@@ -87,7 +87,8 @@ struct DrawAndGuessGuessView: View {
             .modifier(DrawAndGuessReplayAccessibility(viewModel: viewModel, isDrawingShown: !showsPlaceholder))
             if viewModel.settings?.playStyle == .against, !reduceMotion {
                 if viewModel.speedBonus != .hidden {
-                    DrawAndGuessSpeedBonusLine(viewModel: viewModel, width: side)
+                    // As wide as the straight part of the square's bottom edge, between the corners.
+                    DrawAndGuessSpeedBonusLine(viewModel: viewModel, width: side - 2 * PaeoniaRadius.radius28)
                 } else {
                     Color.clear.frame(height: 3)
                 }

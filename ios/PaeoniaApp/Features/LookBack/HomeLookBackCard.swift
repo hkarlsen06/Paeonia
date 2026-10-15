@@ -26,7 +26,7 @@ struct HomeLookBackCard: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.paeoniaPressableCard)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: accessibilityLabel))
         .accessibilityAddTraits(.isButton)

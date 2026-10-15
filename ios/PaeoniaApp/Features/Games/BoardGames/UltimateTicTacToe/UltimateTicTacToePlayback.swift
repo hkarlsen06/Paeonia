@@ -34,6 +34,8 @@ final class UltimateTicTacToePlayback {
         var zoomEnabled: Bool
         /// The camera cuts instead of gliding, and a move shows without its beats.
         var reduceMotion: Bool
+        /// A finished game played again: moves make no haptics or sounds.
+        var isReplay = false
     }
 
     private struct DeferredFocus {
@@ -202,6 +204,7 @@ extension UltimateTicTacToePlayback {
     /// Without the zoom beats, the marks and lines animate on their own. Only the
     /// haptics are left.
     private func playHaptics(for event: BoardMoveEvent) {
+        guard !input.isReplay else { return }
         if !event.isMine {
             PaeoniaHaptics.partnerDrawingReceived()
             GameSound.mark.play(volume: 0.85)
@@ -220,7 +223,7 @@ extension UltimateTicTacToePlayback {
     /// board rests, then the camera goes where I play next.
     private func playPartner(_ event: BoardMoveEvent, id: Int) async {
         let board = event.move / 9
-        requestFocus(board, animation: UltimateTicTacToeMotion.zoomToMove)
+        guard await travel(to: board, animation: UltimateTicTacToeMotion.zoomToMove, id: id) else { return }
         guard await pause(UltimateTicTacToeTiming.zoomToMove, id: id) else { return }
         PaeoniaHaptics.partnerDrawingReceived()
         GameSound.mark.play(volume: 0.85)
@@ -231,7 +234,7 @@ extension UltimateTicTacToePlayback {
         guard await pause(UltimateTicTacToeTiming.markDraw + rest, id: id) else { return }
         guard await closeBoard(board, id: id) else { return }
         isGliding = true
-        settleFocus()
+        guard await travel(to: zoom.restingFocus, animation: UltimateTicTacToeMotion.regroup, id: id) else { return }
         if input.board.outcome == nil {
             _ = await pause(UltimateTicTacToeTiming.regroup, id: id)
         }
@@ -322,6 +325,21 @@ extension UltimateTicTacToePlayback {
 
     private func settleFocus() {
         requestFocus(zoom.restingFocus, animation: UltimateTicTacToeMotion.regroup)
+    }
+
+    /// Moves the camera to `target`. A trip from one small board to another
+    /// first heads out toward the whole board, then turns to the target before
+    /// it gets there. The springs keep their speed through the turn, so the trip
+    /// is one swoop that pulls back on the way, not a fast slide at full zoom.
+    /// A longer trip heads out for longer. False if cancelled.
+    private func travel(to target: Int?, animation: Animation, id: Int) async -> Bool {
+        if let from = focus, let target, from != target {
+            let steps = max(abs(from % 3 - target % 3), abs(from / 3 - target / 3))
+            requestFocus(nil, animation: UltimateTicTacToeMotion.regroup)
+            guard await pause(UltimateTicTacToeTiming.pullBack * Double(steps), id: id) else { return false }
+        }
+        requestFocus(target, animation: animation)
+        return true
     }
 
     private func requestFocus(_ target: Int?, animation: Animation) {

@@ -770,6 +770,67 @@ describe("streak", () => {
   });
 });
 
+describe("history", () => {
+  const history = (user: TestUser, kind: BoardGameKind, before?: number, limit = 10) =>
+    user.as.query(api.boardGames.get_board_game_history, { p_kind: kind, p_before_game_number: before ?? null, p_limit: limit });
+
+  test("a finished game is kept for both partners, with its moves and stake", async () => {
+    const s = await startCouple();
+    const game = await ensure(s.a, "ultimate_tic_tac_toe");
+    const started = game.started_at;
+    expect(await history(s.a, "ultimate_tic_tac_toe")).toEqual({ games: [], next_before_game_number: null });
+    const withStake = await move(s.a, game, ULTIMATE_WIN[0], { p_stake: "Dinner" });
+    tick();
+    await playMoves(s, withStake, ULTIMATE_WIN.slice(1));
+    const expected = {
+      game_number: 1,
+      first_user_id: s.a.userId,
+      moves: ULTIMATE_WIN,
+      winner_user_id: s.b.userId,
+      win_line: [1, 4, 7],
+      stake: "Dinner",
+      started_at: started,
+      finished_at: nowIso(),
+    };
+    expect(await history(s.a, "ultimate_tic_tac_toe")).toEqual({ games: [expected], next_before_game_number: null });
+    expect(await history(s.b, "ultimate_tic_tac_toe")).toEqual({ games: [expected], next_before_game_number: null });
+    // Other kinds have their own history.
+    expect((await history(s.a, "connect_four")).games).toEqual([]);
+  });
+
+  test("a game still on is not in the history, and a draw has no winner", async () => {
+    const s = await startCouple();
+    const playing = await playMoves(s, await ensure(s.a, "connect_four"), CONNECT_FOUR_DRAW.slice(0, -1));
+    expect((await history(s.a, "connect_four")).games).toEqual([]);
+    await playMoves(s, playing, CONNECT_FOUR_DRAW.slice(-1));
+    expect((await history(s.a, "connect_four")).games).toMatchObject([{ winner_user_id: null, win_line: [], stake: null }]);
+  });
+
+  test("pages newest first", async () => {
+    const s = await startCouple();
+    let game = await ensure(s.a, "connect_four");
+    for (let round = 0; round < 3; round += 1) {
+      const done = await playMoves(s, game, CONNECT_FOUR_WIN);
+      game = round < 2 ? await rematch(s.a, done) : done;
+    }
+    const first = await history(s.b, "connect_four", undefined, 2);
+    expect(first.games.map((row) => row.game_number)).toEqual([3, 2]);
+    expect(first.next_before_game_number).toBe(2);
+    const second = await history(s.b, "connect_four", 2, 2);
+    expect(second.games.map((row) => row.game_number)).toEqual([1]);
+    expect(second.next_before_game_number).toBeNull();
+    // Each game remembers who started it.
+    expect([...first.games, ...second.games].map((row) => row.first_user_id)).toEqual([s.a.userId, s.b.userId, s.a.userId]);
+  });
+
+  test("needs an entitled couple and a limit of 1 or more", async () => {
+    const s = await startCouple();
+    expect((await failure(history(s.a, "connect_four", undefined, 0))).code).toBe("23514");
+    const loner = await createSignedInUser(s.t, { name: "Loner" });
+    expect((await failure(history(loner, "connect_four"))).code).toBe("42501");
+  });
+});
+
 describe("start_rematch", () => {
   test("is refused while the game is on", async () => {
     const s = await startCouple();
@@ -1540,7 +1601,7 @@ describe("turn reminder", () => {
 });
 
 describe("relationship end", () => {
-  const BOARD_TABLES = ["board_games", "board_game_marks"] as const;
+  const BOARD_TABLES = ["board_games", "board_game_marks", "board_game_history"] as const;
   const count = (t: TestConvex, coupleId: string) =>
     t.run(async (ctx) => {
       const result: Record<string, number> = {};
@@ -1553,6 +1614,7 @@ describe("relationship end", () => {
   async function playedCouple() {
     const s = await startCouple();
     for (const kind of ALL_KINDS) await move(s.a, await ensure(s.a, kind), OPENING_MOVE[kind]);
+    await playMoves(s, await gameOf(s.a, "connect_four"), CONNECT_FOUR_WIN.slice(1));
     await s.a.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: "aGVsbG8=" });
     await s.b.as.mutation(api.boardGames.set_board_game_mark, { p_drawing: "AAAA" });
     return s;
@@ -1560,13 +1622,13 @@ describe("relationship end", () => {
 
   test("cleanup deletes the games and marks of the couple", async () => {
     const s = await playedCouple();
-    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 4, board_game_marks: 2 });
+    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 4, board_game_marks: 2, board_game_history: 1 });
 
     await s.a.as.mutation(api.relationship.leave_relationship, op());
     // The rows stay until the content is cleaned up.
-    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 4, board_game_marks: 2 });
+    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 4, board_game_marks: 2, board_game_history: 1 });
     await s.t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
-    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0 });
+    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0, board_game_history: 0 });
   });
 
   test("another couple on the same deployment keeps its rows", async () => {
@@ -1576,18 +1638,18 @@ describe("relationship end", () => {
     await ensure(other.first, "connect_four");
     await s.a.as.mutation(api.relationship.leave_relationship, op());
     await s.t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
-    expect(await count(s.t, other.coupleId)).toEqual({ board_games: 1, board_game_marks: 0 });
+    expect(await count(s.t, other.coupleId)).toEqual({ board_games: 1, board_game_marks: 0, board_game_history: 0 });
   });
 
   test("the game row count is exact although the backend is registered for four kinds", async () => {
     const s = await playedCouple();
-    // 1 settings row, 4 games and 2 marks.
+    // 1 settings row, 4 games, 2 marks and 1 finished game.
     const deleted = await s.t.run(async (ctx) => {
       const { deleteCoupleGameRows } = await import("./lib/gameRegistry");
       return await deleteCoupleGameRows(ctx, s.couple.coupleId);
     });
-    expect(deleted).toBe(7);
-    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0 });
+    expect(deleted).toBe(8);
+    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0, board_game_history: 0 });
   });
 
   test("a purge without an earlier cleanup still removes the rows", async () => {
@@ -1597,7 +1659,7 @@ describe("relationship end", () => {
       const couple = (await ctx.db.query("couples").first())!;
       await purgeCoupleContent(ctx, couple);
     });
-    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0 });
+    expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0, board_game_history: 0 });
   });
 });
 

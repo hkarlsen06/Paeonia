@@ -1683,6 +1683,22 @@ export default defineSchema({
     .index("by_couple_id_kind", ["couple_id", "kind"])
     .index("by_turn_reminder_sent_at_turn_started_at", ["turn_reminder_sent_at", "turn_started_at"]),
 
+  // FK: couple_id -> couples cascade. (couple_id, kind, game_number) is unique.
+  // Every finished board game, written by the move that ends it, so the couple can look back and watch it again.
+  board_game_history: defineTable({
+    couple_id: uuid,
+    kind: literals("connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo"),
+    game_number: v.number(),
+    first_user_id: uuid,
+    moves: v.array(v.number()),
+    // Absent for a draw.
+    winner_user_id: optUuid,
+    win_line: v.array(v.number()),
+    stake: optString,
+    started_at: ts,
+    finished_at: ts,
+  }).index("by_couple_id_kind_game_number", ["couple_id", "kind", "game_number"]),
+
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
   // A partner's own mark for all board games, as base64 PKDrawing data.
   board_game_marks: defineTable({

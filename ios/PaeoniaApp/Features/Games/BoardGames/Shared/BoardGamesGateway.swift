@@ -7,6 +7,9 @@ nonisolated protocol BoardGamesGateway: Sendable {
     /// One-shot read of what the live feed follows.
     func loadBoardGames() async throws -> RemoteBoardGames
     func loadMarks() async throws -> RemoteBoardGameMarks
+    /// One page of finished games of this kind, newest first. Pass the page's
+    /// `nextBeforeGameNumber` for the next one.
+    func loadHistory(_ kind: GameKind, beforeGameNumber: Int?, limit: Int) async throws -> RemoteBoardGameHistoryPage
     /// Gets or creates the couple's game of this kind. The caller starts a new one.
     func ensureGame(_ kind: GameKind) async throws -> RemoteBoardGame
     func makeMove(_ payload: BoardGameMovePayload, operation: SyncClientOperation) async throws -> RemoteBoardGame
@@ -33,6 +36,13 @@ nonisolated struct LiveBoardGamesGateway: BoardGamesGateway {
 
     func loadMarks() async throws -> RemoteBoardGameMarks {
         try await client.query("boardGames:get_board_game_marks")
+    }
+
+    func loadHistory(_ kind: GameKind, beforeGameNumber: Int?, limit: Int) async throws -> RemoteBoardGameHistoryPage {
+        try await client.query(
+            "boardGames:get_board_game_history",
+            args: HistoryRequest(kind: kind, beforeGameNumber: beforeGameNumber, limit: limit)
+        )
     }
 
     func ensureGame(_ kind: GameKind) async throws -> RemoteBoardGame {
@@ -72,6 +82,18 @@ nonisolated private struct EnsureGameRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case kind = "p_kind"
+    }
+}
+
+nonisolated private struct HistoryRequest: Encodable {
+    let kind: GameKind
+    let beforeGameNumber: Int?
+    let limit: Int
+
+    enum CodingKeys: String, CodingKey {
+        case kind = "p_kind"
+        case beforeGameNumber = "p_before_game_number"
+        case limit = "p_limit"
     }
 }
 
@@ -172,6 +194,10 @@ nonisolated struct UnavailableBoardGamesGateway: BoardGamesGateway {
     }
 
     func loadMarks() async throws -> RemoteBoardGameMarks {
+        throw Unavailable()
+    }
+
+    func loadHistory(_: GameKind, beforeGameNumber _: Int?, limit _: Int) async throws -> RemoteBoardGameHistoryPage {
         throw Unavailable()
     }
 

@@ -62,15 +62,37 @@ struct BoardGameScoreCapsule: View {
     }
 }
 
+/// The score capsule, as a link to "Past games" when the game has them.
+private struct BoardGameScoreLink: View {
+    let score: BoardGameScore
+    let me: BoardGamePlayerInfo
+    let partner: BoardGamePlayerInfo
+    let history: GamesDestination?
+
+    var body: some View {
+        if let history {
+            NavigationLink(value: history) {
+                BoardGameScoreCapsule(score: score, me: me, partner: partner)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text(.boardGamesHistoryTitle))
+        } else {
+            BoardGameScoreCapsule(score: score, me: me, partner: partner)
+        }
+    }
+}
+
 extension View {
     /// The score capsule in the trailing toolbar, once a game has finished. At
     /// accessibility text sizes it moves into the content instead (see `BoardGameScoreHeader`).
+    /// With `history`, a tap on it opens "Past games".
     func boardGameScoreToolbar(
         score: BoardGameScore?,
         me: BoardGamePlayerInfo,
-        partner: BoardGamePlayerInfo
+        partner: BoardGamePlayerInfo,
+        history: GamesDestination? = nil
     ) -> some View {
-        modifier(BoardGameScoreToolbar(score: score, me: me, partner: partner))
+        modifier(BoardGameScoreToolbar(score: score, me: me, partner: partner, history: history))
     }
 }
 
@@ -78,13 +100,14 @@ private struct BoardGameScoreToolbar: ViewModifier {
     let score: BoardGameScore?
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
+    let history: GamesDestination?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     func body(content: Content) -> some View {
         content.toolbar {
             if let score, !score.isEmpty, !dynamicTypeSize.isAccessibilitySize {
                 ToolbarItem(placement: .topBarTrailing) {
-                    BoardGameScoreCapsule(score: score, me: me, partner: partner)
+                    BoardGameScoreLink(score: score, me: me, partner: partner, history: history)
                 }
                 .sharedBackgroundVisibility(.hidden)
             }
@@ -97,11 +120,12 @@ struct BoardGameScoreHeader: View {
     let score: BoardGameScore?
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
+    var history: GamesDestination?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize, let score, !score.isEmpty {
-            BoardGameScoreCapsule(score: score, me: me, partner: partner)
+            BoardGameScoreLink(score: score, me: me, partner: partner, history: history)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }

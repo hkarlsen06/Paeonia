@@ -512,7 +512,7 @@ struct UltimateTicTacToePresentationTests {
 
     @Test func theMoveDurationsCoverTheirBeats() {
         typealias Timing = UltimateTicTacToeTiming
-        let partner = Timing.zoomToMove + Timing.markDraw + Timing.hold
+        let partner = Timing.pullBack + Timing.zoomToMove + Timing.markDraw + Timing.hold
 
         #expect(UltimateTicTacToeTiming.partner == .milliseconds(Int((partner * 1_000).rounded())))
         #expect(UltimateTicTacToeTiming.mine < UltimateTicTacToeTiming.partner)

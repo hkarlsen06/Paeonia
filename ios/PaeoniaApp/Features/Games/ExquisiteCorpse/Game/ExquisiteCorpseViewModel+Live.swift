@@ -80,19 +80,67 @@ extension ExquisiteCorpseViewModel {
         guard penCanvas !== canvasView else { return }
         penCanvas = canvasView
         let recognizer = WidgetLiveTouchRecognizer()
-        recognizer.onBegan = { [weak self, weak canvasView] touch, _ in
-            guard let canvasView else { return }
-            self?.penMoved(to: touch.location(in: canvasView), in: canvasView.bounds.size)
+        // The canvas view also covers the strip above the part, so its width is
+        // the part's side and not its height.
+        recognizer.onBegan = { [weak self, weak canvasView] touch, event in
+            guard let self, let canvasView else { return }
+            let side = canvasView.bounds.width
+            penMoved(to: touch.location(in: canvasView), in: CGSize(width: side, height: side))
+            beginLiveStroke(touch)
+            extendLiveStroke(touch, event: event, in: canvasView)
         }
-        recognizer.onMoved = { [weak self, weak canvasView] touch, _ in
-            guard let canvasView else { return }
-            self?.penMoved(to: touch.location(in: canvasView), in: canvasView.bounds.size)
+        recognizer.onMoved = { [weak self, weak canvasView] touch, event in
+            guard let self, let canvasView else { return }
+            let side = canvasView.bounds.width
+            penMoved(to: touch.location(in: canvasView), in: CGSize(width: side, height: side))
+            extendLiveStroke(touch, event: event, in: canvasView)
         }
-        recognizer.onEnded = { [weak self] _ in
+        recognizer.onEnded = { [weak self] cancelled in
             self?.penLifted()
+            self?.endLiveStroke(cancelled: cancelled)
         }
         canvasView.addGestureRecognizer(recognizer)
     }
+
+    // MARK: - The stroke being drawn
+
+    /// PencilKit hands over a stroke only when the pen lifts. This builds the
+    /// stroke from the touches, so the partner sees it reach the strip while it
+    /// is drawn. Only the strip of it ever leaves the phone.
+    private func beginLiveStroke(_ touch: UITouch) {
+        guard let tool = board.pencilKitTool as? PKInkingTool, !board.selectedTool.isFill else {
+            liveStroke = nil
+            return
+        }
+        let key = WidgetLiveInkCalibration.key(ink: tool.ink.inkType.rawValue, isPencil: touch.type == .pencil)
+        let style = WidgetLiveInkCalibration.load().style(ink: key, width: tool.width) ?? .fallback(width: tool.width)
+        liveStroke = ExquisiteCorpseLiveStroke(ink: tool.ink, style: style, startTime: touch.timestamp)
+    }
+
+    private func extendLiveStroke(_ touch: UITouch, event: UIEvent, in view: UIView) {
+        guard liveStroke != nil else { return }
+        for sample in event.coalescedTouches(for: touch) ?? [touch] {
+            liveStroke?.append(sample, in: view)
+        }
+        guard let liveStroke, monotonicNow() - liveStroke.lastSentAt >= Self.liveStrokeInterval,
+              board.canvasSide > 0,
+              liveStroke.points.contains(where: { $0.location.y >= ExquisiteCorpseFold.foldY(side: board.canvasSide) })
+        else { return }
+        self.liveStroke?.lastSentAt = monotonicNow()
+        sendStripIfChanged(including: liveStroke.stroke)
+    }
+
+    /// A finished stroke reaches the board, which sends the strip. A cancelled
+    /// one never does, so the strip goes out again without it.
+    private func endLiveStroke(cancelled: Bool) {
+        liveStroke = nil
+        if cancelled {
+            sendStripIfChanged()
+        }
+    }
+
+    /// How often the strip goes out while a stroke is drawn across it.
+    private static let liveStrokeInterval: TimeInterval = 1.0 / 12
 
     /// The pen is at `point` on a canvas of `size`.
     func penMoved(to point: CGPoint, in size: CGSize) {
@@ -117,12 +165,18 @@ extension ExquisiteCorpseViewModel {
 
     /// Sends the strip after a change to the canvas, when the strip itself changed
     /// and the partner is there to see it. A stroke above the fold changes
-    /// nothing the partner may see, so nothing goes out.
-    func sendStripIfChanged() {
+    /// nothing the partner may see, so nothing goes out. `liveStroke` is a stroke
+    /// still being drawn, in canvas points.
+    func sendStripIfChanged(including liveStroke: PKStroke? = nil) {
         guard phase == .drawing, let part, part.hasStrip, isPartnerInRoom,
               let partID = ownPartID, boardPartID == partID
         else { return }
-        let strip = ExquisiteCorpseFold.strip(of: board.canonicalDrawing)
+        var drawing = board.drawing
+        if let liveStroke {
+            drawing.strokes.append(liveStroke)
+        }
+        drawing = GameCanvas.canonical(drawing, fromSide: board.canvasSide)
+        let strip = ExquisiteCorpseFold.strip(of: drawing)
         let signature = strip.paeoniaContentSignature
         if let sentStrip, sentStrip.partID == partID, sentStrip.signature == signature {
             return
@@ -260,5 +314,34 @@ extension ExquisiteCorpseViewModel {
         if partnerFinishedPart != finishedPart {
             partnerFinishedPart = finishedPart
         }
+    }
+}
+
+/// The stroke the drawer is drawing now, from the pen's touches, in canvas points.
+/// Every point gets the typical size for the tool, as the relay's live strokes do.
+struct ExquisiteCorpseLiveStroke {
+    let ink: PKInk
+    let style: WidgetLiveInkCalibration.Style
+    let startTime: TimeInterval
+    private(set) var points: [PKStrokePoint] = []
+    var lastSentAt: TimeInterval = 0
+
+    init(ink: PKInk, style: WidgetLiveInkCalibration.Style, startTime: TimeInterval) {
+        self.ink = ink
+        self.style = style
+        self.startTime = startTime
+    }
+
+    mutating func append(_ touch: UITouch, in view: UIView) {
+        points.append(style.point(
+            at: touch.preciseLocation(in: view),
+            timeOffset: touch.timestamp - startTime,
+            azimuth: touch.azimuthAngle(in: view),
+            scale: 1
+        ))
+    }
+
+    var stroke: PKStroke {
+        PKStroke(ink: ink, path: PKStrokePath(controlPoints: points, creationDate: Date()))
     }
 }

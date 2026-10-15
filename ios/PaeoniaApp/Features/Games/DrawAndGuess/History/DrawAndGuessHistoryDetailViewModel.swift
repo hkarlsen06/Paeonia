@@ -58,7 +58,7 @@ final class DrawAndGuessHistoryDetailViewModel {
     /// The guesser's name, or "You" for use at the start of a sentence.
     private var guesserName: String {
         round.guesserUserID == participants.currentUserID
-            ? String(localized: .gamesDrawAndGuessRevealYou)
+            ? String(localized: .gamesDrawAndGuessHistoryGuesserYou)
             : participants.partnerName
     }
 

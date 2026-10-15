@@ -47,11 +47,11 @@ struct DailyChallengeAnswerStep: View {
                 // Sent answers can be taller than the screen (two photos), so the
                 // review state scrolls and the card keeps its natural height.
                 ScrollView {
-                    content(cardFillsHeight: false)
+                    content(sitsLow: false)
                 }
                 .scrollBounceBehavior(.basedOnSize)
             } else {
-                content(cardFillsHeight: true)
+                content(sitsLow: true)
             }
         }
         .onAppear {
@@ -63,25 +63,22 @@ struct DailyChallengeAnswerStep: View {
         }
     }
 
-    /// While composing, the question card takes all the height the composer leaves, so
-    /// there is no empty gap on the screen. The composer (text field, photo, voice,
-    /// choice) sits under it within thumb reach; a keyboard just shrinks the card. The
-    /// answer-method picker and the waiting hint live inside the card, at its top and
-    /// bottom edges. Review states show the answers under the card instead.
-    private func content(cardFillsHeight: Bool) -> some View {
+    /// While composing, the question card hugs its text and the card and composer
+    /// (text field, photo, voice, choice) sit together at the bottom, within thumb
+    /// reach. The waiting hint and the answer-method picker live at the bottom of the
+    /// card, so the picker sits right above the composer it switches. Review states
+    /// show the answers under the card instead.
+    private func content(sitsLow: Bool) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             DailyQuestionCard(prompt: question.prompt) {
-                cardHeader
+                EmptyView()
             } footer: {
-                if showsPartnerWaitingNote {
-                    DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
-                }
+                cardFooter
             }
-            .frame(maxHeight: cardFillsHeight ? .infinity : nil)
 
             answerSection
         }
-        .frame(maxWidth: .infinity, maxHeight: cardFillsHeight ? .infinity : nil, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: sitsLow ? .infinity : nil, alignment: sitsLow ? .bottom : .top)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, topPadding)
         .padding(.bottom, PaeoniaSpacing.space8)
@@ -93,24 +90,30 @@ struct DailyChallengeAnswerStep: View {
         !showsSendingState && question.editableAnswerKind == nil && question.hasOwnAnswer
     }
 
-    /// The card's top row: the answer-method picker when the user can choose, and
-    /// otherwise small icons for how this question is answered.
-    @ViewBuilder
-    private var cardHeader: some View {
-        if showsKindPicker {
-            DailyAnswerKindPicker(
-                kinds: question.composableAnswerKinds,
-                selection: composeKind,
-                onSelect: setComposeKind
-            )
-        } else {
-            DailyAnswerKindBadges(kinds: question.composableAnswerKinds)
+    /// The card's bottom edge: the waiting hint when it applies, then the
+    /// answer-method picker when the user can choose, and otherwise small icons for
+    /// how this question is answered.
+    private var cardFooter: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            if showsPartnerWaitingNote {
+                DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
+            }
+
+            if showsKindPicker {
+                DailyAnswerKindPicker(
+                    kinds: question.composableAnswerKinds,
+                    selection: composeKind,
+                    onSelect: setComposeKind
+                )
+            } else {
+                DailyAnswerKindBadges(kinds: question.composableAnswerKinds)
+            }
         }
     }
 
     /// The answer-method picker shows only while composing a fresh answer that accepts
-    /// more than one kind. It sits at the top of the question card, so its position is
-    /// stable regardless of which composer is selected.
+    /// more than one kind. It sits at the bottom of the question card, so its position
+    /// is stable regardless of which composer is selected.
     private var showsKindPicker: Bool {
         !showsSendingState
             && question.editableAnswerKind == nil
@@ -150,8 +153,8 @@ struct DailyChallengeAnswerStep: View {
             DailyAnswerDetailsView(question: question, participants: viewModel.participants)
         } else if question.canSubmitAnswer {
             // Just the input here. The kind picker and the "answer to see their
-            // reply" hint live in the question card, so only the composer itself
-            // sits under it for thumb reach.
+            // reply" hint live at the bottom of the question card, so only the
+            // composer itself sits under it for thumb reach.
             if question.usesCombinedCompose {
                 combinedComposer
             } else {
@@ -193,7 +196,7 @@ struct DailyChallengeAnswerStep: View {
     /// the field is focused the photo / partner pick folds away so the text composer
     /// owns the shorter height, and returns once the field is dismissed. This is safe
     /// to animate because the secondary sits *above* the field, which is pinned to the
-    /// bottom: folding it grows the spacer above, never moving the field. The fold is
+    /// bottom: folding it moves the card down, never the field. The fold is
     /// driven by `showsSecondaryComposer` (toggled in `withAnimation` from the focus
     /// change) rather than an `.animation(_:value: isFocused)` on this stack, so the
     /// fade animates the secondary alone and never sweeps in the field's keyboard

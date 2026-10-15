@@ -2,11 +2,8 @@ import SwiftUI
 
 /// The question on an answer screen, set on a raised card with a soft petal glow.
 ///
-/// In the answer flows the caller lets the card take every point of height the
-/// composer leaves (`.frame(maxHeight: .infinity)`), so there's no empty gap between
-/// the question and the answer. The question sits centered between the header and
-/// footer. When the keyboard squeezes the card, the question shrinks a little to fit
-/// instead of being cut off. In a scroll view the card simply hugs its content.
+/// The card hugs its content. When the keyboard leaves too little room, the question
+/// shrinks a little to fit instead of being cut off.
 struct DailyQuestionCard<Header: View, Footer: View>: View {
     let prompt: String
     private let header: Header
@@ -25,10 +22,8 @@ struct DailyQuestionCard<Header: View, Footer: View>: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
 
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             header
-
-            Spacer(minLength: PaeoniaSpacing.space16)
 
             Text(prompt)
                 .font(PaeoniaTypography.heroTitle)
@@ -36,8 +31,6 @@ struct DailyQuestionCard<Header: View, Footer: View>: View {
                 .minimumScaleFactor(0.6)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
-
-            Spacer(minLength: PaeoniaSpacing.space16)
 
             footer
         }
@@ -85,8 +78,8 @@ extension DailyQuestionCard where Footer == EmptyView {
 }
 
 /// Small icon discs naming how a question is answered (voice, photo, writing, pick).
-/// Sized to match `DailyAnswerKindPicker`, which takes their place when the user can
-/// choose, so the question doesn't move between the two.
+/// Sized to match `DailyAnswerKindPicker`, which takes their place at the bottom of
+/// the card when the user can choose, so the card doesn't change height between the two.
 struct DailyAnswerKindBadges: View {
     let kinds: [DailyChallengeAnswerKind]
 
@@ -112,9 +105,10 @@ struct DailyAnswerKindBadges: View {
         DailyQuestionCard(
             prompt: "In a short voice note, what sound, place or moment from today is hard to put into words?"
         ) {
+            EmptyView()
+        } footer: {
             DailyAnswerKindBadges(kinds: [.voice])
         }
-        .frame(maxHeight: .infinity)
 
         DailyQuestionCard(prompt: "What made you smile today?") {
             PaeoniaCardEyebrow(.dailyChallengePartnerRevealEyebrow)

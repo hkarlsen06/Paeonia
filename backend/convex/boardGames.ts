@@ -18,7 +18,7 @@ import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArg
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
-import { getByUuid, omitNulls, withUpdatedAt } from "./lib/db";
+import { getByUuid, omitNulls, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dataEpoch, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
@@ -116,6 +116,50 @@ export const get_board_game_marks = query({
       return row ? { drawing: row.drawing, updated_at: row.updated_at } : null;
     };
     return { user_id: userId, mine: await mark(userId), partner: await mark(partnerId) };
+  },
+});
+
+/** The most finished games one history page returns. */
+const MAX_HISTORY_PAGE = 50;
+
+/**
+ * The couple's finished games of one kind, newest first. `p_before_game_number` is the cursor, and
+ * `next_before_game_number` is null on the last page. The limit is capped at 50.
+ *
+ * Result: `{ games, next_before_game_number }`. A game is `{ game_number, first_user_id, moves,
+ * winner_user_id, win_line, stake, started_at, finished_at }`. `winner_user_id` is null for a draw.
+ */
+export const get_board_game_history = query({
+  args: { p_kind: boardGameKind, p_before_game_number: v.optional(v.union(v.null(), v.number())), p_limit: v.number() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    if (!Number.isFinite(args.p_limit) || args.p_limit < 1) fail("23514", "limit must be 1 or more");
+    const before = args.p_before_game_number ?? Number.MAX_SAFE_INTEGER;
+    if (Number.isNaN(before)) fail("23514", "game number cursor must be a number");
+    const limit = Math.min(Math.floor(args.p_limit), MAX_HISTORY_PAGE);
+
+    const rows = await ctx.db
+      .query("board_game_history")
+      .withIndex("by_couple_id_kind_game_number", (q) =>
+        q.eq("couple_id", coupleId).eq("kind", args.p_kind).lt("game_number", before),
+      )
+      .order("desc")
+      .take(limit + 1);
+    const games = rows.slice(0, limit).map((row) => ({
+      game_number: row.game_number,
+      first_user_id: row.first_user_id,
+      moves: row.moves,
+      winner_user_id: orNull(row.winner_user_id),
+      win_line: row.win_line,
+      stake: orNull(row.stake),
+      started_at: row.started_at,
+      finished_at: row.finished_at,
+    }));
+    return {
+      games,
+      next_before_game_number: rows.length > limit ? games[games.length - 1].game_number : null,
+    };
   },
 });
 
@@ -217,6 +261,7 @@ function pickedColors(
  * A move that passes the turn queues `game_turn_ready` for the partner and a move that ends the game queues
  * `game_result` instead. A Dots and Boxes extra turn queues nothing. Both are skipped while the partner has
  * the game open, and their `round_id` is the turn token `<game number>:<move count>` (see `boardGameTurnToken`).
+ * A move that ends the game also writes it to `board_game_history`.
  */
 export const make_move = mutation({
   args: {
@@ -292,6 +337,20 @@ export const make_move = mutation({
           ...(colors ? { colors_by_user: colors } : {}),
           ...turnPatch,
         });
+        if (updated.status === "finished") {
+          await ctx.db.insert("board_game_history", {
+            couple_id: updated.couple_id,
+            kind: updated.kind,
+            game_number: updated.game_number,
+            first_user_id: updated.first_user_id,
+            moves: updated.moves,
+            winner_user_id: updated.winner_user_id,
+            win_line: updated.win_line,
+            stake: updated.stake,
+            started_at: updated.started_at,
+            finished_at: now,
+          });
+        }
 
         await applyCoupleActivity(ctx, {
           couple_id: game.couple_id,

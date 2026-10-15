@@ -13,6 +13,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     /// The board draws over the whole screen behind the rows and fits itself in the
     /// free space between them, as Ludo's does. It reads `boardFitHeight` for that.
     var boardBleeds = false
+    /// "Past games" of this game. The score opens it.
+    var history: GamesDestination?
     /// The game's board, built from the view model's board state.
     @ViewBuilder let board: () -> BoardContent
 
@@ -39,7 +41,12 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
                 send: viewModel.sendInvite,
                 identifier: "boardGames.invite"
             )
-            .boardGameScoreToolbar(score: viewModel.score, me: viewModel.meInfo, partner: viewModel.partnerInfo)
+            .boardGameScoreToolbar(
+                score: viewModel.score,
+                me: viewModel.meInfo,
+                partner: viewModel.partnerInfo,
+                history: history
+            )
             .preferredColorScheme(.dark)
             .task { await viewModel.start(prefersReducedMotion: reduceMotion) }
             .onChange(of: reduceMotion) { _, newValue in viewModel.prefersReducedMotion = newValue }
@@ -117,7 +124,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             extraTurnCount: hint == nil ? viewModel.extraTurnCount : 0,
             score: viewModel.score,
             hint: hint,
-            colorChoice: viewModel.colorChoice
+            colorChoice: viewModel.colorChoice,
+            history: history
         )
     }
 

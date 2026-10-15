@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The heart row on the compact Home card, for couples who have no map. Both
-/// avatars sit with a heart between them. A tap sends a heart, and the partner's
-/// hearts fly back to the person's avatar here.
+/// avatars sit with a glossy heart between them. A tap squishes the heart, plays a soft
+/// sound and a tap on the phone, and sends a heart. The partner's hearts fly back to the
+/// person's avatar here. The heart beats once when the row first appears.
 struct MapHeartsButton: View {
     let currentName: String
     let currentProfilePhotoAssetID: UUID?
@@ -14,14 +15,19 @@ struct MapHeartsButton: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var flights = HeartFlights()
     @State private var tapCount = 0
+    @State private var beatCount = 0
+    @State private var hasBeaten = false
 
-    private static let avatarDiameter: CGFloat = 28
-    private static let heartGap: CGFloat = 36
+    private static let avatarDiameter: CGFloat = 36
+    private static let heartGap: CGFloat = 28
+    /// The heart overlaps both avatars a little. The art is imported for about 50 pt.
+    private static let heartWidth: CGFloat = 40
     private static let width = avatarDiameter * 2 + heartGap
 
     var body: some View {
         Button {
             tapCount += 1
+            GameSound.send.play(volume: 0.5)
             flights.send()
             onSend()
         } label: {
@@ -33,9 +39,56 @@ struct MapHeartsButton: View {
                 flights.receive(count: burst.flyingCount)
             }
         }
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: tapCount)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.heartsSendAction))
         .accessibilityHint(Text(.heartsSendHint(partnerName)))
+        .task {
+            guard !reduceMotion, !hasBeaten else { return }
+            hasBeaten = true
+            try? await Task.sleep(for: .milliseconds(600))
+            beatCount += 1
+        }
+    }
+
+    /// Squashes flat and wide, then stretches tall, then settles. Used for each tap.
+    private struct Squish {
+        var x = 1.0
+        var y = 1.0
+    }
+
+    private var heart: some View {
+        Image(.homeHeart)
+            .resizable()
+            .scaledToFit()
+            .frame(width: Self.heartWidth)
+            .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+            .keyframeAnimator(initialValue: Squish(), trigger: reduceMotion ? 0 : tapCount) { view, squish in
+                view.scaleEffect(x: squish.x, y: squish.y)
+            } keyframes: { _ in
+                KeyframeTrack(\.x) {
+                    CubicKeyframe(1.22, duration: 0.08)
+                    CubicKeyframe(0.92, duration: 0.12)
+                    SpringKeyframe(1, duration: 0.3, spring: .bouncy)
+                }
+                KeyframeTrack(\.y) {
+                    CubicKeyframe(0.76, duration: 0.08)
+                    CubicKeyframe(1.16, duration: 0.12)
+                    SpringKeyframe(1, duration: 0.3, spring: .bouncy)
+                }
+            }
+            // A lub-dub, once.
+            .keyframeAnimator(initialValue: 1.0, trigger: reduceMotion ? 0 : beatCount) { view, scale in
+                view.scaleEffect(scale)
+            } keyframes: { _ in
+                KeyframeTrack {
+                    CubicKeyframe(1.16, duration: 0.12)
+                    CubicKeyframe(1, duration: 0.12)
+                    CubicKeyframe(1.1, duration: 0.12)
+                    CubicKeyframe(1, duration: 0.3)
+                }
+            }
+            .accessibilityHidden(true)
     }
 
     private var label: some View {
@@ -53,13 +106,7 @@ struct MapHeartsButton: View {
                 size: Self.avatarDiameter
             )
         }
-        .overlay {
-            Image(systemName: "heart.fill")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(.paeoniaAccentSecondary)
-                .symbolEffect(.bounce, value: reduceMotion ? 0 : tapCount)
-                .accessibilityHidden(true)
-        }
+        .overlay { heart }
         .frame(width: Self.width, height: PaeoniaSpacing.compactButtonHeight)
         .contentShape(Rectangle())
         // Hearts fly over the whole button, and past its edge on a wide arc.

@@ -2385,6 +2385,138 @@
         }
       }
     },
+    "boardGames.history.empty.message" : {
+      "comment" : "Message of the empty state when the couple has not finished a game of this kind.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish a game and you can watch it again here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fullfør et spill, så kan dere se det igjen her."
+          }
+        }
+      }
+    },
+    "boardGames.history.empty.title" : {
+      "comment" : "Title of the empty state when the couple has not finished a game of this kind.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No finished games yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen ferdige spill ennå"
+          }
+        }
+      }
+    },
+    "boardGames.history.loadMore.failed" : {
+      "comment" : "Shown at the end of Past games when older games could not be loaded.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load older games."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste eldre spill."
+          }
+        }
+      }
+    },
+    "boardGames.history.offline.message" : {
+      "comment" : "Message under the offline title on Past games. Shown with a Try again button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to see your past games."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å se de tidligere spillene deres."
+          }
+        }
+      }
+    },
+    "boardGames.history.row.moves" : {
+      "comment" : "Small line under a finished game in Past games. %lld is the number of moves in the game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld move"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld moves"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld trekk"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld trekk"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "boardGames.history.title" : {
+      "comment" : "Title of the list of finished board games, and of the link that opens it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Past games"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidligere spill"
+          }
+        }
+      }
+    },
     "boardGames.hub.action.look" : {
       "comment" : "Button on a board game's card while the partner is making their move.",
       "extractionState" : "manual",
@@ -2740,7 +2872,115 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du"
+            "value" : "Deg"
+          }
+        }
+      }
+    },
+    "boardGames.replay.pause" : {
+      "comment" : "Button that pauses a game being played again. Also its VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        }
+      }
+    },
+    "boardGames.replay.play" : {
+      "comment" : "Button that plays a finished game again, move by move. Also its VoiceOver label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill av"
+          }
+        }
+      }
+    },
+    "boardGames.replay.progress" : {
+      "comment" : "Under the slider of a game being played again. %1$lld is the move on the board, %2$lld the number of moves.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move %1$lld of %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trekk %1$lld av %2$lld"
+          }
+        }
+      }
+    },
+    "boardGames.replay.restart" : {
+      "comment" : "Button at the end of a game being played again. Starts it from the first move.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se igjen"
+          }
+        }
+      }
+    },
+    "boardGames.replay.slider.a11y" : {
+      "comment" : "VoiceOver label of the slider that picks a move in a game being played again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trekk"
+          }
+        }
+      }
+    },
+    "boardGames.replay.title" : {
+      "comment" : "Title of the screen that plays a finished board game again. %lld is the game's number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill %lld"
           }
         }
       }
@@ -4258,19 +4498,19 @@
       }
     },
     "dailyChallenge.home.completeWaitingMessage" : {
-      "comment" : "Home daily card message after the user answered their questions while the partner hasn't answered yet today. The argument is the partner's name.",
+      "comment" : "Home daily card message after the user answered their questions while the partner hasn't answered yet today. Shown under the title 'Your part is done', so it doesn't repeat it. The argument is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your part is done. You'll see %@'s answers when they reply."
+            "value" : "You'll see %@'s answers when they reply."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Din del er ferdig. Du ser svarene når %@ svarer."
+            "value" : "Du ser svarene når %@ svarer."
           }
         }
       }
@@ -4325,6 +4565,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Klar for i dag?"
+          }
+        }
+      }
+    },
+    "dailyChallenge.home.progressBadge" : {
+      "comment" : "Small capsule at the top of today's question card on the Home tab. First number is how many of today's questions the person has answered, second is how many there are.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld av %lld besvart"
           }
         }
       }
@@ -9250,7 +9508,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ser at du gjetter"
+            "value" : "%@ ser på deg gjette"
           }
         }
       }
@@ -9725,6 +9983,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stjernemerket"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.history.guesser.you" : {
+      "comment" : "The signed-in person as the subject at the start of a sentence: You got it in 24 seconds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
           }
         }
       }
@@ -10491,6 +10767,24 @@
         }
       }
     },
+    "games.drawAndGuess.result.yourWord" : {
+      "comment" : "Above the drawer's word, shown as letter tiles under the drawing they sent, until the partner guesses on their screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordet ditt"
+          }
+        }
+      }
+    },
     "games.drawAndGuess.reveal.a11y" : {
       "comment" : "VoiceOver announcement when the guess is right. %1$@ is the word and %2$@ the points, for example \"2 points\".",
       "extractionState" : "manual",
@@ -10702,7 +10996,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du"
+            "value" : "Deg"
           }
         }
       }
@@ -14014,7 +14308,7 @@
       }
     },
     "home.milestone.setup.title" : {
-      "comment" : "Title on the Home tab milestone setup tile when the couple has not chosen their relationship start date",
+      "comment" : "Line under the empty calendar on the Home tab countdown tile when the couple has not chosen their relationship start date. Invites them to add it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -14374,7 +14668,7 @@
       }
     },
     "home.milestone.today" : {
-      "comment" : "Shown in place of the day count on the milestone countdown card when the milestone is today",
+      "comment" : "Written on the calendar page on the Home tab countdown tile in place of the day count when the event is today. Must be short, it is drawn large on a small page. Also the caption in the milestones sheet.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -14391,38 +14685,38 @@
         }
       }
     },
-    "home.milestone.until" : {
-      "comment" : "Follows the milestone countdown number, e.g. '25 days until'; the milestone subject continues on the next line. Plural.",
+    "home.milestone.untilEvent" : {
+      "comment" : "Line under the calendar on the Home tab countdown tile. The day count is drawn on the calendar page above it, so this reads 'days until 500 days together'. %@ is the event name, such as '500 days together', 'Oda's birthday' or a countdown the couple named. Plural.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "days until"
+            "value" : "days until %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "dager til"
+            "value" : "dager til %@"
           }
         }
       }
     },
-    "home.milestone.until.one" : {
-      "comment" : "Singular milestone countdown connector when exactly 1 day remains, e.g. '1 day until'.",
+    "home.milestone.untilEvent.one" : {
+      "comment" : "Same line as home.milestone.untilEvent when exactly 1 day remains, so it reads 'day until Oda's birthday' under a 1 on the calendar. %@ is the event name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "day until"
+            "value" : "day until %@"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "dag til"
+            "value" : "dag til %@"
           }
         }
       }
@@ -17464,7 +17758,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du"
+            "value" : "Deg"
           }
         }
       }
@@ -22645,6 +22939,24 @@
         }
       }
     },
+    "settings.relationship.dates.title" : {
+      "comment" : "Row on the Us tab that opens the screen with the day the couple got together and both birthdays. Also that screen's title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Important dates"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viktige datoer"
+          }
+        }
+      }
+    },
     "settings.relationship.section.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -23617,7 +23929,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du"
+            "value" : "Deg"
           }
         }
       }

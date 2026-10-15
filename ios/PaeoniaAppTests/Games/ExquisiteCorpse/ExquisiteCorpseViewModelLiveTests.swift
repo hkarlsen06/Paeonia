@@ -187,6 +187,22 @@ struct ExquisiteCorpseViewModelLiveTests {
         #expect(all.last?.drawing.strokes.isEmpty == true)
     }
 
+    @Test func aStrokeStillBeingDrawnReachesTheStrip() async throws {
+        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
+        let viewModel = await env.loadedViewModel()
+        env.connection.partnerJoins(role: "watching")
+        viewModel.recompute()
+        viewModel.board.updateDrawing(CorpseDrawings.aboveFold)
+        env.connection.forgetSent()
+        let drawing = combined(CorpseDrawings.aboveFold, CorpseDrawings.crossingFold)
+
+        // The pen is still down, so the canvas has no new stroke yet.
+        viewModel.sendStripIfChanged(including: try #require(CorpseDrawings.crossingFold.strokes.first))
+
+        let sent = try #require(strips(in: env.connection.gameMessages).last)
+        #expect(sent.drawing.paeoniaContentSignature == ExquisiteCorpseFold.strip(of: drawing).paeoniaContentSignature)
+    }
+
     @Test func aPartnerWhoArrivesGetsTheWholeStripAndAPenLift() async throws {
         let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
         let viewModel = await env.loadedViewModel()

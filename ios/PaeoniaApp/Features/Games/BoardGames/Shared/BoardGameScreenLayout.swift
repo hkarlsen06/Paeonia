@@ -130,7 +130,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     }
 
     private var scoreHeader: some View {
-        BoardGameScoreHeader(score: content.score, me: content.me, partner: content.partner)
+        BoardGameScoreHeader(score: content.score, me: content.me, partner: content.partner, history: content.history)
     }
 
     /// The rows above the board.

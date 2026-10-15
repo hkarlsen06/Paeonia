@@ -4,21 +4,30 @@ import SwiftUI
 /// on the Home tab. The game's picture runs behind the whole card. A badge such as the
 /// score floats at the top center of its scene. Below, where the picture goes out of
 /// focus, come the partner chip, the name, a status line, the main button, and optional
-/// extras, centered. The card glows while the game waits for this person.
+/// extras, centered. The card glows while the game waits for this person. The daily
+/// question card on the Home tab uses the frame too, with no partner chip.
 struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
     let name: LocalizedStringResource
-    let status: LocalizedStringResource
+    /// A `Text`, so a card can show a string that is not in the String Catalog, such as
+    /// today's question.
+    let status: Text
     let actionTitle: LocalizedStringResource
     let isYourTurn: Bool
-    let context: GameHubCardContext
+    /// Nil on a card that is not a game, so it has no partner chip.
+    let context: GameHubCardContext?
     /// The main button's identifier, such as `games.hub.drawAndGuess`.
     let actionIdentifier: String
     let open: () -> Void
+    /// While set, the name and status show as placeholders, both buttons are off, and
+    /// VoiceOver reads this instead of the name. The layout keeps its height.
+    var loadingLabel: LocalizedStringResource?
     @ViewBuilder let artwork: () -> Artwork
     /// At the top center, over the picture, such as the score.
     @ViewBuilder let badge: () -> Badge
     /// Below the button, such as a quiet link to the game's history.
     @ViewBuilder let extras: () -> Extras
+
+    private var isLoading: Bool { loadingLabel != nil }
 
     private let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
 
@@ -32,6 +41,7 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .disabled(isLoading)
             .accessibilityHidden(true)
 
             textBlock
@@ -64,23 +74,28 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
     private var textBlock: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             VStack(spacing: PaeoniaSpacing.space4) {
-                if context.partnerIsHere {
-                    partnerHereChip
+                if let context, context.partnerIsHere {
+                    partnerHereChip(context)
                         .padding(.bottom, PaeoniaSpacing.space4)
                 }
                 Text(name)
                     .font(PaeoniaTypography.heroTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .multilineTextAlignment(.center)
+                    .contentTransition(.opacity)
+                    .accessibilityLabel(loadingLabel.map { Text($0) } ?? Text(name))
                     .accessibilityAddTraits(.isHeader)
                 statusLine
+                    .accessibilityHidden(isLoading)
             }
             .frame(maxWidth: .infinity)
+            .redacted(reason: isLoading ? .placeholder : [])
 
             Button(action: open) {
                 Text(actionTitle)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .disabled(isLoading)
             .accessibilityIdentifier(actionIdentifier)
 
             extras()
@@ -116,15 +131,16 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
     /// White and bold on your turn. Pink text can't keep 4.5:1 on a blurred pink backdrop,
     /// and the card's pink glow already says it is your turn.
     private var statusLine: some View {
-        Text(status)
+        status
             .font(isYourTurn ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.body)
             .foregroundStyle(isYourTurn ? .paeoniaTextPrimary : .paeoniaTextSecondary)
             .multilineTextAlignment(.center)
+            .contentTransition(.opacity)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     /// Solid green, a live signal centered above the name.
-    private var partnerHereChip: some View {
+    private func partnerHereChip(_ context: GameHubCardContext) -> some View {
         Label {
             Text(.gamesPartnerHereNow(context.partnerName))
                 .font(PaeoniaTypography.caption.weight(.bold))
@@ -152,10 +168,10 @@ extension GameHubCardFrame where Badge == EmptyView, Extras == EmptyView {
     /// A card with no badge and no extras.
     init(
         name: LocalizedStringResource,
-        status: LocalizedStringResource,
+        status: Text,
         actionTitle: LocalizedStringResource,
         isYourTurn: Bool,
-        context: GameHubCardContext,
+        context: GameHubCardContext?,
         actionIdentifier: String,
         open: @escaping () -> Void,
         @ViewBuilder artwork: @escaping () -> Artwork

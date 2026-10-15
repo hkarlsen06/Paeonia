@@ -14,7 +14,7 @@ struct StoryChainHubCard: View {
     var body: some View {
         GameHubCardFrame(
             name: .storyChainName,
-            status: summary.status.title(partnerName: partnerName),
+            status: Text(summary.status.title(partnerName: partnerName)),
             actionTitle: summary.status.actionTitle,
             isYourTurn: summary.status.isYourTurn,
             context: context,

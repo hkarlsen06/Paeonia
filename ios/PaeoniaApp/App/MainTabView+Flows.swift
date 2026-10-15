@@ -23,6 +23,8 @@ extension MainTabView {
     /// shared top banner, because the root's banner would sit behind it.
     func presentingDailyFlows(on content: some View) -> some View {
         presentingStreakMilestones(on: content)
+            // The Home card waits for the flow to close before its seal breaks.
+            .environment(\.dailyFlowIsPresented, isAnswerFlowPresented)
             .fullScreenCover(isPresented: $isAnswerFlowPresented, onDismiss: offerNotificationsIfAnswered) {
                 DailyChallengeAnswerFlow(
                     viewModel: dailyChallengeViewModel,
@@ -63,9 +65,12 @@ extension MainTabView {
             }
     }
 
-    /// Runs once the cover is gone, so the notification ask can show.
+    /// Runs once the cover is gone, so the notification ask can show. It waits for the
+    /// Home card's seal moment to finish first.
     private func offerNotificationsIfAnswered() {
-        if dailyChallengeViewModel.hasSentAnswer {
+        guard dailyChallengeViewModel.hasSentAnswer else { return }
+        Task {
+            try? await Task.sleep(for: DailyPromptCard.momentLength)
             actions.sentSomethingToPartner()
         }
     }

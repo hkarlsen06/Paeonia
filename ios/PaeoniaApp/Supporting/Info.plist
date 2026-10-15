@@ -38,7 +38,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Paeonia uses your camera so you can take a photo to answer the daily question.</string>
+	<string>Paeonia uses your camera so you can take photos for your answers, messages, and memories.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>If you allow this, Paeonia sends your location to your partner each time you move a good distance, even when you're not using the app. You can turn it off anytime in Settings.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -46,13 +46,13 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Paeonia uses your microphone so you can record voice answers and voice messages for your partner.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Paeonia saves a drawing to your photos when you tap save.</string>
+	<string>Paeonia saves a photo or drawing to your photo library when you tap Save to Photos.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>INSendMessageIntent</string>
 	</array>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>Paeonia sends notifications for partner drawings, answered questions, and check-in reminders.</string>
+	<string>Paeonia tells you when your partner answers, sends a message, or takes a turn in a game, and reminds you about the daily question.</string>
 	<key>PaeoniaClerkPublishableKey</key>
 	<string>$(PAEONIA_CLERK_PUBLISHABLE_KEY)</string>
 	<key>PaeoniaConvexURL</key>

@@ -184,9 +184,11 @@ struct KissLayer: View {
     }
 
     private func heart(_ state: KissMath.State) -> some View {
-        Image(systemName: "heart.fill")
-            .font(.system(size: 17, weight: .bold))
-            .foregroundStyle(.paeoniaAccentSecondary)
+        Image(.homeHeart)
+            .resizable()
+            .accessibilityHidden(true)
+            .scaledToFit()
+            .frame(width: 22)
             .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
             .rotationEffect(.degrees(state.rotation))
             .scaleEffect(state.scale)

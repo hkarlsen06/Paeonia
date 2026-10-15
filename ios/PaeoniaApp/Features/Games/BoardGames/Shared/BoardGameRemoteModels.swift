@@ -140,6 +140,47 @@ nonisolated struct RemoteBoardGameEnding: Codable, Equatable, Sendable {
     }
 }
 
+/// `boardGames:get_board_game_history`: one page of finished games of one
+/// kind, newest first.
+nonisolated struct RemoteBoardGameHistoryPage: Codable, Equatable, Sendable {
+    let games: [RemoteBoardGameHistoryGame]
+    /// The cursor for the next page. Nil on the last page.
+    let nextBeforeGameNumber: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case games
+        case nextBeforeGameNumber = "next_before_game_number"
+    }
+}
+
+/// A finished game, with every move, so it can be watched again.
+nonisolated struct RemoteBoardGameHistoryGame: Codable, Equatable, Sendable, Identifiable {
+    let gameNumber: Int
+    let firstUserID: UUID
+    let moves: [Int]
+    /// Nil for a draw.
+    let winnerUserID: UUID?
+    let winLine: [Int]
+    let stake: String?
+    let startedAt: Date
+    let finishedAt: Date
+
+    var id: Int {
+        gameNumber
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case gameNumber = "game_number"
+        case firstUserID = "first_user_id"
+        case moves
+        case winnerUserID = "winner_user_id"
+        case winLine = "win_line"
+        case stake
+        case startedAt = "started_at"
+        case finishedAt = "finished_at"
+    }
+}
+
 /// `boardGames:get_board_game_marks`: both partners' marks, shared by the
 /// three games. A partner without a drawn mark uses their initial.
 nonisolated struct RemoteBoardGameMarks: Codable, Equatable, Sendable {

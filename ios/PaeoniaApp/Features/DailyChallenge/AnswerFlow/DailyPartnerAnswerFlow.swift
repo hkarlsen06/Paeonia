@@ -125,17 +125,20 @@ struct DailyPartnerAnswerFlow: View {
             // The same card the composer showed, with the same waiting hint, so
             // nothing jumps as the editable field becomes this read-only one.
             DailyQuestionCard(prompt: question.prompt) {
-                DailyAnswerKindBadges(kinds: question.composableAnswerKinds)
+                EmptyView()
             } footer: {
-                if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
-                    DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+                    if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
+                        DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
+                    }
+
+                    DailyAnswerKindBadges(kinds: question.composableAnswerKinds)
                 }
             }
-            .frame(maxHeight: .infinity)
 
             committedAnswerField
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space24)
         .padding(.bottom, PaeoniaSpacing.space8)

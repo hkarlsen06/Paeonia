@@ -70,6 +70,8 @@ struct BoardGameShellContent: Equatable {
     var hint: LocalizedStringResource?
     /// Ludo's color circles before the player's first move. Nil in the other games and after.
     var colorChoice: BoardGameColorChoice?
+    /// "Past games", which the score opens. Nil for a game without them.
+    var history: GamesDestination?
 }
 
 // MARK: Turn label

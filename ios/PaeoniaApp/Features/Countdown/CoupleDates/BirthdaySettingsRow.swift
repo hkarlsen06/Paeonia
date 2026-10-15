@@ -10,6 +10,8 @@ struct BirthdaySettingsRow: View {
 
     @State private var isEditing = false
 
+    var isSet: Bool { birthday != nil }
+
     var body: some View {
         // A modal task (Cancel/Save), so it presents as a sheet like the relationship date.
         Button { isEditing = true } label: {

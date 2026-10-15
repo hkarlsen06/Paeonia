@@ -14,7 +14,7 @@ struct DrawAndGuessHubCard: View {
     var body: some View {
         GameHubCardFrame(
             name: .gamesDrawAndGuessName,
-            status: summary.status.title(partnerName: context.partnerName),
+            status: Text(summary.status.title(partnerName: context.partnerName)),
             actionTitle: summary.status.actionTitle,
             isYourTurn: summary.status.isYourTurn,
             context: context,

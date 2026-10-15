@@ -103,6 +103,11 @@
       NavigationStack {
         if isReady, let screen = hub.screen(for: .game(hub.kind)) {
           screen
+            .navigationDestination(for: GamesDestination.self) { destination in
+              if let screen = hub.screen(for: destination) {
+                screen
+              }
+            }
         } else {
           Color.paeoniaBackgroundPrimary
         }
@@ -128,7 +133,8 @@
   /// The board games gateway for scenarios. Reading the games fails like a phone
   /// without a connection, so the cache stays the state. Marks work: saving takes
   /// a moment, and the next read returns what was saved, so a mark drawn in a
-  /// scenario shows on the pieces.
+  /// scenario shows on the pieces. "Past games" of Ultimate Tic-Tac-Toe holds the
+  /// scenarios' won game, so the replay can be watched.
   actor DeveloperBoardGamesGateway: BoardGamesGateway {
     private var mine: RemoteBoardGameMark?
 
@@ -138,6 +144,27 @@
 
     func loadMarks() async throws -> RemoteBoardGameMarks {
       RemoteBoardGameMarks(userID: DeveloperGamesFixture.me, mine: mine, partner: nil)
+    }
+
+    func loadHistory(
+      _ kind: GameKind,
+      beforeGameNumber _: Int?,
+      limit _: Int
+    ) async throws -> RemoteBoardGameHistoryPage {
+      guard kind == .ultimateTicTacToe else {
+        return RemoteBoardGameHistoryPage(games: [], nextBeforeGameNumber: nil)
+      }
+      let game = RemoteBoardGameHistoryGame(
+        gameNumber: 1,
+        firstUserID: DeveloperGamesFixture.me,
+        moves: DeveloperBoardGamesMoves.ultimateTicTacToeGame,
+        winnerUserID: DeveloperGamesFixture.me,
+        winLine: [2, 4, 6],
+        stake: "Loser makes coffee",
+        startedAt: DeveloperScenarioFixture.now.addingTimeInterval(-3_600),
+        finishedAt: DeveloperScenarioFixture.now
+      )
+      return RemoteBoardGameHistoryPage(games: [game], nextBeforeGameNumber: nil)
     }
 
     func ensureGame(_: GameKind) async throws -> RemoteBoardGame {

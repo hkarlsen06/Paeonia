@@ -52,7 +52,7 @@ struct ExquisiteCorpseFoldedPaper: View {
                     }
                 }
                 .shadow(color: .paeoniaBackgroundSecondary.opacity(0.9), radius: 7, y: 4)
-            ExquisiteCorpsePenGlow(pen: penPosition, side: side)
+            ExquisiteCorpsePenGlow(pen: penPosition, side: side, height: paperHeight)
         }
         .frame(width: side, height: side, alignment: .top)
         .background(.paeoniaBackgroundPrimary)
@@ -83,11 +83,14 @@ struct ExquisiteCorpseFoldedPaper: View {
 
 /// A soft glow where the partner's pen is. It slides between positions, fades
 /// out while the pen is lifted and comes back at the new spot instead of sliding
-/// in from the old one. With Reduce Motion it never slides, it only fades.
+/// in from the old one. With Reduce Motion it never slides, it only fades. It is
+/// cut off at the fold, so a pen in the strip carries it off the paper's edge.
 private struct ExquisiteCorpsePenGlow: View {
     /// From 0 to 1 across the part. Nil while the pen is lifted.
     let pen: CGPoint?
     let side: CGFloat
+    /// The height of the paper, where the glow may go.
+    let height: CGFloat
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var point = CGPoint(x: 0.5, y: 0.5)
@@ -100,7 +103,8 @@ private struct ExquisiteCorpsePenGlow: View {
             .blur(radius: Self.blurRadius)
             .opacity(isShown ? Self.peakOpacity : 0)
             .position(x: point.x * side, y: point.y * side)
-            .frame(width: side, height: side)
+            .frame(width: side, height: height)
+            .clipped()
             .allowsHitTesting(false)
             .accessibilityHidden(true)
             .onAppear { move(to: pen, from: nil) }

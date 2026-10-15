@@ -32,13 +32,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Paeonia uses your camera so you can take a photo to answer the daily question."
+            "value" : "Paeonia uses your camera so you can take photos for your answers, messages, and memories."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia bruker kameraet ditt så du kan ta et bilde som svar på dagens spørsmål."
+            "value" : "Paeonia bruker kameraet ditt så du kan ta bilder til svar, meldinger og minner."
           }
         }
       }
@@ -103,13 +103,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia saves a drawing to your photos when you tap save."
+            "value" : "Paeonia saves a photo or drawing to your photo library when you tap Save to Photos."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia lagrer en tegning i bildene dine når du trykker på lagre."
+            "value" : "Paeonia lagrer et bilde eller en tegning i bildebiblioteket ditt når du trykker på Lagre i Bilder."
           }
         }
       }
@@ -121,13 +121,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia sends notifications for partner drawings, answered questions, and check-in reminders."
+            "value" : "Paeonia tells you when your partner answers, sends a message, or takes a turn in a game, and reminds you about the daily question."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia sender varsler om tegninger fra partneren din, svarte spørsmål og påminnelser om å sjekke inn."
+            "value" : "Paeonia sier fra når partneren din svarer, sender en melding eller tar en tur i et spill, og minner deg på dagens spørsmål."
           }
         }
       }

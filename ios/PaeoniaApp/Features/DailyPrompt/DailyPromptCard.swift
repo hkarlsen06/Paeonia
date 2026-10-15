@@ -1,6 +1,17 @@
 import SwiftUI
 
-/// Compact entry point for today's Daily Challenge on the Home tab.
+extension EnvironmentValues {
+    /// True while the daily answer flow covers the tabs. The Home card reads it to wait for
+    /// the flow to close before it plays the seal moment.
+    @Entry var dailyFlowIsPresented = false
+}
+
+/// Today's Daily Challenge on the Home tab and the Questions tab.
+///
+/// While there is something to do (and while the questions load) it is the picture card
+/// with the sealed envelope (`DailyPromptHeroCard`). Once today's questions are done it is
+/// a short row (`DailyPromptCompactCard`). When the last answer comes in while the person
+/// is looking, the seal breaks first and then the card shrinks (see `playMoment`).
 ///
 /// The card is the source the answering flow zooms out of; its parent marks it with
 /// `.matchedTransitionSource`, so the card itself appears to grow into the full-screen
@@ -19,229 +30,154 @@ struct DailyPromptCard: View {
     /// Opens the answer flow of a partner question shown as a locked row.
     var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
 
+    private enum MomentPhase {
+        case idle
+        /// The card is complete but still looks active. It waits for the flow to close.
+        case waiting
+        /// The seal is breaking.
+        case breaking
+    }
+
+    /// How long the seal moment takes after the answer flow closes, from the wait for the
+    /// zoom back to the card settling. The notification ask waits this long, so it doesn't
+    /// slide up over the moment.
+    static let momentLength = Duration.milliseconds(1_600)
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dailyFlowIsPresented) private var flowIsPresented
+    @State private var hold = DailyPromptCardHold()
+    @State private var phase = MomentPhase.idle
+    @State private var sealBreak = 0.0
+    @State private var sealBreaks = 0
+    @State private var envelopePopsOpen = false
+    @State private var isOnScreen = false
+    @State private var momentTask: Task<Void, Never>?
 
     var body: some View {
-        PaeoniaCard {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                PaeoniaCardEyebrow(.homeDailyPromptEyebrow)
-
-                DailyChallengeStepBar(
-                    total: state.totalCount,
-                    completed: state.answeredCount
-                )
-                .accessibilityHidden(isLoading)
-
-                titleBlock
-
-                actionButton
-
-                LockedPartnerQuestionRows(
-                    state: state,
-                    partnerName: partnerName,
+        // While the moment is pending the card draws its last active state.
+        let shown = hold.shownState(for: state)
+        let art = DailyPromptCardArt(shown)
+        let copy = DailyPromptCardCopy(
+            state: shown,
+            partnerName: partnerName,
+            prefersPartnerAnswersWhenComplete: prefersPartnerAnswersWhenComplete
+        )
+        Group {
+            switch art.shape {
+            case .hero:
+                DailyPromptHeroCard(
+                    state: shown,
+                    art: art,
+                    copy: copy,
                     partnerPhotoAssetID: partnerPhotoAssetID,
+                    sealBreak: sealBreak,
                     zoomNamespace: zoomNamespace,
-                    onOpen: onOpenPartnerQuestion
+                    onAnswer: onAnswer,
+                    onOpenPartnerQuestion: onOpenPartnerQuestion
                 )
+                .transition(.opacity)
+            case .compact:
+                DailyPromptCompactCard(
+                    state: shown,
+                    copy: copy,
+                    partnerPhotoAssetID: partnerPhotoAssetID,
+                    envelopePopsOpen: envelopePopsOpen,
+                    zoomNamespace: zoomNamespace,
+                    onAnswer: onAnswer,
+                    onOpenPartnerQuestion: onOpenPartnerQuestion
+                )
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.94, anchor: .top)))
             }
-            // Crossfade the changing content when the state changes — the title and
-            // button label swap via `.contentTransition(.opacity)` and the message
-            // line fades through its own opacity, all in this one transaction so
-            // loading → active → complete settles smoothly. Keyed on `state.kind`
-            // (not a sub-expression like the partner name that changes more often,
-            // which would re-trigger on every render). Instant under Reduce Motion.
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: state.kind)
+        }
+        .onChange(of: state, initial: true) { _, new in observe(new) }
+        .onChange(of: flowIsPresented) { _, isPresented in
+            guard phase == .waiting else { return }
+            if isPresented {
+                momentTask?.cancel()
+            } else {
+                scheduleMoment()
+            }
+        }
+        .onAppear { isOnScreen = true }
+        .onDisappear {
+            isOnScreen = false
+            // Nobody sees the moment from another tab, so show the finished card.
+            if phase != .idle {
+                endMoment()
+            }
+        }
+        .sensoryFeedback(.impact(weight: .medium), trigger: sealBreaks)
+    }
+
+    // MARK: Seal moment
+
+    private func observe(_ new: DailyChallengeCardState) {
+        hold.observe(new)
+        if case .active = new.kind {
+            envelopePopsOpen = false
+        }
+        if hold.isHolding(for: new) {
+            if phase == .idle {
+                beginMoment()
+            }
+        } else if phase != .idle {
+            // The day changed before the moment played.
+            endMoment()
         }
     }
 
-    /// The card's action. A real call to action while there's something to do
-    /// (start/open the challenge) uses the filled primary button; once the day is
-    /// complete it only offers to *review* answers, so it drops to the neutral
-    /// secondary style — same size and shape, so the hero morph still lines up.
-    @ViewBuilder
-    private var actionButton: some View {
-        if isReviewAction {
-            styledActionButton(PaeoniaSecondaryButtonStyle())
+    /// The last answer came in. Plays the moment only for someone who is looking at the
+    /// card. Anyone else, such as a person on another tab, gets the finished card.
+    private func beginMoment() {
+        guard isOnScreen, scenePhase == .active else {
+            hold.release()
+            return
+        }
+        phase = .waiting
+        // The answer flow is usually still open. The moment waits until it has closed.
+        if !flowIsPresented {
+            scheduleMoment()
+        }
+    }
+
+    /// Waits for the flow's zoom back to land on the card, so the person sees the seal break.
+    private func scheduleMoment() {
+        momentTask?.cancel()
+        momentTask = Task {
+            try? await Task.sleep(for: .milliseconds(550))
+            guard !Task.isCancelled else { return }
+            await playMoment()
+        }
+    }
+
+    /// The seal breaks with a crack and a tap, then the card shrinks to the short row and
+    /// its envelope pops open. With Reduce Motion nothing moves: the seal is gone at once
+    /// and the card crossfades. The sound goes quiet with the silent switch. The tap stays.
+    private func playMoment() async {
+        phase = .breaking
+        sealBreaks += 1
+        GameSound.fold.play(volume: 0.8)
+        if reduceMotion {
+            sealBreak = 1
         } else {
-            styledActionButton(PaeoniaPrimaryButtonStyle())
+            withAnimation(.easeOut(duration: 0.4)) { sealBreak = 1 }
         }
+        try? await Task.sleep(for: .milliseconds(reduceMotion ? 150 : 420))
+        guard !Task.isCancelled else { return }
+        envelopePopsOpen = !reduceMotion
+        let collapse = reduceMotion
+            ? PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionFast)
+            : PaeoniaMotion.heroMorph
+        withAnimation(collapse) { endMoment() }
     }
 
-    private func styledActionButton(_ style: some ButtonStyle) -> some View {
-        Button(action: onAnswer) {
-            Text(actionTitle)
-                .contentTransition(.opacity)
-        }
-        .buttonStyle(style)
-        .disabled(!state.isActionEnabled)
-    }
-
-    /// A review action (neutral, not a CTA) once the day is complete — unless the
-    /// partner has replies the user can still unlock by answering, which keeps the
-    /// "See partner answers" button a real call to action.
-    private var isReviewAction: Bool {
-        guard case .complete = state.kind else { return false }
-        return !showsPartnerAnswersCTA
-    }
-
-    /// Whether the complete-state button points the user at partner replies they can
-    /// still unlock (vs. just reviewing answers that are all in).
-    private var showsPartnerAnswersCTA: Bool {
-        prefersPartnerAnswersWhenComplete && state.hasAnswerablePartnerQuestions
-    }
-
-    private var isLoading: Bool {
-        if case .loading = state.kind { true } else { false }
-    }
-
-    private var titleBlock: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            // While loading, the title and message render as skeleton bars sized like
-            // the active card, so a fast load doesn't flash "Loading…" text first.
-            Group {
-                Text(title)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .contentTransition(.opacity)
-                    .accessibilityLabel(isLoading ? Text(.dailyChallengeHomeLoadingTitle) : Text(title))
-
-                // The stand-in is never readable (redacted), so it isn't localized.
-                Text(message ?? "A small moment from today")
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .contentTransition(.opacity)
-                    .accessibilityHidden(isLoading)
-            }
-            .redacted(reason: isLoading ? .placeholder : [])
-        }
-    }
-
-    private var title: LocalizedStringResource {
-        switch state.kind {
-        case .loading, .active:
-            .dailyChallengeHomeActiveTitle
-        case .noChallenge:
-            .dailyChallengeHomeNoChallengeTitle
-        case .complete:
-            .dailyChallengeHomeCompleteTitle
-        }
-    }
-
-    private var message: String? {
-        switch state.kind {
-        case .loading:
-            nil
-        case .noChallenge:
-            String(localized: .dailyChallengeHomeNoChallengeMessage)
-        case let .active(prompt):
-            prompt
-        case .complete:
-            if state.hasAnswerablePartnerQuestions {
-                String(localized: .dailyChallengeHomeCompletePartnerAnsweredMessage(partnerName))
-            } else if !state.hasPartnerAnswersForToday {
-                // Their part is still to come; say what happens next.
-                String(localized: .dailyChallengeHomeCompleteWaitingMessage(partnerName))
-            } else {
-                String(localized: .dailyChallengeHomeCompleteMessage)
-            }
-        }
-    }
-
-    private var actionTitle: LocalizedStringResource {
-        switch state.kind {
-        case .loading:
-            .dailyChallengeOpenButton
-        case .noChallenge:
-            .dailyChallengeStartButton
-        case .active:
-            .dailyChallengeOpenButton
-        case .complete:
-            if showsPartnerAnswersCTA {
-                .dailyChallengeSeePartnerAnswersButton(partnerName)
-            } else {
-                .dailyChallengeSeeYourAnswersButton
-            }
-        }
+    /// Shows the card's real state.
+    private func endMoment() {
+        momentTask?.cancel()
+        momentTask = nil
+        hold.release()
+        phase = .idle
+        sealBreak = 0
     }
 }
-
-#if DEBUG
-#Preview("Loading") {
-    DailyPromptCard(
-        state: DailyChallengeCardState(kind: .loading, answeredCount: 0, totalCount: 2),
-        partnerName: "Oda"
-    )
-    .padding(PaeoniaSpacing.screenHorizontalPadding)
-    .background(.paeoniaBackgroundPrimary)
-    .preferredColorScheme(.dark)
-}
-
-#Preview("Active") {
-    DailyPromptCard(
-        state: DailyChallengeCardState(
-            kind: .active(prompt: "A small moment today"),
-            answeredCount: 1,
-            totalCount: 2
-        ),
-        partnerName: "Oda"
-    )
-    .padding(PaeoniaSpacing.screenHorizontalPadding)
-    .background(.paeoniaBackgroundPrimary)
-    .preferredColorScheme(.dark)
-}
-
-#Preview("Active · partner answered") {
-    DailyPromptCard(
-        state: DailyChallengeCardState(
-            kind: .active(prompt: "A small moment today"),
-            answeredCount: 1,
-            totalCount: 2,
-            hasPartnerAnswersForToday: true,
-            hasAnswerablePartnerQuestions: true,
-            lockedPartnerQuestions: [
-                .init(id: UUID(), shortPrompt: "A memory that stayed"),
-                .init(id: UUID(), shortPrompt: "Something small you love"),
-            ],
-            moreLockedPartnerQuestionCount: 1
-        ),
-        partnerName: "Oda"
-    )
-    .padding(PaeoniaSpacing.screenHorizontalPadding)
-    .background(.paeoniaBackgroundPrimary)
-    .preferredColorScheme(.dark)
-}
-
-#Preview("Complete · partner questions waiting") {
-    DailyPromptCard(
-        state: DailyChallengeCardState(
-            kind: .complete,
-            answeredCount: 2,
-            totalCount: 2,
-            hasPartnerAnswersForToday: true,
-            hasAnswerablePartnerQuestions: true,
-            lockedPartnerQuestions: [.init(id: UUID(), shortPrompt: "A memory that stayed")]
-        ),
-        partnerName: "Oda",
-        prefersPartnerAnswersWhenComplete: true
-    )
-    .padding(PaeoniaSpacing.screenHorizontalPadding)
-    .background(.paeoniaBackgroundPrimary)
-    .preferredColorScheme(.dark)
-}
-
-#Preview("Complete") {
-    DailyPromptCard(
-        state: DailyChallengeCardState(
-            kind: .complete,
-            answeredCount: 2,
-            totalCount: 2
-        ),
-        partnerName: "Oda"
-    )
-    .padding(PaeoniaSpacing.screenHorizontalPadding)
-    .background(.paeoniaBackgroundPrimary)
-    .preferredColorScheme(.dark)
-}
-#endif

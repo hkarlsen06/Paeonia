@@ -49,9 +49,12 @@ export const boardGameBackend: GameBackend = {
   async deleteCoupleRows(ctx, coupleId) {
     const games = await ctx.db.query("board_games").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect();
     const marks = await ctx.db.query("board_game_marks").withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId)).collect();
-    for (const row of games) await ctx.db.delete(row._id);
-    for (const row of marks) await ctx.db.delete(row._id);
-    return games.length + marks.length;
+    const history = await ctx.db
+      .query("board_game_history")
+      .withIndex("by_couple_id_kind_game_number", (q) => q.eq("couple_id", coupleId))
+      .collect();
+    for (const row of [...games, ...marks, ...history]) await ctx.db.delete(row._id);
+    return games.length + marks.length + history.length;
   },
 
   /**

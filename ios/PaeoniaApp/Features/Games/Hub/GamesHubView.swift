@@ -46,7 +46,6 @@ struct GamesHubView: View {
         }
         .paeoniaWideLayout($isWideLayout)
         .refreshable { await viewModel.refresh() }
-        .background(.paeoniaBackgroundPrimary)
         .navigationTitle(Text(.mainTabGames))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {

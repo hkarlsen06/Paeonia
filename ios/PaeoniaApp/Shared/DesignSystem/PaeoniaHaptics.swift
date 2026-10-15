@@ -46,6 +46,19 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// One of the soft taps that build up while the partner's answer is about to show
+    /// in the chat.
+    static func revealBuildUp(intensity: CGFloat) {
+        impact(.soft, intensity: intensity)
+    }
+
+    /// The partner's answer lands in the chat after the build-up: a firm hit and a
+    /// success.
+    static func partnerAnswerLanded() {
+        impact(.heavy, intensity: 1)
+        notify(.success)
+    }
+
     /// Both partners picked the same person on a "who is more likely" question.
     /// A small tap that sits next to the reveal's own success haptic.
     static func partnerChoiceMatched() {

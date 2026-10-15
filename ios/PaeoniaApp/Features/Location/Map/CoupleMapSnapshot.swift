@@ -274,10 +274,16 @@ struct CoupleMapSnapshot: View {
     }
 
     private func togetherHeart(between snap: SnapshotResult) -> some View {
-        Image(systemName: "heart.fill")
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(.paeoniaAccentSecondary)
-            .symbolEffect(.breathe)
+        Image(.homeHeart)
+            .resizable()
+            .accessibilityHidden(true)
+            .scaledToFit()
+            .frame(width: 24)
+            .phaseAnimator(reduceMotion ? [1.0] : [1.0, 1.12]) { view, scale in
+                view.scaleEffect(scale)
+            } animation: { _ in
+                PaeoniaMotion.standardCurve(duration: 1.1)
+            }
             .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
             .position(
                 x: (snap.currentPoint.x + snap.partnerPoint.x) / 2,

@@ -12,8 +12,10 @@ struct UltimateTicTacToeSmallBoardAccess {
 }
 
 /// One of the nine boards: the surface, the grid, the marks, and once the board
-/// is closed, the strike line and the winner's big mark. Taps are handled by the
-/// whole board view, so the cells here only carry VoiceOver.
+/// is closed, the strike line. The winner's big mark is
+/// `UltimateTicTacToeWinnerMarkView`, which the board view draws above the
+/// line through the winning boards. Taps are handled by the whole board view,
+/// so the cells here only carry VoiceOver.
 struct UltimateTicTacToeSmallBoardView: View {
     let index: Int
     /// The side of this small board.
@@ -52,7 +54,6 @@ struct UltimateTicTacToeSmallBoardView: View {
             }
             .opacity(content.state == .open ? 1 : Self.closedOpacity)
             strike
-            winnerMark
             accessibilityCells
         }
         .frame(width: side, height: side)
@@ -129,7 +130,8 @@ struct UltimateTicTacToeSmallBoardView: View {
     }
 
     /// The line always exists and only its progress changes, so it trims in
-    /// when the board closes instead of appearing whole.
+    /// when the board closes instead of appearing whole. It lies under the big
+    /// mark in a paler color, so the mark stays clear.
     private var strike: some View {
         let ends = layout.strikeLine(through: content.winningCells)
         let color = winner.map { styles[$0].color } ?? Color.paeoniaAccentPrimary
@@ -139,18 +141,9 @@ struct UltimateTicTacToeSmallBoardView: View {
             progress: reduceMotion || winner != nil ? 1 : 0
         )
         .stroke(color, style: StrokeStyle(lineWidth: layout.cellSide * 0.14, lineCap: .round))
-        .shadow(color: color.opacity(0.6), radius: layout.cellSide * 0.12)
-        .opacity(winner == nil ? 0 : 1)
-    }
-
-    @ViewBuilder
-    private var winnerMark: some View {
-        if let winner {
-            BoardMarkView(style: styles[winner], tint: styles[winner].color)
-                .frame(width: side * 0.7, height: side * 0.7)
-                .opacity(0.92)
-                .transition(reduceMotion ? .opacity : .scale(scale: 0.4).combined(with: .opacity))
-        }
+        .shadow(color: color.opacity(0.4), radius: layout.cellSide * 0.12)
+        .saturation(UltimateTicTacToeWinnerMarkView.lineSaturation)
+        .opacity(winner == nil ? 0 : UltimateTicTacToeWinnerMarkView.lineOpacity)
     }
 
     // MARK: VoiceOver
@@ -199,5 +192,38 @@ struct UltimateTicTacToeSmallBoardView: View {
             return Text(.ultimateTicTacToeCellYoursA11Y(row, column))
         }
         return Text(.ultimateTicTacToeCellPartnerA11Y(row, column, access.partnerName))
+    }
+}
+
+/// The winner's big mark over a closed small board. The board view draws all
+/// nine above the line through the winning boards, so no line crosses a mark.
+struct UltimateTicTacToeWinnerMarkView: View {
+    /// Strike lines are paler than the marks they sit under.
+    static let lineSaturation = 0.45
+    static let lineOpacity = 0.7
+
+    let side: CGFloat
+    let content: UltimateTicTacToeSmallBoardContent
+    let emphasis: UltimateTicTacToeEmphasis
+    let styles: BoardPieceStyles
+    let pulseCount: Int
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            if case .won(let winner) = content.state {
+                BoardMarkView(style: styles[winner], tint: styles[winner].color)
+                    .frame(width: side * 0.7, height: side * 0.7)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.4).combined(with: .opacity))
+            }
+        }
+        .frame(width: side, height: side)
+        .opacity(emphasis.opacity)
+        .modifier(UltimateTicTacToePulse(trigger: pulseCount, isEnabled: !reduceMotion))
+        .animation(reduceMotion ? PaeoniaMotion.buttonPress : UltimateTicTacToeMotion.close, value: content.state)
+        .animation(PaeoniaMotion.stateChange, value: emphasis)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }

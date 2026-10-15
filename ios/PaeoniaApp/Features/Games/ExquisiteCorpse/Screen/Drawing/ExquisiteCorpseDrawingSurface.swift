@@ -12,6 +12,10 @@ nonisolated enum ExquisiteCorpseHandoff: Hashable {
 /// line that ends at the bottom edge of the strip continues at the top edge of the
 /// canvas, also in the corners. `GameDrawingCanvas` rounds its own corners, which
 /// would clip the ink where the two meet.
+///
+/// The canvas view also lies over the strip, so a line can start on the strip and
+/// run down into the canvas. Ink drawn on the strip is above the part's square and
+/// is cut off wherever the part is shown on its own.
 struct ExquisiteCorpseDrawingSurface: View {
     let board: GameDrawingBoard
     /// The canvas side. With a strip the surface is 12% taller.
@@ -31,9 +35,18 @@ struct ExquisiteCorpseDrawingSurface: View {
             if part.hasStripAbove {
                 stripView
             }
-            canvas
+            Color.clear.frame(width: side, height: side)
         }
         .frame(width: side)
+        .overlay(alignment: .bottom) {
+            canvas
+        }
+        .overlay(alignment: .bottom) {
+            squareMarks
+        }
+        .overlay(alignment: .top) {
+            retryStripButton
+        }
         .background(.paeoniaBackgroundPrimary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
         .overlay {
@@ -43,6 +56,14 @@ struct ExquisiteCorpseDrawingSurface: View {
         }
     }
 
+    private var stripHeight: CGFloat {
+        part.hasStripAbove ? side * ExquisiteCorpseFold.stripFraction : 0
+    }
+
+    private var isRetryShown: Bool {
+        part.hasStripAbove && stripLoadFailed && strip == nil
+    }
+
     @ViewBuilder
     private var stripView: some View {
         let view = ExquisiteCorpseStripView(
@@ -50,31 +71,47 @@ struct ExquisiteCorpseDrawingSurface: View {
             width: side,
             accessibilityLabel: .exquisiteCorpseDrawStripA11Y(partnerName)
         )
-        .overlay {
-            // The whole strip is the button. The strip is shorter than a
-            // button's minimum height, so a capsule would spill onto the canvas.
-            if stripLoadFailed, strip == nil {
-                Button(action: onRetryStrip) {
-                    Label {
-                        Text(.commonTryAgain)
-                    } icon: {
-                        Image(systemName: "wifi.slash")
-                            .accessibilityHidden(true)
-                    }
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("corpse.strip.retry")
-            }
-        }
         if let handoff {
             view.matchedGeometryEffect(id: ExquisiteCorpseHandoff.strip, in: handoff)
         } else {
             view
         }
+    }
+
+    /// Over the canvas, so it takes the tap. The whole strip is the button. The
+    /// strip is shorter than a button's minimum height, so a capsule would spill
+    /// onto the canvas.
+    @ViewBuilder
+    private var retryStripButton: some View {
+        if isRetryShown {
+            Button(action: onRetryStrip) {
+                Label {
+                    Text(.commonTryAgain)
+                } icon: {
+                    Image(systemName: "wifi.slash")
+                        .accessibilityHidden(true)
+                }
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextSecondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: side, height: stripHeight)
+            .accessibilityIdentifier("corpse.strip.retry")
+        }
+    }
+
+    /// The fold line and the size preview, over the canvas's square and not the strip.
+    private var squareMarks: some View {
+        ZStack {
+            if part.showsFoldLine {
+                ExquisiteCorpseFoldLineOverlay(side: side, label: .exquisiteCorpseDrawFoldLabel(partnerName))
+            }
+            WidgetDrawingSizePreview(viewModel: board)
+        }
+        .frame(width: side, height: side)
+        .allowsHitTesting(false)
     }
 
     private var canvas: some View {
@@ -87,19 +124,17 @@ struct ExquisiteCorpseDrawingSurface: View {
             onDrawingChange: board.updateDrawing,
             onStrokeInProgressChange: board.setStrokeInProgress,
             isFillToolSelected: board.selectedTool.isFill,
-            onFill: board.fill,
+            // The paint bucket fills inside the square only.
+            onFill: { point in
+                if point.y >= 0 { board.fill(at: point) }
+            },
             onDrawingApplied: board.canvasDidApplyDrawing,
-            onFinishRendering: board.canvasDidFinishRendering
+            onFinishRendering: board.canvasDidFinishRendering,
+            overscanTop: isRetryShown ? 0 : stripHeight
         )
         .task { board.canvasDidLayout(side: side) }
         .onChange(of: side) { _, newSide in board.canvasDidLayout(side: newSide) }
-        .frame(width: side, height: side)
-        .overlay {
-            if part.showsFoldLine {
-                ExquisiteCorpseFoldLineOverlay(side: side, label: .exquisiteCorpseDrawFoldLabel(partnerName))
-            }
-        }
-        .overlay { WidgetDrawingSizePreview(viewModel: board) }
+        .frame(width: side, height: side + (isRetryShown ? 0 : stripHeight))
         .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
         .accessibilityIdentifier("corpse.canvas")
     }

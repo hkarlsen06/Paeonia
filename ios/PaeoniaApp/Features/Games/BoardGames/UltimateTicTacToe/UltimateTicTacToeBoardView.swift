@@ -8,10 +8,13 @@ import SwiftUI
 /// - When I may choose, the whole board shows. A tap on a small board zooms in.
 ///   A tap outside it, a pinch in, or the "Whole board" button zooms out.
 /// - My partner's move zooms to the board they played, draws their mark in,
-///   rests, and then moves to the board I play in next.
+///   rests, and then moves to the board I play in next. A move from one small
+///   board to another pulls back on the way.
 /// - Reduce Motion still zooms, so the cells stay large enough to tap, but the
 ///   camera cuts instead of gliding and skips the trip to my partner's move.
 /// - VoiceOver never zooms. A tap on any cell plays it.
+/// - A replay of a finished game never zooms either, and its moves make no
+///   haptics or sounds.
 ///
 /// The screen decides what is on the board. This view animates changes to it.
 struct UltimateTicTacToeBoardView: View {
@@ -38,6 +41,8 @@ struct UltimateTicTacToeBoardView: View {
     let bloomSeed: String
     /// My partner's display name, for VoiceOver.
     let partnerName: String
+    /// A finished game played again from "Past games".
+    let isReplay: Bool
     let onPlay: (Int) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -56,6 +61,7 @@ struct UltimateTicTacToeBoardView: View {
         showsOutcome: Bool,
         bloomSeed: String,
         partnerName: String = "",
+        isReplay: Bool = false,
         onPlay: @escaping (Int) -> Void
     ) {
         self.board = board
@@ -66,6 +72,7 @@ struct UltimateTicTacToeBoardView: View {
         self.showsOutcome = showsOutcome
         self.bloomSeed = bloomSeed
         self.partnerName = partnerName
+        self.isReplay = isReplay
         self.onPlay = onPlay
         // Moves and an outcome already on screen when the view first appears
         // just show, so the playback starts having seen them.
@@ -76,13 +83,14 @@ struct UltimateTicTacToeBoardView: View {
                 canPlay: canPlay,
                 showsOutcome: showsOutcome,
                 zoomEnabled: false,
-                reduceMotion: false
+                reduceMotion: false,
+                isReplay: isReplay
             )
         ))
     }
 
     private var zoomEnabled: Bool {
-        !voiceOverEnabled
+        !voiceOverEnabled && !isReplay
     }
 
     /// The beats of a move: zoom to it, hold it back, draw it in. Reduce Motion
@@ -98,7 +106,8 @@ struct UltimateTicTacToeBoardView: View {
             canPlay: canPlay,
             showsOutcome: showsOutcome,
             zoomEnabled: zoomEnabled,
-            reduceMotion: reduceMotion
+            reduceMotion: reduceMotion,
+            isReplay: isReplay
         )
     }
 
@@ -181,6 +190,17 @@ struct UltimateTicTacToeBoardView: View {
                 .position(x: rect.midX, y: rect.midY)
             }
             outcomeLines(geometry)
+            ForEach(0..<9, id: \.self) { index in
+                let rect = geometry.smallRect(index)
+                UltimateTicTacToeWinnerMarkView(
+                    side: geometry.smallSide,
+                    content: look.content(of: index),
+                    emphasis: look.emphasis(of: index),
+                    styles: styles,
+                    pulseCount: playback.pulseCounts[index]
+                )
+                .position(x: rect.midX, y: rect.midY)
+            }
         }
     }
 
@@ -196,7 +216,8 @@ struct UltimateTicTacToeBoardView: View {
 extension UltimateTicTacToeBoardView {
     // MARK: Outcome
 
-    /// The thick glowing line through the winning boards' centers.
+    /// The thick glowing line through the winning boards' centers. It lies
+    /// under the winners' big marks in a paler color, so it shows in the gaps.
     @ViewBuilder
     private func outcomeLines(_ geometry: UltimateTicTacToeBoardGeometry) -> some View {
         if let result = board.outcome, let winner = result.winner {
@@ -209,7 +230,9 @@ extension UltimateTicTacToeBoardView {
                         progress: playback.outcome.lineProgress
                     )
                     .stroke(color, style: StrokeStyle(lineWidth: geometry.smallSide * 0.07, lineCap: .round))
-                    .shadow(color: color.opacity(0.9), radius: geometry.smallSide * 0.1)
+                    .shadow(color: color.opacity(0.6), radius: geometry.smallSide * 0.1)
+                    .saturation(UltimateTicTacToeWinnerMarkView.lineSaturation)
+                    .opacity(UltimateTicTacToeWinnerMarkView.lineOpacity)
                     .allowsHitTesting(false)
                 }
             }

@@ -120,9 +120,11 @@ struct SettingsView: View {
                     profileRow
                 }
                 SettingsRelationshipSection(
-                    relationshipStartedOn: relationshipStartedOn,
-                    isSavingStartedOn: milestoneIsSaving,
-                    onSaveStartedOn: onSaveRelationshipStartedOn,
+                    relationshipDateRow: RelationshipDateSettingsRow(
+                        relationshipStartedOn: relationshipStartedOn,
+                        isSaving: milestoneIsSaving,
+                        onSave: onSaveRelationshipStartedOn
+                    ),
                     yourBirthdayRow: birthdayRow(for: currentUserID),
                     partnerBirthdayRow: birthdayRow(for: partnerUserID),
                     locationViewModel: locationViewModel,
@@ -135,7 +137,7 @@ struct SettingsView: View {
             .listRowBackground(Color.paeoniaSurfacePrimary)
         }
         .listStyle(.insetGrouped)
-        .paeoniaGroupedList()
+        .paeoniaGroupedList(showsTabBackdrop: true)
         .navigationTitle(Text(.mainTabUs))
         .navigationBarTitleDisplayMode(.large)
         .task {

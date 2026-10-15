@@ -10,7 +10,21 @@ enum UltimateTicTacToeGame {
             timing: UltimateTicTacToeBoardView.moveTiming,
             dependencies: dependencies,
             artwork: { AnyView(UltimateTicTacToeHubArtwork()) },
-            screen: { AnyView(UltimateTicTacToeScreen(viewModel: $0)) }
+            screen: { AnyView(UltimateTicTacToeScreen(viewModel: $0)) },
+            replayBoard: { replay in
+                AnyView(UltimateTicTacToeBoardView(
+                    board: replay.board,
+                    lastMove: replay.lastMove,
+                    styles: replay.styles,
+                    me: replay.me,
+                    canPlay: false,
+                    showsOutcome: replay.showsOutcome,
+                    bloomSeed: replay.bloomSeed,
+                    partnerName: replay.partnerName,
+                    isReplay: true,
+                    onPlay: { _ in }
+                ))
+            }
         )
     }
 }
@@ -19,7 +33,11 @@ struct UltimateTicTacToeScreen: View {
     let viewModel: BoardGameViewModel<UltimateTicTacToeBoard>
 
     var body: some View {
-        BoardGameScreen(viewModel: viewModel, title: .ultimateTicTacToeName) {
+        BoardGameScreen(
+            viewModel: viewModel,
+            title: .ultimateTicTacToeName,
+            history: .boardGameHistory(.ultimateTicTacToe)
+        ) {
             UltimateTicTacToeBoardView(
                 board: viewModel.board,
                 lastMove: viewModel.lastMove,

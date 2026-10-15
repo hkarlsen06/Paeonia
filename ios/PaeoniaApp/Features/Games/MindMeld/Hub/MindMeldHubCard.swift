@@ -13,7 +13,7 @@ struct MindMeldHubCard: View {
     var body: some View {
         GameHubCardFrame(
             name: .mindMeldTitle,
-            status: summary.status.title(partnerName: context.partnerName),
+            status: Text(summary.status.title(partnerName: context.partnerName)),
             actionTitle: summary.status.actionTitle,
             isYourTurn: summary.isYourTurn,
             context: context,

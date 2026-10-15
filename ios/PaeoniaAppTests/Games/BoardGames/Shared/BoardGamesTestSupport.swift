@@ -19,6 +19,8 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
         var rematchError: PaeoniaConvexError?
         var stateToLoad: RemoteBoardGames?
         var marksToLoad: RemoteBoardGameMarks?
+        var historyPages: [Int?: RemoteBoardGameHistoryPage] = [:]
+        var historyRequests: [Int?] = []
     }
 
     private let lock = NSLock()
@@ -36,6 +38,8 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
     var moves: [BoardGameMovePayload] { read(\.moves) }
     var rematches: [BoardGameRematchPayload] { read(\.rematches) }
     var marks: [Data?] { read(\.marks) }
+    /// The cursor of each history read, in order. Nil for the first page.
+    var historyRequests: [Int?] { read(\.historyRequests) }
 
     /// Makes the call of this name throw `Failure` before it does anything.
     func fail(_ name: String) {
@@ -64,6 +68,11 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
         write { $0.marksToLoad = marks }
     }
 
+    /// The history page a read with this cursor returns. Nil is the first page.
+    func setHistoryPage(_ page: RemoteBoardGameHistoryPage, before cursor: Int?) {
+        write { $0.historyPages[cursor] = page }
+    }
+
     private func begin(_ name: String) throws {
         let shouldFail = lock.withLock {
             record.calls.append(name)
@@ -89,6 +98,13 @@ final class ScriptedBoardGamesGateway: BoardGamesGateway, @unchecked Sendable {
         try begin("loadMarks")
         guard let marks = read({ $0.marksToLoad }) else { throw Failure() }
         return marks
+    }
+
+    func loadHistory(_: GameKind, beforeGameNumber: Int?, limit _: Int) async throws -> RemoteBoardGameHistoryPage {
+        try begin("loadHistory")
+        write { $0.historyRequests.append(beforeGameNumber) }
+        guard let page = read({ $0.historyPages[beforeGameNumber] }) else { throw Failure() }
+        return page
     }
 
     func ensureGame(_ kind: GameKind) async throws -> RemoteBoardGame {

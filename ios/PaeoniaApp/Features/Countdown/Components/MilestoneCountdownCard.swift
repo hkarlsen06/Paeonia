@@ -1,23 +1,21 @@
 import SwiftUI
 
-/// The countdown to the couple's next milestone on the Home tab. Countdown is not a
-/// tab of its own — it lives here as a derived value computed from when the couple
-/// started (`couples.started_on`).
+/// The countdown to the couple's next event on the Home tab. Countdown is not a tab of
+/// its own. It lives here as a derived value computed from when the couple started
+/// (`couples.started_on`).
 ///
-/// The card reads as one sentence the number leads: "25 days until · your first
-/// month together", with the date underneath. Leading with the day count makes the
-/// countdown the hero (instead of competing with the milestone name) and folds the
-/// "counting down to" framing into the same line, so there's no separate overline.
-/// The event, its day count, and its date all come from `CoupleDateTimeline`, so it
-/// stays current: a new couple counts down to their first month, a couple of years
-/// counts down to their next anniversary or round day count, and a countdown the
-/// couple added or a birthday takes the tile when it comes first. A small "Together
-/// for 394 days" line at the top of the tile shows how long the couple has been
-/// together, and is left out on the first day.
+/// The tile is one object, one number and one line: a desk calendar with the day count
+/// drawn on its page (`CountdownCalendarView`), and under it what the number counts to,
+/// such as "days until 500 days together". The event and its day count come from
+/// `CoupleDateTimeline`, so a new couple counts down to their first month, a couple of
+/// years counts down to their next anniversary or round day count, and a countdown the
+/// couple added or a birthday takes the tile when it comes first. How long the couple has
+/// been together and the event's date live in `RelationshipTimelineView`.
 ///
-/// Tapping the card opens `RelationshipTimelineView` (days together, the milestones
-/// ahead, and the date editor). The heart burst is reserved for the milestone day
-/// itself and plays on its own when the card shows "Today".
+/// Tapping the tile opens `RelationshipTimelineView` (days together, the milestones
+/// ahead, and the date editor). On the event's day the page says "Today" and the heart
+/// burst plays on its own, once, with a haptic and a sound. Without a start date the
+/// calendar is blank and the tile opens the date editor.
 struct MilestoneCountdownCard: View {
     /// The couple's start date as an `yyyy-MM-dd` string (`couples.started_on`).
     let startedOn: String?
@@ -40,6 +38,9 @@ struct MilestoneCountdownCard: View {
     /// The instant the countdown is measured from. Refreshed when the calendar day
     /// changes so the card moves to "Today" without needing a reopen.
     @State private var now = Date()
+    /// Whether the number has counted up from a lower value yet. Starts true after the first
+    /// tile of an app launch, so a tab switch does not replay it.
+    @State private var hasCountedUp = CountUpGate.hasPlayed
 
     init(
         startedOn: String?,
@@ -61,12 +62,6 @@ struct MilestoneCountdownCard: View {
         guard let startedOn else { return nil }
         // Built per read so it reflects the current calendar/time zone.
         return CoupleDateTimeline().next(startedOn: startedOn, dates: coupleDates?.dates ?? CoupleDates(), now: now)
-    }
-
-    /// Whole days since the start, matching the "Together for" line in the timeline.
-    private var daysTogether: Int? {
-        guard let startedOn else { return nil }
-        return RelationshipMilestoneCalculator().daysTogether(startedOn: startedOn, now: now)
     }
 
     var body: some View {
@@ -100,122 +95,80 @@ struct MilestoneCountdownCard: View {
     }
 
     private func card(for milestone: CoupleDateEvent) -> some View {
-        Button(action: { isTimelinePresented = true }) {
-            // The "Together for" line is pinned to the top so it sits on the same
-            // line as the drawing card's header next to it, and the milestone name
-            // is pinned to the bottom to match. The countdown is centred between them.
-            VStack(alignment: .center, spacing: PaeoniaSpacing.space8) {
-                togetherForLine
-
-                countdownBody(for: milestone)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                Text(verbatim: milestone.title(names: names))
-                    .font(PaeoniaTypography.sectionTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .accessibilityElement(children: .combine)
-            .milestoneTileChrome()
-            .overlay {
-                if isCelebrating {
-                    milestoneCelebration
-                        .id(celebrationID)
-                        .transition(.opacity)
-                }
-            }
+        let title = milestone.title(names: names)
+        let isToday = milestone.daysRemaining == 0
+        return Button(action: { isTimelinePresented = true }) {
+            tile(
+                face: isToday ? .today : .days(shownDays(milestone.daysRemaining)),
+                burstID: isCelebrating ? celebrationID : nil,
+                // On the day itself the page says "Today", so the line is just the event.
+                line: isToday ? Text(verbatim: title) : Text(untilLine(for: milestone, title: title))
+            )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.paeoniaPressableCard)
+        .accessibilityLabel(accessibilityLabel(for: milestone, title: title))
         .accessibilityHint(Text(.homeMilestoneTimelineAccessibilityHint))
-        .onAppear { celebrateIfMilestoneDay(milestone) }
+        .onAppear {
+            countUpOnce()
+            celebrateIfMilestoneDay(milestone)
+        }
         .onChange(of: milestone) { _, milestone in
             celebrateIfMilestoneDay(milestone)
         }
     }
 
-    private func countdownBody(for milestone: CoupleDateEvent) -> some View {
-        // The target date sits right under the count, so "25 days until" and
-        // "Saturday 25 July" read together as the countdown.
-        VStack(alignment: .center, spacing: PaeoniaSpacing.space2) {
-            countdown(for: milestone)
-
-            Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextTertiary)
-                .multilineTextAlignment(.center)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
-        }
-    }
-
-    @ViewBuilder
-    private var togetherForLine: some View {
-        if let startedOn, let daysTogether, daysTogether > 0 {
-            Text(.homeMilestoneTimelineTogetherFor(
-                RelationshipTimelineView.togetherText(startedOn: startedOn, now: now)
-            ))
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
-        }
-    }
-
     private var setupCard: some View {
         Button(action: presentEditor) {
-            VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
-                Image(systemName: "calendar.badge.plus")
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .accessibilityHidden(true)
-
-                Text(.homeMilestoneSetupTitle)
-                    .font(PaeoniaTypography.sectionTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .multilineTextAlignment(.center)
-            }
-            .milestoneTileChrome()
+            tile(face: .empty, burstID: nil, line: Text(.homeMilestoneSetupTitle))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.paeoniaPressableCard)
         .accessibilityHint(Text(.homeMilestoneSetupAccessibilityHint))
     }
 
-    private var milestoneCelebration: some View {
-        ZStack {
-            if reduceMotion {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 42, weight: .semibold))
-                    .foregroundStyle(.paeoniaAccentPrimary)
-            } else {
-                Circle()
-                    .fill(.paeoniaAccentPrimary.opacity(0.16))
-                    .frame(width: 92, height: 92)
-                    .blur(radius: 8)
+    /// The calendar with its one line underneath. The calendar takes the space the line
+    /// leaves, so the tile stays square and the number is the biggest thing in it.
+    private func tile(face: CountdownCalendarView.Face, burstID: Int?, line: Text) -> some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            CountdownCalendarView(face: face, burstID: burstID)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 42, weight: .semibold))
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .symbolEffect(.bounce, value: celebrationID)
-
-                ForEach(0..<8, id: \.self) { index in
-                    Image(systemName: index.isMultiple(of: 2) ? "heart.fill" : "sparkle")
-                        .font(.system(size: index.isMultiple(of: 2) ? 12 : 15, weight: .semibold))
-                        .foregroundStyle(index.isMultiple(of: 3) ? .paeoniaAccentSecondary : .paeoniaAccentPrimary)
-                        .offset(
-                            x: cos(Double(index) * .pi / 4) * 58,
-                            y: sin(Double(index) * .pi / 4) * 58
-                        )
-                }
-            }
+            line
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+                .multilineTextAlignment(.center)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 2)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.85)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .accessibilityHidden(true)
-        .allowsHitTesting(false)
+        .milestoneTileChrome()
     }
 
-    /// Plays the heart burst once when the card is showing "Today" — the moment is
+    /// "days until 500 days together". The number sits on the calendar page above it.
+    private func untilLine(for milestone: CoupleDateEvent, title: String) -> LocalizedStringResource {
+        milestone.daysRemaining == 1 ? .homeMilestoneUntilEventOne(title) : .homeMilestoneUntilEvent(title)
+    }
+
+    /// One sentence for VoiceOver, such as "104 days until 500 days together".
+    private func accessibilityLabel(for milestone: CoupleDateEvent, title: String) -> Text {
+        if milestone.daysRemaining == 0 {
+            return Text(verbatim: "\(String(localized: .homeMilestoneToday)), \(title)")
+        }
+        let line = String(localized: untilLine(for: milestone, title: title))
+        return Text(verbatim: "\(milestone.daysRemaining.formatted()) \(line)")
+    }
+
+    /// The number on the page. On the first showing after launch it starts lower, then
+    /// counts up to the real value. Reduce Motion shows the real value at once.
+    private func shownDays(_ days: Int) -> Int {
+        hasCountedUp || reduceMotion ? days : days / 2
+    }
+
+    private func countUpOnce() {
+        CountUpGate.hasPlayed = true
+        hasCountedUp = true
+    }
+
+    /// Plays the heart burst once when the card is showing "Today". The moment is
     /// earned by reaching the milestone, not by tapping. Tapping opens the timeline.
     private func celebrateIfMilestoneDay(_ milestone: CoupleDateEvent) {
         guard milestone.daysRemaining == 0, celebratedMilestoneDate != milestone.date else { return }
@@ -226,6 +179,7 @@ struct MilestoneCountdownCard: View {
     private func celebrate() {
         celebrationID += 1
         PaeoniaHaptics.milestoneReached()
+        GameSound.win.play()
         withAnimation(reduceMotion ? .easeOut(duration: 0.2) : PaeoniaMotion.celebrationReveal) {
             isCelebrating = true
         }
@@ -244,71 +198,24 @@ struct MilestoneCountdownCard: View {
             ?? Date()
         isEditorPresented = true
     }
+}
 
-    @ViewBuilder
-    private func countdown(for milestone: CoupleDateEvent) -> some View {
-        if milestone.daysRemaining == 0 {
-            // On the day itself there's nothing to count down — say so instead of "0".
-            Text(.homeMilestoneToday)
-                .font(PaeoniaTypography.countdownNumber)
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
-        } else {
-            // Number leads as the hero; "days until" carries into the subject line.
-            ViewThatFits(in: .horizontal) {
-                countdownLine(for: milestone)
-
-                VStack(alignment: .center, spacing: PaeoniaSpacing.space2) {
-                    Text(milestone.daysRemaining, format: .number)
-                        .font(PaeoniaTypography.countdownNumber)
-                        .foregroundStyle(.paeoniaAccentPrimary)
-
-                    Text(milestone.daysRemaining == 1 ? .homeMilestoneUntilOne : .homeMilestoneUntil)
-                        .font(PaeoniaTypography.sectionTitle)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                }
-            }
-            .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
-        }
-    }
-
-    private func countdownLine(for milestone: CoupleDateEvent) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
-            Text(milestone.daysRemaining, format: .number)
-                .font(PaeoniaTypography.countdownNumber)
-                .foregroundStyle(.paeoniaAccentPrimary)
-
-            // Same size and colour as the subject line below so "… days until
-            // <milestone>" reads as one sentence, leaving the number as the only
-            // large element.
-            Text(milestone.daysRemaining == 1 ? .homeMilestoneUntilOne : .homeMilestoneUntil)
-                .font(PaeoniaTypography.sectionTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-        }
-        .lineLimit(1)
-    }
+/// Remembers that the tile has counted up once since the app launched, so switching tabs
+/// and coming back does not replay it.
+@MainActor
+private enum CountUpGate {
+    static var hasPlayed = false
 }
 
 private extension View {
-    /// The Home tab tile treatment shared with the widget drawing card in the same
-    /// row: square footprint, tile fill, rounded corners, hairline stroke, and
-    /// lift. The vertical inset matches the drawing card's padding so the top lines
-    /// of both tiles line up.
+    /// The tile's square footprint, the same size as the drawing card next to it in the
+    /// row. There is no card around it: the calendar is an object of its own and stands
+    /// on the page's background. The whole square takes the tap.
     func milestoneTileChrome() -> some View {
         frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .padding(.horizontal, PaeoniaSpacing.space16)
-            .padding(.vertical, PaeoniaSpacing.space12)
+            .padding(.vertical, PaeoniaSpacing.space8)
             .aspectRatio(1, contentMode: .fit)
-            .background(.paeoniaBackgroundPrimary)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
-            }
-            .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
+            .contentShape(Rectangle())
     }
 }
 

@@ -199,15 +199,16 @@ struct DailyChatProjection {
         return NSUUID(uuidBytes: bytes) as UUID
     }
 
-    /// Marks one row as highlighted, for example after tapping a quote jumps to it.
-    /// Only that row's message changes, so only it redraws.
-    func highlighting(_ rowID: String?) -> [ExyteChat.Message] {
-        guard let rowID else { return exyteMessages }
+    /// Marks the row a quote jumped to and the answer being revealed, so only those
+    /// rows' messages change and only they redraw.
+    func highlighting(_ rowID: String?, revealing revealingRowID: String? = nil) -> [ExyteChat.Message] {
+        guard rowID != nil || revealingRowID != nil else { return exyteMessages }
         return exyteMessages.map { message in
-            guard message.id == rowID else { return message }
-            var highlighted = message
-            highlighted.triggerRedraw = Self.redrawToken(of: [message.triggerRedraw?.uuidString, "highlight"])
-            return highlighted
+            let mark = message.id == rowID ? "highlight" : message.id == revealingRowID ? "reveal" : nil
+            guard let mark else { return message }
+            var marked = message
+            marked.triggerRedraw = Self.redrawToken(of: [message.triggerRedraw?.uuidString, mark])
+            return marked
         }
     }
 }

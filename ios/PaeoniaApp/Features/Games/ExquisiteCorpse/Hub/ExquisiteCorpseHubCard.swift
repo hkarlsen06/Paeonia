@@ -13,7 +13,7 @@ struct ExquisiteCorpseHubCard: View {
     var body: some View {
         GameHubCardFrame(
             name: .exquisiteCorpseName,
-            status: summary.status.title(partnerName: context.partnerName),
+            status: Text(summary.status.title(partnerName: context.partnerName)),
             actionTitle: summary.status.actionTitle,
             isYourTurn: summary.status.isYourTurn,
             context: context,

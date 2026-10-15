@@ -40,7 +40,7 @@ struct HomeUnreadChatsCard: View {
                     } label: {
                         row(chat)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.paeoniaPressableRow)
                 }
             }
         }

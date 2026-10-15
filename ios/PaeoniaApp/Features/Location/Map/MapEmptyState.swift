@@ -5,7 +5,8 @@ import SwiftUI
 /// fills the rest with the action button under it, and a spinner trails. At
 /// accessibility text sizes the icon moves above the text. Couples who are paired
 /// also get the heart row (`MapHeartsButton`) at the trailing edge, and a line above
-/// the title while the partner's hearts play.
+/// the title while the partner's hearts play. The avatars and heart already make the
+/// row read as "the two of you", so the icon is left out when the heart row shows.
 /// `CoupleMapCard` adds the rounded frame, stroke, and shadow around it.
 struct MapEmptyState: View {
     let title: LocalizedStringResource
@@ -25,11 +26,13 @@ struct MapEmptyState: View {
 
     var body: some View {
         layout {
-            Image(systemName: systemImage)
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .frame(width: 28)
-                .accessibilityHidden(true)
+            if hearts == nil {
+                Image(systemName: systemImage)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .frame(width: 28)
+                    .accessibilityHidden(true)
+            }
 
             textBlock
 

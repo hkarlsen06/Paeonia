@@ -32,7 +32,7 @@ struct MemoriesScreen: View {
 
     var body: some View {
         content
-            .background(.paeoniaBackgroundPrimary)
+            .paeoniaTabBackdrop()
             .navigationTitle(Text(.mainTabMemories))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -92,7 +92,7 @@ struct MemoriesScreen: View {
             if !viewModel.hasLoadedOnce {
                 // Blank surface for the split second before the local cache resolves, so the
                 // empty state never flashes before we know whether there are memories.
-                Color.paeoniaBackgroundPrimary
+                Color.clear
             } else if viewModel.timeline.isEmpty {
                 emptyState
             } else {
@@ -107,16 +107,15 @@ struct MemoriesScreen: View {
         .animation(PaeoniaMotion.stateChange, value: viewModel.timeline.isEmpty)
     }
 
-    /// Newest first, in month sections whose header stays pinned while you scroll, so a
-    /// long timeline always shows which month you're in. A wide iPad shows one grid of
-    /// cards instead.
+    /// Newest first, in month sections. The headers scroll with the cards: a pinned header
+    /// would need an opaque strip, which shows as a dark band over the tabs' light, and
+    /// every card shows its own date anyway. A wide iPad shows one grid of cards instead.
     private var timeline: some View {
         ScrollView {
             LazyVGrid(
                 columns: timelineColumns,
                 alignment: .leading,
-                spacing: PaeoniaSpacing.space16,
-                pinnedViews: [.sectionHeaders]
+                spacing: PaeoniaSpacing.space16
             ) {
                 if isWideLayout {
                     // Most months hold only a memory or two, so month sections would
@@ -171,7 +170,6 @@ struct MemoriesScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space4)
-            .background(.paeoniaBackgroundPrimary)
             .accessibilityAddTraits(.isHeader)
     }
 
@@ -180,7 +178,7 @@ struct MemoriesScreen: View {
             PaeoniaEmptyStateView(
                 title: .memoriesEmptyTitle,
                 message: .memoriesEmptyMessage,
-                systemImage: "memories"
+                illustration: .memoriesPhotoStack
             ) {
                 Button {
                     openCreate()

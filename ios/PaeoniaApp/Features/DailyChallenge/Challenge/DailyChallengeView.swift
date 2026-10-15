@@ -73,7 +73,7 @@ struct DailyChallengeScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .paeoniaScreenBackground()
+        .paeoniaTabBackdrop()
         .clearsDeliveredQuestionTimeReminders()
         .navigationTitle(Text(.mainTabQuestions))
         .toolbar(chatQuestion.wrappedValue != nil || isOpeningChat ? .hidden : .visible, for: .tabBar)

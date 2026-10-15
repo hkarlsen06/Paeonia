@@ -22,7 +22,7 @@ Decided on 2026-10-13.
 - **Hub with several games.** Every built game gets a full-width card, stacked. The game the partner is in comes first, then games waiting for this person, then catalog order. Catalog order is the `GameKind` case order, most popular first: Ludo, Draw & Guess, Connect Four, Mind Meld, Dots and Boxes, Ultimate Tic-Tac-Toe, Story Chain, Odd Creatures. All cards share one frame (`GameHubCardFrame`): the shared backdrop with the game's own objects behind the whole card (`docs/games/hub-artwork.md`), the partner-here chip, an optional badge such as the score, the name, a status line, the main button, and optional extras such as "Our drawings". The card glows while the game waits for this person.
 - **Us tab with several games.** The Us tab shows one card: the game the partner opened most recently, while they have it open. It is the hub card without hub-only links.
 
-- **Games don't save to Memories.** A creative game keeps its own history instead, such as the finished drawings of Draw & Guess. Each partner can star rounds in that history, and stars are private: the partner isn't told and a star doesn't change the game. This replaces the opt-in save prompt from 2026-10-11 and the save prompt details from 2026-10-12. Board games and quick duels keep no history.
+- **Games don't save to Memories.** A creative game keeps its own history instead, such as the finished drawings of Draw & Guess. Each partner can star rounds in that history, and stars are private: the partner isn't told and a star doesn't change the game. This replaces the opt-in save prompt from 2026-10-11 and the save prompt details from 2026-10-12. Board games keep every finished game with its moves, so the couple can watch it again (decided on 2026-10-15, see "Past games" in `docs/games/board-games.md`). They have no stars. Quick duels keep no history.
 
 Decided on 2026-10-12.
 
@@ -133,7 +133,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Exquisite corpse | Yes | Yes | M |
 | Story chain | No | Yes | S |
 | Guess my spot | Yes, the location | No | M |
-| Connect Four, Dots and Boxes, Ultimate tic-tac-toe | No | No | S each |
+| Connect Four, Dots and Boxes, Ultimate tic-tac-toe | No | Yes, every finished game to watch again | S each |
 | Battleship with date ideas | Yes | No | M |
 | Chess | No | No | L |
 | Wordfeud-style word game | Yes, the tile rack | No | L |

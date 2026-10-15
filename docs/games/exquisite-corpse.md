@@ -12,7 +12,7 @@ Decided on 2026-10-13.
 - **Three parts, and turns alternate.** A figure is a head, a body and legs. The partner who starts a figure draws its head and its legs, and the other partner draws the body. The next figure starts with the other partner. Turns simply alternate forever, so over two figures each partner draws three parts.
 - **The strip is 12% of a part.** The next drawer sees the bottom 12% of the part before, 38 pt of the 320 pt square. Nothing else of it.
 - **Ideas are optional.** The canvas says "Draw the head". A quiet "Need an idea?" button deals a hand-written idea in the couple's game language. The idea shows as a chip with Shuffle and a remove button. Whatever chip shows when the drawer taps Done is saved with the part, stays hidden from the partner, and becomes the part's caption at the reveal.
-- **Live shows folded paper.** While the partner draws live, you see the back of the folded paper with a soft glow where their pen moves behind it. The strokes that reach the strip appear as each stroke is finished. The hidden part never leaves the drawer's phone before the reveal.
+- **Live shows folded paper.** While the partner draws live, you see the back of the folded paper with a soft glow where their pen moves behind it. The strokes that reach the strip appear while they are drawn. The hidden part never leaves the drawer's phone before the reveal.
 - **The reveal unfolds part by part.** The folded paper opens one fold at a time from the top. Each part replays its strokes at the drawn pace, squeezed to about 2.5 seconds. Then the view zooms out to the whole figure with the petal bloom and a success haptic.
 - **Play style doesn't apply.** A figure is always made together, so there are no points in either style. The hub shows how many figures the couple has made.
 - **Each sent part counts toward the streak.**
@@ -38,6 +38,7 @@ Decided on 2026-10-13.
 
 - **What the next drawer sees.** The strip is the bottom 12% of the part before (`ExquisiteCorpseFold.stripFraction = 0.12`). It shows right above the next drawer's canvas, at the same scale, so a line that ends at the bottom edge of the head continues at the top edge of the body. In the finished figure the parts touch at exactly that edge.
 - **What the drawer above is told.** The head and body canvases show a dashed fold line at 88% of their height. Under it, a small label: "[Name] only sees below this line". The legs canvas has no fold line, because nobody draws after it.
+- **Drawing from the strip.** The canvas also lies over the strip, so a line can start on the strip and run down into the canvas. Ink drawn on the strip lies above the part's square, so the finished figure and the history cut it off.
 - **The legs drawer** sees only the strip of the body. Their own head stays folded away, as on paper.
 - **The strip leaves the phone on its own.** When the drawer taps Done, the phone clips the drawing to the strip and uploads it as a separate file, next to the full part. The server lets the partner read the strip at once, and the full part only once the figure is finished. So the hidden part of a drawing never reaches the partner's phone before the reveal, also not through a cache or a crafted request.
 - **Clipping.** A stroke that is only above the fold is left out. A stroke that crosses the fold keeps the points below it, plus one point on the fold line where it crosses, so its line starts exactly at the fold. A stroke inside the strip is kept whole. Ink, width and transform are kept. Erased ink is clipped the same way, so the strip never shows erased ink (`PKStroke.mask`, as in the Draw & Guess replay).
@@ -70,12 +71,12 @@ Live runs whenever both partners have the game screen open. Without the partner 
   - `result`: on the reveal.
   - `present`: in the game on any other screen.
 - **The folded paper.** While the partner is `drawing`, the waiting screen becomes the watch screen: the partner's square, with the top 88% covered by the back of the folded paper and the strip open below it.
-  - A soft glow (`.paeoniaAccentPrimary`, about 56 pt, heavily blurred) moves behind the paper where the partner's pen is. It follows coarse positions, about 8 a second, rounded to a 20 by 20 grid, so it shows where they draw and never what.
-  - The strip shows the partner's strokes that reach it, each one when the stroke is finished.
+  - A soft glow (`.paeoniaAccentPrimary`, about 56 pt, heavily blurred) moves behind the paper where the partner's pen is, and is cut off at the fold, so it never shows over the strip. It follows coarse positions, about 8 a second, rounded to a 20 by 20 grid, so it shows where they draw and never what.
+  - The strip shows the partner's strokes that reach it while they are drawn. The drawer's phone builds the stroke from the touches, because PencilKit hands it over only when the pen lifts, and sends the strip about 12 times a second while the stroke is in it.
   - The line above reads "[Name] is drawing the head" with the avatar ring.
 - **Messages.** `ExquisiteCorpseLiveMessage` on the game's `GameLiveChannel`, sent beside the presence messages on the same socket:
   - `pen(partID, x, y)` while a finger or pencil is down, and `pen(partID, nil, nil)` when it lifts.
-  - `strip(partID, drawing)`: the whole strip so far, clipped on the drawer's phone, as `pkdrawing` base64 at the canonical side. Sent after every change to the drawing and again when the partner arrives (`onPartnerArrived`).
+  - `strip(partID, drawing)`: the whole strip so far, clipped on the drawer's phone, as `pkdrawing` base64 at the canonical side. Sent after every change to the drawing, while a stroke is drawn across the strip, and again when the partner arrives (`onPartnerArrived`).
   - `done(partID)`: the drawer tapped Done.
   
   Every message carries the part id, so a message from an earlier part is ignored. The strip message is the whole state, so a lost message never leaves the watcher with missing strokes. No stroke of the drawing above the fold is ever sent.

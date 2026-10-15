@@ -129,7 +129,7 @@ struct HomeWidgetCard: View {
         Button(action: onOpen) {
             widget
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.paeoniaPressableCard)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.homeWidgetCardLabel))
         .accessibilityHint(Text(.homeWidgetCardHint))

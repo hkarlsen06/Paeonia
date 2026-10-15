@@ -13,6 +13,8 @@ struct DailyChatMessageRow: View {
     let row: DailyChatRow
     let participants: DailyChallengeParticipants
     let isHighlighted: Bool
+    /// The partner's answer just opened after the user answered, so it plays its reveal.
+    var isRevealing = false
     /// Nil when this row can't be replied to.
     let onReply: (() -> Void)?
     let onRetry: () -> Void
@@ -87,7 +89,7 @@ struct DailyChatMessageRow: View {
             }
             .accessibilityElement(children: .combine)
         case let .answer(answer, mediaKind):
-            bubble(fill: bubbleFill) {
+            bubbleBody(fill: bubbleFill) {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                     Label {
                         Text(isCurrentUser
@@ -104,6 +106,8 @@ struct DailyChatMessageRow: View {
                     DailyAnswerContent(detail: answer, participants: participants, mediaKind: mediaKind)
                 }
             }
+            .dailyChatAnswerReveal(isActive: isRevealing, seed: row.id)
+            .frame(maxWidth: bubbleMaxWidth, alignment: isCurrentUser ? .trailing : .leading)
             .accessibilityElement(children: .contain)
         case let .message(message):
             VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 2) {

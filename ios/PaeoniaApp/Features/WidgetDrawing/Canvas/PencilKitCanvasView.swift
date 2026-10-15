@@ -20,10 +20,14 @@ struct PencilKitCanvasView: UIViewRepresentable {
     /// The canvas finished rendering. The pixel eraser can change the drawing
     /// without `canvasViewDrawingDidChange`, so this is a moment to read it again.
     var onFinishRendering: () -> Void = {}
+    /// Points of canvas above the drawing's top edge. The view is that much taller
+    /// than the drawing area, and strokes drawn there have a negative y.
+    var overscanTop: CGFloat = 0
 
     func makeUIView(context: Context) -> PKCanvasView {
         let canvasView = PaeoniaDrawingCanvasView()
         canvasView.configureForPaeoniaDrawingCanvas()
+        canvasView.overscanTop = overscanTop
         let fillTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.fillTapped))
         canvasView.addGestureRecognizer(fillTap)
         context.coordinator.fillTap = fillTap
@@ -46,6 +50,7 @@ struct PencilKitCanvasView: UIViewRepresentable {
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
         context.coordinator.parent = self
+        (canvasView as? PaeoniaDrawingCanvasView)?.overscanTop = overscanTop
         context.coordinator.applyToolIfNeeded(
             tool,
             to: canvasView,
@@ -72,6 +77,26 @@ struct PencilKitCanvasView: UIViewRepresentable {
 /// (`DrawingEditHistory`), and PencilKit's would undo to drawings that are gone.
 final class PaeoniaDrawingCanvasView: PKCanvasView {
     override var undoManager: UndoManager? { nil }
+
+    /// See `PencilKitCanvasView.overscanTop`. The canvas is scrolled up by this
+    /// much, so the drawing's y 0 sits this far below the view's top edge.
+    var overscanTop: CGFloat = 0 {
+        didSet {
+            guard overscanTop != oldValue else { return }
+            contentInsetAdjustmentBehavior = .never
+            contentInset.top = overscanTop
+            contentOffset = CGPoint(x: 0, y: -overscanTop)
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // A layout pass may move the offset back to the content's top.
+        let pinned = CGPoint(x: 0, y: -overscanTop)
+        if overscanTop > 0, contentOffset != pinned {
+            contentOffset = pinned
+        }
+    }
 }
 
 extension PKCanvasView {

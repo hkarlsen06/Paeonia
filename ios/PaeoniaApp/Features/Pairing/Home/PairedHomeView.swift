@@ -136,6 +136,8 @@ struct PairedHomeView: View {
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
+                // The daily card is tall until today's questions are done, then a short row.
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardsHeight = $0 }
 
                 spareSpaceArt
@@ -167,8 +169,10 @@ struct PairedHomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Let the scroll view reach the bottom edge so the tab bar's automatic
         // content inset applies and cards scroll behind the floating glass bar,
-        // instead of a flat background panel filling the space above it.
-        .background(.paeoniaBackgroundPrimary)
+        // instead of a flat background panel filling the space above it. The light
+        // stays put while the cards scroll over it, so a pull to refresh never
+        // reveals a plain strip above it.
+        .paeoniaTabBackdrop()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Image(.paeoniaMark)

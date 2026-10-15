@@ -17,7 +17,7 @@ struct GamesRootView: View {
     var body: some View {
         NavigationStack(path: $path) {
             content
-                .background(.paeoniaBackgroundPrimary)
+                .paeoniaTabBackdrop()
                 // Hide the tab bar from the stack root, in the same update as the push. Hiding
                 // it from the pushed screen shifts the content and brings the bar back late.
                 .toolbar(hidesTabBarInGame && !path.isEmpty ? .hidden : .automatic, for: .tabBar)
@@ -72,7 +72,7 @@ struct GamesRootView: View {
     private var content: some View {
         switch viewModel.screen {
         case .loading:
-            Color.paeoniaBackgroundPrimary
+            Color.clear
         case .unavailable:
             unavailable
         case .hub:

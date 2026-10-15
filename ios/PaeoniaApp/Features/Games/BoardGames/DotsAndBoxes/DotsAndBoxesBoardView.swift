@@ -106,13 +106,14 @@ struct DotsAndBoxesBoardView: View {
     var body: some View {
         Color.clear
             .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: DotsAndBoxesBoardGeometry.maxSide)
             .contentShape(Rectangle())
+            // The overlay sits on the square, not the wider frame, so the frame centers the board.
             .overlay {
                 GeometryReader { proxy in
                     content(DotsAndBoxesBoardGeometry(side: min(proxy.size.width, proxy.size.height)))
                 }
             }
+            .frame(maxWidth: DotsAndBoxesBoardGeometry.maxSide)
             .task(id: lastMove) { await playMove() }
             .task(id: outcomeIsShowing) { await playOutcome() }
     }

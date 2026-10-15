@@ -15,6 +15,8 @@ import SwiftUI
 struct DailyQuestionChatView: View {
     private static let bottomComposerClearance: CGFloat = 14
     private static let highlightDuration: Duration = .seconds(1.6)
+    /// Long enough for the reveal's build-up, bounce, sparkles, and petals to finish.
+    private static let revealDuration: Duration = .seconds(2)
 
     @State private var viewModel: DailyQuestionChatViewModel
     let question: DailyChallengeQuestion
@@ -23,8 +25,8 @@ struct DailyQuestionChatView: View {
     /// The user's answer while it is still sending, shown on the waiting page until
     /// this phone has it.
     var sendingAnswer: DailySendingPreview?
-    /// Set when the page opens right after answering. The partner's answer lights up
-    /// with a haptic when it shows, once.
+    /// Set when the page opens right after answering. The partner's answer plays its
+    /// reveal when it shows, once.
     var revealsPartnerAnswer = false
     /// Swiping right calls this instead of `dismiss`, for a page that owns its cover.
     var onClose: (() -> Void)?
@@ -36,6 +38,8 @@ struct DailyQuestionChatView: View {
     @State private var projectionStore = DailyChatProjectionStore()
     @State private var timestampRevealOffset: CGFloat = 0
     @State private var highlightedRowID: String?
+    /// The partner's answer row while it plays its reveal.
+    @State private var revealingRowID: String?
     /// Where the list scrolls next. Nil keeps the list where it is.
     @State private var scrollTarget: ScrollToParams?
     @State private var didApplyOpeningScroll = false
@@ -43,7 +47,7 @@ struct DailyQuestionChatView: View {
     /// when the list does.
     @State private var openedWithoutRounds = false
     @State private var didRevealPartnerAnswer = false
-    /// The day whose partner-choice match plays its celebration, while the reveal lights up.
+    /// The day whose partner-choice match plays its celebration, while the reveal plays.
     @State private var celebratingInstanceID: UUID?
 
     init(
@@ -128,7 +132,7 @@ struct DailyQuestionChatView: View {
     private var chat: some View {
         let projection = projection
         return ChatView(
-            messages: projection.highlighting(highlightedRowID),
+            messages: projection.highlighting(highlightedRowID, revealing: revealingRowID),
             chatType: .conversation,
             replyMode: .quote,
             // The composer sends by itself.
@@ -188,6 +192,7 @@ struct DailyQuestionChatView: View {
             row: row,
             participants: viewModel.participants,
             isHighlighted: row.id == highlightedRowID,
+            isRevealing: row.id == revealingRowID,
             onReply: row.message.flatMap { message in
                 viewModel.canReply(to: message) ? { viewModel.setReplyTarget(message) } : nil
             },
@@ -414,18 +419,17 @@ extension DailyQuestionChatView {
         revealedRound?.partnerAnswerDetail.map { DailyChatProjection.answerRowPrefix + $0.answerID.uuidString }
     }
 
-    /// Right after answering, the partner's answer is the payoff, so it lights up
-    /// like a jumped-to message, with the reveal haptic. A partner-choice match plays
-    /// its small celebration with it.
+    /// Right after answering, the partner's answer is the payoff, so its bubble plays
+    /// the reveal, haptics included (`dailyChatAnswerReveal`). A partner-choice match
+    /// plays its small celebration with it.
     private func revealPartnerAnswer() {
         guard revealsPartnerAnswer, !didRevealPartnerAnswer, let rowID = revealedPartnerAnswerRowID else { return }
         didRevealPartnerAnswer = true
-        PaeoniaHaptics.answerRevealed()
         celebratingInstanceID = revealedRound?.id
+        revealingRowID = rowID
         Task { @MainActor in
-            highlightedRowID = rowID
-            try? await Task.sleep(for: Self.highlightDuration)
-            if highlightedRowID == rowID { highlightedRowID = nil }
+            try? await Task.sleep(for: Self.revealDuration)
+            if revealingRowID == rowID { revealingRowID = nil }
             celebratingInstanceID = nil
         }
     }

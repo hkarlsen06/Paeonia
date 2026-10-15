@@ -7,12 +7,14 @@ extension View {
     ///
     /// On iPad the sections stop at `PaeoniaSpacing.readableContentWidth`, and the
     /// list still scrolls from anywhere on the screen.
-    func paeoniaGroupedList() -> some View {
-        modifier(PaeoniaGroupedListModifier())
+    /// `showsTabBackdrop` is for a tab's first screen, which shows the tabs' shared light.
+    func paeoniaGroupedList(showsTabBackdrop: Bool = false) -> some View {
+        modifier(PaeoniaGroupedListModifier(showsTabBackdrop: showsTabBackdrop))
     }
 }
 
 private struct PaeoniaGroupedListModifier: ViewModifier {
+    let showsTabBackdrop: Bool
     @State private var width: CGFloat = 0
 
     func body(content: Content) -> some View {
@@ -20,7 +22,13 @@ private struct PaeoniaGroupedListModifier: ViewModifier {
             // Row icons, switches, and action rows take the tint, not the system blue.
             .tint(.paeoniaAccentPrimary)
             .scrollContentBackground(.hidden)
-            .paeoniaScreenBackground()
+            .background {
+                if showsTabBackdrop {
+                    PaeoniaTabBackdrop()
+                } else {
+                    Color.paeoniaBackgroundPrimary.ignoresSafeArea()
+                }
+            }
             .contentMargins(.horizontal, horizontalMargin, for: .scrollContent)
             .onGeometryChange(for: CGFloat.self) { proxy in
                 proxy.size.width

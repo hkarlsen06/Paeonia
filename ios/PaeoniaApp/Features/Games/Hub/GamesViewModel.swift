@@ -21,6 +21,9 @@ nonisolated enum GamesDestination: Hashable, Sendable {
     /// "Our creatures".
     case exquisiteCorpseHistory
     case exquisiteCorpseHistoryDetail(UUID)
+    /// A board game's "Past games", and one of them played again.
+    case boardGameHistory(GameKind)
+    case boardGameReplay(GameKind, gameNumber: Int)
 }
 
 /// The Games tab: first-time setup, the hub, and the couple's game settings.

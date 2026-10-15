@@ -90,11 +90,13 @@ struct DrawAndGuessScorePanel: View {
         name: Text,
         data: DrawAndGuessRevealScore.Column
     ) -> some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            GameAvatar(player: player, isMe: isMe, size: 44)
-            name
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
+        VStack(spacing: PaeoniaSpacing.space4) {
+            HStack(spacing: PaeoniaSpacing.space8) {
+                GameAvatar(player: player, isMe: isMe, size: 28)
+                name
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
             HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
                 DrawAndGuessCountingNumber(
                     from: data.before,
@@ -107,9 +109,10 @@ struct DrawAndGuessScorePanel: View {
                 DrawAndGuessAddedPoints(points: data.added, isShown: isCounting, animates: animates)
                     .font(PaeoniaTypography.bodyEmphasis)
             }
-            VStack(spacing: PaeoniaSpacing.space2) {
+            VStack(spacing: 0) {
                 ForEach(Array(data.lines.enumerated()), id: \.offset) { _, line in
                     lineText(line)
+                        .multilineTextAlignment(.center)
                 }
             }
             .font(PaeoniaTypography.caption)
@@ -117,6 +120,8 @@ struct DrawAndGuessScorePanel: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// The bonus lines fade in without a scale effect. A scaled Text keeps the width
+    /// it had while small and ends in "..." once it is full size.
     @ViewBuilder
     private func lineText(_ line: DrawAndGuessRevealScore.Line) -> some View {
         switch line.kind {
@@ -130,12 +135,10 @@ struct DrawAndGuessScorePanel: View {
             Text(.gamesDrawAndGuessRevealLineSpeed(line.points))
                 .foregroundStyle(Color.paeoniaInkGold)
                 .opacity(showsSpeedBonus || bonusArrivedLate ? 1 : 0)
-                .scaleEffect(showsSpeedBonus || bonusArrivedLate || !animates ? 1 : 0.8)
         case .firstTry:
             Text(.gamesDrawAndGuessRevealLineFirstTry(line.points))
                 .foregroundStyle(.paeoniaTextSecondary)
                 .opacity(showsFirstTryBonus || bonusArrivedLate ? 1 : 0)
-                .scaleEffect(showsFirstTryBonus || bonusArrivedLate || !animates ? 1 : 0.8)
         }
     }
 

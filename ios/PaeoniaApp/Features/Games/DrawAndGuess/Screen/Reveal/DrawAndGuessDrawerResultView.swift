@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// The drawer's screen after sending the drawing. It shows who has seen it, the
-/// guesses as they come, and when the round ends the result. While the partner is
-/// on their guess screen, it shows their letters and plays the drawing where
-/// their replay is. The chips are the drawer's payoff for the turn, so on a round
-/// that ended earlier they play back one by one.
+/// word, the guesses as they come, and when the round ends the result. While the
+/// partner is on their guess screen, their letters take the word's place and the
+/// drawing plays where their replay is. The chips are the drawer's payoff for
+/// the turn, so on a round that ended earlier they play back one by one.
 struct DrawAndGuessDrawerResultView: View {
     @Bindable var viewModel: DrawAndGuessViewModel
 
@@ -50,7 +50,9 @@ struct DrawAndGuessDrawerResultView: View {
                 statusRow
             }
         } square: { side in
-            GameSquare(side: side, scale: 0.8, glow: timeline.glow) {
+            // The drawing keeps the size it had on the drawing screen until the
+            // result needs the room.
+            GameSquare(side: side, scale: isRevealed ? 0.8 : 1, glow: timeline.glow) {
                 DrawAndGuessDrawerSquareContent(viewModel: viewModel, partnerGuess: partnerGuess, side: side)
             }
             .drawAndGuessDrawingAccessibility(
@@ -141,6 +143,7 @@ struct DrawAndGuessDrawerResultView: View {
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: visibleWrong.count)
         .animation(PaeoniaMotion.stateChange, value: partnerGuess == nil)
+        .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: isRevealed)
         .onDisappear {
             playbackTask?.cancel()
             timeline.stop()
@@ -180,8 +183,8 @@ struct DrawAndGuessDrawerResultView: View {
             if viewModel.isHeldOnPhone, !isRevealed {
                 GameOfflineLine(identifier: "draw.pending")
             }
-            if let partnerGuess {
-                DrawAndGuessPartnerSlots(guess: partnerGuess, partnerName: viewModel.partnerName)
+            if !isRevealed, let word = viewModel.round?.word, !word.isEmpty {
+                DrawAndGuessDrawerSlots(word: word, guess: partnerGuess, partnerName: viewModel.partnerName)
                     .transition(.opacity)
             }
             guessArea

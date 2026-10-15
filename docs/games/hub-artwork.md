@@ -54,6 +54,18 @@ The scene is the final frame of the game's moment, with one element left out. Th
 - The beat plays once when the card appears, within about 2 seconds. With Reduce Motion it shows the last frame.
 - Words, such as the Draw & Guess letters, are drawn in code from the String Catalog. Objects have no text.
 
+### The daily question card
+
+The daily question card on the Home tab is in the same series (`DailyPromptHeroArtwork`, in `Features/DailyPrompt/`). It uses `GameHubCardFrame` with no partner chip, and the zones above hold:
+
+| Card | Objects | The beat |
+|---|---|---|
+| Daily question | A sealed envelope, 560 pixels wide, standing at the main object's spot (lower edge at 640) | A wax seal with a peony presses onto the flap tip (0.495 across, 0.614 down the envelope), and a gold glow swells behind it |
+
+- The seal is pink, this person's color. It is lavender once the partner has answered today, so the card reads as a letter from the partner. It is 150 pixels wide.
+- The step count ("1 of 2 answered") is the top badge.
+- When today's questions are done, the seal breaks (it lifts, turns and fades, with a gold flash) and the card shrinks to a short row with an open envelope. That row is not a hub card.
+
 ## Checklist
 
 1. Open the hub with the `games-hub-partner-here` and `games-hub-board-games` developer scenarios, so the partner chip and the score badge show. Look at the cards on the narrowest iPhone and on iPad.

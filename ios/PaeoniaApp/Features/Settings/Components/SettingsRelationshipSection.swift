@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// The Us tab's relationship section: the day you got together, both partners'
-/// birthdays, and location sharing.
+/// The Us tab's relationship section: the couple's dates and location sharing. A date
+/// that isn't set yet gets its own row here so it's easy to find. Set dates move to
+/// the Important dates screen, since they rarely change.
 struct SettingsRelationshipSection: View {
-    let relationshipStartedOn: String?
-    let isSavingStartedOn: Bool
-    let onSaveStartedOn: (Date) async -> Bool
+    let relationshipDateRow: RelationshipDateSettingsRow
     /// Hidden while there is no couple dates model. The partner's row is also hidden
     /// while there is no partner.
     let yourBirthdayRow: BirthdaySettingsRow?
@@ -13,16 +12,23 @@ struct SettingsRelationshipSection: View {
     let locationViewModel: LocationMapViewModel
     let partnerName: String
 
-    @State private var selectedDate = Date()
-    @State private var isEditingDate = false
-
     var body: some View {
         Section {
-            relationshipDateRow
+            if hasSetDate {
+                datesLink
+            }
 
-            yourBirthdayRow
+            if !relationshipDateRow.isSet {
+                relationshipDateRow
+            }
 
-            partnerBirthdayRow
+            if let yourBirthdayRow, !yourBirthdayRow.isSet {
+                yourBirthdayRow
+            }
+
+            if let partnerBirthdayRow, !partnerBirthdayRow.isSet {
+                partnerBirthdayRow
+            }
 
             NavigationLink {
                 LocationSettingsView(
@@ -41,42 +47,23 @@ struct SettingsRelationshipSection: View {
         }
     }
 
-    private var relationshipDateRow: some View {
-        // The date editor is a modal task (Cancel/Save), so it presents as a
-        // sheet, same as from the Home tab milestone tile, instead of a push
-        // that would nest the editor's own navigation stack.
-        Button {
-            selectedDate = relationshipStartDate ?? Date()
-            isEditingDate = true
-        } label: {
-            LabeledContent {
-                if let relationshipStartDate {
-                    Text(relationshipStartDate, format: .dateTime.day().month().year())
-                }
-            } label: {
-                // A Button row draws its label in the tint color, so match the
-                // NavigationLink rows.
-                Label {
-                    Text(.settingsRelationshipDateTitle)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                } icon: {
-                    Image(systemName: "calendar")
-                }
-            }
-        }
-        .sheet(isPresented: $isEditingDate) {
-            RelationshipDateEditorView(
-                selectedDate: $selectedDate,
-                isEditing: relationshipStartedOn != nil,
-                isSaving: isSavingStartedOn,
-                onSave: onSaveStartedOn
+    private var datesLink: some View {
+        NavigationLink {
+            RelationshipDatesSettingsView(
+                relationshipDateRow: relationshipDateRow,
+                yourBirthdayRow: yourBirthdayRow,
+                partnerBirthdayRow: partnerBirthdayRow
             )
+        } label: {
+            Label {
+                Text(.settingsRelationshipDatesTitle)
+            } icon: {
+                Image(systemName: "calendar")
+            }
         }
     }
 
-    private var relationshipStartDate: Date? {
-        relationshipStartedOn
-            .flatMap { try? PairingStartDate(rawValue: $0) }
-            .flatMap { $0.date() }
+    private var hasSetDate: Bool {
+        relationshipDateRow.isSet || yourBirthdayRow?.isSet == true || partnerBirthdayRow?.isSet == true
     }
 }

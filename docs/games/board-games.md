@@ -19,7 +19,7 @@ Decided on 2026-10-13.
 - **The photo is random.** When a Dots and Boxes game starts, the server picks a random photo from the couple's Memories. Neither partner knows which one until boxes start closing.
 - **Norwegian names.** Fire på rad, Prikker og streker and Ultimat bondesjakk.
 - **Gentle rematch.** When a game ends, either partner can tap "Play again". The partner who did not start the last game starts the new one.
-- **No history.** A finished game is replaced by the next one. Only the tallies stay (see "Games don't save to Memories" in `docs/games-plan.md`).
+- **Past games.** Decided on 2026-10-15. The server keeps every finished game with its moves, and the couple can watch any of them again, faster than it was played. Ultimate Tic-Tac-Toe shows them so far. The other board games keep theirs on the server, and each needs a replay mode on its board view before it shows them (see "Past games" under "Screens").
 
 ## Decisions made without the developer
 
@@ -145,6 +145,7 @@ The functions are in `backend/convex/boardGames.ts`, the shared helpers in `back
   - `previous` keeps the last finished game (its number, first player, moves, winner, line, stake and photo) after a rematch, so a partner who missed the ending can see it.
   - `turn_started_at` and `turn_reminder_sent_at` drive the 72-hour reminder. `version` goes up with every change.
 - `board_game_marks`: one row per couple and partner, with the mark as base64 `PKDrawing` data (at most 48 KB) and `updated_at`.
+- `board_game_history`: one row per finished game, written by the move that ends it. It holds the kind, `game_number`, `first_user_id`, `moves`, `winner_user_id` (absent for a draw), `win_line`, `stake`, `started_at` and `finished_at`. The index is `by_couple_id_kind_game_number`.
 - Functions:
   - `get_board_games` returns all three games for the caller as `view_for` projections: the moves, whose turn it is, the outcome, the stake, the photo asset id (only while its memory is visible), my and my partner's tallies, and `previous`. Ludo games also carry `my_color` and `partner_color`. A game the couple has not started is `null`.
   - `get_board_game_marks` returns both marks. It is a separate subscription, so a move never resends the drawings.
@@ -152,8 +153,9 @@ The functions are in `backend/convex/boardGames.ts`, the shared helpers in `back
   - `make_move({ game_id, expected_version, move, stake?, ludo_color? })` checks couple access, that the game is playing, that it is the caller's turn and that `expected_version` matches. It then runs the pure rules for the row's kind. A stale version fails instead of overwriting. It is a client operation, so a retry is answered from the server's record.
   - `start_rematch({ game_id, expected_version })` starts the next game when the current one is finished.
   - `set_board_game_mark({ drawing })` saves or clears the caller's mark.
+  - `get_board_game_history({ kind, before_game_number?, limit })` pages the finished games of one kind, newest first, at most 50 a page. `next_before_game_number` is the cursor for the next page and is null on the last one.
 - Refusals use the wording the phone's queue understands: `42501 it is not your turn`, `23514 that move is not allowed` and `40001 the game has changed`. A game id the server doesn't have, such as after a restore of the server, is `40001` too.
-- Relationship cleanup deletes the couple's `board_games` and `board_game_marks` rows. Account deletion ends the relationship, so it follows the same path.
+- Relationship cleanup deletes the couple's `board_games`, `board_game_marks` and `board_game_history` rows. Account deletion ends the relationship, so it follows the same path.
 - Pushes and reminders go through `boardGameBackend` in `lib/boardGameBackend.ts`, registered in `GAME_BACKENDS` for all three kinds. A turn or result push carries `round_id` as a turn token, `<game number>:<move count>`, and the push drain sends it only while the game is still at that turn or result. The DB helpers are in `lib/boardGameStore.ts`.
 
 ## Screens
@@ -170,7 +172,7 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 - **Color row.** Ludo only. Four round color circles under the status row and above the stake row, until the player's first move of the game (see "Your color" in `docs/games/ludo.md`). In the wide layout it sits under the players row, above the stake.
 - **Status row.** Under the board. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there, as Ludo does ("Roll again"). VoiceOver announces when the partner comes and goes.
 - **Pinned bottom.** In Ludo, the invite button while it is not my turn and the partner is away. The bar always keeps room for it, so the board never resizes. The other boards show the invite as a bell at the leading edge of the toolbar instead. The offline line while a move waits to send. Under it, "[Name] isn't here right now" while the partner doesn't have the game open. While they do, the dot on their avatar says so and the line is gone.
-- **Score capsule.** Toolbar trailing, as in Draw & Guess (see "Scoring").
+- **Score capsule.** Toolbar trailing, as in Draw & Guess (see "Scoring"). In a game with past games, a tap on it opens them.
 - **Toolbar.** "Your mark" (`scribble.variable`) opens the mark editor.
 
 ### Result
@@ -210,10 +212,18 @@ The moment the last move lands.
 
 - The big grid has 9 small boards with wide gaps. Open boards that the next move may use glow softly in the mover's color. Other boards dim.
 - Zoom. When I must play in one board, the board zooms in on it so its cells are large, then I tap a cell. When I may choose, the whole board shows, I tap a small board to zoom into it, and a tap outside it or a pinch zooms back out. After my move the board zooms out and the board my partner is sent to pulses once.
-- The partner's move. The board zooms into the small board they played, their mark draws in, then the view moves to the board I am sent to.
-- A won small board gets a strike line through its three cells, its cells fade to 30%, and the winner's mark draws large over it. A full small board without a winner fades to 30%.
+- The partner's move. The board zooms into the small board they played, their mark draws in, then the view moves to the board I am sent to. A move from one small board to another pulls back partway and swoops in, so it never slides across the board at full zoom.
+- A won small board gets a strike line through its three cells, its cells fade to 30%, and the winner's mark draws large over it. The strike line lies under the big mark and is paler than it (45% saturation, 70% opacity), so the line never covers the mark. The line through the three winning boards at the end of a game is drawn the same way, under the big marks. A full small board without a winner fades to 30%.
 - Reduce Motion. The board still zooms, so the cells stay large enough to tap, but the view cuts to the new board instead of gliding. My partner's move shows at once, without the trip to their board. VoiceOver never zooms. The board I am sent to keeps its glow.
 - VoiceOver. Each small board is a group, "Board 5, center, open" or "Board 5, won by [Name]". Each cell reads "Row 1, column 2, empty".
+
+### Past games
+
+- Ultimate Tic-Tac-Toe has "Past games" ("Tidligere spill"). It opens from a quiet link on the hub card once the couple has finished a game, and from the score capsule on the board screen. The shared code is in `Features/Games/BoardGames/Shared/History/`, so another board game gets it by passing a replay board to its `BoardGameHubModel`.
+- The list shows every finished game, newest first: the winner's photo (an equals sign for a draw), "You won!", "[Name] won" or "It's a draw", the number of moves and the date, and the bet when there was one. It pages 30 games at a time. It reads the server each time it opens, so without a connection it says "Connect to the internet to see your past games." with "Try again".
+- A row plays that game again. The replay screen has the players row, which marks whose move it is and then the winner, the board, the bet, and a play button with a slider and "Move 12 of 39" under it.
+- The replay starts at once and plays one move every 0.32 seconds. The board never zooms in a replay, and moves make no haptics or sounds. After the last move the outcome highlight plays as it did in the game. The play button pauses, and at the end it reads "Watch again" and starts over. Moving the slider pauses the replay and shows the board after that move.
+- My pieces are pink and my partner's lavender, whoever started that game.
 
 ### Mark editor
 
