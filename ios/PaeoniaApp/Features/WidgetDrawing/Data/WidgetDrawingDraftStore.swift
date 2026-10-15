@@ -19,8 +19,11 @@ nonisolated struct WidgetDrawingDraftKey: Hashable, Sendable {
 /// Local storage for an unfinished PencilKit drawing. The bytes remain the
 /// canonical `PKDrawing.dataRepresentation()` so restoring a draft does not
 /// introduce a second stroke format.
+///
+/// `Sendable` because a background task writes drafts through it
+/// (`setDraft(_:base:for:)`). Main-actor classes are `Sendable` already.
 @MainActor
-protocol WidgetDrawingDraftStoring: AnyObject {
+protocol WidgetDrawingDraftStoring: AnyObject, Sendable {
     func draft(for key: WidgetDrawingDraftKey) -> Data?
     func setDraft(_ data: Data, for key: WidgetDrawingDraftKey)
     func removeDraft(for key: WidgetDrawingDraftKey)

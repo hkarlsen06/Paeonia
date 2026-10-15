@@ -158,21 +158,21 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
 
     /// The photo's bytes, or nil. Remembers a failure that retrying will not fix.
     private func download(mediaAssetID: UUID, privacyGeneration requested: UInt64) async -> Data? {
-        let signedURL: URL?
+        let url: URL?
         do {
-            signedURL = try await signedURL(for: mediaAssetID)
+            url = try await signedURL(for: mediaAssetID)
         } catch {
             if MediaMissLog.isLasting(error) { misses.record(mediaAssetID) }
             return nil
         }
         // No URL usually means the photo's row is not visible to this phone yet. It may be a moment
         // away, so it is not remembered as a miss and a tap on the photo tries again.
-        guard let signedURL else {
+        guard let url else {
             return nil
         }
 
         do {
-            let (data, response) = try await URLSession.shared.data(from: signedURL)
+            let (data, response) = try await URLSession.shared.data(from: url)
             guard !Task.isCancelled, requested == privacyGeneration else {
                 return nil
             }
