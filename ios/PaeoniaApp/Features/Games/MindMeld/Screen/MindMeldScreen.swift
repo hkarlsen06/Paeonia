@@ -49,8 +49,12 @@ struct MindMeldScreen: View {
             bannerCenter.show(notice.banner)
             viewModel.clearNotice()
         }
-        .gameTutorial(GameTutorial(kind: .mindMeld, partnerName: viewModel.partnerName), isPresented: $showsTutorial)
+        .gameTutorial(tutorial, isPresented: $showsTutorial)
         .accessibilityIdentifier("mindMeld.screen")
+    }
+
+    private var tutorial: GameTutorial {
+        GameTutorial(kind: .mindMeld, partnerName: viewModel.partnerName)
     }
 
     // MARK: Phases
@@ -82,7 +86,9 @@ struct MindMeldScreen: View {
         case .loading, .starting:
             MindMeldStatusView(viewModel: viewModel)
         case .write:
-            MindMeldWriteView(viewModel: viewModel)
+            // The cards open on their own the first time, so the keyboard waits
+            // for them to close instead of showing over them.
+            MindMeldWriteView(viewModel: viewModel, canShowKeyboard: !showsTutorial && tutorial.hasBeenShown)
         case .waiting:
             MindMeldWaitingView(viewModel: viewModel)
         case .reveal, .over:

@@ -9,6 +9,8 @@ import SwiftUI
 /// Lock in, and only the last rounds of the trail show.
 struct MindMeldWriteView: View {
     @Bindable var viewModel: MindMeldViewModel
+    /// False while the "How to play" cards are open or about to open.
+    let canShowKeyboard: Bool
 
     @FocusState private var isFieldFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -40,7 +42,11 @@ struct MindMeldWriteView: View {
         .animation(stateChange, value: viewModel.draftIssue)
         .animation(stateChange, value: viewModel.invite)
         .animation(stateChange, value: viewModel.showsPartnerRestartedNote)
-        .task {
+        .task(id: canShowKeyboard) {
+            guard canShowKeyboard else {
+                isFieldFocused = false
+                return
+            }
             try? await Task.sleep(for: Self.focusDelay)
             guard !Task.isCancelled else { return }
             isFieldFocused = true
