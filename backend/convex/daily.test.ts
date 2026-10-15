@@ -53,6 +53,19 @@ async function completeDay(t: TestConvex, user: TestUser, text = "done") {
 }
 
 describe("start_daily_challenge_snapshot", () => {
+  test("stores each instance's couple and question for the chat's index", async () => {
+    const { t, couple, a } = await readyCouple();
+    const instances = await liveInstancesFor(t, a.userId);
+    expect(instances.length).toBeGreaterThan(0);
+    for (const instance of instances) {
+      const version = await t.run((ctx) =>
+        ctx.db.query("question_versions").withIndex("by_uuid", (q) => q.eq("id", instance.question_version_id)).unique(),
+      );
+      expect(instance.couple_id).toBe(couple.coupleId);
+      expect(instance.question_id).toBe(version!.question_id);
+    }
+  });
+
   test("seeds two slots per partner and shows each partner only their own questions", async () => {
     const { t, a, b } = await readyCouple();
     const aRows = await today(a);
@@ -223,6 +236,7 @@ describe("answers and the reveal rule", () => {
     await expect(send({})).rejects.toThrow(/23514.*answer payload must include at least one answer kind/);
     await expect(send({ text: "   " })).rejects.toThrow(/answer payload must include at least one answer kind/);
     await expect(send({ text: "x".repeat(2001) })).rejects.toThrow(/23514.*answer text is too long/);
+    await expect(send({ text: "hi", extra: "x".repeat(20_000) })).rejects.toThrow(/23514.*answer payload is too large/);
     await expect(send({ partner_choice_user_id: couple.second.userId })).rejects.toThrow(
       /23514.*answer kind is not allowed for this question/,
     );

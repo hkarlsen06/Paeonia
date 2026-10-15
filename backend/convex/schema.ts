@@ -405,6 +405,9 @@ export default defineSchema({
     expires_at: optTs,
     revoked_at: optTs,
     revocation_reason: optString,
+    // True when the purchase started with a free trial offer, read from the payload when recorded.
+    // Stored only when true, so the trial reminder cron reads trials and no other row.
+    is_free_trial: v.optional(v.boolean()),
     raw_payload_id: optUuid,
     created_at: ts,
     updated_at: ts,
@@ -415,6 +418,7 @@ export default defineSchema({
     .index("by_product_id_user_id", ["product_id", "user_id"])
     .index("by_raw_payload_id", ["raw_payload_id"])
     .index("by_status_expires_at", ["status", "expires_at"])
+    .index("by_is_free_trial_status_expires_at", ["is_free_trial", "status", "expires_at"])
     .index("by_user_id_status_expires_at", ["user_id", "status", "expires_at"]),
 
   // FK: couple_id -> couples cascade; product_id -> subscription_products restrict
@@ -623,10 +627,12 @@ export default defineSchema({
     updated_at: ts,
     ended_at: optTs,
     delete_after: optTs,
+    // Set when the hard purge has removed the couple's content. The couple row stays.
+    purged_at: optTs,
   })
     .index("by_uuid", ["id"])
     .index("by_pair_id_status", ["pair_id", "status"])
-    .index("by_status_delete_after", ["status", "delete_after"]),
+    .index("by_status_purged_at_delete_after", ["status", "purged_at", "delete_after"]),
 
   // FK: answer_id -> daily_question_answers cascade; media_asset_id -> media_assets cascade.
   // (answer_id, media_asset_id) and (answer_id, sort_order) are unique.
@@ -684,6 +690,9 @@ export default defineSchema({
   daily_question_instances: defineTable({
     id: uuid,
     couple_day_id: uuid,
+    // The day's couple and the version's question, stored so a question's rounds are one index read.
+    couple_id: uuid,
+    question_id: uuid,
     question_version_id: uuid,
     seeded_for_user_id: uuid,
     slot_number: v.number(),
@@ -700,6 +709,7 @@ export default defineSchema({
       "slot_number",
     ])
     .index("by_couple_day_id_question_version_id", ["couple_day_id", "question_version_id"])
+    .index("by_couple_id_question_id", ["couple_id", "question_id"])
     .index("by_question_version_id", ["question_version_id"])
     .index("by_replaced_by_instance_id", ["replaced_by_instance_id"])
     .index("by_seeded_for_user_id_status", ["seeded_for_user_id", "status"]),
@@ -755,15 +765,17 @@ export default defineSchema({
     .index("by_couple_id_user_id", ["couple_id", "user_id"])
     .index("by_user_id_updated_at", ["user_id", "updated_at"]),
 
-  // Hearts one partner sent the other from Home. One row per (couple_id, sender_user_id).
-  // The recipient's unseen count is sent_total - seen_total. FK: couple_id -> couples cascade;
+  // One row per (couple_id, user_id). sent_total is what the user sent the partner, and seen_total is how
+  // many of the partner's hearts the user was shown. They are on separate rows so a send and a mark
+  // from the two partners never write the same row. The unseen count is the partner's sent_total minus
+  // the user's seen_total. A row exists once the user has sent or seen a heart. FK: couple_id -> couples cascade;
   // sender_user_id -> users cascade. (couple_id, sender_user_id) is unique.
   couple_hearts: defineTable({
     couple_id: uuid,
     sender_user_id: uuid,
     sent_total: v.number(),
     seen_total: v.number(),
-    last_sent_at: ts,
+    last_sent_at: optTs,
     created_at: ts,
     updated_at: ts,
   })

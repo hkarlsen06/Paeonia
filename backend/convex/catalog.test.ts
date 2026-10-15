@@ -138,6 +138,8 @@ describe("sync_catalog", () => {
       await ctx.db.insert("daily_question_instances", {
         id: crypto.randomUUID(),
         couple_day_id: crypto.randomUUID(),
+        couple_id: crypto.randomUUID(),
+        question_id: v1.question_id,
         question_version_id: v1.id,
         seeded_for_user_id: crypto.randomUUID(),
         slot_number: 1,

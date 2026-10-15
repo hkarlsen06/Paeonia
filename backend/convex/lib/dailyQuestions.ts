@@ -2,7 +2,7 @@ import type { Doc } from "../_generated/dataModel";
 import { isActiveCoupleMember, listActiveMembers } from "./access";
 import { findCoupleDayAt, resolveCoupleDayAnchor } from "./coupleDays";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { getByUuid } from "./db";
+import { getByUuid, requireByUuid } from "./db";
 import { checkViolation, fail, uniqueViolation } from "./errors";
 import { newUuid } from "./ids";
 import { addDaysToInstant, localDateOf, nowIso } from "./time";
@@ -527,10 +527,13 @@ export async function insertDailyQuestionInstance(
   if (sameSlot) {
     uniqueViolation("daily_question_instances_active_slot_unique_idx");
   }
+  const version = await requireByUuid(ctx, "question_versions", input.question_version_id);
   const id = newUuid();
   await ctx.db.insert("daily_question_instances", {
     id,
     couple_day_id: input.couple_day_id,
+    couple_id: day.couple_id,
+    question_id: version.question_id,
     question_version_id: input.question_version_id,
     seeded_for_user_id: input.seeded_for_user_id,
     slot_number: input.slot_number,

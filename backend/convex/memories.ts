@@ -132,6 +132,16 @@ export async function patchMemory(
   return (await ctx.db.get(memory._id))!;
 }
 
+/**
+ * Moves a memory's `updated_at` forward without a revision bump, because
+ * `get_memories` pages by that column and a changed note or photo must reach the
+ * partner's phone. Call it after changing a note or a photo link of an existing memory.
+ */
+export async function touchMemoryForSync(ctx: WriterCtx, memoryId: string): Promise<void> {
+  const memory = await getByUuid(ctx, "memories", memoryId);
+  if (memory) await ctx.db.patch(memory._id, withUpdatedAt({}));
+}
+
 async function insertMemoryNote(
   ctx: WriterCtx,
   row: { memory_id: string; user_id: string; body: string },
@@ -262,6 +272,7 @@ async function attachMemoryMediaAssets(
     });
     inserted.push(asset.reserved_parent_id);
   }
+  await ctx.db.patch(memory._id, withUpdatedAt({}));
   return inserted;
 }
 
@@ -437,6 +448,7 @@ export const upsert_memory_note = mutation({
           if (expected !== null && expected !== 0) fail("40001", "memory note revision conflict");
           result = await insertMemoryNote(ctx, { memory_id: memory.id, user_id: userId, body });
         }
+        await ctx.db.patch(memory._id, withUpdatedAt({}));
         return { note_id: result.id, revision: result.revision, updated_at: result.updated_at };
       },
     );
@@ -497,10 +509,11 @@ export const remove_memory_media = mutation({
         ) {
           fail("42501", "memory media is not removable");
         }
-        await requireWritableMemory(ctx, userId, link.memory_id);
+        const memory = await requireWritableMemory(ctx, userId, link.memory_id);
 
         const now = nowIso();
         await ctx.db.patch(link._id, withUpdatedAt({ deleted_at: now }));
+        await ctx.db.patch(memory._id, withUpdatedAt({}));
         const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
         if (asset && asset.owner_user_id === userId && asset.storage_delete_status !== "deleted") {
           await ctx.db.patch(
@@ -532,32 +545,32 @@ export const get_memories = query({
     const cursorId = optionalUuidArg(args.p_cursor_memory_id) ?? "00000000-0000-0000-0000-000000000000";
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
 
-    // ponytail: reads every memory of the couple, then pages in memory. Add a sync index if couples reach thousands.
-    const memories = await ctx.db
-      .query("memories")
-      .withIndex("by_couple_id_updated_at_id", (q) => q.eq("couple_id", coupleId))
-      .collect();
-    const rows = [];
-    for (const memory of memories) {
-      rows.push(await buildMemoryRow(ctx, userId, memory));
+    // Pages by the memory's own (updated_at, id). A note or photo change moves the
+    // memory's updated_at, so the cursor sees it.
+    let memories: Doc<"memories">[];
+    if (updatedAfter === undefined) {
+      memories = await ctx.db
+        .query("memories")
+        .withIndex("by_couple_id_updated_at_id", (q) => q.eq("couple_id", coupleId))
+        .take(limit);
+    } else {
+      memories = await ctx.db
+        .query("memories")
+        .withIndex("by_couple_id_updated_at_id", (q) =>
+          q.eq("couple_id", coupleId).eq("updated_at", updatedAfter).gt("id", cursorId),
+        )
+        .take(limit);
+      if (memories.length < limit) {
+        const later = await ctx.db
+          .query("memories")
+          .withIndex("by_couple_id_updated_at_id", (q) => q.eq("couple_id", coupleId).gt("updated_at", updatedAfter))
+          .take(limit - memories.length);
+        memories = [...memories, ...later];
+      }
     }
-    return rows
-      .filter(
-        (row) =>
-          updatedAfter === undefined ||
-          row.sync_updated_at > updatedAfter ||
-          (row.sync_updated_at === updatedAfter && row.memory_id > cursorId),
-      )
-      .sort((a, b) =>
-        a.sync_updated_at !== b.sync_updated_at
-          ? a.sync_updated_at < b.sync_updated_at
-            ? -1
-            : 1
-          : a.memory_id < b.memory_id
-            ? -1
-            : 1,
-      )
-      .slice(0, limit);
+    const rows = [];
+    for (const memory of memories) rows.push(await buildMemoryRow(ctx, userId, memory));
+    return rows;
   },
 });
 
@@ -579,12 +592,10 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
   const memoryMediaIds: string[] = [];
   const mediaAssetIds: string[] = [];
   const states = [];
-  let mediaUpdatedAt: string | null = null;
   for (const link of links) {
     const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
     if (!asset) continue;
     const updatedAt = link.updated_at > asset.updated_at ? link.updated_at : asset.updated_at;
-    if (mediaUpdatedAt === null || updatedAt > mediaUpdatedAt) mediaUpdatedAt = updatedAt;
     if (
       visibleMemory &&
       link.deleted_at === undefined &&
@@ -617,10 +628,6 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
     .withIndex("by_memory_id", (q) => q.eq("memory_id", memory.id))
     .unique();
 
-  const syncUpdatedAt = [memory.updated_at, ownNote?.updated_at, partnerNote?.updated_at, mediaUpdatedAt].reduce<string>(
-    (best, value) => (value && value > best ? value : best),
-    "",
-  );
   return {
     memory_id: memory.id,
     couple_id: memory.couple_id,
@@ -633,7 +640,7 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
     deleted_at: orNull(memory.deleted_at),
     created_at: memory.created_at,
     updated_at: memory.updated_at,
-    sync_updated_at: syncUpdatedAt,
+    sync_updated_at: memory.updated_at,
     own_note_id: orNull(ownNote?.id),
     own_note_body: noteBody(ownNote),
     own_note_revision: orNull(ownNote?.revision),

@@ -16,7 +16,6 @@ import {
 import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { timestampArg } from "./lib/ids";
-import { isJsonObject } from "./lib/json";
 import { enqueueNotificationForUser } from "./lib/notifications";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import {
@@ -247,8 +246,8 @@ export const queue_subscription_trial_reminders = internalMutation({
       candidates.push(
         ...(await ctx.db
           .query("storekit_transactions")
-          .withIndex("by_status_expires_at", (q) =>
-            q.eq("status", status).gt("expires_at", now).lte("expires_at", horizon),
+          .withIndex("by_is_free_trial_status_expires_at", (q) =>
+            q.eq("is_free_trial", true).eq("status", status).gt("expires_at", now).lte("expires_at", horizon),
           )
           .collect()),
       );
@@ -259,18 +258,9 @@ export const queue_subscription_trial_reminders = internalMutation({
     let picked = 0;
     for (const tx of candidates) {
       if (picked >= batchSize) break;
-      if (tx.transaction_id !== tx.original_transaction_id || !tx.raw_payload_id || !tx.expires_at) continue;
+      if (tx.transaction_id !== tx.original_transaction_id || !tx.expires_at) continue;
       const product = await getByUuid(ctx, "subscription_products", tx.product_id);
       if (!product || !product.is_active || product.kind !== "couple_subscription") continue;
-      const payload = await getByUuid(ctx, "storekit_payloads", tx.raw_payload_id);
-      const info = isJsonObject(payload?.payload_json) ? payload.payload_json.transactionInfo : undefined;
-      if (
-        !isJsonObject(info) ||
-        String(info.offerType) !== "1" ||
-        String(info.offerDiscountType ?? "").toUpperCase() !== "FREE_TRIAL"
-      ) {
-        continue;
-      }
 
       const preference = await ctx.db
         .query("notification_preferences")

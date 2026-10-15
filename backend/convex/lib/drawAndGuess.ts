@@ -227,8 +227,11 @@ export function roundOutcomeJson(move: GameMove) {
   };
 }
 
-/** One round with its attempts. `starred_by_me` is the caller's private star. */
-export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string) {
+/**
+ * One round with its attempts. `starred_by_me` is the caller's private star. With `withAttempts`
+ * false, `attempts` is empty and `attempt_count` still holds the exact number.
+ */
+export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string, withAttempts = true) {
   const { guesses, count } = await listGuesses(ctx, move.id);
   return {
     id: move.id,
@@ -251,7 +254,7 @@ export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string) 
     guesser_result_seen_at: orNull(move.guesser_result_seen_at),
     /** Every attempt of the round. `attempts` holds the newest 200, oldest first. */
     attempt_count: count,
-    attempts: guesses.map((guess) => ({
+    attempts: (withAttempts ? guesses : []).map((guess) => ({
       id: guess.id,
       user_id: guess.user_id,
       text: guess.text,

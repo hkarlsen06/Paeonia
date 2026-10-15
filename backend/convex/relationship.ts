@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { findCurrentCouple, getCurrentEntitledCoupleId } from "./lib/access";
 import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
@@ -7,7 +8,7 @@ import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, optionalTimestampArg, optionalUuidArg } from "./lib/ids";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
-import { cleanupCoupleContent, isPurgeable, purgeCoupleContent } from "./lib/relationshipCleanup";
+import { cleanupCoupleContent, isPurgeable, purgeCoupleContent, ROWS_PER_CHUNK } from "./lib/relationshipCleanup";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { requireUserId } from "./lib/auth";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
@@ -151,46 +152,62 @@ export const set_couple_started_on = mutation({
 
 // ---- cleanup (operator and cron) ----
 
-function limitArg(value: number | undefined, fallback: number, max: number, message: string): number {
-  const limit = value ?? fallback;
-  if (!Number.isInteger(limit) || limit < 1 || limit > max) {
-    return fail("23514", message);
-  }
-  return limit;
-}
+/**
+ * Couples the purge run checks for ready files before it gives up. A check is one index read, so
+ * this many fit one mutation. Couples whose files never get deleted stay in range and are checked
+ * again each run, and only more than this many of them could hide a purgeable couple behind them.
+ */
+const PURGE_CANDIDATES_PER_RUN = 500;
 
+/**
+ * Hides one ended couple's content. Each run changes at most `ROWS_PER_CHUNK` rows and runs
+ * again while a couple is still due, so one big couple never holds up the others or hits the
+ * limits of a single transaction. A couple leaves the range when its cleanup finishes.
+ */
 export const cleanup_expired_relationship_content = internalMutation({
-  args: { p_now: v.optional(v.union(v.null(), v.string())), p_limit: v.optional(v.number()) },
+  args: { p_now: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => {
     const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    const limit = limitArg(args.p_limit, 25, 100, "relationship cleanup limit is out of range");
-    const due = await ctx.db
-      .query("couples")
-      .withIndex("by_status_delete_after", (q) => q.eq("status", "ended").gt("delete_after", "").lte("delete_after", now))
-      .take(limit * 2);
-    const results = [];
-    for (const couple of due.filter((row) => row.delete_after !== undefined).slice(0, limit)) {
-      results.push({ couple_id: couple.id, ...(await cleanupCoupleContent(ctx, couple, now)) });
+    const due = () =>
+      ctx.db
+        .query("couples")
+        .withIndex("by_status_purged_at_delete_after", (q) =>
+          q.eq("status", "ended").eq("purged_at", undefined).gt("delete_after", "").lte("delete_after", now),
+        );
+    const couple = await due().first();
+    if (!couple) return [];
+    const { done: _done, ...result } = await cleanupCoupleContent(ctx, couple, now, { left: ROWS_PER_CHUNK });
+    if ((await due().first()) !== null) {
+      await ctx.scheduler.runAfter(0, internal.relationship.cleanup_expired_relationship_content, { p_now: now });
     }
-    return results;
+    return [{ couple_id: couple.id, ...result }];
   },
 });
 
+/**
+ * Hard deletes one deleted couple's content once its stored files are gone, in chunks like
+ * the cleanup. A purged couple has `purged_at` and leaves the range.
+ */
 export const purge_deleted_relationship_content = internalMutation({
-  args: { p_now: v.optional(v.union(v.null(), v.string())), p_limit: v.optional(v.number()) },
+  args: { p_now: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => {
     const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    const limit = limitArg(args.p_limit, 25, 100, "relationship purge limit is out of range");
-    const due = await ctx.db
-      .query("couples")
-      .withIndex("by_status_delete_after", (q) => q.eq("status", "deleted").gt("delete_after", "").lte("delete_after", now))
-      .collect();
-    const results = [];
-    for (const couple of due) {
-      if (results.length >= limit) break;
-      if (couple.delete_after === undefined || !(await isPurgeable(ctx, couple))) continue;
-      results.push({ couple_id: couple.id, ...(await purgeCoupleContent(ctx, couple)) });
+    const due = () =>
+      ctx.db
+        .query("couples")
+        .withIndex("by_status_purged_at_delete_after", (q) =>
+          q.eq("status", "deleted").eq("purged_at", undefined).gt("delete_after", "").lte("delete_after", now),
+        );
+    let checked = 0;
+    for await (const couple of due()) {
+      if (++checked > PURGE_CANDIDATES_PER_RUN) break;
+      if (!(await isPurgeable(ctx, couple))) continue;
+      const { done: _done, ...result } = await purgeCoupleContent(ctx, couple, { left: ROWS_PER_CHUNK });
+      if ((await due().first()) !== null) {
+        await ctx.scheduler.runAfter(0, internal.relationship.purge_deleted_relationship_content, { p_now: now });
+      }
+      return [{ couple_id: couple.id, ...result }];
     }
-    return results;
+    return [];
   },
 });

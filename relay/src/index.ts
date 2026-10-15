@@ -1,5 +1,14 @@
 import { DurableObject } from "cloudflare:workers";
-import { deliveryFor, isExpired, nextExpiryAlarm, SESSION_MS, type Attachment } from "./room.ts";
+import {
+  deliveryFor,
+  isExpired,
+  isTooLarge,
+  MAX_SOCKETS_PER_ROOM,
+  nextExpiryAlarm,
+  SESSION_MS,
+  socketToReplace,
+  type Attachment,
+} from "./room.ts";
 import { roomName, verifyTicket } from "./ticket.ts";
 
 /**
@@ -15,9 +24,6 @@ interface Env {
   ROOMS: DurableObjectNamespace<CanvasRoom>;
   RELAY_TICKET_SECRET: string;
 }
-
-const MAX_SOCKETS_PER_ROOM = 4;
-const MAX_MESSAGE_BYTES = 4 * 1_048_576;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -38,13 +44,21 @@ export class CanvasRoom extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
     const userId = request.headers.get("X-Paeonia-User") ?? "";
     this.expireSockets(Date.now());
-    const sockets = this.ctx.getWebSockets().filter((socket) => !attachmentOf(socket).hasLeft);
-    if (sockets.length >= MAX_SOCKETS_PER_ROOM) return new Response("Room is full", { status: 429 });
+    const now = Date.now();
+    let sockets = this.ctx.getWebSockets().filter((socket) => !attachmentOf(socket).hasLeft);
+    if (sockets.length >= MAX_SOCKETS_PER_ROOM) {
+      // A phone that dropped its connection may have left a half-open socket in the room.
+      const replace = socketToReplace(sockets.map(attachmentOf), userId, now);
+      const stale = sockets.find((socket) => attachmentOf(socket).socketId === replace);
+      if (!stale) return new Response("Room is full", { status: 429 });
+      this.close(stale, 4002, "replaced by a newer connection");
+      sockets = sockets.filter((socket) => socket !== stale);
+    }
     const peers = sockets.filter((socket) => attachmentOf(socket).userId !== userId);
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
     const socketId = crypto.randomUUID();
-    server.serializeAttachment({ userId, socketId, closesAt: Date.now() + SESSION_MS } satisfies Attachment);
+    server.serializeAttachment({ userId, socketId, openedAt: now, closesAt: now + SESSION_MS } satisfies Attachment);
     server.send(JSON.stringify({ type: "welcome", id: socketId, peers: peers.length }));
     this.broadcast(server, JSON.stringify({ type: "joined", id: socketId }));
     await this.scheduleExpiryAlarm();
@@ -58,8 +72,7 @@ export class CanvasRoom extends DurableObject<Env> {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    const size = typeof message === "string" ? message.length : message.byteLength;
-    if (size <= MAX_MESSAGE_BYTES) this.broadcast(ws, message);
+    if (!isTooLarge(message)) this.broadcast(ws, message);
     // Forward first: the message may be an erase or a clear, and dropping it
     // would bring the strokes back when the app reconnects.
     if (isExpired(attachmentOf(ws), Date.now())) this.expire(ws);
@@ -81,9 +94,13 @@ export class CanvasRoom extends DurableObject<Env> {
   }
 
   private expire(ws: WebSocket): void {
+    this.close(ws, 4001, "session expired");
+  }
+
+  private close(ws: WebSocket, code: number, reason: string): void {
     this.leave(ws);
     try {
-      ws.close(4001, "session expired");
+      ws.close(code, reason);
     } catch {
       // Already closing.
     }

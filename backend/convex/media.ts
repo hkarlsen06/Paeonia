@@ -603,14 +603,30 @@ export async function deleteQueuedMediaStorage(
   const retryBefore = addMs(now, -retryAfterMs);
   const picked: MediaAsset[] = [];
   for (const status of ["pending", "retrying"] as const) {
-    const queued = ctx.db
+    // A retrying row waits `retryAfterMs` from its last update, and the index is ordered by that update.
+    const queued = await ctx.db
       .query("media_assets")
-      .withIndex("by_storage_delete_status_updated_at", (q) => q.eq("storage_delete_status", status));
-    for await (const asset of queued) {
+      .withIndex("by_storage_delete_status_updated_at", (q) =>
+        status === "retrying"
+          ? q.eq("storage_delete_status", status).lte("updated_at", retryBefore)
+          : q.eq("storage_delete_status", status),
+      )
+      .take(limit);
+    for (const asset of queued) {
       if (picked.length >= limit) break;
-      if (asset.storage_delete_attempts >= maxAttempts) continue;
-      if (status === "retrying" && asset.updated_at > retryBefore) continue;
-      if (await mediaAssetHasLiveReference(ctx, asset.id)) continue;
+      // A row that can never be deleted leaves the queue, so the next run reads fresh rows.
+      // `failed` rows go back in the queue when their last reference goes (`queueOrphanedMediaAssetForDelete`).
+      const spent = asset.storage_delete_attempts >= maxAttempts;
+      if (spent || (await mediaAssetHasLiveReference(ctx, asset.id))) {
+        await ctx.db.patch(
+          asset._id,
+          withUpdatedAt({
+            storage_delete_status: "failed" as const,
+            last_storage_delete_error: spent ? "storage delete attempts used up" : "media is still in use",
+          }),
+        );
+        continue;
+      }
       picked.push(asset);
     }
   }

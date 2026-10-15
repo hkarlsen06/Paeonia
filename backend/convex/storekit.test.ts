@@ -3,6 +3,7 @@ import { api, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import crons from "./crons";
 import { newUuid } from "./lib/ids";
+import { isFreeTrialPayload } from "./lib/storekit";
 import { seedProducts, storekitArgs } from "./storekit.testHelpers";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
 
@@ -536,6 +537,7 @@ describe("queue_subscription_trial_reminders", () => {
         status: "active",
         purchased_at: hoursFromNow(-12 * 24),
         expires_at: hoursFromNow(options.expiresInHours),
+        is_free_trial: (options.discount ?? "FREE_TRIAL") === "FREE_TRIAL" ? true : undefined,
         raw_payload_id: payload.id,
         created_at: now,
         updated_at: now,
@@ -636,5 +638,16 @@ describe("queue_subscription_trial_reminders", () => {
       "queue-subscription-trial-reminders"
     ];
     expect(job.schedule).toEqual({ type: "cron", cron: "15 * * * *" });
+  });
+});
+
+describe("isFreeTrialPayload", () => {
+  test("accepts only the free trial offer", () => {
+    expect(isFreeTrialPayload({ transactionInfo: { offerType: 1, offerDiscountType: "FREE_TRIAL" } })).toBe(true);
+    expect(isFreeTrialPayload({ transactionInfo: { offerType: "1", offerDiscountType: "free_trial" } })).toBe(true);
+    expect(isFreeTrialPayload({ transactionInfo: { offerType: 1, offerDiscountType: "PAY_AS_YOU_GO" } })).toBe(false);
+    expect(isFreeTrialPayload({ transactionInfo: { offerType: 2, offerDiscountType: "FREE_TRIAL" } })).toBe(false);
+    expect(isFreeTrialPayload({ transactionInfo: {} })).toBe(false);
+    expect(isFreeTrialPayload(null)).toBe(false);
   });
 });

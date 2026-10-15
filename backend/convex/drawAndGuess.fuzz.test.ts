@@ -901,7 +901,8 @@ class Fuzz {
     return await user.as.query(api.drawAndGuess.get_draw_and_guess, {});
   }
 
-  private roundJson(round: Round, viewer: Uid) {
+  /** `withAttempts` is false past the two newest rounds, which send no attempts. */
+  private roundJson(round: Round, viewer: Uid, withAttempts = true) {
     return {
       id: round.id,
       round_number: round.number,
@@ -925,7 +926,7 @@ class Fuzz {
       drawer_result_seen_at: round.drawerSeenAt === undefined ? null : iso(round.drawerSeenAt),
       guesser_result_seen_at: round.guesserSeenAt === undefined ? null : iso(round.guesserSeenAt),
       attempt_count: round.attempts.length,
-      attempts: round.attempts.map((item) => [item.text, item.correct]),
+      attempts: withAttempts ? round.attempts.map((item) => [item.text, item.correct]) : [],
     };
   }
 
@@ -988,7 +989,7 @@ class Fuzz {
       // Rounds: the latest first, then up to 20 earlier ones.
       const ordered = [...m.rounds].reverse();
       this.same(`${who} current round`, v.current_round ? this.viewRound(v.current_round) : null, ordered[0] ? this.roundJson(ordered[0], me) : null);
-      this.same(`${who} recent rounds`, v.recent_rounds.map((round) => this.viewRound(round)), ordered.slice(1, 21).map((round) => this.roundJson(round, me)));
+      this.same(`${who} recent rounds`, v.recent_rounds.map((round) => this.viewRound(round)), ordered.slice(1, 21).map((round, index) => this.roundJson(round, me, index === 0)));
       this.same(`${who} presence`, [v.my_present, v.partner_present], [this.present(me), this.present(partner)]);
       this.same(`${who} last invite`, v.last_invite_at, m.lastInvite[me] === undefined ? null : iso(m.lastInvite[me]!));
     }

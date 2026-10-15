@@ -16,6 +16,7 @@ import {
   resolveUserEntitlement,
   userHasDirectEntitlement,
 } from "./access";
+import { listUserEntitlements } from "./entitlements";
 import { newUuid } from "./ids";
 
 const PAST = "2020-01-01T00:00:00.000Z";
@@ -79,6 +80,21 @@ describe("entitlements", () => {
       await userHasDirectEntitlement(ctx, retry.userId),
     ]);
     expect(results).toEqual([true, true, false, false]);
+  });
+
+  test("many old renewals do not hide the current subscription, and only the newest rows are read", async () => {
+    const t = newTest();
+    const user = await createSignedInUser(t);
+    for (let year = 2010; year < 2020; year += 1) {
+      await insertStorekit(t, user.userId, "expired", `${year}-06-01T00:00:00.000Z`);
+    }
+    await insertStorekit(t, user.userId, "active", FUTURE);
+    const { resolved, rows } = await t.run(async (ctx) => ({
+      resolved: await resolveUserEntitlement(ctx, user.userId),
+      rows: await listUserEntitlements(ctx, user.userId),
+    }));
+    expect(resolved).toMatchObject({ is_entitled: true, status: "active", current_period_end: FUTURE });
+    expect(rows).toHaveLength(2);
   });
 
   test("a StoreKit entitlement reports its product's billing period", async () => {

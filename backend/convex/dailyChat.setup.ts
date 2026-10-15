@@ -28,6 +28,8 @@ export async function answeredRound(
     await ctx.db.insert("daily_question_instances", {
       id: instanceId,
       couple_day_id: dayId,
+      couple_id: couple.coupleId,
+      question_id: question.id,
       question_version_id: question.versionId,
       seeded_for_user_id: (options.seededFor ?? couple.first).userId,
       slot_number: 1,

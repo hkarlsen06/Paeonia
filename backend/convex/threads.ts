@@ -10,11 +10,11 @@ import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
-import { dailyQuestionThreadLink, isSharedRound, loadCoupleRounds } from "./lib/dailyQuestionRounds";
+import { dailyQuestionThreadLink, isSharedRound, loadQuestionRounds } from "./lib/dailyQuestionRounds";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
-import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
+import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { enqueuePartnerNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { applyCoupleActivity } from "./lib/streaks";
@@ -375,7 +375,7 @@ export const create_daily_question_thread_with_message = mutation({
           return fail("22023", "daily question was not found");
         }
 
-        const rounds = (await loadCoupleRounds(ctx, coupleId)).get(questionId) ?? [];
+        const rounds = await loadQuestionRounds(ctx, coupleId, questionId);
         if (!rounds.some((round) => round.answers.some((answer) => answer.user_id === userId))) {
           fail("42501", "you must answer this daily question before starting its thread");
         }
@@ -473,7 +473,6 @@ export const get_conversation_threads = query({
       .collect();
 
     const rows = [];
-    let rounds: Awaited<ReturnType<typeof loadCoupleRounds>> | null = null;
     for (const thread of threads) {
       const daily = await ctx.db
         .query("daily_question_threads")
@@ -483,8 +482,7 @@ export const get_conversation_threads = query({
       // Leave it out once they are deleted or hidden, so the app never lists a chat the
       // user can't open.
       if (daily) {
-        rounds ??= await loadCoupleRounds(ctx, coupleId);
-        if (!(rounds.get(daily.question_id) ?? []).some(isSharedRound)) continue;
+        if (!(await loadQuestionRounds(ctx, coupleId, daily.question_id)).some(isSharedRound)) continue;
       }
       const memory = await ctx.db
         .query("memory_threads")
@@ -549,18 +547,48 @@ export const get_conversation_threads = query({
   },
 });
 
+const MAX_MESSAGE_PAGE = 100;
+
+/**
+ * One page of a thread's messages, oldest first. Without a cursor it is the newest page.
+ * `p_before_created_at` and `p_before_message_id` are the oldest message the app has, and
+ * give the page just before it. `has_more` is true when older messages remain.
+ */
 export const get_thread_messages = query({
-  args: { p_thread_id: v.string() },
+  args: {
+    p_thread_id: v.string(),
+    p_limit: v.number(),
+    p_before_created_at: v.optional(v.union(v.null(), v.string())),
+    p_before_message_id: v.optional(v.union(v.null(), v.string())),
+  },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
+    if (!Number.isFinite(args.p_limit) || args.p_limit < 1) fail("23514", "limit must be 1 or more");
+    const limit = Math.min(Math.floor(args.p_limit), MAX_MESSAGE_PAGE);
     const thread = await getByUuid(ctx, "conversation_threads", uuidArg(args.p_thread_id));
-    if (!thread || !(await canAccessCoupleContent(ctx, userId, thread.couple_id))) return [];
+    if (!thread || !(await canAccessCoupleContent(ctx, userId, thread.couple_id))) return { messages: [], has_more: false };
 
+    const beforeAt = args.p_before_created_at ? timestampArg(args.p_before_created_at) : null;
+    const beforeId = args.p_before_message_id ? uuidArg(args.p_before_message_id) : "";
     const threadVisible = thread.deleted_at === undefined && thread.moderation_status === "visible";
-    const messages = await ctx.db
+    const newestFirst = ctx.db
       .query("thread_messages")
-      .withIndex("by_thread_id_created_at_id", (q) => q.eq("thread_id", thread.id))
-      .collect();
+      .withIndex("by_thread_id_created_at_id", (q) =>
+        beforeAt === null ? q.eq("thread_id", thread.id) : q.eq("thread_id", thread.id).lte("created_at", beforeAt),
+      )
+      .order("desc");
+    const messages = [];
+    let hasMore = false;
+    for await (const message of newestFirst) {
+      // Messages sharing the cursor's millisecond sort by id, so skip the ones already sent.
+      if (message.created_at === beforeAt && message.id >= beforeId) continue;
+      if (messages.length === limit) {
+        hasMore = true;
+        break;
+      }
+      messages.push(message);
+    }
+    messages.reverse();
     const rows = [];
     for (const message of messages) {
       const messageVisible = threadVisible && message.deleted_at === undefined && message.moderation_status === "visible";
@@ -619,6 +647,6 @@ export const get_thread_messages = query({
         media_states: mediaStates,
       });
     }
-    return rows;
+    return { messages: rows, has_more: hasMore };
   },
 });

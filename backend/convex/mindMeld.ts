@@ -111,41 +111,31 @@ async function insertGame(ctx: WriterCtx, coupleId: string, userId: string, prev
 type Overview = {
   /** Oldest first. */
   games: Game[];
-  rounds: Round[];
   melds: Map<string, { meld_number: number; is_record: boolean }>;
   stats: { melds: number; fewest_rounds: number | null; games: number };
 };
 
 /**
- * Every game and round of the couple, the meld numbers, and the couple's numbers. `games` in the
- * stats counts finished games. A meld took as many rounds as it has revealed rounds.
- * ponytail: reads all games and rounds of the couple on every call. One couple finishes a few games
- * a day. Keep a counter row on the couple if this gets slow.
+ * Every game of the couple, the meld numbers, and the couple's numbers. `games` in the stats counts
+ * finished games. A meld took as many rounds as the game's `rounds_taken`, so no round is read.
+ * ponytail: reads every game row of the couple on each call. One couple finishes a few games a day,
+ * so a year is about a thousand small rows. Keep a counter row on the couple if this gets slow.
  */
 async function loadOverview(ctx: ReaderCtx, coupleId: string): Promise<Overview> {
   const games = await ctx.db
     .query("mind_meld_games")
     .withIndex("by_couple_id_game_number", (q) => q.eq("couple_id", coupleId))
     .collect();
-  const rounds = await ctx.db
-    .query("mind_meld_rounds")
-    .withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId))
-    .collect();
-  const revealed = new Map<string, number>();
-  for (const round of rounds) {
-    if (round.state === "revealed") revealed.set(round.game_id, (revealed.get(round.game_id) ?? 0) + 1);
-  }
   const melds = new Map<string, { meld_number: number; is_record: boolean }>();
   let fewest: number | null = null;
   for (const game of games) {
     if (game.state !== "melded") continue;
-    const taken = revealed.get(game.id) ?? 0;
+    const taken = game.rounds_taken ?? 0;
     melds.set(game.id, { meld_number: melds.size + 1, is_record: fewest !== null && taken < fewest });
     fewest = fewest === null ? taken : Math.min(fewest, taken);
   }
   return {
     games,
-    rounds,
     melds,
     stats: { melds: melds.size, fewest_rounds: fewest, games: games.filter((game) => game.state !== "playing").length },
   };
@@ -173,7 +163,7 @@ function roundJson(round: Round, words: Word[], userId: string) {
 
 async function gameJson(ctx: ReaderCtx, overview: Overview, game: Game, userId: string) {
   const words = await wordsOfGame(ctx, game.id);
-  const rounds = overview.rounds.filter((round) => round.game_id === game.id).sort((a, b) => a.round_number - b.round_number);
+  const rounds = await roundsOf(ctx, game.id);
   const meld = overview.melds.get(game.id);
   return {
     id: game.id,
@@ -249,9 +239,7 @@ export const get_mind_meld_history = query({
     const games = [];
     for (const game of finished.slice(0, limit)) {
       const words = await wordsOfGame(ctx, game.id);
-      const rounds = overview.rounds
-        .filter((round) => round.game_id === game.id && round.state === "revealed")
-        .sort((a, b) => a.round_number - b.round_number);
+      const rounds = (await roundsOf(ctx, game.id)).filter((round) => round.state === "revealed");
       games.push({
         id: game.id,
         game_number: game.game_number,
@@ -404,7 +392,7 @@ export const lock_mind_meld_word = mutation({
           );
           if (outcome === "match") {
             gameState = "melded";
-            await patchGame(ctx, game, { state: "melded", ended_at: now });
+            await patchGame(ctx, game, { state: "melded", ended_at: now, rounds_taken: round.round_number });
           } else if (round.round_number >= MAX_ROUNDS) {
             gameState = "ended";
             await patchGame(ctx, game, { state: "ended", end_reason: "rounds", ended_at: now });
@@ -478,7 +466,12 @@ export const count_mind_meld_round = mutation({
       await ctx.db.delete(open._id);
     }
     await ctx.db.patch(round._id, withUpdatedAt({ counted_by_user_id: userId }));
-    await patchGame(ctx, game, { state: "melded", end_reason: undefined, ended_at: nowIso() });
+    await patchGame(ctx, game, {
+      state: "melded",
+      end_reason: undefined,
+      ended_at: nowIso(),
+      rounds_taken: latestRevealed.round_number,
+    });
     return { round_id: round.id, game_id: game.id, game_state: "melded" as const };
   },
 });

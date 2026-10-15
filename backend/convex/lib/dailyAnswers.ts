@@ -5,7 +5,7 @@ import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import { checkViolation, fail, uniqueViolation } from "./errors";
 import { newUuid, uuidArg } from "./ids";
-import { jsonbText } from "./json";
+import { jsonbByteLength, jsonbText } from "./json";
 import { enqueuePartnerAnsweredNotification, enqueuePartnerNotification } from "./notifications";
 import { tombstoneReportTargets } from "./reports";
 import { applyCoupleActivity } from "./streaks";
@@ -429,6 +429,8 @@ export type ClientOperationArgs = {
   localCreatedAt: string;
 };
 
+const MAX_ANSWER_PAYLOAD_BYTES = 16_384;
+
 /** Port of `internal.submit_daily_answer`. Returns the answer id. */
 export async function submitDailyAnswer(
   ctx: WriterCtx,
@@ -439,6 +441,10 @@ export async function submitDailyAnswer(
 ): Promise<string> {
   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
     fail("23514", "answer payload must be an object");
+  }
+  // Text is at most 2000 characters (8000 bytes) and the rest are a few ids, so a bigger body is not an answer.
+  if (jsonbByteLength(payload) > MAX_ANSWER_PAYLOAD_BYTES) {
+    fail("23514", "answer payload is too large");
   }
   const body = payload as Record<string, unknown>;
 

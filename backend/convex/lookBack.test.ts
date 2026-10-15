@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { seedCatalog, textQuestions } from "./daily.setup";
+import { getByUuid } from "./lib/db";
 import { hashString, isOnThisDay, sameDayYearsAgo } from "./lib/lookBack";
 import { newUuid } from "./lib/ids";
 import { nowIso } from "./lib/time";
@@ -221,6 +222,8 @@ async function insertRound(
     await ctx.db.insert("daily_question_instances", {
       id: instanceId,
       couple_day_id: dayId,
+      couple_id: couple.coupleId,
+      question_id: (await getByUuid(ctx, "question_versions", versionId))!.question_id,
       question_version_id: versionId,
       seeded_for_user_id: couple.first.userId,
       slot_number: 1,

@@ -65,16 +65,36 @@ function grantRow(grant: Doc<"entitlement_grants">, now: string): EntitlementRow
   };
 }
 
-/** The SQL `user_entitlements` view for one user: StoreKit transactions plus entitlement grants. */
+/** Transaction statuses that can grant access. Only the newest rows of these decide whether a user is entitled. */
+const LIVE_STATUSES = ["active", "grace"] as const;
+const OTHER_STATUSES = ["billing_retry", "expired", "revoked", "refunded"] as const;
+
+/**
+ * The rows of the SQL `user_entitlements` view that can decide `resolveUserEntitlement`, for one user:
+ * the newest StoreKit transactions of each status plus the entitlement grants. A renewal is a new
+ * transaction, so a long subscriber has many expired ones and this reads a few of them.
+ * Within a status the row with the latest end wins, so an older row is never the best one.
+ */
 export async function listUserEntitlements(
   ctx: ReaderCtx,
   userId: string,
   now: string = nowIso(),
 ): Promise<EntitlementRow[]> {
-  const transactions = await ctx.db
-    .query("storekit_transactions")
-    .withIndex("by_user_id_status_expires_at", (q) => q.eq("user_id", userId))
-    .collect();
+  const transactions: Doc<"storekit_transactions">[] = [];
+  for (const [statuses, count] of [
+    [LIVE_STATUSES, 2],
+    [OTHER_STATUSES, 1],
+  ] as const) {
+    for (const status of statuses) {
+      transactions.push(
+        ...(await ctx.db
+          .query("storekit_transactions")
+          .withIndex("by_user_id_status_expires_at", (q) => q.eq("user_id", userId).eq("status", status))
+          .order("desc")
+          .take(count)),
+      );
+    }
+  }
   const grants = await ctx.db
     .query("entitlement_grants")
     .withIndex("by_user_id_status_expires_at", (q) => q.eq("user_id", userId))

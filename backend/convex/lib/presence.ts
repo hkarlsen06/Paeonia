@@ -15,8 +15,10 @@ const presence = new Presence(components.presence);
 
 /** The open game screen of either partner, one room per couple and game. */
 export function gameRoom(coupleId: string, kind: GameKind): string {
-  return `${coupleId}:game:${kind}`;
+  return `${gameRoomPrefix(coupleId)}${kind}`;
 }
+
+const gameRoomPrefix = (coupleId: string) => `${coupleId}:game:`;
 
 /** Typing in one question's chat. */
 export function chatTypingRoom(coupleId: string, instanceId: string): string {
@@ -46,6 +48,13 @@ export async function setPresent(
 /** The users online in a room. Reads no clock, so queries may call it. */
 export async function onlineUserIds(ctx: ReaderCtx, roomId: string): Promise<string[]> {
   return (await presence.listRoom(ctx, roomId, true)).map((row) => row.userId);
+}
+
+/** The game kinds a user has open in a couple's rooms. One read for all kinds, where `onlineUserIds` reads one room. */
+export async function openGameKinds(ctx: ReaderCtx, coupleId: string, userId: string): Promise<Set<string>> {
+  const prefix = gameRoomPrefix(coupleId);
+  const rooms = await presence.listUser(ctx, userId, true, 1000);
+  return new Set(rooms.filter(({ roomId }) => roomId.startsWith(prefix)).map(({ roomId }) => roomId.slice(prefix.length)));
 }
 
 /**

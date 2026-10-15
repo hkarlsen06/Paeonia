@@ -1417,7 +1417,7 @@ describe("records", () => {
 });
 
 describe("recent rounds", () => {
-  test("lists earlier rounds newest first with their attempts, at most 20", async () => {
+  test("lists earlier rounds newest first, at most 20, with attempts for the newest two rounds", async () => {
     const s = await startGame();
     let drawer = s.a;
     let guesser = s.b;
@@ -1433,6 +1433,9 @@ describe("recent rounds", () => {
     expect(data.recent_rounds).toHaveLength(20);
     expect(data.recent_rounds[0].round_number).toBe(21);
     expect(data.recent_rounds[0].attempts.map((attempt) => attempt.text)).toEqual(["wrong", data.recent_rounds[0].word]);
+    // Older rounds keep the exact count and send no attempts.
+    expect(data.recent_rounds[1]).toMatchObject({ attempts: [], attempt_count: 2 });
+    expect(data.recent_rounds[19]).toMatchObject({ attempts: [], attempt_count: 2 });
     expect(data.game?.turn_number).toBe(23);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });

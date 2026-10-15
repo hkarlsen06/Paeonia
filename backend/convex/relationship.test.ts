@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
+import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
 import { createCouple, createSignedInUser, newTest, relationshipStateOf, type TestConvex, type TestCouple } from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
@@ -360,6 +361,8 @@ async function endedCoupleWithContent(t: TestConvex): Promise<TestCouple & { ass
     await ctx.db.insert("daily_question_instances", {
       id: instanceId,
       couple_day_id: dayId,
+      couple_id: couple.coupleId,
+      question_id: newUuid(),
       question_version_id: newUuid(),
       seeded_for_user_id: couple.first.userId,
       slot_number: 1,
@@ -413,7 +416,7 @@ describe("relationship content cleanup", () => {
     expect(await t.mutation(internal.relationship.cleanup_expired_relationship_content, {})).toEqual([]);
   });
 
-  test("leaves couples inside their retention window alone and validates the limit", async () => {
+  test("leaves couples inside their retention window alone", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     await couple.first.as.mutation(api.relationship.leave_relationship, operation());
@@ -421,8 +424,33 @@ describe("relationship content cleanup", () => {
     expect(
       await t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2026-12-01T00:00:00.000Z" }),
     ).toHaveLength(1);
-    await expectFail(t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_limit: 0 }), "23514");
-    await expectFail(t.mutation(internal.relationship.purge_deleted_relationship_content, { p_limit: 101 }), "23514");
+  });
+
+  test("a couple bigger than one chunk finishes over several, and each chunk leaves the done rows alone", async () => {
+    const t = newTest();
+    const couple = await endedCoupleWithContent(t);
+    const chunks: boolean[] = [];
+    for (let i = 0; i < 30 && chunks.at(-1) !== true; i += 1) {
+      chunks.push(
+        await t.run(async (ctx) => {
+          const row = (await ctx.db.query("couples").first())!;
+          return (await cleanupCoupleContent(ctx, row, NOW, { left: 2 })).done;
+        }),
+      );
+    }
+    expect(chunks.length).toBeGreaterThan(2);
+    const state = await t.run(async (ctx) => ({
+      couple: await ctx.db.query("couples").first(),
+      memory: await ctx.db.query("memories").first(),
+      note: await ctx.db.query("memory_notes").first(),
+      asset: await ctx.db.query("media_assets").first(),
+    }));
+    expect(state.couple?.status).toBe("deleted");
+    expect(state.memory?.revision).toBe(2);
+    expect(state.note?.revision).toBe(2);
+    expect(state.asset).toMatchObject({ storage_delete_status: "pending" });
+    // The members hear about it once, in the last chunk.
+    expect((await events(t, couple.coupleId)).filter((event) => event.reason === "relationship_cleanup")).toHaveLength(2);
   });
 });
 
@@ -479,8 +507,40 @@ describe("relationship content purge", () => {
     expect(hardPurge).toHaveLength(2);
     expect(hardPurge[0]).toMatchObject({ event_kind: "content_purged", relationship_status: "deleted" });
 
-    // A purged couple is not purged twice.
+    // A purged couple is out of the purge range, so it is not purged twice.
+    expect(remaining.couple?.purged_at).toBeDefined();
     expect(await t.mutation(internal.relationship.purge_deleted_relationship_content, {})).toEqual([]);
+  });
+
+  test("a couple bigger than one chunk is purged over several", async () => {
+    const t = newTest();
+    const couple = await endedCoupleWithContent(t);
+    await t.mutation(internal.relationship.cleanup_expired_relationship_content, {});
+    await t.run(async (ctx) => {
+      const asset = (await ctx.db.query("media_assets").first())!;
+      await ctx.db.patch(asset._id, { storage_delete_status: "deleted", storage_deleted_at: NOW });
+    });
+    const chunks: boolean[] = [];
+    for (let i = 0; i < 40 && chunks.at(-1) !== true; i += 1) {
+      chunks.push(
+        await t.run(async (ctx) => {
+          const row = (await ctx.db.query("couples").first())!;
+          return (await purgeCoupleContent(ctx, row, { left: 2 })).done;
+        }),
+      );
+    }
+    expect(chunks.length).toBeGreaterThan(2);
+    const left = await t.run(async (ctx) => ({
+      memories: await ctx.db.query("memories").collect(),
+      messages: await ctx.db.query("thread_messages").collect(),
+      answers: await ctx.db.query("daily_question_answers").collect(),
+      days: await ctx.db.query("couple_days").collect(),
+      assets: await ctx.db.query("media_assets").collect(),
+      couple: await ctx.db.query("couples").first(),
+    }));
+    expect([left.memories, left.messages, left.answers, left.days, left.assets].every((rows) => rows.length === 0)).toBe(true);
+    expect(left.couple?.purged_at).toBeDefined();
+    expect((await events(t, couple.coupleId)).filter((event) => event.reason === "relationship_hard_purge")).toHaveLength(2);
   });
 
   test("keeps the couple's report snapshot assets", async () => {

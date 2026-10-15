@@ -3,7 +3,7 @@ import { query } from "./_generated/server";
 import { canAccessCoupleContent } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { detailRow, type DailyAnswerDetailRow } from "./lib/dailyAnswers";
-import { dailyQuestionThreadLink, isSharedRound, loadCoupleRounds } from "./lib/dailyQuestionRounds";
+import { dailyQuestionThreadLink, isSharedRound, loadQuestionRounds } from "./lib/dailyQuestionRounds";
 import { addSeenStates, QuestionContentReader, questionRow, type DailyQuestionRow } from "./lib/dailyQuestions";
 import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
@@ -28,7 +28,7 @@ export const get_daily_question_chat = query({
       return fail("42501", "active entitled couple access is required");
     }
     const questionId = uuidArg(args.p_question_id);
-    const rounds = (await loadCoupleRounds(ctx, coupleId)).get(questionId) ?? [];
+    const rounds = await loadQuestionRounds(ctx, coupleId, questionId);
 
     const reader = new QuestionContentReader(ctx);
     const questions: DailyQuestionRow[] = [];

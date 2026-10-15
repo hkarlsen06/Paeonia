@@ -177,6 +177,16 @@ export async function upsertStorekitTransaction(
 
 // ---- record_verified_storekit_transaction ----
 
+/** True when the payload's transaction info says the purchase started with a free trial offer. */
+export function isFreeTrialPayload(payloadJson: unknown): boolean {
+  const info = isJsonObject(payloadJson) ? payloadJson.transactionInfo : undefined;
+  return (
+    isJsonObject(info) &&
+    String(info.offerType) === "1" &&
+    String(info.offerDiscountType ?? "").toUpperCase() === "FREE_TRIAL"
+  );
+}
+
 export type VerifiedTransactionInput = {
   p_user_id?: string | null;
   p_app_account_token?: string | null;
@@ -336,6 +346,7 @@ export async function recordVerifiedStorekitTransaction(
     expires_at: optionalTimestampArg(input.p_expires_at),
     revoked_at: optionalTimestampArg(input.p_revoked_at),
     revocation_reason: input.p_revocation_reason ?? undefined,
+    is_free_trial: isFreeTrialPayload(input.p_payload_json) ? true : undefined,
     raw_payload_id: payloadId,
   });
 

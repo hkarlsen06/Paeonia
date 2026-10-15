@@ -165,6 +165,23 @@ describe("mark_hearts_seen", () => {
     expect(await failure(markSeen(couple.second, 2.5))).toMatchObject({ code: "23514" });
   });
 
+  test("a mark writes the recipient's own row and leaves the sender's row alone", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await send(couple.first, 6);
+    const rows = () => t.run((ctx) => ctx.db.query("couple_hearts").collect());
+    const [senderBefore] = await rows();
+    await markSeen(couple.second, 4);
+    const after = await rows();
+    expect(after).toHaveLength(2);
+    expect(after.find((row) => row.sender_user_id === couple.first.userId)).toEqual(senderBefore);
+    expect(after.find((row) => row.sender_user_id === couple.second.userId)).toMatchObject({ sent_total: 0, seen_total: 4 });
+    // Sending later does not disturb the recipient's seen total.
+    await send(couple.second, 2);
+    expect((await received(couple.second)).received_seen_total).toBe(4);
+    expect((await received(couple.first)).received_total).toBe(2);
+  });
+
   test("changes only the partner's row, and the sender's own hearts are not theirs to mark", async () => {
     const t = newTest();
     const couple = await createCouple(t);

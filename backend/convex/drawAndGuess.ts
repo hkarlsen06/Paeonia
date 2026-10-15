@@ -140,10 +140,12 @@ export const get_draw_and_guess = query({
       .unique();
     const online = await onlineUserIds(ctx, gameRoom(coupleId, "draw_and_guess"));
 
-    // The latest round first. It is the current round, whatever its state.
+    // The latest round first. It is the current round, whatever its state. Only the first two carry
+    // their attempts: the current round, and the round before it, whose result the phone may still
+    // have to show. Older rounds are for stars and the drawing list, which need no attempts.
     const moves = game ? await getMovesByGame(ctx, game.id, 21) : [];
     const rounds = [];
-    for (const move of moves) rounds.push(await roundJson(ctx, move, userId));
+    for (const [index, move] of moves.entries()) rounds.push(await roundJson(ctx, move, userId, index < 2));
 
     return {
       user_id: userId,

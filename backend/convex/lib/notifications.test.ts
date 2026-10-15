@@ -382,7 +382,7 @@ describe("trigger helpers", () => {
         starts_at: "2026-10-10T00:00:00.000Z", ends_at: "2026-10-11T00:00:00.000Z", created_at: now,
       });
       await ctx.db.insert("daily_question_instances", {
-        id: instanceId, couple_day_id: dayId, question_version_id: newUuid(), seeded_for_user_id: couple.first.userId,
+        id: instanceId, couple_day_id: dayId, couple_id: couple.coupleId, question_id: newUuid(), question_version_id: newUuid(), seeded_for_user_id: couple.first.userId,
         slot_number: 1, status: "active", created_at: now,
       });
     });

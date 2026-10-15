@@ -1,5 +1,4 @@
 import type { Doc } from "../_generated/dataModel";
-import { listActiveMembers } from "./access";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
 import { isLive, type DailyQuestionRow, visibleAnswersOf } from "./dailyQuestions";
@@ -7,7 +6,7 @@ import { isLive, type DailyQuestionRow, visibleAnswersOf } from "./dailyQuestion
 /**
  * A couple has one chat per question. Each time the question comes back it is a new
  * round: one live daily question instance with at least one visible answer. The chat
- * shows every round, oldest first. These helpers find a couple's rounds and answer
+ * shows every round, oldest first. These helpers find a question's rounds and answer
  * what the question rows need to know about them.
  */
 
@@ -32,41 +31,23 @@ function compareRounds(a: QuestionRound, b: QuestionRound): number {
 }
 
 /**
- * Every round of every question in the couple, oldest first, by question id. A round
- * is found through its answers, so an instance nobody answered is not a round.
+ * Every round of one question in the couple, oldest first. A round is a live instance
+ * with a visible answer, so an instance nobody answered is not a round.
  */
-// ponytail: this reads each partner's whole answer history, about two rows a day. Add a
-// question id to the instance rows and index it with the couple if couples get years of history.
-export async function loadCoupleRounds(ctx: ReaderCtx, coupleId: string): Promise<Map<string, QuestionRound[]>> {
-  const instanceIds = new Set<string>();
-  for (const member of await listActiveMembers(ctx, coupleId)) {
-    const answers = await ctx.db
-      .query("daily_question_answers")
-      .withIndex("by_user_id_created_at", (q) => q.eq("user_id", member.user_id))
-      .collect();
-    for (const answer of answers) {
-      if (answer.deleted_at === undefined && answer.moderation_status === "visible") instanceIds.add(answer.instance_id);
-    }
-  }
-
-  const questionByVersion = new Map<string, string | null>();
-  const rounds = new Map<string, QuestionRound[]>();
-  for (const instanceId of instanceIds) {
-    const instance = await getByUuid(ctx, "daily_question_instances", instanceId);
-    if (!instance || !isLive(instance)) continue;
+export async function loadQuestionRounds(ctx: ReaderCtx, coupleId: string, questionId: string): Promise<QuestionRound[]> {
+  const instances = await ctx.db
+    .query("daily_question_instances")
+    .withIndex("by_couple_id_question_id", (q) => q.eq("couple_id", coupleId).eq("question_id", questionId))
+    .collect();
+  const rounds: QuestionRound[] = [];
+  for (const instance of instances) {
+    if (!isLive(instance)) continue;
     const day = await getByUuid(ctx, "couple_days", instance.couple_day_id);
-    if (!day || day.couple_id !== coupleId) continue;
-    let questionId = questionByVersion.get(instance.question_version_id);
-    if (questionId === undefined) {
-      questionId = (await getByUuid(ctx, "question_versions", instance.question_version_id))?.question_id ?? null;
-      questionByVersion.set(instance.question_version_id, questionId);
-    }
-    if (questionId === null) continue;
-    const round = { day, instance, answers: await visibleAnswersOf(ctx, instance.id) };
-    rounds.set(questionId, [...(rounds.get(questionId) ?? []), round]);
+    if (!day) continue;
+    const answers = await visibleAnswersOf(ctx, instance.id);
+    if (answers.length > 0) rounds.push({ day, instance, answers });
   }
-  for (const list of rounds.values()) list.sort(compareRounds);
-  return rounds;
+  return rounds.sort(compareRounds);
 }
 
 /** The thread of a couple's chat about a question, or null before anyone has written. */
@@ -88,10 +69,10 @@ export async function addRoundInfo(
   coupleId: string,
   rows: DailyQuestionRow[],
 ): Promise<void> {
-  if (rows.length === 0) return;
-  const rounds = await loadCoupleRounds(ctx, coupleId);
+  const rounds = new Map<string, QuestionRound[]>();
   for (const row of rows) {
-    const list = rounds.get(row.question_id) ?? [];
+    if (!rounds.has(row.question_id)) rounds.set(row.question_id, await loadQuestionRounds(ctx, coupleId, row.question_id));
+    const list = rounds.get(row.question_id)!;
     const earlier = list.filter(
       (round) => round.day.starts_at < row.starts_at && round.answers.some((answer) => answer.user_id === viewerId),
     );

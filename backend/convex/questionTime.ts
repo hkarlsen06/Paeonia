@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { getEntitledCoupleIdForUser } from "./lib/access";
 import { optionalTimestampArg } from "./lib/ids";
@@ -9,25 +10,36 @@ import { resolveMemberStreakTimeZone } from "./lib/streakDeadlines";
 import { hasStartedToday } from "./lib/questionTimeStatus";
 import { nowIso } from "./lib/time";
 
+const USER_PAGE_SIZE = 50;
+
 /**
  * Queues the opt-in "question time" reminder for each user whose chosen time came in the last
  * `QUESTION_TIME_WINDOW_MINUTES`, in their own time zone (the one the streak reminders use). It
  * skips users who have no entitled couple, have already answered a question today, or have no
  * push device. One reminder per device per local date. It writes no activity event, so it never
- * touches a streak. Returns how many notifications were queued.
+ * touches a streak. Returns how many notifications this page queued.
  *
- * ponytail: one mutation reads every opted-in user each run (the index skips the rest). Fan the
- * users out in batches through the background workpool if opt-ins grow past a few thousand.
+ * Each user costs about 15 database calls, so one mutation handles a page of users and schedules
+ * the next page as its own mutation.
  */
 export const enqueue_question_time_reminders = internalMutation({
-  args: { p_now: v.optional(v.union(v.null(), v.string())) },
+  args: {
+    p_now: v.optional(v.union(v.null(), v.string())),
+    cursor: v.optional(v.union(v.null(), v.string())),
+  },
   handler: async (ctx, args) => {
     const now = optionalTimestampArg(args.p_now) ?? nowIso();
-    let queued = 0;
-    for await (const preference of ctx.db
+    const page = await ctx.db
       .query("notification_preferences")
-      .withIndex("by_question_time_enabled", (q) => q.eq("question_time_enabled", true))) {
-      queued += await remindUser(ctx, preference, now);
+      .withIndex("by_question_time_enabled", (q) => q.eq("question_time_enabled", true))
+      .paginate({ numItems: USER_PAGE_SIZE, cursor: args.cursor ?? null });
+    let queued = 0;
+    for (const preference of page.page) queued += await remindUser(ctx, preference, now);
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.questionTime.enqueue_question_time_reminders, {
+        p_now: now,
+        cursor: page.continueCursor,
+      });
     }
     return queued;
   },

@@ -15,7 +15,7 @@ import {
   settingsJson,
 } from "./lib/games";
 import { signLiveTicket } from "./lib/liveTicket";
-import { gameRoom, onlineUserIds, setPresent } from "./lib/presence";
+import { gameRoom, openGameKinds, setPresent } from "./lib/presence";
 import { addMs, nowIso } from "./lib/time";
 import { GAME_KINDS, gameKind, gameLanguage, gamePlayStyle } from "./lib/validators";
 
@@ -78,12 +78,13 @@ export const get_games_overview = query({
       .withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId))
       .collect();
 
+    const myOpen = await openGameKinds(ctx, coupleId, userId);
+    const partnerOpen = partnerId === null ? new Set<string>() : await openGameKinds(ctx, coupleId, partnerId);
     const presence = [];
     for (const kind of GAME_KINDS) {
-      const online = await onlineUserIds(ctx, gameRoom(coupleId, kind));
       const invite = invites.find((row) => row.kind === kind && row.sender_user_id === userId);
-      const myPresent = online.includes(userId);
-      const partnerPresent = partnerId !== null && online.includes(partnerId);
+      const myPresent = myOpen.has(kind);
+      const partnerPresent = partnerOpen.has(kind);
       if (!myPresent && !partnerPresent && !invite) continue;
       presence.push({ kind, my_present: myPresent, partner_present: partnerPresent, last_invite_at: orNull(invite?.sent_at) });
     }

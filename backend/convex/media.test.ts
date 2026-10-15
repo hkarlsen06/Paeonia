@@ -656,7 +656,7 @@ describe("get_media_signed_url and GET /media", () => {
         starts_at: "2026-10-10T00:00:00.000Z", ends_at: "2026-10-11T00:00:00.000Z", created_at: now,
       });
       await ctx.db.insert("daily_question_instances", {
-        id: instanceId, couple_day_id: dayId, question_version_id: newUuid(),
+        id: instanceId, couple_day_id: dayId, couple_id: couple.coupleId, question_id: newUuid(), question_version_id: newUuid(),
         seeded_for_user_id: couple.first.userId, slot_number: 1, status: "active", created_at: now,
       });
       const answerId = newUuid();
@@ -797,6 +797,8 @@ describe("storage cleanup", () => {
     await queueForDelete(t, up.assetId);
     expect(await t.mutation(internal.media.cleanup_media_storage, {})).toMatchObject({ claimed: 0, deleted: 0 });
     expect(await blobExists(t, up.storageId)).toBe(true);
+    // It leaves the queue, and the orphan check queues it again once the memory is gone.
+    expect((await asset(t, up.assetId))?.storage_delete_status).toBe("failed");
   });
 
   test("a retrying asset waits 15 minutes and a spent asset is skipped", async () => {
@@ -811,7 +813,8 @@ describe("storage cleanup", () => {
     vi.setSystemTime(new Date("2026-10-10T12:15:01.000Z"));
     expect(await t.mutation(internal.media.cleanup_media_storage, {})).toMatchObject({ claimed: 1, deleted: 1 });
     expect((await asset(t, waiting.assetId))?.storage_delete_status).toBe("deleted");
-    expect((await asset(t, spent.assetId))?.storage_delete_status).toBe("retrying");
+    // The spent asset leaves the queue instead of being read again on every run.
+    expect((await asset(t, spent.assetId))?.storage_delete_status).toBe("failed");
     expect(await blobExists(t, spent.storageId)).toBe(true);
   });
 

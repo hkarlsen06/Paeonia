@@ -486,6 +486,24 @@ describe("get_memories", () => {
     expect(await getMemories(couple.first, { p_updated_after: all[2].sync_updated_at, p_cursor_memory_id: all[2].memory_id })).toEqual([]);
   });
 
+  test("memories with the same sync time page by id without repeats or gaps", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const ids = [];
+    for (let i = 0; i < 5; i += 1) ids.push(await createMemory(couple.first));
+    const seen: string[] = [];
+    let cursor: Record<string, unknown> = {};
+    for (;;) {
+      const page: { memory_id: string; sync_updated_at: string }[] = await getMemories(couple.first, { ...cursor, p_limit: 2 });
+      if (page.length === 0) break;
+      seen.push(...page.map((row) => row.memory_id));
+      const last = page[page.length - 1];
+      cursor = { p_updated_after: last.sync_updated_at, p_cursor_memory_id: last.memory_id };
+    }
+    expect(seen).toHaveLength(5);
+    expect(new Set(seen)).toEqual(new Set(ids));
+  });
+
   test("a note edit moves the memory in the sync order", async () => {
     const t = newTest();
     const couple = await createCouple(t);

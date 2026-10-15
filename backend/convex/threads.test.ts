@@ -32,6 +32,10 @@ async function createMemory(user: TestUser) {
 
 type Result = { thread_id: string; message_id: string }[];
 
+const messagePage = (user: TestUser, threadId: string, args: { p_limit?: number; p_before_created_at?: string; p_before_message_id?: string } = {}) =>
+  user.as.query(api.threads.get_thread_messages, { p_thread_id: threadId, p_limit: 50, ...args });
+const messagesOf = async (user: TestUser, threadId: string) => (await messagePage(user, threadId)).messages;
+
 async function memoryThread(user: TestUser, memoryId: string, body = "Secret message text one"): Promise<Result> {
   return await user.as.mutation(api.threads.create_memory_thread_with_message, { ...op(), p_memory_id: memoryId, p_body: body });
 }
@@ -358,7 +362,7 @@ describe("send_thread_message", () => {
     const a = await uploadAsset(t, couple.first, photo(couple.coupleId, "thread_message_media", "thread_media"));
     const [row] = await send(couple.first, threadId, { p_body: null, p_media_asset_ids: [a.assetId] });
     expect(row.message_id).toBe(a.parentId);
-    const messages = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: threadId });
+    const messages = await messagesOf(couple.second, threadId);
     const message = messages.find((item: { message_id: string }) => item.message_id === a.parentId);
     expect(message).toMatchObject({ body: null, media_asset_ids: [a.assetId] });
     expect(message!.media).toEqual([
@@ -383,7 +387,7 @@ describe("send_thread_message", () => {
     const { couple, threadId } = await thread(t);
     const [first] = await send(couple.first, threadId, { p_body: "question" });
     const [reply] = await send(couple.second, threadId, { p_body: "answer", p_reply_to_message_id: first.message_id.toUpperCase() });
-    const rows = await couple.first.as.query(api.threads.get_thread_messages, { p_thread_id: threadId });
+    const rows = await messagesOf(couple.first, threadId);
     const replyRow = rows.find((row: { message_id: string }) => row.message_id === reply.message_id);
     expect(replyRow?.reply_to_message_id).toBe(first.message_id);
   });
@@ -469,7 +473,7 @@ describe("edit_thread_message", () => {
     tick(4 * 60);
     await edit(couple.first, messageId.toUpperCase(), "  first try  ");
     expect(await row(t, messageId)).toMatchObject({ body: "first try", edited_at: new Date().toISOString() });
-    const rows = await couple.second.as.query(api.threads.get_thread_messages, { p_thread_id: threadId });
+    const rows = await messagesOf(couple.second, threadId);
     expect(rows[0]).toMatchObject({ body: "first try", edited_at: new Date().toISOString() });
   });
 
@@ -665,6 +669,36 @@ describe("reads", () => {
     expect(rows.map((row: { daily_question_id: string | null }) => row.daily_question_id)).toEqual([question.id]);
   });
 
+  test("get_thread_messages pages from the newest message back", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const [{ thread_id }] = await memoryThread(couple.first, await createMemory(couple.first), "m1");
+    const ids: string[] = [];
+    for (const body of ["m2", "m3", "m4", "m5"]) {
+      tick();
+      ids.push((await send(couple.second, thread_id, { p_body: body }))[0].message_id);
+    }
+    const newest = await messagePage(couple.first, thread_id, { p_limit: 2 });
+    expect(newest.messages.map((row: { message_id: string }) => row.message_id)).toEqual(ids.slice(-2));
+    expect(newest.has_more).toBe(true);
+    const [oldest] = newest.messages;
+    const older = await messagePage(couple.first, thread_id, {
+      p_limit: 2,
+      p_before_created_at: oldest.created_at,
+      p_before_message_id: oldest.message_id,
+    });
+    expect(older.messages.map((row: { message_id: string }) => row.message_id)).toEqual(ids.slice(0, 2));
+    expect(older.has_more).toBe(true);
+    const first = older.messages[0];
+    const last = await messagePage(couple.first, thread_id, {
+      p_limit: 2,
+      p_before_created_at: first.created_at,
+      p_before_message_id: first.message_id,
+    });
+    expect(last.messages.map((row) => row.body)).toEqual(["m1"]);
+    expect(last.has_more).toBe(false);
+  });
+
   test("get_thread_messages orders by time and hides the text of removed messages", async () => {
     const t = newTest();
     const couple = await createCouple(t);
@@ -676,7 +710,7 @@ describe("reads", () => {
       const message = await ctx.db.query("thread_messages").withIndex("by_uuid", (q) => q.eq("id", second.message_id)).unique();
       await ctx.db.patch(message!._id, { moderation_status: "hidden" });
     });
-    const rows = await couple.first.as.query(api.threads.get_thread_messages, { p_thread_id: thread_id });
+    const rows = await messagesOf(couple.first, thread_id);
     expect(rows.map((row: { message_id: string }) => row.message_id)).toEqual([message_id, second.message_id]);
     expect(rows[0]).toEqual({
       thread_id,
@@ -701,7 +735,7 @@ describe("reads", () => {
     const memoryId = await createMemory(couple.first);
     const [{ thread_id }] = await memoryThread(couple.first, memoryId);
     const stranger = await createSignedInUser(t);
-    const read = (user: TestUser) => user.as.query(api.threads.get_thread_messages, { p_thread_id: thread_id });
+    const read = (user: TestUser) => messagesOf(user, thread_id);
     expect(await read(stranger)).toEqual([]);
     expect(await read(couple.second)).toHaveLength(1);
     expect(await failure(stranger.as.query(api.threads.get_conversation_threads, {}))).toEqual({
@@ -722,7 +756,7 @@ describe("reads", () => {
     await t.run(async (ctx) => {
       for (const grant of await ctx.db.query("entitlement_grants").collect()) await ctx.db.delete(grant._id);
     });
-    expect(await couple.first.as.query(api.threads.get_thread_messages, { p_thread_id: thread_id })).toEqual([]);
+    expect(await messagesOf(couple.first, thread_id)).toEqual([]);
     expect(await failure(couple.first.as.query(api.threads.get_conversation_threads, {}))).toMatchObject({ code: "42501" });
   });
 });

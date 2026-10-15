@@ -8,6 +8,7 @@ import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, withTouch, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { newUuid, optionalTimestampArg, uuidArg } from "./lib/ids";
+import { touchMemoryForSync } from "./memories";
 import { addPairSafetyWarningFlag, upsertRelationshipBlock } from "./lib/relationshipBlock";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { snapshotDeleteAfter } from "./lib/reportTargets";
@@ -147,13 +148,28 @@ async function loadTarget(
     case "memory_note": {
       const row = await getByUuid(ctx, "memory_notes", targetId);
       if (!row) return notFound();
-      return { ...touched(row), restoreAssetIds: [], restoreMessage: CONTENT_RESTORE_MESSAGE, storageAssetIds: [] };
+      const base = touched(row);
+      return {
+        ...base,
+        setStatus: async (status: ModerationStatus, reportId: string | undefined) => {
+          await base.setStatus(status, reportId);
+          await touchMemoryForSync(ctx, row.memory_id);
+        },
+        restoreAssetIds: [],
+        restoreMessage: CONTENT_RESTORE_MESSAGE,
+        storageAssetIds: [],
+      };
     }
     case "memory_media": {
       const row = await getByUuid(ctx, "memory_media", targetId);
       if (!row || !(await getByUuid(ctx, "media_assets", row.media_asset_id))) return notFound();
+      const base = simple(row);
       return {
-        ...simple(row),
+        ...base,
+        setStatus: async (status: ModerationStatus, reportId: string | undefined) => {
+          await base.setStatus(status, reportId);
+          await touchMemoryForSync(ctx, row.memory_id);
+        },
         restoreAssetIds: [row.media_asset_id],
         restoreMessage: MEDIA_RESTORE_MESSAGE,
         storageAssetIds: [row.media_asset_id],
@@ -184,7 +200,23 @@ async function loadTarget(
     case "media_asset": {
       const row = await getByUuid(ctx, "media_assets", targetId);
       if (!row) return notFound();
-      return { ...simple(row), restoreAssetIds: [row.id], restoreMessage: MEDIA_RESTORE_MESSAGE, storageAssetIds: [row.id] };
+      const base = simple(row);
+      return {
+        ...base,
+        // Memory sync follows the memory's own updated_at, so a memory showing this photo must move too.
+        setStatus: async (status: ModerationStatus, reportId: string | undefined) => {
+          await base.setStatus(status, reportId);
+          for (const link of await ctx.db
+            .query("memory_media")
+            .withIndex("by_media_asset_id", (q) => q.eq("media_asset_id", row.id))
+            .collect()) {
+            await touchMemoryForSync(ctx, link.memory_id);
+          }
+        },
+        restoreAssetIds: [row.id],
+        restoreMessage: MEDIA_RESTORE_MESSAGE,
+        storageAssetIds: [row.id],
+      };
     }
     case "profile": {
       const row = targetId

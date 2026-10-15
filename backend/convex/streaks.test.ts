@@ -94,7 +94,7 @@ describe("get_couple_streak", () => {
       current_user_contributed_today: false,
     });
     // The cron stores the restart, which takes the row out of its break scan.
-    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await t.run((ctx) => ctx.db.query("streak_states").first())).toMatchObject({
       current_count: 0,
       longest_count: 1,
@@ -139,7 +139,7 @@ describe("streak break without a write", () => {
     // The query wrote nothing.
     expect(await state()).toMatchObject({ current_count: 3, restorable_count: 0 });
 
-    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toMatchObject({
       current_count: 3,
       restorable_count: 3,
@@ -173,12 +173,12 @@ describe("streak break without a write", () => {
     expect(streak).toMatchObject({ current_count: 3, restorable_count: 0, restore_available: false });
     expect((await state())!.next_activity_deadline_at).toBe("2026-10-11T00:00:00.000Z");
     // The cron stores the corrected deadline and does not open an offer.
-    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toMatchObject({ next_activity_deadline_at: "2026-10-11T22:00:00.000Z", restorable_count: 0 });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("already-broken streaks and ended couples don't use up the cron's batch", async () => {
+  test("the break scan pages through ended couples and broken streaks to reach ours", async () => {
     const { t, state } = await bothQualified();
     vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
     // Older rows whose deadlines sit before ours in the index: ended couples and broken streaks.
@@ -205,18 +205,20 @@ describe("streak break without a write", () => {
         });
       }
     });
-    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
-    expect(await state()).toMatchObject({ restorable_count: 3 });
+    // The first page holds 50 of the 1001 rows, and each page schedules the next.
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
+    expect(await state()).toMatchObject({ restorable_count: 0 });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await state()).toMatchObject({ restorable_count: 3 });
   });
 
   test("the cron leaves a streak that already has an offer alone", async () => {
     const { t, state } = await bothQualified();
     vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
-    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
     const first = await state();
     vi.setSystemTime(new Date("2026-10-12T00:05:00.000Z"));
-    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toEqual(first);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -280,7 +282,7 @@ describe("streak freeze", () => {
     });
     expect((await state())!.freeze_used_at).toBeUndefined();
 
-    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toMatchObject({
       current_count: 3,
       restorable_count: 0,
@@ -291,7 +293,7 @@ describe("streak freeze", () => {
 
     // A second missed day breaks the streak. The restore offer runs from the moved deadline.
     vi.setSystemTime(new Date("2026-10-12T23:00:00.000Z"));
-    await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toMatchObject({
       restorable_count: 3,
       restore_deadline: "2026-10-13T22:00:00.000Z",
@@ -418,7 +420,11 @@ describe("enqueue_due_streak_reminders", () => {
     // detectStreakBreak reads the clock, so move it instead of passing p_now.
     const at = (now: string) => vi.setSystemTime(new Date(now));
     const evening = (now: string) => (at(now), t.mutation(internal.streaks.enqueue_evening_streak_reminders, {}));
-    const lastHour = (now: string) => (at(now), t.mutation(internal.streaks.enqueue_due_streak_reminders, {}));
+    const lastHour = async (now: string) => {
+      at(now);
+      await t.mutation(internal.streaks.detect_streak_breaks, {});
+      return await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
+    };
 
     // The missed day 2026-10-11: both reminders, for both partners.
     expect(await evening("2026-10-11T17:00:00Z")).toBe(2);

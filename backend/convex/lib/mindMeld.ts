@@ -31,6 +31,8 @@ export const mindMeldTables = {
     end_reason: v.optional(literals("rounds", "restart")),
     ended_by_user_id: v.optional(v.string()),
     ended_at: v.optional(v.string()),
+    /** How many rounds a melded game took, set when it melds. Records and stats read it, so they never read rounds. */
+    rounds_taken: v.optional(v.number()),
     /** User id to the time that person first saw the ending. */
     end_seen_by_user: v.record(v.string(), v.string()),
     /** Goes up with every change to the game, its rounds, or its words. The phone never takes an older one. */
