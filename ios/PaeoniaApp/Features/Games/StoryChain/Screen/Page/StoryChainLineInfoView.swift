@@ -21,7 +21,7 @@ struct StoryChainLineInfoView<Avatar: View>: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                 if let usedDare {
                     HStack(spacing: PaeoniaSpacing.space4) {
-                        Image(systemName: "textformat")
+                        Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.paeoniaInkGold)
                             .accessibilityHidden(true)
                         usedDare

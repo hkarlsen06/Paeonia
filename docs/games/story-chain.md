@@ -216,9 +216,9 @@ The page is the heart of the game, so it gets the care a book would.
 ### 2. Writing
 
 - The page, then the composer as the last paragraph of the page: a borderless serif field in my ink, placeholder "What happens next? One or two sentences." in `.paeoniaTextTertiary`. On line 1 without an opening the placeholder is "Write the first line."
-- Above the field, when my partner dared me: a capsule "Use the word LIGHTHOUSE" with `textformat`, gold outline. It turns to `checkmark.circle.fill` in `.paeoniaSuccess` once the draft contains the word, with `selection()`.
+- Above the field, when my partner dared me: a capsule "Use the word LIGHTHOUSE" with an empty `circle`, gold outline. The circle turns to `checkmark.circle.fill` in `.paeoniaSuccess` once the draft contains the word, with `selection()`.
 - Live row above the composer: "[Name] is reading along" (avatar 24 pt with ring) while the partner is `watching`; "[Name] is here" while in the game; "[Name] will read it later" when away.
-- Pinned bar above the keyboard, left to right: "Give [Name] a word" (quiet, `textformat.abc`) or the dare chip "[Name] must use ANCHOR" with an x; the last-line switch from line 8; the counter from 200 characters ("212/240", turns `.paeoniaErrorText` past 240); the round Send button (`arrow.up`, 44 pt hit area).
+- Pinned bar above the keyboard, left to right: "Give [Name] a word" (a capsule with a dashed gold outline and `plus`, the empty shape of the chip) or the dare chip "[Name] must use ANCHOR" with an x; the last-line switch from line 8; the counter from 200 characters ("212/240", turns `.paeoniaErrorText` past 240); the round Send button (`arrow.up`, 44 pt hit area).
 - The dare picker is a sheet at `.medium` detent: title "Give [Name] a word", subtitle "Their next line has to use it.", three word rows, and "Your own word" with a field. Choosing closes the sheet.
 - Send is off with a hint line under the field: "Use LIGHTHOUSE to send." when the dare is missing, nothing otherwise.
 - A line sent offline shows in the page with the offline line "Saved on this phone. We'll send it when you're online."

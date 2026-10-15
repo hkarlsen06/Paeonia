@@ -10,8 +10,8 @@ import SwiftUI
 ///   coordinate space, for a popover to point at.
 /// - VoiceOver. The painted paragraph is hidden. Each line is its own element.
 ///
-/// The view starts the write-in when `arrivingLineID` changes, and calls
-/// `onArrivalFinished` when the line has landed. Until the write-in starts, the
+/// The view starts the write-in when `arrivingLineID` changes, ticks quietly as
+/// each word appears, and calls `onArrivalFinished` when the line has landed. Until the write-in starts, the
 /// arriving line stays hidden, so a new line never flashes onto the page.
 struct StoryChainPageText: View {
     let content: StoryChainPageContent
@@ -34,6 +34,8 @@ struct StoryChainPageText: View {
 
     /// While only the caret blinks, the page redraws this often. The write-in redraws on every frame.
     private static let caretFrameInterval: TimeInterval = 1.0 / 20
+    /// Each word's tick is barely there, so a long line patters instead of clatters.
+    private static let wordTickVolume = 0.2
 
     var body: some View {
         let paragraph = StoryChainParagraph.text(for: content)
@@ -106,8 +108,19 @@ struct StoryChainPageText: View {
         var timing = content.arrivalPace
         timing.fadeDuration = PaeoniaMotion.motionDefault
         let duration = timing.totalDuration(wordCount: wordCount, reduceMotion: reduceMotion)
+        // One tick as each word starts to show. Under Reduce Motion the line fades in
+        // whole, so it gets one.
+        let gap = timing.gap(wordCount: wordCount)
+        var elapsed: TimeInterval = 0
+        for index in 0..<(reduceMotion ? min(wordCount, 1) : wordCount) {
+            let start = gap * Double(index)
+            try? await Task.sleep(for: .seconds(start - elapsed))
+            guard !Task.isCancelled else { return }
+            GameSound.tick.play(volume: Self.wordTickVolume)
+            elapsed = start
+        }
         // A short extra wait lets the last frame draw before the line counts as done.
-        try? await Task.sleep(for: .seconds(duration + 0.05))
+        try? await Task.sleep(for: .seconds(duration + 0.05 - elapsed))
         guard !Task.isCancelled else { return }
         finishedLineID = id
         onArrivalFinished(id)

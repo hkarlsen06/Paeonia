@@ -54,22 +54,42 @@ struct StoryChainComposerBar: View {
             if let dare = viewModel.dareToGive {
                 dareChip(dare)
             } else {
-                Button {
-                    openDareSheet()
-                } label: {
-                    Label {
-                        Text(.storyChainWriteGiveWord(viewModel.partnerName))
-                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
-                            .minimumScaleFactor(0.8)
-                    } icon: {
-                        Image(systemName: "textformat.abc")
-                            .accessibilityHidden(true)
-                    }
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .accessibilityIdentifier("storyChain.giveWord")
+                giveWordButton
             }
         }
+    }
+
+    /// An empty slot in the shape of the chip it turns into: a dashed gold
+    /// outline with a plus, so it reads as something to tap.
+    private var giveWordButton: some View {
+        Button {
+            openDareSheet()
+        } label: {
+            Label {
+                Text(.storyChainWriteGiveWord(viewModel.partnerName))
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                    .minimumScaleFactor(0.8)
+            } icon: {
+                Image(systemName: "plus")
+                    .accessibilityHidden(true)
+            }
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaTextPrimary)
+            .padding(.horizontal, PaeoniaSpacing.space12)
+            .padding(.vertical, PaeoniaSpacing.space8)
+            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+            .background(Capsule(style: .continuous).fill(.paeoniaSurfaceSecondary))
+            .overlay {
+                Capsule(style: .continuous)
+                    .strokeBorder(
+                        Color.paeoniaInkGold,
+                        style: StrokeStyle(lineWidth: PaeoniaRadius.strokeEmphasis, dash: [4, 3])
+                    )
+            }
+            .contentShape(Capsule(style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("storyChain.giveWord")
     }
 
     private func dareChip(_ dare: StoryChainDare) -> some View {
@@ -89,19 +109,14 @@ struct StoryChainComposerBar: View {
         Button {
             openDareSheet()
         } label: {
-            Label {
-                Text(.storyChainWriteDareChip(viewModel.partnerName, dare.word.uppercased()))
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
-                    .minimumScaleFactor(0.8)
-            } icon: {
-                Image(systemName: "textformat")
-                    .accessibilityHidden(true)
-            }
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(.paeoniaTextPrimary)
-            .padding(.leading, PaeoniaSpacing.space12)
-            .padding(.vertical, PaeoniaSpacing.space8)
-            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+            Text(.storyChainWriteDareChip(viewModel.partnerName, dare.word.uppercased()))
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                .minimumScaleFactor(0.8)
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+                .padding(.leading, PaeoniaSpacing.space12)
+                .padding(.vertical, PaeoniaSpacing.space8)
+                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("storyChain.dareChip")

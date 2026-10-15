@@ -115,8 +115,8 @@ struct StoryChainComposer: View {
     }
 }
 
-/// "Use the word LIGHTHOUSE" in a capsule with a gold outline. It turns into a
-/// green check once the draft contains the word.
+/// "Use the word LIGHTHOUSE" in a capsule with a gold outline. Its empty circle
+/// turns into a green check once the draft contains the word.
 struct StoryChainDareCapsule: View {
     let word: String
     let isUsed: Bool
@@ -128,7 +128,7 @@ struct StoryChainDareCapsule: View {
             Text(.storyChainWriteMustUse(word.uppercased()))
                 .fixedSize(horizontal: false, vertical: true)
         } icon: {
-            Image(systemName: isUsed ? "checkmark.circle.fill" : "textformat")
+            Image(systemName: isUsed ? "checkmark.circle.fill" : "circle")
                 .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
                 .accessibilityHidden(true)
         }

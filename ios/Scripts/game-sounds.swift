@@ -94,13 +94,6 @@ func crackle(_ seconds: Double, perSecond: Double) -> [Double] {
     return out
 }
 
-/// Slow wobble between `low` and 1, for the uneven grain of paper under a pencil.
-func grain(_ seconds: Double, low: Double, hz: Double) -> [Double] {
-    let smooth = Biquad.lowpass(hz).run(noise(seconds))
-    let peak = smooth.map(abs).max() ?? 1
-    return smooth.map { low + (1 - low) * abs($0) / max(peak, 1e-9) }
-}
-
 func times(_ a: [Double], _ b: [Double]) -> [Double] {
     zip(a, b).map { $0 * $1 }
 }
@@ -279,11 +272,14 @@ let recipes: [Recipe] = [
         mix.add(Biquad.bandpass(4200, q: 1.2).run(burst(decay: 0.0012)), gain: 0.4)
         return mix.samples
     },
+    // A knock and a short rising note, so it sounds like it goes up and away.
     Recipe(name: "Send", variants: 2, peak: 0.45) {
         var mix = Mix()
+        let pip = 880 * random.jitter(0.02)
         mix.add(thock(170 * random.jitter(0.04), decay: 0.035))
-        mix.add(sweep(swell(0.22, power: 1.5), from: 700, to: 3200, q: 1.2), at: 0.02, gain: 0.3)
-        return mix.samples
+        mix.add(mode(pip, decay: 0.06, from: pip * 0.6, glide: 0.02), at: 0.015, gain: 0.35)
+        mix.add(mode(pip * 2, decay: 0.03, from: pip * 1.2, glide: 0.02), at: 0.015, gain: 0.08)
+        return Biquad.lowpass(4000).run(mix.samples)
     },
     Recipe(name: "Nudge", variants: 2, peak: 0.38) {
         bar(g4 * random.jitter(0.004))
@@ -419,15 +415,15 @@ let recipes: [Recipe] = [
         return mix.samples
     },
 
-    // Story Chain: a page turned.
+    // Story Chain: a page turned. A light lift, then the page lands on the stack.
+    // No swish, because a long noise wash sounds like a broom.
     Recipe(name: "Page", variants: 2, peak: 0.4) {
         var mix = Mix()
-        let length = 0.28 * random.jitter(0.1)
-        let swish = times(swell(length, power: 1.5), grain(length, low: 0.5, hz: 30))
-        mix.add(sweep(swish, from: 900, to: 2600, q: 0.9), gain: 0.6)
-        mix.add(Biquad.bandpass(4000, q: 0.8).run(crackle(length, perSecond: 120)), gain: 0.25)
-        mix.add(slap(240), at: length - 0.04, gain: 0.6)
-        return mix.samples
+        let land = 0.07 * random.jitter(0.1)
+        mix.add(slap(300 * random.jitter(0.05), gain: 0.45))
+        mix.add(slap(220 * random.jitter(0.05)), at: land)
+        mix.add(thock(170, decay: 0.025, bright: 0.3), at: land, gain: 0.5)
+        return Biquad.lowpass(2500).run(mix.samples)
     },
 ]
 
