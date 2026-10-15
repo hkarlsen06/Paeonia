@@ -1,44 +1,46 @@
 import SwiftUI
 
-/// The painting a hub card is made of. `docs/games/hub-artwork.md` has the rules.
+/// The picture a hub card is made of: the shared backdrop, with the game's objects on
+/// it. `docs/games/hub-artwork.md` has the rules.
 enum GameHubArtworkLayout {
-    /// The painting's size in pixels. It is as wide as the card and anchored at the top,
-    /// so one pixel is `cardWidth / 1024` points.
-    static let plateSize = CGSize(width: 1_024, height: 1_536)
+    /// The canvas the picture is laid out on, in pixels. It is as wide as the card and
+    /// anchored at the top, so one pixel is `cardWidth / 1024` points.
+    static let canvasSize = CGSize(width: 1_024, height: 1_536)
     /// How far down the scene reaches, as a share of the card's width. The card's text
     /// starts below it, so the scene keeps its shape at every card width.
-    static let sceneShare: CGFloat = 640 / 1_024
-    /// The painting goes out of focus under the text: a Gaussian blur that fades in over
+    static let sceneShare: CGFloat = 720 / 1_024
+    /// The backdrop goes out of focus under the text: a Gaussian blur that fades in over
     /// `blurFadeIn` points, starting `blurLead` points above where the text starts.
     static let blurRadius: CGFloat = 20
     static let blurLead: CGFloat = 24
     static let blurFadeIn: CGFloat = 40
 }
 
-/// A hub card's picture: the game's painting, as wide as the card and anchored at the top,
-/// with one animated beat on top. Under the card's text the painting goes out of focus
-/// with a Gaussian blur, so the picture carries on behind the text. The beat is laid out
-/// in the painting's own pixels, so it lands on the spot the painting leaves for it at
-/// every card width. It plays once when the card appears, as `progress` runs from 0 to 1
-/// at an even pace. With Reduce Motion it starts finished. VoiceOver skips the picture,
-/// since the card says the same in words.
-struct GameHubArtwork<Beat: View & Animatable>: View {
-    let plate: ImageResource
+/// A hub card's picture: the shared backdrop, as wide as the card and anchored at the
+/// top, with the game's scene on it. Under the card's text the backdrop goes out of focus
+/// with a Gaussian blur, so the picture carries on behind the text. The scene is laid out
+/// in the canvas's pixels, so it keeps its shape at every card width. It plays once when
+/// the card appears, as `progress` runs from 0 to 1 at an even pace. With Reduce Motion it
+/// starts finished. VoiceOver skips the picture, since the card says the same in words.
+struct GameHubArtwork<Scene: View & Animatable>: View {
     let duration: TimeInterval
     var delay: TimeInterval = 0.4
-    let beat: (_ progress: Double) -> Beat
+    let scene: (_ progress: Double) -> Scene
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isPlayed = false
 
     var body: some View {
         GeometryReader { proxy in
-            let plateSize = GameHubArtworkLayout.plateSize
-            let scale = proxy.size.width / plateSize.width
+            let canvasSize = GameHubArtworkLayout.canvasSize
+            let scale = proxy.size.width / canvasSize.width
             let textTop = proxy.size.width * GameHubArtworkLayout.sceneShare
+            let backdropSize = CGSize(width: proxy.size.width, height: canvasSize.height * scale)
             ZStack(alignment: .topLeading) {
-                painting(width: proxy.size.width)
-                painting(width: proxy.size.width)
+                GameHubBackdrop()
+                    .frame(width: backdropSize.width, height: backdropSize.height)
+                GameHubBackdrop()
+                    .frame(width: backdropSize.width, height: backdropSize.height)
                     .blur(radius: GameHubArtworkLayout.blurRadius, opaque: true)
                     .mask(alignment: .top) {
                         VStack(spacing: 0) {
@@ -49,31 +51,126 @@ struct GameHubArtwork<Beat: View & Animatable>: View {
                             Color.black
                         }
                     }
-                beat(isPlayed || reduceMotion ? 1 : 0)
+                scene(isPlayed || reduceMotion ? 1 : 0)
                     .animation(reduceMotion ? nil : .linear(duration: duration).delay(delay), value: isPlayed)
-                    .frame(width: plateSize.width, height: plateSize.height)
+                    .frame(width: canvasSize.width, height: canvasSize.height)
                     .scaleEffect(scale, anchor: .topLeading)
             }
         }
-        // The paintings end in deep plum, so a card taller than its painting continues it.
+        // The backdrop ends in deep plum, so a card taller than the canvas continues it.
         .background(Color.paeoniaBackgroundSecondary)
         .clipped()
         .dynamicTypeSize(.large)
         .accessibilityHidden(true)
         .onAppear { isPlayed = true }
     }
+}
 
-    private func painting(width: CGFloat) -> some View {
-        let plateSize = GameHubArtworkLayout.plateSize
-        return Image(plate)
-            .resizable()
-            .accessibilityHidden(true)
-            .frame(width: width, height: plateSize.height * width / plateSize.width)
+/// The backdrop every hub card shares: a deep plum sky with two big hills, petal pink on
+/// the left and lavender on the right, the two partners' worlds. They meet in a soft seam
+/// behind the middle of the scene. The hills start at about pixel 220, below the badge,
+/// and darken toward the bottom, so the card's text reads on them.
+struct GameHubBackdrop: View {
+    private static let sky = Gradient(stops: [
+        .init(color: .paeoniaBackgroundSecondary, location: 0),
+        .init(color: .paeoniaBackgroundPrimary, location: 0.46),
+        .init(color: .paeoniaBackgroundSecondary, location: 1)
+    ])
+    /// The hills darken toward plum from the middle of the scene down, so the card's text
+    /// keeps its contrast (`art_asset.py text` checks it).
+    private static let hillShade = Gradient(stops: [
+        .init(color: .paeoniaBackgroundElevated.opacity(0), location: 240 / 1_536),
+        .init(color: .paeoniaBackgroundElevated.opacity(0.25), location: 480 / 1_536),
+        .init(color: .paeoniaBackgroundElevated.opacity(0.6), location: 760 / 1_536),
+        .init(color: .paeoniaBackgroundElevated, location: 1)
+    ])
+
+    var body: some View {
+        Canvas { context, size in
+            Self.paint(context, size: size)
+        }
+    }
+
+    private static func paint(_ context: GraphicsContext, size: CGSize) {
+        let scale = size.width / GameHubArtworkLayout.canvasSize.width
+        let height = GameHubArtworkLayout.canvasSize.height * scale
+        let top = CGPoint.zero
+        let bottom = CGPoint(x: 0, y: height)
+        context.fill(
+            Path(CGRect(origin: .zero, size: size)),
+            with: .linearGradient(sky, startPoint: top, endPoint: bottom)
+        )
+        var hills = Path()
+        hills.addEllipse(in: circle(centerX: 190, centerY: 880, radius: 660, scale: scale))
+        hills.addEllipse(in: circle(centerX: 834, centerY: 880, radius: 660, scale: scale))
+        context.fill(
+            hills,
+            with: .linearGradient(
+                Gradient(colors: [.paeoniaAccentPrimary, .paeoniaInkLavender]),
+                startPoint: CGPoint(x: 482 * scale, y: 0),
+                endPoint: CGPoint(x: 542 * scale, y: 0)
+            )
+        )
+        context.fill(hills, with: .linearGradient(hillShade, startPoint: top, endPoint: bottom))
+    }
+
+    private static func circle(centerX: CGFloat, centerY: CGFloat, radius: CGFloat, scale: CGFloat) -> CGRect {
+        CGRect(
+            x: (centerX - radius) * scale,
+            y: (centerY - radius) * scale,
+            width: radius * 2 * scale,
+            height: radius * 2 * scale
+        )
     }
 }
 
-/// An illustrated object that pops into place on a painting, for the beat that lands a
-/// card's moment. `center` and `size` are in the painting's pixels.
+/// Where an object stands in a card's scene. `base` is the middle of its lower edge and
+/// `width` its width, both in the canvas's pixels. `aspect` is the image's width divided
+/// by its height, measured from the asset.
+struct GameHubPlacement {
+    let base: CGPoint
+    let width: CGFloat
+    let aspect: CGFloat
+
+    var height: CGFloat { width / aspect }
+
+    /// A spot on the image, given as fractions of its width and height, in the canvas's
+    /// pixels. Measure the fractions from the asset's pixels.
+    func point(_ across: CGFloat, _ down: CGFloat) -> CGPoint {
+        CGPoint(x: base.x - width / 2 + width * across, y: base.y - height + height * down)
+    }
+}
+
+/// An illustrated object standing on the backdrop, such as a game board. A soft shadow
+/// sits right under its lower edge, so it stands on the hill instead of floating over it.
+struct GameHubObject: View {
+    let image: ImageResource
+    let placement: GameHubPlacement
+    var tilt: Double = 0
+    var shadow = true
+
+    var body: some View {
+        let base = placement.base
+        ZStack {
+            if shadow {
+                Ellipse()
+                    .fill(Color.paeoniaBackgroundSecondary.opacity(0.4))
+                    .frame(width: placement.width * 0.8, height: max(18, placement.height * 0.07))
+                    .blur(radius: 10)
+                    .position(x: base.x, y: base.y - 4)
+            }
+            Image(image)
+                .resizable()
+                .accessibilityHidden(true)
+                .frame(width: placement.width, height: placement.height)
+                .rotationEffect(.degrees(tilt), anchor: .bottom)
+                .position(x: base.x, y: base.y - placement.height / 2)
+        }
+    }
+}
+
+/// An illustrated object that pops into place on the scene, for the beat that lands a
+/// card's moment. `center` and `size` are in the canvas's pixels.
 struct GameHubBeatPop: View {
     let image: ImageResource
     let center: CGPoint
@@ -94,8 +191,8 @@ struct GameHubBeatPop: View {
     }
 }
 
-/// A soft light that swells behind a spot on a painting. `center` and `radius` are in the
-/// painting's pixels.
+/// A soft light that swells behind a spot in the scene. `center` and `radius` are in the
+/// canvas's pixels.
 struct GameHubBeatGlow: View {
     let color: Color
     let center: CGPoint

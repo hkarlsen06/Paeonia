@@ -124,13 +124,13 @@ extension LudoStage {
 
 nonisolated extension LudoDieTray {
     /// The roller's yard as their own phone shows it, with their pawns that wait in
-    /// these slots. The die bounces back from just inside the yard's edge.
+    /// these slots. The die bounces back from the edge of the yard's carved panel.
     static func near(waitingSlots: [Int]) -> LudoDieTray {
         let corner = LudoWorld.rollerCorner(isNear: true)
         let middle = LudoWorld.position(LudoBoardGeometry.yardCenter(corner: corner, viewer: .one))
-        let half = LudoSceneStyle.yardSize / 2 - 0.05
+        let half = 3 - LudoSceneStyle.yardPanelInset
         return LudoDieTray(
-            floor: LudoSceneStyle.yardHeight,
+            floor: 0,
             minimum: SIMD2(middle.x - half, middle.z - half),
             maximum: SIMD2(middle.x + half, middle.z + half),
             pawns: waitingSlots.map { slot in

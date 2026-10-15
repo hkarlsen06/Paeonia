@@ -2,9 +2,7 @@ import AVFoundation
 import Foundation
 
 nonisolated enum DailyVoiceAudioSession {
-    #if compiler(>=6.4)
     private static let errorDomain = "no.paeonia.app.dailyVoice.audioSession"
-    #endif
 
     static func configureForRecording() async throws {
         try await Task.detached(priority: .userInitiated) {
@@ -33,35 +31,15 @@ nonisolated enum DailyVoiceAudioSession {
     /// Releases the session and tells apps we interrupted (music, podcasts) that they can
     /// resume. Used after both recording and playback.
     static func deactivate() {
-        #if compiler(>=6.4)
-        if #available(iOS 27.0, *) {
-            Task.detached(priority: .utility) {
-                await deactivateAsync()
-            }
-            return
-        }
-        #endif
-
         Task.detached(priority: .utility) {
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            await deactivateAsync()
         }
     }
 
     private static func activate(priority: TaskPriority) async throws {
-        #if compiler(>=6.4)
-        if #available(iOS 27.0, *) {
-            try await activateAsync()
-            return
-        }
-        #endif
-
-        try await Task.detached(priority: priority) {
-            try AVAudioSession.sharedInstance().setActive(true)
-        }.value
+        try await activateAsync()
     }
 
-    #if compiler(>=6.4)
-    @available(iOS 27.0, *)
     private static func activateAsync() async throws {
         let session = AVAudioSession.sharedInstance()
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -77,7 +55,6 @@ nonisolated enum DailyVoiceAudioSession {
         }
     }
 
-    @available(iOS 27.0, *)
     private static func deactivateAsync() async {
         let session = AVAudioSession.sharedInstance()
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
@@ -86,9 +63,7 @@ nonisolated enum DailyVoiceAudioSession {
             }
         }
     }
-    #endif
 
-    #if compiler(>=6.4)
     private static func sessionError(_ message: String) -> NSError {
         NSError(
             domain: errorDomain,
@@ -96,5 +71,4 @@ nonisolated enum DailyVoiceAudioSession {
             userInfo: [NSLocalizedDescriptionKey: message]
         )
     }
-    #endif
 }

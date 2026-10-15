@@ -130,16 +130,10 @@ nonisolated enum LudoMeshGeometry {
     /// The height of the flat top of a pawn.
     static var pawnTopHeight: Float { LudoSceneStyle.pawnHeight }
 
-    /// One half of the center dome, on the side of +z. Turn it half a circle for the other half.
-    static func domeHalf() -> LudoMeshData {
-        let radius = LudoSceneStyle.domeDiameter / 2
-        let height = LudoSceneStyle.domeHeight
-        let points: [(Float, Float)] = [
-            (1, 0), (0.985, 0.1), (0.93, 0.3), (0.83, 0.52), (0.66, 0.74), (0.4, 0.91), (0.15, 0.985), (0, 1)
-        ]
-        let profile = points.map { SIMD2($0.0 * radius, $0.1 * height) }
-        return turned(
-            profile: smoothed(profile, samples: LudoSceneStyle.profileSamples),
+    /// One flat half of the middle, facing up, on the side of +z. Turn it half a circle for the other half.
+    static func homeHalf() -> LudoMeshData {
+        turned(
+            profile: [SIMD2(LudoSceneStyle.homeDiameter / 2, 0), SIMD2(0, 0)],
             segments: LudoSceneStyle.turnedSegments,
             sweep: Float.pi,
             closesTop: false

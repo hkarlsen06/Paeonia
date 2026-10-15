@@ -28,6 +28,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             .navigationTitle(Text(title))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
+            // A board that bleeds shows its scene under the bar too.
+            .toolbarBackgroundVisibility(boardBleeds ? .hidden : .automatic, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar { toolbarItems }
             .boardGameScoreToolbar(score: viewModel.score, me: viewModel.meInfo, partner: viewModel.partnerInfo)

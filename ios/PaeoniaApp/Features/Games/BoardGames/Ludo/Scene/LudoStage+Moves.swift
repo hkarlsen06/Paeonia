@@ -98,7 +98,7 @@ extension LudoStage {
                 points.append(pawn.rest)
             } else {
                 let point = LudoBoardGeometry.point(of: square, homeLane: pawn.index % 2, viewer: viewer)
-                points.append(LudoWorld.position(point, height: LudoWorld.standingHeight(on: square)))
+                points.append(LudoWorld.position(point))
             }
         }
         let hops = max(points.count - 1, 1)

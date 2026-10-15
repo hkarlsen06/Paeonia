@@ -168,8 +168,8 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 - **Stake row.** Under the status row, above the pinned bottom. The stake capsule, or the "Add a bet" button for the starter before the first move. Hidden otherwise, without leaving a gap. In the wide layout it sits under the players row.
 - **Board.** Square for Dots and Boxes and Ultimate Tic-Tac-Toe, 7 by 6 for Connect Four. It takes the width up to 560 pt and never scrolls on a phone in portrait.
 - **Color row.** Ludo only. Four round color circles under the status row and above the stake row, until the player's first move of the game (see "Your color" in `docs/games/ludo.md`). In the wide layout it sits under the players row, above the stake.
-- **Status row.** Under the board. Empty while the partner has the game open, since the dot on their avatar already says so, and "[Name] will see it later" otherwise. VoiceOver announces both changes. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there instead, as Ludo does ("Roll again").
-- **Pinned bottom.** The invite button while it is not my turn and the partner is away. The offline line while a move waits to send.
+- **Status row.** Under the board. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there, as Ludo does ("Roll again"). VoiceOver announces when the partner comes and goes.
+- **Pinned bottom.** The invite button while it is not my turn and the partner is away. The offline line while a move waits to send. Under it, "[Name] isn't here right now" while the partner doesn't have the game open. While they do, the dot on their avatar says so and the line is gone.
 - **Score capsule.** Toolbar trailing, as in Draw & Guess (see "Scoring").
 - **Toolbar.** "Your mark" (`scribble.variable`) opens the mark editor.
 
@@ -223,7 +223,7 @@ The moment the last move lands.
 
 ### Hub cards
 
-Each game has its own card on the Games tab with its own painting, made to `docs/games/hub-artwork.md`.
+Each game has its own card on the Games tab, with its own objects on the shared backdrop, made to `docs/games/hub-artwork.md`.
 
 - Connect Four. A cream board with both partners' discs. The last pink disc drops into its hole and the row glows gold.
 - Dots and Boxes. A board of pearls whose closed boxes show a sunset photo. A warm light swells behind it.

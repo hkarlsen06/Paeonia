@@ -27,20 +27,6 @@ nonisolated struct WidgetLiveInkCalibration: Codable, Equatable {
         /// A point at `location` that looks like this style.
         func point(at location: CGPoint, timeOffset: TimeInterval, azimuth: CGFloat, scale: CGFloat) -> PKStrokePoint {
             let size = CGSize(width: self.size * scale, height: self.size * scale)
-            if #available(iOS 27.0, *) {
-                return PKStrokePoint(
-                    location: location,
-                    timeOffset: timeOffset,
-                    size: size,
-                    opacity: opacity,
-                    force: force,
-                    azimuth: azimuth,
-                    altitude: altitude,
-                    secondaryScale: secondaryScale,
-                    threshold: threshold,
-                    lateralJitter: lateralJitter
-                )
-            }
             return PKStrokePoint(
                 location: location,
                 timeOffset: timeOffset,
@@ -50,7 +36,8 @@ nonisolated struct WidgetLiveInkCalibration: Codable, Equatable {
                 azimuth: azimuth,
                 altitude: altitude,
                 secondaryScale: secondaryScale,
-                threshold: threshold
+                threshold: threshold,
+                lateralJitter: lateralJitter
             )
         }
     }
@@ -82,9 +69,7 @@ nonisolated struct WidgetLiveInkCalibration: Codable, Equatable {
         style.altitude = median(\.altitude)
         style.secondaryScale = median(\.secondaryScale)
         style.threshold = median(\.threshold)
-        if #available(iOS 27.0, *) {
-            style.lateralJitter = median(\.lateralJitter)
-        }
+        style.lateralJitter = median(\.lateralJitter)
         var list = samples[key, default: []].filter { abs($0.width - style.width) >= 0.01 }
         list.append(style)
         samples[key] = Array(list.suffix(Self.maxSamplesPerInk))

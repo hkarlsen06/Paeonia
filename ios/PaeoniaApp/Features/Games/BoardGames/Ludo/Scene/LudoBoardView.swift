@@ -60,18 +60,27 @@ private struct LudoBoardScene: View {
     @State private var bloomStart: Date?
     /// Where the camera last came to rest, so VoiceOver follows it.
     @State private var settledRig: LudoCameraRig?
+    /// False until the scene has loaded and drawn. The loading view shows until then.
+    @State private var isSceneReady = false
+    /// When the loading view first showed, so it stays long enough to read as calm.
+    @State private var loadingShownAt = Date()
 
     var body: some View {
         // Fills the space it is given. The shell decides how much that is.
         GeometryReader { proxy in
             let size = proxy.size
             let aspect = size.height > 0 ? Double(size.width / size.height) : LudoSceneStyle.viewAspect
-            let overshoot = LudoSceneStyle.cameraOvershoot(forViewWidth: Double(size.width))
-            let rig = currentRig(aspect: aspect, overshoot: overshoot)
-            let fit = [aspect, overshoot, Double(fitHeight)]
+            let rig = currentRig(aspect: aspect)
+            let fit = [aspect, Double(fitHeight)]
             ZStack {
                 sceneView
                     .accessibilityHidden(true)
+                // It stays in place and fades. A removed view in a stack over the 3D view
+                // vanishes at once instead of fading.
+                LudoLoadingView()
+                    .opacity(isSceneReady ? 0 : 1)
+                    .allowsHitTesting(!isSceneReady)
+                    .accessibilityHidden(isSceneReady)
                 bloom(size: size, rig: rig)
                 LudoAccessibilityLayer(
                     board: inputs.board,
@@ -86,7 +95,7 @@ private struct LudoBoardScene: View {
             }
             .frame(width: size.width, height: size.height)
             .onChange(of: fit, initial: true) {
-                stage.setAspect(aspect, overshoot: overshoot, fitHeight: Double(fitHeight))
+                stage.setAspect(aspect, fitHeight: Double(fitHeight))
             }
         }
         .onChange(of: stageInput, initial: true) { sync() }
@@ -102,14 +111,28 @@ private struct LudoBoardScene: View {
             onUpdate: handle,
             onTarget: handleTap,
             onToss: handleToss,
-            onSettled: { settledRig = $0 }
+            onSettled: { settledRig = $0 },
+            onReady: revealScene
         )
     }
 
+    /// Fades the loading view away once the scene has drawn. A fast load still shows the
+    /// loading view for a moment, so it never flashes.
+    private func revealScene() {
+        let shown = Date().timeIntervalSince(loadingShownAt)
+        let wait = max(0, LudoLoadingView.minimumShowTime - shown)
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(wait))
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: LudoLoadingView.fadeDuration)) {
+                isSceneReady = true
+            }
+        }
+    }
+
     /// The camera the person has left, or the default one while the view's shape is new.
-    private func currentRig(aspect: Double, overshoot: Double) -> LudoCameraRig {
+    private func currentRig(aspect: Double) -> LudoCameraRig {
         if let settledRig, abs(settledRig.aspect - aspect) < 0.001 { return settledRig }
-        return LudoCameraRig.fitting(aspect: aspect, overshoot: overshoot, fitHeight: Double(fitHeight))
+        return LudoCameraRig.fitting(aspect: aspect, fitHeight: Double(fitHeight))
     }
 
     private var stageInput: LudoStage.Input {
@@ -208,9 +231,8 @@ private struct LudoBoardScene: View {
     }
 }
 
-/// The 3D view. RealityKit's `ARView` in its non-AR mode, because it can draw
-/// with a clear background, so the screen shows through around the board, and it
-/// hands out the touches as plain UIKit gestures.
+/// The 3D view. RealityKit's `ARView` in its non-AR mode, because it hands out the
+/// touches as plain UIKit gestures. The room round the board fills it to its edges.
 private struct LudoSceneView: UIViewRepresentable {
     let stage: LudoStage
     let input: LudoStage.Input
@@ -218,6 +240,7 @@ private struct LudoSceneView: UIViewRepresentable {
     let onTarget: (LudoStage.Target) -> Void
     let onToss: (LudoToss) -> Void
     let onSettled: (LudoCameraRig) -> Void
+    let onReady: () -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(stage: stage)
@@ -225,9 +248,9 @@ private struct LudoSceneView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> ARView {
         let view = ARView(frame: .zero, cameraMode: .nonAR, automaticallyConfigureSession: false)
-        view.backgroundColor = .clear
-        view.isOpaque = false
-        view.environment.background = .color(.clear)
+        let room = LudoSceneStyle.color(LudoSceneStyle.roomHex)
+        view.backgroundColor = room
+        view.environment.background = .color(room)
         // The key light draws the shadows. ARView would also put a soft blob under every
         // model, and the camera effects meant to match a real camera's picture only blur the board.
         view.renderOptions.formUnion([
@@ -236,6 +259,7 @@ private struct LudoSceneView: UIViewRepresentable {
         context.coordinator.parent = self
         context.coordinator.attach(to: view)
         stage.onCameraSettled = onSettled
+        stage.onReady = onReady
         let stage = stage
         let input = input
         let onUpdate = onUpdate

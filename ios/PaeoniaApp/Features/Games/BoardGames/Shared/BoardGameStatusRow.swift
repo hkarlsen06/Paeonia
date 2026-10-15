@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The line under the board. On the left, "[Name] will see it later" while the
-/// partner is away, or the game's own hint while it has one (Ludo's "Roll again").
-/// Nothing shows while the partner is here, since the green dot on their avatar
-/// says so. VoiceOver still hears both changes.
+/// The line under the board. On the left, the game's own hint while it has one
+/// (Ludo's "Roll again"). Whether the partner is here shows elsewhere: the green dot
+/// on their avatar, or `BoardGameAwayLine` under the bottom content. VoiceOver hears
+/// both changes from here.
 /// On the right, an "Another turn" chip that pops in each time the extra turn
 /// count goes up and fades after 1.5 seconds. The chip's space is always
 /// reserved, so nothing around the row moves when it shows.
@@ -51,19 +51,13 @@ struct BoardGameStatusRow: View {
                 .foregroundStyle(.paeoniaTextSecondary)
                 .transition(.opacity)
                 .accessibilityIdentifier("boardGames.hint")
-        } else if status == .away {
-            Text(text(for: status))
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextTertiary)
-                .transition(.opacity)
-                .accessibilityIdentifier("boardGames.status")
         }
     }
 
     private func text(for status: BoardGamePartnerStatus) -> LocalizedStringResource {
         switch status {
         case .here: .boardGamesStatusHere(partnerName)
-        case .away: .boardGamesStatusLater(partnerName)
+        case .away: .boardGamesStatusAway(partnerName)
         }
     }
 
@@ -111,6 +105,21 @@ struct BoardGameStatusRow: View {
                 shownTurn = nil
             }
         }
+    }
+}
+
+/// "[Name] isn't here right now", under the bottom content while the partner is away.
+/// `BoardGameStatusRow` announces the change, so VoiceOver doesn't hear it twice.
+struct BoardGameAwayLine: View {
+    let partnerName: String
+
+    var body: some View {
+        Text(.boardGamesStatusAway(partnerName))
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaTextTertiary)
+            .multilineTextAlignment(.center)
+            .transition(.opacity)
+            .accessibilityIdentifier("boardGames.status")
     }
 }
 

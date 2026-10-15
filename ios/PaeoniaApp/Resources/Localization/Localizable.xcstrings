@@ -3261,6 +3261,24 @@
         }
       }
     },
+    "boardGames.status.away" : {
+      "comment" : "Line under the button at the bottom of a board game while the partner does not have the game open. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ isn't here right now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er ikke her nå"
+          }
+        }
+      }
+    },
     "boardGames.status.here" : {
       "comment" : "Status under the board while the partner has the same game open. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -3275,24 +3293,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ er her"
-          }
-        }
-      }
-    },
-    "boardGames.status.later" : {
-      "comment" : "Status under the board while the partner does not have the game open. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ will see it later"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ ser det senere"
           }
         }
       }
@@ -14987,6 +14987,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kast terningen og få alle brikkene dine hjem først."
+          }
+        }
+      }
+    },
+    "ludo.loading" : {
+      "comment" : "Shown in the middle of the Ludo screen while the board and the table round it load, next to a small candle flame.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setting the table"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dekker bordet"
           }
         }
       }

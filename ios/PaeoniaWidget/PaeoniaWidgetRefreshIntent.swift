@@ -17,12 +17,9 @@ struct PaeoniaWidgetRefreshIntent: AppIntent {
     /// Only the widget button runs this intent, so keep it out of Shortcuts.
     static var isDiscoverable: Bool { false }
 
-    #if compiler(>=6.4)
-    @available(iOS 27.0, *)
     static var allowedExecutionTargets: IntentExecutionTargets {
         .widgetKitExtension
     }
-    #endif
 
     func perform() async -> some IntentResult {
 #if DEBUG

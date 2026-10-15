@@ -1,19 +1,19 @@
 import SwiftUI
 
-/// The Mind Meld card's painting: two blank word cards leaning together, one glowing in
-/// each partner's color, with a green light where they touch. The beat opens a peony
-/// where they meet, as in the game when both partners say the same word. It follows
-/// `docs/games/hub-artwork.md`.
+/// The Mind Meld card's scene: two blank word cards leaning together, one edged in each
+/// partner's color. The beat opens a peony where their tops meet, as in the game when
+/// both partners say the same word. It follows `docs/games/hub-artwork.md`.
 struct MindMeldHubArtwork: View {
     var body: some View {
-        GameHubArtwork(plate: .gameHubMindMeldPainting, duration: 1.4) { progress in
-            MindMeldHubBeat(progress: progress)
+        GameHubArtwork(duration: 1.4) { progress in
+            MindMeldHubScene(progress: progress)
         }
     }
 }
 
-/// In the painting's pixels. A green glow swells at the seam, then the peony opens on it.
-private struct MindMeldHubBeat: View, Animatable {
+/// In the canvas's pixels. A green glow swells where the cards meet, then the peony opens
+/// on it.
+private struct MindMeldHubScene: View, Animatable {
     var progress: Double
 
     var animatableData: Double {
@@ -21,17 +21,19 @@ private struct MindMeldHubBeat: View, Animatable {
         set { progress = newValue }
     }
 
-    private static let meeting = CGPoint(x: 513, y: 523)
+    private static let cards = GameHubPlacement(base: CGPoint(x: 512, y: 640), width: 600, aspect: 1.518)
+    private static let meeting = cards.point(0.503, 0.085)
 
     var body: some View {
         ZStack {
+            GameHubObject(image: .gameHubMindMeldCards, placement: Self.cards)
             GameHubBeatGlow(
                 color: .paeoniaSuccess,
                 center: Self.meeting,
                 radius: 180,
                 strength: GameHubArtworkTiming.ease(progress, from: 0, to: 0.4)
             )
-            GameHubBeatPop(image: .gameHubPeony, center: Self.meeting, size: 150, progress: progress, start: 0.25)
+            GameHubBeatPop(image: .gameHubPeony, center: Self.meeting, size: 190, progress: progress, start: 0.25)
         }
     }
 }

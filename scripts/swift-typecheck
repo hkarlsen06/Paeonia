@@ -20,7 +20,7 @@ for setting in \
   "SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;" \
   "SWIFT_APPROACHABLE_CONCURRENCY = YES;" \
   "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;" \
-  "IPHONEOS_DEPLOYMENT_TARGET = 26.5;"; do
+  "IPHONEOS_DEPLOYMENT_TARGET = 27.0;"; do
   if ! grep -qF "$setting" "$PBXPROJ"; then
     echo "swift-typecheck: the project no longer has '$setting'. Update this script to match." >&2
     exit 2
@@ -41,6 +41,6 @@ exec xcrun swiftc -typecheck \
   -enable-upcoming-feature InferSendableFromCaptures \
   -enable-upcoming-feature NonisolatedNonsendingByDefault \
   -enable-upcoming-feature MemberImportVisibility \
-  -target arm64-apple-ios26.5 \
+  -target arm64-apple-ios27.0 \
   -sdk "$(xcrun --sdk iphoneos --show-sdk-path)" \
   "$@"

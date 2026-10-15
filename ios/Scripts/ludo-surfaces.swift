@@ -1,17 +1,22 @@
-// Makes the Ludo surface textures and the studio light in
-// ios/PaeoniaApp/Resources/Assets.xcassets/Ludo from CC0 downloads. Run it again
-// to change the tint, the speckle or the strength of the bumps.
+// Makes the Ludo glaze textures, the table's wood, the linen runner and the room's
+// light in ios/PaeoniaApp/Resources/Assets.xcassets/Ludo from CC0 downloads. Run it
+// again to change the tint, the speckle, the strength of the bumps or the table's gloss.
 //
 // Download each into its own empty folder, outside the repo:
 //   https://ambientcg.com/get?file=Porcelain002_1K-PNG.zip
 //   https://ambientcg.com/get?file=Clay005_1K-PNG.zip
-//   https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr
+//   https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/fireplace_1k.hdr
+//   lacquered_cherry_wood and rough_linen at 1k from https://polyhaven.com/textures: the diff,
+//   nor_gl and rough JPGs of each
 // Then, from an empty output folder:
 //   swiftc -O -o ludo-surfaces ios/Scripts/ludo-surfaces.swift
-//   ./ludo-surfaces studio_small_08_1k.hdr Porcelain002_1K-PNG_Roughness.png \
-//     Clay005_1K-PNG_Color.png Clay005_1K-PNG_NormalGL.png Clay005_1K-PNG_Roughness.png <outDir>
-// and copy the files into the image sets and the LudoStudio data set.
-// LudoStudioPreview.jpg is only for checking the light by eye.
+//   ./ludo-surfaces fireplace_1k.hdr Porcelain002_1K-PNG_Roughness.png \
+//     Clay005_1K-PNG_Color.png Clay005_1K-PNG_NormalGL.png \
+//     lacquered_cherry_wood_diff_1k.jpg lacquered_cherry_wood_nor_gl_1k.jpg \
+//     lacquered_cherry_wood_rough_1k.jpg \
+//     rough_linen_diff_1k.jpg rough_linen_nor_gl_1k.jpg rough_linen_rough_1k.jpg <outDir>
+// and copy the files into the image sets and the LudoRoomLight data set.
+// LudoRoomLightPreview.jpg is only for checking the light by eye.
 // The sky colors match the hub series: see "Light" in docs/games/ludo.md.
 
 import CoreGraphics
@@ -34,10 +39,11 @@ func report(_ message: String) {
 }
 
 let arguments = CommandLine.arguments
-guard arguments.count == 7 else {
-    fail("usage: ludo-surfaces <hdr> <porcelainRoughness> <clayColor> <clayNormalGL> <clayRoughness> <outDir>")
+guard arguments.count == 12 else {
+    fail("usage: ludo-surfaces <hdr> <porcelainRoughness> <clayColor> <clayNormalGL> "
+        + "<woodColor> <woodNormalGL> <woodRough> <linenColor> <linenNormalGL> <linenRough> <outDir>")
 }
-let outFolder = URL(fileURLWithPath: arguments[6])
+let outFolder = URL(fileURLWithPath: arguments[11])
 
 /// Four floats a pixel: red, green, blue, alpha.
 struct FloatImage {
@@ -177,7 +183,6 @@ func flattened(_ image: FloatImage, strength: Float) -> FloatImage {
 let porcelainRoughness = load(arguments[2], linear: false)
 let clayColor = load(arguments[3], linear: false)
 let clayNormal = load(arguments[4], linear: false)
-let clayRoughness = load(arguments[5], linear: false)
 
 /// The same numbers on every run.
 struct Seeded {
@@ -216,14 +221,47 @@ func glazeDetail() -> FloatImage {
     return glaze
 }
 
-// Color pictures in three channels: a one-channel picture tints only the red.
+// Color pictures in three channels. The app also redraws them, because the asset
+// catalog stores an all-gray PNG with one channel, which tints only the red.
 write(glazeDetail(), gray: false, name: "LudoGlazeDetail", jpeg: false)
 let glazeRoughness = remapped(shrunk(porcelainRoughness, by: 2), from: 0.55, to: 1.0)
 write(glazeRoughness, gray: true, name: "LudoGlazeRoughness", jpeg: false)
 write(flattened(shrunk(clayNormal, by: 2), strength: 0.3), gray: false, name: "LudoGlazeNormal", jpeg: true)
-write(remapped(clayColor, from: 0.8, to: 1.0), gray: false, name: "LudoClayDetail", jpeg: true)
-write(flattened(clayNormal, strength: 0.8), gray: false, name: "LudoClayNormal", jpeg: true)
-write(remapped(clayRoughness, from: 0.75, to: 1.0), gray: true, name: "LudoClayRoughness", jpeg: true)
+
+// MARK: Table
+
+/// The table's gloss follows its grain: the dark grain lines and pores are rough and
+/// the lighter wood between them shines, so a highlight breaks up along the grain
+/// instead of lying on the table as one smooth sheen. Wood's own roughness map adds the rest.
+func tableRoughness(color: FloatImage, roughness: FloatImage) -> FloatImage {
+    let grain = remapped(color, from: 0, to: 1)
+    let worn = remapped(roughness, from: 0, to: 1)
+    var result = grain
+    for pixel in 0..<(grain.width * grain.height) {
+        let value = 0.42 + 0.5 * (0.6 * (1 - grain.pixels[pixel * 4]) + 0.4 * worn.pixels[pixel * 4])
+        for channel in 0..<3 {
+            result.pixels[pixel * 4 + channel] = value
+        }
+    }
+    return result
+}
+
+let woodColor = load(arguments[5], linear: false)
+write(woodColor, gray: false, name: "LudoTableColor", jpeg: true)
+// The grain stands out more, so it catches the light.
+write(flattened(load(arguments[6], linear: false), strength: 2.5), gray: false, name: "LudoTableNormal", jpeg: true)
+let woodRoughness = tableRoughness(color: woodColor, roughness: load(arguments[7], linear: false))
+write(shrunk(woodRoughness, by: 2), gray: true, name: "LudoTableRoughness", jpeg: true)
+
+// MARK: Runner
+
+// The linen comes blue. Made gray, the app tints it a warm cream. Linen is matte. It
+// repeats every few cells, so half the size is plenty.
+let linenColor = remapped(shrunk(load(arguments[8], linear: false), by: 2), from: 0.55, to: 1.0)
+write(linenColor, gray: false, name: "LudoRunnerDetail", jpeg: true)
+write(shrunk(load(arguments[9], linear: false), by: 2), gray: false, name: "LudoRunnerNormal", jpeg: true)
+let linenRoughness = remapped(shrunk(load(arguments[10], linear: false), by: 2), from: 0.8, to: 1.0)
+write(linenRoughness, gray: true, name: "LudoRunnerRoughness", jpeg: true)
 
 // MARK: Light
 
@@ -273,8 +311,10 @@ func tintedStudio() -> FloatImage {
             let down = Float(row) / Float(studio.height / 2)
             paintedSum += luminance(paintedSky(across: across, down: down))
             let sky = paintedSky(across: across, down: min(down, 0.85))
-            let skyTint = mix(SIMD3(repeating: 1), sky / max(luminance(sky), 0.01), 0.55)
-            let floorTint = ground / max(luminance(ground), 0.001) * 0.08
+            // The fireplace room is warm already, so it takes only a touch of the pink and lavender.
+            let skyTint = mix(SIMD3(repeating: 1), sky / max(luminance(sky), 0.01), 0.25)
+            // Dark and nearly neutral, with a hint of plum. A strong plum shows as magenta in polished brass.
+            let floorTint = mix(SIMD3(repeating: 1), ground / max(luminance(ground), 0.001), 0.2) * 0.1
             let tinted = color(of: studio, at: pixel) * mix(skyTint, floorTint, smooth((down - 0.9) / 0.2))
             studio.pixels[pixel * 4] = tinted.x
             studio.pixels[pixel * 4 + 1] = tinted.y
@@ -327,7 +367,7 @@ func writeOpenEXR(_ image: FloatImage, name: String) {
 }
 
 let studio = tintedStudio()
-writeOpenEXR(studio, name: "LudoStudio")
+writeOpenEXR(studio, name: "LudoRoomLight")
 
 /// The light squeezed into ordinary brightness, to look at.
 var preview = studio
@@ -335,4 +375,4 @@ for index in preview.pixels.indices where index % 4 != 3 {
     let value = preview.pixels[index]
     preview.pixels[index] = pow(value / (1 + value), 1 / 2.2)
 }
-write(preview, gray: false, name: "LudoStudioPreview", jpeg: true)
+write(preview, gray: false, name: "LudoRoomLightPreview", jpeg: true)

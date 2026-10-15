@@ -32,7 +32,8 @@ extension EnvironmentValues {
 }
 
 /// The arrangement of a board game screen: the players, the board, the status row,
-/// Ludo's color circles and the stake, with the bottom content pinned.
+/// Ludo's color circles and the stake, with the bottom content pinned and the line
+/// that says the partner is away under it.
 ///
 /// The board gets up to `BoardGameMetrics.maxBoard` points of width, or a square
 /// of the wide layout's side, and fits itself inside that space, for example
@@ -41,10 +42,10 @@ extension EnvironmentValues {
 /// - A phone and a narrow window show one column that never scrolls. The board
 ///   shrinks first when the screen is short. The rows keep to a readable width,
 ///   and a board that bleeds draws over the whole screen behind the rows. It fits
-///   itself in the space between them, and the screen color fades over it outside
-///   that space. The color circles and the stake sit under the column, above the
-///   bottom content, and the stake rises with the keyboard while the starter
-///   writes it. The keyboard covers the column instead of squeezing the board.
+///   itself in the space between them, and its scene shows round them. The color
+///   circles and the stake sit under the column, above the bottom content, and the
+///   stake rises with the keyboard while the starter writes it. The keyboard covers
+///   the column instead of squeezing the board.
 /// - At accessibility text sizes the column scrolls, the board keeps its size and
 ///   the stake comes after the status row.
 /// - A wide window puts the board on the left and everything else in a column on
@@ -72,12 +73,6 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     @State private var wideBottomHeight: CGFloat = 0
     /// Where a board that bleeds fits, in global coordinates.
     @State private var bleedSlotFrame: CGRect = .zero
-
-    /// How far the cover takes to fade in past the edge of the space the board fits in.
-    /// A long, eased fade has no edge the eye can catch.
-    private static var bleedCoverFade: CGFloat { 140 }
-    /// How much of the board the cover hides above and below that space.
-    private static var bleedCoverOpacity: Double { 0.85 }
 
     var body: some View {
         GeometryReader { proxy in
@@ -225,13 +220,11 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     }
 
     private var bottomBar: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            bottom
-        }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space8)
-        .paeoniaReadableWidth()
-        .background(boardBleeds && !dynamicTypeSize.isAccessibilitySize ? Color.clear : .paeoniaBackgroundSecondary)
+        bottomStack
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.vertical, PaeoniaSpacing.space8)
+            .paeoniaReadableWidth()
+            .background(boardBleeds && !dynamicTypeSize.isAccessibilitySize ? Color.clear : .paeoniaBackgroundSecondary)
     }
 
     // MARK: Bleed
@@ -256,7 +249,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
 
     /// The board over the whole screen, behind the rows. It reaches as far above and
     /// below the slot as the farther edge of the screen, so the slot stays in its middle
-    /// and the board fits there. Past the slot's top and bottom the screen color fades in over it.
+    /// and the board fits there. Past the slot's top and bottom its scene shows behind the rows.
     private var bleedingBoard: some View {
         GeometryReader { proxy in
             let screen = proxy.frame(in: .global)
@@ -266,49 +259,14 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 let reach = max(slot.minY, screen.height - slot.maxY, 0)
                 let height = slot.height + reach * 2
                 if slot.height > 0 {
-                    ZStack {
-                        board
-                            .environment(\.boardFitHeight, slot.height / height)
-                        bleedCover(reach: reach, slotHeight: slot.height)
-                    }
-                    .frame(width: screen.width, height: height)
-                    .position(x: screen.width / 2, y: slot.midY)
+                    board
+                        .environment(\.boardFitHeight, slot.height / height)
+                        .frame(width: screen.width, height: height)
+                        .position(x: screen.width / 2, y: slot.midY)
                 }
             }
         }
         .ignoresSafeArea()
-    }
-
-    /// The screen color over the board above and below the slot, clear inside it.
-    /// It is not a material: a material can't blur the 3D view behind it and adds its
-    /// own gray tint, which shows as frosted strips even over the plain background.
-    private func bleedCover(reach: CGFloat, slotHeight: CGFloat) -> some View {
-        let height = reach * 2 + slotHeight
-        let fade = Self.bleedCoverFade
-        func at(_ y: CGFloat) -> CGFloat { min(max(y / height, 0), 1) }
-        // Clear at `edge`, easing in to full over `fade` points in `direction`. A
-        // smoothstep curve has no kink where it starts or ends, unlike a straight ramp.
-        func ramp(from edge: CGFloat, direction: CGFloat) -> [Gradient.Stop] {
-            let steps = 16
-            return (0...steps).map { step in
-                let share = CGFloat(step) / CGFloat(steps)
-                let eased = share * share * (3 - 2 * share)
-                return .init(color: .black.opacity(eased), location: at(edge + direction * share * fade))
-            }
-        }
-        let mask = LinearGradient(
-            stops: [.init(color: .black, location: 0)]
-                + ramp(from: reach, direction: -1).reversed()
-                + ramp(from: reach + slotHeight, direction: 1)
-                + [.init(color: .black, location: 1)],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        return Color.paeoniaBackgroundSecondary
-            .opacity(Self.bleedCoverOpacity)
-            .mask(mask)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
     }
 
     // MARK: Wide
@@ -355,11 +313,24 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     }
 
     private var wideBottom: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            bottom
+        bottomStack
+            .padding(.vertical, PaeoniaSpacing.space12)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideBottomHeight = $0 }
+    }
+}
+
+extension BoardGameScreenLayout {
+    /// The bottom content, with the line that says the partner is away under it.
+    fileprivate var bottomStack: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            VStack(spacing: PaeoniaSpacing.space12) {
+                bottom
+            }
+            if content.partnerStatus == .away {
+                BoardGameAwayLine(partnerName: content.partner.name)
+            }
         }
-        .padding(.vertical, PaeoniaSpacing.space12)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideBottomHeight = $0 }
+        .animation(PaeoniaMotion.stateChange, value: content.partnerStatus)
     }
 }
 

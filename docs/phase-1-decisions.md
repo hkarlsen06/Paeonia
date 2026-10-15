@@ -6,7 +6,7 @@ Status: historical foundation record. These decisions were adopted during projec
 
 ## iOS Project
 
-- Minimum deployment target: iOS 26.5.
+- Minimum deployment target: iOS 27.0.
 - Targets to create initially:
   - app
   - widget

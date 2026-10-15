@@ -1,19 +1,19 @@
 import SwiftUI
 
-/// The Draw & Guess card's painting: a sheet of paper with a pink heart drawn on it and the
+/// The Draw & Guess card's scene: a sheet of paper with a pink heart drawn on it and the
 /// pencil that drew it. The beat pops in the letter tiles that spell what the drawing is,
-/// in the card's language, in the clear space at the top right. It follows `docs/games/hub-artwork.md`.
+/// in the card's language, to the right of the paper. It follows `docs/games/hub-artwork.md`.
 struct DrawAndGuessHubArtwork: View {
     var body: some View {
-        GameHubArtwork(plate: .gameHubDrawAndGuessPainting, duration: 1.4) { progress in
-            DrawAndGuessHubBeat(progress: progress)
+        GameHubArtwork(duration: 1.4) { progress in
+            DrawAndGuessHubScene(progress: progress)
         }
     }
 }
 
-/// In the painting's pixels. The tiles pop in one by one, three to a row, centered in the
-/// clear area the painting leaves (x 690 to 1020, y 220 to 450).
-private struct DrawAndGuessHubBeat: View, Animatable {
+/// In the canvas's pixels. The tiles pop in one by one, three to a row. Three tiles end
+/// about 120 pixels from the right edge, so they keep clear of the card's corner.
+private struct DrawAndGuessHubScene: View, Animatable {
     var progress: Double
 
     var animatableData: Double {
@@ -21,9 +21,11 @@ private struct DrawAndGuessHubBeat: View, Animatable {
         set { progress = newValue }
     }
 
-    private static let center = CGPoint(x: 855, y: 335)
-    private static let tileSize: CGFloat = 96
-    private static let tileSpacing: CGFloat = 12
+    private static let paper = GameHubPlacement(base: CGPoint(x: 370, y: 630), width: 400, aspect: 1.033)
+    private static let pencil = GameHubPlacement(base: CGPoint(x: 490, y: 640), width: 280, aspect: 1.673)
+    private static let center = CGPoint(x: 764, y: 400)
+    private static let tileSize: CGFloat = 84
+    private static let tileSpacing: CGFloat = 10
     private static let tilesPerRow = 3
     private static let tileColors: [Color] = [
         .paeoniaAccentPrimary, .paeoniaInkGold, .paeoniaInkLavender, .paeoniaInkBlue, .paeoniaAccentSecondary,
@@ -35,16 +37,20 @@ private struct DrawAndGuessHubBeat: View, Animatable {
         let rows = stride(from: 0, to: letters.count, by: Self.tilesPerRow).map { start in
             Array(start..<min(start + Self.tilesPerRow, letters.count))
         }
-        VStack(spacing: Self.tileSpacing) {
-            ForEach(rows, id: \.self) { row in
-                HStack(spacing: Self.tileSpacing) {
-                    ForEach(row, id: \.self) { index in
-                        tile(letters[index], index: index, count: letters.count)
+        ZStack {
+            GameHubObject(image: .gameHubDrawAndGuessPaper, placement: Self.paper)
+            GameHubObject(image: .gameHubDrawAndGuessPencil, placement: Self.pencil, shadow: false)
+            VStack(spacing: Self.tileSpacing) {
+                ForEach(rows, id: \.self) { row in
+                    HStack(spacing: Self.tileSpacing) {
+                        ForEach(row, id: \.self) { index in
+                            tile(letters[index], index: index, count: letters.count)
+                        }
                     }
                 }
             }
+            .position(Self.center)
         }
-        .position(Self.center)
     }
 
     /// A cream tile tinted in one of the ink colors, with the letter in dark plum, which
@@ -62,7 +68,7 @@ private struct DrawAndGuessHubBeat: View, Animatable {
                     .font(.system(size: Self.tileSize * 0.5, weight: .heavy, design: .rounded))
                     .foregroundStyle(.paeoniaTextInverse)
             }
-            .shadow(color: .paeoniaBackgroundSecondary.opacity(0.5), radius: 12, y: 8)
+            .shadow(color: .paeoniaBackgroundSecondary.opacity(0.5), radius: 10, y: 7)
             .rotationEffect(.degrees(Self.tileTilts[index % Self.tileTilts.count]))
             .offset(y: index.isMultiple(of: 2) ? -5 : 5)
             .scaleEffect(max(0, pop))

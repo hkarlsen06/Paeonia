@@ -8,30 +8,27 @@ struct LudoSceneParts {
     let root: Entity
     let pawns: [LudoPawnNode]
     let die: LudoDieNode
-    /// A glow plate under each player's home pad, by `player.rawValue - 1`.
+    /// The glow over each player's half of the middle, by `player.rawValue - 1`.
     let homeGlows: [ModelEntity]
     /// The picture material on top of each player's pawns, by `player.rawValue - 1`.
     let capMaterials: [PhysicallyBasedMaterial]
     /// The pieces that take the players' colors, so a new pick can paint them again.
     let paint: LudoPaintTargets
+    /// The table, the candle and the tea round the board.
+    let room: LudoRoom
 }
 
 /// The board pieces that change color when a player picks another one.
 @MainActor
 struct LudoPaintTargets {
-    /// By corner: the start tile and the five home column tiles.
-    var startTiles: [ModelEntity] = []
-    var columnTiles: [[ModelEntity]] = []
-    /// By corner: the yard plate, and the dents where pawns wait. A corner nobody plays has no dents.
-    var plates: [ModelEntity] = []
-    var dents: [[ModelEntity]] = []
-    /// By player (`player.rawValue - 1`): the dome half and the glow shell over it.
-    var domeHalves: [ModelEntity] = []
-    var domeGlows: [ModelEntity] = []
+    /// The painted top of the board.
+    var boardTop: ModelEntity?
+    /// By player (`player.rawValue - 1`): the glow over that player's half of the middle.
+    var homeGlows: [ModelEntity] = []
 }
 
-/// Builds the board, the pawns, the die and the lights. Meshes and
-/// materials are made once and shared, so the scene stays at about 150 entities.
+/// Builds the board, the pawns, the die and the lights. The board is one slab with
+/// its layout painted and carved on the top, so the scene has about 40 entities.
 @MainActor
 enum LudoSceneBuilder {
     static func build(
@@ -43,15 +40,16 @@ enum LudoSceneBuilder {
         let colors = CornerColors(viewer: viewer, colors: playerColors)
         let root = Entity()
         root.name = "ludoScene"
+        // The painting and the room take the longest, so they load side by side.
+        async let topMaterial = boardTopMaterial(viewer: viewer, colors: colors)
+        async let builtRoom = LudoRoom.build()
         var paint = LudoPaintTargets()
         addSlab(to: root)
-        addTiles(to: root, viewer: viewer, colors: colors, paint: &paint)
-        addYards(to: root, viewer: viewer, colors: colors, paint: &paint)
-        addCenter(to: root, viewer: viewer, colors: colors, paint: &paint)
-        if let shade = await LudoContactShade.make() { root.addChild(shade) }
-        let peony = await LudoPeonyPicture.texture()
-        addPeonies(to: root, viewer: viewer, texture: peony)
+        paint.homeGlows = addHomeGlows(to: root, viewer: viewer, colors: colors)
         addLights(to: root)
+        paint.boardTop = addBoardTop(to: root, material: await topMaterial)
+        let room = await builtRoom
+        root.addChild(room.root)
 
         let capMaterials = await makeCapMaterials(styles: styles, colors: colors)
         let die = LudoDieNode(startsOnNearTray: true)
@@ -62,9 +60,10 @@ enum LudoSceneBuilder {
             root: root,
             pawns: pawns,
             die: die,
-            homeGlows: paint.domeGlows,
+            homeGlows: paint.homeGlows,
             capMaterials: capMaterials,
-            paint: paint
+            paint: paint,
+            room: room
         )
     }
 
@@ -123,140 +122,62 @@ enum LudoSceneBuilder {
 
     // MARK: Board
 
-    /// The satin materials that depend on the corner colors, by corner.
-    struct CornerMaterials {
-        let start: [PhysicallyBasedMaterial]
-        let column: [PhysicallyBasedMaterial]
-        let plate: [PhysicallyBasedMaterial]
-        let slot: [PhysicallyBasedMaterial]
-
-        init(_ colors: CornerColors) {
-            let corners = Array(0..<4)
-            start = corners.map { LudoMaterials.satin(colors.color(ofCorner: $0)) }
-            column = corners.map {
-                LudoMaterials.satin(colors.color(ofCorner: $0).ludoLightened(LudoSceneStyle.columnLightening))
-            }
-            let floors = corners.map { colors.color(ofCorner: $0).ludoLightened(LudoSceneStyle.yardLightening) }
-            plate = floors.map { LudoMaterials.satin($0) }
-            slot = floors.map { LudoMaterials.satin($0.ludoDarkened(LudoSceneStyle.slotDarkening)) }
-        }
-    }
-
-    /// The center dome's materials for one player's color: the half and the glow shell.
-    static func domeMaterials(_ color: UIColor) -> (half: PhysicallyBasedMaterial, glow: PhysicallyBasedMaterial) {
-        (
-            LudoMaterials.satin(
-                color,
-                roughness: LudoSceneStyle.domeRoughness,
-                clearcoat: LudoSceneStyle.domeClearcoat,
-                showsBothSides: true,
-                finish: .smoothGlaze
-            ),
-            LudoMaterials.glowing(
-                color,
-                roughness: LudoSceneStyle.domeRoughness,
-                clearcoat: LudoSceneStyle.domeClearcoat,
-                showsBothSides: true,
-                finish: .smoothGlaze
-            )
-        )
-    }
-
-    /// Paints the board pieces in new colors, such as when a player picks another one.
-    static func repaint(_ paint: LudoPaintTargets, colors: CornerColors) {
-        let materials = CornerMaterials(colors)
-        for corner in 0..<4 where corner < paint.startTiles.count {
-            paint.startTiles[corner].model?.materials = [materials.start[corner]]
-            for tile in paint.columnTiles[corner] { tile.model?.materials = [materials.column[corner]] }
-            paint.plates[corner].model?.materials = [materials.plate[corner]]
-            for dent in paint.dents[corner] { dent.model?.materials = [materials.slot[corner]] }
-        }
-        for (index, player) in [BoardPlayer.one, .two].enumerated() where index < paint.domeHalves.count {
-            let dome = domeMaterials(colors.pawnColor(of: player))
-            paint.domeHalves[index].model?.materials = [dome.half]
-            paint.domeGlows[index].model?.materials = [dome.glow]
-        }
-    }
-
-    private static func addTiles(
-        to root: Entity,
-        viewer: BoardPlayer,
-        colors: CornerColors,
-        paint: inout LudoPaintTargets
-    ) {
-        let mesh = MeshResource.generateBox(
-            width: LudoSceneStyle.tileSize,
-            height: LudoSceneStyle.tileHeight,
-            depth: LudoSceneStyle.tileSize,
-            cornerRadius: LudoSceneStyle.tileCornerRadius
-        )
-        let plain = LudoMaterials.satin(LudoSceneStyle.color(LudoSceneStyle.trackTileHex))
-        let materials = CornerMaterials(colors)
-        let height = LudoSceneStyle.tileHeight / 2
-        // The same tiles on every phone and every launch, each set down a little differently by hand.
-        var random = LudoRandom(seed: 0x7115)
-        var starts: [ModelEntity?] = Array(repeating: nil, count: 4)
-        for index in 0..<LudoBoard.trackLength {
-            let corner = index / LudoBoardGeometry.squaresPerQuarter
-            let isStart = index % LudoBoardGeometry.squaresPerQuarter == 0
-            let tile = ModelEntity(mesh: mesh, materials: [isStart ? materials.start[corner] : plain])
-            let point = LudoBoardGeometry.point(of: .track(index), viewer: viewer)
-            tile.position = LudoWorld.position(point, height: height)
-            setDownByHand(tile, using: &random)
-            root.addChild(tile)
-            if isStart { starts[corner] = tile }
-        }
-        paint.startTiles = starts.compactMap { $0 }
-        for corner in 0..<4 {
-            var column: [ModelEntity] = []
-            for step in 1...5 {
-                let tile = ModelEntity(mesh: mesh, materials: [materials.column[corner]])
-                let point = LudoBoardGeometry.columnPoint(corner: corner, step: step, viewer: viewer)
-                tile.position = LudoWorld.position(point, height: height)
-                setDownByHand(tile, using: &random)
-                root.addChild(tile)
-                column.append(tile)
-            }
-            paint.columnTiles.append(column)
-        }
-    }
-
-    private static func addYards(
-        to root: Entity,
-        viewer: BoardPlayer,
-        colors: CornerColors,
-        paint: inout LudoPaintTargets
-    ) {
-        let materials = CornerMaterials(colors)
-        let plateMesh = MeshResource.generateBox(
-            width: LudoSceneStyle.yardSize,
-            height: LudoSceneStyle.yardHeight,
-            depth: LudoSceneStyle.yardSize,
-            cornerRadius: LudoSceneStyle.yardCornerRadius
-        )
-        let slotMesh = MeshResource.generateCylinder(
-            height: LudoSceneStyle.yardSlotHeight,
-            radius: LudoSceneStyle.yardSlotRadius
-        )
-        let slotHeight = LudoSceneStyle.yardHeight + LudoSceneStyle.yardSlotHeight / 2
-        for corner in 0..<4 {
-            let plate = ModelEntity(mesh: plateMesh, materials: [materials.plate[corner]])
-            let center = LudoBoardGeometry.yardCenter(corner: corner, viewer: viewer)
-            plate.position = LudoWorld.position(center, height: LudoSceneStyle.yardHeight / 2)
-            root.addChild(plate)
-            paint.plates.append(plate)
-            var dents: [ModelEntity] = []
-            defer { paint.dents.append(dents) }
-            // Only the two players' yards hold pawns, so the two empty corners get no dents.
+    /// The colors the board top is painted in, for one viewer.
+    static func palette(viewer: BoardPlayer, colors: CornerColors) -> LudoBoardArt.Palette {
+        let corners = (0..<4).map { corner in
+            let color = colors.color(ofCorner: corner)
+            let light = color.ludoLightened(LudoSceneStyle.yardLightening)
             let role = LudoBoardGeometry.role(ofCorner: corner, viewer: viewer)
-            guard role == .mine || role == .partner else { continue }
-            for slot in 0..<LudoBoard.pawnsPerPlayer {
-                let dent = ModelEntity(mesh: slotMesh, materials: [materials.slot[corner]])
-                let point = LudoBoardGeometry.slotPoint(corner: corner, slot: slot, viewer: viewer)
-                dent.position = LudoWorld.position(point, height: slotHeight)
-                root.addChild(dent)
-                dents.append(dent)
-            }
+            // Only the two players' yards hold pawns, so the two empty corners get no spots.
+            let plays = role == .mine || role == .partner
+            return LudoBoardArt.Corner(
+                color: color.cgColor,
+                light: light.cgColor,
+                spot: plays ? light.ludoDarkened(LudoSceneStyle.slotDarkening).cgColor : nil
+            )
+        }
+        return LudoBoardArt.Palette(
+            base: LudoSceneStyle.color(LudoSceneStyle.slabHex).cgColor,
+            track: LudoSceneStyle.color(LudoSceneStyle.trackTileHex).cgColor,
+            corners: corners,
+            homeNear: colors.mine.cgColor,
+            homeFar: colors.partner.cgColor,
+            peony: UIImage(named: LudoSceneStyle.peonyAsset)?.cgImage,
+            grain: UIImage(named: "LudoGlazeDetail")?.cgImage
+        )
+    }
+
+    /// The grooves' bump texture, made once. It is the same for every board.
+    private static var bumps: TextureResource?
+
+    /// The glazed material of the painted board top. The painting runs off the main actor.
+    static func boardTopMaterial(viewer: BoardPlayer, colors: CornerColors) async -> PhysicallyBasedMaterial? {
+        let palette = palette(viewer: viewer, colors: colors)
+        let makesBumps = bumps == nil
+        let pictures = await Task.detached(priority: .userInitiated) {
+            LudoBoardArt.paint(viewer: viewer, palette: palette, makesBumps: makesBumps)
+        }.value
+        guard let pictures,
+              let color = try? await TextureResource(image: pictures.color, options: .init(semantic: .color))
+        else { return nil }
+        if bumps == nil, let picture = pictures.bumps {
+            bumps = try? await TextureResource(image: picture, options: .init(semantic: .normal))
+        }
+        var material = LudoMaterials.satin(.white, finish: .plain)
+        material.baseColor = .init(tint: .white, texture: .init(color))
+        if let bumps { material.normal = .init(texture: .init(bumps)) }
+        return material
+    }
+
+    /// The glow over one player's half of the middle.
+    static func homeGlowMaterial(_ color: UIColor) -> PhysicallyBasedMaterial {
+        LudoMaterials.glowing(color, showsBothSides: true, finish: .plain)
+    }
+
+    /// Paints the glows of the middle in new colors, such as when a player picks another one.
+    static func repaintGlows(_ paint: LudoPaintTargets, colors: CornerColors) {
+        for (index, player) in [BoardPlayer.one, .two].enumerated() where index < paint.homeGlows.count {
+            paint.homeGlows[index].model?.materials = [homeGlowMaterial(colors.pawnColor(of: player))]
         }
     }
 

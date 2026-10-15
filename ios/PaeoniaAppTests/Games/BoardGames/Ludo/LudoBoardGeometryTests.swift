@@ -231,7 +231,8 @@ struct LudoBoardGeometryTests {
 
         #expect(near.x < 0 && near.z > 0)
         #expect(far.x > 0 && far.z < 0)
-        #expect(near.y > LudoSceneStyle.yardHeight)
+        // The die rests on the flat board top.
+        #expect(isNearlyEqual(near.y, LudoSceneStyle.dieSize / 2))
         // The same on screen whoever looks: the near spot is in my yard.
         for viewer in viewers {
             let mine = LudoBoardGeometry.dieSpot(corner: LudoBoardGeometry.corner(of: viewer), viewer: viewer)
@@ -258,44 +259,41 @@ struct LudoSceneMathTests {
 
     // MARK: Camera
 
-    @Test func theBoardFillsTheWidthAndFitsTheHeightOfEveryShapeOfView() {
+    @Test func theWholeBoardFitsEveryShapeOfView() {
         for aspect in [0.5, 0.7, 1.0, LudoSceneStyle.viewAspect, 2.0] {
             let rig = LudoCameraRig.fitting(aspect: aspect)
-            let half = LudoWorld.halfBoard
+            let half = LudoWorld.halfSlab
             let corners: [SIMD3<Float>] = [
                 SIMD3(-half, 0, -half), SIMD3(-half, 0, half), SIMD3(half, 0, -half), SIMD3(half, 0, half)
             ]
             let points = corners.compactMap { rig.project($0) }
 
-            // The near corners may run past each side by half the overshoot.
-            let past = LudoSceneStyle.cameraOvershoot / 2 + 0.01
             #expect(points.count == 4)
             for point in points {
-                #expect((-past...(1 + past)).contains(Double(point.x)), "aspect \(aspect)")
+                #expect((-0.001...1.001).contains(Double(point.x)), "aspect \(aspect)")
                 #expect((0.0...1.0).contains(Double(point.y)), "aspect \(aspect)")
             }
-            let left = points.map(\.x).min() ?? 1
-            let right = points.map(\.x).max() ?? 0
-            let middle = rig.project(.zero)
-
             if aspect <= 1.0 {
-                // Tall views are filled sideways.
-                #expect(right - left > 0.9, "aspect \(aspect)")
+                // Tall views are filled sideways by the board. The pawns' height above the
+                // corners is in the fit too, so the slab itself spans a little less.
+                let left = points.map(\.x).min() ?? 1
+                let right = points.map(\.x).max() ?? 0
+                #expect(right - left > 0.85, "aspect \(aspect)")
             }
-            #expect(abs(Double(middle?.x ?? 0) - 0.5) < 0.001)
-            #expect(abs(Double(middle?.y ?? 0) - 0.5) < 0.2)
         }
     }
 
-    @Test func aWideViewKeepsTheWholeSlabInView() {
-        #expect(LudoSceneStyle.cameraOvershoot(forViewWidth: 400) == LudoSceneStyle.cameraOvershoot)
-        #expect(LudoSceneStyle.cameraOvershoot(forViewWidth: 834) == 0)
-        for aspect in [0.7, 1.0, LudoSceneStyle.viewAspect] {
-            let rig = LudoCameraRig.fitting(aspect: aspect, overshoot: 0)
-            let half = LudoWorld.halfSlab
-            for corner in [SIMD3(-half, 0, -half), SIMD3(-half, 0, half), SIMD3(half, 0, -half), SIMD3(half, 0, half)] {
-                #expect((-0.001...1.001).contains(Double(rig.project(corner)?.x ?? -1)), "aspect \(aspect)")
-            }
+    @Test func thePropsStayClearOfTheRowsAboveAndBelow() {
+        // A phone in portrait, where the board fits in the middle 56 percent.
+        let fitHeight = 0.56
+        let rig = LudoCameraRig.fitting(aspect: 0.43, fitHeight: fitHeight)
+        let band = (0.5 - fitHeight / 2)...(0.5 + fitHeight / 2)
+        for prop in LudoSceneStyle.framedProps {
+            let top = rig.project(SIMD3(prop.spot.x, prop.height, prop.spot.y))
+            let foot = rig.project(SIMD3(prop.spot.x, 0, prop.spot.y))
+
+            #expect(band.contains(Double(top?.y ?? -1)))
+            #expect(band.contains(Double(foot?.y ?? -1)))
         }
     }
 
@@ -350,21 +348,25 @@ struct LudoSceneMathTests {
     }
 
     @Test func theResetGlideTakesTheShortWayRound() {
-        let start = LudoCameraPose(yaw: 3.0, pitch: 0.7, zoom: 1.2)
+        let home = LudoCameraPose.home.yaw
+        let start = LudoCameraPose(yaw: home + 3.0, pitch: 0.7, zoom: 1.2)
         let halfway = start.blended(to: .home, amount: 0.5)
-        let nearlyThere = LudoCameraPose(yaw: -3.0, pitch: 0.7, zoom: 1).blended(to: .home, amount: 0.5)
+        let nearlyThere = LudoCameraPose(yaw: home - 3.0, pitch: 0.7, zoom: 1).blended(to: .home, amount: 0.5)
 
-        #expect(isClose(halfway.yaw, 1.5))
-        #expect(isClose(nearlyThere.yaw, -1.5))
+        #expect(isClose(halfway.yaw, home + 1.5))
+        #expect(isClose(nearlyThere.yaw, home - 1.5))
         #expect(start.blended(to: .home, amount: 1).zoom == 1)
     }
 
     @Test func theCameraLooksDownAtTheConfiguredAngle() {
         let rig = LudoCameraRig.fitting(aspect: 1)
         let offset = rig.position - rig.target
-        let pitch = atan2(Double(offset.y), Double(offset.z)) * 180 / .pi
+        let level = (Double(offset.x * offset.x) + Double(offset.z * offset.z)).squareRoot()
+        let pitch = atan2(Double(offset.y), level) * 180 / .pi
+        let yaw = atan2(Double(offset.x), Double(offset.z)) * 180 / .pi
 
         #expect(isClose(pitch, LudoSceneStyle.cameraPitchDegrees, tolerance: 0.01))
+        #expect(isClose(yaw, LudoSceneStyle.cameraYawDegrees, tolerance: 0.01))
     }
 
     // MARK: Die
@@ -428,7 +430,7 @@ struct LudoSceneMathTests {
 
     @Test func theTurnedShapesAreWellFormed() {
         let disc = LudoMeshGeometry.disc(radius: 0.3, segments: 24, flipsVertically: false)
-        for data in [LudoMeshGeometry.pawn(), LudoMeshGeometry.domeHalf(), LudoMeshGeometry.heart(), disc] {
+        for data in [LudoMeshGeometry.pawn(), LudoMeshGeometry.homeHalf(), LudoMeshGeometry.heart(), disc] {
             #expect(!data.positions.isEmpty)
             #expect(data.positions.count == data.normals.count)
             #expect(data.positions.count == data.uvs.count)
@@ -472,14 +474,12 @@ extension LudoSceneMathTests {
         #expect(abs(tip.x) < 0.01)
     }
 
-    @Test func aDomeHalfCoversOneSideOfTheSeam() {
-        let dome = LudoMeshGeometry.domeHalf()
-        let radius = dome.positions.map { ($0.x * $0.x + $0.z * $0.z).squareRoot() }.max() ?? 0
+    @Test func aHomeHalfIsFlatAndCoversOneSideOfTheSeam() {
+        let half = LudoMeshGeometry.homeHalf()
+        let radius = half.positions.map { ($0.x * $0.x + $0.z * $0.z).squareRoot() }.max() ?? 0
 
-        #expect(dome.positions.allSatisfy { $0.z > -0.0001 })
-        #expect(isClose(Double(radius), Double(LudoSceneStyle.domeDiameter / 2), tolerance: 0.001))
-        let top = Double(dome.positions.map(\.y).max() ?? 0)
-
-        #expect(isClose(top, Double(LudoSceneStyle.domeHeight), tolerance: 0.0001))
+        #expect(half.positions.allSatisfy { $0.z > -0.0001 && abs($0.y) < 0.0001 })
+        #expect(isClose(Double(radius), Double(LudoSceneStyle.homeDiameter / 2), tolerance: 0.001))
+        #expect(half.normals.allSatisfy { simd_distance($0, SIMD3(0, 1, 0)) < 0.0001 })
     }
 }

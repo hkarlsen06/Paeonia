@@ -72,7 +72,7 @@ struct GamesRootView: View {
         case .unavailable:
             unavailable
         case .hub:
-            GamesHubView(viewModel: viewModel, open: open)
+            GamesHubView(viewModel: viewModel, isShowingGame: !path.isEmpty, open: open)
         }
     }
 

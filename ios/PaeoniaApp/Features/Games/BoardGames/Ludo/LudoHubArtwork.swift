@@ -1,19 +1,20 @@
 import SwiftUI
 
-/// The Ludo card's painting: the board with a pink and a lavender half in the center,
-/// one pink pawn still on its home column and the center empty. The beat brings the
-/// last pink pawn home: it pops up at the end of the pink home column, hops onto the
-/// center, and the center glows gold. It follows `docs/games/hub-artwork.md`.
+/// The Ludo card's scene: the board with one pawn of each partner on the track and the
+/// dome in the center empty, split pink and lavender. The beat brings a pink pawn home:
+/// it pops up on the last pink tile before the dome, hops onto the dome's seam, and the
+/// dome glows gold. It follows `docs/games/hub-artwork.md`.
 struct LudoHubArtwork: View {
     var body: some View {
-        GameHubArtwork(plate: .gameHubLudoPainting, duration: 1.8) { progress in
-            LudoHubBeat(progress: progress)
+        GameHubArtwork(duration: 1.8) { progress in
+            LudoHubScene(progress: progress)
         }
     }
 }
 
-/// In the painting's pixels. Points are where the pawn's base touches the board.
-private struct LudoHubBeat: View, Animatable {
+/// In the canvas's pixels. Spots on the board are fractions of `GameHubLudoBoard`, and the
+/// pawn's points are where its base touches the board.
+private struct LudoHubScene: View, Animatable {
     var progress: Double
 
     var animatableData: Double {
@@ -23,21 +24,25 @@ private struct LudoHubBeat: View, Animatable {
 
     private typealias Timing = GameHubArtworkTiming
 
-    /// The last tile of the pink home column, and the top of the dome on its seam, where
-    /// the pink and lavender halves meet. The pawn reads best there, half against lavender.
-    private static let column = CGPoint(x: 349, y: 314)
-    private static let home = CGPoint(x: 512, y: 330)
-    private static let center = CGPoint(x: 512, y: 337)
-    private static let pawnHeight: CGFloat = 84
-    /// Width divided by height of `GameHubLudoPawnPink`.
-    private static let pawnAspect: CGFloat = 0.734
-    private static let hopHeight: CGFloat = 80
+    private static let board = GameHubPlacement(base: CGPoint(x: 512, y: 640), width: 600, aspect: 1.370)
+    /// The last pink tile on the left arm, right before the dome.
+    private static let column = board.point(0.351, 0.443)
+    /// The middle of the dome on its seam. Higher up, the base sits on the dome's far
+    /// slope and the pawn looks pasted on.
+    private static let home = board.point(0.499, 0.427)
+    private static let dome = board.point(0.499, 0.404)
+    /// `GameHubLudoPawnPink` is the board's own pink pawn, cut out of `GameHubLudoBoard`,
+    /// so it matches the board's camera and light. This is its height on the board.
+    private static let pawnHeight: CGFloat = 81
+    private static let pawnAspect: CGFloat = 0.696
+    private static let hopHeight: CGFloat = 60
 
     var body: some View {
         let glow = Timing.ease(progress, from: 0.55, to: 0.85)
         let settle = Timing.ease(progress, from: 0.85, to: 1)
         ZStack {
-            GameHubBeatGlow(color: .paeoniaInkGold, center: Self.center, radius: 190, strength: glow - 0.3 * settle)
+            GameHubObject(image: .gameHubLudoBoard, placement: Self.board)
+            GameHubBeatGlow(color: .paeoniaInkGold, center: Self.dome, radius: 120, strength: glow - 0.3 * settle)
             pawn
         }
     }

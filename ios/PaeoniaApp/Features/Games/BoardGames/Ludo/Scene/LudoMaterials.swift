@@ -4,7 +4,7 @@ import SwiftUI
 import UIKit
 
 /// The materials of the Ludo scene, made from the numbers in `LudoSceneStyle`: glazed
-/// ceramic for the pieces and the tiles, matte clay for the slab, and plain for pictures.
+/// ceramic for the slab and the pieces, and plain for pictures.
 enum LudoMaterials {
     /// What the surface is made of.
     enum Finish {
@@ -13,9 +13,7 @@ enum LudoMaterials {
         /// The same glaze without the grain, for the shapes made in code, which have
         /// no directions for a bump picture to follow.
         case smoothGlaze
-        /// Matte clay with fine tool marks.
-        case clay
-        /// One flat color.
+        /// One flat color, or a picture laid on it afterwards.
         case plain
     }
 
@@ -89,34 +87,16 @@ enum LudoMaterials {
         material.emissiveColor = .init(color: .black)
         return material
     }
-
-    /// A flat picture with a see-through background, laid on a tile.
-    static func decal(_ texture: TextureResource) -> PhysicallyBasedMaterial {
-        var material = satin(
-            .white,
-            roughness: LudoSceneStyle.decalRoughness,
-            clearcoat: 0,
-            showsBothSides: true,
-            finish: .plain
-        )
-        material.baseColor = .init(tint: .white, texture: .init(texture))
-        material.emissiveColor = .init(color: .black)
-        material.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: 1))
-        return material
-    }
 }
 
-/// The scanned surface pictures (CC0, from ambientCG: Porcelain002 for the glaze's
-/// gloss, Clay005 for the clay), made gray so the players' colors tint them. They
-/// load once, before the scene's materials are made.
+/// The scanned surface pictures of the glaze (CC0, from ambientCG: Clay005's grain
+/// under Porcelain002's gloss), made gray so the players' colors tint them. They load
+/// once, before the scene's materials are made.
 @MainActor
 struct LudoSurfaces {
     let glazeDetail: TextureResource
     let glazeRoughness: TextureResource
     let glazeNormal: TextureResource
-    let clayDetail: TextureResource
-    let clayRoughness: TextureResource
-    let clayNormal: TextureResource
 
     private(set) static var loaded: LudoSurfaces?
 
@@ -124,24 +104,36 @@ struct LudoSurfaces {
         guard loaded == nil else { return }
         guard let glazeDetail = await texture("LudoGlazeDetail", .raw),
               let glazeRoughness = await texture("LudoGlazeRoughness", .scalar),
-              let glazeNormal = await texture("LudoGlazeNormal", .normal),
-              let clayDetail = await texture("LudoClayDetail", .raw),
-              let clayRoughness = await texture("LudoClayRoughness", .scalar),
-              let clayNormal = await texture("LudoClayNormal", .normal)
+              let glazeNormal = await texture("LudoGlazeNormal", .normal)
         else { return }
-        loaded = LudoSurfaces(
-            glazeDetail: glazeDetail,
-            glazeRoughness: glazeRoughness,
-            glazeNormal: glazeNormal,
-            clayDetail: clayDetail,
-            clayRoughness: clayRoughness,
-            clayNormal: clayNormal
-        )
+        loaded = LudoSurfaces(glazeDetail: glazeDetail, glazeRoughness: glazeRoughness, glazeNormal: glazeNormal)
     }
 
     private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
-        guard let image = UIImage(named: name)?.cgImage else { return nil }
+        guard var image = UIImage(named: name)?.cgImage else { return nil }
+        // The asset catalog stores a gray picture with one channel, and RealityKit reads
+        // one channel as red only. A tint picture must keep all three.
+        if semantic == .raw, let color = threeChannels(image) {
+            image = color
+        }
         return try? await TextureResource(image: image, withName: nil, options: .init(semantic: semantic))
+    }
+
+    /// The picture drawn again with red, green and blue channels.
+    private static func threeChannels(_ image: CGImage) -> CGImage? {
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(
+                  data: nil,
+                  width: image.width,
+                  height: image.height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: 0,
+                  space: space,
+                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+              )
+        else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return context.makeImage()
     }
 
     /// Lays the pictures of `finish` on a material. The roughness pictures run from
@@ -159,10 +151,6 @@ struct LudoSurfaces {
             if finish == .glaze {
                 material.normal = .init(texture: .init(glazeNormal))
             }
-        case .clay:
-            material.baseColor = .init(tint: color, texture: .init(clayDetail))
-            material.roughness = .init(scale: roughness, texture: .init(clayRoughness))
-            material.normal = .init(texture: .init(clayNormal))
         case .plain:
             break
         }
@@ -193,25 +181,27 @@ enum LudoMarkPicture {
     }
 }
 
-/// The light around the scene: a photo of a small studio with softboxes (CC0, Poly
-/// Haven's studio_small_08), tinted pink on the left and lavender on the right with a
-/// dark plum floor, so the glossy pieces show real highlights in the house colors.
-/// It is an OpenEXR picture in the asset catalog, so the softboxes keep their brightness.
+/// The light around the scene: a photo of a warm living room with a lit fireplace (CC0,
+/// Poly Haven's fireplace), touched with pink on the left and lavender on the right over
+/// a dark plum floor. It is an OpenEXR picture in the asset catalog, so its lamps keep
+/// their brightness.
 @MainActor
 enum LudoBackdrop {
+    /// Loaded once and kept, so the board opens faster the next time.
+    private static var loaded: EnvironmentResource?
+
     static func environment() async -> EnvironmentResource? {
-        guard let data = NSDataAsset(name: "LudoStudio")?.data,
+        if let loaded { return loaded }
+        guard let data = NSDataAsset(name: "LudoRoomLight")?.data,
               let source = CGImageSourceCreateWithData(data as CFData, nil),
               var image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else { return nil }
         if LudoSceneStyle.mirrorsSky, let mirrored = mirrored(image) {
             image = mirrored
         }
-        // The scene shows no sky, so iOS 27 can skip making one.
-        if #available(iOS 27.0, *) {
-            return try? await EnvironmentResource(equirectangular: image, options: .init())
-        }
-        return try? await EnvironmentResource(equirectangular: image, withName: nil)
+        // The scene shows no sky, so RealityKit can skip making one.
+        loaded = try? await EnvironmentResource(equirectangular: image, options: .init())
+        return loaded
     }
 
     /// The picture flipped left to right.
@@ -231,14 +221,5 @@ enum LudoBackdrop {
         context.scaleBy(x: -1, y: 1)
         context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
         return context.makeImage()
-    }
-}
-
-/// The peony picture that lies flat on the safe squares.
-@MainActor
-enum LudoPeonyPicture {
-    static func texture() async -> TextureResource? {
-        guard let image = UIImage(named: LudoSceneStyle.peonyAsset)?.cgImage else { return nil }
-        return try? await TextureResource(image: image, withName: nil, options: .init(semantic: .color))
     }
 }

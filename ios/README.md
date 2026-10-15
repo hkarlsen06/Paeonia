@@ -4,7 +4,7 @@ Native iOS app workspace for the Paeonia app, widget, notification service exten
 
 Locked foundation decisions:
 
-- Minimum deployment target: iOS 26.5
+- Minimum deployment target: iOS 27.0
 - Initial targets:
   - app
   - widget

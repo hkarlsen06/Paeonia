@@ -360,9 +360,9 @@ Empty states use `PaeoniaEmptyStateView`: no finished games yet (`point.3.connec
 
 ### Hub card
 
-`MindMeldHubCard` follows the Draw & Guess card: the painting behind the whole card, with the partner-here chip and the stats capsule over its scene, then the title, a status line, the primary button and the "Our melds" link.
+`MindMeldHubCard` follows the Draw & Guess card: the picture behind the whole card, with the partner-here chip and the stats capsule over its scene, then the title, a status line, the primary button and the "Our melds" link.
 
-Artwork (`MindMeldHubArtwork`). A painting of two blank word cards leaning together, one glowing in each partner's color, with a green light where they touch. The beat opens a peony where they meet. It follows `docs/games/hub-artwork.md`.
+Artwork (`MindMeldHubArtwork`). Two blank word cards leaning together, one edged in each partner's color. The beat opens a peony where their tops meet. It follows `docs/games/hub-artwork.md`.
 
 | State | Status line | Button |
 |---|---|---|

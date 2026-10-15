@@ -321,7 +321,7 @@ The reveal. It should feel like closing a book you wrote together.
 
 ### Hub card
 
-- Artwork: a painting of a notebook page with lines in both partners' inks, one word underlined in gold, the fountain pen and an ink bottle. A peony bud pops up after the last line. It follows `docs/games/hub-artwork.md`.
+- Artwork: a notebook page with lines in both partners' inks, one line in gold, the fountain pen and an ink bottle. A peony bud pops up after the last line. It follows `docs/games/hub-artwork.md`.
 - Status: "Your turn to write", "Start a new story", "Give your story a title", "[Name] is writing", "Waiting for [Name]".
 - Detail line: "3 stories finished" once one exists.
 - The badge counts any of my turns: choosing an opening, writing, naming, or an unseen finished story.

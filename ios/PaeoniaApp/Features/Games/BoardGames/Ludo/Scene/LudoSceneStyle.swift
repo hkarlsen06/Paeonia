@@ -7,35 +7,40 @@ import simd
 nonisolated enum LudoSceneStyle {
     // MARK: Board
 
-    /// Edge of a tile. Less than 1.0, so a thin gap shows between tiles.
-    static let tileSize: Float = 0.92
-    /// How far a tile rises above the slab.
-    static let tileHeight: Float = 0.18
-    /// Rounded like a pillow. RealityKit caps the radius at half the height.
-    static let tileCornerRadius: Float = 0.18
-    /// Tiles are set down by hand: each turns up to this many degrees and sinks up to
-    /// this much below the others.
-    static let tileTwistDegrees: Float = 1.2
-    static let tileHeightJitter: Float = 0.012
-    /// The slab ends just past the 15 by 15 cells: a thin rounded lip, no border.
-    static let slabMargin: Float = 0.25
+    /// The board is one glazed slab with the layout painted on its flat top (see
+    /// `LudoBoardArt`). A lip of plain glaze runs round the 15 by 15 cells.
+    static let slabMargin: Float = 0.5
     static let slabThickness: Float = 0.7
-    static let slabCornerRadius: Float = 0.6
-    /// The base yards. A yard is a raised pad a little smaller than its 6 by 6 cells,
-    /// so a rim of the slab shows around it and its rounded edge catches the light.
-    static let yardSize: Float = 5.6
-    static let yardHeight: Float = 0.24
-    static let yardCornerRadius: Float = 0.6
-    /// The round dent where one pawn waits in its base.
+    /// The slab's corners are round, seen from above, and its top edge is softly
+    /// rounded. The corner leaves the painted cells just inside it.
+    static let slabCornerRadius: Float = 1.6
+    static let slabEdgeRadius: Float = 0.12
+    static let slabCornerSegments = 12
+    static let slabEdgeSegments = 4
+    /// Grooves are carved round every square, yard panel, pawn spot and the middle.
+    /// Width and softness are in cells. Depth is how deep they look to the light.
+    /// Pooling is how much darker the glaze is at the bottom of a groove.
+    static let grooveWidth: Float = 0.06
+    static let grooveSoftness: Float = 0.02
+    static let grooveDepth: Float = 0.04
+    static let groovePooling: Float = 0.3
+    /// Pixels across the painted colors and the groove bumps. The colors are sharp to
+    /// the closest zoom. Grooves are soft, so their picture can be smaller.
+    static let boardArtSide = 2_048
+    static let boardBumpSide = 1_024
+    /// The glaze grain repeats every this many cells.
+    static let boardGrainCells: Float = 4
+    /// Each yard fills its 6 by 6 corner, its outer corner rounded like the board's,
+    /// with a carved panel inset by this much.
+    static let yardOuterCornerRadius: Float = 1.0
+    static let yardPanelInset: Float = 0.25
+    static let yardPanelCornerRadius: Float = 0.5
+    /// The painted round spot where one pawn waits in its base.
     static let yardSlotRadius: Float = 0.6
-    static let yardSlotHeight: Float = 0.03
-    /// The center is a low round dome in two halves, mine and my partner's.
-    static let domeDiameter: Float = 2.8
-    static let domeHeight: Float = 0.26
-    /// Height of the dome where the pawns at home stand.
-    static let homePadHeight: Float = 0.2
-    /// How deep a pawn at home sinks into the dome.
-    static let homeSink: Float = 0.3
+    /// The middle is a painted round in two halves, mine and my partner's.
+    static let homeDiameter: Float = 2.8
+    /// The glow over a half of the middle lies this far above the board, to avoid flicker.
+    static let homeGlowLift: Float = 0.003
     /// Pawns that share a square stand this far apart, and shrink to `sharedPawnScale`.
     static let sharedPawnSpacing: Float = 0.5
     static let sharedPawnScale: Float = 0.66
@@ -45,6 +50,58 @@ nonisolated enum LudoSceneStyle {
     static let homeLaneSpacing: Double = 0.45
     /// How far from the center point a player's home pawns stand, along their column.
     static let homeDistance: Double = 0.78
+
+    // MARK: Room
+
+    /// The board lies on a varnished wooden table in a dark room. The table is far wider
+    /// than the view, and fades into the room's color from `roomLitRadius` cells out to
+    /// `roomDarkRadius`. The wood repeats every `tableGrainCells` cells.
+    static let tableSize: Float = 140
+    static let tableGrainCells: Float = 30
+    /// The table's gloss comes from its roughness picture, which follows the grain (see
+    /// `ios/Scripts/ludo-surfaces.swift`). This scales it. There is no clearcoat, which
+    /// lay over the grain as one smooth sheen.
+    static let tableRoughness: Float = 1
+    /// A dark plum close to the app's own background, so the warm table fades into the
+    /// same color as the rows on top of it.
+    static let roomHex: UInt32 = 0x220A18
+    /// A linen runner lies along the middle of the table from far to near, under the
+    /// board and most of the props, `runnerLift` thick. The table shows on both sides.
+    /// The weave repeats every `runnerGrainCells` cells.
+    static let runnerWidth: Float = 11
+    static let runnerGrainCells: Float = 6
+    static let runnerLift: Float = 0.02
+    static let runnerHex: UInt32 = 0xD9C4A8
+    static let roomLitRadius: Float = 13
+    static let roomDarkRadius: Float = 34
+    /// The props are modeled in meters. At true size next to a 40 centimeter board they
+    /// crowd it, so they stand a third smaller, as if the board were a little bigger.
+    static let cellsPerMeter: Float = 26
+    /// Where the props stand on the table, as (x, z) in cells. Far is negative z. The
+    /// candle stands off the far left corner, the teapot and my partner's cup behind the
+    /// board, and my cup in front of it, near me.
+    static let candlePosition = SIMD2<Float>(-8.5, -9)
+    static let teapotPosition = SIMD2<Float>(5.5, -12.5)
+    static let partnerCupPosition = SIMD2<Float>(9.5, -9.5)
+    static let myCupPosition = SIMD2<Float>(2.5, 11)
+    /// A cup rests this far up in its saucer, in meters of the model.
+    static let cupInSaucer: Float = 0.006
+    /// The tea in a cup: how high its surface is and how wide, in meters of the model,
+    /// its color and its gloss. A smooth surface shows the candle in it.
+    static let teaLevel: Float = 0.056
+    static let teaRadius: Float = 0.041
+    static let teaHex: UInt32 = 0x5A2A10
+    static let teaRoughness: Float = 0.08
+    /// The candle flame, in cells, and the warm light it gives. The light flickers by
+    /// up to `candleFlicker` of its strength.
+    static let flameHeight: Float = 0.9
+    static let flameWidth: Float = 0.32
+    static let flameLift: Float = 0.05
+    static let flameCoreHex: UInt32 = 0xFFE2A8
+    static let flameHex: UInt32 = 0xFF9A3C
+    static let candleLumens: Float = 400_000
+    static let candleFlicker: Float = 0.12
+    static let candleReach: Float = 30
 
     // MARK: Pawn
 
@@ -70,26 +127,13 @@ nonisolated enum LudoSceneStyle {
     /// The mark takes this share of the disc width.
     static let markScale: CGFloat = 0.86
 
-    // MARK: Contact shade
-
-    /// The soft dark ring on the slab around each tile, yard and the dome. Strength is
-    /// the darkness right at a piece, spread how far the dark reaches past its edge, and
-    /// blur how soft it fades, both in cells.
-    static let contactShadeStrength: CGFloat = 0.45
-    static let contactShadeSpread: Float = 0.06
-    static let contactShadeBlur: Float = 0.14
-    static let contactShadeTextureSide = 512
-    /// The shade lies this far above the slab, to avoid flicker.
-    static let contactShadeLift: Float = 0.003
-
     // MARK: Peony on safe squares
 
-    /// Asset name of the peony picture laid flat on the six safe squares that are not start squares.
+    /// Asset name of the peony painted on the six safe squares that are not start squares.
     static let peonyAsset = "LudoPeonyTop"
     /// Width and height of the picture are in this ratio.
     static let peonyAspect: Float = 1.008
     static let peonyWidth: Float = 0.7
-    static let peonyLift: Float = 0.004
     static let peonySquares: [Int] = [8, 13, 21, 34, 39, 47]
 
     // MARK: Die
@@ -114,9 +158,9 @@ nonisolated enum LudoSceneStyle {
 
     // MARK: Colors (hex RGB)
 
-    /// The slab under the tiles.
+    /// The glaze of the slab, seen round the edge and in the middle.
     static let slabHex: UInt32 = 0xF4DCE6
-    /// Tiles nobody owns.
+    /// Squares nobody owns.
     static let trackTileHex: UInt32 = 0xFFF8FB
     /// The two corners nobody plays: quiet gold and sky blue, calmer than the players' colors.
     static let goldCornerHex: UInt32 = 0xE9CF98
@@ -126,30 +170,25 @@ nonisolated enum LudoSceneStyle {
     static let pipHex: UInt32 = 0x4F203A
     /// The mark on a pawn top.
     static let markInkHex: UInt32 = 0xFFFFFF
-    /// How much a yard plate or a home column tile mixes in white. 0 is the full color.
+    /// How much a yard or a home column square mixes in white. 0 is the full color.
     static let yardLightening: CGFloat = 0.10
-    static let columnLightening: CGFloat = 0.10
     static let slotDarkening: CGFloat = 0.12
 
     // MARK: Material
 
-    /// Roughness and clearcoat by part. The pieces you touch are glossier than the board.
-    /// The slab is matte clay with no glaze.
-    static let slabRoughness: Float = 0.75
-    static let slabClearcoat: Float = 0
-    /// Tiles, bases and home columns.
-    static let boardRoughness: Float = 0.45
-    static let boardClearcoat: Float = 0.2
-    static let domeRoughness: Float = 0.3
-    static let domeClearcoat: Float = 0.6
-    static let pawnRoughness: Float = 0.24
-    static let pawnClearcoat: Float = 0.9
-    static let dieRoughness: Float = 0.26
-    static let dieClearcoat: Float = 0.9
+    /// Roughness and clearcoat by part: a soft satin glaze, not a gloss. The pieces you
+    /// touch have a little more sheen than the board.
+    /// The slab and its painted top. Rough enough that the lamp leaves no glare on it.
+    static let boardRoughness: Float = 0.85
+    static let boardClearcoat: Float = 0.03
+    static let pawnRoughness: Float = 0.55
+    static let pawnClearcoat: Float = 0.15
+    static let dieRoughness: Float = 0.55
+    static let dieClearcoat: Float = 0.15
     static let pipRoughness: Float = 0.5
-    static let decalRoughness: Float = 0.6
-    static let clearcoatRoughness: Float = 0.12
-    static let specular: Float = 0.5
+    /// A broad, soft sheen from the clearcoat instead of a small sharp highlight.
+    static let clearcoatRoughness: Float = 0.4
+    static let specular: Float = 0.35
     /// Share of a material's own color it gives off itself. It lifts the shadows from
     /// pure black. Kept low, because the studio picture lights the shaded sides and a
     /// strong self fill makes every surface look flat.
@@ -161,38 +200,46 @@ nonisolated enum LudoSceneStyle {
 
     // MARK: Lights and background
 
-    /// Key light from high on the right, a little in front. The tops are lit and the
-    /// fronts of the tiles fall into soft shade, so every tile reads as a raised piece.
-    static let keyLightHex: UInt32 = 0xFFF0E4
-    static let keyLightIntensity: Float = 2_800
+    /// The light is a warm orange, like a lamp or the last sun on an evening. The main
+    /// light is a wide lamp high over the far left, so the whole board is lit evenly with
+    /// no bright pool. It is the only light that casts shadows, and its size makes them soft.
+    static let lampHex: UInt32 = 0xFF8A3C
+    static let lampLumens: Float = 5_500_000
+    static let lampPosition = SIMD3<Float>(-9, 20, -7)
+    /// The cone of the lamp's light, and the share of it that is at full strength.
+    static let lampConeDegrees: Float = 120
+    static let lampFullShare: Float = 0.8
+    static let lampReach: Float = 80
+    /// How big the lamp is. Bigger makes the shadows softer, and also grainier.
+    static let lampSize: Float = 0.7
+    /// A dim warm light from high on the right, so the faces turned from the lamp keep
+    /// their color. No shadows.
+    static let keyLightHex: UInt32 = 0xFFA060
+    static let keyLightIntensity: Float = 350
     static let keyLightPosition = SIMD3<Float>(7, 14, 1.5)
-    /// Pink rim light low and behind on the right. It is low so it grazes the right
-    /// edges of the pieces and adds little to the flat board.
-    static let rimLightHex: UInt32 = 0xF27EB2
-    static let rimLightIntensity: Float = 6_000
+    /// A warm fill from the front left, low and soft, so no side of a piece goes dark. No shadows.
+    static let fillLightHex: UInt32 = 0xFF9A66
+    static let fillLightIntensity: Float = 500
+    static let fillLightPosition = SIMD3<Float>(-8, 9, 7)
+    /// A soft peach rim light low and behind on the right. It grazes the right edges of
+    /// the pieces and adds little to the flat board.
+    static let rimLightHex: UInt32 = 0xFFA08A
+    static let rimLightIntensity: Float = 1_500
     static let rimLightPosition = SIMD3<Float>(12, 2.5, -6)
-    /// The key light's shadow is a fixed box around the board, so it stays the same
-    /// however the camera turns or zooms. An automatic shadow only reaches a set
-    /// distance from the camera, and the camera stands 35 to 60 cells away.
-    /// Near and far are measured from the light along its beam. The light stands about
-    /// 16 cells from the middle, and the board with a jumping pawn spans about 8 to 21.
-    static let shadowNear: Float = 1
-    static let shadowFar: Float = 32
-    /// Width of the shadow box. RealityKit does not say if this is the whole width or
-    /// half, so it is 24: wide enough for the 22 cell diagonal of the slab either way.
-    /// If the shadows look blocky, try 12, and check that the corner pawns keep theirs.
-    static let shadowWidth: Float = 24
-    static let shadowDepthBias: Float = 1
-    /// The studio picture that lights the scene (see `LudoBackdrop`). Its brightness
-    /// matches the old painted sky. Each step up doubles it.
-    static let environmentExposure: Float = 0
+    /// The studio picture that lights the scene (see `LudoBackdrop`). At 0 its brightness
+    /// matches the old painted sky. Each step up doubles it. It is turned down, so its
+    /// cool pink and lavender do not wash out the orange.
+    static let environmentExposure: Float = -0.3
     /// Turn this on if pink lands on the right side of the pieces and lavender on the left.
     static let mirrorsSky = false
 
     // MARK: Camera
 
-    /// Looking down at the board by this angle from level.
-    static let cameraPitchDegrees: Double = 64
+    /// Looking down at the board by this angle from level, and turned this far round it,
+    /// as someone seated at the table at the corner by their own base. The lower, turned
+    /// view shows the props standing up round the board.
+    static let cameraPitchDegrees: Double = 50
+    static let cameraYawDegrees: Double = -18
     /// Vertical field of view.
     static let cameraFieldOfViewDegrees: Double = 30
     /// The camera draws from this near distance to this far one. The closest zoom keeps
@@ -206,16 +253,13 @@ nonisolated enum LudoSceneStyle {
     static let viewAspect: Double = 1.4
     /// Space kept free above and below the board, as a share of half the view.
     static let cameraMargin: Double = 0.03
-    /// How far past the left and right edges of the view the near edge of the board
-    /// may run, as a share of half the view. The board fills a phone sideways.
-    static let cameraOvershoot: Double = 0.3
-    /// A view at least this wide, such as on an iPad, has room for the whole board,
-    /// so its edges stay in view.
-    static let cameraOvershootMaxWidth: Double = 600
-
-    static func cameraOvershoot(forViewWidth width: Double) -> Double {
-        width < cameraOvershootMaxWidth ? cameraOvershoot : 0
+    /// The props the default camera keeps in the space between the rows, as their spot
+    /// on the table and their height in cells: the candle to the tip of its flame, the
+    /// teapot and the two cups. Each reaches `framedPropReach` cells round its spot.
+    static var framedProps: [(spot: SIMD2<Float>, height: Float)] {
+        [(candlePosition, 10.2), (teapotPosition, 4.6), (partnerCupPosition, 2), (myCupPosition, 2)]
     }
+    static let framedPropReach: Float = 1.6
     /// The orbit keeps the camera between these angles above the board.
     static let orbitPitchRangeDegrees: ClosedRange<Double> = 35...80
     /// Pinch limits, as a share of the default distance.

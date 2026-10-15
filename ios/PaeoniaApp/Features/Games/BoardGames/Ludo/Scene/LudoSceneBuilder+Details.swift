@@ -3,109 +3,108 @@ import SwiftUI
 import UIKit
 import simd
 
-/// The slab, the center dome, the peonies and the lights.
+/// The slab, its painted top, the glows of the middle and the lights.
 extension LudoSceneBuilder {
-    /// The rounded slab of matte clay under everything.
+    /// The glazed slab under the painted top: round corners, a softly rounded top edge
+    /// and straight sides.
     static func addSlab(to root: Entity) {
-        let side = LudoWorld.halfSlab * 2
-        let material = LudoMaterials.satin(
-            LudoSceneStyle.color(LudoSceneStyle.slabHex),
-            roughness: LudoSceneStyle.slabRoughness,
-            clearcoat: LudoSceneStyle.slabClearcoat,
-            finish: .clay
+        let style = LudoSceneStyle.self
+        let data = LudoMeshGeometry.slabSides(
+            half: LudoWorld.halfSlab,
+            cornerRadius: style.slabCornerRadius,
+            edge: style.slabEdgeRadius,
+            thickness: style.slabThickness
         )
-        let slab = ModelEntity(
-            mesh: .generateBox(
-                width: side,
-                height: LudoSceneStyle.slabThickness,
-                depth: side,
-                cornerRadius: LudoSceneStyle.slabCornerRadius
-            ),
-            materials: [material]
-        )
-        slab.position.y = -LudoSceneStyle.slabThickness / 2
+        guard let mesh = try? MeshResource.generate(from: [descriptor(data, name: "ludoSlab")]) else { return }
+        let material = LudoMaterials.satin(style.color(style.slabHex), finish: .smoothGlaze)
+        let slab = ModelEntity(mesh: mesh, materials: [material])
         slab.name = "ludoSlab"
         root.addChild(slab)
     }
 
-    /// The center dome in two halves, mine on the near side and my partner's on the
-    /// far side, with the seam between the two home columns. Records each half and
-    /// the glow shell over it in `paint`, for player one and player two in that order.
-    static func addCenter(to root: Entity, viewer: BoardPlayer, colors: CornerColors, paint: inout LudoPaintTargets) {
-        let data = LudoMeshGeometry.domeHalf()
-        guard let mesh = try? MeshResource.generate(from: [descriptor(data, name: "ludoDome")]) else { return }
-        for player in [BoardPlayer.one, .two] {
-            let isNear = player == viewer
-            let dome = domeMaterials(isNear ? colors.mine : colors.partner)
-            let half = ModelEntity(mesh: mesh, materials: [dome.half])
-            // Hidden until a pawn gets home, and when the game is won.
-            let glow = ModelEntity(mesh: mesh, materials: [dome.glow])
-            glow.scale = SIMD3(1.05, 1.04, 1.05)
+    /// The flat painted top of the board, at height 0, where every piece stands.
+    static func addBoardTop(to root: Entity, material: PhysicallyBasedMaterial?) -> ModelEntity? {
+        guard let mesh = boardTopMesh(), let material else { return nil }
+        let top = ModelEntity(mesh: mesh, materials: [material])
+        top.name = "ludoBoardTop"
+        root.addChild(top)
+        return top
+    }
+
+    /// The top inside the rounded edge, with the directions a bump picture needs:
+    /// along x, and toward the far edge.
+    private static func boardTopMesh() -> MeshResource? {
+        let style = LudoSceneStyle.self
+        let data = LudoMeshGeometry.slabTop(
+            half: LudoWorld.halfSlab,
+            cornerRadius: style.slabCornerRadius,
+            edge: style.slabEdgeRadius,
+            pictureHalf: LudoBoardArt.half
+        )
+        var descriptor = descriptor(data, name: "ludoBoardTop")
+        descriptor.tangents = MeshBuffers.Tangents(Array(repeating: SIMD3(1, 0, 0), count: data.positions.count))
+        descriptor.bitangents = MeshBuffers.Tangents(Array(repeating: SIMD3(0, 0, -1), count: data.positions.count))
+        return try? MeshResource.generate(from: [descriptor])
+    }
+
+    /// A glow over each player's half of the middle, mine on the near side and my
+    /// partner's on the far side. Hidden until a pawn gets home, and when the game is won.
+    /// Returned for player one and player two in that order.
+    static func addHomeGlows(to root: Entity, viewer: BoardPlayer, colors: CornerColors) -> [ModelEntity] {
+        let data = LudoMeshGeometry.homeHalf()
+        guard let mesh = try? MeshResource.generate(from: [descriptor(data, name: "ludoHomeGlow")]) else { return [] }
+        return [BoardPlayer.one, .two].map { player in
+            let glow = ModelEntity(mesh: mesh, materials: [homeGlowMaterial(colors.pawnColor(of: player))])
+            glow.position.y = LudoSceneStyle.homeGlowLift
+            // The mesh covers the near half. The far half is the same mesh turned around.
+            if player != viewer { glow.orientation = simd_quatf(angle: .pi, axis: SIMD3(0, 1, 0)) }
             glow.components.set(OpacityComponent(opacity: 0))
+            glow.components.set(DynamicLightShadowComponent(castsShadow: false))
             glow.isEnabled = false
-            for entity in [half, glow] {
-                // The mesh covers the near half. The far half is the same mesh turned around.
-                if !isNear { entity.orientation = simd_quatf(angle: .pi, axis: SIMD3(0, 1, 0)) }
-                root.addChild(entity)
-            }
-            paint.domeHalves.append(half)
-            paint.domeGlows.append(glow)
-        }
-    }
-
-    /// Turns a tile a quarter turn or more, so its glaze shows a different part, then
-    /// twists and sinks it a hair, as a tile set down by hand. It only ever sinks, so the
-    /// peonies and the pawns, placed for the full tile height, never end up inside it.
-    static func setDownByHand(_ tile: ModelEntity, using random: inout LudoRandom) {
-        let quarter = Float(random.next() % 4) * .pi / 2
-        let twist = LudoSceneStyle.tileTwistDegrees * .pi / 180
-        let angle = quarter + random.float(in: -twist...twist)
-        tile.orientation = simd_quatf(angle: angle, axis: SIMD3(0, 1, 0))
-        let lift = LudoSceneStyle.tileHeightJitter
-        tile.position.y -= random.float(in: 0...lift)
-    }
-
-    /// The flat peony on the six safe squares that are not a player's start square.
-    static func addPeonies(to root: Entity, viewer: BoardPlayer, texture: TextureResource?) {
-        guard let texture else { return }
-        let width = LudoSceneStyle.peonyWidth
-        let mesh = MeshResource.generatePlane(width: width, depth: width / LudoSceneStyle.peonyAspect)
-        let material = LudoMaterials.decal(texture)
-        for square in LudoSceneStyle.peonySquares {
-            let flower = ModelEntity(mesh: mesh, materials: [material])
-            let point = LudoBoardGeometry.point(of: .track(square), viewer: viewer)
-            flower.position = LudoWorld.position(point, height: LudoSceneStyle.tileHeight + LudoSceneStyle.peonyLift)
-            root.addChild(flower)
+            root.addChild(glow)
+            return glow
         }
     }
 
     static func addLights(to root: Entity) {
-        let key = DirectionalLight()
-        key.light = DirectionalLightComponent(
-            color: LudoSceneStyle.color(LudoSceneStyle.keyLightHex),
-            intensity: LudoSceneStyle.keyLightIntensity,
-            isRealWorldProxy: false
+        let lamp = SpotLight()
+        lamp.light = SpotLightComponent(
+            color: LudoSceneStyle.color(LudoSceneStyle.lampHex),
+            intensity: LudoSceneStyle.lampLumens,
+            innerAngleInDegrees: LudoSceneStyle.lampConeDegrees * LudoSceneStyle.lampFullShare,
+            outerAngleInDegrees: LudoSceneStyle.lampConeDegrees,
+            attenuationRadius: LudoSceneStyle.lampReach
         )
-        key.shadow = DirectionalLightComponent.Shadow(
-            shadowProjection: .fixed(
-                zNear: LudoSceneStyle.shadowNear,
-                zFar: LudoSceneStyle.shadowFar,
-                orthographicScale: LudoSceneStyle.shadowWidth
-            ),
-            depthBias: LudoSceneStyle.shadowDepthBias
-        )
-        key.look(at: .zero, from: LudoSceneStyle.keyLightPosition, relativeTo: nil)
-        key.name = "ludoKeyLight"
-        root.addChild(key)
+        var shadow = SpotLightComponent.Shadow()
+        shadow.lightSize = LudoSceneStyle.lampSize
+        shadow.quality = .high
+        lamp.shadow = shadow
+        lamp.look(at: .zero, from: LudoSceneStyle.lampPosition, relativeTo: nil)
+        lamp.name = "ludoLamp"
+        root.addChild(lamp)
 
-        let rim = DirectionalLight()
-        rim.light = DirectionalLightComponent(
-            color: LudoSceneStyle.color(LudoSceneStyle.rimLightHex),
-            intensity: LudoSceneStyle.rimLightIntensity,
+        let style = LudoSceneStyle.self
+        addLight("ludoKeyLight", style.keyLightHex, style.keyLightIntensity, from: style.keyLightPosition, to: root)
+        addLight("ludoFillLight", style.fillLightHex, style.fillLightIntensity, from: style.fillLightPosition, to: root)
+        addLight("ludoRimLight", style.rimLightHex, style.rimLightIntensity, from: style.rimLightPosition, to: root)
+    }
+
+    /// A directional light with no shadows, shining toward the middle of the board.
+    private static func addLight(
+        _ name: String,
+        _ hex: UInt32,
+        _ intensity: Float,
+        from position: SIMD3<Float>,
+        to root: Entity
+    ) {
+        let light = DirectionalLight()
+        light.light = DirectionalLightComponent(
+            color: LudoSceneStyle.color(hex),
+            intensity: intensity,
             isRealWorldProxy: false
         )
-        rim.look(at: .zero, from: LudoSceneStyle.rimLightPosition, relativeTo: nil)
-        rim.name = "ludoRimLight"
-        root.addChild(rim)
+        light.look(at: .zero, from: position, relativeTo: nil)
+        light.name = name
+        root.addChild(light)
     }
 }

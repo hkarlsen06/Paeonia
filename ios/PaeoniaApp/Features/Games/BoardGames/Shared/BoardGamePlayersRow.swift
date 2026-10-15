@@ -123,13 +123,14 @@ private extension View {
     /// Glass hugging the avatar and name. It keeps them readable where a board
     /// runs under the row, as Ludo's does. Plum like a hub card's badge, and the
     /// player's piece color for the active player, mixed with plum so white text
-    /// stays readable.
+    /// stays readable. The tint is light, so a scene under the row, such as Ludo's
+    /// warm room, shows through the glass.
     func backdrop(color: Color, isActive: Bool) -> some View {
         let tint = isActive
             ? color.mix(with: .paeoniaBackgroundSecondary, by: 0.45)
             : .paeoniaBackgroundSecondary
         return glassEffect(
-            .regular.tint(tint.opacity(0.75)),
+            .regular.tint(tint.opacity(0.45)),
             in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
         )
     }

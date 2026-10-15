@@ -200,17 +200,9 @@ nonisolated enum LudoWorld {
         SIMD3(Float(point.column - LudoBoardGeometry.middle), height, Float(point.row - LudoBoardGeometry.middle))
     }
 
-    /// How high a pawn's feet are on a kind of square.
-    static func standingHeight(on square: LudoSquare) -> Float {
-        switch square {
-        case .base: LudoSceneStyle.yardHeight + LudoSceneStyle.yardSlotHeight
-        case .track, .homeColumn: LudoSceneStyle.tileHeight
-        case .home: LudoSceneStyle.homePadHeight - LudoSceneStyle.homeSink
-        }
-    }
-
+    /// Where a pawn stands. Every square is painted on the flat board top, at height 0.
     static func position(of placement: LudoPlacement) -> SIMD3<Float> {
-        position(placement.point, height: standingHeight(on: placement.square))
+        position(placement.point)
     }
 
     /// The yard the die rests in on screen: my base at the bottom left (near) or my
@@ -222,6 +214,6 @@ nonisolated enum LudoWorld {
     /// Where the middle of a resting die is, in the roller's base yard.
     static func dieRestPosition(isNear: Bool) -> SIMD3<Float> {
         let point = LudoBoardGeometry.dieSpot(corner: rollerCorner(isNear: isNear), viewer: .one)
-        return position(point, height: LudoSceneStyle.yardHeight + LudoSceneStyle.dieSize / 2)
+        return position(point, height: LudoSceneStyle.dieSize / 2)
     }
 }

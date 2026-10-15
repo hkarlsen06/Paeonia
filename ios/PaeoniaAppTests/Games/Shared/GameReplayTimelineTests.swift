@@ -164,10 +164,7 @@ struct GameReplayTimelineTests {
 
     private static let tolerance = 0.02
 
-    private func erase(_ drawing: PKDrawing, atX x: CGFloat) -> PKDrawing? {
-        guard #available(iOS 27.0, *) else {
-            return nil
-        }
+    private func erase(_ drawing: PKDrawing, atX x: CGFloat) -> PKDrawing {
         let points = [CGFloat(0), 100].map { y in
             PKStrokePoint(
                 location: CGPoint(x: x, y: y),
@@ -190,9 +187,7 @@ struct GameReplayTimelineTests {
 
     @Test func erasingTheMiddleSplitsTheStrokeIntoPiecesThatKeepTheirTiming() throws {
         let line = lineDrawnOverFiveSeconds
-        guard let erased = erase(PKDrawing(strokes: [line]), atX: 25) else {
-            return
-        }
+        let erased = erase(PKDrawing(strokes: [line]), atX: 25)
         let roundTripped = try PKDrawing(data: erased.dataRepresentation())
 
         for drawing in [erased, roundTripped] {
@@ -208,9 +203,7 @@ struct GameReplayTimelineTests {
     }
 
     @Test func piecesPlayOnlyTheirVisiblePartInTheOriginalOrder() throws {
-        guard let erased = erase(PKDrawing(strokes: [lineDrawnOverFiveSeconds]), atX: 25) else {
-            return
-        }
+        let erased = erase(PKDrawing(strokes: [lineDrawnOverFiveSeconds]), atX: 25)
 
         // Reverse the pieces to show the order does not come from the array.
         let result = GameReplayTimeline(drawing: PKDrawing(strokes: erased.strokes.reversed()))
@@ -227,9 +220,7 @@ struct GameReplayTimelineTests {
     }
 
     @Test func erasedGapShowsNothingNewUntilTheNextPieceStarts() throws {
-        guard let erased = erase(PKDrawing(strokes: [lineDrawnOverFiveSeconds]), atX: 25) else {
-            return
-        }
+        let erased = erase(PKDrawing(strokes: [lineDrawnOverFiveSeconds]), atX: 25)
         let result = GameReplayTimeline(drawing: erased)
 
         let inTheGap = result.drawing(at: 2.2).strokes
@@ -246,9 +237,7 @@ struct GameReplayTimelineTests {
     }
 
     @Test func erasedStartOfAStrokeIsNotWaitedFor() throws {
-        guard let erased = erase(PKDrawing(strokes: [lineDrawnOverFiveSeconds]), atX: 2) else {
-            return
-        }
+        let erased = erase(PKDrawing(strokes: [lineDrawnOverFiveSeconds]), atX: 2)
         let result = GameReplayTimeline(drawing: erased)
 
         #expect(erased.strokes.count == 1)
@@ -260,9 +249,7 @@ struct GameReplayTimelineTests {
     }
 
     @Test func erasedEndOfAStrokeIsNotWaitedFor() throws {
-        guard let erased = erase(PKDrawing(strokes: [lineDrawnOverFiveSeconds]), atX: 46) else {
-            return
-        }
+        let erased = erase(PKDrawing(strokes: [lineDrawnOverFiveSeconds]), atX: 46)
 
         let result = GameReplayTimeline(drawing: erased)
 

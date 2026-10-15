@@ -46,6 +46,8 @@ struct GameTutorialSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection = 0
+    @State private var pageHeight: CGFloat = 0
+    @State private var sheetHeight: CGFloat = 0
 
     private var isLastPage: Bool { selection == tutorial.pages.count - 1 }
 
@@ -58,6 +60,17 @@ struct GameTutorialSheet: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
+            // As tall as the tallest card, so the sheet hugs the cards. With
+            // very large text the cards scroll instead.
+            .frame(maxHeight: pageHeight)
+            .background {
+                ZStack {
+                    ForEach(tutorial.pages) { pageContent($0) }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .hidden()
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
+            }
 
             Button(action: advance) {
                 Text(isLastPage ? .gamesTutorialPlay : .gamesTutorialNext)
@@ -69,42 +82,49 @@ struct GameTutorialSheet: View {
         }
         .padding(.top, PaeoniaSpacing.space32)
         .padding(.bottom, PaeoniaSpacing.space16)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { sheetHeight = $0 }
+        .frame(maxHeight: .infinity, alignment: .top)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
         .preferredColorScheme(.dark)
+        .presentationDetents(sheetHeight > pageHeight && pageHeight > 0 ? [.height(sheetHeight)] : [.large])
         .presentationDragIndicator(.visible)
         .accessibilityIdentifier("games.tutorial.\(tutorial.kind.rawValue)")
     }
 
     private func pageView(_ page: GameTutorial.Page) -> some View {
         ScrollView {
-            VStack(spacing: PaeoniaSpacing.space24) {
-                Image(page.image)
-                    .resizable()
-                    .accessibilityHidden(true)
-                    .scaledToFit()
-                    .frame(maxWidth: 320, maxHeight: 240)
-                    // Every card keeps the same slot, so the text stays put
-                    // between square boards and the wide Mind Meld cards.
-                    .frame(height: 240)
-
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Text(page.title)
-                        .font(PaeoniaTypography.heroTitle)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .accessibilityAddTraits(.isHeader)
-                    Text(page.message)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            // Room for the page dots.
-            .padding(.bottom, PaeoniaSpacing.space40)
-            .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+            pageContent(page)
         }
         .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private func pageContent(_ page: GameTutorial.Page) -> some View {
+        VStack(spacing: PaeoniaSpacing.space24) {
+            Image(page.image)
+                .resizable()
+                .accessibilityHidden(true)
+                .scaledToFit()
+                .frame(maxWidth: 320, maxHeight: 240)
+                // Every card keeps the same slot, so the text stays put
+                // between square boards and the wide Mind Meld cards.
+                .frame(height: 240)
+
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Text(page.title)
+                    .font(PaeoniaTypography.heroTitle)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .accessibilityAddTraits(.isHeader)
+                Text(page.message)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        // Room for the page dots.
+        .padding(.bottom, PaeoniaSpacing.space40)
+        .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
     }
 
     private func advance() {

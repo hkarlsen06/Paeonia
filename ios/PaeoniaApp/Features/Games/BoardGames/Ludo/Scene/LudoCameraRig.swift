@@ -8,7 +8,7 @@ import simd
 /// is a share of the default distance. Pure math, so the camera is testable.
 nonisolated struct LudoCameraPose: Equatable, Sendable {
     /// Radians around the vertical axis. 0 looks at the board from the front.
-    var yaw = 0.0
+    var yaw = LudoCameraPose.defaultYaw
     /// Radians above the board.
     var pitch = LudoCameraPose.defaultPitch
     /// 1 is the default distance.
@@ -17,6 +17,7 @@ nonisolated struct LudoCameraPose: Equatable, Sendable {
     var pan = SIMD2<Double>.zero
 
     static let defaultPitch = LudoSceneStyle.cameraPitchDegrees * .pi / 180
+    static let defaultYaw = LudoSceneStyle.cameraYawDegrees * .pi / 180
     static let pitchRange = (LudoSceneStyle.orbitPitchRangeDegrees.lowerBound * .pi / 180)...(
         LudoSceneStyle.orbitPitchRangeDegrees.upperBound * .pi / 180
     )
@@ -50,8 +51,8 @@ nonisolated struct LudoCameraPose: Equatable, Sendable {
 }
 
 /// How far the camera stands from the board and where it looks, for a view of one
-/// shape. The board fills the view sideways, and its near edge may run a little
-/// past the left and right edges. Pure math, so the fit is testable.
+/// shape. The board and the props round it fit inside the view, so nothing important
+/// sits under the rows above and below. Pure math, so the fit is testable.
 nonisolated struct LudoCameraFit: Equatable, Sendable {
     /// Distance from the target at zoom 1.
     let distance: Double
@@ -59,24 +60,17 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
     let targetZ: Double
     /// Width divided by height of the view.
     let aspect: Double
-    /// How far the near edge may run past each side, as a share of half the view.
-    let overshoot: Double
     /// The share of the view's height, around its middle, the board fits in. Below 1
     /// when the view reaches past the space the board was given, as Ludo's does.
     let fitHeight: Double
 
-    static func make(
-        aspect rawAspect: Double,
-        overshoot: Double = LudoSceneStyle.cameraOvershoot,
-        fitHeight: Double = 1
-    ) -> LudoCameraFit {
-        let setup = Fit(aspect: max(rawAspect, 0.2), overshoot: overshoot, fitHeight: min(max(fitHeight, 0.1), 1))
+    static func make(aspect rawAspect: Double, fitHeight: Double = 1) -> LudoCameraFit {
+        let setup = Fit(aspect: max(rawAspect, 0.2), fitHeight: min(max(fitHeight, 0.1), 1))
         let targetZ = setup.centeredTargetZ()
         return LudoCameraFit(
             distance: setup.fittingDistance(targetZ: targetZ),
             targetZ: targetZ,
             aspect: setup.aspect,
-            overshoot: overshoot,
             fitHeight: setup.fitHeight
         )
     }
@@ -121,17 +115,18 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
     /// The numbers of one fit: the lens, the shape of the view and the corners to keep in view.
     private struct Fit {
         let aspect: Double
-        let overshoot: Double
         let fitHeight: Double
         let tanHalf = tan(LudoSceneStyle.cameraFieldOfViewDegrees / 2 * .pi / 180)
-        let corners = Fit.fitPoints()
+        let corners = Fit.boardPoints()
+        let props = Fit.propPoints()
 
         private static let nearestDistance = 3.0
         private static let farthestDistance = 400.0
         private static let targetRange = 12.0
 
         /// The corners of the slab at the floor and at the height of the tallest thing on it.
-        private static func fitPoints() -> [SIMD3<Double>] {
+        /// They must fit the view both ways.
+        private static func boardPoints() -> [SIMD3<Double>] {
             let half = Double(LudoWorld.halfSlab)
             var points: [SIMD3<Double>] = []
             for height in [0, LudoSceneStyle.cameraExtraHeight] {
@@ -142,27 +137,39 @@ nonisolated struct LudoCameraFit: Equatable, Sendable {
             return points
         }
 
-        func cameraPosition(distance: Double, targetZ: Double) -> SIMD3<Double> {
-            SIMD3(0, 0, targetZ) + LudoCameraFit.offset(yaw: 0, pitch: LudoCameraPose.defaultPitch) * distance
+        /// The props round the board from their foot to their top. They must stay clear of
+        /// the rows above and below, but may run off the sides.
+        private static func propPoints() -> [SIMD3<Double>] {
+            let reach = Double(LudoSceneStyle.framedPropReach)
+            return LudoSceneStyle.framedProps.flatMap { prop in
+                let foot = SIMD2<Double>(Double(prop.spot.x), Double(prop.spot.y))
+                return [
+                    SIMD3(foot.x, 0, foot.y - reach),
+                    SIMD3(foot.x, 0, foot.y + reach),
+                    SIMD3(foot.x, Double(prop.height), foot.y)
+                ]
+            }
         }
 
-        /// How far outside the allowed area the corners reach, 1 or less when they fit. Sideways
-        /// the allowance is a little past the view's edge. Nil height means no corner is behind the camera.
+        func cameraPosition(distance: Double, targetZ: Double) -> SIMD3<Double> {
+            let direction = LudoCameraFit.offset(yaw: LudoCameraPose.defaultYaw, pitch: LudoCameraPose.defaultPitch)
+            return SIMD3(0, 0, targetZ) + direction * distance
+        }
+
+        /// How far outside the allowed area the points reach, 1 or less when they fit.
         func extents(distance: Double, targetZ: Double) -> (largest: Double, centerY: Double) {
             let camera = cameraPosition(distance: distance, targetZ: targetZ)
             let target = SIMD3<Double>(0, 0, targetZ)
             var largest = 0.0
             var lowest = Double.infinity
             var highest = -Double.infinity
-            for corner in corners {
+            let height = (1 - LudoSceneStyle.cameraMargin) * fitHeight
+            for (index, point) in (corners + props).enumerated() {
                 guard let ndc = LudoCameraRig.normalized(
-                    corner, camera: camera, target: target, tanHalf: tanHalf, aspect: aspect
+                    point, camera: camera, target: target, tanHalf: tanHalf, aspect: aspect
                 ) else { return (.infinity, 0) }
-                largest = max(
-                    largest,
-                    abs(ndc.x) / (1 + overshoot),
-                    abs(ndc.y) / ((1 - LudoSceneStyle.cameraMargin) * fitHeight)
-                )
+                let isBoard = index < corners.count
+                largest = max(largest, abs(ndc.y) / height, isBoard ? abs(ndc.x) : 0)
                 lowest = min(lowest, ndc.y)
                 highest = max(highest, ndc.y)
             }
@@ -219,12 +226,8 @@ nonisolated struct LudoCameraRig: Equatable, Sendable {
     let aspect: Double
 
     /// The default camera for a view `aspect` wide for each unit of height.
-    static func fitting(
-        aspect: Double,
-        overshoot: Double = LudoSceneStyle.cameraOvershoot,
-        fitHeight: Double = 1
-    ) -> LudoCameraRig {
-        LudoCameraFit.make(aspect: aspect, overshoot: overshoot, fitHeight: fitHeight).rig(for: .home)
+    static func fitting(aspect: Double, fitHeight: Double = 1) -> LudoCameraRig {
+        LudoCameraFit.make(aspect: aspect, fitHeight: fitHeight).rig(for: .home)
     }
 
     /// Where a point of the scene shows in the view, from 0 to 1 across and down,

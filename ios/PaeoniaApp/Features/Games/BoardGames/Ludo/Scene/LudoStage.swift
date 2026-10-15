@@ -56,6 +56,8 @@ final class LudoStage {
     var capMaterials: [PhysicallyBasedMaterial] = []
     /// The board pieces that take the players' colors.
     var paint = LudoPaintTargets()
+    /// The table, the candle and the tea round the board.
+    private var room: LudoRoom?
     /// Goes up with each new look, so a slow mark texture of an earlier one never lands over a later one.
     private var lookGeneration = 0
     private var targets: [Entity.ID: Target] = [:]
@@ -76,6 +78,9 @@ final class LudoStage {
     var cameraNeedsUpdate = true
     /// Called when the camera stops moving, so VoiceOver can follow it.
     var onCameraSettled: ((LudoCameraRig) -> Void)?
+    /// Called once the built scene has drawn a few frames, so the loading view can fade.
+    var onReady: (() -> Void)?
+    private var framesSinceBuilt = 0
 
     struct CameraGlide {
         let from: LudoCameraPose
@@ -128,6 +133,7 @@ final class LudoStage {
         viewer = input.me
         self.input = input
         reduceMotion = input.reduceMotion
+        async let environment = LudoBackdrop.environment()
         let parts = await LudoSceneBuilder.build(viewer: input.me, styles: input.styles, colors: input.colors)
         sceneRoot.addChild(parts.root)
         pawns = parts.pawns
@@ -135,12 +141,13 @@ final class LudoStage {
         homeGlows = parts.homeGlows
         capMaterials = parts.capMaterials
         paint = parts.paint
+        room = parts.room
         targets[parts.die.root.id] = .die
         for pawn in parts.pawns { targets[pawn.root.id] = .pawn(pawn.index) }
 
-        // A clear background lets the screen show through. The sky picture only lights the pieces.
-        arView.environment.background = .color(.clear)
-        if let environment = await LudoBackdrop.environment() {
+        // The dark of the room shows past the table. The sky picture only lights the pieces.
+        arView.environment.background = .color(LudoSceneStyle.color(LudoSceneStyle.roomHex))
+        if let environment = await environment {
             arView.environment.lighting.resource = environment
             arView.environment.lighting.intensityExponent = LudoSceneStyle.environmentExposure
         }
@@ -197,19 +204,24 @@ final class LudoStage {
         }
     }
 
-    /// Paints the board and the pawns in the players' colors, then puts their marks on the pawn tops.
+    /// Paints the pawns and the glows in the players' colors, then paints the board top
+    /// again and puts their marks on the pawn tops.
     private func refreshLook(_ new: Input) {
         let colors = LudoSceneBuilder.CornerColors(viewer: viewer, colors: new.colors)
-        LudoSceneBuilder.repaint(paint, colors: colors)
+        LudoSceneBuilder.repaintGlows(paint, colors: colors)
         for pawn in pawns {
             pawn.setColor(colors.pawnColor(of: pawn.player))
         }
         lookGeneration += 1
         let generation = lookGeneration
         let styles = new.styles
+        let viewer = viewer
         Task { @MainActor in
+            let board = await LudoSceneBuilder.boardTopMaterial(viewer: viewer, colors: colors)
             let materials = await LudoSceneBuilder.makeCapMaterials(styles: styles, colors: colors)
-            guard generation == lookGeneration, materials.count == 2 else { return }
+            guard generation == lookGeneration else { return }
+            if let board { paint.boardTop?.model?.materials = [board] }
+            guard materials.count == 2 else { return }
             capMaterials = materials
             for pawn in pawns {
                 pawn.setCapMaterial(materials[pawn.player.rawValue - 1])
@@ -232,6 +244,13 @@ final class LudoStage {
     // MARK: Frames
 
     func tick(_ deltaTime: Double) {
+        if isBuilt, let onReady {
+            framesSinceBuilt += 1
+            if framesSinceBuilt >= 3 {
+                self.onReady = nil
+                onReady()
+            }
+        }
         let step = min(max(deltaTime, 0), 0.1)
         clock += step
         playClips()
@@ -248,6 +267,7 @@ final class LudoStage {
             dieNode.updateIdle(clock: clock, isReady: input?.die == .ready, reduceMotion: reduceMotion)
         }
         updateGlows(deltaTime: step)
+        room?.update(clock: clock, reduceMotion: reduceMotion)
     }
 
     private func playClips() {
