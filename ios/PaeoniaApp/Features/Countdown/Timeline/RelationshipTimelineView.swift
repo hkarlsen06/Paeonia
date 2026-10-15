@@ -9,13 +9,15 @@ import SwiftUI
 /// the content, not the viewport, so the focal line is sharp wherever it lands.
 /// The blur is an opening veil: the first scroll dissolves it so every row is
 /// readable while exploring, the way Apple Music clears lyric blur on scrub.
+/// Before the couple sets their start date, the focal line asks for it instead and
+/// opens the date editor.
 ///
 /// Owns its whole presentation (navigation bar, detent, background) like
 /// `RelationshipDateEditorView`, so callers only need
 /// `.sheet { RelationshipTimelineView(...) }`.
 struct RelationshipTimelineView: View {
     /// The couple's start date as an `yyyy-MM-dd` string (`couples.started_on`).
-    let startedOn: String
+    let startedOn: String?
     let isSaving: Bool
     let onSave: (Date) async -> Bool
     /// The couple's countdowns and birthdays. Nil shows milestones only (previews).
@@ -83,7 +85,7 @@ struct RelationshipTimelineView: View {
         .sheet(isPresented: $isEditorPresented) {
             RelationshipDateEditorView(
                 selectedDate: $selectedDate,
-                isEditing: true,
+                isEditing: startedOn != nil,
                 isSaving: isSaving,
                 onSave: onSave
             )
@@ -145,9 +147,27 @@ struct RelationshipTimelineView: View {
         TimelineVeilEffect(distance: distance, isLifted: isVeilLifted || reduceTransparency)
     }
 
+    @ViewBuilder
     private var hero: some View {
+        if let startedOn {
+            togetherHero(startedOn: startedOn)
+        } else {
+            Button(action: presentEditor) {
+                Text(.homeMilestoneSetupTitle)
+                    .font(PaeoniaTypography.display)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text(.homeMilestoneSetupAccessibilityHint))
+        }
+    }
+
+    private func togetherHero(startedOn: String) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            heroTitle
+            heroTitle(startedOn: startedOn)
                 .font(PaeoniaTypography.display)
                 .foregroundStyle(.paeoniaTextPrimary)
 
@@ -164,8 +184,8 @@ struct RelationshipTimelineView: View {
     }
 
     /// "Together for 6 months and 3 days", or a first-day line while the count is still 0.
-    private var heroTitle: Text {
-        daysTogether == 0
+    private func heroTitle(startedOn: String) -> Text {
+        daysTogether(startedOn: startedOn) == 0
             ? Text(.homeMilestoneTimelineFirstDay)
             : Text(.homeMilestoneTimelineTogetherFor(Self.togetherText(startedOn: startedOn, now: now)))
     }
@@ -267,17 +287,24 @@ struct RelationshipTimelineView: View {
     }
 
     private var startDate: Date? {
-        (try? PairingStartDate(rawValue: startedOn))?.date()
+        startedOn.flatMap { try? PairingStartDate(rawValue: $0) }?.date()
     }
 
     /// The elapsed whole days. The count comes from the calculator so it matches the
     /// milestone schedule (100 days together lands exactly on the 100-days
     /// milestone). It is never negative: a partner who set the start date from a
     /// time zone that is already on the next day would otherwise produce -1.
-    private var daysTogether: Int {
+    private func daysTogether(startedOn: String) -> Int {
         max(0, RelationshipMilestoneCalculator().daysTogether(startedOn: startedOn, now: now) ?? 0)
     }
 
+    private func presentEditor() {
+        selectedDate = startDate ?? Date()
+        isEditorPresented = true
+    }
+}
+
+extension RelationshipTimelineView {
     /// Formats a whole-day count as "9 days" / "9 dager". Two plain catalog keys
     /// stand in for pluralization, matching the countdown card's until/until.one
     /// pattern. (Foundation's day-unit styles say "døgn" in Norwegian, which is the
@@ -307,11 +334,6 @@ struct RelationshipTimelineView: View {
             parts.append(daysText(days))
         }
         return parts.formatted(.list(type: .and))
-    }
-
-    private func presentEditor() {
-        selectedDate = startDate ?? Date()
-        isEditorPresented = true
     }
 }
 

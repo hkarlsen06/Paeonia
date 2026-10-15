@@ -39,16 +39,10 @@ struct PairedHomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    /// iPad landscape: the map with the other cards in two columns below it on the
-    /// left, the drawing and milestone tiles stacked on the right (`HomeWideLayout`).
+    /// iPad landscape: three columns, with the map and the tile row under it on the
+    /// left two and the cards filling in from the right (`HomeWideLayout`).
     @State private var isWideLayout = false
-    /// The scroll view's visible height and the cards' height, for `spareSpaceArt`.
-    @State private var viewportHeight: CGFloat = 0
-    @State private var cardsHeight: CGFloat = 0
 
-    /// The peony spray needs at least this much empty space below the cards to show.
-    private static let spareSpaceArtMinHeight: CGFloat = 120
-    private static let spareSpaceArtMaxWidth: CGFloat = 500
     private static let alertTypesSeenOnHome: Set<String> = ["widget_updated", "streak_reminder"]
 
     init(
@@ -117,42 +111,33 @@ struct PairedHomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                // One layout for phone and wide iPad keeps the cards' identity, so turning
-                // the iPad doesn't reset them or close the milestone sheet. The spacing
-                // matches the gap inside the milestone/drawing tile row so the cards read
-                // as one grid. On the phone, today's questions lead and the tiles sit
-                // above the map, so a milestone day's celebration plays on screen.
-                cardsLayout {
-                    dailyPromptCard
-                    unreadChatsCard
-                    partnerGameCard
-                    milestoneAndWidget
-                        .layoutValue(key: HomeWideRole.self, value: .tiles)
-                    mapCard
-                        .layoutValue(key: HomeWideRole.self, value: .map)
-                    lookBackCard
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space16)
-                .padding(.bottom, PaeoniaSpacing.space16)
-                .paeoniaReadableWidth(
-                    isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
-                )
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
-                // The daily card is tall until today's questions are done, then a short row.
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardsHeight = $0 }
-
-                spareSpaceArt
+            // One layout for phone and wide iPad keeps the cards' identity, so turning
+            // the iPad doesn't reset them or close the milestone sheet. The spacing
+            // matches the gap inside the milestone/drawing tile row so the cards read
+            // as one grid. On the phone, today's questions lead and the tiles sit
+            // above the map, so a milestone day's celebration plays on screen.
+            cardsLayout {
+                dailyPromptCard
+                unreadChatsCard
+                partnerGameCard
+                milestoneAndWidget
+                    .layoutValue(key: HomeWideRole.self, value: .tiles)
+                mapCard
+                    .layoutValue(key: HomeWideRole.self, value: .map)
+                lookBackCard
             }
-        }
-        // The container size already leaves out the bars' content insets.
-        .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
-            viewportHeight = height
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space16)
+            .padding(.bottom, PaeoniaSpacing.space16)
+            .paeoniaReadableWidth(
+                isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
+            )
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
+            // The daily card is tall until today's questions are done, then a short row.
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
         }
         .paeoniaWideLayout($isWideLayout)
         .heartsLifecycle(hearts, ownerUserID: currentUserID, partnerName: partnerName)
@@ -266,24 +251,6 @@ extension PairedHomeView {
         }
     }
 
-    /// A peony spray in the space left below the cards on a tall screen, such as an
-    /// iPad in landscape. It takes exactly that space, so the page still doesn't
-    /// scroll, and is left out when the cards fill the screen.
-    @ViewBuilder
-    private var spareSpaceArt: some View {
-        let spareHeight = (viewportHeight - cardsHeight).rounded(.down)
-        if spareHeight >= Self.spareSpaceArtMinHeight {
-            Image(.homePeonySpray)
-                .resizable()
-                .accessibilityHidden(true)
-                .scaledToFit()
-                .frame(maxWidth: Self.spareSpaceArtMaxWidth, maxHeight: spareHeight - 2 * PaeoniaSpacing.space16)
-                .frame(maxWidth: .infinity)
-                .frame(height: spareHeight)
-                .transition(.opacity)
-        }
-    }
-
     private var dailyPromptCard: some View {
         DailyPromptCard(
             state: dailyChallengeCardState,
@@ -305,10 +272,9 @@ extension PairedHomeView {
 
     private var milestoneAndWidget: some View {
         // One layout keeps the cards' identity, so a text size change doesn't
-        // reset them or close the milestone sheet.
-        let layout = if isWideLayout {
-            AnyLayout(HomeWideTileColumnLayout(spacing: PaeoniaSpacing.space16))
-        } else if dynamicTypeSize.isAccessibilitySize {
+        // reset them or close the milestone sheet. On a wide iPad each tile is a
+        // column wide, so they stay side by side at every text size.
+        let layout = if dynamicTypeSize.isAccessibilitySize && !isWideLayout {
             AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
         } else {
             AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))

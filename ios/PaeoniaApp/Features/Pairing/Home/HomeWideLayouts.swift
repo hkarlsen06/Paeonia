@@ -2,22 +2,22 @@ import SwiftUI
 
 /// Where a card goes in `HomeWideLayout`. The phone stack ignores it.
 nonisolated enum HomeWideRole: LayoutValueKey {
-    /// One of the main cards, in the two columns under the map.
+    /// One of the cards, in whichever column ends highest.
     case card
-    /// The map, across the top of the main cards.
+    /// The map, across the top of the left two columns.
     case map
-    /// The milestone and drawing tiles, in their own column on the right.
+    /// The milestone and drawing tiles, side by side under the map.
     case tiles
 
     static let defaultValue = HomeWideRole.card
 }
 
-/// The Home tab on a wide iPad. The main cards take the left two thirds and the tile
-/// column the right third, so the 2:1 map and the square drawing tile beside it are
-/// the same height. The map spans the main cards' width at the top. The other cards go
-/// in two columns below it in order, each card in the column that ends higher, so the
-/// cards stay about phone width and today's questions sit beside the game card instead
-/// of below it.
+/// The Home tab on a wide iPad: three columns about phone width. The map and the tile
+/// row under it take the left two columns, so the two square tiles line up with the
+/// columns and the 2:1 map is about as tall as a tile. The cards go in order, each in
+/// the column that ends highest, so today's questions start at the top of the right
+/// column and later cards fill in under the tiles. The page stays about one screen
+/// tall instead of leaving a hole beside a short column.
 struct HomeWideLayout: Layout {
     var spacing: CGFloat
 
@@ -37,55 +37,31 @@ struct HomeWideLayout: Layout {
     }
 
     private func frames(width: CGFloat, subviews: Subviews) -> [CGRect] {
-        let tileWidth = (width - spacing) / 3
-        let mainWidth = width - spacing - tileWidth
-        let columnWidth = (mainWidth - spacing) / 2
-        let mapBottom = subviews.first { $0[HomeWideRole.self] == .map }
-            .map { $0.sizeThatFits(ProposedViewSize(width: mainWidth, height: nil)).height + spacing } ?? 0
-        var columnTops = [mapBottom, mapBottom]
-        return subviews.map { subview in
-            switch subview[HomeWideRole.self] {
-            case .map:
-                return CGRect(x: 0, y: 0, width: mainWidth, height: mapBottom - spacing)
-            case .tiles:
-                let height = subview.sizeThatFits(ProposedViewSize(width: tileWidth, height: nil)).height
-                return CGRect(x: mainWidth + spacing, y: 0, width: tileWidth, height: height)
-            case .card:
-                let column = columnTops[1] < columnTops[0] ? 1 : 0
-                let height = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)).height
-                defer { columnTops[column] += height + spacing }
-                return CGRect(
-                    x: CGFloat(column) * (columnWidth + spacing),
-                    y: columnTops[column],
-                    width: columnWidth,
-                    height: height
-                )
+        let columnWidth = (width - 2 * spacing) / 3
+        let wideWidth = 2 * columnWidth + spacing
+        var frames = Array(repeating: CGRect.zero, count: subviews.count)
+        var wideBottom: CGFloat = 0
+        // The phone puts the tiles above the map, so place the map first here.
+        for role in [HomeWideRole.map, .tiles] {
+            for index in subviews.indices where subviews[index][HomeWideRole.self] == role {
+                let height = subviews[index].sizeThatFits(ProposedViewSize(width: wideWidth, height: nil)).height
+                frames[index] = CGRect(x: 0, y: wideBottom, width: wideWidth, height: height)
+                wideBottom += height + spacing
             }
         }
-    }
-}
-
-/// The tile column in the wide Home layout. It stacks the tiles in reverse, so the
-/// drawing, written last for the phone's row, sits on top beside the map.
-struct HomeWideTileColumnLayout: Layout {
-    var spacing: CGFloat
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.replacingUnspecifiedDimensions().width
-        let heights = subviews.map { $0.sizeThatFits(ProposedViewSize(width: width, height: nil)).height }
-        let gaps = spacing * CGFloat(max(subviews.count - 1, 0))
-        return CGSize(width: width, height: heights.reduce(gaps, +))
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var y = bounds.minY
-        for subview in subviews.reversed() {
-            let height = subview.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height
-            subview.place(
-                at: CGPoint(x: bounds.minX, y: y),
-                proposal: ProposedViewSize(width: bounds.width, height: height)
+        var columnTops = [wideBottom, wideBottom, 0]
+        for index in subviews.indices where subviews[index][HomeWideRole.self] == .card {
+            // Ties go to the right column, so the first card sits beside the map.
+            let column = columnTops.indices.reversed().min { columnTops[$0] < columnTops[$1] } ?? 2
+            let height = subviews[index].sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)).height
+            frames[index] = CGRect(
+                x: CGFloat(column) * (columnWidth + spacing),
+                y: columnTops[column],
+                width: columnWidth,
+                height: height
             )
-            y += height + spacing
+            columnTops[column] += height + spacing
         }
+        return frames
     }
 }

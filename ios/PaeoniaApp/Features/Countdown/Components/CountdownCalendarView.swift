@@ -5,7 +5,7 @@ import SwiftUI
 /// page, so the tile looks the same on a narrow phone and in the wide iPad column.
 struct CountdownCalendarView: View {
     enum Face: Equatable {
-        /// A blank page, for a couple that has not set the day they got together.
+        /// A question mark, for a couple with no date to count down to yet.
         case empty
         case days(Int)
         /// The event is today. The page says so instead of showing a 0.
@@ -62,7 +62,8 @@ struct CountdownCalendarView: View {
         ZStack {
             switch face {
             case .empty:
-                EmptyView()
+                Text(verbatim: "?")
+                    .font(.system(size: rect.height * 0.74, weight: .heavy, design: .rounded))
             case let .days(days):
                 Text(days, format: .number)
                     .font(.system(size: rect.height * 0.74, weight: .heavy, design: .rounded))

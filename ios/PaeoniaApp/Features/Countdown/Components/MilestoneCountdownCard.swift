@@ -15,7 +15,9 @@ import SwiftUI
 /// Tapping the tile opens `RelationshipTimelineView` (days together, the milestones
 /// ahead, and the date editor). On the event's day the page says "Today" and the heart
 /// burst plays on its own, once, with a haptic and a sound, when the tile scrolls into
-/// view. Without a start date the calendar is blank and the tile opens the date editor.
+/// view. Without a start date the tile still counts down to a birthday or countdown the
+/// couple added. With no date at all the page shows a question mark and the tile opens
+/// the date editor.
 struct MilestoneCountdownCard: View {
     /// The couple's start date as an `yyyy-MM-dd` string (`couples.started_on`).
     let startedOn: String?
@@ -57,10 +59,8 @@ struct MilestoneCountdownCard: View {
         self.names = names
     }
 
-    /// The soonest event. The tile asks for the start date first, so it stays the
-    /// setup tile until there is one.
+    /// The soonest event. Nil only when the couple has no date to count down to.
     private var milestone: CoupleDateEvent? {
-        guard let startedOn else { return nil }
         // Built per read so it reflects the current calendar/time zone.
         return CoupleDateTimeline().next(startedOn: startedOn, dates: coupleDates?.dates ?? CoupleDates(), now: now)
     }
@@ -77,21 +77,19 @@ struct MilestoneCountdownCard: View {
         .sheet(isPresented: $isEditorPresented) {
             RelationshipDateEditorView(
                 selectedDate: $selectedDate,
-                isEditing: milestone != nil,
+                isEditing: startedOn != nil,
                 isSaving: isSaving,
                 onSave: onSave
             )
         }
         .sheet(isPresented: $isTimelinePresented) {
-            if let startedOn {
-                RelationshipTimelineView(
-                    startedOn: startedOn,
-                    isSaving: isSaving,
-                    onSave: onSave,
-                    coupleDates: coupleDates,
-                    names: names
-                )
-            }
+            RelationshipTimelineView(
+                startedOn: startedOn,
+                isSaving: isSaving,
+                onSave: onSave,
+                coupleDates: coupleDates,
+                names: names
+            )
         }
     }
 
