@@ -208,16 +208,9 @@ struct PairedHomeView: View {
         let layout = isWideLayout
             ? AnyLayout(HomeWideMainCardsLayout(spacing: PaeoniaSpacing.space16))
             : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
+        // Today's questions lead on the phone. On a wide iPad the map still spans the top.
         return layout {
-            CoupleMapCard(
-                currentName: currentName,
-                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                partnerName: partnerName,
-                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                state: locationMapState,
-                onPromptCurrentLocation: onPromptCurrentLocation,
-                hearts: hearts
-            )
+            dailyPromptCard
             if !unreadChats.isEmpty {
                 HomeUnreadChatsCard(
                     chats: unreadChats,
@@ -234,12 +227,21 @@ struct PairedHomeView: View {
                     .id(game.kind)
                     .transition(.opacity)
             }
-            dailyPromptCard
+            CoupleMapCard(
+                currentName: currentName,
+                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+                partnerName: partnerName,
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+                state: locationMapState,
+                onPromptCurrentLocation: onPromptCurrentLocation,
+                hearts: hearts
+            )
+            .layoutValue(key: HomeWideSpansFullWidth.self, value: true)
             lookBackCard
         }
     }
 
-    /// An old question, drawing or memory, directly under today's questions.
+    /// An old question, drawing or memory, below the map.
     @ViewBuilder
     private var lookBackCard: some View {
         if let lookBack, let item = lookBack.item {

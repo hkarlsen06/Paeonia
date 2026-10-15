@@ -31,10 +31,16 @@ struct HomeWideColumnsLayout: Layout {
     }
 }
 
-/// The main cards in the wide Home layout. The first card, the map, spans the full
-/// width. The rest go in two columns below it, each card in the column that ends
-/// higher, so the cards stay about phone width and today's questions sit beside
-/// the game card instead of below it.
+/// Marks the card that spans the top of `HomeWideMainCardsLayout`.
+struct HomeWideSpansFullWidth: LayoutValueKey {
+    static let defaultValue = false
+}
+
+/// The main cards in the wide Home layout. The card marked with
+/// `HomeWideSpansFullWidth`, the map, spans the full width at the top. The rest go
+/// in two columns below it in order, each card in the column that ends higher, so
+/// the cards stay about phone width and today's questions sit beside the game card
+/// instead of below it.
 struct HomeWideMainCardsLayout: Layout {
     var spacing: CGFloat
 
@@ -54,23 +60,24 @@ struct HomeWideMainCardsLayout: Layout {
     }
 
     private func frames(width: CGFloat, subviews: Subviews) -> [CGRect] {
-        guard let first = subviews.first else { return [] }
-        let topHeight = first.sizeThatFits(ProposedViewSize(width: width, height: nil)).height
-        var frames = [CGRect(x: 0, y: 0, width: width, height: topHeight)]
+        let topHeight = subviews.first { $0[HomeWideSpansFullWidth.self] }
+            .map { $0.sizeThatFits(ProposedViewSize(width: width, height: nil)).height + spacing } ?? 0
         let columnWidth = (width - spacing) / 2
-        var columnTops = [topHeight + spacing, topHeight + spacing]
-        for subview in subviews.dropFirst() {
+        var columnTops = [topHeight, topHeight]
+        return subviews.map { subview in
+            if subview[HomeWideSpansFullWidth.self] {
+                return CGRect(x: 0, y: 0, width: width, height: topHeight - spacing)
+            }
             let column = columnTops[1] < columnTops[0] ? 1 : 0
             let height = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)).height
-            frames.append(CGRect(
+            defer { columnTops[column] += height + spacing }
+            return CGRect(
                 x: CGFloat(column) * (columnWidth + spacing),
                 y: columnTops[column],
                 width: columnWidth,
                 height: height
-            ))
-            columnTops[column] += height + spacing
+            )
         }
-        return frames
     }
 }
 

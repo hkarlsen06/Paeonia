@@ -39,8 +39,10 @@ struct PaeoniaProfilePhotoAvatar: View {
 
     var body: some View {
         ZStack {
+            // Opaque backing so initials-only avatars don't let a map or photo show through.
             Circle()
-                .fill(tint.opacity(0.18))
+                .fill(.paeoniaBackgroundSecondary)
+                .overlay(Circle().fill(tint.opacity(0.18)))
 
             if let profileImage {
                 Image(uiImage: profileImage)

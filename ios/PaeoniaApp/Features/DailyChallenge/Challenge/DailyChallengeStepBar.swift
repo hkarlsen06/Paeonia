@@ -57,6 +57,9 @@ struct DailyChallengeStepBar: View {
                 segment(at: index)
             }
         }
+        // The answering flow (the tappable bar) always keeps room for the taller
+        // current segment, so the bar doesn't jump on steps with no current segment.
+        .frame(height: onSelect == nil && current == nil ? height : currentHeight)
         .animation(PaeoniaMotion.stateChange, value: completedSteps)
         .animation(PaeoniaMotion.stateChange, value: current)
         .accessibilityElement(children: .ignore)
@@ -101,22 +104,21 @@ struct DailyChallengeStepBar: View {
         let isCurrent = index == current
         let shape = Capsule(style: .continuous)
 
+        // The step the user is on stands taller than the rest. If it isn't answered
+        // yet, a faint fill marks it without making it look complete.
         return shape
-            .fill(isCompleted ? Color.paeoniaAccentPrimary : Color.paeoniaSurfaceSecondary)
-            .frame(height: height)
+            // Unanswered segments are a faint blush, not a surface color. A dark
+            // plum track disappears on the dark capsule behind the Home badge.
+            .fill(isCompleted ? Color.paeoniaAccentPrimary : Color.paeoniaTextPrimary.opacity(0.25))
             .overlay {
-                // A faint fill marks the step the user is on but hasn't answered,
-                // so the bar reads as "you are here" without looking complete.
                 if isCurrent, !isCompleted {
                     shape.fill(Color.paeoniaAccentPrimary.opacity(0.3))
                 }
             }
-            .overlay {
-                if isCurrent {
-                    shape.stroke(Color.paeoniaAccentPrimary, lineWidth: PaeoniaRadius.strokeEmphasis)
-                }
-            }
+            .frame(height: isCurrent ? currentHeight : height)
     }
+
+    private var currentHeight: CGFloat { height * 1.75 }
 }
 
 #if DEBUG

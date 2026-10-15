@@ -43,15 +43,12 @@ struct CoupleMapFramingTests {
     private let oslo = CLLocationCoordinate2D(latitude: 59.9139, longitude: 10.7522)
     private let nineMetersAway = CLLocationCoordinate2D(latitude: 59.91398, longitude: 10.7522)
     private let farAway = CLLocationCoordinate2D(latitude: 59.9239, longitude: 10.7522)
-    private let now = Date(timeIntervalSince1970: 1_800_000_000)
 
     @Test
-    func areTogetherWhenCloseWithRecentFixes() {
+    func areTogetherWhenClose() {
         #expect(CoupleMapFraming.areTogether(
             current: oslo,
-            currentCapturedAt: now,
             partner: nineMetersAway,
-            partnerCapturedAt: now.addingTimeInterval(-22 * 60),
             partnerIsStale: false
         ))
     }
@@ -60,20 +57,7 @@ struct CoupleMapFramingTests {
     func areNotTogetherWhenFarApart() {
         #expect(!CoupleMapFraming.areTogether(
             current: oslo,
-            currentCapturedAt: now,
             partner: farAway,
-            partnerCapturedAt: now,
-            partnerIsStale: false
-        ))
-    }
-
-    @Test
-    func areNotTogetherWhenFixesAreHoursApart() {
-        #expect(!CoupleMapFraming.areTogether(
-            current: oslo,
-            currentCapturedAt: now,
-            partner: nineMetersAway,
-            partnerCapturedAt: now.addingTimeInterval(-2 * 60 * 60),
             partnerIsStale: false
         ))
     }
@@ -82,9 +66,7 @@ struct CoupleMapFramingTests {
     func areNotTogetherWhenPartnerLocationIsStale() {
         #expect(!CoupleMapFraming.areTogether(
             current: oslo,
-            currentCapturedAt: now,
             partner: nineMetersAway,
-            partnerCapturedAt: now,
             partnerIsStale: true
         ))
     }

@@ -41,7 +41,8 @@ struct CoupleMapSnapshot: View {
     let partnerCapturedAt: Date
     let partnerWasStaleAtLastRefresh: Bool
     /// Both partners are in the same place right now (see `CoupleMapFraming.areTogether`).
-    /// Shows a heart between the avatars and "Together" in place of the distance.
+    /// Shows two figures holding hands between the avatars and "Together" in place
+    /// of the distance.
     let isTogether: Bool
     let onLongPress: () -> Void
     /// Called for each tap that plays a heart. The card batches them into a send.
@@ -51,8 +52,9 @@ struct CoupleMapSnapshot: View {
 
     private static let scrimHeight: CGFloat = 52
     /// Closest the two avatar centers may sit on screen: one avatar plus room for the
-    /// together heart between them.
-    private static let minimumPinSpacing = MapAvatarPin.avatarDiameter + 20
+    /// together figures between them.
+    private static let minimumPinSpacing = MapAvatarPin.avatarDiameter + 34
+    private static let togetherSymbol = "figure.2.left.holdinghands"
     /// Lean of the sweep line away from vertical, so it cuts across on a diagonal.
     private static let tiltRadians: CGFloat = 18 * .pi / 180
     private static let sweepDuration: TimeInterval = 1.5
@@ -214,7 +216,7 @@ struct CoupleMapSnapshot: View {
             .position(snap.partnerPoint)
 
             if isTogether {
-                togetherHeart(between: snap)
+                togetherFigures(between: snap)
             }
 
             // The distance pill (scrim + number + icon) lives inside the revealed unit
@@ -273,18 +275,16 @@ struct CoupleMapSnapshot: View {
         onSendHeart()
     }
 
-    private func togetherHeart(between snap: SnapshotResult) -> some View {
-        Image(.homeHeart)
-            .resizable()
-            .accessibilityHidden(true)
-            .scaledToFit()
-            .frame(width: 24)
+    private func togetherFigures(between snap: SnapshotResult) -> some View {
+        Image(systemName: Self.togetherSymbol)
+            .font(.system(size: 20, weight: .semibold))
+            .foregroundStyle(.paeoniaAccentPrimary)
             .phaseAnimator(reduceMotion ? [1.0] : [1.0, 1.12]) { view, scale in
                 view.scaleEffect(scale)
             } animation: { _ in
                 PaeoniaMotion.standardCurve(duration: 1.1)
             }
-            .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
+            .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
             .position(
                 x: (snap.currentPoint.x + snap.partnerPoint.x) / 2,
                 y: (snap.currentPoint.y + snap.partnerPoint.y) / 2
@@ -296,7 +296,7 @@ struct CoupleMapSnapshot: View {
     // the Apple Maps watermark baked into the bottom-left of the snapshot.
     private var distanceLabel: some View {
         HStack(spacing: PaeoniaSpacing.space4) {
-            Image(systemName: isTogether ? "person.2.fill" : "location.fill")
+            Image(systemName: isTogether ? Self.togetherSymbol : "location.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .accessibilityHidden(true)
 

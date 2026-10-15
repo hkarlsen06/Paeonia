@@ -28,7 +28,7 @@ struct DailyQuestionCard<Header: View, Footer: View>: View {
             Text(prompt)
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .minimumScaleFactor(0.6)
+                .minimumScaleFactor(0.5)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
 

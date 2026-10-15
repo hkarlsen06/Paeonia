@@ -10,7 +10,8 @@ extension View {
 
 /// The bubble starts hidden behind a blur while two soft taps build up. Then it springs
 /// in with a firm tap and a success haptic, a gold glow, sparkles around its edge, and a
-/// petal burst. Reduce Motion shows the bubble at once and keeps the landing haptic.
+/// petal burst, with the reveal chime. Reduce Motion shows the bubble at once and keeps
+/// the landing haptic and chime.
 private struct DailyChatAnswerReveal: ViewModifier {
     private static let buildUpStep: Duration = .milliseconds(120)
 
@@ -43,6 +44,7 @@ private struct DailyChatAnswerReveal: ViewModifier {
                 }
             }
             .overlay { DailyChatRevealSparkles(trigger: landCount) }
+            .background { DailyChatCellRaiser(isRaised: isActive) }
             .task(id: isActive) { await play() }
     }
 
@@ -67,7 +69,7 @@ private struct DailyChatAnswerReveal: ViewModifier {
         }
         guard !reduceMotion else {
             isHidden = false
-            PaeoniaHaptics.partnerAnswerLanded()
+            land()
             return
         }
         isHidden = true
@@ -81,7 +83,49 @@ private struct DailyChatAnswerReveal: ViewModifier {
         }
         burstStart = .now
         landCount += 1
+        land()
+    }
+
+    /// The firm tap and the games' reveal chime, as the bubble lands.
+    private func land() {
         PaeoniaHaptics.partnerAnswerLanded()
+        GameSound.chime.play()
+    }
+}
+
+/// Lifts the chat row's table cell above its neighbours while `isRaised` is true. Each
+/// ExyteChat row is its own cell with an opaque background, so without this the next
+/// cell covers the glow and sparkles that spill past the bubble.
+private struct DailyChatCellRaiser: UIViewRepresentable {
+    let isRaised: Bool
+
+    func makeUIView(context: Context) -> RaiserView {
+        let view = RaiserView()
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ view: RaiserView, context: Context) {
+        view.isRaised = isRaised
+    }
+
+    final class RaiserView: UIView {
+        var isRaised = false {
+            didSet { apply() }
+        }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            apply()
+        }
+
+        private func apply() {
+            var ancestor = superview
+            while let current = ancestor, !(current is UITableViewCell) {
+                ancestor = current.superview
+            }
+            ancestor?.layer.zPosition = isRaised ? 1 : 0
+        }
     }
 }
 

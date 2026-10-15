@@ -51,21 +51,18 @@ enum CoupleMapFraming {
     /// Partners within this many meters count as together. Indoor location fixes are
     /// often 30 to 65 m off, so a tighter limit would miss couples in the same room.
     static let togetherDistanceMeters: CLLocationDistance = 100
-    /// Both fixes must be at most this far apart in time, so an old fix from a place
-    /// the other partner is at now doesn't read as being together.
-    static let togetherMaximumFixGap: TimeInterval = 60 * 60
 
-    /// True when both partners were recently in the same place.
+    /// True when both partners' last-known locations are in the same place. There is
+    /// no rule on how far apart the two fixes are in time: a phone that sits still
+    /// sends no updates, so a couple on the same couch often has fixes hours apart.
+    /// The map already shows the partner's pin and age from that same fix, so only a
+    /// stale one (24 hours) is ruled out.
     static func areTogether(
         current: CLLocationCoordinate2D,
-        currentCapturedAt: Date,
         partner: CLLocationCoordinate2D,
-        partnerCapturedAt: Date,
         partnerIsStale: Bool
     ) -> Bool {
-        guard !partnerIsStale,
-              abs(currentCapturedAt.timeIntervalSince(partnerCapturedAt)) <= togetherMaximumFixGap
-        else {
+        guard !partnerIsStale else {
             return false
         }
         let distance = CLLocation(latitude: current.latitude, longitude: current.longitude)

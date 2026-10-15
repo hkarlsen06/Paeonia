@@ -37,8 +37,9 @@ struct DailyChallengeAnswerStep: View {
     var topPadding: CGFloat = PaeoniaSpacing.space24
 
     /// Mirrors `!isFocused`, driving the combined-question secondary-composer fold
-    /// (see `combinedComposer`). Toggled inside `withAnimation` from the focus change
-    /// so the fade animates the secondary alone, never the keyboard-driven field.
+    /// (see `combinedComposer`) and the question card's footer. Toggled inside
+    /// `withAnimation` from the focus change so the fade animates the secondary and
+    /// footer alone, never the keyboard-driven field.
     @State private var showsSecondaryComposer = true
 
     var body: some View {
@@ -73,7 +74,12 @@ struct DailyChallengeAnswerStep: View {
             DailyQuestionCard(prompt: question.prompt) {
                 EmptyView()
             } footer: {
-                cardFooter
+                // While typing, the keyboard takes most of the screen, so the footer
+                // folds away and the question keeps the card's room to itself.
+                if showsSecondaryComposer {
+                    cardFooter
+                        .transition(.opacity)
+                }
             }
 
             answerSection

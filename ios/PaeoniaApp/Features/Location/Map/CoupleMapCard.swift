@@ -102,9 +102,7 @@ struct CoupleMapCard: View {
     ) -> Bool {
         CoupleMapFraming.areTogether(
             current: current.coordinate,
-            currentCapturedAt: current.capturedAt,
             partner: partner.coordinate,
-            partnerCapturedAt: partner.capturedAt,
             partnerIsStale: LocationDisplayRecency.resolve(
                 capturedAt: partner.capturedAt,
                 now: .now,
