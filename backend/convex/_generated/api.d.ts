@@ -14,6 +14,7 @@ import type * as admin from "../admin.js";
 import type * as boardGames from "../boardGames.js";
 import type * as catalog from "../catalog.js";
 import type * as chatPresence from "../chatPresence.js";
+import type * as countdowns from "../countdowns.js";
 import type * as crons from "../crons.js";
 import type * as daily from "../daily.js";
 import type * as dailyQuestionChat from "../dailyQuestionChat.js";
@@ -119,6 +120,7 @@ declare const fullApi: ApiFromModules<{
   boardGames: typeof boardGames;
   catalog: typeof catalog;
   chatPresence: typeof chatPresence;
+  countdowns: typeof countdowns;
   crons: typeof crons;
   daily: typeof daily;
   dailyQuestionChat: typeof dailyQuestionChat;

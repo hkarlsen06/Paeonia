@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { findCurrentCouple, getCurrentEntitledCoupleId } from "./lib/access";
-import { runClientOperation } from "./lib/clientOperations";
+import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
 import { userLocalDate } from "./lib/coupleDays";
 import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
@@ -117,21 +117,7 @@ export const set_couple_started_on = mutation({
       request: { kind: "set_couple_started_on", couple_id: coupleId, started_on: startedOn },
     });
     const outcome = await runClientOperation(ctx, userId, input, async () => {
-      // A delayed retry must not overwrite a newer edit the same client already completed.
-      const operations = await ctx.db
-        .query("client_operations")
-        .withIndex("by_user_id_idempotency_scope_created_at", (q) =>
-          q.eq("user_id", userId).eq("idempotency_scope", scope),
-        )
-        .collect();
-      const superseded = operations.some(
-        (operation) =>
-          operation.client_id === input.client_id &&
-          operation.client_sequence > input.client_sequence &&
-          operation.operation_kind === "set_couple_started_on" &&
-          operation.status === "succeeded",
-      );
-      if (superseded) {
+      if (await isSupersededClientOperation(ctx, userId, input)) {
         const couple = await getByUuid(ctx, "couples", coupleId);
         return { couple_id: coupleId, started_on: orNull(couple?.started_on), superseded: true };
       }

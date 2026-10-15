@@ -1,6 +1,6 @@
 import { assertNoPendingAccountDeletion } from "./accountDeletion";
 import { requestHash, sha256Hex } from "./crypto";
-import type { WriterCtx } from "./db";
+import type { ReaderCtx, WriterCtx } from "./db";
 import { checkViolation, fail } from "./errors";
 import { stableStringify } from "./json";
 import { newUuid } from "./ids";
@@ -89,6 +89,30 @@ export async function runClientOperation<T>(
     updated_at: completedAt,
   });
   return result;
+}
+
+/**
+ * True when the same phone already finished a later operation in the same scope. A queued
+ * write can be retried after a newer write from that phone went through, and must not
+ * overwrite it. Call inside `runClientOperation`'s work and return the current state instead.
+ */
+export async function isSupersededClientOperation(
+  ctx: ReaderCtx,
+  userId: string,
+  input: ClientOperationInput,
+): Promise<boolean> {
+  const operations = await ctx.db
+    .query("client_operations")
+    .withIndex("by_user_id_idempotency_scope_created_at", (q) =>
+      q.eq("user_id", userId).eq("idempotency_scope", input.idempotency_scope),
+    )
+    .collect();
+  return operations.some(
+    (operation) =>
+      operation.client_id === input.client_id &&
+      operation.client_sequence > input.client_sequence &&
+      operation.status === "succeeded",
+  );
 }
 
 function assertClientOperationChecks(input: ClientOperationInput): void {

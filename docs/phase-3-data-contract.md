@@ -2098,7 +2098,7 @@ Rules:
 - Anniversary and monthly milestones derive from `couples.started_on`.
 - If the couple has been together under a year, show monthly milestones by default.
 - If the couple has been together at least a year, show the next anniversary by default.
-- Do not create a `countdowns` table for MVP unless custom countdowns are added.
+- Custom countdowns are stored in `countdowns` (title and target day per couple). Either partner can add, edit, or delete one, and both partners' birthdays are stored on `couple_members.birthday`. See `backend/convex/countdowns.ts`.
 
 ## Notifications And Devices
 

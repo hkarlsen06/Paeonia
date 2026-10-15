@@ -84,7 +84,7 @@ Import these instead of re-porting the SQL.
 | `db.ts` | `getByUuid`, `requireByUuid`, `omitNulls`, `orNull`, `withUpdatedAt`, `withTouch`, `withRevisionBump` |
 | `validators.ts` | `literals` and the shared literal unions (`moderationStatus`, `authProvider`, ...) |
 | `auth.ts` | `getCurrentUserId`, `requireUserId`, `ensureCurrentUser` |
-| `clientOperations.ts` | `runClientOperation` |
+| `clientOperations.ts` | `runClientOperation`, and `isSupersededClientOperation` for writes where a late retry must not overwrite a newer write from the same phone |
 | `backgroundWorkpool.ts` | `backgroundWorkpool`, the `@convex-dev/workpool` pool for report snapshot copies and Clerk account deletes |
 | `rateLimits.ts` | every rate limit in one `RateLimiter` (`@convex-dev/rate-limiter`), and `consumeRateLimit`. To add a limit, add an entry to `LIMITS` and call `consumeRateLimit(ctx, name, userId)` first thing inside the `runClientOperation` callback, so replays are free and a refusal rolls back. It fails with `53300`, which the app retries later instead of dropping the write. Set the capacity above the backlog an offline phone sends at once |
 | `accountDeletion.ts` | `assertNoPendingAccountDeletion` |
@@ -177,6 +177,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `widget` | `get_or_create_widget_canvas`, `get_widget_canvas`, `get_widget_drawing_revisions`, `submit_widget_drawing_revision`, `register_widget_push_device`, `create_widget_live_ticket` |
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
 | `hearts` | `send_hearts`, `mark_hearts_seen`, `get_hearts` (the Home map hearts) |
+| `countdowns` | `get_countdowns`, `save_countdown`, `delete_countdown`, `set_birthday` (the couple's own countdowns and both birthdays on the milestones timeline; birthdays live on `couple_members`, and the couple cleanup and purge delete both) |
 
 | `reports` | `submit_leave_and_report` |
 

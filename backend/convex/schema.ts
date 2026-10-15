@@ -602,6 +602,8 @@ export default defineSchema({
     user_id: uuid,
     role: literals("creator", "partner"),
     status: memberStatus,
+    // Either partner can set either member's birthday. It belongs to this relationship only.
+    birthday: v.optional(date),
     joined_at: ts,
     left_at: optTs,
     ended_notice_seen_at: optTs,
@@ -767,6 +769,25 @@ export default defineSchema({
     updated_at: ts,
   })
     .index("by_couple_id_sender_user_id", ["couple_id", "sender_user_id"]),
+
+  // A couple's own countdowns ("Trip to Bergen"), next to the milestones derived from
+  // couples.started_on. Either partner can add, edit, or delete one. target_date is a
+  // calendar day, so each phone counts days in its own time zone. Delete sets deleted_at,
+  // so a late save from the other phone cannot bring a deleted countdown back.
+  // FK: couple_id -> couples cascade.
+  countdowns: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    title: v.string(),
+    target_date: date,
+    created_by_user_id: uuid,
+    last_edited_by_user_id: uuid,
+    created_at: ts,
+    updated_at: ts,
+    deleted_at: optTs,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id_deleted_at", ["couple_id", "deleted_at"]),
 
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
   location_sharing_preferences: defineTable({

@@ -45,6 +45,22 @@ async function emitMemberEvents(
   return members.length;
 }
 
+/** Deletes the couple's countdowns and clears its members' birthdays. Returns the rows changed. */
+async function deleteCoupleDates(ctx: WriterCtx, coupleId: string): Promise<number> {
+  const countdowns = await ctx.db
+    .query("countdowns")
+    .withIndex("by_couple_id_deleted_at", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  for (const countdown of countdowns) await ctx.db.delete(countdown._id);
+  const members = await ctx.db
+    .query("couple_members")
+    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  const withBirthday = members.filter((member) => member.birthday !== undefined);
+  for (const member of withBirthday) await ctx.db.patch(member._id, withUpdatedAt({ birthday: undefined }));
+  return countdowns.length + withBirthday.length;
+}
+
 async function coupleInstances(ctx: WriterCtx, coupleId: string) {
   const days = await ctx.db
     .query("couple_days")
@@ -169,6 +185,7 @@ export async function cleanupCoupleContent(
 
   await deleteLatestLocationsForCouple(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
+  await deleteCoupleDates(ctx, couple.id);
   const current = (await ctx.db.get(couple._id))!;
   if (current.status === "ended") {
     await ctx.db.patch(couple._id, withUpdatedAt({ status: "deleted" as const }));
@@ -310,6 +327,7 @@ export async function purgeCoupleContent(
   // Normally gone since cleanup. This covers a purge that runs without it.
   contentDeleted += await deleteCoupleGameRows(ctx, couple.id);
   contentDeleted += await deleteHeartsForCouple(ctx, couple.id);
+  contentDeleted += await deleteCoupleDates(ctx, couple.id);
 
   for (const day of days) {
     for (const event of await ctx.db
