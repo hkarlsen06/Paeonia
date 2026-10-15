@@ -21,19 +21,15 @@ struct PaeoniaWidgetRefreshIntent: AppIntent {
         .widgetKitExtension
     }
 
-    func perform() async -> some IntentResult {
+    func perform() -> some IntentResult {
 #if DEBUG
         let bundleIdentifier = Bundle.main.bundleIdentifier ?? "unknown"
         Self.logger.debug(
             "Widget refresh intent started in bundle: \(bundleIdentifier, privacy: .public)"
         )
 #endif
-#if WIDGET_EXTENSION
-        // WidgetKit runs a plain AppIntent in the extension process. Keep the
-        // network implementation extension-only while exposing this intent
-        // type from both targets, as required for interactive widgets.
-        try? await PaeoniaWidgetRefreshService.refresh()
-#endif
+        // The new timeline fetches the latest drawing (`refreshWithinDeadline`), so
+        // fetching here too would download it twice.
         WidgetCenter.shared.reloadTimelines(ofKind: "PaeoniaWidget")
         return .result()
     }

@@ -115,7 +115,11 @@ class WidgetLiveConnection {
             let pinger = Task {
                 while !Task.isCancelled {
                     try? await Task.sleep(for: Self.pingInterval)
-                    socket.sendPing { _ in }
+                    // A failed ping means the connection is gone even if receive has not noticed.
+                    // Cancelling makes receive return, so the loop reconnects.
+                    socket.sendPing { error in
+                        if error != nil { socket.cancel(with: .goingAway, reason: nil) }
+                    }
                 }
             }
 

@@ -31,8 +31,9 @@ struct GameReplaySurface: UIViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject {
-        var frames: GameReplayFrames
-        var side: CGFloat
+        // New frames or a new size may need drawing again, so the link wakes up.
+        var frames: GameReplayFrames { didSet { displayLink?.isPaused = false } }
+        var side: CGFloat { didSet { displayLink?.isPaused = false } }
         private weak var canvasView: PKCanvasView?
         private var displayLink: CADisplayLink?
         private var drawnSide: CGFloat = 0
@@ -55,12 +56,15 @@ struct GameReplaySurface: UIViewRepresentable {
             displayLink = nil
         }
 
-        @objc private func step(_: CADisplayLink) {
+        @objc private func step(_ link: CADisplayLink) {
             guard let canvasView else { return }
             let wall = CACurrentMediaTime()
             let isFinished = frames.isFinished(wall)
-            // Once the last stroke is drawn there is nothing left to redraw.
-            if isFinished, finishedDrawing, drawnSide == side { return }
+            // Once the last stroke is drawn there is nothing left to redraw, so the link sleeps.
+            if isFinished, finishedDrawing, drawnSide == side {
+                link.isPaused = true
+                return
+            }
             guard let drawing = frames.drawing(wall, side) else { return }
             canvasView.drawing = drawing
             finishedDrawing = isFinished

@@ -269,6 +269,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await boardGamesCache.clearAll()
         lookBackCache.clearAll()
         BoardMarkRenderer.removeAll()
+        MemoryImageDecoding.removeAll()
         gameDrawingStore.purge(for: scope)
         try? await profilePhotoDiskCache.removeAllProfilePhotoData()
         removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())

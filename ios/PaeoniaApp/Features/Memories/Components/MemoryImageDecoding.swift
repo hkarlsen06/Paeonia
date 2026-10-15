@@ -26,6 +26,11 @@ nonisolated enum MemoryImageDecoding {
         cache.object(forKey: key(mediaAssetID, maxPixelSize))
     }
 
+    /// Drops every decoded photo. The privacy purge calls this on sign-out and when a relationship ends.
+    static func removeAll() {
+        cache.removeAllObjects()
+    }
+
     static func store(_ image: UIImage, for mediaAssetID: UUID, maxPixelSize: Int) {
         // Cost is the decoded size in bytes, which is what the 64 MB limit counts.
         let cost = image.cgImage.map { $0.width * $0.height * 4 } ?? 0

@@ -28,6 +28,8 @@ struct StoryChainScreen: View {
         .task { await viewModel.start() }
         .onDisappear { viewModel.stop() }
         .onChange(of: scenePhase) { _, phase in
+            // Control Center, a system alert or the app switcher only make the app inactive. Keep the game live.
+            guard phase != .inactive else { return }
             viewModel.scenePhaseChanged(isActive: phase == .active)
         }
         .onChange(of: viewModel.notice) { _, notice in
