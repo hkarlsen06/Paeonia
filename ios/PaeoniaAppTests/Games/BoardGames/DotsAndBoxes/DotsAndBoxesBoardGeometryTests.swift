@@ -240,6 +240,42 @@ struct DotsAndBoxesBoardGeometryTests {
         }
     }
 
+    @Test func drawingFromOneDotToTheNextPicksTheLineBetweenThem() {
+        let count = DotsAndBoxesBoard.boxesPerSide
+        for row in 0...count {
+            for column in 0..<count {
+                let left = geometry.dot(row: row, column: column)
+                let right = geometry.dot(row: row, column: column + 1)
+                let horizontal = DotsAndBoxesBoard.horizontalLine(row: row, column: column)
+                #expect(geometry.line(from: left, to: right) == horizontal)
+                #expect(geometry.line(from: right, to: left) == horizontal)
+
+                let top = geometry.dot(row: column, column: row)
+                let bottom = geometry.dot(row: column + 1, column: row)
+                let vertical = DotsAndBoxesBoard.verticalLine(row: column, column: row)
+                #expect(geometry.line(from: top, to: bottom) == vertical)
+                #expect(geometry.line(from: bottom, to: top) == vertical)
+            }
+        }
+    }
+
+    @Test func aSloppyStrokeStillPicksTheLineItFollows() {
+        // Box 5 is in the second row. A stroke along its top, a little low and short of both dots.
+        let rect = geometry.boxRect(5)
+        let cell = geometry.cell
+        let start = CGPoint(x: rect.minX + cell * 0.15, y: rect.minY + cell * 0.1)
+        let end = CGPoint(x: rect.maxX - cell * 0.1, y: rect.minY + cell * 0.2)
+
+        #expect(geometry.line(from: start, to: end) == DotsAndBoxesBoard.lines(of: 5)[0])
+    }
+
+    @Test func aShortStrokeCountsAsATapWhereItEnds() {
+        let end = point(inBox: 5, dx: 0, dy: -0.3)
+        let start = CGPoint(x: end.x + 5, y: end.y + 5)
+
+        #expect(geometry.line(from: start, to: end) == geometry.line(at: end))
+    }
+
     @Test func aBoardWithNoSizePicksNothing() {
         let empty = DotsAndBoxesBoardGeometry(side: 0)
 

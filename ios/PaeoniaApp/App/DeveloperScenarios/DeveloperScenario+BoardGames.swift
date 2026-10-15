@@ -75,7 +75,7 @@
     )
     static let ludoYourTurn = boardGameScreen(
       "ludo-your-turn", "Ludo · your turn",
-      "A new game you start: the die waits on your tray and the status says Tap the die to roll"
+      "A new game you start: the die waits on your tray and the status says Swipe the die to roll"
     )
     static let ludoChoosePawn = boardGameScreen(
       "ludo-choose-pawn", "Ludo · choose a pawn",

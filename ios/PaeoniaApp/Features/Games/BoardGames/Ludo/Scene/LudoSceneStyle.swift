@@ -242,12 +242,14 @@ nonisolated enum LudoSceneStyle {
     static let cameraYawDegrees: Double = -18
     /// Vertical field of view.
     static let cameraFieldOfViewDegrees: Double = 30
-    /// The camera draws from this near distance to this far one. The closest zoom keeps
-    /// it about 16 cells from the board and the farthest corner is under 70 away. A
-    /// tight range keeps the depth test sharp, so the peonies and the marks that lie
-    /// a hair above their surfaces never flicker through them.
+    /// The camera draws from this near distance to this far one. On a phone the camera
+    /// stands about 130 cells away at the farthest zoom, and the table runs about 160
+    /// deep before it has faded into the room's color, so a shorter far distance cuts
+    /// the far table off in a flat band. The depth test's precision comes from the near
+    /// distance, so the peonies and the marks that lie a hair above their surfaces
+    /// still never flicker through them.
     static let cameraNear: Float = 1
-    static let cameraFar: Float = 150
+    static let cameraFar: Float = 250
     /// Width divided by height of the board view. A tilted board is wider than tall,
     /// and this is the shape where the width and the height of the view both fit snugly.
     static let viewAspect: Double = 1.4
@@ -260,18 +262,14 @@ nonisolated enum LudoSceneStyle {
         [(candlePosition, 10.2), (teapotPosition, 4.6), (partnerCupPosition, 2), (myCupPosition, 2)]
     }
     static let framedPropReach: Float = 1.6
-    /// The orbit keeps the camera between these angles above the board.
-    static let orbitPitchRangeDegrees: ClosedRange<Double> = 35...80
     /// Pinch limits, as a share of the default distance.
     static let zoomRange: ClosedRange<Double> = 0.55...1.35
+    /// A two-finger twist turns the board only past this many radians, about 7 degrees,
+    /// and then follows the fingers from there.
+    static let twistDeadZone: Double = 0.12
     /// At the closest zoom the camera may look this many cells from the middle of the
     /// board each way, enough to center a base yard. The reach shrinks to none at zoom 1.
     static let panReach: Double = 4.5
-    /// Radians of yaw and pitch for each point of a one-finger drag.
-    static let orbitYawPerPoint: Double = 0.008
-    static let orbitPitchPerPoint: Double = 0.006
-    /// How quickly the orbit slows down after the finger lifts, per second.
-    static let orbitFriction: Double = 3.5
     /// The double tap glides back to the default view in this time.
     static let cameraResetDuration: Double = 0.5
     /// Pawns and the die rise above the slab by about this much. The camera keeps them in view.
@@ -284,31 +282,38 @@ nonisolated enum LudoSceneStyle {
     /// A die that is not in the hand, such as my partner's or one thrown with a tap,
     /// rises into the throw over this time.
     static let tossPickUpTime: Double = 0.15
+    /// A die the finger let go flies on with its throw until the roll arrives, then
+    /// eases onto the simulated flight over this time.
+    static let tossCatchUpTime: Double = 0.1
     /// Speed along the floor in cells a second. A slower flick throws at the smallest speed.
-    static let tossMinimumSpeed: Float = 3
+    static let tossMinimumSpeed: Float = 4
     static let tossMaximumSpeed: Float = 9
     /// How fast the die rises as it leaves the hand.
-    static let tossRise: Float = 4
+    static let tossRise: Float = 6
     /// Forward roll for each cell a second of speed, in radians a second.
-    static let tossRollPerSpeed: Float = 1.5
+    static let tossRollPerSpeed: Float = 5
     /// How much the spin of each try varies, in radians a second, and how many tries
-    /// the simulation makes to land on the rolled number.
-    static let tossSpinJitter: Float = 8
-    static let tossAttempts = 60
+    /// the simulation makes to land on the rolled number. With these settings a throw
+    /// turns about two times and changes its top face about 7 times, and fewer than 1
+    /// in 100 throws needs its faces swapped round to show the number.
+    static let tossSpinJitter: Float = 12
+    static let tossAttempts = 120
     /// A try that is still moving after this many seconds does not count. The die then
     /// eases flat over `tossSetDownTime`. Together they are the longest a throw lasts.
-    static let tossSettleLimit: Double = 1.2
+    /// Most throws settle in about 1.4 seconds.
+    static let tossSettleLimit: Double = 1.8
     static let tossSetDownTime: Double = 0.1
-    /// Stronger than real gravity at this scale, so a throw is over in about a second.
-    static let tossGravity: Float = 60
-    /// How quickly the die slows down, per second, on the floor and in the air.
-    static let tossFloorDrag: Float = 3
+    /// Stronger than real gravity at this scale, so a throw is over in under two seconds.
+    static let tossGravity: Float = 50
+    /// How quickly the die slows down, per second, on the floor and in the air. The
+    /// floor slows the spin only a little, so the die keeps tumbling after it lands.
+    static let tossFloorDrag: Float = 2
     static let tossAirDrag: Float = 0.2
-    static let tossFloorSpinDrag: Float = 10
+    static let tossFloorSpinDrag: Float = 1.5
     static let tossAirSpinDrag: Float = 0.6
     /// A hit faster than `tossBounceSpeed` bounces back with `tossRestitution` of its speed.
     static let tossBounceSpeed: Float = 1
-    static let tossRestitution: Float = 0.3
+    static let tossRestitution: Float = 0.45
     static let tossFriction: Float = 0.5
     /// A hit faster than this taps the phone.
     static let tossKnockSpeed: Float = 2
@@ -323,6 +328,8 @@ nonisolated enum LudoSceneStyle {
     /// One hop from square to square.
     static let hopDuration: Double = 0.16
     static let hopArc: Float = 0.42
+    /// A pawn walking past another steps this far to the side, into the next lane.
+    static let detourDistance: Float = 1
     /// Pause between the die landing and the partner's pawn moving.
     static let partnerPause: Double = 0.25
     /// A die changing yards hops over this time.

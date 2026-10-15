@@ -11433,6 +11433,24 @@
         }
       }
     },
+    "games.invite.sentBanner" : {
+      "comment" : "Banner after tapping the bell in a game's top bar, which notifies the partner that you want to play. First argument is the partner's name, second is a time like 21:34.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ will get a notification. You can send another at %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ får et varsel. Du kan sende et nytt kl. %2$@."
+          }
+        }
+      }
+    },
     "games.invite.sentUntil" : {
       "comment" : "Small line under the disabled Sent button. %@ is the time of day, like 14:32, when the next invite to play can go out.",
       "extractionState" : "manual",
@@ -14121,6 +14139,42 @@
         }
       }
     },
+    "home.milestone.timeline.months" : {
+      "comment" : "Month count in the \"Together for\" line, joined with years and days",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ months"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ måneder"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.months.one" : {
+      "comment" : "Month count in the \"Together for\" line when the count is exactly 1",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 month"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 måned"
+          }
+        }
+      }
+    },
     "home.milestone.timeline.since" : {
       "comment" : "Subline under the together-for headline. Placeholder is a formatted date like 'Thursday 8 January 2026'",
       "extractionState" : "manual",
@@ -14171,6 +14225,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sammen i %@"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.years" : {
+      "comment" : "Year count in the \"Together for\" line, joined with months and days",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ years"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ år"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.years.one" : {
+      "comment" : "Year count in the \"Together for\" line when the count is exactly 1",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 år"
           }
         }
       }
@@ -14859,6 +14949,24 @@
         }
       }
     },
+    "ludo.gestureHint.zoom" : {
+      "comment" : "Shown over the Ludo board the first times the screen opens, until the person zooms or turns the board with two fingers. Pinch means spreading or closing two fingers. Twist means turning two fingers on the screen, as in Maps.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinch to zoom, twist to turn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knip for å zoome, vri for å snu"
+          }
+        }
+      }
+    },
     "ludo.hint.noMove" : {
       "comment" : "Line under the Ludo board when the roll leaves no pawn to move, so the turn passes by itself. The number is the die that was rolled, 1 to 6.",
       "extractionState" : "manual",
@@ -14913,20 +15021,20 @@
         }
       }
     },
-    "ludo.hint.tapToRoll" : {
-      "comment" : "Line under the Ludo board on this person's first roll of a game. The die on their side of the board is the thing to tap.",
+    "ludo.hint.swipeToRoll" : {
+      "comment" : "Line under the Ludo board on this person's first roll of a game. The die on their side of the board rolls when they drag it and let go, like throwing it. A tap does not roll it.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap the die to roll"
+            "value" : "Swipe the die to roll"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trykk på terningen for å kaste"
+            "value" : "Sveip terningen for å kaste"
           }
         }
       }
@@ -22526,13 +22634,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Relationship date"
+            "value" : "Together since"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Datoen deres"
+            "value" : "Sammen siden"
           }
         }
       }

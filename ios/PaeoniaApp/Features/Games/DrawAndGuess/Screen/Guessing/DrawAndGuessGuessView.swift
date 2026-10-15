@@ -52,6 +52,7 @@ struct DrawAndGuessGuessView: View {
         }
         .onChange(of: viewModel.wrongGuessCount) {
             PaeoniaHaptics.gameWrongGuess()
+            GameSound.wrong.play()
             AccessibilityNotification.Announcement(String(localized: .gamesDrawAndGuessGuessWrong)).post()
         }
         .onDisappear { timeline.stop() }

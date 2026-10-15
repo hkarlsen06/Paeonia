@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A game you can play in Xcode previews. You are player one. Tap the die to roll
+/// A game you can play in Xcode previews. You are player one. Swipe the die to roll
 /// and tap a glowing pawn to move it. The partner rolls and moves by itself, with
 /// the die tumbling at the same moment their move arrives, as on the real screen.
 /// `forcedRoll` makes every roll the same number.

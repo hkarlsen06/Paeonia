@@ -35,7 +35,7 @@ struct LudoRollStore {
 }
 
 /// The die and the pawn choice of one Ludo screen. The phone rolls, so the roll
-/// is part of the move: a tap rolls, the die tumbles, and the choice plays
+/// is part of the move: a throw rolls, the die tumbles, and the choice plays
 /// `LudoBoard.move(die:choice:)` through the board game view model.
 ///
 /// The model keeps the person's roll on this phone before the tumble starts, so
@@ -148,7 +148,7 @@ final class LudoRollModel {
         if let kept = LudoRollDecision.restoredDie(from: saved, at: position) {
             // My partner may have arrived before this roll was back on screen.
             announce?(LudoSavedRoll(position: position, die: kept), nil)
-            land(kept, context: context, schedulesAutomaticMove: true)
+            land(kept, context: context, schedulesAutomaticPass: true)
         } else {
             die = .ready
             movableChoices = []
@@ -156,7 +156,7 @@ final class LudoRollModel {
         }
     }
 
-    /// The person taps the die, or throws it with `toss`.
+    /// The person throws the die with `toss`, or rolls it with VoiceOver, which has no throw.
     func roll(_ toss: LudoToss? = nil) {
         let context = context()
         guard context.canPlay, let position = context.position, var turn, turn.position == position,
@@ -196,43 +196,36 @@ final class LudoRollModel {
     private func landIfStillMine(_ value: Int, at position: LudoPosition) {
         let context = context()
         guard context.canPlay, context.position == position, turn?.position == position else { return }
-        land(value, context: context, schedulesAutomaticMove: true)
+        land(value, context: context, schedulesAutomaticPass: true)
     }
 
-    /// The die shows its face and the person's options appear. A single option
-    /// plays by itself after a moment.
-    private func land(_ value: Int, context: LudoRollContext, schedulesAutomaticMove: Bool) {
+    /// The die shows its face and the person's options appear. With no pawn to
+    /// move, the turn passes by itself after a moment.
+    private func land(_ value: Int, context: LudoRollContext, schedulesAutomaticPass: Bool) {
         guard var turn else { return }
         turn.phase = .showing(value)
         self.turn = turn
         die = .showing(die: value, side: context.me)
         movableChoices = context.board.legalChoices(die: value)
         hint = LudoRollDecision.hintAfterRoll(board: context.board, die: value)
-        guard schedulesAutomaticMove,
-              let automatic = LudoRollDecision.automaticMove(board: context.board, die: value)
+        guard schedulesAutomaticPass, LudoRollDecision.passesByItself(board: context.board, die: value)
         else { return }
-        let choice: LudoChoice
-        let delay: Duration
-        switch automatic {
-        case let .move(only, after): (choice, delay) = (only, after)
-        case let .pass(after): (choice, delay) = (.pass, after)
-        }
         task?.cancel()
         let sleep = sleep
         task = Task { [weak self] in
-            try? await sleep(delay)
+            try? await sleep(LudoRollDecision.autoPassDelay)
             guard !Task.isCancelled else { return }
-            await self?.chooseAutomatically(choice)
+            await self?.passAutomatically()
         }
     }
 
-    /// Plays the only option. The waiting task is done, so `choose` must not cancel it.
-    private func chooseAutomatically(_ choice: LudoChoice) async {
+    /// Passes the turn. The waiting task is done, so `choose` must not cancel it.
+    private func passAutomatically() async {
         task = nil
-        await choose(choice)
+        await choose(.pass)
     }
 
-    /// The person taps a pawn, or the only option moves by itself.
+    /// The person taps a pawn, or the turn passes by itself.
     func choose(_ choice: LudoChoice) async {
         guard let started = turn, case let .showing(value) = started.phase,
               movableChoices.contains(choice)
@@ -245,7 +238,7 @@ final class LudoRollModel {
         update()
         // The move did not land, so the same roll can be used again.
         if let turn, turn.position == started.position, turn.phase == .playing(value) {
-            land(value, context: context(), schedulesAutomaticMove: false)
+            land(value, context: context(), schedulesAutomaticPass: false)
         }
     }
 

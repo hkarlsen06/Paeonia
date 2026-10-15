@@ -92,6 +92,7 @@ struct ConnectFourFallingDiscView: View {
         } else {
             PaeoniaHaptics.streakTick(intensity: 0.6)
         }
+        GameSound.connectFourDrop.play(volume: disc.isMine ? 1 : 0.85)
         await ConnectFourClock.sleep(until: disc.end)
         guard !Task.isCancelled else { return }
         onFinished(disc.id)

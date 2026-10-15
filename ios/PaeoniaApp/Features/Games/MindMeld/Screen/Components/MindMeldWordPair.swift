@@ -69,14 +69,15 @@ private struct MindMeldWordChip: View {
 
 // MARK: - Trail
 
-/// The word pairs of earlier rounds, oldest first, with the gap between the two
-/// words narrowing each round so the couple sees how they came closer.
+/// The word pairs of earlier rounds, oldest first. In "Our melds" the gap between
+/// the two words narrows each round, so the couple sees how they came closer.
 struct MindMeldTrailView: View {
     // swiftlint:disable:next large_tuple
     typealias Pair = (mine: String, theirs: String, isMeld: Bool, isCounted: Bool)
 
     enum Style {
-        /// Caption-size rows for the write phase. Every row is a plain pair.
+        /// Caption-size rows for the write phase. Every row is a plain pair, with
+        /// the plus signs lined up in the middle.
         case compact
         /// Large rows for "Our melds". A meld ends in one merged chip, and a
         /// counted near miss ends in both words with "Counted".
@@ -86,15 +87,14 @@ struct MindMeldTrailView: View {
     let pairs: [Pair]
     var style: Style = .compact
 
-    private static let compactWidestGap: CGFloat = 28
-    private static let compactNarrowestGap: CGFloat = 6
-    private static let detailNarrowestInset: CGFloat = 72
+    private static let detailWidestLine: CGFloat = 120
+    private static let detailNarrowestLine: CGFloat = 16
 
     var body: some View {
         VStack(spacing: style == .compact ? PaeoniaSpacing.space4 : PaeoniaSpacing.space20) {
             ForEach(pairs.indices, id: \.self) { index in
                 switch style {
-                case .compact: compactRow(pairs[index], progress: progress(of: index))
+                case .compact: compactRow(pairs[index])
                 case .detail: detailRow(pairs[index], round: index + 1, progress: progress(of: index))
                 }
             }
@@ -109,15 +109,16 @@ struct MindMeldTrailView: View {
 
     // MARK: Compact
 
-    private func compactRow(_ pair: Pair, progress: CGFloat) -> some View {
-        let gap = Self.compactWidestGap + (Self.compactNarrowestGap - Self.compactWidestGap) * progress
-        return HStack(spacing: gap) {
+    private func compactRow(_ pair: Pair) -> some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
             Text(verbatim: pair.mine.localizedUppercase)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             Image(systemName: "plus")
                 .imageScale(.small)
                 .fontWeight(.bold)
                 .accessibilityHidden(true)
             Text(verbatim: pair.theirs.localizedUppercase)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(PaeoniaTypography.caption)
         // Long words wrap instead of ending in "…", so the whole trail stays readable.
@@ -139,7 +140,8 @@ struct MindMeldTrailView: View {
             if pair.isMeld && !pair.isCounted {
                 mergedChip(pair.mine)
             } else {
-                joinedChips(pair, inset: Self.detailNarrowestInset * progress)
+                let line = Self.detailWidestLine + (Self.detailNarrowestLine - Self.detailWidestLine) * progress
+                joinedChips(pair, lineWidth: line)
             }
             if pair.isCounted {
                 Text(.mindMeldHistoryDetailCounted)
@@ -150,27 +152,26 @@ struct MindMeldTrailView: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// My word, a thin line and the partner's word. A bigger `inset` pulls them
-    /// toward the middle.
-    private func joinedChips(_ pair: Pair, inset: CGFloat) -> some View {
+    /// My word, a thin line and the partner's word. The line sits in the middle
+    /// of the row and each chip touches one end of it, so a shorter line pulls
+    /// the words together.
+    private func joinedChips(_ pair: Pair, lineWidth: CGFloat) -> some View {
         let mine: Color = pair.isMeld ? .paeoniaSuccess : .paeoniaPartnerOne
         let theirs: Color = pair.isMeld ? .paeoniaSuccess : .paeoniaPartnerTwo
         return HStack(spacing: 0) {
             MindMeldWordChip(word: pair.mine, tint: mine, font: PaeoniaTypography.sectionTitle, lines: 2)
-                .layoutPriority(1)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             Capsule()
                 .fill(LinearGradient(
                     colors: [mine.opacity(0.7), theirs.opacity(0.7)],
                     startPoint: .leading,
                     endPoint: .trailing
                 ))
-                .frame(height: PaeoniaRadius.strokeEmphasis)
-                .frame(minWidth: PaeoniaSpacing.space8)
+                .frame(width: lineWidth, height: PaeoniaRadius.strokeEmphasis)
                 .accessibilityHidden(true)
             MindMeldWordChip(word: pair.theirs, tint: theirs, font: PaeoniaTypography.sectionTitle, lines: 2)
-                .layoutPriority(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, inset)
     }
 
     private func mergedChip(_ word: String) -> some View {

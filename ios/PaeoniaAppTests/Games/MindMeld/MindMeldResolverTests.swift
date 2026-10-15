@@ -98,10 +98,24 @@ struct MindMeldResolverTests: MindMeldResolverFixtures {
         #expect(resolution.isYourTurn)
     }
 
-    @Test func aQueuedLockInWithThePartnerAlreadyLockedStaysWaitingUntilTheServerReveals() {
+    @Test func aQueuedLockInWithThePartnerAlreadyLockedOpensTheRevealOfTheOpenRound() {
         let round = open(1, partnerLocked: true)
         var pending = MindMeldPendingWork.none
         pending.lockedWords[round.id] = "ocean"
+        let resolution = resolve(game(rounds: [round]), pending: pending)
+
+        #expect(resolution.phase == .reveal)
+        #expect(resolution.round?.id == round.id)
+        #expect(resolution.round?.myWord == "ocean")
+        // The cards stay face down until the server sends the round back revealed.
+        #expect(resolution.displayOutcome == nil)
+    }
+
+    @Test func aQueuedLockInThatFailedToSendWaitsEvenWithThePartnerLocked() {
+        let round = open(1, partnerLocked: true)
+        var pending = MindMeldPendingWork.none
+        pending.lockedWords[round.id] = "ocean"
+        pending.hasFailedMoveAttempt = true
         let resolution = resolve(game(rounds: [round]), pending: pending)
 
         #expect(resolution.phase == .waiting(isQueued: true))

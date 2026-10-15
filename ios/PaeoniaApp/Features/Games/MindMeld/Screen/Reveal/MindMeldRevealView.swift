@@ -265,6 +265,7 @@ struct MindMeldRevealView: View {
     private var countItButton: some View {
         Button {
             PaeoniaHaptics.selection()
+            GameSound.tap.play()
             viewModel.countIt()
         } label: {
             Text(.mindMeldRevealNearCount)

@@ -36,22 +36,21 @@ struct MindMeldWaitingView: View {
                 Spacer(minLength: PaeoniaSpacing.space16)
             }
             .frame(maxWidth: .infinity)
-        } bottom: {
-            GameInviteButton(
-                invite: viewModel.invite,
-                partnerName: viewModel.partnerName,
-                send: viewModel.sendInvite,
-                identifier: "mindMeld.invite"
-            )
         }
-        // The partner's phone changes the title, the hint, the glow and the invite
-        // button while this screen is open. Everything moves to its new place together.
+        .gameInviteToolbar(
+            invite: viewModel.invite,
+            partnerName: viewModel.partnerName,
+            send: viewModel.sendInvite,
+            identifier: "mindMeld.invite"
+        )
+        // The partner's phone changes the title, the hint and the glow while this
+        // screen is open. Everything moves to its new place together.
         .animation(stateChange, value: viewModel.partnerStatus)
-        .animation(stateChange, value: viewModel.invite)
         .animation(stateChange, value: viewModel.showsOfflineLine)
         .onChange(of: viewModel.partnerStatus) { old, new in
             if old == .away, new != .away {
                 PaeoniaHaptics.partnerDrawingReceived()
+                GameSound.nudge.play(volume: 0.7)
             }
         }
         .accessibilityIdentifier("mindMeld.waiting")

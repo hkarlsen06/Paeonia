@@ -7,7 +7,7 @@ description: Make illustrated raster assets for the Paeonia iOS app with Codex i
 
 Every illustration in the app looks like it came from one sticker set. You get that by holding four things fixed on every asset: the **style block**, a **style reference** from the approved set, the **checks**, and the **import**. Only the subject and its composition change.
 
-Every asset is an **object**: one thing on a transparent background, such as a peony, a game disc or a game board, that code places and animates. The hub cards share one backdrop drawn in code (`GameHubBackdrop`), and each card places its game's objects on it. Read `docs/games/hub-artwork.md` before you brief objects for a hub card. It has the zones, the camera and the beats.
+Every asset is an **object**: one thing on a transparent background, such as a peony, a game disc or a game board, that code places and animates. The one exception is the backdrop all hub cards share (`GameHubBackdrop`), an opaque 1024 by 1536 painting of a room. Each card places its game's objects on it. Read `docs/games/hub-artwork.md` before you brief objects for a hub card. It has the zones, the camera and the beats.
 
 The approved set lives in `ios/PaeoniaApp/Resources/Assets.xcassets/GameHub/`. `GameHubPeony` and `GameHubConnectFourDiscPink` are the clearest examples of the object style, and `GameHubLudoBoard` and `GameHubStoryChainNotebook` of the hub card objects.
 
@@ -67,12 +67,13 @@ A white or cream object, like paper, reads as some fringe because its own edge i
 
 For a hub card, ask for two candidates of the main object and keep the better one. Compose the card on a render of the backdrop before you write code, with the objects at their planned places, and check it against the zones in `docs/games/hub-artwork.md`. Look at it next to the other cards: the same camera, the same size, the same light.
 
-If you change the backdrop, render it and check the card's text against it. `text` lays the card frame's shadow and blur over it and checks every line against the contrast it needs:
+If you change the backdrop, check the card's text against it. `text` lays the card frame's shadow and blur over it and checks every line against the contrast it needs:
 
 ```bash
-/tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py backdrop /tmp/paeonia-art/backdrop.png
 /tmp/paeonia-art-venv/bin/python -I .agents/skills/paeonia-illustrations/scripts/art_asset.py text /tmp/paeonia-art/backdrop.png
 ```
+
+Import a new backdrop with `--opaque` at 1536, as `GameHubBackdrop`.
 
 Done when every file prints `ok` (or passes by eye as a pale object) and looks right on the preview or on the backdrop.
 

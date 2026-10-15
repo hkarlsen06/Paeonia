@@ -30,6 +30,8 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         // move. The location manager must be ready before this returns so the
         // position reaches it.
         LocationUpdateController.shared.resumeAfterLaunch()
+        // Off the main thread, because setting the category can block for a moment.
+        Task.detached(priority: .utility) { PaeoniaAudioSession.useAmbient() }
         return true
     }
 

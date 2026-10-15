@@ -155,6 +155,14 @@ nonisolated struct RelationshipMilestoneCalculator {
         return days(from: calendar.startOfDay(for: start), to: calendar.startOfDay(for: now))
     }
 
+    /// The same span as `daysTogether`, split into whole years, months, and days
+    /// for the "Together for 7 years, 1 month and 2 days" line. `nil` when the date
+    /// can't be parsed.
+    func timeTogether(startedOn rawDate: String, now: Date = Date()) -> DateComponents? {
+        guard let start = startOfDay(fromISODate: rawDate) else { return nil }
+        return calendar.dateComponents([.year, .month, .day], from: start, to: calendar.startOfDay(for: now))
+    }
+
     func nextMilestone(start: Date, now: Date = Date()) -> RelationshipMilestone? {
         let startDay = calendar.startOfDay(for: start)
         let today = calendar.startOfDay(for: now)

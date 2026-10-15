@@ -67,8 +67,11 @@ extension LudoStage {
     /// The die flies along the simulated throw and lands with `value` up, wherever
     /// in the yard the throw takes it. Returns how long that takes.
     private func tumble(_ die: LudoDieNode, to value: Int, toss: LudoToss, isNear: Bool) -> Double {
+        // A die the finger let go has flown on since. Its flight picks up from there.
+        let thrownAgo = isNear ? releasedAt.map { clock - $0 } : nil
         heldDie = nil
         releasedAt = nil
+        releasedToss = nil
         finishDieClip()
         guard diePlaced, !reduceMotion else {
             let tray = LudoWorld.dieRestPosition(isNear: isNear)
@@ -79,36 +82,50 @@ extension LudoStage {
         let roller = isNear ? viewer : viewer.other
         let tray = LudoDieTray.near(waitingSlots: waitingSlots(of: roller))
         let flight = LudoDiePhysics.flight(for: toss, showing: value, in: tray)
-        let first = Self.worldPose(flight.pose(at: 0), isNear: isNear)
         let end = Self.worldPose(flight.pose(at: flight.duration), isNear: isNear)
-        let startPosition = die.currentPosition
-        let startOrientation = die.currentOrientation
-        // A die in the hand is already where the throw starts. Any other die rises into it.
-        let isInHand = simd_distance(startPosition, first.position) < 0.05
-            && abs(simd_dot(startOrientation, first.orientation)) > 0.999
-        let lead = isInHand ? 0 : LudoSceneStyle.tossPickUpTime
-        let duration = lead + flight.duration
         die.setRest(position: end.position, orientation: end.orientation, isNear: isNear, face: value)
-        let clip = flightClip(die, flight: flight, from: (startPosition, startOrientation), lead: lead, isNear: isNear)
+        let start = (die.currentPosition, die.currentOrientation)
+        let clip = flightClip(die, flight: flight, from: start, thrownAgo: thrownAgo, isNear: isNear)
         add(clip)
-        return duration
+        return clip.end - clock
     }
 
-    /// The clip of a throw: the die rises into the throw over `lead`, then follows the flight.
+    /// The clip of a throw. A die the finger let go `thrownAgo` seconds ago starts
+    /// that far into the flight and eases onto it from where it flew. Any other die
+    /// rises into the throw over `tossPickUpTime`, then follows the flight.
     private func flightClip(
         _ die: LudoDieNode,
         flight: LudoDieFlight,
         from start: (position: SIMD3<Float>, orientation: simd_quatf),
-        lead: Double,
+        thrownAgo: Double?,
         isNear: Bool
     ) -> LudoClip {
+        let lead = thrownAgo == nil ? LudoSceneStyle.tossPickUpTime : 0
+        let skipped = min(thrownAgo ?? 0, flight.duration)
         let first = Self.worldPose(flight.pose(at: 0), isNear: isNear)
+        let joined = Self.worldPose(flight.pose(at: skipped), isNear: isNear)
+        let offset = start.position - joined.position
+        let turn = simd_normalize(start.orientation * joined.orientation.inverse)
+        let still = simd_quatf(angle: 0, axis: SIMD3(0, 1, 0))
         let duration = lead + flight.duration
-        var events = flight.knocks.map { time in
-            LudoClip.Event(time: lead + time) { PaeoniaHaptics.selection() }
+        // Each knock is a little quieter than the one before, as the die loses speed.
+        var events = flight.knocks.filter { $0 >= skipped }.enumerated().map { index, time in
+            LudoClip.Event(time: lead + time) {
+                PaeoniaHaptics.selection()
+                GameSound.ludoDieKnock.play(volume: max(0.35, 1 - 0.22 * Double(index)))
+            }
         }
-        events.append(LudoClip.Event(time: duration) { PaeoniaHaptics.streakTick(intensity: 0.55) })
-        let clip = LudoClip(owner: .die, start: clock, duration: duration, isTumble: true, events: events) { time in
+        events.append(LudoClip.Event(time: duration) {
+            PaeoniaHaptics.streakTick(intensity: 0.55)
+            GameSound.ludoDieSettle.play(volume: 0.7)
+        })
+        let clip = LudoClip(
+            owner: .die,
+            start: clock - skipped,
+            duration: duration,
+            isTumble: true,
+            events: events
+        ) { time in
             if time < lead {
                 let amount = Float(LudoMotion.smooth(time / lead))
                 die.apply(
@@ -117,7 +134,13 @@ extension LudoStage {
                     scale: 1
                 )
             } else {
-                let pose = Self.worldPose(flight.pose(at: time - lead), isNear: isNear)
+                var pose = Self.worldPose(flight.pose(at: time - lead), isNear: isNear)
+                let catchUp = (time - skipped) / LudoSceneStyle.tossCatchUpTime
+                if lead == 0, catchUp < 1 {
+                    let amount = Float(LudoMotion.smooth(catchUp))
+                    pose.position += offset * (1 - amount)
+                    pose.orientation = simd_normalize(simd_slerp(turn, still, amount) * pose.orientation)
+                }
                 die.apply(position: pose.position, orientation: pose.orientation, scale: 1)
             }
         }
@@ -197,7 +220,7 @@ extension LudoStage {
         diePlaced = true
     }
 
-    private func finishDieClip() {
+    func finishDieClip() {
         guard let clip = clips.first(where: { $0.owner == .die }) else { return }
         clip.finishNow()
         clips.removeAll { $0 === clip }

@@ -44,6 +44,16 @@ struct LudoDiePhysicsTests {
         }
     }
 
+    /// A die let go flies on with its throw until its roll arrives, so that flight
+    /// has to match the start of the simulated one.
+    @Test func aDieLetGoFliesTheWayTheSimulationStarts() {
+        for toss in tosses {
+            let flight = LudoDiePhysics.simulate(toss, in: tray).flight
+            let pose = toss.pose(after: Float(2 * LudoDieFlight.frameTime))
+            #expect(simd_distance(pose.position, flight.positions[2]) < 0.02)
+        }
+    }
+
     @Test func theSameThrowFliesTheSameWay() {
         for toss in tosses {
             let first = LudoDiePhysics.flight(for: toss, showing: 4, in: tray)

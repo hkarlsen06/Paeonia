@@ -44,23 +44,22 @@ struct DrawAndGuessWaitingView: View {
                 Spacer(minLength: PaeoniaSpacing.space16)
             }
             .frame(maxWidth: .infinity)
-        } bottom: {
-            GameInviteButton(
-                invite: viewModel.invite,
-                partnerName: viewModel.partnerName,
-                send: viewModel.sendInvite,
-                identifier: "draw.invite"
-            )
         }
-        // The partner's phone changes the title, hint, ring, and invite button
-        // while this screen is open. Everything moves to its new place together.
+        .gameInviteToolbar(
+            invite: viewModel.invite,
+            partnerName: viewModel.partnerName,
+            send: viewModel.sendInvite,
+            identifier: "draw.invite"
+        )
+        // The partner's phone changes the title, hint and ring while this screen
+        // is open. Everything moves to its new place together.
         .animation(PaeoniaMotion.stateChange, value: viewModel.partnerPresence)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
         .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.reactionToMyLastDrawing)
         .onChange(of: viewModel.reactionToMyLastDrawing) { old, new in
             // The guesser reacted after this person left the result.
             guard let new, new != old, !isDrawing else { return }
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play()
             AccessibilityNotification.Announcement(
                 String(localized: new.drawerLine(partnerName: viewModel.partnerName, word: viewModel.round?.word))
             ).post()

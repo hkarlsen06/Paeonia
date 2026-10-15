@@ -62,7 +62,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     /// A tap on one of Ludo's color circles.
     let onPickColor: (LudoColor) -> Void
     @ViewBuilder var board: Board
-    /// The invite button, the offline line or the result panel.
+    /// The result panel, the offline line, or the invite under a board that bleeds.
     @ViewBuilder var bottom: Bottom
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -156,7 +156,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 }
                 statusRow
                     .paeoniaReadableWidth()
-                    // The invite comes and goes with the turn, and the row glides with the board.
+                    // A result comes with the turn, and the row glides with the board.
                     .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: content.turn)
             }
             .frame(maxHeight: .infinity)
@@ -220,11 +220,26 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     }
 
     private var bottomBar: some View {
-        bottomStack
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.vertical, PaeoniaSpacing.space8)
-            .paeoniaReadableWidth()
-            .background(boardBleeds && !dynamicTypeSize.isAccessibilitySize ? Color.clear : .paeoniaBackgroundSecondary)
+        ZStack(alignment: .bottom) {
+            // Holds the room of the away line, and of the invite under a board that
+            // bleeds, so the board stays put while they come and go. At accessibility
+            // sizes the column scrolls instead.
+            if !dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    if boardBleeds {
+                        GameInviteButton(invite: .sent(until: .now), partnerName: content.partner.name, send: {})
+                    }
+                    BoardGameAwayLine(partnerName: content.partner.name)
+                }
+                .hidden()
+                .accessibilityHidden(true)
+            }
+            bottomStack
+        }
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        .padding(.vertical, PaeoniaSpacing.space8)
+        .paeoniaReadableWidth()
+        .background(boardBleeds && !dynamicTypeSize.isAccessibilitySize ? Color.clear : .paeoniaBackgroundSecondary)
     }
 
     // MARK: Bleed
@@ -235,7 +250,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         Color.clear
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-                // The bottom bar grows and shrinks as the invite comes and goes, and the
+                // The bottom bar grows past its held room when a result comes, and the
                 // board glides to its new space instead of jumping. The first layout and a
                 // turned screen snap.
                 let isSameColumn = frame.minX == bleedSlotFrame.minX && frame.width == bleedSlotFrame.width
@@ -375,8 +390,6 @@ private struct BoardGameLayoutPreview: View {
                         isCollapsed: $isCollapsed,
                         onPrimary: {}
                     )
-                } else {
-                    GameInviteButton(invite: .available, partnerName: shell.partner.name, send: {})
                 }
             }
         )

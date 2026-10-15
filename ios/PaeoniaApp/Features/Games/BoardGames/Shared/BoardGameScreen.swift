@@ -32,6 +32,13 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             .toolbarBackgroundVisibility(boardBleeds ? .hidden : .automatic, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar { toolbarItems }
+            // A board that bleeds has room for the invite under it. The others keep it in the toolbar.
+            .gameInviteToolbar(
+                invite: boardBleeds ? .hidden : invite,
+                partnerName: viewModel.partnerName,
+                send: viewModel.sendInvite,
+                identifier: "boardGames.invite"
+            )
             .boardGameScoreToolbar(score: viewModel.score, me: viewModel.meInfo, partner: viewModel.partnerInfo)
             .preferredColorScheme(.dark)
             .task { await viewModel.start(prefersReducedMotion: reduceMotion) }
@@ -134,14 +141,19 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             BoardGameOfflineLine(isWaiting: true, failedWhileOnline: viewModel.failedWhileOnline) {
                 Task { await viewModel.retrySending() }
             }
-        } else if !viewModel.canPlay, viewModel.board.outcome == nil, viewModel.invite != .hidden {
+        } else if boardBleeds, invite != .hidden {
             GameInviteButton(
-                invite: viewModel.invite,
+                invite: invite,
                 partnerName: viewModel.partnerName,
                 send: viewModel.sendInvite,
                 identifier: "boardGames.invite"
             )
         }
+    }
+
+    /// The invite, while the partner has the turn and the game is not over.
+    private var invite: GameInviteState {
+        !viewModel.canPlay && viewModel.board.outcome == nil ? viewModel.invite : .hidden
     }
 
     private var tutorial: GameTutorial? {

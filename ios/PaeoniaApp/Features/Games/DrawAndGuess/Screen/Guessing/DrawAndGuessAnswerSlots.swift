@@ -114,6 +114,7 @@ struct DrawAndGuessAnswerSlots: View {
         return Button {
             guard slot.tile != nil, !slot.isHint, let removeTile else { return }
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.6)
             removeTile(slot.id)
         } label: {
             ZStack {

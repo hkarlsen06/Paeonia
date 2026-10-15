@@ -5,8 +5,8 @@ import SwiftUI
 /// connects them. The word checks run in the view model as the person types.
 ///
 /// At normal text sizes the phase fits above the keyboard without scrolling. The
-/// partner and the round share the top line, the invite sits in the bar with
-/// Lock in, and only the last rounds of the trail show.
+/// partner and the round share the top line, the invite is a bell in the
+/// toolbar, and only the last rounds of the trail show.
 struct MindMeldWriteView: View {
     @Bindable var viewModel: MindMeldViewModel
     /// False while the "How to play" cards are open or about to open.
@@ -31,16 +31,15 @@ struct MindMeldWriteView: View {
             }
             .frame(maxWidth: .infinity)
         } bottom: {
-            GameInviteButton(
-                invite: viewModel.invite,
-                partnerName: viewModel.partnerName,
-                send: viewModel.sendInvite,
-                identifier: "mindMeld.invite"
-            )
             lockInButton
         }
+        .gameInviteToolbar(
+            invite: viewModel.invite,
+            partnerName: viewModel.partnerName,
+            send: viewModel.sendInvite,
+            identifier: "mindMeld.invite"
+        )
         .animation(stateChange, value: viewModel.draftIssue)
-        .animation(stateChange, value: viewModel.invite)
         .animation(stateChange, value: viewModel.showsPartnerRestartedNote)
         .task(id: canShowKeyboard) {
             guard canShowKeyboard else {
@@ -192,6 +191,7 @@ struct MindMeldWriteView: View {
             } else if viewModel.isFirstRound {
                 Button {
                     PaeoniaHaptics.selection()
+                    GameSound.tap.play(volume: 0.7)
                     viewModel.surpriseMe()
                 } label: {
                     Label {
@@ -228,6 +228,7 @@ struct MindMeldWriteView: View {
     private func lockIn() {
         if viewModel.lockIn() {
             PaeoniaHaptics.drawingSent()
+            GameSound.send.play()
             isFieldFocused = false
         } else {
             PaeoniaHaptics.validationError()

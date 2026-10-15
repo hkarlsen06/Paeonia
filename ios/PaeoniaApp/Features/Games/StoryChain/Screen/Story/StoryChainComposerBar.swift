@@ -110,6 +110,7 @@ struct StoryChainComposerBar: View {
     private var dareRemoveButton: some View {
         Button {
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.6)
             viewModel.removeDare()
         } label: {
             Image(systemName: "xmark")
@@ -130,6 +131,7 @@ struct StoryChainComposerBar: View {
             get: { viewModel.isLastLine },
             set: { newValue in
                 PaeoniaHaptics.selection()
+                GameSound.tap.play(volume: 0.6)
                 viewModel.isLastLine = newValue
             }
         )

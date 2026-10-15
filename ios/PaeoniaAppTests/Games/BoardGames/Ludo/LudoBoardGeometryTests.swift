@@ -297,16 +297,12 @@ struct LudoSceneMathTests {
         }
     }
 
-    @Test func theOrbitKeepsThePitchAndZoomInsideTheirLimits() {
-        let steep = LudoCameraPose(yaw: 8, pitch: 3, zoom: 9).clamped
-        let flat = LudoCameraPose(yaw: -8, pitch: -1, zoom: 0.01).clamped
+    @Test func thePinchKeepsTheZoomInsideItsLimits() {
+        let far = LudoCameraPose(zoom: 9).clamped
+        let near = LudoCameraPose(zoom: 0.01).clamped
 
-        #expect(isClose(steep.pitch * 180 / .pi, LudoSceneStyle.orbitPitchRangeDegrees.upperBound))
-        #expect(isClose(flat.pitch * 180 / .pi, LudoSceneStyle.orbitPitchRangeDegrees.lowerBound))
-        #expect(steep.zoom == LudoSceneStyle.zoomRange.upperBound)
-        #expect(flat.zoom == LudoSceneStyle.zoomRange.lowerBound)
-        #expect(abs(steep.yaw) <= .pi && abs(flat.yaw) <= .pi)
-        #expect(LudoSceneStyle.orbitPitchRangeDegrees.contains(LudoSceneStyle.cameraPitchDegrees))
+        #expect(far.zoom == LudoSceneStyle.zoomRange.upperBound)
+        #expect(near.zoom == LudoSceneStyle.zoomRange.lowerBound)
     }
 
     @Test func zoomingMovesTheCameraAlongItsView() {
@@ -318,7 +314,7 @@ struct LudoSceneMathTests {
         #expect(near.target == far.target)
     }
 
-    @Test func orbitingKeepsTheBoardCenterInTheMiddleOfTheView() {
+    @Test func anyAngleKeepsTheBoardCenterInTheMiddleOfTheView() {
         let fit = LudoCameraFit.make(aspect: 0.7)
         let turned = fit.rig(for: LudoCameraPose(yaw: 2.2, pitch: 0.9, zoom: 1))
         let middle = turned.project(SIMD3(0, 0, Float(fit.targetZ)))
@@ -419,6 +415,19 @@ struct LudoSceneMathTests {
         #expect(LudoMotion.sendHome(from: start, to: base, elapsed: 0, duration: duration) == start)
         #expect(LudoMotion.sendHome(from: start, to: base, elapsed: duration, duration: duration) == base)
         #expect(LudoMotion.sendHome(from: start, to: base, elapsed: duration * 0.4, duration: duration).y > 1)
+    }
+
+    @Test func aPawnStepsBesideAPawnInItsWayTowardTheMiddle() {
+        // Walking right along the far side of the board, so the middle is toward +z.
+        let point = SIMD3<Float>(1, 0, -6)
+        let beside = LudoMotion.detour(
+            at: point,
+            from: SIMD3(0, 0, -6),
+            to: SIMD3(2, 0, -6),
+            distance: 1
+        )
+
+        #expect(beside == SIMD3(1, 0, -5))
     }
 
     @Test func aShakeSettlesWhereItStarted() {

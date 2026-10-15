@@ -18,6 +18,7 @@ struct StoryChainStarButton: View {
         let title: LocalizedStringResource = isStarred ? .storyChainStarred : .storyChainStar
         Button {
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.7)
             Task { await stars.toggle(storyID: storyID) }
             if showsPrivacyHint, !isStarred, !hintShown {
                 hintShown = true

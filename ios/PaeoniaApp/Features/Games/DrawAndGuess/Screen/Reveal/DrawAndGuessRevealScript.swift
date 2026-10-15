@@ -45,7 +45,7 @@ nonisolated struct DrawAndGuessRevealSchedule: Sendable {
     )
 }
 
-/// The haptics of the reveal, injected so tests can record them.
+/// The haptics and sounds of the reveal, injected so tests can record them.
 struct DrawAndGuessRevealHaptics {
     var selection: @MainActor () -> Void
     var letterTick: @MainActor (CGFloat) -> Void
@@ -56,12 +56,30 @@ struct DrawAndGuessRevealHaptics {
     var speedBonus: @MainActor () -> Void
 
     static let live = Self(
-        selection: { PaeoniaHaptics.selection() },
-        letterTick: { PaeoniaHaptics.streakTick(intensity: $0) },
-        answerRevealed: { PaeoniaHaptics.answerRevealed() },
-        soft: { PaeoniaHaptics.partnerDrawingReceived() },
-        scoreTick: { PaeoniaHaptics.streakTick(intensity: $0) },
-        speedBonus: { PaeoniaHaptics.streakContinued() }
+        selection: {
+            PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.6)
+        },
+        letterTick: {
+            PaeoniaHaptics.streakTick(intensity: $0)
+            GameSound.tick.play(volume: $0)
+        },
+        answerRevealed: {
+            PaeoniaHaptics.answerRevealed()
+            GameSound.chime.play()
+        },
+        soft: {
+            PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play()
+        },
+        scoreTick: {
+            PaeoniaHaptics.streakTick(intensity: $0)
+            GameSound.tick.play(volume: $0)
+        },
+        speedBonus: {
+            PaeoniaHaptics.streakContinued()
+            GameSound.bonus.play()
+        }
     )
 }
 

@@ -38,6 +38,7 @@ struct ExquisiteCorpseIdeaRow: View {
     private var askButton: some View {
         Button {
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.7)
             onAsk()
         } label: {
             Label {
@@ -83,6 +84,7 @@ struct ExquisiteCorpseIdeaRow: View {
     ) -> some View {
         Button {
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.7)
             action()
         } label: {
             Image(systemName: systemName)

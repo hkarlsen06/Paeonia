@@ -1,12 +1,14 @@
 import SwiftUI
 
-/// The Us tab's relationship section: the day you got together, the partner's
-/// birthday, and location sharing.
+/// The Us tab's relationship section: the day you got together, both partners'
+/// birthdays, and location sharing.
 struct SettingsRelationshipSection: View {
     let relationshipStartedOn: String?
     let isSavingStartedOn: Bool
     let onSaveStartedOn: (Date) async -> Bool
-    /// Hidden while there is no partner or no couple dates model.
+    /// Hidden while there is no couple dates model. The partner's row is also hidden
+    /// while there is no partner.
+    let yourBirthdayRow: BirthdaySettingsRow?
     let partnerBirthdayRow: BirthdaySettingsRow?
     let locationViewModel: LocationMapViewModel
     let partnerName: String
@@ -17,6 +19,8 @@ struct SettingsRelationshipSection: View {
     var body: some View {
         Section {
             relationshipDateRow
+
+            yourBirthdayRow
 
             partnerBirthdayRow
 

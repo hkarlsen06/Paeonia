@@ -17,8 +17,8 @@ struct SettingsView: View {
     let relationshipStartedOn: String?
     let milestoneIsSaving: Bool
     let onSaveRelationshipStartedOn: (Date) async -> Bool
-    /// Both partners' birthdays: yours on the profile screen, the partner's in the
-    /// relationship section. Nil hides both rows.
+    /// Both partners' birthdays, side by side in the relationship section. Nil hides
+    /// both rows.
     let coupleDates: CoupleDatesViewModel?
     let locationViewModel: LocationMapViewModel
     /// The partner's display name, so location/notification copy names the partner
@@ -123,6 +123,7 @@ struct SettingsView: View {
                     relationshipStartedOn: relationshipStartedOn,
                     isSavingStartedOn: milestoneIsSaving,
                     onSaveStartedOn: onSaveRelationshipStartedOn,
+                    yourBirthdayRow: birthdayRow(for: currentUserID),
                     partnerBirthdayRow: birthdayRow(for: partnerUserID),
                     locationViewModel: locationViewModel,
                     partnerName: partnerName
@@ -191,7 +192,6 @@ extension SettingsView {
                 onSave: { [onUpdateProfile] displayName, photoUpdate in
                     await onUpdateProfile(displayName, photoUpdate)
                 },
-                birthdayRow: birthdayRow(for: currentUserID),
                 accountSection: SettingsAccountSection(
                     viewModel: viewModel,
                     authProvider: currentAuthProvider,

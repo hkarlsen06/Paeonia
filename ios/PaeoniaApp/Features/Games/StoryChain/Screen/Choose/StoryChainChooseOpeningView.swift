@@ -97,6 +97,7 @@ struct StoryChainChooseOpeningView: View {
     private func select(_ choice: StoryChainOpeningChoice) {
         guard !isStarting else { return }
         PaeoniaHaptics.selection()
+        GameSound.tap.play(volume: 0.7)
         withAnimation(reduceMotion ? nil : PaeoniaMotion.buttonPress) {
             viewModel.selectedOpening = choice
         }

@@ -14,9 +14,10 @@ import UIKit
 /// the status line and the timing of `showsOutcome`.
 ///
 /// The view fills the space it is given and fits the board inside the middle
-/// `boardFitHeight` of it. A one-finger drag orbits the board, a pinch zooms and a
-/// double tap goes back to the default view. A drag that starts on the ready die
-/// picks it up instead, and letting go throws it.
+/// `boardFitHeight` of it. One finger plays and never moves the camera: a tap picks a
+/// pawn, and while my die waits for its throw a drag anywhere picks it up and letting
+/// go throws it. A tap on the die does nothing. Two fingers pinch to zoom and slide
+/// the board, and a double tap goes back to the default view.
 struct LudoBoardView: View {
     let board: LudoBoard
     /// The newest move. The board animates it when `number` changes.
@@ -64,6 +65,8 @@ private struct LudoBoardScene: View {
     @State private var isSceneReady = false
     /// When the loading view first showed, so it stays long enough to read as calm.
     @State private var loadingShownAt = Date()
+    /// Whether this phone has ever zoomed the board. The zoom hint stays until it has.
+    @AppStorage("paeonia.games.ludo.hasZoomedBoard.v2") private var hasZoomedBoard = false
 
     var body: some View {
         // Fills the space it is given. The shell decides how much that is.
@@ -81,6 +84,9 @@ private struct LudoBoardScene: View {
                     .opacity(isSceneReady ? 0 : 1)
                     .allowsHitTesting(!isSceneReady)
                     .accessibilityHidden(isSceneReady)
+                if isSceneReady, !hasZoomedBoard {
+                    LudoGestureHints()
+                }
                 bloom(size: size, rig: rig)
                 LudoAccessibilityLayer(
                     board: inputs.board,
@@ -112,8 +118,17 @@ private struct LudoBoardScene: View {
             onTarget: handleTap,
             onToss: handleToss,
             onSettled: { settledRig = $0 },
+            onZoom: handleZoom,
             onReady: revealScene
         )
+    }
+
+    /// The first zoom on this phone hides the zoom hint for good.
+    private func handleZoom() {
+        guard !hasZoomedBoard else { return }
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
+            hasZoomedBoard = true
+        }
     }
 
     /// Fades the loading view away once the scene has drawn. A fast load still shows the
@@ -187,7 +202,8 @@ private struct LudoBoardScene: View {
     private func handleTap(_ target: LudoStage.Target) {
         switch target {
         case .die:
-            if inputs.die == .ready { inputs.onRoll(stage.tapToss()) }
+            // The die rolls only when thrown. A tap would roll it by accident.
+            break
         case let .pawn(index):
             let owner: BoardPlayer = index < LudoBoard.pawnsPerPlayer ? .one : .two
             guard owner == inputs.me else { return }
@@ -240,6 +256,8 @@ private struct LudoSceneView: UIViewRepresentable {
     let onTarget: (LudoStage.Target) -> Void
     let onToss: (LudoToss) -> Void
     let onSettled: (LudoCameraRig) -> Void
+    /// The person started zooming the board.
+    let onZoom: () -> Void
     let onReady: () -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -275,17 +293,21 @@ private struct LudoSceneView: UIViewRepresentable {
         stage.onCameraSettled = onSettled
     }
 
-    /// Turns touches into camera moves and taps on pieces. One finger orbits, two
-    /// fingers pinch, a double tap resets, and a tap that does not move picks a piece.
-    /// One finger that starts on the ready die carries the die and throws it.
+    /// Turns touches into play and camera moves. One finger plays: a tap picks a pawn,
+    /// and a drag carries the ready die and throws it. Two fingers pinch and twist the
+    /// camera as one move, and a double tap resets it.
     @MainActor
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var parent: LudoSceneView?
         private let stage: LudoStage
         private weak var view: ARView?
+        private weak var pan: UIPanGestureRecognizer?
         private weak var doubleTap: UITapGestureRecognizer?
-        /// True while the one-finger drag carries the die.
-        private var carriesDie = false
+        /// The pinch's scale and the twist's angle in radians so far, and how many of
+        /// the two recognizers run. Either one starts the camera move and both end it.
+        private var pinchScale = 1.0
+        private var twist = 0.0
+        private var cameraGestures = 0
 
         init(stage: LudoStage) {
             self.stage = stage
@@ -296,15 +318,18 @@ private struct LudoSceneView: UIViewRepresentable {
             let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
             pan.maximumNumberOfTouches = 1
             pan.delegate = self
+            self.pan = pan
             let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
             pinch.delegate = self
+            let rotation = UIRotationGestureRecognizer(target: self, action: #selector(handleRotation(_:)))
+            rotation.delegate = self
             let doubleTap = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap(_:)))
             doubleTap.numberOfTapsRequired = 2
             doubleTap.delegate = self
             self.doubleTap = doubleTap
             let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
             tap.delegate = self
-            for recognizer in [pan, pinch, doubleTap, tap] {
+            for recognizer in [pan, pinch, rotation, doubleTap, tap] {
                 view.addGestureRecognizer(recognizer)
             }
         }
@@ -312,40 +337,15 @@ private struct LudoSceneView: UIViewRepresentable {
         @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
             switch recognizer.state {
             case .began:
-                beginPan(recognizer)
-            case .changed where carriesDie:
-                stage.moveHeldDie(to: unitLocation(of: recognizer))
+                stage.pickUpDie(at: unitLocation(of: recognizer))
             case .changed:
-                let move = recognizer.translation(in: recognizer.view)
-                recognizer.setTranslation(.zero, in: recognizer.view)
-                stage.orbit(byX: Double(move.x), y: Double(move.y))
-            case .ended where carriesDie:
-                carriesDie = false
-                throwDie(recognizer)
+                stage.moveHeldDie(to: unitLocation(of: recognizer))
             case .ended:
-                let speed = recognizer.velocity(in: recognizer.view)
-                stage.endOrbit(velocityX: Double(speed.x), velocityY: Double(speed.y))
-            case .cancelled where carriesDie, .failed where carriesDie:
-                carriesDie = false
-                stage.dropHeldDie()
+                throwDie(recognizer)
             case .cancelled, .failed:
-                stage.endOrbit(velocityX: 0, velocityY: 0)
+                stage.dropHeldDie()
             default:
                 break
-            }
-        }
-
-        /// A drag that starts on the ready die picks it up. Any other drag orbits.
-        private func beginPan(_ recognizer: UIPanGestureRecognizer) {
-            let moved = recognizer.translation(in: view)
-            let location = recognizer.location(in: view)
-            let start = CGPoint(x: location.x - moved.x, y: location.y - moved.y)
-            if let view, let entity = view.entity(at: start), stage.canPickUpDie(entity) {
-                carriesDie = true
-                stage.pickUpDie(at: unitLocation(of: recognizer))
-            } else {
-                stage.beginOrbit()
-                recognizer.setTranslation(.zero, in: recognizer.view)
             }
         }
 
@@ -362,15 +362,32 @@ private struct LudoSceneView: UIViewRepresentable {
         }
 
         @objc private func handlePinch(_ recognizer: UIPinchGestureRecognizer) {
+            if recognizer.state == .changed { pinchScale = Double(recognizer.scale) }
+            handleCameraGesture(recognizer)
+        }
+
+        @objc private func handleRotation(_ recognizer: UIRotationGestureRecognizer) {
+            if recognizer.state == .changed { twist = Double(recognizer.rotation) }
+            handleCameraGesture(recognizer)
+        }
+
+        private func handleCameraGesture(_ recognizer: UIGestureRecognizer) {
             switch recognizer.state {
             case .began:
-                stage.beginZoom(at: unitLocation(of: recognizer))
+                if cameraGestures == 0 {
+                    pinchScale = 1
+                    twist = 0
+                    stage.beginZoom(at: unitLocation(of: recognizer))
+                    parent?.onZoom()
+                }
+                cameraGestures += 1
             case .changed:
-                // With one finger lifted the place jumps to the other finger, so hold still until the pinch ends.
+                // With one finger lifted the place jumps to the other finger, so hold still until the move ends.
                 guard recognizer.numberOfTouches == 2 else { return }
-                stage.zoom(scale: Double(recognizer.scale), at: unitLocation(of: recognizer))
+                stage.zoom(scale: pinchScale, twist: twist, at: unitLocation(of: recognizer))
             case .ended, .cancelled, .failed:
-                stage.endZoom()
+                cameraGestures = max(cameraGestures - 1, 0)
+                if cameraGestures == 0 { stage.endZoom() }
             default:
                 break
             }
@@ -394,6 +411,11 @@ private struct LudoSceneView: UIViewRepresentable {
                   let target = stage.target(of: entity)
             else { return }
             parent?.onTarget(target)
+        }
+
+        /// A drag only starts while my die waits for its throw. Otherwise one finger does nothing but tap.
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            gestureRecognizer !== pan || stage.canPickUpDie
         }
 
         /// A double tap resets the camera only on the board around the pieces, so

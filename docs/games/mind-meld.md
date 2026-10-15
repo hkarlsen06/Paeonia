@@ -112,7 +112,7 @@ Live runs whenever both partners have the game open. Without the partner there, 
 - **Presence.** While the game screen is open, the phone joins the `mind_meld` relay room and says `hello` with the role `present`. The relay's `welcome`, `joined` and `left` tell each phone whether the partner is there, as in Draw & Guess. The Convex presence heartbeat runs next to it for push suppression.
 - **Typing.** The phone sends a `MindMeldLiveMessage` with the round number and whether the person is typing. It is typing while the field is not empty and the text changed in the last 3 seconds. The phone sends the message when that changes, and again when the partner arrives. Nothing in it is saved, and it never carries letters.
 - **Locked in.** Comes from Convex, not the relay, because it must survive a lost connection. The partner's status changes to "[Name] locked in" within a few hundred milliseconds.
-- **The reveal.** The second lock-in reveals the round on the server. The second partner's phone plays the reveal as soon as the server answers. The first partner's phone plays it when the live feed delivers the revealed round, usually within 300 ms. Both reveals start nearly together without a shared clock.
+- **The reveal.** The second lock-in reveals the round on the server. The second partner's phone skips the waiting screen. It opens the reveal at once with both cards face down, and plays it as soon as the server answers. If the word fails to send, the phone shows the waiting screen with the line that the word is saved on the phone. The first partner's phone plays it when the live feed delivers the revealed round, usually within 300 ms. Both reveals start nearly together without a shared clock.
 - **Lost connection.** The relay reconnects as in Draw & Guess. Status falls back to the async wording until it is back.
 - **Invite.** "Tell [Name] you want to play" shows when the partner is not in the game, with the shared invite rules in `docs/games-plan.md`.
 
@@ -146,7 +146,7 @@ Locking in a word counts toward the couple's streak through the `game_turn_compl
 "Our melds" lists the couple's finished games, newest first: melded, got away, and started over. Each shows its revealed rounds as pairs of words, my word first.
 
 - **List row.** The final word in capitals for a meld ("FISH"), or "Got away" / "Started over". Under it, "4 rounds · Oct 12". A meld gets a small petal mark.
-- **Detail.** The whole trail, top to bottom. Each round is a row with my word on the left and the partner's on the right, joined by a thin line that pulls in as the words get closer. The last row of a meld is one merged word with the petal mark. A counted near miss shows both words with "Counted".
+- **Detail.** The whole trail, top to bottom. Each round is a row with my word on the left and the partner's on the right, joined by a thin centered line that gets shorter as the words get closer. The last row of a meld is one merged word with the petal mark. A counted near miss shows both words with "Counted".
 - **Records** at the top: melds and fewest rounds.
 - The open round of a game someone started over is never shown, because its words were never revealed.
 - Pages by game number, 30 games a page.
@@ -188,17 +188,17 @@ Layout, top to bottom. At normal text sizes the whole phase is meant to fit abov
 
 1. One line (`GameLiveRow`): partner status on the leading side (see below), and "Round 3 of 10" on the trailing side (`caption` bold, uppercase, tracking 1.4, `.paeoniaTextTertiary`).
 2. Round 1: title "Say any word" (`title`) and subtitle "[Name] does the same. Then you try to meet in the middle." Later rounds: the title "Find a word that connects them", then the last two words as a pair of chips (`MindMeldWordPair`), mine leading, with a small `plus` between.
-3. The trail so far, when round 3 or later: the two rounds before the last pair, in a compact column above it, at `caption` size in `.paeoniaTextTertiary`, so the narrowing shows. "Our melds" keeps the whole trail.
+3. The trail so far, when round 3 or later: the two rounds before the last pair, in a compact column above it, at `caption` size in `.paeoniaTextTertiary`. The plus signs line up in the middle, with my word right-aligned before it and the partner's left-aligned after it. "Our melds" keeps the whole trail.
 4. The field. One large centered text field in `PaeoniaTypography.title`, `radius16`, `.paeoniaSurfaceSecondary`, 64 pt tall, `autocorrectionDisabled`, no autocapitalization, `submitLabel(.done)`. It takes focus when the phase opens. Placeholder "Type a word".
 5. Under the field, one line: a validation message (`exclamationmark.circle`, `caption`, `.paeoniaErrorText`) or, in round 1, the quiet "Surprise me" button (`dice`).
-6. Pinned bottom, above the keyboard while it is open: the invite button while the partner is away, then primary "Lock in" (`lock.fill`). Lock in is disabled while the field is empty or a message shows. Return only closes the keyboard, because a locked word is final and a stray tap on Done must not lock it in.
+6. Pinned bottom, above the keyboard while it is open: primary "Lock in" (`lock.fill`). The invite bell sits in the toolbar while the partner is away. Lock in is disabled while the field is empty or a message shows. Return only closes the keyboard, because a locked word is final and a stray tap on Done must not lock it in.
 
 Partner status. A 24 pt avatar and one line:
 
 - "[Name] locked in" with `lock.fill` in `.paeoniaAccentPrimary`, when the server says so. It arrives with `cardReveal`, a pulse of the avatar (1 to 1.12 and back) and `partnerDrawingReceived()`. VoiceOver announces it.
 - "[Name] is typing" with three dots that rise in turn (`motionDefault`, repeating). Reduce Motion: still dots.
 - "[Name] is here" when the partner has the game open but isn't typing.
-- "[Name] will answer later" in `.paeoniaTextTertiary` when the partner is away. The invite button shows above Lock in, secondary style, until the partner arrives.
+- "[Name] will answer later" in `.paeoniaTextTertiary` when the partner is away. The invite bell shows in the toolbar until the partner arrives.
 
 Validation. Too long, too many words, no letter, and repeats show inline as the person types, with an announcement. Lock in on an invalid word fires `validationError()`.
 
@@ -237,7 +237,7 @@ Layout, centered.
 3. Title. "[Name] is typing" while live typing, "Waiting for [Name]" otherwise.
 4. Hint. "We'll show both words at the same time." When the partner is away: "We'll tell you when [Name] locks in."
 5. The offline line when the lock-in is still on the phone.
-6. Pinned bottom, only while the partner is not in the game: the invite button.
+6. Toolbar, only while the partner is not in the game: the invite bell at the leading edge of the toolbar.
 
 When the partner locks in while this screen is open, the reveal starts at once.
 
@@ -337,7 +337,7 @@ Layout, in one scroll view.
 1. Records. Two values side by side in `PaeoniaTypography.countdownNumber`: melds, and fewest rounds ("Not yet" in `.paeoniaTextTertiary` without a meld).
 2. The list. One row per finished game, newest first, as in "History". Rows have `.paeoniaSurfaceSecondary` and `radius16`. Tapping pushes the detail.
 
-Detail. The trail, top to bottom, with a header ("Melded in 4 rounds · Oct 12", "Got away · Oct 12" or "Started over · Oct 12"). Each round row has my word leading and the partner's trailing, both in capitals, with the round number as an eyebrow. The gap between the two words narrows each round. A meld ends with one merged chip in `.paeoniaSuccess` with the petal mark.
+Detail. The trail, top to bottom, with a header ("Melded in 4 rounds · Oct 12", "Got away · Oct 12" or "Started over · Oct 12"). Each round row has my word leading and the partner's trailing, both in capitals, with the round number as an eyebrow. The two chips touch the ends of a line in the middle of the row, and the line gets shorter each round, from 120 pt to 16 pt. A meld ends with one merged chip in `.paeoniaSuccess` with the petal mark.
 
 Empty states use `PaeoniaEmptyStateView`: no finished games yet (`point.3.connected.trianglepath.dotted`, "No melds yet", "Your finished games will show up here."), and offline with nothing cached (the shared offline state).
 

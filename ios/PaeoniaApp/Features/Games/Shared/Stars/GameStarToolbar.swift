@@ -53,6 +53,7 @@ private struct GameStarToolbar: ViewModifier {
         let title: LocalizedStringResource = isStarred ? .gamesStarButtonStarred : .gamesStarButton
         return Button {
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.7)
             Task { await stars.toggle(id: id) }
             if !isStarred, !hintShown {
                 hintShown = true

@@ -79,6 +79,7 @@ struct ExquisiteCorpseScreen: View {
         switch viewModel.phase {
         case .waiting, .watching, .waitingToSync:
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play(volume: 0.7)
         default:
             break
         }

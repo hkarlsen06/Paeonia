@@ -84,6 +84,7 @@ struct DrawAndGuessGuessActions: View {
         let letter = Array(slots.answer)[index]
         let number = slots.slots.prefix(index + 1).count { !$0.isGap }
         PaeoniaHaptics.selection()
+        GameSound.tick.play()
         AccessibilityNotification.Announcement(
             String(localized: .gamesDrawAndGuessGuessHintPlaced(String(letter), number))
         ).post()

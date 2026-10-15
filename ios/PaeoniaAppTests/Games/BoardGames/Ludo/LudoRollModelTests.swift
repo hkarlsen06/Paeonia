@@ -41,12 +41,12 @@ private final class RollHarness {
         )
     }
 
-    /// Records the wait. While `holdsAutomaticMoves` is set, the waits before a
-    /// move that plays by itself last until it is cleared, so a test can look at
+    /// Records the wait. While `holdsAutomaticMoves` is set, the wait before a
+    /// pass that plays by itself lasts until it is cleared, so a test can look at
     /// the screen in between.
     func recordSleep(_ duration: Duration) async {
         sleeps.append(duration)
-        let isAutomatic = duration == LudoRollDecision.autoMoveDelay || duration == LudoRollDecision.autoPassDelay
+        let isAutomatic = duration == LudoRollDecision.autoPassDelay
         while holdsAutomaticMoves, isAutomatic, !Task.isCancelled {
             try? await Task.sleep(for: .milliseconds(5))
         }
@@ -93,16 +93,16 @@ struct LudoRollModelTests {
     /// Player one has one pawn out on progress 1, so a 3 has one option.
     private static let onePawn = [15]
 
-    @Test func theDieWaitsOnMyTrayAndSaysTapToRoll() async {
+    @Test func theDieWaitsOnMyTrayAndSaysSwipeToRoll() async {
         let harness = RollHarness(moves: [])
         #expect(harness.model.die == .idle(side: .one))
         await harness.model.restore()
         #expect(harness.model.die == .ready)
-        #expect(harness.model.hint == .tapToRoll)
+        #expect(harness.model.hint == .swipeToRoll)
         #expect(harness.model.movableChoices.isEmpty)
     }
 
-    @Test func aTapSavesTheRollThenTumblesAndShowsTheFace() async {
+    @Test func aRollSavesTheRollThenTumblesAndShowsTheFace() async {
         let harness = RollHarness(moves: Self.twoPawns, dice: [3])
         await harness.model.restore()
         harness.model.roll()
@@ -131,14 +131,18 @@ struct LudoRollModelTests {
         #expect(harness.model.die == .idle(side: .two))
     }
 
-    @Test func theOnlyOptionMovesByItselfAfterHalfASecond() async {
+    @Test func theOnlyPawnThatCanMoveWaitsForATap() async {
         let harness = RollHarness(moves: Self.onePawn, dice: [3])
         await harness.model.restore()
         harness.model.roll()
-        let moved = await waitUntil { !harness.played.isEmpty }
-        #expect(moved)
+        let landed = await waitUntil { harness.model.movableChoices == [.first] }
+        #expect(landed)
+        // The fake clock returns at once, so a move that played by itself would be in by now.
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(harness.sleeps == [.milliseconds(800)])
+        #expect(harness.played.isEmpty)
+        await harness.model.choose(.first)
         #expect(harness.played == [LudoBoard.move(die: 3, choice: .first)])
-        #expect(harness.sleeps.contains(.milliseconds(500)))
     }
 
     @Test func aMissedSixPassesByItselfAndLeavesTwoTries() async {

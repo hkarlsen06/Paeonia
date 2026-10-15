@@ -92,21 +92,14 @@ extension LudoStage {
         board: LudoBoard
     ) -> Double {
         let hop = LudoSceneStyle.hopDuration
-        var points = [start.0]
-        for (step, square) in transition.path.enumerated() {
-            if step == transition.path.count - 1 {
-                points.append(pawn.rest)
-            } else {
-                let point = LudoBoardGeometry.point(of: square, homeLane: pawn.index % 2, viewer: viewer)
-                points.append(LudoWorld.position(point))
-            }
-        }
+        let points = hopPoints(pawn, from: start.0, path: transition.path, board: board)
         let hops = max(points.count - 1, 1)
         let duration = Double(hops) * hop
         var events: [LudoClip.Event] = (1...hops).map { step in
             let isLast = step == hops
             return LudoClip.Event(time: Double(step) * hop) {
                 PaeoniaHaptics.streakTick(intensity: isLast ? 0.55 : 0.35)
+                GameSound.ludoStep.play(volume: isLast ? 0.9 : 0.6)
             }
         }
         let reachesHome = transition.path.last == .home(pawn.player)
@@ -114,6 +107,7 @@ extension LudoStage {
             let player = pawn.player
             events.append(LudoClip.Event(time: duration) { [weak self] in
                 PaeoniaHaptics.streakContinued()
+                GameSound.ludoHome.play()
                 self?.pulseHome(of: player)
             })
         }
@@ -125,6 +119,37 @@ extension LudoStage {
             pawn.apply(position: position, scale: scale)
         })
         return duration
+    }
+
+    /// Where the pawn lands on each hop. It steps beside a pawn in its way instead of through it.
+    private func hopPoints(
+        _ pawn: LudoPawnNode,
+        from start: SIMD3<Float>,
+        path: [LudoSquare],
+        board: LudoBoard
+    ) -> [SIMD3<Float>] {
+        var points = [start]
+        let others = pawns.indices.filter { $0 != pawn.index }
+        var occupied: [Int] = []
+        for (step, square) in path.enumerated() {
+            if step == path.count - 1 {
+                points.append(pawn.rest)
+            } else {
+                let point = LudoBoardGeometry.point(of: square, homeLane: pawn.index % 2, viewer: viewer)
+                points.append(LudoWorld.position(point))
+                if others.contains(where: { board.square(ofPawn: $0) == square }) { occupied.append(points.count - 1) }
+            }
+        }
+        let straight = points
+        for index in occupied {
+            points[index] = LudoMotion.detour(
+                at: straight[index],
+                from: straight[index - 1],
+                to: straight[index + 1],
+                distance: LudoSceneStyle.detourDistance
+            )
+        }
+        return points
     }
 
     /// Reduce Motion: the pawn fades out where it was and fades in on its new square.
@@ -142,7 +167,11 @@ extension LudoStage {
         let player = pawn.player
         let events = [LudoClip.Event(time: duration) { [weak self] in
             PaeoniaHaptics.streakTick(intensity: 0.5)
-            if reachesHome { self?.pulseHome(of: player) }
+            GameSound.ludoStep.play(volume: 0.8)
+            if reachesHome {
+                GameSound.ludoHome.play()
+                self?.pulseHome(of: player)
+            }
         }]
         let clip = LudoClip(owner: .pawn(pawn.index), start: begin, duration: duration, events: events) { time in
             if time < half {
@@ -173,6 +202,7 @@ extension LudoStage {
             } else {
                 PaeoniaHaptics.partnerDrawingReceived()
             }
+            GameSound.ludoCapture.play(volume: movedByMe ? 1 : 0.8)
         }
         let clip: LudoClip
         if reduceMotion {

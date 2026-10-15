@@ -2,10 +2,10 @@ import CoreGraphics
 import Foundation
 import simd
 
-/// How far the camera has been turned, zoomed and slid by the person's hands. The
-/// camera orbits a point on the board, the middle unless a pinch slid it. Yaw is
-/// free. Pitch is the angle above the board and stays inside the orbit range. Zoom
-/// is a share of the default distance. Pure math, so the camera is testable.
+/// How far the camera has been zoomed, turned and slid by the person's hands. The
+/// camera looks at a point on the board, the middle unless a pinch slid it. Yaw is
+/// free and turns with a two-finger twist. Pitch stays at its default. Zoom is a share
+/// of the default distance. Pure math, so the camera is testable.
 nonisolated struct LudoCameraPose: Equatable, Sendable {
     /// Radians around the vertical axis. 0 looks at the board from the front.
     var yaw = LudoCameraPose.defaultYaw
@@ -13,23 +13,20 @@ nonisolated struct LudoCameraPose: Equatable, Sendable {
     var pitch = LudoCameraPose.defaultPitch
     /// 1 is the default distance.
     var zoom = 1.0
-    /// How far the orbit point has slid from the middle of the board, in cells across (x) and toward the viewer (y).
+    /// How far the point the camera looks at has slid from the middle of the board,
+    /// in cells across (x) and toward the viewer (y).
     var pan = SIMD2<Double>.zero
 
     static let defaultPitch = LudoSceneStyle.cameraPitchDegrees * .pi / 180
     static let defaultYaw = LudoSceneStyle.cameraYawDegrees * .pi / 180
-    static let pitchRange = (LudoSceneStyle.orbitPitchRangeDegrees.lowerBound * .pi / 180)...(
-        LudoSceneStyle.orbitPitchRangeDegrees.upperBound * .pi / 180
-    )
 
     static let home = LudoCameraPose()
 
-    /// The same pose with pitch, zoom and pan inside their limits and yaw within one turn.
+    /// The same pose with zoom and pan inside their limits and yaw within one turn.
     /// The pan may reach further the closer the camera is, and none at zoom 1 or out,
     /// so zooming out brings the board back to the middle.
     var clamped: LudoCameraPose {
         var pose = self
-        pose.pitch = min(max(pitch, Self.pitchRange.lowerBound), Self.pitchRange.upperBound)
         pose.zoom = min(max(zoom, LudoSceneStyle.zoomRange.lowerBound), LudoSceneStyle.zoomRange.upperBound)
         pose.yaw = yaw.remainder(dividingBy: 2 * .pi)
         let closeness = (1 - pose.zoom) / (1 - LudoSceneStyle.zoomRange.lowerBound)
@@ -56,7 +53,7 @@ nonisolated struct LudoCameraPose: Equatable, Sendable {
 nonisolated struct LudoCameraFit: Equatable, Sendable {
     /// Distance from the target at zoom 1.
     let distance: Double
-    /// Depth of the point the camera looks at and orbits at zero pan, so the board sits in the middle of the view.
+    /// Depth of the point the camera looks at at zero pan, so the board sits in the middle of the view.
     let targetZ: Double
     /// Width divided by height of the view.
     let aspect: Double

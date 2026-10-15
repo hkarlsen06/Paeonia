@@ -5,14 +5,12 @@ Run with a Python that has Pillow, outside the repository:
     python3 -m venv /tmp/paeonia-art-venv && /tmp/paeonia-art-venv/bin/pip install pillow
     /tmp/paeonia-art-venv/bin/python -I art_asset.py check a.png b.png ...
     /tmp/paeonia-art-venv/bin/python -I art_asset.py import a.png GameHubThing 240 [--opaque] [--folder GameHub]
-    /tmp/paeonia-art-venv/bin/python -I art_asset.py backdrop /tmp/paeonia-art/backdrop.png
-    /tmp/paeonia-art-venv/bin/python -I art_asset.py text /tmp/paeonia-art/backdrop.png
+    /tmp/paeonia-art-venv/bin/python -I art_asset.py text backdrop.png ...
     /tmp/paeonia-art-venv/bin/python -I art_asset.py selftest
 
 `check` reports each file's size, alpha, corners, edge fringe and the object's
 bounds, and writes a preview on the plum background to /tmp/paeonia-art-preview.png.
-`backdrop` renders the hub card backdrop that GameHubBackdrop draws in code.
-`text` simulates the hub card's shadow and blur on a 1024 x 1536 render of it and checks
+`text` simulates the hub card's shadow and blur on a 1024 x 1536 card backdrop and checks
 each line of the card's text against the contrast docs/games/hub-artwork.md asks for.
 `import` trims the transparent margin, scales the longest side down to the given
 pixel count (three times the largest size the app shows it at), and writes a
@@ -181,43 +179,6 @@ def import_asset(path, name, longest, opaque=False, folder="GameHub"):
     print(f"{name}: {image.size[0]}x{image.size[1]} px, aspect {image.size[0] / image.size[1]:.3f}, {size_kb} KB")
     return 0
 
-# GameHubBackdrop in GameHubArtworkParts.swift, in canvas pixels. Keep in step with it.
-BACKDROP_SKY = [(0, PLUM), (0.46, (0x38, 0x0F, 0x27)), (1, PLUM)]
-BACKDROP_HILLS = [(190, 880, 660), (834, 880, 660)]
-BACKDROP_SEAM = (482, 542)
-BACKDROP_SHADE = (0x4F, 0x20, 0x3A)
-BACKDROP_SHADE_STOPS = [(240, 0), (480, 0.25), (760, 0.6), (1536, 1)]
-
-
-def ramp(value, stops):
-    """The value of a gradient with `stops` [(position, value)] at `value`."""
-    for (start, low), (end, high) in zip(stops, stops[1:]):
-        if value <= end:
-            t = min(max((value - start) / (end - start), 0), 1)
-            return mix(low, high, t) if isinstance(low, tuple) else low + (high - low) * t
-    return stops[-1][1]
-
-
-def backdrop(path):
-    """Render the hub card backdrop at 1024 x 1536, for `text` and for mockups."""
-    pink, lavender = (0xF2, 0x7E, 0xB2), (0xB9, 0x9C, 0xF2)
-    image = Image.new("RGB", (1024, 1536))
-    for y in range(1536):
-        sky = ramp(y / 1536, BACKDROP_SKY)
-        shade = ramp(y, BACKDROP_SHADE_STOPS)
-        for x in range(1024):
-            inside = any((x - cx) ** 2 + (y - cy) ** 2 <= r * r for cx, cy, r in BACKDROP_HILLS)
-            if inside:
-                hill = mix(pink, lavender, ramp(x, [(BACKDROP_SEAM[0], 0), (BACKDROP_SEAM[1], 1)]))
-                color = mix(hill, BACKDROP_SHADE, shade)
-            else:
-                color = sky
-            image.putpixel((x, y), tuple(round(c) for c in color))
-    image.save(path)
-    print(f"wrote {path}")
-    return 0
-
-
 def selftest():
     """A clean cutout passes and one with a white halo fails."""
     clean = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
@@ -246,8 +207,6 @@ if __name__ == "__main__":
         sys.exit(import_asset(args[1], args[2], int(args[3]), "--opaque" in args, folder))
     if args[:1] == ["text"] and len(args) > 1:
         sys.exit(text(args[1:]))
-    if args[:1] == ["backdrop"] and len(args) == 2:
-        sys.exit(backdrop(args[1]))
     if args == ["selftest"]:
         sys.exit(selftest())
     print(__doc__)

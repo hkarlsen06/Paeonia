@@ -57,6 +57,7 @@ struct ExquisiteCorpseDrawingView: View {
         } bottom: {
             Button {
                 PaeoniaHaptics.drawingSent()
+                GameSound.send.play()
                 Task { await viewModel.finishDrawing() }
             } label: {
                 Text(.commonDone)
@@ -134,6 +135,7 @@ struct ExquisiteCorpseDrawingView: View {
         if !board.isStrokeInProgress {
             PaeoniaHaptics.partnerDrawingReceived()
         }
+        GameSound.nudge.play(volume: 0.7)
         guard !reduceMotion else { return }
         withAnimation(PaeoniaMotion.stateChange) { partnerPulse = 1.12 }
         withAnimation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionDefault)) { partnerPulse = 1 }

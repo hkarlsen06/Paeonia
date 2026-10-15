@@ -34,6 +34,7 @@ struct DrawAndGuessDrawingView: View {
         } bottom: {
             Button {
                 PaeoniaHaptics.drawingSent()
+                GameSound.send.play()
                 Task { await viewModel.finishDrawing() }
             } label: {
                 Text(.commonDone)
@@ -107,6 +108,7 @@ struct DrawAndGuessDrawingView: View {
         if !board.isStrokeInProgress {
             PaeoniaHaptics.partnerDrawingReceived()
         }
+        GameSound.nudge.play(volume: 0.7)
         var announcement = AttributedString(
             String(localized: .gamesDrawAndGuessDrawTried(viewModel.partnerName, attempt.text.uppercased()))
         )
@@ -121,6 +123,7 @@ struct DrawAndGuessDrawingView: View {
         ).post()
         guard !old.isHere else { return }
         PaeoniaHaptics.partnerDrawingReceived()
+        GameSound.nudge.play(volume: 0.7)
         guard !reduceMotion else { return }
         withAnimation(PaeoniaMotion.stateChange) { partnerPulse = 1.12 }
         withAnimation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionDefault)) { partnerPulse = 1 }

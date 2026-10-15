@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 /// Turns off the full-width back swipe while the Ludo board is open, so a drag
-/// that orbits the board never leaves the screen. The swipe from the left edge
+/// that throws the die never leaves the screen. The swipe from the left edge
 /// still goes back. The full-width swipe comes back when the screen closes.
 struct LudoEdgeSwipeOnly: UIViewRepresentable {
     func makeCoordinator() -> Coordinator {

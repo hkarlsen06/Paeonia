@@ -24,6 +24,7 @@ struct StoryChainDareSheet: View {
                             isSelected: viewModel.dareToGive?.wordID == choice.wordID
                         ) {
                             PaeoniaHaptics.selection()
+                            GameSound.tap.play(volume: 0.7)
                             viewModel.giveDare(choice)
                             dismiss()
                         }
@@ -130,6 +131,7 @@ struct StoryChainDareSheet: View {
         guard !ownWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         if viewModel.giveOwnDare(ownWord) {
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.7)
             dismiss()
         } else {
             showsError = true

@@ -12,16 +12,21 @@ extension LudoStage {
         LudoWorld.dieRestPosition(isNear: true).y + LudoSceneStyle.dieHoldLift
     }
 
-    /// True when a drag that starts on `entity` picks up the die.
-    func canPickUpDie(_ entity: Entity) -> Bool {
-        input?.die == .ready && target(of: entity) == .die && !hasClip(.die)
+    /// True when a one-finger drag picks up the die. It does anywhere on the screen
+    /// while my die waits for its throw, even while it still hops into my yard.
+    var canPickUpDie: Bool {
+        guard input?.die == .ready, dieNode != nil else { return false }
+        return !clips.contains { $0.owner == .die && $0.isTumble }
     }
 
-    /// A drag began on the ready die at `point`, from 0 to 1 across and down the view.
+    /// A drag picked up the ready die with the finger at `point`, from 0 to 1 across
+    /// and down the view. A hop into the yard ends at once so the die can follow the finger.
     func pickUpDie(at point: CGPoint) {
+        finishDieClip()
         releasedAt = nil
         heldDie = holdPoint(at: point) ?? dieNode.map { $0.restPosition + SIMD3(0, LudoSceneStyle.dieHoldLift, 0) }
         PaeoniaHaptics.selection()
+        GameSound.tick.play(volume: 0.5)
     }
 
     func moveHeldDie(to point: CGPoint) {
@@ -30,13 +35,13 @@ extension LudoStage {
     }
 
     /// The finger let go at `point`, moving at `velocity` in shares of the view a
-    /// second. The die waits in the air for its roll and returns how it was thrown.
+    /// second. The die flies on with the throw until its roll arrives, and this
+    /// returns how it was thrown.
     func releaseDie(at point: CGPoint, velocity: CGPoint) -> LudoToss? {
         guard heldDie != nil, let die = dieNode, let rig else {
             dropHeldDie()
             return nil
         }
-        releasedAt = clock
         let span = 0.05
         let later = CGPoint(x: point.x + velocity.x * span, y: point.y + velocity.y * span)
         var floorVelocity = SIMD2<Float>.zero
@@ -44,16 +49,19 @@ extension LudoStage {
         if let now = rig.boardPoint(at: point, height: height), let next = rig.boardPoint(at: later, height: height) {
             floorVelocity = SIMD2(Float(next.x - now.x), Float(next.y - now.y)) / Float(span)
         }
-        return .thrown(
+        let toss = LudoToss.thrown(
             from: die.currentPosition,
             orientation: die.currentOrientation,
             floorVelocity: floorVelocity,
             fallbackDirection: SIMD2(0, -1)
         )
+        releasedAt = clock
+        releasedToss = toss
+        return toss
     }
 
-    /// The throw of a tap on my die: it rises from where it rests, as it is turned,
-    /// and leaves away from me. Nil when the die is not in my yard.
+    /// The throw of VoiceOver's roll action on my die: it rises from where it rests,
+    /// as it is turned, and leaves away from me. Nil when the die is not in my yard.
     func tapToss() -> LudoToss? {
         guard let die = dieNode, die.restsOnNearTray else { return nil }
         let back = LudoDieTray.near(waitingSlots: []).minimum.y
@@ -70,16 +78,23 @@ extension LudoStage {
         guard heldDie != nil else { return }
         heldDie = nil
         releasedAt = nil
+        releasedToss = nil
         returnDieToRest()
     }
 
-    /// Moves a held die toward the finger for one frame. Returns false when no die
-    /// is held. A die let go whose roll never came drops back.
+    /// Moves a held die toward the finger for one frame, or a die let go along its
+    /// throw. Returns false when no die is held. A die let go whose roll never came drops back.
     func updateHeldDie(deltaTime: Double) -> Bool {
         guard let held = heldDie, let die = dieNode else { return false }
-        if let releasedAt, clock - releasedAt > 0.3 {
-            dropHeldDie()
-            return false
+        if let releasedAt, let releasedToss {
+            let time = clock - releasedAt
+            guard time <= 0.3 else {
+                dropHeldDie()
+                return false
+            }
+            let pose = releasedToss.pose(after: Float(time))
+            die.apply(position: pose.position, orientation: pose.orientation, scale: 1)
+            return true
         }
         let current = die.currentPosition
         let follow = Float(1 - exp(-deltaTime * 30))

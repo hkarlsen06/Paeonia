@@ -63,8 +63,8 @@ struct BoardGameScoreCapsule: View {
 }
 
 extension View {
-    /// The score capsule in the trailing toolbar. At accessibility text sizes it
-    /// moves into the content instead (see `BoardGameScoreHeader`).
+    /// The score capsule in the trailing toolbar, once a game has finished. At
+    /// accessibility text sizes it moves into the content instead (see `BoardGameScoreHeader`).
     func boardGameScoreToolbar(
         score: BoardGameScore?,
         me: BoardGamePlayerInfo,
@@ -82,7 +82,7 @@ private struct BoardGameScoreToolbar: ViewModifier {
 
     func body(content: Content) -> some View {
         content.toolbar {
-            if let score, !dynamicTypeSize.isAccessibilitySize {
+            if let score, !score.isEmpty, !dynamicTypeSize.isAccessibilitySize {
                 ToolbarItem(placement: .topBarTrailing) {
                     BoardGameScoreCapsule(score: score, me: me, partner: partner)
                 }
@@ -100,7 +100,7 @@ struct BoardGameScoreHeader: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        if dynamicTypeSize.isAccessibilitySize, let score {
+        if dynamicTypeSize.isAccessibilitySize, let score, !score.isEmpty {
             BoardGameScoreCapsule(score: score, me: me, partner: partner)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }

@@ -33,8 +33,8 @@ struct SettingsCoupleHeader: View {
                 person(name: partnerName, photo: partnerProfilePhotoAssetID, tint: .paeoniaPartnerTwo)
             }
 
-            if let daysTogether {
-                togetherLine(days: daysTogether)
+            if let relationshipStartedOn, let daysTogether {
+                togetherLine(startedOn: relationshipStartedOn, days: daysTogether)
             }
         }
         .frame(maxWidth: .infinity)
@@ -83,14 +83,16 @@ struct SettingsCoupleHeader: View {
         .accessibilityHidden(true)
     }
 
-    /// "Together for 186 days", or the first-day line while the count is still 0.
-    /// Same wording as the milestone timeline.
-    private func togetherLine(days: Int) -> some View {
+    /// "Together for 6 months and 3 days", or the first-day line while the count is
+    /// still 0. Same wording as the milestone timeline.
+    private func togetherLine(startedOn: String, days: Int) -> some View {
         Group {
             if days == 0 {
                 Text(.homeMilestoneTimelineFirstDay)
             } else {
-                Text(.homeMilestoneTimelineTogetherFor(RelationshipTimelineView.daysText(days)))
+                Text(.homeMilestoneTimelineTogetherFor(
+                    RelationshipTimelineView.togetherText(startedOn: startedOn, now: now)
+                ))
             }
         }
         .font(PaeoniaTypography.body)

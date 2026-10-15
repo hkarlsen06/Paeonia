@@ -23,14 +23,20 @@ nonisolated struct StoryChainRevealSchedule: Equatable, Sendable {
     )
 }
 
-/// The haptics of the reveal, injected so tests can record them.
+/// The haptics and sounds of the reveal, injected so tests can record them.
 struct StoryChainRevealHaptics {
     var selection: @MainActor () -> Void
     var answerRevealed: @MainActor () -> Void
 
     static let live = Self(
-        selection: { PaeoniaHaptics.selection() },
-        answerRevealed: { PaeoniaHaptics.answerRevealed() }
+        selection: {
+            PaeoniaHaptics.selection()
+            GameSound.page.play()
+        },
+        answerRevealed: {
+            PaeoniaHaptics.answerRevealed()
+            GameSound.chime.play()
+        }
     )
 }
 

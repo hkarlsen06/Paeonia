@@ -145,7 +145,10 @@ struct StoryChainDareCapsule: View {
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isUsed)
         .onChange(of: isUsed) { _, used in
-            if used { PaeoniaHaptics.selection() }
+            if used {
+                PaeoniaHaptics.selection()
+                GameSound.bonus.play(volume: 0.7)
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.storyChainWriteMustUse(word)))

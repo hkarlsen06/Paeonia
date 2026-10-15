@@ -37,7 +37,8 @@ struct DotsAndBoxesBoardView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
-    @GestureState private var touch: CGPoint?
+    /// Where the current touch started and where the finger is now.
+    @GestureState private var stroke: (start: CGPoint, end: CGPoint)?
     /// The number of the move that was already on the board when the view
     /// appeared. The board does not animate it.
     @State private var baseline: Int
@@ -134,7 +135,10 @@ struct DotsAndBoxesBoardView: View {
         .frame(width: geometry.side, height: geometry.side)
         .onChange(of: candidate(in: geometry)) { old, new in
             // Sliding from one line to another ticks. The first touch and the lift do not.
-            if old != nil, new != nil { PaeoniaHaptics.selection() }
+            if old != nil, new != nil {
+                PaeoniaHaptics.selection()
+                GameSound.tick.play(volume: 0.4)
+            }
         }
     }
 
@@ -173,11 +177,11 @@ struct DotsAndBoxesBoardView: View {
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .updating($touch) { value, state, _ in
-                        state = value.location
+                    .updating($stroke) { value, state, _ in
+                        state = (value.startLocation, value.location)
                     }
                     .onEnded { value in
-                        if let line = pick(at: value.location, geometry) {
+                        if let line = pick(from: value.startLocation, to: value.location, geometry) {
                             play(line)
                         }
                     }
@@ -186,16 +190,16 @@ struct DotsAndBoxesBoardView: View {
             .accessibilityHidden(true)
     }
 
-    /// The open line a touch at `point` would draw, if any.
-    private func pick(at point: CGPoint, _ geometry: DotsAndBoxesBoardGeometry) -> Int? {
-        guard canPlay, geometry.touchBounds.contains(point), let line = geometry.line(at: point) else {
+    /// The open line a touch from `start` to `end` would draw, if any.
+    private func pick(from start: CGPoint, to end: CGPoint, _ geometry: DotsAndBoxesBoardGeometry) -> Int? {
+        guard canPlay, geometry.touchBounds.contains(end), let line = geometry.line(from: start, to: end) else {
             return nil
         }
         return board.lines[line] == nil ? line : nil
     }
 
     private func candidate(in geometry: DotsAndBoxesBoardGeometry) -> Int? {
-        touch.flatMap { pick(at: $0, geometry) }
+        stroke.flatMap { pick(from: $0.start, to: $0.end, geometry) }
     }
 
     private func play(_ line: Int) {
@@ -233,6 +237,7 @@ struct DotsAndBoxesBoardView: View {
         } else {
             PaeoniaHaptics.partnerDrawingReceived()
         }
+        GameSound.mark.play(volume: move.isMine ? 1 : 0.85)
         let closed = DotsAndBoxesBoxLayer.closedBoxes(by: move.move, on: board)
         announce(closed: closed.count, by: move)
         var elapsed: TimeInterval = 0
@@ -241,6 +246,7 @@ struct DotsAndBoxesBoardView: View {
             try? await Task.sleep(for: .seconds(delay - elapsed))
             guard !Task.isCancelled else { return }
             PaeoniaHaptics.streakTick(intensity: 0.7)
+            GameSound.stamp.play(volume: 0.8)
             elapsed = delay
         }
     }

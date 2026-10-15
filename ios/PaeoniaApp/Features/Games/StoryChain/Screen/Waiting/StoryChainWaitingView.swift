@@ -31,18 +31,16 @@ struct StoryChainWaitingView: View {
                 Spacer(minLength: PaeoniaSpacing.space16)
             }
             .frame(maxWidth: .infinity)
-        } bottom: {
-            GameInviteButton(
-                invite: viewModel.invite,
-                partnerName: viewModel.partnerName,
-                send: viewModel.sendInvite,
-                identifier: "storyChain.invite"
-            )
         }
-        // The partner's phone changes the title, hint, ring, and invite button
-        // while this screen is open. Everything moves to its new place together.
+        .gameInviteToolbar(
+            invite: viewModel.invite,
+            partnerName: viewModel.partnerName,
+            send: viewModel.sendInvite,
+            identifier: "storyChain.invite"
+        )
+        // The partner's phone changes the title, hint and ring while this screen
+        // is open. Everything moves to its new place together.
         .animation(PaeoniaMotion.stateChange, value: presence)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
     }
 
     private var title: LocalizedStringResource {

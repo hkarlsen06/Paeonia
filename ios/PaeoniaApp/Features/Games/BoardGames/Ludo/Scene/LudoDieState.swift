@@ -2,7 +2,7 @@
 nonisolated enum LudoDieState: Equatable, Sendable {
     /// Resting in `side`'s base yard, not tappable.
     case idle(side: BoardPlayer)
-    /// In my base yard, bobbing gently. A tap rolls.
+    /// In my base yard, bobbing gently. Throwing it rolls.
     case ready
     // swiftlint:disable enum_case_associated_values_count
     /// Thrown with `toss` and lands on `die` in `side`'s base yard. A new `token` starts a new throw.

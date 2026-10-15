@@ -106,8 +106,9 @@ struct DrawAndGuessDrawerResultView: View {
             }
         }
         .onChange(of: wrongAttempts.count) { old, new in
-            if !isRevealed, new > old, !viewModel.board.isStrokeInProgress {
-                PaeoniaHaptics.partnerDrawingReceived()
+            if !isRevealed, new > old {
+                GameSound.nudge.play(volume: 0.7)
+                if !viewModel.board.isStrokeInProgress { PaeoniaHaptics.partnerDrawingReceived() }
             }
         }
         .onChange(of: viewModel.round?.guesserReaction) { old, new in
@@ -115,10 +116,12 @@ struct DrawAndGuessDrawerResultView: View {
             // there when the screen opened comes in with the result instead.
             guard new != nil, new != old, timeline.actionsShown else { return }
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play()
         }
         .onChange(of: nextRoundCall) { _, call in
             guard let call else { return }
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play()
             let announcement: String = switch call {
             case .drawing: String(localized: .gamesDrawAndGuessWaitDrawing(viewModel.partnerName))
             case .sent: String(localized: .gamesDrawAndGuessHandoffSeeDrawing(viewModel.partnerName))
@@ -128,6 +131,7 @@ struct DrawAndGuessDrawerResultView: View {
         .onChange(of: viewModel.partnerPresence.isHere) { old, new in
             guard new, !old else { return }
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play(volume: 0.7)
             guard !reduceMotion else { return }
             withAnimation(PaeoniaMotion.stateChange) { partnerPulse = 1.12 }
             withAnimation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionDefault)) { partnerPulse = 1 }
@@ -278,6 +282,7 @@ extension DrawAndGuessDrawerResultView {
                 guard !Task.isCancelled else { return }
                 withAnimation(PaeoniaMotion.cardReveal) { shownWrongCount = index + 1 }
                 PaeoniaHaptics.partnerDrawingReceived()
+                GameSound.tap.play(volume: 0.6)
             }
         }
         shownWrongCount = total

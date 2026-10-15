@@ -12,7 +12,9 @@ nonisolated enum MindMeldPhase: Equatable, Sendable {
     /// This person's word is locked in and the partner's is not. `isQueued` is
     /// true while the word is only saved on this phone.
     case waiting(isQueued: Bool)
-    /// A round or a game ending this person has not seen yet.
+    /// A round or a game ending this person has not seen yet. Also the open round
+    /// while this person's word is on its way to a partner who already locked in.
+    /// The cards stay face down until the round comes back revealed.
     case reveal
     /// A finished game whose ending this person has seen. Shows its last round, settled.
     case over
@@ -34,7 +36,8 @@ nonisolated struct MindMeldPendingWork: Equatable, Sendable {
     /// A waiting lock-in or count has had a try that did not get through, for any
     /// reason. Until then it is on its first send, and the screen says nothing
     /// about it being on this phone, so a normal send never flashes that line.
-    /// The view model reads this. The resolver does not.
+    /// The resolver reads it to choose between the reveal and waiting when the
+    /// partner's word is already in.
     var hasFailedMoveAttempt = false
     /// A game is being started or restarted.
     var isStarting = false
@@ -139,9 +142,18 @@ nonisolated struct MindMeldResolver: Sendable {
         guard let open = game.openRound else {
             return MindMeldResolution(phase: .loading, game: game)
         }
-        // A word with no lock time only exists on this phone.
-        let phase: MindMeldPhase = open.myWord == nil ? .write : .waiting(isQueued: open.myLockedAt == nil)
-        return MindMeldResolution(phase: phase, game: game, round: open)
+        guard open.myWord != nil else {
+            return MindMeldResolution(phase: .write, game: game, round: open)
+        }
+        // A word with no lock time only exists on this phone. When the partner's
+        // word is in, the server reveals the round as it takes mine, so the reveal
+        // opens now and plays when the round comes back revealed. A send that did
+        // not get through waits instead, where the screen says the word is on the phone.
+        let isQueued = open.myLockedAt == nil
+        if isQueued, open.partnerLocked, !pending.hasFailedMoveAttempt {
+            return MindMeldResolution(phase: .reveal, game: game, round: open)
+        }
+        return MindMeldResolution(phase: .waiting(isQueued: isQueued), game: game, round: open)
     }
 
     private func resolveFinished(_ game: RemoteMindMeldGame, _ pending: MindMeldPendingWork) -> MindMeldResolution {

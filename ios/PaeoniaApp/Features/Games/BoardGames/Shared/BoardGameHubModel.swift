@@ -102,7 +102,7 @@ struct BoardGameHubCard: View {
             open: open,
             artwork: artwork,
             badge: {
-                if let score = summary.score {
+                if let score = summary.score, !score.isEmpty {
                     BoardGameScoreCapsule(score: score, me: me, partner: partner)
                 }
             },

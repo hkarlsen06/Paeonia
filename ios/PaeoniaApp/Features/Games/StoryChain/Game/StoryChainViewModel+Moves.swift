@@ -101,6 +101,7 @@ extension StoryChainViewModel {
         isSavingMove = true
         defer { isSavingMove = false }
         PaeoniaHaptics.drawingSent()
+        GameSound.send.play()
         do {
             try await moveQueue.start(start, ownerUserID: userID)
         } catch {
@@ -153,6 +154,7 @@ extension StoryChainViewModel {
         isSavingMove = true
         defer { isSavingMove = false }
         PaeoniaHaptics.drawingSent()
+        GameSound.send.play()
         // Before the queue reads the line back, so the first page that has it
         // already writes it in.
         beginArrival(of: line.lineID, isMine: true)

@@ -151,11 +151,11 @@ struct RelationshipTimelineView: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// "Together for 186 days", or a first-day line while the count is still 0.
+    /// "Together for 6 months and 3 days", or a first-day line while the count is still 0.
     private var heroTitle: Text {
         daysTogether == 0
             ? Text(.homeMilestoneTimelineFirstDay)
-            : Text(.homeMilestoneTimelineTogetherFor(Self.daysText(daysTogether)))
+            : Text(.homeMilestoneTimelineTogetherFor(Self.togetherText(startedOn: startedOn, now: now)))
     }
 
     @ViewBuilder
@@ -274,6 +274,27 @@ struct RelationshipTimelineView: View {
         days == 1
             ? String(localized: .homeMilestoneTimelineDaysOne)
             : String(localized: .homeMilestoneTimelineDays(days.formatted()))
+    }
+
+    /// The time since the start date as "7 years, 1 month and 2 days" /
+    /// "7 år, 1 måned og 2 dager". Units that are 0 are left out.
+    static func togetherText(startedOn: String, now: Date) -> String {
+        let time = RelationshipMilestoneCalculator().timeTogether(startedOn: startedOn, now: now)
+        var parts: [String] = []
+        if let years = time?.year, years > 0 {
+            parts.append(years == 1
+                ? String(localized: .homeMilestoneTimelineYearsOne)
+                : String(localized: .homeMilestoneTimelineYears(years.formatted())))
+        }
+        if let months = time?.month, months > 0 {
+            parts.append(months == 1
+                ? String(localized: .homeMilestoneTimelineMonthsOne)
+                : String(localized: .homeMilestoneTimelineMonths(months.formatted())))
+        }
+        if let days = time?.day, days > 0 {
+            parts.append(daysText(days))
+        }
+        return parts.formatted(.list(type: .and))
     }
 
     private func presentEditor() {

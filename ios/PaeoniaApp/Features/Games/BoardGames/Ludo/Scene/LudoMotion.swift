@@ -35,6 +35,21 @@ nonisolated enum LudoMotion {
         return hop(from: points[index], to: points[index + 1], progress: local, arc: arc)
     }
 
+    /// Where a walking pawn steps on a square another pawn stands on: beside it,
+    /// `distance` across the walking line on the side nearer the board's middle.
+    static func detour(
+        at point: SIMD3<Float>,
+        from previous: SIMD3<Float>,
+        to next: SIMD3<Float>,
+        distance: Float
+    ) -> SIMD3<Float> {
+        let heading = SIMD3<Float>(next.x - previous.x, 0, next.z - previous.z)
+        guard simd_length(heading) > 0.001 else { return point }
+        var side = simd_normalize(SIMD3(-heading.z, 0, heading.x))
+        if simd_dot(side, SIMD3(-point.x, 0, -point.z)) < 0 { side = -side }
+        return point + side * distance
+    }
+
     /// A pawn sent home: it pops up, arcs back to its base and settles with a small bounce.
     static func sendHome(
         from start: SIMD3<Float>,

@@ -214,6 +214,13 @@ struct RelationshipMilestoneTests {
         #expect(calculator().daysTogether(startedOn: "not-a-date", now: try day("2026-06-01")) == nil)
     }
 
+    @Test func timeTogetherSplitsTheSpanIntoYearsMonthsAndDays() throws {
+        let time = try #require(calculator().timeTogether(startedOn: "2019-09-13", now: try day("2026-10-15")))
+        #expect(time.year == 7)
+        #expect(time.month == 1)
+        #expect(time.day == 2)
+    }
+
     @Test func isoStartDateIsNotReinterpretedThroughPreferredCalendar() throws {
         var buddhistCalendar = Calendar(identifier: .buddhist)
         buddhistCalendar.timeZone = calendar.timeZone

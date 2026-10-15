@@ -212,11 +212,15 @@ struct BoardGameResultPanel: View {
         .font(PaeoniaTypography.countdownNumber)
         .foregroundStyle(.paeoniaTextPrimary)
         .overlay(alignment: .topTrailing) {
-            if count.added > 0 {
-                DrawAndGuessAddedPoints(points: count.added, isShown: showsCount, animates: animatesCount)
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .alignmentGuide(.trailing) { $0[.leading] - PaeoniaSpacing.space4 }
+            // The guide sits outside the `if`. Inside it, SwiftUI ignores the guide
+            // and puts "+1" on top of the number.
+            Group {
+                if count.added > 0 {
+                    DrawAndGuessAddedPoints(points: count.added, isShown: showsCount, animates: animatesCount)
+                        .font(PaeoniaTypography.bodyEmphasis)
+                }
             }
+            .alignmentGuide(.trailing) { $0[.leading] - PaeoniaSpacing.space4 }
         }
     }
 

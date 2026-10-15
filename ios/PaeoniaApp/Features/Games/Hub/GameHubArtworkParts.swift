@@ -66,61 +66,15 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
     }
 }
 
-/// The backdrop every hub card shares: a deep plum sky with two big hills, petal pink on
-/// the left and lavender on the right, the two partners' worlds. They meet in a soft seam
-/// behind the middle of the scene. The hills start at about pixel 220, below the badge,
-/// and darken toward the bottom, so the card's text reads on them.
+/// The backdrop every hub card shares: a room at night, its left wall lit pink and its
+/// right wall lavender, the two partners' worlds. The corner where they meet is behind the
+/// middle of the scene, and the floor in front is where the game's objects stand. Below
+/// the scene the floor darkens to deep plum, so the card's text reads on it.
 struct GameHubBackdrop: View {
-    private static let sky = Gradient(stops: [
-        .init(color: .paeoniaBackgroundSecondary, location: 0),
-        .init(color: .paeoniaBackgroundPrimary, location: 0.46),
-        .init(color: .paeoniaBackgroundSecondary, location: 1)
-    ])
-    /// The hills darken toward plum from the middle of the scene down, so the card's text
-    /// keeps its contrast (`art_asset.py text` checks it).
-    private static let hillShade = Gradient(stops: [
-        .init(color: .paeoniaBackgroundElevated.opacity(0), location: 240 / 1_536),
-        .init(color: .paeoniaBackgroundElevated.opacity(0.25), location: 480 / 1_536),
-        .init(color: .paeoniaBackgroundElevated.opacity(0.6), location: 760 / 1_536),
-        .init(color: .paeoniaBackgroundElevated, location: 1)
-    ])
-
     var body: some View {
-        Canvas { context, size in
-            Self.paint(context, size: size)
-        }
-    }
-
-    private static func paint(_ context: GraphicsContext, size: CGSize) {
-        let scale = size.width / GameHubArtworkLayout.canvasSize.width
-        let height = GameHubArtworkLayout.canvasSize.height * scale
-        let top = CGPoint.zero
-        let bottom = CGPoint(x: 0, y: height)
-        context.fill(
-            Path(CGRect(origin: .zero, size: size)),
-            with: .linearGradient(sky, startPoint: top, endPoint: bottom)
-        )
-        var hills = Path()
-        hills.addEllipse(in: circle(centerX: 190, centerY: 880, radius: 660, scale: scale))
-        hills.addEllipse(in: circle(centerX: 834, centerY: 880, radius: 660, scale: scale))
-        context.fill(
-            hills,
-            with: .linearGradient(
-                Gradient(colors: [.paeoniaAccentPrimary, .paeoniaInkLavender]),
-                startPoint: CGPoint(x: 482 * scale, y: 0),
-                endPoint: CGPoint(x: 542 * scale, y: 0)
-            )
-        )
-        context.fill(hills, with: .linearGradient(hillShade, startPoint: top, endPoint: bottom))
-    }
-
-    private static func circle(centerX: CGFloat, centerY: CGFloat, radius: CGFloat, scale: CGFloat) -> CGRect {
-        CGRect(
-            x: (centerX - radius) * scale,
-            y: (centerY - radius) * scale,
-            width: radius * 2 * scale,
-            height: radius * 2 * scale
-        )
+        Image(.gameHubBackdrop)
+            .resizable()
+            .accessibilityHidden(true)
     }
 }
 

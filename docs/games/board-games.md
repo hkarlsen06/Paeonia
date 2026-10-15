@@ -169,7 +169,7 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 - **Board.** Square for Dots and Boxes and Ultimate Tic-Tac-Toe, 7 by 6 for Connect Four. It takes the width up to 560 pt and never scrolls on a phone in portrait.
 - **Color row.** Ludo only. Four round color circles under the status row and above the stake row, until the player's first move of the game (see "Your color" in `docs/games/ludo.md`). In the wide layout it sits under the players row, above the stake.
 - **Status row.** Under the board. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there, as Ludo does ("Roll again"). VoiceOver announces when the partner comes and goes.
-- **Pinned bottom.** The invite button while it is not my turn and the partner is away. The offline line while a move waits to send. Under it, "[Name] isn't here right now" while the partner doesn't have the game open. While they do, the dot on their avatar says so and the line is gone.
+- **Pinned bottom.** In Ludo, the invite button while it is not my turn and the partner is away. The bar always keeps room for it, so the board never resizes. The other boards show the invite as a bell at the leading edge of the toolbar instead. The offline line while a move waits to send. Under it, "[Name] isn't here right now" while the partner doesn't have the game open. While they do, the dot on their avatar says so and the line is gone.
 - **Score capsule.** Toolbar trailing, as in Draw & Guess (see "Scoring").
 - **Toolbar.** "Your mark" (`scribble.variable`) opens the mark editor.
 
@@ -242,7 +242,7 @@ Code map in `docs/implementation-map.md`. Decisions the sections above leave ope
 
 ## Wide layouts and Dynamic Type
 
-- Wide means 700 pt or more and wider than tall, as in Draw & Guess. The board sits on the left (up to 640 pt), and the players, stake, status and result sit in a column on the right (up to 420 pt). Ludo's board bleeds, so it keeps the single column on a wide screen. Its 3D view covers the whole screen behind the rows, the camera fits the board in the space between the players row and the status row, and the screen color fades in over the board past that space so the rows stay readable. When that space changes, for example as the invite button comes and goes, the board and its camera glide to the new space over `PaeoniaMotion.stateChange` instead of jumping. Reduce Motion snaps. It is not a material blur: a material can't blur the 3D view and shows gray strips over the plain background.
+- Wide means 700 pt or more and wider than tall, as in Draw & Guess. The board sits on the left (up to 640 pt), and the players, stake, status and result sit in a column on the right (up to 420 pt). Ludo's board bleeds, so it keeps the single column on a wide screen. Its 3D view covers the whole screen behind the rows, the camera fits the board in the space between the players row and the status row, and the screen color fades in over the board past that space so the rows stay readable. When that space changes, for example as a result panel comes, the board and its camera glide to the new space over `PaeoniaMotion.stateChange` instead of jumping. Reduce Motion snaps. It is not a material blur: a material can't blur the 3D view and shows gray strips over the plain background.
 - At accessibility text sizes the players row stacks and the screen scrolls. The board keeps its size.
 
 ## Open questions

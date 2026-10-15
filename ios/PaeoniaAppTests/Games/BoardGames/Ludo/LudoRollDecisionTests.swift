@@ -9,52 +9,16 @@ struct LudoRollDecisionTests {
 
     private let position = LudoPosition(gameID: UUID(), gameNumber: 3, moveCount: 4)
 
-    // MARK: Distinct choices
+    // MARK: Passing by itself
 
-    @Test func twoPawnsInTheBaseCountAsOneChoice() throws {
-        let start = LudoBoard.initial
-        #expect(start.legalChoices(die: 6) == [.first, .second])
-        #expect(LudoRollDecision.distinctChoices(board: start, die: 6) == [.first])
+    @Test func noPawnToMovePassesByItself() {
+        #expect(LudoRollDecision.passesByItself(board: .initial, die: 3))
     }
 
-    @Test func twoPawnsOnOneSquareCountAsOneChoice() throws {
-        // Both pawns came out on the start square.
-        let stacked = try board([LudoBoard.move(die: 6, choice: .first), LudoBoard.move(die: 6, choice: .second)])
-        #expect(stacked.legalChoices(die: 3) == [.first, .second])
-        #expect(LudoRollDecision.distinctChoices(board: stacked, die: 3) == [.first])
-    }
-
-    @Test func pawnsOnDifferentSquaresAreTwoChoices() throws {
+    @Test func theOnlyPawnThatCanMoveWaitsForATap() throws {
         let board = try board([LudoBoard.move(die: 6, choice: .first)])
-        // The first pawn is out and the second is in the base, and a 6 moves either one.
-        #expect(LudoRollDecision.distinctChoices(board: board, die: 6) == [.first, .second])
-    }
-
-    @Test func aPawnThatCannotMoveIsNotAChoice() throws {
-        let board = try board([LudoBoard.move(die: 6, choice: .first)])
-        #expect(LudoRollDecision.distinctChoices(board: board, die: 3) == [.first])
-    }
-
-    @Test func withNoPawnToMoveThePassIsTheOnlyChoice() {
-        #expect(LudoRollDecision.distinctChoices(board: .initial, die: 3) == [.pass])
-    }
-
-    // MARK: Moving by itself
-
-    @Test func theOnlyOptionMovesAfterHalfASecond() throws {
-        let board = try board([LudoBoard.move(die: 6, choice: .first)])
-        #expect(LudoRollDecision.automaticMove(board: board, die: 3) == .move(.first, after: .milliseconds(500)))
-        // Two pawns in the base come out as one option.
-        #expect(LudoRollDecision.automaticMove(board: .initial, die: 6) == .move(.first, after: .milliseconds(500)))
-    }
-
-    @Test func aPassMovesAfterOnePointTwoSeconds() {
-        #expect(LudoRollDecision.automaticMove(board: .initial, die: 3) == .pass(after: .milliseconds(1_200)))
-    }
-
-    @Test func twoDifferentOptionsWaitForThePerson() throws {
-        let board = try board([LudoBoard.move(die: 6, choice: .first)])
-        #expect(LudoRollDecision.automaticMove(board: board, die: 6) == nil)
+        #expect(board.legalChoices(die: 3) == [.first])
+        #expect(!LudoRollDecision.passesByItself(board: board, die: 3))
     }
 
     // MARK: Saved roll
@@ -93,12 +57,12 @@ struct LudoRollDecisionTests {
 
     // MARK: Hints
 
-    @Test func theFirstRollOfAGameSaysTapTheDie() throws {
-        #expect(LudoRollDecision.hintBeforeRoll(board: .initial, moves: [], me: .one) == .tapToRoll)
+    @Test func theFirstRollOfAGameSaysSwipeTheDie() throws {
+        #expect(LudoRollDecision.hintBeforeRoll(board: .initial, moves: [], me: .one) == .swipeToRoll)
         // Player two has not moved yet either.
         let afterPlayerOne = Array(repeating: LudoBoard.move(die: 2, choice: .pass), count: 3)
         let board = try board(afterPlayerOne)
-        #expect(LudoRollDecision.hintBeforeRoll(board: board, moves: afterPlayerOne, me: .two) == .tapToRoll)
+        #expect(LudoRollDecision.hintBeforeRoll(board: board, moves: afterPlayerOne, me: .two) == .swipeToRoll)
     }
 
     @Test func anotherRollSaysRollAgain() throws {

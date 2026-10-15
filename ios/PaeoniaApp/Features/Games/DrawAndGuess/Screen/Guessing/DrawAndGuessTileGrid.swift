@@ -65,6 +65,7 @@ struct DrawAndGuessTileGrid: View {
         guard !viewModel.isShowingWrongGuess else { return }
         let slot = viewModel.slots.slots.first { !$0.isGap && $0.tile == nil }
         PaeoniaHaptics.selection()
+        GameSound.tap.play(volume: 0.8)
         viewModel.placeTile(tile)
         if let slot, viewModel.slots.slots.indices.contains(slot.id), viewModel.slots.slots[slot.id].tile != nil {
             let number = viewModel.slots.slots.prefix(slot.id + 1).count { !$0.isGap }

@@ -68,7 +68,7 @@ final class LudoDieNode {
     var currentPosition: SIMD3<Float> { root.position }
     var currentOrientation: simd_quatf { root.orientation }
 
-    /// A gentle bob and sway while the die waits for a tap.
+    /// A gentle bob and sway while the die waits to be thrown.
     func updateIdle(clock: Double, isReady: Bool, reduceMotion: Bool) {
         var position = restPosition
         var orientation = restOrientation

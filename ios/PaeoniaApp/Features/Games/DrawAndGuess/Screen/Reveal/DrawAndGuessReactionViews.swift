@@ -70,6 +70,7 @@ struct DrawAndGuessReactionRow: View {
         let isSelected = selected == reaction
         return Button {
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.7)
             Task { await viewModel.react(reaction) }
         } label: {
             VStack(spacing: PaeoniaSpacing.space4) {

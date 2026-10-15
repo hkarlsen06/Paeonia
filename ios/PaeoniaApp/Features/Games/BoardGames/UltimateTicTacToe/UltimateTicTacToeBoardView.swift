@@ -252,9 +252,11 @@ extension UltimateTicTacToeBoardView {
         switch playback.zoom.tap(at: point, geometry: geometry, focus: playback.focus) {
         case .focus(let target):
             PaeoniaHaptics.selection()
+            GameSound.tap.play(volume: 0.6)
             playback.choose(.board(target))
         case .play(let move):
             PaeoniaHaptics.selection()
+            GameSound.mark.play()
             onPlay(move)
         case .zoomOut:
             playback.choose(.wholeBoard)
@@ -324,6 +326,7 @@ extension UltimateTicTacToeBoardView {
     private func playFromAccessibility(_ move: Int) {
         guard canPlay, board.isLegal(move) else { return }
         PaeoniaHaptics.selection()
+        GameSound.mark.play()
         onPlay(move)
     }
 }

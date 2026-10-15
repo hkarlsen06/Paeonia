@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-/// The haptics of the reveal, injected so tests can record them.
+/// The haptics and sounds of the reveal, injected so tests can record them.
 struct MindMeldRevealHaptics {
     /// The build-up pulses and the card flips.
     var tick: @MainActor (CGFloat) -> Void
@@ -13,10 +13,27 @@ struct MindMeldRevealHaptics {
     var soft: @MainActor () -> Void
 
     static let live = Self(
-        tick: { PaeoniaHaptics.streakTick(intensity: $0) },
-        celebrated: { PaeoniaHaptics.streakCelebrated() },
-        continued: { PaeoniaHaptics.streakContinued() },
-        soft: { PaeoniaHaptics.partnerDrawingReceived() }
+        tick: { intensity in
+            PaeoniaHaptics.streakTick(intensity: intensity)
+            // The pulses stay below the flips' strength, so the strength tells them apart.
+            if intensity >= MindMeldRevealScript.flipIntensity {
+                GameSound.flip.play()
+            } else {
+                GameSound.tick.play(volume: intensity + 0.3)
+            }
+        },
+        celebrated: {
+            PaeoniaHaptics.streakCelebrated()
+            GameSound.win.play()
+        },
+        continued: {
+            PaeoniaHaptics.streakContinued()
+            GameSound.tap.play(volume: 0.7)
+        },
+        soft: {
+            PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.soft.play()
+        }
     )
 }
 

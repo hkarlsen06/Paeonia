@@ -19,7 +19,7 @@ nonisolated struct LudoSavedRoll: Codable, Equatable, Sendable {
 /// The line under the board that teaches Ludo while the person plays.
 nonisolated enum LudoHint: Equatable, Sendable {
     /// The person's first roll of a game.
-    case tapToRoll
+    case swipeToRoll
     /// Every pawn of the person waits in the base.
     case rollSix
     /// The last move earned another roll.
@@ -33,7 +33,7 @@ nonisolated enum LudoHint: Equatable, Sendable {
 extension LudoHint {
     var text: LocalizedStringResource {
         switch self {
-        case .tapToRoll: .ludoHintTapToRoll
+        case .swipeToRoll: .ludoHintSwipeToRoll
         case .rollSix: .ludoHintRollSix
         case .rollAgain: .ludoHintRollAgain
         case let .triesLeft(tries): .ludoHintTriesLeft(tries)
@@ -42,57 +42,19 @@ extension LudoHint {
     }
 }
 
-/// What the screen does with a roll once the die has landed.
-nonisolated enum LudoAutomaticMove: Equatable, Sendable {
-    /// The only option, played after the delay.
-    case move(LudoChoice, after: Duration)
-    /// No pawn can move, so the turn passes after the delay.
-    case pass(after: Duration)
-}
-
 /// The decisions behind the roll, with no view, clock or storage, so tests can
 /// check them directly.
 nonisolated enum LudoRollDecision {
-    /// How long the only option waits before it moves by itself.
-    static let autoMoveDelay: Duration = .milliseconds(500)
     /// How long a pass waits, while the status says "No move with a 3".
     static let autoPassDelay: Duration = .milliseconds(1_200)
 
     static let faces = 1...LudoBoard.dieFaces
 
-    /// The choices that give a different board. Two pawns in the base, or two
-    /// pawns on one square, give the same result, so only the first of them
-    /// counts.
-    static func distinctChoices(board: LudoBoard, die: Int) -> [LudoChoice] {
-        var seen: [[[Int]]] = []
-        var kept: [LudoChoice] = []
-        for choice in board.legalChoices(die: die) {
-            guard let result = resultingPawns(board: board, die: die, choice: choice) else { continue }
-            if !seen.contains(result) {
-                seen.append(result)
-                kept.append(choice)
-            }
-        }
-        return kept
-    }
-
-    /// Each player's pawn progress after the move, in order of progress, so two
-    /// pawns that swap places look the same.
-    private static func resultingPawns(board: LudoBoard, die: Int, choice: LudoChoice) -> [[Int]]? {
-        guard let after = board.applying(LudoBoard.move(die: die, choice: choice)) else { return nil }
-        return [BoardPlayer.one, .two].map { player in
-            (0..<LudoBoard.pawnsPerPlayer)
-                .map { after.progress[LudoBoard.pawnIndex(player, $0)] }
-                .sorted()
-        }
-    }
-
-    /// The move the screen plays by itself after the die lands, or nil when the
-    /// person has a choice to make.
-    static func automaticMove(board: LudoBoard, die: Int) -> LudoAutomaticMove? {
-        let options = distinctChoices(board: board, die: die)
-        guard options.count == 1, let only = options.first else { return nil }
-        return only == .pass ? .pass(after: autoPassDelay) : .move(only, after: autoMoveDelay)
+    /// Whether the turn passes by itself after the die lands. A pawn never moves
+    /// by itself, even when it is the only one that can, so the person always
+    /// taps it.
+    static func passesByItself(board: LudoBoard, die: Int) -> Bool {
+        board.legalChoices(die: die) == [.pass]
     }
 
     /// The saved roll, when it was rolled for this very position. A different
@@ -110,7 +72,7 @@ nonisolated enum LudoRollDecision {
             return board.missedSixes > 0 ? .triesLeft(LudoBoard.triesInBase - board.missedSixes) : .rollAgain
         }
         if !movers.contains(me) {
-            return .tapToRoll
+            return .swipeToRoll
         }
         let allInBase = (0..<LudoBoard.pawnsPerPlayer).allSatisfy {
             board.progress[LudoBoard.pawnIndex(me, $0)] == 0
@@ -120,6 +82,6 @@ nonisolated enum LudoRollDecision {
 
     /// The hint once the die has landed. Only a pass has one.
     static func hintAfterRoll(board: LudoBoard, die: Int) -> LudoHint? {
-        distinctChoices(board: board, die: die) == [.pass] ? .noMove(die: die) : nil
+        passesByItself(board: board, die: die) ? .noMove(die: die) : nil
     }
 }

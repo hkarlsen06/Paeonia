@@ -204,9 +204,11 @@ extension UltimateTicTacToePlayback {
     private func playHaptics(for event: BoardMoveEvent) {
         if !event.isMine {
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.mark.play(volume: 0.85)
         }
         if closedState(of: event)?.isWon == true {
             PaeoniaHaptics.streakContinued()
+            GameSound.stamp.play()
         }
     }
 
@@ -221,6 +223,7 @@ extension UltimateTicTacToePlayback {
         requestFocus(board, animation: UltimateTicTacToeMotion.zoomToMove)
         guard await pause(UltimateTicTacToeTiming.zoomToMove, id: id) else { return }
         PaeoniaHaptics.partnerDrawingReceived()
+        GameSound.mark.play(volume: 0.85)
         withAnimation(UltimateTicTacToeMotion.markDraw) {
             hold.hiddenMove = nil
         }
@@ -258,6 +261,7 @@ extension UltimateTicTacToePlayback {
         }
         if input.board.boards[index].isWon {
             PaeoniaHaptics.streakContinued()
+            GameSound.stamp.play()
         }
         return await pause(UltimateTicTacToeTiming.close + UltimateTicTacToeTiming.afterClose, id: id)
     }

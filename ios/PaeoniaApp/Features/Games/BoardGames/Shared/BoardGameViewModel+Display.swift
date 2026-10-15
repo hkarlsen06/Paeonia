@@ -267,8 +267,10 @@ extension BoardGameViewModel {
     private static func outcomeHaptic(isWin: Bool) {
         if isWin {
             PaeoniaHaptics.answerRevealed()
+            GameSound.win.play()
         } else {
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.soft.play()
         }
     }
 

@@ -105,6 +105,7 @@ struct DrawAndGuessChooseWordView: View {
                 ForEach(shownChoices) { choice in
                     DrawAndGuessWordRow(choice: choice, isSelected: selected == choice.difficulty) {
                         PaeoniaHaptics.selection()
+                        GameSound.tap.play(volume: 0.7)
                         withAnimation(PaeoniaMotion.buttonPress) { selected = choice.difficulty }
                     }
                     .transition(.opacity)
@@ -137,6 +138,7 @@ struct DrawAndGuessChooseWordView: View {
         }
         guard canStart, !isStarting else { return }
         PaeoniaHaptics.drawingSent()
+        GameSound.tap.play()
         isStarting = true
         isFieldFocused = false
         Task {

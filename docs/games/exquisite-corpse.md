@@ -240,7 +240,7 @@ Async, the partner isn't drawing here.
 2. Title: "[Name] is drawing the body" when the partner's role is `drawing`, otherwise "Waiting for [Name] to draw the body". After a figure is finished and the partner starts the next: "Waiting for [Name] to start a new creature".
 3. Hint: "We'll tell you when it's your turn." In the first figure, the head drawer also sees "You'll draw the legs after that."
 4. A small folded paper (72 by 216 pt) showing which parts are done: done parts as paper backs, the open part with a soft shimmer, the next part as an empty outline.
-5. Pinned bottom: the invite button while the partner isn't in the game.
+5. Toolbar: the invite bell at the leading edge of the toolbar while the partner isn't in the game.
 
 Live, the partner is drawing: the watch screen.
 1. Live row: avatar with the ring and "[Name] is drawing the head".
@@ -260,7 +260,7 @@ Live, the partner is drawing: the watch screen.
 | `wait.sent` | Sent to [Name] | Sendt til [Name] |
 | `wait.opening` | Opening… | Åpner … |
 
-The invite button uses the shared invite copy and behavior from Draw & Guess (`docs/games/draw-and-guess.md`, phase 3).
+The invite bell uses the shared invite copy and behavior from Draw & Guess (`docs/games/draw-and-guess.md`, phase 3).
 
 ### 3. Reveal
 

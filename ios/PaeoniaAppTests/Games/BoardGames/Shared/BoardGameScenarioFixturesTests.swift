@@ -410,7 +410,7 @@ extension BoardGameScenarioFixturesTests {
         #expect(model.canPlay)
         #expect(model.stakeState == .writable)
         let hint = LudoRollDecision.hintBeforeRoll(board: model.board, moves: model.displayedMoves, me: model.me)
-        #expect(hint == .tapToRoll)
+        #expect(hint == .swipeToRoll)
     }
 
     @Test func ludoChoosePawnKeepsTheRollForThisPositionAndOffersTwoPawns() async throws {
@@ -426,7 +426,7 @@ extension BoardGameScenarioFixturesTests {
         #expect(roll.position.gameID == setup.remoteGame().id)
         #expect(roll.position.moveCount == setup.moves.count)
         // A 3 moves either pawn, to different squares.
-        #expect(LudoRollDecision.distinctChoices(board: board, die: roll.die) == [.first, .second])
+        #expect(board.legalChoices(die: roll.die) == [.first, .second])
 
         let dependencies = DeveloperGamesScenarioFactory.dependencies(for: scenario)
         await DeveloperBoardGamesScenarioFactory.seed(scenario, dependencies: dependencies)

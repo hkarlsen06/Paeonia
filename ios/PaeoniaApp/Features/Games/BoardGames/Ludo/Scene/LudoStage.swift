@@ -69,9 +69,8 @@ final class LudoStage {
     var fit: LudoCameraFit?
     /// What the person's hands have done to the camera.
     var pose = LudoCameraPose.home
-    var yawVelocity = 0.0
-    var pitchVelocity = 0.0
-    var zoomStart: Double?
+    /// The pose when two fingers went down. A pinch and a twist both start from it.
+    var zoomStart: LudoCameraPose?
     /// The board point (x, z) under the fingers when the pinch began.
     var zoomAnchor: SIMD2<Double>?
     var glide: CameraGlide?
@@ -106,8 +105,10 @@ final class LudoStage {
     var diePlaced = false
     /// Where the die in the hand goes, while a drag holds it.
     var heldDie: SIMD3<Float>?
-    /// When the finger let the held die go. Its roll should arrive at once.
+    /// When the finger let the held die go, and how it threw it. The die flies on
+    /// with that throw until its roll arrives, which should be at once.
     var releasedAt: Double?
+    var releasedToss: LudoToss?
     var outcomeWinner: BoardPlayer?
     var outcomeSchedule: OutcomeSchedule?
     var glowLevels: [Float] = [0, 0]
@@ -255,7 +256,7 @@ final class LudoStage {
         clock += step
         playClips()
         updateOutcomeSchedule()
-        updateCamera(deltaTime: step)
+        updateCamera()
         for pawn in pawns {
             if hasClip(.pawn(pawn.index)) {
                 pawn.updateDim(deltaTime: step)
@@ -313,6 +314,7 @@ final class LudoStage {
     /// A pawn that cannot move shakes, and the phone taps twice.
     func shake(pawn index: Int) {
         PaeoniaHaptics.gameWrongGuess()
+        GameSound.wrong.play(volume: 0.8)
         guard !reduceMotion, pawns.indices.contains(index), !hasClip(.pawn(index)) else { return }
         let pawn = pawns[index]
         let duration = LudoSceneStyle.shakeDuration

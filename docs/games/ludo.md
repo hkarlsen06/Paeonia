@@ -14,6 +14,7 @@ Decided on 2026-10-14 with the developer.
 
 Decided on 2026-10-15 with the developer.
 
+- **Every move is a tap.** Even when only one pawn can move, it glows and waits for the person to tap it. Moving it by itself took the person out of the game. Only a roll with no move passes by itself.
 - **Pick your color.** Ludo only. Each partner picks one of the four corner colors (pink, lavender, gold, sky blue) for their pawns at the start of each game. The two colors nobody picked stay as the empty corners. Both phones show the same color for the same person, so if I pick gold, my partner sees my corner, pawns and avatar in gold too. Nobody waits for a pick: a partner who has not picked keeps the color from the last game. The other board games keep pink for me and lavender for my partner.
 
 ## Decisions made without the developer
@@ -22,11 +23,10 @@ Made on 2026-10-14. Each can change.
 
 - **The name is Ludo in both languages.** Norway calls the game Ludo.
 - **A rolled die is kept.** The phone saves the roll before the die stops, with the game number and move count. Leaving and reopening the screen shows the same roll, so closing the app does not give a new one. The phone keeps it in the board games local document (`ludoRoll`), keyed by game, game number and move count, so sign out clears it with the rest and a different position ignores it.
-- **One option moves by itself.** When only one move is possible, the pawn moves 0.5 seconds after the die lands. Two pawns on the same square, or both in the base, count as one option.
 - **No legal move passes by itself.** The die lands, the board says "No move with a 3", and the turn passes after 1.2 seconds. With no pawn out, the pass only uses up one of the three tries for a 6.
 - **No penalty for three sixes.** Ludo variants that take away the turn after three sixes punish luck. This one doesn't.
 - **No blocks.** Two pawns of the same player on one square do not block the partner.
-- **Teach by playing.** The status row says "Tap the die to roll" on the first roll of a game, "Roll a 6 to bring a pawn out" while all my pawns wait in the base, and "2 tries left to roll a 6" after a missed 6.
+- **Teach by playing.** The status row says "Swipe the die to roll" on the first roll of a game, "Roll a 6 to bring a pawn out" while all my pawns wait in the base, and "2 tries left to roll a 6" after a missed 6.
 
 ## Why Ludo
 
@@ -133,7 +133,7 @@ extension LudoBoard {
 
 ### Rolling
 
-- On my turn the die sits in my yard and bobs gently. A drag that starts on the die picks it up: it rises 1.1 cells and follows my finger above the yard, and letting go throws it in the direction and at the speed of the flick, from 3 to 9 cells a second. A tap throws it from where it rests, away from me, give or take a little. The die bounces off the yard's edges and the pawns waiting in it, and lands flat with the rolled face up wherever the throw takes it, usually within a second and never later than 1.45 seconds. It plays `selection()` on each hard hit and a soft impact when it settles. It stays where it landed until it changes yards.
+- On my turn the die sits in my yard and bobs gently. Any one-finger drag picks it up, wherever it starts on the screen. At other times a one-finger drag does nothing. A die still hopping into my yard lands at once when picked up. Once picked up, it rises 1.1 cells and follows my finger above the yard, and letting go throws it in the direction and at the speed of the flick, from 4 to 9 cells a second. A tap on the die does nothing, because a roll by accident cannot be taken back. VoiceOver's roll action throws it from where it rests, away from me, give or take a little. The die tumbles about two full turns, bounces off the yard's edges and the pawns waiting in it, and lands flat with the rolled face up wherever the throw takes it, usually in about 1.4 seconds and never later than 2.05 seconds. It plays `selection()` on each hard hit and a soft impact when it settles. It stays where it landed until it changes yards.
 - The pawns I can move lift and glow in my color. Tapping one moves it. Tapping a pawn that can't move gives `gameWrongGuess()` and a small shake.
 - The pawn hops square by square, 0.16 seconds a square, with a light tick on each landing. Coming out of the base is one hop onto the start square.
 - Sending a partner's pawn home: my pawn lands, the partner's pawn pops up, arcs back to its base and settles, with `streakTick()`.
@@ -284,14 +284,15 @@ The default camera looks down at 50 degrees, turned 18 degrees round the board, 
 
 The board view takes the full width of the screen and all the height of the screen, and the camera frames the scene inside the space between the players row and the status row (`boardFitHeight`). The whole slab fits that space both ways, so no corner runs off the screen. The props (the candle to the tip of its flame, the teapot and both cups, listed in `framedProps`) must also stay inside it from top to bottom, so none sits under the players row or the button, but they may run off the sides. The camera then centers the whole group from top to bottom. A camera that fitted only the board ran its corners off the sides and hid the candle and the teapot under the rows.
 
-The person can handle the board like a model:
+The person can look closer, but one finger always plays:
 
-- A one-finger drag orbits the camera around the board point in the middle of the view. Yaw is free. Pitch stays between 35 and 80 degrees. The orbit keeps going a little after the finger lifts and slows down.
+- One finger never moves the camera. One finger plays: a tap picks a pawn, and a drag throws the die. A one-finger drag that also turned the board meant one gesture did two things, depending on whether the die could be thrown, and the person could not see which. Throws kept turning the board instead.
+- A two-finger twist turns the board the same way, as in Maps. Yaw is free and pitch stays at 50 degrees. The pinch and the twist are one camera move from the pose when the fingers went down, so the board point under the fingers stays under them while it turns, as far as the slide's reach allows. At the default distance the slide has no reach, so the board turns round the middle of the view. A twist under about 7 degrees (`twistDeadZone`) does nothing, so a pinch does not wobble the board.
 - A pinch zooms between 0.55 and 1.35 times the default distance. The board point under the fingers stays under them, so moving the two fingers also slides the board. The slide reaches up to 4.5 cells from the middle at the closest zoom, enough to center a base, and shrinks to none at the default distance, so zooming out brings the board back to the middle.
 - A double tap glides back to the default view in 0.5 seconds.
-- Taps on the die and the pawns keep working. A drag needs a small movement to start, which tells it from a tap.
+- Taps on the pawns keep working. A drag needs a small movement to start, which tells it from a tap.
 - The board stays where the person leaves it.
-- Reduce Motion: no inertia, and the reset cuts instead of gliding.
+- Reduce Motion: the reset cuts instead of gliding.
 - VoiceOver follows the camera, so its elements stay on the pieces.
 
 ### Illustrated textures

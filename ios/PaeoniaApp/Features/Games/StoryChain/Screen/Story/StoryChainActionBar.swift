@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// The buttons pinned under the story: the invite while the partner has the
-/// turn, "Name the story" while the person names it, and the way on once the
-/// finished story has arrived. It is a bottom bar, so the keyboard covers it
-/// instead of pushing it up.
+/// The buttons pinned under the story: "Name the story" while the person names
+/// it, and the way on once the finished story has arrived. It is a bottom bar,
+/// so the keyboard covers it instead of pushing it up.
 struct StoryChainActionBar: View {
     let viewModel: StoryChainViewModel
     let reveal: StoryChainRevealTimeline
@@ -19,13 +18,11 @@ struct StoryChainActionBar: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .background(hasContent ? Color.paeoniaBackgroundSecondary : Color.clear)
         .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: viewModel.phase)
-        .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
         .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: reveal.actionsShown)
     }
 
     private var hasContent: Bool {
         switch viewModel.phase {
-        case .waitingForLine, .waitingForName: viewModel.invite != .hidden
         case .naming: true
         case .finished: reveal.actionsShown
         default: false
@@ -39,14 +36,6 @@ struct StoryChainActionBar: View {
     @ViewBuilder
     private var content: some View {
         switch viewModel.phase {
-        case .waitingForLine, .waitingForName:
-            GameInviteButton(
-                invite: viewModel.invite,
-                partnerName: viewModel.partnerName,
-                send: viewModel.sendInvite,
-                identifier: "storyChain.invite"
-            )
-                .transition(.opacity)
         case .naming:
             Button {
                 Task { await viewModel.nameStory() }
@@ -62,7 +51,8 @@ struct StoryChainActionBar: View {
                 continueButton(finished)
                     .transition(rise)
             }
-        case .loading, .needsSetup, .preparing, .chooseOpening, .waitingForOpening, .waitingToSync, .writing:
+        case .loading, .needsSetup, .preparing, .chooseOpening, .waitingForOpening, .waitingToSync, .writing,
+             .waitingForLine, .waitingForName:
             EmptyView()
         }
     }

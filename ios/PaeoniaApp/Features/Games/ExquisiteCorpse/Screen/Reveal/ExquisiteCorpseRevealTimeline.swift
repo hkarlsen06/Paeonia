@@ -45,16 +45,25 @@ final class ExquisiteCorpseRevealTimeline {
         static let standard = Self()
     }
 
-    /// The haptics of the reveal, injected so tests can record them.
+    /// The haptics and sounds of the reveal, injected so tests can record them.
     struct Haptics {
         var selection: @MainActor () -> Void
         var foldLanded: @MainActor (CGFloat) -> Void
         var answerRevealed: @MainActor () -> Void
 
         static let live = Self(
-            selection: { PaeoniaHaptics.selection() },
-            foldLanded: { PaeoniaHaptics.streakTick(intensity: $0) },
-            answerRevealed: { PaeoniaHaptics.answerRevealed() }
+            selection: {
+                PaeoniaHaptics.selection()
+                GameSound.tap.play(volume: 0.6)
+            },
+            foldLanded: {
+                PaeoniaHaptics.streakTick(intensity: $0)
+                GameSound.fold.play(volume: 0.5 + 0.5 * $0)
+            },
+            answerRevealed: {
+                PaeoniaHaptics.answerRevealed()
+                GameSound.chime.play()
+            }
         )
     }
 

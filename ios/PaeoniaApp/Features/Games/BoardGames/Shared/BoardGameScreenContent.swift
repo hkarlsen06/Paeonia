@@ -99,6 +99,14 @@ extension BoardGameTurnLabel {
 // MARK: Score
 
 extension BoardGameScore {
+    /// No game has finished yet, so there is nothing worth showing.
+    var isEmpty: Bool {
+        switch self {
+        case let .against(mine, theirs): mine == 0 && theirs == 0
+        case let .together(games): games == 0
+        }
+    }
+
     /// The score as VoiceOver reads it, for example "You 4 wins, Robin 3 wins".
     func spoken(partnerName: String) -> LocalizedStringResource {
         switch self {

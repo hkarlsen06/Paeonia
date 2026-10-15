@@ -78,6 +78,7 @@ struct MindMeldPartnerStatusRow: View {
         let joined = old == .away && (new == .here || new == .typing)
         guard locked || joined else { return }
         PaeoniaHaptics.partnerDrawingReceived()
+        GameSound.nudge.play(volume: 0.7)
         if locked {
             AccessibilityNotification.Announcement(String(localized: .mindMeldPartnerLocked(partner.name))).post()
         }

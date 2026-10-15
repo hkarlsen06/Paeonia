@@ -102,13 +102,20 @@ struct MilestoneCountdownCard: View {
     private func card(for milestone: CoupleDateEvent) -> some View {
         Button(action: { isTimelinePresented = true }) {
             // The "Together for" line is pinned to the top so it sits on the same
-            // line as the drawing card's header next to it. The countdown is
-            // centred in the space below.
+            // line as the drawing card's header next to it, and the milestone name
+            // is pinned to the bottom to match. The countdown is centred between them.
             VStack(alignment: .center, spacing: PaeoniaSpacing.space8) {
                 togetherForLine
 
                 countdownBody(for: milestone)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                Text(verbatim: milestone.title(names: names))
+                    .font(PaeoniaTypography.sectionTitle)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .combine)
             .milestoneTileChrome()
@@ -129,34 +136,26 @@ struct MilestoneCountdownCard: View {
     }
 
     private func countdownBody(for milestone: CoupleDateEvent) -> some View {
-        VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
-            VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
-                countdown(for: milestone)
+        // The target date sits right under the count, so "25 days until" and
+        // "Saturday 25 July" read together as the countdown.
+        VStack(alignment: .center, spacing: PaeoniaSpacing.space2) {
+            countdown(for: milestone)
 
-                // The target date sits right under the count, so "25 days until"
-                // and "Saturday 25 July" read together as the countdown.
-                Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextTertiary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
-            }
-
-            // The milestone name follows as part of the same group.
-            Text(verbatim: milestone.title(names: names))
-                .font(PaeoniaTypography.sectionTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
+            Text(milestone.date, format: .dateTime.weekday(.wide).day().month(.wide))
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextTertiary)
                 .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
         }
     }
 
     @ViewBuilder
     private var togetherForLine: some View {
-        if let daysTogether, daysTogether > 0 {
-            Text(.homeMilestoneTimelineTogetherFor(RelationshipTimelineView.daysText(daysTogether)))
+        if let startedOn, let daysTogether, daysTogether > 0 {
+            Text(.homeMilestoneTimelineTogetherFor(
+                RelationshipTimelineView.togetherText(startedOn: startedOn, now: now)
+            ))
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
                 .multilineTextAlignment(.center)

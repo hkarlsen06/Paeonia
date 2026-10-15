@@ -46,11 +46,12 @@ struct ExquisiteCorpseWatchView: View {
         } footer: {
             hint
         } bottom: {
-            ExquisiteCorpseInviteButton(viewModel: viewModel)
+            EmptyView()
         }
-        .animation(PaeoniaMotion.stateChange, value: viewModel.invite)
+        .exquisiteCorpseInviteToolbar(viewModel)
         .onChange(of: viewModel.partnerDonePulse) { _, _ in
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play()
             AccessibilityNotification.Announcement(String(localized: title)).post()
         }
     }

@@ -7,7 +7,8 @@ nonisolated enum DailyVoiceAudioSession {
     static func configureForRecording() async throws {
         try await Task.detached(priority: .userInitiated) {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+            // Ducking lowers the person's music while they record instead of pausing it.
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .duckOthers])
             // Lets the start and stop haptics play while the microphone is on. A failure
             // here only costs the haptics, so it must not block the recording.
             try? session.setAllowHapticsAndSystemSoundsDuringRecording(true)
@@ -19,7 +20,8 @@ nonisolated enum DailyVoiceAudioSession {
     static func configureForPlayback() async {
         do {
             try await Task.detached(priority: .userInitiated) {
-                try AVAudioSession.sharedInstance().setCategory(.playback)
+                // Ducks the person's music under the voice note instead of pausing it.
+                try AVAudioSession.sharedInstance().setCategory(.playback, options: [.duckOthers])
             }.value
 
             try await activate(priority: .userInitiated)
@@ -28,8 +30,8 @@ nonisolated enum DailyVoiceAudioSession {
         }
     }
 
-    /// Releases the session and tells apps we interrupted (music, podcasts) that they can
-    /// resume. Used after both recording and playback.
+    /// Releases the session, tells apps we ducked (music, podcasts) to come back up, and
+    /// returns to the app's resting `.ambient` session. Used after both recording and playback.
     static func deactivate() {
         Task.detached(priority: .utility) {
             await deactivateAsync()
@@ -62,6 +64,7 @@ nonisolated enum DailyVoiceAudioSession {
                 continuation.resume()
             }
         }
+        PaeoniaAudioSession.useAmbient()
     }
 
     private static func sessionError(_ message: String) -> NSError {

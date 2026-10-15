@@ -286,7 +286,7 @@ The offline line uses `.paeoniaSyncPending` with `clock`. The Done button reads 
 Purpose. Say what is happening, and make the wait feel shared.
 
 Variants, one layout.
-- Waiting for the word. The title follows the partner's role. On the result screen: "Waiting for [Name] to continue". On the choose word screen: "[Name] is picking a word". Away or unknown: "Waiting for [Name]", with the later hint and the invite button. The live hint is left out here, because there is no drawing to watch yet.
+- Waiting for the word. The title follows the partner's role. On the result screen: "Waiting for [Name] to continue". On the choose word screen: "[Name] is picking a word". Away or unknown: "Waiting for [Name]", with the later hint and the invite bell. The live hint is left out here, because there is no drawing to watch yet.
 - Partner drawing, live or not. Title "[Name] is drawing for you".
 - The title of the screen is fixed when it opens, so it does not change its words while it fades out into the guess.
 - Reaction to my drawing. The drawer can tap Continue before the guesser reacts. While this screen waits for the partner's next word, the reaction to the round I just drew shows under the title in the same capsule as on the drawer's result. The drawing is not on this screen, so the line names the word: "[Name] loved the UMBRELLA drawing". The word goes in front of "drawing" ("PARAPLY-tegningen" in Norwegian), so verbs, plurals, any gender and custom phrases all read right. When it arrives while the screen is open, it rises in with `cardReveal` and `partnerDrawingReceived()`, and VoiceOver reads the line. Reduce Motion: fade only. Once the partner picks a word, the reaction stays in "Our drawings".
@@ -296,9 +296,9 @@ Layout, centered in the content, top to bottom.
 1. Partner avatar, 96 pt. When the partner is in the room, a soft ring breathes around it (`.paeoniaAccentPrimary` at 0.2 to 0.5 opacity over 2.4 s, repeating). Reduce Motion: a still ring at 0.35.
 2. Title (`PaeoniaTypography.title`) and one line of hint.
 3. Dim slots (optional, see above).
-4. Pinned bottom, only while the partner is not in the game: the invite button.
+4. Toolbar, only while the partner is not in the game: the invite bell at the leading edge of the toolbar.
 
-The invite button is secondary style, "Tell [Name] you want to play". After a send it is disabled and reads "Sent" with `checkmark`, with a caption under it, "You can send another at [time]". It comes back when `last_invite_at` is 15 minutes old, on the view model's next 15 second tick. Do not use `TimelineView(.explicit([until]))` for this. Its first render gets `context.date == until`, so the button would never read "Sent". It hides while the partner has the game open. A failed send uses the top banner and leaves the button enabled.
+The invite is a `bell` at the leading edge of the toolbar (`gameInviteToolbar`), labeled "Tell [Name] you want to play" for VoiceOver. It sits in the toolbar so it never moves the screen. After a send it fills (`bell.fill`), and an info banner says "[Name] will get a notification. You can send another at [time]." A tap on the filled bell shows that banner again. It comes back when `last_invite_at` is 15 minutes old, on the view model's next 15 second tick. Do not use `TimelineView(.explicit([until]))` for this. Its first render gets `context.date == until`, so the bell would never fill. It hides while the partner has the game open. A failed send uses the top banner and leaves the bell empty. Ludo is the one game that shows the invite as a button (`GameInviteButton`), under its board.
 
 The switch to guessing happens at the first stroke (live) or when the drawing arrives (async). The avatar fades out as the canvas rises in with `cardReveal`. Reduce Motion: cross-fade.
 

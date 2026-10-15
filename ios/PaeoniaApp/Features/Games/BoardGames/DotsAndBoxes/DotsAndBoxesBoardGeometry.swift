@@ -143,4 +143,25 @@ nonisolated struct DotsAndBoxesBoardGeometry: Equatable, Sendable {
         }
         return DotsAndBoxesBoard.horizontalLine(row: offsetY < 0 ? row : row + 1, column: column)
     }
+
+    /// The line a stroke from `start` to `end` picks. A stroke shorter than a
+    /// third of a box is a tap and picks like `line(at: end)`. A longer stroke
+    /// picks the line that runs the same way as the stroke and sits nearest its
+    /// middle, so drawing from one dot to the next picks the line between them.
+    func line(from start: CGPoint, to end: CGPoint) -> Int? {
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        let length = (dx * dx + dy * dy).squareRoot()
+        guard cell > 0, length.isFinite, length >= cell / 3 else { return line(at: end) }
+        let count = DotsAndBoxesBoard.boxesPerSide
+        let middleX = (start.x + end.x) / 2 - gridRect.minX
+        let middleY = (start.y + end.y) / 2 - gridRect.minY
+        // Along the stroke the middle falls between two dots. Across it, it snaps to the nearest row of dots.
+        let between = { (offset: CGFloat) in min(max(Int((offset / self.cell).rounded(.down)), 0), count - 1) }
+        let nearest = { (offset: CGFloat) in min(max(Int((offset / self.cell).rounded()), 0), count) }
+        if abs(dx) >= abs(dy) {
+            return DotsAndBoxesBoard.horizontalLine(row: nearest(middleY), column: between(middleX))
+        }
+        return DotsAndBoxesBoard.verticalLine(row: between(middleY), column: nearest(middleX))
+    }
 }

@@ -71,6 +71,16 @@ nonisolated struct LudoToss: Codable, Equatable, Sendable {
         )
     }
 
+    /// Where the die is `time` seconds after it leaves the hand, flying freely
+    /// before it hits anything. It never sinks below the floor.
+    func pose(after time: Float) -> (position: SIMD3<Float>, orientation: simd_quatf) {
+        var position = position + velocity * time
+        position.y = max(position.y - LudoSceneStyle.tossGravity * time * time / 2, LudoSceneStyle.dieSize / 2)
+        let angle = simd_length(spin) * time
+        guard angle > 0 else { return (position, orientation) }
+        return (position, simd_normalize(simd_quatf(angle: angle, axis: simd_normalize(spin)) * orientation))
+    }
+
     /// The same toss with a different spin and a slightly different speed. The
     /// fingers set the direction. The spin is the part nobody can see.
     func varied(using random: inout LudoRandom) -> LudoToss {

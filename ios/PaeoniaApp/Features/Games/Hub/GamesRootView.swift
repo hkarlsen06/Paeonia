@@ -45,6 +45,10 @@ struct GamesRootView: View {
             path = [destination]
             viewModel.destinationToOpen = nil
         }
+        .onChange(of: path.isEmpty, initial: true) { _, isEmpty in
+            // Loads the sounds while the game slides in, so its first sound is on time.
+            if !isEmpty { GameSoundPlayer.shared.prepare() }
+        }
     }
 
     private var isShowingIntro: Binding<Bool> {

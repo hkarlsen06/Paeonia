@@ -23,13 +23,14 @@ extension StoryChainViewModel {
     }
 
     /// The page tells the view model that the line finished writing itself in. A
-    /// line from the partner buzzes once, as it lands.
+    /// line from the partner buzzes once and turns a page, as it lands.
     func arrivalFinished(lineID: UUID) {
         guard arrivingLineID == lineID else { return }
         let isPartnerLine = arrivalPace == .partner
         arrivingLineID = nil
         if isPartnerLine {
             PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.page.play()
         }
         recompute()
     }

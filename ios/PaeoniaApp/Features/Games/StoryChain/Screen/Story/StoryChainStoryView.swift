@@ -56,6 +56,12 @@ struct StoryChainStoryView: View {
             StoryChainActionBar(viewModel: viewModel, reveal: reveal)
         }
         .toolbar { starItem }
+        .gameInviteToolbar(
+            invite: isPartnersTurn ? viewModel.invite : .hidden,
+            partnerName: viewModel.partnerName,
+            send: viewModel.sendInvite,
+            identifier: "storyChain.invite"
+        )
         .sheet(isPresented: $showsDareSheet) {
             StoryChainDareSheet(viewModel: viewModel)
         }
@@ -152,6 +158,11 @@ struct StoryChainStoryView: View {
                 StoryChainStarButton(stars: viewModel.stars, storyID: storyID, showsPrivacyHint: true)
             }
         }
+    }
+
+    /// The invite shows while the partner writes a line or names the story.
+    private var isPartnersTurn: Bool {
+        viewModel.phase == .waitingForLine || viewModel.phase == .waitingForName
     }
 
     // MARK: Anchoring
