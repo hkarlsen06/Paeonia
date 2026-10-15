@@ -40,7 +40,7 @@ struct PairedHomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     /// iPad landscape: the map with the other cards in two columns below it on the
-    /// left, the drawing and milestone tiles stacked on the right (`HomeWideColumnsLayout`).
+    /// left, the drawing and milestone tiles stacked on the right (`HomeWideLayout`).
     @State private var isWideLayout = false
     /// The scroll view's visible height and the cards' height, for `spareSpaceArt`.
     @State private var viewportHeight: CGFloat = 0
@@ -121,10 +121,17 @@ struct PairedHomeView: View {
                 // One layout for phone and wide iPad keeps the cards' identity, so turning
                 // the iPad doesn't reset them or close the milestone sheet. The spacing
                 // matches the gap inside the milestone/drawing tile row so the cards read
-                // as one grid.
+                // as one grid. On the phone, today's questions lead and the tiles sit
+                // above the map, so a milestone day's celebration plays on screen.
                 cardsLayout {
-                    mainColumn
+                    dailyPromptCard
+                    unreadChatsCard
+                    partnerGameCard
                     milestoneAndWidget
+                        .layoutValue(key: HomeWideRole.self, value: .tiles)
+                    mapCard
+                        .layoutValue(key: HomeWideRole.self, value: .map)
+                    lookBackCard
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -204,41 +211,40 @@ struct PairedHomeView: View {
         }
     }
 
-    private var mainColumn: some View {
-        let layout = isWideLayout
-            ? AnyLayout(HomeWideMainCardsLayout(spacing: PaeoniaSpacing.space16))
-            : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
-        // Today's questions lead on the phone. On a wide iPad the map still spans the top.
-        return layout {
-            dailyPromptCard
-            if !unreadChats.isEmpty {
-                HomeUnreadChatsCard(
-                    chats: unreadChats,
-                    partnerName: partnerName,
-                    partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                    onOpenChat: onOpenChat
-                )
-                .transition(.opacity)
-            }
-            // Only the game the partner opened last. Whose turn it is belongs on the Games tab.
-            if let games, let game = games.partnerGame,
-               let card = game.card(games.cardContext(for: game.kind, isOnHub: false), open: onOpenGame) {
-                card
-                    .id(game.kind)
-                    .transition(.opacity)
-            }
-            CoupleMapCard(
-                currentName: currentName,
-                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+    @ViewBuilder
+    private var unreadChatsCard: some View {
+        if !unreadChats.isEmpty {
+            HomeUnreadChatsCard(
+                chats: unreadChats,
                 partnerName: partnerName,
                 partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                state: locationMapState,
-                onPromptCurrentLocation: onPromptCurrentLocation,
-                hearts: hearts
+                onOpenChat: onOpenChat
             )
-            .layoutValue(key: HomeWideSpansFullWidth.self, value: true)
-            lookBackCard
+            .transition(.opacity)
         }
+    }
+
+    /// Only the game the partner opened last. Whose turn it is belongs on the Games tab.
+    @ViewBuilder
+    private var partnerGameCard: some View {
+        if let games, let game = games.partnerGame,
+           let card = game.card(games.cardContext(for: game.kind, isOnHub: false), open: onOpenGame) {
+            card
+                .id(game.kind)
+                .transition(.opacity)
+        }
+    }
+
+    private var mapCard: some View {
+        CoupleMapCard(
+            currentName: currentName,
+            currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+            partnerName: partnerName,
+            partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+            state: locationMapState,
+            onPromptCurrentLocation: onPromptCurrentLocation,
+            hearts: hearts
+        )
     }
 
     /// An old question, drawing or memory, below the map.
@@ -289,7 +295,7 @@ struct PairedHomeView: View {
 
     private var cardsLayout: AnyLayout {
         isWideLayout
-            ? AnyLayout(HomeWideColumnsLayout(spacing: PaeoniaSpacing.space16))
+            ? AnyLayout(HomeWideLayout(spacing: PaeoniaSpacing.space16))
             : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
     }
 

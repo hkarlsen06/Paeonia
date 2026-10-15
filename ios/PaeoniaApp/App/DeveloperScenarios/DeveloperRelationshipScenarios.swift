@@ -18,9 +18,14 @@
       .background(.paeoniaBackgroundPrimary)
     }
 
+    /// In a scroll view, because the tile counts up and celebrates once it scrolls into view.
     private var countdown: some View {
-      MilestoneCountdownCard(startedOn: relationshipStartedOn)
-        .frame(maxWidth: 430)
+      ScrollView {
+        MilestoneCountdownCard(startedOn: relationshipStartedOn)
+          .frame(maxWidth: 430)
+          .frame(maxWidth: .infinity)
+      }
+      .defaultScrollAnchor(.center)
     }
 
     private var relationshipStartedOn: String? {

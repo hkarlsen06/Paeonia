@@ -1,47 +1,24 @@
 import SwiftUI
 
+/// Where a card goes in `HomeWideLayout`. The phone stack ignores it.
+nonisolated enum HomeWideRole: LayoutValueKey {
+    /// One of the main cards, in the two columns under the map.
+    case card
+    /// The map, across the top of the main cards.
+    case map
+    /// The milestone and drawing tiles, in their own column on the right.
+    case tiles
+
+    static let defaultValue = HomeWideRole.card
+}
+
 /// The Home tab on a wide iPad. The main cards take the left two thirds and the tile
 /// column the right third, so the 2:1 map and the square drawing tile beside it are
-/// the same height. Each column takes its own height.
-struct HomeWideColumnsLayout: Layout {
-    var spacing: CGFloat
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.replacingUnspecifiedDimensions().width
-        let height = zip(subviews, columnWidths(width))
-            .map { $0.sizeThatFits(ProposedViewSize(width: $1, height: nil)).height }
-            .max() ?? 0
-        return CGSize(width: width, height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        for (subview, width) in zip(subviews, columnWidths(bounds.width)) {
-            subview.place(
-                at: CGPoint(x: x, y: bounds.minY),
-                proposal: ProposedViewSize(width: width, height: nil)
-            )
-            x += width + spacing
-        }
-    }
-
-    private func columnWidths(_ width: CGFloat) -> [CGFloat] {
-        let tileWidth = (width - spacing) / 3
-        return [width - spacing - tileWidth, tileWidth]
-    }
-}
-
-/// Marks the card that spans the top of `HomeWideMainCardsLayout`.
-struct HomeWideSpansFullWidth: LayoutValueKey {
-    static let defaultValue = false
-}
-
-/// The main cards in the wide Home layout. The card marked with
-/// `HomeWideSpansFullWidth`, the map, spans the full width at the top. The rest go
-/// in two columns below it in order, each card in the column that ends higher, so
-/// the cards stay about phone width and today's questions sit beside the game card
-/// instead of below it.
-struct HomeWideMainCardsLayout: Layout {
+/// the same height. The map spans the main cards' width at the top. The other cards go
+/// in two columns below it in order, each card in the column that ends higher, so the
+/// cards stay about phone width and today's questions sit beside the game card instead
+/// of below it.
+struct HomeWideLayout: Layout {
     var spacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
@@ -60,23 +37,30 @@ struct HomeWideMainCardsLayout: Layout {
     }
 
     private func frames(width: CGFloat, subviews: Subviews) -> [CGRect] {
-        let topHeight = subviews.first { $0[HomeWideSpansFullWidth.self] }
-            .map { $0.sizeThatFits(ProposedViewSize(width: width, height: nil)).height + spacing } ?? 0
-        let columnWidth = (width - spacing) / 2
-        var columnTops = [topHeight, topHeight]
+        let tileWidth = (width - spacing) / 3
+        let mainWidth = width - spacing - tileWidth
+        let columnWidth = (mainWidth - spacing) / 2
+        let mapBottom = subviews.first { $0[HomeWideRole.self] == .map }
+            .map { $0.sizeThatFits(ProposedViewSize(width: mainWidth, height: nil)).height + spacing } ?? 0
+        var columnTops = [mapBottom, mapBottom]
         return subviews.map { subview in
-            if subview[HomeWideSpansFullWidth.self] {
-                return CGRect(x: 0, y: 0, width: width, height: topHeight - spacing)
+            switch subview[HomeWideRole.self] {
+            case .map:
+                return CGRect(x: 0, y: 0, width: mainWidth, height: mapBottom - spacing)
+            case .tiles:
+                let height = subview.sizeThatFits(ProposedViewSize(width: tileWidth, height: nil)).height
+                return CGRect(x: mainWidth + spacing, y: 0, width: tileWidth, height: height)
+            case .card:
+                let column = columnTops[1] < columnTops[0] ? 1 : 0
+                let height = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)).height
+                defer { columnTops[column] += height + spacing }
+                return CGRect(
+                    x: CGFloat(column) * (columnWidth + spacing),
+                    y: columnTops[column],
+                    width: columnWidth,
+                    height: height
+                )
             }
-            let column = columnTops[1] < columnTops[0] ? 1 : 0
-            let height = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)).height
-            defer { columnTops[column] += height + spacing }
-            return CGRect(
-                x: CGFloat(column) * (columnWidth + spacing),
-                y: columnTops[column],
-                width: columnWidth,
-                height: height
-            )
         }
     }
 }

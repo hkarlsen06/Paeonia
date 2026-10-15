@@ -14,8 +14,8 @@ import SwiftUI
 ///
 /// Tapping the tile opens `RelationshipTimelineView` (days together, the milestones
 /// ahead, and the date editor). On the event's day the page says "Today" and the heart
-/// burst plays on its own, once, with a haptic and a sound. Without a start date the
-/// calendar is blank and the tile opens the date editor.
+/// burst plays on its own, once, with a haptic and a sound, when the tile scrolls into
+/// view. Without a start date the calendar is blank and the tile opens the date editor.
 struct MilestoneCountdownCard: View {
     /// The couple's start date as an `yyyy-MM-dd` string (`couples.started_on`).
     let startedOn: String?
@@ -35,6 +35,7 @@ struct MilestoneCountdownCard: View {
     /// The milestone date last celebrated automatically, so re-renders on the
     /// milestone day don't replay the burst.
     @State private var celebratedMilestoneDate: Date?
+    @State private var isOnScreen = false
     /// The instant the countdown is measured from. Refreshed when the calendar day
     /// changes so the card moves to "Today" without needing a reopen.
     @State private var now = Date()
@@ -108,12 +109,18 @@ struct MilestoneCountdownCard: View {
         .buttonStyle(.paeoniaPressableCard)
         .accessibilityLabel(accessibilityLabel(for: milestone, title: title))
         .accessibilityHint(Text(.homeMilestoneTimelineAccessibilityHint))
-        .onAppear {
+        // Home builds every card up front, so `onAppear` fires while the tile is still
+        // below the fold. Wait until it is actually on screen.
+        .onScrollVisibilityChange(threshold: 0.8) { isVisible in
+            isOnScreen = isVisible
+            guard isVisible else { return }
             countUpOnce()
             celebrateIfMilestoneDay(milestone)
         }
         .onChange(of: milestone) { _, milestone in
-            celebrateIfMilestoneDay(milestone)
+            if isOnScreen {
+                celebrateIfMilestoneDay(milestone)
+            }
         }
     }
 

@@ -4900,13 +4900,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open questions"
+            "value" : "Open your questions"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Åpne spørsmål"
+            "value" : "Åpne spørsmålene dine"
           }
         }
       }
