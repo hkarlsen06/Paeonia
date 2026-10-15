@@ -396,31 +396,6 @@ struct LudoSceneMathTests {
         }
     }
 
-    @Test func theTumbleEndsExactlyOnTheRolledFace() {
-        let start = LudoDieFaces.orientation(showing: 4)
-        for value in 1...6 {
-            let final = LudoDieFaces.orientation(showing: value)
-            let end = SIMD3<Float>(1, 0.6, 2)
-            let begin = SIMD3<Float>(-3, 0.6, -2)
-
-            #expect(LudoMotion.tumblePosition(from: begin, to: end, progress: 1) == end)
-            #expect(LudoMotion.tumbleOrientation(from: start, to: final, progress: 1) == final)
-            let before = LudoMotion.tumbleOrientation(from: start, to: final, progress: 0)
-            #expect(abs(simd_dot(before, start)) > 0.9999)
-        }
-    }
-
-    @Test func theDieTouchesDownAtTheEndOfEachBounce() {
-        let landings = LudoMotion.tumbleLandings()
-
-        #expect(landings.count == LudoSceneStyle.bounceShares.count)
-        #expect(isClose(landings.last ?? 0, 1))
-        for landing in landings {
-            #expect(LudoMotion.tumbleHeight(progress: landing - 0.0001) < 0.01)
-        }
-        #expect(LudoMotion.tumbleHeight(progress: landings[0] / 2) > 0.5)
-    }
-
     // MARK: Motion
 
     @Test func aPawnHopsThroughEveryPointAndStopsOnTheLast() {

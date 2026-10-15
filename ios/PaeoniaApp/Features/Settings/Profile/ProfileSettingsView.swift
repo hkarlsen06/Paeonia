@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The screen behind the Us tab's profile row: the user's name and photo, and
-/// the account actions below them.
+/// The screen behind the Us tab's profile row: the user's name and photo, their
+/// birthday, and the account actions below them.
 ///
 /// While there are unsaved edits the back button steps aside for Cancel, so a
 /// stray swipe can never throw away a new name or photo. Save sits at the bottom
@@ -13,6 +13,8 @@ struct ProfileSettingsView: View {
     let customProfilePhotoAssetID: UUID?
     let providerProfilePhotoAssetID: UUID?
     let onSave: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
+    /// Saves on its own, not with the Save bar, like the birthday in the milestones.
+    var birthdayRow: BirthdaySettingsRow?
     let accountSection: SettingsAccountSection
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -23,6 +25,13 @@ struct ProfileSettingsView: View {
                 ProfileHeaderEditorView(editor: editor)
                     .padding(.vertical, PaeoniaSpacing.space8)
                     .listRowBackground(Color.clear)
+            }
+
+            if let birthdayRow {
+                Section {
+                    birthdayRow
+                }
+                .listRowBackground(Color.paeoniaSurfacePrimary)
             }
 
             accountSection

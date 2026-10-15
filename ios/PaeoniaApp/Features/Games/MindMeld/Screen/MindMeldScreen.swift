@@ -53,7 +53,7 @@ struct MindMeldScreen: View {
         .accessibilityIdentifier("mindMeld.screen")
     }
 
-    private var tutorial: GameTutorial {
+    private var tutorial: GameTutorial? {
         GameTutorial(kind: .mindMeld, partnerName: viewModel.partnerName)
     }
 
@@ -88,7 +88,7 @@ struct MindMeldScreen: View {
         case .write:
             // The cards open on their own the first time, so the keyboard waits
             // for them to close instead of showing over them.
-            MindMeldWriteView(viewModel: viewModel, canShowKeyboard: !showsTutorial && tutorial.hasBeenShown)
+            MindMeldWriteView(viewModel: viewModel, canShowKeyboard: !showsTutorial && tutorial?.hasBeenShown != false)
         case .waiting:
             MindMeldWaitingView(viewModel: viewModel)
         case .reveal, .over:

@@ -15,7 +15,8 @@ import UIKit
 ///
 /// The view fills the space it is given and fits the board inside the middle
 /// `boardFitHeight` of it. A one-finger drag orbits the board, a pinch zooms and a
-/// double tap goes back to the default view.
+/// double tap goes back to the default view. A drag that starts on the ready die
+/// picks it up instead, and letting go throws it.
 struct LudoBoardView: View {
     let board: LudoBoard
     /// The newest move. The board animates it when `number` changes.
@@ -35,7 +36,8 @@ struct LudoBoardView: View {
     let bloomSeed: String
     /// The partner's name for the VoiceOver announcements.
     let partnerName: String
-    let onRoll: () -> Void
+    /// Rolls the die. Carries the throw when the person threw the die by hand.
+    let onRoll: (LudoToss?) -> Void
     let onChoose: (LudoChoice) -> Void
 
     /// How long the die tumbles. The screen keeps the die rolling for this long.
@@ -68,14 +70,8 @@ private struct LudoBoardScene: View {
             let rig = currentRig(aspect: aspect, overshoot: overshoot)
             let fit = [aspect, overshoot, Double(fitHeight)]
             ZStack {
-                LudoSceneView(
-                    stage: stage,
-                    input: stageInput,
-                    onUpdate: handle,
-                    onTarget: handleTap,
-                    onSettled: { settledRig = $0 }
-                )
-                .accessibilityHidden(true)
+                sceneView
+                    .accessibilityHidden(true)
                 bloom(size: size, rig: rig)
                 LudoAccessibilityLayer(
                     board: inputs.board,
@@ -84,7 +80,7 @@ private struct LudoBoardScene: View {
                     movableChoices: inputs.movableChoices,
                     rig: rig,
                     size: size,
-                    onRoll: inputs.onRoll,
+                    onRoll: { inputs.onRoll(stage.tapToss()) },
                     onChoose: inputs.onChoose
                 )
             }
@@ -97,6 +93,17 @@ private struct LudoBoardScene: View {
         .onChange(of: inputs.showsOutcome) {
             if !inputs.showsOutcome { bloomStart = nil }
         }
+    }
+
+    private var sceneView: some View {
+        LudoSceneView(
+            stage: stage,
+            input: stageInput,
+            onUpdate: handle,
+            onTarget: handleTap,
+            onToss: handleToss,
+            onSettled: { settledRig = $0 }
+        )
     }
 
     /// The camera the person has left, or the default one while the view's shape is new.
@@ -157,7 +164,7 @@ private struct LudoBoardScene: View {
     private func handleTap(_ target: LudoStage.Target) {
         switch target {
         case .die:
-            if inputs.die == .ready { inputs.onRoll() }
+            if inputs.die == .ready { inputs.onRoll(stage.tapToss()) }
         case let .pawn(index):
             let owner: BoardPlayer = index < LudoBoard.pawnsPerPlayer ? .one : .two
             guard owner == inputs.me else { return }
@@ -167,6 +174,15 @@ private struct LudoBoardScene: View {
             } else {
                 stage.shake(pawn: index)
             }
+        }
+    }
+
+    /// The person let go of the die they picked up.
+    private func handleToss(_ toss: LudoToss) {
+        if inputs.die == .ready {
+            inputs.onRoll(toss)
+        } else {
+            stage.dropHeldDie()
         }
     }
 
@@ -200,6 +216,7 @@ private struct LudoSceneView: UIViewRepresentable {
     let input: LudoStage.Input
     let onUpdate: (LudoStage.Update) -> Void
     let onTarget: (LudoStage.Target) -> Void
+    let onToss: (LudoToss) -> Void
     let onSettled: (LudoCameraRig) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -211,6 +228,11 @@ private struct LudoSceneView: UIViewRepresentable {
         view.backgroundColor = .clear
         view.isOpaque = false
         view.environment.background = .color(.clear)
+        // The key light draws the shadows. ARView would also put a soft blob under every
+        // model, and the camera effects meant to match a real camera's picture only blur the board.
+        view.renderOptions.formUnion([
+            .disableGroundingShadows, .disableMotionBlur, .disableDepthOfField, .disableCameraGrain
+        ])
         context.coordinator.parent = self
         context.coordinator.attach(to: view)
         stage.onCameraSettled = onSettled
@@ -231,12 +253,15 @@ private struct LudoSceneView: UIViewRepresentable {
 
     /// Turns touches into camera moves and taps on pieces. One finger orbits, two
     /// fingers pinch, a double tap resets, and a tap that does not move picks a piece.
+    /// One finger that starts on the ready die carries the die and throws it.
     @MainActor
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var parent: LudoSceneView?
         private let stage: LudoStage
         private weak var view: ARView?
         private weak var doubleTap: UITapGestureRecognizer?
+        /// True while the one-finger drag carries the die.
+        private var carriesDie = false
 
         init(stage: LudoStage) {
             self.stage = stage
@@ -263,19 +288,52 @@ private struct LudoSceneView: UIViewRepresentable {
         @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
             switch recognizer.state {
             case .began:
-                stage.beginOrbit()
-                recognizer.setTranslation(.zero, in: recognizer.view)
+                beginPan(recognizer)
+            case .changed where carriesDie:
+                stage.moveHeldDie(to: unitLocation(of: recognizer))
             case .changed:
                 let move = recognizer.translation(in: recognizer.view)
                 recognizer.setTranslation(.zero, in: recognizer.view)
                 stage.orbit(byX: Double(move.x), y: Double(move.y))
+            case .ended where carriesDie:
+                carriesDie = false
+                throwDie(recognizer)
             case .ended:
                 let speed = recognizer.velocity(in: recognizer.view)
                 stage.endOrbit(velocityX: Double(speed.x), velocityY: Double(speed.y))
+            case .cancelled where carriesDie, .failed where carriesDie:
+                carriesDie = false
+                stage.dropHeldDie()
             case .cancelled, .failed:
                 stage.endOrbit(velocityX: 0, velocityY: 0)
             default:
                 break
+            }
+        }
+
+        /// A drag that starts on the ready die picks it up. Any other drag orbits.
+        private func beginPan(_ recognizer: UIPanGestureRecognizer) {
+            let moved = recognizer.translation(in: view)
+            let location = recognizer.location(in: view)
+            let start = CGPoint(x: location.x - moved.x, y: location.y - moved.y)
+            if let view, let entity = view.entity(at: start), stage.canPickUpDie(entity) {
+                carriesDie = true
+                stage.pickUpDie(at: unitLocation(of: recognizer))
+            } else {
+                stage.beginOrbit()
+                recognizer.setTranslation(.zero, in: recognizer.view)
+            }
+        }
+
+        private func throwDie(_ recognizer: UIPanGestureRecognizer) {
+            guard let view, view.bounds.width > 0, view.bounds.height > 0 else {
+                stage.dropHeldDie()
+                return
+            }
+            let speed = recognizer.velocity(in: view)
+            let velocity = CGPoint(x: speed.x / view.bounds.width, y: speed.y / view.bounds.height)
+            if let toss = stage.releaseDie(at: unitLocation(of: recognizer), velocity: velocity) {
+                parent?.onToss(toss)
             }
         }
 

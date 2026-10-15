@@ -13,6 +13,10 @@ nonisolated enum LudoSceneStyle {
     static let tileHeight: Float = 0.18
     /// Rounded like a pillow. RealityKit caps the radius at half the height.
     static let tileCornerRadius: Float = 0.18
+    /// Tiles are set down by hand: each turns up to this many degrees and sinks up to
+    /// this much below the others.
+    static let tileTwistDegrees: Float = 1.2
+    static let tileHeightJitter: Float = 0.012
     /// The slab ends just past the 15 by 15 cells: a thin rounded lip, no border.
     static let slabMargin: Float = 0.25
     static let slabThickness: Float = 0.7
@@ -66,6 +70,18 @@ nonisolated enum LudoSceneStyle {
     /// The mark takes this share of the disc width.
     static let markScale: CGFloat = 0.86
 
+    // MARK: Contact shade
+
+    /// The soft dark ring on the slab around each tile, yard and the dome. Strength is
+    /// the darkness right at a piece, spread how far the dark reaches past its edge, and
+    /// blur how soft it fades, both in cells.
+    static let contactShadeStrength: CGFloat = 0.45
+    static let contactShadeSpread: Float = 0.06
+    static let contactShadeBlur: Float = 0.14
+    static let contactShadeTextureSide = 512
+    /// The shade lies this far above the slab, to avoid flicker.
+    static let contactShadeLift: Float = 0.003
+
     // MARK: Peony on safe squares
 
     /// Asset name of the peony picture laid flat on the six safe squares that are not start squares.
@@ -118,8 +134,9 @@ nonisolated enum LudoSceneStyle {
     // MARK: Material
 
     /// Roughness and clearcoat by part. The pieces you touch are glossier than the board.
-    static let slabRoughness: Float = 0.6
-    static let slabClearcoat: Float = 0.1
+    /// The slab is matte clay with no glaze.
+    static let slabRoughness: Float = 0.75
+    static let slabClearcoat: Float = 0
     /// Tiles, bases and home columns.
     static let boardRoughness: Float = 0.45
     static let boardClearcoat: Float = 0.2
@@ -133,8 +150,10 @@ nonisolated enum LudoSceneStyle {
     static let decalRoughness: Float = 0.6
     static let clearcoatRoughness: Float = 0.12
     static let specular: Float = 0.5
-    /// Share of a material's own color it gives off itself. It lifts the shadows from pure black.
-    static let selfFill: CGFloat = 0.06
+    /// Share of a material's own color it gives off itself. It lifts the shadows from
+    /// pure black. Kept low, because the studio picture lights the shaded sides and a
+    /// strong self fill makes every surface look flat.
+    static let selfFill: CGFloat = 0.02
     /// How strongly a movable pawn or the winner's home glows, and how much white the
     /// glow mixes in. A glow of the pawn's own color barely shows on a lit pawn.
     static let glowIntensity: Float = 0.8
@@ -152,18 +171,23 @@ nonisolated enum LudoSceneStyle {
     static let rimLightHex: UInt32 = 0xF27EB2
     static let rimLightIntensity: Float = 6_000
     static let rimLightPosition = SIMD3<Float>(12, 2.5, -6)
-    static let shadowDistance: Float = 30
+    /// The key light's shadow is a fixed box around the board, so it stays the same
+    /// however the camera turns or zooms. An automatic shadow only reaches a set
+    /// distance from the camera, and the camera stands 35 to 60 cells away.
+    /// Near and far are measured from the light along its beam. The light stands about
+    /// 16 cells from the middle, and the board with a jumping pawn spans about 8 to 21.
+    static let shadowNear: Float = 1
+    static let shadowFar: Float = 32
+    /// Width of the shadow box. RealityKit does not say if this is the whole width or
+    /// half, so it is 24: wide enough for the 22 cell diagonal of the slab either way.
+    /// If the shadows look blocky, try 12, and check that the corner pawns keep theirs.
+    static let shadowWidth: Float = 24
     static let shadowDepthBias: Float = 1
-    /// The background is an equirectangular picture, so it also lights the scene softly.
-    /// The sky carries the two worlds of the hub series: pink on the left of the
-    /// horizon, lavender on the right, and a soft zenith above.
-    static let skyLeftHex: UInt32 = 0xE88DBA
-    static let skyRightHex: UInt32 = 0xA992E6
-    static let skyZenithHex: UInt32 = 0xF6DCEA
+    /// The studio picture that lights the scene (see `LudoBackdrop`). Its brightness
+    /// matches the old painted sky. Each step up doubles it.
+    static let environmentExposure: Float = 0
     /// Turn this on if pink lands on the right side of the pieces and lavender on the left.
     static let mirrorsSky = false
-    /// Matches `Color.paeoniaBackgroundSecondary`, so the scene blends into the screen.
-    static let groundHex: UInt32 = 0x2A0B1E
 
     // MARK: Camera
 
@@ -171,6 +195,12 @@ nonisolated enum LudoSceneStyle {
     static let cameraPitchDegrees: Double = 64
     /// Vertical field of view.
     static let cameraFieldOfViewDegrees: Double = 30
+    /// The camera draws from this near distance to this far one. The closest zoom keeps
+    /// it about 16 cells from the board and the farthest corner is under 70 away. A
+    /// tight range keeps the depth test sharp, so the peonies and the marks that lie
+    /// a hair above their surfaces never flicker through them.
+    static let cameraNear: Float = 1
+    static let cameraFar: Float = 150
     /// Width divided by height of the board view. A tilted board is wider than tall,
     /// and this is the shape where the width and the height of the view both fit snugly.
     static let viewAspect: Double = 1.4
@@ -203,24 +233,54 @@ nonisolated enum LudoSceneStyle {
     /// Pawns and the die rise above the slab by about this much. The camera keeps them in view.
     static let cameraExtraHeight: Double = 1.6
 
+    // MARK: Die throw
+
+    /// A drag that starts on the ready die picks it up this high above where it rests.
+    static let dieHoldLift: Float = 1.1
+    /// A die that is not in the hand, such as my partner's or one thrown with a tap,
+    /// rises into the throw over this time.
+    static let tossPickUpTime: Double = 0.15
+    /// Speed along the floor in cells a second. A slower flick throws at the smallest speed.
+    static let tossMinimumSpeed: Float = 3
+    static let tossMaximumSpeed: Float = 9
+    /// How fast the die rises as it leaves the hand.
+    static let tossRise: Float = 4
+    /// Forward roll for each cell a second of speed, in radians a second.
+    static let tossRollPerSpeed: Float = 1.5
+    /// How much the spin of each try varies, in radians a second, and how many tries
+    /// the simulation makes to land on the rolled number.
+    static let tossSpinJitter: Float = 8
+    static let tossAttempts = 60
+    /// A try that is still moving after this many seconds does not count. The die then
+    /// eases flat over `tossSetDownTime`. Together they are the longest a throw lasts.
+    static let tossSettleLimit: Double = 1.2
+    static let tossSetDownTime: Double = 0.1
+    /// Stronger than real gravity at this scale, so a throw is over in about a second.
+    static let tossGravity: Float = 60
+    /// How quickly the die slows down, per second, on the floor and in the air.
+    static let tossFloorDrag: Float = 3
+    static let tossAirDrag: Float = 0.2
+    static let tossFloorSpinDrag: Float = 10
+    static let tossAirSpinDrag: Float = 0.6
+    /// A hit faster than `tossBounceSpeed` bounces back with `tossRestitution` of its speed.
+    static let tossBounceSpeed: Float = 1
+    static let tossRestitution: Float = 0.3
+    static let tossFriction: Float = 0.5
+    /// A hit faster than this taps the phone.
+    static let tossKnockSpeed: Float = 2
+    /// Extra room around a waiting pawn, because the die's sides are flat and the
+    /// simulation only feels its rounded corners.
+    static let tossPawnClearance: Float = 0.15
+    /// The longest throw, with the rise into it. The screen waits this long before the person picks a pawn.
+    static let tumbleDuration: Double = tossPickUpTime + tossSettleLimit + tossSetDownTime
+
     // MARK: Motion
 
     /// One hop from square to square.
     static let hopDuration: Double = 0.16
     static let hopArc: Float = 0.42
-    /// Time the die tumbles. The screen waits the same time before the partner's pawn moves.
-    static let tumbleDuration: Double = 0.8
     /// Pause between the die landing and the partner's pawn moving.
     static let partnerPause: Double = 0.25
-    /// Full turns the die spins while it tumbles. Keep it a whole number, so the tumble starts without a jump.
-    static let tumbleTurns: Double = 2
-    static let tumbleAxis = SIMD3<Float>(1, 0.35, 0.6)
-    /// Bounces of the tumble as a share of its time, and how high each one goes.
-    static let bounceShares: [Double] = [0.42, 0.33, 0.25]
-    static let bouncePeaks: [Float] = [1.7, 0.7, 0.2]
-    /// The die drifts sideways while it tumbles.
-    static let tumbleDriftX: Float = 1.1
-    static let tumbleDriftZ: Float = 0.7
     /// A die changing yards hops over this time.
     static let trayHopDuration: Double = 0.42
     static let trayHopArc: Float = 1.2

@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// Both players. My avatar is on the leading side, my partner's on the trailing
-/// side. Whoever's turn it is, or whoever won, gets a glow, a slightly larger
-/// avatar and a bold name in their piece color. A green dot on my partner's
-/// avatar shows they have the game open. At accessibility text sizes the row stacks.
+/// side. Whoever's turn it is, or whoever won, gets glass in their piece color, a
+/// slightly larger avatar and a bold name. A green dot on my partner's avatar shows
+/// they have the game open. At accessibility text sizes the row stacks.
 struct BoardGamePlayersRow: View {
     let me: BoardGamePlayerInfo
     let partner: BoardGamePlayerInfo
@@ -16,8 +16,6 @@ struct BoardGamePlayersRow: View {
 
     private static let avatarSize: CGFloat = 44
     private static let columnWidth: CGFloat = 88
-    /// Wide enough to hold the avatar's glow and the name.
-    private static let backdropSize: CGFloat = 124
 
     var body: some View {
         Group {
@@ -54,42 +52,26 @@ struct BoardGamePlayersRow: View {
     private func column(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
         VStack(spacing: PaeoniaSpacing.space4) {
             avatar(for: player, isMe: isMe)
-            styledName(for: player, isMe: isMe)
+            styledName(isMe: isMe)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
+        .padding(PaeoniaSpacing.space8)
+        .backdrop(color: player.style.color, isActive: isActive(isMe: isMe))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spokenName(isMe: isMe))
         .accessibilityValue(spokenTurn(isMe: isMe))
         .frame(width: Self.columnWidth)
-        .background { backdrop }
-    }
-
-    /// A disc in the screen color behind the avatar, its glow and the name. It
-    /// can't be seen on the plain background, and it keeps them readable where a
-    /// board runs under the row, as Ludo's does. Its rim fades out so it has no hard edge.
-    private var backdrop: some View {
-        Circle()
-            .fill(RadialGradient(
-                stops: [
-                    .init(color: .paeoniaBackgroundSecondary, location: 0.78),
-                    .init(color: .paeoniaBackgroundSecondary.opacity(0), location: 1)
-                ],
-                center: .center,
-                startRadius: 0,
-                endRadius: Self.backdropSize / 2
-            ))
-            .frame(width: Self.backdropSize, height: Self.backdropSize)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
     }
 
     /// Avatar beside name, for accessibility text sizes.
     private func row(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             avatar(for: player, isMe: isMe)
-            styledName(for: player, isMe: isMe)
+            styledName(isMe: isMe)
         }
+        .padding(PaeoniaSpacing.space8)
+        .backdrop(color: player.style.color, isActive: isActive(isMe: isMe))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spokenName(isMe: isMe))
         .accessibilityValue(spokenTurn(isMe: isMe))
@@ -100,30 +82,26 @@ struct BoardGamePlayersRow: View {
     private func avatar(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
         BoardGamePlayerAvatar(
             player: player,
-            glow: glowState(isMe: isMe),
+            isActive: isActive(isMe: isMe),
             isHere: !isMe && partnerIsHere,
             size: Self.avatarSize
         )
     }
 
-    private func glowState(isMe: Bool) -> BoardGameGlowState {
-        turn.glowState(forMe: isMe)
-    }
-
     private func isActive(isMe: Bool) -> Bool {
-        glowState(isMe: isMe) != .resting
+        turn.isActive(forMe: isMe)
     }
 
     private func name(isMe: Bool) -> Text {
         isMe ? Text(.boardGamesPlayerYou) : Text(verbatim: partnerName)
     }
 
-    /// The name, bold and in the piece color while it is this player's turn or they won.
-    private func styledName(for player: BoardGamePlayerInfo, isMe: Bool) -> some View {
+    /// The name, bold and white while it is this player's turn or they won.
+    private func styledName(isMe: Bool) -> some View {
         let active = isActive(isMe: isMe)
         return name(isMe: isMe)
             .font(PaeoniaTypography.caption.weight(active ? .bold : .regular))
-            .foregroundStyle(active ? player.style.color : .paeoniaTextSecondary)
+            .foregroundStyle(active ? Color.paeoniaTextPrimary : .paeoniaTextSecondary)
     }
 
     /// "[Name] is here" while my partner has the game open, otherwise the name.
@@ -132,7 +110,7 @@ struct BoardGamePlayersRow: View {
     }
 
     /// "Your turn", "[Name]'s turn", "You won" or "[Name] won" for the active
-    /// player, so VoiceOver hears what the glow shows. Nothing for the other.
+    /// player, so VoiceOver hears what the colored glass shows. Nothing for the other.
     private func spokenTurn(isMe: Bool) -> Text {
         guard isActive(isMe: isMe), let spoken = turn.spoken(partnerName: partnerName) else {
             return Text(verbatim: "")
@@ -141,12 +119,28 @@ struct BoardGamePlayersRow: View {
     }
 }
 
-/// An avatar with their mark in a small badge at the bottom trailing edge. It
-/// glows in the player's piece color on their turn and grows a little. A green
-/// dot at the top trailing edge shows the player has the game open.
+private extension View {
+    /// Glass hugging the avatar and name. It keeps them readable where a board
+    /// runs under the row, as Ludo's does. Plum like a hub card's badge, and the
+    /// player's piece color for the active player, mixed with plum so white text
+    /// stays readable.
+    func backdrop(color: Color, isActive: Bool) -> some View {
+        let tint = isActive
+            ? color.mix(with: .paeoniaBackgroundSecondary, by: 0.45)
+            : .paeoniaBackgroundSecondary
+        return glassEffect(
+            .regular.tint(tint.opacity(0.75)),
+            in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
+        )
+    }
+}
+
+/// An avatar with their mark in a small badge at the bottom trailing edge. On
+/// the player's turn it grows a little. A green dot at the top trailing edge
+/// shows the player has the game open.
 struct BoardGamePlayerAvatar: View {
     let player: BoardGamePlayerInfo
-    let glow: BoardGameGlowState
+    let isActive: Bool
     var isHere = false
     var size: CGFloat = 44
 
@@ -155,7 +149,6 @@ struct BoardGamePlayerAvatar: View {
 
     var body: some View {
         BoardGameAvatar(player: player, size: size)
-            .background { BoardGameGlow(color: player.style.color, state: glow, avatarSize: size) }
             .overlay(alignment: .bottomTrailing) {
                 badge.offset(x: 4, y: 4)
             }
@@ -169,7 +162,7 @@ struct BoardGamePlayerAvatar: View {
                         .transition(.scale.combined(with: .opacity))
                 }
             }
-            .scaleEffect(glow == .resting ? 1 : Self.activeScale)
+            .scaleEffect(isActive ? Self.activeScale : 1)
     }
 
     private var badge: some View {
@@ -183,62 +176,6 @@ struct BoardGamePlayerAvatar: View {
             .overlay {
                 Circle().strokeBorder(.paeoniaBackgroundSecondary, lineWidth: PaeoniaRadius.strokeEmphasis)
             }
-    }
-}
-
-/// A soft glow behind the avatar in the player's piece color. It breathes on the
-/// player's turn, stays lit for the winner, and is gone otherwise. It is a radial
-/// gradient, not a blur, because a blur is cut off at the edges of its row.
-private struct BoardGameGlow: View {
-    let color: Color
-    let state: BoardGameGlowState
-    let avatarSize: CGFloat
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// How far the glow reaches past the edge of the avatar.
-    private static let reach: CGFloat = 18
-
-    var body: some View {
-        ZStack {
-            switch state {
-            case .resting:
-                EmptyView()
-            case .steady:
-                glow(opacity: BoardGameGlowPulse.high)
-                    .transition(.opacity)
-            case .breathing:
-                breathing
-            }
-        }
-        .animation(PaeoniaMotion.stateChange, value: state)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    @ViewBuilder
-    private var breathing: some View {
-        if reduceMotion {
-            glow(opacity: BoardGameGlowPulse.still)
-                .transition(.opacity)
-        } else {
-            TimelineView(.animation) { timeline in
-                glow(opacity: BoardGameGlowPulse.opacity(at: timeline.date.timeIntervalSinceReferenceDate))
-            }
-            .transition(.opacity)
-        }
-    }
-
-    private func glow(opacity: Double) -> some View {
-        let radius = avatarSize / 2
-        return Circle()
-            .fill(RadialGradient(
-                colors: [color, color.opacity(0.5), color.opacity(0)],
-                center: .center,
-                startRadius: radius * 0.8,
-                endRadius: radius + Self.reach
-            ))
-            .frame(width: (radius + Self.reach) * 2, height: (radius + Self.reach) * 2)
-            .opacity(opacity)
     }
 }
 

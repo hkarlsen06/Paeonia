@@ -253,6 +253,7 @@ final class RelationshipMilestoneViewModel {
 nonisolated enum RelationshipMilestoneError: Equatable, Sendable {
     case futureDate
     case saveFailed
+    case countdownLimit
 
     var message: String {
         switch self {
@@ -260,6 +261,8 @@ nonisolated enum RelationshipMilestoneError: Equatable, Sendable {
             String(localized: .homeMilestoneErrorFutureDate)
         case .saveFailed:
             String(localized: .homeMilestoneErrorSaveFailed)
+        case .countdownLimit:
+            String(localized: .homeMilestoneErrorCountdownLimit(CustomCountdown.maxCount.formatted()))
         }
     }
 }

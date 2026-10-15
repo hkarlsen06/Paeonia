@@ -56,6 +56,11 @@ private final class RollHarness {
         LudoBoard.replay(moves) ?? .initial
     }
 
+    /// The throw of a tap at the position on screen.
+    var tapToss: LudoToss {
+        .tap(seed: position.tossSeed)
+    }
+
     var position: LudoPosition {
         LudoPosition(gameID: gameID, gameNumber: 1, moveCount: moves.count)
     }
@@ -102,7 +107,7 @@ struct LudoRollModelTests {
         await harness.model.restore()
         harness.model.roll()
         // The die tumbles at once.
-        #expect(harness.model.die == .rolling(die: 3, side: .one, token: 1))
+        #expect(harness.model.die == .rolling(die: 3, side: .one, token: 1, toss: harness.tapToss))
         #expect(harness.model.hint == nil)
 
         let landed = await waitUntil { harness.model.die == .showing(die: 3, side: .one) }
@@ -220,7 +225,7 @@ struct LudoRollModelTests {
     @Test func myRollGoesLiveAsTheTumbleStarts() async {
         let harness = RollHarness(moves: Self.twoPawns, dice: [3])
         var announced: [LudoSavedRoll] = []
-        harness.model.announce = { announced.append($0) }
+        harness.model.announce = { roll, _ in announced.append(roll) }
         await harness.model.restore()
         #expect(harness.model.ownRoll == nil)
         harness.model.roll()
@@ -233,7 +238,7 @@ struct LudoRollModelTests {
     @Test func aKeptRollGoesLiveAgainWhenItComesBack() async {
         let harness = RollHarness(moves: Self.twoPawns)
         var announced: [LudoSavedRoll] = []
-        harness.model.announce = { announced.append($0) }
+        harness.model.announce = { roll, _ in announced.append(roll) }
         harness.setKept(LudoSavedRoll(position: harness.position, die: 4))
         await harness.model.restore()
         #expect(announced == [LudoSavedRoll(position: harness.position, die: 4)])
@@ -243,7 +248,7 @@ struct LudoRollModelTests {
         let harness = RollHarness(moves: [15, 9])
         await harness.model.restore()
         harness.model.receivePartnerRoll(LudoSavedRoll(position: harness.position, die: 4))
-        #expect(harness.model.die == .rolling(die: 4, side: .two, token: 1))
+        #expect(harness.model.die == .rolling(die: 4, side: .two, token: 1, toss: harness.tapToss))
         let landed = await waitUntil { harness.model.die == .showing(die: 4, side: .two) }
         #expect(landed)
         // The same roll again, as when Robin's phone resends it, does not tumble twice.
@@ -259,7 +264,30 @@ struct LudoRollModelTests {
         #expect(harness.model.die == .idle(side: .two))
         harness.moves.append(15)
         harness.model.update()
-        #expect(harness.model.die == .rolling(die: 2, side: .two, token: 1))
+        #expect(harness.model.die == .rolling(die: 2, side: .two, token: 1, toss: harness.tapToss))
+    }
+
+    @Test func aThrownDieCarriesItsThrowToRobin() async {
+        let harness = RollHarness(moves: Self.twoPawns, dice: [5])
+        var announced: [LudoToss?] = []
+        harness.model.announce = { _, toss in announced.append(toss) }
+        await harness.model.restore()
+        let toss = LudoToss.tap(seed: 7)
+        harness.model.roll(toss)
+        #expect(harness.model.die == .rolling(die: 5, side: .one, token: 1, toss: toss))
+        #expect(announced == [toss])
+    }
+
+    @Test func robinsThrowIsPlayedHereAndKeptWhenTheRollIsResent() async {
+        let harness = RollHarness(moves: [15, 9])
+        await harness.model.restore()
+        let toss = LudoToss.tap(seed: 11)
+        let roll = LudoSavedRoll(position: harness.position, die: 4)
+        harness.model.receivePartnerRoll(roll, toss: toss)
+        #expect(harness.model.die == .rolling(die: 4, side: .two, token: 1, toss: toss))
+        // Robin's phone resends the roll without the throw when this phone opens the game.
+        harness.model.receivePartnerRoll(roll)
+        #expect(harness.model.die == .rolling(die: 4, side: .two, token: 1, toss: toss))
     }
 
     @Test func aLiveRollForAnEarlierPositionIsIgnored() async {

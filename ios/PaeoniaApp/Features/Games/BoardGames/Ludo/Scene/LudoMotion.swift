@@ -2,7 +2,8 @@ import Foundation
 import simd
 
 /// The paths of the Ludo animations as pure functions of time, so they are
-/// testable and a clip never needs physics. Positions are in world units.
+/// testable. The thrown die has its own simulation in `LudoDiePhysics`.
+/// Positions are in world units.
 nonisolated enum LudoMotion {
     static func clamped(_ value: Double) -> Double {
         min(max(value, 0), 1)
@@ -62,55 +63,6 @@ nonisolated enum LudoMotion {
     }
 
     // MARK: Die
-
-    /// When the die touches down, as a share of the tumble. The last one is 1.
-    static func tumbleLandings() -> [Double] {
-        var total = 0.0
-        return LudoSceneStyle.bounceShares.map {
-            total += $0
-            return total
-        }
-    }
-
-    /// How high the die is above the yard floor, through the bounces of the tumble.
-    static func tumbleHeight(progress: Double) -> Float {
-        let fraction = clamped(progress)
-        var start = 0.0
-        for (share, peak) in zip(LudoSceneStyle.bounceShares, LudoSceneStyle.bouncePeaks) {
-            if fraction < start + share {
-                let local = (fraction - start) / share
-                return peak * Float(4 * local * (1 - local))
-            }
-            start += share
-        }
-        return 0
-    }
-
-    /// Where the die is during the tumble. It travels from `start` to its resting place at
-    /// `end`, drifts to the side and bounces. At progress 1 it is exactly at `end`.
-    static func tumblePosition(from start: SIMD3<Float>, to end: SIMD3<Float>, progress: Double) -> SIMD3<Float> {
-        let fraction = clamped(progress)
-        guard fraction < 1 else { return end }
-        var position = start + (end - start) * Float(smooth(fraction))
-        position.y += tumbleHeight(progress: fraction)
-        position.x += LudoSceneStyle.tumbleDriftX * Float(sin(fraction * 2 * .pi))
-        let towardBoard: Float = end.z > 0 ? -1 : 1
-        position.z += towardBoard * LudoSceneStyle.tumbleDriftZ * Float(sin(fraction * .pi))
-        return position
-    }
-
-    /// How the die is turned during the tumble. It spins fast, slows down and ends
-    /// exactly in `final`. The spin is a whole number of turns at the start, so
-    /// the die begins in the pose it had.
-    static func tumbleOrientation(from start: simd_quatf, to final: simd_quatf, progress: Double) -> simd_quatf {
-        let fraction = clamped(progress)
-        guard fraction < 1 else { return final }
-        let base = simd_slerp(start, final, Float(smooth(fraction)))
-        let remaining = 1 - fraction
-        let angle = Float(LudoSceneStyle.tumbleTurns * 2 * .pi * remaining * remaining)
-        let spin = simd_quatf(angle: angle, axis: simd_normalize(LudoSceneStyle.tumbleAxis))
-        return spin * base
-    }
 
     /// A die changing yards: a hop with an arc.
     static func trayHop(from start: SIMD3<Float>, to end: SIMD3<Float>, progress: Double) -> SIMD3<Float> {

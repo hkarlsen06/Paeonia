@@ -1,7 +1,9 @@
 import SwiftUI
 
 /// Sheet opened from the Home tab milestone card: the couple's milestone history and
-/// what's ahead, laid out like a lyrics screen. "Together for X days" is the focal
+/// what's ahead, laid out like a lyrics screen. The couple's own countdowns and both
+/// birthdays sit between the milestones by date. Tapping one edits it, and the plus
+/// menu adds them. "Together for X days" is the focal
 /// line; past milestones sit above it and upcoming ones below, each blurring and
 /// fading a step further the more milestones it is away from "now" — anchored to
 /// the content, not the viewport, so the focal line is sharp wherever it lands.
@@ -16,12 +18,16 @@ struct RelationshipTimelineView: View {
     let startedOn: String
     let isSaving: Bool
     let onSave: (Date) async -> Bool
+    /// The couple's countdowns and birthdays. Nil shows milestones only (previews).
+    var coupleDates: CoupleDatesViewModel?
+    var names = CoupleDateNames()
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var isEditorPresented = false
     @State private var selectedDate = Date()
+    @State private var dateEditor: CoupleDateEditor?
     /// Once the user scrolls, the veil dissolves for the rest of the presentation —
     /// re-blurring rows someone is trying to read would fight them.
     @State private var isVeilLifted = false
@@ -57,20 +63,7 @@ struct RelationshipTimelineView: View {
             .background(.paeoniaSurfacePrimary)
             .navigationTitle(Text(.homeMilestoneTimelineTitle))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(action: presentEditor) {
-                        Image(systemName: "pencil")
-                            .accessibilityLabel(Text(.homeMilestoneEditAction))
-                    }
-                }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(action: { dismiss() }) {
-                        Text(.commonDone)
-                    }
-                }
-            }
+            .toolbar { toolbar }
         }
         .presentationDetents([.large])
         .presentationBackground(.paeoniaSurfacePrimary)
@@ -83,14 +76,41 @@ struct RelationshipTimelineView: View {
                 onSave: onSave
             )
         }
+        .sheet(item: $dateEditor) { editor in
+            if let coupleDates {
+                CoupleDateEditorSheet(editor: editor, coupleDates: coupleDates, names: names)
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button(action: presentEditor) {
+                Image(systemName: "pencil")
+                    .accessibilityLabel(Text(.homeMilestoneEditAction))
+            }
+        }
+
+        if coupleDates != nil {
+            ToolbarItem(placement: .primaryAction) {
+                addMenu
+            }
+        }
+
+        ToolbarItem(placement: .confirmationAction) {
+            Button(action: { dismiss() }) {
+                Text(.commonDone)
+            }
+        }
     }
 
     private var timelineContent: some View {
-        let past = pastMilestones
-        let upcoming = upcomingMilestones
+        let past = pastEvents
+        let upcoming = upcomingEvents
         return VStack(alignment: .leading, spacing: PaeoniaSpacing.space32) {
-            ForEach(Array(past.enumerated()), id: \.element.date) { index, milestone in
-                milestoneRow(for: milestone, isPast: true)
+            ForEach(Array(past.enumerated()), id: \.element.id) { index, event in
+                eventRow(for: event, isPast: true)
                     .modifier(veil(distance: past.count - index))
             }
 
@@ -98,8 +118,8 @@ struct RelationshipTimelineView: View {
                 .id(Self.heroID)
                 .modifier(veil(distance: 0))
 
-            ForEach(Array(upcoming.enumerated()), id: \.element.date) { index, milestone in
-                milestoneRow(for: milestone, isPast: false)
+            ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, event in
+                eventRow(for: event, isPast: false)
                     .modifier(veil(distance: index + 1))
             }
         }
@@ -138,13 +158,30 @@ struct RelationshipTimelineView: View {
             : Text(.homeMilestoneTimelineTogetherFor(Self.daysText(daysTogether)))
     }
 
-    private func milestoneRow(for milestone: RelationshipMilestone, isPast: Bool) -> some View {
+    @ViewBuilder
+    private func eventRow(for event: CoupleDateEvent, isPast: Bool) -> some View {
+        if let editor = CoupleDateEditor(event), coupleDates != nil {
+            // The couple's own dates open their editor. Milestones come from the start
+            // date, which the pencil edits.
+            Button { dateEditor = editor } label: {
+                eventLabel(for: event, isPast: isPast)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(Text(.homeMilestoneTimelineEditHint))
+        } else {
+            eventLabel(for: event, isPast: isPast)
+        }
+    }
+
+    private func eventLabel(for event: CoupleDateEvent, isPast: Bool) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
-            Text(milestone.kind.displayName)
+            Text(verbatim: event.title(names: names))
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(isPast ? .paeoniaTextSecondary : .paeoniaTextPrimary)
 
-            caption(for: milestone)
+            caption(for: event)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(isPast ? .paeoniaTextTertiary : .paeoniaAccentPrimary)
         }
@@ -152,27 +189,61 @@ struct RelationshipTimelineView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func caption(for milestone: RelationshipMilestone) -> Text {
-        if milestone.daysRemaining == 0 {
+    private func caption(for event: CoupleDateEvent) -> Text {
+        if event.daysRemaining == 0 {
             return Text(.homeMilestoneToday)
         }
-        let date = milestone.date.formatted(dateFormat(for: milestone.date))
-        if milestone.daysRemaining < 0 {
+        let date = event.date.formatted(dateFormat(for: event.date))
+        if event.daysRemaining < 0 {
             return Text(verbatim: date)
         }
-        return Text(verbatim: "\(date) · \(Self.daysText(milestone.daysRemaining))")
+        return Text(verbatim: "\(date) · \(Self.daysText(event.daysRemaining))")
+    }
+
+    /// Adds a countdown, or a birthday that isn't set yet.
+    private var addMenu: some View {
+        Menu {
+            Button { dateEditor = .newCountdown } label: {
+                Label { Text(.homeMilestoneCountdownNewAction) } icon: { Image(systemName: "calendar.badge.plus") }
+            }
+            ForEach(missingBirthdays, id: \.self) { userID in
+                Button { dateEditor = .birthday(userID) } label: {
+                    Label {
+                        Text(userID == names.currentUserID
+                            ? .homeMilestoneBirthdayAddOwn
+                            : .homeMilestoneBirthdayAddPartner(names.partnerName))
+                    } icon: {
+                        Image(systemName: "gift")
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "plus")
+                .accessibilityLabel(Text(.homeMilestoneTimelineAddAction))
+        }
     }
 
     // MARK: - Derived values
 
-    /// Recomputed per render so the list refreshes after the date is edited while
-    /// the sheet stays open. The math is a handful of bounded calendar additions.
-    private var pastMilestones: [RelationshipMilestone] {
-        RelationshipMilestoneCalculator().pastMilestones(startedOn: startedOn, now: now, limit: Self.pastLimit)
+    private var dates: CoupleDates {
+        coupleDates?.dates ?? CoupleDates()
     }
 
-    private var upcomingMilestones: [RelationshipMilestone] {
-        RelationshipMilestoneCalculator().upcomingMilestones(startedOn: startedOn, now: now, limit: Self.upcomingLimit)
+    /// The couple's members whose birthday isn't set, the signed-in person first.
+    private var missingBirthdays: [UUID] {
+        [names.currentUserID, names.partnerUserID]
+            .compactMap { $0 }
+            .filter { dates.birthdays[$0] == nil }
+    }
+
+    /// Recomputed per render so the list refreshes after an edit while the sheet stays
+    /// open. The math is a handful of bounded calendar additions.
+    private var pastEvents: [CoupleDateEvent] {
+        CoupleDateTimeline().past(startedOn: startedOn, dates: dates, now: now, limit: Self.pastLimit)
+    }
+
+    private var upcomingEvents: [CoupleDateEvent] {
+        CoupleDateTimeline().upcoming(startedOn: startedOn, dates: dates, now: now, milestoneLimit: Self.upcomingLimit)
     }
 
     /// Weekday, day and month, plus the year when the date is not in the current

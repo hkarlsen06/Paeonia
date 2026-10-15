@@ -8,9 +8,9 @@ Keep this file current. When a decision lands or the design changes, update it i
 
 Decided on 2026-10-14 with the developer.
 
-- **A real 3D board, built in code with RealityKit.** A `RealityView` shows a tilted board with lights, soft shadows and a camera. Tiles, pawns and the die are rounded meshes made in code with satin clay materials in the house palette, so a pawn always lands exactly on its square. No Metal, no SceneKit (deprecated at WWDC25), and no model files. The die tumble is a scripted animation, not physics, so it always lands on the rolled face and looks the same on both phones.
+- **A real 3D board, built in code with RealityKit.** RealityKit's `ARView` in its non-AR mode shows a tilted board with lights, soft shadows and a camera. Tiles, pawns and the die are rounded meshes made in code, glazed ceramic on a matte clay slab in the house palette, so a pawn always lands exactly on its square. No Metal, no SceneKit (deprecated at WWDC25), and no model files. The surfaces use scanned CC0 textures and a photographed studio for the light (see "Materials"). The die is thrown by hand and flies by a small rigid-body simulation in Swift (`LudoDiePhysics`), not RealityKit physics. The number is picked first, as the rules need, and the simulation tries slightly different spins until one lands on it, so the die really rolls there. The simulation is pure math, so both phones fly the same throw.
 - **Two pawns each.** A shorter game than classic Ludo's four, because async turns can take hours.
-- **The phone rolls the die.** The roll goes to the server inside the move, so a move can be made offline and queued like every other board game move. The roll also goes live through the relay the moment the die starts to tumble, so a partner with the game open sees the same tumble at the same time. A partner could cheat in theory. The board games already accept that between partners (see "The hidden photo" in `docs/games/board-games.md`).
+- **The phone rolls the die.** The roll goes to the server inside the move, so a move can be made offline and queued like every other board game move. The roll also goes live through the relay the moment the die starts to tumble, with the throw, so a partner with the game open sees the same flight at the same time. A partner could cheat in theory. The board games already accept that between partners (see "The hidden photo" in `docs/games/board-games.md`).
 
 Decided on 2026-10-15 with the developer.
 
@@ -133,7 +133,7 @@ extension LudoBoard {
 
 ### Rolling
 
-- On my turn the die sits on its tray at my side of the board and bobs gently. Tapping it rolls. The die tumbles for 0.8 seconds and lands with the rolled face up, with `selection()` on each bounce and a soft impact when it settles.
+- On my turn the die sits in my yard and bobs gently. A drag that starts on the die picks it up: it rises 1.1 cells and follows my finger above the yard, and letting go throws it in the direction and at the speed of the flick, from 3 to 9 cells a second. A tap throws it from where it rests, away from me, give or take a little. The die bounces off the yard's edges and the pawns waiting in it, and lands flat with the rolled face up wherever the throw takes it, usually within a second and never later than 1.45 seconds. It plays `selection()` on each hard hit and a soft impact when it settles. It stays where it landed until it changes yards.
 - The pawns I can move lift and glow in my color. Tapping one moves it. Tapping a pawn that can't move gives `gameWrongGuess()` and a small shake.
 - The pawn hops square by square, 0.16 seconds a square, with a light tick on each landing. Coming out of the base is one hop onto the start square.
 - Sending a partner's pawn home: my pawn lands, the partner's pawn pops up, arcs back to its base and settles, with `streakTick()`.
@@ -153,13 +153,13 @@ extension LudoBoard {
 
 ### The partner's move
 
-- With the game open on both phones, the partner's die tumbles on my phone while it tumbles on theirs. Their phone sends `LudoLiveMessage` (the game, game number, move count and face) to the `<couple>:ludo` relay room as the tumble starts, and again when I open the game in the middle of their turn. The tumble is scripted, so it lands on the same face the same way. A roll for a position my board has not reached yet waits for the move that leads there. When their move arrives, the die has already rolled, so only the pawn hops.
+- With the game open on both phones, the partner's die tumbles on my phone while it tumbles on theirs. Their phone sends `LudoLiveMessage` (the game, game number, move count, face and throw) to the `<couple>:ludo` relay room as the tumble starts, and again, without the throw, when I open the game in the middle of their turn. The throw is in the frame of the roller's own yard, and my phone turns it half a circle onto their yard. Both phones run the same simulation, so the die flies and lands the same way. A die not already in the hand rises into the throw over 0.15 seconds. A roll without a throw uses the tap throw of its position, which both phones make the same. A roll for a position my board has not reached yet waits for the move that leads there. When their move arrives, the die has already rolled, so only the pawn hops.
 - Without a live roll, for example when the relay is down or I open the game after they moved, the die tumbles to their roll when their move arrives, then their pawn hops the same way. A move that sends my pawn home plays a soft `partnerDrawingReceived()`.
 - Replays follow the board games rule: moves since this phone last showed the board play in order, and a tap skips to the end.
 
 ### Timing
 
-`BoardGameMoveTiming(mine: 1.4 s, partner: 2.4 s)`. My move's tumble happens before the move exists, so my timing covers only the hops and a send-home. The partner's covers the tumble too.
+`BoardGameMoveTiming(mine: 1.4 s, partner: 3.05 s)`. My move's tumble happens before the move exists, so my timing covers only the hops and a send-home. The partner's covers the tumble too.
 
 ### Result
 
@@ -187,7 +187,8 @@ Lengths are in board cells, as in `LudoSceneStyle`: x runs to the right, y up, a
 
 ### The board
 
-- The board is a thick blush slab with rounded edges on the screen's deep plum. It has no border: the slab ends 0.25 cells past the 15 by 15 grid, a thin rounded lip that still reads as a thick board. The scene has a clear background, so the screen's plum shows around it. Tiles are raised squares, 0.18 cells tall with fully rounded edges like small pillows, and whiter than the slab, so the track reads as tiles.
+- The board is a thick blush slab of matte clay with rounded edges on the screen's deep plum. It has no border: the slab ends 0.25 cells past the 15 by 15 grid, a thin rounded lip that still reads as a thick board. The scene has a clear background, so the screen's plum shows around it. Tiles are raised squares of glazed ceramic, 0.18 cells tall with fully rounded edges like small pillows, and whiter than the slab, so the track reads as tiles. Each tile is set down by hand: it turns up to 1.2 degrees and sinks up to 0.012 cells below its neighbors, and its glaze is turned a different way. The same random numbers run on every phone, so the board looks the same everywhere.
+- A soft dark ring lies on the slab around every tile, base and the dome, where less light gets in (`LudoContactShade`). It is drawn once into a picture just above the slab.
 - Colors belong to the person and are the same on both phones (see "Your color"). By default my base, start square and home column are petal pink (`.boardGameMine`) and my partner's are lavender (`.boardGamePartner`). The two colors nobody picked fill the two corners nobody plays, quiet by default: the first one at the top left and the second at the bottom right, in the order pink, lavender, gold, sky blue. With the defaults that is gold at the top left and sky blue at the bottom right.
 - The board turns so my base is always nearest me at the bottom left.
 - Each base is a raised pad, 5.6 cells square inside its 6 by 6 corner, 0.24 cells tall with a 0.6 corner radius. A rim of the slab shows around it and its rounded edge catches the light, so the corner reads as a sticker piece and not a flat block. The players' bases are full color, as in the painting, with darker round dents where the pawns wait. Only the two empty corners are pale, and they have no dents.
@@ -231,16 +232,21 @@ The mark fills 86 percent of the flat top. A pawn is the player's color all over
 
 - The die is blush white with rounded edges (corner radius 0.23 of a 1.3 die) and pips shaped as small plum hearts, as in the hub painting. Hearts match the heart discs of Connect Four and Ultimate Tic-Tac-Toe, and six hearts still count at a glance.
 - A heart pip is 0.27 cells wide, raised 0.04 cells, with rounded edges. Its point faces the face's `down` direction, so on the top face it points toward the viewer and reads upright. Pip places stay as they are.
-- There are no trays. The die rests in the base yard of whoever rolls: my corner on my roll, my partner's corner on theirs. It lies in the free space of the yard beside the two pawn slots, which sit in the yard's outer row, and it tumbles there too. A die that changes player hops from one yard to the other.
+- There are no trays. The die rests in the base yard of whoever rolls: my corner on my roll, my partner's corner on theirs. It starts in the free space of the yard beside the two pawn slots, which sit in the yard's outer row. A throw can take it anywhere in the yard, and it stays where it lands. A die that changes player hops from one yard to the other.
 
 ### Materials
 
-All materials are metallic 0 and specular 0.5, with self fill 0.06 so shadows never go black. Clearcoat roughness is 0.12 everywhere, so the clearcoat gives a small, clear highlight.
+The board is glazed ceramic on a slab of matte clay. Two scanned CC0 texture sets from ambientCG give the surfaces their grain, made gray by `ios/Scripts/ludo-surfaces.swift` so the players' colors tint them:
+
+- Glaze (`LudoGlazeDetail`, `LudoGlazeRoughness`, `LudoGlazeNormal`): the clay grain of Clay005 shows faintly through, with sparse iron speckle, and the gloss comes from Porcelain002's roughness, so each surface shines unevenly like a real glaze. Its roughness runs from about half to all of the number in the table. The tiles, the bases, the dents and the die have the grain as bumps too. The pawns, the dome and the mark discs are made in code without the directions a bump picture needs, so they have the glaze without bumps.
+- Clay (`LudoClayDetail`, `LudoClayRoughness`, `LudoClayNormal`): Clay005's color variation and fine tool marks, for the slab.
+
+All materials are metallic 0 and specular 0.5, with self fill 0.02 so shadows never go fully black. The studio picture lights the shaded sides, and a stronger self fill made every surface look flat. Clearcoat roughness is 0.12 everywhere, so the clearcoat gives a small, clear highlight. The pips and the peony decal stay one flat color.
 
 | Material | Roughness | Clearcoat |
 |---|---|---|
-| Slab | 0.6 | 0.1 |
-| Tiles, bases, home columns, trays | 0.45 | 0.2 |
+| Slab (clay) | 0.75 | 0 |
+| Tiles, bases, home columns | 0.45 | 0.2 |
 | Center dome | 0.3 | 0.6 |
 | Pawns | 0.24 | 0.9 |
 | Die | 0.26 | 0.9 |
@@ -253,8 +259,8 @@ The pieces you touch, the pawns and the die, are glossier than the board, like t
 
 - The key light comes from high on the right and a little in front. The tops are lit, the fronts of the tiles and pads fall into soft shade, and the shading falls toward the lower left, as in every Paeonia illustration. The shaded fronts make each tile read as a raised piece. A directional light from position (7, 14, 1.5), looking at the board's center, color `#FFF0E4`, 2,800 lux, casting shadows. A stronger key washes the tile tops to white.
 - The rim light is pink and comes low from behind on the right, so it draws a pink edge on the right sides of the pawns and the die. It is low so it grazes the pieces and adds little to the flat board. A directional light from (12, 2.5, -6), color `#F27EB2`, 6,000 lux, no shadows.
-- The soft fill is the environment picture. Its sky carries the two worlds of the hub series: pink `#E88DBA` on the left half of the horizon, lavender `#A992E6` on the right, a light blush `#F6DCEA` zenith, and the `#2A0B1E` ground. The light zenith gives the glossy pieces and the dome a soft white highlight. The glossy pawns and the die then pick up pink on their left side and lavender on their right. If the colors land on the wrong sides, mirror the picture.
-- Shadows are soft and short. The shadow reaches 30 cells (the slab is about 18 across), which keeps a pawn's shadow smooth without hard steps.
+- The soft fill is a photo of a small studio with softboxes, Poly Haven's CC0 `studio_small_08`, kept as the OpenEXR data asset `LudoStudio` so the softboxes keep their brightness. The same script tints the photo with the two worlds of the hub series: pink `#E88DBA` on the left half of the horizon, lavender `#A992E6` on the right and a light blush `#F6DCEA` zenith, and turns the floor a dark `#2A0B1E` plum. It is scaled to the brightness of the painted sky it replaced, and `environmentExposure` raises or lowers it. The glossy pawns, the die and the dome show the softboxes as real highlights and pick up pink on their left side and lavender on their right. If the colors land on the wrong sides, turn on `mirrorsSky`.
+- Shadows are soft and short. The key light's shadow map is a fixed box around the board (`.fixed` projection, 24 wide, 1 to 32 cells from the light), so shadows stay put as the camera turns and zooms. An `.automatic` shadow only reaches a set distance from the camera, and the camera stands 35 to 60 cells from the board. The view turns off ARView's grounding shadows, motion blur, depth of field and camera grain.
 
 ### Camera
 

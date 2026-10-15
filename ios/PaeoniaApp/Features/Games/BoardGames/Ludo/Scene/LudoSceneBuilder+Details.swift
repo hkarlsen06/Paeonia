@@ -3,8 +3,31 @@ import SwiftUI
 import UIKit
 import simd
 
-/// The center dome, the peonies and the lights.
+/// The slab, the center dome, the peonies and the lights.
 extension LudoSceneBuilder {
+    /// The rounded slab of matte clay under everything.
+    static func addSlab(to root: Entity) {
+        let side = LudoWorld.halfSlab * 2
+        let material = LudoMaterials.satin(
+            LudoSceneStyle.color(LudoSceneStyle.slabHex),
+            roughness: LudoSceneStyle.slabRoughness,
+            clearcoat: LudoSceneStyle.slabClearcoat,
+            finish: .clay
+        )
+        let slab = ModelEntity(
+            mesh: .generateBox(
+                width: side,
+                height: LudoSceneStyle.slabThickness,
+                depth: side,
+                cornerRadius: LudoSceneStyle.slabCornerRadius
+            ),
+            materials: [material]
+        )
+        slab.position.y = -LudoSceneStyle.slabThickness / 2
+        slab.name = "ludoSlab"
+        root.addChild(slab)
+    }
+
     /// The center dome in two halves, mine on the near side and my partner's on the
     /// far side, with the seam between the two home columns. Records each half and
     /// the glow shell over it in `paint`, for player one and player two in that order.
@@ -30,6 +53,18 @@ extension LudoSceneBuilder {
         }
     }
 
+    /// Turns a tile a quarter turn or more, so its glaze shows a different part, then
+    /// twists and sinks it a hair, as a tile set down by hand. It only ever sinks, so the
+    /// peonies and the pawns, placed for the full tile height, never end up inside it.
+    static func setDownByHand(_ tile: ModelEntity, using random: inout LudoRandom) {
+        let quarter = Float(random.next() % 4) * .pi / 2
+        let twist = LudoSceneStyle.tileTwistDegrees * .pi / 180
+        let angle = quarter + random.float(in: -twist...twist)
+        tile.orientation = simd_quatf(angle: angle, axis: SIMD3(0, 1, 0))
+        let lift = LudoSceneStyle.tileHeightJitter
+        tile.position.y -= random.float(in: 0...lift)
+    }
+
     /// The flat peony on the six safe squares that are not a player's start square.
     static func addPeonies(to root: Entity, viewer: BoardPlayer, texture: TextureResource?) {
         guard let texture else { return }
@@ -52,7 +87,11 @@ extension LudoSceneBuilder {
             isRealWorldProxy: false
         )
         key.shadow = DirectionalLightComponent.Shadow(
-            shadowProjection: .automatic(maximumDistance: LudoSceneStyle.shadowDistance),
+            shadowProjection: .fixed(
+                zNear: LudoSceneStyle.shadowNear,
+                zFar: LudoSceneStyle.shadowFar,
+                orthographicScale: LudoSceneStyle.shadowWidth
+            ),
             depthBias: LudoSceneStyle.shadowDepthBias
         )
         key.look(at: .zero, from: LudoSceneStyle.keyLightPosition, relativeTo: nil)

@@ -30,6 +30,7 @@ nonisolated enum LiveFeedRegistry {
             BoardGamesLiveFeed(cache: FileBoardGamesCache.shared),
             BoardGameMarksLiveFeed(cache: FileBoardGamesCache.shared),
             HeartsLiveFeed(cache: FileHeartsCache.shared),
+            CoupleDatesLiveFeed(cache: FileCoupleDatesCache.shared),
         ]
     }
 }

@@ -68,6 +68,7 @@ final class MainTabModels {
     lazy var games: GamesViewModel =
         dependencies.gamesViewModel ?? GamesViewModel(dependencies: .live())
     lazy var hearts = HeartsViewModel()
+    lazy var coupleDates = CoupleDatesViewModel()
     lazy var lookBack = LookBackViewModel.live(
         thumbnailLoader: dependencies.widgetHistoryThumbnailLoader
             ?? WidgetRevisionThumbnailLoader(gateway: WidgetDrawingHistoryFactory.makeGateway())
@@ -176,6 +177,7 @@ struct MainTabView: View {
     var gamesViewModel: GamesViewModel { models.games }
     var lookBackViewModel: LookBackViewModel { models.lookBack }
     var heartsViewModel: HeartsViewModel { models.hearts }
+    var coupleDatesViewModel: CoupleDatesViewModel { models.coupleDates }
 
     var body: some View {
         presentingDailyFlows(on: tabContent)
@@ -235,6 +237,16 @@ struct MainTabView: View {
                 ownerUserID: identity.currentUserID,
                 serverStartedOn: identity.relationshipStartedOn
             )
+        }
+        .task(id: identity.currentUserID) {
+            coupleDatesViewModel.setSyncAfterLocalChange { await actions.syncAfterLocalChange() }
+            await coupleDatesViewModel.configure(ownerUserID: identity.currentUserID)
+            await coupleDatesViewModel.observeStoreChanges()
+        }
+        .onChange(of: coupleDatesViewModel.error) { _, error in
+            guard let error else { return }
+            bannerCenter.show(.error(message: error.message))
+            coupleDatesViewModel.clearError()
         }
         .onChange(of: identity.relationshipStartedOn) { _, startedOn in
             milestoneViewModel.refreshServerStartedOn(startedOn)
@@ -356,6 +368,12 @@ struct MainTabView: View {
             onSaveRelationshipStartedOn: { date in
                 await milestoneViewModel.save(startedOn: date)
             },
+            coupleDates: coupleDatesViewModel,
+            coupleDateNames: CoupleDateNames(
+                currentUserID: identity.currentUserID,
+                partnerUserID: identity.partnerUserID,
+                partnerName: dailyChallengeParticipants.partnerName
+            ),
             dailyChallengeCardState: dailyChallengeViewModel.homeCardState,
             dailyChallengeStreak: StreakPillState(dailyChallengeViewModel.streak),
             zoomNamespace: zoomNamespace,
@@ -423,6 +441,7 @@ struct MainTabView: View {
                 onSaveRelationshipStartedOn: { date in
                     await milestoneViewModel.save(startedOn: date)
                 },
+                coupleDates: coupleDatesViewModel,
                 locationViewModel: locationViewModel,
                 partnerName: dailyChallengeParticipants.partnerName,
                 onLeftRelationship: actions.leftRelationship,

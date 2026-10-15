@@ -1,15 +1,31 @@
+import ImageIO
 import RealityKit
 import SwiftUI
 import UIKit
 
-/// The satin clay materials of the Ludo scene, made from the numbers in `LudoSceneStyle`.
+/// The materials of the Ludo scene, made from the numbers in `LudoSceneStyle`: glazed
+/// ceramic for the pieces and the tiles, matte clay for the slab, and plain for pictures.
 enum LudoMaterials {
-    /// A soft clay finish with a clearcoat for the gloss. The defaults are the board's.
+    /// What the surface is made of.
+    enum Finish {
+        /// Glazed ceramic: faint clay grain and iron speckle under an uneven gloss.
+        case glaze
+        /// The same glaze without the grain, for the shapes made in code, which have
+        /// no directions for a bump picture to follow.
+        case smoothGlaze
+        /// Matte clay with fine tool marks.
+        case clay
+        /// One flat color.
+        case plain
+    }
+
+    /// A ceramic finish with a clearcoat for the gloss. The defaults are the board's.
     static func satin(
         _ color: UIColor,
         roughness: Float = LudoSceneStyle.boardRoughness,
         clearcoat: Float = LudoSceneStyle.boardClearcoat,
-        showsBothSides: Bool = false
+        showsBothSides: Bool = false,
+        finish: Finish = .glaze
     ) -> PhysicallyBasedMaterial {
         var material = PhysicallyBasedMaterial()
         material.baseColor = .init(tint: color)
@@ -20,6 +36,7 @@ enum LudoMaterials {
         material.clearcoatRoughness = PhysicallyBasedMaterial.ClearcoatRoughness(
             floatLiteral: LudoSceneStyle.clearcoatRoughness
         )
+        LudoSurfaces.loaded?.apply(finish, to: &material, color: color, roughness: roughness)
         if LudoSceneStyle.selfFill > 0 {
             material.emissiveColor = .init(color: color.ludoMixed(with: .black, amount: 1 - LudoSceneStyle.selfFill))
             material.emissiveIntensity = 1
@@ -35,9 +52,16 @@ enum LudoMaterials {
         _ color: UIColor,
         roughness: Float = LudoSceneStyle.boardRoughness,
         clearcoat: Float = LudoSceneStyle.boardClearcoat,
-        showsBothSides: Bool = false
+        showsBothSides: Bool = false,
+        finish: Finish = .glaze
     ) -> PhysicallyBasedMaterial {
-        var material = satin(color, roughness: roughness, clearcoat: clearcoat, showsBothSides: showsBothSides)
+        var material = satin(
+            color,
+            roughness: roughness,
+            clearcoat: clearcoat,
+            showsBothSides: showsBothSides,
+            finish: finish
+        )
         material.emissiveColor = .init(color: color.ludoLightened(LudoSceneStyle.glowLightening))
         material.emissiveIntensity = LudoSceneStyle.glowIntensity
         return material
@@ -48,8 +72,8 @@ enum LudoMaterials {
         let roughness = LudoSceneStyle.pawnRoughness
         let clearcoat = LudoSceneStyle.pawnClearcoat
         return isGlowing
-            ? glowing(color, roughness: roughness, clearcoat: clearcoat, showsBothSides: true)
-            : satin(color, roughness: roughness, clearcoat: clearcoat, showsBothSides: true)
+            ? glowing(color, roughness: roughness, clearcoat: clearcoat, showsBothSides: true, finish: .smoothGlaze)
+            : satin(color, roughness: roughness, clearcoat: clearcoat, showsBothSides: true, finish: .smoothGlaze)
     }
 
     /// The satin finish with a picture on it, such as the mark on top of a pawn.
@@ -58,7 +82,8 @@ enum LudoMaterials {
             .white,
             roughness: LudoSceneStyle.pawnRoughness,
             clearcoat: LudoSceneStyle.pawnClearcoat,
-            showsBothSides: true
+            showsBothSides: true,
+            finish: .plain
         )
         material.baseColor = .init(tint: .white, texture: .init(texture))
         material.emissiveColor = .init(color: .black)
@@ -67,11 +92,80 @@ enum LudoMaterials {
 
     /// A flat picture with a see-through background, laid on a tile.
     static func decal(_ texture: TextureResource) -> PhysicallyBasedMaterial {
-        var material = satin(.white, roughness: LudoSceneStyle.decalRoughness, clearcoat: 0, showsBothSides: true)
+        var material = satin(
+            .white,
+            roughness: LudoSceneStyle.decalRoughness,
+            clearcoat: 0,
+            showsBothSides: true,
+            finish: .plain
+        )
         material.baseColor = .init(tint: .white, texture: .init(texture))
         material.emissiveColor = .init(color: .black)
         material.blending = .transparent(opacity: PhysicallyBasedMaterial.Opacity(floatLiteral: 1))
         return material
+    }
+}
+
+/// The scanned surface pictures (CC0, from ambientCG: Porcelain002 for the glaze's
+/// gloss, Clay005 for the clay), made gray so the players' colors tint them. They
+/// load once, before the scene's materials are made.
+@MainActor
+struct LudoSurfaces {
+    let glazeDetail: TextureResource
+    let glazeRoughness: TextureResource
+    let glazeNormal: TextureResource
+    let clayDetail: TextureResource
+    let clayRoughness: TextureResource
+    let clayNormal: TextureResource
+
+    private(set) static var loaded: LudoSurfaces?
+
+    static func load() async {
+        guard loaded == nil else { return }
+        guard let glazeDetail = await texture("LudoGlazeDetail", .raw),
+              let glazeRoughness = await texture("LudoGlazeRoughness", .scalar),
+              let glazeNormal = await texture("LudoGlazeNormal", .normal),
+              let clayDetail = await texture("LudoClayDetail", .raw),
+              let clayRoughness = await texture("LudoClayRoughness", .scalar),
+              let clayNormal = await texture("LudoClayNormal", .normal)
+        else { return }
+        loaded = LudoSurfaces(
+            glazeDetail: glazeDetail,
+            glazeRoughness: glazeRoughness,
+            glazeNormal: glazeNormal,
+            clayDetail: clayDetail,
+            clayRoughness: clayRoughness,
+            clayNormal: clayNormal
+        )
+    }
+
+    private static func texture(_ name: String, _ semantic: TextureResource.Semantic) async -> TextureResource? {
+        guard let image = UIImage(named: name)?.cgImage else { return nil }
+        return try? await TextureResource(image: image, withName: nil, options: .init(semantic: semantic))
+    }
+
+    /// Lays the pictures of `finish` on a material. The roughness pictures run from
+    /// about half to all of `roughness`, so the gloss is uneven like a real glaze.
+    func apply(
+        _ finish: LudoMaterials.Finish,
+        to material: inout PhysicallyBasedMaterial,
+        color: UIColor,
+        roughness: Float
+    ) {
+        switch finish {
+        case .glaze, .smoothGlaze:
+            material.baseColor = .init(tint: color, texture: .init(glazeDetail))
+            material.roughness = .init(scale: roughness, texture: .init(glazeRoughness))
+            if finish == .glaze {
+                material.normal = .init(texture: .init(glazeNormal))
+            }
+        case .clay:
+            material.baseColor = .init(tint: color, texture: .init(clayDetail))
+            material.roughness = .init(scale: roughness, texture: .init(clayRoughness))
+            material.normal = .init(texture: .init(clayNormal))
+        case .plain:
+            break
+        }
     }
 }
 
@@ -99,67 +193,44 @@ enum LudoMarkPicture {
     }
 }
 
-/// The background of the scene. It is a picture of a sky over a ground that is
-/// the screen's own color, so the board seems to sit on the screen. The sky is
-/// pink on one side and lavender on the other, and it lights the pieces softly,
-/// so the glossy pawns and the die pick up both colors.
+/// The light around the scene: a photo of a small studio with softboxes (CC0, Poly
+/// Haven's studio_small_08), tinted pink on the left and lavender on the right with a
+/// dark plum floor, so the glossy pieces show real highlights in the house colors.
+/// It is an OpenEXR picture in the asset catalog, so the softboxes keep their brightness.
 @MainActor
 enum LudoBackdrop {
     static func environment() async -> EnvironmentResource? {
-        guard let image = skyImage() else { return nil }
+        guard let data = NSDataAsset(name: "LudoStudio")?.data,
+              let source = CGImageSourceCreateWithData(data as CFData, nil),
+              var image = CGImageSourceCreateImageAtIndex(source, 0, nil)
+        else { return nil }
+        if LudoSceneStyle.mirrorsSky, let mirrored = mirrored(image) {
+            image = mirrored
+        }
+        // The scene shows no sky, so iOS 27 can skip making one.
+        if #available(iOS 27.0, *) {
+            return try? await EnvironmentResource(equirectangular: image, options: .init())
+        }
         return try? await EnvironmentResource(equirectangular: image, withName: nil)
     }
 
-    /// An equirectangular picture: the top half is the sky, the bottom half the ground.
-    static func skyImage() -> CGImage? {
-        let width = 256
-        let height = 128
-        var pixels = [UInt8](repeating: 255, count: width * height * 4)
-        for row in 0..<height {
-            for column in 0..<width {
-                let color = skyColor(across: Double(column) / Double(width), down: Double(row) / Double(height / 2))
-                let offset = (row * width + column) * 4
-                pixels[offset] = UInt8(max(0, min(255, color.x * 255)))
-                pixels[offset + 1] = UInt8(max(0, min(255, color.y * 255)))
-                pixels[offset + 2] = UInt8(max(0, min(255, color.z * 255)))
-            }
-        }
-        guard let space = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
-        let provider = CGDataProvider(data: Data(pixels) as CFData)
-        return provider.flatMap {
-            CGImage(
-                width: width,
-                height: height,
-                bitsPerComponent: 8,
-                bitsPerPixel: 32,
-                bytesPerRow: width * 4,
-                space: space,
-                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
-                provider: $0,
-                decode: nil,
-                shouldInterpolate: true,
-                intent: .defaultIntent
-            )
-        }
-    }
-
-    /// The color of the picture at a place. `down` is 0 at the zenith and 1 at the horizon.
-    private static func skyColor(across: Double, down: Double) -> SIMD3<Double> {
-        let ground = rgb(LudoSceneStyle.groundHex)
-        guard down < 1 else { return ground }
-        let left = rgb(LudoSceneStyle.mirrorsSky ? LudoSceneStyle.skyRightHex : LudoSceneStyle.skyLeftHex)
-        let right = rgb(LudoSceneStyle.mirrorsSky ? LudoSceneStyle.skyLeftHex : LudoSceneStyle.skyRightHex)
-        let horizon = mix(left, right, LudoMotion.smooth((across - 0.35) / 0.3))
-        let sky = mix(rgb(LudoSceneStyle.skyZenithHex), horizon, LudoMotion.smooth(down))
-        return mix(sky, ground, LudoMotion.smooth((down - 0.85) / 0.15))
-    }
-
-    private static func rgb(_ hex: UInt32) -> SIMD3<Double> {
-        SIMD3(Double((hex >> 16) & 0xFF) / 255, Double((hex >> 8) & 0xFF) / 255, Double(hex & 0xFF) / 255)
-    }
-
-    private static func mix(_ first: SIMD3<Double>, _ second: SIMD3<Double>, _ amount: Double) -> SIMD3<Double> {
-        first + (second - first) * amount
+    /// The picture flipped left to right.
+    private static func mirrored(_ image: CGImage) -> CGImage? {
+        guard let space = image.colorSpace,
+              let context = CGContext(
+                  data: nil,
+                  width: image.width,
+                  height: image.height,
+                  bitsPerComponent: image.bitsPerComponent,
+                  bytesPerRow: 0,
+                  space: space,
+                  bitmapInfo: image.bitmapInfo.rawValue
+              )
+        else { return nil }
+        context.translateBy(x: CGFloat(image.width), y: 0)
+        context.scaleBy(x: -1, y: 1)
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return context.makeImage()
     }
 }
 

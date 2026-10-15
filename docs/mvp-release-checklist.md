@@ -264,7 +264,7 @@ Record any skipped command with the reason.
 - [x] Missing/invalid start date shows honest setup copy, not fake data.
 - [x] Countdown date formatting localizes correctly.
 - [x] Countdown card has no hardcoded sample milestone in release.
-- [x] Custom countdowns are absent from active product claims/screenshots.
+- [ ] Custom countdowns and birthdays sync between partners, work offline, and show on the Home tile when they come first.
 - [ ] Countdown reminders are either implemented or absent from notification settings/copy.
 
 ## Partner Location

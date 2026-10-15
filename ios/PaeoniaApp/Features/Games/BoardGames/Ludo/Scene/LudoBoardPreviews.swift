@@ -34,7 +34,7 @@ private struct LudoPlayablePreview: View {
                 showsOutcome: showsOutcome,
                 bloomSeed: "preview",
                 partnerName: "Maja",
-                onRoll: { Task { await roll() } },
+                onRoll: { toss in Task { await roll(toss) } },
                 onChoose: { choice in Task { await choose(choice) } }
             )
             Button {
@@ -56,13 +56,13 @@ private struct LudoPlayablePreview: View {
 
     // MARK: My turn
 
-    private func roll() async {
+    private func roll(_ toss: LudoToss?) async {
         guard board.next == .one, board.outcome == nil, die == .ready, !isRolling else { return }
         isRolling = true
         defer { isRolling = false }
         rolled = forcedRoll ?? Int.random(in: 1...LudoBoard.dieFaces)
         tumbleCount += 1
-        die = .rolling(die: rolled, side: .one, token: tumbleCount)
+        die = .rolling(die: rolled, side: .one, token: tumbleCount, toss: toss ?? .tap(seed: UInt64(tumbleCount)))
         try? await Task.sleep(for: LudoBoardView.tumbleDuration)
         die = .showing(die: rolled, side: .one)
         let choices = board.legalChoices(die: rolled)
@@ -88,7 +88,7 @@ private struct LudoPlayablePreview: View {
         let value = forcedRoll ?? Int.random(in: 1...LudoBoard.dieFaces)
         let choice = board.legalChoices(die: value).randomElement() ?? .pass
         tumbleCount += 1
-        die = .rolling(die: value, side: .two, token: tumbleCount)
+        die = .rolling(die: value, side: .two, token: tumbleCount, toss: .tap(seed: UInt64(tumbleCount)))
         play(die: value, choice: choice, isMine: false)
         try? await Task.sleep(for: LudoBoardView.tumbleDuration)
         die = .showing(die: value, side: .two)
@@ -140,7 +140,7 @@ private struct LudoStaticPreview: View {
             showsOutcome: showsOutcome,
             bloomSeed: "preview",
             partnerName: "Maja",
-            onRoll: {},
+            onRoll: { _ in },
             onChoose: { _ in }
         )
         .padding(PaeoniaSpacing.screenHorizontalPadding)

@@ -3,9 +3,9 @@ import SwiftUI
 /// Ludo on the Games tab: its hub model and its screen.
 enum LudoGame {
     /// My move covers the hops and a send-home. The partner's also covers the
-    /// 0.8 s tumble of their die, which happens before their move exists on my
-    /// phone.
-    static let timing = BoardGameMoveTiming(mine: .milliseconds(1_400), partner: .milliseconds(2_400))
+    /// throw of their die, up to 1.45 s (`LudoSceneStyle.tumbleDuration`), which
+    /// happens before their move exists on my phone.
+    static let timing = BoardGameMoveTiming(mine: .milliseconds(1_400), partner: .milliseconds(3_050))
 
     static func hubModel(dependencies: GamesDependencies) -> BoardGameHubModel<LudoBoard> {
         BoardGameHubModel(

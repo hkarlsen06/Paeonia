@@ -39,6 +39,7 @@ enum LudoSceneBuilder {
         styles: BoardPieceStyles,
         colors playerColors: LudoColorPair
     ) async -> LudoSceneParts {
+        await LudoSurfaces.load()
         let colors = CornerColors(viewer: viewer, colors: playerColors)
         let root = Entity()
         root.name = "ludoScene"
@@ -47,6 +48,7 @@ enum LudoSceneBuilder {
         addTiles(to: root, viewer: viewer, colors: colors, paint: &paint)
         addYards(to: root, viewer: viewer, colors: colors, paint: &paint)
         addCenter(to: root, viewer: viewer, colors: colors, paint: &paint)
+        if let shade = await LudoContactShade.make() { root.addChild(shade) }
         let peony = await LudoPeonyPicture.texture()
         addPeonies(to: root, viewer: viewer, texture: peony)
         addLights(to: root)
@@ -77,7 +79,8 @@ enum LudoSceneBuilder {
             if let texture = await LudoMarkPicture.texture(style: styles[player], pawnColor: color) {
                 materials.append(LudoMaterials.picture(texture))
             } else {
-                materials.append(LudoMaterials.satin(color.ludoDarkened(1 - LudoSceneStyle.markBackgroundShade)))
+                let shade = color.ludoDarkened(1 - LudoSceneStyle.markBackgroundShade)
+                materials.append(LudoMaterials.satin(shade, finish: .smoothGlaze))
             }
         }
         return materials
@@ -120,27 +123,6 @@ enum LudoSceneBuilder {
 
     // MARK: Board
 
-    private static func addSlab(to root: Entity) {
-        let side = LudoWorld.halfSlab * 2
-        let material = LudoMaterials.satin(
-            LudoSceneStyle.color(LudoSceneStyle.slabHex),
-            roughness: LudoSceneStyle.slabRoughness,
-            clearcoat: LudoSceneStyle.slabClearcoat
-        )
-        let slab = ModelEntity(
-            mesh: .generateBox(
-                width: side,
-                height: LudoSceneStyle.slabThickness,
-                depth: side,
-                cornerRadius: LudoSceneStyle.slabCornerRadius
-            ),
-            materials: [material]
-        )
-        slab.position.y = -LudoSceneStyle.slabThickness / 2
-        slab.name = "ludoSlab"
-        root.addChild(slab)
-    }
-
     /// The satin materials that depend on the corner colors, by corner.
     struct CornerMaterials {
         let start: [PhysicallyBasedMaterial]
@@ -167,13 +149,15 @@ enum LudoSceneBuilder {
                 color,
                 roughness: LudoSceneStyle.domeRoughness,
                 clearcoat: LudoSceneStyle.domeClearcoat,
-                showsBothSides: true
+                showsBothSides: true,
+                finish: .smoothGlaze
             ),
             LudoMaterials.glowing(
                 color,
                 roughness: LudoSceneStyle.domeRoughness,
                 clearcoat: LudoSceneStyle.domeClearcoat,
-                showsBothSides: true
+                showsBothSides: true,
+                finish: .smoothGlaze
             )
         )
     }
@@ -209,6 +193,8 @@ enum LudoSceneBuilder {
         let plain = LudoMaterials.satin(LudoSceneStyle.color(LudoSceneStyle.trackTileHex))
         let materials = CornerMaterials(colors)
         let height = LudoSceneStyle.tileHeight / 2
+        // The same tiles on every phone and every launch, each set down a little differently by hand.
+        var random = LudoRandom(seed: 0x7115)
         var starts: [ModelEntity?] = Array(repeating: nil, count: 4)
         for index in 0..<LudoBoard.trackLength {
             let corner = index / LudoBoardGeometry.squaresPerQuarter
@@ -216,6 +202,7 @@ enum LudoSceneBuilder {
             let tile = ModelEntity(mesh: mesh, materials: [isStart ? materials.start[corner] : plain])
             let point = LudoBoardGeometry.point(of: .track(index), viewer: viewer)
             tile.position = LudoWorld.position(point, height: height)
+            setDownByHand(tile, using: &random)
             root.addChild(tile)
             if isStart { starts[corner] = tile }
         }
@@ -226,6 +213,7 @@ enum LudoSceneBuilder {
                 let tile = ModelEntity(mesh: mesh, materials: [materials.column[corner]])
                 let point = LudoBoardGeometry.columnPoint(corner: corner, step: step, viewer: viewer)
                 tile.position = LudoWorld.position(point, height: height)
+                setDownByHand(tile, using: &random)
                 root.addChild(tile)
                 column.append(tile)
             }

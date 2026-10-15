@@ -65,6 +65,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     @ViewBuilder var bottom: Bottom
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The height of the right column's rows in the wide layout.
     @State private var wideRowsHeight: CGFloat = 0
     /// The height of the bottom content in the wide layout.
@@ -160,6 +161,8 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 }
                 statusRow
                     .paeoniaReadableWidth()
+                    // The invite comes and goes with the turn, and the row glides with the board.
+                    .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: content.turn)
             }
             .frame(maxHeight: .infinity)
         }
@@ -238,7 +241,17 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     private var bleedSlot: some View {
         Color.clear
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { bleedSlotFrame = $0 }
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+                // The bottom bar grows and shrinks as the invite comes and goes, and the
+                // board glides to its new space instead of jumping. The first layout and a
+                // turned screen snap.
+                let isSameColumn = frame.minX == bleedSlotFrame.minX && frame.width == bleedSlotFrame.width
+                if isSameColumn, bleedSlotFrame.height > 0, !reduceMotion {
+                    withAnimation(PaeoniaMotion.stateChange) { bleedSlotFrame = frame }
+                } else {
+                    bleedSlotFrame = frame
+                }
+            }
     }
 
     /// The board over the whole screen, behind the rows. It reaches as far above and
@@ -247,19 +260,20 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     private var bleedingBoard: some View {
         GeometryReader { proxy in
             let screen = proxy.frame(in: .global)
-            let slot = bleedSlotFrame.offsetBy(dx: -screen.minX, dy: -screen.minY)
-            // ponytail: the view runs past the nearer screen edge and draws pixels nobody sees.
-            // Shift the camera's lens off center instead if that costs frames on an iPad.
-            let reach = max(slot.minY, screen.height - slot.maxY, 0)
-            let height = slot.height + reach * 2
-            if slot.height > 0 {
-                ZStack {
-                    board
-                        .environment(\.boardFitHeight, slot.height / height)
-                    bleedCover(reach: reach, slotHeight: slot.height)
+            BoardGameAnimatedSlot(slot: bleedSlotFrame.offsetBy(dx: -screen.minX, dy: -screen.minY)) { slot in
+                // ponytail: the view runs past the nearer screen edge and draws pixels nobody sees.
+                // Shift the camera's lens off center instead if that costs frames on an iPad.
+                let reach = max(slot.minY, screen.height - slot.maxY, 0)
+                let height = slot.height + reach * 2
+                if slot.height > 0 {
+                    ZStack {
+                        board
+                            .environment(\.boardFitHeight, slot.height / height)
+                        bleedCover(reach: reach, slotHeight: slot.height)
+                    }
+                    .frame(width: screen.width, height: height)
+                    .position(x: screen.width / 2, y: slot.midY)
                 }
-                .frame(width: screen.width, height: height)
-                .position(x: screen.width / 2, y: slot.midY)
             }
         }
         .ignoresSafeArea()
@@ -346,6 +360,24 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         }
         .padding(.vertical, PaeoniaSpacing.space12)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideBottomHeight = $0 }
+    }
+}
+
+/// Hands its content the space a board that bleeds fits in. It is animatable, so
+/// when that space changes, the content is laid out again on every frame of the
+/// animation. The board's view and its camera then follow the space smoothly
+/// instead of jumping to the end.
+private struct BoardGameAnimatedSlot<Content: View>: View, Animatable {
+    var slot: CGRect
+    @ViewBuilder let content: (CGRect) -> Content
+
+    var animatableData: CGRect.AnimatableData {
+        get { slot.animatableData }
+        set { slot.animatableData = newValue }
+    }
+
+    var body: some View {
+        content(slot)
     }
 }
 

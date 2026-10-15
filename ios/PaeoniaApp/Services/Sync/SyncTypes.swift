@@ -162,6 +162,9 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case exquisiteCorpseStar = "exquisite_corpse_star"
     case sendHearts = "send_hearts"
     case markHeartsSeen = "mark_hearts_seen"
+    case saveCountdown = "save_countdown"
+    case deleteCountdown = "delete_countdown"
+    case setBirthday = "set_birthday"
     // Board games (Connect Four, Dots and Boxes, Ultimate Tic-Tac-Toe)
     case boardGameMove = "board_game_move"
     case boardGameRematch = "board_game_rematch"

@@ -84,8 +84,11 @@ final class LudoRollModel {
     /// The position whose partner roll is tumbling or showing.
     @ObservationIgnored private var shownPartnerRoll: LudoPosition?
 
-    /// Sends my roll to my partner's phone as the die starts to tumble.
-    @ObservationIgnored var announce: (@MainActor (LudoSavedRoll) -> Void)?
+    /// Sends my roll to my partner's phone as the die starts to tumble, with the
+    /// throw when the person threw the die by hand.
+    @ObservationIgnored var announce: (@MainActor (LudoSavedRoll, LudoToss?) -> Void)?
+    /// How my partner threw the die for `partnerRoll`, when they threw it by hand.
+    @ObservationIgnored private var partnerToss: LudoToss?
 
     init(
         context: @escaping @MainActor () -> LudoRollContext,
@@ -144,7 +147,7 @@ final class LudoRollModel {
         turn = Turn(position: position, phase: .ready)
         if let kept = LudoRollDecision.restoredDie(from: saved, at: position) {
             // My partner may have arrived before this roll was back on screen.
-            announce?(LudoSavedRoll(position: position, die: kept))
+            announce?(LudoSavedRoll(position: position, die: kept), nil)
             land(kept, context: context, schedulesAutomaticMove: true)
         } else {
             die = .ready
@@ -153,8 +156,8 @@ final class LudoRollModel {
         }
     }
 
-    /// The person taps the die.
-    func roll() {
+    /// The person taps the die, or throws it with `toss`.
+    func roll(_ toss: LudoToss? = nil) {
         let context = context()
         guard context.canPlay, let position = context.position, var turn, turn.position == position,
               turn.phase == .ready
@@ -162,7 +165,8 @@ final class LudoRollModel {
         let value = rollDie()
         let roll = LudoSavedRoll(position: position, die: value)
         saved = roll
-        announce?(roll)
+        let toss = toss ?? .tap(seed: position.tossSeed)
+        announce?(roll, toss)
         turn.phase = .rolling(value)
         self.turn = turn
         movableChoices = []
@@ -170,7 +174,7 @@ final class LudoRollModel {
         let tumbles = !context.prefersReducedMotion
         if tumbles {
             tumbleCount += 1
-            die = .rolling(die: value, side: context.me, token: tumbleCount)
+            die = .rolling(die: value, side: context.me, token: tumbleCount, toss: toss)
         } else {
             die = .showing(die: value, side: context.me)
         }
@@ -258,9 +262,12 @@ final class LudoRollModel {
 
     // MARK: - Their turn
 
-    /// My partner rolled. Their die tumbles here once the board is at the roll's position.
-    func receivePartnerRoll(_ roll: LudoSavedRoll) {
+    /// My partner rolled. Their die tumbles here once the board is at the roll's
+    /// position, with their throw when they threw it by hand.
+    func receivePartnerRoll(_ roll: LudoSavedRoll, toss: LudoToss? = nil) {
         guard LudoRollDecision.faces.contains(roll.die) else { return }
+        // A resent roll has no throw. It keeps the one that came with it first.
+        if roll != partnerRoll || toss != nil { partnerToss = toss }
         partnerRoll = roll
         update()
     }
@@ -291,7 +298,8 @@ final class LudoRollModel {
         // Under Reduce Motion the stage shows the face without a tumble, and still
         // knows the die is rolled, so the partner's move does not roll it again.
         tumbleCount += 1
-        die = .rolling(die: value, side: side, token: tumbleCount)
+        let toss = partnerToss ?? .tap(seed: position.tossSeed)
+        die = .rolling(die: value, side: side, token: tumbleCount, toss: toss)
         let sleep = sleep
         let tumbleDuration = tumbleDuration
         task = Task { [weak self] in

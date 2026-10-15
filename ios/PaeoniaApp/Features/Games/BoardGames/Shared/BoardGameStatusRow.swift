@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// The line under the board. On the left, whether the partner has the game open,
-/// or the game's own hint while it has one (Ludo's "Roll again").
+/// The line under the board. On the left, "[Name] will see it later" while the
+/// partner is away, or the game's own hint while it has one (Ludo's "Roll again").
+/// Nothing shows while the partner is here, since the green dot on their avatar
+/// says so. VoiceOver still hears both changes.
 /// On the right, an "Another turn" chip that pops in each time the extra turn
 /// count goes up and fades after 1.5 seconds. The chip's space is always
 /// reserved, so nothing around the row moves when it shows.
@@ -49,18 +51,12 @@ struct BoardGameStatusRow: View {
                 .foregroundStyle(.paeoniaTextSecondary)
                 .transition(.opacity)
                 .accessibilityIdentifier("boardGames.hint")
-        } else {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                if status == .here {
-                    BoardGamePresenceDot()
-                        .transition(.scale.combined(with: .opacity))
-                }
-                Text(text(for: status))
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(status == .here ? .paeoniaTextSecondary : .paeoniaTextTertiary)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityIdentifier("boardGames.status")
+        } else if status == .away {
+            Text(text(for: status))
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextTertiary)
+                .transition(.opacity)
+                .accessibilityIdentifier("boardGames.status")
         }
     }
 
@@ -120,7 +116,7 @@ struct BoardGameStatusRow: View {
 
 /// A small green dot that dims and brightens slowly. Reduce Motion keeps it still.
 struct BoardGamePresenceDot: View {
-    var size: CGFloat = 8
+    let size: CGFloat
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isDim = false

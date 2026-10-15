@@ -57,8 +57,8 @@ extension LudoStage {
         for (pawn, placement) in zip(pawns, placements) {
             pawn.setRest(position: LudoWorld.position(of: placement), scale: Float(placement.scale))
         }
-        if !isMine, liveTumbleLeft == nil { tumblePartnerDie(to: transition.die) }
-        let tumbleLeft = liveTumbleLeft ?? LudoSceneStyle.tumbleDuration
+        var tumbleLeft = liveTumbleLeft ?? 0
+        if !isMine, liveTumbleLeft == nil { tumbleLeft = tumblePartnerDie(to: transition.die) }
         guard let index = transition.pawn, pawns.indices.contains(index) else { return }
 
         // The partner's pawn waits for the die to tumble on their tray.

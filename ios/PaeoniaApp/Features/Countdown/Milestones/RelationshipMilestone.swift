@@ -58,7 +58,7 @@ nonisolated struct RelationshipMilestoneCalculator {
     /// After the early markers, day-count milestones land on each multiple of this.
     private static let dayMilestoneStride = 1000
 
-    private let calendar: Calendar
+    let calendar: Calendar
 
     init(calendar: Calendar = .current) {
         // The persisted `yyyy-MM-dd` is a Gregorian database date. Respect the
@@ -234,11 +234,12 @@ nonisolated struct RelationshipMilestoneCalculator {
         RelationshipMilestone(kind: kind, date: date, daysRemaining: days(from: today, to: date))
     }
 
-    private func days(from: Date, to: Date) -> Int {
+    func days(from: Date, to: Date) -> Int {
         calendar.dateComponents([.day], from: from, to: to).day ?? 0
     }
 
-    private func startOfDay(fromISODate rawDate: String) -> Date? {
+    /// Start of the `yyyy-MM-dd` day in this calculator's calendar, or nil when it does not parse.
+    func startOfDay(fromISODate rawDate: String) -> Date? {
         let parts = rawDate.split(separator: "-", omittingEmptySubsequences: false)
         guard parts.count == 3,
               let year = Int(parts[0]),

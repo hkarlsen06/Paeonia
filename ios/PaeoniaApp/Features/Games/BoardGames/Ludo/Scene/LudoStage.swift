@@ -99,6 +99,10 @@ final class LudoStage {
     /// that tumble ends. Their move then skips its own tumble.
     var partnerLiveRoll: (die: Int, endsAt: Double)?
     var diePlaced = false
+    /// Where the die in the hand goes, while a drag holds it.
+    var heldDie: SIMD3<Float>?
+    /// When the finger let the held die go. Its roll should arrive at once.
+    var releasedAt: Double?
     var outcomeWinner: BoardPlayer?
     var outcomeSchedule: OutcomeSchedule?
     var glowLevels: [Float] = [0, 0]
@@ -138,10 +142,11 @@ final class LudoStage {
         arView.environment.background = .color(.clear)
         if let environment = await LudoBackdrop.environment() {
             arView.environment.lighting.resource = environment
+            arView.environment.lighting.intensityExponent = LudoSceneStyle.environmentExposure
         }
         camera.camera = PerspectiveCameraComponent(
-            near: 0.1,
-            far: 400,
+            near: LudoSceneStyle.cameraNear,
+            far: LudoSceneStyle.cameraFar,
             fieldOfViewInDegrees: Float(LudoSceneStyle.cameraFieldOfViewDegrees),
             fieldOfViewOrientation: .vertical
         )
@@ -239,7 +244,7 @@ final class LudoStage {
                 pawn.updateIdle(deltaTime: step, clock: clock, reduceMotion: reduceMotion)
             }
         }
-        if let dieNode, !hasClip(.die) {
+        if let dieNode, !hasClip(.die), !updateHeldDie(deltaTime: step) {
             dieNode.updateIdle(clock: clock, isReady: input?.die == .ready, reduceMotion: reduceMotion)
         }
         updateGlows(deltaTime: step)

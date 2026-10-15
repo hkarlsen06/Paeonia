@@ -17,6 +17,12 @@ The data-safety rules in this file are about how the app treats a user's content
 
 Paeonia is an iOS-first private relationship app for couples who want to feel close through distance. The product should prioritize reliability, polish, privacy, local-first behavior, and small daily rituals.
 
+Subscription model:
+
+- Paeonia has no free tier. A couple uses the app only while one partner has an active subscription (or a grant). Without one, the app shows the paywall and nothing else.
+- One subscription covers both partners. The invited partner joins through the inviter's code without paying (`coupleHasEntitledMember` in `backend/convex/lib/access.ts`).
+- Every feature is included in the subscription. Do not ask whether a feature should be free or premium, and do not add per-feature paywalls or feature limits for unpaid users.
+
 Product constraints:
 
 - Native iOS app built with SwiftUI.

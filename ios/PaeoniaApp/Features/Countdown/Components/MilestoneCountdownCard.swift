@@ -8,12 +8,12 @@ import SwiftUI
 /// month together", with the date underneath. Leading with the day count makes the
 /// countdown the hero (instead of competing with the milestone name) and folds the
 /// "counting down to" framing into the same line, so there's no separate overline.
-/// The milestone, its day count, and its date all come from
-/// `RelationshipMilestoneCalculator`, so it stays current: a new couple counts down
-/// to their first month, while a couple of years counts down to their next
-/// anniversary or their next round day count. A small "Together for 394 days" line
-/// at the top of the tile shows how long the couple has been together, and is left
-/// out on the first day.
+/// The event, its day count, and its date all come from `CoupleDateTimeline`, so it
+/// stays current: a new couple counts down to their first month, a couple of years
+/// counts down to their next anniversary or round day count, and a countdown the
+/// couple added or a birthday takes the tile when it comes first. A small "Together
+/// for 394 days" line at the top of the tile shows how long the couple has been
+/// together, and is left out on the first day.
 ///
 /// Tapping the card opens `RelationshipTimelineView` (days together, the milestones
 /// ahead, and the date editor). The heart burst is reserved for the milestone day
@@ -23,6 +23,9 @@ struct MilestoneCountdownCard: View {
     let startedOn: String?
     let isSaving: Bool
     let onSave: (Date) async -> Bool
+    /// The couple's countdowns and birthdays. Nil shows milestones only.
+    let coupleDates: CoupleDatesViewModel?
+    let names: CoupleDateNames
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -41,17 +44,23 @@ struct MilestoneCountdownCard: View {
     init(
         startedOn: String?,
         isSaving: Bool = false,
-        onSave: @escaping (Date) async -> Bool = { _ in false }
+        onSave: @escaping (Date) async -> Bool = { _ in false },
+        coupleDates: CoupleDatesViewModel? = nil,
+        names: CoupleDateNames = CoupleDateNames()
     ) {
         self.startedOn = startedOn
         self.isSaving = isSaving
         self.onSave = onSave
+        self.coupleDates = coupleDates
+        self.names = names
     }
 
-    private var milestone: RelationshipMilestone? {
+    /// The soonest event. The tile asks for the start date first, so it stays the
+    /// setup tile until there is one.
+    private var milestone: CoupleDateEvent? {
         guard let startedOn else { return nil }
         // Built per read so it reflects the current calendar/time zone.
-        return RelationshipMilestoneCalculator().nextMilestone(startedOn: startedOn, now: now)
+        return CoupleDateTimeline().next(startedOn: startedOn, dates: coupleDates?.dates ?? CoupleDates(), now: now)
     }
 
     /// Whole days since the start, matching the "Together for" line in the timeline.
@@ -82,13 +91,15 @@ struct MilestoneCountdownCard: View {
                 RelationshipTimelineView(
                     startedOn: startedOn,
                     isSaving: isSaving,
-                    onSave: onSave
+                    onSave: onSave,
+                    coupleDates: coupleDates,
+                    names: names
                 )
             }
         }
     }
 
-    private func card(for milestone: RelationshipMilestone) -> some View {
+    private func card(for milestone: CoupleDateEvent) -> some View {
         Button(action: { isTimelinePresented = true }) {
             // The "Together for" line is pinned to the top so it sits on the same
             // line as the drawing card's header next to it. The countdown is
@@ -117,7 +128,7 @@ struct MilestoneCountdownCard: View {
         }
     }
 
-    private func countdownBody(for milestone: RelationshipMilestone) -> some View {
+    private func countdownBody(for milestone: CoupleDateEvent) -> some View {
         VStack(alignment: .center, spacing: PaeoniaSpacing.space12) {
             VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
                 countdown(for: milestone)
@@ -133,7 +144,7 @@ struct MilestoneCountdownCard: View {
             }
 
             // The milestone name follows as part of the same group.
-            Text(milestone.kind.displayName)
+            Text(verbatim: milestone.title(names: names))
                 .font(PaeoniaTypography.sectionTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .multilineTextAlignment(.center)
@@ -207,7 +218,7 @@ struct MilestoneCountdownCard: View {
 
     /// Plays the heart burst once when the card is showing "Today" — the moment is
     /// earned by reaching the milestone, not by tapping. Tapping opens the timeline.
-    private func celebrateIfMilestoneDay(_ milestone: RelationshipMilestone) {
+    private func celebrateIfMilestoneDay(_ milestone: CoupleDateEvent) {
         guard milestone.daysRemaining == 0, celebratedMilestoneDate != milestone.date else { return }
         celebratedMilestoneDate = milestone.date
         celebrate()
@@ -236,7 +247,7 @@ struct MilestoneCountdownCard: View {
     }
 
     @ViewBuilder
-    private func countdown(for milestone: RelationshipMilestone) -> some View {
+    private func countdown(for milestone: CoupleDateEvent) -> some View {
         if milestone.daysRemaining == 0 {
             // On the day itself there's nothing to count down — say so instead of "0".
             Text(.homeMilestoneToday)
@@ -265,7 +276,7 @@ struct MilestoneCountdownCard: View {
         }
     }
 
-    private func countdownLine(for milestone: RelationshipMilestone) -> some View {
+    private func countdownLine(for milestone: CoupleDateEvent) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
             Text(milestone.daysRemaining, format: .number)
                 .font(PaeoniaTypography.countdownNumber)

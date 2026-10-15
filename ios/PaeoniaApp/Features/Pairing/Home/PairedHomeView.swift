@@ -11,6 +11,9 @@ struct PairedHomeView: View {
     let relationshipStartedOn: String?
     let milestoneIsSaving: Bool
     let onSaveRelationshipStartedOn: (Date) async -> Bool
+    /// The couple's countdowns and birthdays, shown on the milestone tile and its timeline.
+    var coupleDates: CoupleDatesViewModel?
+    var coupleDateNames = CoupleDateNames()
     let dailyChallengeCardState: DailyChallengeCardState
     let dailyChallengeStreak: StreakPillState
     let zoomNamespace: Namespace.ID?
@@ -58,6 +61,8 @@ struct PairedHomeView: View {
         relationshipStartedOn: String? = nil,
         milestoneIsSaving: Bool = false,
         onSaveRelationshipStartedOn: @escaping (Date) async -> Bool = { _ in false },
+        coupleDates: CoupleDatesViewModel? = nil,
+        coupleDateNames: CoupleDateNames = CoupleDateNames(),
         dailyChallengeCardState: DailyChallengeCardState = DailyChallengeCardState(
             kind: .loading,
             answeredCount: 0,
@@ -89,6 +94,8 @@ struct PairedHomeView: View {
         self.relationshipStartedOn = relationshipStartedOn
         self.milestoneIsSaving = milestoneIsSaving
         self.onSaveRelationshipStartedOn = onSaveRelationshipStartedOn
+        self.coupleDates = coupleDates
+        self.coupleDateNames = coupleDateNames
         self.dailyChallengeCardState = dailyChallengeCardState
         self.dailyChallengeStreak = dailyChallengeStreak
         self.zoomNamespace = zoomNamespace
@@ -304,7 +311,9 @@ struct PairedHomeView: View {
         MilestoneCountdownCard(
             startedOn: relationshipStartedOn,
             isSaving: milestoneIsSaving,
-            onSave: onSaveRelationshipStartedOn
+            onSave: onSaveRelationshipStartedOn,
+            coupleDates: coupleDates,
+            names: coupleDateNames
         )
     }
 

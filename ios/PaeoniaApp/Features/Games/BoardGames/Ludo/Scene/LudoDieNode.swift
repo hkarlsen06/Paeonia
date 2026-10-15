@@ -32,7 +32,8 @@ final class LudoDieNode {
             pipColor,
             roughness: LudoSceneStyle.pipRoughness,
             clearcoat: 0,
-            showsBothSides: true
+            showsBothSides: true,
+            finish: .plain
         )
         let body = ModelEntity(
             mesh: .generateBox(size: LudoSceneStyle.dieSize, cornerRadius: LudoSceneStyle.dieCornerRadius),

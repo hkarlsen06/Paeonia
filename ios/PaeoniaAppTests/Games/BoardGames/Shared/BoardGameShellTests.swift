@@ -48,41 +48,25 @@ struct BoardGameShellTests {
         #expect(BoardGameStake.committed("") == nil)
     }
 
-    // MARK: Glow
+    // MARK: Active player
 
-    @Test func onlyTheActivePlayerGlows() {
-        #expect(BoardGameTurnLabel.yourTurn.glowState(forMe: true) == .breathing)
-        #expect(BoardGameTurnLabel.yourTurn.glowState(forMe: false) == .resting)
-        #expect(BoardGameTurnLabel.partnerTurn.glowState(forMe: true) == .resting)
-        #expect(BoardGameTurnLabel.partnerTurn.glowState(forMe: false) == .breathing)
+    @Test func onlyThePlayerWhoseTurnItIsIsActive() {
+        #expect(BoardGameTurnLabel.yourTurn.isActive(forMe: true))
+        #expect(!BoardGameTurnLabel.yourTurn.isActive(forMe: false))
+        #expect(!BoardGameTurnLabel.partnerTurn.isActive(forMe: true))
+        #expect(BoardGameTurnLabel.partnerTurn.isActive(forMe: false))
     }
 
-    @Test func theWinnersGlowStaysLitAndADrawLightsNone() {
-        #expect(BoardGameTurnLabel.youWon.glowState(forMe: true) == .steady)
-        #expect(BoardGameTurnLabel.youWon.glowState(forMe: false) == .resting)
-        #expect(BoardGameTurnLabel.partnerWon.glowState(forMe: false) == .steady)
-        #expect(BoardGameTurnLabel.partnerWon.glowState(forMe: true) == .resting)
-        #expect(BoardGameTurnLabel.draw.glowState(forMe: true) == .resting)
-        #expect(BoardGameTurnLabel.draw.glowState(forMe: false) == .resting)
-        // VoiceOver reads the turn on the lit avatar, so a draw has nothing to read.
+    @Test func theWinnerStaysActiveAndADrawMarksNone() {
+        #expect(BoardGameTurnLabel.youWon.isActive(forMe: true))
+        #expect(!BoardGameTurnLabel.youWon.isActive(forMe: false))
+        #expect(BoardGameTurnLabel.partnerWon.isActive(forMe: false))
+        #expect(!BoardGameTurnLabel.partnerWon.isActive(forMe: true))
+        #expect(!BoardGameTurnLabel.draw.isActive(forMe: true))
+        #expect(!BoardGameTurnLabel.draw.isActive(forMe: false))
+        // VoiceOver reads the turn on the active avatar, so a draw has nothing to read.
         #expect(BoardGameTurnLabel.draw.spoken(partnerName: "Robin") == nil)
         #expect(BoardGameTurnLabel.yourTurn.spoken(partnerName: "Robin") != nil)
-    }
-
-    @Test func glowPulseStartsDimPeaksHalfwayAndRepeats() {
-        let period = BoardGameGlowPulse.period
-        #expect(abs(BoardGameGlowPulse.opacity(at: 0) - BoardGameGlowPulse.low) < 0.0001)
-        #expect(abs(BoardGameGlowPulse.opacity(at: period / 2) - BoardGameGlowPulse.high) < 0.0001)
-        #expect(abs(BoardGameGlowPulse.opacity(at: period) - BoardGameGlowPulse.low) < 0.0001)
-        #expect(abs(BoardGameGlowPulse.opacity(at: 5 * period + 0.3) - BoardGameGlowPulse.opacity(at: 0.3)) < 0.0001)
-    }
-
-    @Test func glowPulseStaysBetweenItsBounds() {
-        for step in 0..<100 {
-            let opacity = BoardGameGlowPulse.opacity(at: Double(step) * 0.07)
-            #expect(opacity >= BoardGameGlowPulse.low - 0.0001)
-            #expect(opacity <= BoardGameGlowPulse.high + 0.0001)
-        }
     }
 
     // MARK: Result counts

@@ -13473,6 +13473,294 @@
         }
       }
     },
+    "home.milestone.birthday.addOwn" : {
+      "comment" : "Menu item on the milestones screen that sets the signed-in person's birthday",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add your birthday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bursdagen din"
+          }
+        }
+      }
+    },
+    "home.milestone.birthday.addPartner" : {
+      "comment" : "Menu item on the milestones screen that sets the partner's birthday. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add %@'s birthday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bursdagen til %@"
+          }
+        }
+      }
+    },
+    "home.milestone.birthday.editor.ownMessage" : {
+      "comment" : "Explanation above the picker for the signed-in person's own birthday. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the day you were born. %@ will see it too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg dagen du ble født. %@ ser den også."
+          }
+        }
+      }
+    },
+    "home.milestone.birthday.editor.partnerMessage" : {
+      "comment" : "Explanation above the picker for the partner's birthday. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose %@'s birthday. You'll both see it in your milestones."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg bursdagen til %@. Dere ser den begge i milepælene."
+          }
+        }
+      }
+    },
+    "home.milestone.birthday.partner" : {
+      "comment" : "Timeline row and Home tile title for the partner's birthday. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s birthday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bursdagen til %@"
+          }
+        }
+      }
+    },
+    "home.milestone.birthday.removeAction" : {
+      "comment" : "Button in the birthday editor that removes the birthday for both partners",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove birthday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern bursdagen"
+          }
+        }
+      }
+    },
+    "home.milestone.birthday.yours" : {
+      "comment" : "Timeline row and Home tile title for the signed-in person's birthday",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your birthday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bursdagen din"
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.dateLabel" : {
+      "comment" : "Accessible label for the countdown date picker",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagen"
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.deleteAction" : {
+      "comment" : "Button that deletes a countdown, and the confirm button in the delete alert",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete countdown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett nedtellingen"
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.deleteConfirm.message" : {
+      "comment" : "Message in the alert before deleting a countdown",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It will be removed for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den forsvinner for dere begge."
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.deleteConfirm.title" : {
+      "comment" : "Title of the alert before deleting a countdown",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this countdown?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slette nedtellingen?"
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.edit.title" : {
+      "comment" : "Navigation title when editing a countdown",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit countdown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre nedtelling"
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.editor.message" : {
+      "comment" : "Explanation above the countdown title field",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something you're looking forward to? You'll both see the days count down."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe dere gleder dere til? Dere ser begge dagene telle ned."
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.new.title" : {
+      "comment" : "Navigation title when adding a countdown",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New countdown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny nedtelling"
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.newAction" : {
+      "comment" : "Menu item on the milestones screen that adds a countdown",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New countdown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny nedtelling"
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.titlePlaceholder" : {
+      "comment" : "Placeholder in the countdown title field",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What are you counting down to?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva teller dere ned til?"
+          }
+        }
+      }
+    },
     "home.milestone.edit.action" : {
       "comment" : "VoiceOver label for the button that edits the relationship start date on the milestone tile",
       "extractionState" : "manual",
@@ -13635,6 +13923,24 @@
         }
       }
     },
+    "home.milestone.error.countdownLimit" : {
+      "comment" : "Error banner when the couple already has the most countdowns allowed. %@ is the limit (50)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can have up to %@ countdowns. Delete one to add another."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere kan ha opptil %@ nedtellinger. Slett en for å legge til en ny."
+          }
+        }
+      }
+    },
     "home.milestone.error.futureDate" : {
       "comment" : "Error shown if a relationship start date later than today is submitted",
       "extractionState" : "manual",
@@ -13725,6 +14031,24 @@
         }
       }
     },
+    "home.milestone.timeline.addAction" : {
+      "comment" : "VoiceOver label for the plus menu on the milestones screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a date"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til en dato"
+          }
+        }
+      }
+    },
     "home.milestone.timeline.days" : {
       "comment" : "Day count in the milestone timeline sheet when the count is not exactly 1. %@ is the number of days (e.g. 186)",
       "extractionState" : "manual",
@@ -13757,6 +14081,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 dag"
+          }
+        }
+      }
+    },
+    "home.milestone.timeline.editHint" : {
+      "comment" : "VoiceOver hint on a countdown or birthday row in the milestones screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens it so you can change it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner den så du kan endre den."
           }
         }
       }
@@ -20537,6 +20879,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Konto"
+          }
+        }
+      }
+    },
+    "settings.birthday.add" : {
+      "comment" : "Value on a birthday row in the Us tab while no birthday is set; tapping it opens the birthday picker",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til"
           }
         }
       }

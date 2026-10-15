@@ -17,6 +17,9 @@ struct SettingsView: View {
     let relationshipStartedOn: String?
     let milestoneIsSaving: Bool
     let onSaveRelationshipStartedOn: (Date) async -> Bool
+    /// Both partners' birthdays: yours on the profile screen, the partner's in the
+    /// relationship section. Nil hides both rows.
+    let coupleDates: CoupleDatesViewModel?
     let locationViewModel: LocationMapViewModel
     /// The partner's display name, so location/notification copy names the partner
     /// instead of saying "your partner".
@@ -44,8 +47,6 @@ struct SettingsView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .title) private var profileAvatarSize: CGFloat = 56
 
-    @State private var selectedRelationshipDate = Date()
-    @State private var isEditingRelationshipDate = false
     /// Lives here rather than on the profile screen, so a save keeps its state
     /// and still reports back after the user leaves that screen.
     @State private var profileEditor = ProfileEditorViewModel()
@@ -65,6 +66,7 @@ struct SettingsView: View {
         relationshipStartedOn: String? = nil,
         milestoneIsSaving: Bool = false,
         onSaveRelationshipStartedOn: @escaping (Date) async -> Bool = { _ in false },
+        coupleDates: CoupleDatesViewModel? = nil,
         locationViewModel: LocationMapViewModel,
         partnerName: String,
         onLeftRelationship: @escaping () -> Void = {},
@@ -89,6 +91,7 @@ struct SettingsView: View {
         self.relationshipStartedOn = relationshipStartedOn
         self.milestoneIsSaving = milestoneIsSaving
         self.onSaveRelationshipStartedOn = onSaveRelationshipStartedOn
+        self.coupleDates = coupleDates
         self.locationViewModel = locationViewModel
         self.partnerName = partnerName
         self.onLeftRelationship = onLeftRelationship
@@ -116,7 +119,14 @@ struct SettingsView: View {
                 Section {
                     profileRow
                 }
-                relationshipSection
+                SettingsRelationshipSection(
+                    relationshipStartedOn: relationshipStartedOn,
+                    isSavingStartedOn: milestoneIsSaving,
+                    onSaveStartedOn: onSaveRelationshipStartedOn,
+                    partnerBirthdayRow: birthdayRow(for: partnerUserID),
+                    locationViewModel: locationViewModel,
+                    partnerName: partnerName
+                )
                 appSection
                 AdminSettingsSection(access: adminAccess, gateway: adminGateway)
                 helpSection
@@ -148,14 +158,6 @@ struct SettingsView: View {
             profileEditor.consumeEvent()
         }
         .sensoryFeedback(.success, trigger: profileEditor.completedSaveCount)
-        .sheet(isPresented: $isEditingRelationshipDate) {
-            RelationshipDateEditorView(
-                selectedDate: $selectedRelationshipDate,
-                isEditing: relationshipStartedOn != nil,
-                isSaving: milestoneIsSaving,
-                onSave: onSaveRelationshipStartedOn
-            )
-        }
     }
 }
 
@@ -189,6 +191,7 @@ extension SettingsView {
                 onSave: { [onUpdateProfile] displayName, photoUpdate in
                     await onUpdateProfile(displayName, photoUpdate)
                 },
+                birthdayRow: birthdayRow(for: currentUserID),
                 accountSection: SettingsAccountSection(
                     viewModel: viewModel,
                     authProvider: currentAuthProvider,
@@ -235,52 +238,13 @@ extension SettingsView {
         currentDisplayName?.trimmedNonEmpty ?? String(localized: .settingsProfileFallbackName)
     }
 
-    private var relationshipSection: some View {
-        Section {
-            // The date editor is a modal task (Cancel/Save), so it presents as a
-            // sheet, same as from the Home tab milestone tile, instead of a push
-            // that would nest the editor's own navigation stack.
-            Button {
-                selectedRelationshipDate = relationshipStartDate ?? Date()
-                isEditingRelationshipDate = true
-            } label: {
-                LabeledContent {
-                    if let relationshipStartDate {
-                        Text(relationshipStartDate, format: .dateTime.day().month().year())
-                    }
-                } label: {
-                    // A Button row draws its label in the tint color, so match the
-                    // NavigationLink rows.
-                    Label {
-                        Text(.settingsRelationshipDateTitle)
-                            .foregroundStyle(.paeoniaTextPrimary)
-                    } icon: {
-                        Image(systemName: "calendar")
-                    }
-                }
-            }
-
-            NavigationLink {
-                LocationSettingsView(
-                    viewModel: locationViewModel,
-                    partnerName: partnerName
-                )
-            } label: {
-                Label {
-                    Text(.settingsLocationSectionTitle)
-                } icon: {
-                    Image(systemName: "location.fill")
-                }
-            }
-        } header: {
-            Text(.settingsRelationshipSectionTitle)
-        }
-    }
-
-    private var relationshipStartDate: Date? {
-        relationshipStartedOn
-            .flatMap { try? PairingStartDate(rawValue: $0) }
-            .flatMap { $0.date() }
+    private func birthdayRow(for userID: UUID?) -> BirthdaySettingsRow? {
+        guard let userID, let coupleDates else { return nil }
+        return BirthdaySettingsRow(
+            userID: userID,
+            coupleDates: coupleDates,
+            names: CoupleDateNames(currentUserID: currentUserID, partnerUserID: partnerUserID, partnerName: partnerName)
+        )
     }
 
     private var appSection: some View {

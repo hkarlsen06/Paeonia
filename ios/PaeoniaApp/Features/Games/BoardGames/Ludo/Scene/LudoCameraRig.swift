@@ -240,9 +240,9 @@ nonisolated struct LudoCameraRig: Equatable, Sendable {
         return CGPoint(x: (ndc.x + 1) / 2, y: (1 - ndc.y) / 2)
     }
 
-    /// The point on the board's surface (y 0) that shows at `point` in the view, from
-    /// 0 to 1 across and down, as (x, z). Nil when that spot of the view shows sky.
-    func boardPoint(at point: CGPoint) -> SIMD2<Double>? {
+    /// The point at `height` above the board's surface that shows at `point` in the
+    /// view, from 0 to 1 across and down, as (x, z). Nil when that spot of the view shows sky.
+    func boardPoint(at point: CGPoint, height: Double = 0) -> SIMD2<Double>? {
         let tanHalf = tan(Double(fieldOfViewDegrees) / 2 * .pi / 180)
         let camera = SIMD3<Double>(Double(position.x), Double(position.y), Double(position.z))
         let focus = SIMD3<Double>(Double(target.x), Double(target.y), Double(target.z))
@@ -250,8 +250,8 @@ nonisolated struct LudoCameraRig: Equatable, Sendable {
         let ray = axes.forward
             + axes.right * ((Double(point.x) * 2 - 1) * tanHalf * aspect)
             + axes.up * ((1 - Double(point.y) * 2) * tanHalf)
-        guard ray.y < -0.0001 else { return nil }
-        let hit = camera + ray * (-camera.y / ray.y)
+        guard ray.y < -0.0001, camera.y > height else { return nil }
+        let hit = camera + ray * ((height - camera.y) / ray.y)
         return SIMD2(hit.x, hit.z)
     }
 

@@ -111,7 +111,14 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             SendHeartsPendingOperationHandler(gateway: heartsGateway),
             MarkHeartsSeenPendingOperationHandler(gateway: heartsGateway),
         ]
-        let defaultHandlers = locationHandlers + heartsHandlers + GamesPendingOperationRegistry.handlers(client: client)
+        let coupleDatesGateway = LiveCoupleDatesGateway(client: client)
+        let coupleDatesHandlers: [any PendingSyncOperationHandling] = [
+            SaveCountdownPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
+            DeleteCountdownPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
+            SetBirthdayPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
+        ]
+        let defaultHandlers = locationHandlers + heartsHandlers + coupleDatesHandlers
+            + GamesPendingOperationRegistry.handlers(client: client)
 
         return [
             PendingSyncOperationDrainStream(
