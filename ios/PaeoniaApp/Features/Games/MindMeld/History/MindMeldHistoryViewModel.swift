@@ -12,8 +12,11 @@ final class MindMeldHistoryViewModel {
     private(set) var stats: RemoteMindMeldStats?
     /// The first read is under way and there is nothing to show yet.
     private(set) var isLoading = true
-    /// The first read failed and there is nothing to show.
-    private(set) var loadFailed = false
+    /// Why the first read failed, while there is nothing to show.
+    private(set) var loadFailure: PaeoniaFailure?
+    var loadFailed: Bool {
+        loadFailure != nil
+    }
     private(set) var loadMoreFailed = false
     /// There are older games to load.
     private(set) var hasMore = false
@@ -62,7 +65,7 @@ final class MindMeldHistoryViewModel {
             games = []
             stats = nil
             isLoading = true
-            loadFailed = false
+            loadFailure = nil
             loadMoreFailed = false
             hasMore = false
             hasReadCache = false
@@ -88,8 +91,8 @@ final class MindMeldHistoryViewModel {
             await dependencies.mindMeldCache.saveHistoryFirstPage(page, ownerUserID: userID)
         } catch {
             guard !Self.isCancellation(error), currentUserID == userID else { return }
-            // Only a screen with nothing to show says it is offline.
-            loadFailed = games.isEmpty
+            // Only a screen with nothing to show says the read failed.
+            loadFailure = games.isEmpty ? PaeoniaFailure(error) : nil
         }
         isLoading = false
     }
@@ -120,7 +123,7 @@ final class MindMeldHistoryViewModel {
         hasMore = nextCursor != nil
         stats = page.stats
         hasLoaded = true
-        loadFailed = false
+        loadFailure = nil
     }
 
     // MARK: - Paging
@@ -148,7 +151,9 @@ final class MindMeldHistoryViewModel {
                 beforeGameNumber: cursor,
                 limit: pageSize
             )
-            guard currentUserID == userID else { return }
+            // A refresh that replaced the list meanwhile set its own cursor, and
+            // this page would skip the games between the two.
+            guard currentUserID == userID, nextCursor == cursor else { return }
             let known = Set(games.map(\.id))
             games += page.games.filter { !known.contains($0.id) }
             nextCursor = page.nextBeforeGameNumber

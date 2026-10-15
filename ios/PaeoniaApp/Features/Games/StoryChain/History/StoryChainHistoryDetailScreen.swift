@@ -9,7 +9,7 @@ struct StoryChainHistoryDetailHost: View {
     private enum Load {
         case loading
         case loaded(RemoteStoryChainStory)
-        case failed
+        case failed(PaeoniaFailure)
     }
 
     @State private var load = Load.loading
@@ -52,11 +52,12 @@ struct StoryChainHistoryDetailHost: View {
                 .controlSize(.large)
         case let .loaded(story):
             StoryChainHistoryDetailScreen(story: story, history: history)
-        case .failed:
-            PaeoniaEmptyStateView(
-                title: .storyChainOfflineTitle,
-                message: .storyChainHistoryOfflineMessage,
-                systemImage: "wifi.slash"
+        case let .failed(failure):
+            PaeoniaLoadFailureView(
+                failure: failure,
+                offlineTitle: .storyChainOfflineTitle,
+                offlineMessage: .storyChainHistoryOfflineMessage,
+                failedMessage: .storyChainHistoryStoryFailedMessage
             ) {
                 Button {
                     Task { await loadStory() }
@@ -75,10 +76,17 @@ struct StoryChainHistoryDetailHost: View {
         if case .failed = load {
             load = .loading
         }
-        if let story = await history.loadStory(id: storyID) {
-            load = .loaded(story)
-        } else if !Task.isCancelled {
-            load = .failed
+        do {
+            if let story = try await history.loadStory(id: storyID) {
+                load = .loaded(story)
+            } else if !Task.isCancelled {
+                // The couple has no such story, which no connection would fix.
+                load = .failed(.other)
+            }
+        } catch {
+            if !Task.isCancelled {
+                load = .failed(PaeoniaFailure(error))
+            }
         }
     }
 }

@@ -9,7 +9,14 @@ struct StreakPillState: Equatable {
     /// When the restore offer closes. The label re-checks at this moment so the pill
     /// stops advertising a restore the second it lapses, without waiting for new data.
     var restoreDeadline: Date?
+    /// When the live streak ends unless both partners show up first.
+    var endsAt: Date?
+    /// The live streak ends within `atRiskLeadTime`. Set by `resolved(at:)`.
+    private(set) var isAtRisk = false
     private var isAvailable: Bool
+
+    /// How long before the streak ends the pill starts showing the hourglass.
+    static let atRiskLeadTime: TimeInterval = 4 * 60 * 60
 
     static let hidden = StreakPillState(
         count: 0,
@@ -23,12 +30,14 @@ struct StreakPillState: Equatable {
         isRestorable: Bool,
         restorableCount: Int,
         restoreDeadline: Date? = nil,
+        endsAt: Date? = nil,
         isAvailable: Bool = true
     ) {
         self.count = count
         self.isRestorable = isRestorable
         self.restorableCount = restorableCount
         self.restoreDeadline = restoreDeadline
+        self.endsAt = endsAt
         self.isAvailable = isAvailable
     }
 
@@ -37,16 +46,32 @@ struct StreakPillState: Equatable {
         isRestorable = streak.isRestorable
         restorableCount = streak.restorableCount
         restoreDeadline = streak.restoreDeadline
+        endsAt = streak.endsAt
         isAvailable = true
     }
 
     /// The pill as it should look at `now`: an offer whose deadline has been reached
-    /// (or passed) is no longer restorable and falls back to the live count.
+    /// (or passed) is no longer restorable and falls back to the live count, and a
+    /// live streak close to its end shows the hourglass.
     func resolved(at now: Date) -> StreakPillState {
-        guard isRestorable, let restoreDeadline, restoreDeadline <= now else { return self }
-        var lapsed = self
-        lapsed.isRestorable = false
-        return lapsed
+        var resolved = self
+        if isRestorable, let restoreDeadline, restoreDeadline <= now {
+            resolved.isRestorable = false
+        }
+        resolved.isAtRisk = resolved.atRiskFrom.map { $0 <= now } ?? false
+        return resolved
+    }
+
+    /// When the hourglass appears, or `nil` when there is no live streak to lose.
+    /// A paused streak already shows the muted flame, so it never gets the hourglass.
+    private var atRiskFrom: Date? {
+        guard count >= 1, !isRestorable, let endsAt else { return nil }
+        return endsAt.addingTimeInterval(-Self.atRiskLeadTime)
+    }
+
+    /// The moments the pill looks different without new data.
+    var changeDates: [Date] {
+        [restoreDeadline, atRiskFrom].compactMap(\.self).sorted()
     }
 
     /// The number shown: the lost streak while a restore is offered (so it advertises
@@ -81,14 +106,10 @@ struct DailyStreakToolbarLabel: View {
     @ScaledMetric(relativeTo: .subheadline) private var flameHeight: CGFloat = 22
 
     var body: some View {
-        if state.isRestorable, let deadline = state.restoreDeadline {
-            // Draws again at the deadline, so a restore offer that lapses while the
-            // screen stays open stops showing the "get it back" look.
-            TimelineView(.explicit([deadline])) { _ in
-                tappable(state.resolved(at: .now))
-            }
-        } else {
-            tappable(state)
+        // Draws again when a restore offer lapses or the streak gets close to its end,
+        // so the pill changes while the screen stays open.
+        TimelineView(.explicit(state.changeDates)) { _ in
+            tappable(state.resolved(at: .now))
         }
     }
 
@@ -108,10 +129,19 @@ struct DailyStreakToolbarLabel: View {
     private func label(for state: StreakPillState) -> some View {
         // On a milestone day the gold dot belongs to the number, so it sits right
         // against it and the flame moves a little further away.
-        HStack(spacing: state.isMilestone ? PaeoniaSpacing.space8 : PaeoniaSpacing.space4) {
+        // The hourglass hangs off the flame's top right corner, so it needs the same room.
+        HStack(spacing: state.isMilestone || state.isAtRisk ? PaeoniaSpacing.space8 : PaeoniaSpacing.space4) {
             FlameShape()
                 .fill(flameStyle(for: state))
                 .frame(width: flameHeight * 0.84, height: flameHeight)
+                .overlay(alignment: .topTrailing) {
+                    if state.isAtRisk {
+                        Image(systemName: "hourglass")
+                            .font(.system(size: flameHeight * 0.5, weight: .bold))
+                            .foregroundStyle(.paeoniaTextPrimary)
+                            .offset(x: flameHeight * 0.2, y: -flameHeight * 0.1)
+                    }
+                }
 
             HStack(spacing: PaeoniaSpacing.space2) {
                 if state.isMilestone {
@@ -159,6 +189,7 @@ struct DailyStreakToolbarLabel: View {
     /// is paused and how long it was.
     private func accessibilityLabel(for state: StreakPillState) -> String {
         let streakText = "\(state.displayCount) \(String(localized: .homeStreakLabel))"
+        if state.isAtRisk { return String(localized: .streakAtRiskPillAccessibility(streakText)) }
         if state.isMilestone { return String(localized: .streakMilestonePillAccessibility(streakText)) }
         guard state.isRestorable else { return streakText }
         return String(localized: .streakRestorePillAccessibilityLabel(streakText))
@@ -188,6 +219,21 @@ struct DailyStreakToolbarLabel: View {
         .padding()
         .background(.paeoniaBackgroundPrimary)
         .preferredColorScheme(.dark)
+}
+
+#Preview("Ends soon") {
+    DailyStreakToolbarLabel(
+        state: StreakPillState(
+            count: 12,
+            isRestorable: false,
+            restorableCount: 0,
+            endsAt: .now.addingTimeInterval(60 * 60)
+        ),
+        onTap: {}
+    )
+    .padding()
+    .background(.paeoniaBackgroundPrimary)
+    .preferredColorScheme(.dark)
 }
 
 #Preview("Restorable") {

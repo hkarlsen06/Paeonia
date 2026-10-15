@@ -69,8 +69,8 @@ struct DrawAndGuessHistoryScreen: View {
             ProgressView()
                 .tint(.paeoniaAccentPrimary)
                 .frame(maxWidth: .infinity, minHeight: 160)
-        case .offline:
-            offlineState
+        case .failed(let failure):
+            failureState(failure)
         case .loaded:
             if viewModel.isEmpty {
                 emptyState
@@ -148,11 +148,12 @@ struct DrawAndGuessHistoryScreen: View {
         }
     }
 
-    private var offlineState: some View {
-        PaeoniaEmptyStateView(
-            title: .gamesDrawAndGuessChooseOfflineTitle,
-            message: .gamesDrawAndGuessHistoryOfflineMessage,
-            systemImage: "wifi.slash"
+    private func failureState(_ failure: PaeoniaFailure) -> some View {
+        PaeoniaLoadFailureView(
+            failure: failure,
+            offlineTitle: .gamesDrawAndGuessChooseOfflineTitle,
+            offlineMessage: .gamesDrawAndGuessHistoryOfflineMessage,
+            failedMessage: .gamesDrawAndGuessHistoryFailedMessage
         ) {
             Button {
                 Task { await viewModel.retry() }

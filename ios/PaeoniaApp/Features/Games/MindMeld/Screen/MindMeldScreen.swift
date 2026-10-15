@@ -161,8 +161,8 @@ private struct MindMeldStatusView: View {
         GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space16) {
                 Spacer(minLength: 0)
-                if viewModel.startFailed {
-                    failedState
+                if let failure = viewModel.startFailure {
+                    failedState(failure)
                 } else {
                     ProgressView()
                         .tint(.paeoniaAccentPrimary)
@@ -182,11 +182,11 @@ private struct MindMeldStatusView: View {
         }
     }
 
-    private var failedState: some View {
-        PaeoniaEmptyStateView(
-            title: .mindMeldOfflineTitle,
-            message: .mindMeldOfflineMessage,
-            systemImage: "wifi.slash"
+    private func failedState(_ failure: PaeoniaFailure) -> some View {
+        PaeoniaLoadFailureView(
+            failure: failure,
+            offlineMessage: .mindMeldOfflineMessage,
+            failedMessage: .mindMeldStartFailedMessage
         ) {
             Button {
                 Task { await viewModel.retryStart() }

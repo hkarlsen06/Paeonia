@@ -137,7 +137,7 @@ struct DrawAndGuessHistoryDetailScreen: View {
         PaeoniaEmptyStateView(
             title: .gamesNoticeDrawingUnavailableTitle,
             message: .gamesNoticeDrawingUnavailableMessage,
-            systemImage: "wifi.slash"
+            systemImage: "exclamationmark.circle"
         ) {
             Button {
                 Task { await viewModel.retryLoading(showsAtOnce: reduceMotion) }

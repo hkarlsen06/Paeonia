@@ -78,7 +78,7 @@ struct StoryChainHistoryTests {
         let (history, _) = makeHistory()
 
         await history.refresh()
-        #expect(history.phase == .offline)
+        #expect(history.phase == .failed(.other))
 
         environment.gateway.unfail("history")
         await history.retry()
@@ -225,7 +225,7 @@ struct StoryChainHistoryTests {
 
     // MARK: One story
 
-    @Test func aFinishedStoryInTheCachedStateOpensWithoutTheServer() async {
+    @Test func aFinishedStoryInTheCachedStateOpensWithoutTheServer() async throws {
         let story = finishedStoryChainStory(starred: true)
         let env = StoryChainDataEnvironment(
             state: Fixture.state(
@@ -237,25 +237,25 @@ struct StoryChainHistoryTests {
         let stars = StoryChainStars(dependencies: dependencies) { Fixture.me }
         let history = ViewModel(dependencies: dependencies, stars: stars, participants: participants)
 
-        let loaded = await history.loadStory(id: story.id)
+        let loaded = try await history.loadStory(id: story.id)
 
         #expect(loaded == story)
         #expect(!env.gateway.calls.contains("loadStory"))
         #expect(stars.isStarred(story.id))
     }
 
-    @Test func anOlderStoryComesFromTheServerWithItsStar() async {
+    @Test func anOlderStoryComesFromTheServerWithItsStar() async throws {
         let older = finishedStoryChainStory(id: UUID(), number: 2, starred: true)
         environment.gateway.setStoryToLoad(older)
         let (history, stars) = makeHistory()
 
-        let loaded = await history.loadStory(id: older.id)
+        let loaded = try await history.loadStory(id: older.id)
 
         #expect(loaded == older)
         #expect(stars.isStarred(older.id))
     }
 
-    @Test func aStoryThatIsStillBeingWrittenInTheCachedStateIsReadFromTheServer() async {
+    @Test func aStoryThatIsStillBeingWrittenInTheCachedStateIsReadFromTheServer() async throws {
         let writing = Fixture.story(.writing, lines: Fixture.lines(3, starter: Fixture.me))
         let env = StoryChainDataEnvironment(
             state: Fixture.state(Fixture.game(.writing, turn: Fixture.partner), current: writing)
@@ -269,17 +269,19 @@ struct StoryChainHistoryTests {
             participants: participants
         )
 
-        #expect(await history.loadStory(id: finished.id) == finished)
+        #expect(try await history.loadStory(id: finished.id) == finished)
     }
 
-    @Test func aStoryNobodyHasIsNilAndSoIsOneThatCannotBeRead() async {
+    @Test func aStoryNobodyHasIsNilAndOneThatCannotBeReadThrows() async throws {
         let (history, _) = makeHistory()
-        #expect(await history.loadStory(id: UUID()) == nil)
+        #expect(try await history.loadStory(id: UUID()) == nil)
 
         let known = finishedStoryChainStory(id: UUID(), number: 2)
         environment.gateway.setStoryToLoad(known)
         environment.gateway.fail("loadStory")
-        #expect(await history.loadStory(id: known.id) == nil)
+        await #expect(throws: (any Error).self) {
+            try await history.loadStory(id: known.id)
+        }
     }
 
     // MARK: People

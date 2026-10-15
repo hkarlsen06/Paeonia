@@ -13,7 +13,12 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     private(set) var joinPreview: PairingInvitePreview?
     /// The newest problem. The view shows it in the top banner and then clears it, except
     /// for `.createFailed`, which stays so the retry card can show.
-    private(set) var error: PairingInviteFlowError?
+    private(set) var error: PairingInviteFlowError? {
+        didSet { errorFailure = .other }
+    }
+    /// Why the newest problem happened, so its copy blames the connection only when
+    /// the phone is offline. A problem without a thrown error counts as `.other`.
+    private(set) var errorFailure = PaeoniaFailure.other
     /// The newest join problem. Unlike `error`, the view does not clear it, so the caller
     /// can check right after a failed preview whether the code is worth keeping.
     private(set) var lastJoinError: PairingInviteFlowError?
@@ -94,6 +99,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
             inviteStore.saveInvite(createdInvite, for: userID)
         } catch {
             self.error = .createFailed
+            errorFailure = PaeoniaFailure(error)
         }
 
         isLoading = false
@@ -142,6 +148,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
             } else {
                 self.error = .replaceFailed
             }
+            errorFailure = PaeoniaFailure(error)
             return false
         }
     }
@@ -211,7 +218,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         } catch is CancellationError {
             return false
         } catch {
-            return failJoin(.joinCheckFailed)
+            return failJoin(.joinCheckFailed, cause: error)
         }
     }
 
@@ -242,19 +249,13 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
             return false
         } catch {
             clearJoinPreview()
-            return failJoin(.joinFailed)
+            return failJoin(.joinFailed, cause: error)
         }
     }
 
     func clearJoinPreview() {
         joinPreview = nil
         previewedJoinCode = nil
-    }
-
-    private func failJoin(_ failure: PairingInviteFlowError) -> Bool {
-        error = failure
-        lastJoinError = failure
-        return false
     }
 
     // MARK: - Invite helpers
@@ -305,8 +306,21 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
                 self.cachedInvite = nil
             } else {
                 self.error = .createFailed
+                errorFailure = PaeoniaFailure(error)
             }
             isLoading = false
         }
+    }
+}
+
+extension PairingInviteViewModel {
+    /// Reports a join problem. `cause` is the thrown error, when there was one.
+    private func failJoin(_ failure: PairingInviteFlowError, cause: (any Error)? = nil) -> Bool {
+        error = failure
+        if let cause {
+            errorFailure = PaeoniaFailure(cause)
+        }
+        lastJoinError = failure
+        return false
     }
 }

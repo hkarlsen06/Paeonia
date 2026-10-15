@@ -200,7 +200,7 @@ struct SettingsViewModelTests {
         let restored = await viewModel.restorePurchases()
 
         #expect(!restored)
-        #expect(viewModel.notice == .restorePurchasesFailed)
+        #expect(viewModel.notice == .restorePurchasesFailed(.other))
         #expect(!viewModel.isRestoringPurchases)
     }
 }
@@ -380,7 +380,7 @@ extension SettingsViewModelTests {
 
         await viewModel.loadNotificationSettings()
 
-        #expect(viewModel.notificationLoadState == .failed)
+        #expect(viewModel.notificationLoadState == .failed(.other))
         #expect(!viewModel.isNotificationSettingsLoaded)
 
         let observing = Task { await viewModel.observeNotificationSettings() }

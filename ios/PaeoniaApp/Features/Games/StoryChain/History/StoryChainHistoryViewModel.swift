@@ -9,8 +9,8 @@ nonisolated struct StoryChainHistoryListing: Equatable, Sendable {
     var nextCursor: Int?
     /// The cache or the server has answered, even if the answer is no stories.
     var hasLoaded = false
-    /// The last try to load the first page failed.
-    var didFail = false
+    /// Why the last try to load the first page failed. Nil after a good read.
+    var failure: PaeoniaFailure?
     var isLoadingMore = false
     var loadMoreFailed = false
 
@@ -35,7 +35,7 @@ nonisolated struct StoryChainHistoryListing: Equatable, Sendable {
             nextCursor = page.nextBeforeStoryNumber
         }
         hasLoaded = true
-        didFail = false
+        failure = nil
     }
 
     /// Adds an older page. A story that is already here is not added twice.
@@ -63,7 +63,7 @@ final class StoryChainHistoryViewModel {
         case loading
         case loaded
         /// Nothing cached and the first read failed.
-        case offline
+        case failed(PaeoniaFailure)
     }
 
     var filter: Filter = .all
@@ -147,10 +147,10 @@ final class StoryChainHistoryViewModel {
             return .loaded
         }
         // The starred read failed, but the cached "All" list still tells which are starred.
-        if filter == .starred, current.didFail, listing(.all).hasLoaded {
+        if filter == .starred, current.failure != nil, listing(.all).hasLoaded {
             return .loaded
         }
-        return current.didFail ? .offline : .loading
+        return current.failure.map(Phase.failed) ?? .loading
     }
 
     var isEmpty: Bool {
@@ -225,8 +225,8 @@ final class StoryChainHistoryViewModel {
         } catch {
             guard !Self.isCancellation(error), currentUserID == userID else { return }
             // A failed read keeps the list that is on screen. Only a screen with
-            // nothing to show says it is offline.
-            listings[filter, default: StoryChainHistoryListing()].didFail = true
+            // nothing to show says the read failed.
+            listings[filter, default: StoryChainHistoryListing()].failure = PaeoniaFailure(error)
         }
     }
 
@@ -277,9 +277,9 @@ final class StoryChainHistoryViewModel {
     // MARK: - One story
 
     /// A finished story for the detail screen: from the cached state when it
-    /// holds the story, otherwise from the server. Nil when the story is not
-    /// cached and the read failed, or the couple has no such story.
-    func loadStory(id: UUID) async -> RemoteStoryChainStory? {
+    /// holds the story, otherwise from the server. Nil when the couple has no such
+    /// story. Throws when the story is not cached and the read failed.
+    func loadStory(id: UUID) async throws -> RemoteStoryChainStory? {
         guard let userID = currentUserID else { return nil }
         let document = await dependencies.storyChainCache.document(ownerUserID: userID)
         let cached = [document.state?.currentStory, document.state?.previousStory]
@@ -290,7 +290,7 @@ final class StoryChainHistoryViewModel {
             return cached
         }
         let mark = stars.changeMark
-        guard let story = try? await dependencies.storyChainGateway.loadStory(id: id),
+        guard let story = try await dependencies.storyChainGateway.loadStory(id: id),
               !Task.isCancelled, currentUserID == userID
         else { return nil }
         if story.state == .finished {

@@ -305,6 +305,6 @@ struct MindMeldPartnerTests {
         await viewModel.sendInvite()
 
         #expect(viewModel.invite == .available)
-        #expect(viewModel.notice == .couldNotSendInvite)
+        #expect(viewModel.notice == .couldNotSendInvite(.other))
     }
 }

@@ -78,11 +78,13 @@ struct StoryChainChooseOpeningView: View {
         }
     }
 
+    /// Without a failed read, nothing says the connection is to blame.
     private var offline: some View {
-        PaeoniaEmptyStateView(
-            title: .storyChainOfflineTitle,
-            message: .storyChainChooseOfflineMessage,
-            systemImage: "wifi.slash"
+        PaeoniaLoadFailureView(
+            failure: viewModel.refreshFailure ?? .other,
+            offlineTitle: .storyChainOfflineTitle,
+            offlineMessage: .storyChainChooseOfflineMessage,
+            failedMessage: .storyChainChooseFailedMessage
         ) {
             Button {
                 Task { await viewModel.refresh() }

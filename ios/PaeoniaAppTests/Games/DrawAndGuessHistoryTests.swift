@@ -107,7 +107,7 @@ struct DrawAndGuessHistoryTests {
         environment.gateway.fail("history")
 
         await history.refresh()
-        #expect(history.phase == .offline)
+        #expect(history.phase == .failed(.other))
 
         environment.gateway.unfail("history")
         await history.retry()

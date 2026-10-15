@@ -16,7 +16,7 @@ extension BoardGameViewModel {
             }
             await refresh()
         } catch {
-            phase = .unavailable
+            phase = .unavailable(PaeoniaFailure(error))
         }
     }
 
@@ -133,10 +133,10 @@ extension BoardGameViewModel {
                 return
             }
             localInviteSentAt = nil
-            notice = .couldNotSendInvite
+            notice = .couldNotSendInvite(PaeoniaFailure(error))
         } catch {
             localInviteSentAt = nil
-            notice = .couldNotSendInvite
+            notice = .couldNotSendInvite(PaeoniaFailure(error))
         }
         updatePresence()
     }

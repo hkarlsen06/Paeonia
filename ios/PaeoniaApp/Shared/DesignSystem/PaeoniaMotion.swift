@@ -20,6 +20,8 @@ enum PaeoniaMotion {
 
     static let buttonPress = standardCurve(duration: motionFast)
     static let stateChange = standardCurve(duration: motionDefault)
+    /// Matches the keyboard's own slide, for layout that changes as it opens or closes.
+    static let keyboard = Animation.spring(duration: 0.3, bounce: 0)
     static let cardReveal = Animation.spring(duration: motionDefault, bounce: 0.18)
     static let meaningfulMoment = standardCurve(duration: motionSlow)
     static let pairedScreenTransition = Animation.spring(duration: motionCelebration, bounce: 0.16)

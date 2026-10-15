@@ -299,7 +299,7 @@ struct DailyQuestionChatViewModelTests {
 
         await viewModel.load()
 
-        #expect(viewModel.notice == .loadFailed)
+        #expect(viewModel.notice == .loadFailed(.other))
     }
 
     @Test func theEmptyStateWaitsForTheFirstLoadAndEndsEvenWhenChatIsUnavailable() async {
@@ -428,7 +428,7 @@ struct DailyQuestionChatEditTests {
 
         #expect(await viewModel.saveEdit("See you soon") == .failed)
         #expect(viewModel.editTarget != nil)
-        #expect(viewModel.notice == .editFailed)
+        #expect(viewModel.notice == .editFailed(.other))
     }
 
     @Test func theServerClosingTheWindowEndsTheEdit() async {

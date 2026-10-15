@@ -5,7 +5,7 @@ import Observation
 @Observable
 final class DailyQuestionChatViewModel {
     enum Notice: Equatable {
-        case loadFailed
+        case loadFailed(PaeoniaFailure)
         /// The message could not be saved on this phone. It stays in the message field.
         case sendFailed
         /// The message was saved but the server turned it down. It stays in the list, marked as failed.
@@ -17,7 +17,7 @@ final class DailyQuestionChatViewModel {
         /// Picked photos could not be prepared or saved on this phone.
         case photoFailed
         /// A change to a sent message didn't reach the server. The text stays in the box.
-        case editFailed
+        case editFailed(PaeoniaFailure)
         /// The five minutes to change a message ran out.
         case editWindowClosed
     }
@@ -197,7 +197,7 @@ final class DailyQuestionChatViewModel {
             // Without a thread there is nothing missing, and the composer still works.
             // Only a thread that exists but cannot be read is a load error.
             if !isCancellation(error), threadID != nil, messages.isEmpty {
-                notice = .loadFailed
+                notice = .loadFailed(PaeoniaFailure(error))
             }
         }
     }
@@ -648,7 +648,7 @@ extension DailyQuestionChatViewModel {
             notice = .editWindowClosed
             return .windowClosed
         } catch {
-            notice = .editFailed
+            notice = .editFailed(PaeoniaFailure(error))
             return .failed
         }
     }

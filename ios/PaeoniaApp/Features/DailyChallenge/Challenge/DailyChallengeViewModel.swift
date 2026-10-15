@@ -8,12 +8,12 @@ import OSLog
 @Observable
 final class DailyChallengeViewModel {
     enum Notice: Equatable {
-        case loadFailed
-        case startFailed
+        case loadFailed(PaeoniaFailure)
+        case startFailed(PaeoniaFailure)
         case submitFailed
         case emptyAnswer
         case shuffleLimitReached
-        case shuffleFailed
+        case shuffleFailed(PaeoniaFailure)
         case editLocked
         case editFailed
         case photoFailed
@@ -321,7 +321,7 @@ final class DailyChallengeViewModel {
             if !isCancellation(error) {
                 logFailure("Loading today's challenge failed", error)
                 if shouldSurfaceLoadFailureNotice {
-                    notice = .loadFailed
+                    notice = .loadFailed(PaeoniaFailure(error))
                 }
             }
         }
@@ -432,7 +432,7 @@ final class DailyChallengeViewModel {
         } catch {
             if !isCancellation(error) {
                 logFailure("Starting today's challenge failed", error)
-                notice = .startFailed
+                notice = .startFailed(PaeoniaFailure(error))
             }
         }
         isStarting = false

@@ -117,8 +117,9 @@ private struct KeyboardDoneButtonModifier: ViewModifier {
 extension View {
     /// Reports whether a full keyboard is docked at the bottom of the screen. An
     /// iPad's floating keyboard, or the short shortcut bar shown with a hardware
-    /// keyboard, counts as not docked.
-    fileprivate func onDockedKeyboardChange(_ action: @escaping (Bool) -> Void) -> some View {
+    /// keyboard, counts as not docked. It fires as the keyboard starts to move, in the
+    /// same pass that makes room for it, so layout changed here moves with the keyboard.
+    func onDockedKeyboardChange(_ action: @escaping (Bool) -> Void) -> some View {
         onReceive(
             NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)
         ) { notification in

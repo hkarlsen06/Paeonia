@@ -36,6 +36,8 @@ final class DrawAndGuessViewModel {
     /// words. Only then does the choose screen show its offline message. Not
     /// having words while the round starts or the screen leaves is no failure.
     var choicesUnavailable = false
+    /// Why the last read of the server failed. Nil after a good read.
+    var refreshFailure: PaeoniaFailure?
     /// The "Draw your own" text field. Bind to it.
     var customWord = "" {
         didSet { customWordValidation = DrawAndGuessCustomWordValidation(customWord) }
@@ -89,7 +91,11 @@ final class DrawAndGuessViewModel {
     var speedBonus: DrawAndGuessSpeedBonus = .hidden
     /// Creating the game, or sending a setting, is in progress.
     var isStartingGame = false
-    var startFailed = false
+    /// Why creating the game failed. The screen offers another try.
+    var startFailure: PaeoniaFailure?
+    var startFailed: Bool {
+        startFailure != nil
+    }
 
     /// The drawer's canvas.
     let board = GameDrawingBoard()
@@ -258,35 +264,6 @@ final class DrawAndGuessViewModel {
         recompute()
     }
 
-    /// Reads the server's state once and caches it.
-    func refresh() async {
-        guard let userID = currentUserID else { return }
-        guard (try? await dependencies.cache.fetchState(from: gateway, ownerUserID: userID)) == true,
-              !Task.isCancelled
-        else { return }
-        await reload()
-    }
-
-    /// Creates the couple's game when setup is done and no game exists yet. The
-    /// person who gets here first draws first.
-    func startGameIfNeeded() async {
-        guard phase == .preparing, !isStartingGame else { return }
-        isStartingGame = true
-        startFailed = false
-        defer { isStartingGame = false }
-        do {
-            _ = try await gateway.ensureDrawAndGuessGame()
-            await refresh()
-        } catch {
-            startFailed = true
-            notice = .couldNotStartGame
-        }
-    }
-
-    func retryStart() async {
-        await startGameIfNeeded()
-    }
-
     // MARK: - Working out the screen
 
     /// Combines the server's state and the unsent moves into the observable
@@ -313,7 +290,9 @@ final class DrawAndGuessViewModel {
         updatePartnerGuess()
         updatePartnerNextRound()
         if phase == .preparing || phase == .needsSetup {
-            startFailed = startFailed && phase == .preparing
+            if phase != .preparing {
+                startFailure = nil
+            }
         }
 
         syncRoundState()

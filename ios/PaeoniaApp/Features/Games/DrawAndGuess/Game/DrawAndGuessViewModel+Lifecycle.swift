@@ -124,3 +124,43 @@ extension DrawAndGuessViewModel {
         liveSnapshots = [:]
     }
 }
+
+// Reading the server and creating the game.
+extension DrawAndGuessViewModel {
+    /// Reads the server's state once and caches it.
+    func refresh() async {
+        guard let userID = currentUserID else { return }
+        do {
+            guard try await dependencies.cache.fetchState(from: gateway, ownerUserID: userID),
+                  !Task.isCancelled
+            else { return }
+            refreshFailure = nil
+        } catch {
+            if !Task.isCancelled {
+                refreshFailure = PaeoniaFailure(error)
+            }
+            return
+        }
+        await reload()
+    }
+
+    /// Creates the couple's game when setup is done and no game exists yet. The
+    /// person who gets here first draws first.
+    func startGameIfNeeded() async {
+        guard phase == .preparing, !isStartingGame else { return }
+        isStartingGame = true
+        startFailure = nil
+        defer { isStartingGame = false }
+        do {
+            _ = try await gateway.ensureDrawAndGuessGame()
+            await refresh()
+        } catch {
+            startFailure = PaeoniaFailure(error)
+            notice = .couldNotStartGame(PaeoniaFailure(error))
+        }
+    }
+
+    func retryStart() async {
+        await startGameIfNeeded()
+    }
+}

@@ -21,7 +21,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     enum Phase: Equatable {
         case loading
         /// The couple has no game of this kind and it could not be started.
-        case unavailable
+        case unavailable(PaeoniaFailure)
         case game
     }
 
@@ -264,7 +264,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         else {
             self.snapshot = nil
             summary = BoardGameHubSummary(status: .notStarted, score: nil)
-            if phase != .unavailable {
+            if case .unavailable = phase {} else {
                 phase = .loading
             }
             return

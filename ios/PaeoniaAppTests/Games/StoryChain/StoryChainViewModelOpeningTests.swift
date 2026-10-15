@@ -112,7 +112,7 @@ struct StoryChainViewModelOpeningTests {
         viewModel.recompute()
 
         #expect(failed)
-        #expect(viewModel.notice == .couldNotStartGame)
+        #expect(viewModel.notice == .couldNotStartGame(.other))
         #expect(environment.storyGateway.calls.filter { $0 == "ensure" }.count == 1)
         viewModel.stop()
     }

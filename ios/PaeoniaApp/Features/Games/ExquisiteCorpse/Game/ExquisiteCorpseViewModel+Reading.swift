@@ -53,14 +53,14 @@ extension ExquisiteCorpseViewModel {
     func startGameIfNeeded() async {
         guard phase == .preparing, !isStartingGame else { return }
         isStartingGame = true
-        startFailed = false
+        startFailure = nil
         defer { isStartingGame = false }
         do {
             _ = try await gateway.ensureExquisiteCorpseGame()
             await refresh()
         } catch {
-            startFailed = true
-            notice = .couldNotStartGame
+            startFailure = PaeoniaFailure(error)
+            notice = .couldNotStartGame(PaeoniaFailure(error))
         }
     }
 
@@ -85,7 +85,9 @@ extension ExquisiteCorpseViewModel {
         isSendFailing = pending.lastSendFailedWhileOnline
         settings = overview?.settings
         if phase == .preparing || phase == .needsSetup {
-            startFailed = startFailed && phase == .preparing
+            if phase != .preparing {
+                startFailure = nil
+            }
         }
 
         updatePresenceState()

@@ -14,7 +14,7 @@ final class BoardMarkEditorModel {
         case tooBig
         /// The save did not go through. The drawing stays, and the sheet shows the
         /// top banner and then calls `clearFailure()`.
-        case couldNotSave
+        case couldNotSave(PaeoniaFailure)
     }
 
     /// The ink width in canvas points, before the canvas is scaled.
@@ -150,7 +150,7 @@ final class BoardMarkEditorModel {
         } catch is CancellationError {
             return false
         } catch {
-            failure = .couldNotSave
+            failure = .couldNotSave(PaeoniaFailure(error))
             return false
         }
     }

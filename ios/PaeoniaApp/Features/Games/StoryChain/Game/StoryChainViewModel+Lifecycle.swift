@@ -143,14 +143,14 @@ extension StoryChainViewModel {
     private func ensureGame() async {
         guard !isStartingGame else { return }
         isStartingGame = true
-        startFailed = false
+        startFailure = nil
         defer { isStartingGame = false }
         do {
             _ = try await storyGateway.ensureStoryChainGame()
             await refresh()
         } catch {
-            startFailed = true
-            notice = .couldNotStartGame
+            startFailure = PaeoniaFailure(error)
+            notice = .couldNotStartGame(PaeoniaFailure(error))
         }
     }
 }

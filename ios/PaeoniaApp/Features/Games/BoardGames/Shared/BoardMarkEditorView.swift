@@ -192,8 +192,11 @@ struct BoardMarkEditorView: View {
     /// too-big line shows inline, so VoiceOver gets it read out here.
     private func failureChanged(_ failure: BoardMarkEditorModel.Failure?) {
         switch failure {
-        case .couldNotSave:
-            bannerCenter.show(.error(message: String(localized: .boardGamesMarkSaveError)))
+        case .couldNotSave(let reason):
+            let message: LocalizedStringResource = reason == .offline
+                ? .boardGamesMarkSaveError
+                : .boardGamesMarkSaveFailed
+            bannerCenter.show(.error(message: String(localized: message)))
             model.clearFailure()
         case .tooBig:
             AccessibilityNotification.Announcement(String(localized: .boardGamesMarkTooBig)).post()

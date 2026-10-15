@@ -24,8 +24,8 @@ struct NotificationSettingsView: View {
                 case .notAsked:
                     systemNotAskedNote
                 case .allowed:
-                    if viewModel.notificationLoadState == .failed {
-                        loadFailedNote
+                    if case let .failed(failure) = viewModel.notificationLoadState {
+                        loadFailedNote(failure)
                     }
                 }
 
@@ -188,11 +188,14 @@ struct NotificationSettingsView: View {
         }
     }
 
-    private var loadFailedNote: some View {
+    /// Only a phone without a connection is told to check it.
+    private func loadFailedNote(_ failure: PaeoniaFailure) -> some View {
         noteCard(
-            systemImage: "wifi.exclamationmark",
+            systemImage: failure == .offline ? "wifi.exclamationmark" : "exclamationmark.circle",
             title: .settingsNotificationsLoadFailedTitle,
-            message: .settingsNotificationsLoadFailedMessage,
+            message: failure == .offline
+                ? .settingsNotificationsLoadFailedMessage
+                : .settingsNotificationsLoadFailedLaterMessage,
             buttonTitle: .commonTryAgain
         ) {
             Task {

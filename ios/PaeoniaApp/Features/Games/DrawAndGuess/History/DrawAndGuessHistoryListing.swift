@@ -8,8 +8,8 @@ nonisolated struct DrawAndGuessHistoryListing: Equatable, Sendable {
     var nextCursor: Int?
     /// The cache or the server has answered, even if the answer is no rounds.
     var hasLoaded = false
-    /// The last try to load the first page failed.
-    var didFail = false
+    /// Why the last try to load the first page failed. Nil after a good read.
+    var failure: PaeoniaFailure?
     var isLoadingMore = false
     var loadMoreFailed = false
 
@@ -34,7 +34,7 @@ nonisolated struct DrawAndGuessHistoryListing: Equatable, Sendable {
             nextCursor = page.nextBeforeRoundNumber
         }
         hasLoaded = true
-        didFail = false
+        failure = nil
     }
 
     /// Adds an older page. A round that is already here is not added twice.

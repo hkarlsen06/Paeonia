@@ -126,7 +126,7 @@ nonisolated enum BoardGamesNotice: Equatable, Sendable {
     case moveRejected
     /// Saving a move on the phone failed.
     case couldNotSaveMove
-    case couldNotSendInvite
+    case couldNotSendInvite(PaeoniaFailure)
 
     @MainActor
     var banner: PaeoniaBannerContent {
@@ -141,10 +141,12 @@ nonisolated enum BoardGamesNotice: Equatable, Sendable {
                 title: String(localized: .gamesNoticeMoveFailedTitle),
                 message: String(localized: .gamesNoticeMoveFailedMessage)
             )
-        case .couldNotSendInvite:
+        case .couldNotSendInvite(let failure):
             .error(
                 title: String(localized: .gamesNoticeInviteFailedTitle),
-                message: String(localized: .gamesNoticeInviteFailedMessage)
+                message: String(
+                    localized: failure == .offline ? .gamesNoticeInviteFailedMessage : .commonActionFailedMessage
+                )
             )
         }
     }

@@ -36,13 +36,14 @@ extension MindMeldViewModel {
             guard try await cache.fetchState(from: gateway, ownerUserID: userID), !Task.isCancelled else { return }
         } catch {
             // With nothing to show, the screen offers a retry.
-            if state == nil, !Task.isCancelled, !startFailed {
-                startFailed = true
+            // Each failed read records its own reason, so an old "offline" never outlives the outage.
+            if state == nil, !Task.isCancelled {
+                startFailure = PaeoniaFailure(error)
             }
             return
         }
         hasLoaded = true
-        startFailed = false
+        startFailure = nil
         await reload()
     }
 
@@ -54,9 +55,9 @@ extension MindMeldViewModel {
         }
     }
 
-    /// "Try again" on the offline state: reads again, then starts a game if there is none.
+    /// "Try again" on the failed state: reads again, then starts a game if there is none.
     func retryStart() async {
-        startFailed = false
+        startFailure = nil
         if phase == .loading {
             await refresh()
         }
@@ -73,9 +74,9 @@ extension MindMeldViewModel {
             await refresh()
         } catch {
             if isAutomatic {
-                startFailed = true
+                startFailure = PaeoniaFailure(error)
             } else {
-                notice = .couldNotStartGame
+                notice = .couldNotStartGame(PaeoniaFailure(error))
             }
         }
         isStartingGame = false

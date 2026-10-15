@@ -78,8 +78,8 @@ struct MindMeldHistoryScreen: View {
             ProgressView()
                 .tint(.paeoniaAccentPrimary)
                 .frame(maxWidth: .infinity, minHeight: 160)
-        } else if viewModel.loadFailed {
-            offlineState
+        } else if let failure = viewModel.loadFailure {
+            failureState(failure)
         } else {
             PaeoniaEmptyStateView(
                 title: .mindMeldHistoryEmptyTitle,
@@ -127,11 +127,12 @@ struct MindMeldHistoryScreen: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var offlineState: some View {
-        PaeoniaEmptyStateView(
-            title: .mindMeldOfflineTitle,
-            message: .mindMeldHistoryOfflineMessage,
-            systemImage: "wifi.slash"
+    private func failureState(_ failure: PaeoniaFailure) -> some View {
+        PaeoniaLoadFailureView(
+            failure: failure,
+            offlineTitle: .mindMeldOfflineTitle,
+            offlineMessage: .mindMeldHistoryOfflineMessage,
+            failedMessage: .mindMeldHistoryFailedMessage
         ) {
             Button {
                 Task { await viewModel.load() }

@@ -356,6 +356,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [ ] Orphaned media cleanup crons run (`cleanup-media-storage`, `sweep-orphan-media-storage`).
 - [ ] Relationship cleanup crons run (`paeonia-cleanup-expired-relationship-content`, `paeonia-purge-deleted-relationship-content`).
 - [ ] Question catalog is synced to production with `scripts/sync-question-catalog --apply`, and subscription products are seeded.
+- [ ] The catalog sync no longer moves existing daily questions to a new question version (the `ponytail:` step in `backend/convex/catalog.ts`), so answers keep the wording they were written for.
 - [ ] A push drain delivers an alert and a widget update to a real device.
 - [ ] Production data in `/srv/paeonia/convex/data` is backed up, and a restore has been tried.
 - [ ] No Convex admin key or Clerk secret key is reachable from the client source or the marketing app.

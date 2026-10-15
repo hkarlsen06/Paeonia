@@ -59,6 +59,7 @@ describe("get_couple_streak", () => {
         freeze_available: false,
         freeze_ready_at: null,
         freeze_saved_streak: false,
+        next_activity_deadline_at: null,
         current_user_contributed_today: false,
         partner_contributed_today: false,
       },
@@ -275,6 +276,7 @@ describe("streak freeze", () => {
       freeze_available: false,
       freeze_ready_at: "2026-11-10T22:00:00.000Z",
       freeze_saved_streak: true,
+      next_activity_deadline_at: "2026-10-12T22:00:00.000Z",
     });
     expect((await state())!.freeze_used_at).toBeUndefined();
 

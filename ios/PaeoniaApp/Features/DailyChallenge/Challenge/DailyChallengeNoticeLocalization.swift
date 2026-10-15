@@ -32,18 +32,19 @@ extension DailyChallengeViewModel.Notice {
     /// "Oda has answered…") read with the real name; other notices ignore it.
     func message(partnerName: String) -> LocalizedStringResource { // swiftlint:disable:this cyclomatic_complexity
         switch self {
-        case .loadFailed:
-            .dailyChallengeLoadFailedMessage
-        case .startFailed:
-            .dailyChallengeStartFailedMessage
+        // Only a phone without a connection is told to check it.
+        case .loadFailed(let failure):
+            failure == .offline ? .dailyChallengeLoadFailedMessage : .commonLoadFailedMessage
+        case .startFailed(let failure):
+            failure == .offline ? .dailyChallengeStartFailedMessage : .commonActionFailedMessage
         case .submitFailed:
             .dailyChallengeSubmitFailedMessage
         case .emptyAnswer:
             .dailyChallengeEmptyAnswerMessage
         case .shuffleLimitReached:
             .dailyChallengeShuffleLimitMessage
-        case .shuffleFailed:
-            .dailyChallengeShuffleFailedMessage
+        case .shuffleFailed(let failure):
+            failure == .offline ? .dailyChallengeShuffleFailedMessage : .commonActionFailedMessage
         case .editLocked:
             .dailyChallengeEditLockedMessage(partnerName)
         case .editFailed:

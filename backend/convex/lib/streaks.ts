@@ -369,6 +369,8 @@ export type CoupleStreak = {
   freeze_ready_at: string | null;
   /** The couple missed a day and a freeze is keeping the streak alive until the next deadline. */
   freeze_saved_streak: boolean;
+  /** When a live streak breaks unless both partners show up first, or null when there is no live streak. */
+  next_activity_deadline_at: string | null;
 };
 
 /**
@@ -407,6 +409,7 @@ export async function readCoupleStreak(
     freeze_available: currentCount >= MIN_PROTECTED_STREAK && (readyAt === null || readyAt <= now),
     freeze_ready_at: readyAt !== null && readyAt > now ? readyAt : null,
     freeze_saved_streak: currentCount > 0 && (live.frozen || change?.freeze_used_at !== undefined),
+    next_activity_deadline_at: currentCount > 0 ? deadline : null,
   };
 }
 

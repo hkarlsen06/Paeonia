@@ -130,6 +130,32 @@ describe("sync_catalog", () => {
     expect(prompts.map((row) => row.prompt).sort()).toEqual(["A fresher memory", "A fresher memory (nb)"]);
   });
 
+  test("a new version moves the question's daily instances to it", async () => {
+    const t = newTest();
+    await sync(t, [question("memory_that_stayed")], true);
+    const [v1] = await t.run((ctx) => ctx.db.query("question_versions").collect());
+    await t.run(async (ctx) => {
+      await ctx.db.insert("daily_question_instances", {
+        id: crypto.randomUUID(),
+        couple_day_id: crypto.randomUUID(),
+        question_version_id: v1.id,
+        seeded_for_user_id: crypto.randomUUID(),
+        slot_number: 1,
+        status: "answered",
+        created_at: "2026-10-01T00:00:00.000Z",
+      });
+    });
+    const next = question("memory_that_stayed", {
+      versions: [version(1, "A memory that stayed", { status: "retired", retired_at: "2026-10-02T00:00:00.000Z" }), version(2, "A fresher memory")],
+    });
+    await sync(t, [next], true);
+    const v2 = await t.run((ctx) =>
+      ctx.db.query("question_versions").filter((q) => q.eq(q.field("version_number"), 2)).unique(),
+    );
+    const instances = await t.run((ctx) => ctx.db.query("daily_question_instances").collect());
+    expect(instances.map((row) => row.question_version_id)).toEqual([v2!.id]);
+  });
+
   test("a new version can activate while the old one is still active", async () => {
     const t = newTest();
     await sync(t, [question("memory_that_stayed")], true);

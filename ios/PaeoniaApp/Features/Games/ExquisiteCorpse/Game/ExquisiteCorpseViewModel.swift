@@ -85,7 +85,11 @@ final class ExquisiteCorpseViewModel {
 
     /// Creating the game is in progress.
     var isStartingGame = false
-    var startFailed = false
+    /// Why creating the game failed. The screen offers another try.
+    var startFailure: PaeoniaFailure?
+    var startFailed: Bool {
+        startFailure != nil
+    }
 
     /// The drawer's canvas.
     let board = GameDrawingBoard()

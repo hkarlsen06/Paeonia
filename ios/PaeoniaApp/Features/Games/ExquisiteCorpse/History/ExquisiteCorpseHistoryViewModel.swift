@@ -17,7 +17,7 @@ final class ExquisiteCorpseHistoryViewModel {
         case loading
         case loaded
         /// Nothing cached and the first read failed.
-        case offline
+        case failed(PaeoniaFailure)
     }
 
     var filter: Filter = .all
@@ -98,10 +98,10 @@ final class ExquisiteCorpseHistoryViewModel {
             return .loaded
         }
         // The starred read failed, but the cached "All" list still tells which are starred.
-        if filter == .starred, current.didFail, listing(.all).hasLoaded {
+        if filter == .starred, current.failure != nil, listing(.all).hasLoaded {
             return .loaded
         }
-        return current.didFail ? .offline : .loading
+        return current.failure.map(Phase.failed) ?? .loading
     }
 
     var isEmpty: Bool {
@@ -194,8 +194,8 @@ final class ExquisiteCorpseHistoryViewModel {
         } catch {
             guard !Self.isCancellation(error), currentUserID == userID else { return }
             // A failed read keeps the list that is on screen. Only a screen with
-            // nothing to show says it is offline.
-            listings[filter, default: ExquisiteCorpseHistoryListing()].didFail = true
+            // nothing to show says the read failed.
+            listings[filter, default: ExquisiteCorpseHistoryListing()].failure = PaeoniaFailure(error)
         }
     }
 

@@ -112,7 +112,7 @@ struct ExquisiteCorpseViewModelPresenceTests {
         await viewModel.sendInvite()
 
         #expect(viewModel.invite == .available)
-        #expect(viewModel.notice == .couldNotSendInvite)
+        #expect(viewModel.notice == .couldNotSendInvite(.offline))
     }
 
     @Test func theInviteStaysSentWhenTheServerSaysTooSoon() async {
@@ -208,6 +208,6 @@ struct ExquisiteCorpseViewModelPresenceTests {
 
         #expect(failed)
         #expect(env.gateway.calls.contains("ensure"))
-        #expect(viewModel.notice == .couldNotStartGame)
+        #expect(viewModel.notice == .couldNotStartGame(.other))
     }
 }

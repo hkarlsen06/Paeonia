@@ -9,7 +9,7 @@ final class SettingsViewModel {
         case leaveFailed
         case purchasesRestored
         case noPurchasesToRestore
-        case restorePurchasesFailed
+        case restorePurchasesFailed(PaeoniaFailure)
         case purchaseLinkedToAnotherAccount
     }
 
@@ -27,7 +27,7 @@ final class SettingsViewModel {
         case loading
         case loaded(SubscriptionDetails)
         /// The first load failed. Details already shown stay on screen instead.
-        case failed
+        case failed(PaeoniaFailure)
     }
 
     enum NotificationLoadState: Equatable {
@@ -35,7 +35,7 @@ final class SettingsViewModel {
         case loaded
         /// The first load failed and no live value has arrived yet. The switches
         /// stay disabled so they never show a guess as if it were saved.
-        case failed
+        case failed(PaeoniaFailure)
     }
 
     private let preferences: (any NotificationPreferencesProviding)?
@@ -114,7 +114,7 @@ final class SettingsViewModel {
             return
         }
 
-        if notificationLoadState == .failed {
+        if case .failed = notificationLoadState {
             notificationLoadState = .loading
         }
 
@@ -131,7 +131,7 @@ final class SettingsViewModel {
             // Keep the last values the server sent. Only a screen that never got
             // real values says it could not load them.
             if notificationLoadState != .loaded {
-                notificationLoadState = .failed
+                notificationLoadState = .failed(PaeoniaFailure(error))
             }
         }
     }
@@ -295,7 +295,7 @@ final class SettingsViewModel {
             notice = .purchaseLinkedToAnotherAccount
             return false
         } catch {
-            notice = .restorePurchasesFailed
+            notice = .restorePurchasesFailed(PaeoniaFailure(error))
             return false
         }
     }
@@ -304,7 +304,7 @@ final class SettingsViewModel {
     /// screen exists so people can compare it with what Apple shows.
     func loadSubscriptionDetails() async {
         guard let loadAccessSnapshot else {
-            subscriptionDetailsState = .failed
+            subscriptionDetailsState = .failed(.other)
             return
         }
         do {
@@ -313,7 +313,7 @@ final class SettingsViewModel {
             if case .loaded = subscriptionDetailsState {
                 return
             }
-            subscriptionDetailsState = .failed
+            subscriptionDetailsState = .failed(PaeoniaFailure(error))
         }
     }
 

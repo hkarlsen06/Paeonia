@@ -110,6 +110,7 @@ describe("start_daily_challenge_snapshot", () => {
       freeze_available: false,
       freeze_ready_at: null,
       freeze_saved_streak: false,
+      next_activity_deadline_at: null,
       current_user_contributed_today: false,
       partner_contributed_today: false,
     });
@@ -716,6 +717,8 @@ describe("completing the day", () => {
       freeze_available: false,
       freeze_ready_at: null,
       freeze_saved_streak: false,
+      // Local midnight two days after the qualifying day, in Oslo.
+      next_activity_deadline_at: "2026-10-11T22:00:00.000Z",
       current_user_contributed_today: true,
       partner_contributed_today: true,
     });

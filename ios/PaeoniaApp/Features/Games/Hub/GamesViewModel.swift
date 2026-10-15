@@ -37,8 +37,8 @@ final class GamesViewModel {
     enum Screen: Equatable {
         /// Nothing cached yet and the first read has not finished.
         case loading
-        /// Nothing cached and the first read failed.
-        case unavailable
+        /// Nothing cached and the first read failed, for this reason.
+        case unavailable(PaeoniaFailure)
         case hub
     }
 
@@ -248,7 +248,7 @@ final class GamesViewModel {
             // A read that was cancelled (the tab changed under it) says nothing about the network.
             if overview == nil, hasLoaded, !Task.isCancelled, !(error is CancellationError),
                (error as? URLError)?.code != .cancelled {
-                screen = .unavailable
+                screen = .unavailable(PaeoniaFailure(error))
             }
         }
     }
@@ -342,7 +342,7 @@ final class GamesViewModel {
         do {
             saved = try await dependencies.gateway.setSettings(playStyle: playStyle, language: language)
         } catch {
-            notice = .couldNotSaveSettings
+            notice = .couldNotSaveSettings(PaeoniaFailure(error))
             return false
         }
         await dependencies.cache.markSettingsSeen(coupleID: saved.coupleID, ownerUserID: userID)

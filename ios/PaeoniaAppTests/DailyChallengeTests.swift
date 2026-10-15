@@ -738,7 +738,7 @@ struct DailyChallengeMappingTests {
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
 
-        #expect(viewModel.notice == .loadFailed)
+        #expect(viewModel.notice == .loadFailed(.other))
     }
 
     @MainActor
@@ -2283,7 +2283,7 @@ struct DailyChallengeHistoryTests {
 
         await viewModel.load()
 
-        #expect(viewModel.state == .failed)
+        #expect(viewModel.state == .failed(.other))
         #expect(viewModel.notice == nil)
     }
 
@@ -2309,7 +2309,7 @@ struct DailyChallengeHistoryTests {
             return
         }
         #expect(days.count == 1)
-        #expect(viewModel.notice == .loadFailed)
+        #expect(viewModel.notice == .loadFailed(.other))
     }
 
     @MainActor

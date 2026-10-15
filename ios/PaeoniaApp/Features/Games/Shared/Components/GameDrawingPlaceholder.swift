@@ -11,7 +11,7 @@ struct GameDrawingPlaceholder: View {
             PaeoniaEmptyStateView(
                 title: .gamesNoticeDrawingUnavailableTitle,
                 message: .gamesNoticeDrawingUnavailableMessage,
-                systemImage: "wifi.slash"
+                systemImage: "exclamationmark.circle"
             ) {
                 Button {
                     retry()

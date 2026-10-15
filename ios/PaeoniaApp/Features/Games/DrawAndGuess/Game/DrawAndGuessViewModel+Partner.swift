@@ -75,10 +75,10 @@ extension DrawAndGuessViewModel {
                 return
             }
             localInviteSentAt = nil
-            notice = .couldNotSendInvite
+            notice = .couldNotSendInvite(PaeoniaFailure(error))
         } catch {
             localInviteSentAt = nil
-            notice = .couldNotSendInvite
+            notice = .couldNotSendInvite(PaeoniaFailure(error))
         }
         recompute()
     }

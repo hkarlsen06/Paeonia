@@ -51,6 +51,18 @@ struct RelationshipTimelineView: View {
                 .onAppear {
                     proxy.scrollTo(Self.heroID, anchor: UnitPoint(x: 0, y: Self.focalAnchor))
                 }
+                // A swipe right closes the sheet, with the chat's swipe-back thresholds.
+                // Simultaneous so vertical scrolling keeps working.
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 30).onEnded { value in
+                        if DailyChatPanGestureResolver.shouldTriggerNavigationBack(
+                            translation: value.translation,
+                            velocity: value.velocity
+                        ) {
+                            dismiss()
+                        }
+                    }
+                )
                 .onScrollPhaseChange { _, newPhase in
                     // Only the user's own touch lifts the veil — the programmatic
                     // scroll that positions the focal line on open must not.

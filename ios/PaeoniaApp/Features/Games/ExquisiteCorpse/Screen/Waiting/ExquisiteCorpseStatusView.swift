@@ -25,11 +25,12 @@ struct ExquisiteCorpseStatusView: View {
                 message: .gamesNeedsSetup,
                 systemImage: "gamecontroller.fill"
             )
-        case .preparing where viewModel.startFailed:
-            PaeoniaEmptyStateView(
-                title: .gamesNoticeStartFailedTitle,
-                message: .gamesNoticeStartFailedMessage,
-                systemImage: "wifi.slash"
+        case .preparing where viewModel.startFailure != nil:
+            PaeoniaLoadFailureView(
+                failure: viewModel.startFailure ?? .other,
+                offlineTitle: .gamesNoticeStartFailedTitle,
+                offlineMessage: .gamesNoticeStartFailedMessage,
+                failedMessage: .commonActionFailedMessage
             ) {
                 Button {
                     Task { await viewModel.retryStart() }

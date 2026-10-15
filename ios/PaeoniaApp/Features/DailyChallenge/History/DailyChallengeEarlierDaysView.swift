@@ -21,8 +21,8 @@ struct DailyChallengeEarlierDaysView: View {
                     .tint(.paeoniaAccentPrimary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, PaeoniaSpacing.space16)
-            case .failed:
-                failedState
+            case .failed(let failure):
+                failedState(failure)
             case .empty:
                 EmptyView()
             case .content:
@@ -53,16 +53,21 @@ struct DailyChallengeEarlierDaysView: View {
         }
     }
 
-    private var failedState: some View {
+    private func failedState(_ failure: PaeoniaFailure) -> some View {
         PaeoniaEmptyStateView(
             title: .dailyChallengeHistoryLoadFailedTitle,
-            message: .dailyChallengeHistoryLoadFailedMessage,
+            message: failure.dailyHistoryMessage,
             systemImage: "exclamationmark.triangle"
         ) {
-            Button(action: onRetry) {
-                Text(.dailyChallengeHistoryRetryButton)
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Button(action: onRetry) {
+                    Text(.dailyChallengeHistoryRetryButton)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle())
+                if failure == .other {
+                    PaeoniaSupportLink()
+                }
             }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
         }
     }
 }

@@ -13,12 +13,14 @@ enum PairingInviteFlowError: Equatable {
     case joinCheckFailed
     case joinFailed
 
-    var message: LocalizedStringResource {
-        switch self {
+    /// Only a phone without a connection is told to check it.
+    func message(_ failure: PaeoniaFailure) -> LocalizedStringResource {
+        let isOffline = failure == .offline
+        return switch self {
         case .createFailed:
-            .pairingInviteErrorMessage
+            isOffline ? .pairingInviteErrorMessage : .commonActionFailedMessage
         case .replaceFailed:
-            .pairingInviteErrorReplaceFailed
+            isOffline ? .pairingInviteErrorReplaceFailed : .pairingInviteErrorReplaceFailedLater
         case .joinInvalid:
             .pairingJoinErrorInvalid
         case .joinNotFound:
@@ -26,9 +28,9 @@ enum PairingInviteFlowError: Equatable {
         case .joinOwnCode:
             .pairingJoinErrorOwnCode
         case .joinCheckFailed:
-            .pairingJoinErrorCheckFailed
+            isOffline ? .pairingJoinErrorCheckFailed : .pairingJoinErrorCheckFailedLater
         case .joinFailed:
-            .pairingJoinErrorJoinFailed
+            isOffline ? .pairingJoinErrorJoinFailed : .pairingJoinErrorJoinFailedLater
         }
     }
 

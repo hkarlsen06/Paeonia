@@ -73,21 +73,22 @@ struct GamesRootView: View {
         switch viewModel.screen {
         case .loading:
             Color.clear
-        case .unavailable:
-            unavailable
+        case .unavailable(let failure):
+            unavailable(failure)
         case .hub:
             GamesHubView(viewModel: viewModel, isShowingGame: !path.isEmpty, open: open)
         }
     }
 
     /// Centered, and it scrolls when large text makes it taller than the screen.
-    private var unavailable: some View {
+    private func unavailable(_ failure: PaeoniaFailure) -> some View {
         GeometryReader { proxy in
             ScrollView {
-                PaeoniaEmptyStateView(
-                    title: .gamesUnavailableTitle,
-                    message: .gamesUnavailableMessage,
-                    systemImage: "wifi.slash"
+                PaeoniaLoadFailureView(
+                    failure: failure,
+                    offlineTitle: .gamesUnavailableTitle,
+                    offlineMessage: .gamesUnavailableMessage,
+                    failedMessage: .gamesUnavailableFailedMessage
                 ) {
                     Button {
                         Task { await viewModel.refresh() }

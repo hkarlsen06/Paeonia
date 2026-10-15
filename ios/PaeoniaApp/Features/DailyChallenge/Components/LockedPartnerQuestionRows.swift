@@ -63,7 +63,7 @@ struct LockedPartnerQuestionRows: View {
         HStack(spacing: PaeoniaSpacing.space12) {
             lockedAvatar
 
-            Text(rowText(question.shortPrompt))
+            Text(rowText(question))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .lineLimit(2)
@@ -83,14 +83,28 @@ struct LockedPartnerQuestionRows: View {
         .contentShape(Rectangle())
     }
 
-    /// The row's sentence with the question's short prompt in bold.
-    private func rowText(_ shortPrompt: String) -> AttributedString {
-        var text = AttributedString(localized: .dailyChallengeLockedRow(partnerName, shortPrompt))
+    /// The row's sentence with the question's short prompt in bold, then in gray when
+    /// the partner's question is from an earlier day, such as "yesterday".
+    private func rowText(_ question: DailyChallengeCardState.LockedPartnerQuestion) -> AttributedString {
+        var text = AttributedString(localized: .dailyChallengeLockedRow(partnerName, question.shortPrompt))
         // Search from the end so a partner name that contains the prompt stays plain.
-        if let range = text.range(of: shortPrompt, options: .backwards) {
+        if let range = text.range(of: question.shortPrompt, options: .backwards) {
             text[range].inlinePresentationIntent = .stronglyEmphasized
         }
+        if let day = Self.dayText(daysAgo: question.daysAgo) {
+            var suffix = AttributedString(" " + day)
+            suffix.foregroundColor = Color.paeoniaTextTertiary
+            text += suffix
+        }
         return text
+    }
+
+    private static func dayText(daysAgo: Int) -> String? {
+        switch daysAgo {
+        case ...0: nil
+        case 1: String(localized: .dailyChallengeLockedYesterday)
+        default: String(localized: .dailyChallengeLockedDaysAgo(daysAgo))
+        }
     }
 
     /// The partner's avatar with a small lock on its bottom-right edge: they answered,
@@ -123,7 +137,7 @@ struct LockedPartnerQuestionRows: View {
 #Preview("Locked rows") {
     let questions = [
         DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "A memory that stayed"),
-        DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "Something small you love"),
+        DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "Something small you love", daysAgo: 1),
     ]
     return VStack(spacing: PaeoniaSpacing.space24) {
         LockedPartnerQuestionRows(

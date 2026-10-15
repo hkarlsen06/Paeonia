@@ -15,11 +15,11 @@ final class DailyChallengeHistoryViewModel {
         case loading
         case content([DailyChallengeHistoryDay])
         case empty
-        case failed
+        case failed(PaeoniaFailure)
     }
 
     enum Notice: Equatable {
-        case loadFailed
+        case loadFailed(PaeoniaFailure)
     }
 
     private let service: any DailyChallengeServicing
@@ -48,7 +48,10 @@ final class DailyChallengeHistoryViewModel {
     /// last first load failed. Content and an empty result stay as they are until a
     /// pull to refresh or a new day asks for a reload.
     var needsLoad: Bool {
-        state == .loading || state == .failed
+        switch state {
+        case .loading, .failed: true
+        case .content, .empty: false
+        }
     }
 
     /// The loaded days without the questions in `shownIDs`, newest day first. The
@@ -104,9 +107,9 @@ final class DailyChallengeHistoryViewModel {
         logFailure("Loading the question history failed", error)
         if hasContent {
             // Keep what's on screen; nudge the user with a recoverable banner.
-            notice = .loadFailed
+            notice = .loadFailed(PaeoniaFailure(error))
         } else {
-            state = .failed
+            state = .failed(PaeoniaFailure(error))
         }
     }
 
@@ -137,8 +140,15 @@ extension DailyChallengeHistoryViewModel.Notice {
 
     var message: LocalizedStringResource {
         switch self {
-        case .loadFailed:
-            .dailyChallengeHistoryLoadFailedMessage
+        case .loadFailed(let failure):
+            failure.dailyHistoryMessage
         }
+    }
+}
+
+extension PaeoniaFailure {
+    /// Only a phone without a connection is told to check it.
+    var dailyHistoryMessage: LocalizedStringResource {
+        self == .offline ? .dailyChallengeHistoryLoadFailedMessage : .commonLoadFailedMessage
     }
 }

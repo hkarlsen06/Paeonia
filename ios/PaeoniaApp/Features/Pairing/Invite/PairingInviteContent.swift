@@ -166,7 +166,7 @@ struct PairingInviteContent: View {
         PaeoniaCard {
             PaeoniaEmptyStateView(
                 title: .pairingInviteErrorTitle,
-                message: viewModel.error?.message ?? .pairingInviteErrorMessage,
+                message: viewModel.error?.message(viewModel.errorFailure) ?? .commonActionFailedMessage,
                 systemImage: "exclamationmark.icloud.fill"
             ) {
                 Button {
@@ -194,7 +194,7 @@ struct PairingInviteContent: View {
             return
         }
 
-        bannerCenter.show(.error(message: String(localized: error.message)))
+        bannerCenter.show(.error(message: String(localized: error.message(viewModel.errorFailure))))
         viewModel.clearError()
     }
 

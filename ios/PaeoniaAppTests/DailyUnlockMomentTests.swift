@@ -142,6 +142,25 @@ struct LockedPartnerQuestionTests {
         #expect(!state.lockedPartnerQuestionsAreOpenable)
     }
 
+    @Test func carriedOverRowSaysHowManyDaysAgo() {
+        let state = snapshot([
+            row(slot: 1, seededFor: IDs.me),
+            row(slot: 2, seededFor: IDs.me),
+            row(slot: 1, seededFor: IDs.partner, shortPrompt: "Today", partnerAnswerID: UUID()),
+            row(
+                slot: 2,
+                seededFor: IDs.partner,
+                shortPrompt: "Yesterday",
+                coupleDay: IDs.yesterday,
+                isCurrentDay: false,
+                partnerAnswerID: UUID()
+            ),
+        ]).homeCardState
+
+        #expect(state.lockedPartnerQuestions.map(\.shortPrompt) == ["Today", "Yesterday"])
+        #expect(state.lockedPartnerQuestions.map(\.daysAgo) == [0, 1])
+    }
+
     @Test func leavesOutQuestionsTheUserAlreadyAnswered() {
         let state = snapshot([
             row(slot: 1, seededFor: IDs.me, ownAnswerID: UUID()),

@@ -17,14 +17,17 @@ extension DailyQuestionChatViewModel.Notice {
 
     var message: LocalizedStringResource {
         switch self {
-        case .loadFailed: .dailyChatErrorLoadMessage
+        // Only a phone without a connection is told to check it.
+        case .loadFailed(let failure):
+            failure == .offline ? .dailyChatErrorLoadMessage : .commonLoadFailedMessage
         case .sendFailed: .dailyChatErrorSendMessage
         case .deliveryFailed: .dailyChatErrorDeliveryMessage
         case .messageTooLong: .dailyChatErrorTooLongMessage
         case .unavailable: .dailyChatErrorUnavailableMessage
         case .voiceFailed: .dailyChatErrorVoiceMessage
         case .photoFailed: .dailyChatErrorPhotoMessage
-        case .editFailed: .dailyChatErrorEditMessage
+        case .editFailed(let failure):
+            failure == .offline ? .dailyChatErrorEditMessage : .dailyChatErrorEditFailedMessage
         case .editWindowClosed: .dailyChatErrorEditClosedMessage
         }
     }

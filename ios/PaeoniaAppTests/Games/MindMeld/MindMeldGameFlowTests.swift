@@ -111,7 +111,7 @@ struct MindMeldGameFlowTests {
 
         await viewModel.playAgain()
 
-        #expect(viewModel.notice == .couldNotStartGame)
+        #expect(viewModel.notice == .couldNotStartGame(.other))
         #expect(viewModel.phase == .over)
         #expect(!viewModel.isStartingGame)
     }
@@ -160,7 +160,7 @@ struct MindMeldGameFlowTests {
         await viewModel.playAgain()
 
         #expect(env.gateway.starts == 0)
-        #expect(viewModel.notice == .couldNotStartGame)
+        #expect(viewModel.notice == .couldNotStartGame(.other))
         #expect(!viewModel.isStartingGame)
     }
 
@@ -172,7 +172,7 @@ struct MindMeldGameFlowTests {
 
         await viewModel.restart()
 
-        #expect(viewModel.notice == .couldNotStartGame)
+        #expect(viewModel.notice == .couldNotStartGame(.other))
         #expect(viewModel.phase == .write)
     }
 

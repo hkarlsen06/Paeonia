@@ -135,7 +135,7 @@ struct WidgetDrawingHistoryViewModelTests {
         let viewModel = makeViewModel(gateway: gateway, pageSize: 10)
 
         await viewModel.loadInitialIfNeeded()
-        #expect(viewModel.phase == .failed)
+        #expect(viewModel.phase == .failed(.other))
 
         gateway.stateError = nil
         await viewModel.retry()

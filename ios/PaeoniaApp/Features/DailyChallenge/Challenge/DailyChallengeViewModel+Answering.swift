@@ -262,7 +262,7 @@ extension DailyChallengeViewModel {
         } catch {
             if !isCancellation(error) {
                 logFailure("Skipping (shuffling) a question failed", error)
-                notice = .shuffleFailed
+                notice = .shuffleFailed(PaeoniaFailure(error))
             }
         }
         shufflingSlotNumber = nil

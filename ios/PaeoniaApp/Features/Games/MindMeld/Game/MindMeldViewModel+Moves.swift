@@ -121,7 +121,9 @@ extension MindMeldViewModel {
             await syncAfterLocalChange?()
             await reload()
             if hasQueuedCount() {
-                notice = .couldNotStartGame
+                // The sync failed for a reason this screen doesn't know, so the
+                // banner doesn't guess that the connection is to blame.
+                notice = .couldNotStartGame(.other)
                 return
             }
         }

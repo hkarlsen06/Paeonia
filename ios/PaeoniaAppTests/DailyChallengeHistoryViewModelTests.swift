@@ -53,7 +53,7 @@ struct DailyChallengeHistoryViewModelTests {
         await service.finish(call: 0, with: .failure(URLError(.timedOut)))
         await olderLoad.value
 
-        #expect(viewModel.state != .failed)
+        #expect(viewModel.state != .failed(.other))
         #expect(viewModel.notice == nil)
     }
 
@@ -159,7 +159,7 @@ struct DailyChallengeHistoryViewModelTests {
         )
         #expect(failing.needsLoad)
         await failing.load()
-        #expect(failing.state == .failed)
+        #expect(failing.state == .failed(.offline))
         #expect(failing.needsLoad)
 
         let loaded = DailyChallengeHistoryViewModel(

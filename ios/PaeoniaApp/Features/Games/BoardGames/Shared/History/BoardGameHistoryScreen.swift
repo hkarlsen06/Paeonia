@@ -36,8 +36,8 @@ struct BoardGameHistoryScreen<Board: BoardGameRules>: View {
             ProgressView()
                 .tint(.paeoniaAccentPrimary)
                 .frame(maxWidth: .infinity, minHeight: 160)
-        } else if viewModel.loadFailed {
-            offlineState
+        } else if let failure = viewModel.loadFailure {
+            failureState(failure)
         } else {
             PaeoniaEmptyStateView(
                 title: .boardGamesHistoryEmptyTitle,
@@ -98,11 +98,11 @@ struct BoardGameHistoryScreen<Board: BoardGameRules>: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var offlineState: some View {
-        PaeoniaEmptyStateView(
-            title: .boardGamesUnavailableTitle,
-            message: .boardGamesHistoryOfflineMessage,
-            systemImage: "wifi.slash"
+    private func failureState(_ failure: PaeoniaFailure) -> some View {
+        PaeoniaLoadFailureView(
+            failure: failure,
+            offlineMessage: .boardGamesHistoryOfflineMessage,
+            failedMessage: .boardGamesHistoryFailedMessage
         ) {
             Button {
                 Task { await viewModel.load() }

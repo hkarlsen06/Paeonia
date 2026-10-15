@@ -291,10 +291,10 @@ struct GamesViewModelTests {
         env.gateway.fail("setSettings")
         let failed = await viewModel.saveSettings(playStyle: .against, language: .en)
         #expect(!failed)
-        #expect(viewModel.notice == .couldNotSaveSettings)
+        #expect(viewModel.notice == .couldNotSaveSettings(.other))
     }
 
-    @Test func withNothingCachedAndNoConnectionTheTabSaysItNeedsOne() async {
+    @Test func withNothingCachedAndAFailedReadTheTabSaysWhy() async {
         let env = GamesTestEnvironment(state: nil)
         env.gateway.fail("load")
         env.gateway.fail("overview")
@@ -302,7 +302,8 @@ struct GamesViewModelTests {
 
         await viewModel.load()
 
-        #expect(viewModel.screen == .unavailable)
+        // The scripted failure is not a lost connection, so the tab must not say offline.
+        #expect(viewModel.screen == .unavailable(.other))
     }
 
     @Test func theCacheKeepsEachPersonsContentApart() async {

@@ -119,13 +119,14 @@ struct BoardGameHistoryTests {
         let history = BoardGameHistoryViewModel(kind: .ultimateTicTacToe, gateway: gateway)
         history.configure(userID: me)
         await history.load()
-        #expect(history.loadFailed)
+        // The scripted failure is not a lost connection, so the screen must not say offline.
+        #expect(history.loadFailure == .other)
         #expect(history.games.isEmpty)
 
         gateway.unfail("loadHistory")
         gateway.setHistoryPage(RemoteBoardGameHistoryPage(games: [game(1)], nextBeforeGameNumber: nil), before: nil)
         await history.load()
-        #expect(history.loadFailed == false)
+        #expect(history.loadFailure == nil)
         #expect(history.games.count == 1)
 
         history.configure(userID: partner)

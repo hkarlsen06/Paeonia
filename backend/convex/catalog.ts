@@ -340,6 +340,21 @@ async function applyQuestion(ctx: WriterCtx, question: QuestionPayload): Promise
         }
       }
       await ctx.db.patch(row._id, { status: "active", retired_at: undefined });
+      // ponytail: before launch, every daily question shows the newest wording, so a fixed typo
+      // reaches questions already handed out. Stop once real answers exist: an answer should keep
+      // the version it was written for (docs/couple-question-guidelines.md, Versioning).
+      for (const old of await ctx.db
+        .query("question_versions")
+        .withIndex("by_question_id_status", (q) => q.eq("question_id", target.id))
+        .collect()) {
+        if (old.id === row.id) continue;
+        for (const instance of await ctx.db
+          .query("daily_question_instances")
+          .withIndex("by_question_version_id", (q) => q.eq("question_version_id", old.id))
+          .collect()) {
+          await ctx.db.patch(instance._id, { question_version_id: row.id });
+        }
+      }
     } else if (version.status === "retired") {
       await ctx.db.patch(row._id, {
         status: "retired",

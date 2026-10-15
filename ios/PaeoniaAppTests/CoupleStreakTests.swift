@@ -103,7 +103,8 @@ struct CoupleStreakTests {
             {"current_count":6,"longest_count":8,"last_qualified_date":"2026-10-10",
             "restore_available":false,"restorable_count":0,"restore_deadline":null,
             "current_user_contributed_today":true,"partner_contributed_today":false,
-            "freeze_available":false,"freeze_ready_at":"2026-11-10T22:00:00.000Z","freeze_saved_streak":true}
+            "freeze_available":false,"freeze_ready_at":"2026-11-10T22:00:00.000Z","freeze_saved_streak":true,
+            "next_activity_deadline_at":"2026-11-10T22:00:00.000Z"}
             """.utf8
         )
 
@@ -112,6 +113,7 @@ struct CoupleStreakTests {
         #expect(!streak.freezeAvailable)
         #expect(streak.freezeReadyAt == Date(timeIntervalSince1970: 1_794_348_000))
         #expect(streak.freezeSavedStreak)
+        #expect(streak.endsAt == Date(timeIntervalSince1970: 1_794_348_000))
     }
 
     // MARK: - Restore eligibility
@@ -260,6 +262,28 @@ struct CoupleStreakTests {
         let state = StreakPillState(count: 1, isRestorable: true, restorableCount: 30)
 
         #expect(state.resolved(at: .distantFuture).isRestorable)
+    }
+
+    // MARK: - Toolbar ends-soon state
+
+    @Test func pillShowsTheHourglassOnlyCloseToTheEnd() {
+        let endsAt = Date.now.addingTimeInterval(24 * 3_600)
+        let atRiskFrom = endsAt.addingTimeInterval(-StreakPillState.atRiskLeadTime)
+        let state = StreakPillState(count: 12, isRestorable: false, restorableCount: 0, endsAt: endsAt)
+
+        #expect(!state.resolved(at: atRiskFrom.addingTimeInterval(-1)).isAtRisk)
+        #expect(state.resolved(at: atRiskFrom).isAtRisk)
+        #expect(state.changeDates == [atRiskFrom])
+    }
+
+    @Test func pillWithoutALiveStreakNeverShowsTheHourglass() {
+        let endsAt = Date.now.addingTimeInterval(60)
+        let zero = StreakPillState(count: 0, isRestorable: false, restorableCount: 0, endsAt: endsAt)
+        let paused = StreakPillState(count: 1, isRestorable: true, restorableCount: 30, endsAt: endsAt)
+
+        #expect(!zero.resolved(at: endsAt).isAtRisk)
+        #expect(!paused.resolved(at: endsAt).isAtRisk)
+        #expect(zero.changeDates.isEmpty)
     }
 
     private static func streak(

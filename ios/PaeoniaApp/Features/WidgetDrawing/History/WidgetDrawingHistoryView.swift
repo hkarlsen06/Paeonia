@@ -109,8 +109,8 @@ struct WidgetDrawingHistoryView: View {
                 ProgressView()
                     .controlSize(.large)
                     .tint(.paeoniaAccentPrimary)
-            case .failed:
-                failedState
+            case let .failed(failure):
+                failedState(failure)
             case .loaded:
                 if viewModel.isEmpty {
                     emptyState
@@ -184,18 +184,24 @@ struct WidgetDrawingHistoryView: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
     }
 
-    private var failedState: some View {
+    private func failedState(_ failure: PaeoniaFailure) -> some View {
         PaeoniaEmptyStateView(
             title: .widgetHistoryErrorTitle,
-            message: .widgetHistoryErrorMessage,
+            // Only a phone without a connection is told to check it.
+            message: failure == .offline ? .widgetHistoryErrorMessage : .commonLoadFailedMessage,
             systemImage: "exclamationmark.triangle"
         ) {
-            Button {
-                Task { await viewModel.retry() }
-            } label: {
-                Text(.widgetHistoryRetry)
+            VStack(spacing: PaeoniaSpacing.space8) {
+                Button {
+                    Task { await viewModel.retry() }
+                } label: {
+                    Text(.widgetHistoryRetry)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle())
+                if failure == .other {
+                    PaeoniaSupportLink()
+                }
             }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
     }

@@ -143,7 +143,7 @@ struct ExquisiteCorpseHistoryTests {
         gateway.setFailing(true)
 
         await history.refresh()
-        #expect(history.phase == .offline)
+        #expect(history.phase == .failed(.other))
 
         gateway.setFailing(false)
         await history.retry()

@@ -60,8 +60,9 @@ struct PurchaseSettingsView: View {
             case .loading:
                 ProgressView()
                     .frame(maxWidth: .infinity)
-            case .failed:
-                Text(.settingsPurchasesDetailsFailed)
+            case let .failed(failure):
+                // Only a phone without a connection is told to check it.
+                Text(failure == .offline ? .settingsPurchasesDetailsFailed : .settingsPurchasesDetailsFailedLater)
                     .foregroundStyle(.paeoniaTextSecondary)
             case let .loaded(details):
                 detailRows(details)

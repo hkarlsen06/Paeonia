@@ -34,6 +34,9 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     var freezeReadyAt: Date?
     /// True when the couple missed a day and a freeze is keeping the streak alive.
     var freezeSavedStreak = false
+    /// When a live streak ends unless both partners show up first, or `nil` when
+    /// there is no live streak.
+    var endsAt: Date?
 
     /// True while a broken streak can still be bought back. Recomputed from the
     /// deadline (not just the server flag) so the offer disappears the moment it

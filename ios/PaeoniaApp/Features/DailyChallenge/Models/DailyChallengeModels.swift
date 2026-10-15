@@ -590,6 +590,9 @@ nonisolated struct DailyChallengeCardState: Equatable, Sendable {
     nonisolated struct LockedPartnerQuestion: Equatable, Identifiable, Sendable {
         let id: UUID
         let shortPrompt: String
+        /// How many days before today the partner's question was handed out. 0 for
+        /// today's questions, more for ones carried over from an earlier day.
+        var daysAgo = 0
     }
 
     /// The most locked rows a card shows. Any others collapse into "and N more".
@@ -882,6 +885,17 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         return cardState(.active(prompt: prompt))
     }
 
+    /// Whole days from a couple-local date to the active day. Before today's day has
+    /// started, the phone's date when this snapshot was read stands in for it.
+    private func daysBeforeToday(_ localDate: String) -> Int {
+        let today = currentDayLocalDate ?? MemoryTimeline.localDateString(for: refreshedAt)
+        guard
+            let start = DailyChallengeHistory.parseLocalDate(localDate),
+            let end = DailyChallengeHistory.parseLocalDate(today)
+        else { return 0 }
+        return max(0, Int((end.timeIntervalSince(start) / 86_400).rounded()))
+    }
+
     private func cardState(_ kind: DailyChallengeCardState.Kind) -> DailyChallengeCardState {
         let waiting = answerablePartnerQuestions
         let shown = waiting.prefix(DailyChallengeCardState.maxLockedPartnerQuestions)
@@ -894,7 +908,8 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
             lockedPartnerQuestions: shown.map {
                 DailyChallengeCardState.LockedPartnerQuestion(
                     id: $0.id,
-                    shortPrompt: $0.shortPrompt.isEmpty ? $0.prompt : $0.shortPrompt
+                    shortPrompt: $0.shortPrompt.isEmpty ? $0.prompt : $0.shortPrompt,
+                    daysAgo: daysBeforeToday($0.localDate)
                 )
             },
             moreLockedPartnerQuestionCount: waiting.count - shown.count

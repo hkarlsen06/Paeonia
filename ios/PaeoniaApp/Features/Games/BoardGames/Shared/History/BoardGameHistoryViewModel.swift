@@ -11,8 +11,8 @@ final class BoardGameHistoryViewModel {
     private(set) var games: [RemoteBoardGameHistoryGame] = []
     /// The first read is under way and there is nothing to show yet.
     private(set) var isLoading = true
-    /// The first read failed and there is nothing to show.
-    private(set) var loadFailed = false
+    /// Why the first read failed, while there is nothing to show.
+    private(set) var loadFailure: PaeoniaFailure?
     private(set) var loadMoreFailed = false
     /// There are older games to load.
     private(set) var hasMore = false
@@ -39,7 +39,7 @@ final class BoardGameHistoryViewModel {
         userID = newUserID
         games = []
         isLoading = true
-        loadFailed = false
+        loadFailure = nil
         loadMoreFailed = false
         hasMore = false
         nextCursor = nil
@@ -60,8 +60,8 @@ final class BoardGameHistoryViewModel {
             refresh(with: page)
         } catch {
             guard !Self.isCancellation(error), self.userID == userID else { return }
-            // Only a screen with nothing to show says it is offline.
-            loadFailed = games.isEmpty
+            // Only a screen with nothing to show says the read failed.
+            loadFailure = games.isEmpty ? PaeoniaFailure(error) : nil
         }
         isLoading = false
     }
@@ -79,7 +79,7 @@ final class BoardGameHistoryViewModel {
             nextCursor = page.nextBeforeGameNumber
         }
         hasMore = nextCursor != nil
-        loadFailed = false
+        loadFailure = nil
     }
 
     // MARK: - Paging

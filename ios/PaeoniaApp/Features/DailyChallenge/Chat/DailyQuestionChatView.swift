@@ -249,6 +249,9 @@ struct DailyQuestionChatView: View {
             }
             .padding(.vertical, PaeoniaSpacing.space12)
         }
+        // Rows sit at the bottom, where the chat stacks them, so they stay put when the
+        // partner's answer arrives and the page turns into the chat.
+        .defaultScrollAnchor(.bottom)
     }
 
     private func showBanner(for notice: DailyQuestionChatViewModel.Notice?) {

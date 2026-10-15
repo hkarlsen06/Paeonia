@@ -41,8 +41,7 @@ struct CoupleMapSnapshot: View {
     let partnerCapturedAt: Date
     let partnerWasStaleAtLastRefresh: Bool
     /// Both partners are in the same place right now (see `CoupleMapFraming.areTogether`).
-    /// Shows two figures holding hands between the avatars and "Together" in place
-    /// of the distance.
+    /// Overlaps the avatars a little and shows "Together" in place of the distance.
     let isTogether: Bool
     let onLongPress: () -> Void
     /// Called for each tap that plays a heart. The card batches them into a send.
@@ -51,10 +50,11 @@ struct CoupleMapSnapshot: View {
     var incomingBurst: HeartsBurst?
 
     private static let scrimHeight: CGFloat = 52
-    /// Closest the two avatar centers may sit on screen: one avatar plus room for the
-    /// together figures between them.
-    private static let minimumPinSpacing = MapAvatarPin.avatarDiameter + 34
-    private static let togetherSymbol = "figure.2.left.holdinghands"
+    /// Closest the two avatar centers may sit on screen. Apart, a small gap keeps both
+    /// faces whole. Together, the avatars overlap a little, leaving enough of a path
+    /// for a heart to fly from one to the other.
+    private static let apartPinSpacing = MapAvatarPin.avatarDiameter + 12
+    private static let togetherPinSpacing = MapAvatarPin.avatarDiameter - 6
     /// Lean of the sweep line away from vertical, so it cuts across on a diagonal.
     private static let tiltRadians: CGFloat = 18 * .pi / 180
     private static let sweepDuration: TimeInterval = 1.5
@@ -112,6 +112,18 @@ struct CoupleMapSnapshot: View {
         let image: UIImage?
         let currentPoint: CGPoint
         let partnerPoint: CGPoint
+    }
+
+    /// Where the avatars sit on `snap`. Partners closer than the map's tightest zoom
+    /// can show would stack on one spot, so the pins spread apart until both faces
+    /// show. This runs at draw time because `isTogether` can change without new
+    /// coordinates, for example when the partner's location turns stale.
+    private func pinPoints(_ snap: SnapshotResult) -> (current: CGPoint, partner: CGPoint) {
+        CoupleMapFraming.separated(
+            snap.currentPoint,
+            snap.partnerPoint,
+            minimumDistance: isTogether ? Self.togetherPinSpacing : Self.apartPinSpacing
+        )
     }
 
     /// The map currently visible under the reveal cover. Keeping it in one stable
@@ -180,9 +192,10 @@ struct CoupleMapSnapshot: View {
             // uncovered) and whenever there's no map yet, so a heart never flies over
             // empty space.
             if let snapshot, !isRevealing {
+                let pins = pinPoints(snapshot)
                 KissLayer(
-                    start: snapshot.currentPoint,
-                    end: snapshot.partnerPoint,
+                    start: pins.current,
+                    end: pins.partner,
                     tapKisses: flights.kisses
                 )
             }
@@ -194,6 +207,7 @@ struct CoupleMapSnapshot: View {
     /// distance are all uncovered together as the flame passes. None of them pop in.
     @ViewBuilder
     private func mapContent(_ snap: SnapshotResult, size: CGSize) -> some View {
+        let pins = pinPoints(snap)
         ZStack {
             duotone(snap.image, size)
 
@@ -203,7 +217,7 @@ struct CoupleMapSnapshot: View {
                 tint: .paeoniaPartnerOne,
                 capturedAt: currentCapturedAt
             )
-            .position(snap.currentPoint)
+            .position(pins.current)
 
             MapAvatarPin(
                 name: partnerName,
@@ -213,11 +227,7 @@ struct CoupleMapSnapshot: View {
                 wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
                 dimsWhenStale: true
             )
-            .position(snap.partnerPoint)
-
-            if isTogether {
-                togetherFigures(between: snap)
-            }
+            .position(pins.partner)
 
             // The distance pill (scrim + number + icon) lives inside the revealed unit
             // too, so the sweep uncovers it along with the map and avatars instead of it
@@ -275,28 +285,11 @@ struct CoupleMapSnapshot: View {
         onSendHeart()
     }
 
-    private func togetherFigures(between snap: SnapshotResult) -> some View {
-        Image(systemName: Self.togetherSymbol)
-            .font(.system(size: 20, weight: .semibold))
-            .foregroundStyle(.paeoniaAccentPrimary)
-            .phaseAnimator(reduceMotion ? [1.0] : [1.0, 1.12]) { view, scale in
-                view.scaleEffect(scale)
-            } animation: { _ in
-                PaeoniaMotion.standardCurve(duration: 1.1)
-            }
-            .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
-            .position(
-                x: (snap.currentPoint.x + snap.partnerPoint.x) / 2,
-                y: (snap.currentPoint.y + snap.partnerPoint.y) / 2
-            )
-            .accessibilityHidden(true)
-    }
-
     // The distance number and unit, right-aligned so it sits on the same line as
     // the Apple Maps watermark baked into the bottom-left of the snapshot.
     private var distanceLabel: some View {
         HStack(spacing: PaeoniaSpacing.space4) {
-            Image(systemName: isTogether ? Self.togetherSymbol : "location.fill")
+            Image(systemName: isTogether ? "person.2.fill" : "location.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .accessibilityHidden(true)
 
@@ -445,17 +438,10 @@ extension CoupleMapSnapshot {
                 return nil
             }
             if let result {
-                // Partners closer than the map's tightest zoom can show would stack on one
-                // spot, so spread the pins apart on screen until both faces show.
-                let (currentPoint, partnerPoint) = CoupleMapFraming.separated(
-                    result.point(for: currentCoordinate),
-                    result.point(for: partnerCoordinate),
-                    minimumDistance: Self.minimumPinSpacing
-                )
                 return SnapshotResult(
                     image: result.image,
-                    currentPoint: currentPoint,
-                    partnerPoint: partnerPoint
+                    currentPoint: result.point(for: currentCoordinate),
+                    partnerPoint: result.point(for: partnerCoordinate)
                 )
             }
         }

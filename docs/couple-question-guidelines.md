@@ -201,7 +201,7 @@ To replace an active version:
 2. In the old version's `version.md`, set `status: retired` and add a `retired_at` timestamp. Leave its prompts and answer kinds unchanged.
 3. Run `scripts/sync-question-catalog`, then `--apply`. The sync retires the old active version and activates the new one.
 
-Do not edit historical versions in place after they have been used by daily instances. Old answers should continue to point at the version the user actually answered.
+Do not edit historical versions in place after they have been used by daily instances. After launch, old answers should continue to point at the version the user actually answered. Until launch, the sync moves every daily instance of the question to the newly active version, so a wording fix also shows on questions already handed out. Remove that step in `backend/convex/catalog.ts` before launch.
 
 Retire or archive a question when it should no longer be selected. Do not delete a question that has answers, threads, or other relationship content.
 

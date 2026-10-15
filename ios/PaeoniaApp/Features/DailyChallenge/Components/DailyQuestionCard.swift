@@ -6,15 +6,24 @@ import SwiftUI
 /// shrinks a little to fit instead of being cut off.
 struct DailyQuestionCard<Header: View, Footer: View>: View {
     let prompt: String
+    /// While true, the question keeps at most the height it last had while false. The
+    /// answer screen sets it while typing, so folding the composer and raising the
+    /// keyboard, which change the card's room, don't rewrap the question. It still
+    /// shrinks if the room gets tighter than that.
+    private let holdsPromptSize: Bool
     private let header: Header
     private let footer: Footer
 
+    @State private var heldPromptHeight: CGFloat?
+
     init(
         prompt: String,
+        holdsPromptSize: Bool = false,
         @ViewBuilder header: () -> Header,
         @ViewBuilder footer: () -> Footer
     ) {
         self.prompt = prompt
+        self.holdsPromptSize = holdsPromptSize
         self.header = header()
         self.footer = footer()
     }
@@ -29,7 +38,18 @@ struct DailyQuestionCard<Header: View, Footer: View>: View {
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .minimumScaleFactor(0.5)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                // When the question does change size, its lines rewrap. Animated, the
+                // words fly between the two layouts, so the new size takes over at once
+                // while the card resizes.
+                .contentTransition(.identity)
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: holdsPromptSize ? heldPromptHeight : nil,
+                    alignment: .topLeading
+                )
+                .onGeometryChange(for: CGFloat.self, of: \.size.height) { height in
+                    if !holdsPromptSize { heldPromptHeight = height }
+                }
                 .layoutPriority(1)
 
             footer

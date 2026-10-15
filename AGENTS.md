@@ -136,6 +136,7 @@ The developer may run multiple agents in parallel in the same worktree.
   - "Your partner will see this when it finishes sending." instead of "Upload queued."
   - "You no longer have access to this relationship." instead of "Entitlement removed."
 - Error messages must say what happened and what the user can do next.
+- Only tell the user they are offline, or to check their connection, when the phone has no connection. Classify a thrown error with `PaeoniaFailure(error)` (`ios/PaeoniaApp/Shared/Utilities/PaeoniaFailure.swift`) and show connection copy only for `.offline`. A server error, a missing function, a refusal or a timeout may happen on a working connection, so their copy says something went wrong and to try again later. A full screen that says only that also shows `PaeoniaSupportLink`, so the user has somewhere to go when waiting doesn't help. `PaeoniaLoadFailureView` does both for a screen that could not load.
 - If a phrase sounds correct to an engineer but awkward for a normal teenager, rewrite it.
 
 - Before writing, seeding, localizing, or versioning couple/daily questions, read `docs/couple-question-guidelines.md`. Questions are authored by Paeonia, not by either partner, and must not sound like they came from the partner.

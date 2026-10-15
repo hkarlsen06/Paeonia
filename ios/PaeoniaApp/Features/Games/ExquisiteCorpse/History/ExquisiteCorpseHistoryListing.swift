@@ -8,8 +8,8 @@ nonisolated struct ExquisiteCorpseHistoryListing: Equatable, Sendable {
     var nextCursor: Int?
     /// The cache or the server has answered, even if the answer is no creatures.
     var hasLoaded = false
-    /// The last try to load the first page failed.
-    var didFail = false
+    /// Why the last try to load the first page failed. Nil after a good read.
+    var failure: PaeoniaFailure?
     var isLoadingMore = false
     var loadMoreFailed = false
 
@@ -34,7 +34,7 @@ nonisolated struct ExquisiteCorpseHistoryListing: Equatable, Sendable {
             nextCursor = page.nextBeforeFigureNumber
         }
         hasLoaded = true
-        didFail = false
+        failure = nil
     }
 
     /// Adds an older page. A creature that is already here is not added twice.

@@ -4,8 +4,8 @@ import Foundation
 /// The copy says what happened and what to do next. Errors are logged in debug
 /// builds only.
 nonisolated enum GamesNotice: Equatable, Sendable {
-    case couldNotSaveSettings
-    case couldNotStartGame
+    case couldNotSaveSettings(PaeoniaFailure)
+    case couldNotStartGame(PaeoniaFailure)
     /// The picked word was no longer on offer, so new choices are shown.
     case wordRejected
     /// The same, and the drawing made for that word waits on the canvas of the next round.
@@ -19,7 +19,7 @@ nonisolated enum GamesNotice: Equatable, Sendable {
     case moveRejected
     /// Queueing a move on the phone failed.
     case couldNotSaveMove
-    case couldNotSendInvite
+    case couldNotSendInvite(PaeoniaFailure)
     /// An Exquisite corpse part could not be sent and is back on the canvas.
     case exquisiteCorpsePartRejected
 
@@ -53,10 +53,15 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         }
     }
 
+    /// A call that failed tells the person to check their connection only when the
+    /// phone is offline.
     private var message: LocalizedStringResource {
         switch self {
-        case .couldNotSaveSettings: .gamesNoticeSettingsFailedMessage
-        case .couldNotStartGame: .gamesNoticeStartFailedMessage
+        case .couldNotSaveSettings(.offline): .gamesNoticeSettingsFailedMessage
+        case .couldNotStartGame(.offline): .gamesNoticeStartFailedMessage
+        case .couldNotSendInvite(.offline): .gamesNoticeInviteFailedMessage
+        case .couldNotSaveSettings(.other), .couldNotStartGame(.other), .couldNotSendInvite(.other):
+            .commonActionFailedMessage
         case .wordRejected: .gamesNoticeWordRejectedMessage
         case .wordRejectedDrawingKept: .gamesNoticeWordRejectedKeptDrawingMessage
         case .drawingRejected: .gamesNoticeDrawingRejectedMessage
@@ -64,7 +69,6 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         case .drawingTooBig: .gamesNoticeDrawingTooBigMessage
         case .moveRejected: .gamesNoticeMoveRejectedMessage
         case .couldNotSaveMove: .gamesNoticeMoveFailedMessage
-        case .couldNotSendInvite: .gamesNoticeInviteFailedMessage
         case .exquisiteCorpsePartRejected: .exquisiteCorpseNoticePartRejected
         }
     }

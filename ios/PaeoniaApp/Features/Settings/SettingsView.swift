@@ -392,11 +392,11 @@ extension SettingsView {
                     message: String(localized: .settingsPurchasesNoneMessage)
                 )
             )
-        case .restorePurchasesFailed:
+        case let .restorePurchasesFailed(failure):
             bannerCenter.show(
                 .error(
                     title: String(localized: .settingsPurchasesFailedTitle),
-                    message: String(localized: .settingsPurchasesFailedMessage)
+                    message: String(localized: failure.restorePurchasesMessage)
                 )
             )
         case .purchaseLinkedToAnotherAccount:
@@ -417,4 +417,11 @@ extension SettingsView {
     }
     .environment(PaeoniaBannerCenter())
     .preferredColorScheme(.dark)
+}
+
+private extension PaeoniaFailure {
+    /// Only a phone without a connection is told to check it.
+    var restorePurchasesMessage: LocalizedStringResource {
+        self == .offline ? .settingsPurchasesFailedMessage : .commonActionFailedMessage
+    }
 }

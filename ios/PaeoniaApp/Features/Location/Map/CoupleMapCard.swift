@@ -208,7 +208,7 @@ struct CoupleMapCard: View {
             MapEmptyState(
                 title: .homeMapUnavailableTitle,
                 message: .homeMapUnavailableMessage,
-                systemImage: "wifi.slash"
+                systemImage: "map"
             )
         case .disabled, .notSharing, .visible:
             MapEmptyState(

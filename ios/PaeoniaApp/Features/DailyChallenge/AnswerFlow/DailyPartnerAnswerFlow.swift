@@ -6,11 +6,11 @@ import SwiftUI
 /// It is presented as a full-screen cover that zooms out of the tapped card, so the
 /// card appears to grow into the screen. It reuses the daily challenge's prompt and
 /// composer, but without the multi-question chrome (no eyebrow, step bar, or skip).
-/// Sending your answer unlocks your partner's reply, and the flow turns into the
-/// question's chat with their answer lit up, so the user can read it and reply
-/// without finding the card again. When the send is slow or offline, the chat's
-/// waiting page shows the user's answer and opens up once the reply arrives. Close
-/// ends the flow at any point.
+/// Sending your answer unlocks your partner's reply. The composer stays as it was
+/// until the reply loads, then the flow fades straight into the question's chat, where
+/// their answer plays its reveal, so the user can read it and reply without finding
+/// the card again. When the send is slow or offline, the chat's waiting page shows the
+/// user's answer and opens up once the reply arrives. Close ends the flow at any point.
 struct DailyPartnerAnswerFlow: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
@@ -28,11 +28,16 @@ struct DailyPartnerAnswerFlow: View {
     /// incidental order in which `isSending` / snapshot signals arrive — so no
     /// answered/"sending" frame can leak out between composing and the reveal.
     @State private var phase: Phase = .composing
+    /// The question and composer as they were when Send was tapped. Saving the answer
+    /// clears the draft and marks the question answered, so the composer shows these
+    /// copies until the chat takes over.
+    @State private var heldQuestion: DailyChallengeQuestion?
+    @State private var visualHold: DailyAnswerStepVisualHold?
     @FocusState private var isComposerFocused: Bool
 
-    /// `.sending` holds the compose screen while the answer syncs and the partner's reply
-    /// loads; the screen then turns straight over to `.revealed`, the chat. There is
-    /// intentionally no separate "answered" phase here.
+    /// `.sending` holds the composer as it was when Send was tapped while the answer
+    /// syncs and the partner's reply loads. The screen then turns straight over to
+    /// `.revealed`, the chat. There is intentionally no separate "answered" screen.
     private enum Phase {
         case composing
         case sending
@@ -51,6 +56,7 @@ struct DailyPartnerAnswerFlow: View {
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .onChange(of: wasAnswerReturned) { _, returned in
             if returned {
+                releaseHold()
                 withAnimation(PaeoniaMotion.stateChange) { phase = .composing }
             }
         }
@@ -66,30 +72,18 @@ struct DailyPartnerAnswerFlow: View {
             && viewModel.hasDraftContent(for: question.id)
     }
 
+    /// The question and composer. After Send it stays exactly as it was, with Send
+    /// busy, until the chat takes over, so nothing moves in between.
     private var answering: some View {
-        ZStack {
-            if phase == .composing {
-                composing
-            } else {
-                sending
-            }
-        }
-        .paeoniaReadableWidth()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Let the plum bleed under the keyboard's safe-area region too, so the window's
-        // black doesn't show through the keyboard's rounded top corners.
-        .background { PaeoniaGlowBackground() }
-    }
-
-    // MARK: - Composing
-
-    private var composing: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             DailyChallengeAnswerStep(
-                question: liveQuestion,
+                question: heldQuestion ?? liveQuestion,
                 viewModel: viewModel,
-                isFocused: $isComposerFocused
+                isFocused: $isComposerFocused,
+                visualHold: visualHold
             )
+            // The answer is on its way, so the held composer takes no more input.
+            .allowsHitTesting(visualHold == nil)
 
             actionBar
         }
@@ -101,76 +95,11 @@ struct DailyPartnerAnswerFlow: View {
         // keyboard's movement onto a fixed curve and make it bounce.
         // Tap the question or any empty space to put the keyboard away.
         .dismissesKeyboardOnTap { isComposerFocused = false }
-    }
-
-    // MARK: - Sending (holding for the reveal)
-
-    /// The held screen between Send and the reveal. It is its own phase — not the compose
-    /// step with a flag — so nothing it shows depends on live `isSending`/snapshot flags,
-    /// and it is the view that stays on screen (and fades out) as the reveal turns over.
-    private var sending: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
-            committedAnswer
-            actionBar
-        }
-        .padding(.top, PaeoniaSpacing.space8)
-    }
-
-    /// Keeps the *compose* look — the question up top and our just-sent answer read-only
-    /// in the same field below — so the screen holds steady until the reveal cross-fades
-    /// in. It never shows an answered/"saving" state; the reveal is the only answered
-    /// surface.
-    private var committedAnswer: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            // The same card the composer showed, with the same waiting hint, so
-            // nothing jumps as the editable field becomes this read-only one.
-            DailyQuestionCard(prompt: question.prompt) {
-                EmptyView()
-            } footer: {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                    if question.partnerAnswer != nil, !question.canViewPartnerAnswer {
-                        DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
-                    }
-
-                    DailyAnswerKindBadges(kinds: question.composableAnswerKinds)
-                }
-            }
-
-            committedAnswerField
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.top, PaeoniaSpacing.space24)
-        .padding(.bottom, PaeoniaSpacing.space8)
-    }
-
-    /// The just-sent answer shown read-only in the same labelled, bordered field the
-    /// composer used, so it reads as "your answer, still on screen" rather than a reveal.
-    /// Sources the content from the in-flight send, falling back to the live snapshot so
-    /// it stays filled across the moment the send settles and the reveal takes over.
-    private var committedAnswerField: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.dailyChallengeTextAnswerLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-
-            DailySendingAnswerView(
-                mediaKind: liveQuestion.mediaAnswerKind,
-                mediaData: viewModel.sendingMediaData(for: question.id),
-                voiceDurationMs: viewModel.sendingVoiceDurationMs(for: question.id),
-                partnerChoiceName: viewModel.sendingPartnerChoiceName(for: question.id),
-                text: viewModel.sendingText(for: question.id) ?? liveQuestion.ownAnswerDetail?.textBody,
-                showsSendingStatus: false
-            )
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(PaeoniaSpacing.space12)
-            .background(.paeoniaBackgroundSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
-            }
-        }
+        .paeoniaReadableWidth()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Let the plum bleed under the keyboard's safe-area region too, so the window's
+        // black doesn't show through the keyboard's rounded top corners.
+        .background { PaeoniaGlowBackground() }
     }
 
     private var actionBar: some View {
@@ -235,8 +164,8 @@ struct DailyPartnerAnswerFlow: View {
     }
 
     /// The live snapshot copy of this question, carrying our just-sent answer once it
-    /// lands. Used while composing and to source the held answer; falls back to the
-    /// captured question before the snapshot has it.
+    /// lands. Used while composing and for the chat; falls back to the captured
+    /// question before the snapshot has it.
     private var liveQuestion: DailyChallengeQuestion {
         revealedQuestion ?? question
     }
@@ -254,16 +183,22 @@ struct DailyPartnerAnswerFlow: View {
     private func submit() async {
         guard !isSubmitting else { return }
 
+        let sent = liveQuestion
+        heldQuestion = sent
+        visualHold = DailyAnswerStepVisualHold(question: sent, viewModel: viewModel)
         await viewModel.submitAnswer(for: question)
 
         // The answer has landed locally (or staged to send for media). A failure
         // leaves the draft in place and surfaces a banner instead.
         let didAnswer = (revealedQuestion?.hasOwnAnswer ?? false) || viewModel.isSending(question.id)
-        guard didAnswer else { return }
+        guard didAnswer else {
+            releaseHold()
+            return
+        }
 
         isComposerFocused = false
 
-        // Hold on the compose screen (Send still busy) for a moment, so a quick reply
+        // Hold the composer as it was (Send still busy) for a moment, so a quick reply
         // turns over in one step. Capped, so a slow connection never holds it here.
         phase = .sending
         _ = await viewModel.awaitAnswerReveal(for: question.id)
@@ -274,6 +209,11 @@ struct DailyPartnerAnswerFlow: View {
         // Slow or offline: the chat still opens, on its waiting page with the answer
         // as saved, and opens up when their reply arrives.
         withAnimation(PaeoniaMotion.meaningfulMoment) { phase = .revealed }
+    }
+
+    private func releaseHold() {
+        heldQuestion = nil
+        visualHold = nil
     }
 
     private func dismiss() {

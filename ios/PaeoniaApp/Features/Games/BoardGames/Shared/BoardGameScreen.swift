@@ -80,11 +80,11 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             ProgressView()
                 .tint(.paeoniaAccentPrimary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .unavailable:
-            PaeoniaEmptyStateView(
-                title: .boardGamesUnavailableTitle,
-                message: .boardGamesUnavailableMessage,
-                systemImage: "wifi.slash"
+        case .unavailable(let failure):
+            PaeoniaLoadFailureView(
+                failure: failure,
+                offlineMessage: .boardGamesUnavailableMessage,
+                failedMessage: .boardGamesUnavailableFailedMessage
             ) {
                 Button {
                     Task { await viewModel.startGame() }

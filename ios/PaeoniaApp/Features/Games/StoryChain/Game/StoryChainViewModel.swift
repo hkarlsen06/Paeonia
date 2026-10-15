@@ -34,6 +34,8 @@ final class StoryChainViewModel {
     /// It is this person's turn to choose, the state has loaded, and it carries no
     /// openings. Only then does the screen show its offline message.
     private(set) var openingsUnavailable = false
+    /// Why the last read of the server failed. Nil after a good read.
+    private(set) var refreshFailure: PaeoniaFailure?
     var selectedOpening: StoryChainOpeningChoice?
 
     // Writing.
@@ -77,7 +79,11 @@ final class StoryChainViewModel {
     private(set) var isSendFailing = false
     /// Creating the game is in progress.
     var isStartingGame = false
-    var startFailed = false
+    /// Why creating the game failed. The screen offers another try.
+    var startFailure: PaeoniaFailure?
+    var startFailed: Bool {
+        startFailure != nil
+    }
     /// Show it through the banner center, then call `clearNotice()`.
     var notice: GamesNotice?
 
@@ -243,9 +249,17 @@ final class StoryChainViewModel {
     /// Reads the server's state once and caches it.
     func refresh() async {
         guard let userID = currentUserID else { return }
-        guard (try? await dependencies.storyChainCache.fetchState(from: storyGateway, ownerUserID: userID)) == true,
-              !Task.isCancelled
-        else { return }
+        do {
+            guard try await dependencies.storyChainCache.fetchState(from: storyGateway, ownerUserID: userID),
+                  !Task.isCancelled
+            else { return }
+            refreshFailure = nil
+        } catch {
+            if !Task.isCancelled {
+                refreshFailure = PaeoniaFailure(error)
+            }
+            return
+        }
         await reload()
     }
 
@@ -263,7 +277,7 @@ final class StoryChainViewModel {
         isHeldOnPhone = isWaitingToSend && pending.isHeldOnPhone
         isSendFailing = isWaitingToSend && pending.lastSendFailedWhileOnline
         if phase != .preparing {
-            startFailed = false
+            startFailure = nil
         }
 
         resetComposerForNewTurn()

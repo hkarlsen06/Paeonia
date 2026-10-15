@@ -23,7 +23,7 @@ final class WidgetDrawingHistoryViewModel {
     enum Phase: Equatable {
         case loading
         case loaded
-        case failed
+        case failed(PaeoniaFailure)
     }
 
     /// The state of one drawing's "save to your photos" button.
@@ -253,7 +253,7 @@ final class WidgetDrawingHistoryViewModel {
             }
         } catch {
             if generation == loadGeneration {
-                phase = .failed
+                phase = .failed(PaeoniaFailure(error))
             }
         }
     }

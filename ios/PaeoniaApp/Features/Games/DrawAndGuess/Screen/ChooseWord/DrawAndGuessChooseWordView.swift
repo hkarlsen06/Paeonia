@@ -81,11 +81,13 @@ struct DrawAndGuessChooseWordView: View {
         }
     }
 
+    /// Without a failed read, nothing says the connection is to blame.
     private var offline: some View {
-        PaeoniaEmptyStateView(
-            title: .gamesDrawAndGuessChooseOfflineTitle,
-            message: .gamesDrawAndGuessChooseOfflineMessage,
-            systemImage: "wifi.slash"
+        PaeoniaLoadFailureView(
+            failure: viewModel.refreshFailure ?? .other,
+            offlineTitle: .gamesDrawAndGuessChooseOfflineTitle,
+            offlineMessage: .gamesDrawAndGuessChooseOfflineMessage,
+            failedMessage: .gamesDrawAndGuessChooseFailedMessage
         ) {
             Button {
                 Task { await viewModel.refresh() }

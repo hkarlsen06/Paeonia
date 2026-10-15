@@ -103,7 +103,7 @@ struct DrawAndGuessPartnerTests {
         await viewModel.sendInvite()
 
         #expect(viewModel.invite == .available)
-        #expect(viewModel.notice == .couldNotSendInvite)
+        #expect(viewModel.notice == .couldNotSendInvite(.offline))
     }
 
     @Test func theInviteStaysSentWhenTheServerSaysTooSoon() async {
@@ -158,7 +158,7 @@ struct DrawAndGuessPartnerTests {
         await viewModel.startGameIfNeeded()
 
         #expect(viewModel.startFailed)
-        #expect(viewModel.notice == .couldNotStartGame)
+        #expect(viewModel.notice == .couldNotStartGame(.other))
         #expect(viewModel.phase == .preparing)
     }
 

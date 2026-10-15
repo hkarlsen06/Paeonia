@@ -36,10 +36,10 @@ struct DailyChallengeAnswerStep: View {
     /// above the question and already establishes the top spacing.
     var topPadding: CGFloat = PaeoniaSpacing.space24
 
-    /// Mirrors `!isFocused`, driving the combined-question secondary-composer fold
-    /// (see `combinedComposer`) and the question card's footer. Toggled inside
-    /// `withAnimation` from the focus change so the fade animates the secondary and
-    /// footer alone, never the keyboard-driven field.
+    /// False while typing, folding away the combined-question secondary composer (see
+    /// `combinedComposer`) and the question card's footer. A tap on the field folds
+    /// them before focusing it (see `answerTextField`). They come back as the keyboard
+    /// starts to close, on the keyboard's curve.
     @State private var showsSecondaryComposer = true
 
     var body: some View {
@@ -59,8 +59,13 @@ struct DailyChallengeAnswerStep: View {
             seedEditDraftIfNeeded()
             showsSecondaryComposer = !isFocused.wrappedValue
         }
+        .onDockedKeyboardChange { docked in
+            setSecondaryComposerShown(!docked)
+        }
         .onChange(of: isFocused.wrappedValue) { _, focused in
-            withAnimation(PaeoniaMotion.stateChange) { showsSecondaryComposer = !focused }
+            // A hardware keyboard sends no keyboard notifications, so leaving the
+            // field brings the folded parts back here instead.
+            if !focused { setSecondaryComposerShown(true) }
         }
     }
 
@@ -69,18 +74,24 @@ struct DailyChallengeAnswerStep: View {
     /// reach. The waiting hint and the answer-method picker live at the bottom of the
     /// card, so the picker sits right above the composer it switches. Review states
     /// show the answers under the card instead.
+    ///
+    /// A combined question pins the card to the top instead, with the composer still
+    /// at the bottom. Its photo or partner pick folds away as the keyboard rises, and a
+    /// card resting on the composer would ride both moves at once and wobble. Pinned,
+    /// the card stays still and only the field moves, with the keyboard.
     private func content(sitsLow: Bool) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            DailyQuestionCard(prompt: question.prompt) {
+            DailyQuestionCard(prompt: question.prompt, holdsPromptSize: !showsSecondaryComposer) {
                 EmptyView()
             } footer: {
                 // While typing, the keyboard takes most of the screen, so the footer
                 // folds away and the question keeps the card's room to itself.
                 if showsSecondaryComposer {
                     cardFooter
-                        .transition(.opacity)
+                        .transition(Self.foldTransition)
                 }
             }
+            .frame(maxHeight: sitsLow && question.usesCombinedCompose ? .infinity : nil, alignment: .top)
 
             answerSection
         }
@@ -192,30 +203,67 @@ struct DailyChallengeAnswerStep: View {
                 }
             }
         default:
-            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
+            answerTextField
         }
+    }
+
+    /// Fades only, never slides: a slide pulls the picker up across the card and the
+    /// progress bar. It fades out fast, before the field moves into its spot.
+    private static let foldTransition = AnyTransition.asymmetric(
+        insertion: .opacity,
+        removal: .opacity.animation(PaeoniaMotion.buttonPress)
+    )
+
+    /// The photo or partner pick waits to fade back in until the field, sliding down
+    /// with the keyboard, has passed the spot where it sits.
+    private static let secondaryFoldTransition = AnyTransition.asymmetric(
+        insertion: .opacity.animation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionFast)),
+        removal: .opacity.animation(PaeoniaMotion.buttonPress)
+    )
+
+    /// The text field, with a tap target over it while the fold is open. A tap folds
+    /// the card footer and the photo or partner pick first and only then focuses the
+    /// field, so the keyboard rises into a layout that already fits. Focusing first
+    /// lets the keyboard push the still-tall content up past the progress bar before
+    /// anything folds. VoiceOver skips the target and focuses the field directly.
+    private var answerTextField: some View {
+        DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
+            .overlay {
+                if showsSecondaryComposer {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture(perform: focusAnswerField)
+                        .accessibilityHidden(true)
+                }
+            }
+    }
+
+    private func focusAnswerField() {
+        setSecondaryComposerShown(false)
+        isFocused.wrappedValue = true
+    }
+
+    private func setSecondaryComposerShown(_ shown: Bool) {
+        guard showsSecondaryComposer != shown else { return }
+        withAnimation(PaeoniaMotion.keyboard) { showsSecondaryComposer = shown }
     }
 
     /// For questions that accept text alongside a photo or partner pick, both
     /// composers show together, each optional, so the user can add one, the other,
     /// or both. The text field sits below so it lands just above the keyboard. While
     /// the field is focused the photo / partner pick folds away so the text composer
-    /// owns the shorter height, and returns once the field is dismissed. This is safe
-    /// to animate because the secondary sits *above* the field, which is pinned to the
-    /// bottom: folding it moves the card down, never the field. The fold is
-    /// driven by `showsSecondaryComposer` (toggled in `withAnimation` from the focus
-    /// change) rather than an `.animation(_:value: isFocused)` on this stack, so the
-    /// fade animates the secondary alone and never sweeps in the field's keyboard
-    /// movement (which would bounce it).
+    /// owns the shorter height, and returns once the field is dismissed. The card is
+    /// pinned to the top and the field to the bottom (see `content`), so the fold
+    /// moves neither of them.
     @ViewBuilder
     private var combinedComposer: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             if showsSecondaryComposer {
                 combinedSecondaryComposer
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(Self.secondaryFoldTransition)
             }
 
-            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
+            answerTextField
         }
     }
 
@@ -280,7 +328,7 @@ struct DailyChallengeAnswerStep: View {
         case .voice:
             voiceComposer
         default:
-            DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
+            answerTextField
         }
     }
 

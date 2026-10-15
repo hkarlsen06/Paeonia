@@ -57,8 +57,8 @@ struct StoryChainHistoryScreen: View {
             ProgressView()
                 .tint(.paeoniaAccentPrimary)
                 .frame(maxWidth: .infinity, minHeight: 160)
-        case .offline:
-            offlineState
+        case .failed(let failure):
+            failureState(failure)
         case .loaded:
             if viewModel.isEmpty {
                 emptyState
@@ -124,11 +124,12 @@ struct StoryChainHistoryScreen: View {
         }
     }
 
-    private var offlineState: some View {
-        PaeoniaEmptyStateView(
-            title: .storyChainOfflineTitle,
-            message: .storyChainHistoryOfflineMessage,
-            systemImage: "wifi.slash"
+    private func failureState(_ failure: PaeoniaFailure) -> some View {
+        PaeoniaLoadFailureView(
+            failure: failure,
+            offlineTitle: .storyChainOfflineTitle,
+            offlineMessage: .storyChainHistoryOfflineMessage,
+            failedMessage: .storyChainHistoryFailedMessage
         ) {
             Button {
                 Task { await viewModel.retry() }

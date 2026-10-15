@@ -881,13 +881,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Couldn't load this. Check your connection, then pull down to try again."
+            "value" : "Couldn't load this. Pull down to try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke laste dette. Sjekk tilkoblingen, og dra ned for å prøve igjen."
+            "value" : "Kunne ikke laste dette. Dra ned for å prøve igjen."
           }
         }
       }
@@ -2421,6 +2421,24 @@
         }
       }
     },
+    "boardGames.history.failed.message" : {
+      "comment" : "Message on Past games when the list could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your past games right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet de tidligere spillene deres akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "boardGames.history.loadMore.failed" : {
       "comment" : "Shown at the end of Past games when older games could not be loaded.",
       "extractionState" : "manual",
@@ -2747,6 +2765,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi kunne ikke lagre merket ditt. Sjekk nettet og prøv igjen."
+          }
+        }
+      }
+    },
+    "boardGames.mark.saveFailed" : {
+      "comment" : "Banner when the drawn mark could not be saved. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your mark. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke lagre merket ditt. Prøv igjen om litt."
           }
         }
       }
@@ -3609,6 +3645,24 @@
         }
       }
     },
+    "boardGames.unavailable.failed.message" : {
+      "comment" : "Message on a board game screen when the game could not be started. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't start the game right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke startet spillet akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "boardGames.unavailable.message" : {
       "comment" : "Message under the offline title on a board game screen that has never been started.",
       "extractionState" : "manual",
@@ -3627,20 +3681,20 @@
         }
       }
     },
-    "boardGames.unavailable.title" : {
-      "comment" : "Title shown when a board game can't be started because the phone has no connection.",
+    "common.actionFailed.message" : {
+      "comment" : "Message of a banner when an action, such as starting a game or sending an invite, failed. Shown when the phone is online but the server failed, so it must not blame the connection.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You're offline"
+            "value" : "Something went wrong. Try again in a little while."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er ikke på nett"
+            "value" : "Noe gikk galt. Prøv igjen om litt."
           }
         }
       }
@@ -3699,6 +3753,42 @@
         }
       }
     },
+    "common.loadFailed.message" : {
+      "comment" : "Message of a screen or banner when something could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load this right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke lastet dette akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "common.loadFailed.title" : {
+      "comment" : "Title of a screen that could not load for a reason other than a lost connection, such as a server error.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt"
+          }
+        }
+      }
+    },
     "common.loading" : {
       "comment" : "Accessibility value read on a button while its action is running",
       "extractionState" : "manual",
@@ -3717,6 +3807,24 @@
         }
       }
     },
+    "common.offline.title" : {
+      "comment" : "Title of a screen that could not load because the phone has no internet connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett"
+          }
+        }
+      }
+    },
     "common.openSettings" : {
       "comment" : "Button that opens the system Settings app.",
       "extractionState" : "manual",
@@ -3731,6 +3839,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Åpne Innstillinger"
+          }
+        }
+      }
+    },
+    "common.supportLink" : {
+      "comment" : "Link under a failure that says to try again later. Opens the support page on paeonia.no.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Still not working? Contact us"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fungerer det fortsatt ikke? Kontakt oss"
           }
         }
       }
@@ -4731,6 +4857,24 @@
         }
       }
     },
+    "dailyChallenge.locked.daysAgo" : {
+      "comment" : "Gray words after a locked partner question row when the partner's question is two or more days old. %lld is the number of days, always 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld days ago"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "for %lld dager siden"
+          }
+        }
+      }
+    },
     "dailyChallenge.locked.more" : {
       "comment" : "Last line under the locked partner question rows. %lld is how many more partner questions are waiting.",
       "extractionState" : "manual",
@@ -4763,6 +4907,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ svarte på «%@»"
+          }
+        }
+      }
+    },
+    "dailyChallenge.locked.yesterday" : {
+      "comment" : "Gray word after a locked partner question row when the partner's question is from yesterday. Lowercase because it ends the sentence.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yesterday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "i går"
           }
         }
       }
@@ -6459,6 +6621,24 @@
         }
       }
     },
+    "dailyChat.error.edit.failedMessage" : {
+      "comment" : "Banner message when a change to a sent chat message could not be saved. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your text is still in the message box. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teksten din ligger fortsatt i meldingsfeltet. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "dailyChat.error.edit.message" : {
       "comment" : "Banner message when a change to a sent message could not be saved.",
       "extractionState" : "manual",
@@ -7779,6 +7959,24 @@
         }
       }
     },
+    "exquisiteCorpse.history.failed.message" : {
+      "comment" : "Message on Our creatures when the list could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your creatures right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet skapningene deres akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "exquisiteCorpse.history.loadMore.failed" : {
       "comment" : "Message when older creatures fail to load at the end of the list.",
       "extractionState" : "manual",
@@ -8807,6 +9005,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bruk minst 2 bokstaver."
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.choose.failed.message" : {
+      "comment" : "Message on the pick-a-word screen when the words for the round are not on the phone. Shown when the phone is online or the reason is unknown, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't get your words right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet ordene dine akkurat nå. Prøv igjen om litt."
           }
         }
       }
@@ -9929,6 +10145,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ingen stjernemerkede tegninger"
+          }
+        }
+      }
+    },
+    "games.drawAndGuess.history.failed.message" : {
+      "comment" : "Message on Our drawings when the list could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your drawings right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet tegningene deres akkurat nå. Prøv igjen om litt."
           }
         }
       }
@@ -11890,19 +12124,19 @@
       }
     },
     "games.notice.drawingUnavailable.message" : {
-      "comment" : "Banner message when the partner's drawing could not be loaded",
+      "comment" : "Message when a drawing could not be loaded. The reason is unknown, so it must not blame the connection.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check your connection and try again."
+            "value" : "We couldn't load it right now. Try again in a little while."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk nettforbindelsen og prøv igjen."
+            "value" : "Vi fikk ikke lastet den akkurat nå. Prøv igjen om litt."
           }
         }
       }
@@ -12987,6 +13221,24 @@
         }
       }
     },
+    "games.unavailable.failed.message" : {
+      "comment" : "Message on the Games tab when nothing could load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your games right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet spillene deres akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "games.unavailable.message" : {
       "comment" : "Text when Games cannot load the first time",
       "extractionState" : "manual",
@@ -13756,13 +14008,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "It updates by itself when you're back online."
+            "value" : "It updates by itself as soon as it can."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Det oppdateres av seg selv når du er på nett igjen."
+            "value" : "Det oppdateres av seg selv så snart det går."
           }
         }
       }
@@ -16318,13 +16570,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Check your connection and try again."
+            "value" : "Your photos weren't added. Try adding them again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen."
+            "value" : "Bildene ble ikke lagt til. Prøv å legge dem til igjen."
           }
         }
       }
@@ -16655,6 +16907,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ingen treff ennå"
+          }
+        }
+      }
+    },
+    "mindMeld.history.failed.message" : {
+      "comment" : "Message on Our melds when the list could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your finished games right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet spillene dere har fullført akkurat nå. Prøv igjen om litt."
           }
         }
       }
@@ -17781,6 +18051,24 @@
         }
       }
     },
+    "mindMeld.startFailed.message" : {
+      "comment" : "Message on Mind Meld when a game could not be loaded or started. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't start a game right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke startet et spill akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "mindMeld.stats.melds" : {
       "comment" : "Toolbar capsule with the number of times the couple melded (said the same word). %lld is the count.",
       "extractionState" : "manual",
@@ -18513,6 +18801,24 @@
         }
       }
     },
+    "pairing.invite.error.replaceFailed.later" : {
+      "comment" : "Banner when a new invite code could not be made. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't make a new code. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lage en ny kode. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "pairing.invite.error.title" : {
       "comment" : "Title when partner invite creation fails.",
       "extractionState" : "manual",
@@ -18765,6 +19071,24 @@
         }
       }
     },
+    "pairing.join.error.checkFailed.later" : {
+      "comment" : "Banner when the partner's code could not be checked. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't check that code. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke sjekke koden. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "pairing.join.error.invalid" : {
       "comment" : "Top banner shown when the typed partner code is not a valid code",
       "extractionState" : "manual",
@@ -18797,6 +19121,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi klarte ikke å koble deg til partneren din. Sjekk tilkoblingen, og skriv inn koden på nytt."
+          }
+        }
+      }
+    },
+    "pairing.join.error.joinFailed.later" : {
+      "comment" : "Banner when joining the partner failed. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't connect you with your partner. Try again in a little while, then enter the code again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å koble deg til partneren din. Prøv igjen om litt, og skriv inn koden på nytt."
           }
         }
       }
@@ -21663,6 +22005,24 @@
         }
       }
     },
+    "settings.notifications.loadFailed.laterMessage" : {
+      "comment" : "Note on the notification settings when they could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again in a little while. You can change the switches as soon as your settings load."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen om litt. Du kan endre bryterne så snart innstillingene er hentet."
+          }
+        }
+      }
+    },
     "settings.notifications.loadFailed.message" : {
       "comment" : "Message under the title shown when notification settings could not be loaded. Tells the user what to do.",
       "extractionState" : "manual",
@@ -22335,13 +22695,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your changes are still here. Check your connection and try again."
+            "value" : "Your changes are still here, so you can try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Endringene dine er fortsatt her. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Endringene dine er fortsatt her, så du kan prøve igjen."
           }
         }
       }
@@ -22468,6 +22828,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kunne ikke laste inn abonnementet. Sjekk tilkoblingen og dra ned for å prøve igjen."
+          }
+        }
+      }
+    },
+    "settings.purchases.details.failedLater" : {
+      "comment" : "Line on the purchases screen when the subscription details could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load your subscription. Pull down to try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste inn abonnementet. Dra ned for å prøve igjen om litt."
           }
         }
       }
@@ -23010,6 +23388,24 @@
         }
       }
     },
+    "storyChain.choose.failed.message" : {
+      "comment" : "Shown instead of the opening lines when they are not on the phone. Shown when the phone is online or the reason is unknown, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't get your opening lines right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet åpningslinjene dine akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "storyChain.choose.offline.message" : {
       "comment" : "Shown instead of the opening lines while offline.",
       "extractionState" : "manual",
@@ -23436,6 +23832,24 @@
         }
       }
     },
+    "storyChain.history.failed.message" : {
+      "comment" : "Message on Our stories when the list could not load. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your stories right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet historiene deres akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
     "storyChain.history.filter.all" : {
       "comment" : "Filter: every finished story.",
       "extractionState" : "manual",
@@ -23564,6 +23978,24 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "storyChain.history.storyFailed.message" : {
+      "comment" : "Message when one finished story could not be opened. Shown when the phone is online but the server failed, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't open this story right now. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke åpnet denne historien akkurat nå. Prøv igjen om litt."
           }
         }
       }
@@ -24476,6 +24908,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ dager på rad, satt på pause"
+          }
+        }
+      }
+    },
+    "streakAtRisk.pillAccessibility" : {
+      "comment" : "VoiceOver label for the streak pill when the streak ends within a few hours unless both partners show up. %@ is the streak, such as '7 day streak'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, ends soon"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, slutter snart"
           }
         }
       }

@@ -70,8 +70,8 @@ struct ExquisiteCorpseHistoryScreen: View {
             ProgressView()
                 .tint(.paeoniaAccentPrimary)
                 .frame(maxWidth: .infinity, minHeight: 160)
-        case .offline:
-            offlineState
+        case .failed(let failure):
+            failureState(failure)
         case .loaded:
             if viewModel.isEmpty {
                 emptyState
@@ -149,11 +149,12 @@ struct ExquisiteCorpseHistoryScreen: View {
         }
     }
 
-    private var offlineState: some View {
-        PaeoniaEmptyStateView(
-            title: .gamesDrawAndGuessChooseOfflineTitle,
-            message: .exquisiteCorpseHistoryOfflineMessage,
-            systemImage: "wifi.slash"
+    private func failureState(_ failure: PaeoniaFailure) -> some View {
+        PaeoniaLoadFailureView(
+            failure: failure,
+            offlineTitle: .gamesDrawAndGuessChooseOfflineTitle,
+            offlineMessage: .exquisiteCorpseHistoryOfflineMessage,
+            failedMessage: .exquisiteCorpseHistoryFailedMessage
         ) {
             Button {
                 Task { await viewModel.retry() }

@@ -66,9 +66,12 @@ final class MindMeldViewModel {
     var showsPartnerRestartedNote = false
     /// A game is being started, restarted, or started again.
     var isStartingGame = false
-    /// The first read or the automatic first start failed and there is nothing to
-    /// show. The screen offers `retryStart()`.
-    var startFailed = false
+    /// Why the first read or the automatic first start failed, while there is
+    /// nothing to show. The screen offers `retryStart()`.
+    var startFailure: PaeoniaFailure?
+    var startFailed: Bool {
+        startFailure != nil
+    }
     /// The lock-in on this phone has had a try that did not get through.
     var isHeldOnPhone = false
     /// The round whose reveal reached its verdict on screen.
@@ -261,7 +264,7 @@ final class MindMeldViewModel {
         unsavedLocks = [:]
         refusedWords = []
         hasLoaded = false
-        startFailed = false
+        startFailure = nil
         isStartingGame = false
         phase = .loading
         resolution = MindMeldResolution(phase: .loading)
