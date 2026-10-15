@@ -340,16 +340,11 @@ export const get_widget_drawing_revisions = query({
       fail("42501", "active entitled widget canvas access is required");
     }
 
-    const revisions = await ctx.db
-      .query("widget_drawing_revisions")
-      .withIndex("by_canvas_id_created_at_id", (q) => q.eq("canvas_id", canvasId))
-      .collect();
-    const rows = [];
-    for (const revision of revisions) {
+    const row = async (revision: Doc<"widget_drawing_revisions">) => {
       const asset = await getByUuid(ctx, "media_assets", revision.payload_media_asset_id);
-      if (!asset) continue;
+      if (!asset) return null;
       const visible = payloadIsVisible(revision, asset);
-      rows.push({
+      return {
         canvas_id: revision.canvas_id,
         revision_id: revision.id,
         author_user_id: revision.author_user_id,
@@ -360,36 +355,54 @@ export const get_widget_drawing_revisions = query({
         created_at: revision.created_at,
         updated_at: revision.updated_at,
         sync_updated_at: latest(revision.updated_at, asset.updated_at),
-      });
+      };
+    };
+
+    if (updatedAfter === undefined) {
+      // History, newest first: read only one page from the index.
+      const history = ctx.db
+        .query("widget_drawing_revisions")
+        .withIndex("by_canvas_id_created_at_id", (q) =>
+          createdBefore === undefined
+            ? q.eq("canvas_id", canvasId)
+            : q.eq("canvas_id", canvasId).lte("created_at", createdBefore),
+        )
+        .order("desc");
+      const rows = [];
+      for await (const revision of history) {
+        if (rows.length >= limit) break;
+        if (revision.created_at === createdBefore && revision.id >= createdBeforeId!) continue;
+        const next = await row(revision);
+        if (next) rows.push(next);
+      }
+      return rows;
     }
 
-    if (updatedAfter !== undefined) {
-      return rows
-        .filter(
-          (row) =>
-            row.sync_updated_at > updatedAfter ||
-            (row.sync_updated_at === updatedAfter && row.revision_id > updatedAfterId!),
-        )
-        .sort((a, b) =>
-          a.sync_updated_at !== b.sync_updated_at
-            ? a.sync_updated_at < b.sync_updated_at
-              ? -1
-              : 1
-            : a.revision_id < b.revision_id
-              ? -1
-              : 1,
-        )
-        .slice(0, limit);
+    // ponytail: the sync cursor also moves when the payload asset changes, which no index covers,
+    // so this reads every revision of the canvas. Store sync_updated_at on the revision if canvases grow large.
+    const revisions = await ctx.db
+      .query("widget_drawing_revisions")
+      .withIndex("by_canvas_id_created_at_id", (q) => q.eq("canvas_id", canvasId))
+      .collect();
+    const rows = [];
+    for (const revision of revisions) {
+      const next = await row(revision);
+      if (next) rows.push(next);
     }
     return rows
       .filter(
         (row) =>
-          createdBefore === undefined ||
-          row.created_at < createdBefore ||
-          (row.created_at === createdBefore && row.revision_id < createdBeforeId!),
+          row.sync_updated_at > updatedAfter ||
+          (row.sync_updated_at === updatedAfter && row.revision_id > updatedAfterId!),
       )
       .sort((a, b) =>
-        a.created_at !== b.created_at ? (a.created_at < b.created_at ? 1 : -1) : a.revision_id < b.revision_id ? 1 : -1,
+        a.sync_updated_at !== b.sync_updated_at
+          ? a.sync_updated_at < b.sync_updated_at
+            ? -1
+            : 1
+          : a.revision_id < b.revision_id
+            ? -1
+            : 1,
       )
       .slice(0, limit);
   },

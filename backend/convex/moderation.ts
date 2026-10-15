@@ -350,7 +350,7 @@ export const apply_report_moderation_action = internalMutation({
     }
     const snapshotAssets = await ctx.db
       .query("report_snapshot_assets")
-      .withIndex("by_report_id", (q) => q.eq("report_id", report.id))
+      .withIndex("by_report_id_source_media_asset_id", (q) => q.eq("report_id", report.id))
       .collect();
     for (const asset of snapshotAssets) {
       if (asset.delete_after === undefined) {
@@ -571,7 +571,7 @@ export const purge_deleted_report_snapshots = internalMutation({
       if (snapshotsDeleted >= limit) break;
       const remaining = await ctx.db
         .query("report_snapshot_assets")
-        .withIndex("by_report_id", (q) => q.eq("report_id", snapshot.report_id))
+        .withIndex("by_report_id_source_media_asset_id", (q) => q.eq("report_id", snapshot.report_id))
         .first();
       if (remaining) continue;
       await ctx.db.delete(snapshot._id);

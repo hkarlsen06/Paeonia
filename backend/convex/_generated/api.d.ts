@@ -99,6 +99,7 @@ import type * as pushQueue from "../pushQueue.js";
 import type * as questionTime from "../questionTime.js";
 import type * as relationship from "../relationship.js";
 import type * as reports from "../reports.js";
+import type * as retention from "../retention.js";
 import type * as review from "../review.js";
 import type * as storekit from "../storekit.js";
 import type * as storekitNode from "../storekitNode.js";
@@ -205,6 +206,7 @@ declare const fullApi: ApiFromModules<{
   questionTime: typeof questionTime;
   relationship: typeof relationship;
   reports: typeof reports;
+  retention: typeof retention;
   review: typeof review;
   storekit: typeof storekit;
   storekitNode: typeof storekitNode;

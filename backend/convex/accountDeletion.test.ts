@@ -314,6 +314,8 @@ describe("job state machine", () => {
     await expectFail(first.as.query(api.identity.get_notification_preferences, {}), "42501", "authenticated user required");
     expect(await t.run((ctx) => ctx.db.query("app_account_tokens").collect())).toHaveLength(0);
 
+    // Client operations go in a scheduled batch job.
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
     const done = await t.run(async (ctx) => ({
       job: await ctx.db.query("account_deletion_jobs").first(),
       request: await ctx.db.query("privacy_requests").first(),

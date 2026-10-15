@@ -138,8 +138,6 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_user_id_client_operation_id", ["user_id", "client_operation_id"])
     .index("by_status_created_at", ["status", "created_at"])
-    .index("by_status_locked_until", ["status", "locked_until"])
-    .index("by_status_completed_at", ["status", "completed_at"])
     .index("by_user_id_created_at", ["user_id", "created_at"])
     .index("by_user_id_idempotency_scope_created_at", ["user_id", "idempotency_scope", "created_at"]),
 
@@ -226,7 +224,8 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_dedupe_key", ["dedupe_key"])
     .index("by_recipient_user_id_created_at", ["recipient_user_id", "created_at"])
-    .index("by_target_device_id", ["target_device_id"]),
+    .index("by_target_device_id", ["target_device_id"])
+    .index("by_created_at", ["created_at"]),
 
   // FK: pair_id -> relationship_pairs restrict; source_report_id -> content_reports cascade
   pair_safety_warning_flags: defineTable({
@@ -286,7 +285,6 @@ export default defineSchema({
     updated_at: ts,
   })
     .index("by_uuid", ["id"])
-    .index("by_report_id", ["report_id"])
     .index("by_bucket_storage_path", ["bucket", "storage_path"])
     .index("by_delete_after_storage_delete_status", ["delete_after", "storage_delete_status"])
     .index("by_report_id_source_media_asset_id", ["report_id", "source_media_asset_id"])
@@ -464,7 +462,8 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_target_widget_device_id_dedupe_key", ["target_widget_device_id", "dedupe_key"])
-    .index("by_recipient_user_id", ["recipient_user_id"]),
+    .index("by_recipient_user_id", ["recipient_user_id"])
+    .index("by_created_at", ["created_at"]),
 
   // ---- public schema ----
 

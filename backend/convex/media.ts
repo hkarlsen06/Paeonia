@@ -706,12 +706,18 @@ export const cleanup_media_storage = internalMutation({
   },
 });
 
-/** The 6 hour job. Queues orphaned assets nothing caught, then deletes unreferenced blobs. */
+/**
+ * The 6 hour job. Queues orphaned assets nothing caught, one page per run, and schedules the next
+ * page until every asset was checked. The first page also deletes unreferenced blobs.
+ */
 export const sweep_orphan_storage = internalMutation({
-  args: { limit: v.optional(v.number()) },
+  args: { limit: v.optional(v.number()), cursor: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    const queued = await queueOrphanedMediaAssetsForDelete(ctx, args.limit ?? 500);
-    const blobs = await sweepOrphanStorage(ctx, args.limit ?? 500);
+    const { queued, continueCursor } = await queueOrphanedMediaAssetsForDelete(ctx, args.limit, args.cursor ?? null);
+    if (continueCursor !== null) {
+      await ctx.scheduler.runAfter(0, internal.media.sweep_orphan_storage, { limit: args.limit, cursor: continueCursor });
+    }
+    const blobs = args.cursor === undefined ? await sweepOrphanStorage(ctx, args.limit ?? 500) : 0;
     return { queued, blobs };
   },
 });

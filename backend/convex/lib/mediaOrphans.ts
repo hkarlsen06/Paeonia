@@ -118,29 +118,40 @@ const UNATTACHED_UPLOAD_GRACE_MS = 7 * 24 * 3_600_000;
 
 /**
  * Port of `internal.queue_orphaned_media_assets_for_delete`: the sweep for
- * orphans that no write path caught. Visits the oldest assets first. Skips
- * assets finalized within `UNATTACHED_UPLOAD_GRACE_MS`.
+ * orphans that no write path caught. Visits one page of `limit` healthy assets,
+ * oldest first, and returns the cursor for the next page (null when done). The
+ * first page also retries failed deletions. Skips assets finalized within
+ * `UNATTACHED_UPLOAD_GRACE_MS`.
  */
-export async function queueOrphanedMediaAssetsForDelete(ctx: WriterCtx, limit = 500): Promise<number> {
-  if (!Number.isInteger(limit) || limit < 1 || limit > 10000) {
+export async function queueOrphanedMediaAssetsForDelete(
+  ctx: WriterCtx,
+  limit = 200,
+  cursor: string | null = null,
+): Promise<{ queued: number; continueCursor: string | null }> {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
     return fail("23514", "orphaned media queue limit is out of range");
   }
   const finalizedBefore = addMs(nowIso(), -UNATTACHED_UPLOAD_GRACE_MS);
+  const page = await ctx.db
+    .query("media_assets")
+    .withIndex("by_storage_delete_status_updated_at", (q) => q.eq("storage_delete_status", "none"))
+    .paginate({ cursor, numItems: limit });
+  const failed =
+    cursor === null
+      ? await ctx.db
+          .query("media_assets")
+          .withIndex("by_storage_delete_status_updated_at", (q) => q.eq("storage_delete_status", "failed"))
+          .take(limit)
+      : [];
   let queued = 0;
-  for (const status of ["none", "failed"] as const) {
-    const assets = ctx.db
-      .query("media_assets")
-      .withIndex("by_storage_delete_status_updated_at", (q) => q.eq("storage_delete_status", status));
-    for await (const asset of assets) {
-      if (queued >= limit) break;
-      if (asset.upload_finalized_at !== undefined && asset.upload_finalized_at > finalizedBefore) continue;
-      if (isQueueable(asset) && !(await mediaAssetHasLiveReference(ctx, asset.id))) {
-        await queueForDelete(ctx, asset);
-        queued += 1;
-      }
+  for (const asset of [...page.page, ...failed]) {
+    if (asset.upload_finalized_at !== undefined && asset.upload_finalized_at > finalizedBefore) continue;
+    if (isQueueable(asset) && !(await mediaAssetHasLiveReference(ctx, asset.id))) {
+      await queueForDelete(ctx, asset);
+      queued += 1;
     }
   }
-  return queued;
+  return { queued, continueCursor: page.isDone ? null : page.continueCursor };
 }
 
 /**

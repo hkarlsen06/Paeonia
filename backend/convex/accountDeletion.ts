@@ -406,10 +406,6 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
   const rows = [
     ...(await ctx.db.query("app_account_tokens").withIndex("by_user_id", (q) => q.eq("user_id", userId)).collect()),
     ...(await ctx.db
-      .query("client_operations")
-      .withIndex("by_user_id_created_at", (q) => q.eq("user_id", userId))
-      .collect()),
-    ...(await ctx.db
       .query("daily_question_shuffles")
       .withIndex("by_user_id_question_id_exclude_until", (q) => q.eq("user_id", userId))
       .collect()),
@@ -421,6 +417,7 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
       .collect()),
   ];
   for (const row of rows) await ctx.db.delete(row._id);
+  await ctx.scheduler.runAfter(0, internal.retention.delete_user_client_operations, { p_user_id: userId });
   // Ending the relationship already removed the couple's presence rooms. This clears any left.
   await removePresenceRooms(ctx, [userId], "");
   const user = await getByUuid(ctx, "users", userId);

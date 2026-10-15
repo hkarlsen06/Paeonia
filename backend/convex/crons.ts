@@ -65,4 +65,7 @@ crons.interval("sweep-orphan-media-storage", { hours: 6 }, internal.media.sweep_
 // the entitlement_lost sync events. Covers StoreKit transactions and entitlement grants, 500 rows per run.
 crons.interval("expire-stale-entitlements", { minutes: 5 }, internal.storekit.expire_stale_entitlements, {});
 
+// New in Convex: client_operations and both push outboxes had no cleanup. Keeps 30 days. See retention.ts.
+crons.interval("prune-expired-rows", { hours: 1 }, internal.retention.prune_expired_rows, {});
+
 export default crons;
