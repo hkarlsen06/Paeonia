@@ -10,6 +10,14 @@ nonisolated struct LocationUpdatePlan: Equatable, Sendable {
     /// iOS's significant-change service, which wakes Paeonia after the phone
     /// moves a good distance (roughly 500 m or more), even when it is closed.
     let watchesWhileClosed: Bool
+    /// What the app tells Core Location it needs. Since iOS 18, Always access
+    /// only works while the app holds a `CLServiceSession` for it.
+    let sessionGoal: SessionGoal?
+
+    nonisolated enum SessionGoal: Equatable, Sendable {
+        case whenInUse
+        case always
+    }
 
     static func resolve(
         isAppActive: Bool,
@@ -19,14 +27,22 @@ nonisolated struct LocationUpdatePlan: Equatable, Sendable {
         prefersUpdatesWhileClosed: Bool
     ) -> Self {
         let isAuthorized = authorization == .authorizedWhenInUse || authorization == .authorizedAlways
+        // `nil` sharing means the app has not loaded the choice yet, as on a
+        // launch in the background. The uploader checks it before sending.
+        let wantsClosedUpdates = prefersUpdatesWhileClosed && sharingEnabled != false && hasIdentity
+        // The Always goal does not wait for the Always grant, so the session can
+        // also bring up iOS's question about it.
+        let sessionGoal: SessionGoal? = if wantsClosedUpdates {
+            .always
+        } else if isAppActive, sharingEnabled == true, hasIdentity {
+            .whenInUse
+        } else {
+            nil
+        }
         return Self(
             watchesWhileOpen: isAppActive && sharingEnabled == true && hasIdentity && isAuthorized,
-            // `nil` sharing means the app has not loaded the choice yet, as on a
-            // launch in the background. The uploader checks it before sending.
-            watchesWhileClosed: prefersUpdatesWhileClosed
-                && sharingEnabled != false
-                && hasIdentity
-                && authorization == .authorizedAlways
+            watchesWhileClosed: wantsClosedUpdates && authorization == .authorizedAlways,
+            sessionGoal: sessionGoal
         )
     }
 }
@@ -36,6 +52,13 @@ nonisolated struct LocationUpdatePlan: Equatable, Sendable {
 /// model, which sends them through the outbox. When the person turns on updates
 /// while closed and allows Always, iOS wakes the app after bigger moves and
 /// `BackgroundLocationUploader` sends the position directly.
+///
+/// A `CLServiceSession` backs each feed. iOS 18 and later only honor Always
+/// access while the app holds one, and a session must be taken again at every
+/// launch, including a relaunch in the background, because Core Location waits
+/// only a few seconds for it. `resumeAfterLaunch` does that through `apply`.
+/// The app does not set `NSLocationRequireExplicitServiceSession`, so iOS also
+/// keeps its own implicit when-in-use session for the open-app feed.
 ///
 /// No `location` background mode is used. The significant-change service does
 /// not need one, and it is far lighter on battery than continuous updates.
@@ -68,6 +91,7 @@ final class LocationUpdateController: NSObject {
     @ObservationIgnored private var sharingEnabled: Bool?
     @ObservationIgnored private var isAppActive = false
     @ObservationIgnored private var appliedPlan: LocationUpdatePlan?
+    @ObservationIgnored private var serviceSession: CLServiceSession?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -77,6 +101,9 @@ final class LocationUpdateController: NSObject {
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
         manager.distanceFilter = RoutineLocationThrottle.minimumDistanceMeters
+        // People share while walking, driving and riding transit, so no single
+        // activity type fits better than the default.
+        manager.activityType = .other
     }
 
     /// Whether updates while closed are actually running: chosen and allowed.
@@ -179,6 +206,9 @@ final class LocationUpdateController: NSObject {
             prefersUpdatesWhileClosed: prefersUpdatesWhileClosed
         )
         guard plan != appliedPlan else { return }
+        if plan.sessionGoal != appliedPlan?.sessionGoal {
+            applySessionGoal(plan.sessionGoal)
+        }
         if plan.watchesWhileOpen != appliedPlan?.watchesWhileOpen {
             if plan.watchesWhileOpen {
                 manager.startUpdatingLocation()
@@ -194,6 +224,18 @@ final class LocationUpdateController: NSObject {
             }
         }
         appliedPlan = plan
+    }
+
+    /// Takes the new session before letting go of the old one, so authorization
+    /// never lapses while the goal changes.
+    private func applySessionGoal(_ goal: LocationUpdatePlan.SessionGoal?) {
+        let previous = serviceSession
+        serviceSession = switch goal {
+        case .whenInUse: CLServiceSession(authorization: .whenInUse)
+        case .always: CLServiceSession(authorization: .always)
+        case nil: nil
+        }
+        previous?.invalidate()
     }
 
     private func deliver(_ location: LocationPoint) async {
@@ -293,7 +335,7 @@ extension LocationUpdateController: CLLocationManagerDelegate {
 /// Extra background time for one short piece of work, ended exactly once
 /// either when the work finishes or when iOS says time is up.
 @MainActor
-private final class BackgroundTaskToken {
+final class BackgroundTaskToken {
     private var identifier = UIBackgroundTaskIdentifier.invalid
 
     init(name: String) {

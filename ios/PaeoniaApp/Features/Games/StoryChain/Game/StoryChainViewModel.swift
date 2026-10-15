@@ -99,7 +99,8 @@ final class StoryChainViewModel {
     @ObservationIgnored lazy var stars = StoryChainStars(dependencies: dependencies) { [weak self] in
         self?.currentUserID
     }
-    @ObservationIgnored let heartbeatInterval: Duration
+    /// The loops that run while the screen is open: heartbeat, data changes and the clock.
+    @ObservationIgnored let loops: GameScreenLoops
     @ObservationIgnored let tickInterval: Duration
     @ObservationIgnored let liveSendInterval: Duration
     @ObservationIgnored let sleep: @Sendable (Duration) async throws -> Void
@@ -156,9 +157,6 @@ final class StoryChainViewModel {
     /// The line this person sent live, so no later draft message follows it.
     @ObservationIgnored var liveSentKey: StoryChainWritingKey?
 
-    @ObservationIgnored var observationTask: Task<Void, Never>?
-    @ObservationIgnored var heartbeatTask: Task<Void, Never>?
-    @ObservationIgnored var tickTask: Task<Void, Never>?
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
     @ObservationIgnored var refreshTask: Task<Void, Never>?
@@ -173,10 +171,15 @@ final class StoryChainViewModel {
     ) {
         self.dependencies = dependencies
         self.participants = participants
-        self.heartbeatInterval = heartbeatInterval
         self.tickInterval = tickInterval
         self.liveSendInterval = liveSendInterval
         self.sleep = sleep
+        loops = GameScreenLoops(
+            kind: .storyChain,
+            gateway: dependencies.gateway,
+            heartbeatInterval: heartbeatInterval,
+            sleep: sleep
+        )
         moveQueue = StoryChainMoveQueue(dependencies: dependencies)
         now = dependencies.now()
         if let coupleID = participants.coupleID, let room = dependencies.makeStoryChainLive(coupleID) {

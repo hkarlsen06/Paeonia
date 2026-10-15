@@ -144,11 +144,11 @@ extension DrawAndGuessViewModel {
     /// The partner's replay for `GameReplaySurface`.
     var partnerReplayFrames: GameReplayFrames {
         GameReplayFrames(
-            drawing: { [weak self] wall, side in
+            playback: { [weak self] wall in
                 guard let self, let clock = partnerGuess?.replayClock, let round,
                       let timeline = partnerReplayTimeline(for: round)
                 else { return nil }
-                return GameCanvas.fitted(timeline.drawing(at: clock.replayTime(at: wall)), toSide: side)
+                return .init(timeline: timeline, time: clock.replayTime(at: wall))
             },
             isFinished: { [weak self] wall in
                 self?.partnerGuess?.replayClock?.isFinished(at: wall) ?? false

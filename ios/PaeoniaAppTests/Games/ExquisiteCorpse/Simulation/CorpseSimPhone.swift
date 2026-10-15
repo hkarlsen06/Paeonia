@@ -163,7 +163,7 @@ final class CorpseSimPhone {
             ),
             ExquisiteCorpseRevealSeenHandler(gateway: gateway, cache: corpseCache),
             ExquisiteCorpseStarHandler(gateway: gateway, cache: corpseCache),
-        ])
+        ], retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0))
     }
 
     private func makeLiveRoom() -> WidgetLiveDrawing {
@@ -204,8 +204,7 @@ final class CorpseSimPhone {
         startTask = nil
         if let viewModel {
             viewModel.cancelTasks()
-            viewModel.heartbeatTask?.cancel()
-            viewModel.heartbeatTask = nil
+            viewModel.loops.cancelHeartbeat()
             viewModel.liveObservationTask?.cancel()
             viewModel.liveObservationTask = nil
             viewModel.isRunning = false

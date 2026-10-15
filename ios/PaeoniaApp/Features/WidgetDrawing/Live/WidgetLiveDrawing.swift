@@ -206,15 +206,19 @@ final class WidgetLiveDrawing {
     /// The partner is in the middle of a stroke, or one is still fading out.
     var hasLiveStrokes: Bool { !playback.isEmpty }
 
-    /// What the overlay shows at `now`: when watching, the partner's canvas,
-    /// and in both roles the strokes the partner is drawing right now.
-    func overlayStrokes(at now: TimeInterval, side: CGFloat) -> [PKStroke] {
+    /// Changes whenever the overlay may need to draw again, so it can sleep
+    /// between the partner's strokes.
+    private(set) var overlayRevision = 0
+
+    /// Watching only: the partner's canvas, for a view of `side` points.
+    func roomStrokes(side: CGFloat) -> [PKStroke] {
+        room.strokes(side: side)
+    }
+
+    /// In both roles: the strokes the partner is drawing right now, at `now`.
+    func liveStrokes(at now: TimeInterval, side: CGFloat) -> [PKStroke] {
         playback.prune(now: now)
-        var strokes = room.strokes(side: side)
-        if !playback.isEmpty {
-            strokes += playback.pencilKitStrokes(at: now, side: side)
-        }
-        return strokes
+        return playback.isEmpty ? [] : playback.pencilKitStrokes(at: now, side: side)
     }
 
     // MARK: - Messages
@@ -311,6 +315,7 @@ final class WidgetLiveDrawing {
         }
         isShowingPartnerCanvas = room.drawing != nil
         hasPartnerStrokes = room.drawing?.strokes.isEmpty == false || !playback.isEmpty
+        overlayRevision &+= 1
     }
 
     private func sendHello(needsCanvas: Bool) {
@@ -394,6 +399,7 @@ extension WidgetLiveDrawing {
             playback.remove(message.ended ?? [])
         }
         pendingRemote = []
+        overlayRevision &+= 1
         applyRemoteDrawing?(merged)
         if !ownUnsent.isEmpty {
             send(ops: ownUnsent, removals: [], side: side, ended: [])
@@ -493,10 +499,7 @@ extension WidgetLiveDrawing {
 
     /// The message's strokes, scaled from the sender's canvas to this one.
     private static func upserts(in message: WidgetLiveMessage, side: CGFloat) -> [PKStroke] {
-        guard let encoded = message.upserts,
-              let data = Data(base64Encoded: encoded),
-              let drawing = try? PKDrawing(data: data)
-        else {
+        guard let drawing = message.preparedUpserts ?? message.decodeUpserts() else {
             return []
         }
         return drawing.scaled(fromSide: CGFloat(message.side ?? Double(side)), toSide: side).strokes

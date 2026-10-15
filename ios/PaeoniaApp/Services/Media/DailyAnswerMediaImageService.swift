@@ -28,6 +28,7 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
     private let directoryURL: URL
     private let expiresInSeconds = 3_600
     private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
+    private var misses = MediaMissLog()
 
     init(
         client: PaeoniaConvexClient,
@@ -47,7 +48,16 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
         }
 
         if let cached = try? Data(contentsOf: fileURL(for: mediaAssetID)) {
-            return cached
+            if !MediaDownloadCheck.isWebPage(cached, mimeType: nil) {
+                return cached
+            }
+            // A file that is a web page (for example a captive-portal page)
+            // would otherwise stay cached under this asset ID for good.
+            try? FileManager.default.removeItem(at: fileURL(for: mediaAssetID))
+        }
+
+        if misses.isRecentMiss(mediaAssetID) {
+            return nil
         }
 
         if let inFlightDownload = inFlightDownloads[mediaAssetID] {
@@ -70,6 +80,7 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
 
     func clearAll() {
         PaeoniaImageMemoryCache.removeAll()
+        misses.removeAll()
         inFlightDownloads.values.forEach { $0.cancel() }
         inFlightDownloads.removeAll()
 
@@ -77,7 +88,16 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
     }
 
     private func fetchAndCache(mediaAssetID: UUID) async -> Data? {
-        guard let signedURL = try? await signedURL(for: mediaAssetID) else {
+        let signedURL: URL?
+        do {
+            signedURL = try await signedURL(for: mediaAssetID)
+        } catch {
+            if MediaMissLog.isLasting(error) { misses.record(mediaAssetID) }
+            return nil
+        }
+        // No URL usually means the photo's row is not visible to this phone yet. It may be a moment
+        // away, so it is not remembered as a miss and a tap on the photo tries again.
+        guard let signedURL else {
             return nil
         }
 
@@ -87,8 +107,16 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
                 return nil
             }
 
-            if let httpResponse = response as? HTTPURLResponse,
-               !(200..<300).contains(httpResponse.statusCode) {
+            if let statusCode = (response as? HTTPURLResponse)?.statusCode,
+               !(200..<300).contains(statusCode) {
+                if MediaMissLog.isLasting(statusCode: statusCode) { misses.record(mediaAssetID) }
+                return nil
+            }
+
+            // A sign-in page from a captive portal answers 200 too, and would otherwise
+            // become a permanent broken photo or voice note.
+            guard !MediaDownloadCheck.isWebPage(data, mimeType: response.mimeType) else {
+                misses.record(mediaAssetID)
                 return nil
             }
 

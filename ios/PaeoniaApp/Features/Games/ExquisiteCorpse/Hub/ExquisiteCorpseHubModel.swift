@@ -60,7 +60,7 @@ final class ExquisiteCorpseHubModel: GameHubModel {
         }
         // Stars follow the same writes as the rest of the cache.
         await game.stars.reload()
-        summary = document.state.map { state in
+        let newSummary = document.state.map { state in
             let resolution = ExquisiteCorpseResolver(userID: userID).resolve(
                 state: state,
                 hasSettings: hasSettings,
@@ -68,6 +68,9 @@ final class ExquisiteCorpseHubModel: GameHubModel {
                 isPartnerDrawingLive: false
             )
             return ExquisiteCorpseHubSummary(state: state, resolution: resolution)
+        }
+        if summary != newSummary {
+            summary = newSummary
         }
     }
 

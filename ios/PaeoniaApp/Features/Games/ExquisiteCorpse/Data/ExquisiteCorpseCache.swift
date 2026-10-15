@@ -12,7 +12,7 @@ nonisolated enum ExquisiteCorpseStoredNotice: String, Codable, Equatable, Sendab
 /// `exquisiteCorpse:get_exquisite_corpse`, so the game shows something at launch
 /// and offline, and its idea deck works offline. The ideas, notices and refusals
 /// are only ever local.
-nonisolated struct ExquisiteCorpseLocalDocument: Codable, Equatable, Sendable {
+nonisolated struct ExquisiteCorpseLocalDocument: GamesPersistedDocument {
     var state: RemoteExquisiteCorpseState?
     /// The first page of "Our creatures".
     var history: RemoteExquisiteCorpseHistoryPage?
@@ -132,32 +132,19 @@ nonisolated extension ExquisiteCorpseLocalDocument {
 actor FileExquisiteCorpseCache: ExquisiteCorpseCaching {
     static let shared = FileExquisiteCorpseCache()
 
-    /// Bump when a stored type gains a required field. A file with another
-    /// version reads as empty.
-    private static let schemaVersion = 2
-
-    private let directoryURL: URL
+    private var store: GamesDocumentStore<ExquisiteCorpseLocalDocument>
     private var order = GamesStateWriteOrder()
 
     init(directoryURL: URL = FileExquisiteCorpseCache.defaultDirectoryURL()) {
-        self.directoryURL = directoryURL
+        store = GamesDocumentStore(directoryURL: directoryURL, schemaVersion: 2)
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
-        FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("ExquisiteCorpseCache", isDirectory: true)
+        GamesDocumentStore<ExquisiteCorpseLocalDocument>.defaultDirectoryURL(named: "ExquisiteCorpseCache")
     }
 
     func document(ownerUserID: UUID) -> ExquisiteCorpseLocalDocument {
-        guard let data = try? Data(contentsOf: fileURL(for: ownerUserID)),
-              let envelope = try? PaeoniaConvexClient.decoder.decode(Envelope.self, from: data),
-              envelope.schemaVersion == Self.schemaVersion,
-              envelope.ownerUserID == ownerUserID
-        else {
-            return ExquisiteCorpseLocalDocument()
-        }
-        return envelope.document
+        store.document(ownerUserID: ownerUserID)
     }
 
     func saveState(_ state: RemoteExquisiteCorpseState, ownerUserID: UUID) {
@@ -165,7 +152,7 @@ actor FileExquisiteCorpseCache: ExquisiteCorpseCaching {
         var kept = document(ownerUserID: ownerUserID)
         guard kept.accept(state) else { return }
         order.overrideFetches()
-        update(ownerUserID: ownerUserID) { $0.state = kept.state }
+        store.save(kept, ownerUserID: ownerUserID)
     }
 
     func beginFetch() -> Int {
@@ -178,35 +165,33 @@ actor FileExquisiteCorpseCache: ExquisiteCorpseCaching {
         var kept = document(ownerUserID: ownerUserID)
         let isNewer = kept.state.map { $0.isOlder(than: state) } ?? false
         guard kept.accept(state), order.acceptFetch(ticket) || isNewer else { return false }
-        update(ownerUserID: ownerUserID) { $0.state = kept.state }
+        store.save(kept, ownerUserID: ownerUserID)
         return true
     }
 
     func saveHistoryFirstPage(_ page: RemoteExquisiteCorpseHistoryPage, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.history = page }
+        store.update(ownerUserID: ownerUserID) { $0.history = page }
     }
 
     func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.apply(stars: stars) }
+        store.update(ownerUserID: ownerUserID) { $0.apply(stars: stars) }
     }
 
     func saveIdea(_ ideaID: String?, partID: UUID, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.saveIdea(ideaID, partID: partID) }
+        store.update(ownerUserID: ownerUserID) { $0.saveIdea(ideaID, partID: partID) }
     }
 
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int {
-        var count = 0
-        update(ownerUserID: ownerUserID) { count = $0.recordRefusal(of: operationID) }
-        return count
+        store.update(ownerUserID: ownerUserID) { $0.recordRefusal(of: operationID) }
     }
 
     func recordNotice(_ notice: ExquisiteCorpseStoredNotice, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.record(notice) }
+        store.update(ownerUserID: ownerUserID) { $0.record(notice) }
     }
 
     func takeNotices(ownerUserID: UUID) -> [ExquisiteCorpseStoredNotice] {
         var taken: [ExquisiteCorpseStoredNotice] = []
-        update(ownerUserID: ownerUserID) { document in
+        store.update(ownerUserID: ownerUserID) { document in
             taken = document.notices
             document.notices = []
         }
@@ -215,27 +200,7 @@ actor FileExquisiteCorpseCache: ExquisiteCorpseCaching {
 
     func clearAll() {
         order.overrideFetches()
-        guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
-        try? FileManager.default.removeItem(at: directoryURL)
-    }
-
-    private func update(ownerUserID: UUID, _ change: (inout ExquisiteCorpseLocalDocument) -> Void) {
-        var document = document(ownerUserID: ownerUserID)
-        change(&document)
-        let envelope = Envelope(schemaVersion: Self.schemaVersion, ownerUserID: ownerUserID, document: document)
-        guard let data = try? PaeoniaConvexClient.encoder.encode(envelope) else { return }
-        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        try? data.write(to: fileURL(for: ownerUserID), options: [.atomic])
-    }
-
-    private func fileURL(for ownerUserID: UUID) -> URL {
-        directoryURL.appendingPathComponent(ownerUserID.uuidString.lowercased() + ".json", isDirectory: false)
-    }
-
-    private struct Envelope: Codable {
-        let schemaVersion: Int
-        let ownerUserID: UUID
-        let document: ExquisiteCorpseLocalDocument
+        store.clear()
     }
 }
 

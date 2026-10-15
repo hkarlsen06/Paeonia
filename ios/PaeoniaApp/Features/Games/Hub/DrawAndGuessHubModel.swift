@@ -51,13 +51,16 @@ final class DrawAndGuessHubModel: GameHubModel {
         guard self.userID == userID else { return }
         // Stars follow the same writes as the rest of the Games cache.
         await game.stars.reload()
-        summary = document.state.map { state in
+        let newSummary = document.state.map { state in
             let resolution = DrawAndGuessResolver(userID: userID).resolve(
                 state: state,
                 pending: pending,
                 isPartnerDrawingLive: false
             )
             return DrawAndGuessHubSummary(state: state, resolution: resolution)
+        }
+        if summary != newSummary {
+            summary = newSummary
         }
     }
 

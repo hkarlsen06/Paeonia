@@ -22,7 +22,7 @@ struct RelationshipDatePendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing relationship start date payload")
         }
 
-        let payload = try JSONDecoder().decode(
+        let payload = try JSONDecoder().decodeQueuedPayload(
             SetRelationshipStartedOnOperationPayload.self,
             from: requestData
         )

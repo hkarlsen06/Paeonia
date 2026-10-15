@@ -92,7 +92,7 @@ nonisolated struct FinalizeProfilePhotoUploadRequest: Encodable {
         self.reservedParentID = reservedParentID
         self.mimeType = image.mediaType
         self.byteSize = Int64(image.data.count)
-        self.sha256Hex = SHA256.hash(data: image.data).map { String(format: "%02x", $0) }.joined()
+        self.sha256Hex = SHA256.hash(data: image.data).paeoniaHexString
         self.width = image.width
         self.height = image.height
     }

@@ -31,7 +31,7 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
     private let decoder = JSONDecoder()
     /// The photos last written per user, so typing in the title or note doesn't
     /// rewrite every photo file on each keystroke.
-    private var writtenPhotos: [UUID: [Data]] = [:]
+    private var writtenPhotos: [UUID: [UUID]] = [:]
 
     init(
         defaults: UserDefaults = .standard,
@@ -52,11 +52,11 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
               let stored = try? decoder.decode(StoredDraft.self, from: data)
         else { return nil }
 
-        let photos = (0..<stored.photoCount).compactMap {
-            try? Data(contentsOf: photoURL(userID: userID, index: $0))
+        let photos = (0..<stored.photoCount).compactMap { index in
+            (try? Data(contentsOf: photoURL(userID: userID, index: index))).map { MemoryDraftPhoto(data: $0) }
         }
         // These files are what's on disk now, so typing in a restored draft doesn't rewrite them.
-        writtenPhotos[userID] = photos
+        writtenPhotos[userID] = photos.map(\.id)
         let draft = MemoryDraft(title: stored.title, date: stored.date, note: stored.note, photos: photos)
         return draft.isEmpty ? nil : draft
     }
@@ -70,9 +70,10 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
         // If the new photos can't be written (for example the disk is full), keep the
         // text and the photos saved before, rather than lose everything.
         var storedPhotoCount = draft.photos.count
-        if writtenPhotos[userID] != draft.photos {
-            if writePhotos(draft.photos, userID: userID) {
-                writtenPhotos[userID] = draft.photos
+        let photoIDs = draft.photos.map(\.id)
+        if writtenPhotos[userID] != photoIDs {
+            if writePhotos(draft.photos.map(\.data), userID: userID) {
+                writtenPhotos[userID] = photoIDs
             } else {
                 storedPhotoCount = storedDraft(for: userID)?.photoCount ?? 0
             }

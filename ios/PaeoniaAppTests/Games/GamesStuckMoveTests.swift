@@ -40,7 +40,7 @@ struct GamesStuckMoveTests {
         PendingSyncOperationDrainStream(handlers: [
             SubmitGameGuessPendingOperationHandler(gateway: environment.gateway, cache: environment.cache),
             GiveUpGameRoundPendingOperationHandler(gateway: environment.gateway, cache: environment.cache),
-        ])
+        ], retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0))
     }
 
     private func enqueue(_ kind: SyncPendingOperationKind, _ payload: some Encodable, sequence: Int64) async throws {

@@ -22,7 +22,7 @@ final class MemoriesViewModel {
     private let photoUploads: MemoryPhotoUploads
     private let imageProvider: (any MemoryMediaImageProviding)?
     private let photoSaver: any PhotoLibrarySaving
-    private let draftStore: any MemoryDraftStoring
+    let draftStore: any MemoryDraftStoring
     private var localChangeSyncHandler: (@MainActor @Sendable () async -> Void)?
     #if DEBUG
     private let logger = Logger(
@@ -31,7 +31,7 @@ final class MemoriesViewModel {
     )
     #endif
 
-    private var currentUserID: UUID?
+    private(set) var currentUserID: UUID?
     private var coupleID: UUID?
     /// Bumped by every load, so a slow read that finishes after a newer one (or after
     /// the user changed) can't put older memories back on screen.
@@ -51,7 +51,8 @@ final class MemoriesViewModel {
     /// so a swipe-down or the tab being torn down keeps the work. Changes are saved per
     /// user on the device and restored when the user's session loads. A successful save
     /// or a deliberate discard clears it.
-    private(set) var draft = MemoryDraft()
+    var draft = MemoryDraft()
+    @ObservationIgnored var pendingDraftSave: Task<Void, Never>?
 
     init(
         memoryService: (any MemoryDataServicing)? = nil,
@@ -107,6 +108,8 @@ final class MemoriesViewModel {
         self.coupleID = coupleID
 
         guard self.currentUserID != currentUserID else { return }
+        // Text typed for the previous user is saved to that user before switching.
+        flushDraft()
         self.currentUserID = currentUserID
         timeline = []
         hasLoadedOnce = false
@@ -125,15 +128,6 @@ final class MemoriesViewModel {
     /// for new memories). Safe to call from `.onChange` without triggering a reload.
     func updateContext(coupleID: UUID?) {
         self.coupleID = coupleID
-    }
-
-    /// Replaces the new-memory form contents and saves them for the signed-in user. An
-    /// empty draft removes the saved one, which is how Cancel discards a draft.
-    func updateDraft(_ newDraft: MemoryDraft) {
-        guard newDraft != draft else { return }
-        draft = newDraft
-        guard let currentUserID else { return }
-        draftStore.setDraft(newDraft, for: currentUserID)
     }
 
     // MARK: - Loading

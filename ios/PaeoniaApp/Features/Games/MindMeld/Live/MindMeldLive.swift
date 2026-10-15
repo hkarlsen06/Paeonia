@@ -10,20 +10,3 @@ nonisolated struct MindMeldLiveMessage: GameLiveMessage, Equatable {
     let roundNumber: Int
     let isTyping: Bool
 }
-
-/// The live room of Mind Meld: a relay room of its own (`<couple>:mind_meld`),
-/// used for presence and the typing message (`MindMeldLiveMessage`, sent through
-/// a `GameLiveChannel`). Both phones join with the `present` role.
-@MainActor
-enum MindMeldLive {
-    static func make(coupleID: UUID) -> WidgetLiveDrawing {
-        WidgetLiveDrawing(
-            connection: WidgetLiveConnection(
-                coupleID: coupleID,
-                ticketProvider: GameLiveTicket.provider(for: .mindMeld)
-            ),
-            role: .present,
-            presence: WidgetLivePresence(countsLatestHelloOnly: true)
-        )
-    }
-}

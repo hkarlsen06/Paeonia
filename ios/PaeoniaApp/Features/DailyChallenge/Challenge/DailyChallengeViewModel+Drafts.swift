@@ -81,6 +81,33 @@ extension DailyChallengeViewModel {
         var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
         draft.text = text
         answerDrafts[questionID] = draft
+        scheduleDraftSave(for: questionID)
+    }
+
+    /// Typing changes the text on every keystroke, and saving rewrites the whole
+    /// draft blob, so the save waits for a pause. `flushDraftPersistence()` saves
+    /// right away when the screen closes or the app leaves the foreground.
+    private func scheduleDraftSave(for questionID: UUID) {
+        pendingDraftSaves[questionID]?.cancel()
+        pendingDraftSaves[questionID] = Task { [weak self] in
+            try? await Task.sleep(for: Self.draftSaveDelay)
+            guard !Task.isCancelled else { return }
+            self?.flushDraft(for: questionID)
+        }
+    }
+
+    /// Saves every draft whose text is still waiting for its delayed save.
+    func flushDraftPersistence() {
+        for questionID in Array(pendingDraftSaves.keys) {
+            flushDraft(for: questionID)
+        }
+    }
+
+    private func flushDraft(for questionID: UUID) {
+        guard pendingDraftSaves[questionID] != nil, let draft = answerDrafts[questionID] else {
+            pendingDraftSaves[questionID] = nil
+            return
+        }
         persist(draft, for: questionID)
     }
 
@@ -210,11 +237,16 @@ extension DailyChallengeViewModel {
     }
 
     private func persist(_ draft: DailyAnswerDraft, for questionID: UUID) {
+        // This write carries the current text, so a delayed save is not needed.
+        pendingDraftSaves[questionID]?.cancel()
+        pendingDraftSaves[questionID] = nil
         guard let currentUserID else { return }
         draftStore.setDraft(draft, for: questionID, userID: currentUserID)
     }
 
     func clearDraft(for questionID: UUID) {
+        pendingDraftSaves[questionID]?.cancel()
+        pendingDraftSaves[questionID] = nil
         answerDrafts[questionID] = nil
         if let currentUserID {
             draftStore.clearDraft(for: questionID, userID: currentUserID)

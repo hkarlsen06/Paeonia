@@ -35,6 +35,6 @@ nonisolated struct StreakMilestoneStore {
 
     private func key(userID: UUID) -> String {
         let digest = SHA256.hash(data: Data(userID.uuidString.lowercased().utf8))
-        return Self.keyPrefix + digest.map { String(format: "%02x", $0) }.joined()
+        return Self.keyPrefix + digest.paeoniaHexString
     }
 }

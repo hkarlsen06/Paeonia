@@ -70,9 +70,3 @@ nonisolated final class PaeoniaWidgetPushTokenStore: @unchecked Sendable {
         defaults.removeObject(forKey: Key.savedAt)
     }
 }
-
-private extension Data {
-    nonisolated var paeoniaHexString: String {
-        map { String(format: "%02x", $0) }.joined()
-    }
-}

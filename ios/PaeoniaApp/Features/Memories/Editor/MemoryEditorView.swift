@@ -293,7 +293,7 @@ struct MemoryEditorView: View {
             draft.title,
             MemoryTimeline.localDateString(for: draft.date),
             draft.note,
-            draft.photos,
+            draft.photos.map(\.data),
             existingMedia.filter { removedExistingMediaIDs.contains($0.memoryMediaID) }
         )
         if saved {

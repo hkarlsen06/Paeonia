@@ -87,14 +87,8 @@ func readMindMeldStateAfterAcceptedMove(
     gateway: any MindMeldGateway,
     cache: any MindMeldCaching
 ) async -> PendingSyncOperationSendResult {
-    do {
+    await readStateAfterAcceptedMove(operation) {
         _ = try await cache.fetchState(from: gateway, ownerUserID: operation.ownerUserID)
-        return .succeeded
-    } catch {
-        return .retry(after: readAfterMoveRetryPolicy.nextRetryDate(
-            attemptNumber: operation.attemptCount + 1,
-            now: Date()
-        ))
     }
 }
 

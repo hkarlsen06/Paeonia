@@ -185,4 +185,43 @@ struct PaeoniaSyncServicePrivacyTests {
             "relationship.push.local_change",
         ])
     }
+
+    @Test func pendingWritesStreamIsNotCutOffByTheRunTimeout() async {
+        let slowDrain = SlowPendingWritesStream(duration: .milliseconds(300))
+        let coordinator = PaeoniaSyncService(
+            streams: [slowDrain],
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
+            syncTimeoutNanoseconds: 50_000_000
+        )
+        await coordinator.configure(session: .test())
+
+        let result = await coordinator.runOnce(reason: .localChange)
+
+        #expect(result.status == .succeeded)
+        #expect(await slowDrain.finished)
+    }
+}
+
+private actor SlowPendingWritesStream: SyncStream {
+    nonisolated let streamKey: SyncStreamKey = .pendingOperations
+    private let duration: Duration
+    private(set) var finished = false
+
+    init(duration: Duration) {
+        self.duration = duration
+    }
+
+    nonisolated func scope(for _: SyncSession) -> SyncStreamScope? {
+        SyncStreamScope(kind: .user)
+    }
+
+    func pull(context _: SyncContext) -> SyncCursor? {
+        nil
+    }
+
+    func push(context _: SyncContext) async throws {
+        try await Task.sleep(for: duration)
+        finished = true
+    }
 }

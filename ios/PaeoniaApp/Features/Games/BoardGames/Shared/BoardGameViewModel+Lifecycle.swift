@@ -12,9 +12,16 @@ extension BoardGameViewModel {
         isActive = true
         await reload()
         guard isRunning, !Task.isCancelled else { return }
-        beginObserving()
-        beginTicking()
-        beginHeartbeat()
+        loops.beginObserving(
+            currentUserID: { [weak self] in self?.currentUserID },
+            reload: { [weak self] in await self?.reload() }
+        )
+        loops.beginTicking(every: tickInterval) { [weak self] in
+            guard let self else { return }
+            now = dependencies.now()
+            updatePresence()
+        }
+        loops.beginHeartbeat()
         // The live feed keeps the cache current. This read covers the first
         // launch, when the cache is empty.
         await refresh()
@@ -28,13 +35,9 @@ extension BoardGameViewModel {
     func stop() {
         guard isRunning else { return }
         isRunning = false
-        for task in [observationTask, tickTask] {
-            task?.cancel()
-        }
-        observationTask = nil
-        tickTask = nil
+        loops.cancelFollowing()
         pauseDisplay()
-        endHeartbeat()
+        loops.endHeartbeat()
     }
 
     /// Stops the board where it is and remembers how far it showed the game.
@@ -61,61 +64,14 @@ extension BoardGameViewModel {
         guard isRunning, newValue != isActive else { return }
         isActive = newValue
         if newValue {
-            beginHeartbeat()
+            loops.beginHeartbeat()
             recompute()
             Task { [weak self] in await self?.refresh() }
         } else {
             // Nothing counts as shown while the app is in the background.
             pauseDisplay()
-            endHeartbeat()
+            loops.endHeartbeat()
         }
-    }
-
-    private func beginObserving() {
-        observationTask?.cancel()
-        observationTask = Task { [weak self] in
-            for await change in LocalStoreChanges.changes(in: .games, .pendingOperations) {
-                guard !Task.isCancelled, let self else { return }
-                guard change.ownerUserID == nil || change.ownerUserID == currentUserID else { continue }
-                await reload()
-            }
-        }
-    }
-
-    private func beginTicking() {
-        tickTask?.cancel()
-        let interval = tickInterval
-        let sleep = sleep
-        tickTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await sleep(interval)
-                guard !Task.isCancelled, let self else { return }
-                now = dependencies.now()
-                updatePresence()
-            }
-        }
-    }
-
-    private func beginHeartbeat() {
-        heartbeatTask?.cancel()
-        let gateway = dependencies.gateway
-        let kind = kind
-        let interval = heartbeatInterval
-        let sleep = sleep
-        heartbeatTask = Task {
-            while !Task.isCancelled {
-                try? await gateway.setPresence(kind, isPresent: true)
-                try? await sleep(interval)
-            }
-        }
-    }
-
-    private func endHeartbeat() {
-        heartbeatTask?.cancel()
-        heartbeatTask = nil
-        let gateway = dependencies.gateway
-        let kind = kind
-        Task { try? await gateway.setPresence(kind, isPresent: false) }
     }
 }
 

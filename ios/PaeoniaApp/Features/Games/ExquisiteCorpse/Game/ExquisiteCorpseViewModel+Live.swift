@@ -171,12 +171,7 @@ extension ExquisiteCorpseViewModel {
         guard phase == .drawing, let part, part.hasStrip, isPartnerInRoom,
               let partID = ownPartID, boardPartID == partID
         else { return }
-        var drawing = board.drawing
-        if let liveStroke {
-            drawing.strokes.append(liveStroke)
-        }
-        drawing = GameCanvas.canonical(drawing, fromSide: board.canvasSide)
-        let strip = ExquisiteCorpseFold.strip(of: drawing)
+        let strip = stripCache.strip(of: board.drawing.strokes, including: liveStroke, fromSide: board.canvasSide)
         let signature = strip.paeoniaContentSignature
         if let sentStrip, sentStrip.partID == partID, sentStrip.signature == signature {
             return

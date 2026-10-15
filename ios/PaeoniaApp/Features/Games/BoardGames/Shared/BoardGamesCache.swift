@@ -24,7 +24,7 @@ nonisolated struct BoardGameShownPosition: Codable, Equatable, Sendable {
 /// What this phone keeps for one signed-in person. `state` and `marks` are the
 /// last results of the two live queries, so the board shows something at launch
 /// and offline. The rest is only ever local.
-nonisolated struct BoardGamesLocalDocument: Codable, Equatable, Sendable {
+nonisolated struct BoardGamesLocalDocument: GamesPersistedDocument {
     var state: RemoteBoardGames?
     var marks: RemoteBoardGameMarks?
     /// By `GameKind` raw value.
@@ -188,40 +188,27 @@ nonisolated extension RemoteBoardGames {
 actor FileBoardGamesCache: BoardGamesCaching {
     static let shared = FileBoardGamesCache()
 
-    /// Bump when a stored type gains a required field. A file with another
-    /// version reads as empty.
-    private static let schemaVersion = 2
-
-    private let directoryURL: URL
+    private var store: GamesDocumentStore<BoardGamesLocalDocument>
     private var order = GamesStateWriteOrder()
     private var marksOrder = GamesStateWriteOrder()
 
     init(directoryURL: URL = FileBoardGamesCache.defaultDirectoryURL()) {
-        self.directoryURL = directoryURL
+        store = GamesDocumentStore(directoryURL: directoryURL, schemaVersion: 2)
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
-        FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("BoardGamesCache", isDirectory: true)
+        GamesDocumentStore<BoardGamesLocalDocument>.defaultDirectoryURL(named: "BoardGamesCache")
     }
 
     func document(ownerUserID: UUID) -> BoardGamesLocalDocument {
-        guard let data = try? Data(contentsOf: fileURL(for: ownerUserID)),
-              let envelope = try? PaeoniaConvexClient.decoder.decode(Envelope.self, from: data),
-              envelope.schemaVersion == Self.schemaVersion,
-              envelope.ownerUserID == ownerUserID
-        else {
-            return BoardGamesLocalDocument()
-        }
-        return envelope.document
+        store.document(ownerUserID: ownerUserID)
     }
 
     func saveState(_ state: RemoteBoardGames, ownerUserID: UUID) {
         var kept = document(ownerUserID: ownerUserID)
         guard kept.accept(state) else { return }
         order.overrideFetches()
-        update(ownerUserID: ownerUserID) { $0.state = kept.state }
+        store.save(kept, ownerUserID: ownerUserID)
     }
 
     func beginFetch() -> Int {
@@ -232,7 +219,7 @@ actor FileBoardGamesCache: BoardGamesCaching {
         var kept = document(ownerUserID: ownerUserID)
         let isNewer = kept.state.map { $0.isOlder(than: state) } ?? false
         guard kept.accept(state), order.acceptFetch(ticket) || isNewer else { return false }
-        update(ownerUserID: ownerUserID) { $0.state = kept.state }
+        store.save(kept, ownerUserID: ownerUserID)
         return true
     }
 
@@ -240,12 +227,12 @@ actor FileBoardGamesCache: BoardGamesCaching {
         var kept = document(ownerUserID: ownerUserID)
         guard kept.accept(game) else { return }
         order.overrideFetches()
-        update(ownerUserID: ownerUserID) { $0.state = kept.state }
+        store.save(kept, ownerUserID: ownerUserID)
     }
 
     func saveMarks(_ marks: RemoteBoardGameMarks, ownerUserID: UUID) {
         marksOrder.overrideFetches()
-        update(ownerUserID: ownerUserID) { $0.marks = marks }
+        store.update(ownerUserID: ownerUserID) { $0.marks = marks }
     }
 
     func beginMarksFetch() -> Int {
@@ -254,31 +241,29 @@ actor FileBoardGamesCache: BoardGamesCaching {
 
     func saveFetchedMarks(_ marks: RemoteBoardGameMarks, ownerUserID: UUID, ticket: Int) -> Bool {
         guard marksOrder.acceptFetch(ticket) else { return false }
-        update(ownerUserID: ownerUserID) { $0.marks = marks }
+        store.update(ownerUserID: ownerUserID) { $0.marks = marks }
         return true
     }
 
     func markShown(_ position: BoardGameShownPosition, kind: GameKind, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.shown[kind.rawValue] = position }
+        store.update(ownerUserID: ownerUserID) { $0.shown[kind.rawValue] = position }
     }
 
     func saveLudoRoll(_ roll: LudoSavedRoll, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.ludoRoll = roll }
+        store.update(ownerUserID: ownerUserID) { $0.ludoRoll = roll }
     }
 
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int {
-        var count = 0
-        update(ownerUserID: ownerUserID) { count = $0.recordRefusal(of: operationID) }
-        return count
+        store.update(ownerUserID: ownerUserID) { $0.recordRefusal(of: operationID) }
     }
 
     func recordNotice(_ notice: BoardGameStoredNotice, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.record(notice) }
+        store.update(ownerUserID: ownerUserID) { $0.record(notice) }
     }
 
     func takeNotices(kind: GameKind, ownerUserID: UUID) -> [BoardGameStoredNotice] {
         var taken: [BoardGameStoredNotice] = []
-        update(ownerUserID: ownerUserID) { document in
+        store.update(ownerUserID: ownerUserID) { document in
             taken = document.notices.filter { $0.kind == kind }
             document.notices.removeAll { $0.kind == kind }
         }
@@ -288,27 +273,7 @@ actor FileBoardGamesCache: BoardGamesCaching {
     func clearAll() {
         order.overrideFetches()
         marksOrder.overrideFetches()
-        guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
-        try? FileManager.default.removeItem(at: directoryURL)
-    }
-
-    private func update(ownerUserID: UUID, _ change: (inout BoardGamesLocalDocument) -> Void) {
-        var document = document(ownerUserID: ownerUserID)
-        change(&document)
-        let envelope = Envelope(schemaVersion: Self.schemaVersion, ownerUserID: ownerUserID, document: document)
-        guard let data = try? PaeoniaConvexClient.encoder.encode(envelope) else { return }
-        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        try? data.write(to: fileURL(for: ownerUserID), options: [.atomic])
-    }
-
-    private func fileURL(for ownerUserID: UUID) -> URL {
-        directoryURL.appendingPathComponent(ownerUserID.uuidString.lowercased() + ".json", isDirectory: false)
-    }
-
-    private struct Envelope: Codable {
-        let schemaVersion: Int
-        let ownerUserID: UUID
-        let document: BoardGamesLocalDocument
+        store.clear()
     }
 }
 

@@ -31,8 +31,11 @@ actor InMemoryDailyQuestionChatCache: DailyQuestionChatCaching {
         return true
     }
 
-    func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID) {
+    @discardableResult
+    func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID) -> Bool {
+        let changed = storedSummaries[ownerUserID] != summaries
         storedSummaries[ownerUserID] = summaries
+        return changed
     }
 
     func saveMessages(

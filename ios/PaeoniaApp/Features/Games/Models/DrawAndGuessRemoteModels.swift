@@ -125,7 +125,8 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
     /// When each partner moved past the result of the finished round.
     let drawerResultSeenAt: Date?
     let guesserResultSeenAt: Date?
-    /// Oldest first. The newest 200 when there are more.
+    /// Oldest first. The newest 200 when there are more. Empty for rounds older than the
+    /// previous one in `recentRounds`. `attemptCount` is always exact.
     let attempts: [RemoteDrawAndGuessAttempt]
     /// Every attempt of the round, also those past the 200 in `attempts`.
     var attemptCount: Int?

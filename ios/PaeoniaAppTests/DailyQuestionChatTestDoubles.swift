@@ -96,19 +96,26 @@ actor PausingChatService: DailyQuestionChatServicing {
 /// Stands in for the messages subscription. Tests push the full message list, like
 /// the server pushing a new query result.
 final class LiveMessageSource: @unchecked Sendable {
-    private let open = LockedBox<AsyncStream<[DailyQuestionChatMessage]>.Continuation?>(nil)
+    private let open = LockedBox<AsyncStream<DailyQuestionChatMessagePage>.Continuation?>(nil)
     let subscriptionCount = LockedBox(0)
 
-    func stream() -> AsyncStream<[DailyQuestionChatMessage]> {
+    func stream() -> AsyncStream<DailyQuestionChatMessagePage> {
         subscriptionCount.mutate { $0 += 1 }
         return AsyncStream { continuation in
             open.mutate { $0 = continuation }
         }
     }
 
+    /// Pushes the whole thread, as when it fits in the newest page.
     func push(_ messages: [DailyQuestionChatMessage]) async {
+        await push(
+            DailyQuestionChatMessagePage(messages: messages, hasMore: false, oldestAt: messages.first?.createdAt)
+        )
+    }
+
+    func push(_ page: DailyQuestionChatMessagePage) async {
         _ = await waitUntil { open.value != nil }
-        open.value?.yield(messages)
+        open.value?.yield(page)
     }
 }
 
@@ -118,6 +125,10 @@ actor ChatTestGateway: DailyQuestionChatGateway {
     private let messageID: UUID
     private var summaries: [DailyQuestionThreadSummary] = []
     private var messages: [DailyQuestionChatMessage] = []
+    /// What each load asked for, newest first, so a test can check the cursor.
+    private(set) var loadCursors: [DailyQuestionChatMessageCursor?] = []
+    private var olderPages: [DailyQuestionChatMessagePage] = []
+    private var newestPageHasMore = false
     private var shouldFail = false
     private var sendError: (any Error)?
     private var holdsLoads = false
@@ -204,9 +215,31 @@ actor ChatTestGateway: DailyQuestionChatGateway {
         return result
     }
 
-    func loadMessages(threadID _: UUID, questionID _: UUID) async throws -> [DailyQuestionChatMessage] {
+    func setPageHasMore(_ hasMore: Bool) {
+        newestPageHasMore = hasMore
+    }
+
+    /// The pages the next loads with a cursor return, in order.
+    func setOlderPages(_ pages: [DailyQuestionChatMessagePage]) {
+        olderPages = pages
+    }
+
+    private func nextOlderPage() -> DailyQuestionChatMessagePage {
+        olderPages.isEmpty ? DailyQuestionChatMessagePage(messages: [], hasMore: false) : olderPages.removeFirst()
+    }
+
+    func loadMessages(
+        threadID _: UUID,
+        questionID _: UUID,
+        before: DailyQuestionChatMessageCursor?
+    ) async throws -> DailyQuestionChatMessagePage {
         loadCallCount += 1
-        let result = messages
+        loadCursors.append(before)
+        let result = before == nil
+            ? DailyQuestionChatMessagePage(
+                messages: messages, hasMore: newestPageHasMore, oldestAt: messages.first?.createdAt
+            )
+            : nextOlderPage()
         await waitWhileHeld()
         if shouldFail { throw ChatTestError.requested }
         return result
@@ -217,7 +250,7 @@ actor ChatTestGateway: DailyQuestionChatGateway {
         await withCheckedContinuation { heldLoads.append($0) }
     }
 
-    nonisolated func liveMessages(threadID _: UUID, questionID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
+    nonisolated func liveMessages(threadID _: UUID, questionID _: UUID) -> AsyncStream<DailyQuestionChatMessagePage> {
         liveSource.stream()
     }
 

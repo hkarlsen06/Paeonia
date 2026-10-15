@@ -143,9 +143,16 @@ final class ExquisiteCorpseFigurePlayer {
     /// What `GameReplaySurface` draws for `part` on each screen frame.
     func frames(for part: Part) -> GameReplayFrames {
         GameReplayFrames(
-            drawing: { [weak self] wall, side in self?.drawing(for: part, atWall: wall, side: side) },
+            playback: { [weak self] wall in self?.playback(for: part, atWall: wall) },
             isFinished: { [weak self] wall in self?.isFinished(part, atWall: wall) ?? false }
         )
+    }
+
+    /// Where the part's replay is at `wall`. Nil while the part waits for its
+    /// turn or is not loaded.
+    func playback(for part: Part, atWall wall: TimeInterval) -> GameReplayFrames.Playback? {
+        guard let track = tracks[part], let clock = track.clock else { return nil }
+        return .init(timeline: track.timeline, time: clock.replayTime(at: wall))
     }
 
     /// The part as it looks at `wall` (a steady clock such as `CACurrentMediaTime()`),

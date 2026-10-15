@@ -3,7 +3,9 @@ import Foundation
 protocol DailyQuestionChatCaching: Actor {
     func summaries(ownerUserID: UUID) -> [DailyQuestionThreadSummary]
     func messages(ownerUserID: UUID, questionID: UUID) -> [DailyQuestionChatMessage]
-    func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID)
+    /// Keeps the summaries. Returns whether they differ from what was kept.
+    @discardableResult
+    func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID) -> Bool
     func saveMessages(
         _ messages: [DailyQuestionChatMessage],
         ownerUserID: UUID,
@@ -83,6 +85,23 @@ protocol DailyQuestionChatCaching: Actor {
 }
 
 extension DailyQuestionChatCaching {
+    /// Adds a page of older messages to the confirmed ones already kept, unless
+    /// `clearAll()` ran after `generation` was read. Runs without suspending, so no
+    /// live result lands between the read and the save. Returns whether it wrote.
+    @discardableResult
+    func mergeOlderMessages(
+        _ older: [DailyQuestionChatMessage],
+        ownerUserID: UUID,
+        questionID: UUID,
+        unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == purgeGeneration() else { return false }
+        let confirmed = messages(ownerUserID: ownerUserID, questionID: questionID)
+            .filter { !$0.isSending && !$0.sendFailed }
+        saveMessages(confirmed + older, ownerUserID: ownerUserID, questionID: questionID)
+        return true
+    }
+
     func rounds(ownerUserID _: UUID, questionID _: UUID) -> DailyQuestionChatRoundsRow? { nil }
     @discardableResult
     func saveRounds(
@@ -99,29 +118,33 @@ extension DailyQuestionChatCaching {
     func markPartnerAnswerSeen(ownerUserID _: UUID, instanceID _: UUID) -> Bool { false }
 }
 
+/// Keeps the chat on disk, one file per user for the summaries and marks, and one file per
+/// question for its messages and rounds. A user's files are read once and then held in
+/// memory, and a change writes only the file it touched, and only when something differs.
 actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     static let shared = FileDailyQuestionChatCache()
 
-    private static let schemaVersion = 4
-    private let directoryURL: URL
+    private let files: DailyChatCacheFiles
     private var generation = 0
+    private var cores: [UUID: DailyChatCoreDocument] = [:]
+    /// Per user, the question files read so far, keyed by question id.
+    private var questions: [UUID: [String: DailyChatQuestionDocument]] = [:]
 
     init(directoryURL: URL = FileDailyQuestionChatCache.defaultDirectoryURL()) {
-        self.directoryURL = directoryURL
+        files = DailyChatCacheFiles(directoryURL: directoryURL)
     }
 
     func summaries(ownerUserID: UUID) -> [DailyQuestionThreadSummary] {
-        document(ownerUserID: ownerUserID).summaries
+        core(ownerUserID).summaries
     }
 
     func messages(ownerUserID: UUID, questionID: UUID) -> [DailyQuestionChatMessage] {
-        document(ownerUserID: ownerUserID).messagesByQuestionID[questionID.uuidString] ?? []
+        question(ownerUserID, questionID.uuidString).messages
     }
 
-    func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID) {
-        var document = document(ownerUserID: ownerUserID)
-        document.summaries = summaries
-        save(document, ownerUserID: ownerUserID)
+    @discardableResult
+    func saveSummaries(_ summaries: [DailyQuestionThreadSummary], ownerUserID: UUID) -> Bool {
+        updateCore(ownerUserID) { $0.summaries = summaries }
     }
 
     func saveMessages(
@@ -129,86 +152,57 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         ownerUserID: UUID,
         questionID: UUID
     ) {
-        var document = document(ownerUserID: ownerUserID)
-        let cached = document.messagesByQuestionID[questionID.uuidString] ?? []
-        document.messagesByQuestionID[questionID.uuidString] = DailyQuestionChatMessage.visibleOrdered(
-            remote: messages,
-            optimistic: cached
-        )
-        save(document, ownerUserID: ownerUserID)
+        updateQuestion(ownerUserID, questionID.uuidString) {
+            $0.messages = DailyQuestionChatMessage.visibleOrdered(remote: messages, optimistic: $0.messages)
+        }
     }
 
     func append(_ message: DailyQuestionChatMessage, ownerUserID: UUID) {
-        var document = document(ownerUserID: ownerUserID)
-        var messages = document.messagesByQuestionID[message.questionID.uuidString] ?? []
-        // A confirmation that ran first already stored the final copy. Adding the
-        // sending copy again would show a sent message as sending.
-        if let operationID = message.clientOperationID,
-           messages.contains(where: { $0.clientOperationID == operationID && !$0.isSending }) {
-            return
+        let appended = updateQuestion(ownerUserID, message.questionID.uuidString) { document in
+            // A confirmation that ran first already stored the final copy. Adding the
+            // sending copy again would show a sent message as sending.
+            if let operationID = message.clientOperationID,
+               document.messages.contains(where: { $0.clientOperationID == operationID && !$0.isSending }) {
+                return
+            }
+            document.messages.removeAll { $0.clientOperationID == message.clientOperationID }
+            document.messages.append(message)
+            document.messages.sort { $0.createdAt < $1.createdAt }
         }
-        messages.removeAll { $0.clientOperationID == message.clientOperationID }
-        messages.append(message)
-        document.messagesByQuestionID[message.questionID.uuidString] = messages.sorted {
-            $0.createdAt < $1.createdAt
-        }
-
-        if let threadID = message.threadID,
-           let index = document.summaries.firstIndex(where: { $0.threadID == threadID }) {
-            let summary = document.summaries[index]
-            document.summaries[index] = DailyQuestionThreadSummary(
-                threadID: summary.threadID,
-                coupleID: summary.coupleID,
-                questionID: summary.questionID,
-                createdAt: summary.createdAt,
-                updatedAt: message.createdAt,
-                lastMessageID: message.id,
-                lastMessageAt: message.createdAt,
-                lastMessageSenderUserID: message.senderUserID,
-                lastMessageBody: message.body,
-                viewerReadThroughAt: summary.viewerReadThroughAt
-            )
-        }
-        save(document, ownerUserID: ownerUserID)
+        if appended { updateCore(ownerUserID) { $0.updateSummary(for: message) } }
     }
 
     func markFailed(ownerUserID: UUID, clientOperationID: UUID) {
-        var document = document(ownerUserID: ownerUserID)
-        for key in Array(document.messagesByQuestionID.keys) {
-            guard
-                let messages = document.messagesByQuestionID[key],
-                let index = messages.firstIndex(where: { $0.clientOperationID == clientOperationID })
-            else { continue }
-            let message = messages[index]
-            document.messagesByQuestionID[key]?[index] = DailyQuestionChatMessage(
-                id: message.id,
-                threadID: message.threadID,
-                questionID: message.questionID,
-                senderUserID: message.senderUserID,
-                body: message.body,
-                createdAt: message.createdAt,
-                clientOperationID: clientOperationID,
-                isSending: false,
-                sendFailed: true,
-                voice: message.voice,
-                photos: message.photos,
-                replyToMessageID: message.replyToMessageID
-            )
-            save(document, ownerUserID: ownerUserID)
-            return
+        for key in questionKeys(ownerUserID) {
+            let found = updateQuestion(ownerUserID, key) { document in
+                guard let index = document.messages.firstIndex(where: { $0.clientOperationID == clientOperationID })
+                else { return }
+                let message = document.messages[index]
+                document.messages[index] = DailyQuestionChatMessage(
+                    id: message.id,
+                    threadID: message.threadID,
+                    questionID: message.questionID,
+                    senderUserID: message.senderUserID,
+                    body: message.body,
+                    createdAt: message.createdAt,
+                    clientOperationID: clientOperationID,
+                    isSending: false,
+                    sendFailed: true,
+                    voice: message.voice,
+                    photos: message.photos,
+                    replyToMessageID: message.replyToMessageID
+                )
+            }
+            if found { return }
         }
     }
 
     func discardFailed(ownerUserID: UUID, clientOperationID: UUID) {
-        var document = document(ownerUserID: ownerUserID)
-        let before = document.messagesByQuestionID
-        for key in Array(document.messagesByQuestionID.keys) {
-            document.messagesByQuestionID[key]?.removeAll {
-                $0.clientOperationID == clientOperationID && $0.sendFailed
+        for key in questionKeys(ownerUserID) {
+            updateQuestion(ownerUserID, key) { document in
+                document.messages.removeAll { $0.clientOperationID == clientOperationID && $0.sendFailed }
             }
         }
-        guard document.messagesByQuestionID != before else { return }
-        save(document, ownerUserID: ownerUserID)
     }
 
     // swiftlint:disable:next function_parameter_count
@@ -223,20 +217,18 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         senderUserID: UUID,
         createdAt: Date
     ) {
-        var document = document(ownerUserID: ownerUserID)
-        document.apply(
-            DailyChatConfirmedSend(
-                questionID: questionID,
-                coupleID: coupleID,
-                clientOperationID: clientOperationID,
-                threadID: threadID,
-                messageID: messageID,
-                body: body,
-                senderUserID: senderUserID,
-                createdAt: createdAt
-            )
+        let send = DailyChatConfirmedSend(
+            questionID: questionID,
+            coupleID: coupleID,
+            clientOperationID: clientOperationID,
+            threadID: threadID,
+            messageID: messageID,
+            body: body,
+            senderUserID: senderUserID,
+            createdAt: createdAt
         )
-        save(document, ownerUserID: ownerUserID)
+        updateQuestion(ownerUserID, questionID.uuidString) { $0.storeConfirmedMessage(send) }
+        updateCore(ownerUserID) { $0.updateSummary(for: send) }
     }
 
     func purgeGeneration() -> Int {
@@ -284,7 +276,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     }
 
     func rounds(ownerUserID: UUID, questionID: UUID) -> DailyQuestionChatRoundsRow? {
-        document(ownerUserID: ownerUserID).roundsByQuestionID[questionID.uuidString]
+        question(ownerUserID, questionID.uuidString).rounds
     }
 
     @discardableResult
@@ -295,16 +287,13 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         unlessPurgedSince generation: Int
     ) -> Bool {
         guard generation == self.generation else { return false }
-        var document = document(ownerUserID: ownerUserID)
-        guard document.roundsByQuestionID[questionID.uuidString] != rounds else { return true }
-        document.roundsByQuestionID[questionID.uuidString] = rounds
-        save(document, ownerUserID: ownerUserID)
+        updateQuestion(ownerUserID, questionID.uuidString) { $0.rounds = rounds }
         return true
     }
 
     func readMarks(ownerUserID: UUID) -> [UUID: Date] {
         Dictionary(
-            document(ownerUserID: ownerUserID).readThroughByThreadID.compactMap { key, date in
+            core(ownerUserID).readThroughByThreadID.compactMap { key, date in
                 UUID(uuidString: key).map { ($0, date) }
             },
             uniquingKeysWith: max
@@ -313,32 +302,30 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
 
     @discardableResult
     func markRead(ownerUserID: UUID, threadID: UUID, through date: Date) -> Bool {
-        var document = document(ownerUserID: ownerUserID)
         let key = threadID.uuidString
-        if let current = document.readThroughByThreadID[key], current >= date { return false }
-        document.readThroughByThreadID[key] = date
-        save(document, ownerUserID: ownerUserID)
-        return true
+        if let current = core(ownerUserID).readThroughByThreadID[key], current >= date { return false }
+        return updateCore(ownerUserID) { $0.readThroughByThreadID[key] = date }
     }
 
     func seenPartnerAnswers(ownerUserID: UUID) -> Set<UUID> {
-        Set(document(ownerUserID: ownerUserID).seenPartnerAnswerInstanceIDs.compactMap(UUID.init(uuidString:)))
+        Set(core(ownerUserID).seenPartnerAnswerInstanceIDs.compactMap(UUID.init(uuidString:)))
     }
 
     @discardableResult
     func markPartnerAnswerSeen(ownerUserID: UUID, instanceID: UUID) -> Bool {
-        var document = document(ownerUserID: ownerUserID)
         let key = instanceID.uuidString
-        guard !document.seenPartnerAnswerInstanceIDs.contains(key) else { return false }
-        document.seenPartnerAnswerInstanceIDs.append(key)
-        save(document, ownerUserID: ownerUserID)
-        return true
+        guard !core(ownerUserID).seenPartnerAnswerInstanceIDs.contains(key) else { return false }
+        return updateCore(ownerUserID) {
+            $0.seenPartnerAnswerInstanceIDs.append(key)
+            $0.trimSeenPartnerAnswers()
+        }
     }
 
     func clearAll() {
         generation += 1
-        guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
-        try? FileManager.default.removeItem(at: directoryURL)
+        cores = [:]
+        questions = [:]
+        files.removeAll()
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
@@ -347,34 +334,52 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
             .appendingPathComponent("DailyQuestionChatCache", isDirectory: true)
     }
 
-    private func document(ownerUserID: UUID) -> DailyChatCacheDocument {
-        guard let data = try? Data(contentsOf: fileURL(ownerUserID: ownerUserID)),
-              let envelope = try? decoder().decode(DailyChatCacheEnvelope.self, from: data),
-              envelope.schemaVersion == Self.schemaVersion,
-              envelope.ownerUserID == ownerUserID else {
-            return DailyChatCacheDocument()
-        }
-        return envelope.document
+    // MARK: - Memory and disk
+
+    private func core(_ ownerUserID: UUID) -> DailyChatCoreDocument {
+        if let loaded = cores[ownerUserID] { return loaded }
+        let loaded = files.read(DailyChatCoreDocument.self, from: files.coreURL(ownerUserID)) ?? DailyChatCoreDocument()
+        cores[ownerUserID] = loaded
+        return loaded
     }
 
-    private func save(_ document: DailyChatCacheDocument, ownerUserID: UUID) {
-        let envelope = DailyChatCacheEnvelope(
-            schemaVersion: Self.schemaVersion,
-            ownerUserID: ownerUserID,
-            document: document
-        )
-        guard let data = try? encoder().encode(envelope) else { return }
-        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        try? data.write(to: fileURL(ownerUserID: ownerUserID), options: .atomic)
+    /// Applies the change, and writes the file only when the document differs afterwards.
+    @discardableResult
+    private func updateCore(_ ownerUserID: UUID, _ change: (inout DailyChatCoreDocument) -> Void) -> Bool {
+        let before = core(ownerUserID)
+        var document = before
+        change(&document)
+        guard document != before else { return false }
+        cores[ownerUserID] = document
+        files.write(document, to: files.coreURL(ownerUserID))
+        return true
     }
 
-    private func fileURL(ownerUserID: UUID) -> URL {
-        directoryURL.appendingPathComponent(ownerUserID.uuidString.lowercased() + ".json")
+    private func question(_ ownerUserID: UUID, _ key: String) -> DailyChatQuestionDocument {
+        if let loaded = questions[ownerUserID]?[key] { return loaded }
+        let loaded = files.read(DailyChatQuestionDocument.self, from: files.questionURL(ownerUserID, key))
+            ?? DailyChatQuestionDocument()
+        questions[ownerUserID, default: [:]][key] = loaded
+        return loaded
     }
 
-    // Keeps milliseconds. Plain `.iso8601` drops them, which left read marks just
-    // before the server's message times, so read chats came back as unread.
-    private func encoder() -> JSONEncoder { PaeoniaConvexClient.encoder }
+    /// Every question the user has a file for, or has read a document of.
+    private func questionKeys(_ ownerUserID: UUID) -> Set<String> {
+        files.questionKeys(ownerUserID).union((questions[ownerUserID] ?? [:]).keys)
+    }
 
-    private func decoder() -> JSONDecoder { PaeoniaConvexClient.decoder }
+    @discardableResult
+    private func updateQuestion(
+        _ ownerUserID: UUID,
+        _ key: String,
+        _ change: (inout DailyChatQuestionDocument) -> Void
+    ) -> Bool {
+        let before = question(ownerUserID, key)
+        var document = before
+        change(&document)
+        guard document != before else { return false }
+        questions[ownerUserID, default: [:]][key] = document
+        files.write(document, to: files.questionURL(ownerUserID, key))
+        return true
+    }
 }

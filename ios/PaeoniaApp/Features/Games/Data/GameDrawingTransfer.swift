@@ -190,7 +190,7 @@ nonisolated private struct FinalizeGameDrawingRequest: Encodable {
         reservedParentID = parent.id
         uploadPurpose = parent.purpose
         byteSize = Int64(data.count)
-        sha256Hex = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        sha256Hex = SHA256.hash(data: data).paeoniaHexString
     }
 
     enum CodingKeys: String, CodingKey {

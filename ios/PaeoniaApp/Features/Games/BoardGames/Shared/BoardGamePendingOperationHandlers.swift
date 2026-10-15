@@ -52,25 +52,39 @@ nonisolated enum BoardGameServerRejection {
     }
 }
 
-/// The server took a move or a rematch. Reads the server's games before the
-/// action leaves the queue, so the board keeps showing it while the live feed
-/// catches up instead of falling back to the state from before it. When the
-/// read fails, the action stays in the queue: the next try replays it, which the
-/// server answers from its record of the operation, and reads again. That try
-/// comes after 2 to 15 seconds (`readAfterMoveRetryPolicy`).
+/// The server took a move or a rematch and answered with the game. Keeps the
+/// answer, which is the new game, so no read follows and a read that would fail
+/// cannot turn an accepted action into a retry. The live feed brings the rest.
+///
+/// Without cached games to put the answer into, the answer is not kept, so this
+/// falls back to `readBoardGamesAfterAcceptedAction`.
+func keepAnswerToAcceptedAction(
+    _ answer: RemoteBoardGame,
+    for operation: PendingSyncOperationSnapshot,
+    gateway: any BoardGamesGateway,
+    cache: any BoardGamesCaching
+) async -> PendingSyncOperationSendResult {
+    await cache.saveGame(answer, ownerUserID: operation.ownerUserID)
+    if await cache.document(ownerUserID: operation.ownerUserID).state != nil {
+        return .succeeded
+    }
+    return await readBoardGamesAfterAcceptedAction(operation, gateway: gateway, cache: cache)
+}
+
+/// The server took a move or a rematch, but this phone has no answer to keep,
+/// such as for a replay the server already had. Reads the server's games
+/// before the action leaves the queue, so the board keeps showing it while the
+/// live feed catches up instead of falling back to the state from before it.
+/// When the read fails, the action stays in the queue: the next try replays it,
+/// which the server answers from its record of the operation, and reads again.
+/// That try comes after 2 to 15 seconds (`readAfterMoveRetryPolicy`).
 func readBoardGamesAfterAcceptedAction(
     _ operation: PendingSyncOperationSnapshot,
     gateway: any BoardGamesGateway,
     cache: any BoardGamesCaching
 ) async -> PendingSyncOperationSendResult {
-    do {
+    await readStateAfterAcceptedMove(operation) {
         _ = try await cache.fetchState(from: gateway, ownerUserID: operation.ownerUserID)
-        return .succeeded
-    } catch {
-        return .retry(after: readAfterMoveRetryPolicy.nextRetryDate(
-            attemptNumber: operation.attemptCount + 1,
-            now: Date()
-        ))
     }
 }
 
@@ -134,8 +148,7 @@ struct BoardGameMovePendingOperationHandler: PendingSyncOperationHandling {
         }
         do {
             let answer = try await gateway.makeMove(payload, operation: operation.operation)
-            await cache.saveGame(answer, ownerUserID: operation.ownerUserID)
-            return await readBoardGamesAfterAcceptedAction(operation, gateway: gateway, cache: cache)
+            return await keepAnswerToAcceptedAction(answer, for: operation, gateway: gateway, cache: cache)
         } catch let error as PaeoniaConvexError {
             if GameServerRejection.isAlreadyDone(error) {
                 return await readBoardGamesAfterAcceptedAction(operation, gateway: gateway, cache: cache)
@@ -183,8 +196,7 @@ struct BoardGameRematchPendingOperationHandler: PendingSyncOperationHandling {
         }
         do {
             let answer = try await gateway.startRematch(payload, operation: operation.operation)
-            await cache.saveGame(answer, ownerUserID: operation.ownerUserID)
-            return await readBoardGamesAfterAcceptedAction(operation, gateway: gateway, cache: cache)
+            return await keepAnswerToAcceptedAction(answer, for: operation, gateway: gateway, cache: cache)
         } catch let error as PaeoniaConvexError {
             if GameServerRejection.isAlreadyDone(error) || BoardGameServerRejection.isStale(error) {
                 return await readBoardGamesAfterAcceptedAction(operation, gateway: gateway, cache: cache)

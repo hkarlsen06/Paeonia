@@ -6,30 +6,6 @@ import Observation
 extension MindMeldViewModel {
     // MARK: - Presence
 
-    func beginHeartbeat() {
-        heartbeatTask?.cancel()
-        let gateway = dependencies.gateway
-        let interval = heartbeatInterval
-        let sleep = sleep
-        heartbeatTask = Task {
-            while !Task.isCancelled {
-                try? await gateway.setPresence(.mindMeld, isPresent: true)
-                try? await sleep(interval)
-            }
-        }
-    }
-
-    func endHeartbeat() {
-        heartbeatTask?.cancel()
-        heartbeatTask = nil
-        sendPresence(false)
-    }
-
-    func sendPresence(_ isPresent: Bool) {
-        let gateway = dependencies.gateway
-        Task { try? await gateway.setPresence(.mindMeld, isPresent: isPresent) }
-    }
-
     /// The partner is in the live room.
     var isPartnerInLiveRoom: Bool {
         live.map { $0.partnerActivity != .away } ?? false

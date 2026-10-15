@@ -110,10 +110,3 @@ struct RelationshipSyncEventApplier: RelationshipSyncEventApplying {
         "account_deleted"
     ]
 }
-
-struct NoOpRelationshipSyncEventApplier: RelationshipSyncEventApplying {
-    func apply(
-        _ events: [RemoteRelationshipSyncEvent],
-        session: SyncSession
-    ) throws {}
-}

@@ -159,10 +159,9 @@ final class DrawAndGuessHistoryDetailViewModel {
     /// What `GameReplaySurface` draws on each screen frame.
     var frames: GameReplayFrames {
         GameReplayFrames(
-            drawing: { [weak self] wall, side in
+            playback: { [weak self] wall in
                 guard let self, let timeline, let clock else { return nil }
-                let drawing = timeline.drawing(at: clock.replayTime(at: wall))
-                return GameCanvas.fitted(drawing, toSide: side)
+                return .init(timeline: timeline, time: clock.replayTime(at: wall))
             },
             isFinished: { [weak self] wall in self?.clock?.isFinished(at: wall) ?? false }
         )

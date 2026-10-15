@@ -18,7 +18,7 @@ extension WidgetDrawingViewModel {
         guard drawing.strokes.isEmpty else {
             return
         }
-        let signatureBeforeLoad = drawing.paeoniaContentSignature
+        let signatureBeforeLoad = drawingSignature
 
         let snapshot = await service.loadSavedSnapshot()
         let hasPendingUpload = await uploader.hasPendingUpload
@@ -37,7 +37,7 @@ extension WidgetDrawingViewModel {
 
         // The person may have started drawing while the saved drawing loaded.
         // Their strokes win; the loaded drawing is still the baseline above.
-        guard drawing.paeoniaContentSignature == signatureBeforeLoad else {
+        guard drawingSignature == signatureBeforeLoad else {
             return
         }
 
@@ -87,7 +87,7 @@ extension WidgetDrawingViewModel {
             reloadAfterStroke = true
             return
         }
-        let signatureBeforeLoad = drawing.paeoniaContentSignature
+        let signatureBeforeLoad = drawingSignature
         let hadUnsavedEdits = hasUnsavedEdits && !drawing.strokes.isEmpty
 
         guard let snapshot = await service.loadSavedSnapshot(),
@@ -123,7 +123,7 @@ extension WidgetDrawingViewModel {
         }
 
         // Strokes drawn while the drawing loaded count as unsent changes too.
-        let editedMeanwhile = drawing.paeoniaContentSignature != signatureBeforeLoad
+        let editedMeanwhile = drawingSignature != signatureBeforeLoad
         guard setAsideUnsentWork(if: hadUnsavedEdits || editedMeanwhile) else {
             return
         }
@@ -155,7 +155,7 @@ extension WidgetDrawingViewModel {
     /// Drawing together, the partner usually sends exactly what this canvas
     /// shows. That is not news, and nothing here is left unsent.
     private func canvasAlreadyShows(_ savedDrawing: PKDrawing) -> Bool {
-        guard drawing.paeoniaContentSignature == savedDrawing.paeoniaContentSignature else {
+        guard drawingSignature == savedDrawing.paeoniaContentSignature else {
             return false
         }
         partnerSentWhileEditing = false
@@ -214,20 +214,74 @@ extension WidgetDrawingViewModel {
                 return
             }
             self.draftPersistenceTask = nil
-            self.persistDraftImmediatelyIfNeeded()
+            self.persistDraftInBackground()
         }
     }
 
+    /// True when the canvas holds work that is not sent, so a draft is kept.
+    private var shouldKeepDraft: Bool {
+        hasUnsavedEdits && (!drawing.strokes.isEmpty || lastSavedDrawingSignature != nil)
+    }
+
+    /// Writes the draft now, on the main actor.
     private func persistDraftImmediatelyIfNeeded() {
         guard let draftKey = usableDraftKey else {
             return
         }
 
-        if hasUnsavedEdits && (!drawing.strokes.isEmpty || lastSavedDrawingSignature != nil) {
-            draftStore.setDraft(drawing.dataRepresentation(), for: draftKey)
-            draftStore.setDraftBase((savedBaseline ?? PKDrawing()).paeoniaStrokeFingerprint, for: draftKey)
-        } else {
-            draftStore.removeDraft(for: draftKey)
+        draftOrder.performNow {
+            if shouldKeepDraft {
+                draftStore.setDraft(drawing.dataRepresentation(), for: draftKey)
+                draftStore.setDraftBase((savedBaseline ?? PKDrawing()).paeoniaStrokeFingerprint, for: draftKey)
+            } else {
+                draftStore.removeDraft(for: draftKey)
+            }
+        }
+    }
+
+    /// Encodes and writes the draft off the main actor, because a large drawing
+    /// takes long to encode. Only the copy of the drawing is made here.
+    private func persistDraftInBackground() {
+        guard let draftKey = usableDraftKey else {
+            return
+        }
+        guard shouldKeepDraft else {
+            persistDraftImmediatelyIfNeeded()
+            return
+        }
+        let ticket = draftOrder.nextTicket()
+        let snapshot = DraftSnapshot(drawing: drawing, baseline: savedBaseline ?? PKDrawing())
+        let draftStore = draftStore
+        let order = draftOrder
+        let generation = draftStore.purgeGeneration(for: draftKey.ownerUserID)
+        Task {
+            await Self.writeDraft(snapshot, key: draftKey, ticket: ticket, store: draftStore, order: order)
+            // A privacy purge can run while the write is going, even after this screen is gone.
+            // The write may have recreated the draft, so it goes again.
+            if draftStore.purgeGeneration(for: draftKey.ownerUserID) != generation {
+                draftStore.removeDraft(for: draftKey)
+            }
+        }
+    }
+
+    /// The canvas and the drawing on the widgets, as they were when the save began.
+    private struct DraftSnapshot: Sendable {
+        let drawing: PKDrawing
+        let baseline: PKDrawing
+    }
+
+    @concurrent
+    private static func writeDraft(
+        _ snapshot: DraftSnapshot,
+        key: WidgetDrawingDraftKey,
+        ticket: Int,
+        store: any WidgetDrawingDraftStoring,
+        order: DraftWriteOrder
+    ) async {
+        let data = snapshot.drawing.dataRepresentation()
+        let base = snapshot.baseline.paeoniaStrokeFingerprint
+        order.perform(ticket) {
+            store.setDraft(data, base: base, for: key)
         }
     }
 
@@ -237,7 +291,9 @@ extension WidgetDrawingViewModel {
         guard let draftKey = usableDraftKey else {
             return
         }
-        draftStore.removeDraft(for: draftKey)
+        draftOrder.performNow {
+            draftStore.removeDraft(for: draftKey)
+        }
     }
 
     // MARK: - Set-aside drawing

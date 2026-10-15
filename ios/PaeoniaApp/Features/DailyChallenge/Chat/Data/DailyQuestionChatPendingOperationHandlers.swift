@@ -27,7 +27,7 @@ struct CreateDailyChatThreadOperationHandler: PendingSyncOperationHandling {
         guard let data = operation.requestData else {
             return .terminalFailure("Missing daily question thread payload")
         }
-        let payload = try JSONDecoder().decode(
+        let payload = try JSONDecoder().decodeQueuedPayload(
             CreateDailyChatThreadPayload.self,
             from: data
         )
@@ -51,6 +51,12 @@ struct CreateDailyChatThreadOperationHandler: PendingSyncOperationHandling {
         }
         await confirmSent(operation, response: response, of: payload, in: cache)
         return .succeeded
+    }
+
+    nonisolated var showsGivenUpWrites: Bool { true }
+
+    func gaveUp(on operation: PendingSyncOperationSnapshot, context _: SyncContext) async {
+        await markChatMessageFailed(operation, cache: cache)
     }
 
     /// Messages queued while this thread was being created wait for its id. The
@@ -109,7 +115,7 @@ struct SendDailyChatMessageOperationHandler: PendingSyncOperationHandling {
         guard let data = operation.requestData else {
             return .terminalFailure("Missing thread message payload")
         }
-        let payload = try JSONDecoder().decode(
+        let payload = try JSONDecoder().decodeQueuedPayload(
             SendDailyChatMessagePayload.self,
             from: data
         )
@@ -140,6 +146,12 @@ struct SendDailyChatMessageOperationHandler: PendingSyncOperationHandling {
         }
         await confirmSent(operation, response: response, of: payload, in: cache)
         return .succeeded
+    }
+
+    nonisolated var showsGivenUpWrites: Bool { true }
+
+    func gaveUp(on operation: PendingSyncOperationSnapshot, context _: SyncContext) async {
+        await markChatMessageFailed(operation, cache: cache)
     }
 }
 

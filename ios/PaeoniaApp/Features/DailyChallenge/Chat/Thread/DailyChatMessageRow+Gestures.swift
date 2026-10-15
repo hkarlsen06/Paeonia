@@ -9,7 +9,7 @@ extension DailyChatMessageRow {
         ZStack(alignment: .trailing) {
             timestampColumn
             content()
-                .offset(x: isCurrentUser ? -timestampRevealOffset : 0)
+                .offset(x: isCurrentUser ? -timestampReveal.offset : 0)
         }
         .background { frameReader { rowFrame = $0 } }
         .overlay(alignment: isCurrentUser ? .leading : .trailing) {
@@ -39,7 +39,7 @@ extension DailyChatMessageRow {
                 .fixedSize()
                 .frame(width: DailyChatTimestampRevealResolver.revealWidth, alignment: .trailing)
                 .padding(.trailing, PaeoniaSpacing.space12)
-                .opacity(min(max(timestampRevealOffset / DailyChatTimestampRevealResolver.revealWidth, 0), 1))
+                .opacity(min(max(timestampReveal.offset / DailyChatTimestampRevealResolver.revealWidth, 0), 1))
                 .allowsHitTesting(false)
                 // The time only shows while swiping. VoiceOver reads the row instead.
                 .accessibilityHidden(true)
@@ -62,14 +62,14 @@ extension DailyChatMessageRow {
             horizontal: value.translation.width,
             vertical: value.translation.height
         ) else { return }
-        timestampRevealOffset = offset
+        timestampReveal.offset = offset
     }
 
     private func handleTimestampRevealEnded(_ value: DailyChatDragValue) {
         handleTimestampRevealChanged(value)
-        guard timestampRevealOffset != 0 else { return }
+        guard timestampReveal.offset != 0 else { return }
         withAnimation(reduceMotion ? nil : .easeOut(duration: Self.resetAnimationDuration)) {
-            timestampRevealOffset = 0
+            timestampReveal.offset = 0
         }
     }
 

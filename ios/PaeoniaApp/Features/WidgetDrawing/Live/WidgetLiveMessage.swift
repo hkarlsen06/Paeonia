@@ -1,4 +1,5 @@
 import Foundation
+import PencilKit
 
 /// One message on the live drawing relay (`relay/` at the repository root). The
 /// relay forwards the app's messages unchanged and sends `welcome`, `joined`,
@@ -54,4 +55,20 @@ nonisolated struct WidgetLiveMessage: Codable, Equatable, Sendable {
     /// In `live`: how every point looks, learned from real strokes on the
     /// sender's phone. Sizes are in the sender's canvas points.
     var pointStyle: WidgetLiveInkCalibration.Style?
+    /// `upserts` decoded, set by the connection off the main actor. It is not
+    /// part of the wire format. A message built in code leaves it nil.
+    var preparedUpserts: PKDrawing?
+
+    private enum CodingKeys: String, CodingKey {
+        case type, id, ink, color, side, points, upserts, removals, ended, snapshot
+        case peers, needsCanvas, from, role, pointStyle
+    }
+
+    /// The strokes in `upserts`, decoded from base64 and PencilKit data.
+    func decodeUpserts() -> PKDrawing? {
+        guard let upserts, let data = Data(base64Encoded: upserts) else {
+            return nil
+        }
+        return try? PKDrawing(data: data)
+    }
 }

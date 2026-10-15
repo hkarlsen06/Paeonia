@@ -4,7 +4,7 @@ import UIKit
 /// Square thumbnail for a photo picked in the memory editor but not yet saved. Decodes
 /// a small version off the main actor instead of decoding the full camera photo in `body`.
 struct MemoryStagedPhotoThumbnail: View {
-    let data: Data
+    let photo: MemoryDraftPhoto
     let size: CGFloat
     let cornerRadius: CGFloat
 
@@ -23,12 +23,9 @@ struct MemoryStagedPhotoThumbnail: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .task(id: data) {
-                // Photos are keyed by position in the editor, so clear the old one first
-                // rather than showing the previous photo while the new one decodes.
-                image = nil
+            .task(id: photo.id) {
                 let loaded = await MemoryImageDecoding.downsample(
-                    data,
+                    photo.data,
                     maxPixelSize: Int((size * displayScale).rounded(.up))
                 )
                 guard !Task.isCancelled else { return }

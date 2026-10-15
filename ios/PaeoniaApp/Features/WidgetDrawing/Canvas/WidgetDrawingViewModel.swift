@@ -38,7 +38,13 @@ final class WidgetDrawingViewModel {
     let colorChoices = WidgetDrawingColorChoice.palette
 
     /// The drawing on the canvas. The canvas binding writes every stroke here.
-    var drawing = PKDrawing()
+    var drawing = PKDrawing() {
+        didSet { drawingSignature = drawing.paeoniaContentSignature }
+    }
+    /// `drawing.paeoniaContentSignature`, kept up to date when `drawing` is set.
+    /// The signature reads every stroke, and the screen asks for it many times
+    /// per update.
+    @ObservationIgnored private(set) var drawingSignature = PKDrawing().paeoniaContentSignature
     /// Bumped whenever the view model replaces the drawing itself (load, a
     /// partner's drawing, clear, resize). The canvas view pushes the drawing
     /// into PencilKit only when this changes, instead of comparing serialized
@@ -108,6 +114,7 @@ final class WidgetDrawingViewModel {
     @ObservationIgnored var hasLoadedSavedDrawing = false
     @ObservationIgnored private var sentConfirmationTask: Task<Void, Never>?
     @ObservationIgnored var draftPersistenceTask: Task<Void, Never>?
+    @ObservationIgnored let draftOrder = DraftWriteOrder()
     @ObservationIgnored private var sendGeneration = 0
     /// The drawing on the widgets, kept in the canvas's coordinates so its
     /// signature can be recomputed after a resize.
@@ -165,7 +172,7 @@ final class WidgetDrawingViewModel {
     /// True when the canvas differs from the drawing on the widgets. Returns
     /// false again once edits are undone back to that drawing.
     var hasUnsavedEdits: Bool {
-        drawing.paeoniaContentSignature != lastSavedDrawingSignature
+        drawingSignature != lastSavedDrawingSignature
     }
 
     var canSave: Bool {
@@ -370,7 +377,7 @@ extension WidgetDrawingViewModel {
         savedDrawingAuthorName = authorName?.trimmedNonEmpty
         savedDrawingCreatedAt = savedAt
         partnerSentWhileEditing = false
-        if drawing.paeoniaContentSignature == sentSignature {
+        if drawingSignature == sentSignature {
             clearDraft()
         } else {
             persistDraftIfNeeded()

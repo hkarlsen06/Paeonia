@@ -82,13 +82,28 @@ struct DrawAndGuessReplayCanvas: View {
 
     /// A thin line along the bottom edge that shows how much of the drawing has played.
     private var progressLine: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: viewModel.phase == .reveal)) { _ in
-            let progress = viewModel.replayProgress(atWall: CACurrentMediaTime())
-            Rectangle()
-                .fill(.paeoniaAccentPrimary.opacity(0.6))
-                .frame(width: side * progress, height: 2)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .opacity(progress >= 1 ? 0 : 1)
-        }
+        DrawAndGuessReplayProgressLine(viewModel: viewModel, side: side)
+    }
+}
+
+/// Follows the replay about 30 times a second until it ends, then stops.
+private struct DrawAndGuessReplayProgressLine: View {
+    let viewModel: DrawAndGuessViewModel
+    let side: CGFloat
+    @State private var progress = 0.0
+
+    var body: some View {
+        Rectangle()
+            .fill(.paeoniaAccentPrimary.opacity(0.6))
+            .frame(width: side * progress, height: 2)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            .opacity(progress >= 1 ? 0 : 1)
+            .task(id: viewModel.phase) {
+                while !Task.isCancelled {
+                    progress = viewModel.replayProgress(atWall: CACurrentMediaTime())
+                    guard progress < 1, viewModel.phase != .reveal else { return }
+                    try? await Task.sleep(for: .milliseconds(33))
+                }
+            }
     }
 }

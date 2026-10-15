@@ -94,7 +94,7 @@ struct GamesQueueHardeningTests {
             SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
             GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
             GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
-        ])
+        ], retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0))
     }
 
     private func runDrain(transfer: any GameDrawingTransferring? = nil) async {

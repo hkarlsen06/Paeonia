@@ -86,7 +86,8 @@ final class MindMeldViewModel {
     @ObservationIgnored let dependencies: GamesDependencies
     @ObservationIgnored var gateway: any MindMeldGateway { dependencies.mindMeldGateway }
     @ObservationIgnored var cache: any MindMeldCaching { dependencies.mindMeldCache }
-    @ObservationIgnored let heartbeatInterval: Duration
+    /// The loops that run while the screen is open: heartbeat, data changes and the clock.
+    @ObservationIgnored let loops: GameScreenLoops
     @ObservationIgnored let tickInterval: Duration
     /// How long the partner's "typing" lasts without a new typing message.
     @ObservationIgnored let typingTimeout: Duration
@@ -127,9 +128,6 @@ final class MindMeldViewModel {
     @ObservationIgnored var sentTyping = false
     @ObservationIgnored var lastTypingSentAt: ContinuousClock.Instant?
 
-    @ObservationIgnored var observationTask: Task<Void, Never>?
-    @ObservationIgnored var heartbeatTask: Task<Void, Never>?
-    @ObservationIgnored var tickTask: Task<Void, Never>?
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var typingIdleTask: Task<Void, Never>?
     @ObservationIgnored var partnerTypingTask: Task<Void, Never>?
@@ -148,10 +146,15 @@ final class MindMeldViewModel {
     ) {
         self.dependencies = dependencies
         self.participants = participants
-        self.heartbeatInterval = heartbeatInterval
         self.tickInterval = tickInterval
         self.typingTimeout = typingTimeout
         self.sleep = sleep
+        loops = GameScreenLoops(
+            kind: .mindMeld,
+            gateway: dependencies.gateway,
+            heartbeatInterval: heartbeatInterval,
+            sleep: sleep
+        )
         (me, partner) = participants.mindMeldPlayers
         now = dependencies.now()
         if let coupleID = participants.coupleID, let room = dependencies.makeMindMeldLive(coupleID) {

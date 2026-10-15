@@ -22,6 +22,9 @@ struct DailyChallengeEditingTests {
         await first.configure(currentUserID: TestDailyChallengeIDs.currentUser)
         let question = try #require(first.snapshot.ownQuestions.first)
         first.setDraftText("Halfway through a thought", for: question.id)
+        // Typed text reaches the store after a short pause, or when the screen closes.
+        #expect(store.drafts(for: TestDailyChallengeIDs.currentUser).isEmpty)
+        first.flushDraftPersistence()
 
         // Reopen / relaunch: a fresh view model restores the saved drafts.
         let second = DailyChallengeViewModel(

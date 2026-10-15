@@ -80,7 +80,8 @@ struct LiveQueryServiceTests {
             sleep: { delay in
                 delays.mutate { $0.append(delay) }
                 try await Task.sleep(for: .milliseconds(1))
-            }
+            },
+            jitter: { 1 }
         )
     }
 
@@ -127,7 +128,7 @@ struct LiveQueryServiceTests {
     }
 
     @Test func mapsFunctionErrorsAndResubscribesWithBackoff() async {
-        let serverError = PaeoniaConvexError.server(code: "42501", message: "denied")
+        let serverError = PaeoniaConvexError.server(code: "53300", message: "too many requests")
         let transport = ScriptedTransport([
             .init(values: ["1"], ending: .fail(serverError)),
             .init(values: [], ending: .fail(serverError)),
@@ -270,5 +271,55 @@ struct LiveQueryServiceTests {
             ConvexLiveErrorMapping.map(.InternalError(msg: "socket closed")) as? LiveQueryError
                 == .transport("socket closed")
         )
+    }
+}
+
+extension LiveQueryServiceTests {
+    @Test func aRefusalForMissingAccessEndsTheStreamWithoutRetrying() async {
+        let refusal = PaeoniaConvexError.server(code: "42501", message: "active entitled couple access is required")
+        let transport = ScriptedTransport([
+            .init(values: ["1"], ending: .fail(refusal)),
+            .init(values: ["2"], ending: .stayOpen),
+        ])
+        let delays = LockedBox<[Duration]>([])
+        let stream = Self.makeService(transport, delays: delays).subscribe("a:b", as: Int.self)
+
+        var events: [String] = []
+        for await item in stream {
+            switch item {
+            case let .value(number):
+                events.append("value \(number)")
+            case let .failure(error):
+                events.append(error as? PaeoniaConvexError == refusal ? "refused" : "other error")
+            }
+        }
+
+        #expect(events == ["value 1", "refused"])
+        #expect(delays.value.isEmpty)
+        #expect(transport.openedPaths.value.count == 1)
+    }
+
+    @Test func theRetryDelayIsScaledByTheJitter() async {
+        let transport = ScriptedTransport([
+            .init(values: [], ending: .fail(LiveQueryError.transport("down"))),
+            .init(values: ["1"], ending: .stayOpen),
+        ])
+        let delays = LockedBox<[Duration]>([])
+        let service = LiveQueryService(
+            transport: transport,
+            backoff: LiveBackoff(base: .seconds(4), cap: .seconds(8)),
+            sleep: { delay in
+                delays.mutate { $0.append(delay) }
+                try await Task.sleep(for: .milliseconds(1))
+            },
+            jitter: { 0.5 }
+        )
+        var iterator = service.subscribe("a:b", as: Int.self).makeAsyncIterator()
+
+        while case let item? = await iterator.next() {
+            if case .value = item { break }
+        }
+
+        #expect(delays.value == [.seconds(2)])
     }
 }

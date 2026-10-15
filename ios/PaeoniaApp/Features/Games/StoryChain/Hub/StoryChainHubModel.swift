@@ -113,10 +113,13 @@ final class StoryChainHubModel: GameHubModel {
         await game.stars.reload()
         // A queue that could not be read keeps the card as it is.
         guard let work else { return }
-        summary = document.state.map { state in
+        let newSummary = document.state.map { state in
             let resolution = StoryChainResolver(userID: userID)
                 .resolve(state: state, settings: overview?.settings, pending: work)
             return StoryChainHubSummary(state: state, resolution: resolution)
+        }
+        if summary != newSummary {
+            summary = newSummary
         }
     }
 

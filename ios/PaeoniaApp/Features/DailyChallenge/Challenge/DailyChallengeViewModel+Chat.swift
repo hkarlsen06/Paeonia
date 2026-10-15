@@ -105,14 +105,6 @@ extension DailyChallengeViewModel {
         snapshot.questions.first(where: { $0.id == question.id }) ?? question
     }
 
-    func refreshThreadSummaries() async {
-        guard let currentUserID else { return }
-        applyThreadSummaries(await chatService.cachedThreadSummaries(ownerUserID: currentUserID))
-        if let summaries = try? await chatService.refreshThreadSummaries(ownerUserID: currentUserID) {
-            applyThreadSummaries(summaries)
-        }
-    }
-
     /// The question's newest day the user can open a chat from, to open the question's
     /// chat when only the question is known: from a message, a notification, or the Home
     /// card. Today's questions come first, then the question history.

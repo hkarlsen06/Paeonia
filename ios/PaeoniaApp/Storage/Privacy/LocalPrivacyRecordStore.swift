@@ -185,9 +185,3 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
         }
     }
 }
-
-actor NoOpLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
-    func purgeDepartingUser(ownerUserID: UUID) {}
-    func hideRelationshipAccess(ownerUserID: UUID) {}
-    func purgeRelationshipContent(ownerUserID: UUID, clearAccessSnapshot: Bool) {}
-}

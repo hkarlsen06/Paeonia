@@ -317,3 +317,35 @@ struct GamesViewModelTests {
         #expect(await env.cache.document(ownerUserID: GameFixture.me).state == nil)
     }
 }
+
+@MainActor
+extension GamesViewModelTests {
+    @Test func aGamesStoreChangeReloadsTheHubEvenInABurst() async {
+        let env = GamesTestEnvironment(state: nil)
+        func overview(_ settings: RemoteGameSettings?) -> RemoteGamesOverview {
+            RemoteGamesOverview(
+                userID: GameFixture.me,
+                partnerUserID: GameFixture.partner,
+                coupleID: DeveloperScenarioFixture.coupleID,
+                settings: settings,
+                presence: []
+            )
+        }
+        await env.cache.saveOverview(overview(nil), ownerUserID: GameFixture.me)
+        let viewModel = viewModel(env)
+        await viewModel.load()
+        #expect(viewModel.settings == nil)
+        let observing = Task { await viewModel.observeStoreChanges() }
+        defer { observing.cancel() }
+
+        await env.cache.saveOverview(overview(GameFixture.settings()), ownerUserID: GameFixture.me)
+        // The observer subscribes in a task, so a write posted before it listens is lost.
+        // Posting again each poll also makes a burst.
+        #expect(await waitUntil {
+            for _ in 0..<5 {
+                LocalStoreChanges.post(.games, ownerUserID: GameFixture.me)
+            }
+            return await viewModel.settings == GameFixture.settings()
+        })
+    }
+}

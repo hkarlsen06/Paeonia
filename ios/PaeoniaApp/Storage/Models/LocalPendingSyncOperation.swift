@@ -11,7 +11,7 @@ final class LocalPendingSyncOperation {
     var operationKindRawValue: String
     var idempotencyScope: String
     var requestHash: Data?
-    var requestData: Data?
+    @Attribute(.externalStorage) var requestData: Data?
     var statusRawValue: String
     var attemptCount: Int
     var lastAttemptAt: Date?

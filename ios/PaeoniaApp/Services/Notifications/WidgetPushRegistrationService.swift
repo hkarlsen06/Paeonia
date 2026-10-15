@@ -132,9 +132,3 @@ private nonisolated struct RegisterWidgetPushDeviceRequest: Encodable, Sendable 
         case appVersion = "p_app_version"
     }
 }
-
-private extension Data {
-    nonisolated var paeoniaHexString: String {
-        map { String(format: "%02x", $0) }.joined()
-    }
-}

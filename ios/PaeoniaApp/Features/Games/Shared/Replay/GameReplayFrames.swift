@@ -3,7 +3,14 @@ import UIKit
 
 /// What a replay surface draws on each screen frame.
 struct GameReplayFrames {
-    /// The drawing at a wall time, scaled to `side`. Nil while there is nothing to play.
-    let drawing: @MainActor (_ wall: TimeInterval, _ side: CGFloat) -> PKDrawing?
+    /// Where a replay is at a wall time: the timeline in canonical size, and the
+    /// replay time in it.
+    struct Playback {
+        let timeline: GameReplayTimeline
+        let time: TimeInterval
+    }
+
+    /// Nil while there is nothing to play.
+    let playback: @MainActor (_ wall: TimeInterval) -> Playback?
     let isFinished: @MainActor (_ wall: TimeInterval) -> Bool
 }

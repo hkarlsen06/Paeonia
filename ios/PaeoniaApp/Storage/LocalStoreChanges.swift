@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// A part of the local store that view models can watch.
 nonisolated enum LocalStoreDomain: String, CaseIterable, Sendable {
@@ -40,32 +41,126 @@ nonisolated enum LocalStoreChanges {
         NotificationCenter.default.post(name: notificationName, object: nil, userInfo: info)
     }
 
-    /// Yields one element per write to any of `domains`, in write order. The
-    /// stream ends when the consuming task is cancelled.
+    /// Yields the writes to any of `domains`, oldest first. The stream ends when
+    /// the consuming task is cancelled.
+    ///
+    /// A consumer that is busy re-reading gets one element for a burst of
+    /// identical writes, not one per write. Writes to different domains or for
+    /// different users are never merged, so a consumer that switches on
+    /// `change.domain` still sees each domain it watches.
     static func changes(in domains: LocalStoreDomain...) -> AsyncStream<LocalStoreChange> {
         changes(in: Set(domains))
     }
 
     static func changes(in domains: Set<LocalStoreDomain>) -> AsyncStream<LocalStoreChange> {
-        AsyncStream(bufferingPolicy: .unbounded) { continuation in
-            let observer = NotificationCenter.default.addObserver(
-                forName: notificationName,
-                object: nil,
-                queue: nil
-            ) { notification in
-                guard let rawDomain = notification.userInfo?[domainKey] as? String,
-                      let domain = LocalStoreDomain(rawValue: rawDomain),
-                      domains.contains(domain)
-                else {
-                    return
-                }
-                let owner = (notification.userInfo?[ownerKey] as? String).flatMap(UUID.init(uuidString:))
-                continuation.yield(LocalStoreChange(domain: domain, ownerUserID: owner))
+        let mailbox = ChangeMailbox()
+        let observer = NotificationCenter.default.addObserver(
+            forName: notificationName,
+            object: nil,
+            queue: nil
+        ) { notification in
+            guard let rawDomain = notification.userInfo?[domainKey] as? String,
+                  let domain = LocalStoreDomain(rawValue: rawDomain),
+                  domains.contains(domain)
+            else {
+                return
             }
-            nonisolated(unsafe) let token = observer
-            continuation.onTermination = { _ in
-                NotificationCenter.default.removeObserver(token)
-            }
+            let owner = (notification.userInfo?[ownerKey] as? String).flatMap(UUID.init(uuidString:))
+            mailbox.push(LocalStoreChange(domain: domain, ownerUserID: owner))
         }
+        // Removes the observer when the stream is released, also if nobody iterated it.
+        let subscription = ObserverSubscription(observer)
+        return AsyncStream(
+            unfolding: {
+                _ = subscription
+                return await mailbox.next()
+            },
+            onCancel: { mailbox.finish() }
+        )
+    }
+}
+
+private nonisolated final class ObserverSubscription: Sendable {
+    // The token is only passed to `removeObserver`, which is thread safe.
+    nonisolated(unsafe) private let token: any NSObjectProtocol
+
+    init(_ token: any NSObjectProtocol) {
+        self.token = token
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(token)
+    }
+}
+
+/// Holds the writes a consumer has not read yet, without repeats.
+private nonisolated final class ChangeMailbox: Sendable {
+    private struct State {
+        var pending: [LocalStoreChange] = []
+        var waiter: CheckedContinuation<LocalStoreChange?, Never>?
+        var isFinished = false
+    }
+
+    private enum Pickup {
+        case change(LocalStoreChange)
+        case finished
+        case wait
+    }
+
+    private let state = Mutex(State())
+
+    func push(_ change: LocalStoreChange) {
+        let waiter = state.withLock { state -> CheckedContinuation<LocalStoreChange?, Never>? in
+            guard !state.isFinished else {
+                return nil
+            }
+            if let waiter = state.waiter {
+                state.waiter = nil
+                return waiter
+            }
+            if !state.pending.contains(change) {
+                state.pending.append(change)
+            }
+            return nil
+        }
+        waiter?.resume(returning: change)
+    }
+
+    func next() async -> LocalStoreChange? {
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { (continuation: CheckedContinuation<LocalStoreChange?, Never>) in
+                let pickup = state.withLock { state -> Pickup in
+                    if state.isFinished {
+                        return .finished
+                    }
+                    if !state.pending.isEmpty {
+                        return .change(state.pending.removeFirst())
+                    }
+                    state.waiter = continuation
+                    return .wait
+                }
+                switch pickup {
+                case let .change(change):
+                    continuation.resume(returning: change)
+                case .finished:
+                    continuation.resume(returning: nil)
+                case .wait:
+                    break
+                }
+            }
+        } onCancel: {
+            finish()
+        }
+    }
+
+    func finish() {
+        let waiter = state.withLock { state -> CheckedContinuation<LocalStoreChange?, Never>? in
+            state.isFinished = true
+            state.pending.removeAll()
+            let waiter = state.waiter
+            state.waiter = nil
+            return waiter
+        }
+        waiter?.resume(returning: nil)
     }
 }

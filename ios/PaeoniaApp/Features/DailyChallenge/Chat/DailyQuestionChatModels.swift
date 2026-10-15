@@ -33,6 +33,23 @@ nonisolated struct DailyQuestionThreadSummary: Codable, Equatable, Sendable {
     }
 }
 
+/// One read of a thread's messages, oldest first. The newest page follows the chat live,
+/// and older pages load when the person scrolls up.
+nonisolated struct DailyQuestionChatMessagePage: Equatable, Sendable {
+    /// The messages the chat shows. The server also sends removed ones, which are left out.
+    var messages: [DailyQuestionChatMessage]
+    /// Older messages exist on the server.
+    var hasMore: Bool
+    /// When the oldest message in the read was written, removed ones included.
+    var oldestAt: Date?
+}
+
+/// The oldest message the phone has. The next page of older messages comes before it.
+nonisolated struct DailyQuestionChatMessageCursor: Equatable, Sendable {
+    let createdAt: Date
+    let messageID: UUID
+}
+
 nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
     let threadID: UUID?
@@ -55,6 +72,9 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
     var replyToMessageID: UUID?
     /// When the sender last changed the text.
     var editedAt: Date?
+
+    /// How many messages one read of a thread asks for.
+    static let pageSize = 50
 
     /// How long after sending the sender can change a message. The server checks it too.
     static let editWindow: TimeInterval = 5 * 60
@@ -105,6 +125,24 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
         return snapshot + cached.filter {
             !$0.isSending && !$0.sendFailed && !snapshotIDs.contains($0.id) && $0.createdAt > newest
         }
+    }
+
+    /// A page of the thread replaces only the newest part of the cached chat. When older
+    /// messages exist on the server, the confirmed cached ones from before the page's
+    /// oldest message stay, because earlier loads of older pages put them there.
+    /// They stay only when the page overlaps the cache. A page with no message in common
+    /// means more than a page arrived since the cache was saved, and keeping the older
+    /// messages would leave a hole that loading older messages never fills.
+    static func keepingOlderCached(
+        _ page: DailyQuestionChatMessagePage,
+        remote: [DailyQuestionChatMessage],
+        cached: [DailyQuestionChatMessage]
+    ) -> [DailyQuestionChatMessage] {
+        guard page.hasMore, let oldestAt = page.oldestAt else { return remote }
+        let confirmed = cached.filter { !$0.isSending && !$0.sendFailed }
+        let pageIDs = Set(page.messages.map(\.id))
+        guard confirmed.contains(where: { pageIDs.contains($0.id) }) else { return remote }
+        return remote + confirmed.filter { $0.createdAt < oldestAt }
     }
 
     /// Links live server copies of this device's still-sending messages to their

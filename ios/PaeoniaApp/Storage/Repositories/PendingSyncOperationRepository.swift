@@ -1,64 +1,6 @@
 import Foundation
 import SwiftData
 
-nonisolated struct PendingSyncOperationRequest: Equatable, Sendable {
-    let ownerUserID: UUID
-    let operation: SyncClientOperation
-    let operationKind: SyncPendingOperationKind
-    let idempotencyScope: String
-    let requestHash: Data?
-    let requestData: Data?
-
-    init(
-        ownerUserID: UUID,
-        operation: SyncClientOperation,
-        operationKind: SyncPendingOperationKind,
-        idempotencyScope: String,
-        requestHash: Data? = nil,
-        requestData: Data? = nil
-    ) {
-        self.ownerUserID = ownerUserID
-        self.operation = operation
-        self.operationKind = operationKind
-        self.idempotencyScope = idempotencyScope
-        self.requestHash = requestHash
-        self.requestData = requestData
-    }
-}
-
-/// `markSending` throws this when the operation was cancelled or finished after
-/// the drain read its batch.
-nonisolated enum PendingSyncOperationClaimError: Error, Equatable, Sendable {
-    case notPending
-}
-
-nonisolated struct PendingSyncOperationSnapshot: Equatable, Sendable {
-    let ownerUserID: UUID
-    let operation: SyncClientOperation
-    let operationKind: SyncPendingOperationKind?
-    let idempotencyScope: String
-    let requestHash: Data?
-    let requestData: Data?
-    let status: SyncPendingOperationStatus
-    let attemptCount: Int
-    let lastAttemptAt: Date?
-    let nextRetryAt: Date?
-    let lastError: String?
-    let completedAt: Date?
-}
-
-extension PendingSyncOperationSnapshot {
-    /// A try has ended without success. `lastError` covers the time after it,
-    /// and the attempt count covers the next try, which clears `lastError`.
-    ///
-    /// Every write waits in the queue for a moment, also online. Show "Saved on
-    /// this phone. We'll send it when you're online." only when this is true, so
-    /// a normal send never flashes that line.
-    nonisolated var hasFailedAttempt: Bool {
-        lastError != nil || attemptCount > 1
-    }
-}
-
 protocol PendingSyncOperationPersisting: Actor {
     func enqueue(_ request: PendingSyncOperationRequest) async throws
 
@@ -91,6 +33,11 @@ protocol PendingSyncOperationPersisting: Actor {
     ) async throws
     func deleteCompleted(ownerUserID: UUID) async throws
     func resetInFlight(ownerUserID: UUID) async throws
+}
+
+nonisolated enum PendingSyncOperationRetention {
+    /// How long a write that gave up stays on the phone before it is deleted.
+    static let terminal: TimeInterval = 7 * 24 * 60 * 60
 }
 
 actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
@@ -127,9 +74,15 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         now: Date
     ) throws -> [PendingSyncOperationSnapshot] {
         let context = ModelContext(container)
+        let queued = SyncPendingOperationStatus.queued.rawValue
+        let retrying = SyncPendingOperationStatus.retrying.rawValue
+        let failedRetryable = SyncPendingOperationStatus.failedRetryable.rawValue
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
                 operation.ownerUserID == ownerUserID
+                    && (operation.statusRawValue == queued
+                        || operation.statusRawValue == retrying
+                        || operation.statusRawValue == failedRetryable)
             },
             sortBy: [
                 SortDescriptor(\.localCreatedAt),
@@ -137,16 +90,10 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             ]
         )
 
+        // Only the retry date is left to check here, on the few rows that failed.
         let operations = try context.fetch(descriptor)
             .filter { operation in
-                switch operation.status {
-                case .queued, .retrying:
-                    return true
-                case .failedRetryable:
-                    return operation.nextRetryAt.map { $0 <= now } ?? true
-                case .sending, .failedTerminal, .succeeded:
-                    return false
-                }
+                operation.status != .failedRetryable || operation.nextRetryAt.map { $0 <= now } ?? true
             }
             .prefix(limit)
 
@@ -155,22 +102,18 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
 
     func nextPendingOperationDate(ownerUserID: UUID, now: Date) throws -> Date? {
         let context = ModelContext(container)
+        let retrying = SyncPendingOperationStatus.retrying.rawValue
+        let failedRetryable = SyncPendingOperationStatus.failedRetryable.rawValue
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
                 operation.ownerUserID == ownerUserID
+                    && (operation.statusRawValue == retrying || operation.statusRawValue == failedRetryable)
             }
         )
 
         return try context.fetch(descriptor)
-            .compactMap { operation -> Date? in
-                switch operation.status {
-                case .retrying:
-                    return now
-                case .failedRetryable:
-                    return operation.nextRetryAt ?? now
-                case .queued, .sending, .failedTerminal, .succeeded:
-                    return nil
-                }
+            .map { operation in
+                operation.status == .retrying ? now : operation.nextRetryAt ?? now
             }
             .min()
     }
@@ -181,9 +124,18 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
     ) throws -> [PendingSyncOperationSnapshot] {
         let context = ModelContext(container)
         let kindRawValue = kind.rawValue
+        let queued = SyncPendingOperationStatus.queued.rawValue
+        let sending = SyncPendingOperationStatus.sending.rawValue
+        let retrying = SyncPendingOperationStatus.retrying.rawValue
+        let failedRetryable = SyncPendingOperationStatus.failedRetryable.rawValue
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
-                operation.ownerUserID == ownerUserID && operation.operationKindRawValue == kindRawValue
+                operation.ownerUserID == ownerUserID
+                    && operation.operationKindRawValue == kindRawValue
+                    && (operation.statusRawValue == queued
+                        || operation.statusRawValue == sending
+                        || operation.statusRawValue == retrying
+                        || operation.statusRawValue == failedRetryable)
             },
             sortBy: [
                 SortDescriptor(\.localCreatedAt),
@@ -191,16 +143,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             ]
         )
 
-        return try context.fetch(descriptor)
-            .filter { operation in
-                switch operation.status {
-                case .queued, .sending, .retrying, .failedRetryable:
-                    return true
-                case .failedTerminal, .succeeded:
-                    return false
-                }
-            }
-            .map(Self.snapshot(from:))
+        return try context.fetch(descriptor).map(Self.snapshot(from:))
     }
 
     func markSending(clientOperationID: UUID, at date: Date) throws {
@@ -214,8 +157,8 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             throw PendingSyncOperationClaimError.notPending
         }
         operation.markSending(at: date)
+        // No post. A write that starts sending is still waiting, so no screen changes.
         try context.save()
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
     }
 
     func markSucceeded(clientOperationID: UUID, at date: Date) throws {
@@ -249,38 +192,50 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         }
     }
 
+    /// Deletes the writes the server accepted, and the ones that gave up more than
+    /// `terminalRetention` ago. No screen reads either kind, and neither changes
+    /// what a screen shows, so this posts nothing.
     func deleteCompleted(ownerUserID: UUID) throws {
         let context = ModelContext(container)
+        let succeeded = SyncPendingOperationStatus.succeeded.rawValue
+        let failedTerminal = SyncPendingOperationStatus.failedTerminal.rawValue
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
                 operation.ownerUserID == ownerUserID
+                    && (operation.statusRawValue == succeeded || operation.statusRawValue == failedTerminal)
             }
         )
 
-        let completed = try context.fetch(descriptor).filter { $0.status == .succeeded }
-        guard !completed.isEmpty else {
+        let cutoff = Date().addingTimeInterval(-PendingSyncOperationRetention.terminal)
+        let deletable = try context.fetch(descriptor).filter { operation in
+            operation.status == .succeeded || (operation.lastAttemptAt ?? .distantPast) < cutoff
+        }
+        guard !deletable.isEmpty else {
             return
         }
-        completed.forEach(context.delete)
-
+        deletable.forEach(context.delete)
         try context.save()
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
+    /// A write that was sending when the app stopped goes back to waiting. Its
+    /// state is still "not sent yet" for every screen, so this posts nothing.
     func resetInFlight(ownerUserID: UUID) throws {
         let context = ModelContext(container)
+        let sending = SyncPendingOperationStatus.sending.rawValue
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
-                operation.ownerUserID == ownerUserID
+                operation.ownerUserID == ownerUserID && operation.statusRawValue == sending
             }
         )
 
-        for operation in try context.fetch(descriptor) where operation.status == .sending {
+        let interrupted = try context.fetch(descriptor)
+        guard !interrupted.isEmpty else {
+            return
+        }
+        for operation in interrupted {
             operation.status = .retrying
         }
-
         try context.save()
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
     private func update(

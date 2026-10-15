@@ -42,6 +42,22 @@ struct LocationUpdatePlanTests {
     @Test func closedAppKeepsWatchingBeforeSharingLoads() {
         #expect(plan(isAppActive: false, sharingEnabled: nil).watchesWhileClosed)
     }
+
+    @Test func sessionGoalFollowsTheFeedThatNeedsIt() {
+        #expect(plan().sessionGoal == .always)
+        #expect(plan(prefersUpdatesWhileClosed: false).sessionGoal == .whenInUse)
+        // A relaunch in the background retakes the Always session at once.
+        #expect(plan(isAppActive: false, sharingEnabled: nil).sessionGoal == .always)
+        // The Always goal is held before the person grants Always access.
+        #expect(plan(authorization: .authorizedWhenInUse).sessionGoal == .always)
+    }
+
+    @Test func noSessionWhenNothingNeedsLocation() {
+        #expect(plan(isAppActive: false, prefersUpdatesWhileClosed: false).sessionGoal == nil)
+        #expect(plan(sharingEnabled: false, prefersUpdatesWhileClosed: false).sessionGoal == nil)
+        #expect(plan(sharingEnabled: false).sessionGoal == nil)
+        #expect(plan(hasIdentity: false).sessionGoal == nil)
+    }
 }
 
 @MainActor

@@ -9,6 +9,9 @@ protocol DailyQuestionChatServicing: Actor {
         questionID: UUID,
         threadID: UUID
     ) async throws -> [DailyQuestionChatMessage]
+    /// Loads the page of messages before the oldest one this phone has, and keeps it.
+    /// Returns whether older messages remain.
+    func loadOlderMessages(ownerUserID: UUID, questionID: UUID, threadID: UUID) async throws -> Bool
     /// The question's rounds as last saved on this phone, nil before the first read.
     func cachedRounds(ownerUserID: UUID, questionID: UUID) async -> DailyQuestionChatRoundsRow?
     /// Reads the question's rounds from the server and keeps them on this phone.
@@ -87,6 +90,7 @@ nonisolated struct DailyChatPresence: Equatable, Sendable {
 }
 
 extension DailyQuestionChatServicing {
+    func loadOlderMessages(ownerUserID _: UUID, questionID _: UUID, threadID _: UUID) -> Bool { false }
     func cachedRounds(ownerUserID _: UUID, questionID _: UUID) -> DailyQuestionChatRoundsRow? { nil }
     func refreshRounds(
         ownerUserID _: UUID,
@@ -179,18 +183,48 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
         threadID: UUID
     ) async throws -> [DailyQuestionChatMessage] {
         let generation = await cache.purgeGeneration()
-        let messages = try await gateway.loadMessages(threadID: threadID, questionID: questionID)
+        let page = try await gateway.loadMessages(threadID: threadID, questionID: questionID, before: nil)
         let cached = await cache.messages(ownerUserID: ownerUserID, questionID: questionID)
         let pending = await loadPendingMessages(ownerUserID: ownerUserID, coupleID: nil, questionID: questionID)
         // Live results can land while the request is in flight. The cache merge keeps
         // the ones this read is too old to contain.
         await cache.mergeMessages(
-            DailyQuestionChatMessage.claimingPending(remote: messages, cached: cached, pending: pending),
+            DailyQuestionChatMessage.keepingOlderCached(
+                page,
+                remote: DailyQuestionChatMessage.claimingPending(
+                    remote: page.messages,
+                    cached: cached,
+                    pending: pending
+                ),
+                cached: cached
+            ),
             ownerUserID: ownerUserID,
             questionID: questionID,
             unlessPurgedSince: generation
         )
         return await cache.messages(ownerUserID: ownerUserID, questionID: questionID)
+    }
+
+    func loadOlderMessages(ownerUserID: UUID, questionID: UUID, threadID: UUID) async throws -> Bool {
+        let generation = await cache.purgeGeneration()
+        let cached = await cache.messages(ownerUserID: ownerUserID, questionID: questionID)
+        guard let oldest = cached
+            .filter({ !$0.isSending && !$0.sendFailed })
+            .min(by: { ($0.createdAt, $0.id.uuidString) < ($1.createdAt, $1.id.uuidString) })
+        else { return false }
+        let page = try await gateway.loadMessages(
+            threadID: threadID,
+            questionID: questionID,
+            before: DailyQuestionChatMessageCursor(createdAt: oldest.createdAt, messageID: oldest.id)
+        )
+        await cache.mergeOlderMessages(
+            page.messages,
+            ownerUserID: ownerUserID,
+            questionID: questionID,
+            unlessPurgedSince: generation
+        )
+        // A page of only removed messages would repeat the same request, so it ends the list.
+        return page.hasMore && !page.messages.isEmpty
     }
 
     func cachedRounds(ownerUserID: UUID, questionID: UUID) async -> DailyQuestionChatRoundsRow? {
@@ -242,10 +276,10 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
                 // Read before the first result, so a purge that starts while this
                 // writer is suspended makes every later save a no-op.
                 let generation = await cache.purgeGeneration()
-                for await remote in results {
+                for await page in results {
                     guard !Task.isCancelled else { break }
                     guard await saveLiveMessages(
-                        remote,
+                        page,
                         ownerUserID: ownerUserID,
                         questionID: questionID,
                         purgeGeneration: generation
@@ -259,7 +293,7 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
     }
 
     private func saveLiveMessages(
-        _ remote: [DailyQuestionChatMessage],
+        _ page: DailyQuestionChatMessagePage,
         ownerUserID: UUID,
         questionID: UUID,
         purgeGeneration: Int
@@ -271,7 +305,15 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
         // purge ran since the subscription started.
         guard !Task.isCancelled else { return false }
         return await cache.saveMessages(
-            DailyQuestionChatMessage.claimingPending(remote: remote, cached: cached, pending: pending),
+            DailyQuestionChatMessage.keepingOlderCached(
+                page,
+                remote: DailyQuestionChatMessage.claimingPending(
+                    remote: page.messages,
+                    cached: cached,
+                    pending: pending
+                ),
+                cached: cached
+            ),
             ownerUserID: ownerUserID,
             questionID: questionID,
             unlessPurgedSince: purgeGeneration

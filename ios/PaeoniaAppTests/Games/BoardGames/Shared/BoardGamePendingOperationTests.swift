@@ -65,26 +65,44 @@ struct BoardGamePendingOperationTests {
 
     // MARK: A move the server takes
 
-    @Test func aMoveIsReadBackBeforeItLeavesTheQueue() async throws {
-        // The read-back carries a game the answer to the move does not.
-        let dotsAndBoxes = Fixture.game(kind: .dotsAndBoxes, id: Fixture.otherGameID)
-        gateway.setStateToLoad(Fixture.state(Fixture.game(moves: [3]), dotsAndBoxes))
+    @Test func theAnswerToAMoveIsKeptAndNeedsNoReadBack() async throws {
+        let result = try await sendMove()
+
+        #expect(result == .succeeded)
+        #expect(gateway.calls == ["makeMove"])
+        #expect(gateway.moves == [Fixture.move(3, on: game)])
+        #expect(await cache.document(ownerUserID: me).state?.game(.connectFour)?.moves == [3])
+        #expect(await notices().isEmpty)
+    }
+
+    @Test func aMoveTheServerTookIsNotRetriedBecauseTheGamesCouldNotBeRead() async throws {
+        gateway.fail("loadBoardGames")
 
         let result = try await sendMove()
 
         #expect(result == .succeeded)
-        #expect(gateway.calls == ["makeMove", "loadBoardGames"])
-        #expect(gateway.moves == [Fixture.move(3, on: game)])
-        let state = await cache.document(ownerUserID: me).state
-        #expect(state?.game(.connectFour)?.moves == [3])
-        #expect(state?.game(.dotsAndBoxes) == dotsAndBoxes)
+        #expect(await cache.document(ownerUserID: me).state?.game(.connectFour)?.moves == [3])
         #expect(await notices().isEmpty)
     }
 
-    @Test func aFailedReadBackKeepsTheMoveInTheQueueAndTheAnswerOnTheBoard() async throws {
-        gateway.fail("loadBoardGames")
+    @Test func aMoveWithNoCachedGamesIsReadBackBeforeItLeavesTheQueue() async throws {
+        let emptyCache = InMemoryBoardGamesCache()
+        let handler = BoardGameMovePendingOperationHandler(gateway: gateway, cache: emptyCache)
+        let queued = try snapshot(.boardGameMove, Fixture.move(3, on: game), operation: Fixture.operation(sequence: 1))
 
-        let result = try await sendMove()
+        let result = try await handler.send(queued, context: syncContext(pending))
+
+        #expect(result == .succeeded)
+        #expect(gateway.calls == ["makeMove", "loadBoardGames"])
+        #expect(await emptyCache.document(ownerUserID: me).state?.game(.connectFour)?.moves == [3])
+    }
+
+    @Test func aFailedReadBackKeepsAMoveWithNoCachedGamesInTheQueue() async throws {
+        gateway.fail("loadBoardGames")
+        let handler = BoardGameMovePendingOperationHandler(gateway: gateway, cache: InMemoryBoardGamesCache())
+        let queued = try snapshot(.boardGameMove, Fixture.move(3, on: game), operation: Fixture.operation(sequence: 1))
+
+        let result = try await handler.send(queued, context: syncContext(pending))
 
         guard case let .retry(after: date?) = result else {
             Issue.record("Expected a retry with a date, got \(result)")
@@ -92,8 +110,6 @@ struct BoardGamePendingOperationTests {
         }
         // 2 seconds after the first try, not the usual minute.
         #expect((1.0...3.0).contains(date.timeIntervalSinceNow))
-        #expect(await cache.document(ownerUserID: me).state?.game(.connectFour)?.moves == [3])
-        #expect(await notices().isEmpty)
     }
 
     @Test func theReplayOfAMoveTheServerAlreadyHasCountsAsSent() async throws {
@@ -242,14 +258,15 @@ struct BoardGamePendingOperationTests {
 
     // MARK: Play again
 
-    @Test func aRematchIsReadBackBeforeItLeavesTheQueue() async throws {
+    @Test func theAnswerToARematchIsKeptAndNeedsNoReadBack() async throws {
         let next = Fixture.game(gameNumber: 2, first: Fixture.partner, version: 2)
         gateway.setStateToLoad(Fixture.state(next))
+        gateway.fail("loadBoardGames")
 
         let result = try await sendRematch()
 
         #expect(result == .succeeded)
-        #expect(gateway.calls == ["startRematch", "loadBoardGames"])
+        #expect(gateway.calls == ["startRematch"])
         #expect(gateway.rematches == [Fixture.rematch(of: game)])
         #expect(await cache.document(ownerUserID: me).state?.game(.connectFour)?.gameNumber == 2)
     }

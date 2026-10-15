@@ -23,10 +23,11 @@ extension RootView {
     }
 
     /// One pass per activation. Our location refresh runs next to the
-    /// foreground sync, so new content never waits on a GPS fix, and the
-    /// partner's widget drawing is pulled. The map
-    /// follows store changes itself. Quickly leaving and returning to the app
-    /// while a pass runs does not start a second one.
+    /// foreground sync, so new content never waits on a GPS fix. The map
+    /// follows store changes itself, and `WidgetCanvasLiveFeed` pulls the
+    /// partner's widget drawing, so the widget pass only sends a drawing that
+    /// is still waiting. Quickly leaving and returning to the app while a pass
+    /// runs does not start a second one.
     func runForegroundActivation() {
         // Re-arm APNs so a rotated token reaches registration; the fingerprint
         // gate drops the request when nothing changed.
@@ -42,7 +43,10 @@ extension RootView {
                 source: .foregroundOpen,
                 mayPromptForAuthorization: false
             )
-            async let widgetSync: Void = performWidgetSyncIfPaired(viewModel.state)
+            async let widgetSync: Void = performWidgetSyncIfPaired(
+                viewModel.state,
+                syncsCanvas: WidgetPendingUploadStore.shared.hasPending
+            )
             await viewModel.refreshAfterForegroundActivation()
             _ = await (locationRefresh, widgetSync)
         }
@@ -93,7 +97,9 @@ extension RootView {
     /// up until the partner's drawing and avatar are staged. A privacy purge can
     /// start while the state is still `.paired`. Nothing about the partner is
     /// written while one runs, or after one started during the sync.
-    func performWidgetSyncIfPaired(_ state: AppState) async {
+    /// `syncsCanvas` false only saves the names and stages the avatar. The canvas
+    /// service reloads the widget itself when it saves a new drawing.
+    func performWidgetSyncIfPaired(_ state: AppState, syncsCanvas: Bool = true) async {
         guard allowsSystemIntegrations, state == .paired, viewModel.inFlightAccessPrivacyPurge == nil else {
             return
         }
@@ -106,8 +112,9 @@ extension RootView {
         // Persist so a silent-push-triggered background sync can label the
         // drawing with the right nickname even when no view is alive.
         WidgetSyncIdentityStore.shared.save(identity)
-        await widgetCanvasSync.sync(identity: identity)
-        await WidgetCenterReloader().reloadWidget()
+        if syncsCanvas {
+            await widgetCanvasSync.sync(identity: identity)
+        }
         guard viewModel.state == .paired, viewModel.inFlightAccessPrivacyPurge == nil else {
             return
         }

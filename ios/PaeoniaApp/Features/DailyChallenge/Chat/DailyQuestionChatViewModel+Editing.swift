@@ -3,6 +3,17 @@ import Foundation
 // MARK: - Editing
 
 extension DailyQuestionChatViewModel {
+    /// How saving an edit went, so the composer knows what to do with its text.
+    enum EditOutcome {
+        /// Saved, or nothing changed. The composer puts back what it held before.
+        case saved
+        /// Not saved. The composer stays in edit mode with the text.
+        case failed
+        /// Too late to edit. The composer leaves edit mode and keeps the text, so it
+        /// can go out as a new message.
+        case windowClosed
+    }
+
     func canEdit(_ message: DailyQuestionChatMessage) -> Bool {
         message.canEdit(by: participants.currentUserID)
     }

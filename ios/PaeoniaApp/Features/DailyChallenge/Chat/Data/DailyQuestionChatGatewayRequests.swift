@@ -47,7 +47,24 @@ nonisolated struct QuestionChatRequest: Encodable {
 
 nonisolated struct ThreadMessagesRequest: Encodable {
     let threadID: UUID
-    enum CodingKeys: String, CodingKey { case threadID = "p_thread_id" }
+    var limit = DailyQuestionChatMessage.pageSize
+    /// Reads the page of messages before this one. Without it, the newest page.
+    var before: DailyQuestionChatMessageCursor?
+
+    enum CodingKeys: String, CodingKey {
+        case threadID = "p_thread_id"
+        case limit = "p_limit"
+        case beforeCreatedAt = "p_before_created_at"
+        case beforeMessageID = "p_before_message_id"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(threadID, forKey: .threadID)
+        try container.encode(limit, forKey: .limit)
+        try container.encodeIfPresent(before?.createdAt, forKey: .beforeCreatedAt)
+        try container.encodeIfPresent(before?.messageID, forKey: .beforeMessageID)
+    }
 }
 
 nonisolated struct CreateThreadMessageRequest: Encodable {

@@ -74,8 +74,12 @@ struct DailyPhotoAnswerComposer: View {
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
 
-            if let imageData, let uiImage = UIImage(data: imageData) {
-                pickedPhoto(uiImage)
+            if let imageData {
+                DailyDecodedPhoto(data: imageData, reservedHeight: 160) { uiImage in
+                    pickedPhoto(uiImage)
+                } failure: {
+                    photoPlaceholderPicker
+                }
             } else {
                 photoPlaceholderPicker
             }
@@ -254,26 +258,30 @@ struct DailySendingAnswerView: View {
             if let mediaData {
                 DailyVoicePlaybackView(source: .data(mediaData), fallbackDurationMs: voiceDurationMs)
             }
-        } else if let mediaData, let uiImage = UIImage(data: mediaData) {
-            // Sized by the rectangle, with the photo as a clipped overlay — so a
-            // `scaledToFill` photo crops within these bounds rather than widening the
-            // card (same reason as `DailyAnswerImageView`).
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                .fill(.paeoniaSurfaceSecondary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 220)
-                .overlay {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                }
-                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-                .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-                .onTapGesture {
-                    imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
-                }
-                .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
-                .accessibilityAddTraits(.isButton)
+        } else if let mediaData {
+            DailyDecodedPhoto(data: mediaData, reservedHeight: 220) { uiImage in
+                // Sized by the rectangle, with the photo as a clipped overlay — so a
+                // `scaledToFill` photo crops within these bounds rather than widening the
+                // card (same reason as `DailyAnswerImageView`).
+                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                    .fill(.paeoniaSurfaceSecondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 220)
+                    .overlay {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
+                    .onTapGesture {
+                        imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
+                    }
+                    .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
+                    .accessibilityAddTraits(.isButton)
+            } failure: {
+                EmptyView()
+            }
         }
     }
 }
@@ -320,7 +328,13 @@ struct DailyAnswerImageView: View {
         self.height = height
         self.allowsViewing = allowsViewing
         // A photo shown before is in the first frame, with no placeholder in between.
-        _image = State(initialValue: PaeoniaImageMemoryCache.image(for: mediaAssetID))
+        let cached = Self.cacheKey(for: mediaAssetID, height: height).flatMap(PaeoniaImageMemoryCache.image(forKey:))
+        _image = State(initialValue: cached)
+    }
+
+    /// The memory cache holds the copy decoded for this frame height, not the full photo.
+    private static func cacheKey(for mediaAssetID: UUID?, height: CGFloat) -> String? {
+        mediaAssetID.map { "answer-\($0.uuidString)-\(MemoryImageDecoding.maxPixelSize(forHeight: height))" }
     }
 
     private struct LoadKey: Hashable {
@@ -386,32 +400,56 @@ struct DailyAnswerImageView: View {
 
     private func load() async {
         // Already showing this photo from memory. A new photo or a retry loads again.
-        if let image, image === PaeoniaImageMemoryCache.image(for: mediaAssetID) { return }
+        let key = Self.cacheKey(for: mediaAssetID, height: height)
+        if let image, let key, image === PaeoniaImageMemoryCache.image(forKey: key) { return }
         image = nil
         didFail = false
 
-        guard let mediaAssetID, let provider else {
+        guard let mediaAssetID, let provider, let key else {
             didFail = true
             return
         }
 
         let data = await provider.imageData(for: mediaAssetID)
-        if let data, let loaded = UIImage(data: data) {
+        guard !Task.isCancelled else { return }
+        // Decoded off the main thread at the size this frame needs, so the memory cache
+        // pays for that copy and not for the full camera photo.
+        let loaded: UIImage? = if let data {
+            await MemoryImageDecoding.downsample(
+                data,
+                maxPixelSize: MemoryImageDecoding.maxPixelSize(forHeight: height)
+            )
+        } else {
+            nil
+        }
+        guard !Task.isCancelled else { return }
+        if let loaded {
             image = loaded
-            PaeoniaImageMemoryCache.store(loaded, for: mediaAssetID)
+            PaeoniaImageMemoryCache.store(loaded, forKey: key)
         } else {
             didFail = true
         }
     }
 
+    /// The viewer zooms, so it gets a larger copy than the frame shows.
     private func presentImageViewer() {
         guard allowsViewing, let image else { return }
-        if let mediaAssetID {
-            imageViewerSelection = PaeoniaImageViewerSelection(id: mediaAssetID, image: image)
-        } else {
+        guard let mediaAssetID, let provider else {
             imageViewerSelection = PaeoniaImageViewerSelection(image: image)
+            return
+        }
+        Task {
+            let data = await provider.imageData(for: mediaAssetID)
+            let large: UIImage? = if let data {
+                await MemoryImageDecoding.downsample(data, maxPixelSize: Self.viewerPixelSize)
+            } else {
+                nil
+            }
+            imageViewerSelection = PaeoniaImageViewerSelection(id: mediaAssetID, image: large ?? image)
         }
     }
+
+    private static let viewerPixelSize = 2_048
 }
 
 /// The empty photo slot: an add-photo prompt, or a spinner while a pick loads.

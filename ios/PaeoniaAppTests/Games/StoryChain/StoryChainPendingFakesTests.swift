@@ -412,7 +412,8 @@ struct StoryChainDataEnvironment {
     /// One run of the outbox with the Story Chain handlers.
     func drain() async {
         let stream = PendingSyncOperationDrainStream(
-            handlers: StoryChainPendingOperations.handlers(gateway: gateway, cache: cache, gamesCache: gamesCache)
+            handlers: StoryChainPendingOperations.handlers(gateway: gateway, cache: cache, gamesCache: gamesCache),
+            retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0)
         )
         try? await stream.push(context: context)
     }

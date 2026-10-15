@@ -33,7 +33,7 @@ nonisolated struct UserDefaultsLocationSharingPrimerStore: LocationSharingPrimer
             coupleID.uuidString.lowercased(),
         ].joined(separator: ":")
         let digest = SHA256.hash(data: Data(relationshipIdentity.utf8))
-        let digestString = digest.map { String(format: "%02x", $0) }.joined()
+        let digestString = digest.paeoniaHexString
         return Self.responseKeyPrefix + digestString
     }
 }

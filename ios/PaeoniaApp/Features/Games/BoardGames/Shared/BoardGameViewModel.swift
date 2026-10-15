@@ -124,12 +124,10 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     @ObservationIgnored var prefersReducedMotion = false
     @ObservationIgnored var replayTask: Task<Void, Never>?
     @ObservationIgnored var outcomeTask: Task<Void, Never>?
-    @ObservationIgnored var observationTask: Task<Void, Never>?
-    @ObservationIgnored var heartbeatTask: Task<Void, Never>?
-    @ObservationIgnored var tickTask: Task<Void, Never>?
     @ObservationIgnored var photoTask: Task<Void, Never>?
 
-    @ObservationIgnored let heartbeatInterval: Duration
+    /// The loops that run while the screen is open: heartbeat, data changes and the clock.
+    @ObservationIgnored let loops: GameScreenLoops
     @ObservationIgnored let tickInterval: Duration
     @ObservationIgnored let sleep: @Sendable (Duration) async throws -> Void
 
@@ -144,9 +142,14 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         self.kind = kind
         self.timing = timing
         self.dependencies = dependencies
-        self.heartbeatInterval = heartbeatInterval
         self.tickInterval = tickInterval
         self.sleep = sleep
+        loops = GameScreenLoops(
+            kind: kind,
+            gateway: dependencies.gateway,
+            heartbeatInterval: heartbeatInterval,
+            sleep: sleep
+        )
         now = dependencies.now()
         partnerName = ""
         let mine = BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "")

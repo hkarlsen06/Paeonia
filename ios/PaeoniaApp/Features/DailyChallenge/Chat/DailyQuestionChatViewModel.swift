@@ -22,17 +22,6 @@ final class DailyQuestionChatViewModel {
         case editWindowClosed
     }
 
-    /// How saving an edit went, so the composer knows what to do with its text.
-    enum EditOutcome {
-        /// Saved, or nothing changed. The composer puts back what it held before.
-        case saved
-        /// Not saved. The composer stays in edit mode with the text.
-        case failed
-        /// Too late to edit. The composer leaves edit mode and keeps the text, so it
-        /// can go out as a new message.
-        case windowClosed
-    }
-
     static let maximumMessageLength = 4_000
 
     /// The day the page was opened from. The page shows every day of this question.
@@ -56,6 +45,12 @@ final class DailyQuestionChatViewModel {
     /// Becomes true once the screen has read this phone's copy of the chat.
     private(set) var hasReadStore = false
     var notice: Notice?
+    /// Older messages may exist on the server than the ones this phone has. The chat opens
+    /// on the newest page, and the person scrolling up loads the rest.
+    private(set) var hasOlderMessages = false
+    var isLoadingOlderMessages = false
+    /// The server said the oldest message of the chat is already on this phone.
+    var hasReachedChatStart = false
     /// The message the next send replies to, shown above the composer.
     var replyTarget: DailyQuestionChatMessage?
     /// The user's own message whose text the composer is changing.
@@ -207,7 +202,7 @@ final class DailyQuestionChatViewModel {
     }
 
     /// Re-reads the thread, the cached messages, and the messages still sending.
-    private func readStore(ownerUserID: UUID) async {
+    func readStore(ownerUserID: UUID) async {
         readGeneration += 1
         let generation = readGeneration
         let cachedSummaries = await service.cachedThreadSummaries(ownerUserID: ownerUserID)
@@ -232,6 +227,9 @@ final class DailyQuestionChatViewModel {
         }
         hasQueuedThreadCreation = isCreatingThread
         messages = DailyQuestionChatMessage.visibleOrdered(remote: cached, optimistic: pending)
+        // Removed messages are left out of the cache, so a count of what is shown cannot tell
+        // whether older ones exist. A short chat costs one extra read at the top, which ends it.
+        hasOlderMessages = !hasReachedChatStart && cached.contains { !$0.isSending && !$0.sendFailed }
         hasReadStore = true
         raiseNoticeForNewFailures()
         let newestPartner = messages.last { $0.senderUserID != ownerUserID }?.id

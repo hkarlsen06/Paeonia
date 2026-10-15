@@ -58,23 +58,36 @@ nonisolated final class LiveQueryService: Sendable {
     private let transport: any LiveQueryTransport
     private let backoff: LiveBackoff
     private let sleep: @Sendable (Duration) async throws -> Void
+    /// Scales each backoff delay, so phones that dropped together do not resubscribe together.
+    private let jitter: @Sendable () -> Double
 
     init(
         transport: any LiveQueryTransport,
         backoff: LiveBackoff = .standard,
-        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        jitter: @escaping @Sendable () -> Double = { .random(in: 0.5...1) }
     ) {
         self.transport = transport
         self.backoff = backoff
         self.sleep = sleep
+        self.jitter = jitter
+    }
+
+    /// The backend refused the call because the couple has no access. A retry
+    /// cannot fix it. The feeds start again with the new session when access returns.
+    static func isPermanentRefusal(_ error: any Error) -> Bool {
+        guard case .server(code: "42501", _)? = error as? PaeoniaConvexError else { return false }
+        return true
     }
 
     /// Subscribes to the query `path` (for example `"location:get_partner_location_visibility"`).
     ///
     /// - The stream yields `.value` for every result, starting with the current one.
     /// - A failure yields `.failure`, waits with capped exponential backoff
-    ///   (1 s doubling to 30 s, reset by the next value), and subscribes again.
-    ///   Function errors surface as `PaeoniaConvexError.server(code:message:)`.
+    ///   (1 s doubling to 30 s, scaled by a random 0.5 to 1, reset by the next
+    ///   value), and subscribes again. Function errors surface as
+    ///   `PaeoniaConvexError.server(code:message:)`. A refusal for missing access
+    ///   (`42501`) yields `.failure` once and finishes the stream.
     /// - A result that does not decode yields `.failure(LiveQueryError.decoding)`
     ///   and keeps the subscription open for the next result.
     /// - The stream finishes only when the consuming task is cancelled or the
@@ -132,8 +145,11 @@ nonisolated final class LiveQueryService: Sendable {
                 return
             }
             continuation.yield(.failure(failure))
+            if Self.isPermanentRefusal(failure) {
+                return
+            }
             do {
-                try await sleep(backoff.delay(forAttempt: attempt))
+                try await sleep(backoff.delay(forAttempt: attempt) * jitter())
             } catch {
                 return
             }

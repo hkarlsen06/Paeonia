@@ -266,9 +266,13 @@ extension DrawAndGuessViewModel {
             return DrawAndGuessFinalDrawing(drawing: downloadedDrawing)
         }
         // A drawing queued on this phone, for a drawer who reopens the game offline.
-        if let queued = pending.drawings.first(where: { $0.roundID == round.id }),
-           let drawing = try? PKDrawing(data: queued.drawingData), !drawing.strokes.isEmpty {
-            return DrawAndGuessFinalDrawing(drawing: drawing)
+        if let queued = pending.drawings.first(where: { $0.roundID == round.id }) {
+            if decodedQueuedDrawing?.data != queued.drawingData {
+                decodedQueuedDrawing = (try? PKDrawing(data: queued.drawingData)).map { (queued.drawingData, $0) }
+            }
+            if let drawing = decodedQueuedDrawing?.drawing, !drawing.strokes.isEmpty {
+                return DrawAndGuessFinalDrawing(drawing: drawing)
+            }
         }
         return nil
     }
@@ -283,12 +287,7 @@ struct DrawAndGuessSolveClaim: Equatable {
     let hintsUsed: Int
 }
 
-/// A finished drawing at the canonical canvas size. Scale it to the canvas with
-/// `fitted(toSide:)`.
+/// A finished drawing at the canonical canvas size.
 struct DrawAndGuessFinalDrawing {
     let drawing: PKDrawing
-
-    func fitted(toSide side: CGFloat) -> PKDrawing {
-        GameCanvas.fitted(drawing, toSide: side)
-    }
 }

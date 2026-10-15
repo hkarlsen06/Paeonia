@@ -21,7 +21,7 @@ struct ExquisiteCorpseStripView: View {
             if let drawing {
                 // The whole square, so strokes sit where they were drawn. The frame
                 // below cuts it down to the bottom strip.
-                GameStaticDrawing(drawing: GameCanvas.fitted(drawing, toSide: width))
+                GameStaticDrawing(drawing: drawing, side: width)
                     .frame(width: width, height: width)
                     .allowsHitTesting(false)
             }

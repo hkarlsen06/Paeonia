@@ -41,6 +41,7 @@ struct DailyChallengeAnswerStep: View {
     /// them before focusing it (see `answerTextField`). They come back as the keyboard
     /// starts to close, on the keyboard's curve.
     @State var showsSecondaryComposer = true
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -58,6 +59,12 @@ struct DailyChallengeAnswerStep: View {
         .onAppear {
             seedEditDraftIfNeeded()
             showsSecondaryComposer = !isFocused.wrappedValue
+        }
+        // Typed text is saved after a short pause. Save it now when this screen
+        // goes away or the app leaves the foreground.
+        .onDisappear { viewModel.flushDraftPersistence() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { viewModel.flushDraftPersistence() }
         }
         .onDockedKeyboardChange { docked in
             setSecondaryComposerShown(!docked)

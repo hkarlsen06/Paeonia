@@ -3,7 +3,7 @@ import Foundation
 /// What this phone keeps of Story Chain for one signed-in person, so the game
 /// shows something at launch and offline. `state` is the last result of
 /// `storyChain:get_story_chain`. The notices are only ever local.
-nonisolated struct StoryChainLocalDocument: Codable, Equatable, Sendable {
+nonisolated struct StoryChainLocalDocument: GamesPersistedDocument {
     var state: RemoteStoryChainState?
     /// "Our stories": the newest finished stories, the first page of "All".
     var historyFirstPage: RemoteStoryChainHistoryPage?
@@ -72,6 +72,8 @@ extension StoryChainCaching {
 // MARK: - Rules shared by the file and in-memory caches
 
 nonisolated extension StoryChainLocalDocument {
+    private static let maxStars = 500
+
     /// Takes a state from the server unless it is older than the one kept.
     /// Returns whether it took it. The stars it carries become the server's
     /// values, so a story that leaves the state keeps its star.
@@ -80,7 +82,7 @@ nonisolated extension StoryChainLocalDocument {
             return false
         }
         state = newState
-        stars.merge(newState.starValues) { _, new in new }
+        mergeStars(newState.starValues)
         return true
     }
 
@@ -100,10 +102,18 @@ nonisolated extension StoryChainLocalDocument {
         }
     }
 
+    private mutating func mergeStars(_ values: [UUID: Bool]) {
+        stars.merge(values) { _, new in new }
+        if stars.count > Self.maxStars {
+            // A story with no entry reads as not starred, so the unstarred ones go first.
+            stars = stars.filter(\.value)
+        }
+    }
+
     /// Takes the server's answer for these stories everywhere this document
     /// holds them, so the state, the first page and the list never disagree.
     mutating func saveStars(_ values: [UUID: Bool]) {
-        stars.merge(values) { _, new in new }
+        mergeStars(values)
         state?.apply(stars: values)
         historyFirstPage = historyFirstPage?.applying(stars: values)
     }
@@ -156,39 +166,26 @@ nonisolated extension RemoteStoryChainHistoryPage {
 actor FileStoryChainCache: StoryChainCaching {
     static let shared = FileStoryChainCache()
 
-    /// Bump when a stored type gains a required field. A file with another
-    /// version reads as empty.
-    private static let schemaVersion = 3
-
-    private let directoryURL: URL
+    private var store: GamesDocumentStore<StoryChainLocalDocument>
     private var order = GamesStateWriteOrder()
 
     init(directoryURL: URL = FileStoryChainCache.defaultDirectoryURL()) {
-        self.directoryURL = directoryURL
+        store = GamesDocumentStore(directoryURL: directoryURL, schemaVersion: 3)
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
-        FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("StoryChainCache", isDirectory: true)
+        GamesDocumentStore<StoryChainLocalDocument>.defaultDirectoryURL(named: "StoryChainCache")
     }
 
     func document(ownerUserID: UUID) -> StoryChainLocalDocument {
-        guard let data = try? Data(contentsOf: fileURL(for: ownerUserID)),
-              let envelope = try? PaeoniaConvexClient.decoder.decode(Envelope.self, from: data),
-              envelope.schemaVersion == Self.schemaVersion,
-              envelope.ownerUserID == ownerUserID
-        else {
-            return StoryChainLocalDocument()
-        }
-        return envelope.document
+        store.document(ownerUserID: ownerUserID)
     }
 
     func saveState(_ state: RemoteStoryChainState, ownerUserID: UUID) {
         var kept = document(ownerUserID: ownerUserID)
         guard kept.accept(state) else { return }
         order.overrideFetches()
-        write(kept, ownerUserID: ownerUserID)
+        store.save(kept, ownerUserID: ownerUserID)
     }
 
     func beginFetch() -> Int {
@@ -199,40 +196,38 @@ actor FileStoryChainCache: StoryChainCaching {
         var kept = document(ownerUserID: ownerUserID)
         let isNewer = kept.state.map { $0.isOlder(than: state) } ?? false
         guard kept.accept(state), order.acceptFetch(ticket) || isNewer else { return false }
-        write(kept, ownerUserID: ownerUserID)
+        store.save(kept, ownerUserID: ownerUserID)
         return true
     }
 
     func saveHistoryFirstPage(_ page: RemoteStoryChainHistoryPage, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.historyFirstPage = page }
+        store.update(ownerUserID: ownerUserID) { $0.historyFirstPage = page }
     }
 
     func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.saveStars(stars) }
+        store.update(ownerUserID: ownerUserID) { $0.saveStars(stars) }
     }
 
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.record(notice) }
+        store.update(ownerUserID: ownerUserID) { $0.record(notice) }
     }
 
     func saveDraft(_ draft: String?, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.draft = draft }
+        store.update(ownerUserID: ownerUserID) { $0.draft = draft }
     }
 
     func rescueLines(_ lines: [String], ownerUserID: UUID) {
         guard !lines.isEmpty else { return }
-        update(ownerUserID: ownerUserID) { $0.rescuedLines += lines }
+        store.update(ownerUserID: ownerUserID) { $0.rescuedLines += lines }
     }
 
     func takeRescuedLines(into composerText: String, ownerUserID: UUID) -> String? {
-        var rescued: String?
-        update(ownerUserID: ownerUserID) { rescued = $0.takeRescuedLines(into: composerText) }
-        return rescued
+        store.update(ownerUserID: ownerUserID) { $0.takeRescuedLines(into: composerText) }
     }
 
     func takeNotices(ownerUserID: UUID) -> [GameStoredNotice] {
         var taken: [GameStoredNotice] = []
-        update(ownerUserID: ownerUserID) { document in
+        store.update(ownerUserID: ownerUserID) { document in
             taken = document.notices
             document.notices = []
         }
@@ -241,31 +236,7 @@ actor FileStoryChainCache: StoryChainCaching {
 
     func clearAll() {
         order.overrideFetches()
-        guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
-        try? FileManager.default.removeItem(at: directoryURL)
-    }
-
-    private func update(ownerUserID: UUID, _ change: (inout StoryChainLocalDocument) -> Void) {
-        var document = document(ownerUserID: ownerUserID)
-        change(&document)
-        write(document, ownerUserID: ownerUserID)
-    }
-
-    private func write(_ document: StoryChainLocalDocument, ownerUserID: UUID) {
-        let envelope = Envelope(schemaVersion: Self.schemaVersion, ownerUserID: ownerUserID, document: document)
-        guard let data = try? PaeoniaConvexClient.encoder.encode(envelope) else { return }
-        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        try? data.write(to: fileURL(for: ownerUserID), options: [.atomic])
-    }
-
-    private func fileURL(for ownerUserID: UUID) -> URL {
-        directoryURL.appendingPathComponent(ownerUserID.uuidString.lowercased() + ".json", isDirectory: false)
-    }
-
-    private struct Envelope: Codable {
-        let schemaVersion: Int
-        let ownerUserID: UUID
-        let document: StoryChainLocalDocument
+        store.clear()
     }
 }
 

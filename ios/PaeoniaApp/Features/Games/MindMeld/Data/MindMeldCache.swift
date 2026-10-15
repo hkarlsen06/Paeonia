@@ -10,7 +10,7 @@ nonisolated struct MindMeldRefusedWord: Codable, Equatable, Sendable {
 /// last result of `mindMeld:get_mind_meld`, so the game shows something at launch
 /// and offline. `history` is the first page of "Our melds". The refused words
 /// and refusal counts are only ever local.
-nonisolated struct MindMeldLocalDocument: Codable, Equatable, Sendable {
+nonisolated struct MindMeldLocalDocument: GamesPersistedDocument {
     var state: RemoteMindMeldState?
     var history: RemoteMindMeldHistoryPage?
     /// Words the server refused for good, until a screen shows the notice once.
@@ -96,32 +96,19 @@ nonisolated extension MindMeldLocalDocument {
 actor FileMindMeldCache: MindMeldCaching {
     static let shared = FileMindMeldCache()
 
-    /// Bump when a stored type gains a required field. A file with another
-    /// version reads as empty.
-    private static let schemaVersion = 2
-
-    private let directoryURL: URL
+    private var store: GamesDocumentStore<MindMeldLocalDocument>
     private var order = GamesStateWriteOrder()
 
     init(directoryURL: URL = FileMindMeldCache.defaultDirectoryURL()) {
-        self.directoryURL = directoryURL
+        store = GamesDocumentStore(directoryURL: directoryURL, schemaVersion: 2)
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
-        FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("MindMeldCache", isDirectory: true)
+        GamesDocumentStore<MindMeldLocalDocument>.defaultDirectoryURL(named: "MindMeldCache")
     }
 
     func document(ownerUserID: UUID) -> MindMeldLocalDocument {
-        guard let data = try? Data(contentsOf: fileURL(for: ownerUserID)),
-              let envelope = try? PaeoniaConvexClient.decoder.decode(Envelope.self, from: data),
-              envelope.schemaVersion == Self.schemaVersion,
-              envelope.ownerUserID == ownerUserID
-        else {
-            return MindMeldLocalDocument()
-        }
-        return envelope.document
+        store.document(ownerUserID: ownerUserID)
     }
 
     func saveState(_ state: RemoteMindMeldState, ownerUserID: UUID) {
@@ -129,7 +116,7 @@ actor FileMindMeldCache: MindMeldCaching {
         var kept = document(ownerUserID: ownerUserID)
         guard kept.accept(state) else { return }
         order.overrideFetches()
-        update(ownerUserID: ownerUserID) { $0.state = kept.state }
+        store.save(kept, ownerUserID: ownerUserID)
     }
 
     func beginFetch() -> Int {
@@ -141,21 +128,21 @@ actor FileMindMeldCache: MindMeldCaching {
         var kept = document(ownerUserID: ownerUserID)
         let isNewer = kept.state.map { $0.isOlder(than: state) } ?? false
         guard kept.accept(state), order.acceptFetch(ticket) || isNewer else { return false }
-        update(ownerUserID: ownerUserID) { $0.state = kept.state }
+        store.save(kept, ownerUserID: ownerUserID)
         return true
     }
 
     func saveHistoryFirstPage(_ page: RemoteMindMeldHistoryPage, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.history = page }
+        store.update(ownerUserID: ownerUserID) { $0.history = page }
     }
 
     func recordRefusedWord(_ refused: MindMeldRefusedWord, ownerUserID: UUID) {
-        update(ownerUserID: ownerUserID) { $0.record(refused) }
+        store.update(ownerUserID: ownerUserID) { $0.record(refused) }
     }
 
     func takeRefusedWords(ownerUserID: UUID) -> [MindMeldRefusedWord] {
         var taken: [MindMeldRefusedWord] = []
-        update(ownerUserID: ownerUserID) { document in
+        store.update(ownerUserID: ownerUserID) { document in
             taken = document.refusedWords
             document.refusedWords = []
         }
@@ -163,34 +150,12 @@ actor FileMindMeldCache: MindMeldCaching {
     }
 
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int {
-        var count = 0
-        update(ownerUserID: ownerUserID) { count = $0.recordRefusal(of: operationID) }
-        return count
+        store.update(ownerUserID: ownerUserID) { $0.recordRefusal(of: operationID) }
     }
 
     func clearAll() {
         order.overrideFetches()
-        guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
-        try? FileManager.default.removeItem(at: directoryURL)
-    }
-
-    private func update(ownerUserID: UUID, _ change: (inout MindMeldLocalDocument) -> Void) {
-        var document = document(ownerUserID: ownerUserID)
-        change(&document)
-        let envelope = Envelope(schemaVersion: Self.schemaVersion, ownerUserID: ownerUserID, document: document)
-        guard let data = try? PaeoniaConvexClient.encoder.encode(envelope) else { return }
-        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        try? data.write(to: fileURL(for: ownerUserID), options: [.atomic])
-    }
-
-    private func fileURL(for ownerUserID: UUID) -> URL {
-        directoryURL.appendingPathComponent(ownerUserID.uuidString.lowercased() + ".json", isDirectory: false)
-    }
-
-    private struct Envelope: Codable {
-        let schemaVersion: Int
-        let ownerUserID: UUID
-        let document: MindMeldLocalDocument
+        store.clear()
     }
 }
 

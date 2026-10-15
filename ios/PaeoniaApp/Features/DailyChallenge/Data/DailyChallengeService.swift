@@ -265,7 +265,7 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
     func loadCoupleStreak() async throws -> CoupleStreak {
         let rows: [CoupleStreakRow] = try await client.query(
             "streaks:get_couple_streak",
-            args: PaeoniaConvexNoArgs()
+            args: DailyChallengeTodayRequest(dayKey: UUID().uuidString.lowercased())
         )
         return rows.first?.streak ?? .none
     }

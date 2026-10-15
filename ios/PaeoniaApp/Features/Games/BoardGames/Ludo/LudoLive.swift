@@ -16,22 +16,6 @@ nonisolated struct LudoLiveMessage: GameLiveMessage, Equatable {
     var toss: LudoToss?
 }
 
-/// Ludo's relay room (`<couple>:ludo`), used only for live rolls. Both phones
-/// join with the `present` role.
-@MainActor
-enum LudoLive {
-    static func make(coupleID: UUID) -> WidgetLiveDrawing {
-        WidgetLiveDrawing(
-            connection: WidgetLiveConnection(
-                coupleID: coupleID,
-                ticketProvider: GameLiveTicket.provider(for: .ludo)
-            ),
-            role: .present,
-            presence: WidgetLivePresence(countsLatestHelloOnly: true)
-        )
-    }
-}
-
 /// Joins one Ludo screen's die to the relay room while the screen is open. My
 /// rolls go out as they start, and again when my partner opens the game in the
 /// middle of my turn. My partner's rolls go to the roll model.

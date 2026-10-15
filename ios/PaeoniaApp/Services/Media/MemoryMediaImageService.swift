@@ -41,6 +41,10 @@ actor MemoryMediaImageDiskCache: MemoryMediaImageCacheWriting {
         try? data.write(to: fileURL(for: mediaAssetID), options: [.atomic])
     }
 
+    func remove(for mediaAssetID: UUID) {
+        try? FileManager.default.removeItem(at: fileURL(for: mediaAssetID))
+    }
+
     func clearAll() {
         guard FileManager.default.fileExists(atPath: directoryURL.path) else {
             return
@@ -52,9 +56,11 @@ actor MemoryMediaImageDiskCache: MemoryMediaImageCacheWriting {
         directoryURL.appendingPathComponent(mediaAssetID.uuidString.lowercased(), isDirectory: false)
     }
 
+    /// In Caches, so the private photos are not backed up and the system can reclaim
+    /// the space. Anything removed is downloaded again when it's next shown.
     nonisolated static func defaultDirectoryURL() -> URL {
         FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("MemoryMedia", isDirectory: true)
     }
 }
@@ -70,6 +76,10 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
     private let cache: MemoryMediaImageDiskCache
     private let expiresInSeconds = 3_600
     private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
+    private var misses = MediaMissLog()
+    /// Bumped by every purge, so a download that started before it can tell and drop
+    /// its photo instead of saving it.
+    private var privacyGeneration: UInt64 = 0
 
     init(
         client: PaeoniaConvexClient,
@@ -89,44 +99,96 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
         }
 
         if let cached = await cache.imageData(for: mediaAssetID) {
-            return cached
+            if ProfilePhotoImageService.isDecodableImage(cached) {
+                return cached
+            }
+            // A file that is not an image (for example a captive-portal page)
+            // would otherwise stay cached under this asset ID for good.
+            await cache.remove(for: mediaAssetID)
+        }
+
+        if misses.isRecentMiss(mediaAssetID) {
+            return nil
         }
 
         if let inFlightDownload = inFlightDownloads[mediaAssetID] {
             return await inFlightDownload.value
         }
 
-        let download = Task { await fetchAndCache(mediaAssetID: mediaAssetID) }
+        let requestedPrivacyGeneration = privacyGeneration
+        let download = Task {
+            await fetchAndCache(mediaAssetID: mediaAssetID, privacyGeneration: requestedPrivacyGeneration)
+        }
         inFlightDownloads[mediaAssetID] = download
         let data = await download.value
-        inFlightDownloads[mediaAssetID] = nil
+        // A purge may have cleared the map and a newer download started since.
+        if inFlightDownloads[mediaAssetID] == download {
+            inFlightDownloads[mediaAssetID] = nil
+        }
         return data
     }
 
     func clearAll() async {
-        inFlightDownloads.values.forEach { $0.cancel() }
+        privacyGeneration &+= 1
+        misses.removeAll()
+        let downloads = Array(inFlightDownloads.values)
+        downloads.forEach { $0.cancel() }
         inFlightDownloads.removeAll()
+        // A download that is saving its photo right now finishes first, and sees the
+        // new generation, so nothing it wrote survives the delete below.
+        for download in downloads {
+            _ = await download.value
+        }
 
         await cache.clearAll()
     }
 
-    private func fetchAndCache(mediaAssetID: UUID) async -> Data? {
-        guard let signedURL = try? await signedURL(for: mediaAssetID) else {
+    private func fetchAndCache(mediaAssetID: UUID, privacyGeneration requested: UInt64) async -> Data? {
+        guard let data = await download(mediaAssetID: mediaAssetID, privacyGeneration: requested) else {
+            return nil
+        }
+
+        await cache.store(data, for: mediaAssetID)
+        guard !Task.isCancelled, requested == privacyGeneration else {
+            await cache.remove(for: mediaAssetID)
+            return nil
+        }
+        return data
+    }
+
+    /// The photo's bytes, or nil. Remembers a failure that retrying will not fix.
+    private func download(mediaAssetID: UUID, privacyGeneration requested: UInt64) async -> Data? {
+        let signedURL: URL?
+        do {
+            signedURL = try await signedURL(for: mediaAssetID)
+        } catch {
+            if MediaMissLog.isLasting(error) { misses.record(mediaAssetID) }
+            return nil
+        }
+        // No URL usually means the photo's row is not visible to this phone yet. It may be a moment
+        // away, so it is not remembered as a miss and a tap on the photo tries again.
+        guard let signedURL else {
             return nil
         }
 
         do {
             let (data, response) = try await URLSession.shared.data(from: signedURL)
-            guard !Task.isCancelled else {
+            guard !Task.isCancelled, requested == privacyGeneration else {
                 return nil
             }
 
-            if let httpResponse = response as? HTTPURLResponse,
-               !(200..<300).contains(httpResponse.statusCode) {
+            if let statusCode = (response as? HTTPURLResponse)?.statusCode,
+               !(200..<300).contains(statusCode) {
+                if MediaMissLog.isLasting(statusCode: statusCode) { misses.record(mediaAssetID) }
                 return nil
             }
 
-            await cache.store(data, for: mediaAssetID)
+            // Only an image is worth keeping. A sign-in page from a captive portal
+            // answers 200 too, and would otherwise become a permanent broken photo.
+            guard ProfilePhotoImageService.isDecodableImage(data) else {
+                misses.record(mediaAssetID)
+                return nil
+            }
             return data
         } catch {
             return nil

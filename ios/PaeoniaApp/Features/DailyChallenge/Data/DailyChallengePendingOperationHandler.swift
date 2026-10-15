@@ -122,7 +122,7 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing daily answer payload")
         }
 
-        let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(DailySubmitAnswerOperationPayload.self, from: requestData)
 
         switch payload.content {
         case let .text(body):
@@ -144,6 +144,16 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
                 operation: operation
             )
         }
+    }
+
+    nonisolated var showsGivenUpWrites: Bool { true }
+
+    func gaveUp(on operation: PendingSyncOperationSnapshot, context _: SyncContext) async {
+        // The answer goes back into the drafts, like a refused one, so nothing is lost.
+        guard let data = operation.requestData,
+              let payload = try? JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
+        else { return }
+        await restoreDraft(operation.ownerUserID, payload.instanceID, payload.content.restoredDraft)
     }
 
     /// Uploads the staged bytes for a media answer, then submits the resulting asset

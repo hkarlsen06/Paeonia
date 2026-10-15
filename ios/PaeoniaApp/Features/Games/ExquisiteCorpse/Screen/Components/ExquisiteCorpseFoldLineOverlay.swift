@@ -41,7 +41,7 @@ struct ExquisiteCorpseFoldLineOverlay: View {
 #if DEBUG
 #Preview {
     GameSquare(side: 300) {
-        GameStaticDrawing(drawing: GameCanvas.fitted(ExquisiteCorpsePreviewDrawings.head, toSide: 300))
+        GameStaticDrawing(drawing: ExquisiteCorpsePreviewDrawings.head, side: 300)
             .overlay {
                 ExquisiteCorpseFoldLineOverlay(side: 300, label: .exquisiteCorpseDrawFoldLabel("Robin"))
             }

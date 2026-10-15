@@ -107,7 +107,8 @@ final class ExquisiteCorpseViewModel {
     ) { [weak self] in
         self?.currentUserID
     }
-    @ObservationIgnored let heartbeatInterval: Duration
+    /// The loops that run while the screen is open: heartbeat, data changes and the clock.
+    @ObservationIgnored let loops: GameScreenLoops
     @ObservationIgnored let tickInterval: Duration
     @ObservationIgnored let monotonicNow: @Sendable () -> TimeInterval
     @ObservationIgnored let sleep: @Sendable (Duration) async throws -> Void
@@ -136,9 +137,6 @@ final class ExquisiteCorpseViewModel {
     @ObservationIgnored var visibleScreens = 0
     @ObservationIgnored var reloadGate = GameReloadGate()
 
-    @ObservationIgnored var observationTask: Task<Void, Never>?
-    @ObservationIgnored var heartbeatTask: Task<Void, Never>?
-    @ObservationIgnored var tickTask: Task<Void, Never>?
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var draftTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?
@@ -177,6 +175,8 @@ final class ExquisiteCorpseViewModel {
     @ObservationIgnored var liveStroke: ExquisiteCorpseLiveStroke?
     /// The strip last sent to the watching partner, so only a change goes out.
     @ObservationIgnored var sentStrip: (partID: UUID, signature: Int)?
+    /// The strip of each stroke on the canvas, so a send only cuts the stroke being drawn.
+    @ObservationIgnored var stripCache = ExquisiteCorpseStripCache()
     /// The part this person tapped Done on while the room was open.
     @ObservationIgnored var doneSentPartID: UUID?
     /// The part of the partner that this phone watches (waiting or watching).
@@ -203,10 +203,15 @@ final class ExquisiteCorpseViewModel {
     ) {
         self.dependencies = dependencies
         self.participants = participants
-        self.heartbeatInterval = heartbeatInterval
         self.tickInterval = tickInterval
         self.monotonicNow = monotonicNow
         self.sleep = sleep
+        loops = GameScreenLoops(
+            kind: .exquisiteCorpse,
+            gateway: dependencies.gateway,
+            heartbeatInterval: heartbeatInterval,
+            sleep: sleep
+        )
         partnerName = participants.partnerName
         (me, partner) = participants.players
         now = dependencies.now()

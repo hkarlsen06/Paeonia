@@ -34,7 +34,7 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing create memory payload")
         }
 
-        let payload = try JSONDecoder().decode(CreateMemoryOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(CreateMemoryOperationPayload.self, from: requestData)
         _ = try await gateway.createMemory(payload, operation: operation.operation)
         return try await MemoryPendingOperationRefresh.succeeded(
             operation,
@@ -66,7 +66,7 @@ struct UpdateMemoryPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing update memory payload")
         }
 
-        let payload = try JSONDecoder().decode(UpdateMemoryOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(UpdateMemoryOperationPayload.self, from: requestData)
         let refresh = MemoryPendingOperationRefresh.self
         if let older = try await refresh.olderPendingWrite(
             before: operation,
@@ -127,7 +127,7 @@ struct HideMemoryPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing hide memory payload")
         }
 
-        let payload = try JSONDecoder().decode(HideMemoryOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(HideMemoryOperationPayload.self, from: requestData)
         let refresh = MemoryPendingOperationRefresh.self
 
         do {
@@ -181,7 +181,7 @@ struct UpsertMemoryNotePendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing upsert memory note payload")
         }
 
-        let payload = try JSONDecoder().decode(UpsertMemoryNoteOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(UpsertMemoryNoteOperationPayload.self, from: requestData)
         let refresh = MemoryPendingOperationRefresh.self
         if let older = try await refresh.olderPendingWrite(
             before: operation,
@@ -247,7 +247,7 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing attach memory media payload")
         }
 
-        let payload = try JSONDecoder().decode(AttachMemoryMediaOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(AttachMemoryMediaOperationPayload.self, from: requestData)
         do {
             _ = try await gateway.attachMemoryMedia(payload, operation: operation.operation)
         } catch {
@@ -289,7 +289,7 @@ struct RemoveMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing remove memory media payload")
         }
 
-        let payload = try JSONDecoder().decode(RemoveMemoryMediaOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(RemoveMemoryMediaOperationPayload.self, from: requestData)
         let refresh = MemoryPendingOperationRefresh.self
         do {
             _ = try await gateway.removeMemoryMedia(payload, operation: operation.operation)
@@ -337,7 +337,10 @@ struct CreateMemoryThreadMessagePendingOperationHandler: PendingSyncOperationHan
             return .terminalFailure("Missing memory thread message payload")
         }
 
-        let payload = try JSONDecoder().decode(CreateMemoryThreadMessageOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(
+            CreateMemoryThreadMessageOperationPayload.self,
+            from: requestData
+        )
         _ = try await gateway.createMemoryThreadWithMessage(payload, operation: operation.operation)
         return try await MemoryPendingOperationRefresh.succeeded(
             operation,

@@ -179,37 +179,6 @@ nonisolated enum SyncPendingOperationStatus: String, Codable, CaseIterable, Send
     case succeeded
 }
 
-nonisolated struct SyncRecordMetadata: Codable, Equatable, Sendable {
-    var serverUpdatedAt: Date?
-    var serverRevision: Int?
-    var serverDeletedAt: Date?
-    var syncStatus: SyncRecordStatus
-    var dirtyFields: Set<String>
-    var lastSyncedSnapshot: Data?
-    var localUpdatedAt: Date
-    var conflictServerSnapshot: Data?
-
-    init(
-        serverUpdatedAt: Date? = nil,
-        serverRevision: Int? = nil,
-        serverDeletedAt: Date? = nil,
-        syncStatus: SyncRecordStatus = .clean,
-        dirtyFields: Set<String> = [],
-        lastSyncedSnapshot: Data? = nil,
-        localUpdatedAt: Date = Date(),
-        conflictServerSnapshot: Data? = nil
-    ) {
-        self.serverUpdatedAt = serverUpdatedAt
-        self.serverRevision = serverRevision
-        self.serverDeletedAt = serverDeletedAt
-        self.syncStatus = syncStatus
-        self.dirtyFields = dirtyFields
-        self.lastSyncedSnapshot = lastSyncedSnapshot
-        self.localUpdatedAt = localUpdatedAt
-        self.conflictServerSnapshot = conflictServerSnapshot
-    }
-}
-
 nonisolated struct SyncCursor: Codable, Equatable, Sendable {
     var updatedAt: Date?
     var tieID: UUID?

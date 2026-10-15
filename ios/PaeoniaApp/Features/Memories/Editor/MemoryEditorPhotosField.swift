@@ -6,7 +6,7 @@ import UIKit
 /// for this save, placeholders while picked photos load, and the library and camera
 /// buttons. Each partner can add up to five photos to a memory.
 struct MemoryEditorPhotosField: View {
-    @Binding var photos: [Data]
+    @Binding var photos: [MemoryDraftPhoto]
     @Binding var removedExistingMediaIDs: Set<UUID>
     /// Picked photos still loading from the library. The form can't save until they're in.
     @Binding var loadingPhotoCount: Int
@@ -35,8 +35,8 @@ struct MemoryEditorPhotosField: View {
                         ForEach(visibleExistingMedia, id: \.memoryMediaID) { media in
                             existingThumbnail(media)
                         }
-                        ForEach(Array(photos.enumerated()), id: \.offset) { index, data in
-                            stagedThumbnail(data, index: index)
+                        ForEach(photos) { photo in
+                            stagedThumbnail(photo)
                         }
                         ForEach(0..<loadingPhotoCount, id: \.self) { _ in
                             loadingThumbnail
@@ -76,19 +76,18 @@ struct MemoryEditorPhotosField: View {
         }
     }
 
-    private func stagedThumbnail(_ data: Data, index: Int) -> some View {
+    private func stagedThumbnail(_ photo: MemoryDraftPhoto) -> some View {
         ZStack(alignment: .topTrailing) {
-            MemoryStagedPhotoThumbnail(data: data, size: thumbnailSize, cornerRadius: PaeoniaRadius.radius12)
+            MemoryStagedPhotoThumbnail(photo: photo, size: thumbnailSize, cornerRadius: PaeoniaRadius.radius12)
                 .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
                 .onTapGesture {
-                    presentStagedImage(data)
+                    presentStagedImage(photo.data)
                 }
                 .accessibilityLabel(Text(.memoriesPhotoAccessibility))
                 .accessibilityAddTraits(.isButton)
 
             removeButton {
-                guard photos.indices.contains(index) else { return }
-                photos.remove(at: index)
+                photos.removeAll { $0.id == photo.id }
             }
         }
     }
@@ -170,7 +169,7 @@ struct MemoryEditorPhotosField: View {
             }
             // One append, so a saved draft writes its photo files once.
             loadingPhotoCount -= picked.count
-            photos.append(contentsOf: loaded)
+            photos.append(contentsOf: loaded.map { MemoryDraftPhoto(data: $0) })
             if loaded.count < picked.count {
                 bannerCenter.show(.error(message: String(localized: .memoriesEditorPhotoLoadFailed)))
             }
@@ -179,7 +178,7 @@ struct MemoryEditorPhotosField: View {
 
     private func appendCapturedPhoto(_ data: Data) {
         guard allowsPhotos, remainingPhotoSlots > 0 else { return }
-        photos.append(data)
+        photos.append(MemoryDraftPhoto(data: data))
     }
 
     private func presentStagedImage(_ data: Data) {

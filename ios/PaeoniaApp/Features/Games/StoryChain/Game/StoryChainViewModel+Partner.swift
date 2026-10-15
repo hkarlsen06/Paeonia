@@ -42,30 +42,6 @@ extension StoryChainViewModel {
 
     // MARK: - Presence
 
-    func beginHeartbeat() {
-        heartbeatTask?.cancel()
-        let gateway = dependencies.gateway
-        let interval = heartbeatInterval
-        let sleep = sleep
-        heartbeatTask = Task {
-            while !Task.isCancelled {
-                try? await gateway.setPresence(.storyChain, isPresent: true)
-                try? await sleep(interval)
-            }
-        }
-    }
-
-    func endHeartbeat() {
-        heartbeatTask?.cancel()
-        heartbeatTask = nil
-        sendPresence(false)
-    }
-
-    func sendPresence(_ isPresent: Bool) {
-        let gateway = dependencies.gateway
-        Task { try? await gateway.setPresence(.storyChain, isPresent: isPresent) }
-    }
-
     /// The live room says what the partner's screen shows. Without it, the
     /// shared overview's heartbeat says whether the partner is in the game.
     func currentPartnerPresence() -> StoryChainPartnerPresence {

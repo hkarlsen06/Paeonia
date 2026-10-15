@@ -5,30 +5,6 @@ import Foundation
 extension ExquisiteCorpseViewModel {
     // MARK: - Presence
 
-    func beginHeartbeat() {
-        heartbeatTask?.cancel()
-        let gateway = dependencies.gateway
-        let interval = heartbeatInterval
-        let sleep = sleep
-        heartbeatTask = Task {
-            while !Task.isCancelled {
-                try? await gateway.setPresence(.exquisiteCorpse, isPresent: true)
-                try? await sleep(interval)
-            }
-        }
-    }
-
-    func endHeartbeat() {
-        heartbeatTask?.cancel()
-        heartbeatTask = nil
-        sendPresence(false)
-    }
-
-    func sendPresence(_ isPresent: Bool) {
-        let gateway = dependencies.gateway
-        Task { try? await gateway.setPresence(.exquisiteCorpse, isPresent: isPresent) }
-    }
-
     /// Reads what the partner is doing from the relay room, and from their
     /// heartbeat when the room says nothing, then works out the invite button.
     func updatePresenceState() {

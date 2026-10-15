@@ -129,7 +129,7 @@ struct PendingSyncOperationDrainStreamTests {
             id: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
             clientID: try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
             clientSequence: 1,
-            localCreatedAt: Date(timeIntervalSince1970: 100)
+            localCreatedAt: Date()
         )
         let pendingStore = InMemoryPendingSyncOperationRepository()
         try await pendingStore.enqueue(
@@ -247,7 +247,7 @@ struct PendingSyncOperationDrainRunTests {
         #expect(await handler.sentOperationIDs == queued)
     }
 
-    @Test func drainStreamSendsAWriteThatIsWaitingOutItsRetryDelay() async throws {
+    @Test func drainStreamLeavesAWriteThatIsWaitingOutItsRetryDelay() async throws {
         let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
         let pendingStore = InMemoryPendingSyncOperationRepository()
         let operation = try await enqueue(1, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
@@ -263,6 +263,25 @@ struct PendingSyncOperationDrainRunTests {
         let stream = PendingSyncOperationDrainStream(handlers: [handler])
 
         try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore, reason: .foreground))
+
+        #expect(await handler.sentOperationIDs.isEmpty)
+    }
+
+    @Test func pullToRefreshSendsAWriteThatIsWaitingOutItsRetryDelay() async throws {
+        let ownerUserID = testUUID("11111111-1111-1111-1111-111111111111")
+        let pendingStore = InMemoryPendingSyncOperationRepository()
+        let operation = try await enqueue(1, kind: .submitDailyAnswer, owner: ownerUserID, in: pendingStore)
+        try await pendingStore.markSending(clientOperationID: operation.id, at: Date())
+        try await pendingStore.markRetryableFailure(
+            clientOperationID: operation.id,
+            errorDescription: "offline",
+            nextRetryAt: Date().addingTimeInterval(3_600),
+            at: Date()
+        )
+        let handler = RecordingPendingOperationHandler(operationKind: .submitDailyAnswer)
+        let stream = PendingSyncOperationDrainStream(handlers: [handler])
+
+        try await stream.push(context: Self.context(owner: ownerUserID, store: pendingStore, reason: .manualRefresh))
 
         #expect(await handler.sentOperationIDs == [operation.id])
     }
@@ -379,6 +398,7 @@ private enum PendingSyncOperationTestError: Error {
 
 private actor ThrowingPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind
+    nonisolated var showsGivenUpWrites: Bool { true }
 
     init(operationKind: SyncPendingOperationKind) {
         self.operationKind = operationKind

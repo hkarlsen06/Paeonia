@@ -56,20 +56,20 @@ struct GamesDependencies {
             operationProvider: SyncClientOperationFactory.shared,
             drawingStore: FileGameDrawingStore.shared,
             drawingTransfer: client.map { LiveGameDrawingTransfer(client: $0) } ?? UnavailableGameDrawingTransfer(),
-            makeLive: { DrawAndGuessLive.make(coupleID: $0) },
+            makeLive: { GameLiveRoom.make(.drawAndGuess, coupleID: $0, role: .watching) },
             storyChainGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             storyChainCache: FileStoryChainCache.shared,
-            makeStoryChainLive: { StoryChainLive.make(coupleID: $0) },
+            makeStoryChainLive: { GameLiveRoom.make(.storyChain, coupleID: $0) },
             mindMeldGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             mindMeldCache: FileMindMeldCache.shared,
-            makeMindMeldLive: { MindMeldLive.make(coupleID: $0) },
+            makeMindMeldLive: { GameLiveRoom.make(.mindMeld, coupleID: $0) },
             exquisiteCorpseGateway: client.map { LiveExquisiteCorpseGateway(client: $0) }
                 ?? UnavailableExquisiteCorpseGateway(),
             exquisiteCorpseCache: FileExquisiteCorpseCache.shared,
-            makeExquisiteCorpseLive: { ExquisiteCorpseLive.make(coupleID: $0) },
+            makeExquisiteCorpseLive: { GameLiveRoom.make(.exquisiteCorpse, coupleID: $0) },
             boardGamesGateway: client.map { LiveBoardGamesGateway(client: $0) } ?? UnavailableBoardGamesGateway(),
             boardGamesCache: FileBoardGamesCache.shared,
-            makeLudoLive: { LudoLive.make(coupleID: $0) },
+            makeLudoLive: { GameLiveRoom.make(.ludo, coupleID: $0) },
             memoryPhotos: MemoryMediaImageProviderFactory.shared
         )
     }

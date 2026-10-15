@@ -58,6 +58,9 @@ final class DailyChallengeViewModel {
     /// One token per photo being prepared. A newer pick, a removal, or a skip replaces
     /// or clears it, so a slow earlier pick can't land on top of a later choice.
     var photoStagingTokens: [UUID: UUID] = [:]
+    /// Typed text waiting for its delayed save, by question. See `scheduleDraftSave`.
+    @ObservationIgnored var pendingDraftSaves: [UUID: Task<Void, Never>] = [:]
+    static let draftSaveDelay: Duration = .milliseconds(500)
 
     private(set) var participants = DailyChallengeParticipants()
     var snapshot = DailyChallengeSnapshot.empty(currentUserID: nil)
@@ -168,6 +171,8 @@ final class DailyChallengeViewModel {
             return
         }
 
+        // Typed text still waiting for its save belongs to the previous user.
+        flushDraftPersistence()
         resetState(forNewUser: newUserID)
         guard let newUserID else { return }
 
@@ -272,10 +277,6 @@ final class DailyChallengeViewModel {
             }
         }
 
-        let threadSummariesTask = Task { [chatService] in
-            try? await chatService.refreshThreadSummaries(ownerUserID: currentUserID)
-        }
-
         do {
             let result = try await service.loadToday(currentUserID: currentUserID)
             guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
@@ -288,10 +289,6 @@ final class DailyChallengeViewModel {
                     notice = .loadFailed(PaeoniaFailure(error))
                 }
             }
-        }
-        if let summaries = await threadSummariesTask.value,
-           !Task.isCancelled, self.currentUserID == currentUserID {
-            applyThreadSummaries(summaries)
         }
         guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
         // The first load for this user has now settled — either it applied a result

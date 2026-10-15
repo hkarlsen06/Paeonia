@@ -123,17 +123,28 @@ extension DrawAndGuessViewModel {
         draftTask = Task { [weak self, sleep] in
             try? await sleep(.seconds(1))
             guard !Task.isCancelled else { return }
-            self?.saveDraftNow()
+            self?.saveDraftNow(inBackground: true)
         }
     }
 
     /// Keeps the unsent drawing on the phone, so closing the app loses nothing.
-    func saveDraftNow() {
+    /// The delayed save after a stroke scales, encodes and writes off the main
+    /// actor. Leaving the screen saves right away.
+    func saveDraftNow(inBackground: Bool = false) {
         guard let userID = currentUserID, phase == .drawing, let round, boardRoundID == round.id else { return }
         if board.isEmpty || board.canvasSide <= 0 {
             if board.isEmpty {
                 dependencies.drawingStore.removeDraft(ownerUserID: userID, roundID: round.id)
             }
+            return
+        }
+        if inBackground {
+            dependencies.drawingStore.saveDraftInBackground(
+                board.drawing,
+                fromSide: board.canvasSide,
+                ownerUserID: userID,
+                roundID: round.id
+            )
             return
         }
         dependencies.drawingStore.saveDraft(

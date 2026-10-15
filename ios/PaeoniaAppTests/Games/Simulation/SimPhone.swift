@@ -161,7 +161,7 @@ final class SimPhone {
             GiveUpGameRoundPendingOperationHandler(gateway: gateway, cache: cache),
             GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
             GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
-        ])
+        ], retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0))
     }
 
     private func makeLiveRoom() -> WidgetLiveDrawing {
@@ -200,8 +200,7 @@ final class SimPhone {
         appTasks = []
         if let viewModel {
             viewModel.cancelTasks()
-            viewModel.heartbeatTask?.cancel()
-            viewModel.heartbeatTask = nil
+            viewModel.loops.cancelHeartbeat()
             viewModel.liveObservationTask?.cancel()
             viewModel.liveObservationTask = nil
             viewModel.isRunning = false

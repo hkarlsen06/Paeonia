@@ -281,6 +281,18 @@ struct StoryChainCacheTests {
         }
     }
 
+    @Test func theUnstarredAnswersGoFirstWhenTheKeptStarsGrowTooMany() async {
+        await eachCache { cache in
+            let kept = UUID()
+            await cache.saveStars([kept: true], ownerUserID: me)
+
+            let unstarred = Dictionary(uniqueKeysWithValues: (0..<600).map { _ in (UUID(), false) })
+            await cache.saveStars(unstarred, ownerUserID: me)
+
+            #expect(await cache.document(ownerUserID: me).stars == [kept: true])
+        }
+    }
+
     // MARK: On disk
 
     @Test func theFileCacheKeepsTheWholeDocumentBetweenLaunches() async {

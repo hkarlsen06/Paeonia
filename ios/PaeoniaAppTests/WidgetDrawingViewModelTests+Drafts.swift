@@ -18,6 +18,19 @@ extension WidgetDrawingViewModelTests {
         #expect(!viewModel.canClear)
     }
 
+    @Test func drawingSignatureFollowsTheDrawing() {
+        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: WidgetCanvasUploadSpy())
+        #expect(viewModel.drawingSignature == PKDrawing().paeoniaContentSignature)
+
+        let drawing = makeNonEmptyDrawing()
+        viewModel.updateDrawing(drawing)
+        #expect(viewModel.drawingSignature == drawing.paeoniaContentSignature)
+        #expect(viewModel.hasUnsavedEdits)
+
+        viewModel.clearCanvas()
+        #expect(viewModel.drawingSignature == PKDrawing().paeoniaContentSignature)
+    }
+
     @Test func loadSavedDrawingLoadsPersistedDataOnce() async {
         let spy = WidgetCanvasServiceSpy()
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()

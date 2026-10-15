@@ -57,6 +57,40 @@ struct LocalStoreChangesTests {
         #expect(await next(stream, owner: marker)?.ownerUserID == marker)
     }
 
+    @Test func aBurstOfIdenticalWritesReachesASlowConsumerOnce() async {
+        let owner = UUID()
+        let marker = UUID()
+        let stream = LocalStoreChanges.changes(in: .access)
+
+        for _ in 0..<50 {
+            LocalStoreChanges.post(.access, ownerUserID: owner)
+        }
+        LocalStoreChanges.post(.access, ownerUserID: marker)
+
+        var received: [UUID?] = []
+        for await change in stream where change.ownerUserID == owner || change.ownerUserID == marker {
+            received.append(change.ownerUserID)
+            if change.ownerUserID == marker {
+                break
+            }
+        }
+        #expect(received == [owner, marker])
+    }
+
+    @Test func mergingNeverHidesAnotherDomain() async {
+        let owner = UUID()
+        let stream = LocalStoreChanges.changes(in: .dailyChallenge, .pendingOperations)
+
+        LocalStoreChanges.post(.dailyChallenge, ownerUserID: owner)
+        for _ in 0..<20 {
+            LocalStoreChanges.post(.pendingOperations, ownerUserID: owner)
+        }
+
+        var iterator = stream.filter { $0.ownerUserID == owner }.makeAsyncIterator()
+        #expect(await iterator.next()?.domain == .dailyChallenge)
+        #expect(await iterator.next()?.domain == .pendingOperations)
+    }
+
     @Test func cancellingTheConsumerRemovesTheObserver() async {
         let owner = UUID()
         let received = LockedBox(0)

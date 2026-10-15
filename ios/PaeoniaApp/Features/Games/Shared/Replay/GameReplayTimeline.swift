@@ -26,6 +26,9 @@ nonisolated struct GameReplayTimeline: Sendable {
 
     let items: [Item]
     let duration: TimeInterval
+    /// Tells timelines apart, so a surface knows when to start over. A scaled
+    /// copy keeps it.
+    let id: UUID
 
     /// A stroke on the original time line, in seconds. Only the part PencilKit
     /// still shows counts.
@@ -59,6 +62,54 @@ nonisolated struct GameReplayTimeline: Sendable {
         }
         self.items = items
         duration = items.map(\.end).max() ?? 0
+        id = UUID()
+    }
+
+    private init(items: [Item], duration: TimeInterval, id: UUID) {
+        self.items = items
+        self.duration = duration
+        self.id = id
+    }
+
+    /// The same timeline for a canvas of `side` points, from the canonical size.
+    func fitted(toSide side: CGFloat) -> GameReplayTimeline {
+        let scaled = GameCanvas.fitted(PKDrawing(strokes: items.map(\.stroke)), toSide: side).strokes
+        guard scaled.count == items.count else {
+            return self
+        }
+        let fittedItems = zip(items, scaled).map { item, stroke in
+            Item(stroke: stroke, start: item.start, end: item.end, windowOffset: item.windowOffset)
+        }
+        return GameReplayTimeline(items: fittedItems, duration: duration, id: id)
+    }
+
+    /// What `drawing(at:)` holds, split for a surface that draws the finished
+    /// strokes only when one more finishes.
+    struct Progress {
+        /// How many strokes are done. Time only moves forward between restarts,
+        /// so this count names the same strokes every time it repeats.
+        var finishedCount: Int
+        /// The strokes being drawn, cut at the points drawn so far, with their
+        /// positions in `items`.
+        var partials: [(index: Int, stroke: PKStroke)]
+    }
+
+    func progress(at time: TimeInterval) -> Progress {
+        var finishedCount = 0
+        var partials: [(index: Int, stroke: PKStroke)] = []
+        for (index, item) in items.enumerated() where time >= item.start {
+            if time >= item.end {
+                finishedCount += 1
+            } else if let stroke = Self.partialStroke(item, at: time) {
+                partials.append((index, stroke))
+            }
+        }
+        return Progress(finishedCount: finishedCount, partials: partials)
+    }
+
+    /// The strokes that are done at `time`.
+    func finishedStrokes(at time: TimeInterval) -> [PKStroke] {
+        items.filter { time >= $0.end }.map(\.stroke)
     }
 
     /// The drawing as the guesser sees it at `time`: strokes that have finished,

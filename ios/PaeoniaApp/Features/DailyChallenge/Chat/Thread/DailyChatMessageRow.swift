@@ -20,7 +20,8 @@ struct DailyChatMessageRow: View {
     let onRetry: () -> Void
     let onTapQuoted: (UUID) -> Void
     var onOpenPhoto: (DailyQuestionChatPhoto) -> Void = { _ in }
-    @Binding var timestampRevealOffset: CGFloat
+    /// Read only by the row views, so a swipe redraws them and not the page around them.
+    let timestampReveal: DailyChatTimestampReveal
     /// Set while ExyteChat shows this row above its long-press menu.
     let messageFrame: Binding<CGRect>?
 

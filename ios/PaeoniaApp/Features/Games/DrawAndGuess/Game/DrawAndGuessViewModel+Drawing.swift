@@ -158,9 +158,10 @@ extension DrawAndGuessViewModel {
     /// The guesser's replay for `GameReplaySurface`.
     var replayFrames: GameReplayFrames {
         GameReplayFrames(
-            drawing: { [weak self] wall, side in
-                guard let self, isReplayReady else { return nil }
-                return replayDrawing(atWall: wall, side: side)
+            playback: { [weak self] wall in
+                guard let self, isReplayReady, let timeline = replayTimeline, let clock = replayClock
+                else { return nil }
+                return .init(timeline: timeline, time: clock.replayTime(at: wall))
             },
             isFinished: { [weak self] wall in self?.isReplayFinished(atWall: wall) ?? false }
         )

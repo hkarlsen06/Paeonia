@@ -56,7 +56,7 @@ struct DrawAndGuessFinalDrawingView: View {
     let side: CGFloat
 
     var body: some View {
-        GameStaticDrawing(drawing: drawing?.fitted(toSide: side) ?? PKDrawing())
+        GameStaticDrawing(drawing: drawing?.drawing ?? PKDrawing(), side: side)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
     }

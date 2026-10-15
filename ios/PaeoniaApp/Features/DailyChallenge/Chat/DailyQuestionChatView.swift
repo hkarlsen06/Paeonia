@@ -36,7 +36,7 @@ struct DailyQuestionChatView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var photoViewer: PaeoniaImageViewerSelection?
     @State private var projectionStore = DailyChatProjectionStore()
-    @State private var timestampRevealOffset: CGFloat = 0
+    @State private var timestampReveal = DailyChatTimestampReveal()
     @State private var highlightedRowID: String?
     /// The partner's answer row while it plays its reveal.
     @State private var revealingRowID: String?
@@ -172,6 +172,9 @@ struct DailyQuestionChatView: View {
         .keyboardDismissMode(.interactive)
         .contentInsets(bottom: Self.bottomComposerClearance)
         .scrollTo(scrollTarget)
+        .enableLoadMoreOlderMessages(hasMoreToLoad: viewModel.hasOlderMessages) {
+            await viewModel.loadOlderMessages()
+        }
         .chatTheme(chatTheme)
         .overlay {
             ZStack {
@@ -199,7 +202,7 @@ struct DailyQuestionChatView: View {
             onRetry: { retry(row.message) },
             onTapQuoted: jumpToMessage,
             onOpenPhoto: openPhoto,
-            timestampRevealOffset: $timestampRevealOffset,
+            timestampReveal: timestampReveal,
             messageFrame: messageFrame
         )
         .id(row.id)
@@ -419,14 +422,14 @@ extension DailyQuestionChatView {
             horizontal: value.translation.width,
             vertical: value.translation.height
         ) else { return }
-        timestampRevealOffset = offset
+        timestampReveal.offset = offset
     }
 
     private func handleBackgroundTimestampRevealEnded(_ value: DailyChatDragValue) {
         handleBackgroundTimestampRevealChanged(value)
-        guard timestampRevealOffset != 0 else { return }
+        guard timestampReveal.offset != 0 else { return }
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
-            timestampRevealOffset = 0
+            timestampReveal.offset = 0
         }
     }
 }

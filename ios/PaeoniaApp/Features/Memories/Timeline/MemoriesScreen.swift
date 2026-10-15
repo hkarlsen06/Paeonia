@@ -17,6 +17,7 @@ struct MemoriesScreen: View {
     @State private var isWideLayout = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     init(
         currentUserID: UUID?,
@@ -52,7 +53,10 @@ struct MemoriesScreen: View {
                     viewModel: viewModel
                 )
             }
-            .sheet(isPresented: $isCreating) {
+            .onChange(of: scenePhase) { _, phase in
+                if phase != .active { viewModel.flushDraft() }
+            }
+            .sheet(isPresented: $isCreating, onDismiss: { viewModel.flushDraft() }) {
                 // The view model keeps the draft and saves it on the device, so a swipe-down
                 // or a route change never throws away a half-written memory. A successful
                 // save or a deliberate Cancel clears it.

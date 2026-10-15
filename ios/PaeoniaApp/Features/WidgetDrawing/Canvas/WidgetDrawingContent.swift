@@ -52,9 +52,9 @@ extension PKDrawing {
     /// Names this set of strokes in a way that survives encoding, scaling, and
     /// app restarts, unlike `paeoniaContentSignature`, whose hash is seeded per
     /// launch.
-    var paeoniaStrokeFingerprint: String {
+    nonisolated var paeoniaStrokeFingerprint: String {
         let keys = strokes.map(WidgetLiveStrokeSync.key(for:)).sorted().joined(separator: ",")
-        return SHA256.hash(data: Data(keys.utf8)).map { String(format: "%02x", $0) }.joined()
+        return SHA256.hash(data: Data(keys.utf8)).paeoniaHexString
     }
 
     var paeoniaPointCount: Int {

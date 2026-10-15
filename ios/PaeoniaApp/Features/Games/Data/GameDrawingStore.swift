@@ -1,4 +1,5 @@
 import Foundation
+import PencilKit
 
 /// Drawings kept on this phone as files. A draft is the drawer's own unsent
 /// drawing, so closing the app mid-drawing loses nothing. A rescued drawing is
@@ -11,6 +12,13 @@ nonisolated protocol GameDrawingStoring: Sendable {
     func draft(ownerUserID: UUID, roundID: UUID) -> Data?
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID)
     func removeDraft(ownerUserID: UUID, roundID: UUID)
+    /// Starts a save that runs in the background, and returns its ticket. Any
+    /// later save or removal of this draft, background or not, makes the ticket
+    /// stale.
+    func beginDraftSave(ownerUserID: UUID, roundID: UUID) -> Int
+    /// Saves the draft unless its ticket went stale, so a save that finishes late
+    /// never undoes a newer draft or a removal.
+    func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID, ticket: Int)
     func rescuedDrawing(ownerUserID: UUID) -> Data?
     func saveRescuedDrawing(_ data: Data, ownerUserID: UUID)
     func removeRescuedDrawing(ownerUserID: UUID)
@@ -28,6 +36,17 @@ nonisolated protocol GameDrawingStoring: Sendable {
 }
 
 nonisolated extension GameDrawingStoring {
+    /// Saves a draft without holding up the main actor. The caller passes a copy
+    /// of the drawing as drawn on a canvas of `side` points. Scaling to the
+    /// canonical size, encoding and the write happen in the background.
+    func saveDraftInBackground(_ drawing: PKDrawing, fromSide side: CGFloat, ownerUserID: UUID, roundID: UUID) {
+        let ticket = beginDraftSave(ownerUserID: ownerUserID, roundID: roundID)
+        Task.detached(priority: .utility) { [self] in
+            let data = GameCanvas.canonical(drawing, fromSide: side).dataRepresentation()
+            saveDraft(data, ownerUserID: ownerUserID, roundID: roundID, ticket: ticket)
+        }
+    }
+
     /// Applies a privacy purge. Losing access for a while keeps the person's own
     /// unsent drawings, like the widget and memory drafts. Signing out and a
     /// permanent loss remove them too.
@@ -42,11 +61,39 @@ nonisolated extension GameDrawingStoring {
     }
 }
 
+/// Counts the saves and removals of each draft, to tell a background save that
+/// a newer one overtook. The store's lock guards it.
+nonisolated struct GameDraftTickets {
+    private var latest: [String: Int] = [:]
+    private var clearCount = 0
+
+    private static func key(_ ownerUserID: UUID, _ roundID: UUID) -> String {
+        "\(ownerUserID)/\(roundID)"
+    }
+
+    /// Makes every earlier ticket of this draft stale and returns a new one.
+    mutating func next(_ ownerUserID: UUID, _ roundID: UUID) -> Int {
+        let key = Self.key(ownerUserID, roundID)
+        latest[key, default: 0] += 1
+        return latest[key, default: 0] + clearCount
+    }
+
+    /// Makes every ticket of every draft stale.
+    mutating func invalidateAll() {
+        clearCount += 1
+    }
+
+    func isCurrent(_ ticket: Int, _ ownerUserID: UUID, _ roundID: UUID) -> Bool {
+        ticket == latest[Self.key(ownerUserID, roundID), default: 0] + clearCount
+    }
+}
+
 nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sendable {
     static let shared = FileGameDrawingStore()
 
     private let directoryURL: URL
     private let lock = NSLock()
+    private var draftTickets = GameDraftTickets()
 
     init(directoryURL: URL = FileGameDrawingStore.defaultDirectoryURL()) {
         self.directoryURL = directoryURL
@@ -63,11 +110,28 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
     }
 
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID) {
-        lock.withLock { write(data, to: draftURL(ownerUserID: ownerUserID, roundID: roundID)) }
+        lock.withLock {
+            _ = draftTickets.next(ownerUserID, roundID)
+            write(data, to: draftURL(ownerUserID: ownerUserID, roundID: roundID))
+        }
+    }
+
+    func beginDraftSave(ownerUserID: UUID, roundID: UUID) -> Int {
+        lock.withLock { draftTickets.next(ownerUserID, roundID) }
+    }
+
+    func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID, ticket: Int) {
+        lock.withLock {
+            guard draftTickets.isCurrent(ticket, ownerUserID, roundID) else { return }
+            write(data, to: draftURL(ownerUserID: ownerUserID, roundID: roundID))
+        }
     }
 
     func removeDraft(ownerUserID: UUID, roundID: UUID) {
-        lock.withLock { try? FileManager.default.removeItem(at: draftURL(ownerUserID: ownerUserID, roundID: roundID)) }
+        lock.withLock {
+            _ = draftTickets.next(ownerUserID, roundID)
+            try? FileManager.default.removeItem(at: draftURL(ownerUserID: ownerUserID, roundID: roundID))
+        }
     }
 
     func rescuedDrawing(ownerUserID: UUID) -> Data? {
@@ -118,6 +182,7 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
 
     func clearAll() {
         lock.withLock {
+            draftTickets.invalidateAll()
             guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }
             try? FileManager.default.removeItem(at: directoryURL)
         }
@@ -162,6 +227,7 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
 nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked Sendable {
     private let lock = NSLock()
     private var drafts: [String: Data] = [:]
+    private var draftTickets = GameDraftTickets()
     private var rescued: [UUID: Data] = [:]
     private var downloads: [UUID: Data] = [:]
     private var snapshots: [UUID: (roundID: UUID, data: Data)] = [:]
@@ -173,11 +239,28 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
     }
 
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID) {
-        lock.withLock { drafts["\(ownerUserID)/\(roundID)"] = data }
+        lock.withLock {
+            _ = draftTickets.next(ownerUserID, roundID)
+            drafts["\(ownerUserID)/\(roundID)"] = data
+        }
+    }
+
+    func beginDraftSave(ownerUserID: UUID, roundID: UUID) -> Int {
+        lock.withLock { draftTickets.next(ownerUserID, roundID) }
+    }
+
+    func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID, ticket: Int) {
+        lock.withLock {
+            guard draftTickets.isCurrent(ticket, ownerUserID, roundID) else { return }
+            drafts["\(ownerUserID)/\(roundID)"] = data
+        }
     }
 
     func removeDraft(ownerUserID: UUID, roundID: UUID) {
-        lock.withLock { drafts["\(ownerUserID)/\(roundID)"] = nil }
+        lock.withLock {
+            _ = draftTickets.next(ownerUserID, roundID)
+            drafts["\(ownerUserID)/\(roundID)"] = nil
+        }
     }
 
     func rescuedDrawing(ownerUserID: UUID) -> Data? {
@@ -225,6 +308,7 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
 
     func clearAll() {
         lock.withLock {
+            draftTickets.invalidateAll()
             drafts = [:]
             rescued = [:]
             downloads = [:]

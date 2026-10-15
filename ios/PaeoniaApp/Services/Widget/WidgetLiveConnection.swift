@@ -38,7 +38,6 @@ class WidgetLiveConnection {
     private var runTask: Task<Void, Never>?
     private var socket: URLSessionWebSocketTask?
     private let encoder = JSONEncoder()
-    private let decoder = JSONDecoder()
 
     init(
         coupleID: UUID,
@@ -150,13 +149,57 @@ class WidgetLiveConnection {
             guard case let .string(text) = message else {
                 continue
             }
-            let data = Data(text.utf8)
-            if GameLiveEnvelopeTag.isGameMessage(data, decoder: decoder) {
+            // Parsing waits for each message in turn, so they keep their order.
+            let incoming = await Self.parse(text)
+            guard !Task.isCancelled else {
+                break
+            }
+            switch incoming {
+            case let .game(data):
                 onGameData?(data)
-            } else if let decoded = try? decoder.decode(WidgetLiveMessage.self, from: data) {
+            case let .live(decoded):
                 onMessage?(decoded)
+            case nil:
+                break
             }
         }
         return didReceive
+    }
+
+    /// What one relay message holds, parsed off the main actor.
+    nonisolated enum Incoming: Sendable {
+        case game(Data)
+        case live(WidgetLiveMessage)
+    }
+
+    /// Decodes a message once. A game message keeps its JSON for the channel. A
+    /// drawing message also gets its strokes decoded, which can take long for a
+    /// whole-canvas snapshot.
+    @concurrent
+    static func parse(_ text: String) async -> Incoming? {
+        let data = Data(text.utf8)
+        switch try? JSONDecoder().decode(IncomingWrapper.self, from: data) {
+        case .game:
+            return .game(data)
+        case var .live(message):
+            message.preparedUpserts = message.decodeUpserts()
+            return .live(message)
+        case nil:
+            return nil
+        }
+    }
+}
+
+/// Tells a game message from a drawing message in the same parse that decodes it.
+private nonisolated enum IncomingWrapper: Decodable {
+    case game
+    case live(WidgetLiveMessage)
+
+    init(from decoder: any Decoder) throws {
+        if (try? GameLiveEnvelopeTag(from: decoder)) != nil {
+            self = .game
+        } else {
+            self = try .live(WidgetLiveMessage(from: decoder))
+        }
     }
 }

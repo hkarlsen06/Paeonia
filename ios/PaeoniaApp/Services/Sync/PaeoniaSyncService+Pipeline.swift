@@ -1,18 +1,20 @@
 import Foundation
 
 extension PaeoniaSyncService {
+    /// Runs every stream once. The timeout covers each stream except the pending
+    /// writes, whose photo and voice uploads can take longer than any fixed budget
+    /// for the whole run. That stream limits each write on its own.
     func performRunWithTimeout(
         reason: SyncRequestReason,
         session: SyncSession
     ) async -> SyncRunResult {
-        let timeoutNanoseconds = syncTimeoutNanoseconds
         let pipelineID = UUID()
         let runTask = Task {
             await performRun(reason: reason, session: session)
         }
         activePipelineTasks[pipelineID] = runTask
         let result = await withTaskCancellationHandler {
-            await raceTimeout(runTask: runTask, timeoutNanoseconds: timeoutNanoseconds)
+            await runTask.value
         } onCancel: {
             runTask.cancel()
         }
@@ -21,46 +23,44 @@ extension PaeoniaSyncService {
         return result
     }
 
-    private func raceTimeout(
-        runTask: Task<SyncRunResult, Never>,
-        timeoutNanoseconds: UInt64
-    ) async -> SyncRunResult {
-        await withTaskGroup(of: TimedRunEvent.self) { group in
-            group.addTask {
-                .completed(await runTask.value)
-            }
-            group.addTask {
-                do {
-                    try await Task.sleep(nanoseconds: timeoutNanoseconds)
-                    return .timedOut
-                } catch {
-                    return .cancelled
-                }
-            }
-
-            guard let firstEvent = await group.next() else {
-                return SyncRunResult.cancelled()
-            }
-
-            switch firstEvent {
-            case let .completed(result):
-                group.cancelAll()
-                return result
-            case .timedOut:
-                runTask.cancel()
-                group.cancelAll()
-                // Cancellation is a request, not proof that the task has
-                // stopped. Keep this run active until the pipeline settles
-                // so a retry cannot overlap its local writes.
-                _ = await runTask.value
-                return .timedOut()
-            case .cancelled:
-                runTask.cancel()
-                group.cancelAll()
-                _ = await runTask.value
-                return .cancelled()
-            }
+    /// Runs `stream` and cancels it once the timeout passes, unless it is the pending
+    /// writes stream.
+    private func runStreamWithTimeout(
+        _ stream: any SyncStream,
+        _ scope: SyncStreamScope,
+        _ session: SyncSession,
+        _ reason: SyncRequestReason,
+        _ startedAt: Date
+    ) async -> StreamOutcome {
+        guard stream.streamKey != .pendingOperations else {
+            return await runStream(stream, scope: scope, session: session, reason: reason, startedAt: startedAt)
         }
+
+        let streamTask = Task {
+            await runStream(stream, scope: scope, session: session, reason: reason, startedAt: startedAt)
+        }
+        let timeoutNanoseconds = syncTimeoutNanoseconds
+        let timer = Task {
+            guard (try? await Task.sleep(nanoseconds: timeoutNanoseconds)) != nil else {
+                return false
+            }
+            streamTask.cancel()
+            return true
+        }
+        // Cancellation is a request, not proof that the task has stopped. Wait for
+        // the stream to settle so a retry cannot overlap its local writes.
+        let outcome = await withTaskCancellationHandler {
+            await streamTask.value
+        } onCancel: {
+            streamTask.cancel()
+            timer.cancel()
+        }
+        timer.cancel()
+        let didTimeOut = await timer.value
+        if didTimeOut, case .cancelled = outcome {
+            return .timedOut
+        }
+        return outcome
     }
 
     private func removeActivePipeline(_ id: UUID) {
@@ -102,11 +102,14 @@ extension PaeoniaSyncService {
 
             attemptedStreamCount += 1
 
-            switch await runStream(stream, scope: scope, session: session, reason: reason, startedAt: startedAt) {
+            let outcome = await runStreamWithTimeout(stream, scope, session, reason, startedAt)
+            switch outcome {
             case .completed:
                 completedStreamCount += 1
             case .cancelled:
                 return result(.cancelled, failedStreamKey: stream.streamKey)
+            case .timedOut:
+                return result(.timedOut, failedStreamKey: stream.streamKey)
             case let .failed(errorDescription):
                 return result(.failed, failedStreamKey: stream.streamKey, errorDescription: errorDescription)
             }
@@ -206,14 +209,9 @@ extension PaeoniaSyncService {
     }
 }
 
-private enum TimedRunEvent: Sendable {
-    case completed(SyncRunResult)
-    case timedOut
-    case cancelled
-}
-
 private enum StreamOutcome {
     case completed
     case cancelled
+    case timedOut
     case failed(String)
 }

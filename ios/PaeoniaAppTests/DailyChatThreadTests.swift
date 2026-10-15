@@ -410,7 +410,7 @@ struct DailyChatRowGestureAreaTests {
             onReply: {},
             onRetry: {},
             onTapQuoted: { _ in },
-            timestampRevealOffset: .constant(0),
+            timestampReveal: DailyChatTimestampReveal(),
             messageFrame: nil
         )
     }

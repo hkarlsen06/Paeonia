@@ -17,10 +17,17 @@ extension DrawAndGuessViewModel {
         // The screen may have gone away, or the app to the background, while the
         // cache was read. Opening presence and sockets now would leave them open.
         guard isRunning, !Task.isCancelled else { return }
-        beginObserving()
-        beginTicking()
+        loops.beginObserving(
+            currentUserID: { [weak self] in self?.currentUserID },
+            reload: { [weak self] in await self?.reload() }
+        )
+        loops.beginTicking(every: tickInterval) { [weak self] in
+            guard let self else { return }
+            now = dependencies.now()
+            recompute()
+        }
         if isActive {
-            beginHeartbeat()
+            loops.beginHeartbeat()
             startLive()
         }
         // The live feed keeps the cache current. This read covers a build without
@@ -34,7 +41,7 @@ extension DrawAndGuessViewModel {
         isRunning = false
         isStopped = true
         cancelTasks()
-        endHeartbeat()
+        loops.endHeartbeat()
         stopLive()
         saveDraftNow()
     }
@@ -44,28 +51,25 @@ extension DrawAndGuessViewModel {
         guard isRunning, newValue != isActive else { return }
         isActive = newValue
         if newValue {
-            beginHeartbeat()
+            loops.beginHeartbeat()
             startLive()
             // A replay or a first look that waited for the screen starts now.
             recompute()
             refreshTask?.cancel()
             refreshTask = Task { [weak self] in await self?.refresh() }
         } else {
-            heartbeatTask?.cancel()
-            heartbeatTask = nil
-            sendPresence(false)
+            loops.endHeartbeat()
             stopLive()
             saveDraftNow()
         }
     }
 
     func cancelTasks() {
-        for task in [observationTask, tickTask, wrongGuessTask, draftTask, startTask, refreshTask] {
+        loops.cancelFollowing()
+        for task in [wrongGuessTask, draftTask, startTask, refreshTask] {
             task?.cancel()
         }
         cancelDrawingLoad()
-        observationTask = nil
-        tickTask = nil
         wrongGuessTask = nil
         draftTask = nil
         startTask = nil
@@ -75,31 +79,6 @@ extension DrawAndGuessViewModel {
         if isShowingWrongGuess {
             slots.clear()
             isShowingWrongGuess = false
-        }
-    }
-
-    func beginObserving() {
-        observationTask?.cancel()
-        observationTask = Task { [weak self] in
-            for await change in LocalStoreChanges.changes(in: .games, .pendingOperations) {
-                guard !Task.isCancelled, let self else { return }
-                guard change.ownerUserID == nil || change.ownerUserID == currentUserID else { continue }
-                await reload()
-            }
-        }
-    }
-
-    func beginTicking() {
-        tickTask?.cancel()
-        let interval = tickInterval
-        let sleep = sleep
-        tickTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await sleep(interval)
-                guard !Task.isCancelled, let self else { return }
-                now = dependencies.now()
-                recompute()
-            }
         }
     }
 

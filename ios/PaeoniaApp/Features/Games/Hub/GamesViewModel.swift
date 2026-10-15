@@ -201,27 +201,23 @@ final class GamesViewModel {
         }
     }
 
-    /// Follows writes to the Games cache and the pending operations.
-    func observeStoreChanges() async {
-        for await change in LocalStoreChanges.changes(in: .games, .pendingOperations) {
-            guard !Task.isCancelled else { return }
-            guard change.ownerUserID == nil || change.ownerUserID == currentUserID else { continue }
-            await reload()
-        }
-    }
-
     func reload() async {
         guard let userID = currentUserID else { return }
         let document = await dependencies.cache.document(ownerUserID: userID)
         guard currentUserID == userID else { return }
         overview = document.overview
         hasLoaded = true
-        partnerGameKinds = Self.partnerGames(in: overview)
+        let newPartnerGameKinds = Self.partnerGames(in: overview)
             .filter { game($0) != nil }
-        settings = overview?.settings
-        if let settings {
-            draftPlayStyle = settings.playStyle
-            draftLanguage = settings.language
+        if partnerGameKinds != newPartnerGameKinds {
+            partnerGameKinds = newPartnerGameKinds
+        }
+        if settings != overview?.settings {
+            settings = overview?.settings
+            if let settings {
+                draftPlayStyle = settings.playStyle
+                draftLanguage = settings.language
+            }
         }
         for game in games {
             await game.reload()
@@ -365,6 +361,27 @@ final class GamesViewModel {
 }
 
 extension GamesViewModel {
+    /// Follows writes to the Games cache and the pending operations. The change
+    /// carries no rows, so a send queued for chat or a memory reloads too. The
+    /// reload skips unchanged values, and a burst of writes while one reload runs
+    /// makes one more reload.
+    func observeStoreChanges() async {
+        let (dirty, signal) = AsyncStream.makeStream(of: Void.self, bufferingPolicy: .bufferingNewest(1))
+        let forwarder = Task {
+            for await change in LocalStoreChanges.changes(in: .games, .pendingOperations) {
+                if change.ownerUserID == nil || change.ownerUserID == currentUserID {
+                    signal.yield()
+                }
+            }
+            signal.finish()
+        }
+        defer { forwarder.cancel() }
+        for await _ in dirty {
+            guard !Task.isCancelled else { return }
+            await reload()
+        }
+    }
+
     /// The games the partner has open, in the server's order.
     nonisolated static func partnerGames(in overview: RemoteGamesOverview?) -> [GameKind] {
         (overview?.presence ?? []).filter(\.partnerPresent).map(\.kind)

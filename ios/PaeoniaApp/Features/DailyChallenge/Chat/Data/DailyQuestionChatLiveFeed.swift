@@ -33,8 +33,10 @@ nonisolated struct DailyQuestionChatLiveFeed: LiveFeed {
             guard !Task.isCancelled else {
                 return
             }
-            await cache.saveSummaries(rows.compactMap(\.dailyQuestionSummary), ownerUserID: session.userID)
-            LocalStoreChanges.post(.dailyChat, ownerUserID: session.userID)
+            // An unchanged result writes nothing, and the screens have nothing new to read.
+            let summaries = rows.compactMap(\.dailyQuestionSummary)
+            let changed = await cache.saveSummaries(summaries, ownerUserID: session.userID)
+            if changed { LocalStoreChanges.post(.dailyChat, ownerUserID: session.userID) }
         }
     }
 }

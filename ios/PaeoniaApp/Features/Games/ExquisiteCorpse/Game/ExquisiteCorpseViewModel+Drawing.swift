@@ -102,13 +102,15 @@ extension ExquisiteCorpseViewModel {
         draftTask = Task { [weak self, sleep] in
             try? await sleep(.seconds(1))
             guard !Task.isCancelled else { return }
-            self?.saveDraftNow()
+            self?.saveDraftNow(inBackground: true)
         }
         sendStripIfChanged()
     }
 
-    /// Keeps the unsent part on the phone, so closing the app loses nothing.
-    func saveDraftNow() {
+    /// Keeps the unsent part on the phone, so closing the app loses nothing. The
+    /// delayed save after a stroke scales, encodes and writes off the main
+    /// actor. Leaving the screen saves right away.
+    func saveDraftNow(inBackground: Bool = false) {
         // Done owns the drawing while it queues it, and a sent part needs no draft.
         guard !isFinishing, let userID = currentUserID, phase == .drawing, let partID = ownPartID,
               boardPartID == partID, boardSentPartID != partID
@@ -117,6 +119,15 @@ extension ExquisiteCorpseViewModel {
             if board.isEmpty {
                 dependencies.drawingStore.removeDraft(ownerUserID: userID, roundID: partID)
             }
+            return
+        }
+        if inBackground {
+            dependencies.drawingStore.saveDraftInBackground(
+                board.drawing,
+                fromSide: board.canvasSide,
+                ownerUserID: userID,
+                roundID: partID
+            )
             return
         }
         dependencies.drawingStore.saveDraft(

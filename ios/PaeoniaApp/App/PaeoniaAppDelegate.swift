@@ -39,7 +39,7 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        let token = deviceToken.map { String(format: "%02x", $0) }.joined()
+        let token = deviceToken.paeoniaHexString
         Task {
             await pushRegistration.registerDevice(pushToken: token)
         }

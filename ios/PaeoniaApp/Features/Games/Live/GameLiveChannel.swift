@@ -31,6 +31,30 @@ nonisolated enum GameLiveTicket {
     }
 }
 
+/// A game's room on the relay, for presence and the game's own messages. It is a
+/// `WidgetLiveDrawing` so the game shares the socket code of the widget canvas,
+/// but each game has a room of its own (`<couple>:<kind.relayChannel>`), so a
+/// game never shares the four-socket cap with Home and the canvas. Only Draw & Guess
+/// attaches a canvas to it. The drawer joins with the `drawing` role and the
+/// guesser with `watching`. The other games join with `present`.
+@MainActor
+enum GameLiveRoom {
+    static func make(
+        _ kind: GameKind,
+        coupleID: UUID,
+        role: WidgetLivePresence.Role = .present
+    ) -> WidgetLiveDrawing {
+        WidgetLiveDrawing(
+            connection: WidgetLiveConnection(
+                coupleID: coupleID,
+                ticketProvider: GameLiveTicket.provider(for: kind)
+            ),
+            role: role,
+            presence: WidgetLivePresence(countsLatestHelloOnly: true)
+        )
+    }
+}
+
 /// How a game message travels: `{"game": "draw_and_guess", "message": {...}}`.
 /// The `game` key tells it apart from a live drawing message, which has none.
 nonisolated struct GameLiveEnvelope<Message: GameLiveMessage>: Codable {

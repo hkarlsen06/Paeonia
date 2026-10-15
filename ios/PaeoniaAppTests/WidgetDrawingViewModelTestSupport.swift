@@ -197,6 +197,13 @@ final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey) {
         bases[key] = fingerprint
     }
+
+    nonisolated func setDraft(_ data: Data, base fingerprint: String, for key: WidgetDrawingDraftKey) {
+        Task { @MainActor in
+            setDraft(data, for: key)
+            setDraftBase(fingerprint, for: key)
+        }
+    }
 }
 
 // swiftlint:enable async_without_await

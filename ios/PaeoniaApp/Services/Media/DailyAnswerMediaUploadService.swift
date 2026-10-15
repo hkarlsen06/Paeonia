@@ -225,7 +225,7 @@ nonisolated struct FinalizeDailyAnswerMediaRequest: Encodable {
         mediaType = media.purpose.mediaType
         mimeType = media.mimeType
         byteSize = Int64(media.data.count)
-        sha256Hex = SHA256.hash(data: media.data).map { String(format: "%02x", $0) }.joined()
+        sha256Hex = SHA256.hash(data: media.data).paeoniaHexString
         width = media.width
         height = media.height
         durationMs = media.durationMs

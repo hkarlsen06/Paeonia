@@ -96,7 +96,7 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
         else {
             throw PendingSyncOperationClaimError.notPending
         }
-        update(id: clientOperationID) { operation in
+        update(id: clientOperationID, posts: false) { operation in
             snapshot(
                 from: operation,
                 progress: Progress(
@@ -169,10 +169,20 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
     }
 
     func deleteCompleted(ownerUserID: UUID) throws {
-        operations = operations.filter {
-            $0.value.ownerUserID != ownerUserID || $0.value.status != .succeeded
+        let cutoff = Date().addingTimeInterval(-PendingSyncOperationRetention.terminal)
+        operations = operations.filter { _, operation in
+            guard operation.ownerUserID == ownerUserID else {
+                return true
+            }
+            switch operation.status {
+            case .succeeded:
+                return false
+            case .failedTerminal:
+                return (operation.lastAttemptAt ?? .distantPast) >= cutoff
+            case .queued, .sending, .retrying, .failedRetryable:
+                return true
+            }
         }
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
     func resetInFlight(ownerUserID: UUID) throws {
@@ -190,11 +200,11 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
                 )
             )
         }
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
     private func update(
         id: UUID,
+        posts: Bool = true,
         transform: (PendingSyncOperationSnapshot) -> PendingSyncOperationSnapshot
     ) {
         guard let operation = operations[id] else {
@@ -202,7 +212,9 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
         }
 
         operations[id] = transform(operation)
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
+        if posts {
+            LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
+        }
     }
 
     /// The fields a send changes. Everything else on the snapshot stays as it was.

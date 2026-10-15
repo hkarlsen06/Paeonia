@@ -32,7 +32,7 @@ struct ExquisiteCorpseFigureView: View {
     private func part(_ drawing: PKDrawing?) -> some View {
         ZStack {
             if let drawing {
-                GameStaticDrawing(drawing: GameCanvas.fitted(drawing, toSide: side))
+                GameStaticDrawing(drawing: drawing, side: side)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
                     .transition(.opacity)

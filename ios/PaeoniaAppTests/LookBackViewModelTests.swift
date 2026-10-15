@@ -15,7 +15,8 @@ struct LookBackViewModelTests {
         cache: MemoryLookBackCache = MemoryLookBackCache()
     ) -> Setup {
         let service = StubLookBackService(results)
-        return Setup(model: LookBackViewModel(service: service, cache: cache), service: service, cache: cache)
+        let model = LookBackViewModel(service: service, cache: cache, storeChangeQuietPeriod: .milliseconds(50))
+        return Setup(model: model, service: service, cache: cache)
     }
 
     @Test func showsTheServerItemAndSavesIt() async {
@@ -200,5 +201,21 @@ struct LookBackViewModelTests {
         observing.cancel()
         #expect(model.item == lookBackMemoryItem())
         #expect(setup.service.requestTimes.count == 1)
+    }
+
+    @Test func aBurstOfChangesToTheShownMemoryReadsOnce() async {
+        let setup = makeModel([.success(lookBackResponse(lookBackMemoryItem())), .success(lookBackResponse(nil))])
+        let model = setup.model
+        await model.configure(userID: LookBackIDs.user, coupleID: nil)
+        let observing = Task { await model.observeStoreChanges() }
+        try? await Task.sleep(for: .milliseconds(50))
+        for _ in 0..<5 {
+            LocalStoreChanges.post(.memories, ownerUserID: LookBackIDs.user)
+        }
+        await lookBackWaitUntil { model.item == nil }
+        // Wait past the quiet period, so an extra read would show up in the count.
+        try? await Task.sleep(for: .milliseconds(150))
+        observing.cancel()
+        #expect(setup.service.requestTimes.count == 2)
     }
 }

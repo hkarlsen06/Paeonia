@@ -114,6 +114,21 @@ struct DailyQuestionChatOperationFailureTests {
         #expect(await waitUntil { changes.value == 1 })
     }
 
+    @Test func aMessageTheDrainGivesUpOnShowsAsFailedInTheChat() async throws {
+        let fixture = ChatTestFixture()
+        let operation = fixture.operationProvider.makeOperation()
+        await fixture.appendSending(operation, body: "Second", threadID: fixture.threadID)
+
+        await fixture.sendHandler().gaveUp(
+            on: try fixture.sendSnapshot(operation, body: "Second", threadID: fixture.threadID),
+            context: chatSyncContext(ownerUserID: fixture.ownerUserID)
+        )
+
+        let cached = await fixture.cachedMessages()
+        #expect(cached.first?.sendFailed == true)
+        #expect(cached.first?.isSending == false)
+    }
+
     @Test func sendHandlerKeepsAConnectionErrorRetryable() async throws {
         let fixture = ChatTestFixture()
         let operation = fixture.operationProvider.makeOperation()

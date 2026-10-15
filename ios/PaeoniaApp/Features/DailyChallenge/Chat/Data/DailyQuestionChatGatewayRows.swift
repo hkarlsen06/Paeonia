@@ -132,6 +132,24 @@ nonisolated struct ThreadMessageRow: Decodable {
     }
 }
 
+nonisolated struct ThreadMessagesPageRow: Decodable {
+    let messages: [ThreadMessageRow]
+    let hasMore: Bool
+
+    func page(questionID: UUID) -> DailyQuestionChatMessagePage {
+        DailyQuestionChatMessagePage(
+            messages: messages.compactMap { $0.message(questionID: questionID) },
+            hasMore: hasMore,
+            oldestAt: messages.first?.createdAt
+        )
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case messages
+        case hasMore = "has_more"
+    }
+}
+
 nonisolated struct PresenceRow: Decodable {
     let partnerTyping: Bool
     let partnerLastReadMessageID: UUID?

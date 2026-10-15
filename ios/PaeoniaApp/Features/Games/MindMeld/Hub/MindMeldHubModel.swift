@@ -49,9 +49,12 @@ final class MindMeldHubModel: GameHubModel {
         guard self.userID == userID else { return }
         // No state means the first read has not finished, so there is no card yet.
         // A couple with no game gets the "Play" card.
-        summary = document.state.map { state in
+        let newSummary = document.state.map { state in
             let resolution = MindMeldResolver(userID: userID).resolve(state: state, hasLoaded: true, pending: pending)
             return MindMeldHubSummary(state: state, resolution: resolution)
+        }
+        if summary != newSummary {
+            summary = newSummary
         }
     }
 

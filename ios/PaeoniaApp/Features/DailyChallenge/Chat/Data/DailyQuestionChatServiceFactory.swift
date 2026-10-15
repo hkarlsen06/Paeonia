@@ -54,7 +54,11 @@ private actor UnavailableDailyQuestionChatGateway: DailyQuestionChatGateway {
         throw DailyQuestionChatServiceError.unavailable
     }
 
-    func loadMessages(threadID _: UUID, questionID _: UUID) throws -> [DailyQuestionChatMessage] {
+    func loadMessages(
+        threadID _: UUID,
+        questionID _: UUID,
+        before _: DailyQuestionChatMessageCursor?
+    ) throws -> DailyQuestionChatMessagePage {
         throw DailyQuestionChatServiceError.unavailable
     }
 

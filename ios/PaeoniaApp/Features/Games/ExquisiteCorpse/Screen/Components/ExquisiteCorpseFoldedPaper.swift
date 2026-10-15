@@ -64,7 +64,7 @@ struct ExquisiteCorpseFoldedPaper: View {
     /// The strip, drawn at the full square so its strokes sit where the partner
     /// drew them, and cut to the strip so nothing above the fold can show.
     private var stripDrawing: some View {
-        GameStaticDrawing(drawing: GameCanvas.fitted(strip ?? PKDrawing(), toSide: side))
+        GameStaticDrawing(drawing: strip ?? PKDrawing(), side: side)
             .frame(width: side, height: side)
             .clipShape(Path(ExquisiteCorpseFold.stripRect(side: side)))
             .allowsHitTesting(false)

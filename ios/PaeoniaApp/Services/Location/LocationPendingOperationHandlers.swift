@@ -22,7 +22,7 @@ struct LocationSharingPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing location preference payload")
         }
 
-        let payload = try JSONDecoder().decode(LocationSharingOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(LocationSharingOperationPayload.self, from: requestData)
         let response = try await gateway.updateLocationSharingPreference(
             payload: payload,
             operation: operation.operation
@@ -67,7 +67,10 @@ struct LatestLocationPendingOperationHandler: PendingSyncOperationHandling {
             return .terminalFailure("Missing latest location payload")
         }
 
-        let payload = try JSONDecoder().decode(LatestPartnerLocationOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decodeQueuedPayload(
+            LatestPartnerLocationOperationPayload.self,
+            from: requestData
+        )
 
         do {
             if let response = try await gateway.updateLatestPartnerLocation(

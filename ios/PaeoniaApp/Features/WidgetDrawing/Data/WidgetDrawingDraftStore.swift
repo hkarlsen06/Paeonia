@@ -34,6 +34,9 @@ protocol WidgetDrawingDraftStoring: AnyObject {
     /// (`PKDrawing.paeoniaStrokeFingerprint`). Nil when the best-effort write failed.
     func draftBase(for key: WidgetDrawingDraftKey) -> String?
     func setDraftBase(_ fingerprint: String, for key: WidgetDrawingDraftKey)
+    /// Writes a draft and the base it was made on from a background task, where
+    /// the main actor is not available.
+    nonisolated func setDraft(_ data: Data, base fingerprint: String, for key: WidgetDrawingDraftKey)
 }
 
 @MainActor
@@ -52,6 +55,15 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     }
 
     func setDraft(_ data: Data, for key: WidgetDrawingDraftKey) {
+        writeDraft(data, for: key)
+    }
+
+    nonisolated func setDraft(_ data: Data, base fingerprint: String, for key: WidgetDrawingDraftKey) {
+        writeDraft(data, for: key)
+        try? Data(fingerprint.utf8).write(to: baseFileURL(for: key), options: .atomic)
+    }
+
+    nonisolated private func writeDraft(_ data: Data, for key: WidgetDrawingDraftKey) {
         do {
             try FileManager.default.createDirectory(
                 at: ownerDirectoryURL(for: key.ownerUserID),
@@ -77,7 +89,7 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
         try? Data(fingerprint.utf8).write(to: baseFileURL(for: key), options: .atomic)
     }
 
-    private func baseFileURL(for key: WidgetDrawingDraftKey) -> URL {
+    nonisolated private func baseFileURL(for key: WidgetDrawingDraftKey) -> URL {
         fileURL(for: key).deletingPathExtension().appendingPathExtension("base")
     }
 
@@ -90,11 +102,11 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
         purgeGenerations[ownerUserID, default: 0]
     }
 
-    private func ownerDirectoryURL(for ownerUserID: UUID) -> URL {
+    nonisolated private func ownerDirectoryURL(for ownerUserID: UUID) -> URL {
         directoryURL.appendingPathComponent(ownerUserID.uuidString.lowercased(), isDirectory: true)
     }
 
-    private func fileURL(for key: WidgetDrawingDraftKey) -> URL {
+    nonisolated private func fileURL(for key: WidgetDrawingDraftKey) -> URL {
         let suffix = key.slot == .setAside ? "-set-aside" : ""
         return ownerDirectoryURL(for: key.ownerUserID).appendingPathComponent(
             "\(key.coupleID.uuidString.lowercased())\(suffix).drawing",

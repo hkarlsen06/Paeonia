@@ -119,7 +119,8 @@ final class DrawAndGuessViewModel {
     ) { [weak self] in
         self?.currentUserID
     }
-    @ObservationIgnored let heartbeatInterval: Duration
+    /// The loops that run while the screen is open: heartbeat, data changes and the clock.
+    @ObservationIgnored let loops: GameScreenLoops
     @ObservationIgnored let tickInterval: Duration
     @ObservationIgnored let monotonicNow: @Sendable () -> TimeInterval
     @ObservationIgnored let sleep: @Sendable (Duration) async throws -> Void
@@ -144,9 +145,6 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
 
-    @ObservationIgnored var observationTask: Task<Void, Never>?
-    @ObservationIgnored var heartbeatTask: Task<Void, Never>?
-    @ObservationIgnored var tickTask: Task<Void, Never>?
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var wrongGuessTask: Task<Void, Never>?
     @ObservationIgnored var draftTask: Task<Void, Never>?
@@ -175,6 +173,8 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var loadedAssetID: UUID?
     @ObservationIgnored var loadingAssetID: UUID?
     @ObservationIgnored var downloadedDrawing: PKDrawing?
+    /// The queued drawing decoded, so reading `submittedDrawing` does not decode it again.
+    @ObservationIgnored var decodedQueuedDrawing: (data: Data, drawing: PKDrawing)?
     @ObservationIgnored var replayTimeline: GameReplayTimeline?
     @ObservationIgnored var replayClock: GameReplayClock? {
         didSet { sendGuessScreen() }
@@ -190,10 +190,15 @@ final class DrawAndGuessViewModel {
     ) {
         self.dependencies = dependencies
         self.participants = participants
-        self.heartbeatInterval = heartbeatInterval
         self.tickInterval = tickInterval
         self.monotonicNow = monotonicNow
         self.sleep = sleep
+        loops = GameScreenLoops(
+            kind: .drawAndGuess,
+            gateway: dependencies.gateway,
+            heartbeatInterval: heartbeatInterval,
+            sleep: sleep
+        )
         partnerName = participants.partnerName
         (me, partner) = participants.players
         now = dependencies.now()

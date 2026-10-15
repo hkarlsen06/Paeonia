@@ -7,7 +7,6 @@ struct GamesRootView: View {
     @Binding var path: [GamesDestination]
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(\.scenePhase) private var scenePhase
 
     /// The iPad tab bar sits at the top and stays during a game. Hiding it in a push
     /// lays the game out below the bar and moves it up when the push ends, and the bar
@@ -29,11 +28,6 @@ struct GamesRootView: View {
             guard let notice else { return }
             bannerCenter.show(notice.banner)
             viewModel.clearNotice()
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                Task { await viewModel.refresh() }
-            }
         }
         .sheet(isPresented: isShowingIntro) {
             GamesIntroSheet(viewModel: viewModel)

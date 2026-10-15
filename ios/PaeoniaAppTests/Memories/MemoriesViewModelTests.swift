@@ -218,6 +218,7 @@ struct MemoriesViewModelTests {
         let first = makeEnvironment(draftStore: store)
         await first.viewModel.configure(currentUserID: first.userID, coupleID: first.coupleID)
         first.viewModel.updateDraft(MemoryDraft(title: "Lake", note: "Cold water"))
+        first.viewModel.flushDraft()
 
         // A new view model stands in for the tab being torn down and rebuilt.
         let second = makeEnvironment(draftStore: store)
@@ -246,6 +247,7 @@ struct MemoriesViewModelTests {
         let env = makeEnvironment(draftStore: store)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         env.viewModel.updateDraft(MemoryDraft(title: "Trip", note: "Great"))
+        env.viewModel.flushDraft()
         #expect(store.draft(for: env.userID) != nil)
 
         let saved = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "Great", photos: [])
@@ -262,7 +264,7 @@ struct MemoriesViewModelTests {
             draftStore: store
         )
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        env.viewModel.updateDraft(MemoryDraft(title: "Trip", photos: [makeImageData()]))
+        env.viewModel.updateDraft(MemoryDraft(title: "Trip", photos: [MemoryDraftPhoto(data: makeImageData())]))
 
         let saved = await env.viewModel.createMemory(
             title: "Trip",
@@ -276,11 +278,30 @@ struct MemoriesViewModelTests {
         #expect(store.draft(for: env.userID)?.photos.count == 1)
     }
 
+    @Test func typingWaitsForAPauseBeforeSavingButPhotosSaveAtOnce() async {
+        let store = makeIsolatedMemoryDraftStore()
+        let env = makeEnvironment(draftStore: store)
+        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
+
+        env.viewModel.updateDraft(MemoryDraft(title: "Trip"))
+        #expect(store.draft(for: env.userID) == nil)
+        #expect(env.viewModel.draft.title == "Trip")
+
+        env.viewModel.flushDraft()
+        #expect(store.draft(for: env.userID)?.title == "Trip")
+
+        var withPhoto = env.viewModel.draft
+        withPhoto.photos = [MemoryDraftPhoto(data: makeImageData())]
+        env.viewModel.updateDraft(withPhoto)
+        #expect(store.draft(for: env.userID)?.photos.count == 1)
+    }
+
     @Test func discardingTheDraftClearsTheSavedCopy() async {
         let store = makeIsolatedMemoryDraftStore()
         let env = makeEnvironment(draftStore: store)
         await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
         env.viewModel.updateDraft(MemoryDraft(title: "Trip", note: "Great"))
+        env.viewModel.flushDraft()
 
         env.viewModel.updateDraft(MemoryDraft())
 

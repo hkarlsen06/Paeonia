@@ -47,7 +47,14 @@ final class DailyVoicePlayer {
             // Activate the session off the main thread (it blocks), then start.
             Task { @MainActor [weak self] in
                 await Self.activatePlaybackSession()
-                guard let self, let player, !player.isPlaying else { return }
+                // The view may have gone, or the clip been stopped, while the session
+                // activated. Nobody will play, so release it again. A clip that is
+                // already playing keeps the session it has.
+                guard let self, let player else {
+                    DailyVoiceAudioSession.deactivate()
+                    return
+                }
+                guard !player.isPlaying else { return }
                 // Handing over from another clip keeps the session, so the music app
                 // is not told to resume in between.
                 if let other = Self.current, other !== self {

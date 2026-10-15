@@ -103,12 +103,6 @@ nonisolated enum AuthProfilePhotoUpdate: Equatable, Sendable {
     case remove
 }
 
-nonisolated struct AuthRouteResolver: Sendable {
-    func route(for session: AuthSession?) -> AuthRoute {
-        AuthRoute(session: session)
-    }
-}
-
 nonisolated enum AuthRoute: Equatable, Sendable {
     case signedOut
     case onboarding(AuthSession)

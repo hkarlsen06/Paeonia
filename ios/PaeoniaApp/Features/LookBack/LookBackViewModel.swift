@@ -21,6 +21,8 @@ final class LookBackViewModel {
     private let service: any LookBackServing
     private let cache: any LookBackCaching
     private let now: @Sendable () -> Date
+    /// How long the store must stay quiet before a change causes a read.
+    private let storeChangeQuietPeriod: Duration
     private var userID: UUID?
     private var coupleID: UUID?
     /// Numbers each read in the order it started. A read never applies after a newer one has.
@@ -31,12 +33,14 @@ final class LookBackViewModel {
         service: any LookBackServing = NoOpLookBackService(),
         cache: any LookBackCaching = FileLookBackCache.shared,
         thumbnailLoader: any WidgetRevisionThumbnailLoading = NoOpWidgetRevisionThumbnailLoader(),
-        now: @escaping @Sendable () -> Date = { Date() }
+        now: @escaping @Sendable () -> Date = { Date() },
+        storeChangeQuietPeriod: Duration = .seconds(2)
     ) {
         self.service = service
         self.cache = cache
         self.thumbnailLoader = thumbnailLoader
         self.now = now
+        self.storeChangeQuietPeriod = storeChangeQuietPeriod
     }
 
     /// Starts for a signed-in user, then reads. Only a different user resets and loads the saved
@@ -99,13 +103,22 @@ final class LookBackViewModel {
     }
 
     /// Reads again when the content the card shows changes on this phone, such as a memory a
-    /// partner deleted. Runs until the calling task is cancelled.
+    /// partner deleted. A burst of changes makes one read, after the store has been quiet for
+    /// `storeChangeQuietPeriod`. Runs until the calling task is cancelled.
     func observeStoreChanges() async {
+        var scheduledRead: Task<Void, Never>?
+        defer { scheduledRead?.cancel() }
         for await change in LocalStoreChanges.changes(in: .memories, .dailyChallenge) {
             guard change.ownerUserID == userID, let kind = item?.kind else { continue }
             switch (change.domain, kind) {
             case (.memories, .memory), (.dailyChallenge, .question):
-                await refresh()
+                scheduledRead?.cancel()
+                let quietPeriod = storeChangeQuietPeriod
+                scheduledRead = Task { [weak self] in
+                    try? await Task.sleep(for: quietPeriod)
+                    guard !Task.isCancelled else { return }
+                    await self?.refresh()
+                }
             default:
                 continue
             }

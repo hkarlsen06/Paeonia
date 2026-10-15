@@ -309,7 +309,7 @@ actor WidgetCanvasService: WidgetCanvasManaging {
 
     nonisolated static func contentHash(for data: Data) -> String {
         let digest = SHA256.hash(data: data)
-        return "sha256-" + digest.map { String(format: "%02x", $0) }.joined()
+        return "sha256-" + digest.paeoniaHexString
     }
 
     nonisolated private static func defaultCanonicalDrawingURL() -> URL? {

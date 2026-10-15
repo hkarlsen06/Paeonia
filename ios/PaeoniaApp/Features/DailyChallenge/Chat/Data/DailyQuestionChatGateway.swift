@@ -2,12 +2,17 @@ import Foundation
 
 protocol DailyQuestionChatGateway: Actor {
     func loadThreadSummaries() async throws -> [DailyQuestionThreadSummary]
-    func loadMessages(threadID: UUID, questionID: UUID) async throws -> [DailyQuestionChatMessage]
+    /// The newest page of the thread, or the page before `before`.
+    func loadMessages(
+        threadID: UUID,
+        questionID: UUID,
+        before: DailyQuestionChatMessageCursor?
+    ) async throws -> DailyQuestionChatMessagePage
     func loadRounds(coupleID: UUID, questionID: UUID) async throws -> DailyQuestionChatRoundsRow
     /// Every result of the question's rounds query, newest state only.
     nonisolated func liveRounds(coupleID: UUID, questionID: UUID) -> AsyncStream<DailyQuestionChatRoundsRow>
-    /// Every result of the thread's messages query, newest state only.
-    nonisolated func liveMessages(threadID: UUID, questionID: UUID) -> AsyncStream<[DailyQuestionChatMessage]>
+    /// Every result of the thread's newest page query, newest state only.
+    nonisolated func liveMessages(threadID: UUID, questionID: UUID) -> AsyncStream<DailyQuestionChatMessagePage>
     func createThreadWithMessage(
         _ payload: CreateDailyChatThreadPayload,
         mediaAssetIDs: [UUID],
@@ -40,7 +45,7 @@ extension DailyQuestionChatGateway {
         throw DailyQuestionChatServiceError.unavailable
     }
 
-    nonisolated func liveMessages(threadID _: UUID, questionID _: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
+    nonisolated func liveMessages(threadID _: UUID, questionID _: UUID) -> AsyncStream<DailyQuestionChatMessagePage> {
         AsyncStream { $0.finish() }
     }
 
@@ -69,12 +74,16 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
         return rows.compactMap(\.dailyQuestionSummary)
     }
 
-    func loadMessages(threadID: UUID, questionID: UUID) async throws -> [DailyQuestionChatMessage] {
-        let rows: [ThreadMessageRow] = try await client.query(
+    func loadMessages(
+        threadID: UUID,
+        questionID: UUID,
+        before: DailyQuestionChatMessageCursor?
+    ) async throws -> DailyQuestionChatMessagePage {
+        let row: ThreadMessagesPageRow = try await client.query(
             "threads:get_thread_messages",
-            args: ThreadMessagesRequest(threadID: threadID)
+            args: ThreadMessagesRequest(threadID: threadID, before: before)
         )
-        return rows.compactMap { $0.message(questionID: questionID) }
+        return row.page(questionID: questionID)
     }
 
     func loadRounds(coupleID: UUID, questionID: UUID) async throws -> DailyQuestionChatRoundsRow {
@@ -105,19 +114,20 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
         }
     }
 
-    nonisolated func liveMessages(threadID: UUID, questionID: UUID) -> AsyncStream<[DailyQuestionChatMessage]> {
+    nonisolated func liveMessages(threadID: UUID, questionID: UUID) -> AsyncStream<DailyQuestionChatMessagePage> {
         AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
             let task = Task { @MainActor in
                 let live = LiveQueryService(transport: ConvexLiveTransport(connection: .shared))
                 let results = live.subscribe(
                     "threads:get_thread_messages",
-                    args: ["p_thread_id": threadID.uuidString.lowercased()],
-                    as: [ThreadMessageRow].self
+                    args: [
+                        "p_thread_id": threadID.uuidString.lowercased(),
+                        "p_limit": Double(DailyQuestionChatMessage.pageSize)
+                    ],
+                    as: ThreadMessagesPageRow.self
                 )
                 for await result in results {
-                    if case let .value(rows) = result {
-                        continuation.yield(rows.compactMap { $0.message(questionID: questionID) })
-                    }
+                    if case let .value(row) = result { continuation.yield(row.page(questionID: questionID)) }
                 }
                 continuation.finish()
             }
