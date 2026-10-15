@@ -76,7 +76,9 @@ nonisolated final class LiveQueryService: Sendable {
     /// The backend refused the call because the couple has no access. A retry
     /// cannot fix it. The feeds start again with the new session when access returns.
     static func isPermanentRefusal(_ error: any Error) -> Bool {
-        guard case .server(code: "42501", _)? = error as? PaeoniaConvexError else { return false }
+        guard case .server(code: PaeoniaConvexError.accessDeniedCode, _)? = error as? PaeoniaConvexError else {
+            return false
+        }
         return true
     }
 

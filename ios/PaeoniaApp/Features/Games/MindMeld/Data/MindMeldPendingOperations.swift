@@ -119,7 +119,7 @@ private enum MindMeldRejection {
         gateway: any MindMeldGateway,
         ownerUserID: UUID
     ) async -> Bool {
-        guard case .server(code: "42501", message: _) = error,
+        guard case .server(code: PaeoniaConvexError.accessDeniedCode, message: _) = error,
               let state = try? await gateway.loadMindMeld(),
               state.userID == ownerUserID
         else { return false }

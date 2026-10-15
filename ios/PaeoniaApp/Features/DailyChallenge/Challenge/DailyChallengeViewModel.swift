@@ -136,17 +136,6 @@ final class DailyChallengeViewModel {
         #endif
     }
 
-    /// Whether an error just means the request was cancelled — a superseded or
-    /// torn-down load (for example a fresh reload, or the screen going away), not a
-    /// real failure. Foundation reports a cancelled URLSession task as
-    /// `URLError.cancelled` (-999) rather than Swift's `CancellationError`, so both
-    /// must be treated the same: swallowed silently, never shown as an error banner.
-    nonisolated func isCancellation(_ error: Error) -> Bool {
-        if error is CancellationError { return true }
-        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
-        return false
-    }
-
     /// Wires the daily challenge to the app's sync engine so a just-queued media
     /// answer is flushed promptly (mirrors the location pattern).
     func setLocalChangeSyncHandler(_ handler: (@MainActor () async -> Void)?) {
@@ -283,7 +272,7 @@ final class DailyChallengeViewModel {
             apply(result)
         } catch {
             guard !Task.isCancelled, self.currentUserID == currentUserID else { return }
-            if !isCancellation(error) {
+            if !error.isCancellation {
                 logFailure("Loading today's challenge failed", error)
                 if shouldSurfaceLoadFailureNotice {
                     notice = .loadFailed(PaeoniaFailure(error))
@@ -314,7 +303,7 @@ final class DailyChallengeViewModel {
             // This replaced any load it cancelled, so today's state is now known.
             hasResolvedTodayState = true
         } catch {
-            if !isCancellation(error) {
+            if !error.isCancellation {
                 logFailure("Starting today's challenge failed", error)
                 notice = .startFailed(PaeoniaFailure(error))
             }

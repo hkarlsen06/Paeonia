@@ -88,7 +88,7 @@ final class DailyChallengeHistoryViewModel {
             let days = DailyChallengeHistory.grouped(questions)
             state = days.isEmpty ? .empty : .content(days)
         } catch {
-            guard !isCancellation(error) else { return }
+            guard !error.isCancellation else { return }
             guard loadNumber > lastAppliedLoad else { return }
             showLoadFailure(error)
         }
@@ -117,16 +117,6 @@ final class DailyChallengeHistoryViewModel {
         #if DEBUG
         logger.error("\(context, privacy: .public): \(String(describing: error))")
         #endif
-    }
-
-    /// A cancelled load (a superseded reload or the screen going away) is not a real
-    /// failure: Foundation reports it as `URLError.cancelled` rather than Swift's
-    /// `CancellationError`, so both are swallowed. See the `.task(id:)` note in
-    /// AGENTS.md.
-    private nonisolated func isCancellation(_ error: Error) -> Bool {
-        if error is CancellationError { return true }
-        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
-        return false
     }
 }
 

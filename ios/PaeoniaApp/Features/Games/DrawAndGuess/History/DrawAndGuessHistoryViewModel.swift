@@ -218,7 +218,7 @@ final class DrawAndGuessHistoryViewModel {
             }
             await stars.applyServerStars(page.starValues, readSince: mark)
         } catch {
-            guard !Self.isCancellation(error), currentUserID == userID else { return }
+            guard !error.isCancellation, currentUserID == userID else { return }
             // A failed read keeps the list that is on screen. Only a screen with
             // nothing to show says the read failed.
             listings[filter, default: DrawAndGuessHistoryListing()].failure = PaeoniaFailure(error)
@@ -265,11 +265,7 @@ final class DrawAndGuessHistoryViewModel {
             listings[filter]?.isLoadingMore = false
             // A cancelled read says nothing about the network. The next cell that
             // appears asks again.
-            listings[filter]?.loadMoreFailed = !Self.isCancellation(error)
+            listings[filter]?.loadMoreFailed = !error.isCancellation
         }
-    }
-
-    private static func isCancellation(_ error: any Error) -> Bool {
-        error is CancellationError || (error as? URLError)?.code == .cancelled
     }
 }

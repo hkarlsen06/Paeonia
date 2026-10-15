@@ -149,6 +149,7 @@ struct LatestLocationPendingOperationHandler: PendingSyncOperationHandling {
         guard case let .server(code, message) = error as? PaeoniaConvexError else {
             return false
         }
-        return code == "42501" && message.contains("location sharing must be enabled")
+        return code == PaeoniaConvexError.accessDeniedCode
+            && message.contains("location sharing must be enabled")
     }
 }

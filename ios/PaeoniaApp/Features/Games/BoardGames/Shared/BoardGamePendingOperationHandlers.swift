@@ -18,7 +18,7 @@ nonisolated enum BoardGameServerRejection {
         switch code {
         case "40001", "23514":
             return true
-        case "42501":
+        case PaeoniaConvexError.accessDeniedCode:
             return message.contains("not your turn")
         default:
             return false
@@ -30,7 +30,10 @@ nonisolated enum BoardGameServerRejection {
     /// other errors or as `42501` and `55P03`, which keep retrying.
     static func isUnexplained(_ error: PaeoniaConvexError) -> Bool {
         guard case let .server(code, _) = error else { return false }
-        return code != "42501" && code != "55P03" && !isPermanent(error) && !GameServerRejection.isAlreadyDone(error)
+        return code != PaeoniaConvexError.accessDeniedCode
+            && code != "55P03"
+            && !isPermanent(error)
+            && !GameServerRejection.isAlreadyDone(error)
     }
 
     /// Whether to drop the action now: a permanent refusal, or the

@@ -24,10 +24,6 @@ nonisolated enum AuthUserIdentity {
 }
 
 nonisolated enum AuthSessionFallbackPolicy {
-    static func isCancellation(_ error: any Error) -> Bool {
-        error is CancellationError || (error as? URLError)?.code == .cancelled
-    }
-
     /// Only transport failures may use the last server-verified profile. A
     /// backend authorization, missing-row, or decoding error must fail closed
     /// instead of reviving cached access after the backend rejected the profile.

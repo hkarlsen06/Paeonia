@@ -78,7 +78,7 @@ actor ClerkAuthService: AuthServicing {
             }
             return await makeSession(remoteSession: remoteSession, profile: profile)
         } catch {
-            if AuthSessionFallbackPolicy.isCancellation(error) {
+            if error.isCancellation {
                 throw error
             }
             if AuthSessionFallbackPolicy.allowsCachedSession(for: error),

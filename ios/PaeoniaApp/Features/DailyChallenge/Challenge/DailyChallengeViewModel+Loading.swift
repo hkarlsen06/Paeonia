@@ -104,7 +104,7 @@ extension DailyChallengeViewModel {
             streak = try await service.loadStreak()
         } catch {
             // Keep the last known streak; the completion screen falls back gracefully.
-            if !isCancellation(error) {
+            if !error.isCancellation {
                 logFailure("Loading the couple streak failed", error)
             }
         }

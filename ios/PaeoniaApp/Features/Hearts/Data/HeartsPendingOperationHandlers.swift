@@ -76,7 +76,7 @@ nonisolated enum HeartsRejection {
         switch code {
         case "23514":
             return true
-        case "42501":
+        case PaeoniaConvexError.accessDeniedCode:
             return ["active partner", "couple access"].contains { message.contains($0) }
         default:
             return false

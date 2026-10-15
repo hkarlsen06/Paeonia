@@ -59,7 +59,7 @@ final class BoardGameHistoryViewModel {
             guard !Task.isCancelled, self.userID == userID else { return }
             refresh(with: page)
         } catch {
-            guard !Self.isCancellation(error), self.userID == userID else { return }
+            guard !error.isCancellation, self.userID == userID else { return }
             // Only a screen with nothing to show says the read failed.
             loadFailure = games.isEmpty ? PaeoniaFailure(error) : nil
         }
@@ -115,11 +115,7 @@ final class BoardGameHistoryViewModel {
             guard self.userID == userID else { return }
             // A cancelled read says nothing about the network. The next row that
             // appears asks again.
-            loadMoreFailed = !Self.isCancellation(error)
+            loadMoreFailed = !error.isCancellation
         }
-    }
-
-    private static func isCancellation(_ error: any Error) -> Bool {
-        error is CancellationError || (error as? URLError)?.code == .cancelled
     }
 }

@@ -88,7 +88,7 @@ nonisolated enum CoupleDatesRejection {
         switch code {
         case "23514", "22007", "22P02":
             return true
-        case "42501":
+        case PaeoniaConvexError.accessDeniedCode:
             return ["another couple", "not in this relationship"].contains { message.contains($0) }
         default:
             return false

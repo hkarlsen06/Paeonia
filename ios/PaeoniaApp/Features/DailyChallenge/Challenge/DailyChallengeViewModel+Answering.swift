@@ -196,7 +196,7 @@ extension DailyChallengeViewModel {
             notice = .editLocked
             await reload()
         } catch {
-            if !isCancellation(error) {
+            if !error.isCancellation {
                 logFailure("Saving a text answer edit failed", error)
                 notice = .editFailed
             }
@@ -234,7 +234,7 @@ extension DailyChallengeViewModel {
             notice = .editLocked
             await reload()
         } catch {
-            if !isCancellation(error) {
+            if !error.isCancellation {
                 logFailure("Saving a partner-choice answer edit failed", error)
                 notice = .editFailed
             }
@@ -273,7 +273,7 @@ extension DailyChallengeViewModel {
         } catch is DailyChallengeShuffleLimitError {
             notice = .shuffleLimitReached
         } catch {
-            if !isCancellation(error) {
+            if !error.isCancellation {
                 logFailure("Skipping (shuffling) a question failed", error)
                 notice = .shuffleFailed(PaeoniaFailure(error))
             }

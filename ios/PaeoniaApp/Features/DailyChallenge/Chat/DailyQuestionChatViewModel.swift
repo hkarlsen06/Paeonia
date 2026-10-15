@@ -198,7 +198,7 @@ final class DailyQuestionChatViewModel {
         } catch {
             // Without a thread there is nothing missing, and the composer still works.
             // Only a thread that exists but cannot be read is a load error.
-            if !isCancellation(error), threadID != nil, messages.isEmpty {
+            if !error.isCancellation, threadID != nil, messages.isEmpty {
                 notice = .loadFailed(PaeoniaFailure(error))
             }
         }
@@ -289,12 +289,6 @@ final class DailyQuestionChatViewModel {
             guard let ownerUserID = participants.currentUserID else { return }
             await readStore(ownerUserID: ownerUserID)
         }
-    }
-
-    private nonisolated func isCancellation(_ error: Error) -> Bool {
-        if error is CancellationError { return true }
-        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
-        return false
     }
 }
 

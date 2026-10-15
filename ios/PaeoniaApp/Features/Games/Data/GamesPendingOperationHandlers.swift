@@ -11,7 +11,7 @@ nonisolated enum GameServerRejection {
         switch code {
         case "23514":
             return true
-        case "42501":
+        case PaeoniaConvexError.accessDeniedCode:
             return ["not your turn", "only the"].contains { message.contains($0) }
         default:
             return false
@@ -30,7 +30,10 @@ nonisolated enum GameServerRejection {
     /// once, such as a phone that comes back online with many drawings to upload.
     static func isUnexplained(_ error: PaeoniaConvexError) -> Bool {
         guard case let .server(code, _) = error else { return false }
-        return !["42501", "55P03", "53300"].contains(code) && !isPermanent(error) && !isAlreadyDone(error)
+        return code != PaeoniaConvexError.accessDeniedCode
+            && !["55P03", "53300"].contains(code)
+            && !isPermanent(error)
+            && !isAlreadyDone(error)
     }
 
     /// Whether to drop the write now: a permanent refusal, or the
@@ -72,7 +75,8 @@ nonisolated enum GameServerRejection {
     /// long after uploading.
     static func isUploadGone(_ error: PaeoniaConvexError) -> Bool {
         guard case let .server(code, message) = error else { return false }
-        return (code == "42501" && message.contains("media upload reservation is not available"))
+        return (code == PaeoniaConvexError.accessDeniedCode
+            && message.contains("media upload reservation is not available"))
             || (code == "23514" && message.contains("game drawing asset is not usable"))
             || (code == "23514" && message.contains("exquisite corpse drawing asset is not usable"))
             || (code == "23514" && message.contains("exquisite corpse strip asset is not usable"))

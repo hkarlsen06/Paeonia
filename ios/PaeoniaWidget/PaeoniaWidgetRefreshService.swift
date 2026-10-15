@@ -18,8 +18,6 @@ enum PaeoniaWidgetRefreshService {
     // The app bumps this integer before it deletes the widget files, so a
     // refresh that started earlier can tell that it must not publish.
     private static let privacyEpochKey = "paeonia.widget.privacyEpoch"
-    // SQLSTATE the backend returns when the user no longer has access.
-    private static let accessDeniedCode = "42501"
     private static let downloadTimeout: TimeInterval = 15
     // Same fallback as the app. Strokes live in a canvas of about 300 to 420 points.
     private static let fallbackCanvasSide = 320.0
@@ -67,7 +65,7 @@ enum PaeoniaWidgetRefreshService {
             }
             try publish(remoteDrawing, epoch: epoch)
         } catch let error as PaeoniaConvexError {
-            if case let .server(code, _) = error, code == accessDeniedCode {
+            if case let .server(code, _) = error, code == PaeoniaConvexError.accessDeniedCode {
                 removeWidgetFiles()
             }
             throw error

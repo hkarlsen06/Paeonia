@@ -192,12 +192,27 @@ nonisolated struct PaeoniaConvexIgnoredResult: Decodable, Sendable {
     init(from decoder: Decoder) throws {}
 }
 
+nonisolated extension Error {
+    /// Whether the error only means the work was cancelled, such as a superseded
+    /// reload or a screen that went away. It is not a real failure, so callers
+    /// swallow it instead of showing an error. Foundation reports a cancelled
+    /// URLSession task as `URLError.cancelled` (-999) rather than Swift's
+    /// `CancellationError`, so both count. See the `.task(id:)` note in AGENTS.md.
+    var isCancellation: Bool {
+        self is CancellationError || (self as? URLError)?.code == .cancelled
+    }
+}
+
 nonisolated enum PaeoniaConvexError: Error, Equatable, CustomStringConvertible {
     case notAuthenticated
     /// A function threw. `code` is the SQLSTATE-style code the backend kept
     /// from the Supabase era, and `message` is the exact backend message.
     case server(code: String?, message: String)
     case http(status: Int, body: String)
+
+    /// The SQLSTATE code the backend returns when the user has no access, such as a
+    /// lapsed subscription, a missing sign-in or a rule about who may act.
+    static let accessDeniedCode = "42501"
 
     var description: String {
         switch self {

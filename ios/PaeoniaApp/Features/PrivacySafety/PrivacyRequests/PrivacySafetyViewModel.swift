@@ -45,7 +45,7 @@ final class PrivacySafetyViewModel {
         } catch {
             // A cancelled `.task` or refresh is not a failure. URLSession reports it
             // as `URLError.cancelled`, not `CancellationError`.
-            guard !Task.isCancelled, !isCancellation(error) else {
+            guard !Task.isCancelled, !error.isCancellation else {
                 return
             }
             notice = .loadFailed
@@ -124,12 +124,6 @@ final class PrivacySafetyViewModel {
 
     private static func hasText(_ text: String?) -> Bool {
         text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-    }
-
-    private nonisolated func isCancellation(_ error: any Error) -> Bool {
-        if error is CancellationError { return true }
-        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
-        return false
     }
 
     private func upsert(_ request: PrivacyRequest) {

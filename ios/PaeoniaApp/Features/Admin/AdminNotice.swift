@@ -13,11 +13,7 @@ nonisolated enum AdminFailure: Equatable, Sendable {
     case other
 
     init(_ error: any Error) {
-        if error is CancellationError {
-            self = .cancelled
-            return
-        }
-        if let urlError = error as? URLError, urlError.code == .cancelled {
+        if error.isCancellation {
             self = .cancelled
             return
         }
