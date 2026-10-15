@@ -69,7 +69,6 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The height of the right column's rows in the wide layout.
     @State private var wideRowsHeight: CGFloat = 0
-    /// The height of the bottom content in the wide layout.
     @State private var wideBottomHeight: CGFloat = 0
     /// Where a board that bleeds fits, in global coordinates.
     @State private var bleedSlotFrame: CGRect = .zero

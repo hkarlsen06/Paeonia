@@ -127,7 +127,6 @@ nonisolated enum LudoMeshGeometry {
         )
     }
 
-    /// The height of the flat top of a pawn.
     static var pawnTopHeight: Float { LudoSceneStyle.pawnHeight }
 
     /// One flat half of the middle, facing up, on the side of +z. Turn it half a circle for the other half.

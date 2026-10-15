@@ -335,7 +335,6 @@ enum CorpseDrawings {
         PKDrawing(strokes: [line(from: 200, to: 310)])
     }
 
-    /// Lies below the fold.
     static var belowFold: PKDrawing {
         PKDrawing(strokes: [line(from: 285, to: 315, x: 120)])
     }

@@ -182,7 +182,6 @@ final class MindMeldViewModel {
         game?.maxRounds ?? 10
     }
 
-    /// The open round is round 1.
     var isFirstRound: Bool {
         openRound?.roundNumber == 1
     }
@@ -192,7 +191,6 @@ final class MindMeldViewModel {
         game?.usedWords ?? [:]
     }
 
-    /// The word can be locked in.
     var canLockIn: Bool {
         phase == .write && draftIssue == nil && !MindMeldWord.normalized(draft).isEmpty
     }

@@ -65,8 +65,7 @@ extension DailyChallengeAnswerFlow {
                 PaeoniaHaptics.answerRevealed()
             }
             // Slow or offline: the reveal still opens, shows the answer as saved, and
-            // fills in their reply when it arrives. Skipping it used to hide the
-            // payoff until the user found the card again.
+            // fills in their reply when it arrives.
             withAnimation(PaeoniaMotion.meaningfulMoment) {
                 isAwaitingPartnerReveal = false
             }

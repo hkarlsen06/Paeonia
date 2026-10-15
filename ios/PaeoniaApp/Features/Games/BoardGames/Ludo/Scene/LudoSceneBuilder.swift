@@ -21,7 +21,6 @@ struct LudoSceneParts {
 /// The board pieces that change color when a player picks another one.
 @MainActor
 struct LudoPaintTargets {
-    /// The painted top of the board.
     var boardTop: ModelEntity?
     /// By player (`player.rawValue - 1`): the glow over that player's half of the middle.
     var homeGlows: [ModelEntity] = []

@@ -41,7 +41,6 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
     @State private var contentHeight: CGFloat = 0
     @State private var scrollPosition = ScrollPosition(edge: .top)
     @State private var scrollTask: Task<Void, Never>?
-    /// The height of the bottom cluster in the wide layout.
     @State private var wideBottomHeight: CGFloat = 0
     /// The height of the scrolling rows in the wide layout.
     @State private var wideContentHeight: CGFloat = 0

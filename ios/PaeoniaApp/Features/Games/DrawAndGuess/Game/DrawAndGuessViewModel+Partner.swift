@@ -98,7 +98,6 @@ extension DrawAndGuessViewModel {
         live?.stop()
     }
 
-    /// The partner is in the live room and drawing.
     var isPartnerDrawingLive: Bool {
         live?.partnerActivity == .drawing
     }

@@ -46,7 +46,6 @@ struct RootViewModelFlowTests {
         let signIn = Task { await viewModel.signInWithGoogle() }
         await access.waitForBlockedCall()
 
-        // This used to be `.launching`: an empty plum screen with no spinner.
         #expect(viewModel.state == .unauthenticated)
         #expect(viewModel.signingInWith == .google)
 

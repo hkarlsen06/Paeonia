@@ -262,7 +262,6 @@ struct DailyChallengeViewModelSeedTests {
 
     @MainActor
     @Test func configureSeederFromCacheBeforeNetworkReturns() async throws {
-        // Arrange: pre-populate the in-memory cache with a row for the owner.
         let cache = InMemoryDailyChallengeSnapshotCache()
         let cachedRow = sampleSnapshotRow(ownerUserID: CacheTestIDs.ownerUserID)
         cache.save(cachedRow, ownerUserID: CacheTestIDs.ownerUserID)
@@ -282,7 +281,6 @@ struct DailyChallengeViewModelSeedTests {
             snapshotCache: cache
         )
 
-        // Act: start configure but don't await it yet.
         let configureTask = Task { @MainActor in
             await viewModel.configure(currentUserID: CacheTestIDs.ownerUserID)
         }
@@ -293,8 +291,6 @@ struct DailyChallengeViewModelSeedTests {
             await Task.yield()
         }
 
-        // Assert: while the network is still blocked, the snapshot is already
-        // seeded from the cache — not empty.
         #expect(viewModel.snapshot.ownQuestions.count == 1,
             "Expected cache-seeded question before network returns")
         #expect(viewModel.snapshot.currentUserID == CacheTestIDs.ownerUserID)
@@ -313,7 +309,6 @@ struct DailyChallengeViewModelSeedTests {
 
     @MainActor
     @Test func networkResultReplacesTheCachedSeed() async throws {
-        // Arrange: pre-populate the cache with a row that has 1 question.
         let cache = InMemoryDailyChallengeSnapshotCache()
         let cachedRow = sampleSnapshotRow(ownerUserID: CacheTestIDs.ownerUserID)
         cache.save(cachedRow, ownerUserID: CacheTestIDs.ownerUserID)

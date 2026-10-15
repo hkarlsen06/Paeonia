@@ -6,7 +6,6 @@ import Observation
 extension MindMeldViewModel {
     // MARK: - Presence
 
-    /// The partner is in the live room.
     var isPartnerInLiveRoom: Bool {
         live.map { $0.partnerActivity != .away } ?? false
     }

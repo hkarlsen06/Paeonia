@@ -17,7 +17,6 @@ nonisolated struct RelationshipMilestone: Equatable, Sendable {
         case months(Int)
         /// Six months — called out as "half a year" rather than "6 months".
         case halfYear
-        /// The first yearly anniversary.
         case firstAnniversary
         /// A later yearly anniversary (2 years and beyond).
         case years(Int)

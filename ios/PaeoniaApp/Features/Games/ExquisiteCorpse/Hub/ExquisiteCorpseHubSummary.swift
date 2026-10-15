@@ -7,7 +7,6 @@ nonisolated struct ExquisiteCorpseHubSummary: Equatable, Sendable {
         case notStarted
         /// This person draws the part.
         case yourTurn(ExquisiteCorpsePartKind)
-        /// The partner draws the part.
         case partnerDrawing(ExquisiteCorpsePartKind)
         /// A finished creature this person has not looked at. It comes before the next turn.
         case revealReady

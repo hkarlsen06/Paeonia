@@ -165,7 +165,6 @@ struct StreakRestoreViewModelTests {
         let firstAttempt = await viewModel.purchase()
         let secondAttempt = await viewModel.purchase()
 
-        // Ask to Buy used to look like a cancel: nothing on screen changed.
         #expect(!firstAttempt)
         #expect(!secondAttempt)
         #expect(viewModel.restoredCount == nil)
