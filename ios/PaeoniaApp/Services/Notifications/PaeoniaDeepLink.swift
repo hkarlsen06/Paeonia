@@ -141,31 +141,41 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         let pathComponents = url.pathComponents.filter { $0 != "/" }
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
 
-        switch (host, pathComponents) {
-        case ("daily", ["reveal"]):
-            guard let instanceID = query.uuidValue(named: "instanceId") else {
-                return nil
-            }
-            self = .dailyReveal(
-                instanceID: instanceID,
-                coupleDayID: query.uuidValue(named: "coupleDayId")
-            )
-        case ("daily", ["today"]):
-            self = .dailyToday(coupleDayID: query.uuidValue(named: "coupleDayId"))
-        case ("daily", ["chat"]):
-            guard let questionID = query.uuidValue(named: "questionId") else { return nil }
-            self = .dailyChat(questionID: questionID)
-        case ("memories", []):
-            self = .memories
-        case ("games", _) where pathComponents.count == 1:
-            guard let kind = GameKind(path: pathComponents[0]) else { return nil }
-            self = .game(kind)
-        case ("streak", []):
-            self = .streak
-        case ("settings", ["subscription"]):
-            self = .subscription
-        default:
+        guard let link = Self.link(host: host, pathComponents: pathComponents, query: query) else {
             return nil
+        }
+        self = link
+    }
+
+    private static func link(host: String, pathComponents: [String], query: [URLQueryItem]) -> Self? {
+        switch (host, pathComponents) {
+        case ("daily", _):
+            dailyLink(pathComponents: pathComponents, query: query)
+        case ("memories", []):
+            .memories
+        case ("games", _) where pathComponents.count == 1:
+            GameKind(path: pathComponents[0]).map(Self.game)
+        case ("streak", []):
+            .streak
+        case ("settings", ["subscription"]):
+            .subscription
+        default:
+            nil
+        }
+    }
+
+    private static func dailyLink(pathComponents: [String], query: [URLQueryItem]) -> Self? {
+        switch pathComponents {
+        case ["reveal"]:
+            query.uuidValue(named: "instanceId").map {
+                .dailyReveal(instanceID: $0, coupleDayID: query.uuidValue(named: "coupleDayId"))
+            }
+        case ["today"]:
+            .dailyToday(coupleDayID: query.uuidValue(named: "coupleDayId"))
+        case ["chat"]:
+            query.uuidValue(named: "questionId").map { .dailyChat(questionID: $0) }
+        default:
+            nil
         }
     }
 

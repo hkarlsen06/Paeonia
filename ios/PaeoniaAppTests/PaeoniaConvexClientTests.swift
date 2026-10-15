@@ -68,7 +68,7 @@ struct PaeoniaConvexClientTests {
 
     @Test func queryMapsFunctionErrorsToServerErrors() async {
         StubURLProtocol.handler = { _ in
-            (200, Data(#"{"status":"error","errorMessage":"boom","errorData":{"code":"42501","message":"denied"}}"#.utf8))
+            (200, Data(#"{"status":"error","errorMessage":"no","errorData":{"code":"42501","message":"denied"}}"#.utf8))
         }
         let client = Self.makeClient()
 

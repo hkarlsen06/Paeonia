@@ -14,6 +14,14 @@
   enum DeveloperGamesScenarioFactory {
     /// A scenario's fixed server state, or nil for setup before anyone chose.
     static func state(for scenario: DeveloperScenario) -> RemoteDrawAndGuessState {
+      lobbyState(for: scenario)
+        ?? roundState(for: scenario)
+        ?? revealScenarioState(for: scenario)
+        ?? DeveloperGamesFixture.state(settings: DeveloperGamesFixture.settings(), game: nil)
+    }
+
+    /// The setup and hub scenarios, before a drawing is on screen.
+    private static func lobbyState(for scenario: DeveloperScenario) -> RemoteDrawAndGuessState? {
       typealias Fixture = DeveloperGamesFixture
       let mine = Fixture.settings()
       switch scenario {
@@ -46,6 +54,16 @@
           round: Fixture.round(state: .guessing, drawer: Fixture.partner, hasDrawing: true),
           partnerIsHere: scenario == .gamesHubPartnerHere
         )
+      default:
+        return nil
+      }
+    }
+
+    /// The scenarios with a round in progress: guessing, waiting, or drawing.
+    private static func roundState(for scenario: DeveloperScenario) -> RemoteDrawAndGuessState? {
+      typealias Fixture = DeveloperGamesFixture
+      let mine = Fixture.settings()
+      switch scenario {
       case .drawGuessingLongWord:
         return Fixture.state(
           settings: mine,
@@ -76,6 +94,15 @@
           round: Fixture.round(state: .drawing, drawer: Fixture.partner),
           partnerIsHere: true
         )
+      default:
+        return nil
+      }
+    }
+
+    /// The scenarios that show a finished round.
+    private static func revealScenarioState(for scenario: DeveloperScenario) -> RemoteDrawAndGuessState? {
+      typealias Fixture = DeveloperGamesFixture
+      switch scenario {
       case .drawRevealSolved, .drawRevealLoading:
         return revealState(.solved, drawer: Fixture.partner)
       case .drawRevealBonuses:
@@ -98,7 +125,7 @@
       case .drawRevealPartnerDrawing:
         // Robin solved the last drawing and has already started the next one.
         return Fixture.state(
-          settings: mine,
+          settings: Fixture.settings(),
           game: Fixture.game(state: .drawing, turn: Fixture.me, roundID: Fixture.nextRoundID),
           round: Fixture.round(id: Fixture.nextRoundID, state: .drawing, drawer: Fixture.partner),
           recentRounds: [
@@ -114,7 +141,7 @@
           partnerIsHere: true
         )
       default:
-        return Fixture.state(settings: mine, game: nil)
+        return nil
       }
     }
 
@@ -159,13 +186,7 @@
       // The partner's drawing is already on the phone, so a reveal shows it from the first
       // frame. The loading scenario has to download it, and the download never finishes.
       let isLoading = scenario == .drawRevealLoading
-      let drawingStore = InMemoryGameDrawingStore()
-      if !isLoading {
-        drawingStore.saveDownloadedDrawing(
-          DeveloperGamesFixture.umbrella().dataRepresentation(),
-          mediaAssetID: DeveloperGamesFixture.assetID
-        )
-      }
+      let drawingStore = seededDrawingStore(isLoading: isLoading)
       let drawState = state(for: scenario)
       let cache = InMemoryGamesCache(
         state: drawState,
@@ -203,6 +224,17 @@
       )
       ExquisiteCorpseDeveloperScenarioFactory.configure(&dependencies, for: scenario)
       return dependencies
+    }
+
+    private static func seededDrawingStore(isLoading: Bool) -> InMemoryGameDrawingStore {
+      let drawingStore = InMemoryGameDrawingStore()
+      if !isLoading {
+        drawingStore.saveDownloadedDrawing(
+          DeveloperGamesFixture.umbrella().dataRepresentation(),
+          mediaAssetID: DeveloperGamesFixture.assetID
+        )
+      }
+      return drawingStore
     }
 
     static func gamesViewModel(for scenario: DeveloperScenario) -> GamesViewModel {
@@ -251,7 +283,7 @@
     /// "Our drawings" answers with no rounds and empty records.
     var historyIsEmpty = false
 
-    func setSettings(playStyle: GamePlayStyle, language: GameLanguage) async throws -> RemoteGameSettings {
+    func setSettings(playStyle: GamePlayStyle, language: GameLanguage) throws -> RemoteGameSettings {
       RemoteGameSettings(
         coupleID: DeveloperScenarioFixture.coupleID,
         playStyle: playStyle,
@@ -262,20 +294,20 @@
       )
     }
 
-    func ensureDrawAndGuessGame() async throws -> RemoteEnsureGameResult {
+    func ensureDrawAndGuessGame() throws -> RemoteEnsureGameResult {
       RemoteEnsureGameResult(gameID: DeveloperGamesFixture.gameID, created: false)
     }
 
-    func loadDrawAndGuess() async throws -> RemoteDrawAndGuessState {
+    func loadDrawAndGuess() throws -> RemoteDrawAndGuessState {
       // The cache is the scenario's state. Failing keeps the cache as it is.
       throw URLError(.notConnectedToInternet)
     }
 
-    func loadDrawAndGuessRound(roundID _: UUID) async throws -> RemoteDrawAndGuessRound? {
+    func loadDrawAndGuessRound(roundID _: UUID) throws -> RemoteDrawAndGuessRound? {
       throw URLError(.notConnectedToInternet)
     }
 
-    func pickWord(_ pick: GamePickWordPayload, operation _: SyncClientOperation) async throws -> RemotePickedWord {
+    func pickWord(_ pick: GamePickWordPayload, operation _: SyncClientOperation) throws -> RemotePickedWord {
       RemotePickedWord(
         roundID: pick.roundID,
         roundNumber: 1,
@@ -289,11 +321,11 @@
       roundID: UUID,
       mediaAssetID _: UUID,
       operation _: SyncClientOperation
-    ) async throws -> RemoteSubmitDrawingResult {
+    ) throws -> RemoteSubmitDrawingResult {
       RemoteSubmitDrawingResult(roundID: roundID, roundState: .guessing, drawingSubmittedAt: DeveloperGamesFixture.now)
     }
 
-    func markRoundSeen(roundID _: UUID) async throws -> RemoteMarkSeenResult {
+    func markRoundSeen(roundID _: UUID) throws -> RemoteMarkSeenResult {
       RemoteMarkSeenResult(guesserFirstSeenAt: DeveloperGamesFixture.now)
     }
 
@@ -304,27 +336,27 @@
         solveMs _: Int?,
         hintsUsed _: Int?,
         operation _: SyncClientOperation
-    ) async throws -> RemoteGuessResult {
+    ) throws -> RemoteGuessResult {
       throw URLError(.notConnectedToInternet)
     }
 
-    func giveUp(roundID: UUID, operation _: SyncClientOperation) async throws -> RemoteGiveUpResult {
+    func giveUp(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteGiveUpResult {
       RemoteGiveUpResult(roundID: roundID, roundState: .missed)
     }
 
-    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
+    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) throws -> RemoteReactionResult {
       RemoteReactionResult(roundID: roundID, guesserReaction: reaction)
     }
 
-    func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {
+    func markRoundResultSeen(roundID: UUID) throws -> RemoteResultSeenResult {
       RemoteResultSeenResult(roundID: roundID, resultSeenAt: DeveloperGamesFixture.now)
     }
 
-    func sendInvite(_: GameKind) async throws -> RemoteInviteResult {
+    func sendInvite(_: GameKind) throws -> RemoteInviteResult {
       RemoteInviteResult(sentAt: DeveloperGamesFixture.now)
     }
 
-    func setPresence(_: GameKind, isPresent _: Bool) async throws {}
+    func setPresence(_: GameKind, isPresent _: Bool) throws {}
 
     // swiftlint:disable:next async_without_await
     func loadOverview() async throws -> RemoteGamesOverview {
@@ -336,16 +368,16 @@
       starredOnly: Bool,
       beforeRoundNumber: Int?,
       limit: Int
-    ) async throws -> RemoteDrawAndGuessHistoryPage {
+    ) throws -> RemoteDrawAndGuessHistoryPage {
       guard !historyIsEmpty else { return RemoteDrawAndGuessHistoryPage(rounds: [], nextBeforeRoundNumber: nil) }
       return DeveloperGamesFixture.historyPage(starredOnly: starredOnly, before: beforeRoundNumber, limit: limit)
     }
 
-    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+    func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
       historyIsEmpty ? DeveloperGamesFixture.emptyRecords : DeveloperGamesFixture.records
     }
 
-    func setRoundStar(roundID: UUID, starred: Bool) async throws -> RemoteRoundStarResult {
+    func setRoundStar(roundID: UUID, starred: Bool) throws -> RemoteRoundStarResult {
       RemoteRoundStarResult(roundID: roundID, starred: starred)
     }
   }
@@ -361,7 +393,7 @@
       coupleID _: UUID,
       reserveOperation _: SyncClientOperation,
       finalizeOperation _: SyncClientOperation
-    ) async throws -> UUID {
+    ) throws -> UUID {
       DeveloperGamesFixture.assetID
     }
 

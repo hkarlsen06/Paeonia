@@ -1309,10 +1309,11 @@ private actor BlockingValidationPairingService: PairingServicing {
         self.invite = invite
     }
 
+    @available(*, unavailable)
     func createInvite(
         operation: PairingClientOperation,
         expiresAt: Date
-    ) async throws -> PairingInvite {
+    ) throws -> PairingInvite {
         fatalError("unused")
     }
 
@@ -1345,31 +1346,36 @@ private actor BlockingValidationPairingService: PairingServicing {
         validationContinuation = nil
     }
 
-    func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
+    @available(*, unavailable)
+    func previewInvite(codeInput: String) throws -> PairingInvitePreview? {
         fatalError("unused")
     }
 
+    @available(*, unavailable)
     func rotateInvite(
         currentInvite: PairingInvite,
         operation: PairingClientOperation,
         expiresAt: Date
-    ) async throws -> PairingInvite {
+    ) throws -> PairingInvite {
         fatalError("unused")
     }
 
+    @available(*, unavailable)
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
         startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+    ) throws -> PairingAcceptedRelationship {
         fatalError("unused")
     }
 
-    func revokeInvite(id: UUID) async throws -> Bool {
+    @available(*, unavailable)
+    func revokeInvite(id: UUID) throws -> Bool {
         fatalError("unused")
     }
 
-    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+    @available(*, unavailable)
+    func leaveRelationship(operation: PairingClientOperation) throws -> Bool {
         fatalError("unused")
     }
 }
@@ -1387,40 +1393,45 @@ private actor CachedInviteRecoveryPairingService: PairingServicing {
     func createInvite(
         operation: PairingClientOperation,
         expiresAt: Date
-    ) async throws -> PairingInvite {
+    ) throws -> PairingInvite {
         createdInvite
     }
 
-    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+    func validateInvite(_ invite: PairingInvite) throws -> PairingInviteValidation {
         validatedInvite = invite
         return validation
     }
 
-    func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
+    @available(*, unavailable)
+    func previewInvite(codeInput: String) throws -> PairingInvitePreview? {
         fatalError("unused")
     }
 
+    @available(*, unavailable)
     func rotateInvite(
         currentInvite: PairingInvite,
         operation: PairingClientOperation,
         expiresAt: Date
-    ) async throws -> PairingInvite {
+    ) throws -> PairingInvite {
         fatalError("unused")
     }
 
+    @available(*, unavailable)
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
         startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+    ) throws -> PairingAcceptedRelationship {
         fatalError("unused")
     }
 
-    func revokeInvite(id: UUID) async throws -> Bool {
+    @available(*, unavailable)
+    func revokeInvite(id: UUID) throws -> Bool {
         fatalError("unused")
     }
 
-    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
+    @available(*, unavailable)
+    func leaveRelationship(operation: PairingClientOperation) throws -> Bool {
         fatalError("unused")
     }
 }
@@ -1445,7 +1456,7 @@ private actor PendingCreatePairingService: PairingServicing {
         }
     }
 
-    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+    func validateInvite(_ invite: PairingInvite) throws -> PairingInviteValidation {
         PairingInviteValidation(
             inviteID: invite.id,
             status: .pending,
@@ -1514,7 +1525,7 @@ private actor FailingCreatePairingService: PairingServicing {
         throw PairingInviteCreationError.inviteCodeCollision
     }
 
-    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+    func validateInvite(_ invite: PairingInvite) throws -> PairingInviteValidation {
         PairingInviteValidation(
             inviteID: invite.id,
             status: .pending,

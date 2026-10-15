@@ -3,18 +3,25 @@ import Foundation
 /// The pending operation handlers of every built game. `PaeoniaSyncServiceDefaults`
 /// adds them to the outbox drain.
 nonisolated enum GamesPendingOperationRegistry {
+    /// Each built game adds its handlers through a function below, built from the
+    /// shared `gateway` (which conforms to the game's own gateway protocol) and
+    /// `cache`. Its `SyncPendingOperationKind` cases carry the game's Swift prefix.
     static func handlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
         let gateway = LiveGamesGateway(client: client)
         let cache = FileGamesCache.shared
-        let corpseGateway = LiveExquisiteCorpseGateway(client: client)
-        let corpseCache = FileExquisiteCorpseCache.shared
-        let boardGamesGateway = LiveBoardGamesGateway(client: client)
+        return drawAndGuessHandlers(client: client, gateway: gateway, cache: cache)
+            + storyChainHandlers(gateway: gateway, cache: cache)
+            + mindMeldHandlers(gateway: gateway)
+            + exquisiteCorpseHandlers(client: client)
+            + boardGameHandlers(client: client)
+    }
 
-        // Each built game appends its handlers below, built from `gateway` (which
-        // conforms to the game's own gateway protocol) and `cache`. Its
-        // `SyncPendingOperationKind` cases carry the game's Swift prefix.
-        return [
-            // Draw & Guess
+    private static func drawAndGuessHandlers(
+        client: PaeoniaConvexClient,
+        gateway: LiveGamesGateway,
+        cache: FileGamesCache
+    ) -> [any PendingSyncOperationHandling] {
+        [
             PickDrawWordPendingOperationHandler(
                 gateway: gateway,
                 cache: cache,
@@ -31,7 +38,14 @@ nonisolated enum GamesPendingOperationRegistry {
             SetGameRoundStarPendingOperationHandler(gateway: gateway, cache: cache),
             GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
             GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
-            // Story Chain
+        ]
+    }
+
+    private static func storyChainHandlers(
+        gateway: LiveGamesGateway,
+        cache: FileGamesCache
+    ) -> [any PendingSyncOperationHandling] {
+        [
             StoryChainStartPendingOperationHandler(
                 gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
             ),
@@ -45,12 +59,24 @@ nonisolated enum GamesPendingOperationRegistry {
             StoryChainStarPendingOperationHandler(
                 gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
             ),
-            // Mind Meld
+        ]
+    }
+
+    private static func mindMeldHandlers(gateway: LiveGamesGateway) -> [any PendingSyncOperationHandling] {
+        [
             LockMindMeldWordPendingOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
             CountMindMeldPendingOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
             MindMeldRevealSeenOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
             MindMeldEndSeenOperationHandler(gateway: gateway, cache: FileMindMeldCache.shared),
-            // Exquisite corpse
+        ]
+    }
+
+    private static func exquisiteCorpseHandlers(
+        client: PaeoniaConvexClient
+    ) -> [any PendingSyncOperationHandling] {
+        let corpseGateway = LiveExquisiteCorpseGateway(client: client)
+        let corpseCache = FileExquisiteCorpseCache.shared
+        return [
             ExquisiteCorpseSubmitPartHandler(
                 gateway: corpseGateway,
                 transfer: LiveGameDrawingTransfer(client: client),
@@ -59,7 +85,12 @@ nonisolated enum GamesPendingOperationRegistry {
             ),
             ExquisiteCorpseRevealSeenHandler(gateway: corpseGateway, cache: corpseCache),
             ExquisiteCorpseStarHandler(gateway: corpseGateway, cache: corpseCache),
-            // Board games
+        ]
+    }
+
+    private static func boardGameHandlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
+        let boardGamesGateway = LiveBoardGamesGateway(client: client)
+        return [
             BoardGameMovePendingOperationHandler(gateway: boardGamesGateway, cache: FileBoardGamesCache.shared),
             BoardGameRematchPendingOperationHandler(gateway: boardGamesGateway, cache: FileBoardGamesCache.shared),
         ]

@@ -2,7 +2,7 @@ import Foundation
 
 protocol LocationGateway: Actor {
     func updateLocationSharingPreference(
-        payload: LocationSharingPreferenceOperationPayload,
+        payload: LocationSharingOperationPayload,
         operation: SyncClientOperation
     ) async throws -> LocationSharingPreferenceUpdateResponse?
     func updateLatestPartnerLocation(
@@ -21,7 +21,7 @@ actor LiveLocationGateway: LocationGateway {
     }
 
     func updateLocationSharingPreference(
-        payload: LocationSharingPreferenceOperationPayload,
+        payload: LocationSharingOperationPayload,
         operation: SyncClientOperation
     ) async throws -> LocationSharingPreferenceUpdateResponse? {
         try await PaeoniaSignedIn.require(isSignedIn)
@@ -49,23 +49,11 @@ actor LiveLocationGateway: LocationGateway {
     }
 }
 
-nonisolated struct LocationSharingPreferenceOperationPayload: Codable, Equatable, Sendable {
+nonisolated struct LocationSharingOperationPayload: Codable, Equatable, Sendable {
     let coupleID: UUID
     let isEnabled: Bool
     let consentVersion: String?
     let source: LocationSharingSource
-
-    init(
-        coupleID: UUID,
-        isEnabled: Bool,
-        consentVersion: String?,
-        source: LocationSharingSource
-    ) {
-        self.coupleID = coupleID
-        self.isEnabled = isEnabled
-        self.consentVersion = consentVersion
-        self.source = source
-    }
 }
 
 nonisolated struct LatestPartnerLocationOperationPayload: Codable, Equatable, Sendable {
@@ -140,7 +128,7 @@ nonisolated struct UpdateLocationSharingPreferenceRequest: Encodable {
     let clientSequence: Int64
     let localCreatedAt: Date
 
-    init(payload: LocationSharingPreferenceOperationPayload, operation: SyncClientOperation) {
+    init(payload: LocationSharingOperationPayload, operation: SyncClientOperation) {
         coupleID = payload.coupleID
         isEnabled = payload.isEnabled
         consentVersion = payload.consentVersion

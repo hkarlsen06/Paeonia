@@ -34,10 +34,14 @@ struct DrawAndGuessLiveHandoffTests {
         )
     }
 
+    private struct WatchingGuesser {
+        let env: GamesTestEnvironment
+        let viewModel: DrawAndGuessViewModel
+        let connection: WidgetLiveConnection
+    }
+
     /// The guesser is on the watching screen, with the drawer in the room.
-    private func watchingLive(
-        canvasArrives: Bool
-    ) async -> (env: GamesTestEnvironment, viewModel: DrawAndGuessViewModel, connection: WidgetLiveConnection) {
+    private func watchingLive(canvasArrives: Bool) async -> WatchingGuesser {
         let env = GamesTestEnvironment(state: partnerDrawing)
         let (room, connection) = makeOfflineLiveRoom()
         let viewModel = env.viewModel(live: room)
@@ -49,7 +53,7 @@ struct DrawAndGuessLiveHandoffTests {
             sendPartnerCanvasSnapshot(on: connection)
         }
         viewModel.recompute()
-        return (env, viewModel, connection)
+        return WatchingGuesser(env: env, viewModel: viewModel, connection: connection)
     }
 
     /// A push opens the game while the cache still shows the round without a
@@ -57,7 +61,8 @@ struct DrawAndGuessLiveHandoffTests {
     /// with no canvas left to send a snapshot. The live canvas stays empty, so the
     /// guesser has to get the sent file. Before the fix the square stayed blank.
     @Test func aGuesserWhoJoinedAnEmptyRoomGetsTheSentDrawing() async throws {
-        let (env, viewModel, _) = await watchingLive(canvasArrives: false)
+        let watching = await watchingLive(canvasArrives: false)
+        let (env, viewModel) = (watching.env, watching.viewModel)
         #expect(viewModel.phase == .watchingLive)
 
         await env.cache.saveState(drawingSent, ownerUserID: GameFixture.me)
@@ -71,7 +76,8 @@ struct DrawAndGuessLiveHandoffTests {
     }
 
     @Test func aGuesserWhoSeesTheDrawingLiveKeepsTheLiveCanvasAndSkipsTheDownload() async throws {
-        let (env, viewModel, _) = await watchingLive(canvasArrives: true)
+        let watching = await watchingLive(canvasArrives: true)
+        let (env, viewModel) = (watching.env, watching.viewModel)
 
         await env.cache.saveState(drawingSent, ownerUserID: GameFixture.me)
         await viewModel.reload()
@@ -83,7 +89,8 @@ struct DrawAndGuessLiveHandoffTests {
     }
 
     @Test func aReplayThatIsPlayingStaysWhenTheDrawerComesBackWithACanvas() async throws {
-        let (env, viewModel, connection) = await watchingLive(canvasArrives: true)
+        let watching = await watchingLive(canvasArrives: true)
+        let (env, viewModel, connection) = (watching.env, watching.viewModel, watching.connection)
         await env.cache.saveState(drawingSent, ownerUserID: GameFixture.me)
         await viewModel.reload()
         connection.onMessage?(WidgetLiveMessage(type: .left, id: "partner"))

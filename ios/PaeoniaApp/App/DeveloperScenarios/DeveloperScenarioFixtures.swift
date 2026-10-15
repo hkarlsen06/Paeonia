@@ -128,7 +128,7 @@
       UUID(uuidString: "88888888-8888-8888-8888-888888888888") ?? UUID()
   }
 
-  actor DeveloperScenarioOfflineDailyOperationStore: PendingSyncOperationPersisting {
+  actor DeveloperOfflineDailyOperationStore: PendingSyncOperationPersisting {
     private let storage = InMemoryPendingSyncOperationRepository()
     private var didSeed = false
 
@@ -245,7 +245,7 @@
 
     init(mode: Mode) { self.mode = mode }
 
-    func createInvite(operation _: PairingClientOperation, expiresAt: Date) async throws
+    func createInvite(operation _: PairingClientOperation, expiresAt: Date) throws
       -> PairingInvite
     {
       guard mode != .failing else { throw PairingInviteCreationError.inviteCodeCollision }
@@ -260,7 +260,7 @@
       )
     }
 
-    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
+    func validateInvite(_ invite: PairingInvite) throws -> PairingInviteValidation {
       PairingInviteValidation(
         inviteID: invite.id,
         status: mode == .expired ? .expired : .pending,
@@ -268,7 +268,7 @@
       )
     }
 
-    func previewInvite(codeInput _: String) async throws -> PairingInvitePreview? {
+    func previewInvite(codeInput _: String) throws -> PairingInvitePreview? {
       guard mode != .failing else { throw URLError(.notConnectedToInternet) }
       guard mode != .expired else { return nil }
       return PairingInvitePreview(
@@ -281,16 +281,16 @@
     }
     func rotateInvite(
       currentInvite _: PairingInvite, operation: PairingClientOperation, expiresAt: Date
-    ) async throws -> PairingInvite {
-      try await createInvite(operation: operation, expiresAt: expiresAt)
+    ) throws -> PairingInvite {
+      try createInvite(operation: operation, expiresAt: expiresAt)
     }
     func acceptInvite(
       codeInput _: String, operation _: PairingClientOperation, startedOn _: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
+    ) throws -> PairingAcceptedRelationship {
       PairingAcceptedRelationship(coupleID: DeveloperScenarioFixture.coupleID)
     }
-    func revokeInvite(id _: UUID) async throws -> Bool { true }
-    func leaveRelationship(operation _: PairingClientOperation) async throws -> Bool { true }
+    func revokeInvite(id _: UUID) throws -> Bool { true }
+    func leaveRelationship(operation _: PairingClientOperation) throws -> Bool { true }
   }
 
   actor DeveloperScenarioMemoryDataService: MemoryDataServicing {
@@ -324,6 +324,7 @@
       try await seedIfNeeded()
       return try await service.loadCachedMemory(ownerUserID: ownerUserID, memoryID: memoryID)
     }
+    // swiftlint:disable:next function_parameter_count
     func createMemory(
       ownerUserID: UUID, coupleID: UUID, memoryID: UUID, title: String, memoryDate: String,
       noteBody: String?, optimisticMedia: [MemoryMediaSnapshot], operation: SyncClientOperation
@@ -333,6 +334,7 @@
         memoryDate: memoryDate, noteBody: noteBody, optimisticMedia: optimisticMedia,
         operation: operation)
     }
+    // swiftlint:disable:next function_parameter_count
     func updateMemory(
       ownerUserID: UUID, memoryID: UUID, expectedRevision: Int, title: String, memoryDate: String,
       operation: SyncClientOperation
@@ -383,8 +385,8 @@
 
   struct DeveloperScenarioPushAuthorization: PushAuthorizationProviding {
     let denied: Bool
-    func requestAuthorizationIfNeeded() async -> Bool { true }
-    func isDenied() async -> Bool { denied }
+    func requestAuthorizationIfNeeded() -> Bool { true }
+    func isDenied() -> Bool { denied }
   }
 
   @MainActor
@@ -403,12 +405,12 @@
         try await Task.sleep(for: .seconds(3_600))
       }
     }
-    func eligibleFreeTrial(for _: PaeoniaSubscriptionProductID) async -> PaeoniaFreeTrial? { nil }
+    func eligibleFreeTrial(for _: PaeoniaSubscriptionProductID) -> PaeoniaFreeTrial? { nil }
     func product(for _: PaeoniaSubscriptionProductID) -> Product? { nil }
     func product(for _: PaeoniaConsumableProductID) -> Product? { nil }
-    func purchase(_: Product) async throws -> Bool { false }
-    func restorePurchases() async throws -> Bool { false }
-    func redeemStreakRestore() async throws -> Int? { restoredStreakCount }
-    func recoverPendingStreakRestores() async -> Int? { restoredStreakCount }
+    func purchase(_: Product) throws -> Bool { false }
+    func restorePurchases() throws -> Bool { false }
+    func redeemStreakRestore() throws -> Int? { restoredStreakCount }
+    func recoverPendingStreakRestores() -> Int? { restoredStreakCount }
   }
 #endif

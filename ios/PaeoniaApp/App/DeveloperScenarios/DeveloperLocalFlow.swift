@@ -77,7 +77,7 @@
       )
 
       locationViewModel = LocationMapViewModel(
-        visibilityStore: InMemoryLocationVisibilitySnapshotRepository(),
+        visibilityStore: InMemoryLocationVisibilityRepository(),
         ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
         pendingOperationStore: pendingOperationStore,
         operationProvider: operationProvider,

@@ -140,32 +140,31 @@ struct LockedPartnerQuestionRows: View {
         DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "Something small you love", daysAgo: 1),
     ]
     return VStack(spacing: PaeoniaSpacing.space24) {
-        LockedPartnerQuestionRows(
-            state: DailyChallengeCardState(
-                kind: .complete,
-                answeredCount: 2,
-                totalCount: 2,
-                hasAnswerablePartnerQuestions: true,
-                lockedPartnerQuestions: questions,
-                moreLockedPartnerQuestionCount: 3
-            ),
-            partnerName: "Oda",
-            partnerPhotoAssetID: nil
-        )
-        LockedPartnerQuestionRows(
-            state: DailyChallengeCardState(
-                kind: .active(prompt: "x"),
-                answeredCount: 0,
-                totalCount: 2,
-                hasAnswerablePartnerQuestions: true,
-                lockedPartnerQuestions: questions
-            ),
-            partnerName: "Oda",
-            partnerPhotoAssetID: nil
-        )
+        lockedRowsPreview(kind: .complete, answeredCount: 2, questions: questions, moreCount: 3)
+        lockedRowsPreview(kind: .active(prompt: "x"), answeredCount: 0, questions: questions, moreCount: 0)
     }
     .padding(PaeoniaSpacing.screenHorizontalPadding)
     .background(.paeoniaBackgroundPrimary)
     .preferredColorScheme(.dark)
+}
+
+private func lockedRowsPreview(
+    kind: DailyChallengeCardState.Kind,
+    answeredCount: Int,
+    questions: [DailyChallengeCardState.LockedPartnerQuestion],
+    moreCount: Int
+) -> some View {
+    LockedPartnerQuestionRows(
+        state: DailyChallengeCardState(
+            kind: kind,
+            answeredCount: answeredCount,
+            totalCount: 2,
+            hasAnswerablePartnerQuestions: true,
+            lockedPartnerQuestions: questions,
+            moreLockedPartnerQuestionCount: moreCount
+        ),
+        partnerName: "Oda",
+        partnerPhotoAssetID: nil
+    )
 }
 #endif

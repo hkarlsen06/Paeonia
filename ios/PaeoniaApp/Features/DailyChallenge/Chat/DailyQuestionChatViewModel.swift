@@ -46,8 +46,8 @@ final class DailyQuestionChatViewModel {
     private let focusesNewest: Bool
     /// The day the page scrolls to when it opens. Nil means the newest day.
     private var focusedInstanceID: UUID? { focusesNewest ? nil : question.id }
-    private let service: any DailyQuestionChatServicing
-    private let operationProvider: any SyncClientOperationProviding
+    let service: any DailyQuestionChatServicing
+    let operationProvider: any SyncClientOperationProviding
     private var syncAfterLocalChange: (@MainActor () async -> Void)?
     private(set) var participants: DailyChallengeParticipants
     private(set) var messages: [DailyQuestionChatMessage] = []
@@ -55,13 +55,13 @@ final class DailyQuestionChatViewModel {
     private(set) var isLoading = true
     /// Becomes true once the screen has read this phone's copy of the chat.
     private(set) var hasReadStore = false
-    private(set) var notice: Notice?
+    var notice: Notice?
     /// The message the next send replies to, shown above the composer.
-    private(set) var replyTarget: DailyQuestionChatMessage?
+    var replyTarget: DailyQuestionChatMessage?
     /// The user's own message whose text the composer is changing.
-    private(set) var editTarget: DailyQuestionChatMessage?
+    var editTarget: DailyQuestionChatMessage?
     /// Changes when the composer should take focus, for example after picking a reply.
-    private(set) var composerFocusRequest = 0
+    var composerFocusRequest = 0
     /// Typing dots and read receipts.
     let presence: DailyChatPresenceModel
     /// True while the chat is on screen and the app is in front, so reading counts.
@@ -72,7 +72,7 @@ final class DailyQuestionChatViewModel {
     private enum AnswerSeenUpload { case sending, sent }
     private var newestPartnerMessageID: UUID?
     private var hasQueuedThreadCreation = false
-    private var isQueueing = false
+    var isQueueing = false
     /// Counts reads of the store. A read that finishes after a newer one started
     /// holds older data, so it must not replace what the newer read showed.
     private var readGeneration = 0
@@ -95,7 +95,11 @@ final class DailyQuestionChatViewModel {
         self.focusesNewest = focusesNewest
         let service = service ?? DailyQuestionChatServiceFactory.makeDefault()
         self.service = service
-        presence = DailyChatPresenceModel(coupleID: question.coupleID, questionID: question.questionID, service: service)
+        presence = DailyChatPresenceModel(
+            coupleID: question.coupleID,
+            questionID: question.questionID,
+            service: service
+        )
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.syncAfterLocalChange = syncAfterLocalChange
     }
@@ -235,8 +239,14 @@ final class DailyQuestionChatViewModel {
             if newestPartnerMessageID != nil || newestPartner != nil { presence.partnerMessageArrived() }
             newestPartnerMessageID = newestPartner
         }
-        // The screen is open, so everything it shows counts as seen, every revealed
-        // partner answer included.
+        await markShownAsSeen(ownerUserID: ownerUserID)
+        markReadOnServerIfActive()
+        markAnswerSeenOnServerIfActive()
+    }
+
+    /// The screen is open, so everything it shows counts as seen: every revealed partner
+    /// answer, the delivered messages, and their notifications.
+    private func markShownAsSeen(ownerUserID: UUID) async {
         for round in rounds where round.hasRevealedPartnerAnswer {
             await service.markPartnerAnswerSeen(ownerUserID: ownerUserID, instanceID: round.id)
         }
@@ -250,8 +260,6 @@ final class DailyQuestionChatViewModel {
         if let threadID, let newestDelivered {
             await service.markThreadRead(ownerUserID: ownerUserID, threadID: threadID, through: newestDelivered)
         }
-        markReadOnServerIfActive()
-        markAnswerSeenOnServerIfActive()
     }
 
     /// The thread of this couple's chat about the question, if the summaries list it.
@@ -265,65 +273,6 @@ final class DailyQuestionChatViewModel {
             notice = .deliveryFailed
         }
         seenFailedOperationIDs = (seenFailedOperationIDs ?? []).union(failed)
-    }
-
-    /// Keeps the chat current while the screen is open, until the calling task is
-    /// cancelled. Messages that arrive from the partner, and a thread the partner
-    /// starts, show up without a reload. The live results are written to the chat
-    /// cache first, so reopening the chat offline shows the same messages.
-    func observeLiveUpdates() async {
-        guard let ownerUserID = participants.currentUserID, isChatAvailable else { return }
-
-        var followedThreadID: UUID?
-        var messageUpdates: Task<Void, Never>?
-        // The days follow the partner's answers and the chat's thread, so an answer that
-        // opens a day shows without a reload.
-        let questionID = question.questionID
-        let coupleID = question.coupleID
-        let roundUpdates = Task { @MainActor [weak self, service] in
-            let updates = service.liveRoundUpdates(ownerUserID: ownerUserID, coupleID: coupleID, questionID: questionID)
-            for await _ in updates {
-                guard let self else { return }
-                self.roundsAreConfirmed = true
-                await self.readStore(ownerUserID: ownerUserID)
-            }
-        }
-        defer {
-            messageUpdates?.cancel()
-            roundUpdates.cancel()
-        }
-
-        // The queue changes too, so a message that failed to send says so.
-        let changes = LocalStoreChanges.changes(in: .dailyChat, .pendingOperations)
-        // Check once before waiting, in case the thread arrived before this started.
-        var shouldRead = true
-        var iterator = changes.makeAsyncIterator()
-        while shouldRead {
-            await readStore(ownerUserID: ownerUserID)
-            if let threadID, threadID != followedThreadID {
-                followedThreadID = threadID
-                messageUpdates?.cancel()
-                messageUpdates = Task { @MainActor [weak self, service] in
-                    let updates = service.liveMessageUpdates(
-                        ownerUserID: ownerUserID,
-                        questionID: questionID,
-                        threadID: threadID
-                    )
-                    for await _ in updates {
-                        guard let self else { return }
-                        await self.readStore(ownerUserID: ownerUserID)
-                    }
-                }
-            }
-            // Wait for the next change to this user's chats. Other users' changes are skipped.
-            shouldRead = false
-            while let change = await iterator.next() {
-                if change.ownerUserID == ownerUserID {
-                    shouldRead = true
-                    break
-                }
-            }
-        }
     }
 
     func dismissNotice() {
@@ -345,6 +294,78 @@ final class DailyQuestionChatViewModel {
         if error is CancellationError { return true }
         if let urlError = error as? URLError, urlError.code == .cancelled { return true }
         return false
+    }
+}
+
+// MARK: - Live updates
+
+extension DailyQuestionChatViewModel {
+    /// Keeps the chat current while the screen is open, until the calling task is
+    /// cancelled. Messages that arrive from the partner, and a thread the partner
+    /// starts, show up without a reload. The live results are written to the chat
+    /// cache first, so reopening the chat offline shows the same messages.
+    func observeLiveUpdates() async {
+        guard let ownerUserID = participants.currentUserID, isChatAvailable else { return }
+
+        var followedThreadID: UUID?
+        var messageUpdates: Task<Void, Never>?
+        let roundUpdates = followRoundUpdates(ownerUserID: ownerUserID)
+        defer {
+            messageUpdates?.cancel()
+            roundUpdates.cancel()
+        }
+
+        // The queue changes too, so a message that failed to send says so.
+        let changes = LocalStoreChanges.changes(in: .dailyChat, .pendingOperations)
+        // Check once before waiting, in case the thread arrived before this started.
+        var shouldRead = true
+        var iterator = changes.makeAsyncIterator()
+        while shouldRead {
+            await readStore(ownerUserID: ownerUserID)
+            if let threadID, threadID != followedThreadID {
+                followedThreadID = threadID
+                messageUpdates?.cancel()
+                messageUpdates = followMessageUpdates(ownerUserID: ownerUserID, threadID: threadID)
+            }
+            // Wait for the next change to this user's chats. Other users' changes are skipped.
+            shouldRead = false
+            while let change = await iterator.next() {
+                if change.ownerUserID == ownerUserID {
+                    shouldRead = true
+                    break
+                }
+            }
+        }
+    }
+
+    /// The days follow the partner's answers and the chat's thread, so an answer that
+    /// opens a day shows without a reload.
+    private func followRoundUpdates(ownerUserID: UUID) -> Task<Void, Never> {
+        let questionID = question.questionID
+        let coupleID = question.coupleID
+        return Task { @MainActor [weak self, service] in
+            let updates = service.liveRoundUpdates(ownerUserID: ownerUserID, coupleID: coupleID, questionID: questionID)
+            for await _ in updates {
+                guard let self else { return }
+                self.roundsAreConfirmed = true
+                await self.readStore(ownerUserID: ownerUserID)
+            }
+        }
+    }
+
+    private func followMessageUpdates(ownerUserID: UUID, threadID: UUID) -> Task<Void, Never> {
+        let questionID = question.questionID
+        return Task { @MainActor [weak self, service] in
+            let updates = service.liveMessageUpdates(
+                ownerUserID: ownerUserID,
+                questionID: questionID,
+                threadID: threadID
+            )
+            for await _ in updates {
+                guard let self else { return }
+                await self.readStore(ownerUserID: ownerUserID)
+            }
+        }
     }
 }
 
@@ -382,7 +403,7 @@ extension DailyQuestionChatViewModel {
         await send(text, photos: [], replacingFailed: failedOperationID, replyToMessageID: retriedReplyID)
     }
 
-    private func send(
+    func send(
         _ text: String,
         photos: [DailyQuestionChatPhoto],
         replacingFailed failedOperationID: UUID?,
@@ -449,7 +470,7 @@ extension DailyQuestionChatViewModel {
     }
 
     /// Saves one message to the send queue, then shows it and starts sending.
-    private func queue(
+    func queue(
         ownerUserID: UUID,
         replacingFailed failedOperationID: UUID?,
         _ enqueue: (_ createThread: Bool) async throws -> Void
@@ -508,148 +529,6 @@ extension DailyQuestionChatViewModel {
                 let sent = await service.markPartnerAnswerSeenOnServer(instanceID: instanceID)
                 answerSeenUploads[instanceID] = sent ? .sent : nil
             }
-        }
-    }
-}
-
-// MARK: - Photo and voice messages
-
-extension DailyQuestionChatViewModel {
-    /// Queues a message with photos from the composer, already compressed, and the
-    /// text as their caption.
-    func send(_ text: String, photos: [DailyQuestionChatPhoto]) async -> Bool {
-        await send(text, photos: photos, replacingFailed: nil, replyToMessageID: nil)
-    }
-
-    /// Sends a failed photo message again from the compressed copies kept on this phone.
-    func resendPhotos(_ message: DailyQuestionChatMessage) async {
-        let photos = (message.photos ?? []).compactMap { photo -> DailyQuestionChatPhoto? in
-            photo.data == nil ? nil : photo
-        }
-        guard message.sendFailed, !photos.isEmpty else { return }
-        _ = await send(
-            message.body,
-            photos: photos,
-            replacingFailed: message.clientOperationID,
-            replyToMessageID: message.replyToMessageID
-        )
-    }
-
-    /// Queues a voice message recorded with the composer's microphone button. The
-    /// recording is read into the queued message and its file deleted.
-    func sendVoice(fileURL: URL, durationMs: Int) async -> Bool {
-        defer { try? FileManager.default.removeItem(at: fileURL) }
-        guard let data = try? Data(contentsOf: fileURL) else {
-            notice = .voiceFailed
-            return false
-        }
-        return await sendVoice(
-            data: data,
-            durationMs: durationMs,
-            replacingFailed: nil,
-            replyToMessageID: replyTarget?.id
-        )
-    }
-
-    /// Sends a voice message that failed again, from the copy kept on this phone.
-    func resendVoice(_ message: DailyQuestionChatMessage) async {
-        guard message.sendFailed, let data = message.voice?.data else { return }
-        _ = await sendVoice(
-            data: data,
-            durationMs: message.voice?.durationMs ?? 0,
-            replacingFailed: message.clientOperationID,
-            replyToMessageID: message.replyToMessageID
-        )
-    }
-
-    private func sendVoice(
-        data: Data,
-        durationMs: Int,
-        replacingFailed failedOperationID: UUID?,
-        replyToMessageID: UUID?
-    ) async -> Bool {
-        guard let ownerUserID = participants.currentUserID, isChatAvailable else {
-            notice = .unavailable
-            return false
-        }
-        guard !isQueueing else { return false }
-        isQueueing = true
-        defer { isQueueing = false }
-
-        do {
-            try await queue(ownerUserID: ownerUserID, replacingFailed: failedOperationID) { createThread in
-                _ = try await service.queueVoiceMessage(
-                    ownerUserID: ownerUserID,
-                    coupleID: question.coupleID,
-                    questionID: question.questionID,
-                    threadID: threadID,
-                    voice: DailyQuestionChatVoicePayload(
-                        messageID: UUID(),
-                        data: data,
-                        durationMs: durationMs,
-                        reserveOperation: operationProvider.makeOperation(),
-                        finalizeOperation: operationProvider.makeOperation()
-                    ),
-                    createThread: createThread,
-                    replyToMessageID: replyToMessageID,
-                    operation: operationProvider.makeOperation()
-                )
-            }
-            if failedOperationID == nil { replyTarget = nil }
-            return true
-        } catch {
-            notice = .voiceFailed
-            return false
-        }
-    }
-}
-
-// MARK: - Editing
-
-extension DailyQuestionChatViewModel {
-    func canEdit(_ message: DailyQuestionChatMessage) -> Bool {
-        message.canEdit(by: participants.currentUserID)
-    }
-
-    /// One edit at a time. Switching would throw away the changes typed so far.
-    func startEditing(_ message: DailyQuestionChatMessage) {
-        guard canEdit(message), editTarget == nil else { return }
-        replyTarget = nil
-        editTarget = message
-        composerFocusRequest += 1
-        Task { await presence.stopTyping() }
-    }
-
-    func cancelEdit() {
-        editTarget = nil
-    }
-
-    /// Saves the new text of `editTarget`. The live message query shows the change on
-    /// both phones once the server has it.
-    func saveEdit(_ text: String) async -> EditOutcome {
-        guard let target = editTarget else { return .saved }
-        let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !body.isEmpty else { return .failed }
-        guard body.unicodeScalars.count <= Self.maximumMessageLength else {
-            notice = .messageTooLong
-            return .failed
-        }
-        guard body != target.body else {
-            editTarget = nil
-            return .saved
-        }
-        do {
-            try await service.editMessage(messageID: target.id, body: body)
-            editTarget = nil
-            PaeoniaHaptics.selection()
-            return .saved
-        } catch is DailyQuestionChatEditWindowClosedError {
-            editTarget = nil
-            notice = .editWindowClosed
-            return .windowClosed
-        } catch {
-            notice = .editFailed(PaeoniaFailure(error))
-            return .failed
         }
     }
 }

@@ -34,7 +34,12 @@ final class DailyChatPresenceModel {
     private var lastMarkedMessageID: UUID?
     private var readTask: Task<Void, Never>?
 
-    init(coupleID: UUID, questionID: UUID, service: any DailyQuestionChatServicing, now: @escaping () -> Date = Date.init) {
+    init(
+        coupleID: UUID,
+        questionID: UUID,
+        service: any DailyQuestionChatServicing,
+        now: @escaping () -> Date = Date.init
+    ) {
         self.coupleID = coupleID
         self.questionID = questionID
         self.service = service

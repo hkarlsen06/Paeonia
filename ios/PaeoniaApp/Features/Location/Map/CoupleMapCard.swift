@@ -142,22 +142,11 @@ struct CoupleMapCard: View {
 
         // Tap blows heart between avatars; long press opens Maps.
         return mapTile {
-            CoupleMapSnapshot(
-                currentName: currentName,
-                currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-                currentCoordinate: current.coordinate,
-                currentCapturedAt: current.capturedAt,
-                partnerName: partnerName,
-                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                partnerCoordinate: partner.coordinate,
-                partnerCapturedAt: partner.capturedAt,
+            snapshotView(
+                current: current,
+                partner: partner,
                 partnerWasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
-                isTogether: isTogether,
-                onLongPress: {
-                    openInAppleMaps(current: current, partner: partner)
-                },
-                onSendHeart: { hearts?.tap() },
-                incomingBurst: hearts?.incomingBurst
+                isTogether: isTogether
             )
         }
         .overlay(alignment: .topLeading) { incomingLinePill }
@@ -282,6 +271,33 @@ struct CoupleMapCard: View {
                     .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
             }
             .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
+    }
+}
+
+extension CoupleMapCard {
+    private func snapshotView(
+        current: LocationPoint,
+        partner: LocationPoint,
+        partnerWasStaleAtLastRefresh: Bool,
+        isTogether: Bool
+    ) -> some View {
+        CoupleMapSnapshot(
+            currentName: currentName,
+            currentProfilePhotoAssetID: currentProfilePhotoAssetID,
+            currentCoordinate: current.coordinate,
+            currentCapturedAt: current.capturedAt,
+            partnerName: partnerName,
+            partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
+            partnerCoordinate: partner.coordinate,
+            partnerCapturedAt: partner.capturedAt,
+            partnerWasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
+            isTogether: isTogether,
+            onLongPress: {
+                openInAppleMaps(current: current, partner: partner)
+            },
+            onSendHeart: { hearts?.tap() },
+            incomingBurst: hearts?.incomingBurst
+        )
     }
 }
 

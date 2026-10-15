@@ -58,7 +58,7 @@ struct BackgroundLocationUploaderTests {
         gateway: BackgroundTestLocationGateway,
         sharing: Bool,
         lastSent: LocationPoint? = nil,
-        visibilityStore: InMemoryLocationVisibilitySnapshotRepository = InMemoryLocationVisibilitySnapshotRepository()
+        visibilityStore: InMemoryLocationVisibilityRepository = InMemoryLocationVisibilityRepository()
     ) async throws -> (BackgroundLocationUploader, InMemoryOwnLocationSnapshotRepository) {
         try await visibilityStore.setViewerSharingEnabled(
             ownerUserID: ownerUserID,
@@ -139,7 +139,7 @@ struct BackgroundLocationUploaderTests {
     /// Turning sharing off while the request is in flight marks it off and
     /// deletes the stored location. The finished upload must not put it back.
     @Test func optOutDuringSendLeavesNoStoredLocation() async throws {
-        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        let visibilityStore = InMemoryLocationVisibilityRepository()
         let gateway = BackgroundTestLocationGateway { [ownerUserID, coupleID, now] in
             try? await visibilityStore.setViewerSharingEnabled(
                 ownerUserID: ownerUserID,
@@ -208,9 +208,9 @@ private actor BackgroundTestLocationGateway: LocationGateway {
     }
 
     func updateLocationSharingPreference(
-        payload _: LocationSharingPreferenceOperationPayload,
+        payload _: LocationSharingOperationPayload,
         operation _: SyncClientOperation
-    ) async throws -> LocationSharingPreferenceUpdateResponse? {
+    ) throws -> LocationSharingPreferenceUpdateResponse? {
         nil
     }
 
@@ -228,13 +228,13 @@ private actor BackgroundTestLocationGateway: LocationGateway {
 }
 
 private actor UnreadableVisibilityStore: LocationVisibilitySnapshotPersisting {
-    func save(_: LocationVisibilitySnapshot) async throws {}
+    func save(_: LocationVisibilitySnapshot) throws {}
 
-    func load(ownerUserID _: UUID, coupleID _: UUID) async throws -> LocationVisibilitySnapshot? {
+    func load(ownerUserID _: UUID, coupleID _: UUID) throws -> LocationVisibilitySnapshot? {
         throw CocoaError(.fileReadUnknown)
     }
 
-    func saveRemote(_: LocationVisibilitySnapshot, preservingLocalSharingChoiceIf _: Bool) async throws {}
+    func saveRemote(_: LocationVisibilitySnapshot, preservingLocalSharingChoiceIf _: Bool) throws {}
 
     func setViewerSharingEnabled(
         ownerUserID _: UUID,
@@ -242,7 +242,7 @@ private actor UnreadableVisibilityStore: LocationVisibilitySnapshotPersisting {
         isEnabled _: Bool,
         updatedAt _: Date,
         isPendingConfirmation _: Bool
-    ) async throws {}
+    ) throws {}
 
     func confirmViewerSharing(
         ownerUserID _: UUID,
@@ -250,7 +250,7 @@ private actor UnreadableVisibilityStore: LocationVisibilitySnapshotPersisting {
         isEnabled _: Bool,
         updatedAt _: Date,
         otherChoicesPending _: Bool
-    ) async throws {}
+    ) throws {}
 
-    func delete(ownerUserID _: UUID, coupleID _: UUID) async throws {}
+    func delete(ownerUserID _: UUID, coupleID _: UUID) throws {}
 }

@@ -11,7 +11,10 @@ struct GamesHandlerFixTests {
     init() {
         // The server answers the read that follows each move it takes.
         environment.gateway.setStateToLoad(
-            GameFixture.state(settings: GameFixture.settings(), game: GameFixture.game(state: .guessing, turn: GameFixture.me))
+            GameFixture.state(
+                settings: GameFixture.settings(),
+                game: GameFixture.game(state: .guessing, turn: GameFixture.me)
+            )
         )
     }
 
@@ -260,7 +263,10 @@ struct GamesHandlerFixTests {
         let earlier = guess("cat")
         try await enqueue(.submitGameGuess, earlier, operation(1))
         let giveUp = GameGiveUpPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now)
-        let giveUpHandler = GiveUpGameRoundPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
+        let giveUpHandler = GiveUpGameRoundPendingOperationHandler(
+            gateway: environment.gateway,
+            cache: environment.cache
+        )
         let context = syncContext(environment.pending)
 
         let waiting = try await giveUpHandler.send(
@@ -276,43 +282,5 @@ struct GamesHandlerFixTests {
         )
         #expect(sent == .succeeded)
         #expect(environment.gateway.guesses == ["dog"])
-    }
-
-    // MARK: Cache races
-
-    @Test func anOlderOneShotReadNeverOverwritesALiveWrite() async {
-        let cache = InMemoryGamesCache()
-        let older = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .drawing, turn: GameFixture.me)
-        )
-        let newer = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil)
-        )
-
-        let ticket = await cache.beginFetch()
-        // The live feed writes while the one-shot read is on its way.
-        await cache.saveState(newer, ownerUserID: GameFixture.me)
-        let saved = await cache.saveFetchedState(older, ownerUserID: GameFixture.me, ticket: ticket)
-
-        #expect(!saved)
-        #expect(await cache.document(ownerUserID: GameFixture.me).state == newer)
-    }
-
-    @Test func aOneShotReadWithNoLiveWriteInBetweenIsSaved() async throws {
-        let cache = InMemoryGamesCache()
-        let state = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .drawing, turn: GameFixture.me)
-        )
-        environment.gateway.setStateToLoad(state)
-
-        let matched = try await cache.fetchState(from: environment.gateway, ownerUserID: GameFixture.me)
-
-        #expect(matched)
-        #expect(await cache.document(ownerUserID: GameFixture.me).state == state)
-        let otherPerson = try await cache.fetchState(from: environment.gateway, ownerUserID: UUID())
-        #expect(!otherPerson)
     }
 }

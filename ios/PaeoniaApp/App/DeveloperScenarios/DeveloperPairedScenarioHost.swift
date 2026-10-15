@@ -19,7 +19,7 @@
       let dailyService = DeveloperDailyChallengeService(mode: .mode(for: scenario))
       let pendingOperationStore: any PendingSyncOperationPersisting =
         scenario == .questionsOfflineQueued
-        ? DeveloperScenarioOfflineDailyOperationStore()
+        ? DeveloperOfflineDailyOperationStore()
         : InMemoryPendingSyncOperationRepository()
       _selection = State(initialValue: Self.initialTab(for: scenario))
       _deepLink = State(
@@ -89,7 +89,7 @@
       operationProvider: DeveloperScenarioOperationProvider
     ) -> LocationMapViewModel {
       LocationMapViewModel(
-        visibilityStore: InMemoryLocationVisibilitySnapshotRepository(),
+        visibilityStore: InMemoryLocationVisibilityRepository(),
         ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
         pendingOperationStore: InMemoryPendingSyncOperationRepository(),
         operationProvider: operationProvider,

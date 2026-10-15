@@ -31,7 +31,10 @@ struct GamesStuckMoveTests {
             )
         )
     }
-    private let serverError = PaeoniaConvexError.server(code: nil, message: "[Request ID: 245c8d4539293d42] Server Error")
+    private let serverError = PaeoniaConvexError.server(
+        code: nil,
+        message: "[Request ID: 245c8d4539293d42] Server Error"
+    )
 
     private var drain: PendingSyncOperationDrainStream {
         PendingSyncOperationDrainStream(handlers: [
@@ -176,7 +179,7 @@ struct GamesStuckMoveTests {
         #expect(await environment.cache.takeNotices(ownerUserID: GameFixture.me).isEmpty)
     }
 
-    @Test func anOfflineFailureIsNotCountedAsAFailureWhileOnline() async throws {
+    @Test func anOfflineFailureIsNotCountedAsAFailureWhileOnline() throws {
         let offline = snapshotWithError(String(describing: URLError(.notConnectedToInternet)))
 
         #expect(!offline.failedWhileOnline)

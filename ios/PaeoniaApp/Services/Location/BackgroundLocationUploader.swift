@@ -77,7 +77,7 @@ struct BackgroundLocationUploader {
             }
             await storeSent(location, response: response, ownerUserID: ownerUserID, coupleID: coupleID)
             return .sent
-        } catch where LatestPartnerLocationPendingOperationHandler.isSharingOffRejection(error) {
+        } catch where LatestLocationPendingOperationHandler.isSharingOffRejection(error) {
             return .sharingOff
         } catch {
             return .failed

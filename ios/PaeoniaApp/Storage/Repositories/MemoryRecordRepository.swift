@@ -51,7 +51,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         _ rows: [MemoryRemoteRow],
         ownerUserID: UUID,
         mergePolicy: MemoryRemoteMergePolicy = .preserveLocalChanges
-    ) async throws {
+    ) throws {
         let context = ModelContext(container)
 
         for row in rows {
@@ -86,7 +86,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
-    func saveLocal(_ record: MemoryRecord) async throws {
+    func saveLocal(_ record: MemoryRecord) throws {
         let context = ModelContext(container)
 
         if let existing = try fetch(
@@ -113,7 +113,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
     func load(
         ownerUserID: UUID,
         includeHidden: Bool = false
-    ) async throws -> [MemoryRecord] {
+    ) throws -> [MemoryRecord] {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalMemoryRecord>(
             predicate: #Predicate { record in
@@ -134,7 +134,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
     func load(
         ownerUserID: UUID,
         memoryID: UUID
-    ) async throws -> MemoryRecord? {
+    ) throws -> MemoryRecord? {
         let context = ModelContext(container)
         guard let localRecord = try fetch(ownerUserID: ownerUserID, memoryID: memoryID, in: context) else {
             return nil
@@ -147,7 +147,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         ownerUserID: UUID,
         memoryID: UUID,
         reason: String
-    ) async throws {
+    ) throws {
         let context = ModelContext(container)
         guard let record = try fetch(ownerUserID: ownerUserID, memoryID: memoryID, in: context) else {
             return
@@ -164,7 +164,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
     func delete(
         ownerUserID: UUID,
         memoryID: UUID
-    ) async throws {
+    ) throws {
         let context = ModelContext(container)
         if let record = try fetch(ownerUserID: ownerUserID, memoryID: memoryID, in: context) {
             context.delete(record)
@@ -173,7 +173,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
         }
     }
 
-    func deleteAll(ownerUserID: UUID) async throws {
+    func deleteAll(ownerUserID: UUID) throws {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalMemoryRecord>(
             predicate: #Predicate { record in
@@ -301,7 +301,7 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
         _ rows: [MemoryRemoteRow],
         ownerUserID: UUID,
         mergePolicy: MemoryRemoteMergePolicy = .preserveLocalChanges
-    ) async throws {
+    ) throws {
         for row in rows {
             let key = key(ownerUserID: ownerUserID, memoryID: row.memoryID)
             if let existing = records[key], shouldPreserveLocalRecord(existing, mergePolicy: mergePolicy) {
@@ -318,7 +318,7 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
         LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
-    func saveLocal(_ record: MemoryRecord) async throws {
+    func saveLocal(_ record: MemoryRecord) throws {
         records[key(ownerUserID: record.snapshot.ownerUserID, memoryID: record.snapshot.memoryID)] = record
         LocalStoreChanges.post(.memories, ownerUserID: record.snapshot.ownerUserID)
     }
@@ -326,7 +326,7 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
     func load(
         ownerUserID: UUID,
         includeHidden: Bool = false
-    ) async throws -> [MemoryRecord] {
+    ) throws -> [MemoryRecord] {
         records.values
             .filter { $0.snapshot.ownerUserID == ownerUserID }
             .filter { includeHidden || $0.snapshot.isVisible }
@@ -344,7 +344,7 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
     func load(
         ownerUserID: UUID,
         memoryID: UUID
-    ) async throws -> MemoryRecord? {
+    ) throws -> MemoryRecord? {
         records[key(ownerUserID: ownerUserID, memoryID: memoryID)]
     }
 
@@ -352,7 +352,7 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
         ownerUserID: UUID,
         memoryID: UUID,
         reason: String
-    ) async throws {
+    ) throws {
         let recordKey = key(ownerUserID: ownerUserID, memoryID: memoryID)
         guard var record = records[recordKey] else {
             return
@@ -369,12 +369,12 @@ actor InMemoryMemoryRecordRepository: MemoryRecordPersisting {
     func delete(
         ownerUserID: UUID,
         memoryID: UUID
-    ) async throws {
+    ) throws {
         records[key(ownerUserID: ownerUserID, memoryID: memoryID)] = nil
         LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }
 
-    func deleteAll(ownerUserID: UUID) async throws {
+    func deleteAll(ownerUserID: UUID) throws {
         records = records.filter { $0.value.snapshot.ownerUserID != ownerUserID }
         LocalStoreChanges.post(.memories, ownerUserID: ownerUserID)
     }

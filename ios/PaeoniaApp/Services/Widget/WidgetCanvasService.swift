@@ -45,30 +45,10 @@ nonisolated enum WidgetCanvasError: Error, Equatable {
 actor WidgetCanvasService: WidgetCanvasManaging {
     nonisolated static let shared = WidgetCanvasService()
 
-    private nonisolated struct PreviewSpec {
-        let family: String
-        let fileStem: String
-        let pixelWidth: CGFloat
-
-        func fileName(revisionID: String) -> String {
-            "\(fileStem)-\(revisionID).png"
-        }
-    }
-
-    private nonisolated static let previewSpecs: [PreviewSpec] = [
-        PreviewSpec(family: "systemSmall", fileStem: "systemSmall", pixelWidth: 480),
-        PreviewSpec(family: "systemLarge", fileStem: "systemLarge", pixelWidth: 880),
-    ]
-    /// `reloadTimelines` only requests a reload; it does not tell us when every
-    /// previously rendered timeline entry has stopped using its preview URL.
-    /// Keep unreferenced revisions for a full day so a still-live entry never
-    /// points at a file removed immediately after a save.
-    private nonisolated static let unreferencedPreviewRetention: TimeInterval = 24 * 60 * 60
-
-    private let appGroupContainerURL: URL?
+    let appGroupContainerURL: URL?
     private let canonicalDrawingURL: URL?
-    private let rasterizer: any WidgetDrawingRasterizing
-    private let reloader: any WidgetTimelineReloading
+    let rasterizer: any WidgetDrawingRasterizing
+    let reloader: any WidgetTimelineReloading
     /// App Group defaults shared with the widget extension. The widget reads
     /// `widgetPrivacyEpochKey` before and during a refresh and gives up if a
     /// purge bumped it meanwhile.
@@ -150,11 +130,13 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         createdAt: Date
     ) async throws {
         try await publish(
-            drawingData,
-            canvasSize: canvasSize,
-            authorName: authorName,
-            createdAt: createdAt,
-            serverRevisionID: nil
+            WidgetCanvasPublication(
+                drawingData: drawingData,
+                canvasSize: canvasSize,
+                authorName: authorName,
+                createdAt: createdAt,
+                serverRevisionID: nil
+            )
         )
     }
 
@@ -166,30 +148,25 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         revisionID: UUID
     ) async throws {
         try await publish(
-            drawingData,
-            canvasSize: canvasSize,
-            authorName: authorName,
-            createdAt: createdAt,
-            serverRevisionID: revisionID.uuidString.lowercased()
+            WidgetCanvasPublication(
+                drawingData: drawingData,
+                canvasSize: canvasSize,
+                authorName: authorName,
+                createdAt: createdAt,
+                serverRevisionID: revisionID.uuidString.lowercased()
+            )
         )
     }
 
-    private func publish(
-        _ drawingData: Data,
-        canvasSize: CGSize,
-        authorName: String?,
-        createdAt: Date,
-        serverRevisionID: String?
-    ) async throws {
+    private func publish(_ publication: WidgetCanvasPublication) async throws {
         // Required precondition: never persist data we cannot re-render.
-        guard (try? PKDrawing(data: drawingData)) != nil else {
+        guard (try? PKDrawing(data: publication.drawingData)) != nil else {
             throw WidgetCanvasError.invalidDrawingData
         }
 
         publicationGeneration &+= 1
-        let expectedPublicationGeneration = publicationGeneration
-        let expectedPrivacyGeneration = privacyGeneration
-        let stagedCanonicalDrawingURL = try stageCanonicalDrawing(drawingData)
+        let generations = WidgetCanvasGenerations(privacy: privacyGeneration, publication: publicationGeneration)
+        let stagedCanonicalDrawingURL = try stageCanonicalDrawing(publication.drawingData)
         defer {
             try? FileManager.default.removeItem(at: stagedCanonicalDrawingURL)
         }
@@ -198,19 +175,8 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         // has published successfully. Otherwise a failed save can reappear after
         // relaunch even though the UI correctly reported that it did not finish.
         do {
-            try await publishWidgetPayload(
-                drawingData: drawingData,
-                canvasSize: canvasSize,
-                authorName: authorName,
-                createdAt: createdAt,
-                serverRevisionID: serverRevisionID,
-                privacyGeneration: expectedPrivacyGeneration,
-                publicationGeneration: expectedPublicationGeneration
-            )
-            try checkGenerations(
-                privacy: expectedPrivacyGeneration,
-                publication: expectedPublicationGeneration
-            )
+            try await publishWidgetPayload(publication, generations: generations)
+            try checkGenerations(generations)
             try commitCanonicalDrawing(from: stagedCanonicalDrawingURL)
         } catch {
             #if DEBUG
@@ -333,113 +299,9 @@ actor WidgetCanvasService: WidgetCanvasManaging {
         }
     }
 
-    private func publishWidgetPayload(
-        drawingData: Data,
-        canvasSize: CGSize,
-        authorName: String?,
-        createdAt: Date,
-        serverRevisionID: String?,
-        privacyGeneration expectedPrivacyGeneration: UInt64,
-        publicationGeneration expectedPublicationGeneration: UInt64
-    ) async throws {
-        try checkGenerations(
-            privacy: expectedPrivacyGeneration,
-            publication: expectedPublicationGeneration
-        )
-        guard let appGroupContainerURL else {
-            return
-        }
-
-        let fileManager = FileManager.default
-        let previewsURL = appGroupContainerURL.appendingPathComponent(
-            PaeoniaAppGroup.widgetPreviewsDirectory,
-            isDirectory: true
-        )
-        try fileManager.createDirectory(at: previewsURL, withIntermediateDirectories: true)
-
-        // File names always get a fresh id, so this never overwrites (or, on a
-        // failed write, deletes) a file the widget extension wrote for the same
-        // server revision.
-        let fileRevisionID = UUID().uuidString.lowercased()
-        var previews: [String: String] = [:]
-        var newPreviewURLs: [URL] = []
-        var didPublishPayload = false
-        // Until the metadata swap succeeds, every new revision file is an
-        // unreferenced staging artifact. Clean those up on any render/write/
-        // privacy-generation failure without touching the prior live payload.
-        defer {
-            if !didPublishPayload {
-                newPreviewURLs.forEach { try? fileManager.removeItem(at: $0) }
-            }
-        }
-
-        for spec in Self.previewSpecs {
-            guard let pngData = await rasterizer.renderPNG(
-                fromDrawingData: drawingData,
-                canvasSide: canvasSize.width,
-                pixelWidth: spec.pixelWidth
-            ) else {
-                // Both declared Home Screen families are supported. Publishing
-                // a partial payload would make one of them silently regress to
-                // the placeholder while Save reports success.
-                throw WidgetCanvasError.persistenceFailed
-            }
-            try checkGenerations(
-                privacy: expectedPrivacyGeneration,
-                publication: expectedPublicationGeneration
-            )
-
-            let fileName = spec.fileName(revisionID: fileRevisionID)
-            let previewURL = previewsURL.appendingPathComponent(fileName)
-            try pngData.write(to: previewURL, options: .atomic)
-            newPreviewURLs.append(previewURL)
-            previews[spec.family] = "\(PaeoniaAppGroup.widgetPreviewsDirectory)/\(fileName)"
-        }
-
-        guard previews.count == Self.previewSpecs.count else {
-            throw WidgetCanvasError.persistenceFailed
-        }
-
-        let trimmedAuthorName = authorName?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let payload = WidgetSharePayload(
-            revisionID: serverRevisionID ?? fileRevisionID,
-            authorName: trimmedAuthorName?.isEmpty == false ? trimmedAuthorName : nil,
-            createdAt: createdAt,
-            renderedAt: Date(),
-            privacyMode: .normal,
-            isRedacted: false,
-            contentHash: Self.contentHash(for: drawingData),
-            previews: previews,
-            canvasSide: Double(canvasSize.width)
-        )
-
-        // Write the metadata last so it never references previews that do not
-        // exist yet; the widget falls back to a placeholder otherwise.
-        let payloadData = try WidgetSharePayload.encoder().encode(payload)
-        let payloadURL = appGroupContainerURL.appendingPathComponent(PaeoniaAppGroup.widgetPayloadPath)
-        try checkGenerations(
-            privacy: expectedPrivacyGeneration,
-            publication: expectedPublicationGeneration
-        )
-        try payloadData.write(to: payloadURL, options: .atomic)
-        didPublishPayload = true
-
-        await reloader.reloadWidget()
-        try checkGenerations(
-            privacy: expectedPrivacyGeneration,
-            publication: expectedPublicationGeneration
-        )
-        WidgetPreviewFiles.removeExpiredUnreferencedPreviews(
-            keeping: Set(previews.values),
-            previewsURL: previewsURL,
-            olderThan: Date().addingTimeInterval(-Self.unreferencedPreviewRetention),
-            fileManager: fileManager
-        )
-    }
-
-    private func checkGenerations(privacy: UInt64, publication: UInt64) throws {
-        guard privacy == privacyGeneration,
-              publication == publicationGeneration
+    func checkGenerations(_ expected: WidgetCanvasGenerations) throws {
+        guard expected.privacy == privacyGeneration,
+              expected.publication == publicationGeneration
         else {
             throw CancellationError()
         }

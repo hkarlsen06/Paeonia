@@ -248,7 +248,7 @@ extension DailyChallengeQuestion {
     }
 }
 
-nonisolated struct CreateDailyQuestionThreadMessageOperationPayload: Codable, Equatable, Sendable {
+nonisolated struct CreateDailyChatThreadPayload: Codable, Equatable, Sendable {
     let questionID: UUID
     let coupleID: UUID
     let body: String
@@ -256,7 +256,7 @@ nonisolated struct CreateDailyQuestionThreadMessageOperationPayload: Codable, Eq
     var photos: DailyQuestionChatPhotosPayload?
 }
 
-nonisolated struct SendDailyQuestionThreadMessageOperationPayload: Codable, Equatable, Sendable {
+nonisolated struct SendDailyChatMessagePayload: Codable, Equatable, Sendable {
     let questionID: UUID
     let coupleID: UUID
     let threadID: UUID?

@@ -14,6 +14,7 @@ protocol DailyQuestionChatCaching: Actor {
     /// Removes a message that failed to send, so a retry replaces it. Messages that
     /// are still sending or already sent are left alone.
     func discardFailed(ownerUserID: UUID, clientOperationID: UUID)
+    // swiftlint:disable:next function_parameter_count
     func confirm(
         ownerUserID: UUID,
         questionID: UUID,
@@ -210,6 +211,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         save(document, ownerUserID: ownerUserID)
     }
 
+    // swiftlint:disable:next function_parameter_count
     func confirm(
         ownerUserID: UUID,
         questionID: UUID,
@@ -222,60 +224,18 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
         createdAt: Date
     ) {
         var document = document(ownerUserID: ownerUserID)
-        let key = questionID.uuidString
-        let index = document.messagesByQuestionID[key]?.firstIndex(where: {
-            $0.clientOperationID == clientOperationID
-        })
-        // A voice message keeps playing from this phone's copy until the server's
-        // copy, which carries the uploaded file, replaces it.
-        let confirmed = DailyQuestionChatMessage(
-            id: messageID,
-            threadID: threadID,
-            questionID: questionID,
-            senderUserID: senderUserID,
-            body: body,
-            createdAt: createdAt,
-            clientOperationID: clientOperationID,
-            isSending: false,
-            voice: index.flatMap { document.messagesByQuestionID[key]?[$0].voice },
-            photos: index.flatMap { document.messagesByQuestionID[key]?[$0].photos },
-            replyToMessageID: index.flatMap { document.messagesByQuestionID[key]?[$0].replyToMessageID }
-        )
-        if let index {
-            document.messagesByQuestionID[key]?[index] = confirmed
-        } else {
-            document.messagesByQuestionID[key, default: []].append(confirmed)
-        }
-
-        if let summaryIndex = document.summaries.firstIndex(where: { $0.questionID == questionID }) {
-            let summary = document.summaries[summaryIndex]
-            document.summaries[summaryIndex] = DailyQuestionThreadSummary(
-                threadID: threadID,
-                coupleID: summary.coupleID,
+        document.apply(
+            DailyChatConfirmedSend(
                 questionID: questionID,
-                createdAt: summary.createdAt,
-                updatedAt: createdAt,
-                lastMessageID: messageID,
-                lastMessageAt: createdAt,
-                lastMessageSenderUserID: senderUserID,
-                lastMessageBody: body,
-                viewerReadThroughAt: summary.viewerReadThroughAt
+                coupleID: coupleID,
+                clientOperationID: clientOperationID,
+                threadID: threadID,
+                messageID: messageID,
+                body: body,
+                senderUserID: senderUserID,
+                createdAt: createdAt
             )
-        } else {
-            document.summaries.append(
-                DailyQuestionThreadSummary(
-                    threadID: threadID,
-                    coupleID: coupleID,
-                    questionID: questionID,
-                    createdAt: createdAt,
-                    updatedAt: createdAt,
-                    lastMessageID: messageID,
-                    lastMessageAt: createdAt,
-                    lastMessageSenderUserID: senderUserID,
-                    lastMessageBody: body
-                )
-            )
-        }
+        )
         save(document, ownerUserID: ownerUserID)
     }
 
@@ -387,18 +347,18 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
             .appendingPathComponent("DailyQuestionChatCache", isDirectory: true)
     }
 
-    private func document(ownerUserID: UUID) -> CacheDocument {
+    private func document(ownerUserID: UUID) -> DailyChatCacheDocument {
         guard let data = try? Data(contentsOf: fileURL(ownerUserID: ownerUserID)),
-              let envelope = try? decoder().decode(CacheEnvelope.self, from: data),
+              let envelope = try? decoder().decode(DailyChatCacheEnvelope.self, from: data),
               envelope.schemaVersion == Self.schemaVersion,
               envelope.ownerUserID == ownerUserID else {
-            return CacheDocument()
+            return DailyChatCacheDocument()
         }
         return envelope.document
     }
 
-    private func save(_ document: CacheDocument, ownerUserID: UUID) {
-        let envelope = CacheEnvelope(
+    private func save(_ document: DailyChatCacheDocument, ownerUserID: UUID) {
+        let envelope = DailyChatCacheEnvelope(
             schemaVersion: Self.schemaVersion,
             ownerUserID: ownerUserID,
             document: document
@@ -417,18 +377,4 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
     private func encoder() -> JSONEncoder { PaeoniaConvexClient.encoder }
 
     private func decoder() -> JSONDecoder { PaeoniaConvexClient.decoder }
-}
-
-nonisolated private struct CacheEnvelope: Codable {
-    let schemaVersion: Int
-    let ownerUserID: UUID
-    let document: CacheDocument
-}
-
-nonisolated private struct CacheDocument: Codable {
-    var summaries: [DailyQuestionThreadSummary] = []
-    var messagesByQuestionID: [String: [DailyQuestionChatMessage]] = [:]
-    var roundsByQuestionID: [String: DailyQuestionChatRoundsRow] = [:]
-    var readThroughByThreadID: [String: Date] = [:]
-    var seenPartnerAnswerInstanceIDs: [String] = []
 }

@@ -4,93 +4,35 @@ import Testing
 
 struct MemoryDataLayerTests {
     @Test func repositoryPreservesDirtyLocalRecordDuringNormalPull() async throws {
-        let ownerUserID = try fixedUUID("11111111-1111-1111-1111-111111111111")
-        let memoryID = try fixedUUID("22222222-2222-2222-2222-222222222222")
-        let coupleID = try fixedUUID("99999999-9999-9999-9999-999999999999")
-        let repository = InMemoryMemoryRecordRepository()
+        let fixture = try remoteFixture()
 
-        try await repository.saveRemote(
-            [
-                remoteRow(
-                    ownerUserID: ownerUserID,
-                    memoryID: memoryID,
-                    coupleID: coupleID,
-                    title: "Server title",
-                    revision: 1,
-                    syncUpdatedAt: Date(timeIntervalSince1970: 100)
-                )
-            ],
-            ownerUserID: ownerUserID,
-            mergePolicy: .overwriteLocalChanges
-        )
+        try await saveRemote(fixture, title: "Server title", revision: 1, mergePolicy: .overwriteLocalChanges)
 
-        let localEdit = try #require(await repository.load(ownerUserID: ownerUserID, memoryID: memoryID))
-        try await repository.saveLocal(record(from: localEdit, title: "Local title", syncStatus: .dirty))
+        let localEdit = try #require(await fixture.load())
+        try await fixture.repository.saveLocal(record(from: localEdit, title: "Local title", syncStatus: .dirty))
 
-        try await repository.saveRemote(
-            [
-                remoteRow(
-                    ownerUserID: ownerUserID,
-                    memoryID: memoryID,
-                    coupleID: coupleID,
-                    title: "Server changed title",
-                    revision: 2,
-                    syncUpdatedAt: Date(timeIntervalSince1970: 200)
-                )
-            ],
-            ownerUserID: ownerUserID,
-            mergePolicy: .preserveLocalChanges
-        )
+        try await saveRemote(fixture, title: "Server changed title", revision: 2, mergePolicy: .preserveLocalChanges)
 
-        let preserved = try #require(await repository.load(ownerUserID: ownerUserID, memoryID: memoryID))
+        let preserved = try #require(await fixture.load())
         #expect(preserved.snapshot.title == "Local title")
         #expect(preserved.syncStatus == .dirty)
 
-        try await repository.saveRemote(
-            [
-                remoteRow(
-                    ownerUserID: ownerUserID,
-                    memoryID: memoryID,
-                    coupleID: coupleID,
-                    title: "Server changed title",
-                    revision: 2,
-                    syncUpdatedAt: Date(timeIntervalSince1970: 200)
-                )
-            ],
-            ownerUserID: ownerUserID,
-            mergePolicy: .overwriteLocalChanges
-        )
+        try await saveRemote(fixture, title: "Server changed title", revision: 2, mergePolicy: .overwriteLocalChanges)
 
-        let replaced = try #require(await repository.load(ownerUserID: ownerUserID, memoryID: memoryID))
+        let replaced = try #require(await fixture.load())
         #expect(replaced.snapshot.title == "Server changed title")
         #expect(replaced.syncStatus == .clean)
     }
 
     @Test func repositoryOperationRefreshOnlyOverwritesTheConfirmedLocalOperation() async throws {
-        let ownerUserID = try fixedUUID("11111111-1111-1111-1111-111111111111")
-        let memoryID = try fixedUUID("22222222-2222-2222-2222-222222222222")
-        let coupleID = try fixedUUID("99999999-9999-9999-9999-999999999999")
+        let fixture = try remoteFixture()
         let firstOperationID = try fixedUUID("33333333-3333-3333-3333-333333333333")
         let secondOperationID = try fixedUUID("44444444-4444-4444-4444-444444444444")
-        let repository = InMemoryMemoryRecordRepository()
 
-        try await repository.saveRemote(
-            [
-                remoteRow(
-                    ownerUserID: ownerUserID,
-                    memoryID: memoryID,
-                    coupleID: coupleID,
-                    title: "Original",
-                    revision: 1,
-                    syncUpdatedAt: Date(timeIntervalSince1970: 100)
-                )
-            ],
-            ownerUserID: ownerUserID,
-            mergePolicy: .overwriteLocalChanges
-        )
+        try await saveRemote(fixture, title: "Original", revision: 1, mergePolicy: .overwriteLocalChanges)
 
-        let cached = try #require(await repository.load(ownerUserID: ownerUserID, memoryID: memoryID))
-        try await repository.saveLocal(
+        let cached = try #require(await fixture.load())
+        try await fixture.repository.saveLocal(
             record(
                 from: cached,
                 title: "Second local edit",
@@ -99,42 +41,26 @@ struct MemoryDataLayerTests {
             )
         )
 
-        try await repository.saveRemote(
-            [
-                remoteRow(
-                    ownerUserID: ownerUserID,
-                    memoryID: memoryID,
-                    coupleID: coupleID,
-                    title: "First operation on server",
-                    revision: 2,
-                    syncUpdatedAt: Date(timeIntervalSince1970: 200)
-                )
-            ],
-            ownerUserID: ownerUserID,
+        try await saveRemote(
+            fixture,
+            title: "First operation on server",
+            revision: 2,
             mergePolicy: .overwriteIfPendingOperationMatches(firstOperationID)
         )
 
-        let preserved = try #require(await repository.load(ownerUserID: ownerUserID, memoryID: memoryID))
+        let preserved = try #require(await fixture.load())
         #expect(preserved.snapshot.title == "Second local edit")
         #expect(preserved.syncStatus == .dirty)
         #expect(preserved.pendingOperationID == secondOperationID)
 
-        try await repository.saveRemote(
-            [
-                remoteRow(
-                    ownerUserID: ownerUserID,
-                    memoryID: memoryID,
-                    coupleID: coupleID,
-                    title: "Second operation on server",
-                    revision: 3,
-                    syncUpdatedAt: Date(timeIntervalSince1970: 300)
-                )
-            ],
-            ownerUserID: ownerUserID,
+        try await saveRemote(
+            fixture,
+            title: "Second operation on server",
+            revision: 3,
             mergePolicy: .overwriteIfPendingOperationMatches(secondOperationID)
         )
 
-        let replaced = try #require(await repository.load(ownerUserID: ownerUserID, memoryID: memoryID))
+        let replaced = try #require(await fixture.load())
         #expect(replaced.snapshot.title == "Second operation on server")
         #expect(replaced.snapshot.revision == 3)
         #expect(replaced.syncStatus == .clean)
@@ -189,268 +115,48 @@ struct MemoryDataLayerTests {
     }
 
     @Test func dataServiceAdvancesLocalRevisionsForConsecutiveQueuedEdits() async throws {
-        let ownerUserID = try fixedUUID("11111111-1111-1111-1111-111111111111")
-        let coupleID = try fixedUUID("22222222-2222-2222-2222-222222222222")
-        let memoryID = try fixedUUID("33333333-3333-3333-3333-333333333333")
-        let memoryStore = InMemoryMemoryRecordRepository()
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        let service = MemoryDataService(
-            memoryStore: memoryStore,
-            pendingOperationStore: pendingStore
-        )
-
-        let created = try await service.createMemory(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            memoryID: memoryID,
-            title: "Original",
-            memoryDate: "2026-06-30",
-            noteBody: "First note",
-            operation: operation(id: "44444444-4444-4444-4444-444444444444", sequence: 1)
-        )
-        let firstUpdate = try await service.updateMemory(
-            ownerUserID: ownerUserID,
-            memoryID: memoryID,
-            expectedRevision: created.snapshot.revision,
+        let seeded = try await seededMemory()
+        let firstUpdate = try await update(
+            seeded,
+            expectedRevision: seeded.revision,
             title: "Second title",
             memoryDate: "2026-07-01",
-            operation: operation(id: "55555555-5555-5555-5555-555555555555", sequence: 2)
+            operation: try operation(id: "55555555-5555-5555-5555-555555555555", sequence: 2)
         )
-        let secondUpdate = try await service.updateMemory(
-            ownerUserID: ownerUserID,
-            memoryID: memoryID,
+        let secondUpdate = try await update(
+            seeded,
             expectedRevision: firstUpdate.snapshot.revision,
             title: "Third title",
             memoryDate: "2026-07-02",
-            operation: operation(id: "66666666-6666-6666-6666-666666666666", sequence: 3)
+            operation: try operation(id: "66666666-6666-6666-6666-666666666666", sequence: 3)
         )
-        let firstNote = try await service.upsertMemoryNote(
-            ownerUserID: ownerUserID,
-            memoryID: memoryID,
+        let firstNote = try await upsertNote(
+            seeded,
             expectedRevision: secondUpdate.snapshot.ownNote?.revision,
             body: "Second note",
-            operation: operation(id: "77777777-7777-7777-7777-777777777777", sequence: 4)
+            operation: try operation(id: "77777777-7777-7777-7777-777777777777", sequence: 4)
         )
-        let secondNote = try await service.upsertMemoryNote(
-            ownerUserID: ownerUserID,
-            memoryID: memoryID,
+        let secondNote = try await upsertNote(
+            seeded,
             expectedRevision: firstNote.snapshot.ownNote?.revision,
             body: "Third note",
-            operation: operation(id: "88888888-8888-8888-8888-888888888888", sequence: 5)
+            operation: try operation(id: "88888888-8888-8888-8888-888888888888", sequence: 5)
         )
 
-        #expect(created.snapshot.revision == 1)
-        #expect(created.snapshot.ownNote?.revision == 1)
+        #expect(seeded.revision == 1)
+        #expect(seeded.ownNoteRevision == 1)
         #expect(firstUpdate.snapshot.revision == 2)
         #expect(secondUpdate.snapshot.revision == 3)
         #expect(firstNote.snapshot.ownNote?.revision == 2)
         #expect(secondNote.snapshot.ownNote?.revision == 3)
 
-        let updateOperations = try await pendingStore.inFlightOperations(
-            ownerUserID: ownerUserID,
-            kind: .updateMemory
+        let updatePayloads = try await seeded.queuedPayloads(.updateMemory, as: UpdateMemoryOperationPayload.self)
+        let notePayloads = try await seeded.queuedPayloads(
+            .upsertMemoryNote,
+            as: UpsertMemoryNoteOperationPayload.self
         )
-        let updatePayloads = try updateOperations.map { operation in
-            try #require(operation.requestData).decoded(as: UpdateMemoryOperationPayload.self)
-        }
-        let noteOperations = try await pendingStore.inFlightOperations(
-            ownerUserID: ownerUserID,
-            kind: .upsertMemoryNote
-        )
-        let notePayloads = try noteOperations.map { operation in
-            try #require(operation.requestData).decoded(as: UpsertMemoryNoteOperationPayload.self)
-        }
-
         #expect(updatePayloads.map(\.expectedRevision) == [1, 2])
         #expect(notePayloads.map(\.expectedRevision) == [1, 2])
-    }
-
-    /// The server counts Unicode code points, not characters. "👍🏽" is one character
-    /// and two code points, so 80 of them fill the title exactly.
-    @Test func updateMemoryRefusesATitleOverTheServersLimitAndQueuesNothing() async throws {
-        let seeded = try await seededMemory()
-        let fullTitle = String(repeating: "👍🏽", count: 80)
-        #expect(fullTitle.unicodeScalars.count == MemoryDataService.titleCharacterLimit)
-
-        await #expect(throws: MemoryDataServiceError.titleTooLong) {
-            try await seeded.service.updateMemory(
-                ownerUserID: seeded.ownerUserID,
-                memoryID: seeded.memoryID,
-                expectedRevision: seeded.revision,
-                title: fullTitle + "a",
-                memoryDate: "2026-06-30",
-                operation: operation(id: "55555555-5555-5555-5555-555555555555", sequence: 2)
-            )
-        }
-        #expect(try await seeded.queued(.updateMemory).isEmpty)
-
-        let accepted = try await seeded.service.updateMemory(
-            ownerUserID: seeded.ownerUserID,
-            memoryID: seeded.memoryID,
-            expectedRevision: seeded.revision,
-            title: fullTitle,
-            memoryDate: "2026-06-30",
-            operation: operation(id: "66666666-6666-6666-6666-666666666666", sequence: 3)
-        )
-        #expect(accepted.snapshot.title == fullTitle)
-        #expect(try await seeded.queued(.updateMemory).count == 1)
-    }
-
-    @Test func upsertMemoryNoteRefusesABodyOverTheServersLimitAndQueuesNothing() async throws {
-        let seeded = try await seededMemory()
-
-        await #expect(throws: MemoryDataServiceError.noteTooLong) {
-            try await seeded.service.upsertMemoryNote(
-                ownerUserID: seeded.ownerUserID,
-                memoryID: seeded.memoryID,
-                expectedRevision: nil,
-                body: String(repeating: "a", count: MemoryDataService.noteCharacterLimit + 1),
-                operation: operation(id: "55555555-5555-5555-5555-555555555555", sequence: 2)
-            )
-        }
-        #expect(try await seeded.queued(.upsertMemoryNote).isEmpty)
-
-        _ = try await seeded.service.upsertMemoryNote(
-            ownerUserID: seeded.ownerUserID,
-            memoryID: seeded.memoryID,
-            expectedRevision: nil,
-            body: String(repeating: "a", count: MemoryDataService.noteCharacterLimit),
-            operation: operation(id: "66666666-6666-6666-6666-666666666666", sequence: 3)
-        )
-        #expect(try await seeded.queued(.upsertMemoryNote).count == 1)
-    }
-
-    @Test func shorteningTextNeverCutsACharacterInHalf() {
-        #expect(MemoryDataService.prefix("ab👍🏽", fittingCodePoints: 3) == "ab")
-        #expect(MemoryDataService.prefix("ab👍🏽", fittingCodePoints: 4) == "ab👍🏽")
-        #expect(MemoryDataService.prefix("abc", fittingCodePoints: 5) == "abc")
-    }
-
-    private struct SeededMemory {
-        let service: MemoryDataService
-        let pendingStore: InMemoryPendingSyncOperationRepository
-        let ownerUserID: UUID
-        let memoryID: UUID
-        let revision: Int
-
-        func queued(_ kind: SyncPendingOperationKind) async throws -> [PendingSyncOperationSnapshot] {
-            try await pendingStore.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
-        }
-    }
-
-    private func seededMemory() async throws -> SeededMemory {
-        let ownerUserID = try fixedUUID("11111111-1111-1111-1111-111111111111")
-        let memoryID = try fixedUUID("33333333-3333-3333-3333-333333333333")
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        let service = MemoryDataService(
-            memoryStore: InMemoryMemoryRecordRepository(),
-            pendingOperationStore: pendingStore
-        )
-        let created = try await service.createMemory(
-            ownerUserID: ownerUserID,
-            coupleID: try fixedUUID("22222222-2222-2222-2222-222222222222"),
-            memoryID: memoryID,
-            title: "Original",
-            memoryDate: "2026-06-30",
-            noteBody: "First note",
-            operation: operation(id: "44444444-4444-4444-4444-444444444444", sequence: 1)
-        )
-        return SeededMemory(
-            service: service,
-            pendingStore: pendingStore,
-            ownerUserID: ownerUserID,
-            memoryID: memoryID,
-            revision: created.snapshot.revision
-        )
-    }
-
-    private func record(
-        from existing: MemoryRecord,
-        title: String,
-        syncStatus: SyncRecordStatus,
-        pendingOperationID: UUID? = nil
-    ) -> MemoryRecord {
-        let snapshot = existing.snapshot
-        return MemoryRecord(
-            snapshot: MemorySnapshot(
-                ownerUserID: snapshot.ownerUserID,
-                memoryID: snapshot.memoryID,
-                coupleID: snapshot.coupleID,
-                title: title,
-                memoryDate: snapshot.memoryDate,
-                createdByUserID: snapshot.createdByUserID,
-                lastEditedByUserID: snapshot.lastEditedByUserID,
-                revision: snapshot.revision,
-                moderationStatus: snapshot.moderationStatus,
-                deletedAt: snapshot.deletedAt,
-                createdAt: snapshot.createdAt,
-                updatedAt: Date(timeIntervalSince1970: 150),
-                syncUpdatedAt: Date(timeIntervalSince1970: 150),
-                ownNote: snapshot.ownNote,
-                partnerNote: snapshot.partnerNote,
-                visibleMemoryMediaIDs: snapshot.visibleMemoryMediaIDs,
-                visibleMediaAssetIDs: snapshot.visibleMediaAssetIDs,
-                media: snapshot.media,
-                threadID: snapshot.threadID
-            ),
-            syncStatus: syncStatus,
-            pendingOperationID: pendingOperationID,
-            localUpdatedAt: Date(timeIntervalSince1970: 150)
-        )
-    }
-
-    private func operation(id: String, sequence: Int64) throws -> SyncClientOperation {
-        SyncClientOperation(
-            id: try fixedUUID(id),
-            clientID: try fixedUUID("99999999-9999-9999-9999-999999999999"),
-            clientSequence: sequence,
-            localCreatedAt: Date(timeIntervalSince1970: TimeInterval(100 + sequence))
-        )
-    }
-
-    private func remoteRow(
-        ownerUserID: UUID,
-        memoryID: UUID,
-        coupleID: UUID,
-        title: String,
-        revision: Int = 1,
-        syncUpdatedAt: Date
-    ) -> MemoryRemoteRow {
-        MemoryRemoteRow(
-            memoryID: memoryID,
-            coupleID: coupleID,
-            title: title,
-            memoryDate: "2026-06-30",
-            createdByUserID: ownerUserID,
-            lastEditedByUserID: ownerUserID,
-            revision: revision,
-            moderationStatus: .visible,
-            deletedAt: nil,
-            createdAt: Date(timeIntervalSince1970: 50),
-            updatedAt: syncUpdatedAt,
-            syncUpdatedAt: syncUpdatedAt,
-            ownNoteID: nil,
-            ownNoteBody: nil,
-            ownNoteRevision: nil,
-            ownNoteUpdatedAt: nil,
-            ownNoteDeletedAt: nil,
-            ownNoteModerationStatus: nil,
-            partnerNoteID: nil,
-            partnerNoteUserID: nil,
-            partnerNoteBody: nil,
-            partnerNoteRevision: nil,
-            partnerNoteUpdatedAt: nil,
-            partnerNoteDeletedAt: nil,
-            partnerNoteModerationStatus: nil,
-            memoryMediaIDs: [],
-            mediaAssetIDs: [],
-            memoryMediaStates: [],
-            threadID: nil
-        )
-    }
-
-    private func fixedUUID(_ value: String) throws -> UUID {
-        try #require(UUID(uuidString: value))
     }
 }
 
@@ -476,7 +182,7 @@ private actor RecordingMemoryGateway: MemoryGateway {
         updatedAfter: Date?,
         cursorMemoryID: UUID?,
         limit: Int
-    ) async throws -> [MemoryRemoteRow] {
+    ) throws -> [MemoryRemoteRow] {
         recordedRequests.append(
             Request(
                 updatedAfter: updatedAfter,
@@ -493,55 +199,49 @@ private actor RecordingMemoryGateway: MemoryGateway {
     func createMemory(
         _ payload: CreateMemoryOperationPayload,
         operation: SyncClientOperation
-    ) async throws -> UUID {
+    ) throws -> UUID {
         payload.memoryID
     }
 
     func updateMemory(
         _ payload: UpdateMemoryOperationPayload,
         operation: SyncClientOperation
-    ) async throws -> MemoryRevisionResponse? {
+    ) throws -> MemoryRevisionResponse? {
         nil
     }
 
     func hideMemory(
         _ payload: HideMemoryOperationPayload,
         operation: SyncClientOperation
-    ) async throws -> MemoryRevisionResponse? {
+    ) throws -> MemoryRevisionResponse? {
         nil
     }
 
     func upsertMemoryNote(
         _ payload: UpsertMemoryNoteOperationPayload,
         operation: SyncClientOperation
-    ) async throws -> MemoryNoteRevisionResponse? {
+    ) throws -> MemoryNoteRevisionResponse? {
         nil
     }
 
     func attachMemoryMedia(
         _ payload: AttachMemoryMediaOperationPayload,
         operation: SyncClientOperation
-    ) async throws -> [UUID] {
+    ) throws -> [UUID] {
         payload.optimisticMedia.map(\.memoryMediaID)
     }
 
     func removeMemoryMedia(
         _ payload: RemoveMemoryMediaOperationPayload,
         operation: SyncClientOperation
-    ) async throws -> UUID {
+    ) throws -> UUID {
         payload.memoryMediaID
     }
 
     func createMemoryThreadWithMessage(
         _ payload: CreateMemoryThreadMessageOperationPayload,
         operation: SyncClientOperation
-    ) async throws -> MemoryThreadMessageResponse? {
+    ) throws -> MemoryThreadMessageResponse? {
         nil
-    }
-}
-
-private extension Data {
-    func decoded<Value: Decodable>(as type: Value.Type) throws -> Value {
-        try JSONDecoder().decode(type, from: self)
     }
 }

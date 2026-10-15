@@ -32,7 +32,7 @@ actor MemoryMediaImageDiskCache: MemoryMediaImageCacheWriting {
         return try? Data(contentsOf: fileURL(for: mediaAssetID))
     }
 
-    func cacheImageData(_ data: Data, for mediaAssetID: UUID) async {
+    func cacheImageData(_ data: Data, for mediaAssetID: UUID) {
         store(data, for: mediaAssetID)
     }
 

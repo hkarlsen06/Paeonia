@@ -1,6 +1,6 @@
 import Foundation
 
-struct LocationSharingPreferencePendingOperationHandler: PendingSyncOperationHandling {
+struct LocationSharingPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .updateLocationSharingPreference
 
     private let gateway: any LocationGateway
@@ -22,7 +22,7 @@ struct LocationSharingPreferencePendingOperationHandler: PendingSyncOperationHan
             return .terminalFailure("Missing location preference payload")
         }
 
-        let payload = try JSONDecoder().decode(LocationSharingPreferenceOperationPayload.self, from: requestData)
+        let payload = try JSONDecoder().decode(LocationSharingOperationPayload.self, from: requestData)
         let response = try await gateway.updateLocationSharingPreference(
             payload: payload,
             operation: operation.operation
@@ -45,7 +45,7 @@ struct LocationSharingPreferencePendingOperationHandler: PendingSyncOperationHan
     }
 }
 
-struct LatestPartnerLocationPendingOperationHandler: PendingSyncOperationHandling {
+struct LatestLocationPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .updateLatestPartnerLocation
 
     private let gateway: any LocationGateway
@@ -74,41 +74,9 @@ struct LatestPartnerLocationPendingOperationHandler: PendingSyncOperationHandlin
                 payload: payload,
                 operation: operation.operation
             ) {
-                let existing = try await ownLocationStore.load(
-                    ownerUserID: response.userID,
-                    coupleID: response.coupleID
-                )
-                if let existing, existing.location.capturedAt > response.capturedAt {
-                    try await ownLocationStore.clearPendingOperation(
-                        ownerUserID: operation.ownerUserID,
-                        coupleID: payload.coupleID,
-                        operationID: operation.operation.id
-                    )
-                    return .succeeded
-                }
-
-                try await ownLocationStore.save(
-                    OwnLocationSnapshot(
-                        ownerUserID: response.userID,
-                        coupleID: response.coupleID,
-                        location: LocationPoint(
-                            latitude: response.latitude,
-                            longitude: response.longitude,
-                            accuracyMeters: response.accuracyMeters,
-                            capturedAt: response.capturedAt,
-                            updatedAt: response.updatedAt
-                        ),
-                        source: payload.source,
-                        pendingOperationID: nil,
-                        updatedAt: response.updatedAt
-                    )
-                )
+                try await storeConfirmedLocation(response, payload: payload, operation: operation)
             } else {
-                try await ownLocationStore.clearPendingOperation(
-                    ownerUserID: operation.ownerUserID,
-                    coupleID: payload.coupleID,
-                    operationID: operation.operation.id
-                )
+                try await clearPendingOperation(operation, payload: payload)
             }
             return .succeeded
         } catch where Self.isPermanentRejection(error) {
@@ -117,6 +85,51 @@ struct LatestPartnerLocationPendingOperationHandler: PendingSyncOperationHandlin
             // after the user stopped sharing.
             return .terminalFailure("Location update rejected: \(error)")
         }
+    }
+
+    /// Keeps the server's answer as our own location, unless a newer position is
+    /// already stored.
+    private func storeConfirmedLocation(
+        _ response: LatestPartnerLocationUpdateResponse,
+        payload: LatestPartnerLocationOperationPayload,
+        operation: PendingSyncOperationSnapshot
+    ) async throws {
+        let existing = try await ownLocationStore.load(
+            ownerUserID: response.userID,
+            coupleID: response.coupleID
+        )
+        if let existing, existing.location.capturedAt > response.capturedAt {
+            try await clearPendingOperation(operation, payload: payload)
+            return
+        }
+
+        try await ownLocationStore.save(
+            OwnLocationSnapshot(
+                ownerUserID: response.userID,
+                coupleID: response.coupleID,
+                location: LocationPoint(
+                    latitude: response.latitude,
+                    longitude: response.longitude,
+                    accuracyMeters: response.accuracyMeters,
+                    capturedAt: response.capturedAt,
+                    updatedAt: response.updatedAt
+                ),
+                source: payload.source,
+                pendingOperationID: nil,
+                updatedAt: response.updatedAt
+            )
+        )
+    }
+
+    private func clearPendingOperation(
+        _ operation: PendingSyncOperationSnapshot,
+        payload: LatestPartnerLocationOperationPayload
+    ) async throws {
+        try await ownLocationStore.clearPendingOperation(
+            ownerUserID: operation.ownerUserID,
+            coupleID: payload.coupleID,
+            operationID: operation.operation.id
+        )
     }
 
     /// The server also answers `42501` for a sign-in it can't see yet and for

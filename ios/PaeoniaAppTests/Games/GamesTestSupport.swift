@@ -136,7 +136,7 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         }
     }
 
-    func setSettings(playStyle: GamePlayStyle, language: GameLanguage) async throws -> RemoteGameSettings {
+    func setSettings(playStyle: GamePlayStyle, language: GameLanguage) throws -> RemoteGameSettings {
         try begin("setSettings")
         return RemoteGameSettings(
             coupleID: DeveloperScenarioFixture.coupleID,
@@ -148,23 +148,23 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         )
     }
 
-    func ensureDrawAndGuessGame() async throws -> RemoteEnsureGameResult {
+    func ensureDrawAndGuessGame() throws -> RemoteEnsureGameResult {
         try begin("ensure")
         return RemoteEnsureGameResult(gameID: GameFixture.gameID, created: true)
     }
 
-    func loadDrawAndGuess() async throws -> RemoteDrawAndGuessState {
+    func loadDrawAndGuess() throws -> RemoteDrawAndGuessState {
         try begin("load")
         guard let state = read(\.stateToLoad) else { throw Failure() }
         return state
     }
 
-    func loadDrawAndGuessRound(roundID: UUID) async throws -> RemoteDrawAndGuessRound? {
+    func loadDrawAndGuessRound(roundID: UUID) throws -> RemoteDrawAndGuessRound? {
         try begin("loadRound")
         return read { $0.roundsToLoad[roundID] }
     }
 
-    func pickWord(_ pick: GamePickWordPayload, operation _: SyncClientOperation) async throws -> RemotePickedWord {
+    func pickWord(_ pick: GamePickWordPayload, operation _: SyncClientOperation) throws -> RemotePickedWord {
         try begin("pick")
         if let error = read(\.pickError) { throw error }
         write { $0.pickedWords.append(pick) }
@@ -181,14 +181,14 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         roundID: UUID,
         mediaAssetID: UUID,
         operation _: SyncClientOperation
-    ) async throws -> RemoteSubmitDrawingResult {
+    ) throws -> RemoteSubmitDrawingResult {
         try begin("submitDrawing")
         if let error = read(\.submitError) { throw error }
         write { $0.submittedDrawings.append((roundID, mediaAssetID)) }
         return RemoteSubmitDrawingResult(roundID: roundID, roundState: .guessing, drawingSubmittedAt: GameFixture.now)
     }
 
-    func markRoundSeen(roundID: UUID) async throws -> RemoteMarkSeenResult {
+    func markRoundSeen(roundID: UUID) throws -> RemoteMarkSeenResult {
         try begin("markSeen")
         write { $0.seenRounds.append(roundID) }
         return RemoteMarkSeenResult(guesserFirstSeenAt: GameFixture.now)
@@ -201,7 +201,7 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         solveMs: Int?,
         hintsUsed: Int?,
         operation _: SyncClientOperation
-    ) async throws -> RemoteGuessResult {
+    ) throws -> RemoteGuessResult {
         try begin("guess")
         if let error = read(\.guessError),
            !read(\.guessErrorOnlyWithClaim) || speedBonus != nil || solveMs != nil || hintsUsed != nil {
@@ -225,20 +225,20 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         )
     }
 
-    func giveUp(roundID: UUID, operation _: SyncClientOperation) async throws -> RemoteGiveUpResult {
+    func giveUp(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteGiveUpResult {
         try begin("giveUp")
         if let error = read(\.giveUpError) { throw error }
         return RemoteGiveUpResult(roundID: roundID, roundState: .missed)
     }
 
-    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
+    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) throws -> RemoteReactionResult {
         try begin("reaction")
         if let error = read(\.reactionError) { throw error }
         write { $0.reactions.append(SentReaction(roundID: roundID, reaction: reaction)) }
         return RemoteReactionResult(roundID: roundID, guesserReaction: reaction)
     }
 
-    func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {
+    func markRoundResultSeen(roundID: UUID) throws -> RemoteResultSeenResult {
         try begin("resultSeen")
         write { $0.resultSeenRounds.append(roundID) }
         return RemoteResultSeenResult(roundID: roundID, resultSeenAt: GameFixture.now)
@@ -266,7 +266,7 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         starredOnly: Bool,
         beforeRoundNumber: Int?,
         limit: Int
-    ) async throws -> RemoteDrawAndGuessHistoryPage {
+    ) throws -> RemoteDrawAndGuessHistoryPage {
         let request = HistoryRequest(starredOnly: starredOnly, beforeRoundNumber: beforeRoundNumber, limit: limit)
         write { $0.historyRequests.append(request) }
         try begin("history")
@@ -278,13 +278,13 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         )
     }
 
-    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+    func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
         try begin("records")
         guard let records = read(\.recordsToLoad) else { throw Failure() }
         return records
     }
 
-    func setRoundStar(roundID: UUID, starred: Bool) async throws -> RemoteRoundStarResult {
+    func setRoundStar(roundID: UUID, starred: Bool) throws -> RemoteRoundStarResult {
         try begin("star")
         if let error = read(\.starError) { throw error }
         write { $0.starWrites.append(StarWrite(roundID: roundID, starred: starred)) }
@@ -294,7 +294,7 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
 
 /// The calls every game shares: the overview, invites and presence.
 extension ScriptedGamesGateway {
-    func sendInvite(_ kind: GameKind) async throws -> RemoteInviteResult {
+    func sendInvite(_ kind: GameKind) throws -> RemoteInviteResult {
         try begin("invite")
         if let error = read(\.inviteError) { throw error }
         write {
@@ -337,7 +337,7 @@ final class ScriptedDrawingTransfer: GameDrawingTransferring, @unchecked Sendabl
         coupleID _: UUID,
         reserveOperation _: SyncClientOperation,
         finalizeOperation _: SyncClientOperation
-    ) async throws -> UUID {
+    ) throws -> UUID {
         lock.withLock { recordedUploads.append((parent.id, data.count)) }
         return GameFixture.assetID
     }

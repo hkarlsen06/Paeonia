@@ -69,7 +69,8 @@ final class SimNetwork {
         let releasing = Array(held.prefix(count ?? held.count))
         held.removeFirst(releasing.count)
         for call in releasing {
-            let release: Release = deliverAll ? .deliver : random.weighted([(.deliver, 6), (.dropBefore, 1), (.dropAfter, 1)])
+            let plan: [(Release, Double)] = [(.deliver, 6), (.dropBefore, 1), (.dropAfter, 1)]
+            let release: Release = deliverAll ? .deliver : random.weighted(plan)
             log.add("\(name) net release \(call.name) \(release)")
             call.continuation?.resume(returning: release)
         }
@@ -103,7 +104,7 @@ final class SimNetwork {
 
     /// - Parameter started: The incarnation of the app that makes the call.
     func call<T>(_ callName: String, from started: Int, apply: () throws -> T) async throws -> T {
-        guard started == incarnation else { throw CancellationError() }
+        try requireCurrent(started)
         callCount += 1
         inFlight += 1
         defer { inFlight -= 1 }
@@ -111,19 +112,40 @@ final class SimNetwork {
         guard isOnline else { throw URLError(.notConnectedToInternet) }
         var fault = drawFault(for: callName)
         if fault == .hold {
-            log.add("\(name) net hold \(callName)")
-            let call = HeldCall(name: callName)
-            let release = await withCheckedContinuation { continuation in
-                call.continuation = continuation
-                held.append(call)
-            }
-            switch release {
-            case .deliver: fault = .none
-            case .dropBefore: fault = .dropBefore
-            case .dropAfter: fault = .dropAfter
-            }
+            fault = await holdUntilReleased(callName)
             guard isOnline || fault == .dropAfter else { throw URLError(.networkConnectionLost) }
         }
+        try failBeforeServer(fault, callName)
+        let result = try applyOnServer(callName, apply: apply)
+        if fault == .dropAfter {
+            log.add("\(name) net dropAfter \(callName)")
+            throw URLError(.networkConnectionLost)
+        }
+        // The app that sent it is gone, so nobody reads the answer.
+        try requireCurrent(started)
+        return result
+    }
+
+    private func requireCurrent(_ started: Int) throws {
+        guard started == incarnation else { throw CancellationError() }
+    }
+
+    /// Parks the call until the driver lets it go, then returns how it ends.
+    private func holdUntilReleased(_ callName: String) async -> Fault {
+        log.add("\(name) net hold \(callName)")
+        let call = HeldCall(name: callName)
+        let release = await withCheckedContinuation { continuation in
+            call.continuation = continuation
+            held.append(call)
+        }
+        switch release {
+        case .deliver: return .none
+        case .dropBefore: return .dropBefore
+        case .dropAfter: return .dropAfter
+        }
+    }
+
+    private func failBeforeServer(_ fault: Fault, _ callName: String) throws {
         switch fault {
         case .dropBefore:
             log.add("\(name) net dropBefore \(callName)")
@@ -134,6 +156,9 @@ final class SimNetwork {
         case .none, .dropAfter, .hold:
             break
         }
+    }
+
+    private func applyOnServer<T>(_ callName: String, apply: () throws -> T) throws -> T {
         let result: T
         do {
             result = try apply()
@@ -141,15 +166,13 @@ final class SimNetwork {
             log.add("\(name) \(callName) refused: \(error)")
             throw error
         }
-        if ["pick", "submitDrawing", "guess", "giveUp", "reaction", "resultSeen", "upload", "submitPart", "revealSeen", "star"].contains(callName) {
+        let writes = [
+            "pick", "submitDrawing", "guess", "giveUp", "reaction",
+            "resultSeen", "upload", "submitPart", "revealSeen", "star",
+        ]
+        if writes.contains(callName) {
             log.add("\(name) \(callName) applied")
         }
-        if fault == .dropAfter {
-            log.add("\(name) net dropAfter \(callName)")
-            throw URLError(.networkConnectionLost)
-        }
-        // The app that sent it is gone, so nobody reads the answer.
-        guard started == incarnation else { throw CancellationError() }
         return result
     }
 }
@@ -264,15 +287,15 @@ final class SimGateway: DrawAndGuessGateway, @unchecked Sendable {
         starredOnly _: Bool,
         beforeRoundNumber _: Int?,
         limit _: Int
-    ) async throws -> RemoteDrawAndGuessHistoryPage {
+    ) throws -> RemoteDrawAndGuessHistoryPage {
         throw URLError(.notConnectedToInternet)
     }
 
-    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+    func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
         throw URLError(.notConnectedToInternet)
     }
 
-    func setRoundStar(roundID _: UUID, starred _: Bool) async throws -> RemoteRoundStarResult {
+    func setRoundStar(roundID _: UUID, starred _: Bool) throws -> RemoteRoundStarResult {
         throw URLError(.notConnectedToInternet)
     }
 }

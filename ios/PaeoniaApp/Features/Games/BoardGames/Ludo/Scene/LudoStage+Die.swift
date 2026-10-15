@@ -108,17 +108,7 @@ extension LudoStage {
         let turn = simd_normalize(start.orientation * joined.orientation.inverse)
         let still = simd_quatf(angle: 0, axis: SIMD3(0, 1, 0))
         let duration = lead + flight.duration
-        // Each knock is a little quieter than the one before, as the die loses speed.
-        var events = flight.knocks.filter { $0 >= skipped }.enumerated().map { index, time in
-            LudoClip.Event(time: lead + time) {
-                PaeoniaHaptics.selection()
-                GameSound.ludoDieKnock.play(volume: max(0.35, 1 - 0.22 * Double(index)))
-            }
-        }
-        events.append(LudoClip.Event(time: duration) {
-            PaeoniaHaptics.streakTick(intensity: 0.55)
-            GameSound.ludoDieSettle.play(volume: 0.7)
-        })
+        let events = flightEvents(flight, skipped: skipped, lead: lead)
         let clip = LudoClip(
             owner: .die,
             start: clock - skipped,
@@ -149,6 +139,22 @@ extension LudoStage {
             syncDie(state)
         }
         return clip
+    }
+
+    /// The knocks along a flight, then the settle. Each knock is a little quieter
+    /// than the one before, as the die loses speed.
+    private func flightEvents(_ flight: LudoDieFlight, skipped: Double, lead: Double) -> [LudoClip.Event] {
+        var events = flight.knocks.filter { $0 >= skipped }.enumerated().map { index, time in
+            LudoClip.Event(time: lead + time) {
+                PaeoniaHaptics.selection()
+                GameSound.ludoDieKnock.play(volume: max(0.35, 1 - 0.22 * Double(index)))
+            }
+        }
+        events.append(LudoClip.Event(time: lead + flight.duration) {
+            PaeoniaHaptics.streakTick(intensity: 0.55)
+            GameSound.ludoDieSettle.play(volume: 0.7)
+        })
+        return events
     }
 
     /// A die put down without a throw drops back to where it rests.

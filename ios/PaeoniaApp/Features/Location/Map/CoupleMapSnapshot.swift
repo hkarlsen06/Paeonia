@@ -68,7 +68,7 @@ struct CoupleMapSnapshot: View {
     private static let minimumMoveFraction: Double = 0.06
     /// Waits between failed map renders. A render is tried once more after each wait,
     /// so three attempts in total.
-    private static let retryDelays: [Duration] = [.seconds(2), .seconds(5)]
+    static let retryDelays: [Duration] = [.seconds(2), .seconds(5)]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -108,7 +108,7 @@ struct CoupleMapSnapshot: View {
     /// unit (map and avatars together) so the flame hides the old positions while
     /// uncovering the new ones. `image` is nil for the fallback shown when the map could
     /// not be rendered: just the backdrop with the avatars at fixed spots.
-    private struct SnapshotResult {
+    struct SnapshotResult {
         let image: UIImage?
         let currentPoint: CGPoint
         let partnerPoint: CGPoint
@@ -402,50 +402,6 @@ extension CoupleMapSnapshot {
         // the new one in (or swaps silently for a small move), so a refresh never flashes.
         lastRenderedRequest = request
         adopt(rendered)
-    }
-
-    /// Renders the map and both avatar points, trying again after each wait in
-    /// `retryDelays` while the task is alive. Returns nil when every attempt failed or
-    /// the task was cancelled.
-    private func renderMap(size: CGSize) async -> SnapshotResult? {
-        // Muted standard config plays down roads, borders, and labels so the map
-        // reads as a calm backdrop rather than a navigation map.
-        let configuration = MKStandardMapConfiguration(elevationStyle: .flat, emphasisStyle: .muted)
-        configuration.pointOfInterestFilter = .excludingAll
-
-        let options = MKMapSnapshotter.Options()
-        options.region = CoupleMapFraming.region(
-            current: currentCoordinate,
-            partner: partnerCoordinate,
-            aspectRatio: size.width / size.height
-        )
-        options.size = size
-        options.traitCollection = UITraitCollection(userInterfaceStyle: .dark)
-        options.preferredConfiguration = configuration
-
-        for attempt in 0...Self.retryDelays.count {
-            if attempt > 0 {
-                do {
-                    try await Task.sleep(for: Self.retryDelays[attempt - 1])
-                } catch {
-                    return nil
-                }
-            }
-
-            let snapshotter = MKMapSnapshotter(options: options)
-            let result = try? await snapshotter.start()
-            guard !Task.isCancelled else {
-                return nil
-            }
-            if let result {
-                return SnapshotResult(
-                    image: result.image,
-                    currentPoint: result.point(for: currentCoordinate),
-                    partnerPoint: result.point(for: partnerCoordinate)
-                )
-            }
-        }
-        return nil
     }
 
     /// When every attempt failed and nothing is on screen yet, show the avatars and the

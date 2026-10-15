@@ -67,7 +67,8 @@ final class SimRelay {
         let peers = open.filter { $0.user != user }.count
         sockets.append(socket)
         log.add("relay \(connection.phoneName) connect \(socket.id) peers=\(peers)")
-        enqueue(.message(connection, socketID: socket.id, WidgetLiveMessage(type: .welcome, id: socket.id, peers: peers)))
+        let welcome = WidgetLiveMessage(type: .welcome, id: socket.id, peers: peers)
+        enqueue(.message(connection, socketID: socket.id, welcome))
         broadcast(from: socket, WidgetLiveMessage(type: .joined, id: socket.id))
         return socket
     }

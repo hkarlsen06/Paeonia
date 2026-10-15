@@ -28,10 +28,22 @@ protocol DailyChallengeGateway: Actor {
     func loadHistoryAnswerDetails() async throws -> [DailyAnswerDetailRow]
     func loadCoupleStreak() async throws -> CoupleStreak
     func loadAnswerDetails(coupleDayID: UUID) async throws -> [DailyAnswerDetailRow]
-    func submitAnswer(instanceID: UUID, answerID: UUID, payload: DailyAnswerPayload, operation: SyncClientOperation) async throws -> UUID
+    func submitAnswer(
+        instanceID: UUID,
+        answerID: UUID,
+        payload: DailyAnswerPayload,
+        operation: SyncClientOperation
+    ) async throws -> UUID
     func editTextAnswer(instanceID: UUID, text: String, operation: SyncClientOperation) async throws -> UUID
-    func editPartnerChoice(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) async throws -> UUID
-    func shuffleQuestion(slotNumber: Int, operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow
+    func editPartnerChoice(
+        instanceID: UUID,
+        selectedUserID: UUID,
+        operation: SyncClientOperation
+    ) async throws -> UUID
+    func shuffleQuestion(
+        slotNumber: Int,
+        operation: SyncClientOperation
+    ) async throws -> DailyChallengeRemoteSnapshotRow
 }
 
 actor DailyChallengeService: DailyChallengeServicing {
@@ -336,22 +348,22 @@ nonisolated enum DailyChallengeServiceFactory {
 }
 
 private actor EmptyDailyChallengeService: DailyChallengeServicing {
-    func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+    func loadToday(currentUserID: UUID) throws -> DailyChallengeLoadResult {
         DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
     }
 
     func startToday(
         currentUserID: UUID,
         operation _: SyncClientOperation
-    ) async throws -> DailyChallengeLoadResult {
+    ) throws -> DailyChallengeLoadResult {
         DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
     }
 
-    func loadHistory(currentUserID _: UUID) async throws -> [DailyChallengeQuestion] {
+    func loadHistory(currentUserID _: UUID) throws -> [DailyChallengeQuestion] {
         []
     }
 
-    func loadStreak() async throws -> CoupleStreak {
+    func loadStreak() throws -> CoupleStreak {
         .none
     }
 
@@ -359,7 +371,7 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
         instanceID _: UUID,
         text _: String,
         operation _: SyncClientOperation
-    ) async throws -> UUID {
+    ) throws -> UUID {
         throw DailyChallengeServiceUnavailableError()
     }
 
@@ -367,7 +379,7 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
         instanceID _: UUID,
         selectedUserID _: UUID,
         operation _: SyncClientOperation
-    ) async throws -> UUID {
+    ) throws -> UUID {
         throw DailyChallengeServiceUnavailableError()
     }
 
@@ -375,7 +387,7 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
         currentUserID: UUID,
         slotNumber _: Int,
         operation _: SyncClientOperation
-    ) async throws -> DailyChallengeLoadResult {
+    ) throws -> DailyChallengeLoadResult {
         DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
     }
 }
@@ -389,176 +401,3 @@ nonisolated struct DailyChallengeShuffleLimitError: Error, Equatable, Sendable {
 /// Raised when an answer can no longer be edited because the partner has already
 /// answered the same question (so the content is revealed).
 nonisolated struct DailyChallengeEditLockedError: Error, Equatable, Sendable {}
-
-nonisolated private struct DailyChallengeTodayRequest: Encodable {
-    let dayKey: String
-
-    enum CodingKeys: String, CodingKey {
-        case dayKey = "p_day_key"
-    }
-}
-
-nonisolated private struct DailyChallengeClientOperationRequest: Encodable {
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(operation: SyncClientOperation) {
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-    }
-}
-
-nonisolated private struct DailyAnswerDetailsRequest: Encodable {
-    let coupleDayID: UUID
-
-    enum CodingKeys: String, CodingKey {
-        case coupleDayID = "p_couple_day_id"
-    }
-}
-
-nonisolated private struct SubmitDailyAnswerRequest: Encodable {
-    let instanceID: UUID
-    let payload: DailyAnswerPayloadBody
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(instanceID: UUID, answerID: UUID, payload: DailyAnswerPayload, operation: SyncClientOperation) {
-        self.instanceID = instanceID
-        self.payload = DailyAnswerPayloadBody(answerID: answerID, payload: payload)
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case instanceID = "p_instance_id"
-        case payload = "p_payload"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-    }
-}
-
-/// Encodes the `p_payload` JSON the backend expects, carrying a client-generated
-/// `answer_id` for idempotency plus the per-kind fields. Only text is sent today;
-/// partner-choice and media fields are added with their features.
-nonisolated private struct DailyAnswerPayloadBody: Encodable {
-    let answerID: UUID
-    let payload: DailyAnswerPayload
-
-    enum CodingKeys: String, CodingKey {
-        case answerID = "answer_id"
-        case text
-        case partnerChoiceUserID = "partner_choice_user_id"
-        case mediaAssetIDs = "media_asset_ids"
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(answerID, forKey: .answerID)
-        // Any combination the backend allows: a text body, a partner pick, and/or
-        // media ids — only the parts that are present are sent.
-        if let text = payload.text {
-            try container.encode(text, forKey: .text)
-        }
-        if let userID = payload.partnerChoiceUserID {
-            try container.encode(userID, forKey: .partnerChoiceUserID)
-        }
-        if !payload.mediaAssetIDs.isEmpty {
-            try container.encode(payload.mediaAssetIDs, forKey: .mediaAssetIDs)
-        }
-    }
-}
-
-nonisolated private struct EditDailyTextAnswerRequest: Encodable {
-    let instanceID: UUID
-    let text: String
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(instanceID: UUID, text: String, operation: SyncClientOperation) {
-        self.instanceID = instanceID
-        self.text = text
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case instanceID = "p_instance_id"
-        case text = "p_text"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-    }
-}
-
-nonisolated private struct EditDailyPartnerChoiceRequest: Encodable {
-    let instanceID: UUID
-    let selectedUserID: UUID
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) {
-        self.instanceID = instanceID
-        self.selectedUserID = selectedUserID
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case instanceID = "p_instance_id"
-        case selectedUserID = "p_selected_user_id"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-    }
-}
-
-nonisolated private struct ShuffleDailyQuestionRequest: Encodable {
-    let slotNumber: Int
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(slotNumber: Int, operation: SyncClientOperation) {
-        self.slotNumber = slotNumber
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case slotNumber = "p_slot_number"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-    }
-}

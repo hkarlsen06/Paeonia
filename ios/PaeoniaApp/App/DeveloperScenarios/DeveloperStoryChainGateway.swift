@@ -17,7 +17,7 @@
     // MARK: Shared Games calls
 
     func setSettings(playStyle: GamePlayStyle, language: GameLanguage) async throws -> RemoteGameSettings {
-      try await games.setSettings(playStyle: playStyle, language: language)
+      try games.setSettings(playStyle: playStyle, language: language)
     }
 
     func loadOverview() async throws -> RemoteGamesOverview {
@@ -25,11 +25,11 @@
     }
 
     func setPresence(_ kind: GameKind, isPresent: Bool) async throws {
-      try await games.setPresence(kind, isPresent: isPresent)
+      try games.setPresence(kind, isPresent: isPresent)
     }
 
     func sendInvite(_ kind: GameKind) async throws -> RemoteInviteResult {
-      try await games.sendInvite(kind)
+      try games.sendInvite(kind)
     }
 
     // MARK: Reading

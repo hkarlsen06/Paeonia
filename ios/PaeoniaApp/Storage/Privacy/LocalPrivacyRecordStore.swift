@@ -17,7 +17,7 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
         self.container = container
     }
 
-    func purgeDepartingUser(ownerUserID: UUID) async throws {
+    func purgeDepartingUser(ownerUserID: UUID) throws {
         let context = ModelContext(container)
 
         for value in try context.fetch(
@@ -59,7 +59,7 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
     /// Keeps the person's unconfirmed sharing choices. Their queued sharing
     /// change survives this scope, and without the choice a server value that
     /// has not seen it yet would show sharing as on again.
-    func hideRelationshipAccess(ownerUserID: UUID) async throws {
+    func hideRelationshipAccess(ownerUserID: UUID) throws {
         let context = ModelContext(container)
         try deleteRelationshipSyncState(ownerUserID: ownerUserID, in: context)
         try deleteLocationRecords(ownerUserID: ownerUserID, in: context)
@@ -71,7 +71,7 @@ actor SwiftDataLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
     func purgeRelationshipContent(
         ownerUserID: UUID,
         clearAccessSnapshot: Bool
-    ) async throws {
+    ) throws {
         let context = ModelContext(container)
         try deleteRelationshipSyncState(ownerUserID: ownerUserID, in: context)
         for value in try context.fetch(

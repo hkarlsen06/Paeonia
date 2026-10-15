@@ -13,6 +13,15 @@ extension DailyChatProjection {
         var status: ExyteChat.Message.Status?
     }
 
+    /// What building one message row reads besides the message itself.
+    private struct MessageRowContext {
+        let input: Input
+        let messagesByID: [UUID: DailyQuestionChatMessage]
+        let readReceiptMessageID: UUID?
+        let lastSentOwnMessage: DailyQuestionChatMessage?
+        let typingJoinsPrevious: Bool
+    }
+
     /// A millisecond keeps the parts of a day in order without passing a real message.
     private static let step: TimeInterval = 0.001
 
@@ -68,18 +77,6 @@ extension DailyChatProjection {
         lastSentOwnMessage: DailyQuestionChatMessage?
     ) -> [PlacedRow] {
         let nobody = chatUser(nil, isCurrentUser: false, input: input)
-        func decoration(_ id: String, _ kind: DailyChatRow.Kind, at createdAt: Date) -> DailyChatRow {
-            DailyChatRow(
-                id: id,
-                kind: kind,
-                isCurrentUser: false,
-                createdAt: createdAt,
-                groupContext: .standalone(isCurrentUser: false),
-                status: nil,
-                quotedPreview: nil
-            )
-        }
-
         let questionAt = round.answers.first.map { $0.answeredAt.addingTimeInterval(-2 * step) } ?? round.startsAt
         var rows = [placedRow(
             decoration(questionRowID(for: round.instanceID), .question(round.prompt), at: questionAt),
@@ -99,25 +96,7 @@ extension DailyChatProjection {
         }
 
         for answer in round.answers {
-            // Read shows on your answer until you send a message after it, which then carries it.
-            let carriedByMessage = lastSentOwnMessage.map { $0.createdAt > answer.answeredAt } ?? false
-            let status: DailyChatMessageStatus? =
-                answer.isOwnAnswer && round.ownAnswerSeenByPartner && !carriedByMessage ? .read : nil
-            let row = DailyChatRow(
-                id: answerRowPrefix + answer.answerID.uuidString,
-                kind: .answer(answer, mediaKind: round.mediaKind),
-                isCurrentUser: answer.isOwnAnswer,
-                createdAt: answer.answeredAt,
-                groupContext: .standalone(isCurrentUser: answer.isOwnAnswer),
-                status: status,
-                quotedPreview: nil
-            )
-            rows.append(placedRow(
-                row,
-                user: chatUser(answer.answerUserID, isCurrentUser: answer.isOwnAnswer, input: input),
-                redrawKey: AnswerRedrawKey(answer: answer, status: status, mediaKind: round.mediaKind),
-                text: answer.textBody ?? ""
-            ))
+            rows.append(answerRow(answer, in: round, lastSentOwnMessage: lastSentOwnMessage, input: input))
         }
 
         if let waiting = round.waiting {
@@ -132,6 +111,45 @@ extension DailyChatProjection {
         return rows
     }
 
+    private static func decoration(_ id: String, _ kind: DailyChatRow.Kind, at createdAt: Date) -> DailyChatRow {
+        DailyChatRow(
+            id: id,
+            kind: kind,
+            isCurrentUser: false,
+            createdAt: createdAt,
+            groupContext: .standalone(isCurrentUser: false),
+            status: nil,
+            quotedPreview: nil
+        )
+    }
+
+    private static func answerRow(
+        _ answer: DailyQuestionAnswerDetail,
+        in round: DailyChatRound,
+        lastSentOwnMessage: DailyQuestionChatMessage?,
+        input: Input
+    ) -> PlacedRow {
+        // Read shows on your answer until you send a message after it, which then carries it.
+        let carriedByMessage = lastSentOwnMessage.map { $0.createdAt > answer.answeredAt } ?? false
+        let status: DailyChatMessageStatus? =
+            answer.isOwnAnswer && round.ownAnswerSeenByPartner && !carriedByMessage ? .read : nil
+        let row = DailyChatRow(
+            id: answerRowPrefix + answer.answerID.uuidString,
+            kind: .answer(answer, mediaKind: round.mediaKind),
+            isCurrentUser: answer.isOwnAnswer,
+            createdAt: answer.answeredAt,
+            groupContext: .standalone(isCurrentUser: answer.isOwnAnswer),
+            status: status,
+            quotedPreview: nil
+        )
+        return placedRow(
+            row,
+            user: chatUser(answer.answerUserID, isCurrentUser: answer.isOwnAnswer, input: input),
+            redrawKey: AnswerRedrawKey(answer: answer, status: status, mediaKind: round.mediaKind),
+            text: answer.textBody ?? ""
+        )
+    }
+
     // MARK: - Messages
 
     private static func messageRows(
@@ -140,53 +158,73 @@ extension DailyChatProjection {
         typingJoinsPrevious: Bool
     ) -> [PlacedRow] {
         let messagesByID = Dictionary(input.messages.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let readReceiptMessageID = readReceiptMessageID(input: input, messagesByID: messagesByID)
-        return input.messages.enumerated().map { index, message in
-            let isCurrentUser = message.senderUserID == input.currentUserID
-            var groupContext = DailyChatGrouping.context(
-                for: message,
-                previous: index > 0 ? input.messages[index - 1] : nil,
-                next: index + 1 < input.messages.count ? input.messages[index + 1] : nil,
-                currentUserID: input.currentUserID
-            )
-            if typingJoinsPrevious, index == input.messages.count - 1 {
-                groupContext = groupContext.joiningNext()
-            }
-            let status: DailyChatMessageStatus? = if message.sendFailed {
-                .failed
-            } else if message.isSending {
-                .sending
-            } else if message.id == readReceiptMessageID {
-                .read
-            } else if message.id == lastSentOwnMessage?.id {
-                .sent
-            } else {
-                nil
-            }
-            let quotedPreview = message.replyToMessageID.map { replyID in
-                preview(of: messagesByID[replyID], id: replyID, input: input)
-            }
-            let row = DailyChatRow(
-                id: rowID(for: message),
-                kind: .message(message),
-                isCurrentUser: isCurrentUser,
-                createdAt: message.createdAt,
+        let context = MessageRowContext(
+            input: input,
+            messagesByID: messagesByID,
+            readReceiptMessageID: readReceiptMessageID(input: input, messagesByID: messagesByID),
+            lastSentOwnMessage: lastSentOwnMessage,
+            typingJoinsPrevious: typingJoinsPrevious
+        )
+        return input.messages.enumerated().map { messageRow($1, at: $0, context: context) }
+    }
+
+    private static func messageRow(
+        _ message: DailyQuestionChatMessage,
+        at index: Int,
+        context: MessageRowContext
+    ) -> PlacedRow {
+        let input = context.input
+        let isCurrentUser = message.senderUserID == input.currentUserID
+        var groupContext = DailyChatGrouping.context(
+            for: message,
+            previous: index > 0 ? input.messages[index - 1] : nil,
+            next: index + 1 < input.messages.count ? input.messages[index + 1] : nil,
+            currentUserID: input.currentUserID
+        )
+        if context.typingJoinsPrevious, index == input.messages.count - 1 {
+            groupContext = groupContext.joiningNext()
+        }
+        let status = messageStatus(message, context: context)
+        let quotedPreview = message.replyToMessageID.map { replyID in
+            preview(of: context.messagesByID[replyID], id: replyID, input: input)
+        }
+        let row = DailyChatRow(
+            id: rowID(for: message),
+            kind: .message(message),
+            isCurrentUser: isCurrentUser,
+            createdAt: message.createdAt,
+            groupContext: groupContext,
+            status: status,
+            quotedPreview: quotedPreview
+        )
+        return placedRow(
+            row,
+            user: chatUser(message.senderUserID, isCurrentUser: isCurrentUser, input: input),
+            redrawKey: MessageRedrawKey(
+                message: message,
                 groupContext: groupContext,
                 status: status,
                 quotedPreview: quotedPreview
-            )
-            return placedRow(
-                row,
-                user: chatUser(message.senderUserID, isCurrentUser: isCurrentUser, input: input),
-                redrawKey: MessageRedrawKey(
-                    message: message,
-                    groupContext: groupContext,
-                    status: status,
-                    quotedPreview: quotedPreview
-                ),
-                text: message.voice == nil ? message.body : "",
-                status: message.isSending || message.sendFailed ? .sending : .sent
-            )
+            ),
+            text: message.voice == nil ? message.body : "",
+            status: message.isSending || message.sendFailed ? .sending : .sent
+        )
+    }
+
+    private static func messageStatus(
+        _ message: DailyQuestionChatMessage,
+        context: MessageRowContext
+    ) -> DailyChatMessageStatus? {
+        if message.sendFailed {
+            .failed
+        } else if message.isSending {
+            .sending
+        } else if message.id == context.readReceiptMessageID {
+            .read
+        } else if message.id == context.lastSentOwnMessage?.id {
+            .sent
+        } else {
+            nil
         }
     }
 

@@ -245,6 +245,7 @@ struct HomeWidgetCard: View {
                     Image(systemName: "eye.slash.fill")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(.paeoniaAccentPrimary)
+                        .accessibilityHidden(true)
                     Text(.widgetDrawingTitle)
                         .font(PaeoniaTypography.caption.weight(.semibold))
                         .foregroundStyle(.paeoniaTextPrimary)

@@ -220,7 +220,11 @@ struct DrawAndGuessFixTests {
         let oldRound = UUID()
         let resolver = DrawAndGuessResolver(userID: GameFixture.me)
 
-        let unseen = resolver.resolve(state: awayState(oldRoundID: oldRound), pending: .none, isPartnerDrawingLive: false)
+        let unseen = resolver.resolve(
+            state: awayState(oldRoundID: oldRound),
+            pending: .none,
+            isPartnerDrawingLive: false
+        )
         let seen = resolver.resolve(
             state: awayState(oldRoundID: oldRound, seenBy: [GameFixture.me]),
             pending: .none,

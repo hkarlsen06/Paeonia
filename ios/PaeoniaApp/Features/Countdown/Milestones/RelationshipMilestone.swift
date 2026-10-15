@@ -56,7 +56,7 @@ nonisolated struct RelationshipMilestoneCalculator {
     /// (e.g. between the first and second anniversary).
     private static let earlyDayMilestones = [100, 500]
     /// After the early markers, day-count milestones land on each multiple of this.
-    private static let dayMilestoneStride = 1000
+    private static let dayMilestoneStride = 1_000
 
     let calendar: Calendar
 

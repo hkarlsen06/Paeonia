@@ -1,6 +1,6 @@
 import Foundation
 
-struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperationHandling {
+struct CreateDailyChatThreadOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .createDailyQuestionThreadWithMessage
 
     private let gateway: any DailyQuestionChatGateway
@@ -28,20 +28,14 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
             return .terminalFailure("Missing daily question thread payload")
         }
         let payload = try JSONDecoder().decode(
-            CreateDailyQuestionThreadMessageOperationPayload.self,
+            CreateDailyChatThreadPayload.self,
             from: data
         )
         guard isInCurrentCouple(payload.coupleID, context: context) else {
             await markChatMessageFailed(operation, cache: cache)
             return .terminalFailure("The chat belongs to an earlier relationship")
         }
-        let mediaAssetIDs = try await uploadAttachments(
-            voice: payload.voice,
-            photos: payload.photos,
-            coupleID: payload.coupleID,
-            with: mediaUploadService,
-            imageCache: imageCache
-        )
+        let mediaAssetIDs = try await uploadAttachments(of: payload, with: mediaUploadService, imageCache: imageCache)
         let response: DailyQuestionThreadMessageResponse
         do {
             response = try await gateway.createThreadWithMessage(
@@ -55,18 +49,7 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
             try await failMessagesWaitingForThread(of: payload.questionID, operation, context: context)
             return .terminalFailure("Daily question chat is no longer available")
         }
-        await cache.confirm(
-            ownerUserID: operation.ownerUserID,
-            questionID: payload.questionID,
-            coupleID: payload.coupleID,
-            clientOperationID: operation.operation.id,
-            threadID: response.threadID,
-            messageID: response.messageID,
-            body: payload.body,
-            senderUserID: operation.ownerUserID,
-            createdAt: operation.operation.localCreatedAt
-        )
-        LocalStoreChanges.post(.dailyChat, ownerUserID: operation.ownerUserID)
+        await confirmSent(operation, response: response, of: payload, in: cache)
         return .succeeded
     }
 
@@ -83,7 +66,7 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
         for waiting in sends {
             guard let data = waiting.requestData,
                   let payload = try? JSONDecoder().decode(
-                    SendDailyQuestionThreadMessageOperationPayload.self,
+                    SendDailyChatMessagePayload.self,
                     from: data
                   ),
                   payload.questionID == questionID,
@@ -99,7 +82,7 @@ struct CreateDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOpera
     }
 }
 
-struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperationHandling {
+struct SendDailyChatMessageOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .sendThreadMessage
 
     private let gateway: any DailyQuestionChatGateway
@@ -127,7 +110,7 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
             return .terminalFailure("Missing thread message payload")
         }
         let payload = try JSONDecoder().decode(
-            SendDailyQuestionThreadMessageOperationPayload.self,
+            SendDailyChatMessagePayload.self,
             from: data
         )
         guard isInCurrentCouple(payload.coupleID, context: context) else {
@@ -140,13 +123,7 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
             return .retry(after: nil)
         }
 
-        let mediaAssetIDs = try await uploadAttachments(
-            voice: payload.voice,
-            photos: payload.photos,
-            coupleID: payload.coupleID,
-            with: mediaUploadService,
-            imageCache: imageCache
-        )
+        let mediaAssetIDs = try await uploadAttachments(of: payload, with: mediaUploadService, imageCache: imageCache)
         let response: DailyQuestionThreadMessageResponse
         do {
             response = try await gateway.sendMessage(
@@ -161,20 +138,42 @@ struct SendDailyQuestionThreadMessagePendingOperationHandler: PendingSyncOperati
             await markChatMessageFailed(operation, cache: cache)
             return .terminalFailure("Thread message was rejected")
         }
-        await cache.confirm(
-            ownerUserID: operation.ownerUserID,
-            questionID: payload.questionID,
-            coupleID: payload.coupleID,
-            clientOperationID: operation.operation.id,
-            threadID: response.threadID,
-            messageID: response.messageID,
-            body: payload.body,
-            senderUserID: operation.ownerUserID,
-            createdAt: operation.operation.localCreatedAt
-        )
-        LocalStoreChanges.post(.dailyChat, ownerUserID: operation.ownerUserID)
+        await confirmSent(operation, response: response, of: payload, in: cache)
         return .succeeded
     }
+}
+
+/// What the handlers read from either kind of queued chat message.
+private nonisolated protocol ChatMessagePayload {
+    var questionID: UUID { get }
+    var coupleID: UUID { get }
+    var body: String { get }
+    var voice: DailyQuestionChatVoicePayload? { get }
+    var photos: DailyQuestionChatPhotosPayload? { get }
+}
+
+extension CreateDailyChatThreadPayload: ChatMessagePayload {}
+extension SendDailyChatMessagePayload: ChatMessagePayload {}
+
+/// Replaces the message shown while sending with the one the server confirmed.
+private func confirmSent(
+    _ operation: PendingSyncOperationSnapshot,
+    response: DailyQuestionThreadMessageResponse,
+    of payload: some ChatMessagePayload,
+    in cache: any DailyQuestionChatCaching
+) async {
+    await cache.confirm(
+        ownerUserID: operation.ownerUserID,
+        questionID: payload.questionID,
+        coupleID: payload.coupleID,
+        clientOperationID: operation.operation.id,
+        threadID: response.threadID,
+        messageID: response.messageID,
+        body: payload.body,
+        senderUserID: operation.ownerUserID,
+        createdAt: operation.operation.localCreatedAt
+    )
+    LocalStoreChanges.post(.dailyChat, ownerUserID: operation.ownerUserID)
 }
 
 /// A message belongs to the couple it was written in. Once the user is in another couple, it
@@ -188,16 +187,14 @@ private nonisolated func isInCurrentCouple(_ coupleID: UUID, context: SyncContex
 /// in order. The fixed operations make a retry pick up the same uploads. Upload
 /// errors throw, so the operation retries later.
 private func uploadAttachments(
-    voice: DailyQuestionChatVoicePayload?,
-    photos: DailyQuestionChatPhotosPayload?,
-    coupleID: UUID,
+    of payload: some ChatMessagePayload,
     with uploader: (any DailyAnswerMediaUploading)?,
     imageCache: (any DailyAnswerMediaImageCacheWriting)?
 ) async throws -> [UUID] {
-    guard voice != nil || photos != nil else { return [] }
+    guard payload.voice != nil || payload.photos != nil else { return [] }
     guard let uploader else { throw DailyQuestionChatServiceError.unavailable }
     var assetIDs: [UUID] = []
-    for photo in photos?.items ?? [] {
+    for photo in payload.photos?.items ?? [] {
         let assetID = try await uploader.uploadMedia(
             DailyAnswerUploadMedia(
                 data: photo.data,
@@ -207,8 +204,8 @@ private func uploadAttachments(
                 width: photo.width,
                 height: photo.height
             ),
-            answerID: photos?.messageID ?? UUID(),
-            coupleID: coupleID,
+            answerID: payload.photos?.messageID ?? UUID(),
+            coupleID: payload.coupleID,
             reserveOperation: photo.reserveOperation,
             finalizeOperation: photo.finalizeOperation
         )
@@ -218,7 +215,7 @@ private func uploadAttachments(
         await imageCache?.cacheImageData(photo.data, for: assetID)
         _ = await DailyChatPhotoLayout.decodeAndCache(photo.data, key: "chat-\(assetID.uuidString)")
     }
-    if let voice {
+    if let voice = payload.voice {
         assetIDs.append(try await uploader.uploadMedia(
             DailyAnswerUploadMedia(
                 data: voice.data,
@@ -228,7 +225,7 @@ private func uploadAttachments(
                 durationMs: voice.durationMs
             ),
             answerID: voice.messageID,
-            coupleID: coupleID,
+            coupleID: payload.coupleID,
             reserveOperation: voice.reserveOperation,
             finalizeOperation: voice.finalizeOperation
         ))

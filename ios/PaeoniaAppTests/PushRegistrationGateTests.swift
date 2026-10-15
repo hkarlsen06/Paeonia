@@ -27,7 +27,11 @@ struct PushRegistrationGateTests {
     @Test func skipsWhenFingerprintUnchangedWithinHeartbeatWindow() {
         let stored = fingerprint()
         let now = Date(timeIntervalSince1970: 1_000_000)
-        let last = PushRegistrationRecord(fingerprint: stored, sentAt: now.addingTimeInterval(-60 * 60), deviceID: UUID())
+        let last = PushRegistrationRecord(
+            fingerprint: stored,
+            sentAt: now.addingTimeInterval(-60 * 60),
+            deviceID: UUID()
+        )
         #expect(!PushRegistrationGate.shouldSend(current: stored, lastSent: last, now: now))
     }
 
@@ -79,7 +83,11 @@ struct PushRegistrationGateTests {
 
         let device = PushRegistrationFingerprintStore(channel: .device, defaults: defaults)
         let widget = PushRegistrationFingerprintStore(channel: .widget, defaults: defaults)
-        let record = PushRegistrationRecord(fingerprint: fingerprint(), sentAt: Date(timeIntervalSince1970: 1), deviceID: UUID())
+        let record = PushRegistrationRecord(
+            fingerprint: fingerprint(),
+            sentAt: Date(timeIntervalSince1970: 1),
+            deviceID: UUID()
+        )
         device.recordSent(record)
         widget.recordSent(record)
 

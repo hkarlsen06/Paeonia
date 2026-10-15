@@ -47,30 +47,39 @@ extension DailyChallengeViewModel {
     /// a photo or partner pick; everything else stays single-kind.
     private func resolveOutgoingAnswer(for question: DailyChallengeQuestion) -> OutgoingAnswer? {
         let text = nonEmptyDraftText(for: question.id)
-
         if question.usesCombinedCompose {
-            switch question.combinedSecondaryKind {
-            case .photo:
-                if let media = stagedMediaParts(for: question) {
-                    if let text {
-                        return (.textAndMedia(text, media.payload), SendingAnswer(text: text, media: media.sending))
-                    }
-                    return (.media(media.payload), SendingAnswer(media: media.sending))
-                }
-                return textOnly(text)
-            case .partnerChoice:
-                if let choice = partnerChoiceSelection(for: question.id) {
-                    if let text {
-                        return (.textAndPartnerChoice(text, choice), SendingAnswer(text: text, partnerChoiceUserID: choice))
-                    }
-                    return (.partnerChoice(choice), SendingAnswer(partnerChoiceUserID: choice))
-                }
-                return textOnly(text)
-            default:
-                return nil
-            }
+            return resolveCombinedAnswer(for: question, text: text)
         }
+        return resolveSingleKindAnswer(for: question, text: text)
+    }
 
+    private func resolveCombinedAnswer(for question: DailyChallengeQuestion, text: String?) -> OutgoingAnswer? {
+        switch question.combinedSecondaryKind {
+        case .photo:
+            if let media = stagedMediaParts(for: question) {
+                if let text {
+                    return (.textAndMedia(text, media.payload), SendingAnswer(text: text, media: media.sending))
+                }
+                return (.media(media.payload), SendingAnswer(media: media.sending))
+            }
+            return textOnly(text)
+        case .partnerChoice:
+            if let choice = partnerChoiceSelection(for: question.id) {
+                if let text {
+                    return (
+                        .textAndPartnerChoice(text, choice),
+                        SendingAnswer(text: text, partnerChoiceUserID: choice)
+                    )
+                }
+                return (.partnerChoice(choice), SendingAnswer(partnerChoiceUserID: choice))
+            }
+            return textOnly(text)
+        default:
+            return nil
+        }
+    }
+
+    private func resolveSingleKindAnswer(for question: DailyChallengeQuestion, text: String?) -> OutgoingAnswer? {
         switch composeKind(for: question) {
         case .photo, .voice:
             guard let media = stagedMediaParts(for: question) else { return nil }
@@ -199,7 +208,11 @@ extension DailyChallengeViewModel {
     /// allowed while the answer is still private; the backend locks it once the
     /// partner has answered, which surfaces as a clear, non-retryable notice.
     func editPartnerChoiceAnswer(for question: DailyChallengeQuestion) async {
-        guard question.editableAnswerKind == .partnerChoice, submittingQuestionID == nil, shufflingSlotNumber == nil else { return }
+        guard
+            question.editableAnswerKind == .partnerChoice,
+            submittingQuestionID == nil,
+            shufflingSlotNumber == nil
+        else { return }
 
         guard let selection = partnerChoiceSelection(for: question.id) else {
             notice = .emptyAnswer

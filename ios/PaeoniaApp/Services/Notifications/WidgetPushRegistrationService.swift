@@ -66,7 +66,9 @@ actor ConvexWidgetPushRegistrationService: WidgetPushRegistering {
                     appVersion: ConvexPushRegistrationService.appVersion
                 )
             )
-            fingerprintStore.recordSent(PushRegistrationRecord(fingerprint: fingerprint, sentAt: now, deviceID: deviceID))
+            fingerprintStore.recordSent(
+                PushRegistrationRecord(fingerprint: fingerprint, sentAt: now, deviceID: deviceID)
+            )
         } catch {
             #if DEBUG
             logger.error("Widget push registration failed: \(String(describing: error))")
@@ -100,7 +102,7 @@ actor ConvexWidgetPushRegistrationService: WidgetPushRegistering {
 }
 
 nonisolated struct NoOpWidgetPushRegistration: WidgetPushRegistering {
-    func registerCurrentWidgetPushToken() async {}
+    func registerCurrentWidgetPushToken() {}
 }
 
 nonisolated enum WidgetPushRegistrationServiceFactory {

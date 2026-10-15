@@ -254,7 +254,7 @@ final class LocationUpdateController: NSObject {
         }
         let made = BackgroundLocationUploader(
             gateway: (try? PaeoniaConvexClientProvider.shared.client()).map { LiveLocationGateway(client: $0) },
-            visibilityStore: SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
+            visibilityStore: SwiftDataLocationVisibilityRepository(container: localStore.container),
             ownLocationStore: SwiftDataOwnLocationSnapshotRepository(container: localStore.container)
         )
         uploader = made

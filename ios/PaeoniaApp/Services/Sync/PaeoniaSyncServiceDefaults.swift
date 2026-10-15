@@ -1,31 +1,31 @@
 import Foundation
 
 nonisolated enum PaeoniaSyncServiceDefaults {
-    typealias Stores = (
-        stateStore: any SyncStatePersisting,
-        pendingOperationStore: any PendingSyncOperationPersisting,
-        accessSnapshotStore: any AccessSyncSnapshotPersisting,
-        relationshipEventStore: any RelationshipSyncEventPersisting,
-        locationVisibilityStore: any LocationVisibilitySnapshotPersisting,
-        ownLocationStore: any OwnLocationSnapshotPersisting,
-        memoryStore: any MemoryRecordPersisting,
-        privacyRecordStore: any LocalPrivacyRecordPurging
-    )
+    nonisolated struct Stores {
+        let stateStore: any SyncStatePersisting
+        let pendingOperationStore: any PendingSyncOperationPersisting
+        let accessSnapshotStore: any AccessSyncSnapshotPersisting
+        let relationshipEventStore: any RelationshipSyncEventPersisting
+        let locationVisibilityStore: any LocationVisibilitySnapshotPersisting
+        let ownLocationStore: any OwnLocationSnapshotPersisting
+        let memoryStore: any MemoryRecordPersisting
+        let privacyRecordStore: any LocalPrivacyRecordPurging
+    }
 
     static func makeStores() -> Stores {
         guard let localStore = PaeoniaLocalStore.shared else {
             preconditionFailure("Unable to create persistent sync store")
         }
 
-        return (
-            SwiftDataSyncStateRepository(container: localStore.container),
-            SwiftDataPendingSyncOperationRepository(container: localStore.container),
-            SwiftDataAccessSyncSnapshotRepository(container: localStore.container),
-            SwiftDataRelationshipSyncEventRepository(container: localStore.container),
-            SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
-            SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
-            SwiftDataMemoryRecordRepository(container: localStore.container),
-            SwiftDataLocalPrivacyRecordStore(container: localStore.container)
+        return Stores(
+            stateStore: SwiftDataSyncStateRepository(container: localStore.container),
+            pendingOperationStore: SwiftDataPendingSyncOperationRepository(container: localStore.container),
+            accessSnapshotStore: SwiftDataAccessSyncSnapshotRepository(container: localStore.container),
+            relationshipEventStore: SwiftDataRelationshipSyncEventRepository(container: localStore.container),
+            locationVisibilityStore: SwiftDataLocationVisibilityRepository(container: localStore.container),
+            ownLocationStore: SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
+            memoryStore: SwiftDataMemoryRecordRepository(container: localStore.container),
+            privacyRecordStore: SwiftDataLocalPrivacyRecordStore(container: localStore.container)
         )
     }
 
@@ -40,39 +40,82 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             return []
         }
 
+        var defaultHandlers = locationHandlers(
+            client: client,
+            visibilityStore: locationVisibilityStore,
+            ownLocationStore: ownLocationStore
+        )
+        defaultHandlers += dailyHandlers(client: client)
+        defaultHandlers += memoryHandlers(
+            client: client,
+            accessSnapshotStore: accessSnapshotStore,
+            memoryStore: memoryStore
+        )
+        defaultHandlers += heartsAndDatesHandlers(client: client)
+        defaultHandlers += GamesPendingOperationRegistry.handlers(client: client)
+
+        return [
+            PendingSyncOperationDrainStream(
+                handlers: mergedHandlers(
+                    customHandlers: pendingOperationHandlers,
+                    defaultHandlers: defaultHandlers
+                )
+            ),
+        ]
+    }
+
+    private static func locationHandlers(
+        client: PaeoniaConvexClient,
+        visibilityStore: any LocationVisibilitySnapshotPersisting,
+        ownLocationStore: any OwnLocationSnapshotPersisting
+    ) -> [any PendingSyncOperationHandling] {
         let locationGateway = LiveLocationGateway(client: client)
-        let memoryGateway = LiveMemoryGateway(client: client)
+        return [
+            LocationSharingPendingOperationHandler(
+                gateway: locationGateway,
+                visibilityStore: visibilityStore
+            ),
+            LatestLocationPendingOperationHandler(
+                gateway: locationGateway,
+                ownLocationStore: ownLocationStore
+            ),
+        ]
+    }
+
+    private static func dailyHandlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
         let dailyQuestionChatGateway = LiveDailyQuestionChatGateway(client: client)
         let chatMediaUploader = LiveDailyAnswerMediaUploadService(
             client: client,
             reservedParentKind: "thread_message_media"
         )
-        let locationHandlers: [any PendingSyncOperationHandling] = [
-            LocationSharingPreferencePendingOperationHandler(
-                gateway: locationGateway,
-                visibilityStore: locationVisibilityStore
-            ),
-            LatestPartnerLocationPendingOperationHandler(
-                gateway: locationGateway,
-                ownLocationStore: ownLocationStore
-            ),
+        return [
             DailySubmitAnswerPendingOperationHandler(
                 mediaUploadService: LiveDailyAnswerMediaUploadService(client: client),
                 gateway: LiveDailyChallengeGateway(client: client),
                 mediaDraftStore: FileDailyAnswerMediaDraftStore.live()
             ),
-            CreateDailyQuestionThreadMessagePendingOperationHandler(
+            CreateDailyChatThreadOperationHandler(
                 gateway: dailyQuestionChatGateway,
                 cache: FileDailyQuestionChatCache.shared,
                 mediaUploadService: chatMediaUploader,
                 imageCache: DailyAnswerMediaImageService.shared
             ),
-            SendDailyQuestionThreadMessagePendingOperationHandler(
+            SendDailyChatMessageOperationHandler(
                 gateway: dailyQuestionChatGateway,
                 cache: FileDailyQuestionChatCache.shared,
                 mediaUploadService: chatMediaUploader,
                 imageCache: DailyAnswerMediaImageService.shared
             ),
+        ]
+    }
+
+    private static func memoryHandlers(
+        client: PaeoniaConvexClient,
+        accessSnapshotStore: any AccessSyncSnapshotPersisting,
+        memoryStore: any MemoryRecordPersisting
+    ) -> [any PendingSyncOperationHandling] {
+        let memoryGateway = LiveMemoryGateway(client: client)
+        return [
             RelationshipDatePendingOperationHandler(
                 gateway: LiveRelationshipStartedOnGateway(client: client),
                 accessSnapshotStore: accessSnapshotStore
@@ -106,27 +149,17 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 memoryStore: memoryStore
             ),
         ]
+    }
+
+    private static func heartsAndDatesHandlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
         let heartsGateway = LiveHeartsGateway(client: client)
-        let heartsHandlers: [any PendingSyncOperationHandling] = [
+        let coupleDatesGateway = LiveCoupleDatesGateway(client: client)
+        return [
             SendHeartsPendingOperationHandler(gateway: heartsGateway),
             MarkHeartsSeenPendingOperationHandler(gateway: heartsGateway),
-        ]
-        let coupleDatesGateway = LiveCoupleDatesGateway(client: client)
-        let coupleDatesHandlers: [any PendingSyncOperationHandling] = [
             SaveCountdownPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
             DeleteCountdownPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
             SetBirthdayPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
-        ]
-        let defaultHandlers = locationHandlers + heartsHandlers + coupleDatesHandlers
-            + GamesPendingOperationRegistry.handlers(client: client)
-
-        return [
-            PendingSyncOperationDrainStream(
-                handlers: mergedHandlers(
-                    customHandlers: pendingOperationHandlers,
-                    defaultHandlers: defaultHandlers
-                )
-            ),
         ]
     }
 

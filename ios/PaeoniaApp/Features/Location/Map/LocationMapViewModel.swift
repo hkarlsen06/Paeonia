@@ -10,17 +10,13 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         case locationUnavailable
     }
 
-    private enum Constants {
-        static let consentVersion = "location-sharing-v1"
-    }
-
-    private enum LocationOperationAbort: Error {
+    enum LocationOperationAbort: Error {
         /// The account or couple changed, or a newer sharing choice replaced
         /// this operation. Whatever replaced it decides what gets stored.
         case superseded
     }
 
-    private enum LocationOperationKind {
+    enum LocationOperationKind {
         case sharingChange
         case refresh
     }
@@ -30,15 +26,15 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         let kind: LocationOperationKind
     }
 
-    private let visibilityStore: any LocationVisibilitySnapshotPersisting
-    private let ownLocationStore: any OwnLocationSnapshotPersisting
-    private let pendingOperationStore: any PendingSyncOperationPersisting
-    private let operationProvider: any SyncClientOperationProviding
-    private let locationCapture: any ForegroundLocationCapturing
-    private let encoder = JSONEncoder()
+    let visibilityStore: any LocationVisibilitySnapshotPersisting
+    let ownLocationStore: any OwnLocationSnapshotPersisting
+    let pendingOperationStore: any PendingSyncOperationPersisting
+    let operationProvider: any SyncClientOperationProviding
+    let locationCapture: any ForegroundLocationCapturing
+    let encoder = JSONEncoder()
     private var localChangeSyncHandler: (@MainActor () async -> Void)?
 
-    private var identity = LocationIdentity(currentUserID: nil, coupleID: nil)
+    private(set) var identity = LocationIdentity(currentUserID: nil, coupleID: nil)
     private var reloadGeneration = 0
     private var activeOperation: LocationOperation?
     private var storeChangesTask: Task<Void, Never>?
@@ -81,7 +77,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         )
         self.visibilityStore = visibilityStore
             ?? defaultStores?.visibilityStore
-            ?? InMemoryLocationVisibilitySnapshotRepository()
+            ?? InMemoryLocationVisibilityRepository()
         self.ownLocationStore = ownLocationStore
             ?? defaultStores?.ownLocationStore
             ?? InMemoryOwnLocationSnapshotRepository()
@@ -217,50 +213,6 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         isPresentationReady = true
     }
 
-    func setSharingEnabled(_ enabled: Bool) async {
-        refreshAuthorizationState()
-        guard enabled != sharingEnabled,
-              let currentUserID = identity.currentUserID,
-              let coupleID = identity.coupleID,
-              let operationID = beginOperation(.sharingChange)
-        else {
-            return
-        }
-
-        let operationIdentity = identity
-        defer { finishOperation(operationID) }
-        // Read before the capture, which may show the system prompt and change it.
-        let permissionWasUndecided = authorizationState == .notDetermined
-
-        let previousValue = sharingEnabled
-        sharingEnabled = enabled
-        isSharingLoaded = true
-        hasResolvedSharingPreference = true
-
-        do {
-            try await persistSharingChange(
-                ownerUserID: currentUserID,
-                coupleID: coupleID,
-                enabled: enabled,
-                operationID: operationID,
-                operationIdentity: operationIdentity
-            )
-
-            await syncAfterLocalChange()
-            try requireCurrent(operationID, identity: operationIdentity)
-            await reload()
-        } catch LocationOperationAbort.superseded {
-            return
-        } catch {
-            await restoreSharingChange(
-                previousValue: previousValue,
-                operationIdentity: operationIdentity,
-                permissionWasUndecided: permissionWasUndecided,
-                error: error
-            )
-        }
-    }
-
     func promptForCurrentLocation() async {
         guard activeOperation == nil else { return }
 
@@ -271,335 +223,11 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         }
     }
 
-    func refreshOwnLocationIfSharingEnabled(
-        source: LocationSharingSource,
-        mayPromptForAuthorization: Bool = true
-    ) async {
-        // Scene activation lands here, so this is also where a permission
-        // change made in the Settings app reaches the map card.
-        refreshAuthorizationState()
-        guard mayPromptForAuthorization || authorizationState == .authorized else {
-            return
-        }
-
-        guard sharingEnabled,
-              let currentUserID = identity.currentUserID,
-              let coupleID = identity.coupleID,
-              let operationID = beginOperation(.refresh)
-        else {
-            return
-        }
-
-        let operationIdentity = identity
-        defer { finishOperation(operationID) }
-        let ensureCurrent = { [self] in
-            try requireCurrent(operationID, identity: operationIdentity)
-        }
-
-        do {
-            try await captureAndQueueOwnLocation(
-                source: source,
-                ownerUserID: currentUserID,
-                coupleID: coupleID,
-                ensureCurrent: ensureCurrent
-            )
-        } catch LocationOperationAbort.superseded {
-            return
-        } catch {
-            guard identity == operationIdentity else { return }
-            // An automatic refresh on app open must not raise an error banner
-            // every time the phone is indoors. The map card shows the state.
-            guard source != .foregroundOpen else { return }
-            notice = notice(for: error)
-        }
-    }
-
-    /// A position from the live feed while the app is open. It follows the
-    /// same rule as a refresh on app open, so standing still sends nothing.
-    func submitObservedLocation(_ location: LocationPoint) async {
-        refreshAuthorizationState()
-        guard sharingEnabled,
-              authorizationState == .authorized,
-              let currentUserID = identity.currentUserID,
-              let coupleID = identity.coupleID,
-              let operationID = beginOperation(.refresh)
-        else {
-            return
-        }
-
-        let operationIdentity = identity
-        defer { finishOperation(operationID) }
-        // A position that fails to save is fine to miss. The next move sends again.
-        try? await queueOwnLocationIfDue(
-            location,
-            source: .foregroundOpen,
-            ownerUserID: currentUserID,
-            coupleID: coupleID,
-            ensureCurrent: { [self] in try requireCurrent(operationID, identity: operationIdentity) }
-        )
-    }
-
-    private func captureAndQueueOwnLocation(
-        source: LocationSharingSource,
-        ownerUserID: UUID,
-        coupleID: UUID,
-        ensureCurrent: () throws -> Void
-    ) async throws {
-        let location = try await captureCurrentLocation()
-        try ensureCurrent()
-        try await queueOwnLocationIfDue(
-            location,
-            source: source,
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            ensureCurrent: ensureCurrent
-        )
-    }
-
-    private func queueOwnLocationIfDue(
-        _ location: LocationPoint,
-        source: LocationSharingSource,
-        ownerUserID: UUID,
-        coupleID: UUID,
-        ensureCurrent: () throws -> Void
-    ) async throws {
-        guard try await shouldSendLocation(
-            location,
-            source: source,
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            ensureCurrent: ensureCurrent
-        ) else { return }
-
-        try await saveAndEnqueueOwnLocation(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            location: location,
-            source: source,
-            ensureCurrent: ensureCurrent
-        )
-
-        await syncAfterLocalChange()
-        try ensureCurrent()
-        await reload()
-    }
-
     func dismissNotice() {
         notice = nil
     }
 
-    private func enqueueLocationPreference(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        isEnabled: Bool,
-        source: LocationSharingSource
-    ) async throws {
-        let operation = operationProvider.makeOperation()
-        let payload = LocationSharingPreferenceOperationPayload(
-            coupleID: coupleID,
-            isEnabled: isEnabled,
-            consentVersion: isEnabled ? Constants.consentVersion : nil,
-            source: source
-        )
-        try await pendingOperationStore.enqueue(
-            PendingSyncOperationRequest(
-                ownerUserID: ownerUserID,
-                operation: operation,
-                operationKind: .updateLocationSharingPreference,
-                idempotencyScope: [
-                    "location-preference",
-                    coupleID.uuidString.lowercased(),
-                    operation.id.uuidString.lowercased(),
-                ].joined(separator: ":"),
-                requestData: try encoder.encode(payload)
-            )
-        )
-    }
-
-    private func persistSharingChange(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        enabled: Bool,
-        operationID: UUID,
-        operationIdentity: LocationIdentity
-    ) async throws {
-        let ensureCurrent = { [self] in
-            try requireCurrent(operationID, identity: operationIdentity)
-        }
-        let capturedLocation: LocationPoint?
-        if enabled {
-            do {
-                capturedLocation = try await captureCurrentLocation()
-            } catch ForegroundLocationCaptureError.unavailable
-                where locationCapture.authorizationState == .authorized {
-                // The durable sharing choice does not depend on one GPS fix.
-                // A later foreground refresh can fill in the current location,
-                // and the map card offers a retry meanwhile.
-                capturedLocation = nil
-                notice = .locationUnavailable
-            }
-        } else {
-            capturedLocation = nil
-        }
-        try ensureCurrent()
-
-        try await visibilityStore.setViewerSharingEnabled(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            isEnabled: enabled,
-            updatedAt: Date()
-        )
-        try ensureCurrent()
-
-        try await enqueueLocationPreference(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            isEnabled: enabled,
-            source: .settingsToggle
-        )
-        try ensureCurrent()
-
-        if let capturedLocation {
-            do {
-                try await saveAndEnqueueOwnLocation(
-                    ownerUserID: ownerUserID,
-                    coupleID: coupleID,
-                    location: capturedLocation,
-                    source: .settingsToggle,
-                    ensureCurrent: ensureCurrent
-                )
-            } catch LocationOperationAbort.superseded {
-                throw LocationOperationAbort.superseded
-            } catch {
-                // The preference is already safely cached and queued. Keep the
-                // user's choice even if saving this first fix fails; a later
-                // foreground refresh can try the latest location again.
-                try ensureCurrent()
-                notice = .saveFailed
-            }
-        } else {
-            try? await ownLocationStore.delete(ownerUserID: ownerUserID, coupleID: coupleID)
-            await dropQueuedLocationUploads(
-                ownerUserID: ownerUserID,
-                keeping: nil,
-                reason: "cancelled because location sharing was turned off"
-            )
-        }
-        try ensureCurrent()
-    }
-
-    /// Drops queued location uploads that have not started sending, except
-    /// `keeping`. Used for two cases. A location queued before an opt-out must
-    /// not reach the server after it (the outbox can send it first while the
-    /// opt-out waits for a retry). And only the latest position matters, so a
-    /// newer location replaces older ones instead of replaying each of them.
-    private func dropQueuedLocationUploads(ownerUserID: UUID, keeping kept: UUID?, reason: String) async {
-        let queued = (try? await pendingOperationStore.inFlightOperations(
-            ownerUserID: ownerUserID,
-            kind: .updateLatestPartnerLocation
-        )) ?? []
-        for operation in queued where operation.status != .sending && operation.operation.id != kept {
-            try? await pendingOperationStore.markTerminalFailure(
-                clientOperationID: operation.operation.id,
-                errorDescription: reason,
-                at: Date()
-            )
-        }
-    }
-
-    private func restoreSharingChange(
-        previousValue: Bool,
-        operationIdentity: LocationIdentity,
-        permissionWasUndecided: Bool,
-        error: any Error
-    ) async {
-        guard identity == operationIdentity,
-              let ownerUserID = operationIdentity.currentUserID,
-              let coupleID = operationIdentity.coupleID
-        else { return }
-        refreshAuthorizationState()
-        sharingEnabled = previousValue
-        // Nothing was queued for this value, so it is not waiting on the server.
-        try? await visibilityStore.setViewerSharingEnabled(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            isEnabled: previousValue,
-            updatedAt: Date(),
-            isPendingConfirmation: false
-        )
-        guard identity == operationIdentity else { return }
-        // Tapping "Don't Allow" on the system prompt is a choice, not an
-        // error. The map card already shows how to turn location on later.
-        let declinedSystemPrompt = permissionWasUndecided
-            && (error as? ForegroundLocationCaptureError) == .authorizationDenied
-        if !declinedSystemPrompt {
-            notice = notice(for: error)
-        }
-        await reload()
-    }
-
-    private func shouldSendLocation(
-        _ location: LocationPoint,
-        source: LocationSharingSource,
-        ownerUserID: UUID,
-        coupleID: UUID,
-        ensureCurrent: () throws -> Void
-    ) async throws -> Bool {
-        // A routine foreground refresh only writes when the fix is stale or the
-        // user moved; explicit refreshes always write.
-        guard source == .foregroundOpen else { return true }
-
-        let lastSent = (try? await ownLocationStore.load(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID
-        ))?.location
-        try ensureCurrent()
-        return RoutineLocationThrottle.shouldSend(
-            lastSent: lastSent,
-            current: location,
-            now: Date()
-        )
-    }
-
-    /// Starts an operation, or returns nil when it must not run now. A sharing
-    /// choice replaces a running refresh: turning sharing off must never wait
-    /// for (or be dropped behind) a GPS fix, and the replaced refresh stops
-    /// before it writes anything.
-    private func beginOperation(_ kind: LocationOperationKind) -> UUID? {
-        if let activeOperation {
-            guard kind == .sharingChange, activeOperation.kind == .refresh else {
-                return nil
-            }
-        }
-        let operation = LocationOperation(id: UUID(), kind: kind)
-        activeOperation = operation
-        return operation.id
-    }
-
-    private func finishOperation(_ operationID: UUID) {
-        if activeOperation?.id == operationID {
-            activeOperation = nil
-        }
-    }
-
-    private func requireCurrent(_ operationID: UUID, identity expectedIdentity: LocationIdentity) throws {
-        guard identity == expectedIdentity, activeOperation?.id == operationID else {
-            throw LocationOperationAbort.superseded
-        }
-    }
-
-    private func captureCurrentLocation() async throws -> LocationPoint {
-        locatingCount += 1
-        publishMapState()
-        defer {
-            locatingCount -= 1
-            refreshAuthorizationState()
-            publishMapState()
-        }
-        return try await locationCapture.captureCurrentLocation()
-    }
-
-    private func refreshAuthorizationState() {
+    func refreshAuthorizationState() {
         let state = locationCapture.authorizationState
         guard state != authorizationState else { return }
         authorizationState = state
@@ -616,103 +244,53 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         )
     }
 
-    private func saveAndEnqueueOwnLocation(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        location: LocationPoint,
-        source: LocationSharingSource,
-        ensureCurrent: () throws -> Void
-    ) async throws {
-        let operation = operationProvider.makeOperation()
-        let previousSnapshot = try await ownLocationStore.load(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID
-        )
-        // Checked right before each write, so a refresh that a newer sharing
-        // choice replaced never stores or queues a location after an opt-out.
-        try ensureCurrent()
-        try await ownLocationStore.save(
-            OwnLocationSnapshot(
-                ownerUserID: ownerUserID,
-                coupleID: coupleID,
-                location: location,
-                source: source,
-                pendingOperationID: operation.id,
-                updatedAt: Date()
-            )
-        )
+    func syncAfterLocalChange() async {
+        await localChangeSyncHandler?()
+    }
+}
 
-        do {
-            try ensureCurrent()
-            try await enqueueReplacingOlderLocations(
-                latestLocationRequest(
-                    ownerUserID: ownerUserID,
-                    coupleID: coupleID,
-                    location: location,
-                    source: source,
-                    operation: operation
-                )
-            )
-        } catch LocationOperationAbort.superseded {
-            // The operation that replaced this one owns the stored state now.
-            throw LocationOperationAbort.superseded
-        } catch {
-            // A fresh snapshot without its matching pending operation would
-            // make the foreground throttle believe this location was queued.
-            // Restore the last durable state so the next refresh retries.
-            if let previousSnapshot {
-                try? await ownLocationStore.save(previousSnapshot)
-            } else {
-                try? await ownLocationStore.delete(
-                    ownerUserID: ownerUserID,
-                    coupleID: coupleID
-                )
+// MARK: Operations and shared helpers
+
+extension LocationMapViewModel {
+    /// Starts an operation, or returns nil when it must not run now. A sharing
+    /// choice replaces a running refresh: turning sharing off must never wait
+    /// for (or be dropped behind) a GPS fix, and the replaced refresh stops
+    /// before it writes anything.
+    func beginOperation(_ kind: LocationOperationKind) -> UUID? {
+        if let activeOperation {
+            guard kind == .sharingChange, activeOperation.kind == .refresh else {
+                return nil
             }
-            throw error
+        }
+        let operation = LocationOperation(id: UUID(), kind: kind)
+        activeOperation = operation
+        return operation.id
+    }
+
+    func finishOperation(_ operationID: UUID) {
+        if activeOperation?.id == operationID {
+            activeOperation = nil
         }
     }
 
-    /// Queues a location upload and drops older queued ones, but only after
-    /// the newer one is safely queued.
-    private func enqueueReplacingOlderLocations(_ request: PendingSyncOperationRequest) async throws {
-        try await pendingOperationStore.enqueue(request)
-        await dropQueuedLocationUploads(
-            ownerUserID: request.ownerUserID,
-            keeping: request.operation.id,
-            reason: "replaced by a newer location"
-        )
+    func requireCurrent(_ operationID: UUID, identity expectedIdentity: LocationIdentity) throws {
+        guard identity == expectedIdentity, activeOperation?.id == operationID else {
+            throw LocationOperationAbort.superseded
+        }
     }
 
-    private func latestLocationRequest(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        location: LocationPoint,
-        source: LocationSharingSource,
-        operation: SyncClientOperation
-    ) throws -> PendingSyncOperationRequest {
-        let payload = LatestPartnerLocationOperationPayload(
-            coupleID: coupleID,
-            location: location,
-            source: source
-        )
-        return PendingSyncOperationRequest(
-            ownerUserID: ownerUserID,
-            operation: operation,
-            operationKind: .updateLatestPartnerLocation,
-            idempotencyScope: [
-                "latest-location",
-                coupleID.uuidString.lowercased(),
-                operation.id.uuidString.lowercased(),
-            ].joined(separator: ":"),
-            requestData: try encoder.encode(payload)
-        )
+    func captureCurrentLocation() async throws -> LocationPoint {
+        locatingCount += 1
+        publishMapState()
+        defer {
+            locatingCount -= 1
+            refreshAuthorizationState()
+            publishMapState()
+        }
+        return try await locationCapture.captureCurrentLocation()
     }
 
-    private func syncAfterLocalChange() async {
-        await localChangeSyncHandler?()
-    }
-
-    private func notice(for error: any Error) -> Notice {
+    func notice(for error: any Error) -> Notice {
         if let locationError = error as? ForegroundLocationCaptureError {
             switch locationError {
             case .authorizationDenied:
@@ -725,15 +303,35 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         return .saveFailed
     }
 
+    /// Shows a sharing choice before it is saved, so the switch follows the tap.
+    func showSharingChoice(_ enabled: Bool) {
+        sharingEnabled = enabled
+        isSharingLoaded = true
+        hasResolvedSharingPreference = true
+    }
+
+    /// Puts the switch back after a sharing choice could not be saved.
+    func restoreSharingValue(_ enabled: Bool) {
+        sharingEnabled = enabled
+    }
+
+    func show(_ newNotice: Notice) {
+        notice = newNotice
+    }
+}
+
+extension LocationMapViewModel {
+    private struct DefaultStores {
+        let visibilityStore: any LocationVisibilitySnapshotPersisting
+        let ownLocationStore: any OwnLocationSnapshotPersisting
+        let pendingOperationStore: any PendingSyncOperationPersisting
+    }
+
     private static func makeDefaultStores(
         needsVisibilityStore: Bool,
         needsOwnLocationStore: Bool,
         needsPendingOperationStore: Bool
-    ) -> (
-        visibilityStore: any LocationVisibilitySnapshotPersisting,
-        ownLocationStore: any OwnLocationSnapshotPersisting,
-        pendingOperationStore: any PendingSyncOperationPersisting
-    )? {
+    ) -> DefaultStores? {
         guard needsVisibilityStore || needsOwnLocationStore || needsPendingOperationStore else {
             return nil
         }
@@ -742,10 +340,10 @@ final class LocationMapViewModel: PresentationReadinessProviding {
             return nil
         }
 
-        return (
-            SwiftDataLocationVisibilitySnapshotRepository(container: localStore.container),
-            SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
-            SwiftDataPendingSyncOperationRepository(container: localStore.container)
+        return DefaultStores(
+            visibilityStore: SwiftDataLocationVisibilityRepository(container: localStore.container),
+            ownLocationStore: SwiftDataOwnLocationSnapshotRepository(container: localStore.container),
+            pendingOperationStore: SwiftDataPendingSyncOperationRepository(container: localStore.container)
         )
     }
 }

@@ -102,7 +102,7 @@ struct RootView: View {
             // the link changes) so navigation state is never mutated
             // synchronously during a view update.
             .task(id: deepLink) {
-                await handleDeepLink(deepLink)
+                handleDeepLink(deepLink)
             }
             .task(id: locationIdentity) {
                 await locationViewModel.configure(identity: locationIdentity)

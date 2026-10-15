@@ -5,7 +5,7 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
     static let userID = UUID()
     private let partnerUserID = UUID()
 
-    func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+    func loadToday(currentUserID: UUID) throws -> DailyChallengeLoadResult {
         DailyChallengeLoadResult(
             snapshot: DailyChallengeSnapshot(
                 currentUserID: currentUserID,
@@ -41,11 +41,11 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
         )
     }
 
-    func startToday(currentUserID: UUID, operation _: SyncClientOperation) async throws -> DailyChallengeLoadResult {
-        try await loadToday(currentUserID: currentUserID)
+    func startToday(currentUserID: UUID, operation _: SyncClientOperation) throws -> DailyChallengeLoadResult {
+        try loadToday(currentUserID: currentUserID)
     }
 
-    func loadHistory(currentUserID: UUID) async throws -> [DailyChallengeQuestion] {
+    func loadHistory(currentUserID: UUID) throws -> [DailyChallengeQuestion] {
         [
             previewHistoryQuestion(
                 localDate: "2026-06-27",
@@ -74,7 +74,7 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
         ]
     }
 
-    func loadStreak() async throws -> CoupleStreak {
+    func loadStreak() throws -> CoupleStreak {
         CoupleStreak(
             currentCount: 6,
             longestCount: 12,
@@ -85,15 +85,24 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
         )
     }
 
-    func submitAnswer(instanceID _: UUID, answerID _: UUID, payload _: DailyAnswerPayload, operation _: SyncClientOperation) async throws -> UUID {
+    func submitAnswer(
+        instanceID _: UUID,
+        answerID _: UUID,
+        payload _: DailyAnswerPayload,
+        operation _: SyncClientOperation
+    ) throws -> UUID {
         UUID()
     }
 
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) async throws -> UUID {
+    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) throws -> UUID {
         UUID()
     }
 
-    func editPartnerChoice(instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation) async throws -> UUID {
+    func editPartnerChoice(
+        instanceID _: UUID,
+        selectedUserID _: UUID,
+        operation _: SyncClientOperation
+    ) throws -> UUID {
         UUID()
     }
 
@@ -101,8 +110,8 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
         currentUserID: UUID,
         slotNumber _: Int,
         operation _: SyncClientOperation
-    ) async throws -> DailyChallengeLoadResult {
-        try await loadToday(currentUserID: currentUserID)
+    ) throws -> DailyChallengeLoadResult {
+        try loadToday(currentUserID: currentUserID)
     }
 }
 
@@ -146,7 +155,7 @@ nonisolated func previewDailyQuestion(
 /// and both replies are revealed, so the read card shows a complete exchange.
 nonisolated func previewHistoryQuestion(
     localDate: String,
-    slot: Int,
+    slot: Int = 1,
     seededFor userID: UUID,
     prompt: String,
     ownText: String,
@@ -154,9 +163,19 @@ nonisolated func previewHistoryQuestion(
     currentUserID: UUID = PreviewDailyChallengeService.userID
 ) -> DailyChallengeQuestion {
     let answeredAt = Date()
-    let ownAnswerID = UUID()
-    let partnerAnswerID = UUID()
     let partnerUserID = userID == currentUserID ? UUID() : userID
+    let ownDetail = previewHistoryAnswerDetail(
+        answerUserID: currentUserID,
+        answeredAt: answeredAt,
+        isOwnAnswer: true,
+        text: ownText
+    )
+    let partnerDetail = previewHistoryAnswerDetail(
+        answerUserID: partnerUserID,
+        answeredAt: answeredAt,
+        isOwnAnswer: false,
+        text: partnerText
+    )
 
     return DailyChallengeQuestion(
         id: UUID(),
@@ -175,31 +194,31 @@ nonisolated func previewHistoryQuestion(
         prompt: prompt,
         shortPrompt: prompt,
         answerKinds: [.text],
-        ownAnswer: DailyQuestionAnswerSummary(id: ownAnswerID, answeredAt: answeredAt),
-        partnerAnswer: DailyQuestionAnswerSummary(id: partnerAnswerID, answeredAt: answeredAt),
+        ownAnswer: DailyQuestionAnswerSummary(id: ownDetail.answerID, answeredAt: answeredAt),
+        partnerAnswer: DailyQuestionAnswerSummary(id: partnerDetail.answerID, answeredAt: answeredAt),
         canViewPartnerAnswer: true,
-        ownAnswerDetail: DailyQuestionAnswerDetail(
-            answerUserID: currentUserID,
-            answerID: ownAnswerID,
-            answeredAt: answeredAt,
-            isOwnAnswer: true,
-            canViewAnswer: true,
-            textBody: ownText,
-            selectedUserID: nil,
-            mediaAssetIDs: []
-        ),
-        partnerAnswerDetail: DailyQuestionAnswerDetail(
-            answerUserID: partnerUserID,
-            answerID: partnerAnswerID,
-            answeredAt: answeredAt,
-            isOwnAnswer: false,
-            canViewAnswer: true,
-            textBody: partnerText,
-            selectedUserID: nil,
-            mediaAssetIDs: []
-        ),
+        ownAnswerDetail: ownDetail,
+        partnerAnswerDetail: partnerDetail,
         origin: userID == currentUserID ? .own : .partner,
         isCurrentDay: false
+    )
+}
+
+private nonisolated func previewHistoryAnswerDetail(
+    answerUserID: UUID,
+    answeredAt: Date,
+    isOwnAnswer: Bool,
+    text: String
+) -> DailyQuestionAnswerDetail {
+    DailyQuestionAnswerDetail(
+        answerUserID: answerUserID,
+        answerID: UUID(),
+        answeredAt: answeredAt,
+        isOwnAnswer: isOwnAnswer,
+        canViewAnswer: true,
+        textBody: text,
+        selectedUserID: nil,
+        mediaAssetIDs: []
     )
 }
 #endif

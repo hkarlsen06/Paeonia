@@ -22,7 +22,10 @@ struct DrawAndGuessPartnerTests {
 
     @Test func theScreenSaysItIsOpenNowAndGoneWhenItCloses() async {
         let env = environment(yourTurn)
-        let viewModel = env.viewModel(heartbeat: .seconds(30), sleep: { _ in try await Task.sleep(for: .seconds(3_600)) })
+        let viewModel = env.viewModel(
+            heartbeat: .seconds(30),
+            sleep: { _ in try await Task.sleep(for: .seconds(3_600)) }
+        )
 
         await viewModel.start()
         _ = await waitUntil { true }
@@ -108,7 +111,9 @@ struct DrawAndGuessPartnerTests {
 
     @Test func theInviteStaysSentWhenTheServerSaysTooSoon() async {
         let env = environment(yourTurn)
-        env.gateway.setInviteError(PaeoniaConvexError.server(code: "53300", message: "you can send one invite every 15 minutes"))
+        env.gateway.setInviteError(
+            PaeoniaConvexError.server(code: "53300", message: "you can send one invite every 15 minutes")
+        )
         let viewModel = env.viewModel()
         await viewModel.reload()
 

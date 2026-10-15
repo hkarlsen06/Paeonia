@@ -11,7 +11,10 @@ struct GamesPendingOperationTests {
     init() {
         // The server answers the read that follows each move it takes.
         environment.gateway.setStateToLoad(
-            GameFixture.state(settings: GameFixture.settings(), game: GameFixture.game(state: .guessing, turn: GameFixture.me))
+            GameFixture.state(
+                settings: GameFixture.settings(),
+                game: GameFixture.game(state: .guessing, turn: GameFixture.me)
+            )
         )
     }
 
@@ -42,7 +45,11 @@ struct GamesPendingOperationTests {
         try await environment.pending.enqueue(
             PendingSyncOperationRequest(
                 ownerUserID: GameFixture.me,
-                operation: SyncClientOperation(clientID: UUID(), clientSequence: sequence, localCreatedAt: GameFixture.now),
+                operation: SyncClientOperation(
+                    clientID: UUID(),
+                    clientSequence: sequence,
+                    localCreatedAt: GameFixture.now
+                ),
                 operationKind: kind,
                 idempotencyScope: "games",
                 requestData: try JSONEncoder().encode(payload)
@@ -63,7 +70,11 @@ struct GamesPendingOperationTests {
 
     @Test func theDrawingWaitsForTheWordPickOfItsRound() async throws {
         try await enqueue(.pickDrawWord, pick(), sequence: 1)
-        let operation = try snapshot(.submitGameDrawing, drawing(), operation: SyncClientOperation(clientID: UUID(), clientSequence: 2))
+        let operation = try snapshot(
+            .submitGameDrawing,
+            drawing(),
+            operation: SyncClientOperation(clientID: UUID(), clientSequence: 2)
+        )
 
         let waiting = try await drawingHandler().send(operation, context: syncContext(environment.pending))
 
@@ -73,7 +84,11 @@ struct GamesPendingOperationTests {
     }
 
     @Test func onceThePickHasLandedTheDrawingUploadsAndIsSubmitted() async throws {
-        let operation = try snapshot(.submitGameDrawing, drawing(), operation: SyncClientOperation(clientID: UUID(), clientSequence: 2))
+        let operation = try snapshot(
+            .submitGameDrawing,
+            drawing(),
+            operation: SyncClientOperation(clientID: UUID(), clientSequence: 2)
+        )
 
         let result = try await drawingHandler().send(operation, context: syncContext(environment.pending))
 
@@ -86,7 +101,11 @@ struct GamesPendingOperationTests {
 
     @Test func aPickForAnotherRoundDoesNotHoldTheDrawingBack() async throws {
         try await enqueue(.pickDrawWord, pick(roundID: UUID()), sequence: 1)
-        let operation = try snapshot(.submitGameDrawing, drawing(), operation: SyncClientOperation(clientID: UUID(), clientSequence: 2))
+        let operation = try snapshot(
+            .submitGameDrawing,
+            drawing(),
+            operation: SyncClientOperation(clientID: UUID(), clientSequence: 2)
+        )
 
         let result = try await drawingHandler().send(operation, context: syncContext(environment.pending))
 
@@ -107,7 +126,11 @@ struct GamesPendingOperationTests {
             cache: environment.cache,
             drawingStore: environment.drawingStore
         )
-        let operation = try snapshot(.pickDrawWord, pick(), operation: SyncClientOperation(clientID: UUID(), clientSequence: 2, localCreatedAt: GameFixture.now))
+        let operation = try snapshot(
+            .pickDrawWord,
+            pick(),
+            operation: SyncClientOperation(clientID: UUID(), clientSequence: 2, localCreatedAt: GameFixture.now)
+        )
 
         let waiting = try await handler.send(operation, context: syncContext(environment.pending))
 
@@ -122,7 +145,10 @@ struct GamesPendingOperationTests {
             drawingStore: environment.drawingStore
         )
 
-        let result = try await handler.send(try snapshot(.pickDrawWord, pick()), context: syncContext(environment.pending))
+        let result = try await handler.send(
+            try snapshot(.pickDrawWord, pick()),
+            context: syncContext(environment.pending)
+        )
 
         #expect(result == .succeeded)
         #expect(environment.gateway.pickedWords.map(\.word) == ["umbrella"])
@@ -138,7 +164,10 @@ struct GamesPendingOperationTests {
             drawingStore: environment.drawingStore
         )
 
-        let result = try await handler.send(try snapshot(.pickDrawWord, pick()), context: syncContext(environment.pending))
+        let result = try await handler.send(
+            try snapshot(.pickDrawWord, pick()),
+            context: syncContext(environment.pending)
+        )
 
         guard case .terminalFailure = result else {
             Issue.record("Expected a terminal failure, got \(result)")
@@ -175,12 +204,15 @@ struct GamesPendingOperationTests {
             Issue.record("Expected a terminal failure, got \(result)")
             return
         }
-        #expect(environment.drawingStore.draft(ownerUserID: GameFixture.me, roundID: GameFixture.roundID) == Data([1, 2, 3]))
+        let draft = environment.drawingStore.draft(ownerUserID: GameFixture.me, roundID: GameFixture.roundID)
+        #expect(draft == Data([1, 2, 3]))
         #expect(await environment.cache.takeNotices(ownerUserID: GameFixture.me) == [.drawingRejected])
     }
 
     @Test func aDrawingTheServerAlreadyHasCountsAsSent() async throws {
-        environment.gateway.setSubmitError(.server(code: "23505", message: "the drawing for this round was already sent"))
+        environment.gateway.setSubmitError(
+            .server(code: "23505", message: "the drawing for this round was already sent")
+        )
 
         let result = try await drawingHandler().send(
             try snapshot(.submitGameDrawing, drawing()),
@@ -198,12 +230,24 @@ struct GamesPendingOperationTests {
         try await enqueue(.submitGameDrawing, drawing(), sequence: 2)
         try await enqueue(
             .submitGameGuess,
-            GameGuessPayload(id: UUID(), roundID: GameFixture.roundID, guess: "cat", isCorrect: false, createdAt: GameFixture.now),
+            GameGuessPayload(
+                id: UUID(),
+                roundID: GameFixture.roundID,
+                guess: "cat",
+                isCorrect: false,
+                createdAt: GameFixture.now
+            ),
             sequence: 3
         )
-        try await enqueue(.giveUpGameRound, GameGiveUpPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now), sequence: 4)
+        try await enqueue(
+            .giveUpGameRound,
+            GameGiveUpPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now),
+            sequence: 4
+        )
 
-        let work = try #require(await DrawAndGuessPendingWork.load(from: environment.pending, ownerUserID: GameFixture.me))
+        let work = try #require(
+            await DrawAndGuessPendingWork.load(from: environment.pending, ownerUserID: GameFixture.me)
+        )
 
         #expect(work.pick?.word == "umbrella")
         #expect(work.hasDrawing(roundID: GameFixture.roundID))
@@ -231,7 +275,9 @@ struct GamesPendingOperationTests {
             sequence: 3
         )
 
-        let work = try #require(await DrawAndGuessPendingWork.load(from: environment.pending, ownerUserID: GameFixture.me))
+        let work = try #require(
+            await DrawAndGuessPendingWork.load(from: environment.pending, ownerUserID: GameFixture.me)
+        )
 
         // The last reaction made wins, and a cleared one is a reaction too.
         let reaction = try #require(work.reaction(roundID: GameFixture.roundID))

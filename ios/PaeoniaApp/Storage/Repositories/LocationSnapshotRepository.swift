@@ -58,13 +58,13 @@ extension LocationVisibilitySnapshotPersisting {
     }
 }
 
+// ponytail: kept in memory and keyed by owner and couple. A relaunch loses it,
+// and the outbox check in the live feed covers that case.
 /// Sharing choices the user made on this phone that the server has not
 /// confirmed. The SwiftData repositories share one instance because the map
 /// screen and the live feed each create their own repository. The lock covers
 /// the marker and the store write together, so a server value can never land
 /// between a local choice and its marker.
-// ponytail: kept in memory and keyed by owner and couple. A relaunch loses it,
-// and the outbox check in the live feed covers that case.
 nonisolated final class PendingSharingChoiceLedger: @unchecked Sendable {
     static let shared = PendingSharingChoiceLedger()
 
@@ -140,7 +140,7 @@ protocol OwnLocationSnapshotPersisting: Actor {
     func delete(ownerUserID: UUID, coupleID: UUID) async throws
 }
 
-actor SwiftDataLocationVisibilitySnapshotRepository: LocationVisibilitySnapshotPersisting {
+actor SwiftDataLocationVisibilityRepository: LocationVisibilitySnapshotPersisting {
     private let container: ModelContainer
     private let ledger: PendingSharingChoiceLedger
 
@@ -149,7 +149,7 @@ actor SwiftDataLocationVisibilitySnapshotRepository: LocationVisibilitySnapshotP
         self.ledger = ledger
     }
 
-    func save(_ snapshot: LocationVisibilitySnapshot) async throws {
+    func save(_ snapshot: LocationVisibilitySnapshot) throws {
         let context = ModelContext(container)
         if let existing = try fetch(ownerUserID: snapshot.ownerUserID, coupleID: snapshot.coupleID, in: context) {
             existing.update(from: snapshot)
@@ -163,7 +163,7 @@ actor SwiftDataLocationVisibilitySnapshotRepository: LocationVisibilitySnapshotP
     func saveRemote(
         _ snapshot: LocationVisibilitySnapshot,
         preservingLocalSharingChoiceIf hasPendingSharingOperation: Bool
-    ) async throws {
+    ) throws {
         let key = LocalLocationVisibilitySnapshot.storageKey(
             ownerUserID: snapshot.ownerUserID,
             coupleID: snapshot.coupleID
@@ -189,7 +189,7 @@ actor SwiftDataLocationVisibilitySnapshotRepository: LocationVisibilitySnapshotP
         LocalStoreChanges.post(.locationVisibility, ownerUserID: snapshot.ownerUserID)
     }
 
-    func load(ownerUserID: UUID, coupleID: UUID) async throws -> LocationVisibilitySnapshot? {
+    func load(ownerUserID: UUID, coupleID: UUID) throws -> LocationVisibilitySnapshot? {
         let context = ModelContext(container)
         return try fetch(ownerUserID: ownerUserID, coupleID: coupleID, in: context)?.snapshot
     }
@@ -200,7 +200,7 @@ actor SwiftDataLocationVisibilitySnapshotRepository: LocationVisibilitySnapshotP
         isEnabled: Bool,
         updatedAt: Date,
         isPendingConfirmation: Bool
-    ) async throws {
+    ) throws {
         let key = LocalLocationVisibilitySnapshot.storageKey(ownerUserID: ownerUserID, coupleID: coupleID)
         try ledger.withChoices { choices in
             try applyViewerSharing(
@@ -220,7 +220,7 @@ actor SwiftDataLocationVisibilitySnapshotRepository: LocationVisibilitySnapshotP
         isEnabled: Bool,
         updatedAt: Date,
         otherChoicesPending: Bool
-    ) async throws {
+    ) throws {
         let key = LocalLocationVisibilitySnapshot.storageKey(ownerUserID: ownerUserID, coupleID: coupleID)
         let applied = try ledger.withChoices { choices -> Bool in
             if otherChoicesPending || choices[key].map({ $0 != isEnabled }) == true {
@@ -278,7 +278,7 @@ actor SwiftDataLocationVisibilitySnapshotRepository: LocationVisibilitySnapshotP
         try context.save()
     }
 
-    func delete(ownerUserID: UUID, coupleID: UUID) async throws {
+    func delete(ownerUserID: UUID, coupleID: UUID) throws {
         let key = LocalLocationVisibilitySnapshot.storageKey(ownerUserID: ownerUserID, coupleID: coupleID)
         let deleted = try ledger.withChoices { choices -> Bool in
             choices[key] = nil
@@ -321,7 +321,7 @@ actor SwiftDataOwnLocationSnapshotRepository: OwnLocationSnapshotPersisting {
         self.container = container
     }
 
-    func save(_ snapshot: OwnLocationSnapshot) async throws {
+    func save(_ snapshot: OwnLocationSnapshot) throws {
         let context = ModelContext(container)
         if let existing = try fetch(ownerUserID: snapshot.ownerUserID, coupleID: snapshot.coupleID, in: context) {
             existing.update(from: snapshot)
@@ -332,7 +332,7 @@ actor SwiftDataOwnLocationSnapshotRepository: OwnLocationSnapshotPersisting {
         LocalStoreChanges.post(.ownLocation, ownerUserID: snapshot.ownerUserID)
     }
 
-    func load(ownerUserID: UUID, coupleID: UUID) async throws -> OwnLocationSnapshot? {
+    func load(ownerUserID: UUID, coupleID: UUID) throws -> OwnLocationSnapshot? {
         let context = ModelContext(container)
         return try fetch(ownerUserID: ownerUserID, coupleID: coupleID, in: context)?.snapshot
     }
@@ -341,7 +341,7 @@ actor SwiftDataOwnLocationSnapshotRepository: OwnLocationSnapshotPersisting {
         ownerUserID: UUID,
         coupleID: UUID,
         operationID: UUID
-    ) async throws {
+    ) throws {
         let context = ModelContext(container)
         guard let existing = try fetch(ownerUserID: ownerUserID, coupleID: coupleID, in: context),
               existing.pendingOperationID == operationID
@@ -354,7 +354,7 @@ actor SwiftDataOwnLocationSnapshotRepository: OwnLocationSnapshotPersisting {
         LocalStoreChanges.post(.ownLocation, ownerUserID: ownerUserID)
     }
 
-    func delete(ownerUserID: UUID, coupleID: UUID) async throws {
+    func delete(ownerUserID: UUID, coupleID: UUID) throws {
         let context = ModelContext(container)
         if let existing = try fetch(ownerUserID: ownerUserID, coupleID: coupleID, in: context) {
             context.delete(existing)
@@ -376,154 +376,5 @@ actor SwiftDataOwnLocationSnapshotRepository: OwnLocationSnapshotPersisting {
         )
         descriptor.fetchLimit = 1
         return try context.fetch(descriptor).first
-    }
-}
-
-actor InMemoryLocationVisibilitySnapshotRepository: LocationVisibilitySnapshotPersisting {
-    private var snapshots: [String: LocationVisibilitySnapshot] = [:]
-    private var pendingChoices: [String: Bool] = [:]
-
-    func save(_ snapshot: LocationVisibilitySnapshot) async throws {
-        snapshots[key(ownerUserID: snapshot.ownerUserID, coupleID: snapshot.coupleID)] = snapshot
-        LocalStoreChanges.post(.locationVisibility, ownerUserID: snapshot.ownerUserID)
-    }
-
-    func saveRemote(
-        _ snapshot: LocationVisibilitySnapshot,
-        preservingLocalSharingChoiceIf hasPendingSharingOperation: Bool
-    ) async throws {
-        let snapshotKey = key(ownerUserID: snapshot.ownerUserID, coupleID: snapshot.coupleID)
-        let merged = snapshot.mergingRemote(
-            local: snapshots[snapshotKey],
-            pendingChoice: pendingChoices[snapshotKey],
-            hasPendingSharingOperation: hasPendingSharingOperation
-        )
-        snapshots[snapshotKey] = merged.snapshot
-        pendingChoices[snapshotKey] = merged.pendingChoice
-        LocalStoreChanges.post(.locationVisibility, ownerUserID: snapshot.ownerUserID)
-    }
-
-    func load(ownerUserID: UUID, coupleID: UUID) async throws -> LocationVisibilitySnapshot? {
-        snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)]
-    }
-
-    func setViewerSharingEnabled(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        isEnabled: Bool,
-        updatedAt: Date,
-        isPendingConfirmation: Bool
-    ) async throws {
-        applyViewerSharing(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            isEnabled: isEnabled,
-            updatedAt: updatedAt
-        )
-        pendingChoices[key(ownerUserID: ownerUserID, coupleID: coupleID)] = isPendingConfirmation ? isEnabled : nil
-        LocalStoreChanges.post(.locationVisibility, ownerUserID: ownerUserID)
-    }
-
-    func confirmViewerSharing(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        isEnabled: Bool,
-        updatedAt: Date,
-        otherChoicesPending: Bool
-    ) async throws {
-        let snapshotKey = key(ownerUserID: ownerUserID, coupleID: coupleID)
-        if otherChoicesPending || pendingChoices[snapshotKey].map({ $0 != isEnabled }) == true {
-            return
-        }
-        applyViewerSharing(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            isEnabled: isEnabled,
-            updatedAt: updatedAt
-        )
-        pendingChoices[snapshotKey] = nil
-        LocalStoreChanges.post(.locationVisibility, ownerUserID: ownerUserID)
-    }
-
-    private func applyViewerSharing(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        isEnabled: Bool,
-        updatedAt: Date
-    ) {
-        let existing = snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)]
-        let nextState: PartnerLocationVisibilityState
-        if !isEnabled {
-            nextState = .disabled
-        } else if existing?.visibilityState == .disabled {
-            nextState = .unknown("local")
-        } else {
-            nextState = existing?.visibilityState ?? .unknown("local")
-        }
-        snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)] = LocationVisibilitySnapshot(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            viewerUserID: existing?.viewerUserID ?? ownerUserID,
-            partnerUserID: existing?.partnerUserID,
-            visibilityState: nextState,
-            viewerSharingEnabled: isEnabled,
-            partnerSharingEnabled: existing?.partnerSharingEnabled ?? false,
-            partnerLocation: existing?.partnerLocation,
-            partnerLocationIsStale: existing?.partnerLocationIsStale ?? false,
-            updatedAt: updatedAt,
-            refreshedAt: updatedAt
-        )
-    }
-
-    func delete(ownerUserID: UUID, coupleID: UUID) async throws {
-        snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)] = nil
-        pendingChoices[key(ownerUserID: ownerUserID, coupleID: coupleID)] = nil
-        LocalStoreChanges.post(.locationVisibility, ownerUserID: ownerUserID)
-    }
-
-    private func key(ownerUserID: UUID, coupleID: UUID) -> String {
-        LocalLocationVisibilitySnapshot.storageKey(ownerUserID: ownerUserID, coupleID: coupleID)
-    }
-}
-
-actor InMemoryOwnLocationSnapshotRepository: OwnLocationSnapshotPersisting {
-    private var snapshots: [String: OwnLocationSnapshot] = [:]
-
-    func save(_ snapshot: OwnLocationSnapshot) async throws {
-        snapshots[key(ownerUserID: snapshot.ownerUserID, coupleID: snapshot.coupleID)] = snapshot
-        LocalStoreChanges.post(.ownLocation, ownerUserID: snapshot.ownerUserID)
-    }
-
-    func load(ownerUserID: UUID, coupleID: UUID) async throws -> OwnLocationSnapshot? {
-        snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)]
-    }
-
-    func clearPendingOperation(
-        ownerUserID: UUID,
-        coupleID: UUID,
-        operationID: UUID
-    ) async throws {
-        let snapshotKey = key(ownerUserID: ownerUserID, coupleID: coupleID)
-        guard let existing = snapshots[snapshotKey], existing.pendingOperationID == operationID else {
-            return
-        }
-        snapshots[snapshotKey] = OwnLocationSnapshot(
-            ownerUserID: existing.ownerUserID,
-            coupleID: existing.coupleID,
-            location: existing.location,
-            source: existing.source,
-            pendingOperationID: nil,
-            updatedAt: Date()
-        )
-        LocalStoreChanges.post(.ownLocation, ownerUserID: ownerUserID)
-    }
-
-    func delete(ownerUserID: UUID, coupleID: UUID) async throws {
-        snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)] = nil
-        LocalStoreChanges.post(.ownLocation, ownerUserID: ownerUserID)
-    }
-
-    private func key(ownerUserID: UUID, coupleID: UUID) -> String {
-        LocalOwnLocationSnapshot.storageKey(ownerUserID: ownerUserID, coupleID: coupleID)
     }
 }

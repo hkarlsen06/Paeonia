@@ -246,35 +246,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     }
 
     func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) async {
-        if scope == .relationshipAccessHidden {
-            await widgetSync.hideForPrivacy()
-            await widgetCanvas.hideForPrivacy()
-        } else {
-            await widgetSync.clearForPrivacy()
-            await widgetCanvas.clearForPrivacy()
-        }
-        await partnerAvatar?.clear()
-        await dailyAnswerMediaCache?.clearAll()
-        await memoryMediaCache?.clearAll()
-        await profilePhotoCache?.clearAll()
-
-        dailyChallengeSnapshotCache.clearAll()
-        await dailyQuestionChatCache.clearAll()
-        await gamesCache.clearAll()
-        await storyChainCache.clearAll()
-        await mindMeldCache.clearAll()
-        await heartsCache.clearAll()
-        await coupleDatesCache.clearAll()
-        await exquisiteCorpseCache.clearAll()
-        await boardGamesCache.clearAll()
-        lookBackCache.clearAll()
-        BoardMarkRenderer.removeAll()
-        MemoryImageDecoding.removeAll()
-        gameDrawingStore.purge(for: scope)
-        try? await profilePhotoDiskCache.removeAllProfilePhotoData()
-        removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())
-        removeDirectoryIfPresent(MemoryMediaImageService.defaultDirectoryURL())
-        removePartnerAvatarIfPresent()
+        await purgeWidgetsAndMediaCaches(scope: scope)
+        await purgeContentCaches(scope: scope)
 
         WidgetSyncIdentityStore.shared.clear()
         WidgetCanvasSyncService.clearPersistedState()
@@ -305,6 +278,40 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
                 PushRegistrationFingerprintStore.resetAll()
             }
         }
+    }
+
+    private func purgeWidgetsAndMediaCaches(scope: LocalPrivacyPurgeScope) async {
+        if scope == .relationshipAccessHidden {
+            await widgetSync.hideForPrivacy()
+            await widgetCanvas.hideForPrivacy()
+        } else {
+            await widgetSync.clearForPrivacy()
+            await widgetCanvas.clearForPrivacy()
+        }
+        await partnerAvatar?.clear()
+        await dailyAnswerMediaCache?.clearAll()
+        await memoryMediaCache?.clearAll()
+        await profilePhotoCache?.clearAll()
+    }
+
+    private func purgeContentCaches(scope: LocalPrivacyPurgeScope) async {
+        dailyChallengeSnapshotCache.clearAll()
+        await dailyQuestionChatCache.clearAll()
+        await gamesCache.clearAll()
+        await storyChainCache.clearAll()
+        await mindMeldCache.clearAll()
+        await heartsCache.clearAll()
+        await coupleDatesCache.clearAll()
+        await exquisiteCorpseCache.clearAll()
+        await boardGamesCache.clearAll()
+        lookBackCache.clearAll()
+        BoardMarkRenderer.removeAll()
+        MemoryImageDecoding.removeAll()
+        gameDrawingStore.purge(for: scope)
+        try? await profilePhotoDiskCache.removeAllProfilePhotoData()
+        removeDirectoryIfPresent(DailyAnswerMediaImageService.defaultDirectoryURL())
+        removeDirectoryIfPresent(MemoryMediaImageService.defaultDirectoryURL())
+        removePartnerAvatarIfPresent()
     }
 
     private func removeDirectoryIfPresent(_ url: URL) {

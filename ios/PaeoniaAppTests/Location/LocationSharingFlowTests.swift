@@ -13,7 +13,7 @@ struct LocationSharingFlowTests {
     /// dropped silently (the switch snapped back on), and the refresh then
     /// queued the location anyway.
     @Test func turningSharingOffWinsOverARefreshWaitingForGPS() async throws {
-        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        let visibilityStore = InMemoryLocationVisibilityRepository()
         let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
         let pendingStore = InMemoryPendingSyncOperationRepository()
         try await visibilityStore.setViewerSharingEnabled(
@@ -102,7 +102,7 @@ struct LocationSharingFlowTests {
 
     /// Opening the app indoors must not raise an error banner every time.
     @Test func automaticRefreshFailureIsQuietButManualRefreshExplains() async throws {
-        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        let visibilityStore = InMemoryLocationVisibilityRepository()
         try await visibilityStore.setViewerSharingEnabled(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
@@ -206,7 +206,7 @@ struct LocationSharingFlowTests {
     private func sharingViewModel(
         pendingStore: InMemoryPendingSyncOperationRepository
     ) async throws -> LocationMapViewModel {
-        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        let visibilityStore = InMemoryLocationVisibilityRepository()
         try await visibilityStore.setViewerSharingEnabled(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
@@ -221,7 +221,7 @@ struct LocationSharingFlowTests {
     }
 
     private func makeViewModel(
-        visibilityStore: InMemoryLocationVisibilitySnapshotRepository = InMemoryLocationVisibilitySnapshotRepository(),
+        visibilityStore: InMemoryLocationVisibilityRepository = InMemoryLocationVisibilityRepository(),
         ownLocationStore: InMemoryOwnLocationSnapshotRepository = InMemoryOwnLocationSnapshotRepository(),
         pendingStore: InMemoryPendingSyncOperationRepository = InMemoryPendingSyncOperationRepository(),
         capture: ControlledLocationCapture
@@ -398,7 +398,7 @@ extension LocationSharingFlowTests {
     // MARK: - Live feed while open
 
     @Test func liveFeedSendsAMoveButNotTheSameSpotAgain() async throws {
-        let visibilityStore = InMemoryLocationVisibilitySnapshotRepository()
+        let visibilityStore = InMemoryLocationVisibilityRepository()
         let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
         try await visibilityStore.setViewerSharingEnabled(
             ownerUserID: ownerUserID,

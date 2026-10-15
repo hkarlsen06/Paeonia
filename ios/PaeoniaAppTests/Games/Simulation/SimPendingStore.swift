@@ -62,7 +62,10 @@ actor SimPendingStore: PendingSyncOperationPersisting {
         try await base.nextPendingOperationDate(ownerUserID: ownerUserID, now: now)
     }
 
-    func inFlightOperations(ownerUserID: UUID, kind: SyncPendingOperationKind) async throws -> [PendingSyncOperationSnapshot] {
+    func inFlightOperations(
+        ownerUserID: UUID,
+        kind: SyncPendingOperationKind
+    ) async throws -> [PendingSyncOperationSnapshot] {
         try await base.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
     }
 
@@ -90,7 +93,11 @@ actor SimPendingStore: PendingSyncOperationPersisting {
     }
 
     func markTerminalFailure(clientOperationID: UUID, errorDescription: String, at date: Date) async throws {
-        try await base.markTerminalFailure(clientOperationID: clientOperationID, errorDescription: errorDescription, at: date)
+        try await base.markTerminalFailure(
+            clientOperationID: clientOperationID,
+            errorDescription: errorDescription,
+            at: date
+        )
         entries[clientOperationID]?.outcome = .terminal(errorDescription)
     }
 
@@ -116,7 +123,9 @@ actor SimPendingStore: PendingSyncOperationPersisting {
         var parts: [String] = []
         for kind in gameKinds {
             let operations = (try? await base.inFlightOperations(ownerUserID: ownerUserID, kind: kind)) ?? []
-            parts += operations.map { "\($0.operation.id.uuidString.prefix(6)):\($0.status.rawValue):\($0.attemptCount)" }
+            parts += operations.map {
+                "\($0.operation.id.uuidString.prefix(6)):\($0.status.rawValue):\($0.attemptCount)"
+            }
         }
         return parts.joined(separator: ",") + "#\(order.count)"
     }

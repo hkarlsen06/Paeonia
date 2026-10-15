@@ -279,9 +279,9 @@ struct DailyChatReceiptAndTypingRowTests {
     }
 
     @Test func photosFitAFixedFrame() {
-        #expect(DailyChatPhotoLayout.frameSize(for: DailyQuestionChatPhoto(width: 4000, height: 3000))
+        #expect(DailyChatPhotoLayout.frameSize(for: DailyQuestionChatPhoto(width: 4_000, height: 3_000))
             == CGSize(width: 220, height: 165))
-        #expect(DailyChatPhotoLayout.frameSize(for: DailyQuestionChatPhoto(width: 1000, height: 4000))
+        #expect(DailyChatPhotoLayout.frameSize(for: DailyQuestionChatPhoto(width: 1_000, height: 4_000))
             == CGSize(width: 120, height: 220))
         #expect(DailyChatPhotoLayout.frameSize(for: DailyQuestionChatPhoto()) == CGSize(width: 180, height: 180))
     }
@@ -297,22 +297,25 @@ struct DailyChatPresenceModelTests {
         private(set) var typingCalls: [Bool] = []
         private(set) var readMarks: [UUID] = []
 
-        func setTyping(coupleID _: UUID, questionID _: UUID, isTyping: Bool) async { typingCalls.append(isTyping) }
-        func markThreadReadOnServer(threadID _: UUID, messageID: UUID) async { readMarks.append(messageID) }
+        func setTyping(coupleID _: UUID, questionID _: UUID, isTyping: Bool) { typingCalls.append(isTyping) }
+        func markThreadReadOnServer(threadID _: UUID, messageID: UUID) { readMarks.append(messageID) }
 
-        func cachedThreadSummaries(ownerUserID _: UUID) async -> [DailyQuestionThreadSummary] { [] }
-        func refreshThreadSummaries(ownerUserID _: UUID) async throws -> [DailyQuestionThreadSummary] { [] }
-        func cachedMessages(ownerUserID _: UUID, questionID _: UUID) async -> [DailyQuestionChatMessage] { [] }
-        func refreshMessages(ownerUserID _: UUID, questionID _: UUID, threadID _: UUID) async throws
+        func cachedThreadSummaries(ownerUserID _: UUID) -> [DailyQuestionThreadSummary] { [] }
+        func refreshThreadSummaries(ownerUserID _: UUID) throws -> [DailyQuestionThreadSummary] { [] }
+        func cachedMessages(ownerUserID _: UUID, questionID _: UUID) -> [DailyQuestionChatMessage] { [] }
+        func refreshMessages(ownerUserID _: UUID, questionID _: UUID, threadID _: UUID) throws
             -> [DailyQuestionChatMessage] { [] }
-        func pendingMessages(ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID) async -> [DailyQuestionChatMessage] { [] }
-        func hasPendingThreadCreation(ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID) async -> Bool { false }
-        func discardFailedMessage(ownerUserID _: UUID, clientOperationID _: UUID) async {}
+        func pendingMessages(
+            ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID
+        ) -> [DailyQuestionChatMessage] { [] }
+        func hasPendingThreadCreation(ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID) -> Bool { false }
+        func discardFailedMessage(ownerUserID _: UUID, clientOperationID _: UUID) {}
+        // swiftlint:disable:next function_parameter_count
         func queueMessage(
             ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID, threadID _: UUID?, body _: String,
             photos _: DailyQuestionChatPhotosPayload?, createThread _: Bool, replyToMessageID _: UUID?,
             operation _: SyncClientOperation
-        ) async throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
+        ) throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
     }
 
     private func settle() async {
@@ -377,9 +380,7 @@ struct DailyChatPresenceModelTests {
 
 @MainActor
 struct DailyChatRowGestureAreaTests {
-    /// Lays a row out in a phone-sized window and returns the width of each swipe area.
-    private func swipeAreaWidths(for body: String) async throws -> (reply: CGFloat, times: CGFloat) {
-        let me = UUID()
+    private func makeRow(body: String, me: UUID) -> DailyChatRow {
         let message = DailyQuestionChatMessage(
             id: UUID(),
             threadID: UUID(),
@@ -390,7 +391,7 @@ struct DailyChatRowGestureAreaTests {
             clientOperationID: nil,
             isSending: false
         )
-        let row = DailyChatRow(
+        return DailyChatRow(
             id: message.id.uuidString,
             kind: .message(message),
             isCurrentUser: true,
@@ -399,7 +400,10 @@ struct DailyChatRowGestureAreaTests {
             status: nil,
             quotedPreview: nil
         )
-        let view = DailyChatMessageRow(
+    }
+
+    private func makeMessageRowView(for row: DailyChatRow, me: UUID) -> DailyChatMessageRow {
+        DailyChatMessageRow(
             row: row,
             participants: DailyChallengeParticipants(currentUserID: me, partnerDisplayName: "Oda"),
             isHighlighted: false,
@@ -409,6 +413,12 @@ struct DailyChatRowGestureAreaTests {
             timestampRevealOffset: .constant(0),
             messageFrame: nil
         )
+    }
+
+    /// Lays a row out in a phone-sized window and returns the width of each swipe area.
+    private func swipeAreaWidths(for body: String) async throws -> (reply: CGFloat, times: CGFloat) {
+        let me = UUID()
+        let view = makeMessageRowView(for: makeRow(body: body, me: me), me: me)
         let scene = try #require(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let window = UIWindow(windowScene: scene)
         window.frame = CGRect(x: 0, y: 0, width: 393, height: 200)

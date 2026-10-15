@@ -211,6 +211,10 @@ struct PairedHomeView: View {
         }
     }
 
+}
+
+/// The cards `body` lays out.
+extension PairedHomeView {
     @ViewBuilder
     private var unreadChatsCard: some View {
         if !unreadChats.isEmpty {

@@ -5,9 +5,9 @@ extension DailyChallengeViewModel {
     /// sending" preview survives relaunch and clears once the send lands. Any
     /// combination can be present (e.g. a photo with a caption).
     struct SendingAnswer: Equatable {
-        var text: String? = nil
-        var partnerChoiceUserID: UUID? = nil
-        var media: Media? = nil
+        var text: String?
+        var partnerChoiceUserID: UUID?
+        var media: Media?
         /// A try to send it failed, so it may stay on this phone a while.
         var isHeldOnPhone = false
 

@@ -121,12 +121,12 @@ struct DailyChallengeSnapshotCacheTests {
         #expect(loaded.streak?.lastQualifiedDate == row.streak?.lastQualifiedDate)
 
         // Question fields that must survive the round-trip
-        let q = try #require(loaded.questions.first)
-        #expect(q.instanceID == row.questions[0].instanceID)
-        #expect(q.promptEN == row.questions[0].promptEN)
-        #expect(q.answerKinds == row.questions[0].answerKinds)
-        #expect(q.startsAt == row.questions[0].startsAt)
-        #expect(q.isCurrentDay == row.questions[0].isCurrentDay)
+        let question = try #require(loaded.questions.first)
+        #expect(question.instanceID == row.questions[0].instanceID)
+        #expect(question.promptEN == row.questions[0].promptEN)
+        #expect(question.answerKinds == row.questions[0].answerKinds)
+        #expect(question.startsAt == row.questions[0].startsAt)
+        #expect(question.isCurrentDay == row.questions[0].isCurrentDay)
     }
 
     @Test func loadForDifferentOwnerReturnsNil() {
@@ -466,96 +466,6 @@ private func makeSeedTestSnapshot(
         locale: Locale(identifier: "en_US"),
         refreshedAt: CacheTestIDs.generatedAt
     )
-}
-
-/// A `DailyChallengeServicing` that blocks its `loadToday` until `release()` is
-/// called, letting the test observe the view model's state between the cache seed
-/// and the network return.
-private actor BlockingDailyChallengeService: DailyChallengeServicing {
-    private let snapshot: DailyChallengeSnapshot
-    private let probe: DailyChallengeViewModelSeedProbe
-    private(set) var loadCount = 0
-
-    init(snapshot: DailyChallengeSnapshot, probe: DailyChallengeViewModelSeedProbe) {
-        self.snapshot = snapshot
-        self.probe = probe
-    }
-
-    func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
-        loadCount += 1
-        await probe.blockUntilReleased()
-        return DailyChallengeLoadResult(snapshot: snapshot, streak: .none)
-    }
-
-    func startToday(currentUserID: UUID, operation _: SyncClientOperation) async throws -> DailyChallengeLoadResult {
-        DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
-    }
-
-    func loadHistory(currentUserID _: UUID) async throws -> [DailyChallengeQuestion] { [] }
-
-    func loadStreak() async throws -> CoupleStreak { .none }
-
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) async throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
-    func editPartnerChoice(instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation) async throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
-    func shuffleQuestion(currentUserID: UUID, slotNumber _: Int, operation _: SyncClientOperation) async throws -> DailyChallengeLoadResult {
-        DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
-    }
-}
-
-/// A `DailyChallengeServicing` that returns immediately with a fixed snapshot.
-private actor ImmediateDailyChallengeService: DailyChallengeServicing {
-    private let snapshot: DailyChallengeSnapshot
-
-    init(snapshot: DailyChallengeSnapshot) {
-        self.snapshot = snapshot
-    }
-
-    func loadToday(currentUserID _: UUID) async throws -> DailyChallengeLoadResult {
-        DailyChallengeLoadResult(snapshot: snapshot, streak: .none)
-    }
-
-    func startToday(currentUserID: UUID, operation _: SyncClientOperation) async throws -> DailyChallengeLoadResult {
-        DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
-    }
-
-    func loadHistory(currentUserID _: UUID) async throws -> [DailyChallengeQuestion] { [] }
-
-    func loadStreak() async throws -> CoupleStreak { .none }
-
-    func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation) async throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
-    func editPartnerChoice(instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation) async throws -> UUID {
-        throw DailyChallengeServiceUnavailableError()
-    }
-
-    func shuffleQuestion(currentUserID: UUID, slotNumber _: Int, operation _: SyncClientOperation) async throws -> DailyChallengeLoadResult {
-        DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
-    }
-}
-
-/// Lets a test block `BlockingDailyChallengeService.loadToday` until `release()`
-/// is explicitly called, enabling observation of the cache-seeded state while the
-/// network is still in flight.
-private actor DailyChallengeViewModelSeedProbe {
-    private var released = false
-
-    func blockUntilReleased() async {
-        while !released {
-            await Task.yield()
-        }
-    }
-
-    func release() {
-        released = true
-    }
 }
 
 /// A minimal `SyncClientOperationProviding` for tests that don't exercise queuing.

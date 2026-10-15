@@ -100,7 +100,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         self.container = container
     }
 
-    func enqueue(_ request: PendingSyncOperationRequest) async throws {
+    func enqueue(_ request: PendingSyncOperationRequest) throws {
         let context = ModelContext(container)
 
         if try fetchOperation(id: request.operation.id, in: context) != nil {
@@ -125,7 +125,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         ownerUserID: UUID,
         limit: Int,
         now: Date
-    ) async throws -> [PendingSyncOperationSnapshot] {
+    ) throws -> [PendingSyncOperationSnapshot] {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
@@ -153,7 +153,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         return operations.map(Self.snapshot(from:))
     }
 
-    func nextPendingOperationDate(ownerUserID: UUID, now: Date) async throws -> Date? {
+    func nextPendingOperationDate(ownerUserID: UUID, now: Date) throws -> Date? {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
@@ -178,7 +178,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
     func inFlightOperations(
         ownerUserID: UUID,
         kind: SyncPendingOperationKind
-    ) async throws -> [PendingSyncOperationSnapshot] {
+    ) throws -> [PendingSyncOperationSnapshot] {
         let context = ModelContext(container)
         let kindRawValue = kind.rawValue
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
@@ -203,7 +203,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             .map(Self.snapshot(from:))
     }
 
-    func markSending(clientOperationID: UUID, at date: Date) async throws {
+    func markSending(clientOperationID: UUID, at date: Date) throws {
         let context = ModelContext(container)
         // The batch was read earlier. An operation cancelled, finished, or purged
         // since then must not be sent.
@@ -218,7 +218,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
     }
 
-    func markSucceeded(clientOperationID: UUID, at date: Date) async throws {
+    func markSucceeded(clientOperationID: UUID, at date: Date) throws {
         try update(clientOperationID: clientOperationID) { operation in
             operation.markSucceeded(at: date)
         }
@@ -229,7 +229,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         errorDescription: String,
         nextRetryAt: Date?,
         at date: Date
-    ) async throws {
+    ) throws {
         try update(clientOperationID: clientOperationID) { operation in
             operation.markRetryableFailure(
                 errorDescription,
@@ -243,13 +243,13 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         clientOperationID: UUID,
         errorDescription: String,
         at date: Date
-    ) async throws {
+    ) throws {
         try update(clientOperationID: clientOperationID) { operation in
             operation.markTerminalFailure(errorDescription, at: date)
         }
     }
 
-    func deleteCompleted(ownerUserID: UUID) async throws {
+    func deleteCompleted(ownerUserID: UUID) throws {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
@@ -267,7 +267,7 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
     }
 
-    func resetInFlight(ownerUserID: UUID) async throws {
+    func resetInFlight(ownerUserID: UUID) throws {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalPendingSyncOperation>(
             predicate: #Predicate { operation in
@@ -327,228 +327,6 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
             nextRetryAt: operation.nextRetryAt,
             lastError: operation.lastError,
             completedAt: operation.completedAt
-        )
-    }
-}
-
-actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
-    private var operations: [UUID: PendingSyncOperationSnapshot] = [:]
-
-    func enqueue(_ request: PendingSyncOperationRequest) async throws {
-        defer { LocalStoreChanges.post(.pendingOperations, ownerUserID: request.ownerUserID) }
-        operations[request.operation.id] = operations[request.operation.id] ?? PendingSyncOperationSnapshot(
-            ownerUserID: request.ownerUserID,
-            operation: request.operation,
-            operationKind: request.operationKind,
-            idempotencyScope: request.idempotencyScope,
-            requestHash: request.requestHash,
-            requestData: request.requestData,
-            status: .queued,
-            attemptCount: 0,
-            lastAttemptAt: nil,
-            nextRetryAt: nil,
-            lastError: nil,
-            completedAt: nil
-        )
-    }
-
-    func readyOperations(
-        ownerUserID: UUID,
-        limit: Int,
-        now: Date
-    ) async throws -> [PendingSyncOperationSnapshot] {
-        operations.values
-            .filter { operation in
-                guard operation.ownerUserID == ownerUserID else {
-                    return false
-                }
-
-                switch operation.status {
-                case .queued, .retrying:
-                    return true
-                case .failedRetryable:
-                    return operation.nextRetryAt.map { $0 <= now } ?? true
-                case .sending, .failedTerminal, .succeeded:
-                    return false
-                }
-            }
-            .sorted {
-                if $0.operation.localCreatedAt == $1.operation.localCreatedAt {
-                    return $0.operation.clientSequence < $1.operation.clientSequence
-                }
-
-                return $0.operation.localCreatedAt < $1.operation.localCreatedAt
-            }
-            .prefix(limit)
-            .map { $0 }
-    }
-
-    func nextPendingOperationDate(ownerUserID: UUID, now: Date) async throws -> Date? {
-        operations.values
-            .filter { $0.ownerUserID == ownerUserID }
-            .compactMap { operation -> Date? in
-                switch operation.status {
-                case .retrying:
-                    return now
-                case .failedRetryable:
-                    return operation.nextRetryAt ?? now
-                case .queued, .sending, .failedTerminal, .succeeded:
-                    return nil
-                }
-            }
-            .min()
-    }
-
-    func inFlightOperations(
-        ownerUserID: UUID,
-        kind: SyncPendingOperationKind
-    ) async throws -> [PendingSyncOperationSnapshot] {
-        operations.values
-            .filter { $0.ownerUserID == ownerUserID && $0.operationKind == kind }
-            .filter { operation in
-                switch operation.status {
-                case .queued, .sending, .retrying, .failedRetryable:
-                    return true
-                case .failedTerminal, .succeeded:
-                    return false
-                }
-            }
-            .sorted {
-                if $0.operation.localCreatedAt == $1.operation.localCreatedAt {
-                    return $0.operation.clientSequence < $1.operation.clientSequence
-                }
-                return $0.operation.localCreatedAt < $1.operation.localCreatedAt
-            }
-    }
-
-    func markSending(clientOperationID: UUID, at date: Date) async throws {
-        guard let status = operations[clientOperationID]?.status,
-              status != .failedTerminal,
-              status != .succeeded
-        else {
-            throw PendingSyncOperationClaimError.notPending
-        }
-        update(id: clientOperationID) { operation in
-            snapshot(
-                from: operation,
-                status: .sending,
-                attemptCount: operation.attemptCount + 1,
-                lastAttemptAt: date,
-                nextRetryAt: operation.nextRetryAt,
-                lastError: nil,
-                completedAt: operation.completedAt
-            )
-        }
-    }
-
-    func markSucceeded(clientOperationID: UUID, at date: Date) async throws {
-        update(id: clientOperationID) { operation in
-            snapshot(
-                from: operation,
-                status: .succeeded,
-                attemptCount: operation.attemptCount,
-                lastAttemptAt: date,
-                nextRetryAt: nil,
-                lastError: nil,
-                completedAt: date
-            )
-        }
-    }
-
-    func markRetryableFailure(
-        clientOperationID: UUID,
-        errorDescription: String,
-        nextRetryAt: Date?,
-        at date: Date
-    ) async throws {
-        update(id: clientOperationID) { operation in
-            snapshot(
-                from: operation,
-                status: .failedRetryable,
-                attemptCount: operation.attemptCount,
-                lastAttemptAt: date,
-                nextRetryAt: nextRetryAt,
-                lastError: errorDescription,
-                completedAt: operation.completedAt
-            )
-        }
-    }
-
-    func markTerminalFailure(
-        clientOperationID: UUID,
-        errorDescription: String,
-        at date: Date
-    ) async throws {
-        update(id: clientOperationID) { operation in
-            snapshot(
-                from: operation,
-                status: .failedTerminal,
-                attemptCount: operation.attemptCount,
-                lastAttemptAt: date,
-                nextRetryAt: operation.nextRetryAt,
-                lastError: errorDescription,
-                completedAt: operation.completedAt
-            )
-        }
-    }
-
-    func deleteCompleted(ownerUserID: UUID) async throws {
-        operations = operations.filter {
-            $0.value.ownerUserID != ownerUserID || $0.value.status != .succeeded
-        }
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
-    }
-
-    func resetInFlight(ownerUserID: UUID) async throws {
-        for operation in operations.values
-            where operation.ownerUserID == ownerUserID && operation.status == .sending {
-            operations[operation.operation.id] = snapshot(
-                from: operation,
-                status: .retrying,
-                attemptCount: operation.attemptCount,
-                lastAttemptAt: operation.lastAttemptAt,
-                nextRetryAt: operation.nextRetryAt,
-                lastError: operation.lastError,
-                completedAt: operation.completedAt
-            )
-        }
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
-    }
-
-    private func update(
-        id: UUID,
-        transform: (PendingSyncOperationSnapshot) -> PendingSyncOperationSnapshot
-    ) {
-        guard let operation = operations[id] else {
-            return
-        }
-
-        operations[id] = transform(operation)
-        LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
-    }
-
-    private func snapshot(
-        from operation: PendingSyncOperationSnapshot,
-        status: SyncPendingOperationStatus,
-        attemptCount: Int,
-        lastAttemptAt: Date?,
-        nextRetryAt: Date?,
-        lastError: String?,
-        completedAt: Date?
-    ) -> PendingSyncOperationSnapshot {
-        PendingSyncOperationSnapshot(
-            ownerUserID: operation.ownerUserID,
-            operation: operation.operation,
-            operationKind: operation.operationKind,
-            idempotencyScope: operation.idempotencyScope,
-            requestHash: operation.requestHash,
-            requestData: operation.requestData,
-            status: status,
-            attemptCount: attemptCount,
-            lastAttemptAt: lastAttemptAt,
-            nextRetryAt: nextRetryAt,
-            lastError: lastError,
-            completedAt: completedAt
         )
     }
 }

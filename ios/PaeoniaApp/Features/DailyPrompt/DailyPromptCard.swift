@@ -10,8 +10,10 @@ extension EnvironmentValues {
 ///
 /// While there is something to do (and while the questions load) it is the picture card
 /// with the sealed envelope (`DailyPromptHeroCard`). Once today's questions are done it is
-/// a short row (`DailyPromptCompactCard`). When the last answer comes in while the person
-/// is looking, the seal breaks first and then the card shrinks (see `playMoment`).
+/// a short row (`DailyPromptCompactCard`). When the last answer comes in, the seal breaks
+/// first and then the card shrinks (see `playMoment`). If the card is out of sight then,
+/// such as when the flow closes onto the Questions tab, the moment plays when it is next
+/// seen.
 ///
 /// The card is the source the answering flow zooms out of; its parent marks it with
 /// `.matchedTransitionSource`, so the card itself appears to grow into the full-screen
@@ -32,7 +34,8 @@ struct DailyPromptCard: View {
 
     private enum MomentPhase {
         case idle
-        /// The card is complete but still looks active. It waits for the flow to close.
+        /// The card is complete but still looks active. It waits until it is in sight
+        /// with the flow closed.
         case waiting
         /// The seal is breaking.
         case breaking
@@ -91,20 +94,20 @@ struct DailyPromptCard: View {
             }
         }
         .onChange(of: state, initial: true) { _, new in observe(new) }
-        .onChange(of: flowIsPresented) { _, isPresented in
-            guard phase == .waiting else { return }
-            if isPresented {
-                momentTask?.cancel()
-            } else {
-                scheduleMoment()
-            }
+        .onChange(of: flowIsPresented) { scheduleMomentIfSeen() }
+        .onChange(of: scenePhase) { scheduleMomentIfSeen() }
+        .onAppear {
+            isOnScreen = true
+            scheduleMomentIfSeen()
         }
-        .onAppear { isOnScreen = true }
         .onDisappear {
             isOnScreen = false
-            // Nobody sees the moment from another tab, so show the finished card.
-            if phase != .idle {
+            // A moment that already started finishes at once. One still waiting keeps
+            // waiting for the card to come back.
+            if phase == .breaking {
                 endMoment()
+            } else {
+                momentTask?.cancel()
             }
         }
         .sensoryFeedback(.impact(weight: .medium), trigger: sealBreaks)
@@ -122,26 +125,34 @@ struct DailyPromptCard: View {
                 beginMoment()
             }
         } else if phase != .idle {
-            // The day changed before the moment played.
+            // The day changed before the moment played. Ending it clears the hold, so
+            // the new day's state is noted again.
             endMoment()
+            hold.observe(new)
         }
     }
 
-    /// The last answer came in. Plays the moment only for someone who is looking at the
-    /// card. Anyone else, such as a person on another tab, gets the finished card.
+    /// The last answer came in. The answer flow is usually still open, and it often closes
+    /// onto the Questions tab, so the card keeps its sealed look until the person sees it.
     private func beginMoment() {
-        guard isOnScreen, scenePhase == .active else {
-            hold.release()
+        phase = .waiting
+        scheduleMomentIfSeen()
+    }
+
+    /// Starts a waiting moment once the card is in sight with the flow closed and the app
+    /// in front. Otherwise it holds off, and a later appear, flow close or return to the
+    /// app tries again.
+    private func scheduleMomentIfSeen() {
+        guard phase == .waiting else { return }
+        guard isOnScreen, !flowIsPresented, scenePhase == .active else {
+            momentTask?.cancel()
             return
         }
-        phase = .waiting
-        // The answer flow is usually still open. The moment waits until it has closed.
-        if !flowIsPresented {
-            scheduleMoment()
-        }
+        scheduleMoment()
     }
 
-    /// Waits for the flow's zoom back to land on the card, so the person sees the seal break.
+    /// Waits for the flow's zoom back or the tab switch to land on the card, so the person
+    /// sees the seal break.
     private func scheduleMoment() {
         momentTask?.cancel()
         momentTask = Task {

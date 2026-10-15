@@ -66,7 +66,7 @@ actor SwiftDataSyncStateRepository: SyncStatePersisting {
         ownerUserID: UUID,
         scope: SyncStreamScope,
         streamKey: SyncStreamKey
-    ) async throws -> SyncCursor {
+    ) throws -> SyncCursor {
         let context = ModelContext(container)
         let state = try fetchOrCreateState(
             ownerUserID: ownerUserID,
@@ -82,7 +82,7 @@ actor SwiftDataSyncStateRepository: SyncStatePersisting {
         scope: SyncStreamScope,
         streamKey: SyncStreamKey,
         at date: Date
-    ) async throws {
+    ) throws {
         let context = ModelContext(container)
         let state = try fetchOrCreateState(
             ownerUserID: ownerUserID,
@@ -100,7 +100,7 @@ actor SwiftDataSyncStateRepository: SyncStatePersisting {
         streamKey: SyncStreamKey,
         cursor: SyncCursor?,
         at date: Date
-    ) async throws {
+    ) throws {
         let context = ModelContext(container)
         let state = try fetchOrCreateState(
             ownerUserID: ownerUserID,
@@ -118,7 +118,7 @@ actor SwiftDataSyncStateRepository: SyncStatePersisting {
         streamKey: SyncStreamKey,
         errorDescription: String,
         at date: Date
-    ) async throws {
+    ) throws {
         let context = ModelContext(container)
         let state = try fetchOrCreateState(
             ownerUserID: ownerUserID,
@@ -130,7 +130,7 @@ actor SwiftDataSyncStateRepository: SyncStatePersisting {
         try context.save()
     }
 
-    func snapshots(ownerUserID: UUID) async throws -> [SyncStateSnapshot] {
+    func snapshots(ownerUserID: UUID) throws -> [SyncStateSnapshot] {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalSyncState>(
             predicate: #Predicate { state in
@@ -145,7 +145,7 @@ actor SwiftDataSyncStateRepository: SyncStatePersisting {
         return try context.fetch(descriptor).map(Self.snapshot(from:))
     }
 
-    func deleteStates(ownerUserID: UUID) async throws {
+    func deleteStates(ownerUserID: UUID) throws {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<LocalSyncState>(
             predicate: #Predicate { state in
@@ -212,7 +212,7 @@ actor InMemorySyncStateRepository: SyncStatePersisting {
         ownerUserID: UUID,
         scope: SyncStreamScope,
         streamKey: SyncStreamKey
-    ) async throws -> SyncCursor {
+    ) throws -> SyncCursor {
         state(ownerUserID: ownerUserID, scope: scope, streamKey: streamKey).cursor
     }
 
@@ -221,7 +221,7 @@ actor InMemorySyncStateRepository: SyncStatePersisting {
         scope: SyncStreamScope,
         streamKey: SyncStreamKey,
         at date: Date
-    ) async throws {
+    ) throws {
         update(ownerUserID: ownerUserID, scope: scope, streamKey: streamKey) {
             SyncStateSnapshot(
                 ownerUserID: ownerUserID,
@@ -241,7 +241,7 @@ actor InMemorySyncStateRepository: SyncStatePersisting {
         streamKey: SyncStreamKey,
         cursor: SyncCursor?,
         at date: Date
-    ) async throws {
+    ) throws {
         update(ownerUserID: ownerUserID, scope: scope, streamKey: streamKey) {
             SyncStateSnapshot(
                 ownerUserID: ownerUserID,
@@ -261,7 +261,7 @@ actor InMemorySyncStateRepository: SyncStatePersisting {
         streamKey: SyncStreamKey,
         errorDescription: String,
         at date: Date
-    ) async throws {
+    ) throws {
         update(ownerUserID: ownerUserID, scope: scope, streamKey: streamKey) {
             SyncStateSnapshot(
                 ownerUserID: ownerUserID,
@@ -275,13 +275,13 @@ actor InMemorySyncStateRepository: SyncStatePersisting {
         }
     }
 
-    func snapshots(ownerUserID: UUID) async throws -> [SyncStateSnapshot] {
+    func snapshots(ownerUserID: UUID) throws -> [SyncStateSnapshot] {
         states.values
             .filter { $0.ownerUserID == ownerUserID }
             .sorted { $0.streamKey.rawValue < $1.streamKey.rawValue }
     }
 
-    func deleteStates(ownerUserID: UUID) async throws {
+    func deleteStates(ownerUserID: UUID) throws {
         states = states.filter { $0.value.ownerUserID != ownerUserID }
     }
 

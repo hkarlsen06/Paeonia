@@ -115,5 +115,5 @@ struct NoOpRelationshipSyncEventApplier: RelationshipSyncEventApplying {
     func apply(
         _ events: [RemoteRelationshipSyncEvent],
         session: SyncSession
-    ) async throws {}
+    ) throws {}
 }

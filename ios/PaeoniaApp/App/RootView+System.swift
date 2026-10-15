@@ -49,7 +49,7 @@ extension RootView {
     }
 
     @MainActor
-    func handleDeepLink(_ deepLink: PaeoniaDeepLink?) async {
+    func handleDeepLink(_ deepLink: PaeoniaDeepLink?) {
         guard let deepLink else {
             return
         }

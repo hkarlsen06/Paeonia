@@ -367,7 +367,7 @@ private actor RecordingPendingOperationHandler: PendingSyncOperationHandling {
     func send(
         _ operation: PendingSyncOperationSnapshot,
         context _: SyncContext
-    ) async throws -> PendingSyncOperationSendResult {
+    ) throws -> PendingSyncOperationSendResult {
         sentIDs.append(operation.operation.id)
         return .succeeded
     }
@@ -387,7 +387,7 @@ private actor ThrowingPendingOperationHandler: PendingSyncOperationHandling {
     func send(
         _ operation: PendingSyncOperationSnapshot,
         context _: SyncContext
-    ) async throws -> PendingSyncOperationSendResult {
+    ) throws -> PendingSyncOperationSendResult {
         throw PendingSyncOperationTestError.requestedFailure
     }
 }
@@ -403,7 +403,10 @@ private actor CancellingPendingOperationHandler: PendingSyncOperationHandling {
         self.store = store
     }
 
-    func send(_ operation: PendingSyncOperationSnapshot, context _: SyncContext) async throws -> PendingSyncOperationSendResult {
+    func send(
+        _ operation: PendingSyncOperationSnapshot,
+        context _: SyncContext
+    ) async throws -> PendingSyncOperationSendResult {
         sentOperationIDs.append(operation.operation.id)
         try await store.markTerminalFailure(clientOperationID: cancelledID, errorDescription: "cancelled", at: Date())
         return .succeeded

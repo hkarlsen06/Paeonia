@@ -278,18 +278,18 @@ private actor GatedHistoryService: DailyChallengeServicing {
         gates.removeValue(forKey: call)?.resume(with: result)
     }
 
-    func loadToday(currentUserID _: UUID) async throws -> DailyChallengeLoadResult {
+    func loadToday(currentUserID _: UUID) throws -> DailyChallengeLoadResult {
         throw UnusedHistoryServiceCall()
     }
 
     func startToday(
         currentUserID _: UUID,
         operation _: SyncClientOperation
-    ) async throws -> DailyChallengeLoadResult {
+    ) throws -> DailyChallengeLoadResult {
         throw UnusedHistoryServiceCall()
     }
 
-    func loadStreak() async throws -> CoupleStreak {
+    func loadStreak() throws -> CoupleStreak {
         throw UnusedHistoryServiceCall()
     }
 
@@ -297,7 +297,7 @@ private actor GatedHistoryService: DailyChallengeServicing {
         instanceID _: UUID,
         text _: String,
         operation _: SyncClientOperation
-    ) async throws -> UUID {
+    ) throws -> UUID {
         throw UnusedHistoryServiceCall()
     }
 
@@ -305,7 +305,7 @@ private actor GatedHistoryService: DailyChallengeServicing {
         instanceID _: UUID,
         selectedUserID _: UUID,
         operation _: SyncClientOperation
-    ) async throws -> UUID {
+    ) throws -> UUID {
         throw UnusedHistoryServiceCall()
     }
 
@@ -313,7 +313,7 @@ private actor GatedHistoryService: DailyChallengeServicing {
         currentUserID _: UUID,
         slotNumber _: Int,
         operation _: SyncClientOperation
-    ) async throws -> DailyChallengeLoadResult {
+    ) throws -> DailyChallengeLoadResult {
         throw UnusedHistoryServiceCall()
     }
 }

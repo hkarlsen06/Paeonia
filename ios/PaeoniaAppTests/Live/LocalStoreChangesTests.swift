@@ -125,7 +125,7 @@ struct LocalStoreChangesTests {
 
     @Test func locationWritesPostTheirOwnDomains() async throws {
         let store = try PaeoniaLocalStore(inMemory: true)
-        let visibility = SwiftDataLocationVisibilitySnapshotRepository(container: store.container)
+        let visibility = SwiftDataLocationVisibilityRepository(container: store.container)
         let owner = UUID()
         let couple = UUID()
         let stream = LocalStoreChanges.changes(in: .locationVisibility)

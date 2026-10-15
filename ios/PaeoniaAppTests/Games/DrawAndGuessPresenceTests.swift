@@ -11,7 +11,10 @@ struct DrawAndGuessPresenceTests {
         GamesTestEnvironment(state: state)
     }
 
-    private func pick(turn: UUID, choices: [RemoteDrawAndGuessChoice]? = GameFixture.choices) -> RemoteDrawAndGuessState {
+    private func pick(
+        turn: UUID,
+        choices: [RemoteDrawAndGuessChoice]? = GameFixture.choices
+    ) -> RemoteDrawAndGuessState {
         GameFixture.state(
             settings: GameFixture.settings(),
             game: GameFixture.game(state: .choosingWord, turn: turn, roundID: nil),
@@ -119,8 +122,13 @@ struct DrawAndGuessPresenceTests {
     }
 
     @Test func onlyAWatchingPartnerIsWatching() {
-        #expect(DrawAndGuessPartnerPresence.watching.drawingLine(partnerName: "R") == .gamesDrawAndGuessDrawWatching("R"))
-        #expect(DrawAndGuessPartnerPresence.result.drawingLine(partnerName: "R") == .gamesDrawAndGuessDrawLookingAtResult("R"))
+        #expect(
+            DrawAndGuessPartnerPresence.watching.drawingLine(partnerName: "R") == .gamesDrawAndGuessDrawWatching("R")
+        )
+        #expect(
+            DrawAndGuessPartnerPresence.result.drawingLine(partnerName: "R")
+                == .gamesDrawAndGuessDrawLookingAtResult("R")
+        )
         #expect(DrawAndGuessPartnerPresence.here.drawingLine(partnerName: "R") == .gamesDrawAndGuessDrawHere("R"))
         #expect(DrawAndGuessPartnerPresence.away.drawingLine(partnerName: "R") == .gamesDrawAndGuessDrawLater("R"))
         #expect(DrawAndGuessPartnerPresence.result.isHere)

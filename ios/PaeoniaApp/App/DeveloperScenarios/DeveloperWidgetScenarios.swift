@@ -58,29 +58,29 @@
   private struct DeveloperWidgetHistoryGateway: WidgetCanvasGateway {
     private let canvasID = UUID(uuidString: "99999999-9999-9999-9999-999999999999") ?? UUID()
 
-    func getOrCreateCanvas() async throws -> WidgetCanvasReference {
+    func getOrCreateCanvas() throws -> WidgetCanvasReference {
       throw WidgetCanvasGatewayError.emptyResponse
     }
     func reserveDrawingUpload(
       coupleID _: UUID, canvasID _: UUID, revisionID _: UUID,
       operation _: WidgetCanvasClientOperation
-    ) async throws -> MediaUploadReservation {
+    ) throws -> MediaUploadReservation {
       throw WidgetCanvasGatewayError.emptyResponse
     }
-    func uploadPayload(reservation _: MediaUploadReservation, data _: Data) async throws -> String {
+    func uploadPayload(reservation _: MediaUploadReservation, data _: Data) throws -> String {
       throw WidgetCanvasGatewayError.emptyResponse
     }
     func finalizeDrawingUpload(
       _: WidgetDrawingFinalizeInput, operation _: WidgetCanvasClientOperation
-    ) async throws -> FinalizedMediaUploadResponse {
+    ) throws -> FinalizedMediaUploadResponse {
       throw WidgetCanvasGatewayError.emptyResponse
     }
     func submitRevision(
       _: WidgetDrawingRevisionSubmission, operation _: WidgetCanvasClientOperation
-    ) async throws -> WidgetDrawingRevisionResult {
+    ) throws -> WidgetDrawingRevisionResult {
       throw WidgetCanvasGatewayError.emptyResponse
     }
-    func getCanvasState() async throws -> WidgetCanvasState? {
+    func getCanvasState() throws -> WidgetCanvasState? {
       WidgetCanvasState(
         canvasID: canvasID,
         activeRevisionID: UUID(),
@@ -90,10 +90,10 @@
         revisionCreatedAt: DeveloperScenarioFixture.now
       )
     }
-    func signedPayloadURL(mediaAssetID _: UUID) async throws -> URL? { nil }
+    func signedPayloadURL(mediaAssetID _: UUID) throws -> URL? { nil }
     func listRevisions(
       canvasID _: UUID, limit _: Int, createdBefore: Date?, createdBeforeRevisionID _: UUID?
-    ) async throws -> [WidgetDrawingRevisionSummary] {
+    ) throws -> [WidgetDrawingRevisionSummary] {
       guard createdBefore == nil else { return [] }
       return [
         revision(author: DeveloperScenarioFixture.currentUserID, age: 3_600),
@@ -116,23 +116,23 @@
   actor DeveloperWidgetCanvasService: WidgetCanvasManaging {
     private var snapshot: WidgetCanvasSnapshot?
 
-    func loadSavedDrawing() async -> Data? { snapshot?.drawingData }
-    func loadSavedSnapshot() async -> WidgetCanvasSnapshot? { snapshot }
+    func loadSavedDrawing() -> Data? { snapshot?.drawingData }
+    func loadSavedSnapshot() -> WidgetCanvasSnapshot? { snapshot }
     func saveDrawing(
       _ drawingData: Data, canvasSize _: CGSize, authorName: String?, createdAt: Date
-    ) async throws {
+    ) throws {
       snapshot = WidgetCanvasSnapshot(
         drawingData: drawingData,
         authorName: authorName,
         createdAt: createdAt
       )
     }
-    func clearForPrivacy() async { snapshot = nil }
-    func hideForPrivacy() async { snapshot = nil }
+    func clearForPrivacy() { snapshot = nil }
+    func hideForPrivacy() { snapshot = nil }
   }
 
   private actor DeveloperWidgetCanvasUploader: WidgetCanvasUploading {
-    func send(_: WidgetDrawingUploadPayload) async -> WidgetDrawingDelivery { .delivered }
-    func uploadPending(_: WidgetDrawingUploadPayload) async throws {}
+    func send(_: WidgetDrawingUploadPayload) -> WidgetDrawingDelivery { .delivered }
+    func uploadPending(_: WidgetDrawingUploadPayload) throws {}
   }
 #endif

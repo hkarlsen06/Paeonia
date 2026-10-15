@@ -40,7 +40,7 @@ struct PendingSyncOperationDrainStream: SyncStream {
         SyncStreamScope(kind: .user)
     }
 
-    func pull(context _: SyncContext) async throws -> SyncCursor? {
+    func pull(context _: SyncContext) throws -> SyncCursor? {
         nil
     }
 

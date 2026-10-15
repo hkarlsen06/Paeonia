@@ -137,7 +137,7 @@ final class DailyVoiceRecorder {
         PaeoniaHaptics.selection()
 
         let captured = min(max(duration, elapsed), maxDuration)
-        let durationMs = Int((captured * 1000).rounded())
+        let durationMs = Int((captured * 1_000).rounded())
         guard Self.isUsableTake(durationMs: durationMs) else {
             discardRecordedFile()
             recordedDurationMs = nil

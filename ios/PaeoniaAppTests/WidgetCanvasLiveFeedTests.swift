@@ -110,9 +110,11 @@ private final class Env: @unchecked Sendable {
 
     func push(revision: UUID) {
         transport.lastRevision.mutate { $0 = revision.uuidString }
+        let canvasID = UUID().uuidString.lowercased()
+        let revisionID = revision.uuidString.lowercased()
         transport.send(
             """
-            [{"canvas_id":"\(UUID().uuidString.lowercased())","active_revision_id":"\(revision.uuidString.lowercased())"}]
+            [{"canvas_id":"\(canvasID)","active_revision_id":"\(revisionID)"}]
             """
         )
     }
@@ -174,6 +176,6 @@ private final class SyncSpy: WidgetCanvasSyncing, @unchecked Sendable {
         state.mutate { $0.running -= 1 }
     }
 
-    func hideForPrivacy() async {}
-    func clearForPrivacy() async {}
+    func hideForPrivacy() {}
+    func clearForPrivacy() {}
 }

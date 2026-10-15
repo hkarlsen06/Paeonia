@@ -298,21 +298,29 @@ extension MainTabView {
         case .dailyReveal, .dailyChat, .dailyToday:
             await handleQuestionsDeepLink(deepLink)
         case .memories:
-            selection.wrappedValue = .memories
-            await memoriesViewModel.refresh()
-            guard isCurrent(deepLink) else { return }
-            self.deepLink.wrappedValue = nil
+            await openMemories(for: deepLink)
         case let .game(kind):
             await openGame(kind, for: deepLink)
         case .streak:
-            selection.wrappedValue = .home
-            // The streak may have advanced, broken, or passed its restore deadline
-            // since the notification was queued. Refresh before choosing the one
-            // destination so a broken streak opens the purchase offer directly.
-            guard await refreshStillCurrent(for: deepLink) else { return }
-            openStreakDetails()
-            self.deepLink.wrappedValue = nil
+            await openStreak(for: deepLink)
         }
+    }
+
+    private func openMemories(for deepLink: PaeoniaDeepLink) async {
+        selection.wrappedValue = .memories
+        await memoriesViewModel.refresh()
+        guard isCurrent(deepLink) else { return }
+        self.deepLink.wrappedValue = nil
+    }
+
+    private func openStreak(for deepLink: PaeoniaDeepLink) async {
+        selection.wrappedValue = .home
+        // The streak may have advanced, broken, or passed its restore deadline
+        // since the notification was queued. Refresh before choosing the one
+        // destination so a broken streak opens the purchase offer directly.
+        guard await refreshStillCurrent(for: deepLink) else { return }
+        openStreakDetails()
+        self.deepLink.wrappedValue = nil
     }
 
     /// Opens a game from a notification or an invite. Someone who has not been

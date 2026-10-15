@@ -57,7 +57,10 @@ struct GamesQueueHardeningTests {
     init() {
         // The server answers the read that follows each move it takes.
         environment.gateway.setStateToLoad(
-            GameFixture.state(settings: GameFixture.settings(), game: GameFixture.game(state: .guessing, turn: GameFixture.me))
+            GameFixture.state(
+                settings: GameFixture.settings(),
+                game: GameFixture.game(state: .guessing, turn: GameFixture.me)
+            )
         )
     }
 

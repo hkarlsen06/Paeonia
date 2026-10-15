@@ -13,7 +13,7 @@ struct DailyChallengeCompletionView: View {
     /// The in-place buy action follows the same server-owned restore window as
     /// the standalone offer. Keeping it here prevents a completion screen left
     /// open in the foreground from selling an already-expired restore.
-    var restoreDeadline: Date? = nil
+    var restoreDeadline: Date?
     /// Drives the in-place restore purchase. Present only for a slipped streak's
     /// completion; `nil` for a normal finish. Once its `restoredCount` lands the
     /// screen turns celebratory and the flame reignites and refills.
@@ -175,30 +175,7 @@ struct DailyChallengeCompletionView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Button(action: purchase) {
-                if isPurchasing || restoreViewModel?.isLoading == true {
-                    ProgressView().tint(.paeoniaTextInverse)
-                } else if restoreViewModel?.isAwaitingConfirmation == true {
-                    Text(.streakRestoreCheckAgainButton)
-                } else if restoreViewModel?.needsPriceRetry == true {
-                    Text(.paywallProductsRetry)
-                } else {
-                    Text(verbatim: buyTitle)
-                }
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-            // Same rules as the restore sheet: not buyable until the price has loaded,
-            // and never again once a payment went through or the time is up.
-            .disabled(
-                isPurchasing
-                    || restoreViewModel?.isLoading == true
-                    || restoreViewModel?.hasFinishedLoadingProducts != true
-                    || restoreViewModel?.blockingError != nil
-                    || StreakRestoreDeadlineState.resolve(
-                        deadline: restoreDeadline,
-                        now: now
-                    ).blocksPurchase
-            )
+            purchaseButton(now: now)
 
             partnerQuestionsButton(style: .secondary)
 
@@ -208,6 +185,33 @@ struct DailyChallengeCompletionView: View {
             .buttonStyle(PaeoniaQuietButtonStyle())
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
         }
+    }
+
+    private func purchaseButton(now: Date) -> some View {
+        Button(action: purchase) {
+            if isPurchasing || restoreViewModel?.isLoading == true {
+                ProgressView().tint(.paeoniaTextInverse)
+            } else if restoreViewModel?.isAwaitingConfirmation == true {
+                Text(.streakRestoreCheckAgainButton)
+            } else if restoreViewModel?.needsPriceRetry == true {
+                Text(.paywallProductsRetry)
+            } else {
+                Text(verbatim: buyTitle)
+            }
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        // Same rules as the restore sheet: not buyable until the price has loaded,
+        // and never again once a payment went through or the time is up.
+        .disabled(
+            isPurchasing
+                || restoreViewModel?.isLoading == true
+                || restoreViewModel?.hasFinishedLoadingProducts != true
+                || restoreViewModel?.blockingError != nil
+                || StreakRestoreDeadlineState.resolve(
+                    deadline: restoreDeadline,
+                    now: now
+                ).blocksPurchase
+        )
     }
 
     /// Actions for a normal celebratory finish and, after a restore, the revived

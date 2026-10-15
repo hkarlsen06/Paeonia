@@ -121,19 +121,23 @@ struct DailyPhotoAnswerComposer: View {
                 .accessibilityLabel(Text(.dailyChallengePhotoRemove))
             }
 
-            HStack(spacing: PaeoniaSpacing.space8) {
-                PhotosPicker(selection: $selection, matching: .images) {
-                    Label {
-                        Text(.dailyChallengePhotoChange)
-                    } icon: {
-                        Image(systemName: "photo.on.rectangle").accessibilityHidden(true)
-                    }
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .frame(maxWidth: .infinity)
+            photoPickerRow
+        }
+    }
 
-                cameraButton
+    private var photoPickerRow: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            PhotosPicker(selection: $selection, matching: .images) {
+                Label {
+                    Text(.dailyChallengePhotoChange)
+                } icon: {
+                    Image(systemName: "photo.on.rectangle").accessibilityHidden(true)
+                }
             }
+            .buttonStyle(PaeoniaQuietButtonStyle())
+            .frame(maxWidth: .infinity)
+
+            cameraButton
         }
     }
 
@@ -224,10 +228,10 @@ struct DailyPhotoAnswerComposer: View {
 /// offline) while it finishes sending. A combined answer shows all of its parts.
 struct DailySendingAnswerView: View {
     var mediaKind: DailyChallengeAnswerKind = .photo
-    var mediaData: Data? = nil
-    var voiceDurationMs: Int? = nil
-    var partnerChoiceName: String? = nil
-    var text: String? = nil
+    var mediaData: Data?
+    var voiceDurationMs: Int?
+    var partnerChoiceName: String?
+    var text: String?
     /// Whether to show the "saved on this phone, sending" line under the answer. Pass
     /// true only once a try to send it failed, so a normal send never flashes the line.
     /// The partner-answer reveal flow passes false so the just-sent answer reads as

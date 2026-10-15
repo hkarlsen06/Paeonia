@@ -21,7 +21,7 @@ struct WidgetCanvasServiceTests {
     }
 
     @Test func saveWritesCanonicalDrawingPreviewsAndPayload() async throws {
-        let environment = TestEnvironment()
+        let environment = WidgetCanvasTestEnvironment()
         let service = environment.makeService()
         let drawing = makeNonEmptyDrawing()
 
@@ -54,7 +54,7 @@ struct WidgetCanvasServiceTests {
     }
 
     @Test func secondSavePublishesNewURLsAndRetainsPriorTimelineFiles() async throws {
-        let environment = TestEnvironment()
+        let environment = WidgetCanvasTestEnvironment()
         let service = environment.makeService()
 
         try await service.saveDrawing(
@@ -87,7 +87,7 @@ struct WidgetCanvasServiceTests {
     }
 
     @Test func laterSaveCleansExpiredUnreferencedTimelineFiles() async throws {
-        let environment = TestEnvironment()
+        let environment = WidgetCanvasTestEnvironment()
         let service = environment.makeService()
 
         try await service.saveDrawing(
@@ -124,7 +124,7 @@ struct WidgetCanvasServiceTests {
     }
 
     @Test func partialPreviewFailurePreservesPriorPayloadAndCleansStagedFiles() async throws {
-        let environment = TestEnvironment()
+        let environment = WidgetCanvasTestEnvironment()
         let liveService = environment.makeService()
         try await liveService.saveDrawing(
             makeNonEmptyDrawing().dataRepresentation(),
@@ -158,7 +158,7 @@ struct WidgetCanvasServiceTests {
 
     @MainActor
     @Test func overlappingSavePublishesOnlyLatestStartedDrawing() async throws {
-        let environment = TestEnvironment()
+        let environment = WidgetCanvasTestEnvironment()
         let rasterizer = SuspendingFirstWidgetRasterizer()
         let service = environment.makeService(rasterizer: rasterizer)
         let firstData = makeNonEmptyDrawing().dataRepresentation()
@@ -199,7 +199,7 @@ struct WidgetCanvasServiceTests {
     }
 
     @Test func saveRejectsUndecodableData() async {
-        let environment = TestEnvironment()
+        let environment = WidgetCanvasTestEnvironment()
         let service = environment.makeService()
 
         await #expect(throws: WidgetCanvasError.invalidDrawingData) {
@@ -216,7 +216,7 @@ struct WidgetCanvasServiceTests {
     }
 
     @Test func loadSavedDrawingReturnsPersistedData() async throws {
-        let environment = TestEnvironment()
+        let environment = WidgetCanvasTestEnvironment()
         let service = environment.makeService()
         let drawing = makeNonEmptyDrawing()
 
@@ -232,83 +232,6 @@ struct WidgetCanvasServiceTests {
         #expect(loaded == drawing.dataRepresentation())
     }
 
-    @Test func clearForPrivacyRemovesEverythingAndReloads() async throws {
-        let environment = TestEnvironment()
-        let service = environment.makeService()
-        let drawing = makeNonEmptyDrawing()
-
-        try await service.saveDrawing(
-            drawing.dataRepresentation(),
-            canvasSize: CGSize(width: 300, height: 300),
-            authorName: nil,
-            createdAt: Date()
-        )
-
-        await service.clearForPrivacy()
-
-        #expect(!FileManager.default.fileExists(atPath: environment.canonicalURL.path))
-        #expect(!FileManager.default.fileExists(atPath: environment.payloadURL.path))
-        #expect(environment.previewFiles.isEmpty)
-        #expect(await environment.loadedDrawingIsNil(service))
-        // One reload for the save, one for the clear.
-        #expect(environment.reloader.reloadCount == 2)
-    }
-
-    @Test func clearForPrivacyDoesNotReloadWhenNothingStored() async {
-        let environment = TestEnvironment()
-        let service = environment.makeService()
-
-        await service.clearForPrivacy()
-
-        #expect(environment.reloader.reloadCount == 0)
-    }
-
-    @Test func temporaryPrivacyHidePreservesCanonicalDrawingButRemovesWidgetCopies() async throws {
-        let environment = TestEnvironment()
-        let service = environment.makeService()
-        let drawing = makeNonEmptyDrawing()
-
-        try await service.saveDrawing(
-            drawing.dataRepresentation(),
-            canvasSize: CGSize(width: 300, height: 300),
-            authorName: nil,
-            createdAt: Date()
-        )
-
-        await service.hideForPrivacy()
-
-        #expect(FileManager.default.fileExists(atPath: environment.canonicalURL.path))
-        #expect(!FileManager.default.fileExists(atPath: environment.payloadURL.path))
-        #expect(environment.previewFiles.isEmpty)
-        #expect(await service.loadSavedDrawing() == drawing.dataRepresentation())
-        #expect(environment.reloader.reloadCount == 2)
-    }
-
-    @Test func showsSavedDrawingOnlyWhileTheAppCanReadTheWidgetFiles() async throws {
-        let environment = TestEnvironment()
-        let service = environment.makeService()
-        #expect(await !service.isShowingSavedDrawing())
-
-        try await service.saveDrawing(
-            makeNonEmptyDrawing().dataRepresentation(),
-            canvasSize: CGSize(width: 300, height: 300),
-            authorName: nil,
-            createdAt: Date()
-        )
-        #expect(await service.isShowingSavedDrawing())
-
-        // An older widget extension left out `canvasSide`, which the app needs.
-        var json = try #require(
-            JSONSerialization.jsonObject(with: Data(contentsOf: environment.payloadURL)) as? [String: Any]
-        )
-        json.removeValue(forKey: "canvasSide")
-        try JSONSerialization.data(withJSONObject: json).write(to: environment.payloadURL)
-        #expect(await !service.isShowingSavedDrawing())
-
-        await service.hideForPrivacy()
-        #expect(await !service.isShowingSavedDrawing())
-    }
-
     @MainActor
     @Test func rasterizerRendersNonEmptyDrawing() async throws {
         let pngData = await WidgetDrawingRasterizer().renderPNG(
@@ -321,7 +244,7 @@ struct WidgetCanvasServiceTests {
         #expect(!rendered.isEmpty)
     }
 
-    private func makeNonEmptyDrawing(offset: CGFloat = 0) -> PKDrawing {
+    func makeNonEmptyDrawing(offset: CGFloat = 0) -> PKDrawing {
         let point = PKStrokePoint(
             location: CGPoint(x: 40 + offset, y: 40 + offset),
             timeOffset: 0,
@@ -346,7 +269,7 @@ struct WidgetCanvasServiceTests {
     }
 }
 
-private final class WidgetReloaderSpy: WidgetTimelineReloading, @unchecked Sendable {
+final class WidgetReloaderSpy: WidgetTimelineReloading, @unchecked Sendable {
     private(set) var reloadCount = 0
 
     // `reloadWidget()` is async by protocol; the spy just records a call.
@@ -356,7 +279,7 @@ private final class WidgetReloaderSpy: WidgetTimelineReloading, @unchecked Senda
     }
 }
 
-private struct TestEnvironment {
+struct WidgetCanvasTestEnvironment {
     let containerURL: URL
     let canonicalURL: URL
     let reloader = WidgetReloaderSpy()

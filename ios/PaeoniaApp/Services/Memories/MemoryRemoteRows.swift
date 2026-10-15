@@ -78,24 +78,8 @@ nonisolated struct MemoryRemoteRow: Codable, Equatable, Sendable {
             createdAt: createdAt,
             updatedAt: updatedAt,
             syncUpdatedAt: syncUpdatedAt,
-            ownNote: note(
-                noteID: ownNoteID,
-                userID: ownerUserID,
-                body: ownNoteBody,
-                revision: ownNoteRevision,
-                updatedAt: ownNoteUpdatedAt,
-                deletedAt: ownNoteDeletedAt,
-                moderationStatus: ownNoteModerationStatus
-            ),
-            partnerNote: note(
-                noteID: partnerNoteID,
-                userID: partnerNoteUserID,
-                body: partnerNoteBody,
-                revision: partnerNoteRevision,
-                updatedAt: partnerNoteUpdatedAt,
-                deletedAt: partnerNoteDeletedAt,
-                moderationStatus: partnerNoteModerationStatus
-            ),
+            ownNote: ownNote(ownerUserID: ownerUserID),
+            partnerNote: partnerNote,
             visibleMemoryMediaIDs: memoryMediaIDs,
             visibleMediaAssetIDs: mediaAssetIDs,
             media: memoryMediaStates.map(\.snapshot),
@@ -103,28 +87,40 @@ nonisolated struct MemoryRemoteRow: Codable, Equatable, Sendable {
         )
     }
 
-    private func note(
-        noteID: UUID?,
-        userID: UUID?,
-        body: String?,
-        revision: Int?,
-        updatedAt: Date?,
-        deletedAt: Date?,
-        moderationStatus: MemoryModerationStatus?
-    ) -> MemoryNoteSnapshot? {
-        guard noteID != nil || body != nil || revision != nil || updatedAt != nil else {
+    private func ownNote(ownerUserID: UUID) -> MemoryNoteSnapshot? {
+        Self.presentNote(
+            MemoryNoteSnapshot(
+                noteID: ownNoteID,
+                userID: ownerUserID,
+                body: ownNoteBody,
+                revision: ownNoteRevision,
+                updatedAt: ownNoteUpdatedAt,
+                deletedAt: ownNoteDeletedAt,
+                moderationStatus: ownNoteModerationStatus
+            )
+        )
+    }
+
+    private var partnerNote: MemoryNoteSnapshot? {
+        Self.presentNote(
+            MemoryNoteSnapshot(
+                noteID: partnerNoteID,
+                userID: partnerNoteUserID,
+                body: partnerNoteBody,
+                revision: partnerNoteRevision,
+                updatedAt: partnerNoteUpdatedAt,
+                deletedAt: partnerNoteDeletedAt,
+                moderationStatus: partnerNoteModerationStatus
+            )
+        )
+    }
+
+    /// The note, or nil when the row carries nothing about one.
+    private static func presentNote(_ note: MemoryNoteSnapshot) -> MemoryNoteSnapshot? {
+        guard note.noteID != nil || note.body != nil || note.revision != nil || note.updatedAt != nil else {
             return nil
         }
-
-        return MemoryNoteSnapshot(
-            noteID: noteID,
-            userID: userID,
-            body: body,
-            revision: revision,
-            updatedAt: updatedAt,
-            deletedAt: deletedAt,
-            moderationStatus: moderationStatus
-        )
+        return note
     }
 }
 

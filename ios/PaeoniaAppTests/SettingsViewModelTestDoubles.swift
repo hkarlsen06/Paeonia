@@ -121,6 +121,10 @@ actor SettingsFakeNotificationPreferences: NotificationPreferencesProviding {
         lastSetKind = kind
         lastSetValue = value
         sentValues.append(value)
+        store(value, for: kind)
+    }
+
+    private func store(_ value: Bool, for kind: NotificationPreferenceKind) {
         switch kind {
         case .streakReminders:
             preferences.streakRemindersEnabled = value

@@ -63,6 +63,7 @@ final class LocalMemoryRecord {
         localUpdatedAt = record.localUpdatedAt
     }
 
+    // swiftlint:disable:next function_parameter_count
     func update(
         from record: MemoryRecord,
         ownNoteData: Data?,

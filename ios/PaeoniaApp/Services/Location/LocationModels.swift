@@ -143,9 +143,4 @@ nonisolated enum CoupleMapState: Equatable, Sendable {
 nonisolated struct LocationIdentity: Equatable, Hashable, Sendable {
     let currentUserID: UUID?
     let coupleID: UUID?
-
-    init(currentUserID: UUID?, coupleID: UUID?) {
-        self.currentUserID = currentUserID
-        self.coupleID = coupleID
-    }
 }

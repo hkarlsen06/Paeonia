@@ -289,7 +289,8 @@ struct SubmitGameDrawingPendingOperationHandler: PendingSyncOperationHandling {
                 // The server already has a drawing for this round.
                 return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
             }
-            if GameServerRejection.isUploadGone(error), GameServerRejection.mayRenewUpload(renewedAt: payload.renewedAt) {
+            if GameServerRejection.isUploadGone(error),
+               GameServerRejection.mayRenewUpload(renewedAt: payload.renewedAt) {
                 return try await sendWithNewUpload(payload, replacing: operation, context: context)
             }
             guard await GameServerRejection.shouldDrop(error, of: operation, cache: cache) else { throw error }

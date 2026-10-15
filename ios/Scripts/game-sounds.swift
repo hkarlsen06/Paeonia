@@ -32,10 +32,10 @@ struct Random {
 
     mutating func next() -> Double {
         state &+= 0x9e37_79b9_7f4a_7c15
-        var z = state
-        z = (z ^ (z >> 30)) &* 0xbf58_476d_1ce4_e5b9
-        z = (z ^ (z >> 27)) &* 0x94d0_49bb_1331_11eb
-        return Double((z ^ (z >> 31)) >> 11) / Double(1 << 53)
+        var mixed = state
+        mixed = (mixed ^ (mixed >> 30)) &* 0xbf58_476d_1ce4_e5b9
+        mixed = (mixed ^ (mixed >> 27)) &* 0x94d0_49bb_1331_11eb
+        return Double((mixed ^ (mixed >> 31)) >> 11) / Double(1 << 53)
     }
 
     mutating func signed() -> Double { next() * 2 - 1 }
@@ -94,8 +94,8 @@ func crackle(_ seconds: Double, perSecond: Double) -> [Double] {
     return out
 }
 
-func times(_ a: [Double], _ b: [Double]) -> [Double] {
-    zip(a, b).map { $0 * $1 }
+func times(_ first: [Double], _ second: [Double]) -> [Double] {
+    zip(first, second).map { $0 * $1 }
 }
 
 // MARK: Filters
@@ -104,32 +104,32 @@ func times(_ a: [Double], _ b: [Double]) -> [Double] {
 struct Biquad {
     var b0 = 0.0, b1 = 0.0, b2 = 0.0, a1 = 0.0, a2 = 0.0
 
-    static func lowpass(_ hz: Double, q: Double = 0.707) -> Biquad {
-        let (cosine, alpha) = terms(hz, q)
-        return Biquad(b: [(1 - cosine) / 2, 1 - cosine, (1 - cosine) / 2], cosine: cosine, alpha: alpha)
+    static func lowpass(_ hz: Double, q quality: Double = 0.707) -> Biquad {
+        let (cosine, alpha) = terms(hz, quality)
+        return Biquad(numerator: [(1 - cosine) / 2, 1 - cosine, (1 - cosine) / 2], cosine: cosine, alpha: alpha)
     }
 
-    static func highpass(_ hz: Double, q: Double = 0.707) -> Biquad {
-        let (cosine, alpha) = terms(hz, q)
-        return Biquad(b: [(1 + cosine) / 2, -(1 + cosine), (1 + cosine) / 2], cosine: cosine, alpha: alpha)
+    static func highpass(_ hz: Double, q quality: Double = 0.707) -> Biquad {
+        let (cosine, alpha) = terms(hz, quality)
+        return Biquad(numerator: [(1 + cosine) / 2, -(1 + cosine), (1 + cosine) / 2], cosine: cosine, alpha: alpha)
     }
 
     /// A band pass whose peak stays at 0 dB.
-    static func bandpass(_ hz: Double, q: Double) -> Biquad {
-        let (cosine, alpha) = terms(hz, q)
-        return Biquad(b: [alpha, 0, -alpha], cosine: cosine, alpha: alpha)
+    static func bandpass(_ hz: Double, q quality: Double) -> Biquad {
+        let (cosine, alpha) = terms(hz, quality)
+        return Biquad(numerator: [alpha, 0, -alpha], cosine: cosine, alpha: alpha)
     }
 
-    private static func terms(_ hz: Double, _ q: Double) -> (Double, Double) {
+    private static func terms(_ hz: Double, _ quality: Double) -> (Double, Double) {
         let omega = 2 * .pi * min(hz, rate * 0.45) / rate
-        return (cos(omega), sin(omega) / (2 * q))
+        return (cos(omega), sin(omega) / (2 * quality))
     }
 
-    private init(b: [Double], cosine: Double, alpha: Double) {
+    private init(numerator: [Double], cosine: Double, alpha: Double) {
         let a0 = 1 + alpha
-        b0 = b[0] / a0
-        b1 = b[1] / a0
-        b2 = b[2] / a0
+        b0 = numerator[0] / a0
+        b1 = numerator[1] / a0
+        b2 = numerator[2] / a0
         a1 = -2 * cosine / a0
         a2 = (1 - alpha) / a0
     }
@@ -148,14 +148,14 @@ struct Biquad {
 }
 
 /// A band pass whose middle slides from `from` to `to` hertz, for whooshes.
-func sweep(_ input: [Double], from: Double, to: Double, q: Double) -> [Double] {
+func sweep(_ input: [Double], from: Double, to: Double, q quality: Double) -> [Double] {
     var output = [Double](repeating: 0, count: input.count)
     var x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0
-    var filter = Biquad.bandpass(from, q: q)
+    var filter = Biquad.bandpass(from, q: quality)
     for index in input.indices {
         if index % 32 == 0 {
             let progress = Double(index) / Double(max(input.count - 1, 1))
-            filter = Biquad.bandpass(from * pow(to / from, progress), q: q)
+            filter = Biquad.bandpass(from * pow(to / from, progress), q: quality)
         }
         let x = input[index]
         let y = filter.b0 * x + filter.b1 * x1 + filter.b2 * x2 - filter.a1 * y1 - filter.a2 * y2
@@ -193,7 +193,7 @@ func thock(_ body: Double, decay: Double, bright: Double = 1) -> [Double] {
     mix.add(mode(body, decay: decay, from: body * 1.35, glide: 0.005))
     mix.add(mode(body * 2.62, decay: decay * 0.45), gain: 0.32 * bright)
     mix.add(mode(body * 6.1, decay: decay * 0.2), gain: 0.1 * bright)
-    mix.add(Biquad.bandpass(2600 * random.jitter(0.1), q: 0.9).run(burst(decay: 0.0022)), gain: 0.45 * bright)
+    mix.add(Biquad.bandpass(2_600 * random.jitter(0.1), q: 0.9).run(burst(decay: 0.0022)), gain: 0.45 * bright)
     mix.add(Biquad.lowpass(900).run(burst(decay: 0.008)), gain: 0.6)
     return mix.samples
 }
@@ -205,7 +205,7 @@ func clack(_ hz: Double, table: Double, decay: Double = 0.011) -> [Double] {
     mix.add(mode(hz, decay: decay), gain: 0.6)
     mix.add(mode(hz * 1.47 * random.jitter(0.02), decay: decay * 0.7), gain: 0.4)
     mix.add(mode(hz * 2.9 * random.jitter(0.03), decay: decay * 0.35), gain: 0.2)
-    mix.add(Biquad.bandpass(3600, q: 0.8).run(burst(decay: 0.0011)), gain: 0.55)
+    mix.add(Biquad.bandpass(3_600, q: 0.8).run(burst(decay: 0.0011)), gain: 0.55)
     mix.add(mode(table, decay: 0.024, from: table * 1.25), gain: 0.55)
     return mix.samples
 }
@@ -235,7 +235,7 @@ func bar(_ hz: Double, decay: Double = 0.3) -> [Double] {
 /// Paper landing flat: a dull slap with a little body under it.
 func slap(_ body: Double, gain: Double = 1) -> [Double] {
     var mix = Mix()
-    mix.add(Biquad.lowpass(2600).run(burst(decay: 0.006)), gain: 0.7 * gain)
+    mix.add(Biquad.lowpass(2_600).run(burst(decay: 0.006)), gain: 0.7 * gain)
     mix.add(mode(body, decay: 0.016, from: body * 1.3), gain: 0.4 * gain)
     return mix.samples
 }
@@ -266,10 +266,10 @@ let recipes: [Recipe] = [
     },
     Recipe(name: "Tick", variants: 4, peak: 0.3) {
         var mix = Mix()
-        let hz = 1150 * random.jitter(0.07)
+        let hz = 1_150 * random.jitter(0.07)
         mix.add(mode(hz, decay: 0.009))
         mix.add(mode(hz * 2.4, decay: 0.004), gain: 0.3)
-        mix.add(Biquad.bandpass(4200, q: 1.2).run(burst(decay: 0.0012)), gain: 0.4)
+        mix.add(Biquad.bandpass(4_200, q: 1.2).run(burst(decay: 0.0012)), gain: 0.4)
         return mix.samples
     },
     // A knock and a short rising note, so it sounds like it goes up and away.
@@ -279,7 +279,7 @@ let recipes: [Recipe] = [
         mix.add(thock(170 * random.jitter(0.04), decay: 0.035))
         mix.add(mode(pip, decay: 0.06, from: pip * 0.6, glide: 0.02), at: 0.015, gain: 0.35)
         mix.add(mode(pip * 2, decay: 0.03, from: pip * 1.2, glide: 0.02), at: 0.015, gain: 0.08)
-        return Biquad.lowpass(4000).run(mix.samples)
+        return Biquad.lowpass(4_000).run(mix.samples)
     },
     Recipe(name: "Nudge", variants: 2, peak: 0.38) {
         bar(g4 * random.jitter(0.004))
@@ -310,13 +310,13 @@ let recipes: [Recipe] = [
         mix.add(bar(a3), gain: 0.3)
         mix.add(tine(a4, decay: 0.36))
         mix.add(tine(e4, decay: 0.42), at: 0.14, gain: 0.9)
-        return Biquad.lowpass(3000).run(mix.samples)
+        return Biquad.lowpass(3_000).run(mix.samples)
     },
     Recipe(name: "Wrong", peak: 0.42) {
         var mix = Mix()
         mix.add(thock(160, decay: 0.03, bright: 0.4))
         mix.add(thock(146, decay: 0.03, bright: 0.4), at: 0.075, gain: 0.8)
-        return Biquad.lowpass(1500).run(mix.samples)
+        return Biquad.lowpass(1_500).run(mix.samples)
     },
     // A wooden peg snapped into place: the tip touches, the body lands a beat
     // later, and a soft ring two octaves up rounds it off. No noise wash, so it
@@ -324,30 +324,34 @@ let recipes: [Recipe] = [
     Recipe(name: "Mark", variants: 3, peak: 0.42) {
         var mix = Mix()
         let body = 300 * random.jitter(0.04)
-        mix.add(Biquad.bandpass(3400, q: 1).run(burst(decay: 0.0009)), gain: 0.3)
+        mix.add(Biquad.bandpass(3_400, q: 1).run(burst(decay: 0.0009)), gain: 0.3)
         mix.add(thock(body, decay: 0.02, bright: 0.5), at: 0.012)
         mix.add(mode(body * 4, decay: 0.05), at: 0.012, gain: 0.18)
-        return Biquad.lowpass(5000).run(mix.samples)
+        return Biquad.lowpass(5_000).run(mix.samples)
     },
     Recipe(name: "Stamp", variants: 2, peak: 0.52) {
         var mix = Mix()
         let body = 130 * random.jitter(0.05)
         mix.add(mode(body, decay: 0.05, from: body * 1.6, glide: 0.008))
         mix.add(mode(body * 2.4, decay: 0.02), gain: 0.35)
-        mix.add(Biquad.lowpass(1800).run(burst(decay: 0.012)), gain: 0.7)
-        mix.add(Biquad.bandpass(1800, q: 0.7).run(burst(decay: 0.004)), gain: 0.3)
+        mix.add(Biquad.lowpass(1_800).run(burst(decay: 0.012)), gain: 0.7)
+        mix.add(Biquad.bandpass(1_800, q: 0.7).run(burst(decay: 0.004)), gain: 0.3)
         return mix.samples
     },
 
     // Ludo.
     Recipe(name: "LudoDieKnock", variants: 4, peak: 0.5) {
-        clack(1750 * random.jitter(0.06), table: 240 * random.jitter(0.05))
+        clack(1_750 * random.jitter(0.06), table: 240 * random.jitter(0.05))
     },
     Recipe(name: "LudoDieSettle", variants: 3, peak: 0.42) {
         var mix = Mix()
-        let hz = 1750 * random.jitter(0.05)
+        let hz = 1_750 * random.jitter(0.05)
         for (time, gain) in [(0.0, 1.0), (0.045, 0.42), (0.074, 0.2), (0.091, 0.09)] {
-            mix.add(clack(hz * random.jitter(0.02), table: 240, decay: 0.009), at: time * random.jitter(0.1), gain: gain)
+            mix.add(
+                clack(hz * random.jitter(0.02), table: 240, decay: 0.009),
+                at: time * random.jitter(0.1),
+                gain: gain
+            )
         }
         return mix.samples
     },
@@ -356,16 +360,17 @@ let recipes: [Recipe] = [
         let hz = 820 * random.jitter(0.06)
         mix.add(mode(hz, decay: 0.016), gain: 0.55)
         mix.add(mode(hz * 2.25, decay: 0.008), gain: 0.3)
-        mix.add(mode(4100 * random.jitter(0.05), decay: 0.003), gain: 0.15)
+        mix.add(mode(4_100 * random.jitter(0.05), decay: 0.003), gain: 0.15)
         mix.add(mode(200 * random.jitter(0.05), decay: 0.02, from: 260), gain: 0.7)
-        mix.add(Biquad.bandpass(3000, q: 0.9).run(burst(decay: 0.0012)), gain: 0.45)
+        mix.add(Biquad.bandpass(3_000, q: 0.9).run(burst(decay: 0.0012)), gain: 0.45)
         return mix.samples
     },
     Recipe(name: "LudoCapture", peak: 0.52) {
         var mix = Mix()
         mix.add(thock(175, decay: 0.03))
         mix.add(clack(900, table: 170, decay: 0.014), gain: 0.6)
-        mix.add(Biquad.lowpass(3000).run(sweep(swell(0.36, power: 1.2), from: 2600, to: 800, q: 1.1)), at: 0.05, gain: 0.32)
+        let air = sweep(swell(0.36, power: 1.2), from: 2_600, to: 800, q: 1.1)
+        mix.add(Biquad.lowpass(3_000).run(air), at: 0.05, gain: 0.32)
         return mix.samples
     },
     Recipe(name: "LudoHome", peak: 0.42) {
@@ -384,8 +389,8 @@ let recipes: [Recipe] = [
             var disc = Mix()
             disc.add(mode(hz, decay: decay), gain: 0.6)
             disc.add(mode(hz * 2.2, decay: decay * 0.5), gain: 0.35)
-            disc.add(mode(2700 * random.jitter(0.04), decay: decay * 0.3), gain: 0.25)
-            disc.add(Biquad.bandpass(3500, q: 0.8).run(burst(decay: 0.0012)), gain: 0.5)
+            disc.add(mode(2_700 * random.jitter(0.04), decay: decay * 0.3), gain: 0.25)
+            disc.add(Biquad.bandpass(3_500, q: 0.8).run(burst(decay: 0.0012)), gain: 0.5)
             return disc.samples
         }
         mix.add(disc(0.02))
@@ -400,7 +405,7 @@ let recipes: [Recipe] = [
         var mix = Mix()
         let length = 0.11 * random.jitter(0.15)
         let rising = (0..<count(length)).map { Double($0) / Double(count(length)) }
-        mix.add(Biquad.bandpass(3500, q: 0.8).run(times(crackle(length, perSecond: 380), rising)), gain: 0.9)
+        mix.add(Biquad.bandpass(3_500, q: 0.8).run(times(crackle(length, perSecond: 380), rising)), gain: 0.9)
         mix.add(thock(220 * random.jitter(0.06), decay: 0.022, bright: 0.5), at: length - 0.01, gain: 0.7)
         mix.add(slap(260), at: length - 0.01, gain: 0.6)
         return mix.samples
@@ -409,7 +414,7 @@ let recipes: [Recipe] = [
     // Mind Meld: a card flicked over and laid down.
     Recipe(name: "Flip", variants: 3, peak: 0.4) {
         var mix = Mix()
-        mix.add(sweep(swell(0.05), from: 1400, to: 4200, q: 1.4), gain: 0.5)
+        mix.add(sweep(swell(0.05), from: 1_400, to: 4_200, q: 1.4), gain: 0.5)
         mix.add(slap(320 * random.jitter(0.06)), at: 0.04)
         mix.add(mode(320 * 2.9, decay: 0.005), at: 0.04, gain: 0.15)
         return mix.samples
@@ -423,7 +428,7 @@ let recipes: [Recipe] = [
         mix.add(slap(300 * random.jitter(0.05), gain: 0.45))
         mix.add(slap(220 * random.jitter(0.05)), at: land)
         mix.add(thock(170, decay: 0.025, bright: 0.3), at: land, gain: 0.5)
-        return Biquad.lowpass(2500).run(mix.samples)
+        return Biquad.lowpass(2_500).run(mix.samples)
     },
 ]
 
@@ -432,7 +437,7 @@ let recipes: [Recipe] = [
 /// Takes out rumble and fizz, trims the tail below -60 dB, fades both ends and sets the peak.
 /// The fade out takes the last fifth, so a long ring dies away instead of stopping.
 func finish(_ samples: [Double], peak: Double) -> [Double] {
-    var output = Biquad.lowpass(9000).run(Biquad.highpass(70).run(samples))
+    var output = Biquad.lowpass(9_000).run(Biquad.highpass(70).run(samples))
     let loudest = output.map(abs).max() ?? 0
     guard loudest > 0 else { fail("a recipe made silence") }
     if let last = output.lastIndex(where: { abs($0) > loudest * 0.001 }) {
@@ -453,7 +458,8 @@ func write(_ samples: [Double], to url: URL) throws {
         AVLinearPCMIsFloatKey: false,
     ]
     let file = try AVAudioFile(forWriting: url, settings: settings, commonFormat: .pcmFormatFloat32, interleaved: false)
-    guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(samples.count)),
+    let frameCapacity = AVAudioFrameCount(samples.count)
+    guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: frameCapacity),
           let channel = buffer.floatChannelData?[0] else { fail("could not make a buffer") }
     for (index, value) in samples.enumerated() { channel[index] = Float(value) }
     buffer.frameLength = AVAudioFrameCount(samples.count)
@@ -477,7 +483,7 @@ for recipe in recipes {
         } catch {
             fail("could not write \(url.lastPathComponent): \(error)")
         }
-        let line = String(format: "%@  %.0f ms\n", url.lastPathComponent, Double(samples.count) / rate * 1000)
+        let line = String(format: "%@  %.0f ms\n", url.lastPathComponent, Double(samples.count) / rate * 1_000)
         FileHandle.standardOutput.write(Data(line.utf8))
     }
 }

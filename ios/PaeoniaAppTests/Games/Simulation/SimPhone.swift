@@ -1,54 +1,5 @@
 import Foundation
-import PencilKit
 @testable import PaeoniaApp
-
-/// The drawer's PencilKit canvas on screen, standing in for `PencilKitCanvasView`.
-/// It applies drawings the board replaced from code, as `updateUIView` does, and
-/// reports strokes drawn on it the way the canvas delegate does.
-@MainActor
-final class SimCanvas {
-    let view: PKCanvasView
-    let side: CGFloat
-    private let board: GameDrawingBoard
-    private var appliedRevision = -1
-
-    init(viewModel: DrawAndGuessViewModel, side: CGFloat) {
-        self.side = side
-        board = viewModel.board
-        view = PKCanvasView(frame: CGRect(x: 0, y: 0, width: side, height: side))
-        sync()
-        viewModel.canvasReady(view)
-        board.canvasDidLayout(side: side)
-        sync()
-    }
-
-    /// SwiftUI's update pass.
-    func sync() {
-        guard appliedRevision != board.drawingRevision else { return }
-        view.drawing = board.drawing
-        appliedRevision = board.drawingRevision
-        board.canvasDidApplyDrawing(revision: appliedRevision)
-    }
-
-    func draw(_ stroke: PKStroke) {
-        sync()
-        board.setStrokeInProgress(true)
-        let drawing = PKDrawing(strokes: view.drawing.strokes + [stroke])
-        view.drawing = drawing
-        board.updateDrawing(drawing)
-        board.setStrokeInProgress(false)
-    }
-
-    func erase(strokeAt index: Int) {
-        sync()
-        var strokes = view.drawing.strokes
-        guard strokes.indices.contains(index) else { return }
-        strokes.remove(at: index)
-        let drawing = PKDrawing(strokes: strokes)
-        view.drawing = drawing
-        board.updateDrawing(drawing)
-    }
-}
 
 /// One phone: its own Games cache, pending operations, drawings on disk and
 /// relay socket, a real `GamesViewModel` and `DrawAndGuessViewModel` wired as
@@ -163,19 +114,7 @@ final class SimPhone {
         let gateway = SimGateway(user: userID, server: server, network: network)
         let transfer = SimDrawingTransfer(user: userID, server: server, network: network)
         self.gateway = gateway
-        drain = PendingSyncOperationDrainStream(handlers: [
-            PickDrawWordPendingOperationHandler(gateway: gateway, cache: cache, drawingStore: drawingStore),
-            SubmitGameDrawingPendingOperationHandler(
-                gateway: gateway,
-                transfer: transfer,
-                cache: cache,
-                drawingStore: drawingStore
-            ),
-            SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
-            GiveUpGameRoundPendingOperationHandler(gateway: gateway, cache: cache),
-            GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
-            GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
-        ])
+        drain = makeDrain(gateway: gateway, transfer: transfer)
         let clock = clock
         let dependencies = GamesDependencies(
             gateway: gateway,
@@ -207,6 +146,22 @@ final class SimPhone {
         log.add("\(name) launch #\(launchCount)")
         // The sync service runs once at launch.
         Task { await self.sync() }
+    }
+
+    private func makeDrain(gateway: SimGateway, transfer: SimDrawingTransfer) -> PendingSyncOperationDrainStream {
+        PendingSyncOperationDrainStream(handlers: [
+            PickDrawWordPendingOperationHandler(gateway: gateway, cache: cache, drawingStore: drawingStore),
+            SubmitGameDrawingPendingOperationHandler(
+                gateway: gateway,
+                transfer: transfer,
+                cache: cache,
+                drawingStore: drawingStore
+            ),
+            SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
+            GiveUpGameRoundPendingOperationHandler(gateway: gateway, cache: cache),
+            GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
+            GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
+        ])
     }
 
     private func makeLiveRoom() -> WidgetLiveDrawing {
@@ -277,7 +232,9 @@ final class SimPhone {
         forceQuit(closesSocket: true)
         network.releaseHeld(deliverAll: true)
     }
+}
 
+extension SimPhone {
     // MARK: - Screen and app state
 
     func openScreen() {
@@ -480,28 +437,5 @@ final class SimPhone {
         parts.append("\(isSyncing)")
         parts.append("\(socket?.isConnectingNow ?? false)")
         return parts.joined(separator: "|")
-    }
-}
-
-/// Writes each queued move to the log with what the screen showed at that moment.
-@MainActor
-final class SimEnqueueReporter {
-    private weak var phone: SimPhone?
-
-    init(phone: SimPhone) {
-        self.phone = phone
-    }
-
-    func report(_ kind: SyncPendingOperationKind, round: UUID?) {
-        guard let phone else { return }
-        let model = phone.viewModel
-        let screen = model.map { "\($0.phase)" } ?? "no app"
-        let shown = model?.round?.id.uuidString.prefix(6) ?? "-"
-        let sent = model?.round?.isDrawingSent ?? false
-        let drawings = model?.pending.drawings.count ?? -1
-        phone.log.add(
-            "\(phone.name) queued \(kind.rawValue) for \(round?.uuidString.prefix(6) ?? "-") "
-                + "[\(screen) round \(shown) sent \(sent) queued drawings \(drawings)]"
-        )
     }
 }

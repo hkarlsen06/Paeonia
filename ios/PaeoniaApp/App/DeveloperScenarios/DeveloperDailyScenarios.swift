@@ -46,60 +46,74 @@
       case .unanswered:
         return try await base.loadToday(currentUserID: currentUserID)
       case .offline:
-        return DailyChallengeLoadResult(
-          snapshot: DailyChallengeSnapshot(
-            currentUserID: currentUserID,
-            coupleDayID: DeveloperScenarioDailyFixture.coupleDayID,
-            questions: [
-              offlineQuestion()
-            ],
-            refreshedAt: DeveloperScenarioFixture.now
-          ),
-          streak: healthyStreak
-        )
+        return offlineResult(currentUserID: currentUserID)
       case .partial:
         let loaded = try await base.loadToday(currentUserID: currentUserID)
-        let answered = previewHistoryQuestion(
+        return partialResult(loaded: loaded, currentUserID: currentUserID)
+      case .revealed:
+        return revealedResult(currentUserID: currentUserID)
+      }
+    }
+
+    private func offlineResult(currentUserID: UUID) -> DailyChallengeLoadResult {
+      DailyChallengeLoadResult(
+        snapshot: DailyChallengeSnapshot(
+          currentUserID: currentUserID,
+          coupleDayID: DeveloperScenarioDailyFixture.coupleDayID,
+          questions: [
+            offlineQuestion()
+          ],
+          refreshedAt: DeveloperScenarioFixture.now
+        ),
+        streak: healthyStreak
+      )
+    }
+
+    private func partialResult(
+      loaded: DailyChallengeLoadResult, currentUserID: UUID
+    ) -> DailyChallengeLoadResult {
+      let answered = previewHistoryQuestion(
+        localDate: "2026-07-15",
+        slot: 1,
+        seededFor: currentUserID,
+        prompt: "What made you smile today?",
+        ownText: "Your good-morning photo.",
+        partnerText: "The voice note you sent on the bus.",
+        currentUserID: currentUserID
+      )
+      return replacingQuestions(in: loaded, with: [answered] + loaded.snapshot.questions)
+    }
+
+    private func revealedResult(currentUserID: UUID) -> DailyChallengeLoadResult {
+      let questions = [
+        previewHistoryQuestion(
           localDate: "2026-07-15",
           slot: 1,
           seededFor: currentUserID,
-          prompt: "What made you smile today?",
-          ownText: "Your good-morning photo.",
-          partnerText: "The voice note you sent on the bus.",
+          prompt: "What small moment made you think of us today?",
+          ownText: "I walked past the bakery we like.",
+          partnerText: "Our song played while I was making dinner.",
           currentUserID: currentUserID
-        )
-        return replacingQuestions(in: loaded, with: [answered] + loaded.snapshot.questions)
-      case .revealed:
-        let questions = [
-          previewHistoryQuestion(
-            localDate: "2026-07-15",
-            slot: 1,
-            seededFor: currentUserID,
-            prompt: "What small moment made you think of us today?",
-            ownText: "I walked past the bakery we like.",
-            partnerText: "Our song played while I was making dinner.",
-            currentUserID: currentUserID
-          ),
-          previewHistoryQuestion(
-            localDate: "2026-07-15",
-            slot: 2,
-            seededFor: UUID(),
-            prompt: "What are you looking forward to together?",
-            ownText: "A slow Sunday morning.",
-            partnerText: "The train ride to Bergen.",
-            currentUserID: currentUserID
-          ),
-        ]
-        return DailyChallengeLoadResult(
-          snapshot: DailyChallengeSnapshot(
-            currentUserID: currentUserID,
-            coupleDayID: nil,
-            questions: questions,
-            refreshedAt: DeveloperScenarioFixture.now
-          ),
-          streak: healthyStreak
-        )
-      }
+        ),
+        previewHistoryQuestion(
+          localDate: "2026-07-15",
+          slot: 2,
+          seededFor: UUID(),
+          prompt: "What are you looking forward to together?",
+          ownText: "A slow Sunday morning.",
+          partnerText: "The train ride to Bergen.",
+          currentUserID: currentUserID
+        ),
+      ]
+      return DailyChallengeLoadResult(
+        snapshot: DailyChallengeSnapshot(
+          currentUserID: currentUserID,
+          coupleDayID: nil,
+          questions: questions,
+          refreshedAt: DeveloperScenarioFixture.now
+        ),
+        streak: healthyStreak
+      )
     }
 
     func startToday(currentUserID: UUID, operation _: SyncClientOperation) async throws
@@ -112,18 +126,18 @@
       try await base.loadHistory(currentUserID: currentUserID)
     }
 
-    func loadStreak() async throws -> CoupleStreak { healthyStreak }
+    func loadStreak() throws -> CoupleStreak { healthyStreak }
 
     func submitAnswer(
       instanceID _: UUID, answerID _: UUID, payload _: DailyAnswerPayload,
       operation _: SyncClientOperation
-    ) async throws -> UUID { UUID() }
+    ) throws -> UUID { UUID() }
     func editTextAnswer(instanceID _: UUID, text _: String, operation _: SyncClientOperation)
-      async throws -> UUID
+      throws -> UUID
     { UUID() }
     func editPartnerChoice(
       instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation
-    ) async throws -> UUID { UUID() }
+    ) throws -> UUID { UUID() }
     func shuffleQuestion(currentUserID: UUID, slotNumber _: Int, operation _: SyncClientOperation)
       async throws -> DailyChallengeLoadResult
     {

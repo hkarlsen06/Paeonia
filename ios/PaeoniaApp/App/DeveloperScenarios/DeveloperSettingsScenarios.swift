@@ -65,11 +65,11 @@
 
     private var locationViewModel: LocationMapViewModel {
       LocationMapViewModel(
-        visibilityStore: InMemoryLocationVisibilitySnapshotRepository(),
+        visibilityStore: InMemoryLocationVisibilityRepository(),
         ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
         pendingOperationStore: InMemoryPendingSyncOperationRepository(),
         operationProvider: DeveloperScenarioOperationProvider(),
-        locationCapture: DeveloperScenarioUnavailableLocationCapture()
+        locationCapture: DeveloperUnavailableLocationCapture()
       )
     }
   }
@@ -77,9 +77,9 @@
   actor DeveloperNotificationPreferences: NotificationPreferencesProviding {
     private var preferences = NotificationPreferences()
 
-    func loadNotificationPreferences() async throws -> NotificationPreferences { preferences }
+    func loadNotificationPreferences() throws -> NotificationPreferences { preferences }
 
-    func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) async throws {
+    func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) throws {
       switch kind {
       case .streakReminders: preferences.streakRemindersEnabled = enabled
       case .dailyChallenge: preferences.dailyChallengeEnabled = enabled
@@ -91,14 +91,14 @@
       }
     }
 
-    func setQuestionTimeReminder(_ reminder: QuestionTimeReminder) async throws {
+    func setQuestionTimeReminder(_ reminder: QuestionTimeReminder) throws {
       preferences.questionTime = reminder
     }
   }
 
   @MainActor
-  private final class DeveloperScenarioUnavailableLocationCapture: ForegroundLocationCapturing {
-    func captureCurrentLocation() async throws -> LocationPoint {
+  private final class DeveloperUnavailableLocationCapture: ForegroundLocationCapturing {
+    func captureCurrentLocation() throws -> LocationPoint {
       throw ForegroundLocationCaptureError.unavailable
     }
   }

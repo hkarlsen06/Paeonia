@@ -41,35 +41,39 @@ struct DailyChallengeEarlierAnswerNote: View {
     let onOpen: () -> Void
     let onDismiss: () -> Void
 
+    private var openButton: some View {
+        Button(action: onOpen) {
+            HStack(spacing: PaeoniaSpacing.space12) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaAccentPrimary)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+                    Text(.dailyChallengeEarlierAnswerTitle)
+                        .font(PaeoniaTypography.bodyEmphasis)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                    Text(.dailyChallengeEarlierAnswerDate(earlierAnswer.dateText()))
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: "chevron.right")
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextTertiary)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(Text(.dailyChallengeEarlierAnswerHint))
+    }
+
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
-            Button(action: onOpen) {
-                HStack(spacing: PaeoniaSpacing.space12) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(PaeoniaTypography.bodyEmphasis)
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                        .accessibilityHidden(true)
-
-                    VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
-                        Text(.dailyChallengeEarlierAnswerTitle)
-                            .font(PaeoniaTypography.bodyEmphasis)
-                            .foregroundStyle(.paeoniaTextPrimary)
-                        Text(.dailyChallengeEarlierAnswerDate(earlierAnswer.dateText()))
-                            .font(PaeoniaTypography.caption)
-                            .foregroundStyle(.paeoniaTextSecondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Image(systemName: "chevron.right")
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(.paeoniaTextTertiary)
-                        .accessibilityHidden(true)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .combine)
-            .accessibilityHint(Text(.dailyChallengeEarlierAnswerHint))
+            openButton
 
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
@@ -84,7 +88,10 @@ struct DailyChallengeEarlierAnswerNote: View {
         .padding(.leading, PaeoniaSpacing.space16)
         .padding(.trailing, PaeoniaSpacing.space8)
         .padding(.vertical, PaeoniaSpacing.space8)
-        .background(.paeoniaSurfaceSecondary, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+        .background(
+            .paeoniaSurfaceSecondary,
+            in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
+        )
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
     }
 }

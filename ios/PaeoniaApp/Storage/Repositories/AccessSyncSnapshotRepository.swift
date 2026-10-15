@@ -67,7 +67,7 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         self.container = container
     }
 
-    func save(_ snapshot: AccessSyncSnapshot) async throws {
+    func save(_ snapshot: AccessSyncSnapshot) throws {
         let context = ModelContext(container)
         let localSnapshot: LocalAccessSyncSnapshot
 
@@ -88,7 +88,7 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         LocalStoreChanges.post(.access, ownerUserID: snapshot.ownerUserID)
     }
 
-    func load(ownerUserID: UUID) async throws -> AccessSyncSnapshot? {
+    func load(ownerUserID: UUID) throws -> AccessSyncSnapshot? {
         let context = ModelContext(container)
 
         guard let snapshot = try fetchSnapshot(ownerUserID: ownerUserID, in: context) else {
@@ -114,7 +114,7 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
         )
     }
 
-    func delete(ownerUserID: UUID) async throws {
+    func delete(ownerUserID: UUID) throws {
         let context = ModelContext(container)
 
         if let snapshot = try fetchSnapshot(ownerUserID: ownerUserID, in: context) {
@@ -160,16 +160,16 @@ actor SwiftDataAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
 actor InMemoryAccessSyncSnapshotRepository: AccessSyncSnapshotPersisting {
     private var snapshots: [UUID: AccessSyncSnapshot] = [:]
 
-    func save(_ snapshot: AccessSyncSnapshot) async throws {
+    func save(_ snapshot: AccessSyncSnapshot) throws {
         snapshots[snapshot.ownerUserID] = snapshot
         LocalStoreChanges.post(.access, ownerUserID: snapshot.ownerUserID)
     }
 
-    func load(ownerUserID: UUID) async throws -> AccessSyncSnapshot? {
+    func load(ownerUserID: UUID) throws -> AccessSyncSnapshot? {
         snapshots[ownerUserID]
     }
 
-    func delete(ownerUserID: UUID) async throws {
+    func delete(ownerUserID: UUID) throws {
         snapshots[ownerUserID] = nil
         LocalStoreChanges.post(.access, ownerUserID: ownerUserID)
     }

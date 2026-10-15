@@ -136,28 +136,7 @@ struct SyncRepositoryTests {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
 
         for index in 0..<8 {
-            let completedOperation = SyncClientOperation(
-                id: UUID(),
-                clientID: ownerUserID,
-                clientSequence: Int64(index),
-                localCreatedAt: Date(timeIntervalSince1970: TimeInterval(index))
-            )
-            try await repository.enqueue(
-                PendingSyncOperationRequest(
-                    ownerUserID: ownerUserID,
-                    operation: completedOperation,
-                    operationKind: .sendThreadMessage,
-                    idempotencyScope: "completed:\(completedOperation.id)"
-                )
-            )
-            try await repository.markSending(
-                clientOperationID: completedOperation.id,
-                at: Date(timeIntervalSince1970: 100)
-            )
-            try await repository.markSucceeded(
-                clientOperationID: completedOperation.id,
-                at: Date(timeIntervalSince1970: 101)
-            )
+            try await enqueueCompletedOperation(index: index, ownerUserID: ownerUserID, in: repository)
         }
 
         let queuedOperation = SyncClientOperation(
@@ -194,6 +173,35 @@ struct SyncRepositoryTests {
             clientID: try #require(UUID(uuidString: "99999999-9999-9999-9999-999999999999")),
             clientSequence: sequence,
             localCreatedAt: Date(timeIntervalSince1970: createdAt)
+        )
+    }
+
+    private func enqueueCompletedOperation(
+        index: Int,
+        ownerUserID: UUID,
+        in repository: SwiftDataPendingSyncOperationRepository
+    ) async throws {
+        let completedOperation = SyncClientOperation(
+            id: UUID(),
+            clientID: ownerUserID,
+            clientSequence: Int64(index),
+            localCreatedAt: Date(timeIntervalSince1970: TimeInterval(index))
+        )
+        try await repository.enqueue(
+            PendingSyncOperationRequest(
+                ownerUserID: ownerUserID,
+                operation: completedOperation,
+                operationKind: .sendThreadMessage,
+                idempotencyScope: "completed:\(completedOperation.id)"
+            )
+        )
+        try await repository.markSending(
+            clientOperationID: completedOperation.id,
+            at: Date(timeIntervalSince1970: 100)
+        )
+        try await repository.markSucceeded(
+            clientOperationID: completedOperation.id,
+            at: Date(timeIntervalSince1970: 101)
         )
     }
 }
