@@ -15,7 +15,7 @@ export function PhoneScreenshot({ src, alt, className = '', priority = false }: 
           src={src}
           alt={alt}
           width={780}
-          height={1695}
+          height={1696}
           loading={priority ? 'eager' : 'lazy'}
           fetchPriority={priority ? 'high' : undefined}
           decoding="async"

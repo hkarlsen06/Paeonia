@@ -1,12 +1,6 @@
 # Cloudflare Pages static routing.
 
-# Unprefixed public paths use English by default.
-/privacy /en/privacy/ 302
-/privacy/ /en/privacy/ 302
-/terms /en/terms/ 302
-/terms/ /en/terms/ 302
-/support /en/support/ 302
-/support/ /en/support/ 302
+# /, /privacy, /terms and /support go to the visitor's language through functions/.
 
 # Browsers that do not hand an invite to the installed app use the static join fallback.
 /join/* /join/ 200

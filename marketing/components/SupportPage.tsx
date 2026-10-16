@@ -10,7 +10,7 @@ interface SupportPageProps {
 
 export function SupportPage({ locale }: SupportPageProps) {
   const dictionary = getMarketingDictionary(locale);
-  const content = dictionary.marketing.support;
+  const content = dictionary.legal.support;
   const supportEmail = dictionary.legal.supportEmail;
   const contactEmail = dictionary.legal.contactEmail;
 
@@ -19,6 +19,7 @@ export function SupportPage({ locale }: SupportPageProps) {
       <main className="page-shell narrow">
         <h1>{content.title}</h1>
         <p className="lede">{content.description}</p>
+
         <p className="label">{content.emailLabel}</p>
         <div className="actions">
           <a className="button" href={`mailto:${supportEmail}`}>
@@ -30,6 +31,17 @@ export function SupportPage({ locale }: SupportPageProps) {
           <Link className="button secondary" href={buildLocalizedPath(locale)}>
             {content.back}
           </Link>
+        </div>
+
+        <div className="legal-content">
+          {content.sections.map((section) => (
+            <section key={section.heading}>
+              <h2>{section.heading}</h2>
+              {section.paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </section>
+          ))}
         </div>
       </main>
     </SiteShell>

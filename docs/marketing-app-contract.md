@@ -51,15 +51,13 @@ Avoid reintroducing a single large dictionary file as the site grows. Add new ma
 
 Purpose: public landing page.
 
-Temporary behavior: show an under-construction page that says Paeonia is being built and links to support, privacy, and terms.
-
-Production behavior: real marketing page.
+Current behavior: `functions/index.js` sends the visitor to `/no/` when the browser prefers Norwegian (`nb`, `nn` or `no` in `Accept-Language`) and to `/en/` otherwise.
 
 ### `/en` and `/no`
 
 Purpose: localized landing pages.
 
-Temporary behavior: same under-construction message in English and Norwegian.
+Current behavior: the marketing page, with games first, in English and Norwegian. The screenshots in `public/screens/` are real app screens from the Hjalmar and Elena test accounts, in English for both locales.
 
 Production behavior: localized marketing pages.
 
@@ -89,7 +87,7 @@ The path must stay covered by the Apple App Site Association file so iOS can ope
 
 Purpose: stable App Store and in-app privacy URL.
 
-Temporary behavior: redirect to `/en/privacy/`.
+Current behavior: redirect to `/no/privacy/` or `/en/privacy/` by browser language, through `functions/[path].js`.
 
 Production behavior: final privacy policy.
 
@@ -99,7 +97,7 @@ The policy covers private relationship content, account deletion, precise locati
 
 Purpose: stable App Store and in-app terms URL.
 
-Temporary behavior: redirect to `/en/terms/`.
+Current behavior: redirect to `/no/terms/` or `/en/terms/` by browser language, through `functions/[path].js`.
 
 Production behavior: final terms of service.
 
@@ -109,7 +107,7 @@ The terms cover subscriptions, one-partner-pays access, restore behavior, accoun
 
 Purpose: stable App Store and in-app support URL.
 
-Temporary behavior: redirect to `/en/support/`.
+Current behavior: redirect to `/no/support/` or `/en/support/` by browser language, through `functions/[path].js`.
 
 Production behavior: support page with at least one reachable support channel.
 
@@ -277,14 +275,5 @@ Expected deployed result:
 - AASA returns `200` and `Content-Type: application/json`.
 - `/join/test-code` resolves to a page, not a 404.
 - privacy, terms, and support routes resolve.
-- no app-required endpoint depends on a server runtime.
-
-## Current Temporary Site Goal
-
-Until the real marketing site is ready, the static site only needs to:
-
-- tell visitors that Paeonia is being built
-- keep legal/support routes alive
-- keep invite-link fallback routes alive
-- serve Apple Associated Domains correctly
-- avoid misleading launch or availability claims
+- `curl -I -H 'Accept-Language: nb' https://paeonia.no/privacy` redirects to `/no/privacy/`.
+- no app-required endpoint depends on a server runtime. The language redirects are Pages Functions in `marketing/functions/`, and the deploy script runs Wrangler from `marketing/` so it finds them. A deploy from the repository root silently leaves them out.

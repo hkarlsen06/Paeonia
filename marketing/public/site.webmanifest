@@ -3,6 +3,13 @@
   "short_name": "Paeonia",
   "start_url": "/en/",
   "display": "standalone",
-  "background_color": "#fbf7f5",
-  "theme_color": "#fbf7f5"
+  "background_color": "#2A0B1E",
+  "theme_color": "#2A0B1E",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
 }

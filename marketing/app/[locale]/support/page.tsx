@@ -23,8 +23,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const dictionary = getMarketingDictionary(locale as Locale);
 
   return {
-    title: dictionary.marketing.support.title,
-    description: dictionary.marketing.support.description,
+    title: dictionary.legal.support.meta.title,
+    description: dictionary.legal.support.meta.description,
   };
 }
 

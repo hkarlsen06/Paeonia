@@ -1,3 +1,4 @@
 Contact: mailto:support@paeonia.no
+Expires: 2027-10-16T00:00:00.000Z
 Preferred-Languages: en, no
 Canonical: https://paeonia.no/.well-known/security.txt

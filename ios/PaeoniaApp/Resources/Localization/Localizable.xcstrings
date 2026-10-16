@@ -21418,13 +21418,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia will look at your report. Your relationship has ended."
+            "value" : "Paeonia will look at your report within three working days. Your relationship has ended."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia ser på rapporten din. Forholdet ditt er avsluttet."
+            "value" : "Paeonia ser på rapporten din innen tre virkedager. Forholdet ditt er avsluttet."
           }
         }
       }

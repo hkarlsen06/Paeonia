@@ -185,16 +185,16 @@ private struct DailyAnswerersView: View {
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space4) {
             avatar(
-                photo: participants.partnerProfilePhotoAssetID,
-                name: participants.partnerName,
-                tint: .paeoniaPartnerTwo,
-                answered: question.hasPartnerAnswer
-            )
-            avatar(
                 photo: participants.currentProfilePhotoAssetID,
                 name: participants.currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
                 tint: .paeoniaPartnerOne,
                 answered: question.hasOwnAnswer
+            )
+            avatar(
+                photo: participants.partnerProfilePhotoAssetID,
+                name: participants.partnerName,
+                tint: .paeoniaPartnerTwo,
+                answered: question.hasPartnerAnswer
             )
         }
         .accessibilityHidden(true)

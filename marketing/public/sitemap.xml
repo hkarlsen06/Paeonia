@@ -10,9 +10,18 @@
     <loc>https://paeonia.no/en/privacy/</loc>
   </url>
   <url>
+    <loc>https://paeonia.no/no/privacy/</loc>
+  </url>
+  <url>
     <loc>https://paeonia.no/en/terms/</loc>
   </url>
   <url>
+    <loc>https://paeonia.no/no/terms/</loc>
+  </url>
+  <url>
     <loc>https://paeonia.no/en/support/</loc>
+  </url>
+  <url>
+    <loc>https://paeonia.no/no/support/</loc>
   </url>
 </urlset>

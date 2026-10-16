@@ -1,13 +1,66 @@
 export const legalNo = {
   contactEmail: 'contact@paeonia.no',
   supportEmail: 'support@paeonia.no',
+  support: {
+    meta: {
+      title: 'Hjelp',
+      description: 'Få hjelp med Paeonia, abonnementet, kontoen eller en partnerinvitasjon.',
+    },
+    title: 'Hjelp',
+    description: 'Send oss en e-post hvis du trenger hjelp med Paeonia, kontoen, et abonnement eller en partnerinvitasjon.',
+    emailLabel: 'E-post',
+    back: 'Tilbake til Paeonia',
+    sections: [
+      {
+        heading: 'Kontakt oss',
+        paragraphs: [
+          'Trenger du hjelp med appen, kan du sende e-post til support@paeonia.no. Har du spørsmål om personvern eller vil be om opplysninger, kan du skrive til contact@paeonia.no. Fortell hva som skjedde og hvilken iPhone og iOS-versjon du bruker. Send aldri passordet ditt.',
+        ],
+      },
+      {
+        heading: 'Abonnement, betaling og refusjon',
+        paragraphs: [
+          'Paeonia har ingen gratisversjon. Ett abonnement gjelder for dere begge, og partneren som blir med via en invitasjonskode, betaler ikke.',
+          'Apple håndterer all betaling. For å endre eller si opp åpner du Innstillinger på iPhone, trykker på navnet ditt og velger Abonnementer. Du kan også trykke Administrer abonnement i Oss-fanen i Paeonia. Når du sier opp, stopper neste fornyelse, og du beholder tilgangen til den betalte perioden er over. Sletter du appen eller kontoen, sies ikke abonnementet opp.',
+          'Det er Apple som avgjør refusjon, ikke Paeonia. Be om refusjon på reportaproblem.apple.com.',
+          'Har du betalt og Paeonia fortsatt er låst, trykker du Gjenopprett kjøp på abonnementsskjermen. Hvis partneren din betaler, ber du vedkommende trykke Gjenopprett kjøp på sin telefon.',
+        ],
+      },
+      {
+        heading: 'Slett kontoen din',
+        paragraphs: [
+          'Åpne Oss-fanen, bla ned til Konto, trykk Slett konto og bekreft. Du kan også slette den fra abonnementsskjermen. Hvis dere er koblet sammen, avsluttes forholdet. Delt innhold skjules med en gang og slettes etter omtrent 30 dager. Hvis du ikke får åpnet appen, kan du sende e-post til contact@paeonia.no fra adressen som er knyttet til kontoen.',
+          'Når du sletter kontoen, sies ikke abonnementet opp. Si det opp i Apple-kontoinnstillingene.',
+        ],
+      },
+      {
+        heading: 'Se, kopier eller rett opplysningene dine',
+        paragraphs: [
+          'Åpne Oss-fanen og deretter Personvern og trygghet. Der kan du be om å se hva vi lagrer, be om en kopi eller be om retting. Vi svarer på e-post til adressen som er knyttet til kontoen, vanligvis innen en måned.',
+        ],
+      },
+      {
+        heading: 'Trygghet og rapporter',
+        paragraphs: [
+          'Hvis noe i forholdet ditt føles utrygt, åpner du Oss-fanen, så Personvern og trygghet, og trykker Rapporter og forlat forholdet. Vi viser aldri rapporten din til den andre. Vi ser på hver rapport og svarer innen tre virkedager. Du kan også sende e-post til support@paeonia.no. Er du i fare, ring nødnummeret der du bor først.',
+        ],
+      },
+      {
+        heading: 'Invitasjoner og innlogging',
+        paragraphs: [
+          'En invitasjonskode har 6 tegn. Skriv eller lim den inn i Paeonia, eller åpne invitasjonslenken på iPhonen der Paeonia er installert. Hvis lenken åpner denne nettsiden i stedet for appen, trykker du Åpne Paeonia på siden. Fungerer ikke koden, ber du partneren din om en ny.',
+          'Du logger inn med Apple eller Google. Paeonia har ikke passord eller innlogging med e-post.',
+        ],
+      },
+    ],
+  },
   privacy: {
     meta: {
       title: 'Personvern',
       description: 'Slik samler Paeonia inn, bruker, deler og beskytter personopplysninger.',
     },
     title: 'Personvern',
-    updated: 'Sist oppdatert 11. oktober 2026',
+    updated: 'Sist oppdatert 16. oktober 2026',
     sections: [
       {
         heading: 'Hvem personvernteksten gjelder for',
@@ -21,8 +74,9 @@ export const legalNo = {
         paragraphs: [
           'Konto- og profilopplysninger omfatter konto-ID, innloggingsleverandør, e-postadresse og navn når Apple eller Google gjør dem tilgjengelige, valgt visningsnavn, profilbilde, språk, tidssone og kontostatus. Et profilbilde fra innloggingsleverandøren kan brukes som reserve hvis du ikke har lagt til et Paeonia-bilde.',
           'Forholdsopplysninger omfatter invitasjoner, medlemskap og status for forholdet, startdato hvis du legger den til, blokkeringer, sikkerhetsvarsler og valg som trengs for å styre tilgangen til fellesrommet.',
-          'Innhold du velger å legge til, kan omfatte daglige svar, tekst, bilder, talesvar, partnervalg, minner, notater, datoer, nedtellinger, tegninger og oppfølgingsmeldinger. Innholdet er privat i fellesrommet med mindre det rapporteres eller tilgang er nødvendig for de begrensede formålene nedenfor.',
-          'Tjenesteopplysninger omfatter status for abonnement og tilgang, referanser til App Store-transaksjoner, varslingsvalg og enhetsnøkler, status for opplasting og synkronisering, forespørsels-ID-er som hindrer doble handlinger, og sikkerhets- eller driftsopplysninger. Apple behandler betalingsopplysningene dine. Paeonia mottar ikke fullstendige kortopplysninger.',
+          'Innhold du velger å legge til, omfatter svar på daglige spørsmål (tekst, bilder, tale og partnervalg), chattemeldinger med svar, bilder og talemeldinger, minner med bilder og notater, stories (et bilde med en valgfri tekst), korte notater, datoer og nedtellinger, hjerter, tegninger og dine trekk, tegninger, ord og gjetninger i spill. Paeonia leser bare bildene du velger eller tar, og lagrer et bilde i bildebiblioteket ditt bare når du trykker Lagre i Bilder. Innholdet er privat i fellesrommet med mindre det rapporteres eller tilgang er nødvendig for de begrensede formålene nedenfor.',
+          'Tjenesteopplysninger omfatter status for abonnement og tilgang, referanser til App Store-transaksjoner (også engangskjøp, for eksempel for å få tilbake en streak), streak-fremdrift, varslingsvalg, pushnøkkelen til telefonen din, appversjon, språk og tidssone, status for opplasting og synkronisering, forespørsels-ID-er som hindrer doble handlinger, og sikkerhets- eller driftsopplysninger. Apple behandler betalingsopplysningene dine. Paeonia mottar ikke kortopplysningene dine.',
+          'Paeonia bruker ikke analyseverktøy, annonseverktøy eller verktøy for krasjrapporter, og sporer deg ikke på tvers av andre apper eller nettsteder. Nettsiden paeonia.no setter ingen informasjonskapsler og bruker ikke analyse. Cloudflare, som leverer nettsiden, behandler tekniske forespørselsopplysninger som IP-adressen din for å vise sidene.',
           'Hvis du slår på posisjonsdeling, behandler Paeonia den nyeste nøyaktige posisjonen din og tidspunktet den ble registrert. Vi lagrer ikke posisjonshistorikk for denne funksjonen.',
         ],
       },
@@ -48,6 +102,13 @@ export const legalNo = {
         ],
       },
       {
+        heading: 'Stories, notater og spill',
+        paragraphs: [
+          'En story er et bilde med en valgfri tekst. Partneren din ser den på Hjem i 24 timer. Etter det blir den liggende under Stories i Minner for dere begge, til den som la den ut, sletter den. Et notat vises over bildet ditt på Hjem i 24 timer og slettes deretter.',
+          'Spill lagrer trekk, tegninger, ord, gjetninger og poeng i fellesrommet. Når dere tegner sammen live, går strekene gjennom en relétjeneste som kjører hos Cloudflare. Relétjenesten sender dem videre til partneren din mens du tegner, og lagrer dem ikke. En ferdig tegning lagres i fellesrommet som annet innhold. Stories og spill følger de samme reglene om skjuling og sletting som annet innhold når et forhold avsluttes.',
+        ],
+      },
+      {
         heading: 'Posisjonsdeling',
         paragraphs: [
           'Posisjonsdeling er valgfritt og virker bare når begge partnere slår den på. Paeonia oppdaterer den nyeste posisjonen når du åpner appen, hver gang du flytter deg omtrent 250 meter eller mer mens den er åpen, og når du ber om en oppdatering. Partneren ser posisjonen og når den ble registrert, også når den kan være gammel.',
@@ -65,7 +126,7 @@ export const legalNo = {
       {
         heading: 'Hvem vi deler opplysninger med',
         paragraphs: [
-          'Vi bruker leverandører for drift, database og fillagring, innlogging, abonnementer, pushvarsler og levering av nettsiden. De behandler opplysninger bare for å levere disse tjenestene til Paeonia og er underlagt egne krav til sikkerhet og personvern.',
+          'Disse leverandørene behandler opplysninger for Paeonia, og bare for å drive tjenesten. Apple håndterer Logg inn med Apple, betaling og abonnement i App Store og pushvarsler. Google håndterer Logg inn med Google. Clerk håndterer innlogging og økter. Cloudflare lagrer bilder, talemeldinger, tegninger og andre filer i EU, kjører relétjenesten for live-tegning og leverer nettsiden. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
           'Vi kan utlevere opplysninger når loven krever det, for å beskytte en person eller tjenesten, eller som del av en omorganisering med egnede sikkerhetstiltak. Betrodde personer innen brukerstøtte eller moderering kan få tilgang til minst mulig informasjon for å løse en henvendelse, vurdere rapportert innhold, ivareta sikkerhet, fullføre en personvernforespørsel eller utføre sletting og gjenoppretting.',
           'Vi selger ikke personopplysninger. Vi bruker ikke forholdsinnhold til annonsering, og Paeonia har ikke tredjepartsannonser eller sporing på tvers av apper.',
         ],
@@ -74,7 +135,7 @@ export const legalNo = {
         heading: 'Rapporter, blokkeringer og sikkerhet',
         paragraphs: [
           'Du kan rapportere innhold eller oppførsel knyttet til det nåværende eller nylig avsluttede forholdet. En rapport kan inneholde en beskyttet kopi av rapportert tekst, metadata, bilde, talesvar, tegning eller annet relevant innhold, slik at det kan vurderes selv om originalen endres eller slettes.',
-          'Personen som rapporteres, får ikke se rapporten. En blokkering stenger kontakten gjennom Paeonia og hindrer ny sammenkobling frem til personen som blokkerte, fjerner blokkeringen. Sikkerhets- og modereringsopplysninger kan beholdes etter at annet forholdsinnhold er slettet når det er nødvendig for å hindre gjentatt skade og dokumentere behandlingen av en rapport.',
+          'Personen som rapporteres, får ikke se rapporten. Vi går gjennom hver rapport og svarer innen tre virkedager. En blokkering stenger kontakten gjennom Paeonia og hindrer ny sammenkobling frem til personen som blokkerte, fjerner blokkeringen. Sikkerhets- og modereringsopplysninger kan beholdes etter at annet forholdsinnhold er slettet når det er nødvendig for å hindre gjentatt skade og dokumentere behandlingen av en rapport.',
         ],
       },
       {
@@ -82,14 +143,17 @@ export const legalNo = {
         paragraphs: [
           'Vi beholder aktive konto- og forholdsopplysninger så lenge de trengs for å levere Paeonia. Når et forhold avsluttes, skjules delt innhold med en gang og planlegges vanligvis slettet etter omtrent 30 dager. Nyeste delte posisjoner slettes med en gang. Lokale private mellomlagre skjules eller tømmes når tilgangen opphører.',
           'Kopier av rapportert innhold beholdes mens en rapport er åpen og vanligvis i 180 dager etter at den er ferdigbehandlet. Selve rapporten, modereringshandlinger, blokkeringer, sikkerhetsvarsler, abonnementsopplysninger, revisjonsspor for personvernforespørsler og begrensede sikkerhets- eller lovopplysninger kan beholdes lenger når det trengs for sikkerhet, regnskap, tvister, svindelforebygging eller rettslige plikter.',
-          'Ventende opplastinger og driftsopplysninger beholdes bare så lenge de trengs for å fullføre, prøve på nytt, sikre eller rydde opp handlingen. Oppbevaringstiden kan forlenges når loven krever det eller et rettskrav må bevares.',
+          'Ventende opplastinger og driftsopplysninger beholdes bare så lenge de trengs for å fullføre, prøve på nytt, sikre eller rydde opp handlingen. Varslings- og forespørselsopplysninger slettes vanligvis etter omtrent 30 dager. Slettede opplysninger kan bli liggende i sikkerhetskopiene på serveren i opptil 14 dager før kopiene byttes ut.',
+          'Oppbevaringstiden kan forlenges når loven krever det eller et rettskrav må bevares.',
         ],
       },
       {
         heading: 'Avslutte forhold og slette konto',
         paragraphs: [
           'Når du forlater et forhold, skjules fellesrommet for begge med en gang, og den vanlige sletteperioden for forholdsinnhold starter. Den andre partneren får en engangsmelding om at fellesrommet er avsluttet.',
+          'Slik sletter du kontoen i appen: Åpne Oss-fanen, bla ned til Konto, trykk Slett konto og bekreft. Du kan også slette den fra abonnementsskjermen. Hvis du ikke får åpnet appen, kan du sende e-post til contact@paeonia.no fra adressen som er knyttet til kontoen, så gjør vi det for deg.',
           'Når du sletter kontoen, fjernes eller anonymiseres profilen, et aktivt forhold avsluttes, posisjonsdeling og varsler deaktiveres, aktive økter trekkes tilbake og resten av oppryddingen settes i gang. Delt forholdsinnhold følger den samme perioden med skjuling før sletting. Opplysninger som må beholdes for rapporter, abonnementer, sikkerhet, personvernforespørsler eller rettslige plikter, begrenses og brukes bare til disse formålene.',
+          'Hvis du logget inn med Apple, ber Paeonia Apple om å koble fra kontoen når det er mulig. Hvis Paeonia fortsatt vises under Logg inn med Apple i Apple-kontoinnstillingene dine, kan du slutte å bruke den der.',
           'Sletting av Paeonia avslutter ikke et App Store-abonnement. Du kan administrere eller avslutte abonnementet i Apple-kontoinnstillingene.',
         ],
       },
@@ -110,8 +174,14 @@ export const legalNo = {
         heading: 'Valgene og rettighetene dine',
         paragraphs: [
           'Du kan redigere profilopplysninger, slå av posisjonsdeling og varsler, forlate et forhold, blokkere en partner og slette kontoen i appen der disse valgene er tilgjengelige.',
-          'Du kan be om innsyn eller eksport, retting, sletting, begrensning eller en annen rettighet som gjelder der du bor. En eksport omfatter vanligvis kontoopplysninger og dine egne bidrag. Den utleverer ikke automatisk partnerens private svar, medier, rapporter eller andre personopplysninger. Kontakt contact@paeonia.no eller bruk personvernforespørselen i appen.',
+          'Du kan be om innsyn eller eksport, retting, sletting, begrensning eller en annen rettighet som gjelder der du bor. En eksport omfatter vanligvis kontoopplysninger og dine egne bidrag. Den utleverer ikke automatisk partnerens private svar, medier, rapporter eller andre personopplysninger. I appen åpner du Oss-fanen og deretter Personvern og trygghet, der du kan be om å se hva vi lagrer, be om en kopi eller be om retting. Vi svarer på e-post til adressen som er knyttet til kontoen, vanligvis innen en måned. Du kan også skrive til contact@paeonia.no.',
           'Du kan også klage til den lokale personvernmyndigheten. I Norge er dette Datatilsynet. Vi kan måtte bekrefte identiteten din før en forespørsel fullføres.',
+        ],
+      },
+      {
+        heading: 'Barn',
+        paragraphs: [
+          'Paeonia er laget for par og er ikke rettet mot barn. Vi samler ikke bevisst inn personopplysninger fra barn som er for unge til å godta denne personvernteksten selv etter loven der de bor. Hvis du tror et barn bruker Paeonia, kan du sende e-post til contact@paeonia.no. Vi undersøker saken og sletter kontoen om nødvendig.',
         ],
       },
       {
@@ -129,13 +199,14 @@ export const legalNo = {
       description: 'Vilkårene som gjelder når du oppretter konto eller bruker Paeonia.',
     },
     title: 'Vilkår',
-    updated: 'Sist oppdatert 16. august 2026',
+    updated: 'Sist oppdatert 16. oktober 2026',
     sections: [
       {
         heading: 'Avtalen',
         paragraphs: [
           'Disse vilkårene er en avtale mellom deg og Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norge, som driver Paeonia. De gjelder når du oppretter konto eller bruker Paeonia-appen og tilknyttede tjenester. Ved å bruke Paeonia godtar du vilkårene og personvernteksten. Hvis du ikke godtar dem, må du ikke bruke tjenesten.',
-          'Du må etter loven kunne godta vilkårene. Hvis loven der du bor krever tillatelse fra en forelder eller verge, må du ha denne tillatelsen.',
+          'Du må etter loven kunne godta vilkårene. Hvis loven der du bor krever tillatelse fra en forelder eller verge, må du ha denne tillatelsen. Paeonia er laget for par og er ikke rettet mot barn.',
+          'Apples standard lisensavtale for apper (Licensed Application End User License Agreement, https://www.apple.com/legal/internet-services/itunes/dev/stdeula/) gjelder også for appen, og disse vilkårene kommer i tillegg. Apple er ikke part i disse vilkårene og er ikke ansvarlig for appen eller for brukerstøtten.',
         ],
       },
       {
@@ -162,9 +233,11 @@ export const legalNo = {
       {
         heading: 'Abonnement og betaling',
         paragraphs: [
-          'Paeonia låses opp med et gyldig abonnement. Ett aktivt abonnement kan gjelde for begge partnerne i abonnentens nåværende forhold. Abonnementet tilhører Apple-kontoen og Paeonia-kontoen som ble brukt ved kjøpet. Det overføres ikke automatisk til en annen konto eller et annet forhold.',
-          'Apple behandler kjøp, prøveperioder, fornyelser, oppsigelse og refusjon etter vilkårene som vises i App Store. Pris, betalingsperiode og eventuell prøveperiode vises før du bekrefter. Abonnementet fornyes automatisk slik Apple beskriver, med mindre det avsluttes. Du kan administrere eller avslutte det i Apple-kontoinnstillingene og gjenopprette gyldige kjøp fra Paeonia.',
-          'Hvis ingen av partnerne har aktiv tilgang, kan fellesrommet låses til et abonnement gjenopprettes eller kjøpes. Et utløpt abonnement avslutter ikke i seg selv forholdet. Sletting av Paeonia-kontoen eller appen avslutter ikke App Store-abonnementet.',
+          'Paeonia har ingen gratisversjon. Appen virker så lenge én av partnerne har et aktivt abonnement. Ett abonnement gjelder for begge partnerne, og partneren som blir med via en invitasjonskode, betaler ikke. Alle funksjoner er med. Abonnementet tilhører Apple-kontoen og Paeonia-kontoen som ble brukt ved kjøpet. Det flyttes ikke av seg selv til en annen konto eller et annet forhold.',
+          'Paeonia tilbyr månedlige og årlige abonnement, og kan tilby en gratis prøveperiode til deg som ikke har hatt en før. Prisen, lengden på hver periode og lengden på en eventuell prøveperiode vises på kjøpsskjermen før du bekrefter. Apple trekker beløpet fra Apple-kontoen din når du bekrefter kjøpet, eller når en gratis prøveperiode er over. Abonnementet fornyes automatisk for samme periode til prisen som vises i App Store, med mindre du sier det opp minst 24 timer før perioden er over. Apple trekker fornyelsen senest 24 timer før perioden er over.',
+          'Du kan administrere eller avslutte et abonnement i Innstillinger, så navnet ditt, så Abonnementer på iPhone, eller i delen Abonnement i Oss-fanen i Paeonia. Når du sier opp, stopper neste fornyelse, og du beholder tilgangen til den betalte perioden er over. Apple avgjør refusjon, og du kan be om det på reportaproblem.apple.com. Trykk Gjenopprett kjøp på abonnementsskjermen eller i Oss-fanen for å få tilbake et kjøp du allerede har gjort, for eksempel på en ny telefon.',
+          'Hvis ingen av partnerne har aktiv tilgang, er fellesrommet låst til et abonnement gjenopprettes eller kjøpes. Et utløpt abonnement avslutter ikke i seg selv forholdet. Sletting av Paeonia-kontoen eller appen avslutter ikke App Store-abonnementet.',
+          'Paeonia kan også selge engangskjøp, for eksempel for å få tilbake en streak som er brutt. Et engangskjøp fornyes ikke.',
         ],
       },
       {
@@ -184,7 +257,7 @@ export const legalNo = {
       {
         heading: 'Rapporter, blokkeringer og moderering',
         paragraphs: [
-          'Du kan rapportere tilknyttet innhold eller oppførsel og kan blokkere og forlate forholdet. Vi kan bevare rapportert materiale, vurdere det, skjule eller fjerne innhold, begrense kontoer eller sammenkobling og ta andre forholdsmessige grep for å beskytte brukere og tjenesten.',
+          'Paeonia er et privat rom for to og har ingen offentlige innlegg, men reglene gjelder alt du legger til. Slik rapporterer du partneren din: Åpne Oss-fanen, så Personvern og trygghet, og trykk Rapporter og forlat forholdet. Rapporten avslutter forholdet, og du kan også velge å blokkere personen. Du kan også sende e-post til support@paeonia.no. Vi går gjennom hver rapport og svarer innen tre virkedager. Vi kan bevare rapportert materiale, vurdere det, skjule eller fjerne innhold, begrense kontoer eller sammenkobling og ta andre forholdsmessige grep for å beskytte brukere og tjenesten.',
           'Vi lover ikke å overvåke alt privat innhold. Kontakt lokale nødtjenester hvis noen er i umiddelbar fare. Rapporter som bevisst er uriktige, eller misbruk av sikkerhetsverktøy, kan i seg selv bryte vilkårene.',
         ],
       },
@@ -198,7 +271,7 @@ export const legalNo = {
       {
         heading: 'Slette kontoen',
         paragraphs: [
-          'Du kan be om kontosletting i Paeonia. Slettingen er permanent, avslutter et aktivt forhold, fjerner eller anonymiserer profilen og starter oppryddingen som beskrives i personvernteksten. Enkelte begrensede opplysninger kan beholdes for rapporter, betalinger, sikkerhet, tvister eller rettslige plikter.',
+          'Slik sletter du kontoen: Åpne Oss-fanen i Paeonia, bla ned til Konto, trykk Slett konto og bekreft. Du kan også slette den fra abonnementsskjermen. Hvis du ikke får åpnet appen, kan du sende e-post til contact@paeonia.no fra adressen som er knyttet til kontoen. Slettingen er permanent, avslutter et aktivt forhold, fjerner eller anonymiserer profilen og starter oppryddingen som beskrives i personvernteksten. Enkelte begrensede opplysninger kan beholdes for rapporter, betalinger, sikkerhet, tvister eller rettslige plikter.',
           'Et App Store-abonnement må avsluttes separat i Apple-kontoinnstillingene.',
         ],
       },
