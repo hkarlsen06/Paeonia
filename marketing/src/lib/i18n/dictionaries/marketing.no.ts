@@ -23,7 +23,7 @@ export const marketingNo = {
       },
       {
         src: 'ludo',
-        alt: 'Et parti Ludo på et trebord med en tekanne og et lys. Brikkene til hver av dem har merket de tegnet selv.',
+        alt: 'Et parti Ludo på et trebord med croissanter, en liten plante og en kopp kakao til hver av dem. Brikkene til hver av dem har merket de tegnet selv.',
       },
     ],
   },

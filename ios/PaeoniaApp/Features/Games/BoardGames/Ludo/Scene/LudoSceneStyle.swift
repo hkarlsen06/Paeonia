@@ -53,55 +53,104 @@ nonisolated enum LudoSceneStyle {
 
     // MARK: Room
 
-    /// The board lies on a varnished wooden table in a dark room. The table is far wider
-    /// than the view, and fades into the room's color from `roomLitRadius` cells out to
-    /// `roomDarkRadius`. The wood repeats every `tableGrainCells` cells.
-    static let tableSize: Float = 140
+    /// The board lies on a varnished wooden table in a dim room. The table ends a little
+    /// past the props, so its edges show, and it stands on four legs `tableHeight` above
+    /// a parquet floor. Its corners are a little round. The wood repeats every
+    /// `tableGrainCells` cells.
+    static let tableWidth: Float = 34
+    static let tableDepth: Float = 44
+    static let tableThickness: Float = 1.2
+    static let tableCornerRadius: Float = 0.6
     static let tableGrainCells: Float = 30
+    static let tableHeight: Float = 19
+    /// Square legs, `tableLegSide` thick, set in from the corners by `tableLegInset`.
+    static let tableLegSide: Float = 1.6
+    static let tableLegInset: Float = 1.2
     /// The table's gloss comes from its roughness picture, which follows the grain (see
     /// `ios/Scripts/ludo-surfaces.swift`). This scales it. There is no clearcoat, which
     /// lay over the grain as one smooth sheen.
     static let tableRoughness: Float = 1
-    /// A dark plum close to the app's own background, so the warm table fades into the
-    /// same color as the rows on top of it.
-    static let roomHex: UInt32 = 0x220A18
+    /// The floor is herringbone parquet, `floorSize` across, so the view never shows where
+    /// it ends, with the wood repeating every `floorGrainCells` cells. A cream wool rug lies
+    /// under the table. The lamp lights the table, so the floor and the rug are darkened by
+    /// their shade (1 is unchanged): clearly seen, but quiet, and the rows on top stay easy
+    /// to read. A fade into the dark toward the top of the view looked like a horror film.
+    static let floorSize: Float = 400
+    static let floorGrainCells: Float = 18
+    static let floorShade: CGFloat = 0.32
+    static let rugShade: CGFloat = 0.42
+    static let rugWidth: Float = 56
+    static let rugDepth: Float = 68
+    static let rugCornerRadius: Float = 2
+    static let rugGrainCells: Float = 10
+    static let rugLift: Float = 0.05
+    /// The room is `roomHalfWidth` and `roomHalfDepth` cells from its middle to each wall,
+    /// and its walls are `wallHeight` tall: beige plaster repeating every `wallGrainCells`
+    /// cells, darkened like the floor, with a painted skirting board along the bottom.
+    /// Each wall shows only from inside, so the one between the camera and the table
+    /// is not drawn.
+    static let roomHalfWidth: Float = 42
+    static let roomHalfDepth: Float = 46
+    static let wallHeight: Float = 72
+    static let wallGrainCells: Float = 24
+    static let wallShade: CGFloat = 0.5
+    static let skirtingHeight: Float = 2.4
+    static let skirtingHex: UInt32 = 0x6E625A
+    /// Two chairs pulled up to the sides of the table, and a low chest of drawers against
+    /// the far wall, as (x, z) in cells with a turn round the vertical axis in radians.
+    /// Nothing by the walls is taller than about 1.2 meters: the camera passes over it
+    /// when the board turns, and a tall cabinet filled the view.
+    static let chairSpots: [(spot: SIMD2<Float>, turn: Float)] = [(SIMD2(-21, 3), 1.45), (SIMD2(21, -4), -1.75)]
+    static let cabinetSpot = SIMD2<Float>(-14, -roomHalfDepth + 7.5)
+    /// The chairs and the chest are painted white, which glared under the lamp, so they
+    /// are darkened.
+    static let paintedShade: CGFloat = 0.55
+    /// The color behind the scene and under the loading view, a warm brown like the floor
+    /// in shadow. The app's own plum looked like a backdrop, not a room.
+    static let roomHex: UInt32 = 0x1C120D
     /// A linen runner lies along the middle of the table from far to near, under the
-    /// board and most of the props, `runnerLift` thick. The table shows on both sides.
-    /// The weave repeats every `runnerGrainCells` cells.
+    /// board and the mugs, `runnerLift` thick. It hangs `runnerDrop` cells down over each
+    /// end of the table in soft folds up to `runnerFold` deep, and its edges wave a little,
+    /// so it reads as cloth. The weave repeats every `runnerGrainCells` cells.
     static let runnerWidth: Float = 11
+    static let runnerDrop: Float = 6
+    static let runnerFold: Float = 0.3
     static let runnerGrainCells: Float = 6
     static let runnerLift: Float = 0.02
     static let runnerHex: UInt32 = 0xD9C4A8
-    static let roomLitRadius: Float = 13
-    static let roomDarkRadius: Float = 34
-    /// The props are modeled in meters. At true size next to a 40 centimeter board they
-    /// crowd it, so they stand a third smaller, as if the board were a little bigger.
+    /// The models are in meters. At true size next to a 40 centimeter board they crowd
+    /// it, so they stand a third smaller, as if the board were a little bigger.
     static let cellsPerMeter: Float = 26
-    /// Where the props stand on the table, as (x, z) in cells. Far is negative z. The
-    /// candle stands off the far left corner, the teapot and my partner's cup behind the
-    /// board, and my cup in front of it, near me.
-    static let candlePosition = SIMD2<Float>(-8.5, -9)
-    static let teapotPosition = SIMD2<Float>(5.5, -12.5)
-    static let partnerCupPosition = SIMD2<Float>(9.5, -9.5)
-    static let myCupPosition = SIMD2<Float>(2.5, 11)
-    /// A cup rests this far up in its saucer, in meters of the model.
-    static let cupInSaucer: Float = 0.006
-    /// The tea in a cup: how high its surface is and how wide, in meters of the model,
-    /// its color and its gloss. A smooth surface shows the candle in it.
-    static let teaLevel: Float = 0.056
-    static let teaRadius: Float = 0.041
-    static let teaHex: UInt32 = 0x5A2A10
-    static let teaRoughness: Float = 0.08
-    /// The candle flame, in cells, and the warm light it gives. The light flickers by
-    /// up to `candleFlicker` of its strength.
-    static let flameHeight: Float = 0.9
-    static let flameWidth: Float = 0.32
-    static let flameLift: Float = 0.05
-    static let flameCoreHex: UInt32 = 0xFFE2A8
-    static let flameHex: UInt32 = 0xFF9A3C
-    static let candleLumens: Float = 400_000
-    static let candleFlicker: Float = 0.12
-    static let candleReach: Float = 30
+    /// Where the props stand on the table, as (x, z) in cells. Far is negative z. A small
+    /// plant stands off the far left corner, a plate of croissants behind the board,
+    /// my partner's mug off the far right corner, and my mug in front of the board, near me.
+    static let plantPosition = SIMD2<Float>(-6.5, -12)
+    static let platePosition = SIMD2<Float>(4.5, -12.5)
+    static let partnerMugPosition = SIMD2<Float>(10, -8.5)
+    static let myMugPosition = SIMD2<Float>(3, 11)
+    /// Two croissants lie side by side on the plate, this far from its middle and this
+    /// high above the table, in cells.
+    static let croissantSpacing: Float = 1.05
+    static let croissantLift: Float = 0.3
+    /// A chunky stoneware mug, made in code: its size in cells, how thick its wall and
+    /// floor are, and its handle, a half ring on its side.
+    static let mugRadius: Float = 1.15
+    static let mugHeight: Float = 2.3
+    static let mugWall: Float = 0.16
+    static let mugFloor: Float = 0.3
+    static let mugHandleRadius: Float = 0.6
+    static let mugHandleThickness: Float = 0.15
+    /// Each of us has a mug in a soft color of our own, glazed like the pieces.
+    static let myMugHex: UInt32 = 0xDF7DBC
+    static let partnerMugHex: UInt32 = 0x9F8CE0
+    /// Hot chocolate in each mug: how far up the inside it comes, and how high it climbs
+    /// the wall at its edge. It is darkest in the middle and turns milky toward the
+    /// wall, and its surface is wet: almost no roughness, under a full clearcoat.
+    static let cocoaLevel: Float = 0.82
+    static let cocoaMeniscus: Float = 0.1
+    static let cocoaMiddleHex: UInt32 = 0x4F3326
+    static let cocoaEdgeHex: UInt32 = 0xB89478
+    static let cocoaRoughness: Float = 0.08
 
     // MARK: Pawn
 
@@ -200,10 +249,11 @@ nonisolated enum LudoSceneStyle {
 
     // MARK: Lights and background
 
-    /// The light is a warm orange, like a lamp or the last sun on an evening. The main
-    /// light is a wide lamp high over the far left, so the whole board is lit evenly with
-    /// no bright pool. It is the only light that casts shadows, and its size makes them soft.
-    static let lampHex: UInt32 = 0xFF8A3C
+    /// The light is a soft golden white, like a lamp in a living room in the evening. A
+    /// deep orange looked like an old film. The main light is a wide lamp high over the
+    /// far left, so the whole board is lit evenly with no bright pool. It is the only
+    /// light that casts shadows, and its size makes them soft.
+    static let lampHex: UInt32 = 0xFFC48A
     static let lampLumens: Float = 5_500_000
     static let lampPosition = SIMD3<Float>(-9, 20, -7)
     /// The cone of the lamp's light, and the share of it that is at full strength.
@@ -212,14 +262,14 @@ nonisolated enum LudoSceneStyle {
     static let lampReach: Float = 80
     /// How big the lamp is. Bigger makes the shadows softer, and also grainier.
     static let lampSize: Float = 0.7
-    /// A dim warm light from high on the right, so the faces turned from the lamp keep
+    /// A warm light from high on the right, so the faces turned from the lamp keep
     /// their color. No shadows.
-    static let keyLightHex: UInt32 = 0xFFA060
-    static let keyLightIntensity: Float = 350
+    static let keyLightHex: UInt32 = 0xFFD6B0
+    static let keyLightIntensity: Float = 700
     static let keyLightPosition = SIMD3<Float>(7, 14, 1.5)
     /// A warm fill from the front left, low and soft, so no side of a piece goes dark. No shadows.
-    static let fillLightHex: UInt32 = 0xFF9A66
-    static let fillLightIntensity: Float = 500
+    static let fillLightHex: UInt32 = 0xFFD0B0
+    static let fillLightIntensity: Float = 900
     static let fillLightPosition = SIMD3<Float>(-8, 9, 7)
     /// A soft peach rim light low and behind on the right. It grazes the right edges of
     /// the pieces and adds little to the flat board.
@@ -227,9 +277,9 @@ nonisolated enum LudoSceneStyle {
     static let rimLightIntensity: Float = 1_500
     static let rimLightPosition = SIMD3<Float>(12, 2.5, -6)
     /// The studio picture that lights the scene (see `LudoBackdrop`). At 0 its brightness
-    /// matches the old painted sky. Each step up doubles it. It is turned down, so its
-    /// cool pink and lavender do not wash out the orange.
-    static let environmentExposure: Float = -0.3
+    /// matches the old painted sky. Each step up doubles it. It is turned up a little, so
+    /// the shadows stay soft and never go black.
+    static let environmentExposure: Float = 0.3
     /// Turn this on if pink lands on the right side of the pieces and lavender on the left.
     static let mirrorsSky = false
 
@@ -242,12 +292,10 @@ nonisolated enum LudoSceneStyle {
     static let cameraYawDegrees: Double = -18
     /// Vertical field of view.
     static let cameraFieldOfViewDegrees: Double = 30
-    /// The camera draws from this near distance to this far one. On a phone the camera
-    /// stands about 130 cells away at the farthest zoom, and the table runs about 160
-    /// deep before it has faded into the room's color, so a shorter far distance cuts
-    /// the far table off in a flat band. The depth test's precision comes from the near
-    /// distance, so the peonies and the marks that lie a hair above their surfaces
-    /// still never flicker through them.
+    /// The camera draws from this near distance to this far one. The far distance
+    /// reaches past the far corners of the table at the farthest zoom. The depth test's
+    /// precision comes from the near distance, so the peonies and the marks that lie a
+    /// hair above their surfaces still never flicker through them.
     static let cameraNear: Float = 1
     static let cameraFar: Float = 250
     /// Width divided by height of the board view. A tilted board is wider than tall,
@@ -256,10 +304,10 @@ nonisolated enum LudoSceneStyle {
     /// Space kept free above and below the board, as a share of half the view.
     static let cameraMargin: Double = 0.03
     /// The props the default camera keeps in the space between the rows, as their spot
-    /// on the table and their height in cells: the candle to the tip of its flame, the
-    /// teapot and the two cups. Each reaches `framedPropReach` cells round its spot.
+    /// on the table and their height in cells: the plant to the tips of its leaves, the
+    /// croissants and the two mugs. Each reaches `framedPropReach` cells round its spot.
     static var framedProps: [(spot: SIMD2<Float>, height: Float)] {
-        [(candlePosition, 10.2), (teapotPosition, 4.6), (partnerCupPosition, 2), (myCupPosition, 2)]
+        [(plantPosition, 7), (platePosition, 2), (partnerMugPosition, mugHeight), (myMugPosition, mugHeight)]
     }
     static let framedPropReach: Float = 1.6
     /// Pinch limits, as a share of the default distance.

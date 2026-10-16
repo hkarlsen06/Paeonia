@@ -14,17 +14,26 @@ struct LudoCameraFitTests {
         }
     }
 
-    /// Past the far distance the scene shows plain background in a flat band, so the
-    /// table must reach its full dark inside it at the farthest zoom.
-    @Test func theFarthestZoomDrawsTheTableUntilItFadesDark() {
+    /// The floor fills the whole view at the farthest zoom, however the board is turned:
+    /// every corner of the view lands on it, inside its edges and nearer than the far
+    /// distance, so the plain background never shows.
+    @Test func theFloorFillsTheViewAtTheFarthestZoom() {
         let fit = LudoCameraFit.make(aspect: 0.44, fitHeight: 0.68)
-        let radius = Double(LudoSceneStyle.roomDarkRadius)
-        let rig = fit.rig(for: LudoCameraPose(zoom: LudoSceneStyle.zoomRange.upperBound))
-        let camera = SIMD3<Double>(rig.position)
-        let forward = simd_normalize(SIMD3<Double>(rig.target) - camera)
-        let deepest = stride(from: 0.0, to: 2 * .pi, by: 0.05).map { angle in
-            simd_dot(SIMD3(radius * cos(angle), 0, radius * sin(angle)) - camera, forward)
-        }.max() ?? 0
-        #expect(deepest < Double(LudoSceneStyle.cameraFar))
+        let floor = -Double(LudoSceneStyle.slabThickness + LudoSceneStyle.tableHeight)
+        let half = Double(LudoSceneStyle.floorSize) / 2
+        for yaw in stride(from: 0.0, to: 2 * .pi, by: 0.3) {
+            let rig = fit.rig(for: LudoCameraPose(yaw: yaw, zoom: LudoSceneStyle.zoomRange.upperBound))
+            let camera = SIMD3<Double>(rig.position)
+            let forward = simd_normalize(SIMD3<Double>(rig.target) - camera)
+            for corner in [CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 0), CGPoint(x: 0, y: 1), CGPoint(x: 1, y: 1)] {
+                guard let hit = rig.boardPoint(at: corner, height: floor) else {
+                    Issue.record("the view shows sky at yaw \(yaw)")
+                    continue
+                }
+                #expect(abs(hit.x) < half && abs(hit.y) < half, "yaw \(yaw)")
+                let depth = simd_dot(SIMD3(hit.x, floor, hit.y) - camera, forward)
+                #expect(depth < Double(LudoSceneStyle.cameraFar), "yaw \(yaw)")
+            }
+        }
     }
 }

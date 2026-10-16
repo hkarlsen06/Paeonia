@@ -1,6 +1,6 @@
 // Makes the Ludo glaze textures, the table's wood, the linen runner and the room's
 // light in ios/PaeoniaApp/Resources/Assets.xcassets/Ludo from CC0 downloads. Run it
-// again to change the tint, the speckle, the strength of the bumps or the table's gloss.
+// again to change the tint, the strength of the bumps or the table's gloss.
 //
 // Download each into its own empty folder, outside the repo:
 //   https://ambientcg.com/get?file=Porcelain002_1K-PNG.zip
@@ -184,41 +184,10 @@ let porcelainRoughness = load(arguments[2], linear: false)
 let clayColor = load(arguments[3], linear: false)
 let clayNormal = load(arguments[4], linear: false)
 
-/// The same numbers on every run.
-struct Seeded {
-    var state: UInt64 = 0x5EED
-
-    mutating func next() -> Float {
-        state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
-        return Float(state >> 40) / Float(1 << 24)
-    }
-}
-
-/// The clay body shows faintly through the glaze, with sparse iron speckles, mostly small.
+/// The clay body shows faintly through the glaze. There are no iron speckles: repeated
+/// every 4 cells they put hundreds of dark dots on the board, which looked dirty.
 func glazeDetail() -> FloatImage {
-    var glaze = remapped(shrunk(clayColor, by: 2), from: 0.9, to: 1.0)
-    let side = glaze.width
-    var random = Seeded()
-    for _ in 0..<60 {
-        let size = random.next()
-        let centerX = random.next() * Float(side)
-        let centerY = random.next() * Float(side)
-        let radius = 1.2 + size * size * size * 4.5
-        let darkness = 0.66 + random.next() * 0.2
-        for row in Int(centerY - 10)...Int(centerY + 10) {
-            for column in Int(centerX - 10)...Int(centerX + 10) {
-                let distance = ((Float(column) - centerX) * (Float(column) - centerX)
-                    + (Float(row) - centerY) * (Float(row) - centerY)).squareRoot()
-                let cover = max(0, min(1, (radius - distance) / 1.5 + 0.5))
-                guard cover > 0 else { continue }
-                let pixel = ((row + side) % side * side + (column + side) % side) * 4
-                for channel in 0..<3 {
-                    glaze.pixels[pixel + channel] *= 1 - cover * (1 - darkness)
-                }
-            }
-        }
-    }
-    return glaze
+    remapped(shrunk(clayColor, by: 2), from: 0.9, to: 1.0)
 }
 
 // Color pictures in three channels. The app also redraws them, because the asset

@@ -56,8 +56,6 @@ final class LudoStage {
     var capMaterials: [PhysicallyBasedMaterial] = []
     /// The board pieces that take the players' colors.
     var paint = LudoPaintTargets()
-    /// The table, the candle and the tea round the board.
-    private var room: LudoRoom?
     /// Goes up with each new look, so a slow mark texture of an earlier one never lands over a later one.
     private var lookGeneration = 0
     private var targets: [Entity.ID: Target] = [:]
@@ -142,11 +140,11 @@ final class LudoStage {
         homeGlows = parts.homeGlows
         capMaterials = parts.capMaterials
         paint = parts.paint
-        room = parts.room
         targets[parts.die.root.id] = .die
         for pawn in parts.pawns { targets[pawn.root.id] = .pawn(pawn.index) }
 
-        // The dark of the room shows past the table. The sky picture only lights the pieces.
+        // The floor fills the view, so this color shows only before the scene draws.
+        // The sky picture only lights the pieces.
         arView.environment.background = .color(LudoSceneStyle.color(LudoSceneStyle.roomHex))
         if let environment = await environment {
             arView.environment.lighting.resource = environment
@@ -268,7 +266,6 @@ final class LudoStage {
             dieNode.updateIdle(clock: clock, isReady: input?.die == .ready, reduceMotion: reduceMotion)
         }
         updateGlows(deltaTime: step)
-        room?.update(clock: clock, reduceMotion: reduceMotion)
     }
 
     private func playClips() {

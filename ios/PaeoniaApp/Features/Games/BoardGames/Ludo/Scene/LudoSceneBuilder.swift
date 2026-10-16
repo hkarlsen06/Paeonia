@@ -14,8 +14,6 @@ struct LudoSceneParts {
     let capMaterials: [PhysicallyBasedMaterial]
     /// The pieces that take the players' colors, so a new pick can paint them again.
     let paint: LudoPaintTargets
-    /// The table, the candle and the tea round the board.
-    let room: LudoRoom
 }
 
 /// The board pieces that change color when a player picks another one.
@@ -46,8 +44,7 @@ enum LudoSceneBuilder {
         paint.homeGlows = addHomeGlows(to: root, viewer: viewer, colors: colors)
         addLights(to: root)
         paint.boardTop = addBoardTop(to: root, material: await boardTopMaterial(viewer: viewer, colors: colors))
-        let room = await builtRoom
-        root.addChild(room.root)
+        root.addChild(await builtRoom)
 
         let capMaterials = await makeCapMaterials(styles: styles, colors: colors)
         let die = LudoDieNode(startsOnNearTray: true)
@@ -60,8 +57,7 @@ enum LudoSceneBuilder {
             die: die,
             homeGlows: paint.homeGlows,
             capMaterials: capMaterials,
-            paint: paint,
-            room: room
+            paint: paint
         )
     }
 

@@ -8,7 +8,7 @@ import UIKit
 enum LudoMaterials {
     /// What the surface is made of.
     enum Finish {
-        /// Glazed ceramic: faint clay grain and iron speckle under an uneven gloss.
+        /// Glazed ceramic: faint clay grain under an uneven gloss.
         case glaze
         /// The same glaze without the grain, for the shapes made in code, which have
         /// no directions for a bump picture to follow.

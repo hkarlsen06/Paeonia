@@ -23,7 +23,7 @@ export const marketingEn = {
       },
       {
         src: 'ludo',
-        alt: 'A game of Ludo on a wooden table with a teapot and a candle. Each partner\'s pieces carry the mark they drew.',
+        alt: 'A game of Ludo on a wooden table with croissants, a small plant and a mug of hot chocolate for each partner. Each partner\'s pieces carry the mark they drew.',
       },
     ],
   },

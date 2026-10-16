@@ -1,7 +1,7 @@
 import Foundation
 import simd
 
-/// The board's slab and the candle flame.
+/// The board's slab.
 nonisolated extension LudoMeshGeometry {
     /// One ring round the slab: how far in from the outline, how high, and how much the
     /// surface faces up there.
@@ -9,21 +9,6 @@ nonisolated extension LudoMeshGeometry {
         let inset: Float
         let height: Float
         let up: Float
-    }
-
-    /// A candle flame: a soft teardrop standing on its point, `flameHeight` tall.
-    static func flame() -> LudoMeshData {
-        let height = LudoSceneStyle.flameHeight
-        let radius = LudoSceneStyle.flameWidth / 2
-        let points: [(Float, Float)] = [(0, 0), (0.6, 0.1), (1, 0.32), (0.85, 0.58), (0.45, 0.84), (0, 1)]
-        return turned(
-            profile: smoothed(
-                points.map { SIMD2($0.0 * radius, $0.1 * height) },
-                samples: LudoSceneStyle.profileSamples
-            ),
-            segments: 16,
-            closesTop: false
-        )
     }
 
     /// The outline of a square `half` wide each way from the middle with corners rounded
