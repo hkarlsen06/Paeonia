@@ -1,7 +1,9 @@
 import type { Doc } from "../_generated/dataModel";
+import { findCurrentCouple } from "./access";
 import { getByUuid, orNull, withTouch, type ReaderCtx, type WriterCtx } from "./db";
 import { fail } from "./errors";
 import { queueOldMediaAssetIfOrphaned } from "./mediaOrphans";
+import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./notifications";
 import { refreshStreakAfterProfileTimeZoneChange } from "./streaks";
 
 type ProfileColumns = Omit<Doc<"profiles">, "_id" | "_creationTime" | "user_id" | "revision" | "created_at" | "updated_at">;
@@ -141,5 +143,16 @@ export async function updateProfile(
     await queueOldMediaAssetIfOrphaned(ctx, ...oldIds);
   }
   await refreshStreakAfterProfileTimeZoneChange(ctx, updated.user_id, profile.time_zone_id, updated.time_zone_id);
+  // The partner's Lock Screen widget shows this person's name and local time.
+  if (profile.time_zone_id !== updated.time_zone_id || profile.display_name !== updated.display_name) {
+    const couple = await findCurrentCouple(ctx, updated.user_id);
+    if (couple) {
+      await enqueueLockScreenRefreshForPartner(ctx, {
+        couple_id: couple.id,
+        actor_user_id: updated.user_id,
+        delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+      });
+    }
+  }
   return updated;
 }

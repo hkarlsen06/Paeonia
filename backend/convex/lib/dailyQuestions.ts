@@ -170,7 +170,7 @@ function compareStrings(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-async function instancesOfDay(ctx: ReaderCtx, coupleDayId: string): Promise<Doc<"daily_question_instances">[]> {
+export async function instancesOfDay(ctx: ReaderCtx, coupleDayId: string): Promise<Doc<"daily_question_instances">[]> {
   return await ctx.db
     .query("daily_question_instances")
     .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) => q.eq("couple_day_id", coupleDayId))

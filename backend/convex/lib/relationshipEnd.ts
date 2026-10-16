@@ -2,6 +2,7 @@ import type { WriterCtx } from "./db";
 import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
 import { deleteHeartsForCouple } from "./hearts";
+import { enqueueLockScreenRefreshForUser } from "./notifications";
 import { removePresenceRooms } from "./presence";
 import { createRelationshipSyncEvent } from "./syncEvents";
 import { addDaysToInstant, nowIso } from "./time";
@@ -88,6 +89,11 @@ export async function endRelationshipForPair(
         pending_uploads: "review",
       },
     });
+    // The partner's app may be closed, so its own purge can't run yet. The widgets fetch, get no
+    // couple, and delete their cache, so the ex-partner's name and dates leave the Lock Screen.
+    if (member.user_id !== initiatedByUserId) {
+      await enqueueLockScreenRefreshForUser(ctx, { couple_id: couple.id, user_id: member.user_id, delay_seconds: 0 });
+    }
   }
   return true;
 }

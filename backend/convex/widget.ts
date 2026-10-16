@@ -18,6 +18,7 @@ import { checkViolation, fail } from "./lib/errors";
 import { newUuid, optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { isJsonObject, jsonbByteLength } from "./lib/json";
 import { signLiveTicket } from "./lib/liveTicket";
+import { readLockScreenState } from "./lib/lockScreenState";
 import { enqueuePartnerNotification, enqueueWidgetPushForUser, enqueueWidgetUpdateAlert } from "./lib/notifications";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrim, btrimToNull, charLength } from "./lib/text";
@@ -303,6 +304,22 @@ export const get_widget_canvas = query({
         sync_updated_at: latest(canvas.updated_at, revision?.updated_at, asset?.updated_at),
       },
     ];
+  },
+});
+
+/**
+ * Everything the Lock Screen widgets show, in one read: the partner's name and zone, the start date,
+ * the next countdowns, the distance, the streak, the daily question, and the games waiting for the
+ * caller. Returns null without an active entitled couple. It never returns coordinates or text.
+ *
+ * A query must not read the clock, so the widget passes its time in `p_now`, rounded down to the
+ * minute. A new minute is a new argument, so Convex never serves a result cached before midnight.
+ */
+export const get_lock_screen_state = query({
+  args: { p_now: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    return await readLockScreenState(ctx, userId, timestampArg(args.p_now));
   },
 });
 

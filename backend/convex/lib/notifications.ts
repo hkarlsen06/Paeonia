@@ -12,7 +12,7 @@ import {
   notificationAlertTitle,
   notificationPayloadIsSafe,
 } from "./notificationCopy";
-import { nowIso } from "./time";
+import { addMs, nowIso } from "./time";
 
 export * from "./notificationCopy";
 
@@ -317,13 +317,16 @@ export async function insertWidgetPushOutbox(
   if (row.dedupe_key != null) {
     const length = trimmedLength(row.dedupe_key);
     if (length < 1 || length > 256) checkViolation(table, "widget_push_outbox_dedupe_key_check");
-    const pending = await ctx.db
+    // A key that repeats (the lock screen refresh) piles up sent rows, so look at the newest row only.
+    // Rows of one key are sent in the order they were queued, so an older row is never the pending one.
+    const newest = await ctx.db
       .query("widget_push_outbox")
       .withIndex("by_target_widget_device_id_dedupe_key", (q) =>
         q.eq("target_widget_device_id", row.target_widget_device_id).eq("dedupe_key", row.dedupe_key!),
       )
-      .collect();
-    if (pending.some((item) => item.sent_at === undefined && item.failed_at === undefined)) {
+      .order("desc")
+      .first();
+    if (newest && newest.sent_at === undefined && newest.failed_at === undefined) {
       return false;
     }
   }
@@ -395,6 +398,59 @@ export async function enqueueWidgetPushForUser(
     if (inserted) queued += 1;
   }
   return queued;
+}
+
+/** How long a change waits before its Lock Screen push goes out, so a burst of changes becomes one push. */
+export const LOCK_SCREEN_REFRESH_DELAY_SECONDS = 20;
+/** Location updates are frequent, so they cost at most about one Lock Screen push per half hour. */
+export const LOCK_SCREEN_LOCATION_DELAY_SECONDS = 30 * 60;
+/**
+ * A live game trades turns every few seconds while both phones are open, so turns cost at most one
+ * push per two minutes. WidgetKit gives each phone a small daily push budget.
+ */
+export const LOCK_SCREEN_GAME_DELAY_SECONDS = 2 * 60;
+
+/**
+ * Queues a silent WidgetKit refresh of the partner's Lock Screen widgets, `delay_seconds` from now.
+ * The actor is skipped, because their own app reloads its widgets. While a push for the same
+ * partner and `lane` is still waiting, a new call queues nothing, so a burst of changes inside the
+ * delay becomes one push. A slow lane (location, games) uses its own `lane` so it never holds back a fast one.
+ * Never throws: a failed push must not fail the write that caused it.
+ */
+export async function enqueueLockScreenRefreshForPartner(
+  ctx: WriterCtx,
+  args: { couple_id: string; actor_user_id: string; delay_seconds: number; lane?: "location" | "games" },
+): Promise<void> {
+  try {
+    for (const member of await listActiveMembers(ctx, args.couple_id)) {
+      if (member.user_id === args.actor_user_id) continue;
+      await enqueueLockScreenRefreshForUser(ctx, { ...args, user_id: member.user_id });
+    }
+  } catch {
+    // WidgetKit push delivery must never make the user's write fail.
+  }
+}
+
+/**
+ * Like `enqueueLockScreenRefreshForPartner` for one user, whatever their membership status. Ending a
+ * relationship uses it, because the partner is no longer an active member by then. Never throws.
+ */
+export async function enqueueLockScreenRefreshForUser(
+  ctx: WriterCtx,
+  args: { couple_id: string; user_id: string; delay_seconds: number; lane?: "location" | "games" },
+): Promise<void> {
+  try {
+    await enqueueWidgetPushForUser(ctx, {
+      recipient_user_id: args.user_id,
+      kind: "widget_updated",
+      payload: { type: "lock_screen_updated", couple_id: args.couple_id },
+      dedupe_key: `lockscreen:${args.user_id}${args.lane ? `:${args.lane}` : ""}`,
+      apns_collapse_id: `lockscreen:${args.couple_id}`,
+      scheduled_for: addMs(nowIso(), args.delay_seconds * 1000),
+    });
+  } catch {
+    // WidgetKit push delivery must never make the user's write fail.
+  }
 }
 
 /**

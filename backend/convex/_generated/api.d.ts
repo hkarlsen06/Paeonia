@@ -59,6 +59,7 @@ import type * as lib_hearts from "../lib/hearts.js";
 import type * as lib_ids from "../lib/ids.js";
 import type * as lib_json from "../lib/json.js";
 import type * as lib_liveTicket from "../lib/liveTicket.js";
+import type * as lib_lockScreenState from "../lib/lockScreenState.js";
 import type * as lib_lookBack from "../lib/lookBack.js";
 import type * as lib_ludo from "../lib/ludo.js";
 import type * as lib_mediaAssets from "../lib/mediaAssets.js";
@@ -167,6 +168,7 @@ declare const fullApi: ApiFromModules<{
   "lib/ids": typeof lib_ids;
   "lib/json": typeof lib_json;
   "lib/liveTicket": typeof lib_liveTicket;
+  "lib/lockScreenState": typeof lib_lockScreenState;
   "lib/lookBack": typeof lib_lookBack;
   "lib/ludo": typeof lib_ludo;
   "lib/mediaAssets": typeof lib_mediaAssets;

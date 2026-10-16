@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
+import { liveInstancesFor, seedCatalog, textQuestions } from "./daily.setup";
 import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, setMediaEnv, uploadAsset } from "./media.testing";
@@ -243,7 +244,7 @@ describe("submit_widget_drawing_revision", () => {
     expect(outbox[0].apns_collapse_id).toBe(`widget:${couple.coupleId}`);
     expect(outbox[1].dedupe_key).toBe(`widget_updated_alert:${revisionId}:${partnerDevice.id}`);
 
-    const pushes = await t.run((ctx) => ctx.db.query("widget_push_outbox").collect());
+    const pushes = (await t.run((ctx) => ctx.db.query("widget_push_outbox").collect())).filter((row) => row.payload.type === "widget_updated");
     expect(pushes).toHaveLength(1);
     expect(pushes[0]).toMatchObject({ recipient_user_id: couple.second.userId, payload, dedupe_key: `widgetkit:${revisionId}`, apns_collapse_id: `widget:${couple.coupleId}` });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -635,5 +636,346 @@ describe("register_widget_push_device", () => {
     });
     expect(await failure(register(user))).toEqual({ code: "42501", message: "account deletion is in progress" });
     expect(await devices(t)).toHaveLength(0);
+  });
+});
+
+describe("get_lock_screen_state", () => {
+  const stateOf = (user: TestUser) => user.as.query(api.widget.get_lock_screen_state, { p_now: new Date().toISOString() });
+  const countdown = (user: TestUser, id: string, title: string, date: string) =>
+    user.as.mutation(api.countdowns.save_countdown, { p_countdown_id: id, p_title: title, p_target_date: date, ...op() });
+
+  test("is null without a couple and without an entitled couple", async () => {
+    const t = newTest();
+    expect(await stateOf(await createSignedInUser(t))).toBeNull();
+    const unpaid = await createCouple(t, { entitled: false });
+    expect(await stateOf(unpaid.first)).toBeNull();
+    expect(await stateOf(unpaid.second)).toBeNull();
+  });
+
+  test("returns an empty couple's state with nulls and zeros", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["America/New_York", "Europe/Oslo"] });
+    expect(await stateOf(couple.first)).toEqual({
+      generated_at: "2026-10-10T12:00:00.000Z",
+      partner: { display_name: "Second Partner", time_zone_id: "Europe/Oslo" },
+      started_on: null,
+      upcoming_countdowns: [],
+      distance: null,
+      // The westmost partner sets the couple day: New York is still on 2026-10-10 until 04:00 UTC the next day.
+      couple_day: { local_date: "2026-10-10", starts_at: "2026-10-10T04:00:00.000Z", ends_at: "2026-10-11T04:00:00.000Z" },
+      streak: { current_count: 0, me_active_today: false, partner_active_today: false },
+      daily_question: null,
+      games: { my_turn_count: 0, first_my_turn_kind: null },
+    });
+    expect((await stateOf(couple.second))!.partner).toEqual({ display_name: "First Partner", time_zone_id: "America/New_York" });
+  });
+
+  test("returns the start date, yesterday's countdowns and the next three, soonest first", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    const [past, yesterday, soon, later, last, gone] = [newUuid(), newUuid(), newUuid(), newUuid(), newUuid(), newUuid()];
+    await couple.first.as.mutation(api.relationship.set_couple_started_on, { p_started_on: "2025-01-02", ...op() });
+    await countdown(couple.first, last, "Last", "2027-01-01");
+    await countdown(couple.second, later, "Later", "2026-12-24");
+    await countdown(couple.first, soon, "Soon", "2026-10-10");
+    await countdown(couple.first, yesterday, "Yesterday", "2026-10-09");
+    await countdown(couple.first, past, "Past", "2026-10-08");
+    await countdown(couple.first, gone, "Gone", "2026-10-11");
+    await couple.second.as.mutation(api.countdowns.delete_countdown, { p_countdown_id: gone, ...op() });
+
+    const state = (await stateOf(couple.second))!;
+    expect(state.started_on).toBe("2025-01-02");
+    // Yesterday stays so a phone that is a day behind can still drop it by its own clock.
+    expect(state.upcoming_countdowns).toEqual([
+      { id: yesterday, title: "Yesterday", target_date: "2026-10-09", created_at: "2026-10-10T12:00:00.000Z" },
+      { id: soon, title: "Soon", target_date: "2026-10-10", created_at: "2026-10-10T12:00:00.000Z" },
+      { id: later, title: "Later", target_date: "2026-12-24", created_at: "2026-10-10T12:00:00.000Z" },
+      { id: last, title: "Last", target_date: "2027-01-01", created_at: "2026-10-10T12:00:00.000Z" },
+    ]);
+  });
+
+  test("yesterday's countdowns never crowd out an upcoming one", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    const [a, b, c, next] = [newUuid(), newUuid(), newUuid(), newUuid()];
+    for (const id of [a, b, c]) await countdown(couple.first, id, "Yesterday", "2026-10-09");
+    await countdown(couple.first, next, "Next", "2026-10-11");
+
+    const ids = (await stateOf(couple.second))!.upcoming_countdowns.map((row) => row.id);
+    expect(ids).toHaveLength(4);
+    expect(ids.at(-1)).toBe(next);
+  });
+
+  describe("distance", () => {
+    async function share(t: TestConvex, coupleId: string, user: TestUser, enabled: boolean, longitude: number, capturedAt: string) {
+      await t.run(async (ctx) => {
+        const now = new Date().toISOString();
+        await ctx.db.insert("location_sharing_preferences", {
+          couple_id: coupleId,
+          user_id: user.userId,
+          is_enabled: enabled,
+          source: "settings_toggle",
+          created_at: now,
+          updated_at: now,
+        });
+        await ctx.db.insert("latest_partner_locations", {
+          couple_id: coupleId,
+          user_id: user.userId,
+          latitude: 0,
+          longitude,
+          captured_at: capturedAt,
+          received_at: now,
+          updated_at: now,
+          source: "foreground_open",
+          client_operation_id: newUuid(),
+          client_id: newUuid(),
+          client_sequence: 1,
+        });
+      });
+    }
+
+    test("is the haversine distance in whole meters, as of the older fix, and never has coordinates", async () => {
+      const t = newTest();
+      const couple = await createCouple(t);
+      await share(t, couple.coupleId, couple.first, true, 0, "2026-10-10T11:00:00.000Z");
+      await share(t, couple.coupleId, couple.second, true, 1, "2026-10-10T11:30:00.000Z");
+      for (const user of [couple.first, couple.second]) {
+        const state = (await stateOf(user))!;
+        // One degree of longitude on the equator, with an Earth radius of 6371 km.
+        expect(state.distance).toEqual({ meters: 111195, as_of: "2026-10-10T11:00:00.000Z" });
+        expect(JSON.stringify(state)).not.toMatch(/latitude|longitude/);
+      }
+    });
+
+    test("is null unless both partners share and both have a stored fix", async () => {
+      const t = newTest();
+      const couple = await createCouple(t);
+      await share(t, couple.coupleId, couple.first, true, 0, "2026-10-10T11:00:00.000Z");
+      await share(t, couple.coupleId, couple.second, false, 1, "2026-10-10T11:30:00.000Z");
+      expect((await stateOf(couple.first))!.distance).toBeNull();
+      expect((await stateOf(couple.second))!.distance).toBeNull();
+
+      await t.run(async (ctx) => {
+        const preference = await ctx.db.query("location_sharing_preferences").filter((q) => q.eq(q.field("user_id"), couple.second.userId)).unique();
+        await ctx.db.patch(preference!._id, { is_enabled: true });
+      });
+      expect((await stateOf(couple.first))!.distance).not.toBeNull();
+
+      await t.run(async (ctx) => {
+        const location = await ctx.db.query("latest_partner_locations").filter((q) => q.eq(q.field("user_id"), couple.second.userId)).unique();
+        await ctx.db.delete(location!._id);
+      });
+      expect((await stateOf(couple.first))!.distance).toBeNull();
+    });
+  });
+
+  test("tracks the daily questions and the streak halves for each partner", async () => {
+    const t = newTest();
+    await seedCatalog(t, textQuestions(12));
+    const couple = await createCouple(t);
+    const { first, second } = couple;
+    expect((await stateOf(first))!.daily_question).toBeNull();
+    await first.as.mutation(api.daily.start_daily_challenge_snapshot, op());
+    expect((await stateOf(first))!.daily_question).toEqual({ me_answered: false, partner_answered: false });
+
+    const answer = async (user: TestUser, from: number, to: number) => {
+      const own = (await liveInstancesFor(t, user.userId)).filter((row) => row.seeded_for_user_id === user.userId);
+      for (const instance of own.slice(from, to)) {
+        await user.as.mutation(api.daily.submit_daily_answer, { p_instance_id: instance.id, p_payload: { text: "secret" }, ...op() });
+      }
+    };
+    await answer(first, 0, 1);
+    expect((await stateOf(first))!.daily_question).toEqual({ me_answered: false, partner_answered: false });
+    await answer(first, 1, 2);
+    expect((await stateOf(first))!.daily_question).toEqual({ me_answered: true, partner_answered: false });
+    expect((await stateOf(second))!.daily_question).toEqual({ me_answered: false, partner_answered: true });
+    expect((await stateOf(first))!.streak).toEqual({ current_count: 0, me_active_today: true, partner_active_today: false });
+    expect((await stateOf(second))!.streak).toEqual({ current_count: 0, me_active_today: false, partner_active_today: true });
+
+    await answer(second, 0, 2);
+    expect((await stateOf(first))!.daily_question).toEqual({ me_answered: true, partner_answered: true });
+    expect((await stateOf(first))!.streak).toEqual({ current_count: 1, me_active_today: true, partner_active_today: true });
+    expect(JSON.stringify(await stateOf(first))).not.toMatch(/secret|prompt/);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("counts the games where it is the caller's turn and names the most recently updated one", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { first, second } = couple;
+    await first.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
+    const board = await first.as.mutation(api.boardGames.ensure_board_game, { p_kind: "connect_four" });
+    tick();
+    await second.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
+    expect((await stateOf(first))!.games).toEqual({ my_turn_count: 1, first_my_turn_kind: "connect_four" });
+    expect((await stateOf(second))!.games).toEqual({ my_turn_count: 1, first_my_turn_kind: "draw_and_guess" });
+
+    tick();
+    await first.as.mutation(api.boardGames.make_move, { ...op(), p_game_id: board.id, p_expected_version: board.version, p_move: 3 });
+    expect((await stateOf(first))!.games).toEqual({ my_turn_count: 0, first_my_turn_kind: null });
+    expect((await stateOf(second))!.games).toEqual({ my_turn_count: 2, first_my_turn_kind: "connect_four" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("Lock Screen pushes to the partner", () => {
+  async function pairWithWidgets() {
+    const t = newTest();
+    const couple = await createCouple(t);
+    for (const [user, token] of [[couple.first, "a"], [couple.second, "b"]] as const) {
+      await user.as.mutation(api.widget.register_widget_push_device, {
+        p_widget_kind: "PaeoniaWidget",
+        p_widget_push_token: token.repeat(64),
+        p_apns_environment: "sandbox",
+      });
+    }
+    return { t, ...couple };
+  }
+  const lockScreenPushes = async (t: TestConvex) =>
+    (await t.run((ctx) => ctx.db.query("widget_push_outbox").collect())).filter((row) => row.payload.type === "lock_screen_updated");
+  const save = (user: TestUser, id: string, title = "Trip") =>
+    user.as.mutation(api.countdowns.save_countdown, { p_countdown_id: id, p_title: title, p_target_date: "2026-12-24", ...op() });
+
+  test("leaving the relationship pushes the partner at once, so their widgets clear", async () => {
+    const { t, first, second } = await pairWithWidgets();
+    await first.as.mutation(api.relationship.leave_relationship, op());
+    const pushes = await lockScreenPushes(t);
+    expect(pushes.map((row) => row.recipient_user_id)).toEqual([second.userId]);
+    expect(pushes[0].scheduled_for).toBe("2026-10-10T12:00:00.000Z");
+    expect(await second.as.query(api.widget.get_lock_screen_state, { p_now: new Date().toISOString() })).toBeNull();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a countdown change queues one delayed push for the partner and none for the author", async () => {
+    const { t, coupleId, first, second } = await pairWithWidgets();
+    const id = newUuid();
+    await save(first, id);
+    const [push, ...rest] = await lockScreenPushes(t);
+    expect(rest).toEqual([]);
+    expect(push).toMatchObject({
+      recipient_user_id: second.userId,
+      payload: { type: "lock_screen_updated", couple_id: coupleId },
+      dedupe_key: `lockscreen:${second.userId}`,
+      apns_collapse_id: `lockscreen:${coupleId}`,
+      scheduled_for: "2026-10-10T12:00:20.000Z",
+    });
+
+    // An edit and a delete inside the delay join the same push.
+    await save(first, id, "Trip to Bergen");
+    await first.as.mutation(api.countdowns.delete_countdown, { p_countdown_id: id, ...op() });
+    expect(await lockScreenPushes(t)).toHaveLength(1);
+
+    // Once that push is sent, the next change queues a new one.
+    await t.run((ctx) => ctx.db.patch(push._id, { sent_at: "2026-10-10T12:00:21.000Z" }));
+    await save(first, newUuid());
+    expect(await lockScreenPushes(t)).toHaveLength(2);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a change by the other partner pushes to the first partner", async () => {
+    const { t, first, second } = await pairWithWidgets();
+    await save(second, newUuid());
+    expect((await lockScreenPushes(t)).map((row) => row.recipient_user_id)).toEqual([first.userId]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a game move queues a push for the partner, and a burst of moves is one push", async () => {
+    const { t, first, second } = await pairWithWidgets();
+    await first.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
+    const board = await first.as.mutation(api.boardGames.ensure_board_game, { p_kind: "connect_four" });
+    expect(await lockScreenPushes(t)).toEqual([]);
+    const moved = await first.as.mutation(api.boardGames.make_move, { ...op(), p_game_id: board.id, p_expected_version: board.version, p_move: 3 });
+    await second.as.mutation(api.boardGames.make_move, { ...op(), p_game_id: board.id, p_expected_version: moved.version, p_move: 4 });
+    const pushes = await lockScreenPushes(t);
+    expect(pushes.map((row) => row.recipient_user_id).sort()).toEqual([first.userId, second.userId].sort());
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("only the first event of a day from one person counts, unless it is an answer or a game turn", async () => {
+    const { t, coupleId, first, second } = await pairWithWidgets();
+    const record = (user: TestUser, kind: string, key: string) =>
+      user.as.run(async (ctx) => {
+        const { applyCoupleActivity } = await import("./lib/streaks");
+        const { getOrCreateCoupleDayAt } = await import("./lib/coupleDays");
+        await applyCoupleActivity(ctx, {
+          couple_id: coupleId,
+          user_id: user.userId,
+          couple_day_id: await getOrCreateCoupleDayAt(ctx, coupleId, new Date().toISOString()),
+          activity_kind: kind,
+          dedupe_key: key,
+        });
+      });
+    const sendPush = async () => {
+      for (const row of await lockScreenPushes(t)) await t.run((ctx) => ctx.db.patch(row._id, { sent_at: "2026-10-10T12:01:00.000Z" }));
+    };
+    await record(first, "thread_message_sent", "m1");
+    expect(await lockScreenPushes(t)).toHaveLength(1);
+    await sendPush();
+    await record(first, "thread_message_sent", "m2");
+    expect(await lockScreenPushes(t)).toHaveLength(1);
+    await record(first, "game_turn_completed", "g1");
+    expect(await lockScreenPushes(t)).toHaveLength(2);
+    expect((await lockScreenPushes(t)).every((row) => row.recipient_user_id === second.userId)).toBe(true);
+    // Later turns in a live game wait two minutes in their own lane and join that push.
+    const gamePush = (await lockScreenPushes(t)).find((row) => row.dedupe_key === `lockscreen:${second.userId}:games`);
+    expect(gamePush?.scheduled_for).toBe("2026-10-10T12:02:00.000Z");
+    await record(first, "game_turn_completed", "g2");
+    await record(first, "game_turn_completed", "g3");
+    expect(await lockScreenPushes(t)).toHaveLength(2);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("changing the start date queues a push for the partner", async () => {
+    const { t, first, second } = await pairWithWidgets();
+    await first.as.mutation(api.relationship.set_couple_started_on, { p_started_on: "2025-01-02", ...op() });
+    expect((await lockScreenPushes(t)).map((row) => row.recipient_user_id)).toEqual([second.userId]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a new display name queues a push for the partner", async () => {
+    const { t, first, second } = await pairWithWidgets();
+    await second.as.mutation(api.identity.update_own_profile, { p_display_name: "Nora" });
+    expect((await lockScreenPushes(t)).map((row) => row.recipient_user_id)).toEqual([first.userId]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("location updates wait half an hour and join one push without holding back the fast ones", async () => {
+    const { t, coupleId, first, second } = await pairWithWidgets();
+    for (const user of [first, second]) {
+      await user.as.mutation(api.location.update_location_sharing_preference, {
+        p_couple_id: coupleId,
+        p_is_enabled: true,
+        p_consent_version: "test-v1",
+        p_source: "settings_toggle",
+        ...op(),
+      });
+    }
+    // Turning sharing on is a quick refresh for the partner, one each.
+    expect((await lockScreenPushes(t)).map((row) => row.scheduled_for)).toEqual(["2026-10-10T12:00:20.000Z", "2026-10-10T12:00:20.000Z"]);
+    for (const row of await lockScreenPushes(t)) await t.run((ctx) => ctx.db.patch(row._id, { sent_at: "2026-10-10T12:00:21.000Z" }));
+
+    const update = (user: TestUser, capturedAt: string) =>
+      user.as.mutation(api.location.update_latest_partner_location, {
+        p_couple_id: coupleId,
+        p_latitude: 1,
+        p_longitude: 2,
+        p_accuracy_m: 4,
+        p_captured_at: capturedAt,
+        p_source: "foreground_open",
+        ...op(),
+      });
+    await update(first, "2026-10-10T11:59:00.000Z");
+    await update(first, "2026-10-10T11:59:30.000Z");
+    // A stale fix changes nothing.
+    await update(first, "2026-10-10T11:50:00.000Z");
+    const slow = (await lockScreenPushes(t)).filter((row) => row.dedupe_key?.endsWith(":location"));
+    expect(slow).toHaveLength(1);
+    expect(slow[0]).toMatchObject({ recipient_user_id: second.userId, scheduled_for: "2026-10-10T12:30:00.000Z" });
+
+    // A countdown still gets its own quick push while the slow one waits.
+    await save(first, newUuid());
+    const fast = (await lockScreenPushes(t)).filter((row) => row.sent_at === undefined && !row.dedupe_key?.endsWith(":location"));
+    expect(fast).toHaveLength(1);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });

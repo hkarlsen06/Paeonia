@@ -123,6 +123,29 @@ async function bothQualified({ freezeReady = false } = {}) {
 }
 
 describe("streak break without a write", () => {
+  test("a break pushes both Lock Screens, because nobody's own app reloads them", async () => {
+    const { t, a, b } = await bothQualified();
+    for (const [user, token] of [[a, "a"], [b, "b"]] as const) {
+      await user.as.mutation(api.widget.register_widget_push_device, {
+        p_widget_kind: "PaeoniaWidget",
+        p_widget_push_token: token.repeat(64),
+        p_apns_environment: "sandbox",
+      });
+    }
+    const lockScreenPushes = async () =>
+      (await t.run((db) => db.db.query("widget_push_outbox").collect())).filter(
+        (row) => row.payload.type === "lock_screen_updated",
+      );
+    // The answers' own pushes went out long ago.
+    for (const row of await lockScreenPushes()) await t.run((db) => db.db.patch(row._id, { sent_at: "2026-10-10T10:01:00.000Z" }));
+    const before = (await lockScreenPushes()).length;
+    vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
+    const pushes = (await lockScreenPushes()).slice(before);
+    expect(pushes.map((row) => row.recipient_user_id).sort()).toEqual([a.userId, b.userId].sort());
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("the query reports the break virtually, then the cron stores the same state", async () => {
     const { t, a, state } = await bothQualified();
     // The deadline is 2026-10-11T22:00Z, so the restore offer runs to 2026-10-12T22:00Z.

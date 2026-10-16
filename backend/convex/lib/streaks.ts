@@ -1,5 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
-import { getCurrentEntitledCoupleId } from "./access";
+import { getCurrentEntitledCoupleId, listActiveMembers } from "./access";
 import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./coupleDays";
 import { runClientOperation, type ClientOperationInput } from "./clientOperations";
 import type { ReaderCtx, WriterCtx } from "./db";
@@ -7,6 +7,12 @@ import { getByUuid, withUpdatedAt } from "./db";
 import { checkViolation, fail } from "./errors";
 import { newUuid } from "./ids";
 import { jsonbByteLength } from "./json";
+import {
+  enqueueLockScreenRefreshForPartner,
+  enqueueLockScreenRefreshForUser,
+  LOCK_SCREEN_GAME_DELAY_SECONDS,
+  LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+} from "./notifications";
 import {
   freezeCoversGap,
   freezeReadyAt,
@@ -96,6 +102,10 @@ export async function applyCoupleActivity(
     checkViolation("couple_activity_events", "couple_activity_events_metadata_check");
   }
   const eventId = newUuid();
+  const earlierEventsToday = await ctx.db
+    .query("couple_activity_events")
+    .withIndex("by_couple_day_id", (q) => q.eq("couple_day_id", args.couple_day_id))
+    .collect();
   await ctx.db.insert("couple_activity_events", {
     id: eventId,
     couple_id: coupleId,
@@ -107,6 +117,26 @@ export async function applyCoupleActivity(
     metadata,
     created_at: nowIso(),
   });
+
+  // The partner's Lock Screen widgets show the streak halves, the daily question and whose turn it is.
+  // A day's first event from this user flips their streak half. Answers and game turns change the
+  // other two. Other events (a chat message) change nothing there, so they queue no push.
+  // A game turn that changes only "your move" waits in the slower games lane.
+  const firstToday = !earlierEventsToday.some((event) => event.couple_id === coupleId && event.user_id === args.user_id);
+  if (firstToday || args.activity_kind === "daily_challenge_completed") {
+    await enqueueLockScreenRefreshForPartner(ctx, {
+      couple_id: coupleId,
+      actor_user_id: args.user_id,
+      delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+    });
+  } else if (args.activity_kind === "game_turn_completed") {
+    await enqueueLockScreenRefreshForPartner(ctx, {
+      couple_id: coupleId,
+      actor_user_id: args.user_id,
+      delay_seconds: LOCK_SCREEN_GAME_DELAY_SECONDS,
+      lane: "games",
+    });
+  }
 
   const qualifiedAt = await getCoupleDayStreakQualifiedAt(ctx, coupleId, args.couple_day_id);
   // One person can contribute more than once, but no streak state changes until
@@ -353,6 +383,12 @@ export async function detectStreakBreak(ctx: WriterCtx, coupleId: string): Promi
   const change = await streakBreakChange(ctx, coupleId, state, resolvedDeadline, nowIso());
   if (state && change) {
     await ctx.db.patch(state._id, withUpdatedAt(change));
+    // A freeze keeps the count. A break shows 0 on both Lock Screens, and no one acted to cause it.
+    if (change.current_count === 0 || change.restorable_count !== undefined) {
+      for (const member of await listActiveMembers(ctx, coupleId)) {
+        await enqueueLockScreenRefreshForUser(ctx, { couple_id: coupleId, user_id: member.user_id, delay_seconds: 0 });
+      }
+    }
   }
 }
 
@@ -379,17 +415,18 @@ export type CoupleStreak = {
  * freeze that covers a missed day, and a streak that just broke as count 0 with
  * its restore offer open. Safe in a query. The streak cron persists the same state, so a subscribed query flips
  * when the stored row changes. Between the deadline and the next cron run the
- * clock alone changes the answer, which a cached query does not see.
+ * clock alone changes the answer, which a cached query does not see. A caller that passes its own
+ * `now` (the Lock Screen read) gets the streak as of that time.
  */
 export async function readCoupleStreak(
   ctx: ReaderCtx,
   coupleId: string | null | undefined,
+  now: string = nowIso(),
 ): Promise<CoupleStreak> {
   if (!coupleId) {
     return fail("42501", "active entitled couple access is required");
   }
   const stored = await getStreakState(ctx, coupleId);
-  const now = nowIso();
   const live = await liveStreakDeadline(ctx, coupleId, stored);
   const change = await streakBreakChange(ctx, coupleId, stored, live.deadline, now);
   const state = stored && change ? { ...stored, ...change } : stored;

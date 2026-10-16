@@ -5,9 +5,10 @@ import { getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
-import { getByUuid, withUpdatedAt, type ReaderCtx } from "./lib/db";
+import { getByUuid, withUpdatedAt, type ReaderCtx, type WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, uuidArg } from "./lib/ids";
+import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./lib/notifications";
 import { addDaysToDate, nowIso } from "./lib/time";
 
 // The couple's own dates on the milestones timeline: countdowns either partner adds
@@ -17,6 +18,14 @@ import { addDaysToDate, nowIso } from "./lib/time";
 /** The app caps titles at 40 characters. Code points are counted here, so an emoji never trips it. */
 const MAX_TITLE_CODE_POINTS = 80;
 const MAX_COUNTDOWNS_PER_COUPLE = 50;
+
+/** The partner's Lock Screen widget lists the next countdowns, so any change to them refreshes it. */
+const refreshPartnerLockScreen = (ctx: WriterCtx, coupleId: string, userId: string) =>
+  enqueueLockScreenRefreshForPartner(ctx, {
+    couple_id: coupleId,
+    actor_user_id: userId,
+    delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+  });
 
 function countdownRow(row: Doc<"countdowns">) {
   return {
@@ -95,6 +104,7 @@ export const save_countdown = mutation({
 
       if (existing) {
         await ctx.db.patch(existing._id, withUpdatedAt({ title, target_date: targetDate, last_edited_by_user_id: userId }));
+        await refreshPartnerLockScreen(ctx, coupleId, userId);
         return null;
       }
       if ((await liveCountdowns(ctx, coupleId)).length >= MAX_COUNTDOWNS_PER_COUPLE) {
@@ -111,6 +121,7 @@ export const save_countdown = mutation({
         created_at: now,
         updated_at: now,
       });
+      await refreshPartnerLockScreen(ctx, coupleId, userId);
       return null;
     });
     // Read after the operation, so a replay returns today's row and not the answer it stored
@@ -139,6 +150,7 @@ export const delete_countdown = mutation({
         return fail("42501", "countdown belongs to another couple");
       }
       await ctx.db.patch(existing._id, withUpdatedAt({ deleted_at: nowIso(), last_edited_by_user_id: userId }));
+      await refreshPartnerLockScreen(ctx, coupleId, userId);
       return null;
     });
     return null;

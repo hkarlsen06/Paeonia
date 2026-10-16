@@ -22,6 +22,7 @@ import { getByUuid, omitNulls, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dataEpoch, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
+import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./lib/notifications";
 import { LUDO_COLORS, type LudoColor } from "./lib/ludo";
 import { applyCoupleActivity } from "./lib/streaks";
 import { charLength } from "./lib/text";
@@ -428,7 +429,15 @@ export const start_rematch = mutation({
           turn_reminder_sent_at: undefined,
         });
         // The new starter moves next. Starting the game yourself needs no push.
-        if (starterId !== userId) await enqueueBoardGamePush(ctx, updated, userId, starterId);
+        if (starterId !== userId) {
+          await enqueueBoardGamePush(ctx, updated, userId, starterId);
+          // No activity event is recorded for a rematch, so the partner's Lock Screen needs its own refresh.
+          await enqueueLockScreenRefreshForPartner(ctx, {
+            couple_id: game.couple_id,
+            actor_user_id: userId,
+            delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+          });
+        }
         return { game_id: updated.id };
       },
     );

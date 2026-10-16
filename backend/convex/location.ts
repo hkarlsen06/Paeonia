@@ -8,7 +8,12 @@ import { runClientOperation } from "./lib/clientOperations";
 import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { optionalTimestampArg, uuidArg } from "./lib/ids";
-import { enqueuePartnerNotification } from "./lib/notifications";
+import {
+  enqueueLockScreenRefreshForPartner,
+  enqueuePartnerNotification,
+  LOCK_SCREEN_LOCATION_DELAY_SECONDS,
+  LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+} from "./lib/notifications";
 import { addMs, nowIso } from "./lib/time";
 import type { WriterCtx } from "./lib/db";
 
@@ -188,6 +193,13 @@ export const update_latest_partner_location = mutation({
           if (partnerPreference?.is_enabled) partnerShares = true;
         }
         if (partnerShares) {
+          // The distance on the partner's Lock Screen changes with every fix. Updates come often, so this lane sends at most one push per half hour.
+          await enqueueLockScreenRefreshForPartner(ctx, {
+            couple_id: coupleId,
+            actor_user_id: userId,
+            delay_seconds: LOCK_SCREEN_LOCATION_DELAY_SECONDS,
+            lane: "location",
+          });
           await enqueuePartnerNotification(ctx, {
             couple_id: coupleId,
             actor_user_id: userId,
@@ -299,6 +311,14 @@ export const update_location_sharing_preference = mutation({
         }
         if (!isEnabled) {
           await deleteLatestLocationForUser(ctx, coupleId, userId);
+        }
+        // Turning sharing on or off shows or hides the distance on the partner's Lock Screen.
+        if (existing?.is_enabled !== isEnabled) {
+          await enqueueLockScreenRefreshForPartner(ctx, {
+            couple_id: coupleId,
+            actor_user_id: userId,
+            delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+          });
         }
         return {
           couple_id: row.couple_id,

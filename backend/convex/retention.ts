@@ -8,8 +8,8 @@ import { addDaysToInstant, nowIso } from "./lib/time";
 //
 // client_operations: replay protection for the phone's offline queue. A queued write older than
 // this window runs again instead of returning the stored response.
-// notification_outbox, widget_push_outbox: a row is sent or failed within hours, and every dedupe
-// key is tied to one event, so an old row protects nothing.
+// notification_outbox, widget_push_outbox: a row is sent or failed within hours, so an old row
+// protects nothing. The Lock Screen push key repeats, and only its newest row is ever checked.
 const RETENTION_DAYS = 30;
 const BATCH = 1000;
 

@@ -8,6 +8,7 @@ import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, optionalTimestampArg, optionalUuidArg } from "./lib/ids";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
+import { enqueueLockScreenRefreshForPartner, LOCK_SCREEN_REFRESH_DELAY_SECONDS } from "./lib/notifications";
 import { cleanupCoupleContent, isPurgeable, purgeCoupleContent, ROWS_PER_CHUNK } from "./lib/relationshipCleanup";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { requireUserId } from "./lib/auth";
@@ -144,6 +145,11 @@ export const set_couple_started_on = mutation({
           local_purge_scope: { relationship: "refresh" },
         });
       }
+      await enqueueLockScreenRefreshForPartner(ctx, {
+        couple_id: coupleId,
+        actor_user_id: userId,
+        delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+      });
       return { couple_id: coupleId, started_on: startedOn };
     });
     return outcome.started_on ?? null;
