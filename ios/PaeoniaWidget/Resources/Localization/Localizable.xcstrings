@@ -73,6 +73,780 @@
         }
       }
     },
+    "widget.lockScreen.countdown.days" : {
+      "comment" : "Big text in the countdown widget. %lld is the number of days left, two or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "widget.lockScreen.countdown.today" : {
+      "comment" : "Big text in the countdown widget when the date is today.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I dag"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.countdown.tomorrow" : {
+      "comment" : "Big text in the countdown widget when the date is tomorrow.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tomorrow"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I morgen"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.daysTogether.description" : {
+      "comment" : "Gallery description of the days together Lock Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See how many days you have been together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hvor mange dager dere har vært sammen."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.daysTogether.inline" : {
+      "comment" : "One line on the Lock Screen. %lld is the number of days the couple has been together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day together"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days together"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag sammen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager sammen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "widget.lockScreen.daysTogether.name" : {
+      "comment" : "Gallery name of the Lock Screen widget that counts the days the couple has been together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Days together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dager sammen"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.daysTogether.unit" : {
+      "comment" : "Tiny label under the day count in the round days together widget. Space is very tight.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.distance.apart" : {
+      "comment" : "One line on the Lock Screen. %@ is a distance with its unit, such as 7,750 km.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ apart"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ fra hverandre"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.distance.description" : {
+      "comment" : "Gallery description of the distance Lock Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See how far apart you two are."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hvor langt unna hverandre dere er."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.distance.name" : {
+      "comment" : "Gallery name of the Lock Screen widget that shows the distance between the two partners.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distance apart"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avstand"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.distance.together" : {
+      "comment" : "Shown in the distance widget when the partners are less than a kilometer apart.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.distance.turnOn" : {
+      "comment" : "One short line on the Lock Screen when the distance cannot be shown because location sharing is off. Tapping it opens Paeonia.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn on location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på posisjon"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.nextCountdown.description" : {
+      "comment" : "Gallery description of the next countdown Lock Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See how long it is until your next date."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hvor lenge det er til neste dato dere har lagt inn."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.nextCountdown.name" : {
+      "comment" : "Gallery name of the Lock Screen widget that shows the couple's next countdown.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next countdown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste nedtelling"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.partnerFallback" : {
+      "comment" : "Used in a Lock Screen widget in place of the partner's name when it is not known.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.question.bothAnswered" : {
+      "comment" : "Status line in the daily question widget when both have answered.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nice work, you two! See you tomorrow."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Godt jobba, dere to! Vi ses i morgen."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.question.description" : {
+      "comment" : "Gallery description of the daily question Lock Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See if you and your partner have answered today's question."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se om du og partneren din har svart på dagens spørsmål."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.question.name" : {
+      "comment" : "Gallery name and heading of the Lock Screen widget about the daily question.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today's question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dagens spørsmål"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.question.partnerAnswered" : {
+      "comment" : "Status line in the daily question widget when the partner has answered and the viewer has not. %@ is the partner's first name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ answered! Answer to see theirs."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svart! Svar for å se svaret."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.question.waiting" : {
+      "comment" : "Status line in the daily question widget when nobody has answered yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New question! Want to go first?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt spørsmål! Vil du svare først?"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.question.waitingForPartner" : {
+      "comment" : "Status line in the daily question widget when the viewer has answered and the partner has not. %@ is the partner's first name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done! Now it's %@'s turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig! Nå er det %@ sin tur."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.streak.accessibility" : {
+      "comment" : "VoiceOver label of the streak widget. %lld is the number of days in a row.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day in a row"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days in a row"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag på rad"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager på rad"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "widget.lockScreen.streak.description" : {
+      "comment" : "Gallery description of the streak Lock Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See your streak and which of you has taken part today."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se rekken deres og hvem av dere som har vært med i dag."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.streak.name" : {
+      "comment" : "Gallery name of the Lock Screen widget that shows the couple's streak.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekke"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.theirTime.ahead" : {
+      "comment" : "Small line in the partner's time widget when their clock is later by a gap that is not whole hours. %@ is the gap, such as 3 hours, 30 minutes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ahead"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ foran"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.theirTime.aheadHours" : {
+      "comment" : "Small line in the partner's time widget. Their clock is a whole number of hours later than the viewer's. %lld is the number of hours.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hour ahead"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hours ahead"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld time foran"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld timer foran"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "widget.lockScreen.theirTime.behind" : {
+      "comment" : "Small line in the partner's time widget when their clock is earlier by a gap that is not whole hours. %@ is the gap, such as 3 hours, 30 minutes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ behind"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bak"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.theirTime.behindHours" : {
+      "comment" : "Small line in the partner's time widget. Their clock is a whole number of hours earlier than the viewer's. %lld is the number of hours.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hour behind"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hours behind"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld time bak"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld timer bak"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "widget.lockScreen.theirTime.description" : {
+      "comment" : "Gallery description of the partner's time Lock Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See what time it is where your partner is."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hva klokka er der partneren din er."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.theirTime.name" : {
+      "comment" : "Gallery name of the Lock Screen widget that shows the time where the partner is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partnerens tid"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.theirTime.same" : {
+      "comment" : "Small line in the partner's time widget when both clocks show the same time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same time as you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samme tid som deg"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.yourMove.accessibility" : {
+      "comment" : "VoiceOver label of the your move widget. %lld is the number of games where it is the viewer's turn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld game waiting for your move"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld games waiting for your move"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld spill venter på din tur"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld spill venter på din tur"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "widget.lockScreen.yourMove.description" : {
+      "comment" : "Gallery description of the your move Lock Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See when it is your turn in a game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se når det er din tur i et spill."
+          }
+        }
+      }
+    },
+    "widget.lockScreen.yourMove.name" : {
+      "comment" : "Gallery name of the Lock Screen widget that shows when it is the viewer's turn in a game. Also the tiny label under the dice.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your move"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur"
+          }
+        }
+      }
+    },
+    "widget.lockScreen.yourMove.none" : {
+      "comment" : "VoiceOver label of the your move widget when no game is waiting for the viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No game is waiting for your move"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen spill venter på din tur"
+          }
+        }
+      }
+    },
     "widget.placeholder.action" : {
       "comment" : "Small call to action shown inside the widget before a real drawing exists.",
       "extractionState" : "manual",

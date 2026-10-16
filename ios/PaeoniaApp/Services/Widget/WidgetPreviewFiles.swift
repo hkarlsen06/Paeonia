@@ -20,6 +20,13 @@ nonisolated enum WidgetPreviewFiles {
             try? fileManager.removeItem(at: previewsURL)
             didRemoveSomething = true
         }
+
+        // The Lock Screen widgets keep names, dates and countdown titles here.
+        let lockScreenURL = containerURL.appendingPathComponent(LockScreenCache.relativePath)
+        if fileManager.fileExists(atPath: lockScreenURL.path) {
+            try? fileManager.removeItem(at: lockScreenURL)
+            didRemoveSomething = true
+        }
         return didRemoveSomething
     }
 

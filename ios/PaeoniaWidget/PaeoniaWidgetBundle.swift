@@ -5,5 +5,12 @@ import SwiftUI
 struct PaeoniaWidgetBundle: WidgetBundle {
     var body: some Widget {
         PaeoniaWidget()
+        DaysTogetherLockScreenWidget()
+        NextCountdownLockScreenWidget()
+        TheirTimeLockScreenWidget()
+        DistanceLockScreenWidget()
+        StreakLockScreenWidget()
+        DailyQuestionLockScreenWidget()
+        YourMoveLockScreenWidget()
     }
 }

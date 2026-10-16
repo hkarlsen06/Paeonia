@@ -13,8 +13,8 @@ struct PaeoniaWidget: Widget {
         .configurationDisplayName(String(localized: .widgetTitle))
         .description(String(localized: .widgetDescription))
         .pushHandler(PaeoniaWidgetPushHandler.self)
-        // MVP intentionally supports Home Screen families only. No Lock
-        // Screen accessory family can render the couple's drawing.
+        // The drawing stays on the Home Screen. The Lock Screen widgets live in
+        // `LockScreen/` and show numbers and short status lines only.
         .supportedFamilies([.systemSmall, .systemLarge])
     }
 }

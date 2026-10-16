@@ -94,11 +94,15 @@ actor ConvexWidgetPushRegistrationService: WidgetPushRegistering {
     private func currentWidgetPushToken() async -> String? {
         if let pushInfo = await WidgetCenter.shared.currentPushInfo {
             let token = pushInfo.token.paeoniaHexString
-            tokenStore.save(token: token, widgetKinds: [PaeoniaAppGroup.widgetKind])
+            // Keep the kinds the extension reported, so Lock Screen widgets still count.
+            let savedKinds = tokenStore.load()?.widgetKinds ?? []
+            tokenStore.save(token: token, widgetKinds: savedKinds + [PaeoniaAppGroup.widgetKind])
             return token
         }
 
-        return tokenStore.loadToken(forWidgetKind: PaeoniaAppGroup.widgetKind)
+        // The backend filters on `PaeoniaAppGroup.widgetKind`, but any installed
+        // Paeonia widget makes the token worth registering.
+        return tokenStore.loadToken(forAnyOf: [PaeoniaAppGroup.widgetKind] + LockScreenWidgetKind.all)
     }
 }
 

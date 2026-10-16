@@ -255,6 +255,19 @@ Record any skipped command with the reason.
 - [x] Widget does not expose sensitive private text on the lock screen.
 - [x] App Group data clears on sign-out, account deletion, and permanent relationship access loss; temporary entitlement loss uses a privacy-safe hide.
 
+## Lock Screen Widgets
+
+- [ ] Days together, Next countdown, Their time, Distance apart, Streak, Today's question, and Your move can each be added to the Lock Screen.
+- [ ] Each widget shows a neutral state when signed out, unpaired, or before its first refresh, never sample numbers.
+- [ ] The countdown title stays hidden while the phone is locked and shows after Face ID.
+- [ ] Distance apart shows nothing about either partner's location except the distance, and only while both share location.
+- [ ] Streak halves and Today's question reset when the couple's day ends, without opening the app.
+- [ ] A partner's answer, game move, countdown change, or start date change updates the other phone's widgets while Paeonia is closed.
+- [ ] Their time stays correct across a daylight saving change in either time zone.
+- [ ] Tapping each widget opens the matching screen.
+- [ ] The lock screen widget cache clears on sign-out, account deletion, and relationship access loss.
+- [ ] Widget names and copy are audited in English and Norwegian.
+
 ## Countdown And Relationship Milestones
 
 - [x] Relationship start date flows from the milestone setup/server state to home.

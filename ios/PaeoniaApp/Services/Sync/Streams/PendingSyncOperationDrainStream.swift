@@ -205,6 +205,10 @@ struct PendingSyncOperationDrainStream: SyncStream {
         switch result {
         case .succeeded:
             try await store.markSucceeded(clientOperationID: operation.operation.id, at: Date())
+            // The server has the change, so the Lock Screen widgets can fetch it.
+            if operation.operationKind?.changesLockScreenWidgets == true {
+                LockScreenWidgetReloader.reloadIfNotActive()
+            }
         case let .retry(nextRetryAt):
             try await recordRetryOrTerminalFailure(
                 operation: operation,

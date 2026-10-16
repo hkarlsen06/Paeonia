@@ -10,8 +10,6 @@ struct PaeoniaWidgetTimelineProvider: TimelineProvider {
     /// How long a timeline reload waits for the refresh before it shows what is
     /// already on disk.
     private static let refreshDeadline: Duration = .seconds(15)
-    /// Fallback poll only. Pushes and app reloads do the real work.
-    private static let fallbackPollInterval: TimeInterval = 60 * 60
 
     func placeholder(in context: Context) -> PaeoniaWidgetEntry {
         PaeoniaWidgetEntry(date: .now, content: .placeholder)
@@ -45,14 +43,15 @@ struct PaeoniaWidgetTimelineProvider: TimelineProvider {
             let calendar = Calendar.current
             let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))
                 ?? now.addingTimeInterval(24 * 60 * 60)
-            let nextRefresh = now.addingTimeInterval(Self.fallbackPollInterval)
             completion(
                 Timeline(
                     entries: [
                         PaeoniaWidgetEntry(date: now, content: content),
                         PaeoniaWidgetEntry(date: tomorrow, content: content),
                     ],
-                    policy: .after(nextRefresh)
+                    // No polling. A new drawing sends a widget push, and every
+                    // reload spends the same daily budget those pushes need.
+                    policy: .atEnd
                 )
             )
         }

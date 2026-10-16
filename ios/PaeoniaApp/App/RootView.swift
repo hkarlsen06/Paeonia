@@ -146,9 +146,14 @@ struct RootView: View {
             .onChange(of: pendingJoinInviteCode) { _, code in
                 pendingJoinInviteCodeChanged(to: code)
             }
-            .onChange(of: scenePhase) { _, phase in
+            .onChange(of: scenePhase) { oldPhase, phase in
                 if phase == .background {
                     primerShownThisVisit = false
+                }
+                // The Lock Screen widgets come into view as the app leaves, so
+                // one reload here picks up everything that changed while it was open.
+                if oldPhase == .active, phase == .inactive, allowsSystemIntegrations {
+                    LockScreenWidgetReloader.reload()
                 }
                 guard phase == .active, !isLaunchExperienceActive else {
                     return

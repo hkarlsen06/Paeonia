@@ -37,6 +37,19 @@ struct PaeoniaWidgetPushTokenStoreTests {
         #expect(store.loadToken(forWidgetKind: "PaeoniaWidget") == nil)
     }
 
+    @Test func lockScreenOnlyWidgetsStillGiveAToken() throws {
+        let suiteName = "PaeoniaWidgetPushTokenStoreTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = PaeoniaWidgetPushTokenStore(defaults: defaults)
+        store.save(token: "token", widgetKinds: [LockScreenWidgetKind.streak])
+
+        #expect(store.loadToken(forWidgetKind: "PaeoniaWidget") == nil)
+        #expect(store.loadToken(forAnyOf: ["PaeoniaWidget"] + LockScreenWidgetKind.all) == "token")
+        #expect(store.loadToken(forAnyOf: ["OtherWidget"]) == nil)
+    }
+
     @Test func nilDefaultsFallbackCanPersistToken() {
         let defaults = UserDefaults.standard
         let keys = [
