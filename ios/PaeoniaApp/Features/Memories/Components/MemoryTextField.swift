@@ -9,6 +9,8 @@ struct MemoryTextField<Field: Hashable>: View {
     let placeholder: LocalizedStringResource
     var isFocused: FocusState<Field?>.Binding
     let field: Field
+    /// `.horizontal` keeps the field to one line, so Return submits instead of adding a line.
+    var axis: Axis = .vertical
     var lineLimit: ClosedRange<Int> = 1...4
     var characterLimit: Int?
 
@@ -20,7 +22,7 @@ struct MemoryTextField<Field: Hashable>: View {
         TextField(
             text: $text,
             prompt: Text(placeholder),
-            axis: .vertical
+            axis: axis
         ) {
             Text(placeholder)
         }

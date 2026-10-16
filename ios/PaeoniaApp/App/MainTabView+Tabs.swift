@@ -67,10 +67,10 @@ extension MainTabView {
 
     private var homeTab: some View {
         NavigationStack {
+            // Home hides its navigation bar and draws the brand mark and streak in its
+            // own header. Screens pushed from it keep their bar.
             pairedHome
                 .navigationBarTitleDisplayMode(.inline)
-                // The brand mark and streak are populated into the navigation bar
-                // from inside PairedHomeView.
                 .navigationDestination(isPresented: widgetDrawingPresented) {
                     WidgetDrawingView(
                         ownerUserID: identity.currentUserID,

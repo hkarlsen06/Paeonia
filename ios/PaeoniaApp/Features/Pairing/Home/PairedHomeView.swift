@@ -41,9 +41,10 @@ struct PairedHomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    /// iPad landscape: three columns, with the map and the tile row under it on the
-    /// left two and the cards filling in from the right (`HomeWideLayout`).
+    /// iPad landscape: three columns that the cards fill left to right and then down,
+    /// with a square map (`HomeWideLayout`).
     @State private var isWideLayout = false
 
     private static let alertTypesSeenOnHome: Set<String> = ["widget_updated", "streak_reminder", "story_posted"]
@@ -123,9 +124,9 @@ struct PairedHomeView: View {
             // matches the gap inside the milestone/drawing tile row so the cards read
             // as one grid. On the phone, today's questions lead and the tiles sit
             // above the map, so a milestone day's celebration plays on screen.
-            // The partners' story avatars sit above every card, also on a wide iPad.
+            // The header with the partners' story avatars sits above every card, also on a wide iPad.
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                storiesStrip
+                homeHeader
                 cardsLayout {
                     dailyPromptCard
                     unreadChatsCard
@@ -133,13 +134,13 @@ struct PairedHomeView: View {
                     milestoneAndWidget
                         .layoutValue(key: HomeWideRole.self, value: .tiles)
                     mapCard
-                        .layoutValue(key: HomeWideRole.self, value: .map)
                     lookBackCard
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space16)
+            // The header starts right under the status bar, where a navigation bar would
+            // put the mark and the streak.
             .padding(.bottom, PaeoniaSpacing.space16)
             .paeoniaReadableWidth(
                 isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
@@ -176,47 +177,101 @@ struct PairedHomeView: View {
         // stays put while the cards scroll over it, so a pull to refresh never
         // reveals a plain strip above it.
         .paeoniaTabBackdrop()
+        // In compact width Home draws its own header instead of a navigation bar. The bar
+        // took every tap in its band, so the note bubbles that rise into that space
+        // couldn't be tapped. In regular width the tab bar sits at the top, in the bar's
+        // row, so the bar stays there with the mark and the streak beside the tabs.
+        .toolbarVisibility(drawsOwnHeader ? .hidden : .automatic, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Image(.paeoniaMark)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 28)
-                    .accessibilityHidden(true)
-            }
-            // The mark is the brand, not a control, so keep it free of the
-            // system's Liquid Glass capsule and let it sit flat on the bar.
-            .sharedBackgroundVisibility(.hidden)
-
-            // The streak lives at the trailing edge of the bar, sized to match the brand
-            // mark and carried in the toolbar's standard background. It fades in when
-            // the streak count becomes available rather than popping in abruptly.
-            // Reserving a fixed-width placeholder slot in the toolbar is not idiomatic
-            // SwiftUI, so we keep the conditional item and rely on an opacity transition
-            // instead. Instant under Reduce Motion.
-            if dailyChallengeStreak.isVisible {
-                ToolbarItem(placement: .topBarTrailing) {
-                    DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
-                        .transition(.opacity)
-                        .animation(
-                            reduceMotion ? nil : PaeoniaMotion.stateChange,
-                            value: dailyChallengeStreak.isVisible
-                        )
-                }
+            if !drawsOwnHeader {
+                barItems
             }
         }
+    }
+
+    /// iPhone, which is portrait only, and a narrow iPad window, where the tab bar is at
+    /// the bottom and the top row is free.
+    private var drawsOwnHeader: Bool {
+        horizontalSizeClass != .regular
+    }
+
+    @ToolbarContentBuilder
+    private var barItems: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            brandMark(height: Self.barMarkHeight)
+        }
+        // The mark is the brand, not a control, so keep it free of the
+        // system's Liquid Glass capsule and let it sit flat on the bar.
+        .sharedBackgroundVisibility(.hidden)
+
+        // Fades in when the streak count becomes available rather than popping in.
+        if dailyChallengeStreak.isVisible {
+            ToolbarItem(placement: .topBarTrailing) {
+                DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
+                    .transition(.opacity)
+                    .animation(
+                        reduceMotion ? nil : PaeoniaMotion.stateChange,
+                        value: dailyChallengeStreak.isVisible
+                    )
+            }
+        }
+    }
+
+    private func brandMark(height: CGFloat) -> some View {
+        Image(.paeoniaMark)
+            .resizable()
+            .scaledToFit()
+            .frame(height: height)
+            .accessibilityHidden(true)
     }
 
 }
 
 /// The cards `body` lays out.
 extension PairedHomeView {
-    @ViewBuilder
-    private var storiesStrip: some View {
-        if let stories, let storyPeople {
-            HomeStoriesStrip(viewModel: stories, people: storyPeople)
+    /// The brand mark and the streak at the corners, and both partners with their stories
+    /// in the middle. The note bubbles over the avatars rise up beside the mark and the
+    /// streak, so the row uses the space a navigation bar would leave empty.
+    private var homeHeader: some View {
+        ZStack(alignment: .top) {
+            if drawsOwnHeader {
+                markAndStreakRow
+            }
+
+            // The strip's top is the top of a full note bubble, which lines up with the
+            // top of the streak pill.
+            if let stories, let storyPeople {
+                HomeStoriesStrip(viewModel: stories, people: storyPeople)
+            }
         }
     }
+
+    private var markAndStreakRow: some View {
+        HStack {
+            brandMark(height: Self.markHeight)
+            Spacer(minLength: 0)
+            if dailyChallengeStreak.isVisible {
+                DailyStreakToolbarLabel(state: dailyChallengeStreak, onTap: onTapStreak)
+                    // The label pads itself for a capsule. This adds what the
+                    // toolbar's capsule added, so the pill keeps its old width.
+                    .padding(.horizontal, PaeoniaSpacing.space4)
+                    .frame(minHeight: Self.headerBarHeight)
+                    .glassEffect(.regular.interactive(), in: Capsule())
+                    // Fades in once the streak is known instead of popping in.
+                    .transition(.opacity)
+            }
+        }
+        .frame(height: Self.headerBarHeight)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isVisible)
+    }
+
+    /// The height of a navigation bar's row, so the mark and the streak sit where a bar
+    /// would put them.
+    private static let headerBarHeight = PaeoniaSpacing.compactButtonHeight
+    /// The mark's frame in the navigation bar, which draws it a little smaller.
+    private static let barMarkHeight: CGFloat = 28
+    /// The size the navigation bar drew the mark at, for the header Home draws itself.
+    private static let markHeight: CGFloat = 22
 
     @ViewBuilder
     private var unreadChatsCard: some View {
@@ -250,7 +305,8 @@ extension PairedHomeView {
             partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
             state: locationMapState,
             onPromptCurrentLocation: onPromptCurrentLocation,
-            hearts: hearts
+            hearts: hearts,
+            aspectRatio: isWideLayout ? 1 : 2
         )
     }
 
@@ -297,14 +353,29 @@ extension PairedHomeView {
         } else {
             AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
         }
+        // On a wide iPad the pair usually sits under the header, so the drawing goes
+        // under the avatars and the calendar to the edge, where it doesn't compete with
+        // them. `ForEach` keeps each tile's identity when the order flips.
+        let tiles: [HomeTile] = isWideLayout ? [.drawing, .milestone] : [.milestone, .drawing]
         return layout {
-            milestoneCard
-            HomeWidgetCard(
-                coupleID: coupleID,
-                partnerName: partnerDisplayName?.trimmedNonEmpty,
-                onOpen: onOpenWidgetDrawing
-            )
+            ForEach(tiles, id: \.self) { tile in
+                switch tile {
+                case .milestone:
+                    milestoneCard
+                case .drawing:
+                    HomeWidgetCard(
+                        coupleID: coupleID,
+                        partnerName: partnerDisplayName?.trimmedNonEmpty,
+                        onOpen: onOpenWidgetDrawing
+                    )
+                }
+            }
         }
+    }
+
+    private enum HomeTile {
+        case milestone
+        case drawing
     }
 
     private var milestoneCard: some View {

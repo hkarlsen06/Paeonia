@@ -2,15 +2,15 @@ import MapKit
 import SwiftUI
 import UIKit
 
-/// The top card on the Home tab. With a map to show it is a 2:1 tile: a dark-mode map
-/// that fills the whole card, framed to show both partners with their avatars, and
-/// the live distance overlaid at the bottom. The map is rendered with
-/// `MKMapSnapshotter` so it has no Apple Maps attribution overlay and so the camera
-/// framing and pin placement are fully under our control.
+/// The top card on the Home tab. With a map to show it is a 2:1 tile, square on a wide
+/// iPad (`aspectRatio`). A dark-mode map fills the whole card, framed to show both
+/// partners with their avatars, with the live distance overlaid at the bottom. The map
+/// is rendered with `MKMapSnapshotter` so it has no Apple Maps attribution overlay and
+/// so the camera framing and pin placement are fully under our control.
 ///
 /// When there is no map, the card shrinks to a compact row (`MapEmptyState`) that
 /// explains why and, where it helps, offers one action. That keeps the rest of the
-/// Home tab on screen for couples who do not share location. `.loading` keeps the 2:1
+/// Home tab on screen for couples who do not share location. `.loading` keeps the map's
 /// shape because it usually resolves to a map, so the card does not shrink and
 /// then grow back. Both shapes share the same corner radius, stroke, and shadow.
 struct CoupleMapCard: View {
@@ -22,6 +22,8 @@ struct CoupleMapCard: View {
     var onPromptCurrentLocation: () -> Void = {}
     /// Sends and receives hearts. Nil leaves the card without them (previews).
     var hearts: HeartsViewModel?
+    /// Width over height of the map and loading tiles. The empty states ignore it.
+    var aspectRatio: CGFloat = 2
 
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -259,7 +261,7 @@ struct CoupleMapCard: View {
     }
 
     private func mapTile<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        mapTileSurface(content().aspectRatio(2, contentMode: .fit))
+        mapTileSurface(content().aspectRatio(aspectRatio, contentMode: .fit))
     }
 
     private func mapTileSurface<Content: View>(_ content: Content) -> some View {

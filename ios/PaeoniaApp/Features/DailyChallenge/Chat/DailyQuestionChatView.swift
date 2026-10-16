@@ -25,9 +25,6 @@ struct DailyQuestionChatView: View {
     /// The user's answer while it is still sending, shown on the waiting page until
     /// this phone has it.
     var sendingAnswer: DailySendingPreview?
-    /// Set when the page opens right after answering. The partner's answer plays its
-    /// reveal when it shows, once.
-    var revealsPartnerAnswer = false
     /// Swiping right calls this instead of `dismiss`, for a page that owns its cover.
     var onClose: (() -> Void)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -56,7 +53,6 @@ struct DailyQuestionChatView: View {
         participants: DailyChallengeParticipants,
         onReport: ((PrivacyReportTarget) -> Void)? = nil,
         sendingAnswer: DailySendingPreview? = nil,
-        revealsPartnerAnswer: Bool = false,
         onClose: (() -> Void)? = nil
     ) {
         _viewModel = State(initialValue: viewModel)
@@ -64,7 +60,6 @@ struct DailyQuestionChatView: View {
         self.participants = participants
         self.onReport = onReport
         self.sendingAnswer = sendingAnswer
-        self.revealsPartnerAnswer = revealsPartnerAnswer
         self.onClose = onClose
     }
 
@@ -375,11 +370,13 @@ extension DailyQuestionChatView {
         revealedRound?.partnerAnswerDetail.map { DailyChatProjection.answerRowPrefix + $0.answerID.uuidString }
     }
 
-    /// Right after answering, the partner's answer is the payoff, so its bubble plays
-    /// the reveal, haptics included (`dailyChatAnswerReveal`). A partner-choice match
-    /// plays its small celebration with it.
+    /// A partner's answer the user hasn't seen is the payoff, so its bubble plays the
+    /// reveal, haptics included (`dailyChatAnswerReveal`). A partner-choice match plays
+    /// its small celebration with it.
     private func revealPartnerAnswer() {
-        guard revealsPartnerAnswer, !didRevealPartnerAnswer, let rowID = revealedPartnerAnswerRowID else { return }
+        guard viewModel.revealsPartnerAnswer, !didRevealPartnerAnswer,
+              let rowID = revealedPartnerAnswerRowID
+        else { return }
         didRevealPartnerAnswer = true
         celebratingInstanceID = revealedRound?.id
         revealingRowID = rowID

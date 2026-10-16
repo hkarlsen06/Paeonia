@@ -158,6 +158,32 @@ struct DailyChallengeReadOverviewTests {
         #expect(bySlot[3]?.hasNewPartnerAnswer(seen: []) == false)
     }
 
+    /// Opening a chat marks the partner's answer seen, so the chat decides to play the
+    /// reveal before that read.
+    @MainActor
+    @Test func aChatOpenedOnAnUnseenPartnerAnswerPlaysTheReveal() async throws {
+        let snapshot = makeDailySnapshot(rows: [
+            dailyQuestionRow(
+                slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, status: "answered",
+                ownAnswerID: UUID(), partnerAnswerID: UUID(), partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
+                canViewPartnerAnswer: true
+            ),
+        ])
+        let viewModel = DailyChallengeViewModel(
+            service: RecordingDailyChallengeService(snapshots: [snapshot]),
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        let question = try #require(viewModel.snapshot.questions.first)
+
+        await viewModel.prepareChat(for: question)
+        #expect(viewModel.makeChatViewModel(question: question).revealsPartnerAnswer)
+
+        viewModel.seenPartnerAnswerIDs.insert(question.id)
+        await viewModel.prepareChat(for: question)
+        #expect(!viewModel.makeChatViewModel(question: question).revealsPartnerAnswer)
+    }
+
     @Test func carriedForwardQuestionsSortBelowCurrentDayQuestions() {
         let previousStart = TestDailyChallengeIDs.startsAt.addingTimeInterval(-86_400)
         let previousEnd = TestDailyChallengeIDs.startsAt

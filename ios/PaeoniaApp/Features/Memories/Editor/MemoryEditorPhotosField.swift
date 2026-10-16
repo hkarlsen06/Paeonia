@@ -25,10 +25,6 @@ struct MemoryEditorPhotosField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.memoriesEditorPhotosLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-
             if !visibleExistingMedia.isEmpty || !photos.isEmpty || loadingPhotoCount > 0 {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: PaeoniaSpacing.space8) {

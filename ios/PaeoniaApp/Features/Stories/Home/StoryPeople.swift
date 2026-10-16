@@ -34,7 +34,8 @@ struct StoryRingAvatar: View {
     let ring: StoryRingState
     var size: CGFloat = 60
 
-    private static let ringGap: CGFloat = 4
+    /// The space between the photo and the ring.
+    static let ringGap = PaeoniaSpacing.space4
 
     var body: some View {
         PaeoniaProfilePhotoAvatar(mediaAssetID: mediaAssetID, name: name, tint: tint, size: size)

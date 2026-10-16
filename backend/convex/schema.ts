@@ -820,14 +820,17 @@ export default defineSchema({
     .index("by_media_asset_id", ["media_asset_id"]),
 
   // A partner's short note, shown in a bubble over their avatar on Home for 24 hours after
-  // created_at. A new note replaces the old one, and removing it deletes the row.
+  // created_at. A new note replaces the old one, removing it deletes the row, and the
+  // delete-expired-notes cron deletes it once its 24 hours are over.
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
   couple_notes: defineTable({
     couple_id: uuid,
     user_id: uuid,
     text: v.string(),
     created_at: ts,
-  }).index("by_couple_id_user_id", ["couple_id", "user_id"]),
+  })
+    .index("by_couple_id_user_id", ["couple_id", "user_id"])
+    .index("by_created_at", ["created_at"]),
 
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
   location_sharing_preferences: defineTable({

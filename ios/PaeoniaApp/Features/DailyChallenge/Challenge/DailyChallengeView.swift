@@ -40,6 +40,10 @@ struct DailyChallengeScreen: View {
     /// ends. Same approach as Tidex's chat.
     @State private var isOpeningChat = false
 
+    private var hidesTabBar: Bool {
+        chatQuestion.wrappedValue != nil || isOpeningChat
+    }
+
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -54,7 +58,8 @@ struct DailyChallengeScreen: View {
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isDayComplete)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, PaeoniaSpacing.space16)
-                .padding(.bottom, PaeoniaSpacing.space32)
+                // The same gap above the tab bar as between the sections.
+                .padding(.bottom, PaeoniaSpacing.sectionSpacing)
                 .paeoniaReadableWidth(alignment: .leading)
             }
             .refreshable { await refresh() }
@@ -73,10 +78,11 @@ struct DailyChallengeScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .keepsTabBarBottomInset(whileHidden: hidesTabBar)
         .paeoniaTabBackdrop()
         .clearsDeliveredQuestionTimeReminders()
         .navigationTitle(Text(.mainTabQuestions))
-        .toolbar(chatQuestion.wrappedValue != nil || isOpeningChat ? .hidden : .visible, for: .tabBar)
+        .toolbar(hidesTabBar ? .hidden : .visible, for: .tabBar)
         .onChange(of: chatQuestion.wrappedValue == nil) { _, isClosed in
             if isClosed { isOpeningChat = false }
         }
@@ -344,3 +350,28 @@ private struct DailyChallengeScreenPreviewHost: View {
     }
 }
 #endif
+
+/// Keeps a tab's scroll view at its bottom inset with the tab bar showing, while the
+/// bar is hidden. Otherwise the shorter safe area pulls a list scrolled to the end
+/// down, and it stays there after the bar comes back.
+private struct TabBarBottomInsetModifier: ViewModifier {
+    let isTabBarHidden: Bool
+    @State private var inset: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .safeAreaPadding(.bottom, inset)
+            .ignoresSafeArea(.container, edges: .bottom)
+            .background {
+                Color.clear.onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { newInset in
+                    if !isTabBarHidden { inset = newInset }
+                }
+            }
+    }
+}
+
+private extension View {
+    func keepsTabBarBottomInset(whileHidden isHidden: Bool) -> some View {
+        modifier(TabBarBottomInsetModifier(isTabBarHidden: isHidden))
+    }
+}

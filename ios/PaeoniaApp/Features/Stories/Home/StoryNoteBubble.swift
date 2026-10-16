@@ -1,155 +1,134 @@
 import SwiftUI
 
-/// A thought bubble over a Home avatar with the person's note. Without a note, your own
-/// bubble shows a quiet "Note..." that opens the editor.
+nonisolated extension VerticalAlignment {
+    private enum ThoughtBubbleBase: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat {
+            context[.bottom]
+        }
+    }
+
+    /// The bottom edge of a thought bubble's body, above its dots. The body rests on the
+    /// avatar there, and the dots reach down into the avatar.
+    static let thoughtBubbleBase = VerticalAlignment(ThoughtBubbleBase.self)
+}
+
+/// A thought bubble that sits on top of a Home avatar with the person's note. Without a
+/// note, your own bubble shows a quiet "Note..." that opens the editor.
 struct StoryNoteBubble: View {
     /// Nil shows the placeholder.
     let text: String?
 
-    private static let maxWidth: CGFloat = 116
+    nonisolated static let maxWidth: CGFloat = 92
+    /// A note shows at most this many lines on Home.
+    nonisolated static let maxLines = 2
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+        ThoughtBubble(dotSize: ThoughtBubbleMetrics.compactDotSize) {
             Group {
                 if let text {
                     Text(text)
                         .foregroundStyle(.paeoniaTextPrimary)
+                        .lineLimit(Self.maxLines)
                 } else {
                     Text(.storiesNotePlaceholder)
-                        .foregroundStyle(.paeoniaTextTertiary)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .lineLimit(1)
                 }
             }
-            .font(PaeoniaTypography.caption)
-            .multilineTextAlignment(.center)
-            .lineLimit(3)
-            .padding(.horizontal, PaeoniaSpacing.space12)
-            .padding(.vertical, PaeoniaSpacing.space8)
-            .background(
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                    .fill(.paeoniaSurfaceSecondary)
-            )
-            // The two small circles that make it a thought bubble.
-            Circle()
-                .fill(.paeoniaSurfaceSecondary)
-                .frame(width: 8, height: 8)
-                .padding(.leading, PaeoniaSpacing.space16)
-            Circle()
-                .fill(.paeoniaSurfaceSecondary)
-                .frame(width: 4, height: 4)
-                .padding(.leading, PaeoniaSpacing.space24)
+            .modifier(BodyStyle())
         }
         .frame(maxWidth: Self.maxWidth)
         .fixedSize(horizontal: false, vertical: true)
     }
+
+    /// An empty body as tall as the tallest note, for reserving its room in a layout.
+    static var tallestBody: some View {
+        // An empty string reserves only one line, so this holds a space.
+        Text(verbatim: " ")
+            .lineLimit(maxLines, reservesSpace: true)
+            .modifier(BodyStyle())
+            .hidden()
+            .accessibilityHidden(true)
+    }
+
+    private struct BodyStyle: ViewModifier {
+        func body(content: Content) -> some View {
+            content
+                .font(PaeoniaTypography.caption)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, PaeoniaSpacing.space12)
+                .padding(.vertical, PaeoniaSpacing.space8)
+        }
+    }
 }
 
-/// Writes, changes or removes your note. Your partner sees it over your avatar on Home
-/// for a day. A failed save keeps the text here, and the error shows in the banner.
-struct StoryNoteEditor: View {
-    let viewModel: StoriesViewModel
-    let partnerName: String
-    /// The note on Home now, if any. The field starts with it.
-    let current: StoryNote?
+/// A rounded bubble around `content` with two dots under it, the bigger one near the
+/// left edge and the smaller one below it and to the right, leading down to an avatar.
+struct ThoughtBubble<Content: View>: View {
+    /// The bigger dot's diameter. The rest of the bubble scales with it.
+    let dotSize: CGFloat
+    @ViewBuilder let content: Content
 
-    @State private var text: String
-    @FocusState private var isFocused: Bool
-    @Environment(\.dismiss) private var dismiss
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-
-    init(viewModel: StoriesViewModel, partnerName: String, current: StoryNote?) {
-        self.viewModel = viewModel
-        self.partnerName = partnerName
-        self.current = current
-        _text = State(initialValue: current?.text ?? "")
-    }
+    /// How much bigger than the Home bubble this one is. Corners scale with it.
+    private var scale: CGFloat { dotSize / ThoughtBubbleMetrics.compactDotSize }
+    private var smallDotSize: CGFloat { dotSize * ThoughtBubbleMetrics.smallDotRatio }
 
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                field
-                hint
-                Spacer(minLength: 0)
-                buttons
-            }
-            .padding(PaeoniaSpacing.screenHorizontalPadding)
-            .paeoniaScreenBackground()
-            .navigationTitle(Text(.storiesNoteTitle))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text(.commonCancel)
-                    }
-                    .disabled(viewModel.isSavingNote)
-                }
-            }
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+            content
+                .background(
+                    RoundedRectangle(cornerRadius: PaeoniaRadius.radius16 * scale, style: .continuous)
+                        .fill(.paeoniaSurfacePressed)
+                )
+                .alignmentGuide(.thoughtBubbleBase) { $0[.bottom] }
+            // The bigger dot is one dot in from the left edge. The smaller one starts
+            // where the bigger one ends, so the pair leads down and to the right.
+            Circle()
+                .fill(.paeoniaSurfacePressed)
+                .frame(width: dotSize, height: dotSize)
+                .padding(.leading, dotSize)
+            Circle()
+                .fill(.paeoniaSurfacePressed)
+                .frame(width: smallDotSize, height: smallDotSize)
+                .padding(.leading, dotSize * 2)
         }
-        // The sheet covers the app's top banner, so show it here too.
-        .paeoniaTopBanner(bannerCenter)
-        .presentationDetents([.medium])
-        .presentationBackground(.paeoniaBackgroundPrimary)
-        .interactiveDismissDisabled(viewModel.isSavingNote)
-        .onAppear { isFocused = true }
+        // Lifts the bubble off the avatar and the background behind it.
+        .compositingGroup()
+        .shadow(color: .black.opacity(ThoughtBubbleMetrics.shadowOpacity), radius: PaeoniaSpacing.space4 * scale)
     }
+}
 
-    private var field: some View {
-        TextField(text: $text, prompt: Text(.storiesNoteFieldPrompt), axis: .vertical) {
-            Text(.storiesNoteFieldPrompt)
-        }
-        .focused($isFocused)
-        .lineLimit(1...3)
-        .font(PaeoniaTypography.body)
-        .padding(PaeoniaSpacing.space16)
-        .background(
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                .fill(.paeoniaSurfaceSecondary)
-        )
-        .onChange(of: text) { _, newText in
-            if newText.count > StoryNote.maxLength {
-                text = String(newText.prefix(StoryNote.maxLength))
-            }
+/// The sizes every thought bubble shares.
+nonisolated enum ThoughtBubbleMetrics {
+    /// The bigger dot under a bubble over a Home avatar.
+    static let compactDotSize: CGFloat = 9
+    /// The smaller dot compared to the bigger one, as in the Instagram note bubble.
+    static let smallDotRatio: CGFloat = 0.55
+    static let shadowOpacity: Double = 0.3
+}
+
+extension View {
+    /// Rests `bubble`'s body on top of this avatar, its dots reaching into the avatar.
+    /// The bubble takes no room in the layout.
+    func storyNoteBubble<Bubble: View>(@ViewBuilder _ bubble: () -> Bubble) -> some View {
+        overlay(alignment: .top) {
+            bubble()
+                .alignmentGuide(.top) { $0[.thoughtBubbleBase] }
         }
     }
+}
 
-    private var hint: some View {
-        HStack {
-            Text(.storiesNoteExplainer(partnerName))
-            Spacer(minLength: PaeoniaSpacing.space8)
-            Text(verbatim: "\(text.count)/\(StoryNote.maxLength)")
-                .monospacedDigit()
-                .accessibilityHidden(true)
-        }
-        .font(PaeoniaTypography.caption)
-        .foregroundStyle(.paeoniaTextSecondary)
+/// Wraps its content at `maxWidth` and takes the width the wrapped lines need, not the
+/// whole `maxWidth`, so a bubble hugs a note that wraps. A frame can't do this: it takes
+/// the full width as soon as one line is too long.
+struct WrappedWidth: Layout {
+    let maxWidth: CGFloat
+
+    func sizeThatFits(proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
+        subviews.first?.sizeThatFits(ProposedViewSize(width: maxWidth, height: nil)) ?? .zero
     }
 
-    private var buttons: some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            Button {
-                Task { await save(text) }
-            } label: {
-                Text(.storiesNoteShare)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isSavingNote))
-            .disabled(StoriesViewModel.cleanNote(text) == nil || StoriesViewModel.cleanNote(text) == current?.text)
-
-            if current != nil {
-                Button {
-                    Task { await save("") }
-                } label: {
-                    Text(.storiesNoteRemove)
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .disabled(viewModel.isSavingNote)
-            }
-        }
-    }
-
-    private func save(_ note: String) async {
-        if await viewModel.setNote(note) {
-            dismiss()
-        }
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: nil))
     }
 }

@@ -32,6 +32,8 @@ struct StoryViewer: View {
     /// The story whose photo is on screen. The timer waits for it.
     @State private var shownPhotoID: UUID?
     @State private var dragOffset: CGFloat = 0
+    /// When the finger came down on the story, while it is down.
+    @State private var touchStart: Date?
     @State private var isConfirmingDelete = false
     @State private var isDeleting = false
     @Environment(\.dismiss) private var dismiss
@@ -59,10 +61,17 @@ struct StoryViewer: View {
         stories.indices.contains(index) ? stories[index] : nil
     }
 
-    /// The delete question is open or the delete is on its way.
+    /// A finger is on the story, the delete question is open, or the delete is on its way.
     private var isPaused: Bool {
-        isConfirmingDelete || isDeleting
+        touchStart != nil || isConfirmingDelete || isDeleting
     }
+
+    /// A touch held at least this long is a hold, not a tap, so letting go doesn't move on.
+    private static let holdDuration: TimeInterval = 0.25
+    /// A touch that moved less than this is still a tap or a hold, not a drag.
+    private static let touchSlop: CGFloat = 10
+    /// Dragging the story down this far closes it.
+    private static let closeDistance: CGFloat = 120
 
     /// Auto-advance would move on before VoiceOver finishes reading, so it stays off then.
     private var playsOnItsOwn: Bool {
@@ -83,8 +92,6 @@ struct StoryViewer: View {
             }
         }
         .offset(y: dragOffset)
-        .gesture(swipeDownToClose)
-        .statusBarHidden()
         .preferredColorScheme(.dark)
         .task(id: TimerKey(storyID: story?.id, photoShown: shownPhotoID == story?.id, isPaused: isPaused)) {
             await runTimer()
@@ -109,21 +116,17 @@ struct StoryViewer: View {
 
     // MARK: - Layout
 
-    /// The left third goes back, the rest goes forward.
+    /// One touch layer for the whole story. A tap on the left third goes back and anywhere
+    /// else goes forward. Holding pauses the story until the finger lifts. Dragging down
+    /// closes it. One gesture tells these apart, because separate tap, hold and drag
+    /// gestures compete for the same touch.
     private func tapZones(for story: Story) -> some View {
-        // One VoiceOver element with next and previous actions stands in for the two zones.
-        // swiftlint:disable accessibility_trait_for_button
-        HStack(spacing: 0) {
+        GeometryReader { proxy in
             Color.clear
                 .contentShape(Rectangle())
-                .containerRelativeFrame(.horizontal, count: 3, span: 1, spacing: 0)
-                .onTapGesture { goBack() }
-            Color.clear
-                .contentShape(Rectangle())
-                .containerRelativeFrame(.horizontal, count: 3, span: 2, spacing: 0)
-                .onTapGesture { goForward() }
+                .gesture(touchGesture(width: proxy.size.width))
         }
-        // swiftlint:enable accessibility_trait_for_button
+        // One VoiceOver element with next and previous actions stands in for the gesture.
         .accessibilityElement()
         .accessibilityLabel(Text(.storiesViewerPhotoAccessibility(people.name(of: story))))
         .accessibilityAction(named: Text(.storiesViewerNext)) { goForward() }
@@ -196,16 +199,28 @@ struct StoryViewer: View {
         .accessibilityLabel(Text(label))
     }
 
-    private var swipeDownToClose: some Gesture {
-        DragGesture(minimumDistance: 20)
+    private func touchGesture(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0)
             .onChanged { value in
-                dragOffset = max(value.translation.height, 0)
+                if touchStart == nil { touchStart = .now }
+                if value.translation.height > Self.touchSlop {
+                    dragOffset = value.translation.height
+                }
             }
             .onEnded { value in
-                if value.translation.height > 120 {
+                let heldFor = touchStart.map { Date.now.timeIntervalSince($0) } ?? 0
+                touchStart = nil
+                if value.translation.height > Self.closeDistance {
                     dismiss()
+                    return
+                }
+                withAnimation(PaeoniaMotion.stateChange) { dragOffset = 0 }
+                let moved = hypot(value.translation.width, value.translation.height)
+                guard moved < Self.touchSlop, heldFor < Self.holdDuration else { return }
+                if value.startLocation.x < width / 3 {
+                    goBack()
                 } else {
-                    withAnimation(PaeoniaMotion.stateChange) { dragOffset = 0 }
+                    goForward()
                 }
             }
     }

@@ -74,6 +74,9 @@ struct PartnerChoiceMatchBanner: View {
         self.match = match
         self.partnerName = partnerName
         self.celebrates = celebrates
+        // Only the reveal fades the banner in. The chat rebuilds the row when the
+        // reveal ends, and a second fade there reads as a flicker.
+        _isShown = State(initialValue: !celebrates)
     }
 
     var body: some View {

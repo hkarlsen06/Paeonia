@@ -10,8 +10,10 @@ extension DailyChallengeViewModel {
     /// Reads a question's chat before its screen opens, so the screen's first frame
     /// is complete. Callers await this, then open the screen. The page scrolls to
     /// `question`'s day, or to the question's newest day when `focusesNewest` is set.
+    /// A partner answer the user hasn't seen yet plays its reveal.
     func prepareChat(for question: DailyChallengeQuestion, focusesNewest: Bool = false) async {
         let chat = newChatViewModel(question: question, focusesNewest: focusesNewest)
+        chat.revealsPartnerAnswer = hasNewPartnerAnswer(question)
         await chat.prepare()
         preparedChat = chat
     }

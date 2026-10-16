@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { cleanupCoupleContent, purgeCoupleContent } from "./lib/relationshipCleanup";
 import { failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
@@ -446,5 +446,37 @@ describe("set_note", () => {
     await t.run((ctx) => cleanupCoupleContent(ctx, row, NOW));
     const notes = await t.run((ctx) => ctx.db.query("couple_notes").collect());
     expect(notes.map((note) => note.text)).toEqual(["stays"]);
+  });
+});
+
+describe("delete_expired_notes", () => {
+  const setNote = (user: TestUser, text: string) => user.as.mutation(api.stories.set_note, { p_text: text, ...op() });
+
+  test("deletes notes older than 24 hours and keeps newer notes and every story", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await setNote(couple.first, "old");
+    const story = await post(t, couple);
+    await story.run();
+    tick(23 * 3600);
+    await setNote(couple.second, "new");
+    tick(3600);
+
+    expect(await t.mutation(internal.stories.delete_expired_notes, {})).toEqual({ deleted: 1 });
+    const notes = (await getStories(couple.first)).notes;
+    expect(notes.map((note) => note.text)).toEqual(["new"]);
+    expect((await getStories(couple.first)).stories.map((row) => row.id)).toEqual([story.storyId]);
+  });
+
+  test("a note set again restarts its 24 hours", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await setNote(couple.first, "first");
+    tick(20 * 3600);
+    await setNote(couple.first, "again");
+    tick(5 * 3600);
+
+    expect(await t.mutation(internal.stories.delete_expired_notes, {})).toEqual({ deleted: 0 });
+    expect((await getStories(couple.first)).notes.map((note) => note.text)).toEqual(["again"]);
   });
 });

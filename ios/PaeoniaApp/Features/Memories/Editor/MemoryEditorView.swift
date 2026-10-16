@@ -6,6 +6,10 @@ import UIKit
 /// remember. Photos are uploaded only when the memory is saved; the form just stages
 /// picked images until then.
 ///
+/// A new memory should take as few taps as possible: the title is focused when the form
+/// opens, Return moves on to the note, the date starts at today, and Save sits in the
+/// top bar so the keyboard never covers it.
+///
 /// A new memory's contents live in a `MemoryDraft` owned by the view model, so the
 /// form survives an accidental swipe-down. An edit can't be swiped away while it has
 /// changes; Cancel asks before throwing them away.
@@ -73,15 +77,17 @@ struct MemoryEditorView: View {
                 .paeoniaScreenBackground()
                 .scrollDismissesKeyboard(.interactively)
                 .keyboardDismissable()
-                .paeoniaBottomBar { saveBar }
-                .navigationTitle(Text(mode.title))
+                .navigationTitle(navigationTitle)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
+                    ToolbarItem(placement: .cancellationAction) {
                         Button(role: .cancel) { cancel() } label: {
                             Text(.commonCancel)
                         }
                         .disabled(isSaving)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        saveButton
                     }
                 }
                 .alert(Text(.memoriesEditorDiscardTitle), isPresented: $isConfirmingDiscard) {
@@ -99,8 +105,17 @@ struct MemoryEditorView: View {
         // edit isn't kept, and nothing may close the form while it saves.
         .interactiveDismissDisabled(isSaving || hasUnsavedEdits)
         .onAppear {
-            if mode == .edit, initialDraft == nil {
-                initialDraft = draft
+            switch mode {
+            case .create:
+                if draft.title.isEmpty {
+                    focusedField = .title
+                } else if draft.note.isEmpty {
+                    focusedField = .note
+                }
+            case .edit:
+                if initialDraft == nil {
+                    initialDraft = draft
+                }
             }
         }
     }
@@ -111,10 +126,8 @@ struct MemoryEditorView: View {
                 if isMemoryRemoved {
                     MemoryRemovedNotice(copyableText: draft.copyableText)
                 }
-                titleField
-                dateField
-                noteField
-
+                // Photos come first so the keyboard, which opens on the title, never
+                // covers them.
                 if allowsPhotos || !existingMedia.isEmpty {
                     MemoryEditorPhotosField(
                         photos: $draft.photos,
@@ -126,6 +139,9 @@ struct MemoryEditorView: View {
                         isSaving: isSaving
                     )
                 }
+                titleField
+                noteField
+                dateField
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
@@ -138,23 +154,23 @@ struct MemoryEditorView: View {
     // MARK: - Fields
 
     private var titleField: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            fieldLabel(.memoriesEditorTitleLabel)
-
-            MemoryTextField(
-                text: $draft.title,
-                placeholder: .memoriesEditorTitlePlaceholder,
-                isFocused: $focusedField,
-                field: .title,
-                lineLimit: 1...2,
-                characterLimit: MemoryDataService.titleCharacterLimit
-            )
-        }
+        MemoryTextField(
+            text: $draft.title,
+            placeholder: .memoriesEditorTitlePlaceholder,
+            isFocused: $focusedField,
+            field: .title,
+            axis: .horizontal,
+            characterLimit: MemoryDataService.titleCharacterLimit
+        )
+        .submitLabel(.next)
+        .onSubmit { focusedField = .note }
     }
 
     private var dateField: some View {
         HStack {
-            fieldLabel(.memoriesEditorDateLabel)
+            Text(.memoriesEditorDateLabel)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextPrimary)
             Spacer(minLength: PaeoniaSpacing.space16)
             // A memory is something that already happened, so the latest choice is today.
             // The bound is the end of today: an edit's date sits at noon, which can still
@@ -173,8 +189,6 @@ struct MemoryEditorView: View {
 
     private var noteField: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            fieldLabel(.memoriesEditorNoteLabel)
-
             MemoryTextField(
                 text: $draft.note,
                 placeholder: .memoriesEditorNotePlaceholder,
@@ -194,40 +208,29 @@ struct MemoryEditorView: View {
         .animation(PaeoniaMotion.stateChange, value: isClearingExistingNote)
     }
 
-    private var saveBar: some View {
+    private var saveButton: some View {
         Button {
             Task { await save() }
         } label: {
             if isSaving {
-                HStack(spacing: PaeoniaSpacing.space8) {
-                    ProgressView().tint(.paeoniaTextInverse)
-                    if let uploadProgress {
-                        Text(.memoriesEditorUploadingPhoto(
-                            uploadProgress.current.formatted(),
-                            uploadProgress.total.formatted()
-                        ))
-                    }
-                }
+                ProgressView()
             } else {
                 Text(.memoriesEditorSave)
             }
         }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(!canSave || isSaving)
-        // The spinner fades in over the save label instead of snapping while
-        // the save (including any photo upload) settles.
-        .animation(PaeoniaMotion.stateChange, value: isSaving)
-        .animation(PaeoniaMotion.stateChange, value: uploadProgress)
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space12)
-        .paeoniaReadableWidth()
-        .background(.paeoniaBackgroundPrimary)
     }
 
-    private func fieldLabel(_ key: LocalizedStringResource) -> some View {
-        Text(key)
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(.paeoniaTextSecondary)
+    /// While photos send, the title counts them, since saving can take a while.
+    private var navigationTitle: Text {
+        if isSaving, let uploadProgress {
+            Text(.memoriesEditorUploadingPhoto(
+                uploadProgress.current.formatted(),
+                uploadProgress.total.formatted()
+            ))
+        } else {
+            Text(mode.title)
+        }
     }
 
     // MARK: - State

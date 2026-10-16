@@ -35,6 +35,9 @@ final class DailyQuestionChatViewModel {
     private let focusesNewest: Bool
     /// The day the page scrolls to when it opens. Nil means the newest day.
     private var focusedInstanceID: UUID? { focusesNewest ? nil : question.id }
+    /// The partner's answer on the opened day plays its reveal when it shows, once. Set
+    /// before the page reads the chat, because that read marks the answer seen.
+    @ObservationIgnored var revealsPartnerAnswer = false
     let service: any DailyQuestionChatServicing
     let operationProvider: any SyncClientOperationProviding
     private var syncAfterLocalChange: (@MainActor () async -> Void)?

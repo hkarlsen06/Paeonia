@@ -11,7 +11,8 @@ struct StoryPhotoView: View {
     @State private var loaded: (id: UUID, image: UIImage)?
     @State private var didFail = false
 
-    private static let maxPixelSize = 2_048
+    /// The longest side a story photo is decoded at for the screen.
+    static let maxPixelSize = 2_048
 
     init(mediaAssetID: UUID, onLoaded: @escaping () -> Void = {}) {
         self.mediaAssetID = mediaAssetID

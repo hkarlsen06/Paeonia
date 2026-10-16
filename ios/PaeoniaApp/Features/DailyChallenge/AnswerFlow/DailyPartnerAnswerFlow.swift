@@ -129,7 +129,6 @@ struct DailyPartnerAnswerFlow: View {
                 participants: viewModel.participants,
                 onReport: { reportTarget = $0 },
                 sendingAnswer: viewModel.sendingPreview(for: liveQuestion),
-                revealsPartnerAnswer: true,
                 onClose: dismiss
             )
             .toolbar {
@@ -205,7 +204,10 @@ struct DailyPartnerAnswerFlow: View {
         // Reads the chat from this phone first, so it opens complete. The chat plays
         // the reveal haptic when the partner's answer shows.
         await viewModel.prepareChat(for: liveQuestion)
-        chat = viewModel.makeChatViewModel(question: liveQuestion)
+        let chat = viewModel.makeChatViewModel(question: liveQuestion)
+        // Their reply may still be on its way, so it plays the reveal whenever it shows.
+        chat.revealsPartnerAnswer = true
+        self.chat = chat
         // Slow or offline: the chat still opens, on its waiting page with the answer
         // as saved, and opens up when their reply arrives.
         withAnimation(PaeoniaMotion.meaningfulMoment) { phase = .revealed }

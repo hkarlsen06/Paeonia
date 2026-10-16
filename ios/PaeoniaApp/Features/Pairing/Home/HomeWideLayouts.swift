@@ -2,22 +2,19 @@ import SwiftUI
 
 /// Where a card goes in `HomeWideLayout`. The phone stack ignores it.
 nonisolated enum HomeWideRole: LayoutValueKey {
-    /// One of the cards, in whichever column ends highest.
+    /// One column wide.
     case card
-    /// The map, across the top of the left two columns.
-    case map
-    /// The milestone and drawing tiles, side by side under the map.
+    /// The milestone and drawing tiles, side by side across two columns.
     case tiles
 
     static let defaultValue = HomeWideRole.card
 }
 
-/// The Home tab on a wide iPad: three columns about phone width. The map and the tile
-/// row under it take the left two columns, so the two square tiles line up with the
-/// columns and the 2:1 map is about as tall as a tile. The cards go in order, each in
-/// the column that ends highest, so today's questions start at the top of the right
-/// column and later cards fill in under the tiles. The page stays about one screen
-/// tall instead of leaving a hole beside a short column.
+/// The Home tab on a wide iPad: three columns about phone width. The cards keep the
+/// phone's order and fill in the way people read, left to right and then down. Each card
+/// goes in the column that ends highest, and ties go left, so today's questions start at
+/// the top left. The tile pair takes the two neighboring columns that end highest, so its
+/// squares line up with the columns and with the square map.
 struct HomeWideLayout: Layout {
     var spacing: CGFloat
 
@@ -38,30 +35,20 @@ struct HomeWideLayout: Layout {
 
     private func frames(width: CGFloat, subviews: Subviews) -> [CGRect] {
         let columnWidth = (width - 2 * spacing) / 3
-        let wideWidth = 2 * columnWidth + spacing
-        var frames = Array(repeating: CGRect.zero, count: subviews.count)
-        var wideBottom: CGFloat = 0
-        // The phone puts the tiles above the map, so place the map first here.
-        for role in [HomeWideRole.map, .tiles] {
-            for index in subviews.indices where subviews[index][HomeWideRole.self] == role {
-                let height = subviews[index].sizeThatFits(ProposedViewSize(width: wideWidth, height: nil)).height
-                frames[index] = CGRect(x: 0, y: wideBottom, width: wideWidth, height: height)
-                wideBottom += height + spacing
+        var columnTops: [CGFloat] = [0, 0, 0]
+        return subviews.map { subview in
+            let span = subview[HomeWideRole.self] == .tiles ? 2 : 1
+            let starts = Array(0...(columnTops.count - span))
+            let top = { (start: Int) in columnTops[start..<(start + span)].max() ?? 0 }
+            // `min(by:)` keeps the first of equal elements, so ties go left.
+            let column = starts.min { top($0) < top($1) } ?? 0
+            let y = top(column)
+            let frameWidth = CGFloat(span) * columnWidth + CGFloat(span - 1) * spacing
+            let height = subview.sizeThatFits(ProposedViewSize(width: frameWidth, height: nil)).height
+            for index in column..<(column + span) {
+                columnTops[index] = y + height + spacing
             }
+            return CGRect(x: CGFloat(column) * (columnWidth + spacing), y: y, width: frameWidth, height: height)
         }
-        var columnTops = [wideBottom, wideBottom, 0]
-        for index in subviews.indices where subviews[index][HomeWideRole.self] == .card {
-            // Ties go to the right column, so the first card sits beside the map.
-            let column = columnTops.indices.reversed().min { columnTops[$0] < columnTops[$1] } ?? 2
-            let height = subviews[index].sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)).height
-            frames[index] = CGRect(
-                x: CGFloat(column) * (columnWidth + spacing),
-                y: columnTops[column],
-                width: columnWidth,
-                height: height
-            )
-            columnTops[column] += height + spacing
-        }
-        return frames
     }
 }

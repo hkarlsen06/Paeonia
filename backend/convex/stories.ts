@@ -1,6 +1,7 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { getCurrentEntitledCoupleId } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
@@ -13,7 +14,7 @@ import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { enqueueStoryPostedNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { charLength } from "./lib/text";
-import { nowIso } from "./lib/time";
+import { addMs, nowIso } from "./lib/time";
 
 // A story is a photo with an optional short caption that one partner posts as an
 // "I thought about you" check-in. The phone shows it in a ring on Home for 24 hours after
@@ -23,6 +24,10 @@ import { nowIso } from "./lib/time";
 const MAX_CAPTION_CODE_POINTS = 200;
 /** The app caps notes at 60 characters. */
 const MAX_NOTE_CODE_POINTS = 120;
+/** A note shows for this long after it was set, then the cron deletes it. */
+const NOTE_LIFETIME_MS = 24 * 3_600_000;
+/** Expired notes one cron run deletes before it schedules the next. */
+const EXPIRED_NOTES_PER_RUN = 100;
 
 function noteRow(row: Doc<"couple_notes">) {
   return { user_id: row.user_id, text: row.text, created_at: row.created_at };
@@ -237,5 +242,27 @@ export const set_note = mutation({
     });
     const current = await coupleNote(ctx, coupleId, userId);
     return current ? noteRow(current) : null;
+  },
+});
+
+/**
+ * Deletes notes whose 24 hours are over, so a note is gone once it leaves Home and not only
+ * hidden. The live query then drops it from both phones. Runs from the delete-expired-notes
+ * cron, `EXPIRED_NOTES_PER_RUN` at a time, and schedules itself again while more are due.
+ * Stories are not touched: they stay in the Stories archive in Memories.
+ */
+export const delete_expired_notes = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const cutoff = addMs(nowIso(), -NOTE_LIFETIME_MS);
+    const expired = await ctx.db
+      .query("couple_notes")
+      .withIndex("by_created_at", (q) => q.lte("created_at", cutoff))
+      .take(EXPIRED_NOTES_PER_RUN);
+    for (const note of expired) await ctx.db.delete(note._id);
+    if (expired.length === EXPIRED_NOTES_PER_RUN) {
+      await ctx.scheduler.runAfter(0, internal.stories.delete_expired_notes, {});
+    }
+    return { deleted: expired.length };
   },
 });

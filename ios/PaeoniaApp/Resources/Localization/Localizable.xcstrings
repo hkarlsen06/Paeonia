@@ -16167,24 +16167,6 @@
         }
       }
     },
-    "memories.editor.noteLabel" : {
-      "comment" : "Field label for the optional note on a memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Note"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notat"
-          }
-        }
-      }
-    },
     "memories.editor.notePlaceholder" : {
       "comment" : "Placeholder for the memory note field.",
       "extractionState" : "manual",
@@ -16235,24 +16217,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi klarte ikke å legge til ett av bildene. Prøv å velge det på nytt."
-          }
-        }
-      }
-    },
-    "memories.editor.photosLabel" : {
-      "comment" : "Field label for the photos attached to a memory.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bilder"
           }
         }
       }
@@ -16330,19 +16294,19 @@
       }
     },
     "memories.editor.save" : {
-      "comment" : "Primary button that saves a new memory.",
+      "comment" : "Toolbar button that saves the memory form.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save memory"
+            "value" : "Save"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lagre minne"
+            "value" : "Lagre"
           }
         }
       }
@@ -16361,24 +16325,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ta bilde"
-          }
-        }
-      }
-    },
-    "memories.editor.titleLabel" : {
-      "comment" : "Field label for a memory's title.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Title"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tittel"
           }
         }
       }
@@ -23502,6 +23448,42 @@
         }
       }
     },
+    "stories.composer.cameraDenied" : {
+      "comment" : "Shown in the story viewfinder when camera access is turned off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia can't use the camera. Turn it on in Settings, or choose a photo below."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia får ikke bruke kameraet. Slå det på i Innstillinger, eller velg et bilde under."
+          }
+        }
+      }
+    },
+    "stories.composer.cameraUnavailable" : {
+      "comment" : "Shown in the story viewfinder when the phone has no camera that can be used.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The camera isn't available. Choose a photo below instead."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kameraet er ikke tilgjengelig. Velg et bilde under i stedet."
+          }
+        }
+      }
+    },
     "stories.composer.captionPlaceholder" : {
       "comment" : "Placeholder of the optional caption field on a new story.",
       "extractionState" : "manual",
@@ -23552,6 +23534,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ kan se storyen din på Hjem i 24 timer. Etter det finner dere den under Stories i Minner."
+          }
+        }
+      }
+    },
+    "stories.composer.flipCamera" : {
+      "comment" : "VoiceOver label for the button that switches between the front and back camera.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch camera"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bytt kamera"
           }
         }
       }
@@ -23880,20 +23880,20 @@
         }
       }
     },
-    "stories.note.explainer" : {
-      "comment" : "Under the note field. %@ is the partner's name.",
+    "stories.note.audience" : {
+      "comment" : "Next to the Share button in the note editor. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ sees it over your photo on Home for 24 hours."
+            "value" : "Only %@ sees it, for 24 hours"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ser det over bildet ditt på Hjem i 24 timer."
+            "value" : "Bare %@ ser det, i 24 timer"
           }
         }
       }
@@ -24002,24 +24002,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Del notat"
-          }
-        }
-      }
-    },
-    "stories.note.title" : {
-      "comment" : "Title of the sheet where you write a short note for your partner.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your note"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notatet ditt"
           }
         }
       }

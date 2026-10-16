@@ -26,15 +26,20 @@ struct DailyChallengeEarlierDaysView: View {
             case .empty:
                 EmptyView()
             case .content:
-                days
+                // Nothing left once today's list shows every question. Leaving the
+                // stack out keeps the Questions list from adding a gap for it.
+                let days = history.days(excluding: shownQuestionIDs)
+                if !days.isEmpty {
+                    dayList(days)
+                }
             }
         }
         .animation(PaeoniaMotion.stateChange, value: history.state)
     }
 
-    private var days: some View {
+    private func dayList(_ days: [DailyChallengeHistoryDay]) -> some View {
         LazyVStack(spacing: PaeoniaSpacing.sectionSpacing) {
-            ForEach(history.days(excluding: shownQuestionIDs)) { day in
+            ForEach(days) { day in
                 VStack(spacing: PaeoniaSpacing.space12) {
                     DailyChallengeHistoryDateDivider(date: day.date)
 

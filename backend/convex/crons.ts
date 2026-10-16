@@ -54,6 +54,11 @@ crons.interval(
 );
 crons.interval("paeonia-expire-stale-pairing-invites", { hours: 1 }, internal.pairing.expire_stale_pairing_invites, {});
 
+// New in Convex: deletes notes whose 24 hours are over, so they are gone and not only hidden.
+// Stories have no cleanup cron: they leave Home on the phone after 24 hours and stay in the
+// Stories archive. See stories.ts.
+crons.interval("delete-expired-notes", { minutes: 15 }, internal.stories.delete_expired_notes, {});
+
 // Replaces the cleanup-media-storage Edge Function, claim_media_storage_deletes, and
 // claim_expired_pending_uploads. The SQL drain ran after each queueing write; the other two had no schedule.
 crons.interval("cleanup-media-storage", { minutes: 5 }, internal.media.cleanup_media_storage, {});
