@@ -1,7 +1,6 @@
 {
   "name": "paeonia",
   "private": true,
-  "packageManager": "bun@1.3.14",
   "workspaces": [
     "marketing",
     "ios"
