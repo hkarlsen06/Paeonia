@@ -65,15 +65,19 @@ export const marketingNo = {
     ],
     listHeading: 'Alle spillene',
     list: [
-      { name: 'Ludo', description: 'Kast terningen og få alle brikkene dine hjem først.' },
-      { name: 'Tegn og gjett', description: 'Bytt på å tegne et ord. Den andre gjetter hva det er.' },
-      { name: 'Fire på rad', description: 'Slipp brikker og få fire på rad først.' },
-      { name: 'Tenk likt', description: 'Skriv et ord samtidig, og finn ordet som binder dem sammen.' },
-      { name: 'Prikker og streker', description: 'Tegn streker på tur. Den som lukker flest ruter, vinner.' },
-      { name: 'Ultimat bondesjakk', description: 'Bondesjakk inni bondesjakk. Vinn tre brett på rad.' },
-      { name: 'Skrivestafett', description: 'Skriv en historie sammen, én linje om gangen.' },
-      { name: 'Rare skapninger', description: 'Tegn hver deres del uten å kikke. Brett så ut skapningen.' },
+      { name: 'Ludo', art: 'ludo', description: 'Kast terningen og få alle brikkene dine hjem først.' },
+      { name: 'Tegn og gjett', art: 'draw-and-guess', description: 'Bytt på å tegne et ord. Den andre gjetter hva det er.' },
+      { name: 'Fire på rad', art: 'connect-four', description: 'Slipp brikker og få fire på rad først.' },
+      { name: 'Tenk likt', art: 'mind-meld', description: 'Skriv et ord samtidig, og finn ordet som binder dem sammen.' },
+      { name: 'Prikker og streker', art: 'dots-and-boxes', description: 'Tegn streker på tur. Den som lukker flest ruter, vinner.' },
+      { name: 'Ultimat bondesjakk', art: 'ultimate-tic-tac-toe', description: 'Bondesjakk inni bondesjakk. Vinn tre brett på rad.' },
+      { name: 'Skrivestafett', art: 'story-chain', description: 'Skriv en historie sammen, én linje om gangen.' },
+      { name: 'Rare skapninger', art: 'odd-creatures', description: 'Tegn hver deres del uten å kikke. Brett så ut skapningen.' },
     ],
+  },
+  moment: {
+    title: 'For nettene dere sovner i hver deres by',
+    description: 'Kast terningen før leggetid, finn en tegning om morgenen og tell dagene til dere ses igjen.',
   },
   live: {
     title: 'Alt skjer med en gang',
@@ -83,6 +87,8 @@ export const marketingNo = {
       src: 'home-live',
       alt: 'Hjemskjermen mens Elena har Ludo åpent. Et kort sier at Elena er her nå, og at det er din tur.',
     },
+    events: ['Elena er her nå', 'Elena kastet en sekser', 'Elena gjettet tegningen din', 'Elena sendte deg et notat'],
+    now: 'nå',
     items: [
       {
         title: 'Se hvem som er her',

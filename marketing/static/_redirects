@@ -10,6 +10,7 @@
 /.well-known/* /.well-known/:splat 200
 /brand/* /brand/:splat 200
 /screens/* /screens/:splat 200
+/art/* /art/:splat 200
 /favicon.svg /favicon.svg 200
 /opengraph-image.png /opengraph-image.png 200
 /site.webmanifest /site.webmanifest 200

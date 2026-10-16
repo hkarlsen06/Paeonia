@@ -65,15 +65,19 @@ export const marketingEn = {
     ],
     listHeading: 'All the games',
     list: [
-      { name: 'Ludo', description: 'Roll the die and race all your pieces home.' },
-      { name: 'Draw & Guess', description: 'Take turns drawing a word. The other one guesses it.' },
-      { name: 'Connect Four', description: 'Drop discs and get four in a row first.' },
-      { name: 'Mind Meld', description: 'Write a word at the same time, then find the word that links them.' },
-      { name: 'Dots and Boxes', description: 'Take turns drawing lines. Close the most boxes to win.' },
-      { name: 'Ultimate Tic-Tac-Toe', description: 'Tic-tac-toe inside tic-tac-toe. Win three boards in a row.' },
-      { name: 'Story Chain', description: 'Write a story together, one line at a time.' },
-      { name: 'Odd Creatures', description: 'Draw one part each without peeking. Then unfold your creature.' },
+      { name: 'Ludo', art: 'ludo', description: 'Roll the die and race all your pieces home.' },
+      { name: 'Draw & Guess', art: 'draw-and-guess', description: 'Take turns drawing a word. The other one guesses it.' },
+      { name: 'Connect Four', art: 'connect-four', description: 'Drop discs and get four in a row first.' },
+      { name: 'Mind Meld', art: 'mind-meld', description: 'Write a word at the same time, then find the word that links them.' },
+      { name: 'Dots and Boxes', art: 'dots-and-boxes', description: 'Take turns drawing lines. Close the most boxes to win.' },
+      { name: 'Ultimate Tic-Tac-Toe', art: 'ultimate-tic-tac-toe', description: 'Tic-tac-toe inside tic-tac-toe. Win three boards in a row.' },
+      { name: 'Story Chain', art: 'story-chain', description: 'Write a story together, one line at a time.' },
+      { name: 'Odd Creatures', art: 'odd-creatures', description: 'Draw one part each without peeking. Then unfold your creature.' },
     ],
+  },
+  moment: {
+    title: 'For the nights you fall asleep in different cities',
+    description: 'Roll the die before bed, find a drawing in the morning, and count the days until you meet again.',
   },
   live: {
     title: 'Everything happens live',
@@ -83,6 +87,8 @@ export const marketingEn = {
       src: 'home-live',
       alt: 'The home screen while Elena has Ludo open. A card says Elena is here now and it is your turn.',
     },
+    events: ['Elena is here now', 'Elena rolled a six', 'Elena guessed your drawing', 'Elena sent you a note'],
+    now: 'now',
     items: [
       {
         title: 'See who is here',
