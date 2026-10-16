@@ -89,6 +89,9 @@ struct LudoRollDecisionTests {
         let moves = [
             LudoBoard.move(die: 6, choice: .first),
             LudoBoard.move(die: 4, choice: .first),
+            // Player two misses a 6 three times, so the turn comes back to player one.
+            LudoBoard.move(die: 2, choice: .pass),
+            LudoBoard.move(die: 2, choice: .pass),
             LudoBoard.move(die: 2, choice: .pass),
         ]
         let board = try board(moves)

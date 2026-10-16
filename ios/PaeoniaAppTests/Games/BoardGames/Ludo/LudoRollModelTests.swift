@@ -18,26 +18,28 @@ private final class RollHarness {
     private(set) var sleeps: [Duration] = []
     private(set) var model: LudoRollModel!
 
+    /// The closures hold the harness strongly. A test that rolls and returns leaves the
+    /// model's save task running, and an unowned reference would crash in it.
     init(moves: [Int], me: BoardPlayer = .one, dice: [Int] = []) {
         self.moves = moves
         self.me = me
         self.dice = dice
         model = LudoRollModel(
-            context: { [unowned self] in self.context },
+            context: { self.context },
             store: LudoRollStore(
-                load: { [unowned self] in self.kept },
-                save: { [unowned self] roll in
+                load: { self.kept },
+                save: { roll in
                     self.kept = roll
                     self.savedRolls.append(roll)
                 }
             ),
-            play: { [unowned self] move in
+            play: { move in
                 self.played.append(move)
                 self.moves.append(move)
             },
-            rollDie: { [unowned self] in self.dice.removeFirst() },
+            rollDie: { self.dice.removeFirst() },
             tumbleDuration: .milliseconds(800),
-            sleep: { [unowned self] duration in await self.recordSleep(duration) }
+            sleep: { duration in await self.recordSleep(duration) }
         )
     }
 

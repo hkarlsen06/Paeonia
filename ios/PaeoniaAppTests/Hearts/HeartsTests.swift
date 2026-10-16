@@ -290,7 +290,13 @@ struct HeartsViewModelTests {
         #expect(rig.viewModel.incomingBurst?.flyingCount == 12)
         #expect(rig.viewModel.incomingLine?.contains("Robin") == true)
         #expect(rig.announcements.lines.count == 1)
-        #expect(try await seenTotals(in: rig) == [14])
+        // The burst shows before the seen write is queued, so wait for the write.
+        var totals = try await seenTotals(in: rig)
+        for _ in 0..<200 where totals.isEmpty {
+            try await Task.sleep(for: .milliseconds(10))
+            totals = try await seenTotals(in: rig)
+        }
+        #expect(totals == [14])
 
         // Nothing is left to play, so another look does not play them again.
         await rig.viewModel.playIfNeeded()

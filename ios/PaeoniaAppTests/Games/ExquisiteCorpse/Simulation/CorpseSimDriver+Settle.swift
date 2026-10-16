@@ -28,7 +28,9 @@ extension CorpseSimDriver {
             }
             try? await Task.sleep(for: .milliseconds(2))
             let fingerprint = await worldFingerprint(includingRelay: true)
-            guard fingerprint == last, relay.isIdle else {
+            guard fingerprint == last, relay.isIdle,
+                  !phones.contains(where: { $0.drawingStore.hasUnfinishedBackgroundSave })
+            else {
                 stable = 0
                 last = fingerprint
                 continue

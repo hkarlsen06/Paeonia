@@ -38,7 +38,8 @@ extension CorpseSimPhone {
         try? await pending.resetInFlight(ownerUserID: userID)
         let context = SyncContext(
             session: SyncSession(userID: userID),
-            reason: .localChange,
+            // A settled phone has waited out every retry delay, so the run tries all writes.
+            reason: .manualRefresh,
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: pending
         )

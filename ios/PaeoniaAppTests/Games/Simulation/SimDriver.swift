@@ -219,7 +219,8 @@ extension SimDriver {
                 parts.append(await phone.fingerprint())
             }
             let fingerprint = parts.joined(separator: "§")
-            if fingerprint == last, relay.isIdle {
+            let isSaving = phones.contains { $0.drawingStore.hasUnfinishedBackgroundSave }
+            if fingerprint == last, relay.isIdle, !isSaving {
                 stable += 1
                 if stable >= 3, round >= minRounds { return }
             } else {

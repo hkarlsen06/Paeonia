@@ -228,6 +228,8 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
     private let lock = NSLock()
     private var drafts: [String: Data] = [:]
     private var draftTickets = GameDraftTickets()
+    private var startedBackgroundSaves = 0
+    private var finishedBackgroundSaves = 0
     private var rescued: [UUID: Data] = [:]
     private var downloads: [UUID: Data] = [:]
     private var snapshots: [UUID: (roundID: UUID, data: Data)] = [:]
@@ -246,11 +248,21 @@ nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked
     }
 
     func beginDraftSave(ownerUserID: UUID, roundID: UUID) -> Int {
-        lock.withLock { draftTickets.next(ownerUserID, roundID) }
+        lock.withLock {
+            startedBackgroundSaves += 1
+            return draftTickets.next(ownerUserID, roundID)
+        }
+    }
+
+    /// Whether a background draft save has begun and not written yet. Tests wait for
+    /// this to be false before they read a draft or close the app.
+    var hasUnfinishedBackgroundSave: Bool {
+        lock.withLock { startedBackgroundSaves != finishedBackgroundSaves }
     }
 
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID, ticket: Int) {
         lock.withLock {
+            finishedBackgroundSaves += 1
             guard draftTickets.isCurrent(ticket, ownerUserID, roundID) else { return }
             drafts["\(ownerUserID)/\(roundID)"] = data
         }

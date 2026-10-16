@@ -63,8 +63,8 @@ struct BoardGameResolverLudoColorTests {
     }
 
     @Test func thePartnerStartingDoesNotStopMyFirstMoveFromPicking() throws {
-        // The partner passed with a 1, so my first move of the game is the second move.
-        let game = ludoGame(first: partner, moves: [2])
+        // The partner missed a 6 three times, each time with a 1, so my first move of the game is their fourth.
+        let game = ludoGame(first: partner, moves: [2, 2, 2])
 
         let snapshot = try resolve(game, [.move(Fixture.move(15, on: game, ludoColor: .sky))], as: LudoBoard.self)
 

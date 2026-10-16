@@ -118,13 +118,13 @@ struct LocalStoreChangesTests {
         let repository = InMemoryAccessSyncSnapshotRepository()
         let stream = LocalStoreChanges.changes(in: .access)
 
+        var iterator = stream.filter { $0.ownerUserID == owner }.makeAsyncIterator()
         try await repository.save(
             AccessSyncSnapshot(ownerUserID: owner, userEntitlement: nil, coupleEntitlement: nil, relationshipState: nil)
         )
-        try await repository.delete(ownerUserID: owner)
-
-        var iterator = stream.filter { $0.ownerUserID == owner }.makeAsyncIterator()
         #expect(await iterator.next()?.domain == .access)
+        // Two identical writes before a read merge into one change, so read between them.
+        try await repository.delete(ownerUserID: owner)
         #expect(await iterator.next()?.domain == .access)
     }
 
@@ -149,11 +149,11 @@ struct LocalStoreChangesTests {
         let owner = UUID()
         let stream = LocalStoreChanges.changes(in: .memories)
 
-        try await repository.saveRemote([], ownerUserID: owner, mergePolicy: .preserveLocalChanges)
-        try await repository.deleteAll(ownerUserID: owner)
-
         var iterator = stream.filter { $0.ownerUserID == owner }.makeAsyncIterator()
+        try await repository.saveRemote([], ownerUserID: owner, mergePolicy: .preserveLocalChanges)
         #expect(await iterator.next()?.domain == .memories)
+        // Two identical writes before a read merge into one change, so read between them.
+        try await repository.deleteAll(ownerUserID: owner)
         #expect(await iterator.next()?.domain == .memories)
     }
 

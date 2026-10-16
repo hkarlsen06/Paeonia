@@ -2,6 +2,17 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
+/// A run that tries every write, as when the retry delay has passed. The tests
+/// would otherwise wait out the delays in real time.
+private func triesEveryWriteContext(_ store: any PendingSyncOperationPersisting) -> SyncContext {
+    SyncContext(
+        session: SyncSession(userID: GameFixture.me),
+        reason: .manualRefresh,
+        stateStore: InMemorySyncStateRepository(),
+        pendingOperationStore: store
+    )
+}
+
 /// A guess the server keeps refusing used to stay in the queue forever. The
 /// phone then showed "saved on this phone" while it was online, and a give up
 /// behind it never left either. These tests run the real drain, the way the
@@ -40,7 +51,7 @@ struct GamesStuckMoveTests {
         PendingSyncOperationDrainStream(handlers: [
             SubmitGameGuessPendingOperationHandler(gateway: environment.gateway, cache: environment.cache),
             GiveUpGameRoundPendingOperationHandler(gateway: environment.gateway, cache: environment.cache),
-        ], retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0))
+        ])
     }
 
     private func enqueue(_ kind: SyncPendingOperationKind, _ payload: some Encodable, sequence: Int64) async throws {
@@ -81,7 +92,7 @@ struct GamesStuckMoveTests {
     }
 
     private func runDrain() async throws {
-        try await drain.push(context: syncContext(environment.pending))
+        try await drain.push(context: triesEveryWriteContext(environment.pending))
     }
 
     private func pendingWork() async throws -> DrawAndGuessPendingWork {
@@ -204,7 +215,7 @@ struct GamesStuckMoveTests {
         let drain = drain
         let pending = environment.pending
         viewModel.setLocalChangeSyncHandler {
-            try? await drain.push(context: syncContext(pending))
+            try? await drain.push(context: triesEveryWriteContext(pending))
         }
         await viewModel.reload()
         // The server already has this person's "result seen" for the round, so the next turn
