@@ -397,7 +397,7 @@ When updating `marketing/`:
 - Keep the public page structure simple. Do not add a design-system package unless the page grows enough to need it.
 - Use SVG assets from `design/brand/web/` or copied public equivalents. Do not trace or recreate the logo.
 - Keep locale dictionaries in sync for English and Norwegian.
-- Use the current marketing app structure as the implementation target: `marketing/components/LandingPage.tsx`, `marketing/components/SiteShell.tsx`, `marketing/app/globals.css`, and `marketing/lib/i18n/dictionaries/`.
+- Use the current marketing app structure as the implementation target: `marketing/src/routes/[locale=locale]/+page.svelte`, `marketing/src/lib/components/SiteShell.svelte`, `marketing/src/app.css`, and `marketing/src/lib/i18n/dictionaries/`.
 - If adding app screenshots, prefer real product captures. If those are not ready, use clearly intentional product mockups, not blank panels.
 
 ## Do And Do Not

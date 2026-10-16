@@ -1,0 +1,24 @@
+# Cloudflare Pages static routing.
+
+# /, /privacy, /terms and /support go to the visitor's language through functions/.
+
+# Browsers that do not hand an invite to the installed app use the static join fallback.
+/join/* /join/ 200
+
+# Pass through static assets. Without these, the catch-all at the end would redirect them.
+/_app/* /_app/:splat 200
+/.well-known/* /.well-known/:splat 200
+/brand/* /brand/:splat 200
+/screens/* /screens/:splat 200
+/favicon.svg /favicon.svg 200
+/opengraph-image.png /opengraph-image.png 200
+/site.webmanifest /site.webmanifest 200
+/robots.txt /robots.txt 200
+/sitemap.xml /sitemap.xml 200
+
+# Pass through supported locales.
+/no/* /no/:splat 200
+/en/* /en/:splat 200
+
+# Unsupported locale-looking paths fallback to English.
+/:locale/* /en/:splat 302

@@ -1,10 +1,9 @@
 # dependencies
 node_modules
 
-# Next.js/static export
-marketing/.next/
+# SvelteKit static export
+marketing/.svelte-kit/
 marketing/out/
-marketing/next-env.d.ts
 
 # Wrangler local state
 .wrangler/

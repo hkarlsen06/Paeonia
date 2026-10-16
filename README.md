@@ -58,7 +58,7 @@ The app should help couples create small, reliable daily rituals that make dista
 Organize by product feature, not just by file type.
 
 ```text
-marketing/      # Static Next.js marketing/legal site for paeonia.no
+marketing/      # Static SvelteKit marketing/legal site for paeonia.no
 ios/
 ├── PaeoniaApp/
 │   ├── App/

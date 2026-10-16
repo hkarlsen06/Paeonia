@@ -259,13 +259,12 @@ Most backend changes should start by reading `backend/AGENTS.md` and the module 
 ## Marketing
 
 - `docs/marketing-app-contract.md`: routes, Universal Links, AASA, Cloudflare headers/redirects, and app-required static files.
-- `marketing/app/`: Next.js App Router pages.
-- `marketing/app/[locale]/`: localized public pages.
-- `marketing/app/(static)/join/page.tsx`: static invite fallback route for `/join/*`.
-- `marketing/components/`: shared page components.
-- `marketing/lib/i18n/dictionaries/`: localized marketing and legal dictionaries.
-- `marketing/lib/paths.ts` and `marketing/lib/metadata.ts`: route and metadata helpers.
-- `marketing/public/_headers` and `marketing/public/_redirects`: Cloudflare Pages behavior.
-- `marketing/public/.well-known/apple-app-site-association`: Universal Links file when present in the export/public tree.
+- `marketing/src/routes/`: SvelteKit pages. `[locale=locale]/` holds the landing, privacy, terms and support pages, and `join/` is the invite fallback for `/join/*`.
+- `marketing/src/lib/components/`: shared page components, including `PageHead.svelte` for titles and social previews.
+- `marketing/src/lib/i18n/dictionaries/`: localized marketing and legal dictionaries.
+- `marketing/src/lib/paths.ts`: localized route helper.
+- `marketing/functions/`: Cloudflare Pages Functions that send `/`, `/privacy`, `/terms` and `/support` to the visitor's language.
+- `marketing/static/_headers` and `marketing/static/_redirects`: Cloudflare Pages behavior.
+- `marketing/static/.well-known/apple-app-site-association`: Universal Links file.
 
 Do not route backend traffic through the marketing app. `paeonia.no` is public web and Universal Links; `api.paeonia.no` is the Convex API.

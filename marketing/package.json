@@ -2,25 +2,27 @@
   "name": "marketing",
   "private": true,
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev --webpack -p 3001",
-    "build": "next build",
-    "start": "bunx serve@latest out -p 3001",
-    "typecheck": "tsc --noEmit"
+    "dev": "vite dev --port 3001",
+    "build": "vite build",
+    "start": "vite preview --port 3001",
+    "prepare": "svelte-kit sync || echo ''",
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
-  "dependencies": {
-    "lucide-react": "^0.473.0",
-    "next": "^16.2.6",
-    "react": "19.2.0",
-    "react-dom": "19.2.0"
+  "imports": {
+    "#lib/*": "./src/lib/*"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "^20.12.7",
-    "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
-    "postcss": "^8.5.10",
-    "tailwindcss": "^4.1.18",
-    "typescript": "^5.4.4"
+    "@lucide/svelte": "^1.58.0",
+    "@sveltejs/adapter-static": "^4.0.0",
+    "@sveltejs/kit": "^3.1.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.6.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.0"
   }
 }

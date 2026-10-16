@@ -57,5 +57,5 @@ Status: historical foundation record. These decisions were adopted during projec
 ## Marketing
 
 - `paeonia.no` is the canonical domain.
-- The marketing app is static Next.js for Cloudflare Pages.
+- The marketing app is static Next.js for Cloudflare Pages. It moved to static SvelteKit on 2026-10-16.
 - The original placeholder legal copy has been replaced by production-oriented English and Norwegian source text. Final operator details and legal review remain release-owner responsibilities; see `docs/mvp-release-checklist.md`.

@@ -26,7 +26,7 @@ Subscription model:
 Product constraints:
 
 - Native iOS app built with SwiftUI.
-- Static Next.js marketing/legal site deployed to Cloudflare Pages.
+- Static SvelteKit marketing/legal site deployed to Cloudflare Pages.
 - Local-first persistence using the existing storage layer.
 - Clear MVVM boundaries.
 - Type-safe localization from the beginning.
@@ -44,7 +44,7 @@ Repository structure:
 
 ```text
 paeonia/
-├── marketing/            # Static Next.js site for paeonia.no
+├── marketing/            # Static SvelteKit site for paeonia.no
 ├── ios/                  # Native iOS application
 │   ├── PaeoniaApp/       # Main iOS app target
 │   ├── PaeoniaWidget/    # Widget target, if/when added

@@ -32,16 +32,17 @@ Do not route backend traffic through the marketing app.
 
 ## Implementation Structure
 
-Keep the marketing app structurally close to Tidex's modern marketing app:
+The marketing app is a static SvelteKit 3 site built with `@sveltejs/adapter-static` into `marketing/out/`:
 
-- use the Next.js App Router under `marketing/app/`
-- keep localized public pages under `marketing/app/[locale]/`
-- keep fallback app-link pages such as `/join` as explicit routes under `marketing/app/`
-- keep shared page components under `marketing/components/`
-- keep localization setup under `marketing/lib/i18n/`
-- split dictionaries by domain and locale under `marketing/lib/i18n/dictionaries/`
-- keep route/path helpers in `marketing/lib/`
-- keep static deployment files in `marketing/public/`
+- keep routes under `marketing/src/routes/`
+- keep localized public pages under `marketing/src/routes/[locale=locale]/`. The `locale` matcher is in `marketing/src/params.ts`
+- keep fallback app-link pages such as `/join` as explicit routes under `marketing/src/routes/`
+- keep shared page components under `marketing/src/lib/components/`
+- keep localization setup under `marketing/src/lib/i18n/`
+- split dictionaries by domain and locale under `marketing/src/lib/i18n/dictionaries/`
+- keep route/path helpers in `marketing/src/lib/`
+- keep static deployment files in `marketing/static/`
+- keep Cloudflare Pages Functions in `marketing/functions/`
 
 Avoid reintroducing a single large dictionary file as the site grows. Add new marketing copy to the marketing dictionaries, legal copy to the legal dictionaries, and app-required static files to `public/`.
 
@@ -67,7 +68,7 @@ Purpose: fallback page for invite links.
 
 Current pre-launch behavior: preserve the invite code, offer an explicit `paeonia://join/<code>` button when Safari keeps the Universal Link in the browser, and tell private-beta users to install from their beta invitation before reopening the link.
 
-Production behavior: if the app is installed, iOS should open Paeonia through Universal Links. If the app is not installed, the fallback page offers the canonical App Store listing at `https://apps.apple.com/us/app/paeonia/id6779833892` alongside the retained invite code. `NEXT_PUBLIC_PAEONIA_APP_STORE_URL` may override that destination for a specific marketing build.
+Production behavior: if the app is installed, iOS should open Paeonia through Universal Links. If the app is not installed, the fallback page offers the canonical App Store listing at `https://apps.apple.com/us/app/paeonia/id6779833892` alongside the retained invite code.
 
 Do not reveal invite details on the public web page. Invite preview and acceptance belong inside the app/backend flow.
 
@@ -196,11 +197,9 @@ Required behavior:
 
 ## Local Development
 
-`marketing/next.config.js` keeps `output: 'export'` enabled for production builds only.
+`bun run dev` serves the site at `http://localhost:3001` with Vite. The dev server does not read `_redirects` or run `functions/`, so `/join/<code>` and the unprefixed `/privacy`, `/terms` and `/support` only work on Cloudflare. To test those, build and run `npx wrangler pages dev out` from `marketing/`.
 
-`marketing/lib/i18n/static-params.ts` also returns no locale static params in local development, while returning every locale for production builds.
-
-Reason: with the Next.js 16 dev server, static-export behavior around dynamic locale routes can corrupt or briefly read incomplete generated dev JSON manifests when several routes are requested at the same time. Production `next build` still exports a static Cloudflare-compatible site with every supported locale.
+`bun run build` writes to `marketing/out/` and `.svelte-kit/`. It doesn't touch the dev server's files, so it is safe to build while `bun run dev` runs.
 
 ## Optional But Expected Static Files
 
@@ -212,7 +211,7 @@ These are not critical to app auth or pairing, but should remain present for a c
 
 ## Branding Assets
 
-The canonical public mark, lockup, favicon SVG, Open Graph image, and web manifest are present under `marketing/public/` and referenced by the marketing metadata.
+The canonical public mark, lockup, favicon SVG, Open Graph image, and web manifest are present under `marketing/static/` and referenced by `marketing/src/app.html` and `marketing/src/lib/components/PageHead.svelte`.
 
 Before App Store launch, decide whether dedicated PNG favicon sizes and Apple touch icons are needed in addition to the canonical SVG:
 
@@ -220,7 +219,7 @@ Before App Store launch, decide whether dedicated PNG favicon sizes and Apple to
 - `/favicon-192x192.png`
 - `/apple-touch-icon.png`
 
-Keep `marketing/app/layout.tsx` metadata and `marketing/public/site.webmanifest` in sync with any added exports.
+Keep `marketing/src/app.html` and `marketing/static/site.webmanifest` in sync with any added exports.
 
 ## Things The Marketing App Must Not Own
 
@@ -250,7 +249,7 @@ Run locally:
 
 ```bash
 bun run build
-jq empty marketing/public/.well-known/apple-app-site-association
+jq empty marketing/static/.well-known/apple-app-site-association
 ```
 
 Deploy the generated static site with Wrangler:
