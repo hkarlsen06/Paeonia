@@ -69,6 +69,7 @@ final class MainTabModels {
         dependencies.gamesViewModel ?? GamesViewModel(dependencies: .live())
     lazy var hearts = HeartsViewModel()
     lazy var coupleDates = CoupleDatesViewModel()
+    lazy var stories = StoriesViewModel()
     lazy var lookBack = LookBackViewModel.live(
         thumbnailLoader: dependencies.widgetHistoryThumbnailLoader
             ?? WidgetRevisionThumbnailLoader(gateway: WidgetDrawingHistoryFactory.makeGateway())
@@ -178,6 +179,7 @@ struct MainTabView: View {
     var lookBackViewModel: LookBackViewModel { models.lookBack }
     var heartsViewModel: HeartsViewModel { models.hearts }
     var coupleDatesViewModel: CoupleDatesViewModel { models.coupleDates }
+    var storiesViewModel: StoriesViewModel { models.stories }
 
     var body: some View {
         presentingDailyFlows(on: tabContent)
@@ -247,6 +249,18 @@ struct MainTabView: View {
             guard let error else { return }
             bannerCenter.show(.error(message: error.message))
             coupleDatesViewModel.clearError()
+        }
+        .task(id: identity.currentUserID) {
+            await storiesViewModel.configure(ownerUserID: identity.currentUserID, coupleID: identity.coupleID)
+            await storiesViewModel.observeStoreChanges()
+        }
+        .onChange(of: identity.coupleID) { _, coupleID in
+            storiesViewModel.updateCoupleID(coupleID)
+        }
+        .onChange(of: storiesViewModel.error) { _, error in
+            guard let error else { return }
+            bannerCenter.show(.error(message: error.message))
+            storiesViewModel.clearError()
         }
         .onChange(of: identity.relationshipStartedOn) { _, startedOn in
             milestoneViewModel.refreshServerStartedOn(startedOn)

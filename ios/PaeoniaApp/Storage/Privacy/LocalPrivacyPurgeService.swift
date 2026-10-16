@@ -198,6 +198,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let lookBackCache: any LookBackCaching
     private let heartsCache: any HeartsCaching
     private let coupleDatesCache: any CoupleDatesCaching
+    private let storiesCache: any StoriesCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
     private let temporaryDirectory: URL
 
@@ -220,6 +221,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         lookBackCache: any LookBackCaching = FileLookBackCache.shared,
         heartsCache: any HeartsCaching = FileHeartsCache.shared,
         coupleDatesCache: any CoupleDatesCaching = FileCoupleDatesCache.shared,
+        storiesCache: any StoriesCaching = FileStoriesCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) {
@@ -241,6 +243,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.lookBackCache = lookBackCache
         self.heartsCache = heartsCache
         self.coupleDatesCache = coupleDatesCache
+        self.storiesCache = storiesCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
         self.temporaryDirectory = temporaryDirectory
     }
@@ -302,6 +305,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await mindMeldCache.clearAll()
         await heartsCache.clearAll()
         await coupleDatesCache.clearAll()
+        await storiesCache.clearAll()
         await exquisiteCorpseCache.clearAll()
         await boardGamesCache.clearAll()
         lookBackCache.clearAll()

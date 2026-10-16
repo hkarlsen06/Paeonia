@@ -22060,37 +22060,37 @@
       }
     },
     "settings.notifications.memories.subtitle" : {
-      "comment" : "Subtitle for the new-memory notification preference. The placeholder is the partner's display name.",
+      "comment" : "Subtitle for the memories and stories notification preference. The placeholder is the partner's display name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when %@ adds a memory."
+            "value" : "Get a notification when %@ adds a memory or shares a story."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når %@ legger til et minne."
+            "value" : "Få et varsel når %@ legger til et minne eller deler en story."
           }
         }
       }
     },
     "settings.notifications.memories.title" : {
-      "comment" : "Title for the notification preference for newly added memories",
+      "comment" : "Title for the notification preference for new memories and stories",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "New memories"
+            "value" : "New memories and stories"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nye minner"
+            "value" : "Nye minner og stories"
           }
         }
       }
@@ -23384,6 +23384,822 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Forlat forholdet"
+          }
+        }
+      }
+    },
+    "stories.archive.empty.message" : {
+      "comment" : "Message when the couple has no stories yet. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share a photo from Home to show you're thinking of %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del et bilde fra Hjem for å vise at du tenker på %@."
+          }
+        }
+      }
+    },
+    "stories.archive.empty.title" : {
+      "comment" : "Title when the couple has no stories yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No stories yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen stories ennå"
+          }
+        }
+      }
+    },
+    "stories.archive.rowCount" : {
+      "comment" : "Line under Stories in Memories. %lld is how many stories the couple has shared.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld story"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld stories"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld story"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld stories"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stories.archive.tileAccessibility" : {
+      "comment" : "VoiceOver label for a story in the Stories section. %1$@ is who shared it, %2$@ is the date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story from %1$@, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story fra %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "stories.archive.title" : {
+      "comment" : "Title of the section in Memories that keeps every story the couple shared.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stories"
+          }
+        }
+      }
+    },
+    "stories.composer.captionPlaceholder" : {
+      "comment" : "Placeholder of the optional caption field on a new story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a few words (optional)"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv noen ord (valgfritt)"
+          }
+        }
+      }
+    },
+    "stories.composer.choosePhoto" : {
+      "comment" : "Button that picks a photo from the library for a new story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et bilde"
+          }
+        }
+      }
+    },
+    "stories.composer.explainer" : {
+      "comment" : "Shown the first time someone shares a story. %@ is the partner's name. Memories is the tab name and Stories is a section in it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ can see your story on Home for 24 hours. After that, you'll both find it under Stories in Memories."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kan se storyen din på Hjem i 24 timer. Etter det finner dere den under Stories i Minner."
+          }
+        }
+      }
+    },
+    "stories.composer.photoAccessibility" : {
+      "comment" : "VoiceOver label for the picked photo in a new story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your story photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet til storyen din"
+          }
+        }
+      }
+    },
+    "stories.composer.removePhoto" : {
+      "comment" : "Button that removes the picked photo from a new story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern bildet"
+          }
+        }
+      }
+    },
+    "stories.composer.share" : {
+      "comment" : "Button that shares the story. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del med %@"
+          }
+        }
+      }
+    },
+    "stories.composer.takePhoto" : {
+      "comment" : "Button that opens the camera for a new story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta et bilde"
+          }
+        }
+      }
+    },
+    "stories.composer.title" : {
+      "comment" : "Title of the screen where you share a new story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny story"
+          }
+        }
+      }
+    },
+    "stories.error.deleteFailed" : {
+      "comment" : "Banner when a story could not be deleted for another reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The story couldn't be deleted. Please try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storyen kunne ikke slettes. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "stories.error.deleteOffline" : {
+      "comment" : "Banner when a story could not be deleted because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline, so the story wasn't deleted. Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet, så storyen ble ikke slettet. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "stories.error.noteFailed" : {
+      "comment" : "Banner when a note could not be saved for another reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your note couldn't be saved. Please try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet kunne ikke lagres. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "stories.error.noteOffline" : {
+      "comment" : "Banner when a note could not be saved because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline, so your note wasn't saved. Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet, så notatet ble ikke lagret. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "stories.error.photoUnreadable" : {
+      "comment" : "Banner when the picked photo can't be used for a story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't use that photo. Try another one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke bruke det bildet. Prøv et annet."
+          }
+        }
+      }
+    },
+    "stories.error.postFailed" : {
+      "comment" : "Banner when a story could not be shared for another reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your story couldn't be shared. Please try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storyen kunne ikke deles. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "stories.error.postOffline" : {
+      "comment" : "Banner when a story could not be shared because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline, so your story wasn't shared. Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet, så storyen ble ikke delt. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "stories.home.addAccessibility" : {
+      "comment" : "VoiceOver label and button that adds a new photo to your story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to your story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til i storyen din"
+          }
+        }
+      }
+    },
+    "stories.home.partnerNewStory" : {
+      "comment" : "VoiceOver label for the partner's avatar on Home when they shared a story you haven't opened. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s story, new"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storyen til %@, ny"
+          }
+        }
+      }
+    },
+    "stories.home.partnerNoStory" : {
+      "comment" : "VoiceOver label for the partner's avatar on Home when they have no story. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has no story right now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har ingen story akkurat nå"
+          }
+        }
+      }
+    },
+    "stories.home.partnerStory" : {
+      "comment" : "VoiceOver label for the partner's avatar on Home when you already opened their story. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storyen til %@"
+          }
+        }
+      }
+    },
+    "stories.home.yourStory" : {
+      "comment" : "Label under your own avatar at the top of Home. It opens your story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din story"
+          }
+        }
+      }
+    },
+    "stories.note.addAccessibility" : {
+      "comment" : "VoiceOver label for the empty thought bubble over your avatar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv et notat"
+          }
+        }
+      }
+    },
+    "stories.note.explainer" : {
+      "comment" : "Under the note field. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sees it over your photo on Home for 24 hours."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser det over bildet ditt på Hjem i 24 timer."
+          }
+        }
+      }
+    },
+    "stories.note.fieldPrompt" : {
+      "comment" : "Placeholder in the note field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share a thought..."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del en tanke ..."
+          }
+        }
+      }
+    },
+    "stories.note.ownAccessibility" : {
+      "comment" : "VoiceOver label for your own note over your avatar. %@ is the note. Tapping changes it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your note: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet ditt: %@"
+          }
+        }
+      }
+    },
+    "stories.note.partnerAccessibility" : {
+      "comment" : "VoiceOver label for the partner's note over their avatar. %1$@ is the partner's name, %2$@ is the note.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@'s note: %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet til %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "stories.note.placeholder" : {
+      "comment" : "Quiet text in the empty thought bubble over your own avatar on Home. Tapping it lets you write a note.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note..."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notat ..."
+          }
+        }
+      }
+    },
+    "stories.note.remove" : {
+      "comment" : "Button that removes your note.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern notatet"
+          }
+        }
+      }
+    },
+    "stories.note.share" : {
+      "comment" : "Button that shares the note.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del notat"
+          }
+        }
+      }
+    },
+    "stories.note.title" : {
+      "comment" : "Title of the sheet where you write a short note for your partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet ditt"
+          }
+        }
+      }
+    },
+    "stories.viewer.delete.action" : {
+      "comment" : "Destructive button that deletes your own story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
+          }
+        }
+      }
+    },
+    "stories.viewer.delete.message" : {
+      "comment" : "Message of the alert that confirms deleting a story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It will be gone for both of you, also from Memories. You can't undo this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den forsvinner for dere begge, også fra Minner. Du kan ikke angre."
+          }
+        }
+      }
+    },
+    "stories.viewer.delete.title" : {
+      "comment" : "Title of the alert that confirms deleting your own story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this story?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slette denne storyen?"
+          }
+        }
+      }
+    },
+    "stories.viewer.homeSubtitle" : {
+      "comment" : "Line under the name in the story viewer. %1$@ is when it was shared, like '2 hours ago'. %2$@ is how long it stays on Home, like '21 hr'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ igjen"
+          }
+        }
+      }
+    },
+    "stories.viewer.next" : {
+      "comment" : "VoiceOver action that shows the next story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste story"
+          }
+        }
+      }
+    },
+    "stories.viewer.notSeen" : {
+      "comment" : "Shown on your own story before your partner opened it. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn't seen it yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har ikke sett den ennå"
+          }
+        }
+      }
+    },
+    "stories.viewer.photoAccessibility" : {
+      "comment" : "VoiceOver label for the story photo. %@ is the name of the person who shared it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story from %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story fra %@"
+          }
+        }
+      }
+    },
+    "stories.viewer.photoFailed" : {
+      "comment" : "Shown in the story viewer when the photo could not load. Tapping tries again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load the photo. Tap to try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste bildet. Trykk for å prøve igjen."
+          }
+        }
+      }
+    },
+    "stories.viewer.previous" : {
+      "comment" : "VoiceOver action that shows the previous story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forrige story"
+          }
+        }
+      }
+    },
+    "stories.viewer.seen" : {
+      "comment" : "Shown on your own story once your partner opened it. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seen by %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett av %@"
           }
         }
       }

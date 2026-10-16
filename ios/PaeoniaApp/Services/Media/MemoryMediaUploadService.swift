@@ -4,13 +4,25 @@ import Foundation
 nonisolated enum MemoryMediaPurpose: String, Codable, Sendable, Equatable {
     case photo = "memory_photo"
     case voice = "voice_note"
+    /// A story photo. It goes through the same upload as a memory photo.
+    case story = "story_photo"
 
     var mediaType: String {
         switch self {
-        case .photo:
+        case .photo, .story:
             "image"
         case .voice:
             "voice"
+        }
+    }
+
+    /// What the upload is reserved for. A story photo belongs to its story.
+    var reservedParentKind: String {
+        switch self {
+        case .photo, .voice:
+            "memory_media"
+        case .story:
+            "story"
         }
     }
 }
@@ -146,7 +158,7 @@ nonisolated struct ReserveMemoryMediaRequest: Encodable {
     let clientID: UUID
     let clientSequence: Int64
     let localCreatedAt: Date
-    let reservedParentKind = "memory_media"
+    let reservedParentKind: String
     let reservedParentID: UUID
     let coupleID: UUID
     let uploadPurpose: String
@@ -164,6 +176,7 @@ nonisolated struct ReserveMemoryMediaRequest: Encodable {
         clientID = operation.clientID
         clientSequence = operation.clientSequence
         localCreatedAt = operation.localCreatedAt
+        reservedParentKind = purpose.reservedParentKind
         reservedParentID = memoryMediaID
         self.coupleID = coupleID
         uploadPurpose = purpose.rawValue
@@ -195,7 +208,7 @@ nonisolated struct FinalizeMemoryMediaRequest: Encodable {
     let bucket: String
     let storagePath: String
     let storageID: String
-    let reservedParentKind = "memory_media"
+    let reservedParentKind: String
     let reservedParentID: UUID
     let uploadPurpose: String
     let mediaType: String
@@ -223,6 +236,7 @@ nonisolated struct FinalizeMemoryMediaRequest: Encodable {
         localCreatedAt = operation.localCreatedAt
         bucket = reservation.bucket
         storagePath = reservation.storagePath
+        reservedParentKind = media.purpose.reservedParentKind
         reservedParentID = memoryMediaID
         uploadPurpose = media.purpose.rawValue
         mediaType = media.purpose.mediaType

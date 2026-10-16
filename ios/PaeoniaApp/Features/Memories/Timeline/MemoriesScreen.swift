@@ -10,9 +10,13 @@ struct MemoriesScreen: View {
     /// Flushes pending local memory writes to the backend (wired to the app's sync
     /// engine by the host). Called after each local change and on pull-to-refresh.
     let onLocalChange: @MainActor @Sendable () async -> Void
+    /// The couple's stories, shown as a row that opens the Stories archive. Nil hides it.
+    let stories: StoriesViewModel?
+    let storyPeople: StoryPeople
 
     @State private var viewModel: MemoriesViewModel
     @State private var isCreating = false
+    @State private var isShowingStories = false
     /// iPad landscape: memories sit in a grid of cards instead of one column.
     @State private var isWideLayout = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -23,11 +27,15 @@ struct MemoriesScreen: View {
         currentUserID: UUID?,
         coupleID: UUID?,
         viewModel: MemoriesViewModel? = nil,
+        stories: StoriesViewModel? = nil,
+        storyPeople: StoryPeople = StoryPeople(currentName: "", partnerName: ""),
         onLocalChange: @escaping @MainActor @Sendable () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
         self.coupleID = coupleID
         _viewModel = State(initialValue: viewModel ?? MemoriesViewModel())
+        self.stories = stories
+        self.storyPeople = storyPeople
         self.onLocalChange = onLocalChange
     }
 
@@ -44,6 +52,11 @@ struct MemoriesScreen: View {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel(Text(.memoriesAddAccessibility))
+                }
+            }
+            .navigationDestination(isPresented: $isShowingStories) {
+                if let stories {
+                    StoriesArchiveView(viewModel: stories, people: storyPeople)
                 }
             }
             .navigationDestination(for: UUID.self) { memoryID in
@@ -114,8 +127,22 @@ struct MemoriesScreen: View {
     /// Newest first, in month sections. The headers scroll with the cards: a pinned header
     /// would need an opaque strip, which shows as a dark band over the tabs' light, and
     /// every card shows its own date anyway. A wide iPad shows one grid of cards instead.
+    /// The Stories row, once the couple has shared a story.
+    @ViewBuilder
+    private var storiesRow: some View {
+        if let stories, !stories.stories.isEmpty {
+            MemoriesStoriesRow(stories: stories.stories) { isShowingStories = true }
+        }
+    }
+
     private var timeline: some View {
         ScrollView {
+            storiesRow
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space16)
+                .paeoniaReadableWidth(
+                    isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
+                )
             LazyVGrid(
                 columns: timelineColumns,
                 alignment: .leading,
@@ -179,6 +206,10 @@ struct MemoriesScreen: View {
 
     private var emptyState: some View {
         ScrollView {
+            storiesRow
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space16)
+                .paeoniaReadableWidth()
             PaeoniaEmptyStateView(
                 title: .memoriesEmptyTitle,
                 message: .memoriesEmptyMessage,

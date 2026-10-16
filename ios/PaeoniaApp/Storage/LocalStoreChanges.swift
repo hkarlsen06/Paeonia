@@ -14,6 +14,7 @@ nonisolated enum LocalStoreDomain: String, CaseIterable, Sendable {
     case games
     case hearts
     case coupleDates
+    case stories
 }
 
 /// One committed write to a `LocalStoreDomain`.

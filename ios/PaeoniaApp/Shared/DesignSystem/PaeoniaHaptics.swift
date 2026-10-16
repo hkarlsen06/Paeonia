@@ -69,6 +69,10 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    static func storyShared() {
+        notify(.success)
+    }
+
     static func validationError() {
         notify(.error)
     }

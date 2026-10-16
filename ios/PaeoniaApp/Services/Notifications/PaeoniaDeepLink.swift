@@ -7,6 +7,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case dailyChat(questionID: UUID)
     case dailyToday(coupleDayID: UUID?)
     case memories
+    /// `paeonia://stories`: the partner shared a story. Opens Home, where the ring shows it.
+    case stories
     /// `paeonia://games/<path>`, for every `GameKind`.
     case game(GameKind)
     case streak
@@ -153,6 +155,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             dailyLink(pathComponents: pathComponents, query: query)
         case ("memories", []):
             .memories
+        case ("stories", []):
+            .stories
         case ("games", _) where pathComponents.count == 1:
             GameKind(path: pathComponents[0]).map(Self.game)
         case ("streak", []):

@@ -41,12 +41,25 @@ extension MainTabView {
         )
     }
 
+    var storyPeople: StoryPeople {
+        StoryPeople(
+            currentUserID: identity.currentUserID,
+            currentName: identity.currentDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationYouName),
+            currentPhotoAssetID: identity.currentProfilePhotoAssetID,
+            partnerUserID: identity.partnerUserID,
+            partnerName: dailyChallengeParticipants.partnerName,
+            partnerPhotoAssetID: identity.partnerProfilePhotoAssetID
+        )
+    }
+
     private var memoriesTab: some View {
         NavigationStack(path: $memoriesPath) {
             MemoriesScreen(
                 currentUserID: identity.currentUserID,
                 coupleID: identity.coupleID,
                 viewModel: memoriesViewModel,
+                stories: storiesViewModel,
+                storyPeople: storyPeople,
                 onLocalChange: actions.syncAfterLocalChange
             )
         }
@@ -120,6 +133,8 @@ extension MainTabView {
             onOpenWidgetDrawing: actions.openWidgetDrawing,
             lookBack: lookBackViewModel,
             onOpenLookBack: openLookBack,
+            stories: storiesViewModel,
+            storyPeople: storyPeople,
             onRefresh: {
                 await refreshDailyChallenge()
                 await actions.refreshHome()

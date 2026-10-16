@@ -34,6 +34,9 @@ struct PairedHomeView: View {
     /// The old question, drawing or memory shown under the daily card. Hidden when there is none.
     var lookBack: LookBackViewModel?
     var onOpenLookBack: (LookBackItem) -> Void = { _ in }
+    /// The partners' avatars at the top, with their stories. Nil hides the row.
+    var stories: StoriesViewModel?
+    var storyPeople: StoryPeople?
     var onRefresh: () async -> Void = {}
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -43,7 +46,7 @@ struct PairedHomeView: View {
     /// left two and the cards filling in from the right (`HomeWideLayout`).
     @State private var isWideLayout = false
 
-    private static let alertTypesSeenOnHome: Set<String> = ["widget_updated", "streak_reminder"]
+    private static let alertTypesSeenOnHome: Set<String> = ["widget_updated", "streak_reminder", "story_posted"]
 
     init(
         currentUserID: UUID? = nil,
@@ -77,6 +80,8 @@ struct PairedHomeView: View {
         onOpenWidgetDrawing: @escaping () -> Void = {},
         lookBack: LookBackViewModel? = nil,
         onOpenLookBack: @escaping (LookBackItem) -> Void = { _ in },
+        stories: StoriesViewModel? = nil,
+        storyPeople: StoryPeople? = nil,
         onRefresh: @escaping () async -> Void = {}
     ) {
         self.currentUserID = currentUserID
@@ -106,6 +111,8 @@ struct PairedHomeView: View {
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
         self.lookBack = lookBack
         self.onOpenLookBack = onOpenLookBack
+        self.stories = stories
+        self.storyPeople = storyPeople
         self.onRefresh = onRefresh
     }
 
@@ -116,15 +123,19 @@ struct PairedHomeView: View {
             // matches the gap inside the milestone/drawing tile row so the cards read
             // as one grid. On the phone, today's questions lead and the tiles sit
             // above the map, so a milestone day's celebration plays on screen.
-            cardsLayout {
-                dailyPromptCard
-                unreadChatsCard
-                partnerGameCard
-                milestoneAndWidget
-                    .layoutValue(key: HomeWideRole.self, value: .tiles)
-                mapCard
-                    .layoutValue(key: HomeWideRole.self, value: .map)
-                lookBackCard
+            // The partners' story avatars sit above every card, also on a wide iPad.
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                storiesStrip
+                cardsLayout {
+                    dailyPromptCard
+                    unreadChatsCard
+                    partnerGameCard
+                    milestoneAndWidget
+                        .layoutValue(key: HomeWideRole.self, value: .tiles)
+                    mapCard
+                        .layoutValue(key: HomeWideRole.self, value: .map)
+                    lookBackCard
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -146,8 +157,8 @@ struct PairedHomeView: View {
         .refreshable {
             await onRefresh()
         }
-        // Home shows the couple's current drawing and the streak, so seeing it
-        // means the user has noticed a new drawing or a check-in reminder.
+        // Home shows the couple's current drawing, the streak and the story ring, so
+        // seeing it means the user has noticed a new drawing, a check-in reminder or a story.
         .task {
             await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
         }
@@ -200,6 +211,13 @@ struct PairedHomeView: View {
 
 /// The cards `body` lays out.
 extension PairedHomeView {
+    @ViewBuilder
+    private var storiesStrip: some View {
+        if let stories, let storyPeople {
+            HomeStoriesStrip(viewModel: stories, people: storyPeople)
+        }
+    }
+
     @ViewBuilder
     private var unreadChatsCard: some View {
         if !unreadChats.isEmpty {
