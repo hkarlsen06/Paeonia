@@ -24,6 +24,7 @@ const NOTIFICATION_KINDS = [
   "location_updated",
   "subscription_trial_reminder",
   "memory_created",
+  "story_posted",
   "thread_message_sent",
   "game_turn_ready",
   "game_result",
@@ -165,6 +166,7 @@ function preferenceAllows(
     case "location_updated":
       return preference.location_updates_enabled;
     case "memory_created":
+    case "story_posted":
       return preference.memories_enabled;
     case "thread_message_sent":
       return preference.messages_enabled;
@@ -465,6 +467,28 @@ export async function enqueueMemoryCreatedNotification(
     redaction_level: "private",
     apns_push_type: "alert",
     apns_collapse_id: `memory:${memory.id}`,
+    scheduled_for: nowIso(),
+  });
+}
+
+/** Queues the "shared a story" alert for the partner. Call after inserting a stories row. The payload never holds the caption. */
+export async function enqueueStoryPostedNotification(ctx: WriterCtx, story: Doc<"stories">): Promise<void> {
+  await enqueuePartnerNotification(ctx, {
+    couple_id: story.couple_id,
+    actor_user_id: story.author_user_id,
+    kind: "story_posted",
+    payload: {
+      type: "story_posted",
+      couple_id: story.couple_id,
+      story_id: story.id,
+      actor_user_id: story.author_user_id,
+      route: "home",
+      deeplink: "paeonia://stories",
+    },
+    dedupe_key: `story_posted:${story.id}`,
+    redaction_level: "private",
+    apns_push_type: "alert",
+    apns_collapse_id: `story:${story.couple_id}`,
     scheduled_for: nowIso(),
   });
 }

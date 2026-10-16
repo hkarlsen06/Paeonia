@@ -193,6 +193,17 @@ async function canReadGameDrawing(ctx: ReaderCtx, userId: string, asset: Doc<"me
     (await canAccessCoupleContent(ctx, userId, asset.couple_id!));
 }
 
+async function canReadStoryPhoto(ctx: ReaderCtx, userId: string, asset: Doc<"media_assets">): Promise<boolean> {
+  const stories = await ctx.db
+    .query("stories")
+    .withIndex("by_media_asset_id", (q) => q.eq("media_asset_id", asset.id))
+    .collect();
+  return (
+    stories.some((story) => story.id === asset.reserved_parent_id && story.deleted_at === undefined && story.couple_id === asset.couple_id) &&
+    (await canAccessCoupleContent(ctx, userId, asset.couple_id!))
+  );
+}
+
 /**
  * Port of `internal.can_read_media_object`, which backed both the
  * `storage.objects` select policy and `get_media_signed_url`.
@@ -219,6 +230,8 @@ export async function canReadMediaAsset(ctx: ReaderCtx, userId: string, asset: D
       return await canReadThreadMessageMedia(ctx, userId, asset);
     case "memory_media":
       return await canReadMemoryMedia(ctx, userId, asset);
+    case "story":
+      return await canReadStoryPhoto(ctx, userId, asset);
     case "widget_drawing_revision":
       return asset.bucket === "widget-drawings" && (await canReadWidgetPayload(ctx, userId, asset));
     case "game_move":

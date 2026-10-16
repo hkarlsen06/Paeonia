@@ -103,6 +103,7 @@ import type * as retention from "../retention.js";
 import type * as review from "../review.js";
 import type * as storekit from "../storekit.js";
 import type * as storekitNode from "../storekitNode.js";
+import type * as stories from "../stories.js";
 import type * as storyChain from "../storyChain.js";
 import type * as streaks from "../streaks.js";
 import type * as threads from "../threads.js";
@@ -210,6 +211,7 @@ declare const fullApi: ApiFromModules<{
   review: typeof review;
   storekit: typeof storekit;
   storekitNode: typeof storekitNode;
+  stories: typeof stories;
   storyChain: typeof storyChain;
   streaks: typeof streaks;
   threads: typeof threads;

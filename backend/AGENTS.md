@@ -113,7 +113,7 @@ Rules that come with them:
 
 - Patches that write `updated_at` go through `withUpdatedAt` or `withTouch`. Do not hand-write `updated_at`.
 - Postgres ran orphan media triggers at commit time (deferred). Call the `queue*IfOrphaned` helpers after the mutation's last write to the referencing rows.
-- After writing `user_devices`, call `refreshStreakAfterDeviceTimeZoneChange`. After changing `profiles.time_zone_id`, call `refreshStreakAfterProfileTimeZoneChange`. After a daily answer insert, call `enqueuePartnerAnsweredNotification`. After a memory insert, call `enqueueMemoryCreatedNotification`. After a widget revision insert, call `enqueueWidgetUpdateAlert`.
+- After writing `user_devices`, call `refreshStreakAfterDeviceTimeZoneChange`. After changing `profiles.time_zone_id`, call `refreshStreakAfterProfileTimeZoneChange`. After a daily answer insert, call `enqueuePartnerAnsweredNotification`. After a memory insert, call `enqueueMemoryCreatedNotification`. After a story insert, call `enqueueStoryPostedNotification`. After a widget revision insert, call `enqueueWidgetUpdateAlert`.
 - Insert outbox rows only through `insertNotificationOutbox` and `insertWidgetPushOutbox`. They apply the check constraints, dedupe keys, and payload safety rule, and queue the send for the row's `scheduled_for`.
 - `readCoupleStreak` is the pure streak reader for queries. A just-broken streak shows as broken with its restore offer, without writing. `getCoupleStreakForCouple` first persists the break with `detectStreakBreak`, so call it only from a mutation. The streak cron and `applyStreakRestore` persist breaks, so `restorable_count` is stored before a restore needs it.
 - Time zone math uses `Intl.DateTimeFormat`. It follows the Postgres rules at daylight saving changes: a local time in a spring-forward gap uses the offset from before the gap, and an ambiguous fall-back time resolves to standard time.
@@ -179,6 +179,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `location` | `update_latest_partner_location`, `update_location_sharing_preference`, `get_partner_location_visibility` |
 | `hearts` | `send_hearts`, `mark_hearts_seen`, `get_hearts` (the Home map hearts) |
 | `countdowns` | `get_countdowns`, `save_countdown`, `delete_countdown`, `set_birthday` (the couple's own countdowns and both birthdays on the milestones timeline; birthdays live on `couple_members`, and the couple cleanup and purge delete both) |
+| `stories` | `get_stories`, `post_story`, `delete_story`, `mark_story_seen`, `set_note` (`get_stories` also returns each partner's note from `couple_notes`, one row per member that a new note replaces and a blank one deletes; the phone shows it for 24 hours. A photo with an optional caption that one partner posts for the other. The phone shows it for 24 hours from `created_at` and keeps it in an archive, so the server stores no expiry. Only the author deletes. The photo is a `story_photo` upload, and the couple cleanup and purge delete the stories) |
 
 | `reports` | `submit_leave_and_report` |
 

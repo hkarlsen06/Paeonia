@@ -54,6 +54,16 @@ async function emitMemberEvents(
   return members.length;
 }
 
+/** Deletes the couple's notes. Returns the rows deleted. */
+async function deleteCoupleNotes(ctx: WriterCtx, coupleId: string): Promise<number> {
+  const notes = await ctx.db
+    .query("couple_notes")
+    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  for (const note of notes) await ctx.db.delete(note._id);
+  return notes.length;
+}
+
 /** Deletes the couple's countdowns and clears its members' birthdays. Returns the rows changed. */
 async function deleteCoupleDates(ctx: WriterCtx, coupleId: string): Promise<number> {
   const countdowns = await ctx.db
@@ -193,6 +203,16 @@ export async function cleanupCoupleContent(
     }
   }
 
+  for (const story of await ctx.db
+    .query("stories")
+    .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", couple.id))
+    .collect()) {
+    if (story.deleted_at !== undefined) continue;
+    if (budget.left <= 0) return unfinished();
+    await ctx.db.patch(story._id, { deleted_at: now });
+    budget.left -= 1;
+  }
+
   const canvases = await ctx.db
     .query("widget_canvases")
     .withIndex("by_couple_id", (q) => q.eq("couple_id", couple.id))
@@ -240,6 +260,7 @@ export async function cleanupCoupleContent(
   await deleteLatestLocationsForCouple(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
   await deleteCoupleDates(ctx, couple.id);
+  await deleteCoupleNotes(ctx, couple.id);
   const current = (await ctx.db.get(couple._id))!;
   if (current.status === "ended") {
     await ctx.db.patch(couple._id, withUpdatedAt({ status: "deleted" as const }));
@@ -391,6 +412,14 @@ export async function purgeCoupleContent(
     await remove(memory);
   }
 
+  for (const story of await ctx.db
+    .query("stories")
+    .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", couple.id))
+    .take(Math.max(budget.left, 1))) {
+    if (budget.left <= 0) return unfinished();
+    await remove(story);
+  }
+
   for (const canvas of await ctx.db
     .query("widget_canvases")
     .withIndex("by_couple_id", (q) => q.eq("couple_id", couple.id))
@@ -412,7 +441,11 @@ export async function purgeCoupleContent(
   const gameRows = await deleteCoupleGameRows(ctx, couple.id);
   contentDeleted += gameRows;
   budget.left -= gameRows;
-  for (const deleted of [await deleteHeartsForCouple(ctx, couple.id), await deleteCoupleDates(ctx, couple.id)]) {
+  for (const deleted of [
+    await deleteHeartsForCouple(ctx, couple.id),
+    await deleteCoupleDates(ctx, couple.id),
+    await deleteCoupleNotes(ctx, couple.id),
+  ]) {
     contentDeleted += deleted;
     budget.left -= deleted;
   }

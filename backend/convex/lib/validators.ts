@@ -50,6 +50,7 @@ export const notificationKind = literals(
   "location_updated",
   "subscription_trial_reminder",
   "memory_created",
+  "story_posted",
   "thread_message_sent",
   "game_turn_ready",
   "game_result",

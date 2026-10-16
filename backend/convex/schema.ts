@@ -800,6 +800,35 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_couple_id_deleted_at", ["couple_id", "deleted_at"]),
 
+  // A photo with an optional short caption that one partner posts as an "I thought about you"
+  // check-in. The phone shows it in a ring on Home for 24 hours after created_at, then keeps it in
+  // the Stories archive. The server stores no expiry. seen_at is when the partner first opened it.
+  // Delete sets deleted_at and only the author may delete.
+  // FK: couple_id -> couples cascade; author_user_id -> users cascade; media_asset_id -> media_assets restrict.
+  stories: defineTable({
+    id: uuid,
+    couple_id: uuid,
+    author_user_id: uuid,
+    media_asset_id: uuid,
+    caption: optString,
+    created_at: ts,
+    seen_at: optTs,
+    deleted_at: optTs,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_couple_id_created_at", ["couple_id", "created_at"])
+    .index("by_media_asset_id", ["media_asset_id"]),
+
+  // A partner's short note, shown in a bubble over their avatar on Home for 24 hours after
+  // created_at. A new note replaces the old one, and removing it deletes the row.
+  // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
+  couple_notes: defineTable({
+    couple_id: uuid,
+    user_id: uuid,
+    text: v.string(),
+    created_at: ts,
+  }).index("by_couple_id_user_id", ["couple_id", "user_id"]),
+
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
   location_sharing_preferences: defineTable({
     couple_id: uuid,
@@ -829,6 +858,7 @@ export default defineSchema({
       "widget_drawing_revision",
       "game_move",
       "exquisite_corpse_part", // Exquisite corpse
+      "story",
       "report_snapshot",
     ),
     reserved_parent_id: uuid,
@@ -846,6 +876,7 @@ export default defineSchema({
       "game_drawing_payload",
       "exquisite_corpse_drawing", // Exquisite corpse
       "exquisite_corpse_strip", // Exquisite corpse
+      "story_photo",
       "report_snapshot",
     ),
     expected_media_type: mediaType,

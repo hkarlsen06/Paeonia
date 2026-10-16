@@ -128,6 +128,16 @@ export const create_pending_media_upload = mutation({
           bucket = "couple-media";
           coupleId = coupleArg;
           storagePath = `${coupleArg}/${mediaType}/${assetId}.${extension}`;
+        } else if (purpose === "story_photo") {
+          if (kind !== "story" || mediaType !== "image" || coupleArg === undefined) {
+            fail("23514", "story photo upload contract is invalid");
+          }
+          if (!(await canAccessCoupleContent(ctx, userId, coupleArg))) {
+            fail("42501", "active entitled couple access is required");
+          }
+          bucket = "couple-media";
+          coupleId = coupleArg;
+          storagePath = `${coupleArg}/${mediaType}/${assetId}.${extension}`;
         } else if (purpose === "widget_drawing_payload") {
           if (kind !== "widget_drawing_revision" || mediaType !== "drawing_payload" || coupleArg === undefined) {
             fail("23514", "widget drawing upload contract is invalid");

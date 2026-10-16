@@ -68,6 +68,7 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
     case "location_updated":
       return preference?.location_updates_enabled ?? false;
     case "memory_created":
+    case "story_posted":
       return preference?.memories_enabled ?? false;
     case "thread_message_sent":
       return preference?.messages_enabled ?? false;

@@ -45,6 +45,12 @@ export async function mediaAssetHasLiveReference(ctx: ReaderCtx, assetId: string
     if (memory && memory.deleted_at === undefined) return true;
   }
 
+  const stories = await ctx.db
+    .query("stories")
+    .withIndex("by_media_asset_id", (q) => q.eq("media_asset_id", assetId))
+    .collect();
+  if (stories.some((story) => story.deleted_at === undefined)) return true;
+
   const messageMedia = await ctx.db
     .query("thread_message_media")
     .withIndex("by_media_asset_id", (q) => q.eq("media_asset_id", assetId))

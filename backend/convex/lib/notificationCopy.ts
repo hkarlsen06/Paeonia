@@ -234,6 +234,8 @@ export function notificationAlertBody(
         : "Open Paeonia to answer and reveal what they wrote.";
     case "memory_created":
       return nb ? "Åpne Paeonia for å se det." : "Open Paeonia to see it.";
+    case "story_posted":
+      return nb ? "Åpne Paeonia for å se den." : "Open Paeonia to see it.";
     case "thread_message_sent":
       return nb ? "Åpne Paeonia for å lese og svare." : "Open Paeonia to read it and reply.";
     case "game_turn_ready":
@@ -281,6 +283,8 @@ export async function notificationAlertTitle(
       return nb ? `${name} fullførte dagens spørsmål` : `${name} finished today's questions`;
     case "memory_created":
       return nb ? `${name} la til et nytt minne` : `${name} added a new memory`;
+    case "story_posted":
+      return nb ? `${name} delte en story` : `${name} shared a story`;
     case "thread_message_sent":
       return nb ? `${name} sendte deg en melding` : `${name} sent you a message`;
     case "game_turn_ready":
