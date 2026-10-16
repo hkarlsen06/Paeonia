@@ -4,6 +4,7 @@ import Testing
 
 /// The phase a state puts the person in, from the server's rows and the moves
 /// saved on the phone.
+@MainActor
 struct GamesPhaseTests {
     let resolver = DrawAndGuessResolver(userID: GameFixture.me)
 

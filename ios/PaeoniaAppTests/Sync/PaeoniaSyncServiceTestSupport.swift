@@ -6,7 +6,7 @@ struct SyncPrivacyPurgeCall: Equatable, Sendable {
     let scope: LocalPrivacyPurgeScope
 }
 
-actor RecordingSyncPrivacyPurger: LocalPrivacyPurging {
+actor RecordingSyncPrivacyPurger {
     private(set) var calls: [SyncPrivacyPurgeCall] = []
 
     func purge(
@@ -17,6 +17,8 @@ actor RecordingSyncPrivacyPurger: LocalPrivacyPurging {
         return .completed
     }
 }
+
+extension RecordingSyncPrivacyPurger: LocalPrivacyPurging {}
 
 actor AsyncCompletionProbe {
     private var completed = false
@@ -39,7 +41,7 @@ enum RecordingSyncStreamError: Error {
     case requestedFailure
 }
 
-actor BlockingFirstPullSyncStream: SyncStream {
+actor BlockingFirstPullSyncStream {
     nonisolated let streamKey: SyncStreamKey
     private var recordedEvents: [String] = []
     private var firstPullStarted = false
@@ -142,7 +144,9 @@ actor BlockingFirstPullSyncStream: SyncStream {
     }
 }
 
-actor FailOnceSyncStream: SyncStream {
+extension BlockingFirstPullSyncStream: SyncStream {}
+
+actor FailOnceSyncStream {
     nonisolated let streamKey: SyncStreamKey
     private var recordedEvents: [String] = []
     private var pullCount = 0
@@ -191,7 +195,9 @@ actor FailOnceSyncStream: SyncStream {
     }
 }
 
-actor RecordingSyncStream: SyncStream {
+extension FailOnceSyncStream: SyncStream {}
+
+actor RecordingSyncStream {
     nonisolated let streamKey: SyncStreamKey
     private let failure: RecordingSyncStreamFailure?
     private var recordedEvents: [String] = []
@@ -231,7 +237,9 @@ actor RecordingSyncStream: SyncStream {
     }
 }
 
-actor RetryThenSucceedPendingOperationHandler: PendingSyncOperationHandling {
+extension RecordingSyncStream: SyncStream {}
+
+actor RetryThenSucceedPendingOperationHandler {
     nonisolated let operationKind: SyncPendingOperationKind
     private var sendCount = 0
     private var waiters: [CheckedContinuation<Void, Never>] = []
@@ -265,6 +273,8 @@ actor RetryThenSucceedPendingOperationHandler: PendingSyncOperationHandling {
         return .succeeded
     }
 }
+
+extension RetryThenSucceedPendingOperationHandler: PendingSyncOperationHandling {}
 
 extension SyncSession {
     static func test() -> SyncSession {

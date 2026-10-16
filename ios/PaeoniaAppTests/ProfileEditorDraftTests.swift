@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
+@MainActor
 struct ProfileEditorDraftTests {
     private let customAssetID = UUID()
     private let providerAssetID = UUID()

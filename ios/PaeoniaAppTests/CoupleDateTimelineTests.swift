@@ -5,6 +5,7 @@ import Testing
 /// Covers how the couple's own countdowns and birthdays merge with the milestones on
 /// the Home tile and the milestones timeline, and how queued writes lay over the
 /// server's copy.
+@MainActor
 struct CoupleDateTimelineTests {
     // A fixed UTC calendar keeps the day math deterministic (no DST, no locale drift).
     private let calendar: Calendar = {

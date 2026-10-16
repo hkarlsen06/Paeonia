@@ -197,7 +197,7 @@ actor FakeAuthGateway: AuthGateway {
 }
 // swiftlint:enable async_without_await
 
-actor FakeProfilePhotoImageCache: ProfilePhotoImageCaching {
+actor FakeProfilePhotoImageCache {
     private var storedData: [UUID: Data] = [:]
     private(set) var storedMediaAssetIDs: [UUID] = []
     private(set) var removeAllCallCount = 0
@@ -220,6 +220,8 @@ actor FakeProfilePhotoImageCache: ProfilePhotoImageCaching {
         storedData.removeAll()
     }
 }
+
+extension FakeProfilePhotoImageCache: ProfilePhotoImageCaching {}
 
 actor FakeAuthSessionCache: AuthSessionCaching {
     private(set) var currentSession: AuthSession?
@@ -248,7 +250,7 @@ actor FakeAuthSessionCache: AuthSessionCaching {
     }
 }
 
-actor FakeProviderAvatarImageLoader: ProviderAvatarImageLoading {
+actor FakeProviderAvatarImageLoader {
     private let data: Data?
     private(set) var requestedURLs: [URL] = []
 
@@ -262,13 +264,17 @@ actor FakeProviderAvatarImageLoader: ProviderAvatarImageLoading {
     }
 }
 
-actor FakeProfilePhotoImageInvalidator: ProfilePhotoImageInvalidating {
+extension FakeProviderAvatarImageLoader: ProviderAvatarImageLoading {}
+
+actor FakeProfilePhotoImageInvalidator {
     private(set) var invalidatedMediaAssetIDs: [UUID] = []
 
     func invalidate(mediaAssetID: UUID) {
         invalidatedMediaAssetIDs.append(mediaAssetID)
     }
 }
+
+extension FakeProfilePhotoImageInvalidator: ProfilePhotoImageInvalidating {}
 
 extension RemoteAuthSession {
     static func test(

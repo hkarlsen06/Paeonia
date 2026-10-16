@@ -16,7 +16,7 @@ nonisolated struct PrivacyCapturedReportSubmission: Equatable, Sendable {
     let operation: SyncClientOperation
 }
 
-actor PrivacyFakeGateway: PrivacySafetyGateway {
+actor PrivacyFakeGateway {
     private let rows: [PrivacyRequestRemoteRow]
     private let createdRow: PrivacyRequestRemoteRow?
     private(set) var createCallCount = 0
@@ -64,7 +64,9 @@ actor PrivacyFakeGateway: PrivacySafetyGateway {
     }
 }
 
-actor PrivacyFakeService: PrivacySafetyServicing {
+extension PrivacyFakeGateway: PrivacySafetyGateway {}
+
+actor PrivacyFakeService {
     private let requests: [PrivacyRequest]
     private let requestOutcome: PrivacyRequestSubmissionOutcome?
     private let failPrivacyRequest: Bool
@@ -145,8 +147,10 @@ actor PrivacyFakeService: PrivacySafetyServicing {
     }
 }
 
+extension PrivacyFakeService: PrivacySafetyServicing {}
+
 /// Holds a report in flight until the test calls `release()`.
-actor PrivacyGatedReportService: PrivacySafetyServicing {
+actor PrivacyGatedReportService {
     private var continuation: CheckedContinuation<Void, Never>?
     private var isReleased = false
     private(set) var reportCallCount = 0
@@ -182,6 +186,8 @@ actor PrivacyGatedReportService: PrivacySafetyServicing {
         continuation = nil
     }
 }
+
+extension PrivacyGatedReportService: PrivacySafetyServicing {}
 
 @MainActor
 final class PrivacyFixedOperationProvider: SyncClientOperationProviding {

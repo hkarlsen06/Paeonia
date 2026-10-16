@@ -11,7 +11,7 @@ enum SettingsFakePreferencesError: Error {
 }
 
 // An actor supplies the async-ness, so the sync bodies need no `async`/`await`.
-actor SettingsFakeNotificationPreferences: NotificationPreferencesProviding {
+actor SettingsFakeNotificationPreferences {
     private var preferences: NotificationPreferences
     private var failOnSet: Bool
     private var failOnLoad: Bool
@@ -144,6 +144,8 @@ actor SettingsFakeNotificationPreferences: NotificationPreferencesProviding {
     }
 }
 
+extension SettingsFakeNotificationPreferences: NotificationPreferencesProviding {}
+
 struct SettingsFakePushAuthorization: PushAuthorizationProviding {
     var denied = false
 
@@ -252,7 +254,7 @@ final class SettingsFakeStoreKit: PaeoniaStoreKitServicing {
     }
 }
 /// The iOS notification permission. Asking flips it to the configured answer.
-actor SettingsFakeSystemPermission: PushAuthorizationProviding {
+actor SettingsFakeSystemPermission {
     private var status: SettingsViewModel.SystemNotificationPermission
     private let answer: SettingsViewModel.SystemNotificationPermission
     private(set) var requestCount = 0
@@ -282,4 +284,6 @@ actor SettingsFakeSystemPermission: PushAuthorizationProviding {
         return true
     }
 }
+
+extension SettingsFakeSystemPermission: PushAuthorizationProviding {}
 // swiftlint:enable async_without_await unavailable_function

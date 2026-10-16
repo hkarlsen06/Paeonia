@@ -5,6 +5,7 @@ import Testing
 /// Covers the predicted streak shown on the completion celebration. Answers send
 /// local-first, so this math has to land on the same number the server will reach
 /// once today's answer syncs.
+@MainActor
 struct CoupleStreakTests {
     @Test func consecutiveDayExtendsStoredCountWhenPartnerAlreadyContributed() {
         let count = StreakCelebration.celebratedCount(
@@ -303,6 +304,7 @@ struct CoupleStreakTests {
 }
 
 /// Covers which freeze line the streak sheet shows.
+@MainActor
 struct StreakFreezeNoteTests {
     private func freezeStreak(
         currentCount: Int = 6,

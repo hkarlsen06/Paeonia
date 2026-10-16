@@ -69,9 +69,15 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         return .newData
     }
 
+    nonisolated private static let typesShownLiveInApp: Set<String> = [
+        "thread_message_sent",
+        "partner_answered",
+        "daily_challenge_completed",
+    ]
+
     /// While the app is open, suppress the system banner for a partner's widget
     /// update and surface it as an in-app top banner instead (like the rest of
-    /// the app's notices). Question chat messages show no banner at all. Other
+    /// the app's notices). Question activity shows no banner at all. Other
     /// notifications show a banner but stay out of Notification Center, since the
     /// person already saw it in the app. The sender name
     /// and localized body are read off the content before crossing to the main
@@ -91,16 +97,17 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
             || (userInfo["route"] as? String) == "widget"
             || content.threadIdentifier.hasPrefix("widget:")
 
+        let type = (userInfo["type"] as? String) ?? ""
+
         #if DEBUG
-        let type = (userInfo["type"] as? String) ?? "nil"
         let detail = "widget=\(isWidgetUpdate) thread=\(content.threadIdentifier) type=\(type)"
         logger.debug("willPresent \(detail, privacy: .public)")
         #endif
 
-        // A question chat message already shows live on Home and as the
-        // Questions tab badge, and its alert copy says "Open Paeonia", so
-        // drop the system banner while the app is open.
-        if (userInfo["type"] as? String) == "thread_message_sent" {
+        // Question activity already shows live on Home and in the Questions
+        // tab, and its alert copy says "Open Paeonia", so drop the system
+        // banner while the app is open.
+        if Self.typesShownLiveInApp.contains(type) {
             completionHandler([])
             return
         }

@@ -37,6 +37,7 @@ struct PaeoniaSubscriptionTests {
     }
 }
 
+@MainActor
 @Suite("Paywall presentation")
 struct PaywallPresentationTests {
     private let nok = Decimal.FormatStyle.Currency(code: "NOK", locale: Locale(identifier: "nb_NO"))

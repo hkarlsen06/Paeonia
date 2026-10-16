@@ -300,7 +300,7 @@ struct StaticPushAuthorization: PushAuthorizationProviding {
     // swiftlint:enable async_without_await
 }
 
-actor SequencedPushAuthorization: PushAuthorizationProviding {
+actor SequencedPushAuthorization {
     private var evaluationCount = 0
     private var firstEvaluationContinuation: CheckedContinuation<Bool, Never>?
     private var firstEvaluationStartWaiters: [CheckedContinuation<Void, Never>] = []
@@ -338,6 +338,8 @@ actor SequencedPushAuthorization: PushAuthorizationProviding {
     func isDenied() async -> Bool { false }
     // swiftlint:enable async_without_await
 }
+
+extension SequencedPushAuthorization: PushAuthorizationProviding {}
 
 func visibilitySnapshot(
     ownerUserID: UUID = locationTestUUID("11111111-1111-1111-1111-111111111111"),

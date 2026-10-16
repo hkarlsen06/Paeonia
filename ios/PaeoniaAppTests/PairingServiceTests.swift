@@ -3,6 +3,7 @@ import StoreKit
 import Testing
 @testable import PaeoniaApp
 
+@MainActor
 struct PairingInviteCodeTests {
     private let canonicalCode = "01ABCD"
 
@@ -842,6 +843,7 @@ struct PaywallAudienceTests {
     }
 }
 
+@MainActor
 struct PaywallErrorTests {
     @Test func purchaseConfirmationErrorMessageHidesTechnicalDiagnostics() {
         let message = PaywallError.purchaseNotConfirmed.message
@@ -1300,6 +1302,7 @@ private final class PairingInviteStoreSpy: PairingInviteStoring {
     }
 }
 
+// swiftlint:disable unavailable_function
 private actor BlockingValidationPairingService: PairingServicing {
     private let invite: PairingInvite
     private var validationContinuation: CheckedContinuation<PairingInviteValidation, any Error>?
@@ -1309,7 +1312,6 @@ private actor BlockingValidationPairingService: PairingServicing {
         self.invite = invite
     }
 
-    @available(*, unavailable)
     func createInvite(
         operation: PairingClientOperation,
         expiresAt: Date
@@ -1346,12 +1348,10 @@ private actor BlockingValidationPairingService: PairingServicing {
         validationContinuation = nil
     }
 
-    @available(*, unavailable)
     func previewInvite(codeInput: String) throws -> PairingInvitePreview? {
         fatalError("unused")
     }
 
-    @available(*, unavailable)
     func rotateInvite(
         currentInvite: PairingInvite,
         operation: PairingClientOperation,
@@ -1360,7 +1360,6 @@ private actor BlockingValidationPairingService: PairingServicing {
         fatalError("unused")
     }
 
-    @available(*, unavailable)
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
@@ -1369,12 +1368,10 @@ private actor BlockingValidationPairingService: PairingServicing {
         fatalError("unused")
     }
 
-    @available(*, unavailable)
     func revokeInvite(id: UUID) throws -> Bool {
         fatalError("unused")
     }
 
-    @available(*, unavailable)
     func leaveRelationship(operation: PairingClientOperation) throws -> Bool {
         fatalError("unused")
     }
@@ -1402,12 +1399,10 @@ private actor CachedInviteRecoveryPairingService: PairingServicing {
         return validation
     }
 
-    @available(*, unavailable)
     func previewInvite(codeInput: String) throws -> PairingInvitePreview? {
         fatalError("unused")
     }
 
-    @available(*, unavailable)
     func rotateInvite(
         currentInvite: PairingInvite,
         operation: PairingClientOperation,
@@ -1416,7 +1411,6 @@ private actor CachedInviteRecoveryPairingService: PairingServicing {
         fatalError("unused")
     }
 
-    @available(*, unavailable)
     func acceptInvite(
         codeInput: String,
         operation: PairingClientOperation,
@@ -1425,16 +1419,15 @@ private actor CachedInviteRecoveryPairingService: PairingServicing {
         fatalError("unused")
     }
 
-    @available(*, unavailable)
     func revokeInvite(id: UUID) throws -> Bool {
         fatalError("unused")
     }
 
-    @available(*, unavailable)
     func leaveRelationship(operation: PairingClientOperation) throws -> Bool {
         fatalError("unused")
     }
 }
+// swiftlint:enable unavailable_function
 
 private actor PendingCreatePairingService: PairingServicing {
     private let invite: PairingInvite

@@ -362,6 +362,7 @@ struct RoutineLocationThrottleTests {
     }
 }
 
+@MainActor
 struct PartnerLocationShortAgeTests {
     private let now = Date(timeIntervalSince1970: 1_000_000)
 

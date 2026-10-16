@@ -44,7 +44,7 @@ final class ChatTestOperationProvider: SyncClientOperationProviding {
     }
 }
 
-actor ChatVoiceUploader: DailyAnswerMediaUploading {
+actor ChatVoiceUploader {
     let assetID: UUID
     private(set) var uploadedParentIDs: [UUID] = []
     private(set) var uploadedPurposes: [DailyAnswerMediaPurpose] = []
@@ -65,6 +65,8 @@ actor ChatVoiceUploader: DailyAnswerMediaUploading {
         return assetID
     }
 }
+
+extension ChatVoiceUploader: DailyAnswerMediaUploading {}
 
 @MainActor
 final class ChatTestFixture {

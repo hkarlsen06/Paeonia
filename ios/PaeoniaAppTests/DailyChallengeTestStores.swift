@@ -36,7 +36,7 @@ final class FixedDailyChallengeOperationProvider: SyncClientOperationProviding {
     }
 }
 
-actor RecordingMediaUploadService: DailyAnswerMediaUploading {
+actor RecordingMediaUploadService {
     let assetID: UUID
     private(set) var uploadCount = 0
     private(set) var lastAnswerID: UUID?
@@ -59,6 +59,8 @@ actor RecordingMediaUploadService: DailyAnswerMediaUploading {
         return assetID
     }
 }
+
+extension RecordingMediaUploadService: DailyAnswerMediaUploading {}
 
 final class InMemoryDailyAnswerMediaDraftStore: DailyAnswerMediaDraftStoring, @unchecked Sendable {
     private var storage: [UUID: Data] = [:]

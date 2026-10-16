@@ -2,6 +2,7 @@
   import Testing
   @testable import PaeoniaApp
 
+  @MainActor
   struct DeveloperScenarioLaunchTests {
     @Test func defaultsToProduction() {
       #expect(DeveloperScenarioLaunch.destination(arguments: [], environment: [:]) == .production)

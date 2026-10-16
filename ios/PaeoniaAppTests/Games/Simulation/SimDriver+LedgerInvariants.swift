@@ -62,16 +62,14 @@ extension SimDriver {
         let dropped = Set(ledger.compactMap { entry -> SyncPendingOperationKind? in
             if case .terminal = entry.outcome { entry.kind } else { nil }
         })
-        let explains: [GamesNotice: [SyncPendingOperationKind]] = [
-            .moveRejected: [.submitGameGuess, .giveUpGameRound],
-            .wordRejected: [.pickDrawWord],
-            .wordRejectedDrawingKept: [.pickDrawWord],
-            .drawingRejected: [.submitGameDrawing],
+        let explains: [(notice: GamesNotice, kinds: [SyncPendingOperationKind])] = [
+            (.moveRejected, [.submitGameGuess, .giveUpGameRound]),
+            (.wordRejected, [.pickDrawWord]),
+            (.wordRejectedDrawingKept, [.pickDrawWord]),
+            (.drawingRejected, [.submitGameDrawing]),
         ]
-        for notice in Set(context.notices) {
-            if let kinds = explains[notice], dropped.isDisjoint(with: kinds) {
-                throw fail("\(context.phone.name) showed \(notice) with no dropped move behind it")
-            }
+        for (notice, kinds) in explains where context.notices.contains(notice) && dropped.isDisjoint(with: kinds) {
+            throw fail("\(context.phone.name) showed \(notice) with no dropped move behind it")
         }
     }
 

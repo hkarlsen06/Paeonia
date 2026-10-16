@@ -6,7 +6,7 @@ import Foundation
 
 /// Forwards to a real data service, but can hold one cached read after it has read the
 /// store, so a test can let a newer read finish first.
-actor GatedMemoryDataService: MemoryDataServicing {
+actor GatedMemoryDataService {
     private let base: MemoryDataService
     private var shouldHoldNextLoad = false
     private var heldLoad: CheckedContinuation<Void, Never>?
@@ -157,4 +157,6 @@ actor GatedMemoryDataService: MemoryDataServicing {
         )
     }
 }
+
+extension GatedMemoryDataService: MemoryDataServicing {}
 // swiftlint:enable function_parameter_count

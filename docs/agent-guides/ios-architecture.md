@@ -96,6 +96,10 @@ Default to local-first behavior:
 
 Passing a stored `@MainActor () async -> T` property straight into another view's closure parameter warns "converting non-Sendable function value ... may introduce data races". Adding `@Sendable` to both types does not stop it. Pass a closure that calls it instead: `Row(load: { await load() })`. This happens with Xcode 27 and this project's approachable-concurrency settings.
 
+#### Test actors conform to `nonisolated` protocols in an extension
+
+In `PaeoniaAppTests`, write `actor FakeCache { ... }` followed by `extension FakeCache: ProfilePhotoImageCaching {}` when the protocol is declared `nonisolated protocol`. With the conformance on the actor itself, Xcode 27 can fail with "'nonisolated' on an actor's synchronous initializer is invalid". It fails when a file that calls the actor's initializer is type-checked before the file that declares the actor, so whether it fails depends on how the build batches files. A local build can pass while CI fails. The app target is not affected because it defaults to `MainActor` isolation and the test target does not.
+
 #### `.task(id:)` keys must be load-bearing only
 
 `SwiftUI`'s `.task(id:)` cancels its running task and restarts it whenever the `id` value changes. So the `id` must contain *only* the inputs that determine what the task loads — never cosmetic data that arrives or refreshes shortly after launch.

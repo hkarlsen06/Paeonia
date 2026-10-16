@@ -4,6 +4,7 @@ import Testing
 
 /// Covers which streak lengths are milestones, the streak sheet's badge row, and
 /// when a phone celebrates one.
+@MainActor
 struct StreakMilestoneTests {
     @Test func milestonesAreTheFixedListThenEveryYear() {
         let milestones = (1...1_100).filter(StreakMilestones.isMilestone)

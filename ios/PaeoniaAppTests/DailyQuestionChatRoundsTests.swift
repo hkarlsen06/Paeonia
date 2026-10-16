@@ -5,6 +5,7 @@ import Testing
 
 /// A couple has one chat per question, and the page stacks every day the question came up.
 /// These tests cover how those days are found, merged, laid out, and scrolled to.
+@MainActor
 struct DailyChatRoundsTests {
     let me = UUID()
     let partner = UUID()

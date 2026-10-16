@@ -8,7 +8,11 @@ import UIKit
 /// Answers every request to its host with `{"status":"success","value":[]}` and
 /// records the endpoint and body.
 private final class DailyGatewayStubProtocol: URLProtocol, @unchecked Sendable {
-    nonisolated(unsafe) static var requests = LockedBox<[(path: String, body: [String: Any])]>([])
+    static let recorded = LockedBox<[(path: String, body: Data)]>([])
+
+    static var requests: [(path: String, body: [String: Any])] {
+        recorded.value.map { ($0.path, (try? JSONSerialization.jsonObject(with: $0.body)) as? [String: Any] ?? [:]) }
+    }
 
     // swiftlint:disable static_over_final_class
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -29,8 +33,7 @@ private final class DailyGatewayStubProtocol: URLProtocol, @unchecked Sendable {
             data.append(buffer, count: count)
         }
         stream.close()
-        let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
-        Self.requests.mutate { $0.append((url.path(), body)) }
+        Self.recorded.mutate { $0.append((url.path(), data)) }
         let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)
         if let response {
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
@@ -45,7 +48,7 @@ private final class DailyGatewayStubProtocol: URLProtocol, @unchecked Sendable {
 @Suite(.serialized)
 struct DailyChallengeGatewayRequestTests {
     private func makeGateway() -> LiveDailyChallengeGateway {
-        DailyGatewayStubProtocol.requests.mutate { $0.removeAll() }
+        DailyGatewayStubProtocol.recorded.mutate { $0.removeAll() }
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [DailyGatewayStubProtocol.self]
         let client = PaeoniaConvexClient(
@@ -62,7 +65,7 @@ struct DailyChallengeGatewayRequestTests {
         _ = try await gateway.loadTodaySnapshot()
         _ = try await gateway.loadTodaySnapshot()
 
-        let requests = DailyGatewayStubProtocol.requests.value
+        let requests = DailyGatewayStubProtocol.requests
         let request = try #require(requests.first)
         #expect(request.path == "/api/query")
         #expect(request.body["path"] as? String == "daily:get_today_daily_challenge_snapshot")
@@ -81,7 +84,7 @@ struct DailyChallengeGatewayRequestTests {
         _ = try await gateway.startDailyChallenge(operation: operation)
         _ = try await gateway.shuffleQuestion(slotNumber: 1, operation: operation)
 
-        let requests = DailyGatewayStubProtocol.requests.value
+        let requests = DailyGatewayStubProtocol.requests
         #expect(requests.map(\.path) == ["/api/mutation", "/api/mutation"])
         #expect(requests.map { $0.body["path"] as? String } == [
             "daily:start_daily_challenge_snapshot",

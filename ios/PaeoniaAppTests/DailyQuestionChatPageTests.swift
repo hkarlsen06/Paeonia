@@ -93,8 +93,8 @@ struct DailyQuestionChatPageTests {
             threadID: fixture.threadID,
             rounds: [
                 // The fixture's question begins in 1970, so the earlier day is older still.
-                (earlierID, "1960-03-03", "1960-03-03T00:00:00.000Z"),
-                (fixture.question.id, "1970-01-01", "1970-01-01T00:00:01.000Z"),
+                ChatRoundDay(instance: earlierID, date: "1960-03-03", startsAt: "1960-03-03T00:00:00.000Z"),
+                ChatRoundDay(instance: fixture.question.id, date: "1970-01-01", startsAt: "1970-01-01T00:00:01.000Z"),
             ],
             user: fixture.ownerUserID,
             coupleID: fixture.question.coupleID,
@@ -115,8 +115,8 @@ struct DailyQuestionChatPageTests {
         await fixture.gateway.setRounds(try decodedChatRounds(
             threadID: nil,
             rounds: [
-                (fixture.question.id, "1970-01-01", "1970-01-01T00:00:01.000Z"),
-                (newestID, "2026-10-09", "2026-10-09T00:00:00.000Z"),
+                ChatRoundDay(instance: fixture.question.id, date: "1970-01-01", startsAt: "1970-01-01T00:00:01.000Z"),
+                ChatRoundDay(instance: newestID, date: "2026-10-09", startsAt: "2026-10-09T00:00:00.000Z"),
             ],
             user: fixture.ownerUserID,
             coupleID: fixture.question.coupleID,

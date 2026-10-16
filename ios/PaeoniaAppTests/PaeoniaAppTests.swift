@@ -1058,7 +1058,7 @@ struct RootLiveAccessTests {
     }
 }
 
-actor TestPaeoniaSyncService: PaeoniaSyncing {
+actor TestPaeoniaSyncService {
     private(set) var startCallCount = 0
     private(set) var requestedReasons: [SyncRequestReason] = []
     private(set) var runOnceReasons: [SyncRequestReason] = []
@@ -1130,6 +1130,8 @@ actor TestPaeoniaSyncService: PaeoniaSyncing {
         return .completed
     }
 }
+
+extension TestPaeoniaSyncService: PaeoniaSyncing {}
 
 actor StaticAccessRouteService: AccessRouteServicing {
     private let resolution: AccessRouteResolution

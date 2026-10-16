@@ -4,6 +4,7 @@ import Testing
 
 /// The Games rules that need no screen: what the server's JSON means, who counts
 /// as here, when the invite button is back, and which phase a state is in.
+@MainActor
 struct GamesRulesTests {
     // MARK: Contract
 

@@ -75,7 +75,7 @@ final class MemoryTestOperationProvider: SyncClientOperationProviding {
     }
 }
 
-actor MemoryTestImageCache: MemoryMediaImageCacheWriting {
+actor MemoryTestImageCache {
     private(set) var cachedMediaAssetIDs: [UUID] = []
 
     func cacheImageData(_ data: Data, for mediaAssetID: UUID) {
@@ -84,7 +84,9 @@ actor MemoryTestImageCache: MemoryMediaImageCacheWriting {
     }
 }
 
-actor MemoryTestMediaUploader: MemoryMediaUploading {
+extension MemoryTestImageCache: MemoryMediaImageCacheWriting {}
+
+actor MemoryTestMediaUploader {
     private let shouldFail: Bool
     /// 1-based upload calls that fail.
     private let failingCalls: Set<Int>
@@ -115,6 +117,8 @@ actor MemoryTestMediaUploader: MemoryMediaUploading {
         return MemoryMediaUploadResult(memoryMediaID: memoryMediaID, mediaAssetID: UUID())
     }
 }
+
+extension MemoryTestMediaUploader: MemoryMediaUploading {}
 
 nonisolated final class MemoryTestPhotoSaver: PhotoLibrarySaving, @unchecked Sendable {
     var result: PhotoLibrarySaveResult

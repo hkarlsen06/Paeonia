@@ -98,7 +98,7 @@ final class WidgetCanvasUploadSpy: WidgetCanvasUploading, @unchecked Sendable {
     }
 }
 
-actor SuspendedWidgetCanvasService: WidgetCanvasManaging {
+actor SuspendedWidgetCanvasService {
     private var shouldSuspendNextSave = false
     private var suspendedSaveStarted = false
     private var suspendedSaveStartedContinuation: CheckedContinuation<Void, Never>?
@@ -154,6 +154,8 @@ actor SuspendedWidgetCanvasService: WidgetCanvasManaging {
 
     func clearForPrivacy() async {}
 }
+
+extension SuspendedWidgetCanvasService: WidgetCanvasManaging {}
 
 /// The couple every draft test runs in, unless a test says otherwise.
 let draftTestCoupleID = UUID()

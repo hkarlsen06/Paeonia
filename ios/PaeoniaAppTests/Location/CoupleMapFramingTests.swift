@@ -3,6 +3,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
+@MainActor
 struct CoupleMapFramingTests {
     @Test
     func separatedLeavesPinsThatAreAlreadyApartUntouched() {

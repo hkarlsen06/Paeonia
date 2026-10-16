@@ -6,6 +6,7 @@ import Testing
 import UIKit
 @testable import PaeoniaApp
 
+@MainActor
 struct DailyChatProjectionTests {
     private let me = UUID()
     private let partner = UUID()
@@ -112,7 +113,7 @@ struct DailyChatProjectionTests {
         let sending = message("Wait", from: me, at: 20, isSending: true)
         let projection = DailyChatProjection.make(input: input([partnerMessage, mine, sending]))
         func items(_ id: String) -> [DailyChatMenuAction] {
-            projection.exyteMessages.first { $0.id == id }.map(DailyChatMenuAction.menuItems(for:)) ?? []
+            projection.exyteMessages.first { $0.id == id }.map { DailyChatMenuAction.menuItems(for: $0) } ?? []
         }
 
         #expect(items(DailyChatProjection.questionRowID(for: instanceID)) == [.copy])
@@ -142,7 +143,7 @@ struct DailyChatProjectionTests {
             youName: "You"
         ))
         func items(_ id: String) -> [DailyChatMenuAction] {
-            projection.exyteMessages.first { $0.id == id }.map(DailyChatMenuAction.menuItems(for:)) ?? []
+            projection.exyteMessages.first { $0.id == id }.map { DailyChatMenuAction.menuItems(for: $0) } ?? []
         }
 
         #expect(items(fresh.id.uuidString) == [.reply, .edit, .copy])
@@ -161,6 +162,7 @@ struct DailyChatProjectionTests {
     }
 }
 
+@MainActor
 struct DailyChatGestureResolverTests {
     @Test func aReplySwipeFollowsTheFingerThenResists() {
         let resolver = DailyChatReplySwipeResolver.self
@@ -195,6 +197,7 @@ struct DailyChatGestureResolverTests {
     }
 }
 
+@MainActor
 struct DailyChatReceiptAndTypingRowTests {
     private let me = UUID()
     private let partner = UUID()

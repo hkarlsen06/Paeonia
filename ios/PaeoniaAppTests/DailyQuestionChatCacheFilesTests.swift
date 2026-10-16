@@ -176,6 +176,7 @@ struct DailyQuestionChatCacheFilesTests {
 }
 
 /// The chat opens on the newest page and loads older pages when the person scrolls up.
+@MainActor
 struct DailyQuestionChatMessagePagingTests {
     private func page(
         _ messages: [DailyQuestionChatMessage],

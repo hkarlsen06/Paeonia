@@ -197,7 +197,8 @@ struct ExquisiteCorpseViewModelLiveTests {
         let drawing = combined(CorpseDrawings.aboveFold, CorpseDrawings.crossingFold)
 
         // The pen is still down, so the canvas has no new stroke yet.
-        viewModel.sendStripIfChanged(including: try #require(CorpseDrawings.crossingFold.strokes.first))
+        let crossingStroke = try #require(CorpseDrawings.crossingFold.strokes.first)
+        viewModel.sendStripIfChanged(including: crossingStroke)
 
         let sent = try #require(strips(in: env.connection.gameMessages).last)
         #expect(sent.drawing.paeoniaContentSignature == ExquisiteCorpseFold.strip(of: drawing).paeoniaContentSignature)
