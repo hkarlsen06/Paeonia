@@ -27,6 +27,7 @@ struct StoryPhotoView: View {
                 Image(uiImage: loaded.image)
                     .resizable()
                     .scaledToFit()
+                    .allowsHitTesting(false)
                     .accessibilityHidden(true)
                     .onAppear(perform: onLoaded)
             } else if didFail {
@@ -46,6 +47,7 @@ struct StoryPhotoView: View {
             } else {
                 ProgressView()
                     .tint(.white)
+                    .allowsHitTesting(false)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

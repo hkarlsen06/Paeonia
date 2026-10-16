@@ -127,7 +127,6 @@ struct StoriesViewModelTests {
             cache: cache,
             gateway: gateway,
             operationProvider: MemoryTestOperationProvider(),
-            imageCache: nil,
             defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard
         )
         await model.configure(ownerUserID: StoryFixture.me, coupleID: StoryFixture.couple)
@@ -191,6 +190,35 @@ struct StoriesViewModelTests {
         try await waitUntil { await gateway.seenIDs == [story.id] }
 
         #expect(await cache.snapshot(ownerUserID: StoryFixture.me).stories.first?.seenAt != nil)
+    }
+
+    @Test func aFailedSeenMarkUndoesItSoTheNextOpenTriesAgain() async throws {
+        let gateway = FakeStoriesGateway()
+        await gateway.failSeen()
+        let cache = InMemoryStoriesCache()
+        let story = StoryFixture.story(by: StoryFixture.partner, hoursAgo: 1)
+        await cache.save(StoriesSnapshot(stories: [story]), ownerUserID: StoryFixture.me)
+        let model = await makeModel(gateway: gateway, cache: cache)
+
+        model.markSeen(story)
+        try await waitUntil { await gateway.seenIDs == [story.id] }
+        try await Task.sleep(for: .milliseconds(50))
+
+        #expect(await cache.snapshot(ownerUserID: StoryFixture.me).stories.first?.seenAt == nil)
+    }
+
+    @Test func anAnswerThatArrivesAfterAPurgeWritesNothing() async {
+        let gateway = FakeStoriesGateway()
+        let cache = InMemoryStoriesCache()
+        await gateway.runBeforeAnswer { await cache.clearAll() }
+        let model = await makeModel(gateway: gateway, cache: cache)
+
+        let posted = await model.post(photo: StoryFixture.photo, caption: "hi")
+        let saved = await model.setNote("hi")
+
+        #expect(posted)
+        #expect(saved)
+        #expect(await cache.snapshot(ownerUserID: StoryFixture.me) == StoriesSnapshot())
     }
 
     @Test func openingYourOwnStoryDoesNotMarkIt() async throws {
@@ -276,6 +304,7 @@ struct StoriesViewModelTests {
 
 actor InMemoryStoriesCache {
     private var byOwner: [UUID: StoriesSnapshot] = [:]
+    private(set) var purgeGeneration = 0
 
     func snapshot(ownerUserID: UUID) -> StoriesSnapshot {
         byOwner[ownerUserID] ?? StoriesSnapshot()
@@ -285,7 +314,20 @@ actor InMemoryStoriesCache {
         byOwner[ownerUserID] = snapshot
     }
 
+    func update(
+        ownerUserID: UUID,
+        ifGeneration generation: Int,
+        _ change: @Sendable (inout StoriesSnapshot) -> Void
+    ) -> Bool {
+        guard generation == purgeGeneration else { return false }
+        var updated = snapshot(ownerUserID: ownerUserID)
+        change(&updated)
+        byOwner[ownerUserID] = updated
+        return true
+    }
+
     func clearAll() {
+        purgeGeneration += 1
         byOwner = [:]
     }
 }
@@ -306,13 +348,25 @@ actor FakeStoriesGateway {
     private var failsNextPost = false
     private var deleteError: (any Error)?
     private var noteError: (any Error)?
+    private var seenFails = false
+    /// Runs before a post or note answers, like a purge that lands while the call is out.
+    private var beforeAnswer: (@Sendable () async -> Void)?
+
+    func failSeen() {
+        seenFails = true
+    }
+
+    func runBeforeAnswer(_ action: @escaping @Sendable () async -> Void) {
+        beforeAnswer = action
+    }
 
     func failNotes(with error: any Error) {
         noteError = error
     }
 
-    func setNote(_ text: String?, operation: SyncClientOperation) throws -> StoryNote? {
+    func setNote(_ text: String?, operation: SyncClientOperation) async throws -> StoryNote? {
         if let noteError { throw noteError }
+        await beforeAnswer?()
         noteTexts.append(text)
         return text.map { StoryNote(userID: StoryFixture.me, text: $0, createdAt: Date()) }
     }
@@ -331,8 +385,9 @@ actor FakeStoriesGateway {
         caption: String?,
         coupleID: UUID,
         operations: StoryPostOperations
-    ) throws -> Story? {
+    ) async throws -> Story? {
         posts.append(Post(id: id, caption: caption, postOperationID: operations.post.id))
+        await beforeAnswer?()
         if failsNextPost {
             failsNextPost = false
             throw URLError(.timedOut)
@@ -352,8 +407,9 @@ actor FakeStoriesGateway {
         deletedIDs.append(id)
     }
 
-    func markSeen(id: UUID) {
+    func markSeen(id: UUID) throws {
         seenIDs.append(id)
+        if seenFails { throw URLError(.timedOut) }
     }
 }
 

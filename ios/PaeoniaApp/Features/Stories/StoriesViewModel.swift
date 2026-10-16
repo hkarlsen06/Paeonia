@@ -25,7 +25,6 @@ final class StoriesViewModel {
     /// Nil when the server client can't be set up (previews), so posting reports a failure.
     @ObservationIgnored private let gateway: (any StoriesGateway)?
     @ObservationIgnored private let operationProvider: any SyncClientOperationProviding
-    @ObservationIgnored private let imageCache: (any MemoryMediaImageCacheWriting)?
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var ownerUserID: UUID?
     @ObservationIgnored private var coupleID: UUID?
@@ -47,13 +46,11 @@ final class StoriesViewModel {
         cache: (any StoriesCaching)? = nil,
         gateway: (any StoriesGateway)? = nil,
         operationProvider: (any SyncClientOperationProviding)? = nil,
-        imageCache: (any MemoryMediaImageCacheWriting)? = MemoryMediaImageDiskCache(),
         defaults: UserDefaults = .standard
     ) {
         self.cache = cache ?? FileStoriesCache.shared
         self.gateway = gateway ?? (try? LiveStoriesGateway.live())
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
-        self.imageCache = imageCache
         self.defaults = defaults
     }
 
@@ -111,6 +108,7 @@ final class StoriesViewModel {
         isPosting = true
         defer { isPosting = false }
 
+        let stamp = await writeStamp()
         guard let compressed = await Self.compress(photo) else {
             error = .photoUnreadable
             return false
@@ -131,7 +129,7 @@ final class StoriesViewModel {
                 coupleID: coupleID,
                 operations: attempt.operations
             )
-            await finishPost(story, photo: compressed.data)
+            await finishPost(story, stamp: stamp)
             return true
         } catch {
             #if DEBUG
@@ -143,13 +141,13 @@ final class StoriesViewModel {
         }
     }
 
-    /// Shows the new story at once, before the live feed brings it.
-    private func finishPost(_ story: Story?, photo: Data) async {
+    /// Shows the new story at once, before the live feed brings it. The photo itself
+    /// downloads like any other, so nothing is written outside the purgeable cache.
+    private func finishPost(_ story: Story?, stamp: WriteStamp) async {
         failedPost = nil
         defaults.set(true, forKey: Self.hasPostedKey)
         guard let story else { return }
-        await imageCache?.cacheImageData(photo, for: story.mediaAssetID)
-        await save { snapshot in
+        await save(stamp: stamp) { snapshot in
             snapshot.stories.removeAll { $0.id == story.id }
             snapshot.stories.insert(story, at: 0)
         }
@@ -158,9 +156,10 @@ final class StoriesViewModel {
     /// Deletes one of this person's stories for both partners.
     func delete(_ story: Story) async -> Bool {
         guard story.authorUserID == ownerUserID, let gateway else { return false }
+        let stamp = await writeStamp()
         do {
             try await gateway.delete(id: story.id, operation: operationProvider.makeOperation())
-            await save { snapshot in snapshot.stories.removeAll { $0.id == story.id } }
+            await save(stamp: stamp) { snapshot in snapshot.stories.removeAll { $0.id == story.id } }
             return true
         } catch {
             #if DEBUG
@@ -171,19 +170,29 @@ final class StoriesViewModel {
         }
     }
 
-    /// Marks the partner's story as opened. The ring updates at once. A failed send is
-    /// fine: the next live result brings the story back unseen and the next open tries again.
+    /// Marks the partner's story as opened. The ring updates at once. A failed send undoes
+    /// the mark, so the ring stays bright and the next open tries again.
     func markSeen(_ story: Story) {
-        guard story.authorUserID != ownerUserID, story.seenAt == nil else { return }
+        guard story.authorUserID != ownerUserID, story.seenAt == nil, let gateway else { return }
         let seenAt = Date()
         Task {
-            await save { snapshot in
+            let stamp = await writeStamp()
+            await save(stamp: stamp) { snapshot in
                 if let index = snapshot.stories.firstIndex(where: { $0.id == story.id }),
                    snapshot.stories[index].seenAt == nil {
                     snapshot.stories[index].seenAt = seenAt
                 }
             }
-            try? await gateway?.markSeen(id: story.id)
+            do {
+                try await gateway.markSeen(id: story.id)
+            } catch {
+                await save(stamp: stamp) { snapshot in
+                    if let index = snapshot.stories.firstIndex(where: { $0.id == story.id }),
+                       snapshot.stories[index].seenAt == seenAt {
+                        snapshot.stories[index].seenAt = nil
+                    }
+                }
+            }
         }
     }
 
@@ -198,9 +207,10 @@ final class StoriesViewModel {
         let text = Self.cleanNote(text)
         isSavingNote = true
         defer { isSavingNote = false }
+        let stamp = await writeStamp()
         do {
             let note = try await gateway.setNote(text, operation: operationProvider.makeOperation())
-            await save { snapshot in
+            await save(stamp: stamp) { snapshot in
                 snapshot.notes.removeAll { $0.userID == ownerUserID }
                 if let note { snapshot.notes.append(note) }
             }
@@ -214,13 +224,22 @@ final class StoriesViewModel {
         }
     }
 
-    private func save(_ change: (inout StoriesSnapshot) -> Void) async {
-        guard let ownerUserID else { return }
-        var updated = await cache.snapshot(ownerUserID: ownerUserID)
-        change(&updated)
-        guard self.ownerUserID == ownerUserID else { return }
-        await cache.save(updated, ownerUserID: ownerUserID)
-        LocalStoreChanges.post(.stories, ownerUserID: ownerUserID)
+    /// Who started a write and which purge it saw, read before the server call.
+    private struct WriteStamp {
+        let ownerUserID: UUID?
+        let generation: Int
+    }
+
+    private func writeStamp() async -> WriteStamp {
+        WriteStamp(ownerUserID: ownerUserID, generation: await cache.purgeGeneration)
+    }
+
+    /// Writes a change this phone made into the cache, unless the account changed or a
+    /// privacy purge ran since `stamp` was taken.
+    private func save(stamp: WriteStamp, _ change: @escaping @Sendable (inout StoriesSnapshot) -> Void) async {
+        guard let owner = stamp.ownerUserID, owner == ownerUserID else { return }
+        guard await cache.update(ownerUserID: owner, ifGeneration: stamp.generation, change) else { return }
+        LocalStoreChanges.post(.stories, ownerUserID: owner)
     }
 
     /// The failed post again when the photo and caption are unchanged, otherwise a new one.

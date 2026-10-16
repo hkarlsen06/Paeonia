@@ -59,6 +59,11 @@ struct StoryViewer: View {
         stories.indices.contains(index) ? stories[index] : nil
     }
 
+    /// The delete question is open or the delete is on its way.
+    private var isPaused: Bool {
+        isConfirmingDelete || isDeleting
+    }
+
     /// Auto-advance would move on before VoiceOver finishes reading, so it stays off then.
     private var playsOnItsOwn: Bool {
         content.mode == .home && !voiceOverEnabled
@@ -68,10 +73,12 @@ struct StoryViewer: View {
         ZStack {
             Color.black.ignoresSafeArea()
             if let story {
+                // The tap zones sit under the photo, which only takes taps on its retry
+                // button, so a failed photo can be retried without moving on.
+                tapZones(for: story)
                 StoryPhotoView(mediaAssetID: story.mediaAssetID) { shownPhotoID = story.id }
                     .id(story.id)
                     .ignoresSafeArea(edges: .bottom)
-                tapZones(for: story)
                 overlay(for: story)
             }
         }
@@ -79,7 +86,7 @@ struct StoryViewer: View {
         .gesture(swipeDownToClose)
         .statusBarHidden()
         .preferredColorScheme(.dark)
-        .task(id: TimerKey(storyID: story?.id, photoShown: shownPhotoID == story?.id, isPaused: isConfirmingDelete)) {
+        .task(id: TimerKey(storyID: story?.id, photoShown: shownPhotoID == story?.id, isPaused: isPaused)) {
             await runTimer()
         }
         .onChange(of: story?.id, initial: true) { _, _ in
@@ -214,7 +221,7 @@ struct StoryViewer: View {
     /// Fills the current bar while the photo shows, then moves on. Starts again from
     /// where it was after the delete question closes.
     private func runTimer() async {
-        guard playsOnItsOwn, shownPhotoID == story?.id, !isConfirmingDelete else { return }
+        guard playsOnItsOwn, shownPhotoID == story?.id, !isPaused else { return }
         while progress < 1 {
             try? await Task.sleep(for: .seconds(Self.tick))
             guard !Task.isCancelled else { return }
@@ -244,9 +251,13 @@ struct StoryViewer: View {
         isDeleting = true
         defer { isDeleting = false }
         guard await viewModel.delete(story) else { return }
+        // A tap may have moved on while the delete was sent. Keep showing that story.
+        let shownID = self.story?.id
         stories.removeAll { $0.id == story.id }
         if stories.isEmpty {
             dismiss()
+        } else if let shownID, shownID != story.id, let shown = stories.firstIndex(where: { $0.id == shownID }) {
+            index = shown
         } else {
             index = min(index, stories.count - 1)
         }
