@@ -39,6 +39,14 @@
     language = /^(nb|no|nn)(-|$)/.test(navigator.language.toLowerCase()) ? 'nb' : 'en';
   });
 
+  // iOS forgets a link on the way through the App Store, so the app can't see it on
+  // first launch. Copying it here lets the welcome screen offer a Paste button. The
+  // copy has to run inside the tap, so it is not awaited before the App Store opens.
+  function copyInviteLink() {
+    if (!inviteCode) return;
+    navigator.clipboard?.writeText(`https://paeonia.no/join/${inviteCode}`).catch(() => {});
+  }
+
   const text = $derived(copy[language]);
   const home = $derived(language === 'nb' ? '/no/' : '/en/');
 </script>
@@ -71,8 +79,12 @@
         {#if inviteCode}
           <a class="join-primary" href={`paeonia://join/${inviteCode}`}>{text.open}</a>
         {/if}
-        <a class="join-secondary" href={appStoreURL}>{text.install}</a>
+        <a class="join-secondary" href={appStoreURL} onclick={copyInviteLink}>{text.install}</a>
       </div>
+
+      {#if inviteCode}
+        <p class="join-note">{text.installNote}</p>
+      {/if}
 
       <a class="join-help" href={`${home}support/`}>{text.help}</a>
     </section>

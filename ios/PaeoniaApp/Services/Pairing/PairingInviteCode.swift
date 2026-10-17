@@ -94,7 +94,8 @@ nonisolated enum PairingInviteCode {
         return text
     }
 
-    private static func joinLinkCode(in text: String) -> String? {
+    /// The code from the first Paeonia join link in `text`, or `nil` when there is none.
+    static func joinLinkCode(in text: String) -> String? {
         for token in text.split(whereSeparator: \.isWhitespace) {
             let trimmed = token.trimmingCharacters(in: .punctuationCharacters)
             if let url = URL(string: trimmed), let code = PairingJoinURL.inviteCode(from: url) {

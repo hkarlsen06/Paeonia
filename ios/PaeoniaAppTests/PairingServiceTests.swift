@@ -85,6 +85,13 @@ struct PairingInviteCodeTests {
         )
     }
 
+    @Test func joinLinkCodeOnlyAcceptsPaeoniaJoinLinks() {
+        #expect(PairingInviteCode.joinLinkCode(in: "https://paeonia.no/join/01abcd") == canonicalCode)
+        #expect(PairingInviteCode.joinLinkCode(in: "See https://paeonia.no/join/01-ab-cd!") == canonicalCode)
+        #expect(PairingInviteCode.joinLinkCode(in: "https://example.com/join/01ABCD") == nil)
+        #expect(PairingInviteCode.joinLinkCode(in: "01ABCD") == nil)
+    }
+
     @Test func entryTextCleansTypedText() {
         #expect(PairingInviteCode.entryText("o1-abcd") == "01ABCD")
         #expect(PairingInviteCode.entryText("lIoU u!") == "110")

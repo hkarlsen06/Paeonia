@@ -6,7 +6,8 @@ import SwiftUI
 /// so its parts cascade in with `View.launchEntrance(order:)`.
 ///
 /// "Have an invite code?" is for a partner who was sent a code. The code is
-/// saved before sign-in, then joined on the next screen.
+/// saved before sign-in, then joined on the next screen. A partner who installed
+/// from the invite web page gets a Paste button for the link it copied instead.
 struct WelcomeView: View {
     let isWorking: Bool
     let signingInWith: AuthProvider?
@@ -37,7 +38,8 @@ struct WelcomeView: View {
                 pendingInviteCode: pendingInviteCode,
                 onAppleSignIn: onAppleSignIn,
                 onGoogleSignIn: onGoogleSignIn,
-                onHaveInviteCode: { isInviteSheetPresented = true }
+                onHaveInviteCode: { isInviteSheetPresented = true },
+                onPasteInviteCode: onSubmitInviteCode
             )
             .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
             .frame(maxWidth: .infinity)

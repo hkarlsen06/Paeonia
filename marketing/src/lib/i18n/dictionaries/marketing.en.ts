@@ -265,6 +265,7 @@ export const marketingEn = {
     code: 'Invite code',
     open: 'Open Paeonia',
     install: 'Get Paeonia on the App Store',
+    installNote: "New to Paeonia? We'll copy your invite when you tap the App Store button. Open Paeonia once it's installed and tap Paste.",
     help: 'Need help?',
     opening: 'Opening your invite…',
   },

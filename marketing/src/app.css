@@ -304,6 +304,13 @@
   background: hsl(var(--surface-secondary));
 }
 
+.join-note {
+  margin-top: 16px;
+  color: hsl(var(--text-secondary));
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .join-help {
   min-height: 44px;
   margin-top: 16px;

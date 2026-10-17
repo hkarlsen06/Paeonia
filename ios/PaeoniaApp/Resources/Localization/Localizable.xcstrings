@@ -28910,6 +28910,24 @@
         }
       }
     },
+    "welcome.invitePaste.prompt" : {
+      "comment" : "Welcome sign-in: shown beside the system Paste button when the clipboard holds a link, such as the invite link the join web page copied before the partner installed the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got an invite link?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fikk du en invitasjonslenke?"
+          }
+        }
+      }
+    },
     "welcome.summary" : {
       "comment" : "One line under the picture on the welcome screen, before sign-in. Says what couples do in the app.",
       "extractionState" : "manual",

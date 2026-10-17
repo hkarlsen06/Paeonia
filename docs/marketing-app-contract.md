@@ -68,7 +68,7 @@ Purpose: fallback page for invite links.
 
 Current pre-launch behavior: preserve the invite code, offer an explicit `paeonia://join/<code>` button when Safari keeps the Universal Link in the browser, and tell private-beta users to install from their beta invitation before reopening the link.
 
-Production behavior: if the app is installed, iOS should open Paeonia through Universal Links. If the app is not installed, the fallback page offers the canonical App Store listing at `https://apps.apple.com/us/app/paeonia/id6779833892` alongside the retained invite code.
+Production behavior: if the app is installed, iOS should open Paeonia through Universal Links. If the app is not installed, the fallback page offers the canonical App Store listing at `https://apps.apple.com/us/app/paeonia/id6779833892` alongside the retained invite code. Tapping the App Store button copies `https://paeonia.no/join/<code>` to the clipboard, because iOS has no way to carry a link through an App Store install. On first launch the app's welcome screen sees a link on the clipboard and offers the system Paste button (`SignInView`), which reads it without a permission prompt.
 
 Do not reveal invite details on the public web page. Invite preview and acceptance belong inside the app/backend flow.
 

@@ -1,5 +1,6 @@
 import SafariServices
 import SwiftUI
+import UIKit
 
 /// The sign-in controls at the bottom of the welcome screen: Apple and Google,
 /// the partner invite code row, and the privacy, terms, and support links.
@@ -13,9 +14,19 @@ struct SignInView: View {
     /// Enters or replaces a partner invite code. A saved code gets an explicit
     /// state so the user knows it will be used after sign-in.
     let onHaveInviteCode: () -> Void
+    /// Saves the code from a pasted invite link.
+    let onPasteInviteCode: (String) -> Void
+
+    @Environment(\.scenePhase) private var scenePhase
 
     /// The legal page currently shown in the in-app browser, if any.
     @State private var activeLegalLink: LegalLink?
+    /// Whether the clipboard holds something that looks like a link. The `/join`
+    /// web page copies the invite link when a partner without the app taps
+    /// "Install", because the link itself is lost on the way through the App
+    /// Store. Checking the pattern does not read the clipboard, so iOS shows no
+    /// paste prompt. Only the system paste button reads it.
+    @State private var clipboardHasLink = false
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
@@ -27,6 +38,15 @@ struct SignInView: View {
         .sheet(item: $activeLegalLink) { link in
             SafariView(url: link.url)
                 .ignoresSafeArea()
+        }
+        // Checked again on return to the app, since the link may be copied after
+        // the welcome screen first appeared.
+        .task(id: scenePhase) {
+            guard scenePhase == .active else {
+                return
+            }
+            let patterns = try? await UIPasteboard.general.detectedPatterns(for: [\.probableWebURL])
+            clipboardHasLink = patterns?.contains(\.probableWebURL) ?? false
         }
     }
 
@@ -82,6 +102,19 @@ struct SignInView: View {
                 }
             }
             .frame(maxWidth: .infinity)
+        } else if clipboardHasLink {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    invitePastePrompt
+                    invitePasteButton
+                }
+
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    invitePastePrompt
+                    invitePasteButton
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
         } else {
             Button(action: onHaveInviteCode) {
                 Text(.welcomeHaveInviteCode)
@@ -92,6 +125,30 @@ struct SignInView: View {
             .disabled(isWorking)
             .accessibilityIdentifier("auth.welcome.inviteCode")
         }
+    }
+
+    private var invitePastePrompt: some View {
+        Text(.welcomeInvitePastePrompt)
+            .font(PaeoniaTypography.bodyEmphasis)
+            .foregroundStyle(.paeoniaTextPrimary)
+            .multilineTextAlignment(.center)
+    }
+
+    /// The system paste button reads the clipboard without a permission prompt.
+    /// Anything other than a Paeonia join link opens the code sheet, so the
+    /// partner can still type the code.
+    private var invitePasteButton: some View {
+        PasteButton(payloadType: String.self) { strings in
+            if let code = PairingInviteCode.joinLinkCode(in: strings.joined(separator: " ")) {
+                onPasteInviteCode(code)
+            } else {
+                onHaveInviteCode()
+            }
+        }
+        .labelStyle(.titleAndIcon)
+        .buttonBorderShape(.capsule)
+        .tint(.paeoniaAccentSecondary)
+        .disabled(isWorking)
     }
 
     private var inviteSavedLabel: some View {
