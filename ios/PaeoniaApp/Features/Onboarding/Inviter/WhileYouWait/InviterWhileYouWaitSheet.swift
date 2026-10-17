@@ -59,7 +59,6 @@ struct InviterWhileYouWaitSheet: View {
                 closedQuestions = questions
                 self.questionsModel = nil
             }
-            .analyticsScreen("first_day_questions")
             .environment(bannerCenter)
             .paeoniaTopBanner(bannerCenter)
         }
@@ -67,7 +66,6 @@ struct InviterWhileYouWaitSheet: View {
             FirstDayDrawingFlow(model: model) {
                 isDrawing = false
             }
-            .analyticsScreen("first_day_drawing")
             .environment(bannerCenter)
             .paeoniaTopBanner(bannerCenter)
         }

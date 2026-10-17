@@ -22596,19 +22596,19 @@
       }
     },
     "privacySafety.usage.toggleDescription" : {
-      "comment" : "Explains the usage statistics switch. Must say that text, photos and drawings are hidden and that the data is never sold.",
+      "comment" : "Explains the usage statistics switch in Privacy and safety",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shows us which parts of Paeonia get used and when the app crashes. We also see recordings of the screens you move through, with all text, photos, drawings and the camera hidden. Only Paeonia sees this, and we never sell it."
+            "value" : "Tells us which screens you open, which features you use, and when the app crashes. Never what you or your partner write, say, photograph or draw. PostHog stores it for us in Germany, and we never sell it. Turning this off also deletes what we have."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Viser oss hvilke deler av Paeonia som blir brukt, og når appen krasjer. Vi ser også opptak av skjermene du går gjennom, der all tekst, alle bilder, tegninger og kameraet er skjult. Bare Paeonia ser dette, og vi selger det aldri."
+            "value" : "Forteller oss hvilke skjermer du åpner, hvilke funksjoner du bruker, og når appen krasjer. Aldri det du eller partneren din skriver, sier, tar bilde av eller tegner. PostHog lagrer det for oss i Tyskland, og vi selger det aldri. Slår du dette av, sletter vi også det vi har."
           }
         }
       }
@@ -28780,6 +28780,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hele brettet"
+          }
+        }
+      }
+    },
+    "usageSharing.question.footnote" : {
+      "comment" : "Who stores usage statistics and how to change the answer, small text on the one-time question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PostHog stores this for us in Germany, and we never sell it. You can change your answer any time in Us, under Privacy and safety."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PostHog lagrer dette for oss i Tyskland, og vi selger det aldri. Du kan endre svaret når som helst under Oss, i Personvern og trygghet."
+          }
+        }
+      }
+    },
+    "usageSharing.question.message" : {
+      "comment" : "What sharing usage statistics sends, on the one-time question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you say yes, Paeonia tells us which screens you open, which features you use, and when the app crashes. It never sends what you or your partner write, say, photograph or draw, and it doesn't record your screen."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sier du ja, forteller Paeonia oss hvilke skjermer du åpner, hvilke funksjoner du bruker, og når appen krasjer. Den sender aldri det du eller partneren din skriver, sier, tar bilde av eller tegner, og den tar ikke opp skjermen din."
+          }
+        }
+      }
+    },
+    "usageSharing.question.no" : {
+      "comment" : "Button that declines to share usage statistics. Same style as the button that says yes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No, don't share"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nei, ikke del"
+          }
+        }
+      }
+    },
+    "usageSharing.question.title" : {
+      "comment" : "Title of the one-time question after pairing that asks whether to share usage statistics",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Help us improve Paeonia?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du hjelpe oss å gjøre Paeonia bedre?"
+          }
+        }
+      }
+    },
+    "usageSharing.question.yes" : {
+      "comment" : "Button that agrees to share usage statistics. Same style as the button that says no.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, share"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ja, del"
           }
         }
       }

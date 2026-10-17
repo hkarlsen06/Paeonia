@@ -78,7 +78,6 @@ struct PaywallView: View {
                 .frame(minHeight: visibleHeight, alignment: .top)
 
                 footerActions
-                    .visibleInReplays()
                     .padding(.top, PaeoniaSpacing.space40)
             }
             .padding(.top, PaeoniaSpacing.space16)
@@ -95,7 +94,6 @@ struct PaywallView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomBar
-                .visibleInReplays()
         }
         .task {
             guard presentationOverride == nil else {
@@ -130,7 +128,6 @@ struct PaywallView: View {
                 submitTitle: .pairingCodeEntrySubmit,
                 onSubmit: { await onSubmitInviteCode($0) }
             )
-            .analyticsScreen("code_entry")
         }
         .modifier(
             PaywallConfirmationAlerts(

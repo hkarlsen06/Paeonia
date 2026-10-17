@@ -150,7 +150,6 @@ struct DailyPartnerAnswerFlow: View {
                         operationProvider: privacyOperationProvider,
                         onReportedAndLeft: onReportedAndLeft
                     )
-                    .analyticsScreen("report_and_leave")
                 }
             }
         }

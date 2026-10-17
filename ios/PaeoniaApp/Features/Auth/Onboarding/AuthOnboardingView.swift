@@ -12,6 +12,9 @@ import UIKit
 /// The second page asks when the couple got together (`AuthOnboardingStartDatePage`).
 /// It comes before the profile is saved, because saving it moves the app on. Someone
 /// joining a partner's code skips it, since they confirm the date after joining.
+///
+/// The last page asks whether to share usage statistics (`UsageSharingQuestionView`),
+/// here rather than as a pop-up later. Answering saves the profile.
 struct AuthOnboardingView: View {
     let isWorking: Bool
     /// The photo already on the account, such as the imported Google photo.
@@ -21,6 +24,8 @@ struct AuthOnboardingView: View {
     let onSignOut: () -> Void
     let onDeleteAccount: () -> Void
     private let ownerUserID: UUID?
+    /// The signed-in user id as the session spells it, which keys the usage answer.
+    private let sessionUserID: String?
     /// Nil until needed, so a redraw of this view doesn't build a store.
     private let startDateQueue: FirstDayStartedOnQueue?
 
@@ -39,11 +44,14 @@ struct AuthOnboardingView: View {
     @State private var triedWithoutPhoto = false
     @FocusState private var isNameFocused: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    /// Missing in previews and tests, which then skip the usage page.
+    @Environment(UsageSharingModel.self) private var usageSharing: UsageSharingModel?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Page {
         case profile
         case startDate
+        case usage
     }
 
     init(
@@ -62,6 +70,7 @@ struct AuthOnboardingView: View {
         self.onSignOut = onSignOut
         self.onDeleteAccount = onDeleteAccount
         ownerUserID = session.flatMap { UUID(uuidString: $0.id) }
+        sessionUserID = session?.id
         self.startDateQueue = startDateQueue
         _displayName = State(initialValue: session?.displayName ?? "")
     }
@@ -72,16 +81,18 @@ struct AuthOnboardingView: View {
             case .profile:
                 profilePage
                     .transition(pageTransition(edge: .leading))
-                    .analyticsScreen("profile_setup")
             case .startDate:
                 AuthOnboardingStartDatePage(
                     isSaving: isSaving,
                     onBack: { page = .profile },
                     onSaveDate: { await saveStartDate($0) },
-                    onFinish: { submit() }
+                    onFinish: { finishAfterStartDate() }
                 )
                 .transition(pageTransition(edge: .trailing))
-                .analyticsScreen("start_date")
+            case .usage:
+                UsageSharingQuestionView(onAnswer: answerUsageQuestion)
+                    .disabled(isSaving)
+                    .transition(pageTransition(edge: .trailing))
             }
         }
         .animation(PaeoniaMotion.meaningfulMoment, value: page)
@@ -271,7 +282,7 @@ struct AuthOnboardingView: View {
             PaeoniaHaptics.selection()
             page = .startDate
         } else {
-            submit()
+            finishAfterStartDate()
         }
     }
 
@@ -294,6 +305,27 @@ struct AuthOnboardingView: View {
 // MARK: - Saving
 
 extension AuthOnboardingView {
+    /// Goes on to the usage question, or saves the profile in a build that
+    /// sends no usage statistics.
+    private func finishAfterStartDate() {
+        guard usageSharing != nil, sessionUserID != nil, PaeoniaAnalytics.isAvailable else {
+            submit()
+            return
+        }
+        PaeoniaHaptics.selection()
+        page = .usage
+    }
+
+    /// Saves the answer on its way, and the profile, which moves the app on.
+    private func answerUsageQuestion(_ shares: Bool) {
+        if let usageSharing, let sessionUserID {
+            Task {
+                await usageSharing.answer(shares, for: sessionUserID)
+            }
+        }
+        submit()
+    }
+
     /// Saves the profile, which moves the app on to the next screen.
     private func submit() {
         guard !isWorking, let name = validatedName else {

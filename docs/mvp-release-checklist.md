@@ -52,11 +52,13 @@ These block TestFlight/App Review until resolved.
 - [x] Subscription terms are clear before purchase.
 - [ ] App icon is final in the app target, widget target, and App Store assets.
 - [x] App Store privacy labels match the actual data collected by the build.
-- [x] App Store privacy labels include the PostHog data: product interaction, other usage data (replays) and crash data, linked to the user, not used for tracking.
-- [ ] A lawyer confirms that usage statistics may be on by default with an opt-out under Norway's ekomloven (in force since 1 January 2025), or the app asks first.
-- [x] `POSTHOG_PERSONAL_API_KEY` is set on the hosted backend, so account deletion also deletes the person's PostHog events and recordings.
+- [ ] App Store privacy labels include the PostHog data: product interaction, device ID and crash data, linked to the user, used for analytics, not for tracking. There are no screen recordings.
+- [x] `POSTHOG_PERSONAL_API_KEY` is set on the hosted backend, so account deletion and turning off usage statistics delete the person's PostHog data.
+- [ ] That key also has the `query:read` scope, so the monthly `delete-inactive-analytics-persons` cron can find people inactive for a year.
 - [x] The Mac that archives has `posthog-cli` installed and signed in (`posthog-cli login`, EU), so the Upload dSYMs to PostHog phase can send symbols. An archive fails without it.
-- [ ] A PostHog session replay was watched on a device and shows no readable text, photos, drawings or map.
+- [x] The PostHog data processing agreement is signed.
+- [ ] A record of processing and a short DPIA for usage statistics and crash reports are written down.
+- [ ] On a device: the usage question appears once after pairing, nothing reaches PostHog before a yes, and turning off Share usage statistics stops sending at once.
 
 ## Repository And Build Hygiene
 

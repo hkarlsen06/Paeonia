@@ -7,7 +7,8 @@ import UIKit
 /// and runs app-wide work such as deep links, widget sync, and permission
 /// primers. Screens live in `RootView+Screens.swift`, user actions in
 /// `RootView+Actions.swift`, system integration in `RootView+System.swift`,
-/// and the primers in `RootView+PermissionPrimers.swift`.
+/// the primers in `RootView+PermissionPrimers.swift`, and the usage question
+/// in `RootView+UsageSharing.swift`.
 struct RootView: View {
     @State var viewModel: RootViewModel
     @State var locationViewModel: LocationMapViewModel
@@ -36,6 +37,10 @@ struct RootView: View {
     /// One of the invite screen's first day tasks is open. A partner who joins
     /// meanwhile waits on the invite screen until it closes, then the celebration plays.
     @State var inviterTaskIsOpen = false
+    /// The paired person's answer to "Help us improve Paeonia?".
+    @State var usageSharing = UsageSharingModel()
+    /// The usage statistics question is showing. It takes a primer's turn.
+    @State var isUsageQuestionPresented = false
     @Binding var deepLink: PaeoniaDeepLink?
     @Binding var pendingJoinInviteCode: String?
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -109,6 +114,8 @@ struct RootView: View {
     var body: some View {
         rootContent
             .environment(bannerCenter)
+            // Developer flows skip the usage question and switch.
+            .environment(allowsSystemIntegrations ? usageSharing : nil)
             .task {
                 locationViewModel.setLocalChangeSyncHandler {
                     await viewModel.syncAfterLocalLocationChange()
@@ -147,11 +154,11 @@ struct RootView: View {
             .onChange(of: viewModel.currentSession?.id, initial: true) { previousUserID, userID in
                 sessionChanged(from: previousUserID, to: userID)
             }
-            .onChange(of: viewModel.currentActiveCoupleID, initial: true) { _, coupleID in
-                PaeoniaAnalytics.setCouple(coupleID)
-            }
-            .onChange(of: analyticsAccount, initial: true) { _, account in
-                PaeoniaAnalytics.follow(account)
+            .task(id: usageSharingUserID) {
+                guard allowsSystemIntegrations else {
+                    return
+                }
+                await usageSharing.follow(usageSharingUserID)
             }
             .onReceive(NotificationCenter.default.publisher(for: .paeoniaSubscriptionDidUpdate)) { _ in
                 guard allowsSystemIntegrations else {
@@ -181,6 +188,12 @@ struct RootView: View {
                 // one reload here picks up everything that changed while it was open.
                 if oldPhase == .active, phase == .inactive, allowsSystemIntegrations {
                     LockScreenWidgetReloader.reload()
+                }
+                // A no given on another phone stops counting here too.
+                if phase == .active, allowsSystemIntegrations {
+                    Task {
+                        await usageSharing.refresh()
+                    }
                 }
                 guard phase == .active, !isLaunchExperienceActive else {
                     return
@@ -247,19 +260,6 @@ struct RootView: View {
         )
     }
 
-    /// Read from the screen shown rather than from session changes, because a
-    /// session that ended while the app was closed never shows up as a change.
-    var analyticsAccount: PaeoniaAnalytics.Account {
-        switch viewModel.state {
-        case .launching:
-            .unknown
-        case .unauthenticated, .deletingAccount:
-            .signedOut
-        default:
-            viewModel.currentSession.map { .signedIn(userID: $0.id) } ?? .unknown
-        }
-    }
-
     var mainTabSelection: Binding<MainTab> {
         Binding(
             get: { viewModel.selectedMainTab },
@@ -293,6 +293,18 @@ struct RootView: View {
                 .transition(.identity)
                 .zIndex(1)
             }
+        }
+        .sheet(isPresented: usageSharingQuestionBinding) {
+            UsageSharingQuestionView { shares in
+                Task {
+                    await usageSharing.answer(shares)
+                }
+            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .background(.paeoniaBackgroundPrimary)
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .interactiveDismissDisabled()
         }
     }
 }

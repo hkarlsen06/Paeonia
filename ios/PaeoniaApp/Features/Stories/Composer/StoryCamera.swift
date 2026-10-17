@@ -161,8 +161,6 @@ struct StoryCameraPreview: UIViewRepresentable {
         let view = PreviewView()
         view.previewLayer.session = camera.session
         view.previewLayer.videoGravity = .resizeAspectFill
-        // Session replays would otherwise record the live camera picture.
-        view.accessibilityIdentifier = PaeoniaAnalytics.hiddenFromReplaysAccessibilityToken
         camera.attach(view.previewLayer)
         return view
     }

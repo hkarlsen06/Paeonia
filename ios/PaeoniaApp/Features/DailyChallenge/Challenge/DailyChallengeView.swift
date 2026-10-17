@@ -106,7 +106,6 @@ struct DailyChallengeScreen: View {
                     operationProvider: privacyOperationProvider,
                     onReportedAndLeft: onReportedAndLeft
                 )
-                .analyticsScreen("report_and_leave")
             }
         }
         .navigationDestination(item: chatQuestion) { question in

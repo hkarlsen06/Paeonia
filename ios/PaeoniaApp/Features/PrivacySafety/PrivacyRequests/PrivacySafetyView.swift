@@ -11,7 +11,8 @@ struct PrivacySafetyView: View {
     private let operationProvider: (any SyncClientOperationProviding)?
     @State private var viewModel: PrivacySafetyViewModel
     @State private var isShowingCorrectionRequest = false
-    @State private var isSharingUsage = PaeoniaAnalytics.isSharingEnabled
+    /// Missing in previews and tests, which then hide the usage switch.
+    @Environment(UsageSharingModel.self) private var usageSharing: UsageSharingModel?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     @MainActor
@@ -40,8 +41,8 @@ struct PrivacySafetyView: View {
 
                 privacyRequestsSection
 
-                if PaeoniaAnalytics.isAvailable {
-                    usageSection
+                if let usageSharing, PaeoniaAnalytics.isAvailable, usageSharing.userID != nil {
+                    usageSection(usageSharing)
                 }
 
                 if let partnerUserID {
@@ -74,7 +75,6 @@ struct PrivacySafetyView: View {
         }
         .sheet(isPresented: $isShowingCorrectionRequest) {
             PrivacyCorrectionRequestView(viewModel: viewModel)
-                .analyticsScreen("privacy_correction")
         }
     }
 
@@ -108,18 +108,18 @@ struct PrivacySafetyView: View {
         }
     }
 
-    private var usageSection: some View {
+    private func usageSection(_ usageSharing: UsageSharingModel) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             sectionHeader(.privacySafetyUsageSectionTitle)
 
             PaeoniaCard {
-                Toggle(isOn: $isSharingUsage) {
+                Toggle(isOn: Binding(
+                    get: { usageSharing.shares == true },
+                    set: { shares in Task { await usageSharing.answer(shares) } }
+                )) {
                     Text(.privacySafetyUsageToggleTitle)
                     Text(.privacySafetyUsageToggleDescription)
                 }
-            }
-            .onChange(of: isSharingUsage) { _, isSharing in
-                PaeoniaAnalytics.isSharingEnabled = isSharing
             }
         }
     }
@@ -137,7 +137,6 @@ struct PrivacySafetyView: View {
                         operationProvider: operationProvider,
                         onReportedAndLeft: onReportedAndLeft
                     )
-                    .analyticsScreen("report_and_leave")
                 } label: {
                     PaeoniaDisclosureRow(
                         title: .privacySafetyReportTitle(partnerName),

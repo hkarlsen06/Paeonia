@@ -108,9 +108,6 @@ extension PKCanvasView {
         overrideUserInterfaceStyle = .light
         showsHorizontalScrollIndicator = false
         showsVerticalScrollIndicator = false
-        // Every drawing on screen is one of these canvases, so this one line
-        // keeps drawings out of session replays.
-        accessibilityIdentifier = PaeoniaAnalytics.hiddenFromReplaysAccessibilityToken
     }
 }
 

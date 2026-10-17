@@ -131,7 +131,7 @@ extension RootViewModel {
         route = .deletingAccount(previousRoute.session)
         // Right away, because RootView sees the new route only after this
         // request has gone out.
-        PaeoniaAnalytics.accountDeletionStarted()
+        PaeoniaAnalytics.stopSharingAndDeleteQueued()
 
         do {
             let outcome = try await authService.requestAccountDeletion(
@@ -140,7 +140,6 @@ extension RootViewModel {
             requiresManualAppleRevocation = outcome == .manualAppleRevocationRequired
             await endSession(purgingLocalData: true)
         } catch {
-            PaeoniaAnalytics.accountDeletionFailed()
             route = previousRoute
             notice = .deleteAccountFailed
         }
@@ -154,6 +153,9 @@ extension RootViewModel {
     /// phone; without it their data and queued writes stay for their return.
     func endSession(purgingLocalData: Bool) async {
         sessionEpoch &+= 1
+        // Usage statistics and crash reports queued for this account must not
+        // go out under whoever uses the phone next.
+        PaeoniaAnalytics.stopSharingAndDeleteQueued()
         stopObservingAccessChanges()
         invalidateAccessResolution()
         leaveRelationshipSurfaces()
@@ -183,6 +185,9 @@ extension RootViewModel {
         }
 
         sessionEpoch &+= 1
+        // The previous owner's usage statistics and crash reports must not go
+        // out once PostHog starts for this account.
+        PaeoniaAnalytics.stopSharingAndDeleteQueued()
         await liveSync?.stop()
         // The purge runs for the sync service's configured user, so point it at
         // the previous owner first. Nothing starts syncing for them.

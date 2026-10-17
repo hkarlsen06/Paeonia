@@ -59,8 +59,8 @@ extension RootView {
     /// Nothing asks for permission when the app opens. The primers wait until
     /// the person has answered a question or sent a drawing, and show once the
     /// answer cover or the drawing screen has gone away. Notifications come
-    /// first. At most one primer shows per visit, so the location primer waits
-    /// for a later visit after the notification one.
+    /// first, then location, then the usage statistics question. At most one
+    /// shows per visit, so each later one waits for a later visit.
     func offerPrimersAfterSharing() {
         guard allowsSystemIntegrations,
               !primerShownThisVisit,
@@ -91,6 +91,9 @@ extension RootView {
             }
 
             if permissionPrimerCoordinator.presentedPrimer != nil {
+                primerShownThisVisit = true
+            } else if usageSharing.needsAnswer, isCurrentStableIdentity(identity) {
+                isUsageQuestionPresented = true
                 primerShownThisVisit = true
             }
         }

@@ -18,9 +18,7 @@ struct PaywallContentView: View {
             header
                 .screenEntrance(order: 1, isReady: isEntranceReady)
 
-            // The header stays hidden in replays, since it names the partner.
             PaywallFeatureList()
-                .visibleInReplays()
                 .screenEntrance(order: 2, isReady: isEntranceReady)
 
             VStack(spacing: PaeoniaSpacing.space12) {
@@ -32,7 +30,6 @@ struct PaywallContentView: View {
             }
             // Prices that come in after the drop grow the cards instead of jumping.
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isLoadingPlans)
-            .visibleInReplays()
             .screenEntrance(order: 3, isReady: isEntranceReady)
         }
     }
