@@ -118,12 +118,6 @@ enum PaeoniaHaptics {
         impact(.soft, intensity: 0.8)
     }
 
-    /// A "while you wait" item on the invite screen turned done.
-    static func firstDayItemDone() {
-        impact(.rigid, intensity: 0.7)
-        notify(.success)
-    }
-
     static func storyShared() {
         notify(.success)
     }

@@ -2,9 +2,10 @@ import SwiftUI
 
 /// Two things the inviter can make for their partner while the code is out: their first
 /// answers and a drawing for the partner's Home Screen. The invite screen's "While you
-/// wait" button opens this sheet. Each row shows how far it got, and plays a small beat
-/// with hearts when it turns done. The rows open the answer flow and the drawing screen
-/// as full-screen covers.
+/// wait" button opens this sheet. Each row shows how far it got, and pops with hearts
+/// when it turns done. The pop is silent, since the answer flow and the widget nudge
+/// already played their own sound and haptics. The rows open the answer flow and the
+/// drawing screen as full-screen covers.
 struct InviterWhileYouWaitSheet: View {
     let model: InviterFirstDayModel
 
@@ -15,39 +16,24 @@ struct InviterWhileYouWaitSheet: View {
     @State private var isDrawing = false
     @State private var isOpeningQuestions = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
-                header
-                    .screenEntrance(order: 1)
-
-                VStack(spacing: PaeoniaSpacing.space12) {
-                    questionsRow
-                        .screenEntrance(order: 2)
-                    drawingRow
-                        .screenEntrance(order: 3)
+        NavigationStack {
+            content
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(action: { dismiss() }) {
+                            Text(.commonDone)
+                        }
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space32)
-            .padding(.bottom, PaeoniaSpacing.space16)
         }
-        .scrollBounceBehavior(.basedOnSize)
-        .paeoniaScreenBackground()
         // The sheet covers the root's banner, so it mounts its own copy.
         .paeoniaTopBanner(bannerCenter)
         .preferredColorScheme(.dark)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .onChange(of: model.completion) { _, completion in
-            guard completion != nil else {
-                return
-            }
-            PaeoniaHaptics.firstDayItemDone()
-            GameSound.chime.play()
-        }
         .fullScreenCover(item: $questionsModel, onDismiss: questionsClosed) { questionsModel in
             FirstDayQuestionsFlow(model: questionsModel) { questions in
                 closedQuestions = questions
@@ -63,6 +49,28 @@ struct InviterWhileYouWaitSheet: View {
             .environment(bannerCenter)
             .paeoniaTopBanner(bannerCenter)
         }
+    }
+
+    private var content: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
+                header
+                    .screenEntrance(order: 1)
+
+                VStack(spacing: PaeoniaSpacing.space12) {
+                    questionsRow
+                        .screenEntrance(order: 2)
+                    drawingRow
+                        .screenEntrance(order: 3)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space8)
+            .padding(.bottom, PaeoniaSpacing.space16)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .paeoniaScreenBackground()
     }
 
     // MARK: Rows

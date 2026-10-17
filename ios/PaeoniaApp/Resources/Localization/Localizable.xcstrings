@@ -20832,19 +20832,19 @@
       }
     },
     "pairing.join.noCode" : {
-      "comment" : "Quiet button on the join screen. Forgets the partner's code and goes back to the previous screen.",
+      "comment" : "Quiet button on the join screen. Forgets the partner's code, so the person sets up Paeonia themselves and invites their partner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I don't have a code"
+            "value" : "Invite my partner instead"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jeg har ingen kode"
+            "value" : "Inviter partneren min i stedet"
           }
         }
       }
