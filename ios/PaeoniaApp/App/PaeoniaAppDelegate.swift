@@ -73,11 +73,13 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         "thread_message_sent",
         "partner_answered",
         "daily_challenge_completed",
+        // The open app plays the pairing celebration the moment the partner joins.
+        "partner_joined",
     ]
 
     /// While the app is open, suppress the system banner for a partner's widget
     /// update and surface it as an in-app top banner instead (like the rest of
-    /// the app's notices). Question activity shows no banner at all. Other
+    /// the app's notices). Question activity and a partner joining show no banner. Other
     /// notifications show a banner but stay out of Notification Center, since the
     /// person already saw it in the app. The sender name
     /// and localized body are read off the content before crossing to the main
@@ -104,8 +106,8 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         logger.debug("willPresent \(detail, privacy: .public)")
         #endif
 
-        // Question activity already shows live on Home and in the Questions
-        // tab, and its alert copy says "Open Paeonia", so drop the system
+        // Question activity and a partner joining already show live in the
+        // app, and their alert copy says "Open Paeonia", so drop the system
         // banner while the app is open.
         if Self.typesShownLiveInApp.contains(type) {
             completionHandler([])
