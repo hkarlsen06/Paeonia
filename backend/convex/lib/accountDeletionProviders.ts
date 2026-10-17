@@ -1,9 +1,11 @@
-// The outbound HTTP calls of account deletion (Clerk Backend API and Apple's
-// Sign in with Apple REST API). Kept apart from the mutations so tests stub `fetch`
+// The outbound HTTP calls of account deletion (Clerk Backend API, Apple's
+// Sign in with Apple REST API, and PostHog's person API). Kept apart from the mutations so tests stub `fetch`
 // in one place. Port of supabase/functions/_shared/appleSignInDeletion.ts.
 
 const APPLE_ISSUER = "https://appleid.apple.com";
 const CLERK_API = "https://api.clerk.com/v1";
+// The app's usage statistics project on PostHog EU Cloud.
+const POSTHOG_PROJECT_API = "https://eu.posthog.com/api/projects/309819";
 
 export type AppleRevocationResult =
   | { status: "succeeded" }
@@ -209,5 +211,44 @@ export async function revokeAppleAuthorization(
     else if (error instanceof DOMException && error.name === "TimeoutError") errorCode = "apple_timeout";
     else if (error instanceof TypeError) errorCode = "apple_unreachable";
     return { status: "manual_required", errorCode };
+  }
+}
+
+// ---- PostHog ----
+
+/**
+ * Asks PostHog to delete the person the app identified with `userId`, with
+ * their events and session recordings. PostHog accepts the request and deletes
+ * in a weekly batch. Without `POSTHOG_PERSONAL_API_KEY`, as on a local backend,
+ * there is nothing to delete and this does nothing.
+ */
+export async function deleteAnalyticsPerson(userId: string): Promise<void> {
+  const key = process.env.POSTHOG_PERSONAL_API_KEY;
+  if (!key) return;
+  let response: Response;
+  try {
+    response = await fetch(`${POSTHOG_PROJECT_API}/persons/bulk_delete/`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ distinct_ids: [userId], delete_events: true, delete_recordings: true }),
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    throw new ProviderError("analytics_unreachable");
+  }
+  if (!response.ok) {
+    throw new ProviderError(`analytics_http_${response.status}`);
+  }
+  // A 202 can still report a person whose deletion failed, so a body that
+  // cannot be read counts as a failure too. PostHog never queues the same
+  // person's deletion twice, so a retry is safe.
+  let body: { deletion_errors?: unknown };
+  try {
+    body = (await response.json()) as { deletion_errors?: unknown };
+  } catch {
+    throw new ProviderError("analytics_unreadable_response");
+  }
+  if (Array.isArray(body?.deletion_errors) && body.deletion_errors.length > 0) {
+    throw new ProviderError("analytics_deletion_failed");
   }
 }

@@ -19,6 +19,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   delete process.env.CLERK_SECRET_KEY;
+  delete process.env.POSTHOG_PERSONAL_API_KEY;
   delete process.env.APPLE_SIGN_IN_TEAM_ID;
   delete process.env.APPLE_SIGN_IN_KEY_ID;
   delete process.env.APPLE_SIGN_IN_PRIVATE_KEY;
@@ -267,6 +268,7 @@ describe("job state machine", () => {
     );
     expect(await t.query(internal.accountDeletion.get_auth_delete_target, { p_job_id: jobId })).toEqual({
       clerk_user_id: first.subject,
+      user_id: first.userId,
     });
 
     // A failed try records its error and leaves the job for the next try.
@@ -379,7 +381,18 @@ function idToken(claims: Record<string, unknown>): string {
 
 type Call = { url: string; method: string; body: string };
 
-function stubNetwork(options: { clerkDelete?: number; appleSub?: string; noAppleAccount?: boolean; tokenStatus?: number } = {}) {
+const POSTHOG_BULK_DELETE = "https://eu.posthog.com/api/projects/309819/persons/bulk_delete/";
+
+function stubNetwork(
+  options: {
+    clerkDelete?: number;
+    appleSub?: string;
+    noAppleAccount?: boolean;
+    tokenStatus?: number;
+    posthogStatus?: number;
+    posthogDeletionErrors?: boolean;
+  } = {},
+) {
   const calls: Call[] = [];
   vi.stubGlobal(
     "fetch",
@@ -401,6 +414,11 @@ function stubNetwork(options: { clerkDelete?: number; appleSub?: string; noApple
         });
       }
       if (url === "https://appleid.apple.com/auth/revoke") return new Response("", { status: 200 });
+      if (url === POSTHOG_BULK_DELETE) {
+        expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer phx_test_posthog");
+        const deletionErrors = options.posthogDeletionErrors ? [{ person_uuid: "p-1", step: "delete_person" }] : [];
+        return Response.json({ deletion_errors: deletionErrors }, { status: options.posthogStatus ?? 202 });
+      }
       throw new Error(`unexpected fetch ${url}`);
     }),
   );
@@ -550,5 +568,69 @@ describe("queued Clerk delete", () => {
       error_code: "auth_http_503",
       requires_attention: true,
     });
+  });
+});
+
+describe("PostHog delete", () => {
+  const jobOf = (t: TestConvex) => t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
+
+  test("deletes the person's events and recordings with the Clerk user", async () => {
+    process.env.POSTHOG_PERSONAL_API_KEY = "phx_test_posthog";
+    const t = newTest();
+    const calls = stubNetwork({ noAppleAccount: true });
+    const { first } = await createCouple(t);
+
+    expect((await first.as.action(api.identity.delete_account, {})).authDeleteStatus).toBe("completed");
+    const posthog = calls.filter((call) => call.url === POSTHOG_BULK_DELETE);
+    expect(posthog).toHaveLength(1);
+    expect(posthog[0].method).toBe("POST");
+    expect(JSON.parse(posthog[0].body)).toEqual({
+      distinct_ids: [first.userId],
+      delete_events: true,
+      delete_recordings: true,
+    });
+    expect(await jobOf(t)).toMatchObject({ status: "completed" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a failed PostHog delete keeps the job open until a later try works", async () => {
+    process.env.POSTHOG_PERSONAL_API_KEY = "phx_test_posthog";
+    const t = newTest();
+    stubNetwork({ noAppleAccount: true, posthogStatus: 500 });
+    const { first } = await createCouple(t);
+
+    expect((await first.as.action(api.identity.delete_account, {})).authDeleteStatus).toBe("queued");
+    expect(await jobOf(t)).toMatchObject({ status: "ready_for_auth_delete", last_auth_delete_error_code: "analytics_http_500" });
+
+    stubNetwork({ clerkDelete: 404, noAppleAccount: true });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await jobOf(t)).toMatchObject({ status: "completed" });
+  });
+
+  test("a deletion error inside an accepted response keeps the job open", async () => {
+    process.env.POSTHOG_PERSONAL_API_KEY = "phx_test_posthog";
+    const t = newTest();
+    stubNetwork({ noAppleAccount: true, posthogDeletionErrors: true });
+    const { first } = await createCouple(t);
+
+    expect((await first.as.action(api.identity.delete_account, {})).authDeleteStatus).toBe("queued");
+    expect(await jobOf(t)).toMatchObject({
+      status: "ready_for_auth_delete",
+      last_auth_delete_error_code: "analytics_deletion_failed",
+    });
+
+    stubNetwork({ clerkDelete: 404, noAppleAccount: true });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await jobOf(t)).toMatchObject({ status: "completed" });
+  });
+
+  test("a backend without a PostHog key skips the call", async () => {
+    const t = newTest();
+    const calls = stubNetwork({ noAppleAccount: true });
+    const { first } = await createCouple(t);
+
+    expect((await first.as.action(api.identity.delete_account, {})).authDeleteStatus).toBe("completed");
+    expect(calls.some((call) => call.url === POSTHOG_BULK_DELETE)).toBe(false);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });

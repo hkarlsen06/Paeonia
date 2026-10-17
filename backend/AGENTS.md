@@ -154,7 +154,7 @@ Local-first writes from iOS carry `p_client_operation_id`, `p_client_id`, `p_cli
 
 ## Environment variables
 
-Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KEY`, `PAEONIA_MEDIA_URL_SECRET`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_PRIVATE_KEY`, `APPLE_BUNDLE_ID`, `APPLE_APP_APPLE_ID`, `PAEONIA_LIVE_RELAY_URL`, `PAEONIA_LIVE_RELAY_SECRET`, `PAEONIA_ADMIN_CLERK_USER_IDS` (the Clerk user ids of the admins, comma separated). Never commit values. `PAEONIA_DATA_EPOCH` is optional and reads as an empty string while unset. Change it only after a restore or a hand edit of game rows (see the hosted deployment section).
+Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KEY`, `PAEONIA_MEDIA_URL_SECRET`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_PRIVATE_KEY`, `APPLE_BUNDLE_ID`, `APPLE_APP_APPLE_ID`, `PAEONIA_LIVE_RELAY_URL`, `PAEONIA_LIVE_RELAY_SECRET`, `PAEONIA_ADMIN_CLERK_USER_IDS` (the Clerk user ids of the admins, comma separated), `POSTHOG_PERSONAL_API_KEY` (a PostHog personal API key with only the `person:write` scope on project 309819; account deletion uses it to delete the person's usage statistics and recordings, and skips that step while it is unset). Never commit values. `PAEONIA_DATA_EPOCH` is optional and reads as an empty string while unset. Change it only after a restore or a hand edit of game rows (see the hosted deployment section).
 
 ## Module map
 

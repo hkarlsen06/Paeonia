@@ -12,6 +12,7 @@ import { newUuid, uuidArg } from "./lib/ids";
 import { deleteFirstDayDraft } from "./lib/firstDay";
 import { queueOldMediaAssetIfOrphaned } from "./lib/mediaOrphans";
 import {
+  deleteAnalyticsPerson,
   deleteClerkUser,
   fetchAppleSubjects,
   revokeAppleAuthorization,
@@ -341,14 +342,14 @@ export const begin_account_deletion = internalMutation({
   },
 });
 
-/** The Clerk user a job still has to delete. Null once the job completed. */
+/** The Clerk user and Paeonia user a job still has to delete. Null once the job completed. */
 export const get_auth_delete_target = internalQuery({
   args: { p_job_id: v.string() },
-  handler: async (ctx, args): Promise<{ clerk_user_id: string | null } | null> => {
+  handler: async (ctx, args): Promise<{ clerk_user_id: string | null; user_id: string } | null> => {
     const job = await getByUuid(ctx, "account_deletion_jobs", uuidArg(args.p_job_id));
     if (!job || job.status === "completed") return null;
     const user = await getByUuid(ctx, "users", job.user_id);
-    return { clerk_user_id: user?.clerk_user_id ?? null };
+    return { clerk_user_id: user?.clerk_user_id ?? null, user_id: job.user_id };
   },
 });
 
@@ -518,24 +519,28 @@ export const retry_account_deletion_job = internalMutation({
 });
 
 /**
- * Deletes the Clerk user of a job that has not completed, then marks it
- * completed. Records a failure and throws it, so the pool can try again.
+ * Deletes the Clerk user of a job that has not completed and asks PostHog to
+ * delete the person's usage statistics, then marks the job completed. Records
+ * a failure and throws it, so the pool can try again. Both calls are safe to
+ * repeat: Clerk treats a missing user as deleted.
  */
 async function deleteAuthUser(ctx: ActionCtx, jobId: string): Promise<void> {
   const target = await ctx.runQuery(internal.accountDeletion.get_auth_delete_target, { p_job_id: jobId });
   if (!target) return;
-  // A user without a Clerk identity has nothing to delete there.
-  if (target.clerk_user_id) {
-    try {
+  try {
+    // A user without a Clerk identity has nothing to delete there.
+    if (target.clerk_user_id) {
       await deleteClerkUser(target.clerk_user_id);
-    } catch (error) {
-      const errorCode = stableAuthDeleteErrorCode(error);
-      await ctx.runMutation(internal.accountDeletion.mark_account_deletion_auth_failed, {
-        p_job_id: jobId,
-        p_error_code: errorCode,
-      });
-      throw new Error(errorCode);
     }
+    // The app identifies people to PostHog by their Paeonia user id.
+    await deleteAnalyticsPerson(target.user_id);
+  } catch (error) {
+    const errorCode = stableAuthDeleteErrorCode(error);
+    await ctx.runMutation(internal.accountDeletion.mark_account_deletion_auth_failed, {
+      p_job_id: jobId,
+      p_error_code: errorCode,
+    });
+    throw new Error(errorCode);
   }
   await ctx.runMutation(internal.accountDeletion.mark_account_deletion_completed, { p_job_id: jobId });
 }
