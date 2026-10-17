@@ -59,6 +59,9 @@ struct WelcomeView: View {
             .launchEntrance(order: 2)
         }
         .background(PaeoniaGlowBackground())
+        // Every word here is the app's own. The code sheet below is a separate
+        // screen and stays hidden.
+        .visibleInReplays()
         .sheet(isPresented: $isInviteSheetPresented) {
             PairingCodeEntrySheet(
                 title: .welcomeInviteCodeTitle,

@@ -301,4 +301,12 @@ extension View {
     func analyticsScreen(_ name: String) -> some View {
         onAppear { PaeoniaAnalytics.screen(name) }
     }
+
+    /// Shows this view's text and pictures in replays, which hide all of them by
+    /// default. Use it only on views that never show a name, a code, a photo or
+    /// anything someone wrote. It also shows every view inside, and a
+    /// `postHogMask()` inside does not hide anything.
+    func visibleInReplays() -> some View {
+        postHogNoMask()
+    }
 }
