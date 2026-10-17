@@ -8,7 +8,8 @@ nonisolated struct DailyPromptCardArt: Equatable, Sendable {
         /// The picture card with the sealed envelope, while there is something to do.
         /// It also stands in while the questions load, so the card does not jump.
         case hero
-        /// A short row with the open envelope, once today's questions are done.
+        /// A short row with the envelope, once today's questions are done. The envelope
+        /// stays sealed until the partner's answers can be read.
         case compact
     }
 
@@ -26,9 +27,18 @@ nonisolated struct DailyPromptCardArt: Equatable, Sendable {
     let glows: Bool
     /// The "1 of 2 answered" capsule at the top of the picture.
     let showsProgressBadge: Bool
+    /// The envelope holds the partner's answers, so it is open once they can be read.
+    let isEnvelopeOpen: Bool
+
+    /// This person's questions are done and the partner has answered today, so the
+    /// partner's answers can be read.
+    static func partnerAnswersAreReadable(_ state: DailyChallengeCardState) -> Bool {
+        state.kind == .complete && state.hasPartnerAnswersForToday
+    }
 
     init(_ state: DailyChallengeCardState) {
         seal = state.hasPartnerAnswersForToday || state.hasAnswerablePartnerQuestions ? .lavender : .pink
+        isEnvelopeOpen = Self.partnerAnswersAreReadable(state)
         switch state.kind {
         case .loading:
             shape = .hero

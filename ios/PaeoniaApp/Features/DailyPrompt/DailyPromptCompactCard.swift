@@ -1,12 +1,17 @@
 import SwiftUI
 
 /// The daily question card once today's questions are done: a short row that leaves the
-/// screen to the other cards. The open envelope sits beside the title and one line about
-/// what happens next, with the button below and the partner's waiting questions under it.
+/// screen to the other cards. The envelope sits beside the title and one line about what
+/// happens next, with the button below and the partner's waiting questions under it. The
+/// envelope stays sealed until the partner's answers can be read, then it is open.
 struct DailyPromptCompactCard: View {
     let state: DailyChallengeCardState
     let copy: DailyPromptCardCopy
     let partnerPhotoAssetID: UUID?
+    let seal: DailyPromptCardArt.Seal
+    let opening: DailyPromptEnvelopeOpening
+    /// How far the seal has broken, from 0 to 1, while the envelope opens.
+    var sealBreak: Double = 0
     var zoomNamespace: Namespace.ID?
     var onAnswer: () -> Void
     var onOpenPartnerQuestion: (UUID) -> Void
@@ -57,10 +62,26 @@ struct DailyPromptCompactCard: View {
         }
     }
 
-    /// The open envelope with its letter out, as the picture card left it.
     private var envelope: some View {
-        DailyPromptEnvelope(width: Self.envelopeSize, opening: .letterOut)
+        DailyPromptEnvelope(width: Self.envelopeSize, opening: opening)
+            .overlay { waxSeal }
             .frame(width: Self.envelopeSize, height: Self.envelopeSize, alignment: .bottom)
+    }
+
+    /// On the tip of the closed flap, sized like the picture card's. When it breaks it
+    /// lifts, turns and fades.
+    private var waxSeal: some View {
+        let height = Self.envelopeSize / PaeoniaEnvelopeLayer.aspect
+        return Image(seal == .pink ? .homeWaxSealPink : .homeWaxSealLavender)
+            .resizable()
+            .scaledToFit()
+            .frame(width: Self.envelopeSize * 150 / 560)
+            .scaleEffect(1 + 0.4 * sealBreak)
+            .rotationEffect(.degrees(24 * sealBreak))
+            .offset(y: height * (0.614 - 0.5) - 10 * sealBreak)
+            .offset(x: Self.envelopeSize * (0.495 - 0.5))
+            .opacity(opening == .closed ? 1 - sealBreak : 0)
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder

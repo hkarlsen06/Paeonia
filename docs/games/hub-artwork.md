@@ -64,7 +64,7 @@ The daily question card on the Home tab is in the same series (`DailyPromptHeroA
 
 - The seal is pink, this person's color. It is lavender once the partner has answered today, so the card reads as a letter from the partner. It is 150 pixels wide.
 - The step count ("1 of 2 answered") is the top badge.
-- When today's questions are done, the seal breaks (it lifts, turns and fades, with a gold flash), the flap folds back and a letter rises in the pocket, and the card shrinks to a short row with the same open envelope. That row is not a hub card. The envelope is cut along the flap's rim in `PaeoniaEnvelope.swift`, which the first-day gift uses too.
+- The envelope holds the partner's answers, so it opens only once they can be read. When today's questions are done and the partner has answered, the seal breaks (it lifts, turns and fades, with a gold flash), the flap folds back, a letter rises in the pocket, and the card shrinks to a short row with the same open envelope. If the partner has not answered yet, the card shrinks with the envelope still sealed, and the short row opens it the same way when the partner answers. That row is not a hub card. The envelope is cut along the flap's rim in `PaeoniaEnvelope.swift`, which the first-day gift uses too.
 
 ## Checklist
 

@@ -10,8 +10,11 @@ extension EnvironmentValues {
 ///
 /// While there is something to do (and while the questions load) it is the picture card
 /// with the sealed envelope (`DailyPromptHeroCard`). Once today's questions are done it is
-/// a short row (`DailyPromptCompactCard`). When the last answer comes in, the seal breaks,
-/// the envelope opens and then the card shrinks (see `playMoment`). If the card is out of sight then,
+/// a short row (`DailyPromptCompactCard`). The envelope holds the partner's answers, so it
+/// opens only once they can be read. When the last answer comes in and the partner has
+/// answered, the seal breaks, the envelope opens and the card shrinks. Otherwise the card
+/// shrinks with the envelope still sealed, and it opens on the short row when the partner
+/// answers (see `playMoment` and `playOpening`). If the card is out of sight then,
 /// such as when the flow closes onto the Questions tab, the moment plays when it is next
 /// seen.
 ///
@@ -37,8 +40,10 @@ struct DailyPromptCard: View {
         /// The card is complete but still looks active. It waits until it is in sight
         /// with the flow closed.
         case waiting
-        /// The seal is breaking.
+        /// The picture card's moment is playing.
         case breaking
+        /// The short row's envelope is opening.
+        case opening
     }
 
     /// How long the seal moment takes after the answer flow closes, from the wait for the
@@ -54,6 +59,15 @@ struct DailyPromptCard: View {
     @State private var sealBreak = 0.0
     @State private var sealBreaks = 0
     @State private var envelopeOpening = DailyPromptEnvelopeOpening.closed
+    /// The short row's envelope while it opens. Nil shows what the state says.
+    @State private var compactOpening: DailyPromptEnvelopeOpening?
+    @State private var compactSealBreak = 0.0
+    /// The partner's answers became readable while the short row was up. The envelope
+    /// opens when the card is next seen.
+    @State private var opensWhenSeen = false
+    /// Whether the last state that was not loading could read the partner's answers.
+    /// Nil until one arrives, so a launch into readable answers shows them open at once.
+    @State private var wasReadable: Bool?
     @State private var isOnScreen = false
     @State private var momentTask: Task<Void, Never>?
 
@@ -86,6 +100,9 @@ struct DailyPromptCard: View {
                     state: shown,
                     copy: copy,
                     partnerPhotoAssetID: partnerPhotoAssetID,
+                    seal: art.seal,
+                    opening: compactOpening ?? (art.isEnvelopeOpen ? .letterOut : .closed),
+                    sealBreak: compactSealBreak,
                     zoomNamespace: zoomNamespace,
                     onAnswer: onAnswer,
                     onOpenPartnerQuestion: onOpenPartnerQuestion
@@ -104,9 +121,12 @@ struct DailyPromptCard: View {
             isOnScreen = false
             // A moment that already started finishes at once. One still waiting keeps
             // waiting for the card to come back.
-            if phase == .breaking {
+            switch phase {
+            case .breaking:
                 endMoment()
-            } else {
+            case .opening:
+                endOpening()
+            case .idle, .waiting:
                 momentTask?.cancel()
             }
         }
@@ -119,17 +139,36 @@ struct DailyPromptCard: View {
         hold.observe(new)
         if case .active = new.kind {
             envelopeOpening = .closed
+            if phase == .opening {
+                endOpening()
+            }
+            opensWhenSeen = false
+            compactOpening = nil
         }
+        noteReadability(new)
         if hold.isHolding(for: new) {
             if phase == .idle {
                 beginMoment()
             }
-        } else if phase != .idle {
+        } else if phase == .waiting || phase == .breaking {
             // The day changed before the moment played. Ending it clears the hold, so
             // the new day's state is noted again.
             endMoment()
             hold.observe(new)
         }
+    }
+
+    /// The partner answered after this person's part was done, so the short row's sealed
+    /// envelope opens once the card is seen. The picture card's moment opens it by itself.
+    private func noteReadability(_ new: DailyChallengeCardState) {
+        guard new.kind != .loading else { return }
+        let isReadable = DailyPromptCardArt.partnerAnswersAreReadable(new)
+        if wasReadable == false, isReadable, !hold.isHolding(for: new) {
+            opensWhenSeen = true
+            compactOpening = .closed
+            scheduleMomentIfSeen()
+        }
+        wasReadable = isReadable
     }
 
     /// The last answer came in. The answer flow is usually still open, and it often closes
@@ -143,7 +182,7 @@ struct DailyPromptCard: View {
     /// in front. Otherwise it holds off, and a later appear, flow close or return to the
     /// app tries again.
     private func scheduleMomentIfSeen() {
-        guard phase == .waiting else { return }
+        guard phase == .waiting || (phase == .idle && opensWhenSeen) else { return }
         guard isOnScreen, !flowIsPresented, scenePhase == .active else {
             momentTask?.cancel()
             return
@@ -158,19 +197,26 @@ struct DailyPromptCard: View {
         momentTask = Task {
             try? await Task.sleep(for: .milliseconds(550))
             guard !Task.isCancelled else { return }
-            await playMoment()
+            if phase == .waiting {
+                await playMoment()
+            } else {
+                await playOpening()
+            }
         }
     }
 
-    /// The seal breaks with a crack and a tap, the flap folds back and the letter rises,
-    /// then the card shrinks to the short row. With Reduce Motion nothing moves: the seal
-    /// is gone at once and the card crossfades. The sound goes quiet with the silent
-    /// switch. The tap stays.
+    /// This person's part is done. With the partner's answers readable, the seal breaks
+    /// with a crack and a tap, the flap folds back and the letter rises. Then the card
+    /// shrinks to the short row, sealed if the partner has not answered yet. With Reduce
+    /// Motion nothing moves: the seal is gone at once and the card crossfades. The sound
+    /// goes quiet with the silent switch. The tap stays.
     private func playMoment() async {
         phase = .breaking
         sealBreaks += 1
         GameSound.fold.play(volume: 0.8)
-        if reduceMotion {
+        if !DailyPromptCardArt.partnerAnswersAreReadable(state) {
+            try? await Task.sleep(for: .milliseconds(150))
+        } else if reduceMotion {
             sealBreak = 1
             try? await Task.sleep(for: .milliseconds(150))
         } else {
@@ -197,6 +243,40 @@ struct DailyPromptCard: View {
         withAnimation(.spring(duration: 0.45, bounce: 0.25)) { envelopeOpening = .letterOut }
         try? await Task.sleep(for: .milliseconds(600))
         return !Task.isCancelled
+    }
+
+    /// The partner's answers came in after the card shrank. The short row's seal breaks,
+    /// its flap folds back and the letter rises.
+    private func playOpening() async {
+        phase = .opening
+        opensWhenSeen = false
+        sealBreaks += 1
+        GameSound.fold.play(volume: 0.8)
+        guard !reduceMotion else {
+            endOpening()
+            return
+        }
+        withAnimation(.easeOut(duration: 0.4)) { compactSealBreak = 1 }
+        try? await Task.sleep(for: .milliseconds(250))
+        guard !Task.isCancelled else { return }
+        withAnimation(.spring(duration: 0.5, bounce: 0.12)) { compactOpening = .flapOpening }
+        try? await Task.sleep(for: .milliseconds(220))
+        guard !Task.isCancelled else { return }
+        GameSound.flip.play(volume: 0.6)
+        withAnimation(.spring(duration: 0.45, bounce: 0.25)) { compactOpening = .letterOut }
+        try? await Task.sleep(for: .milliseconds(450))
+        guard !Task.isCancelled else { return }
+        endOpening()
+    }
+
+    /// Hands the short row's envelope back to the state, which has it open.
+    private func endOpening() {
+        momentTask?.cancel()
+        momentTask = nil
+        phase = .idle
+        opensWhenSeen = false
+        compactOpening = nil
+        compactSealBreak = 0
     }
 
     /// Shows the card's real state.
