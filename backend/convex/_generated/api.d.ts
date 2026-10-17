@@ -11,6 +11,7 @@
 import type * as access from "../access.js";
 import type * as accountDeletion from "../accountDeletion.js";
 import type * as admin from "../admin.js";
+import type * as analytics from "../analytics.js";
 import type * as boardGames from "../boardGames.js";
 import type * as catalog from "../catalog.js";
 import type * as chatPresence from "../chatPresence.js";
@@ -123,6 +124,7 @@ declare const fullApi: ApiFromModules<{
   access: typeof access;
   accountDeletion: typeof accountDeletion;
   admin: typeof admin;
+  analytics: typeof analytics;
   boardGames: typeof boardGames;
   catalog: typeof catalog;
   chatPresence: typeof chatPresence;

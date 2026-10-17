@@ -74,4 +74,8 @@ crons.interval("expire-stale-entitlements", { minutes: 5 }, internal.storekit.ex
 // New in Convex: client_operations and both push outboxes had no cleanup. Keeps 30 days. See retention.ts.
 crons.interval("prune-expired-rows", { hours: 1 }, internal.retention.prune_expired_rows, {});
 
+// New in Convex: PostHog keeps usage statistics for years and cannot delete them by age, so this
+// deletes everyone it has not heard from in 12 months, early on the 1st of each month. See analytics.ts.
+crons.cron("delete-inactive-analytics-persons", "0 4 1 * *", internal.analytics.delete_inactive_analytics_persons, {});
+
 export default crons;

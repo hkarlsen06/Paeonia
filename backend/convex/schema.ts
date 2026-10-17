@@ -1074,6 +1074,11 @@ export default defineSchema({
     deleted_at: optTs,
     provider_profile_photo_asset_id: optUuid,
     provider_profile_photo_source: v.optional(v.literal("google")),
+    // The person's answer to "Help us improve Paeonia?", when they gave it, and
+    // which version of the question they saw. Missing until they answer.
+    shares_usage: v.optional(v.boolean()),
+    shares_usage_decided_at: optTs,
+    shares_usage_notice: optString,
   })
     .index("by_user_id", ["user_id"])
     .index("by_moderation_report_id", ["moderation_report_id"])

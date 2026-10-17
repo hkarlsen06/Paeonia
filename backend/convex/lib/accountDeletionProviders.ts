@@ -216,21 +216,21 @@ export async function revokeAppleAuthorization(
 
 // ---- PostHog ----
 
-/**
- * Asks PostHog to delete the person the app identified with `userId`, with
- * their events and session recordings. PostHog accepts the request and deletes
- * in a weekly batch. Without `POSTHOG_PERSONAL_API_KEY`, as on a local backend,
- * there is nothing to delete and this does nothing.
- */
-export async function deleteAnalyticsPerson(userId: string): Promise<void> {
+function posthogKey(): string {
   const key = process.env.POSTHOG_PERSONAL_API_KEY;
-  if (!key) return;
+  if (!key) throw new ProviderError("analytics_configuration_missing");
+  return key;
+}
+
+/** Sends one request to the PostHog project API and returns the parsed body. */
+async function posthogRequest(path: string, body: unknown): Promise<unknown> {
+  const key = posthogKey();
   let response: Response;
   try {
-    response = await fetch(`${POSTHOG_PROJECT_API}/persons/bulk_delete/`, {
+    response = await fetch(`${POSTHOG_PROJECT_API}${path}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ distinct_ids: [userId], delete_events: true, delete_recordings: true }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
@@ -239,16 +239,59 @@ export async function deleteAnalyticsPerson(userId: string): Promise<void> {
   if (!response.ok) {
     throw new ProviderError(`analytics_http_${response.status}`);
   }
-  // A 202 can still report a person whose deletion failed, so a body that
-  // cannot be read counts as a failure too. PostHog never queues the same
-  // person's deletion twice, so a retry is safe.
-  let body: { deletion_errors?: unknown };
   try {
-    body = (await response.json()) as { deletion_errors?: unknown };
+    return await response.json();
   } catch {
     throw new ProviderError("analytics_unreadable_response");
   }
+}
+
+/**
+ * Asks PostHog to delete people with their events and recordings, by the ids
+ * the app identified them with (`distinct_ids`) or by PostHog's own ids
+ * (`ids`). PostHog accepts the request and deletes in a weekly batch. It never
+ * queues the same person's deletion twice, so a retry is safe.
+ */
+async function deleteAnalyticsPersons(target: { distinct_ids: string[] } | { ids: string[] }): Promise<void> {
+  const body = (await posthogRequest("/persons/bulk_delete/", {
+    ...target,
+    delete_events: true,
+    delete_recordings: true,
+  })) as { deletion_errors?: unknown } | null;
+  // A 202 can still report a person whose deletion failed.
   if (Array.isArray(body?.deletion_errors) && body.deletion_errors.length > 0) {
     throw new ProviderError("analytics_deletion_failed");
   }
+}
+
+/** Deletes the PostHog person the app identified with this Paeonia user id. */
+export function deleteAnalyticsPerson(userId: string): Promise<void> {
+  return deleteAnalyticsPersons({ distinct_ids: [userId] });
+}
+
+/** How many people one run deletes. PostHog's bulk delete takes at most 1000. */
+const INACTIVE_BATCH = 1000;
+
+/**
+ * Deletes everyone PostHog has not heard from in a year, so usage statistics
+ * are kept for a year after someone's last use. PostHog cannot delete events
+ * by age, only whole people. Returns how many it asked PostHog to delete.
+ * ponytail: one batch per run. A month with more than 1000 such people leaves
+ * the rest for the next run.
+ */
+export async function deleteInactiveAnalyticsPersons(): Promise<number> {
+  const body = (await posthogRequest("/query/", {
+    query: {
+      kind: "HogQLQuery",
+      query: `SELECT person_id FROM events GROUP BY person_id HAVING max(timestamp) < now() - INTERVAL 12 MONTH LIMIT ${INACTIVE_BATCH}`,
+    },
+  })) as { results?: unknown } | null;
+  if (!Array.isArray(body?.results)) {
+    throw new ProviderError("analytics_unreadable_response");
+  }
+  const ids = body.results.map((row) => String((row as unknown[])[0]));
+  if (ids.length > 0) {
+    await deleteAnalyticsPersons({ ids });
+  }
+  return ids.length;
 }

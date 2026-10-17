@@ -13,6 +13,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(NOW));
   process.env.CLERK_SECRET_KEY = "sk_test_clerk";
+  process.env.POSTHOG_PERSONAL_API_KEY = "phx_test_posthog";
   stubNetwork();
 });
 afterEach(() => {
@@ -449,6 +450,7 @@ describe("delete_account action", () => {
       "POST https://appleid.apple.com/auth/token",
       "POST https://appleid.apple.com/auth/revoke",
       `DELETE https://api.clerk.com/v1/users/${first.subject}`,
+      `POST ${POSTHOG_BULK_DELETE}`,
     ]);
     expect(calls[1].body).toContain("code=auth-code");
     expect(calls[2].body).toContain("token=apple-refresh-token");
@@ -575,7 +577,6 @@ describe("PostHog delete", () => {
   const jobOf = (t: TestConvex) => t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
 
   test("deletes the person's events and recordings with the Clerk user", async () => {
-    process.env.POSTHOG_PERSONAL_API_KEY = "phx_test_posthog";
     const t = newTest();
     const calls = stubNetwork({ noAppleAccount: true });
     const { first } = await createCouple(t);
@@ -594,7 +595,6 @@ describe("PostHog delete", () => {
   });
 
   test("a failed PostHog delete keeps the job open until a later try works", async () => {
-    process.env.POSTHOG_PERSONAL_API_KEY = "phx_test_posthog";
     const t = newTest();
     stubNetwork({ noAppleAccount: true, posthogStatus: 500 });
     const { first } = await createCouple(t);
@@ -608,7 +608,6 @@ describe("PostHog delete", () => {
   });
 
   test("a deletion error inside an accepted response keeps the job open", async () => {
-    process.env.POSTHOG_PERSONAL_API_KEY = "phx_test_posthog";
     const t = newTest();
     stubNetwork({ noAppleAccount: true, posthogDeletionErrors: true });
     const { first } = await createCouple(t);
@@ -624,13 +623,17 @@ describe("PostHog delete", () => {
     expect(await jobOf(t)).toMatchObject({ status: "completed" });
   });
 
-  test("a backend without a PostHog key skips the call", async () => {
+  test("a backend without a PostHog key keeps the job open", async () => {
+    delete process.env.POSTHOG_PERSONAL_API_KEY;
     const t = newTest();
     const calls = stubNetwork({ noAppleAccount: true });
     const { first } = await createCouple(t);
 
-    expect((await first.as.action(api.identity.delete_account, {})).authDeleteStatus).toBe("completed");
+    expect((await first.as.action(api.identity.delete_account, {})).authDeleteStatus).toBe("queued");
     expect(calls.some((call) => call.url === POSTHOG_BULK_DELETE)).toBe(false);
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await jobOf(t)).toMatchObject({
+      status: "ready_for_auth_delete",
+      last_auth_delete_error_code: "analytics_configuration_missing",
+    });
   });
 });
