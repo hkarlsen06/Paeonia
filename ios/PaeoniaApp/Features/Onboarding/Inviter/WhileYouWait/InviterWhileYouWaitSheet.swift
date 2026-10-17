@@ -1,11 +1,11 @@
 import SwiftUI
 
 /// Two things the inviter can make for their partner while the code is out: their first
-/// answers and a drawing for the partner's Home Screen. It sits under the code as a
-/// quiet invitation. Each row shows how far it got, and plays a small beat with hearts
-/// when it turns done. The rows open the answer flow and the drawing screen as
-/// full-screen covers.
-struct InviterWhileYouWaitSection: View {
+/// answers and a drawing for the partner's Home Screen. The invite screen's "While you
+/// wait" button opens this sheet. Each row shows how far it got, and plays a small beat
+/// with hearts when it turns done. The rows open the answer flow and the drawing screen
+/// as full-screen covers.
+struct InviterWhileYouWaitSheet: View {
     let model: InviterFirstDayModel
 
     @State private var questionsModel: FirstDayQuestionsModel?
@@ -15,43 +15,32 @@ struct InviterWhileYouWaitSection: View {
     @State private var isDrawing = false
     @State private var isOpeningQuestions = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-            header
-                .screenEntrance(order: 1, isReady: model.hasLoaded)
-            // The ids let the invite screen scroll a row into sight for its completion beat.
-            questionsRow
-                .id(InviterFirstDayModel.Item.questions)
-                .screenEntrance(order: 2, isReady: model.hasLoaded)
-            drawingRow
-                .id(InviterFirstDayModel.Item.drawing)
-                .screenEntrance(order: 3, isReady: model.hasLoaded)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .task {
-            await model.load()
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                Task { await model.refreshOnForeground() }
+        ScrollView {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
+                header
+                    .screenEntrance(order: 1)
+
+                VStack(spacing: PaeoniaSpacing.space12) {
+                    questionsRow
+                        .screenEntrance(order: 2)
+                    drawingRow
+                        .screenEntrance(order: 3)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.top, PaeoniaSpacing.space32)
+            .padding(.bottom, PaeoniaSpacing.space16)
         }
-        .onChange(of: model.loadFailure) { _, failure in
-            guard let failure else {
-                return
-            }
-            bannerCenter.show(.error(
-                title: String(localized: .inviterQuestionsLoadFailedTitle),
-                message: String(
-                    localized: failure == .offline
-                        ? .inviterQuestionsLoadFailedOfflineMessage
-                        : .commonActionFailedMessage
-                )
-            ))
-            model.clearLoadFailure()
-        }
+        .scrollBounceBehavior(.basedOnSize)
+        .paeoniaScreenBackground()
+        // The sheet covers the root's banner, so it mounts its own copy.
+        .paeoniaTopBanner(bannerCenter)
+        .preferredColorScheme(.dark)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         .onChange(of: model.completion) { _, completion in
             guard completion != nil else {
                 return
@@ -79,11 +68,14 @@ struct InviterWhileYouWaitSection: View {
     // MARK: Rows
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            PaeoniaCardEyebrow(.inviterWhileYouWaitTitle)
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            Text(.inviterWhileYouWaitTitle)
+                .font(PaeoniaTypography.title)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityAddTraits(.isHeader)
 
             Text(.inviterWhileYouWaitMessage)
-                .font(PaeoniaTypography.caption)
+                .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

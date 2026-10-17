@@ -91,22 +91,6 @@ struct PairingInviteContent: View {
     }
 
     private func readyContent(_ invite: PairingInvite) -> some View {
-        ScrollViewReader { proxy in
-            readyScrollView(invite)
-                // A row that turns done may sit under the buttons, so it comes into
-                // sight for its beat.
-                .onChange(of: firstDay?.completion) { _, completion in
-                    guard let completion else {
-                        return
-                    }
-                    withAnimation(PaeoniaMotion.stateChange) {
-                        proxy.scrollTo(completion.item, anchor: .center)
-                    }
-                }
-        }
-    }
-
-    private func readyScrollView(_ invite: PairingInvite) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -126,8 +110,7 @@ struct PairingInviteContent: View {
                 PairingInviteWaitingLine(notifiesOnJoin: firstDay?.notificationsAllowed == true)
 
                 if let firstDay {
-                    InviterWhileYouWaitSection(model: firstDay)
-                        .padding(.top, PaeoniaSpacing.space8)
+                    InviterWhileYouWaitButton(model: firstDay)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

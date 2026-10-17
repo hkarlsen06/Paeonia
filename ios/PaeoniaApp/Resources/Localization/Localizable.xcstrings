@@ -15549,6 +15549,42 @@
         }
       }
     },
+    "inviter.whileYouWait.button.done" : {
+      "comment" : "Invite screen: subtitle of the While you wait button once the answers and the drawing are both made.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Both are ready for your partner."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begge deler ligger klart til partneren din."
+          }
+        }
+      }
+    },
+    "inviter.whileYouWait.button.subtitle" : {
+      "comment" : "Invite screen: subtitle of the While you wait button, before both things are made.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make something for your partner to find."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lag noe partneren din finner når dere er koblet sammen."
+          }
+        }
+      }
+    },
     "inviter.whileYouWait.message" : {
       "comment" : "Invite screen: line under 'While you wait'. 'Them' is the partner who has not joined yet",
       "extractionState" : "manual",
@@ -15563,6 +15599,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lag noe til partneren din. Det ligger klart når dere er koblet sammen."
+          }
+        }
+      }
+    },
+    "inviter.whileYouWait.progress" : {
+      "comment" : "Invite screen: VoiceOver label for the progress ring on the While you wait button. First number is how many are done, second is the total.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld av %2$lld gjort"
           }
         }
       }

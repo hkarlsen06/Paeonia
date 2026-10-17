@@ -141,11 +141,14 @@ struct InviterFirstDayCheck: View {
 }
 
 /// How many of the first questions are answered, as a ring that fills, then a check.
+/// The While you wait button counts its two things with it too.
 struct InviterQuestionsProgress: View {
     let answered: Int
     let total: Int
     /// The questions are loading because the row was tapped.
-    let isLoading: Bool
+    var isLoading = false
+    /// What VoiceOver reads for the count.
+    var label: (Int, Int) -> LocalizedStringResource = { .inviterQuestionsRowProgress($0, $1) }
 
     @ScaledMetric(relativeTo: .body) private var size: CGFloat = 34
 
@@ -162,7 +165,7 @@ struct InviterQuestionsProgress: View {
         }
         .frame(minWidth: size, minHeight: size)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(total > 0 ? Text(.inviterQuestionsRowProgress(answered, total)) : Text(verbatim: ""))
+        .accessibilityLabel(total > 0 ? Text(label(answered, total)) : Text(verbatim: ""))
     }
 
     private var ring: some View {
