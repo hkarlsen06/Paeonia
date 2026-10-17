@@ -56,6 +56,14 @@ struct PostPairingEnvelope<Card: View>: View {
             cardLayer
                 .zIndex(stage >= .cardFull ? 6 : 2)
 
+            // The uncut art while it is closed, so no seam shows where the pieces
+            // meet. It goes at once when the flap starts to move.
+            art(clippedTo: Rectangle())
+                .opacity(stage >= .flapOpening ? 0 : 1)
+                .transaction { $0.animation = nil }
+                .modifier(leaving)
+                .zIndex(3.5)
+
             art(clippedTo: EnvelopePocketShape())
                 // The cut pieces carry no shadow of their own, so the pocket casts it.
                 .shadow(color: .black.opacity(0.35), radius: side * 0.05, y: side * 0.03)
@@ -121,6 +129,8 @@ struct PostPairingEnvelope<Card: View>: View {
             // around the art's rounded bottom corners.
             .frame(width: width, height: height * 0.7)
             .frame(height: height, alignment: .top)
+            // Its square corners would show behind the closed envelope's rounded ones.
+            .opacity(stage >= .flapOpening ? 1 : 0)
     }
 
     private var flap: some View {
