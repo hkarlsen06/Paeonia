@@ -7,14 +7,11 @@ struct DailyPromptCompactCard: View {
     let state: DailyChallengeCardState
     let copy: DailyPromptCardCopy
     let partnerPhotoAssetID: UUID?
-    /// The envelope pops open, for a card that just shrank from the picture card.
-    let envelopePopsOpen: Bool
     var zoomNamespace: Namespace.ID?
     var onAnswer: () -> Void
     var onOpenPartnerQuestion: (UUID) -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @State private var envelopeIsOpen = false
 
     private static let envelopeSize: CGFloat = 68
 
@@ -60,22 +57,10 @@ struct DailyPromptCompactCard: View {
         }
     }
 
+    /// The open envelope with its letter out, as the picture card left it.
     private var envelope: some View {
-        let isShut = envelopePopsOpen && !envelopeIsOpen
-        return Image(.homeEnvelopeOpen)
-            .resizable()
-            .accessibilityHidden(true)
-            .scaledToFit()
-            .frame(width: Self.envelopeSize, height: Self.envelopeSize)
-            .scaleEffect(isShut ? 0.5 : 1)
-            .rotationEffect(.degrees(isShut ? -12 : 0))
-            .opacity(isShut ? 0 : 1)
-            .onAppear {
-                guard envelopePopsOpen else { return }
-                withAnimation(.spring(duration: PaeoniaMotion.motionSlow, bounce: 0.4).delay(0.12)) {
-                    envelopeIsOpen = true
-                }
-            }
+        DailyPromptEnvelope(width: Self.envelopeSize, opening: .letterOut)
+            .frame(width: Self.envelopeSize, height: Self.envelopeSize, alignment: .bottom)
     }
 
     @ViewBuilder

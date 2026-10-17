@@ -19,11 +19,10 @@ enum PostPairingEnvelopeStage: Int, Comparable {
     }
 }
 
-/// The sealed envelope from the daily question card, holding `card`. Sized from
-/// `side`, the side of the square the card fills once it is out. The art is cut
-/// along the flap's rim into the flap and the front pocket, so the flap can fold
-/// back and the card can slide out of the pocket. The card sits between the pink
-/// inside and the pocket, and the flap moves behind the card once it is past upright.
+/// The sealed envelope from the daily question card (`PaeoniaEnvelopeLayer`), holding
+/// `card`. Sized from `side`, the side of the square the card fills once it is out.
+/// The card sits between the pink inside and the pocket and slides out of the pocket,
+/// and the flap moves behind the card once it is past upright.
 struct PostPairingEnvelope<Card: View>: View {
     let side: CGFloat
     let stage: PostPairingEnvelopeStage
@@ -31,11 +30,7 @@ struct PostPairingEnvelope<Card: View>: View {
     var float: CGFloat = 0
     @ViewBuilder let card: Card
 
-    /// The art's width over its height.
-    private static var artAspect: CGFloat { 900 / 498 }
-
     private var width: CGFloat { side * 0.9 }
-    private var height: CGFloat { width / Self.artAspect }
     /// The envelope sits low in the square, so the open flap and the card fit above it.
     private var envelopeY: CGFloat { side * 0.12 }
 
@@ -45,11 +40,12 @@ struct PostPairingEnvelope<Card: View>: View {
                 .offset(y: envelopeY)
                 .zIndex(-1)
 
-            inside
+            PaeoniaEnvelopeLayer(part: .inside, width: width)
+                .opacity(stage >= .flapOpening ? 1 : 0)
                 .modifier(leaving)
                 .zIndex(0)
 
-            flap
+            PaeoniaEnvelopeLayer(part: .flap(isOpen: stage >= .flapOpening), width: width)
                 .modifier(leaving)
                 .zIndex(stage >= .cardInside ? 1 : 4)
 
@@ -58,13 +54,13 @@ struct PostPairingEnvelope<Card: View>: View {
 
             // The uncut art while it is closed, so no seam shows where the pieces
             // meet. It goes at once when the flap starts to move.
-            art(clippedTo: Rectangle())
+            PaeoniaEnvelopeLayer(part: .uncut, width: width)
                 .opacity(stage >= .flapOpening ? 0 : 1)
                 .transaction { $0.animation = nil }
                 .modifier(leaving)
                 .zIndex(3.5)
 
-            art(clippedTo: EnvelopePocketShape())
+            PaeoniaEnvelopeLayer(part: .pocket, width: width)
                 // The cut pieces carry no shadow of their own, so the pocket casts it.
                 .shadow(color: .black.opacity(0.35), radius: side * 0.05, y: side * 0.03)
                 .modifier(leaving)
@@ -96,62 +92,6 @@ struct PostPairingEnvelope<Card: View>: View {
         )
         .frame(width: side * 1.5, height: side * 1.5)
         .allowsHitTesting(false)
-    }
-
-    private func art(clippedTo shape: some Shape) -> some View {
-        Image(.homeEnvelopeSealed)
-            .resizable()
-            .frame(width: width, height: height)
-            .clipShape(shape)
-            .accessibilityHidden(true)
-    }
-
-    /// The pink inside, seen once the flap is open. Square at the top and as wide as
-    /// the open flap, so the sides run straight through the fold.
-    private var inside: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [.paeoniaAccentPrimary, .paeoniaAccentPrimary.opacity(0.75)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            // The shade under the fold, so the open flap reads as folded back.
-            .overlay {
-                LinearGradient(
-                    colors: [.black.opacity(0.22), .clear],
-                    startPoint: .top,
-                    endPoint: UnitPoint(x: 0.5, y: 0.3)
-                )
-            }
-            // Only as tall as the opening above the pocket, so it never peeks out
-            // around the art's rounded bottom corners.
-            .frame(width: width, height: height * 0.7)
-            .frame(height: height, alignment: .top)
-            // Its square corners would show behind the closed envelope's rounded ones.
-            .opacity(stage >= .flapOpening ? 1 : 0)
-    }
-
-    private var flap: some View {
-        let isOpen = stage >= .flapOpening
-        return art(clippedTo: EnvelopeFlapShape())
-            // The back of the flap, which shows as it folds past upright. Opaque, so the
-            // art's rounded corners don't show through at the fold.
-            .overlay {
-                EnvelopeFlapShape()
-                    .fill(Color.paeoniaAccentPrimary)
-                    .frame(width: width, height: height)
-                    .opacity(isOpen ? 1 : 0)
-            }
-            .rotation3DEffect(
-                .degrees(isOpen ? 178 : 0),
-                axis: (x: 1, y: 0, z: 0),
-                anchor: .top,
-                perspective: 0.5
-            )
-            // Overlaps the body a hair when open, so no gap shows at the fold.
-            .offset(y: isOpen ? height * 0.01 : 0)
     }
 
     private var cardLayer: some View {
@@ -196,41 +136,6 @@ private struct EnvelopeLeaving: ViewModifier {
             .animation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionDefault)) {
                 $0.opacity(isGone ? 0 : 1)
             }
-    }
-}
-
-/// Where the flap's rim runs in the art, as fractions of its height: from near the
-/// top corners down to the tip in the middle.
-nonisolated private enum EnvelopeRim {
-    static let cornerY: CGFloat = 0.09
-    static let tipY: CGFloat = 0.635
-}
-
-/// The flap: the top edge down to the tip, rim included.
-nonisolated private struct EnvelopeFlapShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * EnvelopeRim.cornerY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY + rect.height * EnvelopeRim.tipY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * EnvelopeRim.cornerY))
-        path.closeSubpath()
-        return path
-    }
-}
-
-/// The front pocket: everything below the flap's rim.
-nonisolated private struct EnvelopePocketShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * EnvelopeRim.cornerY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY + rect.height * EnvelopeRim.tipY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * EnvelopeRim.cornerY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.closeSubpath()
-        return path
     }
 }
 

@@ -11,6 +11,8 @@ struct DailyPromptHeroCard: View {
     let partnerPhotoAssetID: UUID?
     /// How far the seal has broken, from 0 to 1.
     let sealBreak: Double
+    /// How far the envelope has opened after the seal broke.
+    var envelopeOpening = DailyPromptEnvelopeOpening.closed
     var zoomNamespace: Namespace.ID?
     var onAnswer: () -> Void
     var onOpenPartnerQuestion: (UUID) -> Void
@@ -26,7 +28,7 @@ struct DailyPromptHeroCard: View {
             open: onAnswer,
             loadingLabel: copy.isLoading ? .dailyChallengeHomeLoadingTitle : nil
         ) {
-            DailyPromptHeroArtwork(seal: art.seal, sealBreak: sealBreak)
+            DailyPromptHeroArtwork(seal: art.seal, sealBreak: sealBreak, opening: envelopeOpening)
         } badge: {
             if art.showsProgressBadge {
                 progressBadge

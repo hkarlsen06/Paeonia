@@ -5,15 +5,40 @@ import SwiftUI
 /// swells behind it. It follows `docs/games/hub-artwork.md`.
 ///
 /// `sealBreak` runs from 0 to 1 when the seal breaks, once today's questions are done.
-/// The seal flies off the flap and the glow flashes. The card animates it, since it is
-/// not part of the beat.
+/// The seal flies off the flap and the glow flashes. Then `opening` folds the flap back
+/// and a letter rises in the pocket. The card animates both, since they are not part of
+/// the beat.
 struct DailyPromptHeroArtwork: View {
     let seal: DailyPromptCardArt.Seal
     let sealBreak: Double
+    var opening = DailyPromptEnvelopeOpening.closed
 
     var body: some View {
         GameHubArtwork(duration: 1.2) { progress in
-            DailyPromptHeroScene(progress: progress, sealBreak: sealBreak, seal: seal)
+            DailyPromptHeroScene(progress: progress, sealBreak: sealBreak, seal: seal, opening: opening)
+        }
+    }
+}
+
+/// How far the daily card's envelope has opened.
+enum DailyPromptEnvelopeOpening {
+    case closed
+    /// The flap is folding back.
+    case flapOpening
+    /// The flap is behind the letter, which has risen in the pocket.
+    case letterOut
+}
+
+/// The daily card's envelope with a letter in its pocket, `width` wide. The open flap
+/// reaches above its frame.
+struct DailyPromptEnvelope: View {
+    let width: CGFloat
+    let opening: DailyPromptEnvelopeOpening
+
+    var body: some View {
+        PaeoniaEnvelope(width: width, isOpen: opening != .closed, isFlapBehind: opening == .letterOut) {
+            PaeoniaEnvelopeLetter(width: width * 0.55, height: width * 0.45)
+                .offset(y: opening == .letterOut ? -width * 0.06 : width * 0.07)
         }
     }
 }
@@ -25,6 +50,7 @@ private struct DailyPromptHeroScene: View, Animatable {
     var progress: Double
     var sealBreak: Double
     let seal: DailyPromptCardArt.Seal
+    let opening: DailyPromptEnvelopeOpening
 
     var animatableData: AnimatablePair<Double, Double> {
         get { AnimatablePair(progress, sealBreak) }
@@ -41,7 +67,7 @@ private struct DailyPromptHeroScene: View, Animatable {
 
     var body: some View {
         ZStack {
-            GameHubObject(image: .homeEnvelopeSealed, placement: Self.envelope)
+            envelope
             GameHubBeatGlow(
                 color: .paeoniaInkGold,
                 center: Self.flapTip,
@@ -49,6 +75,21 @@ private struct DailyPromptHeroScene: View, Animatable {
                 strength: 0.7 * GameHubArtworkTiming.ease(progress, from: 0.3, to: 1) + 0.8 * sin(.pi * sealBreak)
             )
             waxSeal
+        }
+    }
+
+    /// The envelope standing on the floor, with a soft shadow under it like the hub's
+    /// other objects (`GameHubObject`).
+    private var envelope: some View {
+        let placement = Self.envelope
+        return ZStack {
+            Ellipse()
+                .fill(Color.paeoniaBackgroundSecondary.opacity(0.4))
+                .frame(width: placement.width * 0.8, height: max(18, placement.height * 0.07))
+                .blur(radius: 10)
+                .position(x: placement.base.x, y: placement.base.y - 4)
+            DailyPromptEnvelope(width: placement.width, opening: opening)
+                .position(x: placement.base.x, y: placement.base.y - placement.height / 2)
         }
     }
 

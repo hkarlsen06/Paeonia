@@ -10,8 +10,8 @@ extension EnvironmentValues {
 ///
 /// While there is something to do (and while the questions load) it is the picture card
 /// with the sealed envelope (`DailyPromptHeroCard`). Once today's questions are done it is
-/// a short row (`DailyPromptCompactCard`). When the last answer comes in, the seal breaks
-/// first and then the card shrinks (see `playMoment`). If the card is out of sight then,
+/// a short row (`DailyPromptCompactCard`). When the last answer comes in, the seal breaks,
+/// the envelope opens and then the card shrinks (see `playMoment`). If the card is out of sight then,
 /// such as when the flow closes onto the Questions tab, the moment plays when it is next
 /// seen.
 ///
@@ -44,7 +44,7 @@ struct DailyPromptCard: View {
     /// How long the seal moment takes after the answer flow closes, from the wait for the
     /// zoom back to the card settling. The notification ask waits this long, so it doesn't
     /// slide up over the moment.
-    static let momentLength = Duration.milliseconds(1_600)
+    static let momentLength = Duration.milliseconds(2_250)
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -53,7 +53,7 @@ struct DailyPromptCard: View {
     @State private var phase = MomentPhase.idle
     @State private var sealBreak = 0.0
     @State private var sealBreaks = 0
-    @State private var envelopePopsOpen = false
+    @State private var envelopeOpening = DailyPromptEnvelopeOpening.closed
     @State private var isOnScreen = false
     @State private var momentTask: Task<Void, Never>?
 
@@ -75,6 +75,7 @@ struct DailyPromptCard: View {
                     copy: copy,
                     partnerPhotoAssetID: partnerPhotoAssetID,
                     sealBreak: sealBreak,
+                    envelopeOpening: envelopeOpening,
                     zoomNamespace: zoomNamespace,
                     onAnswer: onAnswer,
                     onOpenPartnerQuestion: onOpenPartnerQuestion
@@ -85,7 +86,6 @@ struct DailyPromptCard: View {
                     state: shown,
                     copy: copy,
                     partnerPhotoAssetID: partnerPhotoAssetID,
-                    envelopePopsOpen: envelopePopsOpen,
                     zoomNamespace: zoomNamespace,
                     onAnswer: onAnswer,
                     onOpenPartnerQuestion: onOpenPartnerQuestion
@@ -118,7 +118,7 @@ struct DailyPromptCard: View {
     private func observe(_ new: DailyChallengeCardState) {
         hold.observe(new)
         if case .active = new.kind {
-            envelopePopsOpen = false
+            envelopeOpening = .closed
         }
         if hold.isHolding(for: new) {
             if phase == .idle {
@@ -162,25 +162,41 @@ struct DailyPromptCard: View {
         }
     }
 
-    /// The seal breaks with a crack and a tap, then the card shrinks to the short row and
-    /// its envelope pops open. With Reduce Motion nothing moves: the seal is gone at once
-    /// and the card crossfades. The sound goes quiet with the silent switch. The tap stays.
+    /// The seal breaks with a crack and a tap, the flap folds back and the letter rises,
+    /// then the card shrinks to the short row. With Reduce Motion nothing moves: the seal
+    /// is gone at once and the card crossfades. The sound goes quiet with the silent
+    /// switch. The tap stays.
     private func playMoment() async {
         phase = .breaking
         sealBreaks += 1
         GameSound.fold.play(volume: 0.8)
         if reduceMotion {
             sealBreak = 1
+            try? await Task.sleep(for: .milliseconds(150))
         } else {
             withAnimation(.easeOut(duration: 0.4)) { sealBreak = 1 }
+            guard await openEnvelope() else { return }
         }
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 150 : 420))
         guard !Task.isCancelled else { return }
-        envelopePopsOpen = !reduceMotion
         let collapse = reduceMotion
             ? PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionFast)
             : PaeoniaMotion.heroMorph
         withAnimation(collapse) { endMoment() }
+    }
+
+    /// Folds the flap back once the seal is off, then lifts the letter so it shows for a
+    /// beat before the card shrinks. Returns false if the moment was cancelled.
+    private func openEnvelope() async -> Bool {
+        try? await Task.sleep(for: .milliseconds(250))
+        guard !Task.isCancelled else { return false }
+        withAnimation(.spring(duration: 0.5, bounce: 0.12)) { envelopeOpening = .flapOpening }
+        // The flap is past upright, so it can go behind the letter.
+        try? await Task.sleep(for: .milliseconds(220))
+        guard !Task.isCancelled else { return false }
+        GameSound.flip.play(volume: 0.6)
+        withAnimation(.spring(duration: 0.45, bounce: 0.25)) { envelopeOpening = .letterOut }
+        try? await Task.sleep(for: .milliseconds(600))
+        return !Task.isCancelled
     }
 
     /// Shows the card's real state.
