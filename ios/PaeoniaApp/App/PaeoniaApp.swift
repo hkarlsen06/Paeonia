@@ -20,6 +20,9 @@ struct PaeoniaApp: App {
         // publishable key leaves it unconfigured and auth reports itself unavailable.
         // The view models below read it, so they are created after this call.
         let usesClerk = !Self.isHostingUnitTests && PaeoniaClerk.configureIfPossible()
+        if !Self.isHostingUnitTests {
+            PaeoniaAnalytics.configure()
+        }
         _rootViewModel = State(
             initialValue: RootViewModel(
                 authProviderSessionIsActive: usesClerk ? Self.clerkSessionIsActive : nil

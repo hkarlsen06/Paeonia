@@ -69,6 +69,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             .sheet(isPresented: isEditingMark) {
                 if let model = viewModel.markEditor {
                     BoardMarkEditorView(color: viewModel.meInfo.style.color, model: model)
+                        .analyticsScreen("mark_editor")
                 }
             }
             .gameTutorial(tutorial, isPresented: $showsTutorial)

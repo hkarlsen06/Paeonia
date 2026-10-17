@@ -22577,6 +22577,60 @@
         }
       }
     },
+    "privacySafety.usage.sectionTitle" : {
+      "comment" : "Section title on the privacy and safety screen above the switch for sharing usage statistics with Paeonia",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Help improve Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjelp oss å gjøre Paeonia bedre"
+          }
+        }
+      }
+    },
+    "privacySafety.usage.toggleDescription" : {
+      "comment" : "Explains the usage statistics switch. Must say that text, photos and drawings are hidden and that the data is never sold.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows us which parts of Paeonia get used and when the app crashes. We also see recordings of the screens you move through, with all text, photos, drawings and the camera hidden. Only Paeonia sees this, and we never sell it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viser oss hvilke deler av Paeonia som blir brukt, og når appen krasjer. Vi ser også opptak av skjermene du går gjennom, der all tekst, alle bilder, tegninger og kameraet er skjult. Bare Paeonia ser dette, og vi selger det aldri."
+          }
+        }
+      }
+    },
+    "privacySafety.usage.toggleTitle" : {
+      "comment" : "Switch that lets Paeonia collect usage statistics, screen recordings with all content hidden, and crash reports from this phone",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share usage statistics"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del bruksstatistikk"
+          }
+        }
+      }
+    },
     "reportAndLeave.block.description" : {
       "comment" : "Description of the optional block toggle. The placeholder is the partner name.",
       "extractionState" : "manual",

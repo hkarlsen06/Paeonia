@@ -11,6 +11,7 @@ struct PrivacySafetyView: View {
     private let operationProvider: (any SyncClientOperationProviding)?
     @State private var viewModel: PrivacySafetyViewModel
     @State private var isShowingCorrectionRequest = false
+    @State private var isSharingUsage = PaeoniaAnalytics.isSharingEnabled
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     @MainActor
@@ -38,6 +39,10 @@ struct PrivacySafetyView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 privacyRequestsSection
+
+                if PaeoniaAnalytics.isAvailable {
+                    usageSection
+                }
 
                 if let partnerUserID {
                     safetySection(partnerUserID: partnerUserID)
@@ -69,6 +74,7 @@ struct PrivacySafetyView: View {
         }
         .sheet(isPresented: $isShowingCorrectionRequest) {
             PrivacyCorrectionRequestView(viewModel: viewModel)
+                .analyticsScreen("privacy_correction")
         }
     }
 
@@ -102,6 +108,22 @@ struct PrivacySafetyView: View {
         }
     }
 
+    private var usageSection: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            sectionHeader(.privacySafetyUsageSectionTitle)
+
+            PaeoniaCard {
+                Toggle(isOn: $isSharingUsage) {
+                    Text(.privacySafetyUsageToggleTitle)
+                    Text(.privacySafetyUsageToggleDescription)
+                }
+            }
+            .onChange(of: isSharingUsage) { _, isSharing in
+                PaeoniaAnalytics.isSharingEnabled = isSharing
+            }
+        }
+    }
+
     private func safetySection(partnerUserID: UUID) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             sectionHeader(.privacySafetySafetySectionTitle)
@@ -115,6 +137,7 @@ struct PrivacySafetyView: View {
                         operationProvider: operationProvider,
                         onReportedAndLeft: onReportedAndLeft
                     )
+                    .analyticsScreen("report_and_leave")
                 } label: {
                     PaeoniaDisclosureRow(
                         title: .privacySafetyReportTitle(partnerName),

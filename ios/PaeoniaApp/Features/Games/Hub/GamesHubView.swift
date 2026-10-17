@@ -64,6 +64,7 @@ struct GamesHubView: View {
         }
         .sheet(isPresented: $isChangingSettings) {
             GamesSettingsSheet(viewModel: viewModel)
+                .analyticsScreen("games_settings")
         }
         .accessibilityIdentifier("games.hub")
     }

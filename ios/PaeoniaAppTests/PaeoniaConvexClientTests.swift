@@ -306,6 +306,33 @@ struct PaeoniaConvexClientTests {
     }
 }
 
+// In an extension so the suite's struct stays a readable length. The tests still
+// run one at a time with the rest of the suite, because they share the stub.
+extension PaeoniaConvexClientTests {
+    @Test func onlySucceededWritesReachTheWriteObserver() async throws {
+        let paths = PathRecorder()
+        PaeoniaConvexClient.setWriteObserver { paths.record($0) }
+        StubURLProtocol.handler = { request in
+            let body = (try? JSONSerialization.jsonObject(with: request.bodyData)) as? [String: Any]
+            if body?["path"] as? String == "observerTest:failing_write" {
+                return (200, Data(#"{"status":"error","errorMessage":"no"}"#.utf8))
+            }
+            return (200, Data(#"{"status":"success","value":null}"#.utf8))
+        }
+        let client = Self.makeClient()
+
+        try await client.mutation("observerTest:write")
+        try await client.query("observerTest:read")
+        await #expect(throws: PaeoniaConvexError.self) {
+            try await client.mutation("observerTest:failing_write")
+        }
+        let _: PaeoniaConvexIgnoredResult = try await client.action("observerTest:action")
+
+        // Other suites may send their own writes meanwhile, so only this test's paths count.
+        #expect(paths.all.filter { $0.hasPrefix("observerTest:") } == ["observerTest:write", "observerTest:action"])
+    }
+}
+
 private extension URLRequest {
     /// URLSession moves `httpBody` into a stream before it reaches a URLProtocol.
     var bodyData: Data {
@@ -340,6 +367,19 @@ private final class RequestRecorder: @unchecked Sendable {
 
     func record(_ request: URLRequest) {
         lock.withLock { requests.append(request) }
+    }
+}
+
+private final class PathRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var paths: [String] = []
+
+    var all: [String] {
+        lock.withLock { paths }
+    }
+
+    func record(_ path: String) {
+        lock.withLock { paths.append(path) }
     }
 }
 

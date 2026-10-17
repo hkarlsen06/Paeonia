@@ -128,6 +128,7 @@ struct PaywallView: View {
                 submitTitle: .pairingCodeEntrySubmit,
                 onSubmit: { await onSubmitInviteCode($0) }
             )
+            .analyticsScreen("code_entry")
         }
         .modifier(
             PaywallConfirmationAlerts(

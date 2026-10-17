@@ -106,6 +106,7 @@ struct DailyChallengeScreen: View {
                     operationProvider: privacyOperationProvider,
                     onReportedAndLeft: onReportedAndLeft
                 )
+                .analyticsScreen("report_and_leave")
             }
         }
         .navigationDestination(item: chatQuestion) { question in
@@ -115,6 +116,7 @@ struct DailyChallengeScreen: View {
                 participants: viewModel.participants,
                 onReport: { reportTarget = $0 }
             )
+            .analyticsScreen("daily_chat")
             .id(question.id)
         }
         .onChange(of: viewModel.notice) { _, notice in

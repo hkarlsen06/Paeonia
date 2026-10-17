@@ -57,6 +57,8 @@
 	<string>$(PAEONIA_CLERK_PUBLISHABLE_KEY)</string>
 	<key>PaeoniaConvexURL</key>
 	<string>$(PAEONIA_CONVEX_URL)</string>
+	<key>PaeoniaPostHogProjectKey</key>
+	<string>$(PAEONIA_POSTHOG_PROJECT_KEY)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

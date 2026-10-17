@@ -64,6 +64,7 @@ struct StoryChainStoryView: View {
         )
         .sheet(isPresented: $showsDareSheet) {
             StoryChainDareSheet(viewModel: viewModel)
+                .analyticsScreen("story_chain_dare")
         }
         .onChange(of: viewModel.phase, initial: true) { _, new in
             phaseChanged(to: new)

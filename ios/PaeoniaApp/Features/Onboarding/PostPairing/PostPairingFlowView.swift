@@ -25,6 +25,7 @@ struct PostPairingFlowView: View {
             ZStack {
                 if let screen = model.screen {
                     screenView(screen)
+                        .analyticsScreen("post_pairing_\(screen)")
                         .id(screen)
                         .transition(.opacity)
                 }

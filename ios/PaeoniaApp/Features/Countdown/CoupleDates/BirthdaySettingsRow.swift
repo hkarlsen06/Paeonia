@@ -34,6 +34,7 @@ struct BirthdaySettingsRow: View {
         }
         .sheet(isPresented: $isEditing) {
             CoupleDateEditorSheet(editor: .birthday(userID), coupleDates: coupleDates, names: names)
+                .analyticsScreen("couple_date_editor")
         }
     }
 

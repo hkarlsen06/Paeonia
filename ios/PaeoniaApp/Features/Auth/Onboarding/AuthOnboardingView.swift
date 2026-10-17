@@ -72,6 +72,7 @@ struct AuthOnboardingView: View {
             case .profile:
                 profilePage
                     .transition(pageTransition(edge: .leading))
+                    .analyticsScreen("profile_setup")
             case .startDate:
                 AuthOnboardingStartDatePage(
                     isSaving: isSaving,
@@ -80,6 +81,7 @@ struct AuthOnboardingView: View {
                     onFinish: { submit() }
                 )
                 .transition(pageTransition(edge: .trailing))
+                .analyticsScreen("start_date")
             }
         }
         .animation(PaeoniaMotion.meaningfulMoment, value: page)

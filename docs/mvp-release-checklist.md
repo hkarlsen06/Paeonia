@@ -52,6 +52,11 @@ These block TestFlight/App Review until resolved.
 - [x] Subscription terms are clear before purchase.
 - [ ] App icon is final in the app target, widget target, and App Store assets.
 - [ ] App Store privacy labels match the actual data collected by the build.
+- [ ] App Store privacy labels include the PostHog data: product interaction, other usage data (replays) and crash data, linked to the user, not used for tracking.
+- [ ] A lawyer confirms that usage statistics may be on by default with an opt-out under Norway's ekomloven (in force since 1 January 2025), or the app asks first.
+- [x] `POSTHOG_PERSONAL_API_KEY` is set on the hosted backend, so account deletion also deletes the person's PostHog events and recordings.
+- [x] The Mac that archives has `posthog-cli` installed and signed in (`posthog-cli login`, EU), so the Upload dSYMs to PostHog phase can send symbols. An archive fails without it.
+- [ ] A PostHog session replay was watched on a device and shows no readable text, photos, drawings or map.
 
 ## Repository And Build Hygiene
 

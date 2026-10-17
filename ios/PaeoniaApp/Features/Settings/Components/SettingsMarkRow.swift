@@ -24,6 +24,7 @@ struct SettingsMarkRow: View {
         .sheet(isPresented: isEditing) {
             if let editor {
                 BoardMarkEditorView(color: .boardGameMine, model: editor)
+                    .analyticsScreen("mark_editor")
             }
         }
     }

@@ -129,6 +129,9 @@ extension RootViewModel {
         invalidateAccessResolution()
         leaveRelationshipSurfaces()
         route = .deletingAccount(previousRoute.session)
+        // Right away, because RootView sees the new route only after this
+        // request has gone out.
+        PaeoniaAnalytics.accountDeletionStarted()
 
         do {
             let outcome = try await authService.requestAccountDeletion(
@@ -137,6 +140,7 @@ extension RootViewModel {
             requiresManualAppleRevocation = outcome == .manualAppleRevocationRequired
             await endSession(purgingLocalData: true)
         } catch {
+            PaeoniaAnalytics.accountDeletionFailed()
             route = previousRoute
             notice = .deleteAccountFailed
         }

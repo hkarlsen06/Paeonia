@@ -40,9 +40,11 @@ struct HomeStoriesStrip: View {
                     viewer = nil
                 }
             )
+            .analyticsScreen("story_viewer")
         }
         .sheet(isPresented: $isComposing) {
             StoryComposerView(viewModel: viewModel, partnerName: people.partnerName)
+                .analyticsScreen("story_composer")
         }
         // The note screen runs its own opening and closing, flying the avatar between
         // Home and the middle of the screen, so the cover appears and leaves without animation.
@@ -55,6 +57,7 @@ struct HomeStoriesStrip: View {
             ) {
                 withoutAnimation { openNote = nil }
             }
+            .analyticsScreen("story_note")
             .presentationBackground(.clear)
         }
     }

@@ -80,8 +80,10 @@ struct WidgetDrawingView: View {
                     viewModel: historyViewModel,
                     thumbnailLoader: historyThumbnailLoader
                 )
+                .analyticsScreen("drawing_history")
             } else {
                 WidgetDrawingHistoryView()
+                    .analyticsScreen("drawing_history")
             }
         }
         .task {

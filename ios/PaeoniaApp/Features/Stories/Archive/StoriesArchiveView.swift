@@ -18,6 +18,7 @@ struct StoriesArchiveView: View {
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(item: $viewer) { content in
                 StoryViewer(content: content, people: people, viewModel: viewModel)
+                    .analyticsScreen("story_viewer")
             }
     }
 

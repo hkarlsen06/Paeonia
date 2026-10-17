@@ -147,6 +147,12 @@ struct RootView: View {
             .onChange(of: viewModel.currentSession?.id, initial: true) { previousUserID, userID in
                 sessionChanged(from: previousUserID, to: userID)
             }
+            .onChange(of: viewModel.currentActiveCoupleID, initial: true) { _, coupleID in
+                PaeoniaAnalytics.setCouple(coupleID)
+            }
+            .onChange(of: analyticsAccount, initial: true) { _, account in
+                PaeoniaAnalytics.follow(account)
+            }
             .onReceive(NotificationCenter.default.publisher(for: .paeoniaSubscriptionDidUpdate)) { _ in
                 guard allowsSystemIntegrations else {
                     return
@@ -239,6 +245,19 @@ struct RootView: View {
                 }
             }
         )
+    }
+
+    /// Read from the screen shown rather than from session changes, because a
+    /// session that ended while the app was closed never shows up as a change.
+    var analyticsAccount: PaeoniaAnalytics.Account {
+        switch viewModel.state {
+        case .launching:
+            .unknown
+        case .unauthenticated, .deletingAccount:
+            .signedOut
+        default:
+            viewModel.currentSession.map { .signedIn(userID: $0.id) } ?? .unknown
+        }
     }
 
     var mainTabSelection: Binding<MainTab> {

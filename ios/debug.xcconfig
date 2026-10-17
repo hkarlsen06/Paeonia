@@ -11,6 +11,11 @@ PAEONIA_CONVEX_URL = https:/$()/api.paeonia.no
 // production Clerk instance exists. An empty key disables sign-in.
 PAEONIA_CLERK_PUBLISHABLE_KEY = pk_test_dmVyaWZpZWQtYmFkZ2VyLTEwLmNsZXJrLmFjY291bnRzLmRldiQ
 
+// PostHog project key (phc_...) for usage statistics, session replay and crash
+// reports. It can only send events, so it is safe in the app. The project is on
+// EU Cloud. An empty key turns all of it off.
+PAEONIA_POSTHOG_PROJECT_KEY = phc_ruqiKvB8F5xvh5fMRt7oRAWpL8dhbvKjhzAhTQT3qqGg
+
 // Optional and untracked. scripts/local-backend writes it to point Debug builds
 // of a worktree at that worktree's local Convex backend. Last, so it overrides.
 #include? "local.xcconfig"

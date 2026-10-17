@@ -131,6 +131,7 @@ struct DailyPartnerAnswerFlow: View {
                 sendingAnswer: viewModel.sendingPreview(for: liveQuestion),
                 onClose: dismiss
             )
+            .analyticsScreen("daily_chat")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: dismiss) {
@@ -149,6 +150,7 @@ struct DailyPartnerAnswerFlow: View {
                         operationProvider: privacyOperationProvider,
                         onReportedAndLeft: onReportedAndLeft
                     )
+                    .analyticsScreen("report_and_leave")
                 }
             }
         }

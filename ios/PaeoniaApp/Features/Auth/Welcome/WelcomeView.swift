@@ -68,6 +68,7 @@ struct WelcomeView: View {
                 onSubmitInviteCode(code)
                 return true
             }
+            .analyticsScreen("code_entry")
         }
     }
 

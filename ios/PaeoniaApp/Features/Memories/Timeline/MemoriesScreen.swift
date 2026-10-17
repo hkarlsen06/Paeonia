@@ -57,6 +57,7 @@ struct MemoriesScreen: View {
             .navigationDestination(isPresented: $isShowingStories) {
                 if let stories {
                     StoriesArchiveView(viewModel: stories, people: storyPeople)
+                        .analyticsScreen("stories_archive")
                 }
             }
             .navigationDestination(for: UUID.self) { memoryID in
@@ -65,6 +66,7 @@ struct MemoriesScreen: View {
                     currentUserID: currentUserID,
                     viewModel: viewModel
                 )
+                .analyticsScreen("memory_detail")
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active { viewModel.flushDraft() }

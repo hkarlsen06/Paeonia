@@ -16,12 +16,14 @@ struct GamesRootView: View {
     var body: some View {
         NavigationStack(path: $path) {
             content
+                .analyticsScreen("games")
                 .paeoniaTabBackdrop()
                 // Hide the tab bar from the stack root, in the same update as the push. Hiding
                 // it from the pushed screen shifts the content and brings the bar back late.
                 .toolbar(hidesTabBarInGame && !path.isEmpty ? .hidden : .automatic, for: .tabBar)
                 .navigationDestination(for: GamesDestination.self) { destination in
                     viewModel.screen(for: destination)
+                        .analyticsScreen(destination.analyticsName)
                 }
         }
         .onChange(of: viewModel.notice) { _, notice in
@@ -31,6 +33,7 @@ struct GamesRootView: View {
         }
         .sheet(isPresented: isShowingIntro) {
             GamesIntroSheet(viewModel: viewModel)
+                .analyticsScreen("games_intro")
         }
         // The hub, Home and notifications open screens through the view model, so
         // the first game can show the first-time steps before it.
@@ -99,5 +102,24 @@ struct GamesRootView: View {
         }
         .navigationTitle(Text(.mainTabGames))
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private extension GamesDestination {
+    /// The screen's name in usage statistics, such as `game_ludo`.
+    var analyticsName: String {
+        switch self {
+        case let .game(kind): "game_\(kind.rawValue)"
+        case .drawAndGuessHistory: "draw_and_guess_history"
+        case .drawAndGuessHistoryDetail: "draw_and_guess_history_detail"
+        case .storyChainHistory: "story_chain_history"
+        case .storyChainHistoryDetail: "story_chain_history_detail"
+        case .mindMeldHistory: "mind_meld_history"
+        case .mindMeldHistoryDetail: "mind_meld_history_detail"
+        case .exquisiteCorpseHistory: "exquisite_corpse_history"
+        case .exquisiteCorpseHistoryDetail: "exquisite_corpse_history_detail"
+        case let .boardGameHistory(kind): "\(kind.rawValue)_history"
+        case let .boardGameReplay(kind, _): "\(kind.rawValue)_replay"
+        }
     }
 }

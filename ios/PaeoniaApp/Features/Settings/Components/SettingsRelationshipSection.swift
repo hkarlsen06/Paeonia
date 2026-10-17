@@ -35,6 +35,7 @@ struct SettingsRelationshipSection: View {
                     viewModel: locationViewModel,
                     partnerName: partnerName
                 )
+                .analyticsScreen("settings_location")
             } label: {
                 Label {
                     Text(.settingsLocationSectionTitle)
@@ -54,6 +55,7 @@ struct SettingsRelationshipSection: View {
                 yourBirthdayRow: yourBirthdayRow,
                 partnerBirthdayRow: partnerBirthdayRow
             )
+            .analyticsScreen("settings_dates")
         } label: {
             Label {
                 Text(.settingsRelationshipDatesTitle)

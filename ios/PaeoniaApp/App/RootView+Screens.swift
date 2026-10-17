@@ -89,12 +89,14 @@ extension RootView {
                 isWorking: viewModel.isWorking,
                 onAcknowledge: acknowledgeRelationshipEnded
             )
+            .analyticsScreen("relationship_ended")
         case .accountClosed:
             AccountClosedView(
                 isWorking: viewModel.isWorking,
                 onSignOut: signOut,
                 onDeleteAccount: deleteAccount
             )
+            .analyticsScreen("account_closed")
         case .deletingAccount:
             AuthDeletingAccountView()
         }
@@ -123,6 +125,7 @@ extension RootView {
             onGoogleSignIn: signInWithGoogle,
             onSubmitInviteCode: captureInviteCode
         )
+        .analyticsScreen("welcome")
     }
 
     private var paywallScreen: some View {
@@ -138,6 +141,7 @@ extension RootView {
             viewModel: featureDependencies.paywallViewModel,
             presentationOverride: featureDependencies.paywallPresentationOverride
         )
+        .analyticsScreen(viewModel.state == .pairedPaywalled ? "paywall_paired" : "paywall")
     }
 
     /// A paired-but-unentitled couple gets the paired paywall (clear partner
@@ -161,6 +165,7 @@ extension RootView {
             onSubmitJoinCode: submitJoinCode,
             onRefreshAccess: refreshPairing
         )
+        .analyticsScreen("invite")
         .environment(\.inviterTaskOpenChanged, InviterTaskOpenAction { isOpen in
             inviterTaskIsOpen = isOpen
             // A drawing sent after the partner joined was saved as waiting. The
@@ -186,6 +191,7 @@ extension RootView {
             onSignOut: signOut,
             onDeleteAccount: deleteAccount
         )
+        .analyticsScreen("join")
     }
 
     private var pairedScaffold: some View {
@@ -328,6 +334,7 @@ extension RootView {
                 dismissPairingCelebration()
             }
         )
+        .analyticsScreen("pairing_celebration")
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.screenTopSpacing)
         .padding(.bottom, PaeoniaSpacing.space16)

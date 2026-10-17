@@ -50,6 +50,7 @@ struct PairingInviteContent: View {
                     submitTitle: .pairingCodeEntrySubmit,
                     onSubmit: { await onSubmitJoinCode($0) }
                 )
+                .analyticsScreen("code_entry")
             }
     }
 

@@ -118,12 +118,14 @@ extension RootView {
                 onShare: enableLocationSharing,
                 onNotNow: dismissLocationSharingPrimer
             )
+            .analyticsScreen("location_primer")
         case .notifications:
             PushPermissionPrimerView(
                 partnerName: partnerNameForCopy,
                 onEnable: enablePushNotifications,
                 onNotNow: dismissPushPermissionPrimer
             )
+            .analyticsScreen("push_primer")
         }
     }
 

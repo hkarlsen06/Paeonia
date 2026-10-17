@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// Calls Convex functions over the HTTP API (`/api/query`, `/api/mutation`, `/api/action`).
 ///
@@ -12,6 +13,15 @@ nonisolated final class PaeoniaConvexClient: Sendable {
     private let deploymentURL: URL
     private let session: URLSession
     private let tokenProvider: TokenProvider
+
+    /// Called with the function's path after each mutation or action that
+    /// succeeds. The app counts these as feature use (`PaeoniaAnalytics`). The
+    /// widget leaves it unset.
+    private static let writeObserver = Mutex<(@Sendable (String) -> Void)?>(nil)
+
+    static func setWriteObserver(_ observer: @escaping @Sendable (String) -> Void) {
+        writeObserver.withLock { $0 = observer }
+    }
 
     init(
         deploymentURL: URL,
@@ -86,6 +96,9 @@ nonisolated final class PaeoniaConvexClient: Sendable {
         let envelope = try Self.decoder.decode(ResponseEnvelope<Result>.self, from: body)
         switch envelope.status {
         case "success":
+            if kind != "query" {
+                Self.writeObserver.withLock { $0 }?(path)
+            }
             guard let value = envelope.value else {
                 // `null` results decode only into optional or ignored result types.
                 return try Self.decoder.decode(Result.self, from: Data("null".utf8))

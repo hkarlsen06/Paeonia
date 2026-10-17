@@ -41,6 +41,7 @@ struct RelationshipDateSettingsRow: View {
                 isSaving: isSaving,
                 onSave: onSave
             )
+            .analyticsScreen("start_date_editor")
         }
     }
 

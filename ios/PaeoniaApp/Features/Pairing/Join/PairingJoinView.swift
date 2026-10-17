@@ -76,6 +76,7 @@ struct PairingJoinView: View {
                 submitTitle: .pairingCodeEntrySubmit,
                 onSubmit: { await onSubmitCode($0) }
             )
+            .analyticsScreen("code_entry")
         }
         .alert(Text(.authDeleteAccountConfirmTitle), isPresented: $isConfirmingDelete) {
             Button(role: .destructive, action: onDeleteAccount) {

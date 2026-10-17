@@ -24,8 +24,10 @@ extension View {
             if let viewModel = dependencies.widgetHistoryViewModel,
                let thumbnailLoader = dependencies.widgetHistoryThumbnailLoader {
                 WidgetDrawingHistoryView(viewModel: viewModel, thumbnailLoader: thumbnailLoader)
+                    .analyticsScreen("drawing_history")
             } else {
                 WidgetDrawingHistoryView()
+                    .analyticsScreen("drawing_history")
             }
         }
     }

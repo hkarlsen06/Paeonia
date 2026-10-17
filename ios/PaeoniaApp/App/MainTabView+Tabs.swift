@@ -62,6 +62,7 @@ extension MainTabView {
                 storyPeople: storyPeople,
                 onLocalChange: actions.syncAfterLocalChange
             )
+            .analyticsScreen("memories")
         }
     }
 
@@ -70,6 +71,7 @@ extension MainTabView {
             // Home hides its navigation bar and draws the brand mark and streak in its
             // own header. Screens pushed from it keep their bar.
             pairedHome
+                .analyticsScreen("home")
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(isPresented: widgetDrawingPresented) {
                     WidgetDrawingView(
@@ -80,6 +82,7 @@ extension MainTabView {
                         historyViewModel: dependencies.widgetHistoryViewModel,
                         historyThumbnailLoader: dependencies.widgetHistoryThumbnailLoader
                     )
+                    .analyticsScreen("widget_drawing")
                 }
                 .lookBackDrawingHistory(isPresented: $isLookBackDrawingHistoryPresented, dependencies: dependencies)
                 .onChange(of: widgetDrawingPresented.wrappedValue) { _, isPresented in
@@ -159,12 +162,14 @@ extension MainTabView {
                 privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
                 onReportedAndLeft: actions.leftRelationship
             )
+            .analyticsScreen("questions")
         }
     }
 
     private var usTab: some View {
         NavigationStack {
             settingsView
+                .analyticsScreen("us")
         }
     }
 

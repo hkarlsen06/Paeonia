@@ -269,6 +269,8 @@ private struct LudoSceneView: UIViewRepresentable {
         let room = LudoSceneStyle.color(LudoSceneStyle.roomHex)
         view.backgroundColor = room
         view.environment.background = .color(room)
+        // The pawns carry each player's drawn mark, and replays record a 3D view as pixels.
+        view.accessibilityIdentifier = PaeoniaAnalytics.hiddenFromReplaysAccessibilityToken
         // The key light draws the shadows. ARView would also put a soft blob under every
         // model, and the camera effects meant to match a real camera's picture only blur the board.
         view.renderOptions.formUnion([

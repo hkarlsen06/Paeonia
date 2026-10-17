@@ -34,6 +34,7 @@ extension MainTabView {
                     claimStreakMilestone: claimStreakMilestone,
                     onOpenQuestionChat: openQuestionChatFromAnswerFlow
                 )
+                .analyticsScreen("daily_answer")
                 .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
                 .environment(bannerCenter)
                 .paeoniaTopBanner(bannerCenter)
@@ -50,6 +51,7 @@ extension MainTabView {
                     viewModel: makeStreakRestoreViewModel(),
                     onClose: { showStreakRestore = false }
                 )
+                .analyticsScreen("streak_restore")
                 .presentationDetents([.large])
                 .presentationBackground(.paeoniaSurfacePrimary)
                 .paeoniaTopBanner(bannerCenter)
@@ -60,6 +62,7 @@ extension MainTabView {
                     streak: dailyChallengeViewModel.streak,
                     onClose: { showStreakDetail = false }
                 )
+                .analyticsScreen("streak_detail")
                 .presentationDetents([.large])
                 .presentationBackground(.paeoniaSurfacePrimary)
             }
@@ -104,6 +107,7 @@ extension MainTabView {
         content
             .sheet(item: $streakMilestone) { moment in
                 StreakMilestoneView(days: moment.days, onClose: { streakMilestone = nil })
+                    .analyticsScreen("streak_milestone")
                     .presentationDetents([.large])
                     .presentationBackground(.paeoniaSurfacePrimary)
             }

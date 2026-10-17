@@ -204,6 +204,7 @@ extension SettingsView {
                     isLoggingOut: isLoggingOut
                 )
             )
+            .analyticsScreen("settings_profile")
         } label: {
             HStack(spacing: PaeoniaSpacing.space16) {
                 PaeoniaProfilePhotoAvatar(
@@ -252,10 +253,8 @@ extension SettingsView {
     private var appSection: some View {
         Section {
             NavigationLink {
-                NotificationSettingsView(
-                    viewModel: viewModel,
-                    partnerName: partnerName
-                )
+                NotificationSettingsView(viewModel: viewModel, partnerName: partnerName)
+                    .analyticsScreen("settings_notifications")
             } label: {
                 Label {
                     Text(.settingsNotificationsSectionTitle)
@@ -275,6 +274,7 @@ extension SettingsView {
                         await onPurchasesRestored()
                     }
                 )
+                .analyticsScreen("settings_purchases")
             } label: {
                 Label {
                     Text(.settingsPurchasesSectionTitle)
@@ -300,6 +300,7 @@ extension SettingsView {
                     operationProvider: privacyOperationProvider,
                     onReportedAndLeft: onLeftRelationship
                 )
+                .analyticsScreen("privacy_safety")
             } label: {
                 Label {
                     Text(.privacySafetyTitle)

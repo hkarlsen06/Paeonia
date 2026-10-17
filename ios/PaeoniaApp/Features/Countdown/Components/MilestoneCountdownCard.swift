@@ -81,6 +81,7 @@ struct MilestoneCountdownCard: View {
                 isSaving: isSaving,
                 onSave: onSave
             )
+            .analyticsScreen("start_date_editor")
         }
         .sheet(isPresented: $isTimelinePresented) {
             RelationshipTimelineView(
@@ -90,6 +91,7 @@ struct MilestoneCountdownCard: View {
                 coupleDates: coupleDates,
                 names: names
             )
+            .analyticsScreen("relationship_timeline")
         }
     }
 

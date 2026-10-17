@@ -18,6 +18,7 @@
 		2A2D06022FE2000000A7BE1A /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D06042FE2000000A7BE1A /* ClerkKit */; };
 		2A2D07012FE3000000A7BE1A /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D07042FE3000000A7BE1A /* ConvexMobile */; };
 		2A2D07022FE3000000A7BE1A /* ClerkConvex in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D07062FE3000000A7BE1A /* ClerkConvex */; };
+		2A2D08012FE4000000A7BE1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D08032FE4000000A7BE1A /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -171,6 +172,7 @@
 				2A2D06012FE2000000A7BE1A /* ClerkKit in Frameworks */,
 				2A2D07012FE3000000A7BE1A /* ConvexMobile in Frameworks */,
 				2A2D07022FE3000000A7BE1A /* ClerkConvex in Frameworks */,
+				2A2D08012FE4000000A7BE1A /* PostHog in Frameworks */,
 				2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */,
 				2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */,
 			);
@@ -251,6 +253,7 @@
 				000000000000000130000000 /* Frameworks */,
 				000000000000000140000000 /* Resources */,
 				2A2D03542FDD045F00A7BE1A /* Embed Foundation Extensions */,
+				2A2D08042FE4000000A7BE1A /* Upload dSYMs to PostHog */,
 			);
 			buildRules = (
 			);
@@ -269,6 +272,7 @@
 				2A2D06042FE2000000A7BE1A /* ClerkKit */,
 				2A2D07042FE3000000A7BE1A /* ConvexMobile */,
 				2A2D07062FE3000000A7BE1A /* ClerkConvex */,
+				2A2D08032FE4000000A7BE1A /* PostHog */,
 				2A2D04132FE0000000A7BE1A /* CropViewController */,
 				2A2D04152FE0000000A7BE1A /* TOCropViewController */,
 			);
@@ -402,6 +406,7 @@
 				2A2D06032FE2000000A7BE1A /* XCRemoteSwiftPackageReference "clerk-ios" */,
 				2A2D07032FE3000000A7BE1A /* XCRemoteSwiftPackageReference "convex-swift" */,
 				2A2D07052FE3000000A7BE1A /* XCRemoteSwiftPackageReference "clerk-convex-swift" */,
+				2A2D08022FE4000000A7BE1A /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 			);
 			preferredProjectObjectVersion = 90;
@@ -445,6 +450,29 @@
 			);
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2A2D08042FE4000000A7BE1A /* Upload dSYMs to PostHog */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Upload dSYMs to PostHog";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Release builds send their dSYMs to PostHog, so crash reports show function names and lines.\n# Other configurations skip inside the script. It needs posthog-cli, signed in once with\n# `posthog-cli login` on the Mac that archives.\n\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/posthog-ios/build-tools/upload-symbols.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		000000000000000120000000 /* Sources */ = {
@@ -1010,6 +1038,14 @@
 				minimumVersion = 0.1.0;
 			};
 		};
+		2A2D08022FE4000000A7BE1A /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.92.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1042,6 +1078,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A2D07052FE3000000A7BE1A /* XCRemoteSwiftPackageReference "clerk-convex-swift" */;
 			productName = ClerkConvex;
+		};
+		2A2D08032FE4000000A7BE1A /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2A2D08022FE4000000A7BE1A /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -59,6 +59,7 @@ struct InviterWhileYouWaitButton: View {
         }
         .sheet(isPresented: $isOpen) {
             InviterWhileYouWaitSheet(model: model)
+                .analyticsScreen("inviter_while_you_wait")
                 .environment(bannerCenter)
         }
     }

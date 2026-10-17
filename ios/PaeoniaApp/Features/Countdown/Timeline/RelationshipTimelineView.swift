@@ -89,10 +89,12 @@ struct RelationshipTimelineView: View {
                 isSaving: isSaving,
                 onSave: onSave
             )
+            .analyticsScreen("start_date_editor")
         }
         .sheet(item: $dateEditor) { editor in
             if let coupleDates {
                 CoupleDateEditorSheet(editor: editor, coupleDates: coupleDates, names: names)
+                    .analyticsScreen("couple_date_editor")
             }
         }
     }

@@ -21,6 +21,7 @@ struct GamesIntroSheet: View {
             }
         case let .mark(model):
             BoardMarkEditorView(color: .boardGameMine, model: model)
+                .analyticsScreen("mark_editor")
         case nil:
             EmptyView()
         }
