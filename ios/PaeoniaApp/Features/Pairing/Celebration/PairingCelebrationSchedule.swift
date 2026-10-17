@@ -66,7 +66,7 @@ struct PairingCelebrationSchedule {
     static let standard = PairingCelebrationSchedule()
 }
 
-/// The haptics the timeline fires. Injected so tests can record them.
+/// The haptics and sounds the timeline fires. Injected so tests can record them.
 struct PairingCelebrationHaptics {
     var buildUp: @MainActor (CGFloat) -> Void
     var burst: @MainActor () -> Void
@@ -76,8 +76,14 @@ struct PairingCelebrationHaptics {
 
     static let live = PairingCelebrationHaptics(
         buildUp: { PaeoniaHaptics.pairingLinkBuildUp(intensity: $0) },
-        burst: { PaeoniaHaptics.pairingLinkExplosion() },
+        burst: {
+            PaeoniaHaptics.pairingLinkExplosion()
+            GameSound.win.play()
+        },
         linked: { PaeoniaHaptics.streakContinued() },
-        settledWithoutIntro: { PaeoniaHaptics.pairedSuccessfully() }
+        settledWithoutIntro: {
+            PaeoniaHaptics.pairedSuccessfully()
+            GameSound.win.play()
+        }
     )
 }

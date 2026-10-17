@@ -15,9 +15,6 @@ nonisolated final class StoryCamera: NSObject, @unchecked Sendable {
         case unavailable
     }
 
-    /// The sensor is landscape, so a portrait photo is turned this many degrees.
-    private static let portraitRotation: CGFloat = 90
-
     let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "no.paeonia.story-camera")
     private let photoOutput = AVCapturePhotoOutput()
@@ -25,6 +22,9 @@ nonisolated final class StoryCamera: NSObject, @unchecked Sendable {
     private var input: AVCaptureDeviceInput?
     private var isConfigured = false
     private var pendingCapture: CheckedContinuation<Data?, Never>?
+    private var previewLayer: AVCaptureVideoPreviewLayer?
+    private var rotationCoordinator: AVCaptureDevice.RotationCoordinator?
+    private var rotationObservation: NSKeyValueObservation?
 
     /// Asks for camera access when needed and sets the session up with the back camera.
     func prepare() async -> Availability {
@@ -65,6 +65,16 @@ nonisolated final class StoryCamera: NSObject, @unchecked Sendable {
         }
     }
 
+    /// Keeps `layer` upright as the screen turns. An iPad turns with the device, an iPhone
+    /// stays portrait.
+    func attach(_ layer: AVCaptureVideoPreviewLayer) {
+        nonisolated(unsafe) let layer = layer
+        queue.async {
+            self.previewLayer = layer
+            self.updateRotationCoordinator()
+        }
+    }
+
     /// Takes a photo as it looks in the viewfinder. Nil when the capture failed.
     func capture() async -> Data? {
         await withCheckedContinuation { continuation in
@@ -75,9 +85,10 @@ nonisolated final class StoryCamera: NSObject, @unchecked Sendable {
                     continuation.resume(returning: nil)
                     return
                 }
-                // Portrait, and the front camera mirrored like its preview.
-                if connection.isVideoRotationAngleSupported(Self.portraitRotation) {
-                    connection.videoRotationAngle = Self.portraitRotation
+                // Turned and mirrored like the viewfinder.
+                if let angle = self.rotationCoordinator?.videoRotationAngleForHorizonLevelPreview,
+                   connection.isVideoRotationAngleSupported(angle) {
+                    connection.videoRotationAngle = angle
                 }
                 if connection.isVideoMirroringSupported {
                     connection.automaticallyAdjustsVideoMirroring = false
@@ -110,7 +121,25 @@ nonisolated final class StoryCamera: NSObject, @unchecked Sendable {
             session.addOutput(photoOutput)
         }
         isConfigured = true
+        updateRotationCoordinator()
         return true
+    }
+
+    /// Runs on `queue`. The coordinator follows one camera, so a flip needs a new one.
+    private func updateRotationCoordinator() {
+        guard let device = input?.device, let previewLayer else { return }
+        let coordinator = AVCaptureDevice.RotationCoordinator(device: device, previewLayer: previewLayer)
+        rotationCoordinator = coordinator
+        nonisolated(unsafe) let layer = previewLayer
+        rotationObservation = coordinator.observe(
+            \.videoRotationAngleForHorizonLevelPreview,
+            options: [.initial, .new]
+        ) { _, change in
+            guard let angle = change.newValue else { return }
+            DispatchQueue.main.async {
+                layer.connection?.videoRotationAngle = angle
+            }
+        }
     }
 }
 
@@ -126,12 +155,13 @@ extension StoryCamera: AVCapturePhotoCaptureDelegate {
 
 /// The live camera image, filling its frame.
 struct StoryCameraPreview: UIViewRepresentable {
-    let session: AVCaptureSession
+    let camera: StoryCamera
 
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
-        view.previewLayer.session = session
+        view.previewLayer.session = camera.session
         view.previewLayer.videoGravity = .resizeAspectFill
+        camera.attach(view.previewLayer)
         return view
     }
 

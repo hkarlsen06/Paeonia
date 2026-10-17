@@ -21,7 +21,7 @@ struct StoryViewfinder: View {
             Color.black
             switch availability {
             case .ready:
-                StoryCameraPreview(session: camera.session)
+                StoryCameraPreview(camera: camera)
                     .accessibilityHidden(true)
             case .denied:
                 message(.storiesComposerCameraDenied, showsSettings: true)
