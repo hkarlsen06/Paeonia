@@ -38,7 +38,6 @@ struct PostPairingEnvelope<Card: View>: View {
     private var height: CGFloat { width / Self.artAspect }
     /// The envelope sits low in the square, so the open flap and the card fit above it.
     private var envelopeY: CGFloat { side * 0.12 }
-    private var cornerRadius: CGFloat { height * 0.08 }
 
     var body: some View {
         ZStack {
@@ -99,9 +98,10 @@ struct PostPairingEnvelope<Card: View>: View {
             .accessibilityHidden(true)
     }
 
-    /// The pink inside, seen once the flap is open.
+    /// The pink inside, seen once the flap is open. Square at the top and as wide as
+    /// the open flap, so the sides run straight through the fold.
     private var inside: some View {
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        Rectangle()
             .fill(
                 LinearGradient(
                     colors: [.paeoniaAccentPrimary, .paeoniaAccentPrimary.opacity(0.75)],
@@ -109,19 +109,28 @@ struct PostPairingEnvelope<Card: View>: View {
                     endPoint: .bottom
                 )
             )
-            // Only as tall as the opening above the pocket, and a hair narrower than
-            // the art, so it never peeks out around the art's rounded edges.
-            .frame(width: width * 0.99, height: height * 0.7)
+            // The shade under the fold, so the open flap reads as folded back.
+            .overlay {
+                LinearGradient(
+                    colors: [.black.opacity(0.22), .clear],
+                    startPoint: .top,
+                    endPoint: UnitPoint(x: 0.5, y: 0.3)
+                )
+            }
+            // Only as tall as the opening above the pocket, so it never peeks out
+            // around the art's rounded bottom corners.
+            .frame(width: width, height: height * 0.7)
             .frame(height: height, alignment: .top)
     }
 
     private var flap: some View {
         let isOpen = stage >= .flapOpening
         return art(clippedTo: EnvelopeFlapShape())
-            // The back of the flap, which shows as it folds past upright.
+            // The back of the flap, which shows as it folds past upright. Opaque, so the
+            // art's rounded corners don't show through at the fold.
             .overlay {
                 EnvelopeFlapShape()
-                    .fill(Color.paeoniaAccentPrimary.opacity(0.85))
+                    .fill(Color.paeoniaAccentPrimary)
                     .frame(width: width, height: height)
                     .opacity(isOpen ? 1 : 0)
             }
