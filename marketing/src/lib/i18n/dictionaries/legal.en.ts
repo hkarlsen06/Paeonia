@@ -60,7 +60,7 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 16 October 2026',
+    updated: 'Last updated 17 October 2026',
     sections: [
       {
         heading: 'Who this policy is for',
@@ -76,7 +76,8 @@ export const legalEn = {
           'Relationship data includes invites, relationship membership and status, your relationship start date if you add it, blocks, safety warnings, and the choices needed to manage access to a shared space.',
           'Content you choose to add includes your answers to daily questions (text, photos, voice, and partner choices), chat messages with replies, photos, and voice messages, memories with photos and notes, stories (a photo with an optional caption), short notes, dates and countdowns, hearts, drawings, and your moves, drawings, words, and guesses in games. Paeonia only reads the photos you pick or take, and it saves a photo to your photo library only when you tap Save to Photos. This content is private to the shared space unless it is reported or access is needed for the limited purposes described below.',
           'Service data includes subscription and access status, App Store transaction references (including one-time purchases such as bringing back a streak), streak progress, notification choices, your phone\'s push token, app version, language, and time zone, upload and sync status, request identifiers used to prevent duplicate actions, and security or operational records. Apple processes your payment details. Paeonia does not receive your payment-card details.',
-          'Paeonia does not use analytics, advertising, or crash-reporting tools, and it does not track you across other apps or websites. The website paeonia.no sets no cookies and uses no analytics. Cloudflare, which delivers the website, processes technical request data such as your IP address to serve the pages.',
+          'Usage statistics and crash reports show us which parts of Paeonia get used and where the app breaks. Unless you turn them off, the app sends which screens you open, which actions you take (for example that you sent an answer, never what it says), your app version, iPhone model, language, crash reports, and recordings of the screens in a visit. The recordings hide all text, photos, drawings, and the camera, and they do not record where you tap. This data is linked to your account and your relationship, so we can count use per person and per couple. It is not used for advertising, and Paeonia does not track you across other apps or websites.',
+          'The website paeonia.no sets no cookies and uses no analytics. Cloudflare, which delivers the website, processes technical request data such as your IP address to serve the pages.',
           'If you turn on location sharing, Paeonia processes your latest precise location and when it was recorded. We do not keep a location history for this feature.',
         ],
       },
@@ -91,6 +92,7 @@ export const legalEn = {
         paragraphs: [
           'We use personal data to create and secure your account, connect you with the partner you choose, provide and sync shared features, show subscription access, deliver notifications you allow, answer support requests, and keep the service reliable.',
           'We also use data to prevent fraud and misuse, enforce blocks and access rules, review reports, protect users, comply with legal obligations, handle data requests, and delete or anonymize data when required.',
+          'We use usage statistics, screen recordings, and crash reports to find bugs and decide what to improve. This relies on our legitimate interest in keeping Paeonia working and making it better, and you can turn it off at any time in the app.',
           'Where consent is the appropriate legal basis, such as precise location sharing and device permissions, you can withdraw it by turning the feature off or changing your device settings. Other processing is necessary to provide the service, fulfill our agreement with you, meet legal duties, or protect legitimate security and service interests.',
         ],
       },
@@ -126,7 +128,7 @@ export const legalEn = {
       {
         heading: 'Who we share data with',
         paragraphs: [
-          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions. Cloudflare stores photos, voice messages, drawings, and other files in the EU, runs the live drawing relay, and delivers the website. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
+          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions. Cloudflare stores photos, voice messages, drawings, and other files in the EU, runs the live drawing relay, and delivers the website. PostHog stores usage statistics, screen recordings, and crash reports on its EU servers in Frankfurt, Germany, and does not keep your IP address. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
           'We may disclose data when required by law, to protect a person or the service, or as part of a business reorganization with appropriate safeguards. Trusted support or moderation personnel may access the minimum data needed to resolve a request, review reported content, keep the service safe, complete a data request, or perform deletion and recovery work.',
           'We do not sell personal data. We do not use relationship content for advertising, and Paeonia does not include third-party advertising or cross-app tracking.',
         ],
@@ -144,6 +146,7 @@ export const legalEn = {
           'We keep active account and relationship data while it is needed to provide Paeonia. When a relationship ends, shared content is hidden immediately and is normally scheduled for deletion after about 30 days. Latest shared locations are deleted immediately. Local private caches are hidden or cleared when access ends.',
           'Reported-content snapshots are kept while a report is open and normally for 180 days after it is resolved. The report record, moderation actions, block state, safety warning, subscription records, privacy-request audit records, and limited security or legal records may be kept longer when needed for safety, accounting, dispute handling, fraud prevention, or legal obligations.',
           'Pending uploads and operational records are kept only as long as needed to finish, retry, secure, or clean up the related action. Notification and request records are normally deleted after about 30 days. Deleted data can stay in our server backups for up to 14 days before the backups are replaced.',
+          'Usage statistics and crash reports are kept for up to one year. Screen recordings are kept for up to 30 days.',
           'Retention periods may be extended where the law requires it or a legal claim must be preserved.',
         ],
       },
@@ -152,7 +155,7 @@ export const legalEn = {
         paragraphs: [
           'Leaving a relationship hides the shared space from both partners immediately and starts the normal relationship-content deletion period. The other partner sees a one-time notice that the shared space closed.',
           'To delete your account in the app, open the Us tab, scroll to Account, tap Delete account, and confirm. You can also delete it from the subscription screen. If you cannot open the app, email contact@paeonia.no from the address on your account and we will do it for you.',
-          'Deleting your account removes or anonymizes your profile, ends an active relationship, disables location sharing and notifications, revokes active sessions, and queues remaining cleanup. Shared relationship content follows the same hidden-then-delete period. Records that must be kept for reports, subscriptions, security, data requests, or legal obligations are restricted and retained only for those purposes.',
+          'Deleting your account removes or anonymizes your profile, ends an active relationship, disables location sharing and notifications, revokes active sessions, and queues remaining cleanup. Shared relationship content follows the same hidden-then-delete period. Records that must be kept for reports, subscriptions, security, data requests, or legal obligations are restricted and retained only for those purposes. Deleting your account also asks PostHog to delete your usage statistics, screen recordings, and crash reports. PostHog finishes this within about a week.',
           'If you signed in with Apple, Paeonia asks Apple to disconnect the account when it can. If Paeonia still shows under Sign in with Apple in your Apple Account settings, you can stop using it there.',
           'Deleting Paeonia does not cancel an App Store subscription. You can manage or cancel the subscription in your Apple Account settings.',
         ],
@@ -173,7 +176,7 @@ export const legalEn = {
       {
         heading: 'Your choices and rights',
         paragraphs: [
-          'You can edit profile details, turn location sharing and notifications off, leave a relationship, block a partner, and delete your account from the app where those controls are available.',
+          'You can edit profile details, turn location sharing and notifications off, leave a relationship, block a partner, and delete your account from the app where those controls are available. To stop usage statistics, screen recordings, and crash reports from your phone, open the Us tab, then Privacy and safety, and turn off Share usage statistics.',
           'You may ask for access to or an export of your data, correction, deletion, restriction, or another right available where you live. An export normally covers your account data and your own contributions; it does not automatically disclose your partner\'s private answers, media, reports, or other personal data. In the app, open the Us tab, then Privacy and safety, to ask to see what we store, ask for a copy, or ask for a correction. We reply by email to the address on your account, normally within a month. You can also write to contact@paeonia.no.',
           'You may also complain to your local data protection authority. In Norway, this is Datatilsynet. We may need to verify your identity before completing a request.',
         ],

@@ -60,7 +60,7 @@ export const legalNo = {
       description: 'Slik samler Paeonia inn, bruker, deler og beskytter personopplysninger.',
     },
     title: 'Personvern',
-    updated: 'Sist oppdatert 16. oktober 2026',
+    updated: 'Sist oppdatert 17. oktober 2026',
     sections: [
       {
         heading: 'Hvem personvernteksten gjelder for',
@@ -76,7 +76,8 @@ export const legalNo = {
           'Forholdsopplysninger omfatter invitasjoner, medlemskap og status for forholdet, startdato hvis du legger den til, blokkeringer, sikkerhetsvarsler og valg som trengs for å styre tilgangen til fellesrommet.',
           'Innhold du velger å legge til, omfatter svar på daglige spørsmål (tekst, bilder, tale og partnervalg), chattemeldinger med svar, bilder og talemeldinger, minner med bilder og notater, stories (et bilde med en valgfri tekst), korte notater, datoer og nedtellinger, hjerter, tegninger og dine trekk, tegninger, ord og gjetninger i spill. Paeonia leser bare bildene du velger eller tar, og lagrer et bilde i bildebiblioteket ditt bare når du trykker Lagre i Bilder. Innholdet er privat i fellesrommet med mindre det rapporteres eller tilgang er nødvendig for de begrensede formålene nedenfor.',
           'Tjenesteopplysninger omfatter status for abonnement og tilgang, referanser til App Store-transaksjoner (også engangskjøp, for eksempel for å få tilbake en streak), streak-fremdrift, varslingsvalg, pushnøkkelen til telefonen din, appversjon, språk og tidssone, status for opplasting og synkronisering, forespørsels-ID-er som hindrer doble handlinger, og sikkerhets- eller driftsopplysninger. Apple behandler betalingsopplysningene dine. Paeonia mottar ikke kortopplysningene dine.',
-          'Paeonia bruker ikke analyseverktøy, annonseverktøy eller verktøy for krasjrapporter, og sporer deg ikke på tvers av andre apper eller nettsteder. Nettsiden paeonia.no setter ingen informasjonskapsler og bruker ikke analyse. Cloudflare, som leverer nettsiden, behandler tekniske forespørselsopplysninger som IP-adressen din for å vise sidene.',
+          'Bruksstatistikk og krasjrapporter viser oss hvilke deler av Paeonia som blir brukt, og hvor appen svikter. Hvis du ikke slår det av, sender appen hvilke skjermer du åpner, hvilke handlinger du gjør (for eksempel at du sendte et svar, aldri hva det sier), appversjon, iPhone-modell, språk, krasjrapporter og opptak av skjermene i et besøk. Opptakene skjuler all tekst, alle bilder, alle tegninger og kameraet, og de tar ikke opp hvor du trykker. Opplysningene er knyttet til kontoen din og forholdet ditt, så vi kan telle bruk per person og per par. De brukes ikke til annonser, og Paeonia sporer deg ikke på tvers av andre apper eller nettsteder.',
+          'Nettsiden paeonia.no setter ingen informasjonskapsler og bruker ikke analyse. Cloudflare, som leverer nettsiden, behandler tekniske forespørselsopplysninger som IP-adressen din for å vise sidene.',
           'Hvis du slår på posisjonsdeling, behandler Paeonia den nyeste nøyaktige posisjonen din og tidspunktet den ble registrert. Vi lagrer ikke posisjonshistorikk for denne funksjonen.',
         ],
       },
@@ -91,6 +92,7 @@ export const legalNo = {
         paragraphs: [
           'Vi bruker personopplysninger for å opprette og sikre kontoen, koble deg til partneren du velger, levere og synkronisere fellesfunksjoner, vise abonnementstilgang, sende varsler du tillater, svare på henvendelser og holde tjenesten pålitelig.',
           'Vi bruker også opplysninger for å forebygge svindel og misbruk, håndheve blokkeringer og tilgangsregler, gjennomgå rapporter, beskytte brukere, følge lovpålagte krav, behandle personvernforespørsler og slette eller anonymisere opplysninger når det kreves.',
+          'Vi bruker bruksstatistikk, skjermopptak og krasjrapporter til å finne feil og bestemme hva vi skal forbedre. Dette bygger på vår berettigede interesse i å holde Paeonia i gang og gjøre appen bedre, og du kan slå det av når som helst i appen.',
           'Når samtykke er riktig behandlingsgrunnlag, for eksempel for nøyaktig posisjonsdeling og enhetstillatelser, kan du trekke det tilbake ved å slå av funksjonen eller endre innstillingene på enheten. Annen behandling er nødvendig for å levere tjenesten, oppfylle avtalen med deg, følge rettslige plikter eller ivareta berettigede sikkerhets- og driftsinteresser.',
         ],
       },
@@ -126,7 +128,7 @@ export const legalNo = {
       {
         heading: 'Hvem vi deler opplysninger med',
         paragraphs: [
-          'Disse leverandørene behandler opplysninger for Paeonia, og bare for å drive tjenesten. Apple håndterer Logg inn med Apple, betaling og abonnement i App Store og pushvarsler. Google håndterer Logg inn med Google. Clerk håndterer innlogging og økter. Cloudflare lagrer bilder, talemeldinger, tegninger og andre filer i EU, kjører relétjenesten for live-tegning og leverer nettsiden. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
+          'Disse leverandørene behandler opplysninger for Paeonia, og bare for å drive tjenesten. Apple håndterer Logg inn med Apple, betaling og abonnement i App Store og pushvarsler. Google håndterer Logg inn med Google. Clerk håndterer innlogging og økter. Cloudflare lagrer bilder, talemeldinger, tegninger og andre filer i EU, kjører relétjenesten for live-tegning og leverer nettsiden. PostHog lagrer bruksstatistikk, skjermopptak og krasjrapporter på sine EU-servere i Frankfurt i Tyskland, og tar ikke vare på IP-adressen din. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
           'Vi kan utlevere opplysninger når loven krever det, for å beskytte en person eller tjenesten, eller som del av en omorganisering med egnede sikkerhetstiltak. Betrodde personer innen brukerstøtte eller moderering kan få tilgang til minst mulig informasjon for å løse en henvendelse, vurdere rapportert innhold, ivareta sikkerhet, fullføre en personvernforespørsel eller utføre sletting og gjenoppretting.',
           'Vi selger ikke personopplysninger. Vi bruker ikke forholdsinnhold til annonsering, og Paeonia har ikke tredjepartsannonser eller sporing på tvers av apper.',
         ],
@@ -144,6 +146,7 @@ export const legalNo = {
           'Vi beholder aktive konto- og forholdsopplysninger så lenge de trengs for å levere Paeonia. Når et forhold avsluttes, skjules delt innhold med en gang og planlegges vanligvis slettet etter omtrent 30 dager. Nyeste delte posisjoner slettes med en gang. Lokale private mellomlagre skjules eller tømmes når tilgangen opphører.',
           'Kopier av rapportert innhold beholdes mens en rapport er åpen og vanligvis i 180 dager etter at den er ferdigbehandlet. Selve rapporten, modereringshandlinger, blokkeringer, sikkerhetsvarsler, abonnementsopplysninger, revisjonsspor for personvernforespørsler og begrensede sikkerhets- eller lovopplysninger kan beholdes lenger når det trengs for sikkerhet, regnskap, tvister, svindelforebygging eller rettslige plikter.',
           'Ventende opplastinger og driftsopplysninger beholdes bare så lenge de trengs for å fullføre, prøve på nytt, sikre eller rydde opp handlingen. Varslings- og forespørselsopplysninger slettes vanligvis etter omtrent 30 dager. Slettede opplysninger kan bli liggende i sikkerhetskopiene på serveren i opptil 14 dager før kopiene byttes ut.',
+          'Bruksstatistikk og krasjrapporter beholdes i opptil ett år. Skjermopptak beholdes i opptil 30 dager.',
           'Oppbevaringstiden kan forlenges når loven krever det eller et rettskrav må bevares.',
         ],
       },
@@ -152,7 +155,7 @@ export const legalNo = {
         paragraphs: [
           'Når du forlater et forhold, skjules fellesrommet for begge med en gang, og den vanlige sletteperioden for forholdsinnhold starter. Den andre partneren får en engangsmelding om at fellesrommet er avsluttet.',
           'Slik sletter du kontoen i appen: Åpne Oss-fanen, bla ned til Konto, trykk Slett konto og bekreft. Du kan også slette den fra abonnementsskjermen. Hvis du ikke får åpnet appen, kan du sende e-post til contact@paeonia.no fra adressen som er knyttet til kontoen, så gjør vi det for deg.',
-          'Når du sletter kontoen, fjernes eller anonymiseres profilen, et aktivt forhold avsluttes, posisjonsdeling og varsler deaktiveres, aktive økter trekkes tilbake og resten av oppryddingen settes i gang. Delt forholdsinnhold følger den samme perioden med skjuling før sletting. Opplysninger som må beholdes for rapporter, abonnementer, sikkerhet, personvernforespørsler eller rettslige plikter, begrenses og brukes bare til disse formålene.',
+          'Når du sletter kontoen, fjernes eller anonymiseres profilen, et aktivt forhold avsluttes, posisjonsdeling og varsler deaktiveres, aktive økter trekkes tilbake og resten av oppryddingen settes i gang. Delt forholdsinnhold følger den samme perioden med skjuling før sletting. Opplysninger som må beholdes for rapporter, abonnementer, sikkerhet, personvernforespørsler eller rettslige plikter, begrenses og brukes bare til disse formålene. Når du sletter kontoen, ber vi også PostHog om å slette bruksstatistikken, skjermopptakene og krasjrapportene dine. PostHog fullfører dette innen omtrent en uke.',
           'Hvis du logget inn med Apple, ber Paeonia Apple om å koble fra kontoen når det er mulig. Hvis Paeonia fortsatt vises under Logg inn med Apple i Apple-kontoinnstillingene dine, kan du slutte å bruke den der.',
           'Sletting av Paeonia avslutter ikke et App Store-abonnement. Du kan administrere eller avslutte abonnementet i Apple-kontoinnstillingene.',
         ],
@@ -173,7 +176,7 @@ export const legalNo = {
       {
         heading: 'Valgene og rettighetene dine',
         paragraphs: [
-          'Du kan redigere profilopplysninger, slå av posisjonsdeling og varsler, forlate et forhold, blokkere en partner og slette kontoen i appen der disse valgene er tilgjengelige.',
+          'Du kan redigere profilopplysninger, slå av posisjonsdeling og varsler, forlate et forhold, blokkere en partner og slette kontoen i appen der disse valgene er tilgjengelige. For å stoppe bruksstatistikk, skjermopptak og krasjrapporter fra telefonen din åpner du Oss-fanen og deretter Personvern og trygghet, og slår av Del bruksstatistikk.',
           'Du kan be om innsyn eller eksport, retting, sletting, begrensning eller en annen rettighet som gjelder der du bor. En eksport omfatter vanligvis kontoopplysninger og dine egne bidrag. Den utleverer ikke automatisk partnerens private svar, medier, rapporter eller andre personopplysninger. I appen åpner du Oss-fanen og deretter Personvern og trygghet, der du kan be om å se hva vi lagrer, be om en kopi eller be om retting. Vi svarer på e-post til adressen som er knyttet til kontoen, vanligvis innen en måned. Du kan også skrive til contact@paeonia.no.',
           'Du kan også klage til den lokale personvernmyndigheten. I Norge er dette Datatilsynet. Vi kan måtte bekrefte identiteten din før en forespørsel fullføres.',
         ],
