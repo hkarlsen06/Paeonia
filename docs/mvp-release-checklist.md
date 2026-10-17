@@ -51,8 +51,8 @@ These block TestFlight/App Review until resolved.
 - [ ] One paying partner unlocks both partners through backend entitlement. Re-verify on Convex.
 - [x] Subscription terms are clear before purchase.
 - [ ] App icon is final in the app target, widget target, and App Store assets.
-- [ ] App Store privacy labels match the actual data collected by the build.
-- [ ] App Store privacy labels include the PostHog data: product interaction, other usage data (replays) and crash data, linked to the user, not used for tracking.
+- [x] App Store privacy labels match the actual data collected by the build.
+- [x] App Store privacy labels include the PostHog data: product interaction, other usage data (replays) and crash data, linked to the user, not used for tracking.
 - [ ] A lawyer confirms that usage statistics may be on by default with an opt-out under Norway's ekomloven (in force since 1 January 2025), or the app asks first.
 - [x] `POSTHOG_PERSONAL_API_KEY` is set on the hosted backend, so account deletion also deletes the person's PostHog events and recordings.
 - [x] The Mac that archives has `posthog-cli` installed and signed in (`posthog-cli login`, EU), so the Upload dSYMs to PostHog phase can send symbols. An archive fails without it.
@@ -303,7 +303,7 @@ Record any skipped command with the reason.
 - [x] Stale marker behavior after 24 hours is implemented or intentionally deferred from UI claims.
 - [x] Disabling sharing deletes/hides latest location as documented.
 - [x] Relationship end/account deletion removes location visibility.
-- [ ] App Store privacy labels include precise location.
+- [x] App Store privacy labels include precise location.
 - [x] Privacy policy explains opt-in latest-location sharing, no history, stale timestamps, and deletion behavior clearly.
 
 ## Notifications
@@ -505,7 +505,7 @@ Run these on real devices where possible.
   - [ ] location behavior, including that sharing while closed is optional, asked about right after sharing is turned on, needs Always, and sends the latest location only after a significant move
 - [ ] In-app purchases submitted with the build.
 - [ ] Subscription screenshot/metadata completed.
-- [ ] Privacy Nutrition Labels completed.
+- [x] Privacy Nutrition Labels completed.
 - [ ] Encryption/export compliance answered.
 - [ ] Content rights answered.
 
