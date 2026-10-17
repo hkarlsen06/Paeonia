@@ -455,21 +455,15 @@
 		2A2D08042FE4000000A7BE1A /* Upload dSYMs to PostHog */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
 			name = "Upload dSYMs to PostHog";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Release builds send their dSYMs to PostHog, so crash reports show function names and lines.\n# Other configurations skip inside the script. It needs posthog-cli, signed in once with\n# `posthog-cli login` on the Mac that archives.\n\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/posthog-ios/build-tools/upload-symbols.sh\"\n";
+			shellScript = (
+				"# Release builds send their dSYMs to PostHog, so crash reports show function names and lines.",
+				"# Other configurations skip inside the script. It needs posthog-cli, signed in once with",
+				"# `posthog-cli login` on the Mac that archives.",
+				"\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/posthog-ios/build-tools/upload-symbols.sh\"",
+				"",
+			);
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
