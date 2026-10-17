@@ -203,13 +203,13 @@ describe("first day drawing", () => {
 });
 
 describe("accept_pairing_invite with a first day draft", () => {
-  async function inviterWithDraft(t: TestConvex) {
+  async function inviterWithDraft(t: TestConvex, options: { answered?: number } = {}) {
     await seedCatalog(t, textQuestions(8));
     const creator = await inviter(t);
     await addDevice(t, creator.userId, { locale: "en" });
     const draft = await creator.as.mutation(api.firstDay.start_first_day_draft, {});
     await creator.as.mutation(api.firstDay.set_first_day_started_on, { ...op(), p_started_on: "2026-09-01" });
-    for (const [index, question] of draft.questions.entries()) {
+    for (const [index, question] of draft.questions.slice(0, options.answered ?? 2).entries()) {
       await creator.as.mutation(api.firstDay.save_first_day_answer, {
         ...op(),
         p_question_version_id: question.question_version_id,
@@ -274,6 +274,31 @@ describe("accept_pairing_invite with a first day draft", () => {
         payload: expect.objectContaining({ couple_id: coupleId, deeplink: "paeonia://home" }),
       }),
     ]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("an answer saved after the partner joined goes to the couple's first day question", async () => {
+    const t = newTest();
+    const { creator, partner, draft } = await inviterWithDraft(t, { answered: 1 });
+    await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" });
+    const save = (index: number, text: string) =>
+      creator.as.mutation(api.firstDay.save_first_day_answer, {
+        ...op(),
+        p_question_version_id: draft.questions[index].question_version_id,
+        p_text: text,
+      });
+
+    // The unanswered question gets its answer, which completes the inviter's day, and the
+    // partner hears about it like any finished day.
+    await save(1, "Late answer");
+    // The one answered before pairing is edited in place.
+    await save(0, "Edited after pairing");
+
+    const [own] = await creator.as.query(api.daily.get_today_daily_challenge_snapshot, {});
+    const texts = own.answer_details.filter((row) => row.is_own_answer).map((row) => row.text_body);
+    expect(texts.sort()).toEqual(["Edited after pairing", "Late answer"]);
+    const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
+    expect(outbox.filter((row) => row.recipient_user_id === partner.userId && row.kind === "daily_challenge_completed")).toHaveLength(1);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

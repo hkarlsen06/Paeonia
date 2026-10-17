@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { findCurrentCouple, userHasDirectEntitlement } from "./access";
 import { assertNoPendingAccountDeletion } from "./accountDeletion";
-import { getOrCreateCoupleDayAt } from "./coupleDays";
+import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./coupleDays";
 import { insertDailyAnswer } from "./dailyAnswers";
 import {
   DAILY_QUESTION_SLOTS,
@@ -51,6 +51,28 @@ export async function assertFirstDayDraftAllowed(ctx: ReaderCtx, userId: string,
   if (options.entitled && !(await userHasDirectEntitlement(ctx, userId))) {
     fail("42501", "direct entitlement is required for first day content");
   }
+}
+
+/**
+ * The question of the couple's current day that a first day question became when the partner
+ * joined, found by its question version and seeded for `userId`. Null without a couple or
+ * without that question today.
+ */
+export async function findPairedFirstDayQuestion(
+  ctx: ReaderCtx,
+  userId: string,
+  questionVersionId: string,
+): Promise<Doc<"daily_question_instances"> | null> {
+  const couple = await findCurrentCouple(ctx, userId);
+  const day = couple ? await findCoupleDayAt(ctx, couple.id, nowIso()) : null;
+  if (!day) return null;
+  const instances = await ctx.db
+    .query("daily_question_instances")
+    .withIndex("by_couple_day_id_question_version_id", (q) =>
+      q.eq("couple_day_id", day.id).eq("question_version_id", questionVersionId),
+    )
+    .collect();
+  return instances.find((instance) => instance.seeded_for_user_id === userId && instance.status !== "shuffled") ?? null;
 }
 
 export async function findFirstDayDraft(ctx: ReaderCtx, userId: string): Promise<Draft | null> {

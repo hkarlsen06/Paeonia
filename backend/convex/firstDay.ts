@@ -6,15 +6,17 @@ import { isSupersededClientOperation, runClientOperation } from "./lib/clientOpe
 import { assertStartedOnNotInFuture } from "./lib/coupleDays";
 import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
+import { submitDailyAnswer, updateDailyAnswerText } from "./lib/dailyAnswers";
 import {
   assertFirstDayDraftAllowed,
   ensureFirstDayDraft,
   findFirstDayDraft,
+  findPairedFirstDayQuestion,
   firstDayDraftJson,
   firstDayDrawingPath,
   pickFirstDayQuestionVersions,
 } from "./lib/firstDay";
-import { optionalDateArg, uuidArg } from "./lib/ids";
+import { optionalDateArg, timestampArg, uuidArg } from "./lib/ids";
 import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { btrim, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
@@ -89,7 +91,11 @@ export const set_first_day_started_on = mutation({
   },
 });
 
-/** Saves or replaces the caller's written answer to one of the draft's questions. */
+/**
+ * Saves or replaces the caller's written answer to one of the draft's questions. Once the
+ * partner has joined, the draft is gone and its questions are the couple's first day, so the
+ * answer goes to that question instead, the same way a daily answer does.
+ */
 export const save_first_day_answer = mutation({
   args: { p_question_version_id: v.string(), p_text: v.string(), ...clientOperationArgs },
   handler: async (ctx, args) => {
@@ -98,6 +104,21 @@ export const save_first_day_answer = mutation({
     const body = btrim(args.p_text);
     if (body === "") fail("23514", "answer text is required");
     if (charLength(body) > 2000) fail("23514", "answer text is too long");
+    const pairedQuestion = await findPairedFirstDayQuestion(ctx, userId, versionId);
+    if (pairedQuestion) {
+      const operation = {
+        clientOperationId: uuidArg(args.p_client_operation_id),
+        clientId: uuidArg(args.p_client_id),
+        clientSequence: args.p_client_sequence,
+        localCreatedAt: timestampArg(args.p_local_created_at),
+      };
+      if (pairedQuestion.status === "answered") {
+        await updateDailyAnswerText(ctx, userId, pairedQuestion.id, body, operation);
+      } else {
+        await submitDailyAnswer(ctx, userId, pairedQuestion.id, { text: body }, operation);
+      }
+      return null;
+    }
     const input = toClientOperation(args, {
       kind: "save_first_day_answer",
       scope: `first_day_draft:${userId}:answer:${versionId}`,
