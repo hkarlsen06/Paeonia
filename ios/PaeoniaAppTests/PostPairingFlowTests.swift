@@ -274,6 +274,43 @@ struct PostPairingFlowModelTests {
         #expect(progress.finishedSteps == [.date, .questionTime, .answerInvite])
     }
 
+    /// The inviter finished their first answers after the partner's sequence planned its
+    /// steps. The last step still leads to the answer invite.
+    @Test func answersThatArriveDuringTheSequenceStillGetTheInvite() async {
+        let store = TestPairingCelebrationStore()
+        let model = makeModel(
+            store: store,
+            loader: PostPairingFakeLoader(questionTimeIsOn: false, answersWaitingAfterFirstCheck: true)
+        )
+        model.prepare(context)
+        await model.start(startedOn: "2024-03-03", acceptedInvite: false)
+        #expect(model.screen == .questionTime)
+
+        model.questionTimeFinished()
+        for _ in 0 ..< 100 where model.screen != .answerInvite {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(model.screen == .answerInvite)
+        #expect(model.outcome == nil)
+    }
+
+    @Test func noLateAnswersEndsOnHome() async {
+        let model = makeModel(
+            store: TestPairingCelebrationStore(),
+            loader: PostPairingFakeLoader(questionTimeIsOn: false)
+        )
+        model.prepare(context)
+        await model.start(startedOn: "2024-03-03", acceptedInvite: false)
+
+        model.questionTimeFinished()
+        for _ in 0 ..< 100 where model.outcome == nil {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(model.outcome == .home)
+    }
+
     @Test func closingTheDrawingWithoutSendingMovesOn() async {
         let store = TestPairingCelebrationStore()
         store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
@@ -383,6 +420,9 @@ private struct PostPairingFakeLoader: PostPairingDataLoading {
     var giftDelay: Duration = .zero
     var questionTimeIsOn: Bool? = true
     var partnerAnswersWaiting = false
+    /// The partner's answers land after the first load.
+    var answersWaitingAfterFirstCheck = false
+    let answerChecks = PostPairingCallCounter()
 
     func partnerGift(partnerUserID _: UUID) async -> PostPairingGiftLoad {
         try? await Task.sleep(for: giftDelay)
@@ -395,10 +435,20 @@ private struct PostPairingFakeLoader: PostPairingDataLoading {
     }
 
     func partnerAnswersWaiting(currentUserID _: UUID) async -> Bool {
-        partnerAnswersWaiting
+        let call = await answerChecks.next()
+        return partnerAnswersWaiting || (answersWaitingAfterFirstCheck && call > 1)
     }
 
     // swiftlint:enable async_without_await
+}
+
+private actor PostPairingCallCounter {
+    private var count = 0
+
+    func next() -> Int {
+        count += 1
+        return count
+    }
 }
 
 private struct PostPairingNoWidgets: WidgetConfigurationProviding {

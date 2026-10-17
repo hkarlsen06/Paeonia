@@ -20939,6 +20939,42 @@
         }
       }
     },
+    "pairing.joinedDuringTask.message" : {
+      "comment" : "Banner message under the partner-joined title. The pairing celebration plays once the person closes what they are doing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish up here. We'll celebrate when you're done."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør deg ferdig her. Vi feirer når du er klar."
+          }
+        }
+      }
+    },
+    "pairing.joinedDuringTask.title" : {
+      "comment" : "Banner title when the partner joins while the person is answering their first questions or drawing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ joined you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ble med deg"
+          }
+        }
+      }
+    },
     "pairing.unpair.confirm.action" : {
       "comment" : "Destructive confirm button that ends the pairing. Shared by the paywall footer and the You-tab leave action.",
       "extractionState" : "manual",

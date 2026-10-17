@@ -28,6 +28,12 @@ extension RootView {
     }
 
     private var framedScreen: RootFramedScreen? {
+        // The partner joined while the inviter was answering or drawing. The invite
+        // screen stays until that closes, so the task isn't cut off.
+        if viewModel.state == .paired, inviterTaskIsOpen {
+            return .pairing
+        }
+
         // A partner's code takes the place of the paywall and the invite screen.
         if PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
             for: viewModel.state,
@@ -155,6 +161,14 @@ extension RootView {
             onSubmitJoinCode: submitJoinCode,
             onRefreshAccess: refreshPairing
         )
+        .environment(\.inviterTaskOpenChanged) { isOpen in
+            inviterTaskIsOpen = isOpen
+            // A drawing sent after the partner joined was saved as waiting. The
+            // couple's widget sync sends it.
+            if !isOpen {
+                syncWidgetIfPaired(viewModel.state)
+            }
+        }
     }
 
     /// Someone with a partner's code from a link, the welcome screen, the paywall

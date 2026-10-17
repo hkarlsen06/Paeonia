@@ -69,6 +69,9 @@ final class PostPairingFlowModel {
     @ObservationIgnored private var hasStarted = false
     /// Every load for the current context has settled.
     @ObservationIgnored private var isLoaded = false
+    /// Whether the partner answered while the sequence ran, started as the last
+    /// planned step shows (see `advance`).
+    @ObservationIgnored private var lateAnswersCheck: Task<Bool, Never>?
 
     init(
         store: any PairingCelebrationStoring,
@@ -118,6 +121,8 @@ final class PostPairingFlowModel {
     func reset() {
         loadTask?.cancel()
         loadTask = nil
+        lateAnswersCheck?.cancel()
+        lateAnswersCheck = nil
         gift?.stop()
         context = nil
         screen = nil
@@ -218,10 +223,46 @@ final class PostPairingFlowModel {
 
     private func advance() {
         guard !queue.isEmpty else {
-            outcome = .home
+            finish()
             return
         }
         screen = Self.screen(for: queue.removeFirst())
+        if queue.isEmpty {
+            startLateAnswersCheck()
+        }
+    }
+
+    /// The partner may finish their first answers after the sequence decided its
+    /// steps, such as an inviter who was still answering when the partner joined.
+    /// The check runs while the last step shows, so ending doesn't wait on it.
+    /// Answers that come later still show up in today's questions.
+    private func startLateAnswersCheck() {
+        guard let context, !facts.partnerAnswersWaiting, screen != .answerInvite else {
+            return
+        }
+        let loader = loader
+        lateAnswersCheck = Task {
+            await loader.partnerAnswersWaiting(currentUserID: context.currentUserID)
+        }
+    }
+
+    private func finish() {
+        guard let check = lateAnswersCheck, let context else {
+            outcome = .home
+            return
+        }
+        lateAnswersCheck = nil
+        Task {
+            let waiting = await check.value
+            guard self.context == context, outcome == nil else {
+                return
+            }
+            if waiting {
+                screen = .answerInvite
+            } else {
+                outcome = .home
+            }
+        }
     }
 
     private static func screen(for step: PostPairingStep) -> Screen {
@@ -246,7 +287,9 @@ final class PostPairingFlowModel {
     func clearGiftFailure() {
         giftFailure = nil
     }
+}
 
+extension PostPairingFlowModel {
     // MARK: Gift
 
     /// The envelope was tapped. Saved right away, so the gift never plays twice.

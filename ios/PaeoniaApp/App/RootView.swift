@@ -33,6 +33,9 @@ struct RootView: View {
     /// A permission primer appeared since the app last came to the front. Only
     /// one is offered per visit; the flag resets when the app goes to the background.
     @State var primerShownThisVisit = false
+    /// One of the invite screen's first day tasks is open. A partner who joins
+    /// meanwhile waits on the invite screen until it closes, then the celebration plays.
+    @State var inviterTaskIsOpen = false
     @Binding var deepLink: PaeoniaDeepLink?
     @Binding var pendingJoinInviteCode: String?
     @Environment(\.accessibilityReduceMotion) var reduceMotion

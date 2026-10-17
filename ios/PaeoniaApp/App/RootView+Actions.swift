@@ -135,6 +135,15 @@ extension RootView {
         if state != .paired {
             permissionPrimerCoordinator.dismiss()
         }
+        switch state {
+        case .paired where inviterTaskIsOpen:
+            showPartnerJoinedDuringTask()
+        case .paired, .unpaired, .invitePending:
+            break
+        default:
+            // The invite screen is gone, so no task of its own is open any more.
+            inviterTaskIsOpen = false
+        }
         // A paired couple cannot join anyone. Drop a code left over from an
         // invite accepted just before the app closed, or saved on an old link.
         // A link that opened the app is still explained.
@@ -151,6 +160,18 @@ extension RootView {
         if !isLaunchExperienceActive {
             syncWidgetIfPaired(state)
         }
+    }
+
+    /// The partner joined while the inviter is answering or drawing. The celebration
+    /// waits for the task to close, and this says why nothing else happened yet.
+    private func showPartnerJoinedDuringTask() {
+        bannerCenter.show(
+            .info(
+                title: String(localized: .pairingJoinedDuringTaskTitle(partnerNameForCopy)),
+                message: String(localized: .pairingJoinedDuringTaskMessage),
+                timing: .fixed(.seconds(6))
+            )
+        )
     }
 
     /// A partner's invite link opened while this person is already paired would

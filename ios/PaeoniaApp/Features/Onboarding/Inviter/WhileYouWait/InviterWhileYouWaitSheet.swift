@@ -1,5 +1,12 @@
 import SwiftUI
 
+extension EnvironmentValues {
+    /// Told true when one of the invite screen's first day tasks opens, and false when it
+    /// closes. The root keeps the invite screen up while one is open, so a partner who joins
+    /// meanwhile doesn't pull the person out of it.
+    @Entry var inviterTaskOpenChanged: (Bool) -> Void = { _ in }
+}
+
 /// Two things the inviter can make for their partner while the code is out: their first
 /// answers and a drawing for the partner's Home Screen. The invite screen's "While you
 /// wait" button opens this sheet. Each row shows how far it got, and pops with hearts
@@ -17,6 +24,7 @@ struct InviterWhileYouWaitSheet: View {
     @State private var isOpeningQuestions = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.inviterTaskOpenChanged) private var taskOpenChanged
 
     var body: some View {
         NavigationStack {
@@ -145,10 +153,14 @@ struct InviterWhileYouWaitSheet: View {
         Task {
             questionsModel = await model.makeQuestionsModel()
             isOpeningQuestions = false
+            if questionsModel != nil {
+                taskOpenChanged(true)
+            }
         }
     }
 
     private func questionsClosed() {
+        taskOpenChanged(false)
         guard let closedQuestions else {
             return
         }
@@ -159,9 +171,11 @@ struct InviterWhileYouWaitSheet: View {
 
     private func openDrawing() {
         isDrawing = true
+        taskOpenChanged(true)
     }
 
     private func drawingClosed() {
+        taskOpenChanged(false)
         Task { await model.drawingFlowClosed() }
     }
 }
