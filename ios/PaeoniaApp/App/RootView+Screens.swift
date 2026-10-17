@@ -161,14 +161,14 @@ extension RootView {
             onSubmitJoinCode: submitJoinCode,
             onRefreshAccess: refreshPairing
         )
-        .environment(\.inviterTaskOpenChanged) { isOpen in
+        .environment(\.inviterTaskOpenChanged, InviterTaskOpenAction { isOpen in
             inviterTaskIsOpen = isOpen
             // A drawing sent after the partner joined was saved as waiting. The
             // couple's widget sync sends it.
             if !isOpen {
                 syncWidgetIfPaired(viewModel.state)
             }
-        }
+        })
     }
 
     /// Someone with a partner's code from a link, the welcome screen, the paywall

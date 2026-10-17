@@ -4,7 +4,19 @@ extension EnvironmentValues {
     /// Told true when one of the invite screen's first day tasks opens, and false when it
     /// closes. The root keeps the invite screen up while one is open, so a partner who joins
     /// meanwhile doesn't pull the person out of it.
-    @Entry var inviterTaskOpenChanged: (Bool) -> Void = { _ in }
+    @Entry var inviterTaskOpenChanged = InviterTaskOpenAction { _ in }
+}
+
+/// Wraps the closure so the environment can compare it. The root sets it once, so every
+/// copy counts as equal and a new closure on each root update doesn't redraw the sheet.
+struct InviterTaskOpenAction: Equatable {
+    let action: (Bool) -> Void
+
+    func callAsFunction(_ isOpen: Bool) {
+        action(isOpen)
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool { true }
 }
 
 /// Two things the inviter can make for their partner while the code is out: their first
