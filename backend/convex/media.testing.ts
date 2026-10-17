@@ -59,6 +59,7 @@ export type UploadSpec = {
   coupleId?: string;
   canvasId?: string;
   gameId?: string;
+  pathContext?: Record<string, unknown>;
   bytes?: Uint8Array;
 };
 
@@ -97,6 +98,7 @@ export async function uploadAsset(t: TestConvex, user: TestUser, spec: UploadSpe
     ...(spec.coupleId ? { p_couple_id: spec.coupleId } : {}),
     ...(spec.canvasId ? { p_path_context: { canvas_id: spec.canvasId } } : {}),
     ...(spec.gameId ? { p_path_context: { game_id: spec.gameId } } : {}),
+    ...(spec.pathContext ? { p_path_context: spec.pathContext } : {}),
   });
   const storageId = await storeBlob(t, bytes, spec.mime);
   const sha256 = await sha256Hex(bytes);

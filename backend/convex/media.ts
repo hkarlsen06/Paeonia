@@ -23,6 +23,7 @@ import {
 import { mediaAssetHasLiveReference, queueOrphanedMediaAssetsForDelete } from "./lib/mediaOrphans";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { isCorpseUploadPurpose, reserveCorpseUpload } from "./lib/exquisiteCorpse"; // Exquisite corpse
+import { assertFirstDayDraftAllowed, firstDayDrawingPath } from "./lib/firstDay";
 import { btrim } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
 
@@ -138,6 +139,14 @@ export const create_pending_media_upload = mutation({
           bucket = "couple-media";
           coupleId = coupleArg;
           storagePath = `${coupleArg}/${mediaType}/${assetId}.${extension}`;
+        } else if (purpose === "widget_drawing_payload" && pathContext.first_day_draft === true) {
+          // The inviter's first drawing, before the couple exists (firstDay.ts).
+          if (kind !== "widget_drawing_revision" || mediaType !== "drawing_payload" || coupleArg !== undefined) {
+            fail("23514", "first day drawing upload contract is invalid");
+          }
+          await assertFirstDayDraftAllowed(ctx, userId, { entitled: true });
+          bucket = "widget-drawings";
+          storagePath = firstDayDrawingPath(userId, parentId, extension);
         } else if (purpose === "widget_drawing_payload") {
           if (kind !== "widget_drawing_revision" || mediaType !== "drawing_payload" || coupleArg === undefined) {
             fail("23514", "widget drawing upload contract is invalid");
@@ -230,6 +239,9 @@ export const create_pending_media_upload = mutation({
     }
     if (asset.couple_id !== undefined && !(await canAccessCoupleContent(ctx, userId, asset.couple_id))) {
       fail("42501", "active entitled couple access is required");
+    }
+    if (asset.couple_id === undefined && asset.upload_purpose === "widget_drawing_payload") {
+      await assertFirstDayDraftAllowed(ctx, userId, { entitled: true });
     }
     // A queued daily answer retries reserve, upload, and finalize with the same operations
     // until it is sent, so a replay must not fail for good. A finalized asset replays as is.
@@ -346,6 +358,10 @@ export const finalize_media_upload = mutation({
         if (asset.owner_user_id !== userId) fail("42501", "media asset is owned by another user");
         if (asset.couple_id !== undefined && !(await canAccessCoupleContent(ctx, userId, asset.couple_id))) {
           fail("42501", "active entitled couple access is required");
+        }
+        if (asset.couple_id === undefined && asset.upload_purpose === "widget_drawing_payload") {
+          // A first day drawing: the rules from the reservation must still hold.
+          await assertFirstDayDraftAllowed(ctx, userId, { entitled: true });
         }
         if (
           asset.reserved_by_client_operation_id !== reservedBy ||

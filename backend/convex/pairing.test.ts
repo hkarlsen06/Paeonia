@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { sha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
+import { setMediaEnv, uploadAsset } from "./media.testing";
 import { hashPairingInviteCode } from "./pairing";
 import { createCouple, createSignedInUser, grantLifetime, newTest, relationshipStateOf, type TestConvex, type TestUser } from "./test.setup";
 
@@ -138,10 +139,41 @@ describe("preview_pairing_invite", () => {
         invite_id: id,
         inviter_user_id: owner.userId,
         inviter_display_name: "Ada",
+        inviter_photo_url: null,
         expires_at: inDays(7),
         has_safety_warning: false,
       },
     ]);
+  });
+
+  test("signs a short link to the inviter's profile photo", async () => {
+    setMediaEnv();
+    const t = newTest();
+    const owner = await inviter(t, "Ada");
+    await createInvite(owner);
+    const photo = await uploadAsset(t, owner, {
+      kind: "profile_photo",
+      purpose: "profile_photo",
+      mediaType: "image",
+      extension: "jpg",
+      mime: "image/jpeg",
+      parentId: owner.userId,
+    });
+    await t.run(async (ctx) => {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user_id", (q) => q.eq("user_id", owner.userId))
+        .unique();
+      await ctx.db.patch(profile!._id, { profile_photo_asset_id: photo.assetId });
+    });
+    const guest = await createSignedInUser(t, {});
+    const [row] = await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" });
+    const url = new URL(row.inviter_photo_url!);
+    expect(url.pathname).toBe("/media");
+    expect(url.searchParams.get("asset")).toBe(photo.assetId);
+    expect(Number(url.searchParams.get("exp"))).toBe(Date.parse(NOW) / 1000 + 900);
+    // A code that matches no invite shows nothing.
+    expect(await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ZZZZZZ" })).toEqual([]);
   });
 
   test("hides unknown, expired, revoked, and blocked invites and a hidden inviter name", async () => {
@@ -248,6 +280,7 @@ describe("preview_pairing_invite", () => {
         invite_id: codeId,
         inviter_user_id: partner.userId,
         inviter_display_name: "Demo Partner",
+        inviter_photo_url: null,
         expires_at: inDays(1),
         has_safety_warning: false,
       },

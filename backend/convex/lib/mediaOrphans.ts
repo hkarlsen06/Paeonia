@@ -72,6 +72,12 @@ export async function mediaAssetHasLiveReference(ctx: ReaderCtx, assetId: string
     if (canvas && canvas.deleted_at === undefined) return true;
   }
 
+  const draft = await ctx.db
+    .query("first_day_drafts")
+    .withIndex("by_drawing_media_asset_id", (q) => q.eq("drawing.media_asset_id", assetId))
+    .first();
+  if (draft !== null) return true;
+
   const moves = await ctx.db
     .query("game_moves")
     .withIndex("by_drawing_media_asset_id", (q) => q.eq("drawing_media_asset_id", assetId))

@@ -204,6 +204,18 @@ async function canReadStoryPhoto(ctx: ReaderCtx, userId: string, asset: Doc<"med
   );
 }
 
+/** Before pairing, only the inviter reads the drawing their first day draft holds. */
+async function canReadFirstDayDrawing(ctx: ReaderCtx, userId: string, asset: Doc<"media_assets">): Promise<boolean> {
+  if (asset.owner_user_id !== userId || asset.reserved_parent_kind !== "widget_drawing_revision" || asset.bucket !== "widget-drawings") {
+    return false;
+  }
+  const draft = await ctx.db
+    .query("first_day_drafts")
+    .withIndex("by_drawing_media_asset_id", (q) => q.eq("drawing.media_asset_id", asset.id))
+    .first();
+  return draft?.user_id === userId;
+}
+
 /**
  * Port of `internal.can_read_media_object`, which backed both the
  * `storage.objects` select policy and `get_media_signed_url`.
@@ -222,7 +234,7 @@ export async function canReadMediaAsset(ctx: ReaderCtx, userId: string, asset: D
   if (asset.bucket === "profile-photos" && asset.couple_id === undefined && asset.reserved_parent_kind === "profile_photo") {
     if (await canReadProfilePhoto(ctx, userId, asset)) return true;
   }
-  if (asset.couple_id === undefined) return false;
+  if (asset.couple_id === undefined) return await canReadFirstDayDrawing(ctx, userId, asset);
   switch (asset.reserved_parent_kind) {
     case "daily_answer_media":
       return await canReadDailyAnswerMedia(ctx, userId, asset);

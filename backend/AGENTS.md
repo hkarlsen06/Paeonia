@@ -107,6 +107,8 @@ Import these instead of re-porting the SQL.
 | `boardGameStore.ts`, `boardGameBackend.ts` | the board game row helpers, the view projection, the hidden photo pick, the turn token, and `boardGameBackend` |
 | `gameRegistry.ts` | `GAME_BACKENDS` and the dispatchers `gamePushStillWanted`, `deleteCoupleGameRows`, `sendDueGameTurnReminders`, `gameLanguageChanged` |
 | `gameWords.ts` | Draw & Guess word lists, custom word and guess normalization |
+| `widgetDrawings.ts` | widget drawing payload checks (`parseWidgetDrawingPayload`, `isUsableWidgetPayloadAsset`), `getOrCreateWidgetCanvas`, and `insertWidgetDrawingRevision` with its side effects |
+| `firstDay.ts` | first day draft guards and reads, and `materializeFirstDayDrafts` |
 | `liveTicket.ts` | `signLiveTicket`, the relay ticket for the widget canvas and for game channels |
 
 Rules that come with them:
@@ -160,6 +162,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 |---|---|
 | `identity` | `ensure_current_user`, `complete_profile_onboarding`, `update_own_profile`, `set_own_provider_profile_photo`, `register_user_device`, `disable_user_device`, `get_notification_preferences`, `set_notification_preference`, `get_privacy_requests`, `create_privacy_request`, `request_account_deletion`, `delete_account` (action) |
 | `pairing` | `create_pairing_invite`, `preview_pairing_invite`, `validate_my_pairing_invite`, `accept_pairing_invite`, `revoke_pairing_invite`, `rotate_pairing_invite` |
+| `firstDay` | `start_first_day_draft`, `get_first_day_draft`, `set_first_day_started_on`, `save_first_day_answer`, `save_first_day_drawing` (what the inviter makes before their partner joins: the start date, the first two daily questions with written answers, and the first widget drawing, kept in `first_day_drafts`. The drawing is a `widget_drawing_payload` upload with `p_path_context: { first_day_draft: true }` and no couple. `accept_pairing_invite` turns the drafts into couple content with `materializeFirstDayDrafts` in `lib/firstDay.ts`, sends the joining partner no visible pushes for it, and sends the inviter a `partner_joined` push) |
 | `relationship` | `get_relationship_sync_events`, `leave_relationship`, `mark_relationship_ended_notice_seen`, `set_couple_started_on` |
 | `access` | `get_access_snapshot`, `get_or_create_app_account_token`, `verify_purchase` (action), `redeem_streak_restore` (action) |
 | `admin` | `get_admin_status`, `search_users`, `get_user`, `ban_user`, `unban_user`, `get_audit_log`. Operator commands: `operator_ban_user` and `operator_unban_user` (`{ p_user_id, p_reason?, p_operator }`) |

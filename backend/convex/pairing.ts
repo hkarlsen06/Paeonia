@@ -9,11 +9,14 @@ import { hmacSha256Hex } from "./lib/crypto";
 import { getByUuid, orNull, type ReaderCtx, withUpdatedAt } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalDateArg, optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
+import { materializeFirstDayDrafts } from "./lib/firstDay";
+import { enqueueNotificationForUser } from "./lib/notifications";
 import { findActiveReviewAccessCode, redeemReviewAccess } from "./lib/reviewAccess";
 import { userHasDirectEntitlement } from "./lib/entitlements";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import { consumeRateLimit, rateLimiter } from "./lib/rateLimits";
 import { addDaysToInstant, nowIso } from "./lib/time";
+import { signMediaUrl } from "./media";
 
 const CODE_PATTERN = /^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{6}$/;
 
@@ -225,6 +228,22 @@ export const validate_my_pairing_invite = query({
   },
 });
 
+/** A 15 minute link to the visible profile photo the app shows for this person, or null. */
+async function profilePhotoUrl(ctx: ReaderCtx, profile: Doc<"profiles"> | null): Promise<string | null> {
+  if (!profile || profile.moderation_status !== "visible" || profile.deleted_at !== undefined) return null;
+  const asset = await getByUuid(ctx, "media_assets", profile.profile_photo_asset_id ?? profile.provider_profile_photo_asset_id);
+  if (
+    !asset ||
+    asset.upload_status !== "finalized" ||
+    asset.storage_delete_status !== "none" ||
+    asset.moderation_status !== "visible" ||
+    asset.deleted_at !== undefined
+  ) {
+    return null;
+  }
+  return await signMediaUrl(asset.id, Math.floor(Date.now() / 1000) + 900);
+}
+
 export const preview_pairing_invite = mutation({
   args: { p_invite_code: v.string() },
   handler: async (ctx, args) => {
@@ -245,6 +264,7 @@ export const preview_pairing_invite = mutation({
           invite_id: reviewCode.id,
           inviter_user_id: orNull(reviewCode.seeded_partner_user_id),
           inviter_display_name: partner?.moderation_status === "visible" ? orNull(partner.display_name) : null,
+          inviter_photo_url: await profilePhotoUrl(ctx, partner),
           expires_at: reviewCode.expires_at ?? addDaysToInstant(now, 1),
           has_safety_warning: false,
         },
@@ -283,6 +303,7 @@ export const preview_pairing_invite = mutation({
         invite_id: invite.id,
         inviter_user_id: invite.created_by_user_id,
         inviter_display_name: inviter?.moderation_status === "visible" ? orNull(inviter.display_name) : null,
+        inviter_photo_url: await profilePhotoUrl(ctx, inviter),
         expires_at: invite.expires_at,
         has_safety_warning: flagged,
       },
@@ -360,6 +381,7 @@ export const accept_pairing_invite = mutation({
           couple_id: coupleId,
         }),
       );
+      await materializeFirstDayDrafts(ctx, { coupleId, creatorUserId: invite.created_by_user_id, partnerUserId: userId });
       for (const memberId of [invite.created_by_user_id, userId]) {
         await createRelationshipSyncEvent(ctx, {
           user_id: memberId,
@@ -372,6 +394,21 @@ export const accept_pairing_invite = mutation({
           local_purge_scope: { relationship: "refresh", entitlement: "refresh" },
         });
       }
+      await enqueueNotificationForUser(ctx, {
+        recipient_user_id: invite.created_by_user_id,
+        kind: "partner_joined",
+        payload: {
+          type: "partner_joined",
+          couple_id: coupleId,
+          actor_user_id: userId,
+          route: "home",
+          deeplink: "paeonia://home",
+        },
+        dedupe_key: `partner_joined:${coupleId}`,
+        redaction_level: "private",
+        apns_push_type: "alert",
+        apns_collapse_id: `partner_joined:${coupleId}`,
+      });
       await recordAttempt(ctx, userId, prefix, true);
       return { couple_id: coupleId };
     });

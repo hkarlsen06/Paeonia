@@ -3,7 +3,7 @@ import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { findCurrentCouple, getCurrentEntitledCoupleId } from "./lib/access";
 import { isSupersededClientOperation, runClientOperation } from "./lib/clientOperations";
-import { userLocalDate } from "./lib/coupleDays";
+import { assertStartedOnNotInFuture } from "./lib/coupleDays";
 import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { dateArg, optionalTimestampArg, optionalUuidArg } from "./lib/ids";
@@ -107,9 +107,7 @@ export const set_couple_started_on = mutation({
       return fail("23514", "relationship start date must be today or earlier");
     }
     const startedOn = dateArg(args.p_started_on);
-    if (startedOn > (await userLocalDate(ctx, userId, nowIso()))) {
-      fail("23514", "relationship start date must be today or earlier");
-    }
+    await assertStartedOnNotInFuture(ctx, userId, startedOn);
 
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const scope = `couple:${coupleId}:started_on`;

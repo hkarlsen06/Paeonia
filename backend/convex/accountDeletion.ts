@@ -9,6 +9,7 @@ import { backgroundWorkpool } from "./lib/backgroundWorkpool";
 import { getByUuid, withTouch, withUpdatedAt, type ReaderCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
+import { deleteFirstDayDraft } from "./lib/firstDay";
 import { queueOldMediaAssetIfOrphaned } from "./lib/mediaOrphans";
 import {
   deleteClerkUser,
@@ -186,6 +187,7 @@ export async function requestAccountDeletion(
   for (const invite of invites) {
     await ctx.db.patch(invite._id, withUpdatedAt({ status: "revoked" as const, revoked_at: invite.revoked_at ?? now }));
   }
+  await deleteFirstDayDraft(ctx, userId);
 
   // Remove every delivery and location path before the identity job runs.
   const widgetDevices = await ctx.db

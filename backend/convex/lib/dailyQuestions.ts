@@ -405,8 +405,11 @@ function shuffled<T>(items: T[]): T[] {
   return copy;
 }
 
-/** The active version of a question when it has both locales and 1 to 2 answer kinds. */
-async function usableVersionId(ctx: ReaderCtx, questionId: string): Promise<string | null> {
+/** Which answer kinds a picked version may have. Every version needs 1 to 2. */
+export type AnswerKindFilter = (kinds: string[]) => boolean;
+
+/** The active version of a question when it has both locales and 1 to 2 answer kinds that `acceptsKinds` allows. */
+async function usableVersionId(ctx: ReaderCtx, questionId: string, acceptsKinds: AnswerKindFilter): Promise<string | null> {
   const version = await ctx.db
     .query("question_versions")
     .withIndex("by_question_id_status", (q) => q.eq("question_id", questionId).eq("status", "active"))
@@ -421,7 +424,7 @@ async function usableVersionId(ctx: ReaderCtx, questionId: string): Promise<stri
     .query("question_answer_kinds")
     .withIndex("by_question_version_id_answer_kind", (q) => q.eq("question_version_id", version.id))
     .collect();
-  return kinds.length >= 1 && kinds.length <= 2 ? version.id : null;
+  return kinds.length >= 1 && kinds.length <= 2 && acceptsKinds(kinds.map((row) => row.answer_kind)) ? version.id : null;
 }
 
 /**
@@ -441,6 +444,38 @@ export async function pickDailyQuestionVersion(
   excludedQuestionId: string | null,
   answered?: AnsweredQuestions,
 ): Promise<string> {
+  // Every instance the user got today, answered and shuffled ones too, so the fallback
+  // can never hand out a question the user already has today.
+  const todaysInstances = await ctx.db
+    .query("daily_question_instances")
+    .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
+      q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", userId),
+    )
+    .collect();
+  const excludedQuestionIds = new Set<string>();
+  if (excludedQuestionId !== null) excludedQuestionIds.add(excludedQuestionId);
+  for (const instance of todaysInstances) {
+    const version = await getByUuid(ctx, "question_versions", instance.question_version_id);
+    if (version) excludedQuestionIds.add(version.question_id);
+  }
+  return await pickQuestionVersion(ctx, userId, {
+    excludedQuestionIds,
+    answered: answered ?? (await loadAnsweredQuestions(ctx, userId)),
+    acceptsKinds: () => true,
+  });
+}
+
+/**
+ * The selection rules of `pickDailyQuestionVersion` without a couple day: a random usable
+ * version of an active system question outside `excludedQuestionIds`, preferring questions
+ * the user has not answered or may see again, then the one answered longest ago.
+ */
+export async function pickQuestionVersion(
+  ctx: ReaderCtx,
+  userId: string,
+  options: { excludedQuestionIds: Set<string>; answered: AnsweredQuestions; acceptsKinds: AnswerKindFilter },
+): Promise<string> {
+  const { excludedQuestionIds, answered: history, acceptsKinds } = options;
   const now = nowIso();
   const collection = await ctx.db
     .query("question_collections")
@@ -453,24 +488,9 @@ export async function pickDailyQuestionVersion(
         .collect()
     : [];
 
-  // Every instance the user got today, answered and shuffled ones too, so the fallback
-  // below can never hand out a question the user already has today.
-  const todaysInstances = await ctx.db
-    .query("daily_question_instances")
-    .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-      q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", userId),
-    )
-    .collect();
-  const todaysQuestionIds = new Set<string>();
-  for (const instance of todaysInstances) {
-    const version = await getByUuid(ctx, "question_versions", instance.question_version_id);
-    if (version) todaysQuestionIds.add(version.question_id);
-  }
-  const history = answered ?? (await loadAnsweredQuestions(ctx, userId));
-
   const answeredBefore: { questionId: string; lastAnsweredAt: string }[] = [];
   for (const question of shuffled(questions)) {
-    if (question.id === excludedQuestionId || todaysQuestionIds.has(question.id)) continue;
+    if (excludedQuestionIds.has(question.id)) continue;
     const skipped = await ctx.db
       .query("daily_question_shuffles")
       .withIndex("by_user_id_question_id_exclude_until", (q) =>
@@ -486,14 +506,14 @@ export async function pickDailyQuestionVersion(
       answeredBefore.push({ questionId: question.id, lastAnsweredAt });
       continue;
     }
-    const versionId = await usableVersionId(ctx, question.id);
+    const versionId = await usableVersionId(ctx, question.id, acceptsKinds);
     if (versionId) return versionId;
   }
   // ponytail: oldest answer first, resurfaceable or not. Add a resurfaceable-first tier if repeats of questions
   // marked as one-time ever matter more than repeats of resurfaceable ones.
   answeredBefore.sort((a, b) => compareStrings(a.lastAnsweredAt, b.lastAnsweredAt));
   for (const { questionId } of answeredBefore) {
-    const versionId = await usableVersionId(ctx, questionId);
+    const versionId = await usableVersionId(ctx, questionId, acceptsKinds);
     if (versionId) return versionId;
   }
   return fail("22023", "no eligible daily questions are available");

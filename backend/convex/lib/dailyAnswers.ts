@@ -377,9 +377,14 @@ async function insertAnswerMedia(
 
 /**
  * Port of the `handle_daily_challenge_completed` trigger. Call after a user's last
- * own slot is answered. Counts the day for the streak and tells the partner once.
+ * own slot is answered. Counts the day for the streak and, with `notifyPartner`, tells the partner once.
  */
-async function completeDailyChallenge(ctx: WriterCtx, coupleDayId: string, userId: string): Promise<void> {
+async function completeDailyChallenge(
+  ctx: WriterCtx,
+  coupleDayId: string,
+  userId: string,
+  notifyPartner: boolean,
+): Promise<void> {
   const challenge = await ctx.db
     .query("daily_challenges")
     .withIndex("by_couple_day_id_user_id", (q) => q.eq("couple_day_id", coupleDayId).eq("user_id", userId))
@@ -399,25 +404,27 @@ async function completeDailyChallenge(ctx: WriterCtx, coupleDayId: string, userI
       dedupe_key: dedupeKey,
       metadata: { source: "daily_challenge" },
     });
-    await enqueuePartnerNotification(ctx, {
-      couple_id: day.couple_id,
-      actor_user_id: userId,
-      kind: "daily_challenge_completed",
-      payload: {
-        type: "daily_challenge_completed",
+    if (notifyPartner) {
+      await enqueuePartnerNotification(ctx, {
         couple_id: day.couple_id,
-        couple_day_id: coupleDayId,
         actor_user_id: userId,
-        route: "daily",
-        deeplink: `paeonia://daily/today?coupleDayId=${coupleDayId}`,
-      },
-      dedupe_key: dedupeKey,
-      redaction_level: "private",
-      apns_push_type: "alert",
-      apns_collapse_id: `daily:${day.couple_id}`,
-      scheduled_for: completedAt,
-    });
-    partnerNotifiedAt = completedAt;
+        kind: "daily_challenge_completed",
+        payload: {
+          type: "daily_challenge_completed",
+          couple_id: day.couple_id,
+          couple_day_id: coupleDayId,
+          actor_user_id: userId,
+          route: "daily",
+          deeplink: `paeonia://daily/today?coupleDayId=${coupleDayId}`,
+        },
+        dedupe_key: dedupeKey,
+        redaction_level: "private",
+        apns_push_type: "alert",
+        apns_collapse_id: `daily:${day.couple_id}`,
+        scheduled_for: completedAt,
+      });
+      partnerNotifiedAt = completedAt;
+    }
   }
   await ctx.db.patch(challenge._id, { completed_at: completedAt, partner_notified_at: partnerNotifiedAt });
 }
@@ -550,46 +557,80 @@ export async function submitDailyAnswer(
         uniqueViolation("daily_question_answers_instance_user_unique");
       }
       // assert_daily_question_answer_member: the author is an active member (checked above).
-      const now = nowIso();
-      const answerDocId = await ctx.db.insert("daily_question_answers", {
-        id: answerId,
-        instance_id: instance.id,
-        user_id: userId,
-        created_at: now,
-        updated_at: now,
-        moderation_status: "visible",
+      await insertDailyAnswer(ctx, {
+        userId,
+        instance,
+        day,
+        answerId,
+        textBody,
+        selectedPartnerUserId,
+        mediaAssetIds,
+        notifyPartner: true,
       });
-      const answer = (await ctx.db.get(answerDocId))!;
-      await enqueuePartnerAnsweredNotification(ctx, answer);
-
-      if (textBody !== "") {
-        await upsertAnswerText(ctx, answer, instance, textBody);
-      }
-      if (selectedPartnerUserId !== null) {
-        await upsertAnswerPartnerChoice(ctx, answer, instance, day, selectedPartnerUserId);
-      }
-      for (const [index, mediaAssetId] of mediaAssetIds.entries()) {
-        await insertAnswerMedia(ctx, answer, instance, day, mediaAssetId, index + 1);
-      }
-
-      if (userId === instance.seeded_for_user_id) {
-        if (instance.status === "active") {
-          await ctx.db.patch(instance._id, { status: "answered" });
-        }
-        const ownInstances = await ctx.db
-          .query("daily_question_instances")
-          .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-            q.eq("couple_day_id", instance.couple_day_id).eq("seeded_for_user_id", userId).eq("status", "answered"),
-          )
-          .collect();
-        if (ownInstances.length === DAILY_QUESTION_SLOTS) {
-          await completeDailyChallenge(ctx, instance.couple_day_id, userId);
-        }
-      }
       return { answer_id: answerId };
     },
   );
   return result.answer_id;
+}
+
+/**
+ * Writes a checked answer: the answer row and its parts, the user's own instance marked
+ * answered, and the day completed once every own slot is answered. The caller has checked
+ * access, the answer kinds, and that the user has no answer on the instance yet.
+ * `notifyPartner: false` keeps the streak effects but sends the partner no push.
+ */
+export async function insertDailyAnswer(
+  ctx: WriterCtx,
+  input: {
+    userId: string;
+    instance: Doc<"daily_question_instances">;
+    day: Doc<"couple_days">;
+    answerId: string;
+    textBody: string;
+    selectedPartnerUserId: string | null;
+    mediaAssetIds: string[];
+    notifyPartner: boolean;
+  },
+): Promise<void> {
+  const { userId, instance, day } = input;
+  const now = nowIso();
+  const answerDocId = await ctx.db.insert("daily_question_answers", {
+    id: input.answerId,
+    instance_id: instance.id,
+    user_id: userId,
+    created_at: now,
+    updated_at: now,
+    moderation_status: "visible",
+  });
+  const answer = (await ctx.db.get(answerDocId))!;
+  if (input.notifyPartner) {
+    await enqueuePartnerAnsweredNotification(ctx, answer);
+  }
+
+  if (input.textBody !== "") {
+    await upsertAnswerText(ctx, answer, instance, input.textBody);
+  }
+  if (input.selectedPartnerUserId !== null) {
+    await upsertAnswerPartnerChoice(ctx, answer, instance, day, input.selectedPartnerUserId);
+  }
+  for (const [index, mediaAssetId] of input.mediaAssetIds.entries()) {
+    await insertAnswerMedia(ctx, answer, instance, day, mediaAssetId, index + 1);
+  }
+
+  if (userId === instance.seeded_for_user_id) {
+    if (instance.status === "active") {
+      await ctx.db.patch(instance._id, { status: "answered" });
+    }
+    const ownInstances = await ctx.db
+      .query("daily_question_instances")
+      .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
+        q.eq("couple_day_id", instance.couple_day_id).eq("seeded_for_user_id", userId).eq("status", "answered"),
+      )
+      .collect();
+    if (ownInstances.length === DAILY_QUESTION_SLOTS) {
+      await completeDailyChallenge(ctx, instance.couple_day_id, userId, input.notifyPartner);
+    }
+  }
 }
 
 type EditKind = "text" | "partner_choice";

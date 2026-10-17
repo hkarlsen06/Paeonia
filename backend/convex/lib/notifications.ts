@@ -31,6 +31,7 @@ const NOTIFICATION_KINDS = [
   "game_invite",
   "game_turn_reminder",
   "question_time_reminder",
+  "partner_joined",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

@@ -1385,6 +1385,39 @@ export default defineSchema({
     .index("by_parent_revision_id", ["parent_revision_id"])
     .index("by_payload_media_asset_id", ["payload_media_asset_id"]),
 
+  // FK: user_id -> users cascade; drawing.media_asset_id -> media_assets restrict. One row per user.
+  // What the inviter makes before their partner joins (firstDay.ts). accept_pairing_invite turns it
+  // into couple content and deletes the row.
+  first_day_drafts: defineTable({
+    user_id: uuid,
+    started_on: v.optional(date),
+    // Picked once by start_first_day_draft. The slot is the index + 1.
+    question_version_ids: v.array(uuid),
+    answers: v.array(v.object({ question_version_id: uuid, body: v.string(), answered_at: ts })),
+    drawing: v.optional(
+      v.object({
+        media_asset_id: uuid,
+        // The revision id the drawing gets on the couple's canvas: the asset's reserved_parent_id.
+        revision_id: uuid,
+        payload_bytes: v.number(),
+        uncompressed_bytes: v.number(),
+        compression: literals("none", "gzip"),
+        stroke_count: v.optional(v.number()),
+        point_count: v.optional(v.number()),
+        bounds: v.optional(v.any()),
+        sha256: v.string(),
+        client_decode_validated_at: ts,
+        client_renderer_version: v.string(),
+        client_validation_version: v.string(),
+        saved_at: ts,
+      }),
+    ),
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_user_id", ["user_id"])
+    .index("by_drawing_media_asset_id", ["drawing.media_asset_id"]),
+
   // ---- games (new in Convex, see games.ts and docs/games/draw-and-guess.md) ----
   // Every games table has a couple_id index. Relationship cleanup deletes the rows (lib/gameRegistry.ts).
   // game_settings and game_invites are shared by every game kind. The presence component keeps who

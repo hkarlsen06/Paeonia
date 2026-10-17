@@ -10,48 +10,29 @@ import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
-import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import { sha256Hex } from "./lib/crypto";
-import type { ReaderCtx, WriterCtx } from "./lib/db";
+import type { ReaderCtx } from "./lib/db";
 import { getByUuid, orNull, withTouch } from "./lib/db";
 import { checkViolation, fail } from "./lib/errors";
 import { newUuid, optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
-import { isJsonObject, jsonbByteLength } from "./lib/json";
 import { signLiveTicket } from "./lib/liveTicket";
 import { readLockScreenState } from "./lib/lockScreenState";
-import { enqueuePartnerNotification, enqueueWidgetPushForUser, enqueueWidgetUpdateAlert } from "./lib/notifications";
-import { applyCoupleActivity } from "./lib/streaks";
 import { btrim, btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
+import {
+  MAX_WIDGET_PAYLOAD_BYTES,
+  getOrCreateWidgetCanvas,
+  insertWidgetDrawingRevision,
+  isUsableWidgetPayloadAsset,
+  parseWidgetDrawingPayload,
+  widgetDrawingPayloadArgs,
+  widgetDrawingPayloadHashFields,
+} from "./lib/widgetDrawings";
 
-const MAX_PAYLOAD_BYTES = 2_097_152;
 const nullableInt = v.optional(v.union(v.null(), v.number()));
 
 type Revision = Doc<"widget_drawing_revisions">;
 type Asset = Doc<"media_assets">;
-
-/** Port of `assert_widget_canvas_couple_allowed`. */
-async function assertWidgetCanvasCoupleAllowed(ctx: ReaderCtx, coupleId: string): Promise<void> {
-  const couple = await getByUuid(ctx, "couples", coupleId);
-  if (!couple || couple.status !== "active") fail("23514", "widget canvas requires an active couple");
-}
-
-/** Port of `assert_widget_canvas_active_revision_allowed`. */
-async function assertWidgetCanvasActiveRevisionAllowed(
-  ctx: ReaderCtx,
-  canvasId: string,
-  activeRevisionId: string,
-): Promise<void> {
-  const revision = await getByUuid(ctx, "widget_drawing_revisions", activeRevisionId);
-  if (
-    !revision ||
-    revision.canvas_id !== canvasId ||
-    revision.deleted_at !== undefined ||
-    revision.moderation_status !== "visible"
-  ) {
-    fail("23514", "active widget revision must be a visible revision for the same canvas");
-  }
-}
 
 /** Port of `assert_widget_drawing_revision_allowed`. */
 async function assertWidgetDrawingRevisionAllowed(
@@ -96,7 +77,7 @@ async function assertWidgetDrawingRevisionAllowed(
     asset.upload_status !== "finalized" ||
     asset.upload_finalized_at === undefined ||
     asset.byte_size !== revision.payload_bytes ||
-    asset.byte_size > MAX_PAYLOAD_BYTES ||
+    asset.byte_size > MAX_WIDGET_PAYLOAD_BYTES ||
     asset.sha256 === undefined ||
     asset.storage_delete_status !== "none" ||
     asset.moderation_status !== "visible" ||
@@ -104,73 +85,6 @@ async function assertWidgetDrawingRevisionAllowed(
   ) {
     fail("23514", "widget drawing payload asset is not usable");
   }
-}
-
-/**
- * Port of the `handle_widget_drawing_revision_created` trigger: streak activity,
- * the silent WidgetKit refresh, the silent app refresh, and the visible alert.
- */
-async function handleWidgetDrawingRevisionCreated(ctx: WriterCtx, revision: Revision): Promise<void> {
-  const canvas = await getByUuid(ctx, "widget_canvases", revision.canvas_id);
-  if (!canvas) return;
-  await applyCoupleActivity(ctx, {
-    couple_id: canvas.couple_id,
-    user_id: revision.author_user_id,
-    couple_day_id: await getOrCreateCoupleDayAt(ctx, canvas.couple_id, revision.created_at),
-    activity_kind: "widget_drawing_saved",
-    occurred_at: revision.created_at,
-    dedupe_key: `widget_drawing_saved:${revision.id}`,
-    metadata: { canvas_id: revision.canvas_id },
-  });
-
-  const members = await ctx.db
-    .query("couple_members")
-    .withIndex("by_couple_id_status", (q) => q.eq("couple_id", canvas.couple_id).eq("status", "active"))
-    .collect();
-  const recipient = members.find((member) => member.user_id !== revision.author_user_id);
-  const payload = {
-    type: "widget_updated",
-    couple_id: canvas.couple_id,
-    canvas_id: revision.canvas_id,
-    revision_id: revision.id,
-    actor_user_id: revision.author_user_id,
-    route: "widget",
-    deeplink: "paeonia://widget/drawing",
-  };
-  if (recipient) {
-    try {
-      await enqueueWidgetPushForUser(ctx, {
-        recipient_user_id: recipient.user_id,
-        kind: "widget_updated",
-        payload,
-        dedupe_key: `widgetkit:${revision.id}`,
-        apns_collapse_id: `widget:${canvas.couple_id}`,
-        scheduled_for: null,
-      });
-    } catch {
-      // WidgetKit push delivery must never make saving a drawing fail.
-    }
-  }
-
-  // Silent refresh: wakes the partner's app to pull the new drawing.
-  await enqueuePartnerNotification(ctx, {
-    couple_id: canvas.couple_id,
-    actor_user_id: revision.author_user_id,
-    kind: "widget_updated",
-    payload,
-    dedupe_key: `widget_updated:${revision.id}`,
-    redaction_level: "private",
-    apns_push_type: "background",
-    apns_collapse_id: `widget:${canvas.couple_id}`,
-    scheduled_for: nowIso(),
-  });
-  // Alert: lock-screen banner, gated on the partner's alert toggle.
-  await enqueueWidgetUpdateAlert(ctx, {
-    couple_id: canvas.couple_id,
-    author_user_id: revision.author_user_id,
-    canvas_id: revision.canvas_id,
-    revision_id: revision.id,
-  });
 }
 
 // --- Canvas reads -----------------------------------------------------------
@@ -189,21 +103,7 @@ export const get_or_create_widget_canvas = mutation({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleId = await resolveCoupleId(ctx, userId, args.p_couple_id);
-    let canvas = await ctx.db
-      .query("widget_canvases")
-      .withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId))
-      .unique();
-    if (!canvas) {
-      await assertWidgetCanvasCoupleAllowed(ctx, coupleId);
-      const now = nowIso();
-      const docId = await ctx.db.insert("widget_canvases", {
-        id: newUuid(),
-        couple_id: coupleId,
-        created_at: now,
-        updated_at: now,
-      });
-      canvas = (await ctx.db.get(docId))!;
-    }
+    const canvas = await getOrCreateWidgetCanvas(ctx, coupleId);
     if (canvas.deleted_at !== undefined) return [];
     return [
       {
@@ -430,18 +330,8 @@ export const get_widget_drawing_revisions = query({
 export const submit_widget_drawing_revision = mutation({
   args: {
     p_canvas_id: v.string(),
-    p_payload_media_asset_id: v.string(),
     p_parent_revision_id: v.optional(v.union(v.null(), v.string())),
-    p_payload_bytes: v.number(),
-    p_uncompressed_bytes: nullableInt,
-    p_compression: v.optional(v.union(v.null(), v.string())),
-    p_stroke_count: nullableInt,
-    p_point_count: nullableInt,
-    p_bounds: v.optional(v.any()),
-    p_sha256_hex: v.string(),
-    p_client_decode_validated_at: v.string(),
-    p_client_renderer_version: v.string(),
-    p_client_validation_version: v.string(),
+    ...widgetDrawingPayloadArgs,
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
@@ -450,54 +340,7 @@ export const submit_widget_drawing_revision = mutation({
     const assetId = uuidArg(args.p_payload_media_asset_id);
     const parentId = optionalUuidArg(args.p_parent_revision_id);
 
-    const compression = btrim(args.p_compression ?? "none").toLowerCase();
-    if (compression !== "none" && compression !== "gzip") {
-      fail("23514", "widget drawing compression is not supported");
-    }
-    const payloadBytes = args.p_payload_bytes;
-    if (!(payloadBytes > 0) || payloadBytes > MAX_PAYLOAD_BYTES) {
-      fail("23514", "widget drawing payload bytes are out of range");
-    }
-    const uncompressedBytes = args.p_uncompressed_bytes ?? payloadBytes;
-    if (!(uncompressedBytes > 0) || uncompressedBytes > MAX_PAYLOAD_BYTES) {
-      fail("23514", "widget drawing uncompressed bytes are out of range");
-    }
-    if (
-      (compression === "none" && uncompressedBytes !== payloadBytes) ||
-      (compression === "gzip" && uncompressedBytes < payloadBytes)
-    ) {
-      fail("23514", "widget drawing compression metadata is invalid");
-    }
-    const strokeCount = args.p_stroke_count ?? undefined;
-    if (strokeCount !== undefined && (strokeCount < 0 || strokeCount > 5000)) {
-      fail("23514", "widget drawing stroke count is out of range");
-    }
-    const pointCount = args.p_point_count ?? undefined;
-    if (pointCount !== undefined && (pointCount < 0 || pointCount > 200000)) {
-      fail("23514", "widget drawing point count is out of range");
-    }
-    const bounds = args.p_bounds ?? undefined;
-    if (bounds !== undefined && (!isJsonObject(bounds) || jsonbByteLength(bounds) > 2048)) {
-      fail("23514", "widget drawing bounds metadata is invalid");
-    }
-    if (!/^[0-9a-fA-F]{64}$/.test(args.p_sha256_hex)) {
-      fail("22023", "widget drawing sha256 must be a 64 character hex string");
-    }
-    const sha256 = args.p_sha256_hex.toLowerCase();
-    const rendererVersion = btrimToNull(args.p_client_renderer_version);
-    const validationVersion = btrimToNull(args.p_client_validation_version);
-    if (
-      rendererVersion === null ||
-      charLength(rendererVersion) > 80 ||
-      validationVersion === null ||
-      charLength(validationVersion) > 80
-    ) {
-      fail("23514", "widget drawing client validation metadata is invalid");
-    }
-    const validatedAt = timestampArg(args.p_client_decode_validated_at);
-    if (Date.parse(validatedAt) > Date.now() + 5 * 60_000) {
-      fail("23514", "widget drawing client decode validation timestamp is invalid");
-    }
+    const payload = parseWidgetDrawingPayload(args);
 
     const stored = await runClientOperation(
       ctx,
@@ -510,16 +353,7 @@ export const submit_widget_drawing_revision = mutation({
           canvasId,
           assetId,
           parentId ?? "",
-          payloadBytes,
-          uncompressedBytes,
-          compression,
-          strokeCount ?? "",
-          pointCount ?? "",
-          bounds ?? "",
-          sha256,
-          validatedAt,
-          rendererVersion,
-          validationVersion,
+          ...widgetDrawingPayloadHashFields(payload),
         ],
       }),
       async () => {
@@ -533,26 +367,7 @@ export const submit_widget_drawing_revision = mutation({
         if (!asset) return fail("22023", "widget drawing payload asset was not found");
         const revisionId = asset.reserved_parent_id;
         const expectedPath = `${canvas.couple_id}/${canvas.id}/revisions/${revisionId}/drawing.pkdrawing`;
-        if (
-          asset.owner_user_id !== userId ||
-          asset.couple_id !== canvas.couple_id ||
-          asset.reserved_parent_kind !== "widget_drawing_revision" ||
-          asset.bucket !== "widget-drawings" ||
-          asset.storage_path !== expectedPath ||
-          asset.media_type !== "drawing_payload" ||
-          asset.upload_purpose !== "widget_drawing_payload" ||
-          asset.expected_media_type !== "drawing_payload" ||
-          asset.expected_bucket !== "widget-drawings" ||
-          asset.upload_status !== "finalized" ||
-          asset.upload_finalized_at === undefined ||
-          asset.byte_size !== payloadBytes ||
-          asset.byte_size > MAX_PAYLOAD_BYTES ||
-          !["application/octet-stream", "application/x-pkdrawing"].includes(asset.mime_type ?? "") ||
-          asset.sha256 !== sha256 ||
-          asset.storage_delete_status !== "none" ||
-          asset.moderation_status !== "visible" ||
-          asset.deleted_at !== undefined
-        ) {
+        if (!isUsableWidgetPayloadAsset(asset, { ownerUserId: userId, coupleId: canvas.couple_id, storagePath: expectedPath, payload })) {
           fail("23514", "widget drawing payload asset is not usable");
         }
         const sameRevision = await getByUuid(ctx, "widget_drawing_revisions", revisionId);
@@ -562,39 +377,22 @@ export const submit_widget_drawing_revision = mutation({
           .first();
         if (sameRevision || sameAsset) fail("23505", "widget drawing payload asset was already saved");
 
-        const revisionRow = {
+        await assertWidgetDrawingRevisionAllowed(ctx, userId, {
           id: revisionId,
           canvas_id: canvas.id,
           author_user_id: userId,
           parent_revision_id: parentId,
           payload_media_asset_id: asset.id,
-          payload_bytes: payloadBytes,
-        };
-        await assertWidgetDrawingRevisionAllowed(ctx, userId, revisionRow);
-        const now = nowIso();
-        const docId = await ctx.db.insert("widget_drawing_revisions", {
-          ...revisionRow,
-          format: "pkdrawing",
-          format_version: 1,
-          uncompressed_bytes: uncompressedBytes,
-          compression,
-          stroke_count: strokeCount,
-          point_count: pointCount,
-          bounds,
-          renderer_version: 1,
-          client_decode_validated_at: validatedAt,
-          client_renderer_version: rendererVersion,
-          client_validation_version: validationVersion,
-          moderation_status: "visible",
-          created_at: now,
-          updated_at: now,
+          payload_bytes: payload.payloadBytes,
         });
-        const revision = (await ctx.db.get(docId))!;
-        await handleWidgetDrawingRevisionCreated(ctx, revision);
-
-        await assertWidgetCanvasActiveRevisionAllowed(ctx, canvas.id, revision.id);
-        const updatedAt = nowIso();
-        await ctx.db.patch(canvas._id, { active_revision_id: revision.id, updated_at: updatedAt });
+        const { revision, updatedAt } = await insertWidgetDrawingRevision(ctx, canvas, {
+          id: revisionId,
+          authorUserId: userId,
+          parentRevisionId: parentId,
+          payloadMediaAssetId: asset.id,
+          payload,
+          alert: true,
+        });
         return {
           canvas_id: canvas.id,
           revision_id: revision.id,

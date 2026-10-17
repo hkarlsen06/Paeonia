@@ -42,6 +42,8 @@ export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string
     pair_id: best.couple.pair_id,
     relationship_status: best.couple.status,
     member_status: best.member.status,
+    // This person joined with the partner's invite code.
+    accepted_invite: best.member.role === "partner",
     partner_user_id: partner?.user_id ?? null,
     partner_display_name: visible ? orNull(profile?.display_name) : null,
     partner_profile_photo_asset_id: visible

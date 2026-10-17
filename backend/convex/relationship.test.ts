@@ -179,6 +179,7 @@ describe("relationship_state in get_access_snapshot", () => {
       pair_id: couple.pairId,
       relationship_status: "active",
       member_status: "active",
+      accepted_invite: false,
       partner_user_id: couple.second.userId,
       partner_display_name: "Second Partner",
       partner_profile_photo_asset_id: null,

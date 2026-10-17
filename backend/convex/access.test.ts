@@ -171,9 +171,12 @@ describe("access snapshot", () => {
       couple_id: couple.coupleId,
       relationship_status: "active",
       member_status: "active",
+      accepted_invite: true,
       partner_user_id: couple.first.userId,
       partner_display_name: "First Partner",
     });
+    const [creatorRow] = await couple.first.as.query(api.access.get_access_snapshot, {});
+    expect(creatorRow.relationship_state).toMatchObject({ accepted_invite: false });
   });
 });
 

@@ -3,6 +3,7 @@ import type { ReaderCtx, WriterCtx } from "./db";
 import { fail } from "./errors";
 import { newUuid } from "./ids";
 import {
+  addDaysToDate,
   endOfLocalDay,
   isValidTimeZone,
   localDateOf,
@@ -146,4 +147,22 @@ export async function userLocalDate(
     .unique();
   const timeZone = isValidTimeZone(profile?.time_zone_id) ? profile.time_zone_id : "UTC";
   return localDateOf(observedAt, timeZone);
+}
+
+/**
+ * Fails unless a relationship start date is on or before the user's local today. Before
+ * onboarding saves a time zone, the user's today can be one day past UTC's, so that day passes too.
+ */
+export async function assertStartedOnNotInFuture(ctx: ReaderCtx, userId: string, startedOn: string): Promise<void> {
+  const profile = await ctx.db
+    .query("profiles")
+    .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+    .unique();
+  const now = nowIso();
+  const latest = isValidTimeZone(profile?.time_zone_id)
+    ? localDateOf(now, profile.time_zone_id)
+    : addDaysToDate(localDateOf(now, "UTC"), 1);
+  if (startedOn > latest) {
+    fail("23514", "relationship start date must be today or earlier");
+  }
 }
