@@ -360,111 +360,6 @@ struct RemotePairingServiceTests {
     }
 }
 
-struct PaywallInviteAcceptanceTests {
-    @MainActor
-    @Test func previewMustSucceedBeforeAcceptingInviteWithoutInventingStartDate() async throws {
-        let operation = PairingClientOperation(
-            id: try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333")),
-            clientID: try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222")),
-            clientSequence: 9,
-            localCreatedAt: Date(timeIntervalSince1970: 40)
-        )
-        let preview = PairingInvitePreview(
-            inviteID: try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444")),
-            inviterUserID: try #require(UUID(uuidString: "55555555-5555-5555-5555-555555555555")),
-            inviterDisplayName: "Alex",
-            expiresAt: Date(timeIntervalSince1970: 100),
-            hasSafetyWarning: false
-        )
-        let pairingService = PaywallPairingServiceSpy(preview: preview)
-        let viewModel = PaywallViewModel(
-            userID: "11111111-1111-1111-1111-111111111111",
-            storeKitService: PaywallStoreKitServiceSpy(),
-            pairingService: pairingService,
-            operationProvider: StaticPairingOperationProvider(operation: operation)
-        )
-
-        let loadedPreview = await viewModel.previewInvite(codeInput: "01-ab-cd")
-
-        #expect(loadedPreview == preview)
-        #expect(viewModel.invitePreview == preview)
-        #expect(await pairingService.previewedCodeInput == "01ABCD")
-        #expect(await pairingService.acceptCallCount == 0)
-
-        let accepted = await viewModel.acceptPreviewedInvite()
-
-        #expect(accepted)
-        #expect(viewModel.error == nil)
-        #expect(viewModel.invitePreview == nil)
-        #expect(await pairingService.acceptedCodeInput == "01ABCD")
-        #expect(await pairingService.acceptedOperation == operation)
-        #expect(await pairingService.acceptedStartedOn == nil)
-    }
-
-    @MainActor
-    @Test func invalidInviteCodeDoesNotCallPreviewOrAccept() async {
-        let pairingService = PaywallPairingServiceSpy()
-        let viewModel = PaywallViewModel(
-            userID: "11111111-1111-1111-1111-111111111111",
-            storeKitService: PaywallStoreKitServiceSpy(),
-            pairingService: pairingService,
-            operationProvider: StaticPairingOperationProvider()
-        )
-
-        let preview = await viewModel.previewInvite(codeInput: "ABC12")
-
-        #expect(preview == nil)
-        #expect(viewModel.error == .inviteInvalid)
-        #expect(await pairingService.previewCallCount == 0)
-        #expect(await pairingService.acceptCallCount == 0)
-    }
-
-    @MainActor
-    @Test func unavailableInviteExplainsInvalidOrExpiredCodeAndCannotBeAccepted() async {
-        let pairingService = PaywallPairingServiceSpy(preview: nil)
-        let viewModel = PaywallViewModel(
-            userID: "11111111-1111-1111-1111-111111111111",
-            storeKitService: PaywallStoreKitServiceSpy(),
-            pairingService: pairingService,
-            operationProvider: StaticPairingOperationProvider()
-        )
-
-        let preview = await viewModel.previewInvite(codeInput: "01ABCD")
-        let accepted = await viewModel.acceptPreviewedInvite()
-
-        #expect(preview == nil)
-        #expect(!accepted)
-        #expect(viewModel.error == .inviteUnavailable)
-        #expect(await pairingService.previewCallCount == 1)
-        #expect(await pairingService.acceptCallCount == 0)
-        #expect(
-            PaywallError.inviteUnavailable.message
-                == String(localized: .paywallErrorInviteUnavailable)
-        )
-    }
-
-    @MainActor
-    @Test func previewRetainsPriorSafetyWarningForConfirmation() async throws {
-        let warningPreview = PairingInvitePreview(
-            inviteID: try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444")),
-            inviterUserID: try #require(UUID(uuidString: "55555555-5555-5555-5555-555555555555")),
-            inviterDisplayName: "Alex",
-            expiresAt: Date(timeIntervalSince1970: 100),
-            hasSafetyWarning: true
-        )
-        let viewModel = PaywallViewModel(
-            userID: "11111111-1111-1111-1111-111111111111",
-            storeKitService: PaywallStoreKitServiceSpy(),
-            pairingService: PaywallPairingServiceSpy(preview: warningPreview),
-            operationProvider: StaticPairingOperationProvider()
-        )
-
-        _ = await viewModel.previewInvite(codeInput: "01ABCD")
-
-        #expect(viewModel.invitePreview?.hasSafetyWarning == true)
-    }
-}
-
 struct PaywallUnpairTests {
     @MainActor
     @Test func leavingRelationshipUsesOperationAndSucceeds() async throws {
@@ -1194,23 +1089,12 @@ private final class StaticPairingOperationProvider: PairingClientOperationProvid
 }
 
 private actor PaywallPairingServiceSpy: PairingServicing {
-    private(set) var previewCallCount = 0
-    private(set) var previewedCodeInput: String?
-    private(set) var acceptCallCount = 0
-    private(set) var acceptedCodeInput: String?
-    private(set) var acceptedOperation: PairingClientOperation?
-    private(set) var acceptedStartedOn: PairingStartDate?
     private(set) var leaveCallCount = 0
     private(set) var leftOperation: PairingClientOperation?
     private let leaveShouldFail: Bool
-    private let preview: PairingInvitePreview?
 
-    init(
-        leaveShouldFail: Bool = false,
-        preview: PairingInvitePreview? = nil
-    ) {
+    init(leaveShouldFail: Bool = false) {
         self.leaveShouldFail = leaveShouldFail
-        self.preview = preview
     }
 
     func createInvite(
@@ -1234,9 +1118,7 @@ private actor PaywallPairingServiceSpy: PairingServicing {
     }
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
-        previewCallCount += 1
-        previewedCodeInput = codeInput
-        return preview
+        nil
     }
 
     func rotateInvite(
@@ -1257,11 +1139,7 @@ private actor PaywallPairingServiceSpy: PairingServicing {
         operation: PairingClientOperation,
         startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
-        acceptCallCount += 1
-        acceptedCodeInput = codeInput
-        acceptedOperation = operation
-        acceptedStartedOn = startedOn
-        return PairingAcceptedRelationship(coupleID: UUID())
+        PairingAcceptedRelationship(coupleID: UUID())
     }
 
     func revokeInvite(id: UUID) async throws -> Bool {

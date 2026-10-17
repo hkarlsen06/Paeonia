@@ -13,7 +13,7 @@
     /// Every scenario, in menu order within each category. A new game adds its
     /// list here.
     static let allCases: [DeveloperScenario] =
-      app + drawAndGuess + storyChain + mindMeld + exquisiteCorpse + boardGames
+      app + inviter + drawAndGuess + storyChain + mindMeld + exquisiteCorpse + boardGames
 
     nonisolated enum Category: String, CaseIterable, Identifiable, Sendable {
       case launchAndAuth = "State · Launch & authentication"

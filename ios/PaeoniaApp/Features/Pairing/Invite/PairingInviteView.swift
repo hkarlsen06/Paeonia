@@ -1,39 +1,37 @@
 import SwiftUI
 
-/// The screen an entitled but unpaired user sees. It shows their invite code and lets
-/// them join a partner's code instead.
+/// The screen an entitled but unpaired user sees. It shows their invite code, lets
+/// them enter a partner's code instead, and offers things to make for the partner
+/// while they wait.
 ///
-/// The default view model is built once after the view appears. Building it in `init`
+/// The default view models are built once after the view appears. Building it in `init`
 /// would repeat its setup (service creation, reading saved data) on every parent redraw.
 struct PairingInviteView: View {
     @State private var viewModel: PairingInviteViewModel?
+    @State private var firstDayModel: InviterFirstDayModel?
 
     private let userID: String?
-    private let pendingJoinCode: String?
-    private let onClearPendingJoinCode: () -> Void
-    private let onInviteAccepted: () -> Void
+    private let displayName: String?
+    private let onSubmitJoinCode: (String) async -> Bool
     private let onRefreshAccess: () -> Void
 
     /// - Parameters:
-    ///   - pendingJoinCode: A normalized partner code from a link or the welcome screen.
-    ///     The screen asks the user to confirm joining it once their own code is showing.
-    ///   - onClearPendingJoinCode: Called when the pending code is done with, so the root
-    ///     can forget it.
-    ///   - onInviteAccepted: Called after the user joined their partner.
+    ///   - onSubmitJoinCode: Checks a partner's code typed in the code sheet. If it
+    ///     works the root saves it and shows the join screen. Returns false to keep
+    ///     the sheet open.
     ///   - onRefreshAccess: Called when access should be checked again.
     init(
         session: AuthSession?,
         viewModel: PairingInviteViewModel? = nil,
-        pendingJoinCode: String?,
-        onClearPendingJoinCode: @escaping () -> Void,
-        onInviteAccepted: @escaping () -> Void,
+        firstDayModel: InviterFirstDayModel? = nil,
+        onSubmitJoinCode: @escaping (String) async -> Bool,
         onRefreshAccess: @escaping () -> Void
     ) {
         userID = session?.id
+        displayName = session?.displayName
         _viewModel = State(initialValue: viewModel)
-        self.pendingJoinCode = pendingJoinCode
-        self.onClearPendingJoinCode = onClearPendingJoinCode
-        self.onInviteAccepted = onInviteAccepted
+        _firstDayModel = State(initialValue: firstDayModel)
+        self.onSubmitJoinCode = onSubmitJoinCode
         self.onRefreshAccess = onRefreshAccess
     }
 
@@ -42,9 +40,8 @@ struct PairingInviteView: View {
             if let viewModel {
                 PairingInviteContent(
                     viewModel: viewModel,
-                    pendingJoinCode: pendingJoinCode,
-                    onClearPendingJoinCode: onClearPendingJoinCode,
-                    onInviteAccepted: onInviteAccepted,
+                    firstDay: firstDayModel,
+                    onSubmitJoinCode: { await onSubmitJoinCode($0) },
                     onRefreshAccess: onRefreshAccess
                 )
             } else {
@@ -56,6 +53,12 @@ struct PairingInviteView: View {
         .task {
             if viewModel == nil {
                 viewModel = PairingInviteViewModel(userID: userID)
+            }
+            if firstDayModel == nil {
+                firstDayModel = InviterFirstDayModel(
+                    ownerUserID: userID.flatMap(UUID.init(uuidString:)),
+                    authorName: displayName
+                )
             }
         }
     }
@@ -71,9 +74,7 @@ struct PairingInviteView: View {
             profilePhotoAssetID: nil,
             profileStatus: .complete
         ),
-        pendingJoinCode: nil,
-        onClearPendingJoinCode: {},
-        onInviteAccepted: {},
+        onSubmitJoinCode: { _ in false },
         onRefreshAccess: {}
     )
     .environment(PaeoniaBannerCenter())

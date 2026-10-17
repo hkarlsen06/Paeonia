@@ -18,6 +18,17 @@ enum PaeoniaHaptics {
         impact(.light)
     }
 
+    /// Profile setup: the cropped photo landed in the avatar.
+    static func profilePhotoSet() {
+        impact(.soft, intensity: 0.8)
+    }
+
+    /// The join screen's Join button: a light tap while the join runs. The pairing
+    /// celebration that follows has its own success haptics.
+    static func partnerJoinSent() {
+        impact(.light)
+    }
+
     static func pairingLinkBuildUp(intensity: CGFloat) {
         impact(.soft, intensity: intensity)
     }
@@ -66,6 +77,50 @@ enum PaeoniaHaptics {
     }
 
     static func memorySaved() {
+        notify(.success)
+    }
+
+    /// Onboarding found the Paeonia widget on the Home Screen after the person
+    /// went to add it.
+    static func widgetAdded() {
+        impact(.medium, intensity: 0.9)
+        notify(.success)
+    }
+
+    /// Onboarding saved the time the question reminder comes.
+    static func questionTimeSaved() {
+        notify(.success)
+    }
+
+    /// The seal on the partner's first drawing breaks: a crisp snap, then a soft
+    /// give as the envelope opens.
+    static func giftUnwrapped() {
+        impact(.rigid, intensity: 0.75)
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(70))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            impact(.soft, intensity: 0.5)
+        }
+    }
+
+    /// The last stroke of the partner's first drawing lands.
+    static func giftReplayFinished() {
+        impact(.medium, intensity: 0.8)
+        notify(.success)
+    }
+
+    /// One of the inviter's first answers was saved and the next page slides in.
+    static func firstDayAnswerSaved() {
+        impact(.soft, intensity: 0.8)
+    }
+
+    /// A "while you wait" item on the invite screen turned done.
+    static func firstDayItemDone() {
+        impact(.rigid, intensity: 0.7)
         notify(.success)
     }
 

@@ -12,11 +12,12 @@ extension RootView {
     }
 
     /// The paired identity once Home is actually on screen: after launch work,
-    /// and never under the pairing celebration.
+    /// and never under the pairing celebration or the first day sequence.
     var stablePairedLocationIdentity: LocationIdentity? {
         guard hasFinishedPostLaunchWork,
               viewModel.state == .paired,
               !viewModel.isPairingCelebrationPresented,
+              !viewModel.isFirstDayPresented,
               locationIdentity.currentUserID != nil,
               locationIdentity.coupleID != nil
         else {

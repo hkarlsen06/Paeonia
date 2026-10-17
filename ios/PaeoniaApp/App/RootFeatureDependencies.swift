@@ -10,6 +10,9 @@ struct RootFeatureDependencies {
     var paywallViewModel: PaywallViewModel?
     var paywallPresentationOverride: PaywallPresentationOverride?
     var pairingInviteViewModel: PairingInviteViewModel?
+    var inviterFirstDayModel: InviterFirstDayModel?
+    var firstDayStartedOnQueue: FirstDayStartedOnQueue?
+    var pairingJoinViewModel: PairingJoinViewModel?
     var dailyChallengeViewModel: DailyChallengeViewModel?
     var milestoneViewModel: RelationshipMilestoneViewModel?
     var memoriesViewModel: MemoriesViewModel?
@@ -25,6 +28,9 @@ struct RootFeatureDependencies {
         paywallViewModel: PaywallViewModel? = nil,
         paywallPresentationOverride: PaywallPresentationOverride? = nil,
         pairingInviteViewModel: PairingInviteViewModel? = nil,
+        inviterFirstDayModel: InviterFirstDayModel? = nil,
+        firstDayStartedOnQueue: FirstDayStartedOnQueue? = nil,
+        pairingJoinViewModel: PairingJoinViewModel? = nil,
         dailyChallengeViewModel: DailyChallengeViewModel? = nil,
         milestoneViewModel: RelationshipMilestoneViewModel? = nil,
         memoriesViewModel: MemoriesViewModel? = nil,
@@ -39,6 +45,9 @@ struct RootFeatureDependencies {
         self.paywallViewModel = paywallViewModel
         self.paywallPresentationOverride = paywallPresentationOverride
         self.pairingInviteViewModel = pairingInviteViewModel
+        self.inviterFirstDayModel = inviterFirstDayModel
+        self.firstDayStartedOnQueue = firstDayStartedOnQueue
+        self.pairingJoinViewModel = pairingJoinViewModel
         self.dailyChallengeViewModel = dailyChallengeViewModel
         self.milestoneViewModel = milestoneViewModel
         self.memoriesViewModel = memoriesViewModel

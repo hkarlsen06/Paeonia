@@ -1262,6 +1262,7 @@ private actor RelationshipEndedAccessRouteService: AccessRouteServicing {
                     pairID: UUID(),
                     relationshipStatus: .ended,
                     memberStatus: noticeSeen ? .endedNoticeSeen : .endedNoticePending,
+                    acceptedInvite: false,
                     partnerUserID: UUID(),
                     partnerDisplayName: "Partner",
                     partnerProfilePhotoAssetID: nil,
@@ -1306,6 +1307,7 @@ extension AccessSyncSnapshot {
                 pairID: UUID(),
                 relationshipStatus: .ended,
                 memberStatus: .endedNoticePending,
+                acceptedInvite: false,
                 partnerUserID: UUID(),
                 partnerDisplayName: "Partner",
                 partnerProfilePhotoAssetID: nil,
@@ -1432,6 +1434,7 @@ private extension RemoteRelationshipState {
             pairID: pairID ?? UUID(),
             relationshipStatus: .active,
             memberStatus: .active,
+            acceptedInvite: false,
             partnerUserID: UUID(),
             partnerDisplayName: partnerDisplayName,
             partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
@@ -1457,6 +1460,16 @@ final class TestPairingCelebrationStore: PairingCelebrationStoring {
 
     func markCelebrationSeen(forPairID pairID: UUID) {
         seenPairIDs.insert(pairID)
+    }
+
+    private(set) var progressByPairID: [UUID: PostPairingProgress] = [:]
+
+    func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress? {
+        progressByPairID[pairID]
+    }
+
+    func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID) {
+        progressByPairID[pairID] = progress
     }
 }
 

@@ -6,39 +6,20 @@ import UniformTypeIdentifiers
 /// model lazily and hands it over.
 struct PairingInviteContent: View {
     let viewModel: PairingInviteViewModel
-    let pendingJoinCode: String?
-    let onClearPendingJoinCode: () -> Void
-    let onInviteAccepted: () -> Void
+    /// The "while you wait" items. Nil until the parent builds it.
+    let firstDay: InviterFirstDayModel?
+    let onSubmitJoinCode: (String) async -> Bool
     let onRefreshAccess: () -> Void
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @State private var isConfirmingNewCode = false
     @State private var isEnteringCode = false
-    @State private var isConfirmingJoin = false
-    @State private var joinOrigin = JoinOrigin.entry
-
-    private enum JoinOrigin {
-        /// The code came from a link, so a saved copy exists that should go away when the
-        /// user is done with it.
-        case link
-        case entry
-    }
-
-    private struct PendingJoinTaskID: Equatable {
-        let code: String?
-        let hasInvite: Bool
-    }
 
     var body: some View {
         content
             .task {
                 await viewModel.loadInviteIfNeeded()
-            }
-            // The link flow waits for the user's own code to show, so the confirmation
-            // never appears over a loading screen.
-            .task(id: PendingJoinTaskID(code: pendingJoinCode, hasInvite: viewModel.invite != nil)) {
-                await previewPendingJoin()
             }
             .onChange(of: viewModel.error) { _, error in
                 showBanner(for: error)
@@ -62,29 +43,13 @@ struct PairingInviteContent: View {
             } message: {
                 Text(.pairingInviteNewCodeConfirmMessage)
             }
-            .alert(
-                Text(PaywallInviteConfirmation.title(for: viewModel.joinPreview)),
-                isPresented: $isConfirmingJoin
-            ) {
-                Button(action: confirmJoin) {
-                    Text(.paywallInviteConfirmAction)
-                }
-
-                Button(role: .cancel, action: cancelJoin) {
-                    Text(.paywallInviteConfirmCancel)
-                }
-            } message: {
-                Text(PaywallInviteConfirmation.message(for: viewModel.joinPreview))
-            }
-            .sheet(isPresented: $isEnteringCode, onDismiss: confirmJoinIfPreviewed) {
+            .sheet(isPresented: $isEnteringCode) {
                 PairingCodeEntrySheet(
                     title: .pairingCodeEntryTitle,
                     message: .pairingCodeEntryMessage,
-                    submitTitle: .pairingCodeEntrySubmit
-                ) { code in
-                    joinOrigin = .entry
-                    return await viewModel.previewJoin(codeInput: code)
-                }
+                    submitTitle: .pairingCodeEntrySubmit,
+                    onSubmit: { await onSubmitJoinCode($0) }
+                )
             }
     }
 
@@ -126,6 +91,22 @@ struct PairingInviteContent: View {
     }
 
     private func readyContent(_ invite: PairingInvite) -> some View {
+        ScrollViewReader { proxy in
+            readyScrollView(invite)
+                // A row that turns done may sit under the buttons, so it comes into
+                // sight for its beat.
+                .onChange(of: firstDay?.completion) { _, completion in
+                    guard let completion else {
+                        return
+                    }
+                    withAnimation(PaeoniaMotion.stateChange) {
+                        proxy.scrollTo(completion.item, anchor: .center)
+                    }
+                }
+        }
+    }
+
+    private func readyScrollView(_ invite: PairingInvite) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -142,7 +123,12 @@ struct PairingInviteContent: View {
 
                 PairingInviteCodeBlock(invite: invite)
 
-                PairingInviteWaitingLine()
+                PairingInviteWaitingLine(notifiesOnJoin: firstDay?.notificationsAllowed == true)
+
+                if let firstDay {
+                    InviterWhileYouWaitSection(model: firstDay)
+                        .padding(.top, PaeoniaSpacing.space8)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, PaeoniaSpacing.space16)
@@ -153,7 +139,6 @@ struct PairingInviteContent: View {
                 invite: invite,
                 didCopyCode: viewModel.didCopyCode,
                 isBusy: viewModel.isBusy,
-                isJoining: viewModel.isJoining,
                 onCopy: { copyInviteCode(invite.code) },
                 onNewCode: { isConfirmingNewCode = true },
                 onEnterCode: { isEnteringCode = true }
@@ -228,44 +213,5 @@ struct PairingInviteContent: View {
         PaeoniaHaptics.selection()
         AccessibilityNotification.Announcement(String(localized: .pairingInviteCopiedAnnouncement)).post()
         viewModel.noteCodeCopied()
-    }
-
-    // MARK: - Joining a partner's code
-
-    private func previewPendingJoin() async {
-        guard let pendingJoinCode, viewModel.invite != nil else {
-            return
-        }
-
-        joinOrigin = .link
-        if await viewModel.previewJoin(codeInput: pendingJoinCode) {
-            isConfirmingJoin = true
-        } else if viewModel.lastJoinError?.isFinalJoinFailure == true {
-            onClearPendingJoinCode()
-        }
-    }
-
-    /// Runs after the code sheet has closed. Showing the alert any earlier can lose it to
-    /// the sheet's closing animation.
-    private func confirmJoinIfPreviewed() {
-        if viewModel.joinPreview != nil {
-            isConfirmingJoin = true
-        }
-    }
-
-    private func confirmJoin() {
-        Task {
-            if await viewModel.acceptPreviewedJoin() {
-                onClearPendingJoinCode()
-                onInviteAccepted()
-            }
-        }
-    }
-
-    private func cancelJoin() {
-        viewModel.clearJoinPreview()
-        if joinOrigin == .link {
-            onClearPendingJoinCode()
-        }
     }
 }

@@ -5,6 +5,7 @@
     private var session: AuthSession?
     private var isEntitled: Bool
     private var isPaired: Bool
+    private var acceptedInvite = false
 
     init(seed: DeveloperLocalFlowSeed) {
       switch seed {
@@ -77,6 +78,7 @@
       session = nil
       isEntitled = false
       isPaired = false
+      acceptedInvite = false
     }
 
     func grantEntitlement() { isEntitled = true }
@@ -84,13 +86,18 @@
     func acceptInvite() {
       isEntitled = true
       isPaired = true
+      acceptedInvite = true
     }
 
-    func leaveRelationship() { isPaired = false }
+    func leaveRelationship() {
+      isPaired = false
+      acceptedInvite = false
+    }
 
     func resolveAccess(hasPendingInvite: Bool) -> AccessRouteResolution {
       if hasPendingInvite, isEntitled, !isPaired {
         isPaired = true
+        acceptedInvite = true
       }
 
       let snapshot = AccessRouteSnapshot(
@@ -141,6 +148,7 @@
         pairID: DeveloperLocalFlowIDs.pairID,
         relationshipStatus: .active,
         memberStatus: .active,
+        acceptedInvite: acceptedInvite,
         partnerUserID: DeveloperScenarioFixture.partnerUserID,
         partnerDisplayName: "Robin",
         partnerProfilePhotoAssetID: nil,
@@ -308,6 +316,11 @@
     private var seenPairIDs = Set<UUID>()
     func hasSeenCelebration(forPairID pairID: UUID) -> Bool { seenPairIDs.contains(pairID) }
     func markCelebrationSeen(forPairID pairID: UUID) { seenPairIDs.insert(pairID) }
+    private var progressByPairID: [UUID: PostPairingProgress] = [:]
+    func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress? { progressByPairID[pairID] }
+    func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID) {
+      progressByPairID[pairID] = progress
+    }
   }
 
   nonisolated struct DeveloperLocalFlowPrimerStore: PushPermissionPrimerPersisting {

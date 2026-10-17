@@ -240,7 +240,7 @@
   }
 
   actor DeveloperScenarioPairingService: PairingServicing {
-    enum Mode: Equatable { case ready, expired, failing }
+    enum Mode: Equatable { case ready, expired, failing, safetyWarning }
     private let mode: Mode
 
     init(mode: Mode) { self.mode = mode }
@@ -276,7 +276,7 @@
         inviterUserID: DeveloperScenarioFixture.partnerUserID,
         inviterDisplayName: "Robin",
         expiresAt: DeveloperScenarioFixture.now.addingTimeInterval(86_400),
-        hasSafetyWarning: false
+        hasSafetyWarning: mode == .safetyWarning
       )
     }
     func rotateInvite(

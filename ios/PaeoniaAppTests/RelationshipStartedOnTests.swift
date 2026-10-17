@@ -132,6 +132,7 @@ struct RelationshipStartedOnDataServiceTests {
             pairID: try #require(UUID(uuidString: "55555555-5555-5555-5555-555555555555")),
             relationshipStatus: .active,
             memberStatus: .active,
+            acceptedInvite: false,
             partnerUserID: UUID(uuidString: "66666666-6666-6666-6666-666666666666"),
             partnerDisplayName: "Alex",
             partnerProfilePhotoAssetID: nil,

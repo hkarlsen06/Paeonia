@@ -116,6 +116,10 @@
   actor DeveloperWidgetCanvasService: WidgetCanvasManaging {
     private var snapshot: WidgetCanvasSnapshot?
 
+    init(snapshot: WidgetCanvasSnapshot? = nil) {
+      self.snapshot = snapshot
+    }
+
     func loadSavedDrawing() -> Data? { snapshot?.drawingData }
     func loadSavedSnapshot() -> WidgetCanvasSnapshot? { snapshot }
     func saveDrawing(
@@ -131,7 +135,7 @@
     func hideForPrivacy() { snapshot = nil }
   }
 
-  private actor DeveloperWidgetCanvasUploader: WidgetCanvasUploading {
+  actor DeveloperWidgetCanvasUploader: WidgetCanvasUploading {
     func send(_: WidgetDrawingUploadPayload) -> WidgetDrawingDelivery { .delivered }
     func uploadPending(_: WidgetDrawingUploadPayload) throws {}
   }

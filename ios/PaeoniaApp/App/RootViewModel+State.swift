@@ -30,6 +30,14 @@ extension RootViewModel {
         route.accessResolution?.relationshipStartedOn
     }
 
+    var currentRelationshipAcceptedInvite: Bool {
+        route.accessResolution?.acceptedInvite ?? false
+    }
+
+    var currentPairID: UUID? {
+        route.accessResolution?.pairingCelebrationPairID
+    }
+
     var currentProfilePhotoAssetID: UUID? {
         currentSession?.profilePhotoAssetID
     }

@@ -160,6 +160,10 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             SaveCountdownPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
             DeleteCountdownPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
             SetBirthdayPendingOperationHandler(gateway: coupleDatesGateway, cache: FileCoupleDatesCache.shared),
+            FirstDayStartedOnPendingOperationHandler(
+                gateway: LiveFirstDayGateway(client: client),
+                relationshipDates: RelationshipStartedOnDataServiceFactory.makeDefault()
+            ),
         ]
     }
 

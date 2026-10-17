@@ -24,6 +24,7 @@ final class DailyChallengeViewModel {
     let service: any DailyChallengeServicing
     let operationProvider: any SyncClientOperationProviding
     let draftStore: any DailyChallengeDraftStoring
+    let firstDayDraftStore: any FirstDayAnswerDraftStoring
     let mediaDraftStore: any DailyAnswerMediaDraftStoring
     let pendingOperationStore: any PendingSyncOperationPersisting
     let snapshotCache: any DailyChallengeSnapshotCaching
@@ -98,6 +99,7 @@ final class DailyChallengeViewModel {
         service: (any DailyChallengeServicing)? = nil,
         operationProvider: (any SyncClientOperationProviding)? = nil,
         draftStore: (any DailyChallengeDraftStoring)? = nil,
+        firstDayDraftStore: (any FirstDayAnswerDraftStoring)? = nil,
         mediaDraftStore: (any DailyAnswerMediaDraftStoring)? = nil,
         pendingOperationStore: (any PendingSyncOperationPersisting)? = nil,
         snapshotCache: (any DailyChallengeSnapshotCaching)? = nil,
@@ -108,6 +110,7 @@ final class DailyChallengeViewModel {
         self.service = service ?? DailyChallengeServiceFactory.makeDefault()
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.draftStore = draftStore ?? UserDefaultsDailyChallengeDraftStore.shared
+        self.firstDayDraftStore = firstDayDraftStore ?? UserDefaultsFirstDayAnswerDraftStore.shared
         self.mediaDraftStore = mediaDraftStore ?? FileDailyAnswerMediaDraftStore.live()
         self.pendingOperationStore = pendingOperationStore ?? Self.makeDefaultPendingOperationStore()
         self.snapshotCache = snapshotCache ?? FileDailyChallengeSnapshotCache.live()
@@ -212,7 +215,7 @@ final class DailyChallengeViewModel {
         // identity after that suspension so a completed read for the previous user
         // can never update the newly signed-in user's screen.
         if self.currentUserID == newUserID, let cached {
-            apply(cached.loadResult(currentUserID: newUserID, locale: .current))
+            apply(cached.loadResult(currentUserID: newUserID, locale: .current), fromCache: true)
         }
         let cachedThreads = await chatService.cachedThreadSummaries(ownerUserID: newUserID)
         let readMarks = await chatService.chatReadMarks(ownerUserID: newUserID)
@@ -315,10 +318,15 @@ final class DailyChallengeViewModel {
         notice = nil
     }
 
-    func apply(_ result: DailyChallengeLoadResult) {
+    /// `fromCache` is true for the copy saved on this phone. Its questions may be
+    /// from an earlier day, so first day text waits for the server's answer.
+    func apply(_ result: DailyChallengeLoadResult, fromCache: Bool = false) {
         // A cached day, or a response from just before the couple's day ended, must
         // not show as today.
         snapshot = result.snapshot.endingCurrentDay(ifEndedBy: now())
+        if !fromCache {
+            adoptFirstDayDrafts()
+        }
         streak = result.streak
         scheduleDayEnd()
         snapshotWaiters.values.forEach { $0.yield() }

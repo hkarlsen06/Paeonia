@@ -52,6 +52,12 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(url) == .dailyChat(questionID: questionID))
     }
 
+    @Test func parsesHomeURL() throws {
+        let url = try #require(URL(string: "paeonia://home"))
+
+        #expect(PaeoniaDeepLink(url) == .home)
+    }
+
     @Test func parsesStreakURL() {
         let url = PaeoniaDeepLink.streakURL
 

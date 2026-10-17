@@ -122,70 +122,14 @@ struct PaywallViewModelTests {
         #expect(!viewModel.isLoading)
     }
 
-    @Test func unusableInviteCodeIsFlaggedButNetworkFailureIsNot() async {
-        let unavailable = makeViewModel(pairing: PaywallTestPairing(previewResult: .success(nil)))
-        _ = await unavailable.previewInvite(codeInput: "ABCD23")
-        #expect(unavailable.lastInviteCodeWasUnusable)
-        #expect(unavailable.error == .inviteUnavailable)
-
-        let offline = makeViewModel(
-            pairing: PaywallTestPairing(previewResult: .failure(URLError(.notConnectedToInternet)))
-        )
-        _ = await offline.previewInvite(codeInput: "ABCD23")
-        #expect(!offline.lastInviteCodeWasUnusable)
-        #expect(offline.error == .invitePreviewFailed)
-    }
-
-    /// The first accept reached the server and paired the couple, but its answer
-    /// was lost. Retrying used to preview again (the used invite now looks gone)
-    /// and send a new operation (the couple now exists), so it always failed.
-    @Test func retryAfterLostAcceptAnswerReplaysTheSameOperation() async {
-        let pairing = LostAnswerPairing()
-        let viewModel = PaywallViewModel(
-            userID: "user-1",
-            storeKitService: PaywallTestStoreKit(restoreResult: .success(false)),
-            pairingService: pairing,
-            operationProvider: CountingOperationProvider()
-        )
-
-        #expect(await viewModel.previewInvite(codeInput: "ABCD23") != nil)
-        #expect(await viewModel.acceptPreviewedInvite() == false)
-        #expect(viewModel.error == .inviteAcceptFailed)
-
-        #expect(await viewModel.previewInvite(codeInput: "ABCD23") != nil)
-        #expect(await viewModel.acceptPreviewedInvite())
-
-        #expect(await pairing.previewCount == 1)
-        let operations = await pairing.acceptOperations
-        #expect(operations.count == 2)
-        #expect(operations.first == operations.last)
-    }
-
-    @Test func serverRejectionStartsTheNextAcceptFresh() async {
-        let pairing = LostAnswerPairing(firstFailure: .server(code: "22023", message: "pairing invite is expired"))
-        let viewModel = PaywallViewModel(
-            userID: "user-1",
-            storeKitService: PaywallTestStoreKit(restoreResult: .success(false)),
-            pairingService: pairing,
-            operationProvider: CountingOperationProvider()
-        )
-
-        _ = await viewModel.previewInvite(codeInput: "ABCD23")
-        _ = await viewModel.acceptPreviewedInvite()
-        _ = await viewModel.previewInvite(codeInput: "ABCD23")
-
-        #expect(await pairing.previewCount == 2)
-    }
-
     private func makeViewModel(
         storeKit: PaywallTestStoreKit? = nil,
-        pairing: PaywallTestPairing? = nil,
         deadline: Duration = .seconds(5)
     ) -> PaywallViewModel {
         PaywallViewModel(
             userID: "user-1",
             storeKitService: storeKit ?? PaywallTestStoreKit(restoreResult: .success(false)),
-            pairingService: pairing ?? PaywallTestPairing(previewResult: .success(nil)),
+            pairingService: PaywallTestPairing(),
             operationProvider: PaywallTestOperationProvider(),
             firstPresentationDeadline: deadline
         )
@@ -256,16 +200,10 @@ private final class PaywallTestStoreKit: PaeoniaStoreKitServicing {
     func recoverPendingStreakRestores() async -> Int? { nil }
 }
 
-/// Only `previewInvite` is exercised by these tests.
+/// None of these tests reach the pairing service.
 private actor PaywallTestPairing: PairingServicing {
-    private let previewResult: Result<PairingInvitePreview?, Error>
-
-    init(previewResult: Result<PairingInvitePreview?, Error>) {
-        self.previewResult = previewResult
-    }
-
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
-        try previewResult.get()
+        fatalError("unused")
     }
 
     func createInvite(operation: PairingClientOperation, expiresAt: Date) async throws -> PairingInvite {
@@ -308,85 +246,4 @@ private final class PaywallTestOperationProvider: PairingClientOperationProvidin
     }
 }
 
-/// Pairs on the first accept but loses the answer (or rejects it, when
-/// `firstFailure` is a server error). Like the server, a replay of the first
-/// operation returns the stored result, and any other operation fails.
-private actor LostAnswerPairing: PairingServicing {
-    private let firstFailure: PaeoniaConvexError?
-    private var pairedOperation: PairingClientOperation?
-    private(set) var previewCount = 0
-    private(set) var acceptOperations = [PairingClientOperation]()
-
-    init(firstFailure: PaeoniaConvexError? = nil) {
-        self.firstFailure = firstFailure
-    }
-
-    func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
-        previewCount += 1
-        guard pairedOperation == nil else {
-            return nil
-        }
-        return PairingInvitePreview(
-            inviteID: UUID(),
-            inviterUserID: UUID(),
-            inviterDisplayName: "Robin",
-            expiresAt: Date().addingTimeInterval(3_600),
-            hasSafetyWarning: false
-        )
-    }
-
-    func acceptInvite(
-        codeInput: String,
-        operation: PairingClientOperation,
-        startedOn: PairingStartDate?
-    ) async throws -> PairingAcceptedRelationship {
-        acceptOperations.append(operation)
-        if let pairedOperation {
-            guard pairedOperation == operation else {
-                throw PaeoniaConvexError.server(code: "22023", message: "pairing invite is not pending")
-            }
-            return PairingAcceptedRelationship(coupleID: UUID())
-        }
-        if let firstFailure, acceptOperations.count == 1 {
-            throw firstFailure
-        }
-        pairedOperation = operation
-        throw URLError(.networkConnectionLost)
-    }
-
-    func createInvite(operation: PairingClientOperation, expiresAt: Date) async throws -> PairingInvite {
-        fatalError("unused")
-    }
-
-    func validateInvite(_ invite: PairingInvite) async throws -> PairingInviteValidation {
-        fatalError("unused")
-    }
-
-    func rotateInvite(
-        currentInvite: PairingInvite,
-        operation: PairingClientOperation,
-        expiresAt: Date
-    ) async throws -> PairingInvite {
-        fatalError("unused")
-    }
-
-    func revokeInvite(id: UUID) async throws -> Bool {
-        fatalError("unused")
-    }
-
-    func leaveRelationship(operation: PairingClientOperation) async throws -> Bool {
-        fatalError("unused")
-    }
-}
-
-/// Hands out a new operation every time, so a reused one is easy to spot.
-@MainActor
-private final class CountingOperationProvider: PairingClientOperationProviding {
-    private var sequence: Int64 = 0
-
-    func makeOperation() -> PairingClientOperation {
-        sequence += 1
-        return SyncClientOperation(clientID: UUID(), clientSequence: sequence)
-    }
-}
 // swiftlint:enable async_without_await unavailable_function

@@ -9,7 +9,6 @@ struct PairingInviteActionCluster: View {
     let invite: PairingInvite
     let didCopyCode: Bool
     let isBusy: Bool
-    let isJoining: Bool
     let onCopy: () -> Void
     let onNewCode: () -> Void
     let onEnterCode: () -> Void
@@ -83,18 +82,9 @@ struct PairingInviteActionCluster: View {
 
     private var enterCodeButton: some View {
         Button(action: onEnterCode) {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                if isJoining {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(.paeoniaTextSecondary)
-                        .accessibilityHidden(true)
-                }
-
-                Text(.pairingInviteJoinButton)
-            }
-            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-            .contentShape(Rectangle())
+            Text(.pairingInviteJoinButton)
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                .contentShape(Rectangle())
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
         .disabled(isBusy)

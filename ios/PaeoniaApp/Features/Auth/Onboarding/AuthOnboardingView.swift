@@ -2,18 +2,27 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-/// Profile setup right after the first sign-in: a photo and a name, both required.
-/// A Google photo imported at sign-in shows in the avatar and counts as the photo.
-/// Continue sits at the bottom, with sign out and account deletion as quiet links
-/// under it. The keyboard covers them while the name is typed, and the keyboard's
-/// Continue key submits.
+/// Profile setup right after the first sign-in, in two pages.
+///
+/// The first page asks for a photo and a name, both required. A Google photo imported
+/// at sign-in shows in the avatar and counts as the photo. Continue sits at the bottom,
+/// with sign out and account deletion as quiet links under it. The keyboard covers them
+/// while the name is typed, and the keyboard's Continue key submits.
+///
+/// The second page asks when the couple got together (`AuthOnboardingStartDatePage`).
+/// It comes before the profile is saved, because saving it moves the app on. Someone
+/// joining a partner's code skips it, since they confirm the date after joining.
 struct AuthOnboardingView: View {
     let isWorking: Bool
     /// The photo already on the account, such as the imported Google photo.
     let savedPhotoAssetID: UUID?
+    let asksStartDate: Bool
     let onCompleteOnboarding: (String, Data?) -> Void
     let onSignOut: () -> Void
     let onDeleteAccount: () -> Void
+    private let ownerUserID: UUID?
+    /// Nil until needed, so a redraw of this view doesn't build a store.
+    private let startDateQueue: FirstDayStartedOnQueue?
 
     @State private var displayName: String
     @State private var selectedProfilePhotoItem: PhotosPickerItem?
@@ -21,6 +30,7 @@ struct AuthOnboardingView: View {
     @State private var selectedProfilePhotoImage: Image?
     @State private var profilePhotoCropDraft: ProfilePhotoCropDraft?
     @State private var isConfirmingDelete = false
+    @State private var page = Page.profile
     /// The user tapped Continue. The spinner shows only while that save runs,
     /// not while a sign-out from the menu is running.
     @State private var hasSubmitted = false
@@ -29,39 +39,50 @@ struct AuthOnboardingView: View {
     @State private var triedWithoutPhoto = false
     @FocusState private var isNameFocused: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private enum Page {
+        case profile
+        case startDate
+    }
 
     init(
         session: AuthSession?,
         isWorking: Bool,
+        asksStartDate: Bool = true,
+        startDateQueue: FirstDayStartedOnQueue? = nil,
         onCompleteOnboarding: @escaping (String, Data?) -> Void,
         onSignOut: @escaping () -> Void,
         onDeleteAccount: @escaping () -> Void
     ) {
         self.isWorking = isWorking
         self.savedPhotoAssetID = session?.profilePhotoAssetID
+        self.asksStartDate = asksStartDate
         self.onCompleteOnboarding = onCompleteOnboarding
         self.onSignOut = onSignOut
         self.onDeleteAccount = onDeleteAccount
+        ownerUserID = session.flatMap { UUID(uuidString: $0.id) }
+        self.startDateQueue = startDateQueue
         _displayName = State(initialValue: session?.displayName ?? "")
     }
 
     var body: some View {
-        ScrollView {
-            onboardingContent
-                .padding(.top, PaeoniaSpacing.space16)
-                .padding(.bottom, PaeoniaSpacing.space24)
-        }
-        .scrollIndicators(.hidden)
-        .scrollBounceBehavior(.basedOnSize)
-        .scrollDismissesKeyboard(.interactively)
-        .paeoniaBottomBar(spacing: 0) {
-            VStack(spacing: PaeoniaSpacing.space4) {
-                completeButton
-                accountActions
+        ZStack {
+            switch page {
+            case .profile:
+                profilePage
+                    .transition(pageTransition(edge: .leading))
+            case .startDate:
+                AuthOnboardingStartDatePage(
+                    isSaving: isSaving,
+                    onBack: { page = .profile },
+                    onSaveDate: { await saveStartDate($0) },
+                    onFinish: { submit() }
+                )
+                .transition(pageTransition(edge: .trailing))
             }
-            .padding(.top, PaeoniaSpacing.space12)
-            .screenEntrance(order: 4)
         }
+        .animation(PaeoniaMotion.meaningfulMoment, value: page)
         .task(id: selectedProfilePhotoItem) {
             await loadProfilePhoto(from: selectedProfilePhotoItem)
         }
@@ -86,6 +107,32 @@ struct AuthOnboardingView: View {
             }
         } message: {
             Text(.authDeleteAccountConfirmMessage)
+        }
+    }
+
+    /// Pages slide like a push: the date page comes in from the trailing edge and goes
+    /// back out there. Reduce Motion crossfades.
+    private func pageTransition(edge: Edge) -> AnyTransition {
+        reduceMotion ? .opacity : .move(edge: edge).combined(with: .opacity)
+    }
+
+    private var profilePage: some View {
+        ScrollView {
+            onboardingContent
+                .padding(.top, PaeoniaSpacing.space16)
+                .padding(.bottom, PaeoniaSpacing.space24)
+        }
+        .scrollIndicators(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
+        .scrollDismissesKeyboard(.interactively)
+        .paeoniaBottomBar(spacing: 0) {
+            VStack(spacing: PaeoniaSpacing.space4) {
+                completeButton
+                accountActions
+            }
+            .padding(.top, PaeoniaSpacing.space12)
+            .onboardingBottomBarFade()
+            .screenEntrance(order: 4)
         }
     }
 
@@ -212,15 +259,18 @@ struct AuthOnboardingView: View {
         guard !isWorking else {
             return
         }
-        guard hasPhoto, let name = validatedName else {
+        guard hasPhoto, validatedName != nil else {
             showMissingRequirements()
             return
         }
 
         isNameFocused = false
-        hasSubmitted = true
-        PaeoniaHaptics.profileSetupSent()
-        onCompleteOnboarding(name, selectedProfilePhotoData)
+        if asksStartDate {
+            PaeoniaHaptics.selection()
+            page = .startDate
+        } else {
+            submit()
+        }
     }
 
     /// Points at what still blocks setup: a note and a stronger ring on the photo,
@@ -235,6 +285,38 @@ struct AuthOnboardingView: View {
         }
         if validatedName == nil {
             isNameFocused = true
+        }
+    }
+}
+
+// MARK: - Saving
+
+extension AuthOnboardingView {
+    /// Saves the profile, which moves the app on to the next screen.
+    private func submit() {
+        guard !isWorking, let name = validatedName else {
+            return
+        }
+        hasSubmitted = true
+        PaeoniaHaptics.profileSetupSent()
+        onCompleteOnboarding(name, selectedProfilePhotoData)
+    }
+
+    /// Queues the date on this phone. The sync sends it once the profile is saved.
+    private func saveStartDate(_ date: Date) async -> Bool {
+        guard let ownerUserID else {
+            return false
+        }
+        do {
+            let queue = startDateQueue ?? FirstDayStartedOnQueue()
+            try await queue.save(PairingStartDate(date: date), ownerUserID: ownerUserID)
+            return true
+        } catch {
+            bannerCenter.show(.error(
+                title: String(localized: .onboardingStartDateSaveFailedTitle),
+                message: String(localized: .commonActionFailedMessage)
+            ))
+            return false
         }
     }
 }
@@ -317,59 +399,11 @@ extension AuthOnboardingView {
             return
         }
 
-        selectedProfilePhotoData = imageData
-        selectedProfilePhotoImage = Image(uiImage: image)
-    }
-}
-
-/// The round photo in the profile picker, with its add or change badge.
-private struct AuthOnboardingPhotoPreview: View {
-    let image: Image?
-    let savedPhotoAssetID: UUID?
-    let name: String
-    let hasPhoto: Bool
-    let showsPhotoRequiredHint: Bool
-
-    var body: some View {
-        Group {
-            if let image {
-                image
-                    .resizable()
-                    .scaledToFill()
-            } else if let savedPhotoAssetID {
-                PaeoniaProfilePhotoAvatar(
-                    mediaAssetID: savedPhotoAssetID,
-                    name: name,
-                    tint: .paeoniaPartnerOne,
-                    size: 88
-                )
-            } else {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .padding(PaeoniaSpacing.space12)
-                    .foregroundStyle(.paeoniaTextTertiary)
-            }
+        withAnimation(PaeoniaMotion.stateChange) {
+            selectedProfilePhotoData = imageData
+            selectedProfilePhotoImage = Image(uiImage: image)
         }
-        .frame(width: 88, height: 88)
-        .background(.paeoniaSurfaceSecondary)
-        .clipShape(Circle())
-        .overlay {
-            Circle()
-                .strokeBorder(
-                    .paeoniaAccentPrimary.opacity(showsPhotoRequiredHint ? 1 : 0.25),
-                    lineWidth: showsPhotoRequiredHint ? 2 : 1
-                )
-        }
-        .animation(PaeoniaMotion.stateChange, value: showsPhotoRequiredHint)
-        .accessibilityHidden(true)
-        .overlay(alignment: .bottomTrailing) {
-            Image(systemName: hasPhoto ? "pencil.circle.fill" : "plus.circle.fill")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .background(Circle().fill(.paeoniaBackgroundPrimary))
-                .accessibilityHidden(true)
-        }
+        PaeoniaHaptics.profilePhotoSet()
     }
 }
 

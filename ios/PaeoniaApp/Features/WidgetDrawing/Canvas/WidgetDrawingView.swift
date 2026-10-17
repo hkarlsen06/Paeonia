@@ -10,6 +10,9 @@ struct WidgetDrawingView: View {
     private let historyViewModel: WidgetDrawingHistoryViewModel?
     private let historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)?
     private let partnerName: String
+    private let title: LocalizedStringResource
+    private let showsHistory: Bool
+    private let emptyCanvasHint: LocalizedStringResource?
     @State private var isClearConfirmationPresented = false
     @State private var isHistoryPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -22,7 +25,10 @@ struct WidgetDrawingView: View {
         authorName: String? = nil,
         viewModel: WidgetDrawingViewModel? = nil,
         historyViewModel: WidgetDrawingHistoryViewModel? = nil,
-        historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)? = nil
+        historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)? = nil,
+        title: LocalizedStringResource = .widgetDrawingTitle,
+        showsHistory: Bool = true,
+        emptyCanvasHint: LocalizedStringResource? = nil
     ) {
         _viewModel = State(
             initialValue: viewModel ?? WidgetDrawingViewModel(
@@ -34,6 +40,9 @@ struct WidgetDrawingView: View {
         )
         self.historyViewModel = historyViewModel
         self.historyThumbnailLoader = historyThumbnailLoader
+        self.title = title
+        self.showsHistory = showsHistory
+        self.emptyCanvasHint = emptyCanvasHint
         partnerName = WidgetSyncIdentityStore.shared.load().partnerDisplayName?.trimmedNonEmpty
             ?? String(localized: .pairingCelebrationPartnerName)
     }
@@ -59,7 +68,7 @@ struct WidgetDrawingView: View {
         // A canvas wider than this makes strokes look thin once they shrink onto the widget.
         .paeoniaReadableWidth()
         .background(.paeoniaBackgroundSecondary)
-        .navigationTitle(Text(.widgetDrawingTitle))
+        .navigationTitle(Text(title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -187,6 +196,7 @@ struct WidgetDrawingView: View {
             // where the remaining vertical space is shorter than screen width.
             .frame(width: side, height: side)
             .overlay { liveOverlay }
+            .overlay { emptyCanvasHintView }
             .overlay { WidgetDrawingSizePreview(viewModel: viewModel) }
             .overlay(alignment: .bottom) { WidgetDrawingSetAsideBar(viewModel: viewModel) }
             .background(.paeoniaBackgroundPrimary)
@@ -302,13 +312,31 @@ private extension WidgetDrawingView {
             .disabled(!viewModel.canRevertToSavedDrawing)
             .accessibilityLabel(Text(.widgetDrawingRevertButton))
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                isHistoryPresented = true
-            } label: {
-                Image(systemName: "clock.arrow.circlepath")
+        if showsHistory {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    isHistoryPresented = true
+                } label: {
+                    Image(systemName: "clock.arrow.circlepath")
+                }
+                .accessibilityLabel(Text(.widgetHistoryOpenButton))
             }
-            .accessibilityLabel(Text(.widgetHistoryOpenButton))
+        }
+    }
+
+    /// A line on the empty canvas that says who the drawing is for. It fades out
+    /// with the first stroke.
+    @ViewBuilder
+    var emptyCanvasHintView: some View {
+        if let emptyCanvasHint {
+            Text(emptyCanvasHint)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextTertiary)
+                .multilineTextAlignment(.center)
+                .padding(PaeoniaSpacing.space32)
+                .opacity(viewModel.drawing.strokes.isEmpty ? 1 : 0)
+                .animation(PaeoniaMotion.stateChange, value: viewModel.drawing.strokes.isEmpty)
+                .allowsHitTesting(false)
         }
     }
 

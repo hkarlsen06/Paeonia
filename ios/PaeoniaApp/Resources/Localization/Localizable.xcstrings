@@ -8937,6 +8937,168 @@
         }
       }
     },
+    "firstDay.drawing.hint" : {
+      "comment" : "Drawing screen before the partner joins: hint on the empty canvas",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw something for your partner. It'll be on their Home Screen when they join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn noe til partneren din. Det dukker opp på Hjem-skjermen til partneren din når dere er koblet sammen."
+          }
+        }
+      }
+    },
+    "firstDay.drawing.title" : {
+      "comment" : "Title of the drawing screen for the first drawing, made before the partner joins",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din første tegning"
+          }
+        }
+      }
+    },
+    "firstDay.drawing.waiting.message" : {
+      "comment" : "Banner after sending the first drawing when it could not reach the server yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing is saved on this phone. We'll keep trying to send it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen din er lagret på denne telefonen. Vi prøver å sende den igjen."
+          }
+        }
+      }
+    },
+    "firstDay.questions.done.message" : {
+      "comment" : "First questions before the partner joins: message after both are answered",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When your partner joins, they get the same questions. Once you've both answered, you'll see each other's answers."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din får de samme spørsmålene når dere er koblet sammen. Når dere begge har svart, ser dere svarene til hverandre."
+          }
+        }
+      }
+    },
+    "firstDay.questions.done.title" : {
+      "comment" : "First questions before the partner joins: title after both are answered",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answers are ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svarene dine er klare"
+          }
+        }
+      }
+    },
+    "firstDay.questions.eyebrow" : {
+      "comment" : "First questions before the partner joins: small heading on the question card, such as 'Question 1 of 2'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Question %1$lld of %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål %1$lld av %2$lld"
+          }
+        }
+      }
+    },
+    "firstDay.questions.revealRule" : {
+      "comment" : "First questions before the partner joins: explains when the partner can read the answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner sees your answer once they've answered too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din ser svaret ditt etter å ha svart selv."
+          }
+        }
+      }
+    },
+    "firstDay.questions.saveFailed.offlineMessage" : {
+      "comment" : "Banner message when an answer could not be saved because the phone is offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Your answer is still here, so try again when you're connected."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett. Svaret ditt er fortsatt her, så prøv igjen når du er koblet til."
+          }
+        }
+      }
+    },
+    "firstDay.questions.saveFailed.title" : {
+      "comment" : "Banner title when an answer to a first question could not be saved",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke lagret svaret ditt"
+          }
+        }
+      }
+    },
     "games.drawAndGuess.choose.error.character" : {
       "comment" : "Shown under the own-word field when it has anything other than the letters A to Z, Æ, Ø and Å, such as a number, a symbol or an accented letter like é.",
       "extractionState" : "manual",
@@ -15207,6 +15369,222 @@
         }
       }
     },
+    "inviter.drawing.row.done" : {
+      "comment" : "Invite screen: line under 'Draw something for them' once a drawing is saved for the partner",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready for their Home Screen. Tap to draw again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klar for Hjem-skjermen. Trykk for å tegne på nytt."
+          }
+        }
+      }
+    },
+    "inviter.drawing.row.subtitle" : {
+      "comment" : "Invite screen: line under 'Draw something for them' before anything is drawn",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It shows up on their Home Screen."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det dukker opp på Hjem-skjermen når dere er koblet sammen."
+          }
+        }
+      }
+    },
+    "inviter.drawing.row.title" : {
+      "comment" : "Invite screen: row that opens the drawing canvas to draw something for the partner before they join",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw something for them"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn noe til partneren din"
+          }
+        }
+      }
+    },
+    "inviter.drawing.row.waiting" : {
+      "comment" : "Invite screen: line under 'Draw something for them' when the drawing is saved on the phone but has not reached the server yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. We'll send it as soon as we can."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på denne telefonen. Vi sender den så snart vi kan."
+          }
+        }
+      }
+    },
+    "inviter.questions.loadFailed.offlineMessage" : {
+      "comment" : "Banner message when the first questions could not be loaded because the phone is offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "inviter.questions.loadFailed.title" : {
+      "comment" : "Banner title when the first questions could not be loaded on the invite screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't get your questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet spørsmålene"
+          }
+        }
+      }
+    },
+    "inviter.questions.row.done" : {
+      "comment" : "Invite screen: line under 'Answer your first questions' once both are answered",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready for them. Tap to change your answers."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på partneren din. Trykk for å endre svarene."
+          }
+        }
+      }
+    },
+    "inviter.questions.row.progress" : {
+      "comment" : "Invite screen, VoiceOver: how many of the first questions are answered, such as '1 of 2 answered'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld av %2$lld besvart"
+          }
+        }
+      }
+    },
+    "inviter.questions.row.subtitle" : {
+      "comment" : "Invite screen: line under 'Answer your first questions' before they are answered",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner gets the same ones when they join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din får de samme spørsmålene når dere er koblet sammen."
+          }
+        }
+      }
+    },
+    "inviter.questions.row.title" : {
+      "comment" : "Invite screen: row that opens the first two daily questions to answer before the partner joins",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer your first questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på de første spørsmålene"
+          }
+        }
+      }
+    },
+    "inviter.whileYouWait.message" : {
+      "comment" : "Invite screen: line under 'While you wait'. 'Them' is the partner who has not joined yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make something for your partner. It'll be waiting for them when they join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lag noe til partneren din. Det ligger klart når dere er koblet sammen."
+          }
+        }
+      }
+    },
+    "inviter.whileYouWait.title" : {
+      "comment" : "Invite screen: small uppercase heading over things the person can make for their partner while waiting",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "While you wait"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mens du venter"
+          }
+        }
+      }
+    },
     "location.permissionPrimer.message" : {
       "comment" : "Privacy explanation shown before iOS asks for location access. %@ is the partner name.",
       "extractionState" : "manual",
@@ -18477,6 +18855,1208 @@
         }
       }
     },
+    "onboarding.daysTogether.accessibility" : {
+      "comment" : "VoiceOver label for the days-together count in onboarding. %lld is the number of days the couple has been together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day together"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days together"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dag sammen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld dager sammen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "onboarding.daysTogether.dayOne" : {
+      "comment" : "Shown in big letters instead of a day count when the couple got together today.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today is day one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I dag er dag én"
+          }
+        }
+      }
+    },
+    "onboarding.daysTogether.unit" : {
+      "comment" : "Words under the big days-together number in onboarding. The number itself shows above, so these words leave it out. The plural follows the number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "day together"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "days together"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "dag sammen"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "dager sammen"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.answers.message" : {
+      "comment" : "Line under the title. The partner's answers stay hidden until the person answers too. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer them too, and you'll see what %@ said."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar du også, så ser du hva %@ svarte."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.answers.now.button" : {
+      "comment" : "Button that opens the daily questions so the person can answer them right away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar nå"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.answers.title" : {
+      "comment" : "Title when the partner has already answered the couple's first daily questions. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ answered the first questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svart på de første spørsmålene"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.continue.button" : {
+      "comment" : "Button that moves on to the next step of the first day after pairing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.ask.message" : {
+      "comment" : "Line under the question about when the couple got together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll count your days together. Either of you can change it later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi teller dagene dere har vært sammen. Begge kan endre datoen senere."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.ask.title" : {
+      "comment" : "Title of the first day step that asks when the couple got together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When did you get together?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når ble dere sammen?"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.change.button" : {
+      "comment" : "Quiet button that opens a calendar to change the day the couple got together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.confirm.button" : {
+      "comment" : "Button that confirms the day the partner set as the day the couple got together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's right"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det stemmer"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.confirm.message" : {
+      "comment" : "Line under the date the partner set, asking the person to confirm it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Is that right?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stemmer det?"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.confirm.title" : {
+      "comment" : "Title that shows the day the couple got together, as the partner set it. %1$@ is the partner's name. %2$@ is the date, like 3 March 2024.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ says you got together on %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ sier at dere ble sammen %2$@."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.reveal.title" : {
+      "comment" : "Title above the count of days the couple has been together. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du og %@"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.save.button" : {
+      "comment" : "Button that saves the day picked in the calendar as the day the couple got together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's our day"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er dagen vår"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.date.skip.button" : {
+      "comment" : "Quiet button that skips setting the day the couple got together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip for now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over for nå"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.button" : {
+      "comment" : "Last button of the pairing celebration when the partner made a drawing while waiting. %@ is the partner's name. Tapping it opens the drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the gift from %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne gaven fra %@"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.drawBack.button" : {
+      "comment" : "Button that opens the drawing screen so the person can draw something back for their partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn tilbake"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.failed.message" : {
+      "comment" : "Banner message when the partner's first drawing did not load for a reason other than being offline. Home shows the couple's current drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. You'll find it on Home later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt. Du finner den på Hjem senere."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.failed.offlineMessage" : {
+      "comment" : "Banner message when the partner's first drawing did not load because the phone has no internet. Home shows the couple's current drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Once you're back online, you'll find it on Home."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett. Når du er på nett igjen, finner du den på Hjem."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.failed.title" : {
+      "comment" : "Banner title when the partner's first drawing could not be downloaded. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The drawing from %@ didn't load"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen fra %@ ble ikke lastet inn"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.finished.message" : {
+      "comment" : "Line under the title once the partner's drawing has played back. Invites the person to draw something back. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draw one back, and %@ gets it right away."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegn en tilbake, så får %@ den med en gang."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.finished.title" : {
+      "comment" : "Title once the partner's drawing has played back. The drawing is on the shared Paeonia widget. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ drew this for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ tegnet dette til deg"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.holdHint" : {
+      "comment" : "Line under the title while the partner's drawing plays back line by line. Holding a finger on the drawing plays it faster.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold the drawing to speed it up."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold på tegningen for å spole fremover."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.open.accessibility" : {
+      "comment" : "VoiceOver label for the sealed envelope that holds the partner's first drawing. Activating it opens the envelope. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the drawing from %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne tegningen fra %@"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.replay.accessibility" : {
+      "comment" : "VoiceOver label for the partner's drawing while it plays back line by line, and after. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A drawing from %@, shown the way it was drawn"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En tegning fra %@, vist slik den ble tegnet"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.showWhole.action" : {
+      "comment" : "VoiceOver action that skips the line-by-line playback and shows the whole drawing at once.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the whole drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis hele tegningen"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.tap.message" : {
+      "comment" : "Line under the title of the sealed envelope. Tapping the envelope opens it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to open it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk for å åpne."
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.gift.title" : {
+      "comment" : "Title above a sealed envelope that holds the partner's first drawing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra %@"
+          }
+        }
+      }
+    },
+    "onboarding.firstDay.later.button" : {
+      "comment" : "Quiet button that skips a step of the first day after pairing, so the person can do it later.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senere"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.custom.subtitle" : {
+      "comment" : "Small line under the Another time choice.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick your own"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg selv"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.custom.title" : {
+      "comment" : "Question reminder choice that opens a time picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et annet tidspunkt"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.evening.subtitle" : {
+      "comment" : "Small line under the Evening choice. A concrete moment from the day.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When the day winds down"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når dagen roer seg"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.evening.title" : {
+      "comment" : "Question reminder choice for the evening, at 20:00. The time shows next to it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Evening"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kveld"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.lunch.subtitle" : {
+      "comment" : "Small line under the Lunch choice. A concrete moment from the day.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On your lunch break"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I lunsjpausen"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.lunch.title" : {
+      "comment" : "Question reminder choice for lunch, at 12:00. The time shows next to it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lunch"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lunsj"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.message.paired" : {
+      "comment" : "Onboarding message after the couple is paired. The reminder helps the couple answer the daily questions together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a time that fits your day. We'll remind you then, so the two of you can answer together."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et tidspunkt som passer dagen din. Vi minner deg på spørsmålene da, så dere to kan svare sammen."
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.message.waiting" : {
+      "comment" : "Onboarding message for the person who invited their partner and is waiting for them to join. We also send a notification when the partner joins.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a time that fits your day, and we'll remind you then. We'll also tell you the moment your partner joins."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et tidspunkt som passer dagen din, så minner vi deg på det da. Vi sier også fra med en gang partneren din blir med."
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.morning.subtitle" : {
+      "comment" : "Small line under the Morning choice. A concrete moment from the day.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With your morning coffee"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til morgenkaffen"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.morning.title" : {
+      "comment" : "Question reminder choice for the morning, at 8:00. The time shows next to it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morning"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morgen"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.notNow.button" : {
+      "comment" : "Quiet button that skips the question reminder for now.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.picker.label" : {
+      "comment" : "VoiceOver label for the time picker that sets the question reminder time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tidspunkt for påminnelsen"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.remind.button" : {
+      "comment" : "Button that saves the question reminder. %@ is the time in the phone's format, such as 20:00 or 8:00 PM.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remind me at %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minn meg på kl. %@"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.saveFailed.offlineMessage" : {
+      "comment" : "Error banner message when the reminder time could not be saved because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline, so your time wasn't saved. Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett, så tidspunktet ble ikke lagret. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.saveFailed.title" : {
+      "comment" : "Error banner title when the question reminder time could not be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your time"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke lagret tidspunktet"
+          }
+        }
+      }
+    },
+    "onboarding.questionTime.title" : {
+      "comment" : "Onboarding title of the step where the person picks when their daily question reminder comes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When should your questions arrive?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Når skal spørsmålene komme?"
+          }
+        }
+      }
+    },
+    "onboarding.startDate.back.button" : {
+      "comment" : "Profile setup, second page: button that goes back to the name and photo page",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbake"
+          }
+        }
+      }
+    },
+    "onboarding.startDate.message" : {
+      "comment" : "Profile setup, second page: the line under 'When did you get together?'",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll count your days together and celebrate the big ones. You can change it later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi teller dagene dere har vært sammen og feirer de store. Du kan endre datoen senere."
+          }
+        }
+      }
+    },
+    "onboarding.startDate.saveFailed.title" : {
+      "comment" : "Banner title when the date the couple got together could not be saved on the phone",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save your date"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke lagret datoen"
+          }
+        }
+      }
+    },
+    "onboarding.startDate.skip.button" : {
+      "comment" : "Profile setup, second page: quiet button that moves on without picking the date the couple got together",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip for now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over for nå"
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.added.message" : {
+      "comment" : "Onboarding message once the Paeonia widget is on the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawings will show up there from now on."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningene deres dukker opp der fra nå av."
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.added.title" : {
+      "comment" : "Onboarding title once the app sees that the person added the Paeonia widget to their Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's on your Home Screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den er på Hjem-skjermen din"
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.continue.button" : {
+      "comment" : "Button that moves on after the widget was added to the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.howTo.title" : {
+      "comment" : "Heading above the numbered steps for adding the widget to the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to add it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slik legger du den til"
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.later.button" : {
+      "comment" : "Quiet button on the widget step for people who don't want to add the widget now.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'll do it later"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeg gjør det senere"
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.message" : {
+      "comment" : "Onboarding message under the title. Asks the person to add the Paeonia widget to their iPhone Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add the Paeonia widget to your Home Screen to see it. When your partner draws something, it shows up there too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til Paeonia-widgeten på Hjem-skjermen for å se den. Når partneren din tegner noe, dukker det opp der også."
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.mock.accessibility" : {
+      "comment" : "VoiceOver label for a picture of an iPhone Home Screen with the Paeonia widget on it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Home Screen with the Paeonia widget showing your drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En Hjem-skjerm med Paeonia-widgeten som viser tegningen din"
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.step.add" : {
+      "comment" : "Step 3 of adding the widget. Add Widget is the iOS menu item. Use the name iOS shows in this language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap Add Widget."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på Legg til widget."
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.step.edit" : {
+      "comment" : "Step 2 of adding the widget. Edit is the iOS button that shows in a top corner of the Home Screen. Use the button name iOS shows in this language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap Edit in the top corner."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på Rediger øverst i hjørnet."
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.step.hold" : {
+      "comment" : "Step 1 of adding the widget. Matches the iOS gesture for editing the Home Screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touch and hold an empty spot on your Home Screen."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold fingeren på et tomt sted på Hjem-skjermen."
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.step.search" : {
+      "comment" : "Step 4 of adding the widget. Paeonia is the app name and stays as is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search for Paeonia."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Søk etter Paeonia."
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.step.size" : {
+      "comment" : "Step 5 of adding the widget. Add Widget is the iOS button under the widget sizes. Use the name iOS shows in this language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick the size you like and tap Add Widget."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg størrelsen du liker, og trykk på Legg til widget."
+          }
+        }
+      }
+    },
+    "onboarding.widgetNudge.title" : {
+      "comment" : "Onboarding title shown right after the person drew their first drawing. The drawing now shows on the Paeonia Home Screen widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing is waiting"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen din venter"
+          }
+        }
+      }
+    },
     "pairing.celebration.connectedAnnouncement" : {
       "comment" : "Spoken by VoiceOver when the pairing celebration settles. %@ is the partner's display name.",
       "extractionState" : "manual",
@@ -18981,6 +20561,24 @@
         }
       }
     },
+    "pairing.invite.waiting.notified" : {
+      "comment" : "Invite screen: quiet line under the code when notifications are allowed. 'They' is the partner who has not joined yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll tell you the moment they join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sier fra med en gang partneren din blir med."
+          }
+        }
+      }
+    },
     "pairing.invite.waiting.status" : {
       "comment" : "Quiet status line under the invite code. The app moves on by itself when the partner joins, so there is no button.",
       "extractionState" : "manual",
@@ -18995,6 +20593,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du kommer rett inn så snart partneren din blir med."
+          }
+        }
+      }
+    },
+    "pairing.join.covered" : {
+      "comment" : "Join screen line for someone without their own subscription. The partner's subscription covers both people.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their subscription covers you both, so joining is free."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnementet dekker dere begge, så det er gratis å bli med."
           }
         }
       }
@@ -19060,13 +20676,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't connect you with your partner. Check your connection, then enter the code again."
+            "value" : "We couldn't connect you with your partner. Check your connection and try again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi klarte ikke å koble deg til partneren din. Sjekk tilkoblingen, og skriv inn koden på nytt."
+            "value" : "Vi klarte ikke å koble deg til partneren din. Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -19078,13 +20694,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't connect you with your partner. Try again in a little while, then enter the code again."
+            "value" : "We couldn't connect you with your partner. Try again in a little while."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi klarte ikke å koble deg til partneren din. Prøv igjen om litt, og skriv inn koden på nytt."
+            "value" : "Vi klarte ikke å koble deg til partneren din. Prøv igjen om litt."
           }
         }
       }
@@ -19121,6 +20737,150 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Det er din egen kode. Send den til partneren din i stedet."
+          }
+        }
+      }
+    },
+    "pairing.join.message" : {
+      "comment" : "Line under the join screen title. %@ is the partner's name. The partner made the code the user is about to join.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ started Paeonia for the two of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ startet Paeonia for dere to."
+          }
+        }
+      }
+    },
+    "pairing.join.message.fallback" : {
+      "comment" : "Line under the join screen title when the partner's name is not available.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner started Paeonia for the two of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din startet Paeonia for dere to."
+          }
+        }
+      }
+    },
+    "pairing.join.noCode" : {
+      "comment" : "Quiet button on the join screen. Forgets the partner's code and goes back to the previous screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I don't have a code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeg har ingen kode"
+          }
+        }
+      }
+    },
+    "pairing.join.otherCode" : {
+      "comment" : "Quiet button on the join screen that opens code entry to type a different partner code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use a different code"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk en annen kode"
+          }
+        }
+      }
+    },
+    "pairing.join.safety" : {
+      "comment" : "Safety note on the join screen, shown under who the code belongs to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only continue if this is the person you expect."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett bare hvis dette er personen du forventer."
+          }
+        }
+      }
+    },
+    "pairing.join.safetyWarning" : {
+      "comment" : "Safety note on the join screen when there was an earlier safety concern involving the person who made the code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There was a previous safety concern involving this person. Only join if you feel safe doing so."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det har tidligere vært en bekymring knyttet til denne personen. Bli bare med hvis du føler deg trygg."
+          }
+        }
+      }
+    },
+    "pairing.join.title" : {
+      "comment" : "Title of the screen for joining a partner, also used on its main button. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med %@"
+          }
+        }
+      }
+    },
+    "pairing.join.title.fallback" : {
+      "comment" : "Title and main button of the join screen when the partner's name is not available.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med partneren din"
           }
         }
       }
@@ -19270,7 +21030,7 @@
       }
     },
     "paywall.cta.done" : {
-      "comment" : "Paywall button label right after a purchase or joining a partner went through, while the next screen opens.",
+      "comment" : "Paywall button label right after a purchase went through, while the next screen opens.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -19373,78 +21133,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ gratis, deretter %2$@."
-          }
-        }
-      }
-    },
-    "paywall.error.inviteAcceptFailed" : {
-      "comment" : "Error message when accepting an invite code fails.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We could not join you with that code. Check the code and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi klarte ikke å koble deg til med den koden. Sjekk koden og prøv igjen."
-          }
-        }
-      }
-    },
-    "paywall.error.inviteInvalid" : {
-      "comment" : "Error message when the entered invite code is not valid.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "That invite code does not look right."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Koden ser ikke riktig ut."
-          }
-        }
-      }
-    },
-    "paywall.error.invitePreviewFailed" : {
-      "comment" : "Error shown when the app cannot check an invite code because of a temporary failure",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't check this code. Check your connection and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke sjekke koden. Sjekk nettet og prøv igjen."
-          }
-        }
-      }
-    },
-    "paywall.error.inviteUnavailable" : {
-      "comment" : "Error shown when an invite code is invalid, expired, revoked, or already used",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This invite is no longer available. The code may be invalid or expired. Ask your partner for a new code."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Denne invitasjonen er ikke lenger tilgjengelig. Koden kan være ugyldig eller utløpt. Be partneren din om en ny kode."
           }
         }
       }
@@ -19571,114 +21259,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi kunne ikke gjenopprette kjøp. Prøv igjen."
-          }
-        }
-      }
-    },
-    "paywall.invite.confirm.action" : {
-      "comment" : "Button that explicitly accepts a previewed partner invite",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Join"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bli med"
-          }
-        }
-      }
-    },
-    "paywall.invite.confirm.cancel" : {
-      "comment" : "Button that cancels partner invite confirmation without accepting",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not now"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ikke nå"
-          }
-        }
-      }
-    },
-    "paywall.invite.confirm.message" : {
-      "comment" : "Centered confirmation message before accepting a normal partner invite",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Joining connects your shared space. Only continue if this is the person you expect."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Når du blir med, kobles det felles området deres sammen. Fortsett bare hvis dette er personen du forventer."
-          }
-        }
-      }
-    },
-    "paywall.invite.confirm.safetyMessage" : {
-      "comment" : "Safety warning shown before accepting an invite when the pair has a prior safety flag",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "There was a previous safety concern involving this person. Only join if you feel safe doing so."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Det har tidligere vært en bekymring knyttet til denne personen. Bli bare med hvis du føler deg trygg."
-          }
-        }
-      }
-    },
-    "paywall.invite.confirm.title" : {
-      "comment" : "Centered confirmation title before accepting an invite. %@ is the inviter's display name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Join %@?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bli med %@?"
-          }
-        }
-      }
-    },
-    "paywall.invite.confirm.titleFallback" : {
-      "comment" : "Centered confirmation title before accepting an invite when the inviter has no visible display name",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Join your partner?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bli med partneren din?"
           }
         }
       }
@@ -27073,7 +28653,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegn på hjemskjermen til partneren din"
+            "value" : "Tegn på Hjem-skjermen til partneren din"
           }
         }
       }

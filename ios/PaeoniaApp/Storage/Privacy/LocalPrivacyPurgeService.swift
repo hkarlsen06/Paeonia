@@ -249,7 +249,13 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     }
 
     func purge(ownerUserID: UUID, scope: LocalPrivacyPurgeScope) async {
-        await purgeWidgetsAndMediaCaches(scope: scope)
+        let savedDrawing = await widgetCanvas.loadSavedDrawing()
+        let keepsFirstDayUpload = Self.keepsUnsentFirstDayDrawing(
+            scope: scope,
+            pending: WidgetPendingUploadStore.shared.pendingSnapshot,
+            savedDrawing: savedDrawing
+        )
+        await purgeWidgetsAndMediaCaches(scope: scope, keepsSavedDrawing: keepsFirstDayUpload)
         await purgeContentCaches(scope: scope)
 
         WidgetSyncIdentityStore.shared.clear()
@@ -261,7 +267,9 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         if shouldPurgeOwnedContent {
             dailyAnswerMediaDraftStore.clearAll()
             removeTemporaryVoiceFiles()
-            WidgetPendingUploadStore.shared.clearAll()
+            if !keepsFirstDayUpload {
+                WidgetPendingUploadStore.shared.clearAll()
+            }
         }
 
         await MainActor.run {
@@ -279,12 +287,34 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
                 )
                 UserDefaultsPairingJoinInviteStore.shared.clearInviteCode()
                 PushRegistrationFingerprintStore.resetAll()
+                // First day text belongs to no couple, so only sign-out clears it.
+                UserDefaultsFirstDayAnswerDraftStore.shared.clearAll(for: ownerUserID)
             }
         }
     }
 
-    private func purgeWidgetsAndMediaCaches(scope: LocalPrivacyPurgeScope) async {
-        if scope == .relationshipAccessHidden {
+    /// An ended relationship purges again on each access check while its row lasts on
+    /// the server. The inviter's first drawing that has not reached the server yet belongs
+    /// to no couple and was never shared, so that purge keeps it on this phone with its
+    /// "not sent yet" marker, and it can still go out. The widget files go as usual.
+    /// Sign-out clears it.
+    nonisolated static func keepsUnsentFirstDayDrawing(
+        scope: LocalPrivacyPurgeScope,
+        pending: WidgetPendingUploadSnapshot?,
+        savedDrawing: Data?
+    ) -> Bool {
+        guard case .relationshipContentPurged = scope,
+              let pending, pending.isFirstDay,
+              let savedDrawing
+        else {
+            return false
+        }
+        return WidgetCanvasUploadService.sha256Hex(of: savedDrawing) == pending.contentHash
+    }
+
+    /// `keepsSavedDrawing` removes only what the widget shows, like a hide.
+    private func purgeWidgetsAndMediaCaches(scope: LocalPrivacyPurgeScope, keepsSavedDrawing: Bool) async {
+        if scope == .relationshipAccessHidden || keepsSavedDrawing {
             await widgetSync.hideForPrivacy()
             await widgetCanvas.hideForPrivacy()
         } else {

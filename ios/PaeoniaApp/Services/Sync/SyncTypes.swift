@@ -128,6 +128,7 @@ nonisolated enum SyncRecordStatus: String, Codable, CaseIterable, Sendable {
 
 nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendable {
     case setRelationshipStartedOn = "set_relationship_started_on"
+    case setFirstDayStartedOn = "set_first_day_started_on"
     case submitDailyAnswer = "submit_daily_answer"
     case createDailyQuestionThreadWithMessage = "create_daily_question_thread_with_message"
     case createMemoryThreadWithMessage = "create_memory_thread_with_message"

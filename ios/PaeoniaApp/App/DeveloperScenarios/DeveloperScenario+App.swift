@@ -7,8 +7,9 @@
     static let app: [DeveloperScenario] = [
       launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
-      pairingInviteReady, pairingJoin, pairingInviteExpired, pairingSafetyWarning, pairingInviteError,
-      pairingCelebration, pairingCelebrationSettled,
+      pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
+      pairingInviteError,
+      pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
       paywallTrial, paywallStandard, paywallPaired, paywallLoading,
       pairedHome, questions, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow,
@@ -75,11 +76,15 @@
     static let pairingJoin = pairing(
       "pairing-join", "Pairing · enter invite", "Six-character invite entry before authentication"
     )
+    static let pairingJoinPartner = pairing(
+      "pairing-join-partner", "Pairing · join partner",
+      "Join screen for someone with a partner's code, in place of the paywall"
+    )
     static let pairingInviteExpired = pairing(
       "pairing-invite-expired", "Pairing invite · expired", "Expired invite recovery state"
     )
     static let pairingSafetyWarning = pairing(
-      "pairing-safety-warning", "Pairing · safety warning", "Confirmation before joining a flagged invite"
+      "pairing-safety-warning", "Pairing · safety warning", "Join screen for a flagged invite"
     )
     static let pairingInviteError = pairing(
       "pairing-invite-error", "Pairing invite · error", "Invite creation failure and retry"
@@ -90,6 +95,14 @@
     static let pairingCelebrationSettled = pairing(
       "pairing-celebration-settled", "Pairing celebration · settled", "Final celebration layout without animation"
     )
+    static let firstDayJoined = DeveloperScenario(
+      "first-day-joined", "First day · joined partner",
+      "Celebration, then unwrap the gift, draw back, confirm the date, question time and answers", .pairing
+    ) { _ in DeveloperPostPairingScenarioView(acceptedInvite: true) }
+    static let firstDayInvited = DeveloperScenario(
+      "first-day-invited", "First day · inviter",
+      "Celebration, then the partner's drawing back. Date, question time and answers are skipped", .pairing
+    ) { _ in DeveloperPostPairingScenarioView(acceptedInvite: false) }
 
     // MARK: Paywall
 

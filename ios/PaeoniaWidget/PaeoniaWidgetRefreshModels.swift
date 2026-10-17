@@ -19,6 +19,8 @@ extension PaeoniaWidgetRefreshService {
 
     struct PendingUpload: Decodable {
         let contentHash: String
+        /// The inviter's own first drawing, which belongs to no couple yet.
+        let isFirstDay: Bool
     }
 
     /// The fields of `Widget/current.json` needed to tell whether the widget
@@ -54,7 +56,27 @@ extension PaeoniaWidgetRefreshService {
     }
 
     struct DrawingBounds: Decodable {
-        let canvasSide: Double
+        let canvasSide: Double?
+    }
+
+    /// The part of `firstDay:get_first_day_draft` the widget needs: the person's own
+    /// first drawing, saved before any partner joined.
+    struct FirstDayDraftState: Decodable {
+        let drawing: FirstDayDrawing?
+    }
+
+    struct FirstDayDrawing: Decodable {
+        let mediaAssetID: UUID
+        let revisionID: UUID
+        let savedAt: Date
+        let bounds: DrawingBounds?
+
+        enum CodingKeys: String, CodingKey {
+            case mediaAssetID = "media_asset_id"
+            case revisionID = "revision_id"
+            case savedAt = "saved_at"
+            case bounds
+        }
     }
 
     struct SignedURLRequest: Encodable {

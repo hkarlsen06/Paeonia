@@ -1,0 +1,236 @@
+import SwiftUI
+
+/// Where an onboarding step is shown. Before pairing, `RootBrandedFrame` already
+/// draws the logo, the background, the side margins and the column width, so the
+/// step adds none of them. After pairing the step stands alone and draws them itself.
+enum OnboardingStepPlacement {
+    case brandedFrame
+    case standalone
+}
+
+/// A button in an onboarding step's bottom bar.
+struct OnboardingStepAction {
+    let title: LocalizedStringResource
+    /// Shows a spinner in place of the title and ignores taps.
+    var isLoading = false
+    var isEnabled = true
+    let action: () -> Void
+}
+
+/// The shared layout of an onboarding step: optional art at the top, a title and a
+/// short message, the step's own content, and a bottom bar with a primary button and
+/// a quiet second choice under it. Everything drops in with the screen entrance
+/// cascade (art, text, content, then the bar). Either button can come and go, for a
+/// step whose choices change, and the bar animates the change.
+struct OnboardingStepScaffold<Art: View, Content: View>: View {
+    let title: LocalizedStringResource
+    let message: LocalizedStringResource?
+    let placement: OnboardingStepPlacement
+    let primary: OnboardingStepAction?
+    let secondary: OnboardingStepAction?
+    /// Holds the entrance until the step has what it needs to show. Once true, it
+    /// must stay true.
+    let isReady: Bool
+    /// The id of a view in the content to scroll into sight, such as a picker that
+    /// just opened under the fold. The scroll runs each time it changes to a new id.
+    let scrollTarget: AnyHashable?
+    private let art: Art
+    private let content: Content
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(
+        title: LocalizedStringResource,
+        message: LocalizedStringResource? = nil,
+        placement: OnboardingStepPlacement = .brandedFrame,
+        primary: OnboardingStepAction? = nil,
+        secondary: OnboardingStepAction? = nil,
+        isReady: Bool = true,
+        scrollTarget: AnyHashable? = nil,
+        @ViewBuilder art: () -> Art,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.message = message
+        self.placement = placement
+        self.primary = primary
+        self.secondary = secondary
+        self.isReady = isReady
+        self.scrollTarget = scrollTarget
+        self.art = art()
+        self.content = content()
+    }
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            scrollView
+                .onChange(of: scrollTarget) { _, target in
+                    guard let target else {
+                        return
+                    }
+                    withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
+                        proxy.scrollTo(target, anchor: .bottom)
+                    }
+                }
+        }
+    }
+
+    private var scrollView: some View {
+        ScrollView {
+            VStack(spacing: PaeoniaSpacing.sectionSpacing) {
+                if Art.self != EmptyView.self {
+                    art
+                        .screenEntrance(order: 1, isReady: isReady)
+                }
+
+                header
+                    .screenEntrance(order: 2, isReady: isReady)
+
+                content
+                    .screenEntrance(order: 3, isReady: isReady)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, placement == .standalone ? PaeoniaSpacing.screenTopSpacing : PaeoniaSpacing.space16)
+            .padding(.bottom, PaeoniaSpacing.space24)
+            .modifier(OnboardingStepColumn(placement: placement))
+        }
+        .scrollIndicators(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
+        .paeoniaBottomBar(spacing: 0) {
+            actionBar
+                .padding(.top, PaeoniaSpacing.space12)
+                .padding(.bottom, placement == .standalone ? PaeoniaSpacing.space16 : 0)
+                .modifier(OnboardingStepColumn(placement: placement))
+                .onboardingBottomBarFade()
+                .screenEntrance(order: 4, isReady: isReady)
+        }
+        .background {
+            if placement == .standalone {
+                PaeoniaGlowBackground()
+            }
+        }
+    }
+
+    private var header: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            Text(title)
+                .font(PaeoniaTypography.title)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .contentTransition(.opacity)
+                .accessibilityAddTraits(.isHeader)
+
+            if let message {
+                Text(message)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .contentTransition(.opacity)
+            }
+        }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var actionBar: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            if let primary {
+                Button(action: primary.action) {
+                    Text(primary.title)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: primary.isLoading))
+                .disabled(!primary.isEnabled)
+                .transition(buttonTransition)
+            }
+
+            if let secondary {
+                Button(action: secondary.action) {
+                    Text(secondary.title)
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .disabled(!secondary.isEnabled)
+                .frame(maxWidth: .infinity)
+                .transition(buttonTransition)
+            }
+        }
+        .animation(PaeoniaMotion.stateChange, value: primary == nil)
+        .animation(PaeoniaMotion.stateChange, value: secondary == nil)
+    }
+
+    private var buttonTransition: AnyTransition {
+        reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12))
+    }
+}
+
+extension OnboardingStepScaffold where Art == EmptyView {
+    init(
+        title: LocalizedStringResource,
+        message: LocalizedStringResource? = nil,
+        placement: OnboardingStepPlacement = .brandedFrame,
+        primary: OnboardingStepAction? = nil,
+        secondary: OnboardingStepAction? = nil,
+        isReady: Bool = true,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.init(
+            title: title,
+            message: message,
+            placement: placement,
+            primary: primary,
+            secondary: secondary,
+            isReady: isReady,
+            art: { EmptyView() },
+            content: content
+        )
+    }
+}
+
+/// The margins and column width `RootBrandedFrame` gives its content, for a step
+/// that stands alone.
+private struct OnboardingStepColumn: ViewModifier {
+    let placement: OnboardingStepPlacement
+
+    func body(content: Content) -> some View {
+        switch placement {
+        case .brandedFrame:
+            content
+        case .standalone:
+            content
+                .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        }
+    }
+}
+
+#if DEBUG
+#Preview("Standalone") {
+    OnboardingStepScaffold(
+        title: .onboardingQuestionTimeTitle,
+        message: .onboardingQuestionTimeMessagePaired,
+        placement: .standalone,
+        primary: OnboardingStepAction(title: .onboardingWidgetNudgeContinueButton) {},
+        secondary: OnboardingStepAction(title: .onboardingQuestionTimeNotNowButton) {}
+    ) {
+        Image(systemName: "sparkles")
+            .font(.system(size: 44, weight: .semibold))
+            .foregroundStyle(.paeoniaAccentPrimary)
+    } content: {
+        Text(verbatim: "Step content")
+            .foregroundStyle(.paeoniaTextSecondary)
+    }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("In the branded frame") {
+    RootBrandedFrame {
+        OnboardingStepScaffold(
+            title: .onboardingWidgetNudgeTitle,
+            message: .onboardingWidgetNudgeMessage,
+            secondary: OnboardingStepAction(title: .onboardingWidgetNudgeLaterButton) {}
+        ) {
+            Text(verbatim: "Step content")
+                .foregroundStyle(.paeoniaTextSecondary)
+        }
+    }
+    .preferredColorScheme(.dark)
+}
+#endif

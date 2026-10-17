@@ -43,8 +43,8 @@
         )
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .background(.paeoniaBackgroundPrimary)
-      case .pairingSafetyWarning:
-        DeveloperPairingSafetyWarningView()
+      case .pairingJoinPartner, .pairingSafetyWarning:
+        DeveloperJoinScenarioView(hasSafetyWarning: scenario == .pairingSafetyWarning)
       case .pairingCelebration, .pairingCelebrationSettled:
         PairingCelebrationView(
           currentDisplayName: "Alex",
@@ -59,9 +59,8 @@
           PairingInviteView(
             session: DeveloperScenarioFixture.completeSession,
             viewModel: inviteViewModel,
-            pendingJoinCode: nil,
-            onClearPendingJoinCode: {},
-            onInviteAccepted: {},
+            firstDayModel: DeveloperInviterFixture.firstDayModel(answered: 0, hasDrawing: false),
+            onSubmitJoinCode: { _ in true },
             onRefreshAccess: {}
           )
         }
@@ -97,37 +96,35 @@
     }
   }
 
-  private struct DeveloperPairingSafetyWarningView: View {
-    @State private var isPresented = true
+  /// The join screen in place of the paywall, with a local partner code.
+  private struct DeveloperJoinScenarioView: View {
+    let hasSafetyWarning: Bool
+    @State private var viewModel: PairingJoinViewModel
 
-    private let preview = PairingInvitePreview(
-      inviteID: UUID(),
-      inviterUserID: DeveloperScenarioFixture.partnerUserID,
-      inviterDisplayName: "Robin",
-      expiresAt: DeveloperScenarioFixture.now.addingTimeInterval(86_400),
-      hasSafetyWarning: true
-    )
+    init(hasSafetyWarning: Bool) {
+      self.hasSafetyWarning = hasSafetyWarning
+      _viewModel = State(
+        initialValue: PairingJoinViewModel(
+          pairingService: DeveloperScenarioPairingService(mode: hasSafetyWarning ? .safetyWarning : .ready),
+          operationProvider: DeveloperScenarioOperationProvider()
+        )
+      )
+    }
 
     var body: some View {
-      Color.paeoniaBackgroundPrimary
-        .ignoresSafeArea()
-        .alert(
-          Text(PaywallInviteConfirmation.title(for: preview)),
-          isPresented: $isPresented
-        ) {
-          Button {
-            isPresented = true
-          } label: {
-            Text(.paywallInviteConfirmAction)
-          }
-          Button(role: .cancel) {
-            isPresented = true
-          } label: {
-            Text(.paywallInviteConfirmCancel)
-          }
-        } message: {
-          Text(PaywallInviteConfirmation.message(for: preview))
-        }
+      RootBrandedFrame {
+        PairingJoinView(
+          viewModel: viewModel,
+          code: "LOVE26",
+          currentUserID: DeveloperScenarioFixture.currentUserID.uuidString,
+          replacesPaywall: true,
+          onSubmitCode: { _ in true },
+          onAccepted: {},
+          onForgetCode: {},
+          onSignOut: {},
+          onDeleteAccount: {}
+        )
+      }
     }
   }
 
@@ -147,7 +144,7 @@
           session: DeveloperScenarioFixture.completeSession,
           audience: audience,
           onPurchaseConfirmed: {},
-          onInviteAccepted: {},
+          onSubmitInviteCode: { _ in true },
           onSignOut: {},
           onUnpaired: {},
           onDeleteAccount: {},

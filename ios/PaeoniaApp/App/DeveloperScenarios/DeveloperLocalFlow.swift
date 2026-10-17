@@ -147,6 +147,19 @@
         paywallViewModel: paywallViewModel,
         paywallPresentationOverride: Self.paywallOverride(store: store),
         pairingInviteViewModel: pairingViewModel,
+        inviterFirstDayModel: DeveloperInviterFixture.firstDayModel(
+          answered: 0,
+          hasDrawing: false,
+          canvas: widgetCanvasService
+        ),
+        firstDayStartedOnQueue: FirstDayStartedOnQueue(
+          pendingOperationStore: pendingOperationStore,
+          operationProvider: operationProvider
+        ),
+        pairingJoinViewModel: PairingJoinViewModel(
+          pairingService: pairingService,
+          operationProvider: operationProvider
+        ),
         dailyChallengeViewModel: dailyViewModel,
         milestoneViewModel: milestoneViewModel,
         memoriesViewModel: memoriesViewModel,

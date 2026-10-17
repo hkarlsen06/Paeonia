@@ -8,10 +8,9 @@ struct PaywallBottomCTAView: View {
     let caption: String?
     let isEnabled: Bool
     let isBusy: Bool
-    /// The purchase or the join went through and the next screen is on its way.
+    /// The purchase went through and the next screen is on its way.
     /// The button says so and stays put instead of offering to buy again.
     let isDone: Bool
-    let isJoiningPartner: Bool
     let onPrimaryAction: () -> Void
     let onHaveInviteCode: (() -> Void)?
 
@@ -94,18 +93,11 @@ struct PaywallBottomCTAView: View {
     private var inviteButton: some View {
         if let onHaveInviteCode {
             Button(action: onHaveInviteCode) {
-                HStack(spacing: PaeoniaSpacing.space8) {
-                    if isJoiningPartner {
-                        ProgressView()
-                            .tint(.paeoniaAccentPrimary)
-                            .accessibilityHidden(true)
-                    }
-                    Text(.paywallInviteEntry)
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                }
+                Text(.paywallInviteEntry)
+                    .foregroundStyle(.paeoniaAccentPrimary)
             }
             .buttonStyle(PaeoniaQuietButtonStyle())
-            .disabled(isBusy || isDone || isJoiningPartner)
+            .disabled(isBusy || isDone)
             .accessibilityIdentifier("paywall.haveInviteCode")
         }
     }

@@ -172,6 +172,8 @@ nonisolated struct PairingInvitePreview: Decodable, Equatable, Sendable {
     let inviterDisplayName: String?
     let expiresAt: Date
     let hasSafetyWarning: Bool
+    /// A signed link to the inviter's profile photo. It works for about 15 minutes.
+    var inviterPhotoURL: URL?
 
     enum CodingKeys: String, CodingKey {
         case inviteID = "invite_id"
@@ -179,6 +181,7 @@ nonisolated struct PairingInvitePreview: Decodable, Equatable, Sendable {
         case inviterDisplayName = "inviter_display_name"
         case expiresAt = "expires_at"
         case hasSafetyWarning = "has_safety_warning"
+        case inviterPhotoURL = "inviter_photo_url"
     }
 }
 

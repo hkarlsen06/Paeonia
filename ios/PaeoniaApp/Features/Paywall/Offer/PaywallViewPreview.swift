@@ -13,7 +13,7 @@ import SwiftUI
             ),
             audience: .unpaired,
             onPurchaseConfirmed: {},
-            onInviteAccepted: {},
+            onSubmitInviteCode: { _ in false },
             onSignOut: {},
             onUnpaired: {},
             onDeleteAccount: {}

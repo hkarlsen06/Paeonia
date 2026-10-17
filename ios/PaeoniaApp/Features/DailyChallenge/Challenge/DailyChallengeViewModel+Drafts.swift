@@ -253,6 +253,27 @@ extension DailyChallengeViewModel {
         }
     }
 
+    /// Text the inviter typed before pairing and never sent waits in the first day store
+    /// by question version. When that version shows up as an unanswered question with no
+    /// draft of its own, the text moves into that question's draft. The first day store is
+    /// emptied on the first pass that has questions: a first day question missing from it
+    /// has ended, and its text must not land on the same question on a later day.
+    func adoptFirstDayDrafts() {
+        guard let currentUserID, !snapshot.questions.isEmpty else { return }
+        defer { firstDayDraftStore.clearAll(for: currentUserID) }
+        for question in snapshot.questions {
+            guard let text = firstDayDraftStore.takeText(for: question.questionVersionID, userID: currentUserID),
+                  !question.hasOwnAnswer,
+                  answerDrafts[question.id] == nil
+            else {
+                continue
+            }
+            let draft = DailyAnswerDraft(text: text)
+            answerDrafts[question.id] = draft
+            draftStore.setDraft(draft, for: question.id, userID: currentUserID)
+        }
+    }
+
     /// The outbox puts an answer back into the drafts when the server refuses it for
     /// good, so nothing the user wrote is lost. Picks those up without touching drafts
     /// the user is editing now, and says the answer didn't go through.

@@ -10,10 +10,6 @@ enum PaywallError: Equatable {
     case purchaseLinkedToAnotherAccount
     case noPurchasesToRestore
     case restoreFailed
-    case inviteInvalid
-    case inviteUnavailable
-    case invitePreviewFailed
-    case inviteAcceptFailed
     case unpairFailed
 
     /// Shown with the calm info banner instead of the error one.
@@ -60,14 +56,6 @@ enum PaywallError: Equatable {
             String(localized: .paywallErrorNoPurchases)
         case .restoreFailed:
             String(localized: .paywallErrorRestoreFailed)
-        case .inviteInvalid:
-            String(localized: .paywallErrorInviteInvalid)
-        case .inviteUnavailable:
-            String(localized: .paywallErrorInviteUnavailable)
-        case .invitePreviewFailed:
-            String(localized: .paywallErrorInvitePreviewFailed)
-        case .inviteAcceptFailed:
-            String(localized: .paywallErrorInviteAcceptFailed)
         case .unpairFailed:
             String(localized: .pairingUnpairFailed)
         }

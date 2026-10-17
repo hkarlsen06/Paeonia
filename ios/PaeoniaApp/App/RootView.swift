@@ -16,6 +16,13 @@ struct RootView: View {
     @State var launchContentRevealed = false
     @State var launchSidesUncovered = false
     @State var permissionPrimerCoordinator: RootPairingPermissionPrimerCoordinator
+    /// Checks and joins a partner's code. One instance serves the paywall, the
+    /// invite screen and the join screen, so a code typed on either of the first
+    /// two is checked once.
+    @State var pairingJoinViewModel: PairingJoinViewModel
+    /// The first day sequence after the pairing celebration. It starts loading
+    /// while the celebration plays.
+    @State var postPairingFlow: PostPairingFlowModel
     @State var hasFinishedPostLaunchWork = false
     /// The running foreground pass. A second activation while it runs is
     /// skipped instead of starting an overlapping pass.
@@ -63,7 +70,8 @@ struct RootView: View {
         featureDependencies: RootFeatureDependencies? = nil,
         allowsSystemIntegrations: Bool = true
     ) {
-        _viewModel = State(initialValue: viewModel ?? RootViewModel())
+        let resolvedViewModel = viewModel ?? RootViewModel()
+        _viewModel = State(initialValue: resolvedViewModel)
         _locationViewModel = State(initialValue: locationViewModel ?? LocationMapViewModel())
         _permissionPrimerCoordinator = State(
             initialValue: RootPairingPermissionPrimerCoordinator(
@@ -71,6 +79,16 @@ struct RootView: View {
                     ?? UserDefaultsPushPermissionPrimerStore(),
                 locationPrimerStore: locationSharingPrimerStore
                     ?? UserDefaultsLocationSharingPrimerStore()
+            )
+        )
+        _pairingJoinViewModel = State(
+            initialValue: featureDependencies?.pairingJoinViewModel ?? PairingJoinViewModel()
+        )
+        _postPairingFlow = State(
+            initialValue: PostPairingFlowModel(
+                store: resolvedViewModel.pairingCelebrationStore,
+                milestoneViewModel: featureDependencies?.milestoneViewModel,
+                drawingViewModel: featureDependencies?.widgetDrawingViewModel
             )
         )
         _deepLink = deepLink

@@ -9,6 +9,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case memories
     /// `paeonia://stories`: the partner shared a story. Opens Home, where the ring shows it.
     case stories
+    /// `paeonia://home`: opens Home, for example after the partner joined.
+    case home
     /// `paeonia://games/<path>`, for every `GameKind`.
     case game(GameKind)
     case streak
@@ -157,6 +159,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             .memories
         case ("stories", []):
             .stories
+        case ("home", []):
+            .home
         case ("games", _) where pathComponents.count == 1:
             GameKind(path: pathComponents[0]).map(Self.game)
         case ("streak", []):

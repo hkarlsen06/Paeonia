@@ -31,6 +31,8 @@ struct PairingCelebrationView: View {
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
     let playsIntro: Bool
+    /// The last button. It names the partner's gift when one is waiting.
+    let dismissTitle: LocalizedStringResource
     let onIntroComplete: () -> Void
     let onDismiss: () -> Void
     private let profilePhotoProvider: (any ProfilePhotoImageProviding)?
@@ -41,6 +43,7 @@ struct PairingCelebrationView: View {
         partnerDisplayName: String? = nil,
         partnerProfilePhotoAssetID: UUID? = nil,
         playsIntro: Bool,
+        dismissTitle: LocalizedStringResource = .pairingCelebrationGetStartedButton,
         profilePhotoProvider: (any ProfilePhotoImageProviding)? = nil,
         onIntroComplete: @escaping () -> Void = {},
         onDismiss: @escaping () -> Void = {}
@@ -50,6 +53,7 @@ struct PairingCelebrationView: View {
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.playsIntro = playsIntro
+        self.dismissTitle = dismissTitle
         self.onIntroComplete = onIntroComplete
         self.onDismiss = onDismiss
         self.profilePhotoProvider = profilePhotoProvider ?? ProfilePhotoImageProviderFactory.shared
@@ -211,9 +215,12 @@ struct PairingCelebrationView: View {
             Spacer()
 
             Button(action: dismiss) {
-                Text(.pairingCelebrationGetStartedButton)
+                Text(dismissTitle)
+                    .contentTransition(.opacity)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
+            // The gift can finish loading after the button is up.
+            .animation(PaeoniaMotion.stateChange, value: String(localized: dismissTitle))
             .opacity(isVisible ? 1 : 0)
             .offset(y: isVisible ? 0 : 18)
             .allowsHitTesting(isVisible)

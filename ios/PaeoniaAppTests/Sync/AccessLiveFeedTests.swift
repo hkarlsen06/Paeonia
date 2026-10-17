@@ -205,6 +205,7 @@ extension RemoteAccessSnapshot {
                 pairID: pairID,
                 relationshipStatus: status,
                 memberStatus: memberStatus,
+                acceptedInvite: false,
                 partnerUserID: partnerUserID,
                 partnerDisplayName: partnerDisplayName,
                 partnerProfilePhotoAssetID: nil,

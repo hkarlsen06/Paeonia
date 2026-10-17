@@ -72,18 +72,27 @@ private struct PairingInviteCodeCharacterTile: View {
             return
         }
 
+        let delay = Double(index) * 0.035
         withAnimation(
             .spring(response: 0.42, dampingFraction: 0.58)
-            .delay(Double(index) * 0.035)
+            .delay(delay)
         ) {
             isSettled = true
+        }
+        // A quiet click as each tile lands, so the six make a short run.
+        Task {
+            try? await Task.sleep(for: .seconds(delay + 0.12))
+            GameSound.tick.play(volume: 0.3)
         }
     }
 }
 
 /// A quiet line under the code. The app moves on by itself when the partner joins, so
-/// there is nothing to tap. The dot pulses, and stays still with Reduce Motion on.
+/// there is nothing to tap. With notifications allowed it promises a notification
+/// instead. The dot pulses, and stays still with Reduce Motion on.
 struct PairingInviteWaitingLine: View {
+    var notifiesOnJoin = false
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isDimmed = false
 
@@ -95,10 +104,12 @@ struct PairingInviteWaitingLine: View {
                 .opacity(isDimmed ? 0.3 : 1)
                 .accessibilityHidden(true)
 
-            Text(.pairingInviteWaitingStatus)
+            Text(notifiesOnJoin ? .pairingInviteWaitingNotified : .pairingInviteWaitingStatus)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+                .contentTransition(.opacity)
+                .animation(PaeoniaMotion.stateChange, value: notifiesOnJoin)
         }
         .onAppear {
             guard !reduceMotion else {

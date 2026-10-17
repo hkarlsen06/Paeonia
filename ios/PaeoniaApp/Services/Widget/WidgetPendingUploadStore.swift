@@ -15,16 +15,21 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
     /// Where the upload got to, so a retry reuses its IDs. Nil until the
     /// first attempt starts.
     var progress: WidgetUploadProgress?
+    /// The inviter's first drawing, made before any partner joined. It belongs to
+    /// no couple, so an ended relationship's purge keeps it (`LocalPrivacyPurgeService`).
+    let isFirstDay: Bool
 
     init(
         contentHash: String,
         markedAt: Date,
         lastAttemptAt: Date?,
-        payload: WidgetDrawingUploadPayload
+        payload: WidgetDrawingUploadPayload,
+        isFirstDay: Bool = false
     ) {
         self.contentHash = contentHash
         self.markedAt = markedAt
         self.lastAttemptAt = lastAttemptAt
+        self.isFirstDay = isFirstDay
         canvasSide = Double(payload.canvasSide)
         strokeCount = payload.strokeCount
         pointCount = payload.pointCount
@@ -89,13 +94,15 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
     func markPending(
         _ payload: WidgetDrawingUploadPayload,
         contentHash: String,
+        isFirstDay: Bool = false,
         at date: Date = Date()
     ) {
         let snapshot = WidgetPendingUploadSnapshot(
             contentHash: contentHash,
             markedAt: date,
             lastAttemptAt: date,
-            payload: payload
+            payload: payload,
+            isFirstDay: isFirstDay
         )
         if let data = try? JSONEncoder().encode(snapshot) {
             defaults.set(data, forKey: key)

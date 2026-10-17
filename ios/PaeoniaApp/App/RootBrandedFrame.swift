@@ -5,6 +5,8 @@ enum RootFramedScreen: Hashable {
     case onboarding
     case paywall
     case pairing
+    /// Joining a partner through their code, in place of the paywall or pairing.
+    case join
     case relationshipEnded
     case accountClosed
     case deletingAccount

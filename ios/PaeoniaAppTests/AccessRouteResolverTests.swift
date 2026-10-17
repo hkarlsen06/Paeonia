@@ -87,6 +87,17 @@ struct AccessRouteResolverTests {
         )
     }
 
+    /// A saved partner code shows the join screen in place of the paywall.
+    /// Joining a partner whose subscription has lapsed pairs the couple without
+    /// access, and that couple gets the paywall even if the code is still saved.
+    @Test func aPartnersCodeReplacesThePaywallOnlyBeforePairing() {
+        let resolver = PendingJoinInviteFlowResolver()
+
+        #expect(resolver.shouldPresentInviteAcceptance(for: .limitedAuthenticated, pendingInviteCode: "01ABCD"))
+        #expect(!resolver.shouldPresentInviteAcceptance(for: .limitedAuthenticated, pendingInviteCode: nil))
+        #expect(!resolver.shouldPresentInviteAcceptance(for: .pairedPaywalled, pendingInviteCode: "01ABCD"))
+    }
+
     @Test func malformedOrCompletedIncomingInviteDoesNotOverrideRouting() {
         let resolver = PendingJoinInviteFlowResolver()
 
@@ -311,6 +322,7 @@ private extension RemoteRelationshipState {
             pairID: UUID(),
             relationshipStatus: relationshipStatus,
             memberStatus: memberStatus,
+            acceptedInvite: false,
             partnerUserID: UUID(),
             partnerDisplayName: "Riley",
             partnerProfilePhotoAssetID: nil,

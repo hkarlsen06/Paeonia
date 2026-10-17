@@ -62,6 +62,8 @@ final class RootViewModel {
     /// destination as one atomic change. See [openWidgetDrawing].
     private(set) var selectedMainTab: MainTab = .home
     private var celebration: RootPairingCelebrationState
+    /// Where the celebration and the first day sequence keep their progress.
+    let pairingCelebrationStore: any PairingCelebrationStoring
     /// Changes whenever a signed-in session ends on this phone. Async work that
     /// started under an older session compares it after each suspension and
     /// stops instead of acting for someone who already left.
@@ -92,6 +94,12 @@ final class RootViewModel {
         celebration.playsIntro
     }
 
+    /// True while the first day sequence after the celebration covers the paired
+    /// screen.
+    var isFirstDayPresented: Bool {
+        celebration.isFirstDayPresented
+    }
+
     init(
         syncService: (any PaeoniaSyncing)? = nil,
         authService: (any AuthServicing)? = nil,
@@ -115,9 +123,9 @@ final class RootViewModel {
         self.accessRouteService = accessRouteService ?? (try? RemoteAccessRouteService.live())
         self.accessSnapshotStore = accessSnapshotStore ?? Self.makeDefaultAccessSnapshotStore()
         self.inviteStore = inviteStore ?? UserDefaultsPairingInviteStore.shared
-        self.celebration = RootPairingCelebrationState(
-            store: pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
-        )
+        let resolvedCelebrationStore = pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
+        self.pairingCelebrationStore = resolvedCelebrationStore
+        self.celebration = RootPairingCelebrationState(store: resolvedCelebrationStore)
         self.systemSideEffects = systemSideEffects ?? LiveRootSystemSideEffects()
         // Tests and developer scenarios inject a sync service and get a private
         // in-memory owner, so they never read or clear the real phone's marker.
@@ -212,6 +220,10 @@ final class RootViewModel {
 
     func dismissPairingCelebration() {
         celebration.dismiss(currentResolution: route.accessResolution)
+    }
+
+    func finishFirstDay() {
+        celebration.finishFirstDay(currentResolution: route.accessResolution)
     }
 
     func refreshAfterInviteAccepted() async {

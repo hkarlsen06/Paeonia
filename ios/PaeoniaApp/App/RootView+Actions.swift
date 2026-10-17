@@ -16,11 +16,28 @@ extension RootView {
     }
 
     /// Stashes an invite code a joining partner entered before signing in. After
-    /// sign-in the paywall or the pairing screen reads it, so they join their
-    /// partner. The binding owner persists production changes, so this view stays
-    /// safe to host with an in-memory binding in local flows and previews.
+    /// sign-in the root shows the join screen for it. The binding owner persists
+    /// production changes, so this view stays safe to host with an in-memory
+    /// binding in local flows and previews.
     func captureInviteCode(_ code: String) {
         pendingJoinInviteCode = code
+    }
+
+    /// A code typed on the paywall, the invite screen or the join screen. Once it
+    /// checks out it becomes the pending code, which shows the join screen for it.
+    /// Otherwise the banner says why, and the code sheet stays open.
+    func submitJoinCode(_ code: String) async -> Bool {
+        guard await pairingJoinViewModel.checkCode(code, currentUserID: viewModel.currentSession?.id),
+              let checkedCode = pairingJoinViewModel.checkedCode
+        else {
+            if let error = pairingJoinViewModel.lastError {
+                bannerCenter.show(.error(message: String(localized: error.message)))
+            }
+            return false
+        }
+
+        pendingJoinInviteCode = checkedCode
+        return true
     }
 
     func completeOnboarding(displayName: String, profilePhotoData: Data?) {
@@ -73,6 +90,17 @@ extension RootView {
     func dismissPairingCelebration() {
         withAnimation(pairedScreenAnimation) {
             viewModel.dismissPairingCelebration()
+        }
+    }
+
+    /// The first day sequence ended. "Answer now" goes on to the answer flow,
+    /// which `MainTabView` opens for the deep link.
+    func finishFirstDay(_ outcome: PostPairingOutcome) {
+        if outcome == .answerQuestions {
+            deepLink = .dailyToday(coupleDayID: nil)
+        }
+        withAnimation(pairedScreenAnimation) {
+            viewModel.finishFirstDay()
         }
     }
 
@@ -129,6 +157,7 @@ extension RootView {
     /// otherwise do nothing visible, then resurface much later after an unpair.
     func pendingJoinInviteCodeChanged(to code: String?) {
         guard code != nil else {
+            pairingJoinViewModel.clearCheckedCode()
             return
         }
 

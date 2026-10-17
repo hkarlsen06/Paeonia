@@ -77,6 +77,8 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
     let pairID: UUID
     let relationshipStatus: RemoteRelationshipStatus
     let memberStatus: RemoteRelationshipMemberStatus
+    /// This person joined with the partner's invite code.
+    let acceptedInvite: Bool
     let partnerUserID: UUID?
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
@@ -90,6 +92,7 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
         case pairID = "pair_id"
         case relationshipStatus = "relationship_status"
         case memberStatus = "member_status"
+        case acceptedInvite = "accepted_invite"
         case partnerUserID = "partner_user_id"
         case partnerDisplayName = "partner_display_name"
         case partnerProfilePhotoAssetID = "partner_profile_photo_asset_id"
@@ -113,6 +116,7 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
             pairID: pairID,
             relationshipStatus: relationshipStatus,
             memberStatus: memberStatus,
+            acceptedInvite: acceptedInvite,
             partnerUserID: partnerUserID,
             partnerDisplayName: partnerDisplayName,
             partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,

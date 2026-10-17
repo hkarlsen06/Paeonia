@@ -7,10 +7,6 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     private(set) var invite: PairingInvite?
     private(set) var isLoading = false
     private(set) var isRevoking = false
-    private(set) var isPreviewingJoin = false
-    private(set) var isAcceptingJoin = false
-    /// What the partner's code points to, kept until the user confirms or cancels.
-    private(set) var joinPreview: PairingInvitePreview?
     /// The newest problem. The view shows it in the top banner and then clears it, except
     /// for `.createFailed`, which stays so the retry card can show.
     private(set) var error: PairingInviteFlowError? {
@@ -19,9 +15,6 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     /// Why the newest problem happened, so its copy blames the connection only when
     /// the phone is offline. A problem without a thrown error counts as `.other`.
     private(set) var errorFailure = PaeoniaFailure.other
-    /// The newest join problem. Unlike `error`, the view does not clear it, so the caller
-    /// can check right after a failed preview whether the code is worth keeping.
-    private(set) var lastJoinError: PairingInviteFlowError?
     private(set) var didCopyCode = false
 
     private let userID: String?
@@ -30,7 +23,6 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     private let inviteStore: any PairingInviteStoring
     private let now: @MainActor () -> Date
     private var cachedInvite: PairingInvite?
-    private var previewedJoinCode: String?
     private var copyResetTask: Task<Void, Never>?
 
     init(
@@ -55,13 +47,9 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         invite != nil || error == .createFailed
     }
 
-    var isJoining: Bool {
-        isPreviewingJoin || isAcceptingJoin
-    }
-
-    /// True while something is changing the invite or joining, so buttons wait.
+    /// True while something is changing the invite, so buttons wait.
     var isBusy: Bool {
-        isLoading || isRevoking || isJoining
+        isLoading || isRevoking
     }
 
     func loadInviteIfNeeded() async {
@@ -182,82 +170,6 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         }
     }
 
-    // MARK: - Joining a partner's code
-
-    /// Looks up a partner's code and keeps what it found so the user can confirm. Only
-    /// runs once the user's own code is showing, and never twice at the same time.
-    func previewJoin(codeInput: String) async -> Bool {
-        guard invite != nil, !isJoining else {
-            return false
-        }
-
-        isPreviewingJoin = true
-        defer { isPreviewingJoin = false }
-        clearJoinPreview()
-        lastJoinError = nil
-
-        do {
-            let code = try PairingInviteCode.normalized(codeInput)
-            guard code != invite?.code else {
-                return failJoin(.joinOwnCode)
-            }
-
-            guard let pairingService else {
-                return failJoin(.joinCheckFailed)
-            }
-
-            guard let preview = try await pairingService.previewInvite(codeInput: code) else {
-                return failJoin(.joinNotFound)
-            }
-
-            joinPreview = preview
-            previewedJoinCode = code
-            return true
-        } catch is PairingInviteCodeError {
-            return failJoin(.joinInvalid)
-        } catch is CancellationError {
-            return false
-        } catch {
-            return failJoin(.joinCheckFailed, cause: error)
-        }
-    }
-
-    /// Joins only the code that `previewJoin` found, so a code can never be accepted
-    /// without the user having seen who it belongs to.
-    func acceptPreviewedJoin() async -> Bool {
-        guard !isJoining,
-              joinPreview != nil,
-              let previewedJoinCode,
-              let pairingService
-        else {
-            return false
-        }
-
-        isAcceptingJoin = true
-        defer { isAcceptingJoin = false }
-        lastJoinError = nil
-
-        do {
-            _ = try await pairingService.acceptInvite(
-                codeInput: previewedJoinCode,
-                operation: operationProvider.makeOperation(),
-                startedOn: nil
-            )
-            clearJoinPreview()
-            return true
-        } catch is CancellationError {
-            return false
-        } catch {
-            clearJoinPreview()
-            return failJoin(.joinFailed, cause: error)
-        }
-    }
-
-    func clearJoinPreview() {
-        joinPreview = nil
-        previewedJoinCode = nil
-    }
-
     // MARK: - Invite helpers
 
     private func inviteExpiryDate() -> Date {
@@ -310,17 +222,5 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
             }
             isLoading = false
         }
-    }
-}
-
-extension PairingInviteViewModel {
-    /// Reports a join problem. `cause` is the thrown error, when there was one.
-    private func failJoin(_ failure: PairingInviteFlowError, cause: (any Error)? = nil) -> Bool {
-        error = failure
-        if let cause {
-            errorFailure = PaeoniaFailure(cause)
-        }
-        lastJoinError = failure
-        return false
     }
 }

@@ -5,7 +5,6 @@ import Testing
 @MainActor
 struct PairingInviteJoinTests {
     private let userID = "11111111-1111-1111-1111-111111111111"
-    private let partnerCode = "02BCDE"
 
     // MARK: - Creating the invite
 
@@ -109,135 +108,6 @@ struct PairingInviteJoinTests {
         #expect(await service.rotateCallCount == 1)
     }
 
-    // MARK: - Joining a partner's code
-
-    @Test func previewThenAcceptJoinsThePreviewedCodeWithoutAStartDate() async throws {
-        let preview = makePreview()
-        let service = JoinTestPairingService(preview: preview)
-        let viewModel = await makeLoadedViewModel(service: service)
-
-        let didPreview = await viewModel.previewJoin(codeInput: " 02-bcde ")
-
-        #expect(didPreview)
-        #expect(viewModel.joinPreview == preview)
-        #expect(viewModel.error == nil)
-        #expect(await service.previewedCodes == [partnerCode])
-
-        let didJoin = await viewModel.acceptPreviewedJoin()
-
-        #expect(didJoin)
-        #expect(viewModel.joinPreview == nil)
-        #expect(!viewModel.isJoining)
-        let accepted = await service.acceptedJoins
-        #expect(accepted.count == 1)
-        #expect(accepted.first?.code == partnerCode)
-        #expect(accepted.first?.startedOn == nil)
-    }
-
-    @Test func acceptWithoutAPreviewDoesNothing() async throws {
-        let service = JoinTestPairingService(preview: makePreview())
-        let viewModel = await makeLoadedViewModel(service: service)
-
-        let didJoin = await viewModel.acceptPreviewedJoin()
-
-        #expect(!didJoin)
-        #expect(viewModel.error == nil)
-        #expect(await service.acceptedJoins.isEmpty)
-    }
-
-    @Test func aSecondPreviewWhileOneIsPendingIsIgnored() async throws {
-        let gate = JoinTestGate()
-        let service = JoinTestPairingService(preview: makePreview(), previewGate: gate)
-        let viewModel = await makeLoadedViewModel(service: service)
-
-        let first = Task { await viewModel.previewJoin(codeInput: partnerCode) }
-        await gate.waitUntilWaiting()
-        #expect(viewModel.isJoining)
-
-        let secondPreview = await viewModel.previewJoin(codeInput: "03CDEF")
-        let accepted = await viewModel.acceptPreviewedJoin()
-        await gate.open()
-        let firstResult = await first.value
-
-        #expect(!secondPreview)
-        #expect(!accepted)
-        #expect(firstResult)
-        #expect(await service.previewedCodes == [partnerCode])
-        #expect(await service.acceptedJoins.isEmpty)
-    }
-
-    @Test func previewDoesNothingUntilTheOwnCodeIsShowing() async throws {
-        let service = JoinTestPairingService(preview: makePreview())
-        let viewModel = makeViewModel(service: service, store: JoinTestInviteStore())
-
-        let didPreview = await viewModel.previewJoin(codeInput: partnerCode)
-
-        #expect(!didPreview)
-        #expect(viewModel.error == nil)
-        #expect(await service.previewedCodes.isEmpty)
-    }
-
-    @Test func aCodeThatIsNotFoundSetsTheNotFoundError() async throws {
-        let service = JoinTestPairingService(preview: nil)
-        let viewModel = await makeLoadedViewModel(service: service)
-
-        let didPreview = await viewModel.previewJoin(codeInput: partnerCode)
-
-        #expect(!didPreview)
-        #expect(viewModel.error == .joinNotFound)
-        #expect(viewModel.lastJoinError == .joinNotFound)
-        #expect(viewModel.lastJoinError?.isFinalJoinFailure == true)
-        #expect(viewModel.joinPreview == nil)
-        #expect(viewModel.invite != nil)
-    }
-
-    @Test func aMalformedCodeSetsTheInvalidErrorWithoutCallingTheService() async throws {
-        let service = JoinTestPairingService(preview: makePreview())
-        let viewModel = await makeLoadedViewModel(service: service)
-
-        let didPreview = await viewModel.previewJoin(codeInput: "abc")
-
-        #expect(!didPreview)
-        #expect(viewModel.error == .joinInvalid)
-        #expect(viewModel.lastJoinError?.isFinalJoinFailure == true)
-        #expect(await service.previewedCodes.isEmpty)
-    }
-
-    @Test func theUsersOwnCodeIsRejectedBeforeAskingTheServer() async throws {
-        let service = JoinTestPairingService(preview: makePreview())
-        let viewModel = await makeLoadedViewModel(service: service)
-
-        let didPreview = await viewModel.previewJoin(codeInput: makeInvite().code.lowercased())
-
-        #expect(!didPreview)
-        #expect(viewModel.error == .joinOwnCode)
-        #expect(await service.previewedCodes.isEmpty)
-    }
-
-    @Test func aConnectionProblemDuringPreviewKeepsTheCodeWorthRetrying() async throws {
-        let service = JoinTestPairingService(previewError: URLError(.notConnectedToInternet))
-        let viewModel = await makeLoadedViewModel(service: service)
-
-        let didPreview = await viewModel.previewJoin(codeInput: partnerCode)
-
-        #expect(!didPreview)
-        #expect(viewModel.error == .joinCheckFailed)
-        #expect(viewModel.lastJoinError?.isFinalJoinFailure == false)
-    }
-
-    @Test func aFailedJoinClearsThePreviewAndReportsTheError() async throws {
-        let service = JoinTestPairingService(preview: makePreview(), acceptError: URLError(.timedOut))
-        let viewModel = await makeLoadedViewModel(service: service)
-        _ = await viewModel.previewJoin(codeInput: partnerCode)
-
-        let didJoin = await viewModel.acceptPreviewedJoin()
-
-        #expect(!didJoin)
-        #expect(viewModel.error == .joinFailed)
-        #expect(viewModel.joinPreview == nil)
-        #expect(!viewModel.isJoining)
-    }
-
     // MARK: - Helpers
 
     private nonisolated static let now = Date(timeIntervalSince1970: 1_000_000)
@@ -255,16 +125,6 @@ struct PairingInviteJoinTests {
         )
     }
 
-    private func makePreview() -> PairingInvitePreview {
-        PairingInvitePreview(
-            inviteID: UUID(),
-            inviterUserID: UUID(),
-            inviterDisplayName: "Robin",
-            expiresAt: Self.now.addingTimeInterval(86_400),
-            hasSafetyWarning: false
-        )
-    }
-
     private func makeViewModel(
         service: JoinTestPairingService,
         store: JoinTestInviteStore
@@ -276,12 +136,6 @@ struct PairingInviteJoinTests {
             inviteStore: store,
             now: { Self.now }
         )
-    }
-
-    private func makeLoadedViewModel(service: JoinTestPairingService) async -> PairingInviteViewModel {
-        let viewModel = makeViewModel(service: service, store: JoinTestInviteStore())
-        await viewModel.createInvite()
-        return viewModel
     }
 }
 
@@ -315,51 +169,32 @@ private actor JoinTestGate {
     }
 }
 
-private struct JoinTestAcceptedJoin: Equatable {
-    let code: String
-    let startedOn: PairingStartDate?
-}
-
 // swiftlint:disable async_without_await
 private actor JoinTestPairingService: PairingServicing {
     private let createdInvite: PairingInvite
     private let rotatedInvite: PairingInvite
     private let validationError: (any Error)?
-    private let preview: PairingInvitePreview?
-    private let previewError: (any Error)?
     private let rotateError: (any Error)?
-    private let acceptError: (any Error)?
     private let createGate: JoinTestGate?
     private let rotateGate: JoinTestGate?
-    private let previewGate: JoinTestGate?
 
     private(set) var createCallCount = 0
     private(set) var rotateCallCount = 0
-    private(set) var previewedCodes = [String]()
-    private(set) var acceptedJoins = [JoinTestAcceptedJoin]()
 
     init(
         createdInvite: PairingInvite = JoinTestPairingService.defaultInvite,
         rotatedInvite: PairingInvite = JoinTestPairingService.defaultInvite,
         validationError: (any Error)? = nil,
-        preview: PairingInvitePreview? = nil,
-        previewError: (any Error)? = nil,
         rotateError: (any Error)? = nil,
-        acceptError: (any Error)? = nil,
         createGate: JoinTestGate? = nil,
-        rotateGate: JoinTestGate? = nil,
-        previewGate: JoinTestGate? = nil
+        rotateGate: JoinTestGate? = nil
     ) {
         self.createdInvite = createdInvite
         self.rotatedInvite = rotatedInvite
         self.validationError = validationError
-        self.preview = preview
-        self.previewError = previewError
         self.rotateError = rotateError
-        self.acceptError = acceptError
         self.createGate = createGate
         self.rotateGate = rotateGate
-        self.previewGate = previewGate
     }
 
     static let defaultInvite = PairingInvite(
@@ -391,13 +226,7 @@ private actor JoinTestPairingService: PairingServicing {
     }
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
-        previewedCodes.append(codeInput)
-        await previewGate?.wait()
-        if let previewError {
-            throw previewError
-        }
-
-        return preview
+        nil
     }
 
     func rotateInvite(
@@ -419,12 +248,7 @@ private actor JoinTestPairingService: PairingServicing {
         operation: PairingClientOperation,
         startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
-        acceptedJoins.append(JoinTestAcceptedJoin(code: codeInput, startedOn: startedOn))
-        if let acceptError {
-            throw acceptError
-        }
-
-        return PairingAcceptedRelationship(coupleID: UUID())
+        PairingAcceptedRelationship(coupleID: UUID())
     }
 
     func revokeInvite(id: UUID) async throws -> Bool {

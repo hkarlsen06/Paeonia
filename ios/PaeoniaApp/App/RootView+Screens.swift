@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The routed screens. Each `AppState` maps to exactly one screen.
+/// The routed screens. Each `AppState` maps to one screen, except that a saved
+/// partner code shows the join screen in place of the paywall or pairing.
 extension RootView {
     /// The routed surfaces crossfade into each other instead of swapping in one
     /// frame. The screens between sign-in and the paired app share one frame, so
@@ -22,14 +23,22 @@ extension RootView {
             }
         }
         .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.state)
+        // Saving or forgetting a partner's code swaps screens without a state change.
+        .animation(PaeoniaMotion.meaningfulMoment, value: framedScreen)
     }
 
     private var framedScreen: RootFramedScreen? {
-        switch viewModel.state {
+        // A partner's code takes the place of the paywall and the invite screen.
+        if PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
+            for: viewModel.state,
+            pendingInviteCode: pendingJoinInviteCode
+        ) {
+            return .join
+        }
+
+        return switch viewModel.state {
         case .onboarding:
             .onboarding
-        // One screen for every paywall state, so saving a pending invite code
-        // doesn't swap in a new PaywallView and drop its confirm alert.
         case .limitedAuthenticated, .pairedPaywalled:
             .paywall
         case .entitlementLost, .entitlementRestored:
@@ -56,6 +65,9 @@ extension RootView {
             AuthOnboardingView(
                 session: viewModel.currentSession,
                 isWorking: viewModel.isWorking,
+                // Someone joining a partner's code confirms the date after joining.
+                asksStartDate: pendingJoinInviteCode == nil,
+                startDateQueue: featureDependencies.firstDayStartedOnQueue,
                 onCompleteOnboarding: completeOnboarding,
                 onSignOut: signOut,
                 onDeleteAccount: deleteAccount
@@ -64,6 +76,8 @@ extension RootView {
             paywallScreen
         case .pairing:
             pairingScreen
+        case .join:
+            joinScreen
         case .relationshipEnded:
             RelationshipEndedNoticeView(
                 isWorking: viewModel.isWorking,
@@ -108,11 +122,10 @@ extension RootView {
     private var paywallScreen: some View {
         PaywallView(
             session: viewModel.currentSession,
-            pendingInviteCode: $pendingJoinInviteCode,
             audience: paywallAudience,
             isCheckingAccess: viewModel.route.isResolvingAccess,
             onPurchaseConfirmed: subscriptionChanged,
-            onInviteAccepted: inviteAccepted,
+            onSubmitInviteCode: submitJoinCode,
             onSignOut: signOut,
             onUnpaired: refreshPairing,
             onDeleteAccount: deleteAccount,
@@ -133,28 +146,32 @@ extension RootView {
         }
     }
 
-    /// A subscribed user who is not paired yet. A partner's code from a link or
-    /// the welcome screen is joined right here instead of on the paywall.
+    /// A subscribed user who is not paired yet.
     private var pairingScreen: some View {
         PairingInviteView(
             session: viewModel.currentSession,
             viewModel: featureDependencies.pairingInviteViewModel,
-            pendingJoinCode: pendingJoinCodeForPairing,
-            onClearPendingJoinCode: { pendingJoinInviteCode = nil },
-            onInviteAccepted: inviteAccepted,
+            firstDayModel: featureDependencies.inviterFirstDayModel,
+            onSubmitJoinCode: submitJoinCode,
             onRefreshAccess: refreshPairing
         )
     }
 
-    private var pendingJoinCodeForPairing: String? {
-        guard PendingJoinInviteFlowResolver().shouldPresentInviteAcceptance(
-            for: viewModel.state,
-            pendingInviteCode: pendingJoinInviteCode
-        ) else {
-            return nil
-        }
-
-        return pendingJoinInviteCode
+    /// Someone with a partner's code from a link, the welcome screen, the paywall
+    /// or the invite screen. Without a subscription of their own it replaces the
+    /// paywall.
+    private var joinScreen: some View {
+        PairingJoinView(
+            viewModel: pairingJoinViewModel,
+            code: pendingJoinInviteCode,
+            currentUserID: viewModel.currentSession?.id,
+            replacesPaywall: viewModel.state == .limitedAuthenticated,
+            onSubmitCode: submitJoinCode,
+            onAccepted: inviteAccepted,
+            onForgetCode: { pendingJoinInviteCode = nil },
+            onSignOut: signOut,
+            onDeleteAccount: deleteAccount
+        )
     }
 
     private var pairedScaffold: some View {
@@ -167,6 +184,9 @@ extension RootView {
                             removal: reduceMotion ? .opacity : .scale(scale: 0.96).combined(with: .opacity)
                         )
                     )
+            } else if viewModel.isFirstDayPresented {
+                postPairingSequence
+                    .transition(.opacity)
             } else {
                 mainTabs
                     .transition(
@@ -180,6 +200,47 @@ extension RootView {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaBackgroundPrimary)
         .animation(pairedScreenAnimation, value: viewModel.isPairingCelebrationPresented)
+        .animation(pairedScreenAnimation, value: viewModel.isFirstDayPresented)
+        // Starts loading the first day steps while the celebration plays.
+        .onChange(of: postPairingContext, initial: true) { _, context in
+            if let context {
+                postPairingFlow.prepare(context)
+            }
+        }
+        // Signed out or unpaired. Signing back in to the same pair starts over.
+        .onDisappear {
+            postPairingFlow.reset()
+        }
+    }
+
+    /// Who the first day sequence is for, while the celebration or the sequence is up.
+    private var postPairingContext: PostPairingContext? {
+        guard viewModel.isPairingCelebrationPresented || viewModel.isFirstDayPresented,
+              let pairID = viewModel.currentPairID,
+              let currentUserID = viewModel.currentSession.flatMap({ UUID(uuidString: $0.id) }),
+              let partnerUserID = viewModel.currentPartnerUserID,
+              let coupleID = viewModel.currentActiveCoupleID
+        else {
+            return nil
+        }
+        return PostPairingContext(
+            pairID: pairID,
+            currentUserID: currentUserID,
+            partnerUserID: partnerUserID,
+            coupleID: coupleID
+        )
+    }
+
+    private var postPairingSequence: some View {
+        PostPairingFlowView(
+            model: postPairingFlow,
+            partnerName: partnerNameForCopy,
+            currentDisplayName: viewModel.currentSession?.displayName,
+            startedOn: viewModel.currentRelationshipStartedOn,
+            acceptedInvite: viewModel.currentRelationshipAcceptedInvite,
+            syncAfterLocalChange: { await viewModel.syncAfterLocalChange() },
+            onFinish: finishFirstDay
+        )
     }
 
     private var mainTabs: some View {
@@ -242,6 +303,10 @@ extension RootView {
             partnerDisplayName: viewModel.currentPartnerDisplayName,
             partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
             playsIntro: viewModel.pendingPairingCelebration,
+            // The prefetched gift turns the last button into the way to it.
+            dismissTitle: postPairingFlow.gift == nil
+                ? .pairingCelebrationGetStartedButton
+                : .onboardingFirstDayGiftButton(partnerNameForCopy),
             onIntroComplete: {
                 viewModel.consumePairingCelebration()
             },

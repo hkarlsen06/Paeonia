@@ -6,14 +6,15 @@ import SwiftUI
 /// placeholders, so nothing jumps when they arrive.
 struct PaywallView: View {
     @State private var viewModel: PaywallViewModel
-    @Binding private var pendingInviteCode: String?
     private let presentationOverride: PaywallPresentationOverride?
-    /// The root is checking access after a purchase or a join.
+    /// The root is checking access after a purchase.
     private let isCheckingAccess: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     let onPurchaseConfirmed: () -> Void
-    let onInviteAccepted: () -> Void
+    /// Checks a partner's code typed in the code sheet. If it works the root saves
+    /// it and shows the join screen. Returns false to keep the sheet open.
+    let onSubmitInviteCode: (String) async -> Bool
     let audience: PaywallAudience
     let onSignOut: () -> Void
     let onUnpaired: () -> Void
@@ -21,9 +22,8 @@ struct PaywallView: View {
 
     @State private var isConfirmingDelete = false
     @State private var isConfirmingUnpair = false
-    @State private var isConfirmingInvite = false
     @State private var isEnteringInviteCode = false
-    /// A purchase, restore, or join went through and the next screen is on its
+    /// A purchase or restore went through and the next screen is on its
     /// way. The buttons wait instead of offering to buy again. If the access check
     /// ends with the paywall still up, they come back.
     @State private var isOpening = false
@@ -35,11 +35,10 @@ struct PaywallView: View {
 
     init(
         session: AuthSession?,
-        pendingInviteCode: Binding<String?> = .constant(nil),
         audience: PaywallAudience,
         isCheckingAccess: Bool = false,
         onPurchaseConfirmed: @escaping () -> Void,
-        onInviteAccepted: @escaping () -> Void,
+        onSubmitInviteCode: @escaping (String) async -> Bool,
         onSignOut: @escaping () -> Void,
         onUnpaired: @escaping () -> Void,
         onDeleteAccount: @escaping () -> Void,
@@ -49,12 +48,11 @@ struct PaywallView: View {
         _viewModel = State(
             initialValue: viewModel ?? PaywallViewModel(userID: session?.id)
         )
-        _pendingInviteCode = pendingInviteCode
         self.presentationOverride = presentationOverride
         self.isCheckingAccess = isCheckingAccess
         self.audience = audience
         self.onPurchaseConfirmed = onPurchaseConfirmed
-        self.onInviteAccepted = onInviteAccepted
+        self.onSubmitInviteCode = onSubmitInviteCode
         self.onSignOut = onSignOut
         self.onUnpaired = onUnpaired
         self.onDeleteAccount = onDeleteAccount
@@ -112,9 +110,6 @@ struct PaywallView: View {
                 isEntranceReady = true
             }
         }
-        .task(id: allowsInviteEntry ? pendingInviteCode : nil) {
-            await previewPendingInvite()
-        }
         .onChange(of: viewModel.error) { _, error in
             showBanner(for: error)
         }
@@ -126,25 +121,21 @@ struct PaywallView: View {
         .sensoryFeedback(.success, trigger: viewModel.purchaseSucceeded) { _, succeeded in
             succeeded
         }
-        .sheet(isPresented: $isEnteringInviteCode, onDismiss: confirmInviteIfPreviewed) {
+        .sheet(isPresented: $isEnteringInviteCode) {
             PairingCodeEntrySheet(
                 title: .pairingCodeEntryTitle,
                 message: .paywallInviteSheetMessage,
                 submitTitle: .pairingCodeEntrySubmit,
-                onSubmit: previewEnteredInvite
+                onSubmit: { await onSubmitInviteCode($0) }
             )
         }
         .modifier(
             PaywallConfirmationAlerts(
                 isConfirmingDelete: $isConfirmingDelete,
                 isConfirmingUnpair: $isConfirmingUnpair,
-                isConfirmingInvite: $isConfirmingInvite,
                 partnerName: audience.partnerNameForCopy,
-                invitePreview: viewModel.invitePreview,
                 onDeleteAccount: onDeleteAccount,
-                onUnpair: unpair,
-                onAcceptInvite: redeemPreviewedInvite,
-                onCancelInvite: cancelInviteConfirmation
+                onUnpair: unpair
             )
         )
     }
@@ -192,7 +183,7 @@ private extension PaywallView {
             ?? (hasOffer ? selected.primaryButtonIsEnabled : canRetry)
         var inviteAction: (() -> Void)?
         if allowsInviteEntry {
-            inviteAction = { showInviteCodeEntry() }
+            inviteAction = { isEnteringInviteCode = true }
         }
 
         return PaywallBottomCTAView(
@@ -201,7 +192,6 @@ private extension PaywallView {
             isEnabled: isEnabled,
             isBusy: hasOffer ? selected.isPurchasing : selected.isLoading,
             isDone: isOpening,
-            isJoiningPartner: viewModel.isPreviewingInvite || viewModel.isAcceptingInvite,
             onPrimaryAction: {
                 if hasOffer {
                     purchase()
@@ -285,80 +275,5 @@ private extension PaywallView {
 
         bannerCenter.show(error.bannerContent)
         viewModel.clearError()
-    }
-
-    // MARK: - Joining a partner
-
-    /// An earlier preview that was never accepted would otherwise come back as
-    /// the confirmation when the sheet closes.
-    func showInviteCodeEntry() {
-        viewModel.clearInvitePreview()
-        isEnteringInviteCode = true
-    }
-
-    /// A code saved from a link or the welcome screen goes straight to the
-    /// confirmation, without the code sheet.
-    func previewPendingInvite() async {
-        // A code typed in the sheet is saved as the pending code once it previews.
-        // That save is not a second request to preview it, so a code with a
-        // preview already in hand is left alone.
-        guard allowsInviteEntry,
-              let pendingInviteCode,
-              viewModel.invitePreview == nil,
-              !isEnteringInviteCode,
-              !isConfirmingInvite
-        else {
-            return
-        }
-
-        if await viewModel.previewInvite(codeInput: pendingInviteCode) != nil {
-            isConfirmingInvite = true
-        } else if viewModel.lastInviteCodeWasUnusable {
-            // A wrong or expired code would otherwise come back on every launch.
-            self.pendingInviteCode = nil
-        }
-    }
-
-    /// Keeps the sheet open with the keyboard up when the code doesn't work. The
-    /// banner says why.
-    func previewEnteredInvite(_ code: String) async -> Bool {
-        guard await viewModel.previewInvite(codeInput: code) != nil else {
-            return false
-        }
-
-        // Remember only a code that works, so a typo is not reopened on the next
-        // launch.
-        pendingInviteCode = code
-        return true
-    }
-
-    /// Runs after the code sheet has closed. Showing the alert any earlier can lose
-    /// it to the sheet's closing animation.
-    func confirmInviteIfPreviewed() {
-        if viewModel.invitePreview != nil {
-            isConfirmingInvite = true
-        }
-    }
-
-    func redeemPreviewedInvite() {
-        guard !viewModel.isAcceptingInvite else {
-            return
-        }
-
-        Task {
-            if await viewModel.acceptPreviewedInvite() {
-                bannerCenter.dismiss()
-                // Root clears the pending code once the paired route is in place.
-                // Clearing it here would route back to pairing for a frame first.
-                startOpening(then: onInviteAccepted)
-            }
-        }
-    }
-
-    /// "Not now" also forgets a code that came from a link, so it doesn't ask again
-    /// on the next launch.
-    func cancelInviteConfirmation() {
-        viewModel.clearInvitePreview()
-        pendingInviteCode = nil
     }
 }

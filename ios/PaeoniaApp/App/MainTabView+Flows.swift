@@ -303,7 +303,7 @@ extension MainTabView {
             await openGame(kind, for: deepLink)
         case .streak:
             await openStreak(for: deepLink)
-        case .stories:
+        case .stories, .home:
             selection.wrappedValue = .home
             self.deepLink.wrappedValue = nil
         }

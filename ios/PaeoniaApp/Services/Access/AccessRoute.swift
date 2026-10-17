@@ -92,6 +92,11 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
         snapshot.relationshipState?.startedOn
     }
 
+    /// This person joined with the partner's invite code.
+    var acceptedInvite: Bool {
+        snapshot.relationshipState?.acceptedInvite ?? false
+    }
+
     var pairingCelebrationPairID: UUID? {
         snapshot.relationshipState?.pairID
     }
@@ -127,10 +132,9 @@ nonisolated struct AccessRouteResolver: Sendable {
     }
 }
 
-/// Decides when a captured incoming invite should take precedence over the
-/// ordinary post-auth destination. An entitled, unpaired user would normally be
-/// sent to invite creation, but someone who already entered a partner's code must
-/// instead finish that join flow first.
+/// Decides when a saved partner code takes precedence over the ordinary post-auth
+/// destination. The root then shows the join screen instead of the paywall or the
+/// invite screen, so someone with a partner's code finishes joining first.
 nonisolated struct PendingJoinInviteFlowResolver: Sendable {
     func shouldPresentInviteAcceptance(
         for state: AppState,

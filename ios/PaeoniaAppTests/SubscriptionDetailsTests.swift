@@ -90,6 +90,7 @@ struct SubscriptionDetailsTests {
                 pairID: UUID(),
                 relationshipStatus: .active,
                 memberStatus: .active,
+                acceptedInvite: false,
                 partnerUserID: partner,
                 partnerDisplayName: partnerName,
                 partnerProfilePhotoAssetID: nil,
