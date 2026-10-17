@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The partner's first drawing as a gift. It waits in a sealed envelope until the
-/// person taps it. The seal pops, the flap folds back, and the drawing slides out and
-/// plays back stroke by stroke, the way the partner drew it. Holding the drawing
+/// person taps it. The envelope jumps, and the drawing slides up out of it and plays
+/// back stroke by stroke, the way the partner drew it. Holding the drawing
 /// speeds it up. When the last stroke lands, petals burst and the step offers to
 /// draw one back.
 ///
@@ -125,11 +125,11 @@ struct PostPairingGiftStep: View {
     @ViewBuilder
     private var blooms: some View {
         if let sealBloomStart {
-            // From the seal, at the tip of the flap.
+            // From the tip of the envelope's flap.
             GamePetalBloom(
                 start: sealBloomStart,
                 seed: "firstDay.seal",
-                origin: UnitPoint(x: 0.5, y: 0.55),
+                origin: UnitPoint(x: 0.5, y: 0.66),
                 intensity: 0.6
             )
         }
@@ -167,24 +167,19 @@ struct PostPairingGiftStep: View {
         ).post()
     }
 
-    /// The seal pops, the flap folds back, and the card slides out and grows.
+    /// The envelope jumps, and the card peeks out, slides up and grows.
     /// Returns false if the step went away meanwhile.
     private func playOpening() async -> Bool {
         withAnimation(.spring(duration: 0.3, bounce: 0.4)) {
             stage = .unsealed
         }
         sealBloomStart = Date()
-        guard await sleep(0.15) else { return false }
+        guard await sleep(0.18) else { return false }
 
-        withAnimation(.spring(duration: 0.5, bounce: 0.12)) {
-            stage = .flapOpening
+        withAnimation(.spring(duration: 0.45, bounce: 0.3)) {
+            stage = .cardPeeking
         }
-        // The flap is past upright, so it can go behind the card.
-        guard await sleep(0.22) else { return false }
-        withAnimation(.easeOut(duration: PaeoniaMotion.motionFast)) {
-            stage = .cardInside
-        }
-        guard await sleep(0.2) else { return false }
+        guard await sleep(0.3) else { return false }
 
         GameSound.flip.play(volume: 0.7)
         withAnimation(.spring(duration: 0.55, bounce: 0.22)) {
