@@ -122,15 +122,16 @@ struct PairedHomeView: View {
             // One layout for phone and wide iPad keeps the cards' identity, so turning
             // the iPad doesn't reset them or close the milestone sheet. The spacing
             // matches the gap inside the milestone/drawing tile row so the cards read
-            // as one grid. On the phone, today's questions lead and the tiles sit
-            // above the map, so a milestone day's celebration plays on screen.
+            // as one grid. The partner's game leads while they are in it, because it
+            // is the one card that can't wait. Then today's questions, and the tiles
+            // sit above the map, so a milestone day's celebration plays on screen.
             // The header with the partners' story avatars sits above every card, also on a wide iPad.
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 homeHeader
                 cardsLayout {
+                    partnerGameCard
                     dailyPromptCard
                     unreadChatsCard
-                    partnerGameCard
                     milestoneAndWidget
                         .layoutValue(key: HomeWideRole.self, value: .tiles)
                     mapCard
