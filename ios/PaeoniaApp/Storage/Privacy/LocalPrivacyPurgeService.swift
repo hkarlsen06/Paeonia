@@ -195,6 +195,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let boardGamesCache: any BoardGamesCaching
     private let gameDrawingStore: any GameDrawingStoring
     private let mindMeldCache: any MindMeldCaching
+    private let consensioCache: any ConsensioCaching
     private let lookBackCache: any LookBackCaching
     private let heartsCache: any HeartsCaching
     private let coupleDatesCache: any CoupleDatesCaching
@@ -218,6 +219,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         boardGamesCache: any BoardGamesCaching = FileBoardGamesCache.shared,
         gameDrawingStore: any GameDrawingStoring = FileGameDrawingStore.shared,
         mindMeldCache: any MindMeldCaching = FileMindMeldCache.shared,
+        consensioCache: any ConsensioCaching = FileConsensioCache.shared,
         lookBackCache: any LookBackCaching = FileLookBackCache.shared,
         heartsCache: any HeartsCaching = FileHeartsCache.shared,
         coupleDatesCache: any CoupleDatesCaching = FileCoupleDatesCache.shared,
@@ -240,6 +242,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.boardGamesCache = boardGamesCache
         self.gameDrawingStore = gameDrawingStore
         self.mindMeldCache = mindMeldCache
+        self.consensioCache = consensioCache
         self.lookBackCache = lookBackCache
         self.heartsCache = heartsCache
         self.coupleDatesCache = coupleDatesCache
@@ -333,6 +336,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await gamesCache.clearAll()
         await storyChainCache.clearAll()
         await mindMeldCache.clearAll()
+        await consensioCache.clearAll()
         await heartsCache.clearAll()
         await coupleDatesCache.clearAll()
         await storiesCache.clearAll()

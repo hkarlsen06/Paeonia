@@ -116,6 +116,8 @@ private extension GamesDestination {
         case .storyChainHistoryDetail: "story_chain_history_detail"
         case .mindMeldHistory: "mind_meld_history"
         case .mindMeldHistoryDetail: "mind_meld_history_detail"
+        case .consensioHistory: "consensio_history"
+        case .consensioHistoryDetail: "consensio_history_detail"
         case .exquisiteCorpseHistory: "exquisite_corpse_history"
         case .exquisiteCorpseHistoryDetail: "exquisite_corpse_history_detail"
         case let .boardGameHistory(kind): "\(kind.rawValue)_history"

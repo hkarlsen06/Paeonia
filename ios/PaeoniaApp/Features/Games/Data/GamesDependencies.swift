@@ -28,6 +28,12 @@ struct GamesDependencies {
     /// The Mind Meld relay room for the couple: presence and typing only.
     var makeMindMeldLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
 
+    // Consensio
+    var consensioGateway: any ConsensioGateway = UnavailableGamesGateway()
+    var consensioCache: any ConsensioCaching = InMemoryConsensioCache()
+    /// The Consensio relay room for the couple: presence, roles and the live guess pin.
+    var makeConsensioLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
+
     // Exquisite corpse
     var exquisiteCorpseGateway: any ExquisiteCorpseGateway = UnavailableExquisiteCorpseGateway()
     var exquisiteCorpseCache: any ExquisiteCorpseCaching = InMemoryExquisiteCorpseCache()
@@ -63,6 +69,9 @@ struct GamesDependencies {
             mindMeldGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             mindMeldCache: FileMindMeldCache.shared,
             makeMindMeldLive: { GameLiveRoom.make(.mindMeld, coupleID: $0) },
+            consensioGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
+            consensioCache: FileConsensioCache.shared,
+            makeConsensioLive: { GameLiveRoom.make(.consensio, coupleID: $0) },
             exquisiteCorpseGateway: client.map { LiveExquisiteCorpseGateway(client: $0) }
                 ?? UnavailableExquisiteCorpseGateway(),
             exquisiteCorpseCache: FileExquisiteCorpseCache.shared,

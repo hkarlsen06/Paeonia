@@ -218,6 +218,9 @@
         mindMeldGateway: DeveloperMindMeldGateway(historyIsEmpty: scenario == .mindMeldHistoryEmpty),
         mindMeldCache: DeveloperMindMeldScenarioFactory.cache(for: scenario),
         makeMindMeldLive: { coupleID in DeveloperMindMeldScenarioFactory.makeLive(for: scenario, coupleID: coupleID) },
+        consensioGateway: DeveloperConsensioGateway(),
+        consensioCache: DeveloperConsensioScenarioFactory.cache(for: scenario),
+        makeConsensioLive: { DeveloperConsensioScenarioFactory.makeLive(for: scenario, coupleID: $0) },
         boardGamesGateway: DeveloperBoardGamesGateway(),
         boardGamesCache: DeveloperBoardGamesFixture.cache(for: scenario),
         memoryPhotos: DeveloperBoardPhotoProvider()

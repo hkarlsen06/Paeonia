@@ -12,6 +12,7 @@ nonisolated enum GamesPendingOperationRegistry {
         return drawAndGuessHandlers(client: client, gateway: gateway, cache: cache)
             + storyChainHandlers(gateway: gateway, cache: cache)
             + mindMeldHandlers(gateway: gateway)
+            + consensioHandlers(gateway: gateway)
             + exquisiteCorpseHandlers(client: client)
             + boardGameHandlers(client: client)
     }
@@ -59,6 +60,14 @@ nonisolated enum GamesPendingOperationRegistry {
             StoryChainStarPendingOperationHandler(
                 gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
             ),
+        ]
+    }
+
+    private static func consensioHandlers(gateway: LiveGamesGateway) -> [any PendingSyncOperationHandling] {
+        [
+            ConsensioPlacePendingOperationHandler(gateway: gateway, cache: FileConsensioCache.shared),
+            ConsensioGuessPendingOperationHandler(gateway: gateway, cache: FileConsensioCache.shared),
+            ConsensioRevealSeenOperationHandler(gateway: gateway, cache: FileConsensioCache.shared),
         ]
     }
 

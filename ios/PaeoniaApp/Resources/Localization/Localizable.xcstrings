@@ -4101,6 +4101,1764 @@
         }
       }
     },
+    "consensio.choose.offline.message" : {
+      "comment" : "Under the title above. The person can still write a topic of their own below.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again in a moment, or write your own below."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen om litt, eller lag ditt eget under."
+          }
+        }
+      }
+    },
+    "consensio.choose.offline.title" : {
+      "comment" : "Shown in place of the topic list when the topics haven't arrived on the phone yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your topics are on their way"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temaene er på vei"
+          }
+        }
+      }
+    },
+    "consensio.choose.own.error.characters" : {
+      "comment" : "Validation message when an own topic has characters the game can't use.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some of those characters can't be used. Try plain letters."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noen av tegnene kan ikke brukes. Prøv vanlige bokstaver."
+          }
+        }
+      }
+    },
+    "consensio.choose.own.error.end" : {
+      "comment" : "Validation message under the own topic fields.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use 1 to 24 characters for each end."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk 1 til 24 tegn på hver ende."
+          }
+        }
+      }
+    },
+    "consensio.choose.own.error.same" : {
+      "comment" : "Validation message when both ends are the same.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give the two ends different words."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi de to endene forskjellige ord."
+          }
+        }
+      }
+    },
+    "consensio.choose.own.error.subject" : {
+      "comment" : "Validation message under the own topic fields.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use 2 to 60 characters for what it's about."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk 2 til 60 tegn på hva det handler om."
+          }
+        }
+      }
+    },
+    "consensio.choose.own.left" : {
+      "comment" : "Placeholder of the field for the left end of the line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One end"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den ene enden"
+          }
+        }
+      }
+    },
+    "consensio.choose.own.right" : {
+      "comment" : "Placeholder of the field for the right end of the line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other end"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den andre enden"
+          }
+        }
+      }
+    },
+    "consensio.choose.own.subject" : {
+      "comment" : "Placeholder of the field for what an own topic is about.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What it's about"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva det handler om"
+          }
+        }
+      }
+    },
+    "consensio.choose.own.subtitle" : {
+      "comment" : "Under 'Write your own'. Suggests inside jokes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An inside joke, or something only the two of you know."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En intern spøk, eller noe bare dere to vet om."
+          }
+        }
+      }
+    },
+    "consensio.choose.own.title" : {
+      "comment" : "Row and section title for writing a topic of your own.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write your own"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lag ditt eget"
+          }
+        }
+      }
+    },
+    "consensio.choose.row.a11y" : {
+      "comment" : "VoiceOver label of a topic row. %1$@ is the topic, %2$@ and %3$@ are the two ends of the line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, from %2$@ to %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, fra «%2$@» til «%3$@»"
+          }
+        }
+      }
+    },
+    "consensio.choose.start" : {
+      "comment" : "Button that opens the line for the chosen topic.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Begynn"
+          }
+        }
+      }
+    },
+    "consensio.choose.subtitle" : {
+      "comment" : "Consensio is a couples game: one partner places a marker (pin) on a line between two ends of a topic, the other guesses where. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ guesses where you stand."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjetter hvor du står."
+          }
+        }
+      }
+    },
+    "consensio.choose.subtitleFirst" : {
+      "comment" : "Consensio is a couples game: one partner places a marker (pin) on a line between two ends of a topic, the other guesses where. Shown on the very first turn, the only teaching. %@ is the partner's name. Norwegian uses brikke for marker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put your marker where you stand. %@ guesses where it is."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett brikken din der du står. %@ gjetter hvor den er."
+          }
+        }
+      }
+    },
+    "consensio.choose.title" : {
+      "comment" : "Consensio is a couples game: one partner places a marker (pin) on a line between two ends of a topic, the other guesses where. Title of the screen where the person picks a topic.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a topic"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et tema"
+          }
+        }
+      }
+    },
+    "consensio.guess.later" : {
+      "comment" : "Status line while the partner is away. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will see your guess later"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser gjetningen din senere"
+          }
+        }
+      }
+    },
+    "consensio.guess.lock" : {
+      "comment" : "Button that locks in the guess.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock in my guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås gjetningen"
+          }
+        }
+      }
+    },
+    "consensio.guess.question" : {
+      "comment" : "Question under the topic while guessing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where is %@ on this?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvor står %@ her?"
+          }
+        }
+      }
+    },
+    "consensio.guess.tapHint" : {
+      "comment" : "Hint over the empty line while guessing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap where you think %@ is"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk der du tror %@ står"
+          }
+        }
+      }
+    },
+    "consensio.guess.watching" : {
+      "comment" : "Status line while the partner watches the guess live. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is watching"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser på"
+          }
+        }
+      }
+    },
+    "consensio.handoff.continue" : {
+      "comment" : "Button after the reveal for the person who placed the marker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "consensio.handoff.place" : {
+      "comment" : "Button after the reveal that goes on to placing your own marker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn to place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur til å sette brikken"
+          }
+        }
+      }
+    },
+    "consensio.history.detail.placed" : {
+      "comment" : "Under a round's verdict. %@ is the partner's name, who placed the marker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ placed this one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ satte denne"
+          }
+        }
+      }
+    },
+    "consensio.history.detail.placedByYou" : {
+      "comment" : "Under a round's verdict when this person placed the marker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You placed this one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du satte denne"
+          }
+        }
+      }
+    },
+    "consensio.history.empty.message" : {
+      "comment" : "Empty state of 'What we know'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your rounds show up here after the first guess."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rundene deres dukker opp her etter første gjetning."
+          }
+        }
+      }
+    },
+    "consensio.history.empty.title" : {
+      "comment" : "Empty state of 'What we know'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing here yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingenting her ennå"
+          }
+        }
+      }
+    },
+    "consensio.history.failed.message" : {
+      "comment" : "When 'What we know' can't load on a working connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your rounds. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste rundene deres. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "consensio.history.loadMore.failed" : {
+      "comment" : "When older rounds could not load.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load older rounds."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste eldre runder."
+          }
+        }
+      }
+    },
+    "consensio.history.offline.message" : {
+      "comment" : "When 'What we know' can't load because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to see your rounds."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å se rundene deres."
+          }
+        }
+      }
+    },
+    "consensio.history.records.average" : {
+      "comment" : "Record label: how far off the guesses were on average.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On average"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I snitt"
+          }
+        }
+      }
+    },
+    "consensio.history.records.averageValue" : {
+      "comment" : "Record value. %lld is a percent of the line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld %% unna"
+          }
+        }
+      }
+    },
+    "consensio.history.records.none" : {
+      "comment" : "Record value before the first guess.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke ennå"
+          }
+        }
+      }
+    },
+    "consensio.history.records.spotOn" : {
+      "comment" : "Record label: how many guesses were spot on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spot on"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Midt i blinken"
+          }
+        }
+      }
+    },
+    "consensio.history.row.a11y" : {
+      "comment" : "VoiceOver label of a round. %1$@ topic, %2$@ where the real spot was, %3$@ where the guess was, %4$lld points.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@. The real spot is %2$@. The guess is %3$@. Points: %4$lld."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@. Den riktige plassen er %2$@. Gjetningen er %3$@. Poeng: %4$lld."
+          }
+        }
+      }
+    },
+    "consensio.history.row.caption" : {
+      "comment" : "Caption of a round in the list. %1$@ is who guessed ('You' or a name), %2$@ the points such as '4 points', %3$@ the date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ guessed · %2$@ · %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ gjettet · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "consensio.history.title" : {
+      "comment" : "Title of the screen with every guessed round and both partners' records.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What we know"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det vi vet"
+          }
+        }
+      }
+    },
+    "consensio.hub.guess" : {
+      "comment" : "Games tab card button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjett"
+          }
+        }
+      }
+    },
+    "consensio.hub.open" : {
+      "comment" : "Games tab card button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne"
+          }
+        }
+      }
+    },
+    "consensio.hub.pick" : {
+      "comment" : "Games tab card button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a topic"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et tema"
+          }
+        }
+      }
+    },
+    "consensio.hub.play" : {
+      "comment" : "Games tab card button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
+          }
+        }
+      }
+    },
+    "consensio.hub.seeReveal" : {
+      "comment" : "Games tab card button that opens a reveal.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See how close"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hvor nær"
+          }
+        }
+      }
+    },
+    "consensio.hub.status.choosing" : {
+      "comment" : "Games tab card status while the partner picks a topic. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is picking a topic."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ velger et tema."
+          }
+        }
+      }
+    },
+    "consensio.hub.status.guess" : {
+      "comment" : "Games tab card status when the partner placed a marker. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ placed a marker. Your turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har satt brikken sin. Din tur."
+          }
+        }
+      }
+    },
+    "consensio.hub.status.new" : {
+      "comment" : "Games tab card status before the first game. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show where you stand. Then %@ guesses."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis hvor du står. Så gjetter %@."
+          }
+        }
+      }
+    },
+    "consensio.hub.status.place" : {
+      "comment" : "Games tab card status when it's this person's turn to pick a topic.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn to pick a topic."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur til å velge et tema."
+          }
+        }
+      }
+    },
+    "consensio.hub.status.reveal" : {
+      "comment" : "Games tab card status when a guessed round waits to be seen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A guess is in."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En gjetning er klar."
+          }
+        }
+      }
+    },
+    "consensio.hub.status.waiting" : {
+      "comment" : "Games tab card status while waiting for the partner's guess. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@ to guess."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på at %@ skal gjette."
+          }
+        }
+      }
+    },
+    "consensio.menu.a11y" : {
+      "comment" : "VoiceOver label of the ••• menu in the Consensio toolbar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More options"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere valg"
+          }
+        }
+      }
+    },
+    "consensio.offline.message" : {
+      "comment" : "Shown when the game can't start because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to start the game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å starte spillet."
+          }
+        }
+      }
+    },
+    "consensio.offline.title" : {
+      "comment" : "Title when Consensio can't load because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett"
+          }
+        }
+      }
+    },
+    "consensio.place.back" : {
+      "comment" : "VoiceOver label of the back button from the line to the topic list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to topics"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbake til temaene"
+          }
+        }
+      }
+    },
+    "consensio.place.hint" : {
+      "comment" : "Quiet line under the line while placing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Be honest. %@ won't see it until they've guessed."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vær ærlig. %@ ser det ikke før gjetningen er låst."
+          }
+        }
+      }
+    },
+    "consensio.place.lock" : {
+      "comment" : "Button that locks in the marker. It can't be moved after.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock it in"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås svaret"
+          }
+        }
+      }
+    },
+    "consensio.place.question" : {
+      "comment" : "Consensio is a couples game: one partner places a marker (pin) on a line between two ends of a topic, the other guesses where. Question under the topic while placing your own marker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where are you on this?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvor står du her?"
+          }
+        }
+      }
+    },
+    "consensio.place.tapHint" : {
+      "comment" : "Hint over the empty line before the marker is placed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap where you stand"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk der du står"
+          }
+        }
+      }
+    },
+    "consensio.pointsTogether" : {
+      "comment" : "The couple's shared Consensio score. %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld point together"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld points together"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng sammen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng sammen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "consensio.reveal.announcement.guesser" : {
+      "comment" : "VoiceOver announcement of the reveal for the guesser. %1$@ partner's name, %2$@ where they are, %3$@ where the guess is (both like '62 percent of the way to book it now'), %4$@ the verdict, %5$lld the points.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ is %2$@. You guessed %3$@. %4$@. Points: %5$lld."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ er %2$@. Du gjettet %3$@. %4$@. Poeng: %5$lld."
+          }
+        }
+      }
+    },
+    "consensio.reveal.announcement.placer" : {
+      "comment" : "VoiceOver announcement of the reveal for the person who placed. %1$@ partner's name, %2$@ where the guess is, %3$@ where this person was, %4$@ the verdict, %5$lld the points.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ guessed %2$@. You were %3$@. %4$@. Points: %5$lld."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ gjettet %2$@. Du var %3$@. %4$@. Poeng: %5$lld."
+          }
+        }
+      }
+    },
+    "consensio.reveal.close.title" : {
+      "comment" : "Reveal title when the guess was 12 to 19 percent off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nær"
+          }
+        }
+      }
+    },
+    "consensio.reveal.far.guesser" : {
+      "comment" : "%1$@ is the partner's name, %2$@ the end of the line their real spot is nearer to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ is closer to %2$@ than you thought."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ er nærmere «%2$@» enn du trodde."
+          }
+        }
+      }
+    },
+    "consensio.reveal.far.middle.guesser" : {
+      "comment" : "When the partner's real spot is in the middle. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is right in the middle."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ står midt på."
+          }
+        }
+      }
+    },
+    "consensio.reveal.far.middle.placer" : {
+      "comment" : "When this person's spot is in the middle and the guess was far. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ thought you'd lean more to one side."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ trodde du lå mer til den ene siden."
+          }
+        }
+      }
+    },
+    "consensio.reveal.far.placer" : {
+      "comment" : "%1$@ is the partner's name, %2$@ the end of the line their guess is nearer to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ thought you were closer to %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ trodde du var nærmere «%2$@»."
+          }
+        }
+      }
+    },
+    "consensio.reveal.far.title" : {
+      "comment" : "Reveal title when the guess was 20 percent or more off. Gentle, not a loss.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now you know more"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nå vet du mer"
+          }
+        }
+      }
+    },
+    "consensio.reveal.hidden.a11y" : {
+      "comment" : "VoiceOver value of the line before the partner's marker shows. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@'s marker"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på brikken til %@"
+          }
+        }
+      }
+    },
+    "consensio.reveal.off" : {
+      "comment" : "Under the reveal title. %lld is how many percent of the line the guess was off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only %lld%% off."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare %lld %% unna."
+          }
+        }
+      }
+    },
+    "consensio.reveal.points" : {
+      "comment" : "The points this round added, next to the total.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld"
+          }
+        }
+      }
+    },
+    "consensio.reveal.pointsTogether" : {
+      "comment" : "Under the shared total on the reveal.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "points together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "poeng sammen"
+          }
+        }
+      }
+    },
+    "consensio.reveal.soClose.title" : {
+      "comment" : "Reveal title when the guess was 4 to 11 percent off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "So close!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Så nær!"
+          }
+        }
+      }
+    },
+    "consensio.reveal.spotOn.guesser" : {
+      "comment" : "Under 'Spot on!' for the guesser. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You know %@ well."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kjenner %@ godt."
+          }
+        }
+      }
+    },
+    "consensio.reveal.spotOn.placer" : {
+      "comment" : "Under 'Spot on!' for the person who placed the marker. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ knows you well."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kjenner deg godt."
+          }
+        }
+      }
+    },
+    "consensio.reveal.spotOn.title" : {
+      "comment" : "Reveal title when the guess was 0 to 3 percent off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spot on!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Midt i blinken!"
+          }
+        }
+      }
+    },
+    "consensio.reveal.stage.a11y" : {
+      "comment" : "VoiceOver value of the line on the reveal. %1$@ is where the real spot is, %2$@ where the guess is.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The real spot is %1$@. The guess is %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den riktige plassen er %1$@. Gjetningen er %2$@."
+          }
+        }
+      }
+    },
+    "consensio.reveal.waitingServer" : {
+      "comment" : "Shown while a guess saved on the phone hasn't reached the server. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. We'll show where %@ is when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på telefonen. Vi viser hvor %@ står når du er på nett."
+          }
+        }
+      }
+    },
+    "consensio.reveal.you" : {
+      "comment" : "Label for this person on the reveal and in the records.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
+          }
+        }
+      }
+    },
+    "consensio.scale.empty" : {
+      "comment" : "VoiceOver value of the line before the marker is placed. Lowercase.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "not placed yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ikke satt ennå"
+          }
+        }
+      }
+    },
+    "consensio.scale.hint" : {
+      "comment" : "VoiceOver hint of the line. %1$@ and %2$@ are its two ends.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %1$@ to %2$@. Swipe up or down to move it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra «%1$@» til «%2$@». Sveip opp eller ned for å flytte den."
+          }
+        }
+      }
+    },
+    "consensio.scale.left" : {
+      "comment" : "VoiceOver action that moves the marker one step left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move a little left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt litt til venstre"
+          }
+        }
+      }
+    },
+    "consensio.scale.middle" : {
+      "comment" : "VoiceOver value of the line when the marker is near the middle. Lowercase, because it is read inside sentences too.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in the middle"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "midt på"
+          }
+        }
+      }
+    },
+    "consensio.scale.partner.a11y" : {
+      "comment" : "VoiceOver value while the partner guesses live. %1$@ is the partner's name, %2$@ where their guess is, such as '62 percent of the way to book it now'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@'s guess, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjetningen til %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "consensio.scale.place" : {
+      "comment" : "VoiceOver action that puts the marker in the middle of the line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place your marker"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett brikken din"
+          }
+        }
+      }
+    },
+    "consensio.scale.range" : {
+      "comment" : "VoiceOver hint of a line that can't be moved. %1$@ and %2$@ are its two ends.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %1$@ to %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra «%1$@» til «%2$@»"
+          }
+        }
+      }
+    },
+    "consensio.scale.right" : {
+      "comment" : "VoiceOver action that moves the marker one step right.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move a little right"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt litt til høyre"
+          }
+        }
+      }
+    },
+    "consensio.scale.value" : {
+      "comment" : "VoiceOver value of the line. %1$lld is a percent, %2$@ is the end it is closer to. Norwegian puts the end in quotes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld percent of the way to %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld prosent av veien mot «%2$@»"
+          }
+        }
+      }
+    },
+    "consensio.startFailed.message" : {
+      "comment" : "Shown when starting Consensio failed on a working connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't start the game. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke startet spillet. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "consensio.stats.points" : {
+      "comment" : "A number of Consensio points. %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld point"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld points"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "consensio.title" : {
+      "comment" : "Consensio is a couples game: one partner places a marker (pin) on a line between two ends of a topic, the other guesses where. The game's name, the same in every language.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consensio"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consensio"
+          }
+        }
+      }
+    },
+    "consensio.wait.choosing" : {
+      "comment" : "Waiting screen title while the partner picks a topic. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is picking a topic"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ velger et tema"
+          }
+        }
+      }
+    },
+    "consensio.wait.guessing" : {
+      "comment" : "Waiting screen title while the partner guesses live. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is guessing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjetter"
+          }
+        }
+      }
+    },
+    "consensio.wait.hintGuess" : {
+      "comment" : "Hint while the partner is away. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll tell you when %@ guesses."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sier fra når %@ har gjettet."
+          }
+        }
+      }
+    },
+    "consensio.wait.hintLive" : {
+      "comment" : "Hint while the partner guesses live. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll both see it the moment %@ locks in."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere ser det begge så snart %@ har låst svaret."
+          }
+        }
+      }
+    },
+    "consensio.wait.hintTurn" : {
+      "comment" : "Hint while the partner picks a topic.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll tell you when it's your turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sier fra når det er din tur."
+          }
+        }
+      }
+    },
+    "consensio.wait.title" : {
+      "comment" : "Waiting screen title. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      }
+    },
+    "consensio.wait.yourSpot.a11y" : {
+      "comment" : "VoiceOver value of the line on the waiting screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your marker. Only you can see it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brikken din. Bare du ser den."
+          }
+        }
+      }
+    },
     "dailyChallenge.choice.partnerFallback" : {
       "comment" : "Fallback name for the partner in a partner-choice answer when their display name is unknown",
       "extractionState" : "manual",
@@ -13001,6 +14759,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bare du ser stjernene dine."
+          }
+        }
+      }
+    },
+    "games.tutorial.consensio.close.message" : {
+      "comment" : "Last Consensio card. The couple always scores together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You score together. The closer the guess, the more points you both get."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere får poeng sammen. Jo nærmere gjetningen er, jo flere poeng får dere."
+          }
+        }
+      }
+    },
+    "games.tutorial.consensio.close.title" : {
+      "comment" : "Title of the last Consensio card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closer means more points"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jo nærmere, jo flere poeng"
+          }
+        }
+      }
+    },
+    "games.tutorial.consensio.guess.message" : {
+      "comment" : "Second Consensio card. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sees the same topic and guesses where you put it. Then you swap."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser det samme temaet og gjetter hvor du satte den. Så bytter dere."
+          }
+        }
+      }
+    },
+    "games.tutorial.consensio.guess.title" : {
+      "comment" : "Title of the second Consensio card. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ guesses"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjetter"
+          }
+        }
+      }
+    },
+    "games.tutorial.consensio.place.message" : {
+      "comment" : "First Consensio How to play card. Norwegian uses brikke for marker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a topic and put your marker where you really stand."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et tema og sett brikken din der du egentlig står."
+          }
+        }
+      }
+    },
+    "games.tutorial.consensio.place.title" : {
+      "comment" : "Title of the first Consensio How to play card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show where you stand"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis hvor du står"
           }
         }
       }

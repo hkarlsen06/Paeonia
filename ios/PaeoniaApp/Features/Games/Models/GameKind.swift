@@ -9,6 +9,7 @@ nonisolated enum GameKind: String, CaseIterable, Codable, Hashable, Sendable {
     case drawAndGuess = "draw_and_guess"
     case connectFour = "connect_four"
     case mindMeld = "mind_meld"
+    case consensio = "consensio"
     case dotsAndBoxes = "dots_and_boxes"
     case ultimateTicTacToe = "ultimate_tic_tac_toe"
     case storyChain = "story_chain"
@@ -32,6 +33,7 @@ nonisolated enum GameKind: String, CaseIterable, Codable, Hashable, Sendable {
         case .drawAndGuess: .gamesDrawAndGuessName
         case .connectFour: .connectFourName
         case .mindMeld: .mindMeldTitle
+        case .consensio: .consensioTitle
         case .dotsAndBoxes: .dotsAndBoxesName
         case .ultimateTicTacToe: .ultimateTicTacToeName
         case .storyChain: .storyChainName

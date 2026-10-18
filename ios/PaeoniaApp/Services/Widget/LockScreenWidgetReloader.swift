@@ -42,6 +42,7 @@ nonisolated extension SyncPendingOperationKind {
              .pickDrawWord, .submitGameDrawing, .submitGameGuess, .giveUpGameRound,
              .storyChainStartStory, .storyChainAddLine,
              .lockMindMeldWord, .countMindMeldRound,
+             .placeConsensioSpot, .guessConsensioSpot,
              .exquisiteCorpseSubmitPart,
              .boardGameMove, .boardGameRematch:
             true

@@ -18,6 +18,9 @@ nonisolated enum GamesDestination: Hashable, Sendable {
     /// "Our melds".
     case mindMeldHistory
     case mindMeldHistoryDetail(UUID)
+    /// "What we know".
+    case consensioHistory
+    case consensioHistoryDetail(UUID)
     /// "Our creatures".
     case exquisiteCorpseHistory
     case exquisiteCorpseHistoryDetail(UUID)
@@ -73,6 +76,7 @@ final class GamesViewModel {
     let drawAndGuess: DrawAndGuessHubModel
     let storyChain: StoryChainHubModel
     let mindMeld: MindMeldHubModel
+    let consensio: ConsensioHubModel
     let exquisiteCorpse: ExquisiteCorpseHubModel
     let connectFour: BoardGameHubModel<ConnectFourBoard>
     let dotsAndBoxes: BoardGameHubModel<DotsAndBoxesBoard>
@@ -81,7 +85,10 @@ final class GamesViewModel {
 
     /// The built games, in `GameKind` order. A kind that is not here shows nowhere.
     var games: [any GameHubModel] {
-        [ludo, drawAndGuess, connectFour, mindMeld, dotsAndBoxes, ultimateTicTacToe, storyChain, exquisiteCorpse]
+        [
+            ludo, drawAndGuess, connectFour, mindMeld, consensio, dotsAndBoxes, ultimateTicTacToe, storyChain,
+            exquisiteCorpse,
+        ]
     }
 
     private let dependencies: GamesDependencies
@@ -100,6 +107,7 @@ final class GamesViewModel {
         self.drawAndGuess = DrawAndGuessHubModel(dependencies: dependencies, game: drawAndGuess)
         storyChain = StoryChainHubModel(dependencies: dependencies)
         mindMeld = MindMeldHubModel(dependencies: dependencies)
+        consensio = ConsensioHubModel(dependencies: dependencies)
         exquisiteCorpse = ExquisiteCorpseHubModel(dependencies: dependencies)
         connectFour = ConnectFourGame.hubModel(dependencies: dependencies)
         dotsAndBoxes = DotsAndBoxesGame.hubModel(dependencies: dependencies)

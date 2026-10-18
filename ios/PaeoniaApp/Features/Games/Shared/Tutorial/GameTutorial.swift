@@ -19,6 +19,7 @@ struct GameTutorial {
         case .ultimateTicTacToe: pages = Self.ultimateTicTacToePages(partnerName: partnerName)
         case .dotsAndBoxes: pages = Self.dotsAndBoxesPages(partnerName: partnerName)
         case .mindMeld: pages = Self.mindMeldPages(partnerName: partnerName)
+        case .consensio: pages = Self.consensioPages(partnerName: partnerName)
         case .drawAndGuess, .exquisiteCorpse, .storyChain, .connectFour, .ludo: return nil
         }
         self.kind = kind
@@ -80,6 +81,26 @@ struct GameTutorial {
                 image: .gameTutorialMindMeldMatch,
                 title: .gamesTutorialMindMeldMatchTitle,
                 message: .gamesTutorialMindMeldMatchMessage
+            ),
+        ]
+    }
+
+    private static func consensioPages(partnerName: String) -> [Page] {
+        [
+            Page(
+                image: .gameTutorialConsensioPlace,
+                title: .gamesTutorialConsensioPlaceTitle,
+                message: .gamesTutorialConsensioPlaceMessage
+            ),
+            Page(
+                image: .gameTutorialConsensioGuess,
+                title: .gamesTutorialConsensioGuessTitle(partnerName),
+                message: .gamesTutorialConsensioGuessMessage(partnerName)
+            ),
+            Page(
+                image: .gameTutorialConsensioClose,
+                title: .gamesTutorialConsensioCloseTitle,
+                message: .gamesTutorialConsensioCloseMessage
             ),
         ]
     }
