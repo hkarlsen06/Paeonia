@@ -69,7 +69,7 @@ extension DailyChallengeViewModel {
     /// whenever the questions or the seen list change, so one that failed offline is
     /// sent again once a live update arrives. The server keeps the first time it heard.
     func uploadSeenPartnerAnswers() {
-        let pending = snapshot.questions.filter {
+        let pending = (snapshot.questions + topicQuestions.values).filter {
             seenPartnerAnswerIDs.contains($0.id) && $0.hasRevealedPartnerAnswer && $0.partnerAnswerSeenAt == nil
                 && !seenAnswerUploads.contains($0.id)
         }
@@ -101,10 +101,16 @@ extension DailyChallengeViewModel {
         snapshot.questions.first(where: { $0.questionID == questionID })?.prompt
     }
 
+    /// Chats with a partner message the user has not opened yet, from daily questions
+    /// only. Home and other shared screens list these. Topic chats show on the Topics card.
+    var unreadDailyChats: [DailyQuestionThreadSummary] {
+        unreadChats.filter { $0.topicKey == nil }
+    }
+
     /// Today's copy of a question opened earlier, so an open page sees the partner's
     /// answer arrive. Older questions are not in today's snapshot and stay as they were.
     func latestQuestion(_ question: DailyChallengeQuestion) -> DailyChallengeQuestion {
-        snapshot.questions.first(where: { $0.id == question.id }) ?? question
+        knownQuestion(question.id) ?? question
     }
 
     /// The question's newest day the user can open a chat from, to open the question's
@@ -127,7 +133,7 @@ extension DailyChallengeViewModel {
     /// The day with this instance id, to open the question's chat on that day. History
     /// rows cover days the user answered earlier than today.
     func questionForChat(instanceID: UUID) async -> DailyChallengeQuestion? {
-        if let question = snapshot.questions.first(where: { $0.id == instanceID && $0.isChatAvailable }) {
+        if let question = knownQuestion(instanceID), question.isChatAvailable {
             return question
         }
         guard let currentUserID else { return nil }

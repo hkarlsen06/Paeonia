@@ -65,6 +65,10 @@ final class DailyChallengeViewModel {
 
     private(set) var participants = DailyChallengeParticipants()
     var snapshot = DailyChallengeSnapshot.empty(currentUserID: nil)
+    /// The questions of the topics the user has opened, by question id (the topic
+    /// instance id). Topics put them here (`setTopicQuestions`), so answering one uses
+    /// the same drafts, send queue, reveal and chat as a daily question.
+    private(set) var topicQuestions: [UUID: DailyChallengeQuestion] = [:]
     /// Questions whose answer is saved on the device and finishing its send in the
     /// background, keyed to what's being sent so the "saved, sending" preview can show
     /// the text, the picked person, or a photo/voice note (and a voice note's length)
@@ -195,6 +199,7 @@ final class DailyChallengeViewModel {
         // the app — keeps their half-written answers.
         answerDrafts = newUserID.map { draftStore.drafts(for: $0) } ?? [:]
         snapshot = .empty(currentUserID: newUserID)
+        topicQuestions = [:]
         sendingAnswers = [:]
         threadSummariesByQuestionID = [:]
         chatReadMarks = [:]
@@ -316,6 +321,24 @@ final class DailyChallengeViewModel {
 
     func dismissNotice() {
         notice = nil
+    }
+
+    /// Today's copy of a question, or the topic copy when it is a topic question.
+    func knownQuestion(_ id: UUID) -> DailyChallengeQuestion? {
+        snapshot.questions.first(where: { $0.id == id }) ?? topicQuestions[id]
+    }
+
+    /// Replaces one topic's questions. A topic's rows change when the partner answers
+    /// or a send lands, so this also wakes an answer flow waiting for the reveal.
+    func setTopicQuestions(_ questions: [DailyChallengeQuestion], topicKey: String) {
+        var merged = topicQuestions.filter { $0.value.topicKey != topicKey }
+        for question in questions {
+            merged[question.id] = question
+        }
+        guard merged != topicQuestions else { return }
+        topicQuestions = merged
+        snapshotWaiters.values.forEach { $0.yield() }
+        uploadSeenPartnerAnswers()
     }
 
     /// `fromCache` is true for the copy saved on this phone. Its questions may be

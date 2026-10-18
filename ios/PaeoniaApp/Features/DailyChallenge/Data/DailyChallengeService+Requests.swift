@@ -64,6 +64,53 @@ nonisolated struct SubmitDailyAnswerRequest: Encodable {
     }
 }
 
+/// `topics:submit_topic_answer`: the daily answer request plus the question it answers.
+nonisolated struct SubmitTopicAnswerRequest: Encodable {
+    let questionID: UUID
+    let instanceID: UUID
+    let payload: DailyAnswerPayloadBody
+    let clientOperationID: UUID
+    let clientID: UUID
+    let clientSequence: Int64
+    let localCreatedAt: Date
+
+    init(
+        questionID: UUID,
+        instanceID: UUID,
+        answerID: UUID,
+        payload: DailyAnswerPayload,
+        operation: SyncClientOperation
+    ) {
+        self.questionID = questionID
+        self.instanceID = instanceID
+        self.payload = DailyAnswerPayloadBody(answerID: answerID, payload: payload)
+        clientOperationID = operation.id
+        clientID = operation.clientID
+        clientSequence = operation.clientSequence
+        localCreatedAt = operation.localCreatedAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case questionID = "p_question_id"
+        case instanceID = "p_instance_id"
+        case payload = "p_payload"
+        case clientOperationID = "p_client_operation_id"
+        case clientID = "p_client_id"
+        case clientSequence = "p_client_sequence"
+        case localCreatedAt = "p_local_created_at"
+    }
+}
+
+nonisolated struct SubmitTopicAnswerResult: Decodable {
+    let answerID: UUID
+    let instanceID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case answerID = "answer_id"
+        case instanceID = "instance_id"
+    }
+}
+
 /// Encodes the `p_payload` JSON the backend expects, carrying a client-generated
 /// `answer_id` for idempotency plus the per-kind fields. Only text is sent today;
 /// partner-choice and media fields are added with their features.

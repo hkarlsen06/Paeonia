@@ -18,6 +18,8 @@ nonisolated struct ConversationThreadRow: Decodable {
     let lastMessageMediaType: String?
     /// How far this user has read the chat, from any of their devices.
     let viewerReadThroughAt: Date?
+    let topicKey: String?
+    let adultsOnly: Bool?
 
     var dailyQuestionSummary: DailyQuestionThreadSummary? {
         guard kind == "daily_question", deletedAt == nil, moderationStatus == "visible",
@@ -35,7 +37,9 @@ nonisolated struct ConversationThreadRow: Decodable {
             lastMessageSenderUserID: previewIsVisible ? lastMessageSenderUserID : nil,
             lastMessageBody: previewIsVisible ? lastMessageBody : nil,
             lastMessageMediaType: previewIsVisible ? lastMessageMediaType : nil,
-            viewerReadThroughAt: viewerReadThroughAt
+            viewerReadThroughAt: viewerReadThroughAt,
+            topicKey: topicKey,
+            isAdultTopic: adultsOnly
         )
     }
 
@@ -56,6 +60,8 @@ nonisolated struct ConversationThreadRow: Decodable {
         case lastMessageBody = "last_message_body"
         case lastMessageMediaType = "last_message_media_type"
         case viewerReadThroughAt = "viewer_read_through_at"
+        case topicKey = "topic_key"
+        case adultsOnly = "adults_only"
     }
 }
 

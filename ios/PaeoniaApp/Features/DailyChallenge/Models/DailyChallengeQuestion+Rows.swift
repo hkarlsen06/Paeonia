@@ -68,7 +68,8 @@ extension DailyChallengeQuestion {
             ownAnswerSeenByPartnerAt: row.ownAnswerSeenByPartnerAt,
             earlierRoundCount: row.earlierRoundCount ?? 0,
             latestEarlierRoundLocalDate: row.latestEarlierRoundLocalDate,
-            hasSharedRound: row.chatAvailable ?? false
+            hasSharedRound: row.chatAvailable ?? false,
+            topicKey: row.topicKey
         )
     }
 }

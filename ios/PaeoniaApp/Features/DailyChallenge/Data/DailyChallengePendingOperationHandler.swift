@@ -11,6 +11,9 @@ nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatab
     let instanceID: UUID
     let answerID: UUID
     let content: Content
+    /// Set for an answer to a topic question, which goes to `topics:submit_topic_answer`.
+    /// Its `instanceID` is the topic instance id both phones derive (`TopicInstanceID`).
+    var topicQuestionID: UUID?
 
     /// What the queued answer is sending. The combined cases let one answer carry a
     /// text caption alongside a photo or a partner pick (kept as separate cases so
@@ -229,12 +232,22 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
         operation: PendingSyncOperationSnapshot
     ) async throws -> PendingSyncOperationSendResult {
         do {
-            _ = try await gateway.submitAnswer(
-                instanceID: payload.instanceID,
-                answerID: payload.answerID,
-                payload: answer,
-                operation: operation.operation
-            )
+            if let topicQuestionID = payload.topicQuestionID {
+                try await gateway.submitTopicAnswer(
+                    questionID: topicQuestionID,
+                    instanceID: payload.instanceID,
+                    answerID: payload.answerID,
+                    payload: answer,
+                    operation: operation.operation
+                )
+            } else {
+                _ = try await gateway.submitAnswer(
+                    instanceID: payload.instanceID,
+                    answerID: payload.answerID,
+                    payload: answer,
+                    operation: operation.operation
+                )
+            }
             return .succeeded
         } catch let error as PaeoniaConvexError where Self.isPermanentRejection(error) {
             await restoreDraft(operation.ownerUserID, payload.instanceID, payload.content.restoredDraft)

@@ -6,6 +6,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     /// A question's chat. A couple has one chat per question.
     case dailyChat(questionID: UUID)
     case dailyToday(coupleDayID: UUID?)
+    /// `paeonia://topics`: the partner answered topic questions. Opens the Topics shelf.
+    case topics
     case memories
     /// `paeonia://stories`: the partner shared a story. Opens Home, where the ring shows it.
     case stories
@@ -151,22 +153,25 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         self = link
     }
 
+    /// Links that are just a host, such as `paeonia://memories`.
+    private static let hostOnlyLinks: [String: Self] = [
+        "topics": .topics,
+        "memories": .memories,
+        "stories": .stories,
+        "home": .home,
+        "streak": .streak,
+    ]
+
     private static func link(host: String, pathComponents: [String], query: [URLQueryItem]) -> Self? {
         switch (host, pathComponents) {
         case ("daily", _):
             dailyLink(pathComponents: pathComponents, query: query)
-        case ("memories", []):
-            .memories
-        case ("stories", []):
-            .stories
-        case ("home", []):
-            .home
         case ("games", _) where pathComponents.count == 1:
             GameKind(path: pathComponents[0]).map(Self.game)
-        case ("streak", []):
-            .streak
         case ("settings", ["subscription"]):
             .subscription
+        case (_, []):
+            hostOnlyLinks[host]
         default:
             nil
         }

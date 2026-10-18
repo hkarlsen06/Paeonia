@@ -119,7 +119,8 @@ extension MainTabView {
             onPromptCurrentLocation: {
                 Task { await actions.shareLocation() }
             },
-            unreadChats: dailyChallengeViewModel.unreadChats.map { summary in
+            // Topic chats stay off Home. The Topics card says when one has a new message.
+            unreadChats: dailyChallengeViewModel.unreadDailyChats.map { summary in
                 UnreadChatRow(
                     id: summary.questionID,
                     prompt: dailyChallengeViewModel.questionPrompt(for: summary.questionID),
@@ -146,7 +147,7 @@ extension MainTabView {
     }
 
     private var questionsTab: some View {
-        NavigationStack {
+        NavigationStack(path: $questionsPath) {
             DailyChallengeScreen(
                 viewModel: dailyChallengeViewModel,
                 zoomNamespace: zoomNamespace,
@@ -160,9 +161,16 @@ extension MainTabView {
                 onAnswerPartnerQuestion: openPartnerAnswerFlow,
                 privacySafetyService: dependencies.settingsPrivacyService,
                 privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
-                onReportedAndLeft: actions.leftRelationship
+                onReportedAndLeft: actions.leftRelationship,
+                topicsCard: TopicsCardContent(
+                    topics: topicsViewModel.cardTopics,
+                    hook: topicsHook,
+                    isShown: topicsViewModel.hasLoadedOverview && !topicsViewModel.overview.isEmpty,
+                    onOpen: openTopics
+                )
             )
             .analyticsScreen("questions")
+            .navigationDestination(for: QuestionsDestination.self, destination: questionsDestination)
         }
     }
 

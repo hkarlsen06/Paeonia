@@ -15,6 +15,10 @@ nonisolated struct DailyQuestionThreadSummary: Codable, Equatable, Sendable {
     var lastMessageMediaType: String?
     /// How far this user has read the chat on any of their devices, from the server.
     var viewerReadThroughAt: Date?
+    /// The topic of a topic question's chat, nil for a daily question.
+    var topicKey: String?
+    /// The chat belongs to the adults-only topic, so nothing about it shows outside it.
+    var isAdultTopic: Bool?
 
     /// What to show for the newest message. A shown message with no text has an
     /// attachment, because the server only leaves out the text of hidden messages.

@@ -60,6 +60,8 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
     var latestEarlierRoundLocalDate: String?
     /// Some day of the question has answers from both partners, so its chat can start.
     var chatAvailable: Bool?
+    /// The topic of a topic question, nil for a daily question.
+    var topicKey: String?
 
     enum CodingKeys: String, CodingKey {
         case coupleDayID = "couple_day_id"
@@ -91,6 +93,7 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
         case earlierRoundCount = "earlier_round_count"
         case latestEarlierRoundLocalDate = "latest_earlier_round_local_date"
         case chatAvailable = "chat_available"
+        case topicKey = "topic_key"
     }
 
     func prompt(for locale: Locale) -> String {

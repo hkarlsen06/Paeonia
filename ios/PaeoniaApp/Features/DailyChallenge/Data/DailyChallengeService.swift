@@ -44,6 +44,29 @@ protocol DailyChallengeGateway: Actor {
         slotNumber: Int,
         operation: SyncClientOperation
     ) async throws -> DailyChallengeRemoteSnapshotRow
+    /// Answers a topic question. The server starts the couple's instance of the
+    /// question when nobody has answered it yet.
+    func submitTopicAnswer(
+        questionID: UUID,
+        instanceID: UUID,
+        answerID: UUID,
+        payload: DailyAnswerPayload,
+        operation: SyncClientOperation
+    ) async throws
+}
+
+extension DailyChallengeGateway {
+    /// Gateways that only serve the daily questions, such as test doubles, never send
+    /// topic answers.
+    func submitTopicAnswer(
+        questionID _: UUID,
+        instanceID _: UUID,
+        answerID _: UUID,
+        payload _: DailyAnswerPayload,
+        operation _: SyncClientOperation
+    ) throws {
+        throw DailyChallengeServiceUnavailableError()
+    }
 }
 
 actor DailyChallengeService: DailyChallengeServicing {
@@ -286,6 +309,25 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
         try await client.mutation(
             "daily:submit_daily_answer",
             args: SubmitDailyAnswerRequest(
+                instanceID: instanceID,
+                answerID: answerID,
+                payload: payload,
+                operation: operation
+            )
+        )
+    }
+
+    func submitTopicAnswer(
+        questionID: UUID,
+        instanceID: UUID,
+        answerID: UUID,
+        payload: DailyAnswerPayload,
+        operation: SyncClientOperation
+    ) async throws {
+        let _: SubmitTopicAnswerResult = try await client.mutation(
+            "topics:submit_topic_answer",
+            args: SubmitTopicAnswerRequest(
+                questionID: questionID,
                 instanceID: instanceID,
                 answerID: answerID,
                 payload: payload,

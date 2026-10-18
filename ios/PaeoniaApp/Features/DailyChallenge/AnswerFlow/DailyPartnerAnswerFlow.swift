@@ -18,6 +18,12 @@ struct DailyPartnerAnswerFlow: View {
     var privacyOperationProvider: (any SyncClientOperationProviding)?
     var onReportedAndLeft: () -> Void = {}
     var onClose: () -> Void = {}
+    /// The topic's name, over the question, for a topic question.
+    var topicTitle: String?
+    /// Puts a topic question aside without asking (`TopicAnswerSession`).
+    var onSkip: (() -> Void)?
+    /// Moves on to the topic's next question once this one is sent.
+    var onNext: (() -> Void)?
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     /// The question's chat, made when the answer is sent.
@@ -80,7 +86,8 @@ struct DailyPartnerAnswerFlow: View {
                 question: heldQuestion ?? liveQuestion,
                 viewModel: viewModel,
                 isFocused: $isComposerFocused,
-                visualHold: visualHold
+                visualHold: visualHold,
+                eyebrow: topicTitle
             )
             // The answer is on its way, so the held composer takes no more input.
             .allowsHitTesting(visualHold == nil)
@@ -108,8 +115,11 @@ struct DailyPartnerAnswerFlow: View {
             isPrimaryBusy: isSubmitting,
             isPrimaryDisabled: isPrimaryDisabled,
             isComposing: isComposerFocused,
+            canSkip: onSkip != nil,
+            isSkipDisabled: isSubmitting,
             onPrimary: { Task { await submit() } },
             onClose: dismiss,
+            onSkip: { onSkip?() },
             onDone: { isComposerFocused = false }
         )
     }
@@ -140,6 +150,7 @@ struct DailyPartnerAnswerFlow: View {
                     .accessibilityLabel(Text(.dailyChallengeFlowClose))
                 }
             }
+            .modifier(TopicNextQuestionActions(onNext: onNext, isChatAvailable: chat.isChatAvailable))
             .navigationDestination(item: $reportTarget) { reportTarget in
                 if let partnerUserID = viewModel.participants.partnerUserID {
                     ReportAndLeaveView(
@@ -160,7 +171,7 @@ struct DailyPartnerAnswerFlow: View {
     /// The live copy of this question from the snapshot, carrying the partner's reply
     /// once it unlocks.
     private var revealedQuestion: DailyChallengeQuestion? {
-        viewModel.snapshot.questions.first { $0.id == question.id }
+        viewModel.knownQuestion(question.id)
     }
 
     /// The live snapshot copy of this question, carrying our just-sent answer once it
@@ -397,5 +408,39 @@ struct DailyPartnerAnswerRevealView: View {
         } else if let revealedQuestion, revealedQuestion.ownAnswerDetail != nil {
             DailyAnswerDetailsView(question: revealedQuestion, participants: participants)
         }
+    }
+}
+
+/// A topic question's page moves on to the topic's next question: a button at the
+/// bottom while the waiting page shows (it has no composer), and Next in the toolbar
+/// once the chat is open. Nothing for a daily question.
+private struct TopicNextQuestionActions: ViewModifier {
+    let onNext: (() -> Void)?
+    let isChatAvailable: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar {
+                if let onNext, isChatAvailable {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(action: onNext) {
+                            Text(.topicsFlowNext)
+                        }
+                        .accessibilityIdentifier("topics.flow.next")
+                    }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if let onNext, !isChatAvailable {
+                    Button(action: onNext) {
+                        Text(.topicsFlowNextQuestion)
+                    }
+                    .buttonStyle(PaeoniaPrimaryButtonStyle())
+                    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                    .padding(.bottom, PaeoniaSpacing.space8)
+                    .paeoniaReadableWidth()
+                    .accessibilityIdentifier("topics.flow.nextQuestion")
+                }
+            }
     }
 }

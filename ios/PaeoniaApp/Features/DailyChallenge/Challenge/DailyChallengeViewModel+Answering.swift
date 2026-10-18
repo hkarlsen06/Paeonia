@@ -22,7 +22,7 @@ extension DailyChallengeViewModel {
         // The couple's day ended while this was open (offline, or before the live
         // update arrived). The server only takes your own answers made during their
         // day, so a queued one would never send.
-        if question.origin == .own, question.endsAt <= now() {
+        if question.origin == .own, !question.isTopicQuestion, question.endsAt <= now() {
             endCurrentDayIfNeeded()
             notice = .dayEnded
             Task { await reload() }
@@ -134,7 +134,8 @@ extension DailyChallengeViewModel {
         let operationPayload = DailySubmitAnswerOperationPayload(
             instanceID: question.id,
             answerID: UUID(),
-            content: outgoing.content
+            content: outgoing.content,
+            topicQuestionID: question.isTopicQuestion ? question.questionID : nil
         )
 
         do {

@@ -84,7 +84,9 @@ nonisolated extension DailyChatCoreDocument {
             lastMessageAt: message.createdAt,
             lastMessageSenderUserID: message.senderUserID,
             lastMessageBody: message.body,
-            viewerReadThroughAt: summary.viewerReadThroughAt
+            viewerReadThroughAt: summary.viewerReadThroughAt,
+            topicKey: summary.topicKey,
+            isAdultTopic: summary.isAdultTopic
         )
     }
 
@@ -101,7 +103,9 @@ nonisolated extension DailyChatCoreDocument {
                 lastMessageAt: send.createdAt,
                 lastMessageSenderUserID: send.senderUserID,
                 lastMessageBody: send.body,
-                viewerReadThroughAt: summary.viewerReadThroughAt
+                viewerReadThroughAt: summary.viewerReadThroughAt,
+                topicKey: summary.topicKey,
+                isAdultTopic: summary.isAdultTopic
             )
         } else {
             summaries.append(

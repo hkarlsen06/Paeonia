@@ -40,7 +40,7 @@ extension DailyChallengeViewModel {
     }
 
     private func hasRevealedPartnerAnswer(for instanceID: UUID) -> Bool {
-        snapshot.questions.first(where: { $0.id == instanceID })?.canViewPartnerAnswer == true
+        knownQuestion(instanceID)?.canViewPartnerAnswer == true
     }
 
     /// Re-reads the local store when the live feeds write to it, so a partner's

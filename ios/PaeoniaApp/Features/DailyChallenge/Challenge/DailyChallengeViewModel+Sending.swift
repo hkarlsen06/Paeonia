@@ -23,7 +23,7 @@ extension DailyChallengeViewModel {
     /// sending" preview right away rather than at the next full reload.
     func isSending(_ instanceID: UUID) -> Bool {
         guard sendingAnswers[instanceID] != nil else { return false }
-        return snapshot.questions.first(where: { $0.id == instanceID })?.hasOwnAnswer != true
+        return knownQuestion(instanceID)?.hasOwnAnswer != true
     }
 
     /// The text of a still-sending answer (a standalone text answer or the caption on

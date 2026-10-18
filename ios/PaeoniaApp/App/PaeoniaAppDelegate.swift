@@ -72,6 +72,8 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     nonisolated private static let typesShownLiveInApp: Set<String> = [
         "thread_message_sent",
         "partner_answered",
+        // The Topics card on the Questions tab shows what's waiting.
+        "topics_waiting",
         "daily_challenge_completed",
         // The open app plays the pairing celebration the moment the partner joins.
         "partner_joined",

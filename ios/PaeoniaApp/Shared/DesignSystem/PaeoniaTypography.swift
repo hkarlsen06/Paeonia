@@ -13,6 +13,10 @@ nonisolated enum PaeoniaTypography {
     static let countdownNumber = Font.system(.largeTitle, design: .rounded).weight(.bold)
     static let widgetPrimary = Font.headline
     static let widgetSecondary = Font.caption
+    /// A named collection, such as a question topic, in the brand's serif.
+    static let collectionTitle = Font.system(.title3, design: .serif).weight(.semibold)
+    /// The large heading of a collection's own screen.
+    static let collectionHeroTitle = Font.system(.title, design: .serif).weight(.semibold)
 
     static func wordmark(size: CGFloat) -> Font {
         Font.system(size: size, weight: .semibold, design: .serif)

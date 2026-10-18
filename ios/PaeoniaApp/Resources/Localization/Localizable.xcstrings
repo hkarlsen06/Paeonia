@@ -30848,6 +30848,672 @@
         }
       }
     },
+    "topics.adult.body" : {
+      "comment" : "Sheet before the age check. Apple shows its own sheet after Continue",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These questions are playful and a little daring. Apple will ask if you're happy to share that you're 18 or older. Paeonia only learns yes or no, never your birthday."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disse spørsmålene er lekne og litt dristige. Apple spør om du vil dele at du er 18 eller eldre. Paeonia får bare vite ja eller nei, aldri bursdagen din."
+          }
+        }
+      }
+    },
+    "topics.adult.continue" : {
+      "comment" : "Button that starts Apple's age check",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "topics.adult.notNow" : {
+      "comment" : "Button that closes the age check sheet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      }
+    },
+    "topics.adult.partnerLine" : {
+      "comment" : "Second line of the age check sheet. Partner name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ confirms on their own phone. Flirt opens once you both have."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ bekrefter på sin egen telefon. Flørt åpnes når dere begge har gjort det."
+          }
+        }
+      }
+    },
+    "topics.adult.title" : {
+      "comment" : "Title of the sheet before the adults-only topic asks for the person's age",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flirt is 18+"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flørt er for 18+"
+          }
+        }
+      }
+    },
+    "topics.answerNext" : {
+      "comment" : "Button at the bottom of a topic screen that opens the next question to answer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer the next one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på neste"
+          }
+        }
+      }
+    },
+    "topics.badge.adults" : {
+      "comment" : "Badge on the adults-only topic card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "18+"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "18+"
+          }
+        }
+      }
+    },
+    "topics.badge.forYou" : {
+      "comment" : "Badge on a topic card: questions the partner answered that wait for this person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld til deg"
+          }
+        }
+      }
+    },
+    "topics.badge.new" : {
+      "comment" : "Badge on a topic card: questions added since the person last opened it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld new"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld nye"
+          }
+        }
+      }
+    },
+    "topics.card.idle" : {
+      "comment" : "Topics card line when nothing is waiting",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extra questions for the two of you. Answer as many as you like."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ekstra spørsmål for dere to. Svar på så mange dere vil."
+          }
+        }
+      }
+    },
+    "topics.card.title" : {
+      "comment" : "Title of the Topics card on the Questions tab, the Topics shelf, and its navigation title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Topics"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temaer"
+          }
+        }
+      }
+    },
+    "topics.finished.button" : {
+      "comment" : "Button that closes the finished-topic moment",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See your answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se svarene deres"
+          }
+        }
+      }
+    },
+    "topics.finished.message" : {
+      "comment" : "Line under the finished-topic title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every answer stays here for when you want to read them again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle svarene blir liggende her til dere vil lese dem igjen."
+          }
+        }
+      }
+    },
+    "topics.finished.title" : {
+      "comment" : "Moment shown once when a couple has answered every question in a topic. Topic name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've answered all of %@ together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har svart på alt i %@ sammen"
+          }
+        }
+      }
+    },
+    "topics.flirt.locked" : {
+      "comment" : "Line on the adults-only topic card before this person confirmed their age",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "18+. You both confirm your age first."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "18+. Dere bekrefter begge alderen først."
+          }
+        }
+      }
+    },
+    "topics.flirt.showAgain" : {
+      "comment" : "Button at the bottom of the Topics shelf, shown only to the person who hid the adults-only topic",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Flirt again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis Flørt igjen"
+          }
+        }
+      }
+    },
+    "topics.flirt.waiting" : {
+      "comment" : "Line on the adults-only topic card after this person confirmed. Partner name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens when %@ taps it too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpnes når %@ også trykker på det."
+          }
+        }
+      }
+    },
+    "topics.flow.next" : {
+      "comment" : "Toolbar button in a topic question's chat. Opens the next question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste"
+          }
+        }
+      }
+    },
+    "topics.flow.nextQuestion" : {
+      "comment" : "Button after sending a topic answer, before the partner answered. Opens the next question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next question"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste spørsmål"
+          }
+        }
+      }
+    },
+    "topics.flow.youGoFirst" : {
+      "comment" : "Note on a topic question nobody has answered yet. Partner name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sees your answer after answering too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser svaret ditt etter å ha svart selv."
+          }
+        }
+      }
+    },
+    "topics.hook.answeredCountForYou" : {
+      "comment" : "Topics card line when the topics aren't named. 1: partner name, 2: number (2 or more)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ answered %2$lld questions for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ har svart på %2$lld spørsmål til deg"
+          }
+        }
+      }
+    },
+    "topics.hook.answeredCountIn" : {
+      "comment" : "Topics card line. 1: partner name, 2: number of questions (2 or more), 3: topic name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ answered %2$lld in %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ svarte på %2$lld i %3$@"
+          }
+        }
+      }
+    },
+    "topics.hook.answeredOneForYou" : {
+      "comment" : "Topics card line when the topic isn't named. Partner name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ answered a question for you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svart på et spørsmål til deg"
+          }
+        }
+      }
+    },
+    "topics.hook.answeredOneIn" : {
+      "comment" : "Topics card line. 1: partner name, 2: topic name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ answered a question in %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ svarte på et spørsmål i %2$@"
+          }
+        }
+      }
+    },
+    "topics.hook.messageFrom" : {
+      "comment" : "Topics card line about an unread chat in a topic that isn't named. Partner name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New message from %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny melding fra %@"
+          }
+        }
+      }
+    },
+    "topics.hook.messageIn" : {
+      "comment" : "Topics card line about an unread chat. Topic name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New message in %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny melding i %@"
+          }
+        }
+      }
+    },
+    "topics.load.offlineMessage" : {
+      "comment" : "A topic that could not open because the phone is offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This topic opens once you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette temaet åpnes når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "topics.notice.offlineMessage" : {
+      "comment" : "Banner message when an action failed because the phone is offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again when you're back online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv igjen når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "topics.progress.finished" : {
+      "comment" : "A topic where both partners answered every question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All answered together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt besvart sammen"
+          }
+        }
+      }
+    },
+    "topics.progress.questionCount" : {
+      "comment" : "A topic nobody has started yet. Number of questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld spørsmål"
+          }
+        }
+      }
+    },
+    "topics.progress.together" : {
+      "comment" : "How many questions in a topic both partners answered. 1: answered, 2: total",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld av %2$lld sammen"
+          }
+        }
+      }
+    },
+    "topics.row.bringBack" : {
+      "comment" : "Button on a skipped question that puts it back in the topic",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hent tilbake"
+          }
+        }
+      }
+    },
+    "topics.section.forYou" : {
+      "comment" : "Section on a topic screen: questions the partner answered first",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til deg"
+          }
+        }
+      }
+    },
+    "topics.section.skipped" : {
+      "comment" : "Collapsed section on a topic screen. Number of skipped questions",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped (%lld)"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoppet over (%lld)"
+          }
+        }
+      }
+    },
+    "topics.section.together" : {
+      "comment" : "Section on a topic screen: questions both partners answered",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answered together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besvart sammen"
+          }
+        }
+      }
+    },
+    "topics.section.upNext" : {
+      "comment" : "Section on a topic screen: questions nobody has answered yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up next"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste"
+          }
+        }
+      }
+    },
+    "topics.section.waiting" : {
+      "comment" : "Section on a topic screen: questions this person answered. Partner name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      }
+    },
     "ultimateTicTacToe.board.full.a11y" : {
       "comment" : "VoiceOver label of a small board that is full with no winner. %lld is 1 to 9.",
       "extractionState" : "manual",

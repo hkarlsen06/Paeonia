@@ -247,6 +247,8 @@ actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
 actor RecordingDailyChallengeGateway: DailyChallengeGateway {
     private(set) var submittedPayloads: [DailyAnswerPayload] = []
     private(set) var submittedAnswerIDs: [UUID] = []
+    /// Topic answers, as (question id, instance id).
+    private(set) var submittedTopicAnswers: [(questionID: UUID, instanceID: UUID)] = []
     private var submitError: (any Error)?
 
     func failSubmits(with error: any Error) {
@@ -300,6 +302,21 @@ actor RecordingDailyChallengeGateway: DailyChallengeGateway {
         operation _: SyncClientOperation
     ) throws -> DailyChallengeRemoteSnapshotRow {
         DailyChallengeRemoteSnapshotRow(questions: [], answerDetails: [], streak: nil, generatedAt: Date())
+    }
+
+    func submitTopicAnswer(
+        questionID: UUID,
+        instanceID: UUID,
+        answerID: UUID,
+        payload: DailyAnswerPayload,
+        operation _: SyncClientOperation
+    ) throws {
+        if let submitError {
+            throw submitError
+        }
+        submittedPayloads.append(payload)
+        submittedAnswerIDs.append(answerID)
+        submittedTopicAnswers.append((questionID, instanceID))
     }
 }
 

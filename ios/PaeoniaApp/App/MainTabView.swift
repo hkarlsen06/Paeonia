@@ -70,6 +70,7 @@ final class MainTabModels {
     lazy var hearts = HeartsViewModel()
     lazy var coupleDates = CoupleDatesViewModel()
     lazy var stories = StoriesViewModel()
+    lazy var topics = TopicsViewModel()
     lazy var lookBack = LookBackViewModel.live(
         thumbnailLoader: dependencies.widgetHistoryThumbnailLoader
             ?? WidgetRevisionThumbnailLoader(gateway: WidgetDrawingHistoryFactory.makeGateway())
@@ -133,6 +134,8 @@ struct MainTabView: View {
     /// or a button that sends the user to answer the partner's questions.
     @State var focusedDailyQuestionIDs: [UUID] = []
     @State var dailyChatQuestion: DailyChallengeQuestion?
+    /// What the Questions tab has pushed: the Topics shelf and a topic.
+    @State var questionsPath: [QuestionsDestination] = []
     /// The Memories tab's stack, so the Home look-back card can open a memory in it.
     @State var memoriesPath: [UUID] = []
     /// The drawing history, opened from the Home look-back card.
@@ -180,6 +183,7 @@ struct MainTabView: View {
     var heartsViewModel: HeartsViewModel { models.hearts }
     var coupleDatesViewModel: CoupleDatesViewModel { models.coupleDates }
     var storiesViewModel: StoriesViewModel { models.stories }
+    var topicsViewModel: TopicsViewModel { models.topics }
 
     var body: some View {
         presentingDailyFlows(on: tabContent)
@@ -210,6 +214,14 @@ struct MainTabView: View {
         }
         .onChange(of: dailyChallengeParticipants) { _, participants in
             dailyChallengeViewModel.refreshParticipants(participants)
+        }
+        // Topics answer through the daily challenge, so it is attached first.
+        .task(id: identity.currentUserID) {
+            topicsViewModel.attach(dailyChallenge: dailyChallengeViewModel)
+            await topicsViewModel.configure(currentUserID: identity.currentUserID, coupleID: identity.coupleID)
+        }
+        .onChange(of: identity.coupleID) { _, coupleID in
+            Task { await topicsViewModel.configure(currentUserID: identity.currentUserID, coupleID: coupleID) }
         }
         // The Games tab's badge needs the game state before the tab is opened, so
         // the tab bar loads and follows it.

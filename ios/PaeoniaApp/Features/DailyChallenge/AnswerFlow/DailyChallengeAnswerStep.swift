@@ -35,6 +35,8 @@ struct DailyChallengeAnswerStep: View {
     /// multi-question flow passes a smaller value because the progress bar sits just
     /// above the question and already establishes the top spacing.
     var topPadding: CGFloat = PaeoniaSpacing.space24
+    /// A small overline over the question, such as the topic's name.
+    var eyebrow: String?
 
     /// False while typing, folding away the combined-question secondary composer (see
     /// `combinedComposer`) and the question card's footer. A tap on the field folds
@@ -89,7 +91,13 @@ struct DailyChallengeAnswerStep: View {
     private func content(sitsLow: Bool) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             DailyQuestionCard(prompt: question.prompt, holdsPromptSize: !showsSecondaryComposer) {
-                EmptyView()
+                if let eyebrow {
+                    Text(verbatim: eyebrow)
+                        .font(PaeoniaTypography.caption.weight(.semibold))
+                        .textCase(.uppercase)
+                        .tracking(0.8)
+                        .foregroundStyle(.paeoniaTextTertiary)
+                }
             } footer: {
                 // While typing, the keyboard takes most of the screen, so the footer
                 // folds away and the question keeps the card's room to itself.
@@ -121,6 +129,11 @@ struct DailyChallengeAnswerStep: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
             if showsPartnerWaitingNote {
                 DailyPartnerWaitingNote(partnerName: viewModel.participants.partnerName)
+            } else if showsGoesFirstNote {
+                DailyPartnerWaitingNote(
+                    partnerName: viewModel.participants.partnerName,
+                    message: .topicsFlowYouGoFirst(viewModel.participants.partnerName)
+                )
             }
 
             if showsKindPicker {
@@ -150,6 +163,15 @@ struct DailyChallengeAnswerStep: View {
 
     /// Whether the partner's reply is waiting behind a fresh answer, so the "answer
     /// to see their reply" hint should show at the bottom of the question card.
+    /// A topic question nobody has answered: the partner sees this answer only after
+    /// answering too.
+    private var showsGoesFirstNote: Bool {
+        question.isTopicQuestion
+            && !showsSendingState
+            && !question.hasOwnAnswer
+            && question.partnerAnswer == nil
+    }
+
     private var showsPartnerWaitingNote: Bool {
         !showsSendingState
             && question.editableAnswerKind == nil
@@ -269,6 +291,8 @@ struct DailyChallengeAnswerStep: View {
 
 struct DailyPartnerWaitingNote: View {
     let partnerName: String
+    /// Defaults to "answer to unlock their answer".
+    var message: LocalizedStringResource?
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
@@ -276,7 +300,7 @@ struct DailyPartnerWaitingNote: View {
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .accessibilityHidden(true)
 
-            Text(.dailyChallengePartnerHiddenMessage(partnerName))
+            Text(message ?? .dailyChallengePartnerHiddenMessage(partnerName))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)

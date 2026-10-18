@@ -26,6 +26,8 @@ struct DailyChallengeScreen: View {
     var privacySafetyService: (any PrivacySafetyServicing)?
     var privacyOperationProvider: (any SyncClientOperationProviding)?
     var onReportedAndLeft: () -> Void = {}
+    /// The Topics card under the daily question, which opens the extra questions.
+    var topicsCard: TopicsCardContent?
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -49,6 +51,8 @@ struct DailyChallengeScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
                     heroCard
+
+                    topicsEntry
 
                     todayList
 
@@ -327,6 +331,22 @@ struct DailyChallengeScreen: View {
         withAnimation(PaeoniaMotion.stateChange) {
             highlightedQuestionIDs.subtract(questionIDs)
             focusedQuestionIDs.wrappedValue = []
+        }
+    }
+}
+
+extension DailyChallengeScreen {
+    /// The Topics card. Always under the daily card, so the daily question comes first.
+    @ViewBuilder
+    var topicsEntry: some View {
+        if let topicsCard, topicsCard.isShown {
+            TopicsCard(
+                topics: topicsCard.topics,
+                hook: topicsCard.hook,
+                partnerName: viewModel.participants.partnerName,
+                partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
+                onOpen: topicsCard.onOpen
+            )
         }
     }
 }

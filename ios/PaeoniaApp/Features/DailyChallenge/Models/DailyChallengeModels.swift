@@ -338,6 +338,13 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     var latestEarlierRoundLocalDate: String?
     /// Some day of this question has answers from both partners, so its chat can start.
     var hasSharedRound = false
+    /// The topic this question belongs to, or nil for a daily question. A topic question
+    /// has no day to end and is answered from its topic, not from today's list.
+    var topicKey: String?
+
+    var isTopicQuestion: Bool {
+        topicKey != nil
+    }
 
     /// The single person both partners picked when a partner-choice exchange has the
     /// *same* viewable pick on both sides and nothing else to show. When set, the two

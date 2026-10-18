@@ -81,14 +81,20 @@ extension MainTabView {
     /// Answering a question the partner already answered. Sending it turns the
     /// cover into the question's chat.
     private func partnerAnswerFlow(for question: DailyChallengeQuestion) -> some View {
-        DailyPartnerAnswerFlow(
-            question: question,
-            viewModel: dailyChallengeViewModel,
-            privacySafetyService: dependencies.settingsPrivacyService,
-            privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
-            onReportedAndLeft: actions.leftRelationship,
-            onClose: closePartnerAnswerFlow
-        )
+        Group {
+            if question.isTopicQuestion {
+                topicAnswerSession(for: question)
+            } else {
+                DailyPartnerAnswerFlow(
+                    question: question,
+                    viewModel: dailyChallengeViewModel,
+                    privacySafetyService: dependencies.settingsPrivacyService,
+                    privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
+                    onReportedAndLeft: actions.leftRelationship,
+                    onClose: closePartnerAnswerFlow
+                )
+            }
+        }
         .zoomTransition(partnerAnswerZoomSourceID(for: question), in: zoomNamespace, enabled: !reduceMotion)
         .environment(bannerCenter)
         .paeoniaTopBanner(bannerCenter)
@@ -299,7 +305,7 @@ extension MainTabView {
             // RootView owns this: it opens App Store subscription management and
             // then consumes the link. Acting here as well would race the root task.
             break
-        case .dailyReveal, .dailyChat, .dailyToday:
+        case .dailyReveal, .dailyChat, .dailyToday, .topics:
             await handleQuestionsDeepLink(deepLink)
         case .memories:
             await openMemories(for: deepLink)
@@ -390,6 +396,8 @@ extension MainTabView {
             if dailyChallengeViewModel.homeCardState.kind != .complete {
                 openAnswerFlow(source: .questions)
             }
+        case .topics:
+            openTopics()
         default:
             return
         }
@@ -399,10 +407,11 @@ extension MainTabView {
     /// Opens a question's chat on the Questions tab at its newest day, from a
     /// notification or the Home unread chats card. A couple has one chat per question.
     func openDailyChat(questionID: UUID) async {
-        await presentDailyChat(
-            await dailyChallengeViewModel.questionForChat(questionID: questionID),
-            focusesNewest: true
-        )
+        var question = await dailyChallengeViewModel.questionForChat(questionID: questionID)
+        if question == nil {
+            question = await topicChatQuestion(questionID: questionID)
+        }
+        await presentDailyChat(question, focusesNewest: true)
     }
 
     /// Opens the chat of the question that one day belongs to, scrolled to that day.
