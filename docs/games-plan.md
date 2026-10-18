@@ -13,6 +13,11 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-10-18.
+
+- **Dropped games.** Touch, Air hockey and Battleship with date ideas are out. Touch is too thin to ship. Air hockey needs both phones side by side, because each phone shows only its own half of the table, and Paeonia is for couples who are apart. Battleship with date ideas makes the couple come up with date ideas, which is the hard part they would want help with.
+- **Guess my spot takes any photo.** The sender can take a photo or pick one from the library.
+
 Decided on 2026-10-14.
 
 - **How to play cards.** Ultimate Tic-Tac-Toe, Dots and Boxes and Mind Meld have three swipeable cards, each with one illustration and one or two sentences. They open by themselves the first time this phone opens the game, and again from "How to play" in the game's toolbar or menu. The other games still teach by playing. The cards are `GameTutorial` and `GameTutorialSheet` in `Features/Games/Shared/Tutorial/`, and the pictures are in the `GameTutorial` asset folder.
@@ -29,7 +34,7 @@ Decided on 2026-10-12.
 - **Draw & Guess is the first game.** Design in `docs/games/draw-and-guess.md`.
 - **Every game is crafted.** A game ships only when it passes the quality bar below. It is better to ship fewer games than to ship thin ones.
 - **First-time setup.** The Games tab opens on the hub, so both partners see every game before choosing anything. The first time a partner opens a game, a sheet asks for two couple settings: play style and game language. The partner who opens a game first completes setup. The other partner sees what was picked before their first game and can keep it or change it. Then each partner without a drawn mark gets the canvas for their board game mark, and the game opens when that sheet closes. Cancel on the settings step leaves the person on the hub. There is no step where both must agree. Either partner can change a setting later, and the last change wins.
-- **Play style.** The couple chooses whether they like to play against each other or together as a team. "Against each other" gives each partner their own score and a winner. "Together" gives one shared score. Each game's design doc says how the game plays in each style. A game where scores make no sense, such as Touch, can ignore the setting.
+- **Play style.** The couple chooses whether they like to play against each other or together as a team. "Against each other" gives each partner their own score and a winner. "Together" gives one shared score. Each game's design doc says how the game plays in each style. A game where scores make no sense can ignore the setting.
 - **Game language.** The couple picks a language they both understand. Word lists, decoy letters and other game content use it, whatever language each partner's app is in. The choices are the app's languages, English and Norwegian Bokmal. When both partners already use the same app language, setup preselects it.
 - **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
 - **Tab order.** Home, Questions, Games, Memories, You. Games sits in the middle.
@@ -69,7 +74,7 @@ Proposed. Two transports already exist, and they suit different jobs.
 |---|---|---|
 | Latency | Phone to phone, about 30 to 80 ms | Mutation then subscription update, about 100 to 300 ms |
 | Storage | None. Forwards messages and forgets them | Saved, validated, authorized |
-| Use for | Continuous streams: finger positions, strokes, puck physics | Turns, scores, hidden information, history, push |
+| Use for | Continuous streams: finger positions, strokes | Turns, scores, hidden information, history, push |
 
 Convex owns the state of every game. The relay carries only movement that never needs saving. Games built on simultaneous reveal (both act, then both see the result) run on Convex alone.
 
@@ -85,15 +90,13 @@ Convex owns the state of every game. The relay carries only movement that never 
 - Shared tables, keyed by `kind` where it matters: `game_settings` (the couple's play style and language), `game_invites` (each partner's last invite per game). Who has which game open lives in the `@convex-dev/presence` component, one room per couple and game (`backend/convex/lib/presence.ts`). `games:get_games_overview` returns all three for the app.
 - Each game has its own tables, named with its kind as a prefix. Draw & Guess came first, so its tables are `games` (one row per couple, without a `status` column because the game never ends), `game_moves` (one row per round), `game_guesses`, `game_round_stars` and `game_used_words`. Follow the snake_case and uuid conventions in `backend/convex/schema.ts`.
 - Draw & Guess has one mutation per action (`pick_draw_word`, `submit_drawing`, `submit_guess`, `give_up_round`), each checking access, turn ownership, and round state. Proposal for board games: one `make_move({ game_id, expected_version, move })` mutation. It checks couple access, whose turn it is, and the version, then runs a pure rules function for that `kind`. A stale version fails instead of overwriting.
-- A `view_for(state, user_id)` function per kind. Queries return only that projection, so hidden information (Battleship boards, unrevealed answers, the drawing under the fold) never reaches the other phone.
+- A `view_for(state, user_id)` function per kind. Queries return only that projection, so hidden information (unrevealed answers, the drawing under the fold) never reaches the other phone.
 - Game data joins relationship end and account deletion cleanup. `deleteCoupleGameRows` in `lib/gameRegistry.ts` deletes the shared rows and calls each game's `deleteCoupleRows`.
 - A creative game keeps its own history in its own tables, such as the finished rounds and drawings of Draw & Guess. Stars are a per-game table with one row per partner and round. Nothing is copied into `memories`.
 
 ### Real-time fairness
 
 Reaction games compare reaction times, not arrival order. Each phone measures from the moment its own screen showed the signal. Both phones schedule the signal for a shared future time, with clock offset measured by a ping over the relay.
-
-For two-phone physics (air hockey), the phone the puck is on runs the physics and hands it over at the edge of its half. Neither phone waits on the other's lag.
 
 ### Notifications
 
@@ -116,15 +119,11 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 |---|---|---|---|
 | Draw & Guess | Relay strokes, Convex round state | Yes, the drawings with stars | S |
 | Mind Meld | Convex, relay for presence and typing | Yes, the word trails | S |
-| Touch | Relay | No | S |
 | Reaction duel | Relay, Convex for results | No | S |
-| Air hockey | Relay | No | M |
 
 - **Draw & Guess.** The first game. It plays async, with live watching when both are online. Its full design is in `docs/games/draw-and-guess.md`.
 - **Mind Meld.** Built. Both type a word at the same time and the words are revealed together. Each next round, both try to name a word that connects the last two. You win when you say the same word. Live play shows when the partner is here, typing or locked in. Its design is in `docs/games/mind-meld.md`.
-- **Touch.** Both put a finger on the screen and see the partner's finger as a glow. When they overlap, both phones buzz and a flower opens.
 - **Reaction duel.** Tap when the flower opens. Uses the fairness rule above.
-- **Air hockey.** Each phone is half of the table and the puck crosses between them.
 
 ### Async (one turn, then hours of waiting)
 
@@ -134,16 +133,14 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Story chain | No | Yes | S |
 | Guess my spot | Yes, the location | No | M |
 | Connect Four, Dots and Boxes, Ultimate tic-tac-toe | No | Yes, every finished game to watch again | S each |
-| Battleship with date ideas | Yes | No | M |
 | Chess | No | No | L |
 | Wordfeud-style word game | Yes, the tile rack | No | L |
 
 - **Exquisite corpse.** Built. Partners take turns drawing the head, body and legs of a figure, and each sees only the bottom 12% of the part before. The whole figure unfolds part by part at the end and goes to "Our creatures". It plays live with a folded paper view and async with pushes. Its full design is in `docs/games/exquisite-corpse.md`.
 - **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed. Its design is in `docs/games/story-chain.md`.
-- **Guess my spot.** Send a photo of where you are. The partner drops a pin on a map and scores by distance. The sender's coordinates stay hidden until the guess.
+- **Guess my spot.** Send a photo of where you are, taken now or picked from the library. The partner drops a pin on a map and scores by distance. The sender's coordinates stay hidden until the guess.
 - **Board games.** Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe share one turn engine (`make_move` with a pure rules function per kind). Each partner's own drawn mark is on every piece, the starter can play for something, and Dots and Boxes uncovers a random photo from Memories. Built. Design in `docs/games/board-games.md`.
 - **Ludo.** The fourth board game, on the same engine. Two pawns each race round the classic cross board. The phone rolls the die and the roll is part of the move, so a move can still be made offline. Design in `docs/games/ludo.md`.
-- **Battleship with date ideas.** Hide date ideas instead of ships. Sinking one turns it into a plan.
 - **Chess and word games.** Popular but expensive. Chess needs a rules engine. A word game needs licensed English and Norwegian dictionaries. Deferred.
 
 ## Adding a game
