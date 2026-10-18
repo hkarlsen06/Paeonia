@@ -1,6 +1,6 @@
 # Games plan
 
-Plan and decisions for the Games tab. Draw & Guess is built (`backend/convex/drawAndGuess.ts`, `Features/Games/DrawAndGuess/`). The shared Games wiring is kind-based: the backend (`backend/convex/games.ts`, `lib/games.ts`, `lib/gameRegistry.ts`), the relay (`relay/src/ticket.ts`) and Swift (`GameKind`) register all eight kinds below, and each game plugs in at the points in "Adding a game". Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
+Plan and decisions for the Games tab. Draw & Guess is built (`backend/convex/drawAndGuess.ts`, `Features/Games/DrawAndGuess/`). The shared Games wiring is kind-based: the backend (`backend/convex/games.ts`, `lib/games.ts`, `lib/gameRegistry.ts`), the relay (`relay/src/ticket.ts`) and Swift (`GameKind`) register all nine kinds below, and each game plugs in at the points in "Adding a game". Sections marked "Decided" were agreed with the developer. Everything else is the current proposal and can change.
 
 Keep this file current. When a games decision changes, or games code lands, update the matching section in the same change. Move items from "Open questions" to "Decisions" once the developer settles them, and replace proposals with what was actually built.
 
@@ -10,6 +10,7 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 - `docs/games/mind-meld.md`: the simultaneous word game.
 - `docs/games/hub-artwork.md`: the standard every game's hub picture follows.
 - `docs/games/ludo.md`: Ludo, the fourth board game, on the board game engine.
+- `docs/games/consensio.md`: Consensio, where one partner places a marker on a line and the other guesses where it is.
 
 ## Decisions
 
@@ -20,11 +21,11 @@ Decided on 2026-10-18.
 
 Decided on 2026-10-14.
 
-- **How to play cards.** Ultimate Tic-Tac-Toe, Dots and Boxes and Mind Meld have three swipeable cards, each with one illustration and one or two sentences. They open by themselves the first time this phone opens the game, and again from "How to play" in the game's toolbar or menu. The other games still teach by playing. The cards are `GameTutorial` and `GameTutorialSheet` in `Features/Games/Shared/Tutorial/`, and the pictures are in the `GameTutorial` asset folder.
+- **How to play cards.** Ultimate Tic-Tac-Toe, Dots and Boxes, Mind Meld and Consensio have three swipeable cards, each with one illustration and one or two sentences. They open by themselves the first time this phone opens the game, and again from "How to play" in the game's toolbar or menu. The other games still teach by playing. The cards are `GameTutorial` and `GameTutorialSheet` in `Features/Games/Shared/Tutorial/`, and the pictures are in the `GameTutorial` asset folder.
 
 Decided on 2026-10-13.
 
-- **Hub with several games.** Every built game gets a full-width card, stacked. The game the partner is in comes first, then games waiting for this person, then catalog order. Catalog order is the `GameKind` case order, most popular first: Ludo, Draw & Guess, Connect Four, Mind Meld, Dots and Boxes, Ultimate Tic-Tac-Toe, Story Chain, Odd Creatures. All cards share one frame (`GameHubCardFrame`): the shared backdrop with the game's own objects behind the whole card (`docs/games/hub-artwork.md`), the partner-here chip, an optional badge such as the score, the name, a status line, the main button, and optional extras such as "Our drawings". The card glows while the game waits for this person.
+- **Hub with several games.** Every built game gets a full-width card, stacked. The game the partner is in comes first, then games waiting for this person, then catalog order. Catalog order is the `GameKind` case order, most popular first: Ludo, Draw & Guess, Connect Four, Mind Meld, Consensio, Dots and Boxes, Ultimate Tic-Tac-Toe, Story Chain, Odd Creatures. All cards share one frame (`GameHubCardFrame`): the shared backdrop with the game's own objects behind the whole card (`docs/games/hub-artwork.md`), the partner-here chip, an optional badge such as the score, the name, a status line, the main button, and optional extras such as "Our drawings". The card glows while the game waits for this person.
 - **Us tab with several games.** The Us tab shows one card: the game the partner opened most recently, while they have it open. It is the hub card without hub-only links.
 
 - **Games don't save to Memories.** A creative game keeps its own history instead, such as the finished drawings of Draw & Guess. Each partner can star rounds in that history, and stars are private: the partner isn't told and a star doesn't change the game. This replaces the opt-in save prompt from 2026-10-11 and the save prompt details from 2026-10-12. Board games keep every finished game with its moves, so the couple can watch it again (decided on 2026-10-15, see "Past games" in `docs/games/board-games.md`). They have no stars. Quick duels keep no history.
@@ -131,6 +132,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 |---|---|---|---|
 | Exquisite corpse | Yes | Yes | M |
 | Story chain | No | Yes | S |
+| Consensio | Yes, the real spot until the guess | Yes, every revealed round | M |
 | Guess my spot | Yes, the location | No | M |
 | Connect Four, Dots and Boxes, Ultimate tic-tac-toe | No | Yes, every finished game to watch again | S each |
 | Chess | No | No | L |
@@ -138,6 +140,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 
 - **Exquisite corpse.** Built. Partners take turns drawing the head, body and legs of a figure, and each sees only the bottom 12% of the part before. The whole figure unfolds part by part at the end and goes to "Our creatures". It plays live with a folded paper view and async with pushes. Its full design is in `docs/games/exquisite-corpse.md`.
 - **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed. Its design is in `docs/games/story-chain.md`.
+- **Consensio.** Built. One partner puts a marker where they honestly stand on a line between two ends, such as how they feel about camping. The other guesses where it went, and the reveal scores how close they came. It plays async with pushes and live with the guess marker moving on the placer's screen. Its design and the decisions are in `docs/games/consensio.md`.
 - **Guess my spot.** Send a photo of where you are, taken now or picked from the library. The partner drops a pin on a map and scores by distance. The sender's coordinates stay hidden until the guess.
 - **Board games.** Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe share one turn engine (`make_move` with a pure rules function per kind). Each partner's own drawn mark is on every piece, the starter can play for something, and Dots and Boxes uncovers a random photo from Memories. Built. Design in `docs/games/board-games.md`.
 - **Ludo.** The fourth board game, on the same engine. Two pawns each race round the classic cross board. The phone rolls the die and the roll is part of the move, so a move can still be made offline. Design in `docs/games/ludo.md`.
@@ -145,7 +148,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 
 ## Adding a game
 
-The checklist for building a game. All eight kinds are already registered on the backend (`GAME_KINDS` in `lib/validators.ts`), in the relay (`ALLOWED_CHANNELS`) and in Swift (`GameKind`). A kind shows nowhere in the app until its hub model is in `GamesViewModel.games`. Add your lines at the points below and leave other games' lines alone. Draw & Guess is the worked example for every point.
+The checklist for building a game. All nine kinds are already registered on the backend (`GAME_KINDS` in `lib/validators.ts`), in the relay (`ALLOWED_CHANNELS`) and in Swift (`GameKind`). A kind shows nowhere in the app until its hub model is in `GamesViewModel.games`. Add your lines at the points below and leave other games' lines alone. Draw & Guess is the worked example for every point.
 
 ### Names
 
@@ -159,6 +162,7 @@ The checklist for building a game. All eight kinds are already registered on the
 | dots_and_boxes | dotsAndBoxes / DotsAndBoxes | dots-and-boxes | BoardGames/DotsAndBoxes | docs/games/board-games.md |
 | ultimate_tic_tac_toe | ultimateTicTacToe / UltimateTicTacToe | ultimate-tic-tac-toe | BoardGames/UltimateTicTacToe | docs/games/board-games.md |
 | ludo | ludo / Ludo | ludo | BoardGames/Ludo | docs/games/ludo.md |
+| consensio | consensio / Consensio | consensio | Consensio | docs/games/consensio.md |
 
 - Backend: module `backend/convex/<camelKind>.ts` (function paths `<camelKind>:<name>`), helpers in `backend/convex/lib/<camelKind>.ts`, tests next to them. Tables start with the kind, such as `mind_meld_rounds`. The board games share `boardGames.ts`, `lib/boardGames.ts`, `board_games` and `board_game_*`.
 - Swift: every type, file, `GamesDestination` case, `SyncPendingOperationKind` case and `DeveloperScenario` static member starts with the Swift prefix, such as `MindMeldHubModel` and `mindMeldReveal`. Tests go in `ios/PaeoniaAppTests/Games/<Folder>/`. Board games share `Features/Games/BoardGames/Shared/`.

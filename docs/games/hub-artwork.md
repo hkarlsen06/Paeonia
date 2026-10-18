@@ -48,6 +48,7 @@ The scene is the final frame of the game's moment, with one element left out. Th
 | Ultimate Tic-Tac-Toe | The tray of boards with hearts and rings | A gold line strikes through three hearts |
 | Odd Creatures | The folded strip with its creature, two crayons | A pink glow swells over the sweater's heart |
 | Ludo | The board with one pawn of each partner and the dome empty | A pink pawn hops home onto the dome, and the dome glows gold |
+| Consensio | A cream rail with gold end caps and one pink pin planted in it | A lavender pin drops onto the rail beside it and plants, and a gold glow swells between the two heads |
 
 - Measure the beat's spot on the object's pixels and give it as fractions of the image (`GameHubPlacement.point`), so it lands on the spot at every size.
 - An element that moves across an object must share its camera. The Ludo pawn is cut out of the Ludo board image for that reason.
