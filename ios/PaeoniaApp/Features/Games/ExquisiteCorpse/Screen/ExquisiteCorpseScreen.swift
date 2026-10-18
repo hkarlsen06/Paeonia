@@ -53,6 +53,11 @@ struct ExquisiteCorpseScreen: View {
         .onChange(of: viewModel.partnerPresence) { old, new in
             partnerPresenceChanged(from: old, to: new)
         }
+        .onChange(of: viewModel.phase) { old, new in
+            if old == .watching, new == .drawing {
+                handoffLanded()
+            }
+        }
         .accessibilityIdentifier("corpse.screen")
     }
 
@@ -86,6 +91,22 @@ struct ExquisiteCorpseScreen: View {
             break
         }
     }
+
+    /// The turn came to this person while they watched: the strip slides from the
+    /// watched square to the top of their canvas over `meaningfulMoment`. The fold
+    /// sound creases for 0.1 seconds before its knock, so it starts early, and the
+    /// knock and the tap land as the strip settles.
+    private func handoffLanded() {
+        Task {
+            try? await Task.sleep(for: .seconds(PaeoniaMotion.motionSlow - Self.foldSoundLead))
+            GameSound.fold.play(volume: 0.7)
+            try? await Task.sleep(for: .seconds(Self.foldSoundLead))
+            PaeoniaHaptics.partnerDrawingReceived()
+        }
+    }
+
+    /// How long the fold sound creases before its knock.
+    private static let foldSoundLead: TimeInterval = 0.1
 
     /// Cross-fade and a 12 point rise. Reduce Motion keeps only the cross-fade.
     private var phaseTransition: AnyTransition {

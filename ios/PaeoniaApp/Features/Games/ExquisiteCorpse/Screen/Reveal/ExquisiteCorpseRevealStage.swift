@@ -18,17 +18,22 @@ struct ExquisiteCorpseRevealStage: View {
 
     var body: some View {
         let size = camera.stage
+        let figureCenter = CGPoint(x: size.width / 2, y: camera.overviewHeight / 2)
+        let bloomSide = max(size.width, size.height)
         ZStack {
             ExquisiteCorpseRevealGlow(
                 level: glowLevel,
                 pulse: timeline.showsBloom,
-                center: CGPoint(x: size.width / 2, y: camera.overviewHeight / 2),
+                center: figureCenter,
                 fitSide: camera.fitSide,
                 reach: max(size.width, camera.overviewHeight) * 0.6
             )
             if let bloomStart {
+                // Placed, not centered, so the petals leave from the middle of the
+                // figure and the wide canvas never widens the stage under the glow.
                 GamePetalBloom(start: bloomStart, seed: content.figureID.uuidString)
-                    .frame(width: max(size.width, size.height), height: max(size.width, size.height))
+                    .frame(width: bloomSide, height: bloomSide)
+                    .position(figureCenter)
             }
             ExquisiteCorpseRevealFigure(
                 player: player,
@@ -82,7 +87,7 @@ struct ExquisiteCorpseRevealStage: View {
             if let part = captionPart {
                 ExquisiteCorpseRevealCaption(part: part)
                     .id(part.kind)
-                    .transition(.opacity)
+                    .transition(Self.captionTransition)
             }
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: captionPart?.kind)
@@ -92,6 +97,15 @@ struct ExquisiteCorpseRevealStage: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .allowsHitTesting(false)
     }
+
+    /// The caption of the part before leaves quickly, and the next one comes in
+    /// after it, so two names never show on top of each other. Both are done as
+    /// the fold finishes opening.
+    private static let captionTransition = AnyTransition.asymmetric(
+        insertion: .opacity.combined(with: .offset(y: 6))
+            .animation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionFast)),
+        removal: .opacity.animation(PaeoniaMotion.buttonPress)
+    )
 
     // MARK: Derived state
 

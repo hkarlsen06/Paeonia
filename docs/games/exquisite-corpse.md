@@ -81,7 +81,7 @@ Live runs whenever both partners have the game screen open. Without the partner 
   
   Every message carries the part id, so a message from an earlier part is ignored. The strip message is the whole state, so a lost message never leaves the watcher with missing strokes. No stroke of the drawing above the fold is ever sent.
 - **The drawer's canvas is not streamed.** The game does not attach its canvas to `WidgetLiveDrawing`, so the relay's own `live` and `ops` stroke messages never carry the hidden part. The game uses `WidgetLiveDrawing` for presence and roles only.
-- **Done, live.** The drawer's phone sends `done`. The watcher's line changes to "[Name] finished the head" and the paper gives one soft pulse with `partnerDrawingReceived()`. When the part reaches the server, the watcher's turn starts: the folded paper lifts away (`meaningfulMoment`), and the strip slides from the bottom of the watched square to the top of the new canvas (`matchedGeometryEffect`). The new canvas shows the live strip until the strip file has loaded, then the file. The two are the same drawing.
+- **Done, live.** The drawer's phone sends `done`. The watcher's line changes to "[Name] finished the head" and the paper gives one soft pulse with `partnerDrawingReceived()`. When the part reaches the server, the watcher's turn starts: the folded paper lifts away (`meaningfulMoment`), and the strip slides from the bottom of the watched square to the top of the new canvas (`matchedGeometryEffect`). As the strip settles, the fold sound and `partnerDrawingReceived()` mark the turn coming to you. The new canvas shows the live strip until the strip file has loaded, then the file. The two are the same drawing.
 - **Lost connection.** The watcher falls back to the async waiting screen. A reconnect gets the whole strip again. The drawer keeps drawing and Done still sends.
 - **The live reveal.** When the legs are done live, both phones open the reveal as soon as they have all three parts. Each phone waits for the server to finish the figure and then downloads the parts it lacks, which takes about a second. Until then both show the folded paper with "Opening…" and a slow shimmer.
 - **Invite.** The waiting screen has the shared "Tell [Name] you want to play" button while the partner isn't in the game (`docs/games-plan.md`). The push opens Exquisite corpse directly.
@@ -95,16 +95,18 @@ Who sees it when.
 - The partner sees it the next time they open the game, or at once when they watch live.
 - A figure's reveal shows until this person taps Continue. The server keeps a "reveal seen" time for each partner, so a second phone or a fresh install doesn't show it again. Like Draw & Guess, the latest unseen reveal comes before a new turn.
 
-Beats, in seconds from the start.
+Beats, in seconds from the start. The later times assume each part plays for the full 2.5 s. Shorter parts move everything after them earlier.
 
 | Time | What happens |
 |---|---|
-| 0.00 | The folded paper sits in the middle. The three parts are folded like an accordion with only the paper's back showing. `selection()`. |
-| 0.30 | The top fold opens (`rotation3DEffect` around its top edge, `meaningfulMoment`). The head replays its strokes at the drawn pace, squeezed to at most 2.5 s. Under it: the drawer's avatar (24 pt) and "Head by Robin", plus the idea in `.paeoniaTextSecondary` if the part has one. One `streakTick` at 0.4 as the fold lands. |
-| about 3.0 | The second fold opens below the head, and the view eases down to frame it. The body replays. `streakTick` at 0.6. |
-| about 5.7 | The third fold opens and the legs replay. `streakTick` at 0.85. |
-| about 8.4 | The view zooms out to the whole figure (`celebrationReveal`). `answerRevealed()`. A petal bloom from behind the figure (`GamePetalBloom`, seeded by the figure id) and a soft radial glow. |
-| about 9.0 | The title fades up, "Meet your creature", with "Creature 12" under it. The credits row shows the three parts with the avatars. The primary button appears. |
+| 0.00 | The folded paper sits in the middle. The three parts are folded like an accordion with only the paper's back showing. `selection()`. The screen fades in over the first 0.36 s, so the paper rests about half a second before anything moves. |
+| 0.80 | The top fold opens (`rotation3DEffect` around its top edge, `meaningfulMoment`). The fold sound starts 0.1 s before the fold lands, so its knock lands with it. One `streakTick` at 0.4 as the fold lands, at 1.16. The head replays its strokes at the drawn pace, squeezed to at most 2.5 s. Under it: the drawer's avatar (24 pt) and "Head by Robin", plus the idea in `.paeoniaTextSecondary` if the part has one. |
+| about 4.0 | 0.3 s after the head's replay, the second fold opens below the head, and the view eases down to frame it. The body replays. `streakTick` at 0.6. |
+| about 7.1 | The third fold opens and the legs replay. `streakTick` at 0.85. |
+| about 10.5 | The finished legs hold for 0.5 s, then the view zooms out to the whole figure (`celebrationReveal`). 0.3 s into the zoom, as it settles: `answerRevealed()`, a petal bloom from behind the middle of the figure (`GamePetalBloom`, seeded by the figure id) and a soft radial glow centered on it. |
+| about 11.4 | The title fades up, "Meet your creature", with "Creature 12" under it. The credits row shows the three parts with the avatars. The primary button appears. |
+
+- When a fold opens, the caption of the part before fades out in 0.16 s, and the new caption fades in after it with a 6 pt rise, so two names never show on top of each other.
 
 - Each part plays its strokes in drawn order through `GameReplayTimeline` and `GameReplayClock`, with long pauses shortened as in Draw & Guess. A part that took longer than 2.5 s plays faster to fit (`rate = duration / 2.5`). A short part plays at its own pace.
 - Holding anywhere on the figure plays at 4x, with a `forward.fill` glyph and `selection()` once.
@@ -192,7 +194,7 @@ Haptics.
 |---|---|
 | Pick a tool, color, idea, shuffle | `selection()` |
 | Done sent | `drawingSent()` |
-| Partner joins, partner's part arrives, partner tapped Done live | `partnerDrawingReceived()` |
+| Partner joins, partner's part arrives, partner tapped Done live, the strip lands in your canvas after watching | `partnerDrawingReceived()` |
 | Each fold lands in the reveal | `streakTick(intensity:)`, 0.4, 0.6, 0.85 |
 | The whole figure shows | `answerRevealed()` |
 

@@ -186,5 +186,5 @@ final class ExquisiteCorpseHistoryDetailViewModel {
 
 extension ExquisiteCorpseRevealTimeline.Haptics {
     /// No haptics. "Our creatures" opens a creature quietly.
-    static let silent = Self(selection: {}, foldLanded: { _ in }, answerRevealed: {})
+    static let silent = Self(selection: {}, foldCreasing: { _ in }, foldLanded: { _ in }, answerRevealed: {})
 }

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// A recording of every haptic the reveal fires.
+/// A recording of every haptic and fold sound the reveal fires.
 @MainActor
 private final class HapticLog {
     var events: [String] = []
@@ -11,6 +11,7 @@ private final class HapticLog {
     var haptics: ExquisiteCorpseRevealTimeline.Haptics {
         ExquisiteCorpseRevealTimeline.Haptics(
             selection: { [self] in events.append("selection") },
+            foldCreasing: { [self] _ in events.append("crease") },
             foldLanded: { [self] intensity in events.append("fold"); foldIntensities.append(intensity) },
             answerRevealed: { [self] in events.append("revealed") }
         )
@@ -127,7 +128,7 @@ struct ExquisiteCorpseRevealTimelineTests {
         #expect(!timeline.isZoomedOut && !timeline.showsTitle)
     }
 
-    @Test func theRunEndsSettledWithEveryHapticOnceInOrder() async {
+    @Test func theRunEndsSettledWithEveryHapticOnceInOrderAndEachFoldSoundBeforeItsHaptic() async {
         let log = HapticLog()
         let timeline = instantTimeline(log)
         timeline.begin(reduceMotion: false)
@@ -139,7 +140,7 @@ struct ExquisiteCorpseRevealTimelineTests {
         #expect(timeline.isZoomedOut)
         #expect(timeline.showsBloom)
         #expect(timeline.showsTitle && timeline.showsButtons)
-        #expect(log.events == ["selection", "fold", "fold", "fold", "revealed"])
+        #expect(log.events == ["selection", "crease", "fold", "crease", "fold", "crease", "fold", "revealed"])
         #expect(log.foldIntensities == [0.4, 0.6, 0.85])
     }
 
@@ -149,10 +150,12 @@ struct ExquisiteCorpseRevealTimelineTests {
         timeline.begin(reduceMotion: false)
         await playEverything(on: timeline)
 
-        // First fold, then for each part the fold opening and the pause after its replay,
-        // then the zoom out to the bloom and the bloom to the title.
-        let fold = 0.36
-        #expect(sleeps.durations == [0.3, fold, 0.3, fold, 0.3, fold, 0.3, 0.6])
+        // The closed paper, then for each part the fold opening up to its sound, the
+        // sound's lead up to the haptic, and the pause after its replay. The legs
+        // hold a little longer before the zoom out, then come the bloom and the title.
+        let crease = 0.26
+        let lead = 0.1
+        #expect(sleeps.durations == [0.8, crease, lead, 0.3, crease, lead, 0.3, crease, lead, 0.5, 0.3, 0.6])
     }
 
     @Test func theWholeFigureShowsBeforeTheTitleAndTheButtons() async {
@@ -195,7 +198,7 @@ struct ExquisiteCorpseRevealTimelineTests {
         _ = await waitUntil { timeline.stage == .playing(.body) }
         try? await Task.sleep(for: .milliseconds(50))
         #expect(timeline.stage == .playing(.body))
-        #expect(sleeps.durations == [0.3, 0.36, 0.3, 0.36])
+        #expect(sleeps.durations == [0.8, 0.26, 0.1, 0.3, 0.26, 0.1])
     }
 
     @Test func aReportBeforeTheReplayStartsIsIgnored() {
@@ -260,7 +263,7 @@ struct ExquisiteCorpseRevealTimelineTests {
         try? await Task.sleep(for: .milliseconds(50))
 
         #expect(timeline.stage == .settled)
-        #expect(log.events == ["selection", "fold"])
+        #expect(log.events == ["selection", "crease", "fold"])
     }
 
     @Test func aTapAfterTheBloomStartedKeepsTheBloom() async {
@@ -341,6 +344,8 @@ struct ExquisiteCorpseRevealTimelineTests {
         timeline.begin(reduceMotion: false)
         await playEverything(on: timeline)
         #expect(timeline.stage == .settled)
-        #expect(log.events == ["selection", "selection", "fold", "fold", "fold", "revealed"])
+        #expect(log.events == [
+            "selection", "selection", "crease", "fold", "crease", "fold", "crease", "fold", "revealed",
+        ])
     }
 }

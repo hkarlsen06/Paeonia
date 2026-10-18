@@ -30,13 +30,20 @@ final class ExquisiteCorpseRevealTimeline {
 
     /// How long each beat waits, in seconds.
     nonisolated struct Schedule: Sendable {
-        /// The closed paper sits before the first fold opens.
-        var firstFold: TimeInterval = 0.3
+        /// The closed paper sits before the first fold opens. The screen fades in
+        /// over the first 0.36 seconds, so the paper rests about half a second.
+        var firstFold: TimeInterval = 0.8
         /// A fold takes this long to open, the length of `PaeoniaMotion.meaningfulMoment`.
         /// The replay starts and the haptic lands when it ends.
         var foldOpens: TimeInterval = 0.36
+        /// The fold sound creases this long before its knock, so it starts this
+        /// much before the fold has opened.
+        var foldSoundLead: TimeInterval = 0.1
         /// From the end of a part's replay to the next fold opening.
         var betweenParts: TimeInterval = 0.3
+        /// From the end of the legs' replay to the zoom out, so the finished legs
+        /// show for a moment before the whole figure.
+        var beforeZoom: TimeInterval = 0.5
         /// From the start of the zoom out to the haptic and the bloom.
         var zoomToBloom: TimeInterval = 0.3
         /// From the bloom to the title and the buttons.
@@ -48,6 +55,8 @@ final class ExquisiteCorpseRevealTimeline {
     /// The haptics and sounds of the reveal, injected so tests can record them.
     struct Haptics {
         var selection: @MainActor () -> Void
+        /// The fold sound, `Schedule.foldSoundLead` before the fold lands.
+        var foldCreasing: @MainActor (CGFloat) -> Void
         var foldLanded: @MainActor (CGFloat) -> Void
         var answerRevealed: @MainActor () -> Void
 
@@ -56,9 +65,11 @@ final class ExquisiteCorpseRevealTimeline {
                 PaeoniaHaptics.selection()
                 GameSound.tap.play(volume: 0.6)
             },
+            foldCreasing: {
+                GameSound.fold.play(volume: 0.5 + 0.5 * $0)
+            },
             foldLanded: {
                 PaeoniaHaptics.streakTick(intensity: $0)
-                GameSound.fold.play(volume: 0.5 + 0.5 * $0)
             },
             answerRevealed: {
                 PaeoniaHaptics.answerRevealed()
@@ -146,7 +157,9 @@ final class ExquisiteCorpseRevealTimeline {
         guard awaitedPart == part else { return }
         awaitedPart = nil
         guard let next = part.next else {
-            zoomOut()
+            after(schedule.beforeZoom) { [self] in
+                zoomOut()
+            }
             return
         }
         after(schedule.betweenParts) { [self] in
@@ -190,10 +203,14 @@ final class ExquisiteCorpseRevealTimeline {
         withAnimation(PaeoniaMotion.meaningfulMoment) {
             _ = openParts.insert(part)
         }
-        after(schedule.foldOpens) { [self] in
-            haptics.foldLanded(Self.foldIntensity(for: part))
-            stage = .playing(part)
-            awaitedPart = part
+        let intensity = Self.foldIntensity(for: part)
+        after(schedule.foldOpens - schedule.foldSoundLead) { [self] in
+            haptics.foldCreasing(intensity)
+            after(schedule.foldSoundLead) { [self] in
+                haptics.foldLanded(intensity)
+                stage = .playing(part)
+                awaitedPart = part
+            }
         }
     }
 
