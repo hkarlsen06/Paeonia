@@ -4,7 +4,7 @@ import type { ReaderCtx, WriterCtx } from "./db";
 import { fail } from "./errors";
 import { enqueueNotificationForUser } from "./notifications";
 import { gameRoom, onlineUserIds } from "./presence";
-import { nowIso } from "./time";
+import { addMs, nowIso } from "./time";
 import type { GAME_KINDS } from "./validators";
 
 // Helpers every game shares: settings, presence, invites, and pushes. Draw & Guess has its own
@@ -97,6 +97,8 @@ export async function enqueueGamePush(
     skipIfPresent?: boolean;
     /** A fixed token the game picks, such as `last_line`, never content. It picks the copy in `GamePushCopy.steps`. */
     step?: string;
+    /** Sends the push this long from now instead of at once. The drain checks it again when it is due. */
+    delay_ms?: number;
   },
 ): Promise<number> {
   if (args.skipIfPresent && (await isGamePresent(ctx, args.couple_id, args.game_kind, args.recipient_user_id))) {
@@ -120,7 +122,7 @@ export async function enqueueGamePush(
     redaction_level: "private",
     apns_push_type: "alert",
     apns_collapse_id: `${args.kind}:${args.couple_id}`,
-    scheduled_for: nowIso(),
+    scheduled_for: args.delay_ms ? addMs(nowIso(), args.delay_ms) : nowIso(),
   });
 }
 

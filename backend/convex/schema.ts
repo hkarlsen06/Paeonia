@@ -20,6 +20,7 @@ import {
   wordDifficulty,
 } from "./lib/validators";
 import { LUDO_COLORS } from "./lib/ludo";
+import { consensioTables } from "./lib/consensio";
 import { mindMeldTables } from "./lib/mindMeld";
 
 // Conventions (see backend/AGENTS.md):
@@ -1640,6 +1641,8 @@ export default defineSchema({
     .index("by_couple_id", ["couple_id"]),
   // Mind Meld: mind_meld_games, mind_meld_rounds, mind_meld_words (lib/mindMeld.ts, docs/games/mind-meld.md).
   ...mindMeldTables,
+  // Consensio: consensio_games, consensio_rounds, consensio_used_topics (lib/consensio.ts, docs/games/consensio.md).
+  ...consensioTables,
   // Exquisite corpse (docs/games/exquisite-corpse.md). Four tables, deleted with the couple's other game rows (lib/exquisiteCorpse.ts).
   // FK: couple_id -> couples cascade. couple_id is unique. part_index (0 head, 1 body, 2 legs) is the next part.
   exquisite_corpse_games: defineTable({

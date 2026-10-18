@@ -20,6 +20,7 @@ export const ALLOWED_CHANNELS: readonly string[] = [
   "dots_and_boxes",
   "ultimate_tic_tac_toe",
   "ludo",
+  "consensio",
 ];
 
 /** The Durable Object name for a ticket's room. */

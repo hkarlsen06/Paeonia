@@ -153,6 +153,26 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       resultBody: "Åpne Paeonia for å se hvordan det endte.",
     },
   },
+  consensio: {
+    en: {
+      name: "Consensio",
+      turnReadyBody: "Open Paeonia to make your guess.",
+      resultTitle: (actor) => `${actor} made a guess`,
+      resultBody: "Open Paeonia to see how close they got.",
+      steps: {
+        guessed: { title: (actor) => `${actor} guessed and placed one for you`, body: "Open Paeonia to see how close they got." },
+      },
+    },
+    nb: {
+      name: "Consensio",
+      turnReadyBody: "Åpne Paeonia for å gjette.",
+      resultTitle: (actor) => `${actor} har gjettet`,
+      resultBody: "Åpne Paeonia for å se hvor nær gjetningen var.",
+      steps: {
+        guessed: { title: (actor) => `${actor} har gjettet og satt en brikke til deg`, body: "Åpne Paeonia for å se hvor nær gjetningen var." },
+      },
+    },
+  },
 };
 
 /** The copy of the game a push names in `payload.game_kind`, or null when the game has no entry. */

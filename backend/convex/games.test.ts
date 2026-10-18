@@ -261,6 +261,7 @@ describe("presence and invites for every kind", () => {
       dots_and_boxes: "paeonia://games/dots-and-boxes",
       ultimate_tic_tac_toe: "paeonia://games/ultimate-tic-tac-toe",
       ludo: "paeonia://games/ludo",
+      consensio: "paeonia://games/consensio",
     });
     for (const kind of GAME_KINDS) expect(links[kind]).toBe(gameDeepLink(kind));
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);

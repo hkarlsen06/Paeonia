@@ -1,5 +1,6 @@
 import { canAccessCoupleContent } from "./access";
 import { boardGameBackend } from "./boardGameBackend";
+import { consensioBackend } from "./consensio";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { drawAndGuessBackend } from "./drawAndGuess";
 import { exquisiteCorpseBackend } from "./exquisiteCorpse";
@@ -41,6 +42,7 @@ export const GAME_BACKENDS: Record<GameKind, GameBackend | null> = {
   dots_and_boxes: boardGameBackend,
   ultimate_tic_tac_toe: boardGameBackend,
   ludo: boardGameBackend,
+  consensio: consensioBackend,
 };
 
 const registered = (): GameBackend[] => GAME_KINDS.flatMap((kind) => GAME_BACKENDS[kind] ?? []);
