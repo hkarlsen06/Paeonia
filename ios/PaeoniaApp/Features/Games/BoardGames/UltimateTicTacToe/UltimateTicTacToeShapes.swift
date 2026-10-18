@@ -46,7 +46,7 @@ struct UltimateTicTacToePulse: ViewModifier {
             view.scaleEffect(isEnabled ? scale : 1)
         } keyframes: { _ in
             KeyframeTrack {
-                LinearKeyframe(1.07, duration: 0.15)
+                LinearKeyframe(1.1, duration: 0.15)
                 SpringKeyframe(1.0, duration: 0.4)
             }
         }

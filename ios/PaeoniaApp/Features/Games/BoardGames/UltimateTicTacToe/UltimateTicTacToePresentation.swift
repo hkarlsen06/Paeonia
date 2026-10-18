@@ -88,6 +88,9 @@ nonisolated struct UltimateTicTacToeOutcomeState: Equatable {
     var lineProgress: CGFloat = 0
     /// After a draw, how bright the whole board is.
     var drawOpacity = 1.0
+    /// The small board the last move won. The winning boards light up from it,
+    /// and the line draws from it. Nil lights them in order.
+    var origin: Int?
 
     static let idle = UltimateTicTacToeOutcomeState()
     static let restOpacity = 0.4
@@ -107,6 +110,24 @@ nonisolated struct UltimateTicTacToeOutcomeState: Equatable {
     static func winningRows(of outcome: BoardOutcome) -> [[Int]] {
         let boards = Set(outcome.line)
         return UltimateTicTacToeBoard.winningLines.filter { boards.isSuperset(of: $0) }
+    }
+
+    /// The winning boards in the order they light up, nearest `origin` first.
+    func litOrder(of outcome: BoardOutcome) -> [Int] {
+        guard let origin else { return outcome.line }
+        return outcome.line.sorted { Self.steps($0, origin) < Self.steps($1, origin) }
+    }
+
+    /// A winning row that starts at the end nearer `origin`.
+    func fromOrigin(_ row: [Int]) -> [Int] {
+        guard let origin, let first = row.first, let last = row.last,
+              Self.steps(last, origin) < Self.steps(first, origin) else { return row }
+        return row.reversed()
+    }
+
+    /// How many boards apart two small boards are along a row, a column or a diagonal.
+    private static func steps(_ board: Int, _ other: Int) -> Int {
+        max(abs(board / 3 - other / 3), abs(board % 3 - other % 3))
     }
 }
 
@@ -147,7 +168,7 @@ nonisolated struct UltimateTicTacToeLook: Equatable {
             return UltimateTicTacToeEmphasis(glow: .none, opacity: outcome.drawOpacity)
         }
         guard outcome.isDimmed else { return .plain }
-        if result.line.prefix(outcome.litCount).contains(index) {
+        if outcome.litOrder(of: result).prefix(outcome.litCount).contains(index) {
             return UltimateTicTacToeEmphasis(glow: .winner, opacity: 1)
         }
         if result.line.contains(index) {

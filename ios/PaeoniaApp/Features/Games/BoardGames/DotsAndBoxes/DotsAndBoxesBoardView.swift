@@ -167,6 +167,7 @@ struct DotsAndBoxesBoardView: View {
             )
             .opacity(chromeOpacity)
         }
+        .animation(DotsAndBoxesMotion.photoArrives, value: photo != nil)
     }
 
     // MARK: Input

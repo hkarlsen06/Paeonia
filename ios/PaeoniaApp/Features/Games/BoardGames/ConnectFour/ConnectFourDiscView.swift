@@ -61,9 +61,10 @@ nonisolated struct ConnectFourFallingDisc: Identifiable, Equatable {
     var end: Date { start.addingTimeInterval(motion.totalDuration) }
 }
 
-/// Draws a falling disc every frame and taps once when it lands. It sits behind
-/// the board face, so the face hides it as it passes. It tells its parent when it
-/// has settled, and the parent then draws the disc in its cell instead.
+/// Draws a falling disc every frame. It taps when it lands and more quietly when
+/// it comes down from its first hop. It sits behind the board face, so the face
+/// hides it as it passes. It tells its parent when it has settled, and the parent
+/// then draws the disc in its cell instead.
 struct ConnectFourFallingDiscView: View {
     let disc: ConnectFourFallingDisc
     let style: BoardPieceStyle
@@ -93,6 +94,13 @@ struct ConnectFourFallingDiscView: View {
             PaeoniaHaptics.streakTick(intensity: 0.6)
         }
         GameSound.connectFourDrop.play(volume: disc.isMine ? 1 : 0.85)
+        // A quieter tap as the disc comes down from its first hop.
+        if let hop = disc.motion.bounces.first {
+            await ConnectFourClock.sleep(until: disc.start.addingTimeInterval(hop.start + hop.duration))
+            guard !Task.isCancelled else { return }
+            PaeoniaHaptics.streakTick(intensity: 0.35)
+            GameSound.connectFourDrop.play(volume: 0.3)
+        }
         await ConnectFourClock.sleep(until: disc.end)
         guard !Task.isCancelled else { return }
         onFinished(disc.id)

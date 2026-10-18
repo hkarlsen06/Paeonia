@@ -57,6 +57,7 @@ extension BoardGameViewModel {
         isResultCollapsed = false
         stagedOutcomeGame = nil
         lastMove = nil
+        lastMoveSettles = nil
     }
 
     /// The app moved to the background or came back while the screen is open.

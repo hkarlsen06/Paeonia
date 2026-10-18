@@ -256,7 +256,8 @@ extension UltimateTicTacToePlayback {
     }
 
     /// The closing beat of a small board a move just closed: the strike line
-    /// trims in, the cells fade and the big mark scales in. False if cancelled.
+    /// trims in, the cells fade and the big mark scales in. A move that ends the
+    /// game goes straight on to the outcome. False if cancelled.
     private func closeBoard(_ index: Int, id: Int) async -> Bool {
         guard hold.unclosedBoard == index else { return true }
         withAnimation(UltimateTicTacToeMotion.close) {
@@ -266,7 +267,8 @@ extension UltimateTicTacToePlayback {
             PaeoniaHaptics.streakContinued()
             GameSound.stamp.play()
         }
-        return await pause(UltimateTicTacToeTiming.close + UltimateTicTacToeTiming.afterClose, id: id)
+        let rest = input.board.outcome == nil ? UltimateTicTacToeTiming.afterClose : 0
+        return await pause(UltimateTicTacToeTiming.close + rest, id: id)
     }
 
     /// The camera waits for the opening zoom into the board I must play in, so
@@ -396,6 +398,7 @@ extension UltimateTicTacToePlayback {
         cancelOutcome()
         let id = outcomeRunID
         isPlayingOutcome = true
+        outcome.origin = input.lastMove.map { $0.move / 9 }
         requestFocus(nil, animation: UltimateTicTacToeMotion.regroup)
         let beats = UltimateTicTacToeOutcomeScript.beats(lineCount: result.line.count, isDraw: result.winner == nil)
         outcomeTask = Task { [weak self] in

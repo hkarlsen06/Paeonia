@@ -91,14 +91,19 @@ nonisolated enum UltimateTicTacToeTiming {
     /// On a trip between two small boards, how long the camera heads out per
     /// board it crosses before it turns to the new board.
     static let pullBack: TimeInterval = 0.08
-    /// The board my partner is sent to pulses once the camera is nearly out.
-    static let pulseDelay: TimeInterval = 0.4
+    /// The board my partner is sent to pulses once the camera has settled, so
+    /// the pulse doesn't blur into the zoom.
+    static let pulseDelay: TimeInterval = 0.5
     static let pulse: TimeInterval = 0.35
     /// The pause before the opening zoom into the board I must play in.
     static let intro: TimeInterval = 0.4
 
     /// How long the board takes to show one of my moves, for the screen's replay.
-    static let mine = Duration.milliseconds(900)
+    static let mine = Duration.milliseconds(1_000)
+    /// My move that ends the game: the mark pops in and its small board closes.
+    static let mineEnding = Duration.milliseconds(Int(((minePop + close) * 1_000).rounded()))
+    /// The whole board shows as this phone left it before missed moves play.
+    static let openLeadIn = Duration.milliseconds(600)
     /// How long the board takes to show one of my partner's moves. In a replay
     /// the camera comes from the last move's board, so it pulls back on the way.
     static let partner = Duration.milliseconds(1_180)

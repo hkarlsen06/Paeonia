@@ -172,10 +172,20 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space8)
             .paeoniaReadableWidth()
-            // The board can be under it while the keyboard is up. A board that bleeds is covered there instead.
-            .background(boardBleeds ? Color.clear : .paeoniaBackgroundSecondary)
+            // The board can be under it while the keyboard is up for the bet. A board that
+            // bleeds is covered there instead, and a fixed bet leaves it clear so a gliding
+            // board isn't cut off.
+            .background(boardBleeds || content.stake != .writable ? Color.clear : .paeoniaBackgroundSecondary)
             .animation(PaeoniaMotion.stateChange, value: content.stake)
             .animation(PaeoniaMotion.stateChange, value: content.colorChoice != nil)
+            // The bet moves up with the board when the result panel comes. While the bet
+            // is written it rises with the keyboard instead, and a change of the bet
+            // animates itself.
+            .modifier(BoardGameGlide(
+                isEnabled: !boardBleeds && !reduceMotion && content.stake != .writable,
+                scales: false,
+                key: content.stake
+            ))
         }
         .paeoniaBottomBar { bottomBar }
         .background {
@@ -183,6 +193,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 bleedingBoard
             }
         }
+        .coordinateSpace(.named(BoardGameGlide.space))
     }
 
     private var scrolling: some View {
@@ -216,6 +227,9 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                 maxHeight: boardBleeds ? .infinity : nil
             )
             .padding(.horizontal, boardBleeds ? -PaeoniaSpacing.screenHorizontalPadding : 0)
+            // A board that bleeds glides to its new space on its own. At accessibility
+            // sizes the column scrolls, and the board stays put.
+            .modifier(BoardGameGlide(isEnabled: !boardBleeds && !reduceMotion && !dynamicTypeSize.isAccessibilitySize))
     }
 
     private var bottomBar: some View {
@@ -238,7 +252,10 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space8)
         .paeoniaReadableWidth()
-        .background(boardBleeds && !dynamicTypeSize.isAccessibilitySize ? Color.clear : .paeoniaBackgroundSecondary)
+        // Clear over a fixed column, so a board gliding up out of the result panel's
+        // way shows behind the panel instead of being cut off. Content that scrolls
+        // under the bar at accessibility sizes needs the cover.
+        .background(dynamicTypeSize.isAccessibilitySize ? Color.paeoniaBackgroundSecondary : .clear)
     }
 
     // MARK: Bleed
@@ -345,24 +362,6 @@ extension BoardGameScreenLayout {
             }
         }
         .animation(PaeoniaMotion.stateChange, value: content.partnerStatus)
-    }
-}
-
-/// Hands its content the space a board that bleeds fits in. It is animatable, so
-/// when that space changes, the content is laid out again on every frame of the
-/// animation. The board's view and its camera then follow the space smoothly
-/// instead of jumping to the end.
-private struct BoardGameAnimatedSlot<Content: View>: View, Animatable {
-    var slot: CGRect
-    @ViewBuilder let content: (CGRect) -> Content
-
-    var animatableData: CGRect.AnimatableData {
-        get { slot.animatableData }
-        set { slot.animatableData = newValue }
-    }
-
-    var body: some View {
-        content(slot)
     }
 }
 

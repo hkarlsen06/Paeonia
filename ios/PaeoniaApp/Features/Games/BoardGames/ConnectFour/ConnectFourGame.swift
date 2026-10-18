@@ -2,8 +2,15 @@ import SwiftUI
 
 /// Connect Four on the Games tab: its hub model and its screen.
 enum ConnectFourGame {
-    /// The partner's disc hovers for 0.25 s before it falls. Both bounce once.
-    static let timing = BoardGameMoveTiming(mine: .milliseconds(700), partner: .milliseconds(1_000))
+    /// The partner's disc hovers for 0.25 s before it falls. Both bounce. Each
+    /// move takes as long as its disc falls, so the outcome starts 0.15 s after
+    /// the winning disc stops. `mine` and `partner` are the longest drops.
+    static let timing = BoardGameMoveTiming(
+        mine: .milliseconds(770),
+        partner: .milliseconds(1_020),
+        openLeadIn: .milliseconds(600),
+        exact: { ConnectFourDropMotion.showDuration(of: $0, on: $1) }
+    )
 
     static func hubModel(dependencies: GamesDependencies) -> BoardGameHubModel<ConnectFourBoard> {
         BoardGameHubModel(

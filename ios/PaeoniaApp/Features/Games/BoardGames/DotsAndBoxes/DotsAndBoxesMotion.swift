@@ -12,6 +12,8 @@ enum DotsAndBoxesMotion {
     /// The tints lift off the photo and the gaps between the pieces close.
     static let lift = PaeoniaMotion.standardCurve(duration: 0.8)
     static let dim = PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionSlow)
+    /// The photo loads after the board shows, and its pieces fade in over the plain boxes.
+    static let photoArrives = PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionSlow)
     /// What Reduce Motion uses in place of movement.
     static let fade = PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionFast)
 

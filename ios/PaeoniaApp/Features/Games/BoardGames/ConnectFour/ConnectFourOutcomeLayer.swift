@@ -39,13 +39,15 @@ struct ConnectFourOutcomeVeil: View {
 }
 
 /// The win, drawn above the board face: the winning discs light up one after
-/// another, a glowing line runs through each winning run, and a petal bloom
-/// bursts from the middle of the line.
+/// another from the disc that won, a glowing line runs from it through each
+/// winning run, and a petal bloom bursts from the middle of the line.
 struct ConnectFourOutcomeLayer: View {
     /// The winner's pieces.
     let style: BoardPieceStyle
     /// The winning cells, as `BoardOutcome.line` lists them.
     let line: [Int]
+    /// The disc that won, where the light starts. Nil lights the line in order.
+    let origin: Int?
     let geometry: ConnectFourBoardGeometry
     /// When the highlight started, or nil to show it finished.
     let start: Date?
@@ -55,7 +57,7 @@ struct ConnectFourOutcomeLayer: View {
         ConnectFourOutcomeClock(start: start) { elapsed in
             ZStack(alignment: .topLeading) {
                 runLines(elapsed: elapsed)
-                ForEach(Array(line.enumerated()), id: \.element) { rank, index in
+                ForEach(Array(litOrder.enumerated()), id: \.element) { rank, index in
                     litDisc(at: index, rank: rank, elapsed: elapsed)
                 }
                 bloom(elapsed: elapsed)
@@ -73,7 +75,7 @@ struct ConnectFourOutcomeLayer: View {
         let diameter = geometry.discDiameter
         let glowStroke = StrokeStyle(lineWidth: diameter * 0.2, lineCap: .round, lineJoin: .round)
         let coreStroke = StrokeStyle(lineWidth: diameter * 0.07, lineCap: .round, lineJoin: .round)
-        let runs = ConnectFourBoardGeometry.runs(in: line)
+        let runs = ConnectFourBoardGeometry.runs(in: line).map(fromOrigin)
         return ForEach(Array(runs.enumerated()), id: \.offset) { _, run in
             let path = ConnectFourRunShape(points: run.map { geometry.cellCenter(index: $0) })
                 .trim(from: 0, to: CGFloat(progress))
@@ -84,6 +86,24 @@ struct ConnectFourOutcomeLayer: View {
             }
             .opacity(progress > 0 ? 1 : 0)
         }
+    }
+
+    /// The winning cells, nearest the disc that won first.
+    private var litOrder: [Int] {
+        guard let origin else { return line }
+        return line.sorted { Self.steps($0, origin) < Self.steps($1, origin) }
+    }
+
+    /// A run that starts at the end nearer the disc that won.
+    private func fromOrigin(_ run: [Int]) -> [Int] {
+        guard let origin, let first = run.first, let last = run.last else { return run }
+        return Self.steps(last, origin) < Self.steps(first, origin) ? run.reversed() : run
+    }
+
+    /// How many cells apart two cells are along a row, a column or a diagonal.
+    private static func steps(_ cell: Int, _ other: Int) -> Int {
+        let columns = ConnectFourBoardGeometry.columns
+        return max(abs(cell / columns - other / columns), abs(cell % columns - other % columns))
     }
 
     /// A copy of a winning disc above the face. It pulses to 112%, then keeps a

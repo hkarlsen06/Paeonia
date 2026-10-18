@@ -3,7 +3,11 @@ import SwiftUI
 /// Dots and Boxes on the Games tab: its hub model and its screen.
 enum DotsAndBoxesGame {
     /// A line snaps in. A closed box pops in after it.
-    static let timing = BoardGameMoveTiming(mine: .milliseconds(350), partner: .milliseconds(600))
+    static let timing = BoardGameMoveTiming(
+        mine: .milliseconds(350),
+        partner: .milliseconds(600),
+        openLeadIn: .milliseconds(600)
+    )
 
     static func hubModel(dependencies: GamesDependencies) -> BoardGameHubModel<DotsAndBoxesBoard> {
         BoardGameHubModel(

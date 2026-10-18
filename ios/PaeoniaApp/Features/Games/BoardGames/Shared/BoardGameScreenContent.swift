@@ -19,7 +19,7 @@ nonisolated enum BoardGameTurnLabel: Equatable, Hashable, Sendable {
     case draw
 }
 
-nonisolated enum BoardGameStakeState: Equatable, Sendable {
+nonisolated enum BoardGameStakeState: Hashable, Sendable {
     case hidden
     /// The starter can write or change the stake until the first move.
     case writable

@@ -4,7 +4,7 @@ import Testing
 @testable import PaeoniaApp
 
 /// Games used by the Ultimate Tic-Tac-Toe board tests.
-private enum UltimateTicTacToeFixtures {
+enum UltimateTicTacToeFixtures {
     /// Player one opened in the middle, so player two must play in board 4.
     static let forcedMoves = [40]
     /// Player one took board 3, and the last move sent player one to it. Any
@@ -516,5 +516,7 @@ struct UltimateTicTacToePresentationTests {
 
         #expect(UltimateTicTacToeTiming.partner == .milliseconds(Int((partner * 1_000).rounded())))
         #expect(UltimateTicTacToeTiming.mine < UltimateTicTacToeTiming.partner)
+        let ending = Timing.minePop + Timing.close
+        #expect(UltimateTicTacToeTiming.mineEnding == .milliseconds(Int((ending * 1_000).rounded())))
     }
 }

@@ -21,10 +21,17 @@ struct UltimateTicTacToeBoardView: View {
     /// The longest the board grows.
     static let maxSide: CGFloat = 560
 
-    /// How long the board takes to show one move, for the screen's replay.
+    /// How long the board takes to show one move, for the screen's replay. My
+    /// move that ends the game is over once its small board has closed, so the
+    /// outcome follows without a gap.
     static let moveTiming = BoardGameMoveTiming(
         mine: UltimateTicTacToeTiming.mine,
-        partner: UltimateTicTacToeTiming.partner
+        partner: UltimateTicTacToeTiming.partner,
+        openLeadIn: UltimateTicTacToeTiming.openLeadIn,
+        exact: { event, board in
+            guard event.isMine, (board as? UltimateTicTacToeBoard)?.outcome != nil else { return nil }
+            return UltimateTicTacToeTiming.mineEnding
+        }
     )
 
     let board: UltimateTicTacToeBoard
@@ -223,7 +230,7 @@ extension UltimateTicTacToeBoardView {
         if let result = board.outcome, let winner = result.winner {
             let color = styles[winner].color
             ForEach(UltimateTicTacToeOutcomeState.winningRows(of: result), id: \.self) { row in
-                if let ends = geometry.lineEnds(through: row) {
+                if let ends = geometry.lineEnds(through: playback.outcome.fromOrigin(row)) {
                     UltimateTicTacToeStrikeShape(
                         start: ends.start,
                         end: ends.end,

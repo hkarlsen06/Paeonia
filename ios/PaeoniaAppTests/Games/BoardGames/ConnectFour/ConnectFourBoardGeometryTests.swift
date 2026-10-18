@@ -333,3 +333,32 @@ struct ConnectFourBoardGeometryTests {
         #expect(ConnectFourOutcomeStage.idle.startDate == nil)
     }
 }
+
+/// How long the screen waits for a Connect Four move, from how far its disc falls.
+struct ConnectFourDropTimingTests {
+    @Test func aMoveTakesAsLongAsItsDiscFalls() throws {
+        let one = try #require(ConnectFourBoard.replay([3]))
+        let three = try #require(ConnectFourBoard.replay([3, 3, 3]))
+        let mine = BoardMoveEvent(number: 1, move: 3, player: .one, isMine: true)
+        let partner = BoardMoveEvent(number: 1, move: 3, player: .one, isMine: false)
+        let bottom = ConnectFourDropMotion.forMove(landingRow: 5, isMine: true, reduceMotion: false)
+
+        #expect(ConnectFourDropMotion.showDuration(of: mine, on: one) == .seconds(bottom.totalDuration))
+        let short = try #require(ConnectFourDropMotion.showDuration(of: mine, on: three))
+        let partners = try #require(ConnectFourDropMotion.showDuration(of: partner, on: one))
+        #expect(short < .seconds(bottom.totalDuration))
+        #expect(partners > .seconds(bottom.totalDuration))
+        // A column with no disc holds no move to show.
+        let empty = BoardMoveEvent(number: 1, move: 0, player: .one, isMine: true)
+        #expect(ConnectFourDropMotion.showDuration(of: empty, on: one) == nil)
+    }
+
+    @MainActor
+    @Test func theGamesFallbackTimingCoversTheLongestDrops() {
+        let mine = ConnectFourDropMotion.forMove(landingRow: 5, isMine: true, reduceMotion: false)
+        let partner = ConnectFourDropMotion.forMove(landingRow: 5, isMine: false, reduceMotion: false)
+
+        #expect(ConnectFourGame.timing.mine >= .seconds(mine.totalDuration))
+        #expect(ConnectFourGame.timing.partner >= .seconds(partner.totalDuration))
+    }
+}

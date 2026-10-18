@@ -216,13 +216,17 @@ struct BoardGameHarness {
 
     /// `partnerTiming` of a minute or more holds the board inside a partner's
     /// move animation (see `BoardGameSleepRecorder`).
-    func makeViewModel(partnerTiming: Duration = .zero) -> ConnectFourViewModel {
+    func makeViewModel(
+        partnerTiming: Duration = .zero,
+        mineTiming: Duration = .zero,
+        openLeadIn: Duration = .zero
+    ) -> ConnectFourViewModel {
         var dependencies = env.dependencies()
         dependencies.boardGamesGateway = gateway
         dependencies.boardGamesCache = cache
         let viewModel = ConnectFourViewModel(
             kind: .connectFour,
-            timing: BoardGameMoveTiming(mine: .zero, partner: partnerTiming),
+            timing: BoardGameMoveTiming(mine: mineTiming, partner: partnerTiming, openLeadIn: openLeadIn),
             dependencies: dependencies,
             heartbeatInterval: .seconds(3_600),
             tickInterval: .seconds(3_600),

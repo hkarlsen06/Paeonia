@@ -23,7 +23,8 @@ extension BoardGameViewModel {
     /// shows as it is.
     func advanceDisplay(to snapshot: BoardGameSnapshot<Board>, userID: UUID) {
         guard !isShowingMissedEnding else { return }
-        if !hasDisplay {
+        let isOpening = !hasDisplay
+        if isOpening {
             hasDisplay = true
             if showMissedEndingAtOpen(snapshot, userID: userID) {
                 return
@@ -44,7 +45,7 @@ extension BoardGameViewModel {
             return
         }
         if displayedMoves.count < snapshot.moves.count {
-            startReplay()
+            startReplay(after: isOpening ? timing.openLeadIn : .zero)
         } else if !isReplaying {
             settle()
         }
@@ -63,7 +64,7 @@ extension BoardGameViewModel {
             firstUserID: previous.firstUserID,
             userID: userID
         )
-        startReplay()
+        startReplay(after: timing.openLeadIn)
         return true
     }
 
@@ -120,6 +121,7 @@ extension BoardGameViewModel {
         isResultCollapsed = false
         stagedOutcomeGame = nil
         lastMove = nil
+        lastMoveSettles = nil
         PaeoniaHaptics.selection()
         recompute()
     }
@@ -137,6 +139,7 @@ extension BoardGameViewModel {
             displayedMoves = target.moves
         }
         lastMove = nil
+        lastMoveSettles = nil
         if board.outcome != nil {
             stagedOutcomeGame = displayedGameNumber
             showsOutcome = true
@@ -160,6 +163,7 @@ extension BoardGameViewModel {
         board = Board.replay(moves) ?? .initial
         me = firstUserID == userID ? .one : .two
         lastMove = nil
+        lastMoveSettles = nil
     }
 
     private func showAsItIs(_ snapshot: BoardGameSnapshot<Board>, userID: UUID) {
@@ -186,14 +190,20 @@ extension BoardGameViewModel {
         displayedMoves.append(move)
         let event = BoardMoveEvent(number: displayedMoves.count, move: move, player: mover, isMine: mover == me)
         lastMove = event
+        lastMoveSettles = .now + moveDuration(event)
         return event
     }
 
-    private func startReplay() {
+    /// Plays the moves the board is missing, one at a time. `leadIn` holds the
+    /// board still first.
+    private func startReplay(after leadIn: Duration = .zero) {
         guard replayTask == nil else { return }
         isReplaying = true
         updateScreen()
         replayTask = Task { [weak self] in
+            if leadIn > .zero {
+                try? await self?.sleep(leadIn)
+            }
             while !Task.isCancelled {
                 guard let self, let target, target.gameNumber == displayedGameNumber,
                       target.moves.starts(with: displayedMoves), displayedMoves.count < target.moves.count
@@ -213,18 +223,27 @@ extension BoardGameViewModel {
         if prefersReducedMotion {
             return .milliseconds(250)
         }
-        return event.isMine ? timing.mine : timing.partner
+        return timing.exact?(event, board) ?? (event.isMine ? timing.mine : timing.partner)
     }
 
-    /// The board has caught up. A finished game gets its outcome beats once.
-    /// Otherwise this phone remembers how far it showed the game.
+    /// The board has caught up. A finished game gets its outcome beats once,
+    /// after the last move has finished animating. Otherwise this phone
+    /// remembers how far it showed the game.
     func settle(animated: Bool = true) {
         updateScreen()
         guard board.outcome != nil else {
             markShown()
             return
         }
-        stageOutcome(animated: animated, after: .zero)
+        stageOutcome(animated: animated, after: lastMoveRemaining)
+    }
+
+    /// How long the board still animates the newest move. A move made on this
+    /// phone reloads the game before its disc or line has landed, and the
+    /// outcome must not start under it.
+    var lastMoveRemaining: Duration {
+        guard let lastMoveSettles else { return .zero }
+        return max(.zero, lastMoveSettles - .now)
     }
 
     /// The outcome's beats after the last move landed: the board's highlight at

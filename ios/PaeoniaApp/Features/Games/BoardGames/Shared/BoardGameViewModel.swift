@@ -6,6 +6,13 @@ import SwiftUI
 nonisolated struct BoardGameMoveTiming: Sendable {
     let mine: Duration
     let partner: Duration
+    /// How long the board shows as this phone left it before the moves it
+    /// missed start to play, so the person sees the board first.
+    var openLeadIn: Duration = .zero
+    /// The time one move takes when it depends on the move, such as a Connect
+    /// Four disc that falls further. It gets the board that holds the move. Nil
+    /// for a move that takes `mine` or `partner`.
+    var exact: (@Sendable (BoardMoveEvent, any BoardGameRules) -> Duration?)?
 }
 
 /// One board game screen: Connect Four, Dots and Boxes or Ultimate
@@ -106,6 +113,8 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     @ObservationIgnored var replayQueue: [Int] = []
     var isReplaying = false
     @ObservationIgnored var stagedOutcomeGame: Int?
+    /// When the board finishes animating `lastMove`. The outcome waits for it.
+    @ObservationIgnored var lastMoveSettles: ContinuousClock.Instant?
     @ObservationIgnored var markImages: [UUID: (key: String, image: UIImage)] = [:]
     @ObservationIgnored var photoAssetID: UUID?
     @ObservationIgnored var localInviteSentAt: Date?
@@ -310,6 +319,7 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         localInviteSentAt = nil
         board = .initial
         lastMove = nil
+        lastMoveSettles = nil
         showsOutcome = false
         result = nil
         isShowingMissedEnding = false

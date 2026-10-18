@@ -88,6 +88,22 @@ struct BoardGameViewModelEndingTests {
         #expect(viewModel.snapshot?.myWins == 1)
     }
 
+    @Test func myWinningMoveWaitsForItsDiscBeforeTheOutcome() async {
+        let game = harness.game(moves: Fixture.connectFourAlmostWon)
+        await harness.save(game)
+        await harness.cache.markShown(harness.position(6), kind: .connectFour, ownerUserID: harness.me)
+        let viewModel = harness.makeViewModel(mineTiming: .milliseconds(400))
+        await viewModel.start(prefersReducedMotion: false)
+        defer { viewModel.stop() }
+
+        await viewModel.play(0)
+
+        // Saving the move reloads the game before the disc lands. The outcome
+        // still waits for the disc, then 0.15 s, and not 0.15 s from the tap.
+        let outcomeWait = harness.sleeps.waits.first
+        #expect(outcomeWait.map { $0 > .milliseconds(450) } == true)
+    }
+
     // MARK: Missed ending
 
     @Test func anEndingIMissedShowsFirstAndContinueLeadsToTheNewGame() async {

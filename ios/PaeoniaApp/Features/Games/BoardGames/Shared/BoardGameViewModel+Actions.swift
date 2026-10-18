@@ -37,7 +37,7 @@ extension BoardGameViewModel {
             createdAt: dependencies.now()
         )
         localActionRevision += 1
-        guard let event = step(move) else { return }
+        guard step(move) != nil else { return }
         // A Dots and Boxes box gives the mover another turn.
         if board.outcome == nil, board.next == me {
             extraTurnCount += 1
@@ -51,8 +51,9 @@ extension BoardGameViewModel {
             return
         }
         // After the save, so the result reads the tallies with this move in them.
+        // The save's reload usually stages it first, with the same wait.
         if board.outcome != nil {
-            stageOutcome(animated: true, after: moveDuration(event))
+            stageOutcome(animated: true, after: lastMoveRemaining)
         }
     }
 

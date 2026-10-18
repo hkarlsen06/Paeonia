@@ -112,7 +112,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 - **Convex only.** Moves go through Convex and reach the other phone through its subscription within a few hundred milliseconds. Board games use no relay room.
 - **Presence.** The open board screen sends the game's presence heartbeat, as Draw & Guess does. While the partner has the same game open, a green dot sits on their avatar. The status row stays empty then, unless the game shows a hint there.
 - **Invite.** While the partner is not in the game, the board shows "Tell [Name] you want to play" (see `docs/games-plan.md`).
-- **The partner's moves arrive animated.** A move that arrives while the board is open plays its animation. When the board opens after the partner moved, the moves since this phone last showed the board play in order, 0.45 seconds apart, and the whole sequence takes 3 seconds at most. A tap on the board skips to the end.
+- **The partner's moves arrive animated.** A move that arrives while the board is open plays its animation. When the board opens after the partner moved, it first shows the board as this phone left it for 0.6 seconds, so the person sees where things stood. Then the moves since this phone last showed the board play in order, each one after the last one's animation. A tap on the board skips to the end.
 - **Offline.** A move made offline shows on the board at once and is saved on the phone as a pending operation. The screen says "Saved on this phone. We'll send it when you're online." Moves leave in order. A move the server refuses as stale or illegal is dropped with "Your move wasn't sent", and the board shows the server's state again.
 - **Notifications.**
   - "Your turn in Connect Four" when the turn passes to you, skipped while you have that game open.
@@ -181,10 +181,10 @@ The moment the last move lands.
 
 | Time | What happens |
 |---|---|
-| 0.00 | The last move's own animation finishes. Input locks. |
-| 0.15 | The winning pieces light up in order and the rest of the board dims to 40%. A glowing line draws through the winning run (Connect Four and Ultimate Tic-Tac-Toe). In Dots and Boxes the tints lift off the photo and it shows whole. |
+| 0.00 | The last move's own animation finishes, whether the move was made on this phone or arrived. Input locks. |
+| 0.15 | The winning pieces light up one after another, starting from the piece that won, and the rest of the board dims to 40%. A glowing line draws from that piece through the winning run (Connect Four and Ultimate Tic-Tac-Toe). In Dots and Boxes the tints lift off the photo and it shows whole. |
 | 0.70 | `answerRevealed()` and the petal bloom from the middle of the winning line, as in Draw & Guess. A draw gets one soft `partnerDrawingReceived()` and no bloom. |
-| 1.10 | The result panel rises from the bottom: the title, the stake line, the score and "Play again". |
+| 1.10 | The result panel rises from the bottom: the title, the stake line, the score and "Play again". The board glides smaller and up to make room for it, and the bet moves up with it (`meaningfulMoment`). |
 
 - Titles. Against each other: "You won!", "[Name] won" or "It's a draw". Together: "You won this one", "[Name] won this one" or "It's a draw".
 - Stake line. "You claimed: Loser makes coffee", "[Name] claimed: Loser makes coffee", or after a draw "Nobody claimed: Loser makes coffee".
@@ -196,7 +196,7 @@ The moment the last move lands.
 
 - The board face is a rounded plum frame with 42 round holes. The discs sit behind the face, so a falling disc shows through the holes.
 - Playing. Tap a column, or drag across the board. A hovering disc with my mark follows the finger above the columns and snaps to each column with `selection()`. Releasing, or tapping, drops it. A full column makes the hovering disc shake with `gameWrongGuess()` and nothing is sent.
-- The drop. The disc falls with gravity and lands with a small bounce. A soft impact haptic plays when it lands. The partner's disc first hovers over its column for 0.25 seconds, then drops the same way.
+- The drop. The disc falls with gravity and lands with a small bounce. A soft impact haptic and the drop sound play when it lands, and a quieter tap and sound when it comes down from its first bounce. The partner's disc first hovers over its column for 0.25 seconds, then drops the same way. A move takes as long as its disc falls, so the result starts 0.15 seconds after the winning disc stops, however far it fell.
 - Reduce Motion. The disc fades in at its cell.
 - VoiceOver. Each column is one element, "Column 3, 2 discs, yours on top", with the action "Drop a disc". The partner's move announces "[Name] dropped a disc in column 3".
 
@@ -204,16 +204,16 @@ The moment the last move lands.
 
 - 25 dots on a square board over the hidden photo. Undrawn lines are faint dotted guides. Closed boxes show their piece of the photo with a 30% tint in the owner's color and the owner's mark small in a corner. Without a photo, a closed box fills with the owner's color and the mark in the middle.
 - Playing. Tap anywhere near a line. Each line's tap area is the triangle between it and the centers of its neighboring boxes, so every point of the board picks exactly one line. The line is drawn at once.
-- The line snaps in from its middle to both dots with a spring, and its two dots pulse once. A closed box's piece scales up from 0.85 and fades in, with `streakTick`. Two boxes from one line are 0.12 seconds apart.
+- The line snaps in from its middle to both dots with a spring, and its two dots pulse once. A closed box's piece scales up from 0.85 and fades in, with `streakTick`. Two boxes from one line are 0.12 seconds apart. The photo loads after the board shows, and its pieces fade in over the plain boxes (0.36 seconds).
 - Reduce Motion. Lines and boxes fade in.
 - VoiceOver. The board is a grid of boxes. Each box reads its four sides, for example "Box row 2, column 3, top and left drawn", with actions for each undrawn side. Closing a box announces "You closed a box. Another turn."
 
 ### Ultimate Tic-Tac-Toe
 
 - The big grid has 9 small boards with wide gaps. Open boards that the next move may use glow softly in the mover's color. Other boards dim.
-- Zoom. When I must play in one board, the board zooms in on it so its cells are large, then I tap a cell. When I may choose, the whole board shows, I tap a small board to zoom into it, and a tap outside it or a pinch zooms back out. After my move the board zooms out and the board my partner is sent to pulses once.
+- Zoom. When I must play in one board, the board zooms in on it so its cells are large, then I tap a cell. When I may choose, the whole board shows, I tap a small board to zoom into it, and a tap outside it or a pinch zooms back out. After my move the board zooms out, and once the camera has settled, the board my partner is sent to pulses once to 110%.
 - The partner's move. The board zooms into the small board they played, their mark draws in, then the view moves to the board I am sent to. A move from one small board to another pulls back partway and swoops in, so it never slides across the board at full zoom.
-- A won small board gets a strike line through its three cells, its cells fade to 30%, and the winner's mark draws large over it. The strike line lies under the big mark and is paler than it (45% saturation, 70% opacity), so the line never covers the mark. The line through the three winning boards at the end of a game is drawn the same way, under the big marks. A full small board without a winner fades to 30%.
+- A won small board gets a strike line through its three cells, its cells fade to 30%, and the winner's mark draws large over it. The strike line lies under the big mark and is paler than it (45% saturation, 70% opacity), so the line never covers the mark. The line through the three winning boards at the end of a game is drawn the same way, under the big marks. A full small board without a winner fades to 30%. When a move closes a small board and ends the game, the board goes straight on to the result, which starts 0.15 seconds after the closing beat.
 - Reduce Motion. The board still zooms, so the cells stay large enough to tap, but the view cuts to the new board instead of gliding. My partner's move shows at once, without the trip to their board. VoiceOver never zooms. The board I am sent to keeps its glow.
 - VoiceOver. Each small board is a group, "Board 5, center, open" or "Board 5, won by [Name]". Each cell reads "Row 1, column 2, empty".
 

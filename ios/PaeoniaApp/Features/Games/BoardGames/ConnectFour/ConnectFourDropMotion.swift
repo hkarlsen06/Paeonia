@@ -13,6 +13,16 @@ nonisolated struct ConnectFourDropMotion: Equatable {
         let peak: Double
     }
 
+    /// How long the board takes to show a move: the disc of `event` falls into
+    /// the top of its column on `board`. Nil for a move the board doesn't hold.
+    static func showDuration(of event: BoardMoveEvent, on board: any BoardGameRules) -> Duration? {
+        guard let board = board as? ConnectFourBoard, let index = board.topDiscIndex(column: event.move) else {
+            return nil
+        }
+        let row = index / ConnectFourBoardGeometry.columns
+        return .seconds(forMove(landingRow: row, isMine: event.isMine, reduceMotion: false).totalDuration)
+    }
+
     /// Cells per second squared. A drop from the lane to the bottom row takes 0.45 seconds.
     static let gravity = 62.0
     static let shortestFall: TimeInterval = 0.25
@@ -59,6 +69,20 @@ nonisolated struct ConnectFourDropMotion: Equatable {
         self.fadeInDuration = fadeInDuration
         self.fallDuration = fallDuration
         self.bounces = bounces
+    }
+
+    /// How the disc of a move falls into `landingRow`. Reduce Motion fades it in
+    /// at its cell instead.
+    static func forMove(landingRow: Int, isMine: Bool, reduceMotion: Bool) -> ConnectFourDropMotion {
+        if reduceMotion {
+            // `PaeoniaMotion.motionFast`, which this pure type can't read.
+            return .reduced(fadeIn: 0.16)
+        }
+        return ConnectFourDropMotion(
+            distance: ConnectFourBoardGeometry.dropDistance(toRow: landingRow),
+            hover: isMine ? 0 : partnerHover,
+            fadeIn: isMine ? 0 : partnerFadeIn
+        )
     }
 
     /// Reduce Motion: the disc fades in at its cell and never falls.

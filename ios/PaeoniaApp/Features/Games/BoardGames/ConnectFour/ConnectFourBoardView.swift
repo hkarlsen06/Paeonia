@@ -125,6 +125,7 @@ struct ConnectFourBoardView: View {
             ConnectFourOutcomeLayer(
                 style: styles[winner],
                 line: outcome.line,
+                origin: lastMove.flatMap { board.topDiscIndex(column: $0.move) },
                 geometry: geometry,
                 start: effectiveStage.startDate,
                 bloomSeed: bloomSeed
@@ -160,7 +161,7 @@ struct ConnectFourBoardView: View {
               board.cells[index] == move.player
         else { return }
         let row = index / ConnectFourBoardGeometry.columns
-        let motion = Self.dropMotion(landingRow: row, isMine: move.isMine, reduceMotion: reduceMotion)
+        let motion = ConnectFourDropMotion.forMove(landingRow: row, isMine: move.isMine, reduceMotion: reduceMotion)
         falling.append(ConnectFourFallingDisc(move: move, index: index, start: Date(), motion: motion))
         announce(move)
     }
@@ -222,23 +223,4 @@ struct ConnectFourBoardView: View {
         }
     }
 
-    // MARK: Timing for the screen
-
-    /// How a disc falls. Reduce Motion fades it in at its cell instead.
-    static func dropMotion(landingRow: Int, isMine: Bool, reduceMotion: Bool) -> ConnectFourDropMotion {
-        if reduceMotion {
-            return .reduced(fadeIn: PaeoniaMotion.motionFast)
-        }
-        return ConnectFourDropMotion(
-            distance: ConnectFourBoardGeometry.dropDistance(toRow: landingRow),
-            hover: isMine ? 0 : ConnectFourDropMotion.partnerHover,
-            fadeIn: isMine ? 0 : ConnectFourDropMotion.partnerFadeIn
-        )
-    }
-
-    /// Seconds from the moment a move arrives until its disc has stopped. The
-    /// screen turns `showsOutcome` on 0.15 seconds after this.
-    static func dropDuration(landingRow: Int, isMine: Bool, reduceMotion: Bool) -> TimeInterval {
-        dropMotion(landingRow: landingRow, isMine: isMine, reduceMotion: reduceMotion).totalDuration
-    }
 }
