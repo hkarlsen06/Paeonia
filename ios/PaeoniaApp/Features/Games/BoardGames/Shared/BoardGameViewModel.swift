@@ -139,6 +139,8 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     }
     @ObservationIgnored var prefersReducedMotion = false
     @ObservationIgnored var replayTask: Task<Void, Never>?
+    /// The replay's wait for the move it just showed. `finishMoveAnimation` ends it early.
+    @ObservationIgnored var moveWait: (number: Int, task: Task<Void, Never>)?
     @ObservationIgnored var outcomeTask: Task<Void, Never>?
     @ObservationIgnored var photoTask: Task<Void, Never>?
 

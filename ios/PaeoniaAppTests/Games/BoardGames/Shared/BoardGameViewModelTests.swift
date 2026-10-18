@@ -82,6 +82,25 @@ struct BoardGameViewModelTests {
         #expect(viewModel.canPlay)
     }
 
+    @Test func aBoardThatFinishedThePartnersMoveHandsOverTheTurnAtOnce() async {
+        await harness.save(harness.game(moves: [3, 4]))
+        let viewModel = harness.makeViewModel(partnerTiming: .seconds(120))
+        defer { viewModel.stop() }
+        await viewModel.start(prefersReducedMotion: false)
+        let animating = await waitUntil { viewModel.displayedMoves == [3, 4] && viewModel.isReplaying }
+        #expect(animating)
+        #expect(!viewModel.canPlay)
+
+        // An older move's signal changes nothing.
+        viewModel.finishMoveAnimation(number: 1)
+        #expect(viewModel.isReplaying)
+
+        // Ludo's board says the pawn stands still and the die has landed.
+        viewModel.finishMoveAnimation(number: 2)
+        let handedOver = await waitUntil { !viewModel.isReplaying && viewModel.canPlay }
+        #expect(handedOver)
+    }
+
     @Test func aPartnerMoveThatArrivesWhileTheBoardIsOpenPlaysAsAMove() async {
         let viewModel = await harness.openBoard(harness.game(moves: [3]))
         defer { viewModel.stop() }

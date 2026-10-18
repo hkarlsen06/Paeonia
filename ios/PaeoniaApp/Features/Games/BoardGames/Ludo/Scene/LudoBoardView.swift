@@ -44,6 +44,9 @@ struct LudoBoardView: View {
     var onShown: () -> Void = {}
     /// My thrown die came to rest.
     var onDieLanded: () -> Void = {}
+    /// The partner's move with this number has finished: its pawns stand still and
+    /// its die has landed.
+    var onPartnerMoveShown: (Int) -> Void = { _ in }
 
     /// The longest a throw takes. The screen keeps the die rolling for at most this
     /// long, and shows the choices sooner when `onDieLanded` comes first.
@@ -183,6 +186,14 @@ private struct LudoBoardScene: View {
     private func handle(_ update: LudoStage.Update) {
         if let move = update.presentedMove {
             announce(move)
+            if !move.isMine, let number = inputs.lastMove?.number {
+                let delay = stage.moveTimeLeft
+                let shown = inputs.onPartnerMoveShown
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(delay))
+                    shown(number)
+                }
+            }
         }
         if let delay = update.outcomeStartsIn {
             bloomStart = Date().addingTimeInterval(delay + LudoSceneStyle.bloomDelay)

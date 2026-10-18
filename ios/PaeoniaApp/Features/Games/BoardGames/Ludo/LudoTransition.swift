@@ -38,6 +38,20 @@ nonisolated extension LudoBoard {
         return Self.square(player: player, pawn: index % Self.pawnsPerPlayer, progress: progress[index])
     }
 
+    /// Where each pawn `next` can move with `die` would land, with the pawn's
+    /// number, while they pick one. Two pawns that would land on one square give
+    /// it once. Empty for a pass and once the game is over.
+    func landings(die: Int) -> [(pawn: Int, square: LudoSquare)] {
+        var landings: [(pawn: Int, square: LudoSquare)] = []
+        for choice in legalChoices(die: die) where choice != .pass {
+            guard let square = transition(Self.move(die: die, choice: choice))?.path.last,
+                  !landings.contains(where: { $0.square == square })
+            else { continue }
+            landings.append((choice.rawValue, square))
+        }
+        return landings
+    }
+
     /// What one move does, or nil when the move is illegal.
     func transition(_ move: Int) -> LudoTransition? {
         resolve(move)?.transition

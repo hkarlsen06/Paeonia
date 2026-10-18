@@ -15,6 +15,31 @@ struct LudoTransitionTests {
         try #require(board.transition(LudoBoard.move(die: die, choice: choice)))
     }
 
+    // MARK: Landings
+
+    @Test func landingsAreWhereEachMovablePawnWouldEnd() {
+        // Pawn 0 is in the base and can't move on a 3. Pawn 1 walks from square 4 to 7.
+        let landings = board([0, 5, 0, 0]).landings(die: 3)
+        #expect(landings.map(\.pawn) == [1])
+        #expect(landings.map(\.square) == [.track(7)])
+    }
+
+    @Test func aSixLandsAPawnFromTheBaseOnTheStartSquare() {
+        let landings = board([0, 5, 0, 0]).landings(die: 6)
+        #expect(landings.map(\.square) == [.track(0), .track(10)])
+    }
+
+    @Test func twoPawnsThatWouldLandTogetherLightOneSquare() {
+        let landings = board([12, 12, 0, 0]).landings(die: 2)
+        #expect(landings.map(\.square) == [.track(13)])
+    }
+
+    @Test func thePartnersLandingsAndAPassWithNone() {
+        #expect(board([0, 0, 1, 0], next: .two).landings(die: 4).map(\.square) == [.track(30)])
+        #expect(board([0, 0, 0, 0]).landings(die: 3).isEmpty)
+        #expect(board([0, 55, 0, 0]).landings(die: 2).map(\.square) == [.home(.one)])
+    }
+
     // MARK: Squares
 
     @Test func squareOfPawnReadsBaseTrackHomeColumnAndHome() {

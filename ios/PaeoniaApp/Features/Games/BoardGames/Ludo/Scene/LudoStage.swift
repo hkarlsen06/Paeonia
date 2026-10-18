@@ -115,6 +115,11 @@ final class LudoStage {
     var glowTargets: [Float] = [0, 0]
     var glowPulses: [Float] = [0, 0]
     var appliedGlows: [Float] = [-1, -1]
+    /// The glowing discs on the squares the movable pawns would land on.
+    var landingMarks: [ModelEntity] = []
+    var landingKey: LandingKey?
+    var landingLevel: Float = 0
+    var appliedLandingLevel: Float = -1
 
     struct OutcomeSchedule {
         let start: Double
@@ -142,6 +147,7 @@ final class LudoStage {
         homeGlows = parts.homeGlows
         capMaterials = parts.capMaterials
         paint = parts.paint
+        landingMarks = Self.makeLandingMarks(in: parts.root)
         targets[parts.die.root.id] = .die
         for pawn in parts.pawns { targets[pawn.root.id] = .pawn(pawn.index) }
 
@@ -190,6 +196,7 @@ final class LudoStage {
         }
         update.presentedMove = syncBoard(new)
         syncMovable(new)
+        syncLandings(new)
         // The die state can still carry the roll of a partner move this update just
         // played. That roll must not tumble again or mark a later move as rolled.
         syncDie(new.die, afterPartnerMove: update.presentedMove?.isMine == false)
@@ -268,6 +275,7 @@ final class LudoStage {
             dieNode.updateIdle(clock: clock, isReady: input?.die == .ready, reduceMotion: reduceMotion)
         }
         updateGlows(deltaTime: step)
+        updateLandings(deltaTime: step)
     }
 
     private func playClips() {
@@ -301,6 +309,16 @@ final class LudoStage {
             clip.finishNow()
             clip.onFinish?()
         }
+    }
+
+    /// Seconds until every pawn stands still and a thrown die has landed. The die's
+    /// hop to the next yard and a home glow may still move.
+    var moveTimeLeft: Double {
+        let busy = clips.filter { clip in
+            if case .pawn = clip.owner { return true }
+            return clip.isTumble
+        }
+        return max(0, (busy.map(\.end).max() ?? clock) - clock)
     }
 
     /// Seconds until every pawn stands still. The die and a home glow may still move.

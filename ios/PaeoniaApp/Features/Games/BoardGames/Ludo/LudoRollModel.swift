@@ -247,6 +247,8 @@ final class LudoRollModel {
         var playing = started
         playing.phase = .playing(value)
         turn = playing
+        // The pawns stop glowing and the landing squares go out as the move starts.
+        movableChoices = []
         await play(LudoBoard.move(die: value, choice: choice))
         update()
         // The move did not land, so the same roll can be used again.

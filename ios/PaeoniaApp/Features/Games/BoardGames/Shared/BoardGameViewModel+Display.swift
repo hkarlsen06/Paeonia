@@ -220,12 +220,40 @@ extension BoardGameViewModel {
                 else { break }
                 guard let event = step(target.moves[displayedMoves.count]) else { break }
                 updateScreen()
-                try? await sleep(moveDuration(event))
+                await waitForMove(event)
             }
             guard let self, !Task.isCancelled else { return }
             replayTask = nil
             isReplaying = false
             settle()
+        }
+    }
+
+    /// Waits out a move's animation, or less when the board says it has finished.
+    private func waitForMove(_ event: BoardMoveEvent) async {
+        let sleep = sleep
+        let duration = moveDuration(event)
+        let wait = Task<Void, Never> { _ = try? await sleep(duration) }
+        moveWait = (event.number, wait)
+        await withTaskCancellationHandler {
+            await wait.value
+        } onCancel: {
+            wait.cancel()
+        }
+        if moveWait?.number == event.number {
+            moveWait = nil
+        }
+    }
+
+    /// The board finished animating move `number` before its timing ran out, such
+    /// as a Ludo move whose die already rolled live. The next move or the turn
+    /// follows at once.
+    func finishMoveAnimation(number: Int) {
+        guard let moveWait, moveWait.number == number else { return }
+        moveWait.task.cancel()
+        self.moveWait = nil
+        if lastMove?.number == number {
+            lastMoveSettles = .now
         }
     }
 

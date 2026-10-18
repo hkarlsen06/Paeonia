@@ -41,6 +41,11 @@ nonisolated enum LudoSceneStyle {
     static let homeDiameter: Float = 2.8
     /// The glow over a half of the middle lies this far above the board, to avoid flicker.
     static let homeGlowLift: Float = 0.003
+    /// The disc on a square a movable pawn would land on: its width in cells, its
+    /// height above the board, and its strongest opacity.
+    static let landingSize: Float = 0.78
+    static let landingLift: Float = 0.006
+    static let landingOpacity: Float = 0.6
     /// Pawns that share a square stand this far apart, and shrink to `sharedPawnScale`.
     static let sharedPawnSpacing: Float = 0.5
     static let sharedPawnScale: Float = 0.66

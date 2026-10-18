@@ -53,7 +53,8 @@ struct LudoScreen: View {
                 onRoll: roll.roll,
                 onChoose: { choice in Task { await roll.choose(choice) } },
                 onShown: { viewModel.isWaitingForBoard = false },
-                onDieLanded: roll.dieLanded
+                onDieLanded: roll.dieLanded,
+                onPartnerMoveShown: { viewModel.finishMoveAnimation(number: $0) }
             )
         }
         // The partner's moves replay once the 3D board shows, not under the loading view.
