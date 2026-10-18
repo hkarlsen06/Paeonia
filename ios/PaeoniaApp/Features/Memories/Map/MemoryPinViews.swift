@@ -12,6 +12,7 @@ enum MemoryPinStyle {
     static let selectedScale: CGFloat = 1.18
     /// Decoded size of a pin photo: a 48 pt tile at 3x.
     static let photoPixelSize = 160
+    static let raisedZPriority = MKAnnotationViewZPriority(rawValue: MKAnnotationViewZPriority.max.rawValue - 1)
 
     static let ring = UIColor(Color.paeoniaMemory)
     static let selectedRing = UIColor.paeoniaAccentPrimary
@@ -169,21 +170,30 @@ final class MemoryPinAnnotationView: MKAnnotationView {
         applySelection(animated: false)
     }
 
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
+    /// Whether this memory's card shows. Drawn by the pin itself rather than through
+    /// MapKit's selection, which would pull a clustered memory out of its cluster.
+    var showsSelection = false
+
+    func setShowsSelection(_ shows: Bool, animated: Bool) {
+        guard shows != showsSelection else { return }
+        showsSelection = shows
         applySelection(animated: animated)
     }
 
     /// Grows from the tail's tip, so the pin keeps pointing at its spot.
     private func applySelection(animated: Bool) {
+        let isSelected = showsSelection
+        accessibilityTraits = isSelected ? [.button, .selected] : .button
         let scale = isSelected ? MemoryPinStyle.selectedScale : 1
         let lift = bounds.height * (scale - 1) / 2
         let changes = {
             self.body.transform = CGAffineTransform(translationX: 0, y: -lift).scaledBy(x: scale, y: scale)
-            self.tile.ringColor = self.isSelected ? MemoryPinStyle.selectedRing : MemoryPinStyle.ring
-            self.tail.color = self.isSelected ? MemoryPinStyle.selectedRing : MemoryPinStyle.ring
+            self.tile.ringColor = isSelected ? MemoryPinStyle.selectedRing : MemoryPinStyle.ring
+            self.tail.color = isSelected ? MemoryPinStyle.selectedRing : MemoryPinStyle.ring
         }
-        zPriority = isSelected ? .max : .defaultUnselected
+        // Raised above other pins, but below `.max`: MapKit treats a pin at `.max` like a
+        // selected one and takes it out of its cluster.
+        zPriority = isSelected ? MemoryPinStyle.raisedZPriority : .defaultUnselected
         guard animated, !UIAccessibility.isReduceMotionEnabled else {
             changes()
             return
@@ -209,6 +219,10 @@ final class MemoryClusterAnnotationView: MKAnnotationView {
     private let frontTile = MemoryPinTileView()
     private let tail = MemoryPinTailView()
     private let badge = UILabel()
+    /// The cluster's memories, newest first.
+    private var entries: [MemoryMapEntry] = []
+    /// The memory whose card shows, set before MapKit displays the view.
+    var selectedMemoryID: UUID?
 
     override init(annotation: (any MKAnnotation)?, reuseIdentifier: String?) {
         super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
@@ -253,8 +267,18 @@ final class MemoryClusterAnnotationView: MKAnnotationView {
     }
 
     /// Lights up the cluster when the memory whose card shows is inside it, the same
-    /// way a single selected pin grows and turns pink.
-    func setHoldsSelection(_ holds: Bool, animated: Bool) {
+    /// way a single selected pin grows and turns pink, and puts that memory's photo on
+    /// top of the stack. Otherwise the newest memory is on top.
+    func showSelectedMemory(_ selectedID: UUID?, animated: Bool) {
+        selectedMemoryID = selectedID
+        let holds = entries.contains { $0.id == selectedID }
+        let ordered = holds
+            ? entries.filter { $0.id == selectedID } + entries.filter { $0.id != selectedID }
+            : entries
+        frontTile.show(photoAssetID: ordered.first?.photoAssetID)
+        middleTile.show(photoAssetID: ordered.dropFirst().first?.photoAssetID)
+        backTile.show(photoAssetID: ordered.dropFirst(2).first?.photoAssetID)
+
         let scale = holds ? MemoryPinStyle.selectedScale : 1
         let lift = bounds.height * (scale - 1) / 2
         let changes = {
@@ -288,12 +312,8 @@ final class MemoryClusterAnnotationView: MKAnnotationView {
     override func prepareForDisplay() {
         super.prepareForDisplay()
         guard let cluster = annotation as? MKClusterAnnotation else { return }
-        let entries = cluster.memoryEntries
-        frontTile.show(photoAssetID: entries.first?.photoAssetID)
-        middleTile.show(photoAssetID: entries.dropFirst().first?.photoAssetID)
-        backTile.show(photoAssetID: entries.dropFirst(2).first?.photoAssetID)
-
-        setHoldsSelection(false, animated: false)
+        entries = cluster.memoryEntries
+        showSelectedMemory(selectedMemoryID, animated: false)
         badge.text = MemoryClusterBadge.label(count: entries.count)
         let width = max(22, badge.intrinsicContentSize.width + 12)
         let tileRight = frontTile.frame.maxX

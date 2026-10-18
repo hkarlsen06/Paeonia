@@ -66,6 +66,8 @@ struct MemoriesMapScreen: View {
         .navigationTitle(Text(.memoriesMapTitle))
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
+        // Full screen: the carousel owns the bottom edge. The tabs come back on the way out.
+        .toolbar(.hidden, for: .tabBar)
         .background(Color.paeoniaBackgroundSecondary.ignoresSafeArea())
         .animation(PaeoniaMotion.stateChange, value: selectedID == nil)
         .animation(PaeoniaMotion.stateChange, value: content.placed.isEmpty)

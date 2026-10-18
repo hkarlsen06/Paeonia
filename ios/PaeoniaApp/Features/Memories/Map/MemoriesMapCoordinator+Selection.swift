@@ -17,8 +17,7 @@ extension MemoriesMapCoordinator {
         guard wantedID != revealedID else { return }
         revealedID = wantedID
         guard let wantedID, let annotation = annotations[wantedID] else {
-            deselectAll(on: mapView)
-            highlightClusters(on: mapView)
+            markSelection(on: mapView)
             return
         }
         moveCamera(to: annotation.coordinate, on: mapView)
@@ -51,65 +50,36 @@ extension MemoriesMapCoordinator {
         }
     }
 
-    /// Selects the memory's own pin, or lights up the cluster it is in.
-    func markSelection(on mapView: MKMapView) {
-        guard let id = parent?.selectedID, let annotation = annotations[id] else { return }
-        if mapView.view(for: annotation) is MemoryPinAnnotationView {
-            if !mapView.selectedAnnotations.contains(where: { $0 === annotation }) {
-                isChangingSelection = true
-                mapView.selectAnnotation(annotation, animated: true)
-                isChangingSelection = false
-            }
-        } else {
-            deselectAll(on: mapView)
-        }
-        highlightClusters(on: mapView)
-    }
-
-    func highlightClusters(on mapView: MKMapView) {
+    /// Draws which memory's card shows: its own pin grows and turns pink, or, when it
+    /// shares a cluster, the cluster does with that memory's photo on top. MapKit's own
+    /// selection is never used for this, because a selected annotation leaves its
+    /// cluster and would hide its neighbour and the count.
+    func markSelection(on _: MKMapView) {
         let id = parent?.selectedID
-        for case let cluster as MKClusterAnnotation in mapView.annotations {
-            guard let view = mapView.view(for: cluster) as? MemoryClusterAnnotationView else { continue }
-            view.setHoldsSelection(cluster.memoryEntries.contains { $0.id == id }, animated: true)
+        for view in pinViews.allObjects {
+            let memoryID = (view.annotation as? MemoryMapAnnotation)?.memoryID
+            view.setShowsSelection(memoryID != nil && memoryID == id, animated: true)
         }
-    }
-
-    private func deselectAll(on mapView: MKMapView) {
-        isChangingSelection = true
-        for annotation in mapView.selectedAnnotations {
-            mapView.deselectAnnotation(annotation, animated: true)
+        for view in clusterViews.allObjects where view.annotation is MKClusterAnnotation {
+            view.showSelectedMemory(id, animated: true)
         }
-        isChangingSelection = false
     }
 
     func mapView(_ mapView: MKMapView, didSelect annotation: any MKAnnotation) {
+        // MapKit's selection is cleared straight away. See `markSelection`.
+        mapView.deselectAnnotation(annotation, animated: false)
         if let cluster = annotation as? MKClusterAnnotation {
-            isChangingSelection = true
-            mapView.deselectAnnotation(cluster, animated: false)
-            isChangingSelection = false
             openCluster(cluster, on: mapView)
             return
         }
-        guard !isChangingSelection, let memory = annotation as? MemoryMapAnnotation else { return }
+        guard let memory = annotation as? MemoryMapAnnotation else { return }
         // The person tapped the pin, so it is already on screen: no camera move.
         revealedID = memory.memoryID
         if parent?.selectedID != memory.memoryID {
             PaeoniaHaptics.selection()
             parent?.selectedID = memory.memoryID
         }
-        highlightClusters(on: mapView)
-    }
-
-    func mapView(_ mapView: MKMapView, didDeselect annotation: any MKAnnotation) {
-        guard !isChangingSelection, annotation is MemoryMapAnnotation else { return }
-        // Tapping another pin deselects this one first. Only an empty selection
-        // afterwards means the person tapped the map.
-        DispatchQueue.main.async { [weak self, weak mapView] in
-            guard let self, let mapView, mapView.selectedAnnotations.isEmpty else { return }
-            self.revealedID = nil
-            self.parent?.selectedID = nil
-            self.highlightClusters(on: mapView)
-        }
+        markSelection(on: mapView)
     }
 
     /// Zooms in when the cluster's memories are at different spots. Memories at

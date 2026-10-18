@@ -24,9 +24,11 @@ final class MemoriesMapCoordinator: NSObject, MKMapViewDelegate, UIGestureRecogn
     var revealedID: UUID?
     /// The second half of a long glide: after zooming out over both places, zoom in here.
     var pendingCameraRect: MKMapRect?
-    /// True while the coordinator itself selects or deselects, so MapKit's callback
-    /// isn't read as the person tapping the map.
-    var isChangingSelection = false
+    /// The cluster views on the map. `MKMapView.annotations` doesn't list MapKit's
+    /// cluster annotations, so the coordinator keeps its own list to light them up.
+    let clusterViews = NSHashTable<MemoryClusterAnnotationView>.weakObjects()
+    /// The single pins on the map, to draw which one's card shows.
+    let pinViews = NSHashTable<MemoryPinAnnotationView>.weakObjects()
 
     func mapDidChangeSize() {
         guard let parent else { return }
@@ -100,7 +102,7 @@ final class MemoriesMapCoordinator: NSObject, MKMapViewDelegate, UIGestureRecogn
 
     // MARK: - Gestures
 
-    /// Watches the person's own pans and pinches without taking them from the map.
+    /// Watches the person's own pans, pinches and taps without taking them from the map.
     func watchGestures(on mapView: MKMapView) {
         for recognizer in [UIPanGestureRecognizer(), UIPinchGestureRecognizer()] {
             recognizer.addTarget(self, action: #selector(userGesture(_:)))
@@ -108,6 +110,23 @@ final class MemoriesMapCoordinator: NSObject, MKMapViewDelegate, UIGestureRecogn
             recognizer.cancelsTouchesInView = false
             mapView.addGestureRecognizer(recognizer)
         }
+        let tap = UITapGestureRecognizer(target: self, action: #selector(mapTapped(_:)))
+        tap.delegate = self
+        tap.cancelsTouchesInView = false
+        mapView.addGestureRecognizer(tap)
+    }
+
+    /// A tap on the map itself, not on a pin, closes the card.
+    @objc private func mapTapped(_ recognizer: UITapGestureRecognizer) {
+        guard let mapView, parent?.selectedID != nil else { return }
+        var view = mapView.hitTest(recognizer.location(in: mapView), with: nil)
+        while let current = view {
+            if current is MKAnnotationView { return }
+            view = current.superview
+        }
+        revealedID = nil
+        parent?.selectedID = nil
+        markSelection(on: mapView)
     }
 
     @objc private func userGesture(_ recognizer: UIGestureRecognizer) {
@@ -182,7 +201,9 @@ final class MemoriesMapCoordinator: NSObject, MKMapViewDelegate, UIGestureRecogn
         let top = insets.top + padding + MemoryPinStyle.tileSize
         let left = insets.left + padding
         let clearWidth = max(mapView.bounds.width - left - insets.right - padding, 1)
-        let clearHeight = max(mapView.bounds.height - top - insets.bottom - padding, 1)
+        // The Maps logo and Legal link sit at the bottom margin and must stay readable.
+        let bottom = insets.bottom + Self.attributionHeight + padding
+        let clearHeight = max(mapView.bounds.height - top - bottom, 1)
         // Map points per screen point, so the rect just fills the clear area.
         let scale = max(rect.width / clearWidth, rect.height / clearHeight)
         let visible = MKMapRect(
@@ -193,6 +214,34 @@ final class MemoriesMapCoordinator: NSObject, MKMapViewDelegate, UIGestureRecogn
         )
         mapView.setRegion(MKCoordinateRegion(visible), animated: animated)
     }
+
+    private func pinView(for annotation: MemoryMapAnnotation, on mapView: MKMapView) -> MKAnnotationView {
+        let view = mapView.dequeueReusableAnnotationView(
+            withIdentifier: MemoryPinAnnotationView.reuseIdentifier,
+            for: annotation
+        )
+        if let pinView = view as? MemoryPinAnnotationView {
+            pinView.setShowsSelection(annotation.memoryID == parent?.selectedID, animated: false)
+            pinViews.add(pinView)
+        }
+        return view
+    }
+
+    private func clusterView(for annotation: any MKAnnotation, on mapView: MKMapView) -> MKAnnotationView {
+        let view = mapView.dequeueReusableAnnotationView(
+            withIdentifier: MemoryClusterAnnotationView.reuseIdentifier,
+            for: annotation
+        )
+        if let clusterView = view as? MemoryClusterAnnotationView {
+            clusterView.selectedMemoryID = parent?.selectedID
+            clusterViews.add(clusterView)
+        }
+        return view
+    }
+
+    /// Room for MapKit's attribution strip (the Maps logo and Legal link), so a fit
+    /// never places a pin over it.
+    static let attributionHeight: CGFloat = 28
 
     static func mapRect(for region: MKCoordinateRegion) -> MKMapRect {
         let center = region.center
@@ -215,15 +264,9 @@ final class MemoriesMapCoordinator: NSObject, MKMapViewDelegate, UIGestureRecogn
     func mapView(_ mapView: MKMapView, viewFor annotation: any MKAnnotation) -> MKAnnotationView? {
         switch annotation {
         case is MKClusterAnnotation:
-            mapView.dequeueReusableAnnotationView(
-                withIdentifier: MemoryClusterAnnotationView.reuseIdentifier,
-                for: annotation
-            )
-        case is MemoryMapAnnotation:
-            mapView.dequeueReusableAnnotationView(
-                withIdentifier: MemoryPinAnnotationView.reuseIdentifier,
-                for: annotation
-            )
+            clusterView(for: annotation, on: mapView)
+        case let memory as MemoryMapAnnotation:
+            pinView(for: memory, on: mapView)
         default:
             nil
         }
