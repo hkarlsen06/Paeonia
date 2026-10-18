@@ -57,7 +57,7 @@ These block TestFlight/App Review until resolved.
 - [x] That key also has the `query:read` scope, so the monthly `delete-inactive-analytics-persons` cron can find people inactive for a year.
 - [x] The Mac that archives has `posthog-cli` installed and signed in (`posthog-cli login`, EU), so the Upload dSYMs to PostHog phase can send symbols. An archive fails without it.
 - [x] The PostHog data processing agreement is signed.
-- [ ] A record of processing and a short DPIA for usage statistics and crash reports are written down.
+- [x] A record of processing and a short DPIA for usage statistics and crash reports are written down. They are kept outside the repo with the signed PostHog DPA.
 - [ ] On a device: the usage question appears once after pairing, nothing reaches PostHog before a yes, and turning off Share usage statistics stops sending at once.
 
 ## Repository And Build Hygiene
