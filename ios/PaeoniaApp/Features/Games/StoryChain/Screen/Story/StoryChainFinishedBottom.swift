@@ -1,20 +1,15 @@
 import SwiftUI
 
-/// The end of a finished story: the flower with its petal burst, then how long
-/// the story is. Both appear on the reveal's schedule (see
-/// `StoryChainRevealTimeline`). They take their place from the start, so nothing
-/// jumps when they fade in.
+/// The end of a finished story: the flower, then how long the story is. Both
+/// appear on the reveal's schedule (see `StoryChainRevealTimeline`). They take
+/// their place from the start, so nothing jumps when they fade in.
 struct StoryChainFinishedBottom: View {
     let finished: StoryChainFinishedStory
     let reveal: StoryChainRevealTimeline
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            StoryChainOrnament(
-                isShown: reveal.ornamentShown,
-                bloomStart: reveal.bloomStart,
-                seed: finished.storyID.uuidString
-            )
+            StoryChainOrnament(isShown: reveal.ornamentShown)
             StoryChainStatsLine(lineCount: finished.lineCount, dareCount: finished.dareCount)
                 .opacity(reveal.statsShown ? 1 : 0)
                 .offset(y: reveal.statsShown ? 0 : PaeoniaSpacing.space8)

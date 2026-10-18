@@ -104,6 +104,17 @@ extension StoryChainViewModel {
         animatedLineIDs.insert(lineID)
         arrivingLineID = lineID
         arrivalPace = isMine ? .mine : .partner
+        arrivalStartedOnPartnersTurn = !isMine && phase == .waitingForLine
+    }
+
+    /// The phase the bottom of the page shows. A line the partner sent while this
+    /// person watched lands before the composer or the title field rises in, even
+    /// when the server passed the turn while the line was still writing itself in.
+    var bottomPhase: StoryChainPhase {
+        guard page.arrivingLineID != nil, arrivalStartedOnPartnersTurn,
+              phase == .writing || phase == .naming
+        else { return phase }
+        return .waitingForLine
     }
 
     /// The screen is open and it is this person's turn to write or name. The

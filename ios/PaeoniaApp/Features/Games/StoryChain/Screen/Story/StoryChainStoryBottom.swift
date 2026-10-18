@@ -23,7 +23,7 @@ struct StoryChainStoryBottom: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         // The writer's field rises in when the partner's line has landed.
-        .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: viewModel.phase)
+        .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: viewModel.bottomPhase)
         .animation(PaeoniaMotion.stateChange, value: viewModel.isHeldOnPhone)
     }
 
@@ -31,10 +31,20 @@ struct StoryChainStoryBottom: View {
         reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12))
     }
 
+    /// The composer starts to rise once the status row it replaces has mostly
+    /// faded, so the two do not show through each other.
+    private var composerRise: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        return .asymmetric(
+            insertion: rise.animation(PaeoniaMotion.cardReveal.delay(0.12)),
+            removal: rise
+        )
+    }
+
     /// The phase the slot shows. A finished story shows the bottom it replaces
     /// until the page has scrolled to the top.
     private var slotPhase: StoryChainPhase {
-        guard case .finished = viewModel.phase else { return viewModel.phase }
+        guard case .finished = viewModel.phase else { return viewModel.bottomPhase }
         return reveal.scrolledToTop ? .loading : departingPhase ?? .loading
     }
 
@@ -43,7 +53,7 @@ struct StoryChainStoryBottom: View {
         switch slotPhase {
         case .writing:
             StoryChainComposer(viewModel: viewModel)
-                .transition(rise)
+                .transition(composerRise)
         case .waitingForLine:
             StoryChainWaitingBottom(viewModel: viewModel, isNaming: false)
                 .transition(.opacity)

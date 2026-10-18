@@ -91,7 +91,7 @@ struct StoryChainRevealTimelineTests {
         #expect(timeline.storyID == story)
         #expect(timeline.bloomStart == burst)
         #expect(!timeline.wasSkipped)
-        // The title writes in with a tick and the flower lands with the success haptic.
+        // The title writes in with a tick, and its petals burst with the success haptic.
         #expect(log.events == ["selection", "revealed"])
     }
 

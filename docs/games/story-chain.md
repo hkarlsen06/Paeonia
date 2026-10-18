@@ -250,7 +250,7 @@ The page is the heart of the game, so it gets the care a book would.
 
 - The page stays. Under it, the partner's live draft when they write live.
 - Bottom, one line of status: "[Name] is writing" with three breathing dots while the live draft is moving; "[Name] is here" in the game; "Waiting for [Name]" with "We'll tell you when it's your turn." when away, plus the invite bell at the leading edge of the toolbar.
-- When the partner's line lands and the turn is mine, the composer rises in (`cardReveal`) with the dare capsule if there is one.
+- When the partner's line lands and the turn is mine, the composer rises in (`cardReveal`) with the dare capsule if there is one, on the frame the line lands with its haptic. The server often passes the turn while a line sent live is still writing itself in, so the status row stays until the line has landed (`StoryChainViewModel.bottomPhase`). The page glides with the new bottom (`meaningfulMoment`) instead of jumping, and the composer starts to rise 0.12 s after the status row starts to fade, so the two do not show through each other.
 
 | Key | English | Norwegian |
 |---|---|---|
@@ -280,12 +280,15 @@ The reveal. It should feel like closing a book you wrote together.
 
 | Time | What happens |
 |---|---|
-| 0.00 | The bottom fades out. The page scrolls to the top (`meaningfulMoment`). |
-| 0.40 | The title writes itself in letter by letter, from blur to sharp. Letters start 30 ms apart, compressed so a long title takes at most 0.75 s. `selection()`. |
-| 1.10 | The byline fades up: "by you and Robin · Oct 13". |
-| 1.30 | The ornament (`camera.macro`) scales in with `celebrationReveal`. `answerRevealed()`. A petal bloom bursts from it (the Draw & Guess bloom, seeded by the story id). |
-| 1.80 | "14 lines" and, when dares were used, "3 dare words" fade up under the end of the text. |
-| 2.10 | The star and the primary button rise in (`cardReveal`). |
+| 0.00 | The bottom fades out. The page scrolls to the top, fast at first and then settling onto the title (a 0.6 s spring without bounce), so it reads as going back to the start of the book. |
+| 0.50 | The title writes itself in letter by letter, from blur to sharp. Letters start 30 ms apart, compressed so a long title takes at most 0.75 s. `selection()`. |
+| 1.20 | The last letter of a typical title lands. A petal bloom bursts from just under the middle of the title (the Draw & Guess bloom, seeded by the title). `answerRevealed()`. |
+| 1.55 | The byline fades up once the petals have spread off the title: "by you and Robin · Oct 13". |
+| 1.60 | The ornament (`camera.macro`) at the end of the story scales in with `celebrationReveal`, without a haptic. |
+| 1.75 | "14 lines" and, when dares were used, "3 dare words" fade up under the end of the text. |
+| 1.85 | The star and the primary button rise in (`cardReveal`). |
+
+- The burst and the success haptic belong to the title because the page is at its top by then. Most finished stories are longer than a screen, so the end of the story, with the ornament and the counts, is out of sight.
 
 - A tap on the screen jumps to the settled state without repeating haptics. Reduce Motion: the settled state at once, with only `answerRevealed()`.
 - Built on a `StoryChainRevealTimeline` like `DrawAndGuessRevealTimeline`: run id, injected schedule and haptics, so tests run it fast.

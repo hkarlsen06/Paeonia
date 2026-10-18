@@ -14,6 +14,8 @@ struct StoryChainPageView<LineInfo: View, Trailing: View>: View {
     var title: String?
     /// How much of the title has written itself in, from 0 to 1.
     var titleProgress: Double = 1
+    /// When the petals burst from the title. Nil shows no burst.
+    var titleBloomStart: Date?
     /// The line under the title, such as "by you and Robin".
     var byline: Text?
     var isBylineShown = true
@@ -69,7 +71,7 @@ struct StoryChainPageView<LineInfo: View, Trailing: View>: View {
                 .frame(maxWidth: .infinity, alignment: title == nil ? .leading : .center)
                 .accessibilityAddTraits(.isHeader)
             if let title {
-                StoryChainTitleText(title: title, progress: titleProgress)
+                StoryChainTitleText(title: title, progress: titleProgress, bloomStart: titleBloomStart)
                 if let byline {
                     byline
                         .font(PaeoniaTypography.caption)

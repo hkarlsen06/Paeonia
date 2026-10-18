@@ -7,8 +7,9 @@ import SwiftUI
 /// - Writing and waiting. The page is anchored to the bottom of its scroll view,
 ///   so the newest line and the writer's field stay in sight.
 /// - Finished. `StoryChainRevealTimeline` plays the reveal: the old bottom fades
-///   out, the page scrolls to the top, and the title, byline, flower, counts and
-///   button arrive one after another. A tap jumps to the settled state.
+///   out, the page scrolls to the top, the title writes itself in and petals burst
+///   from it, and the byline, flower, counts and button arrive one after another.
+///   A tap jumps to the settled state.
 struct StoryChainStoryView: View {
     let viewModel: StoryChainViewModel
 
@@ -44,6 +45,9 @@ struct StoryChainStoryView: View {
         .defaultScrollAnchor(keepsBottom ? .bottom : .top, for: .sizeChanges)
         .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
+        // The page moves with the bottom when it changes, instead of jumping to keep
+        // its bottom in place before the new bottom has faded in.
+        .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: viewModel.bottomPhase)
         // A tap anywhere ends the reveal early. The lines keep their own taps.
         .simultaneousGesture(
             TapGesture().onEnded { reveal.skip() },
@@ -71,7 +75,9 @@ struct StoryChainStoryView: View {
         }
         .onChange(of: reveal.scrolledToTop) { _, isAtTop in
             guard isAtTop else { return }
-            withAnimation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment) {
+            // Fast at first, then a long settle onto the title, so the page reads as
+            // going back to its start instead of a jump.
+            withAnimation(reduceMotion ? nil : Self.scrollToTop) {
                 position.scrollTo(edge: .top)
             }
         }
@@ -86,6 +92,8 @@ struct StoryChainStoryView: View {
         .onDisappear { reveal.stop() }
     }
 
+    private static let scrollToTop = Animation.spring(duration: 0.6, bounce: 0)
+
     // MARK: Page
 
     private var page: some View {
@@ -94,6 +102,7 @@ struct StoryChainStoryView: View {
             eyebrow: eyebrow,
             title: viewModel.finished?.title,
             titleProgress: reveal.titleProgress,
+            titleBloomStart: reveal.bloomStart,
             byline: byline,
             isBylineShown: reveal.bylineShown,
             youLabel: String(localized: .storyChainPageYou),
@@ -139,14 +148,14 @@ struct StoryChainStoryView: View {
     /// The bar rides up with the keyboard, so it is a plain safe area inset.
     private var composerBar: some View {
         ZStack {
-            if viewModel.phase == .writing {
+            if viewModel.bottomPhase == .writing {
                 StoryChainComposerBar(viewModel: viewModel) {
                     showsDareSheet = true
                 }
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
             }
         }
-        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.phase == .writing)
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.bottomPhase == .writing)
     }
 
     // MARK: Star

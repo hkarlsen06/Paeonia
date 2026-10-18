@@ -79,10 +79,22 @@ nonisolated struct StoryChainTitleRenderer: TextRenderer {
 /// The name of a finished story, in the serif, centered. It writes itself in
 /// letter by letter as `progress` goes from 0 to 1. The title takes its place on
 /// the page from the start, so nothing jumps when it appears.
+///
+/// When `bloomStart` is set, petals burst from behind the title. The bloom is the
+/// Draw & Guess one, seeded by the title, so a story always blooms the same way.
 struct StoryChainTitleText: View {
     let title: String
     /// How much of the title has written itself in, from 0 to 1.
     var progress: Double = 1
+    /// When the petals burst. Nil shows no burst.
+    var bloomStart: Date?
+
+    /// The burst needs room around the title. It draws outside the title without
+    /// taking layout space.
+    private static let bloomSize = CGSize(width: 340, height: 220)
+    /// Just under the middle of the title, so the first frames of the burst do not
+    /// bunch up over the letters.
+    private static let bloomOrigin = UnitPoint(x: 0.5, y: 0.58)
 
     var body: some View {
         Text(verbatim: title)
@@ -91,6 +103,12 @@ struct StoryChainTitleText: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
             .textRenderer(StoryChainTitleRenderer(progress: progress))
+            .background {
+                if let bloomStart {
+                    GamePetalBloom(start: bloomStart, seed: title, origin: Self.bloomOrigin)
+                        .frame(width: Self.bloomSize.width, height: Self.bloomSize.height)
+                }
+            }
             .accessibilityAddTraits(.isHeader)
     }
 }

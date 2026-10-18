@@ -10,7 +10,8 @@ import SwiftUI
 /// - `titleProgress`: pass it to `StoryChainTitleText`. `titleShown` says the
 ///   title has started.
 /// - `bylineShown`, `statsShown`, `actionsShown`: fade those rows up.
-/// - `ornamentShown` and `bloomStart`: pass them to `StoryChainOrnament`.
+/// - `bloomStart`: pass it to `StoryChainTitleText`, so the petals burst from the title.
+/// - `ornamentShown`: pass it to `StoryChainOrnament`.
 ///
 /// Every run has an id, and each step checks it after sleeping, so no step or
 /// haptic can happen after the timeline settled or stopped. The schedule, the
@@ -154,13 +155,14 @@ final class StoryChainRevealTimeline {
             withAnimation(.linear(duration: schedule.titleDuration)) {
                 titleProgress = 1
             }
+        case .bloom:
+            bloomStart = now()
+            haptics.answerRevealed()
         case .byline:
             withAnimation(PaeoniaMotion.meaningfulMoment) {
                 bylineShown = true
             }
         case .ornament:
-            bloomStart = now()
-            haptics.answerRevealed()
             withAnimation(PaeoniaMotion.celebrationReveal) {
                 ornamentShown = true
             }

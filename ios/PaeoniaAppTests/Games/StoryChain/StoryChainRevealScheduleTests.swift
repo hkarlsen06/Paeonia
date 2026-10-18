@@ -8,18 +8,19 @@ struct StoryChainRevealScheduleTests {
         let schedule = StoryChainRevealSchedule.standard
 
         #expect(schedule.scrollTop == 0.0)
-        #expect(schedule.title == 0.40)
-        #expect(schedule.byline == 1.10)
-        #expect(schedule.ornament == 1.30)
-        #expect(schedule.stats == 1.80)
-        #expect(schedule.actions == 2.10)
+        #expect(schedule.title == 0.50)
+        #expect(schedule.bloom == 1.20)
+        #expect(schedule.byline == 1.55)
+        #expect(schedule.ornament == 1.60)
+        #expect(schedule.stats == 1.75)
+        #expect(schedule.actions == 1.85)
     }
 
     @Test func theStandardScriptPlaysEachBeatOnceInOrder() {
         let steps = StoryChainRevealScript.steps(schedule: .standard)
 
-        #expect(steps.map(\.event) == [.scrollTop, .title, .byline, .ornament, .stats, .actions])
-        #expect(steps.map(\.at) == [0.0, 0.40, 1.10, 1.30, 1.80, 2.10])
+        #expect(steps.map(\.event) == [.scrollTop, .title, .bloom, .byline, .ornament, .stats, .actions])
+        #expect(steps.map(\.at) == [0.0, 0.50, 1.20, 1.55, 1.60, 1.75, 1.85])
         #expect(steps.map(\.at) == steps.map(\.at).sorted())
     }
 
@@ -29,7 +30,7 @@ struct StoryChainRevealScheduleTests {
 
         #expect(schedule.titleDuration == 0)
         #expect(steps.allSatisfy { $0.at == 0 })
-        #expect(steps.map(\.event) == [.scrollTop, .title, .byline, .ornament, .stats, .actions])
+        #expect(steps.map(\.event) == [.scrollTop, .title, .bloom, .byline, .ornament, .stats, .actions])
     }
 
     @Test func aCustomScheduleIsSortedByTime() {
@@ -39,14 +40,20 @@ struct StoryChainRevealScheduleTests {
 
         let events = StoryChainRevealScript.steps(schedule: schedule).map(\.event)
 
-        #expect(events == [.scrollTop, .stats, .title, .actions, .byline, .ornament])
+        #expect(events == [.scrollTop, .stats, .title, .actions, .bloom, .byline, .ornament])
     }
 
-    @Test func theTitleFinishesWritingAboutWhenTheBylineAppears() {
+    @Test func thePetalsBurstAsTheLastLetterOfATypicalTitleLands() {
         let schedule = StoryChainRevealSchedule.standard
+        let landing = schedule.bloom - schedule.title
 
         #expect(schedule.titleDuration == StoryChainTitleTiming.totalDuration)
-        #expect(abs((schedule.title + schedule.titleDuration) - schedule.byline) < 0.1)
+        // An 18-letter title has its last letter nearly sharp at the burst, not long before.
+        let last = StoryChainTitleTiming.letterProgress(index: 17, letterCount: 18, elapsed: landing)
+        #expect(last > 0.9)
+        #expect(StoryChainTitleTiming.letterProgress(index: 17, letterCount: 18, elapsed: landing - 0.15) < 0.9)
+        // The page scroll (a 0.6 s ease-out) has nearly settled before the title starts.
+        #expect(schedule.title >= 0.4)
     }
 
     // MARK: Title timing

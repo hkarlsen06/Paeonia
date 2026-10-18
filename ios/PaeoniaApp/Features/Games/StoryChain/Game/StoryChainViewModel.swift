@@ -147,6 +147,9 @@ final class StoryChainViewModel {
     @ObservationIgnored var animatedLineIDs: Set<UUID> = []
     @ObservationIgnored var arrivingLineID: UUID?
     @ObservationIgnored var arrivalPace = StoryChainArrivalTiming.partner
+    /// The arriving line is the partner's, and it started while this person
+    /// watched them write it. See `bottomPhase`.
+    @ObservationIgnored var arrivalStartedOnPartnersTurn = false
 
     // The live room.
     @ObservationIgnored var live: WidgetLiveDrawing?

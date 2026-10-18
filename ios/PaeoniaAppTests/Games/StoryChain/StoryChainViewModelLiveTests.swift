@@ -166,6 +166,33 @@ struct StoryChainViewModelLiveTests {
         viewModel.stop()
     }
 
+    @Test func theComposerWaitsForALineSentLiveToLand() async {
+        let environment = Env.waitingOnPartner()
+        let viewModel = environment.viewModel()
+        await viewModel.start()
+        let lineID = UUID()
+        receiveLiveLine(lineID, in: environment)
+
+        // Convex passes the turn while the line is still writing itself in.
+        let convex = Env.writing(
+            turn: Fixture.me,
+            lines: [
+                Env.line(1, by: Fixture.me),
+                Env.line(2, by: Fixture.partner, text: "It opened onto a garden.", id: lineID),
+            ],
+            version: 2
+        )
+        await environment.cache.saveState(convex, ownerUserID: Fixture.me)
+        await viewModel.reload()
+        #expect(viewModel.phase == .writing)
+        #expect(viewModel.bottomPhase == .waitingForLine)
+
+        // The composer rises in as the line lands.
+        viewModel.arrivalFinished(lineID: lineID)
+        #expect(viewModel.bottomPhase == .writing)
+        viewModel.stop()
+    }
+
     @Test func aSentLineThatConvexAlreadyHasMovesNothing() async {
         let environment = Env.waitingOnPartner()
         let viewModel = environment.viewModel()

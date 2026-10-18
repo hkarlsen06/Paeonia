@@ -17,12 +17,12 @@ struct StoryChainActionBar: View {
         .paeoniaReadableWidth(StoryChainPageStyle.measure)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .background(hasContent ? Color.paeoniaBackgroundSecondary : Color.clear)
-        .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: viewModel.phase)
+        .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: viewModel.bottomPhase)
         .animation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal, value: reveal.actionsShown)
     }
 
     private var hasContent: Bool {
-        switch viewModel.phase {
+        switch viewModel.bottomPhase {
         case .naming: true
         case .finished: reveal.actionsShown
         default: false
@@ -35,7 +35,7 @@ struct StoryChainActionBar: View {
 
     @ViewBuilder
     private var content: some View {
-        switch viewModel.phase {
+        switch viewModel.bottomPhase {
         case .naming:
             Button {
                 Task { await viewModel.nameStory() }

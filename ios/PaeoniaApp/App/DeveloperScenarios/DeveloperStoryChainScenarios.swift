@@ -85,9 +85,9 @@
   }
 
   /// Robin writes line 8 in front of the reader: letters one at a time, a slip
-  /// that gets deleted, a phrase that gets dropped, a pause, then Send. A second
-  /// later the server confirms the line and the turn is Alex's. It runs once. The
-  /// reset button plays it again.
+  /// that gets deleted, a phrase that gets dropped, a pause, then Send. Half a
+  /// second later, while the line still writes itself in, the server confirms it
+  /// and the turn is Alex's. It runs once. The reset button plays it again.
   @MainActor
   private final class DeveloperStoryChainPartnerTypist {
     private enum Keystroke {
@@ -119,7 +119,7 @@
       }
       guard await pause(0.8) else { return }
       send(text, sent: true)
-      guard await pause(1.5), let connection else { return }
+      guard await pause(0.5), let connection else { return }
       // Convex confirms the line with the same id, and the turn is Alex's.
       await cache.saveState(Fixture.writing(lines: number, version: 2), ownerUserID: Fixture.me)
       LocalStoreChanges.post(.games, ownerUserID: Fixture.me)

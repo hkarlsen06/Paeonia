@@ -17,6 +17,8 @@ struct StoryChainViewModelArrivalTests {
         #expect(lineID != nil)
         #expect(viewModel.page.arrivingLineID == lineID)
         #expect(viewModel.page.arrivalPace == .partner)
+        // The line arrived before the screen opened, so the composer does not wait for it.
+        #expect(viewModel.bottomPhase == .writing)
 
         viewModel.arrivalFinished(lineID: lineID ?? UUID())
         #expect(viewModel.page.arrivingLineID == nil)

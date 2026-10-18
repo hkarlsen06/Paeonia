@@ -4,22 +4,27 @@ import Foundation
 nonisolated struct StoryChainRevealSchedule: Equatable, Sendable {
     /// The bottom fades out and the page scrolls to the top.
     var scrollTop: TimeInterval = 0.0
-    /// The title starts to write itself in.
-    var title: TimeInterval = 0.40
+    /// The title starts to write itself in, once the page has scrolled up.
+    var title: TimeInterval = 0.50
     /// How long the title takes to write itself in.
     var titleDuration: TimeInterval = StoryChainTitleTiming.totalDuration
-    var byline: TimeInterval = 1.10
-    /// The ornament scales in and the petals burst.
-    var ornament: TimeInterval = 1.30
+    /// The last letter of the title lands: the petals burst from it with the
+    /// success haptic.
+    var bloom: TimeInterval = 1.20
+    /// The byline signs the title once the petals have spread off it.
+    var byline: TimeInterval = 1.55
+    /// The flower at the end of the story scales in, without a sound. A long
+    /// story's end is off screen at this point.
+    var ornament: TimeInterval = 1.60
     /// The line count and the dare word count.
-    var stats: TimeInterval = 1.80
+    var stats: TimeInterval = 1.75
     /// The star and the button.
-    var actions: TimeInterval = 2.10
+    var actions: TimeInterval = 1.85
 
     static let standard = Self()
     /// Every beat at once, so tests run the whole script without waiting.
     static let instant = Self(
-        scrollTop: 0, title: 0, titleDuration: 0, byline: 0, ornament: 0, stats: 0, actions: 0
+        scrollTop: 0, title: 0, titleDuration: 0, bloom: 0, byline: 0, ornament: 0, stats: 0, actions: 0
     )
 }
 
@@ -43,6 +48,7 @@ struct StoryChainRevealHaptics {
 nonisolated enum StoryChainRevealEvent: Equatable, Sendable {
     case scrollTop
     case title
+    case bloom
     case byline
     case ornament
     case stats
@@ -60,6 +66,7 @@ nonisolated enum StoryChainRevealScript {
         let steps = [
             StoryChainRevealStep(at: schedule.scrollTop, event: .scrollTop),
             StoryChainRevealStep(at: schedule.title, event: .title),
+            StoryChainRevealStep(at: schedule.bloom, event: .bloom),
             StoryChainRevealStep(at: schedule.byline, event: .byline),
             StoryChainRevealStep(at: schedule.ornament, event: .ornament),
             StoryChainRevealStep(at: schedule.stats, event: .stats),
