@@ -60,13 +60,23 @@
       operationProvider: DeveloperScenarioOperationProvider
     ) -> MemoriesViewModel {
       MemoriesViewModel(
-        memoryService: DeveloperScenarioMemoryDataService(
-          records: scenario == .memoriesPopulated ? DeveloperScenarioFixture.memoryRecords() : []
-        ),
+        memoryService: DeveloperScenarioMemoryDataService(records: memoryRecords(for: scenario)),
         operationProvider: operationProvider,
         mediaUploader: nil,
         mediaImageCache: nil
       )
+    }
+
+    private static func memoryRecords(for scenario: DeveloperScenario) -> [MemoryRecord] {
+      switch scenario {
+      case .memoriesPopulated:
+        return DeveloperScenarioFixture.memoryRecords()
+      case .memoriesMapTab:
+        DeveloperMemoriesMapFixture.seedPhotos()
+        return DeveloperMemoriesMapFixture.records(withPlaces: true)
+      default:
+        return []
+      }
     }
 
     private static func initialTab(for scenario: DeveloperScenario) -> MainTab {
@@ -74,7 +84,7 @@
       case .questions, .questionsPartial, .questionsRevealed, .questionsEmpty,
         .questionsLoading, .questionsError, .questionsHistory, .questionAnswerFlow:
         .questions
-      case .memoriesEmpty, .memoriesPopulated:
+      case .memoriesEmpty, .memoriesPopulated, .memoriesMapTab:
         .memories
       case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
         .gamesHubPartnerHere, .exquisiteCorpseHubYourTurn, .exquisiteCorpseHubPartnerDrawing,
