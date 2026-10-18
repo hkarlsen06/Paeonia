@@ -261,17 +261,18 @@ Beats, in seconds after the reveal starts.
 | Time | What happens |
 |---|---|
 | 0.00 | Both cards face down. The glow behind them rises from 0.16. |
-| 0.20, 0.50, 0.80 | Three build-up beats. Both cards pulse 1 to 1.04 and back, each with `streakTick` 0.3, 0.5, 0.7. |
+| 0.25, 0.58, 0.86 | Three build-up beats that speed up into the flips. Both cards pulse to 1.035, 1.05 and 1.065 and back, each with `streakTick` 0.3, 0.5, 0.7. The glow rises 0.05 with each beat. |
 | 1.10 | My card flips (a 3D turn around the vertical axis, 0.4 s). `streakTick(0.85)`. |
 | 1.55 | The partner's card flips. `streakTick(0.85)`. |
-| 2.10 | The verdict. See below. |
+| 2.10 | The verdict. See below. A near miss or a miss lets the glow fall back to 0.16. |
+| 2.34 | A meld's cards touch. |
 | 2.60 | Title and line fade up (`celebrationReveal`). |
 | 3.00 | Buttons appear. |
 
 Verdict.
 
-- **Meld.** The cards slide together and overlap into one (`heroMorph`), their borders turn `.paeoniaSuccess`, the glow peaks at 0.40, and a big petal bloom bursts from the merged card (`GamePetalBloom` at intensity 1.6, seeded by the round id). `streakCelebrated()`. At 2.60 the title "You melded!" and "In 4 rounds". At 2.90 the stats line, with `streakContinued()`: "Meld number 3. Your fewest is 2 rounds.", "Your first meld." for the first one, or, on a new record, "Your fewest rounds yet." in `.paeoniaAccentPrimary`.
-- **Near miss.** The cards lean toward each other (8 pt each) and their borders turn `.paeoniaAccentPrimary`. `streakContinued()`. Title "So close!", line "OCEAN and OCEANS are almost the same word.", and a quiet "Count it" button next to the primary.
+- **Meld.** At 2.10 the cards speed up into each other (0.24 s, an ease-in curve, like two magnets). The partner's card stays solid and slides under mine. At 2.34 they touch: the partner's card hides, the card swells to 1.07 and back, the borders turn `.paeoniaSuccess`, the glow peaks at 0.40, and a big petal bloom bursts from the merged card (`GamePetalBloom` at intensity 1.6, seeded by the round id). `streakCelebrated()` and the win sound play on the touch, not at 2.10. At 2.60 the title "You melded!" and "In 4 rounds". At 2.90 the stats line, with `streakContinued()`: "Meld number 3. Your fewest is 2 rounds.", "Your first meld." for the first one, or, on a new record, "Your fewest rounds yet." in `.paeoniaAccentPrimary`.
+- **Near miss.** The cards reach for each other on a bouncy spring, nearly touch, and settle 13 pt closer each, and their borders turn `.paeoniaAccentPrimary`. `streakContinued()`. Title "So close!", line "OCEAN and OCEANS are almost the same word.", and a quiet "Count it" button next to the primary.
 - **Miss.** The cards stay apart and a thin line draws between them with a small `plus` in the middle (`motionMorph`). `partnerDrawingReceived()`. Title "Now find the link", line "What connects OCEAN and SUSHI?".
 - **Got away** (round 10, miss). As a miss, then title "This one got away" and line "You came close. Want to try another?". A near miss in round 10 shows "So close!" with "Count it" and "Play again".
 
@@ -279,7 +280,7 @@ Everything is tappable from 2.60. A tap on the screen jumps to the settled state
 
 Buttons.
 
-- Miss and near miss: primary "Next round". A near miss adds "Count it" (`PaeoniaQuietButtonStyle`). "Count it" turns the reveal into a meld in place: the cards slide together, the bloom bursts, and the title changes to "You melded!".
+- Miss and near miss: primary "Next round". A near miss adds "Count it" (`PaeoniaQuietButtonStyle`). "Count it" turns the reveal into a meld in place. The near title and buttons fade out in 0.16 s, then the meld plays with the same gaps as above: the cards slide together, touch 0.24 s later with the bloom and `streakCelebrated()`, and "You melded!" fades up 0.5 s after the slide began.
 - Meld and got away: primary "Play again", and a quiet "See our melds".
 
 Leaving the reveal (Next round, Play again, or back) marks it seen once its verdict has shown. A reveal left before the verdict plays again next time.

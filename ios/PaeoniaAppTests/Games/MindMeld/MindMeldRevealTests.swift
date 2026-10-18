@@ -59,20 +59,30 @@ struct MindMeldRevealTests {
         let steps = RevealTimeline.steps(for: plan(.meld), schedule: .standard)
 
         #expect(steps.first == RevealTimeline.Step(at: 0, event: .start))
-        #expect(steps.contains(RevealTimeline.Step(at: 0.20, event: .pulse(intensity: 0.3))))
-        #expect(steps.contains(RevealTimeline.Step(at: 0.50, event: .pulse(intensity: 0.5))))
-        #expect(steps.contains(RevealTimeline.Step(at: 0.80, event: .pulse(intensity: 0.7))))
+        #expect(steps.contains(RevealTimeline.Step(at: 0.25, event: .pulse(intensity: 0.3))))
+        #expect(steps.contains(RevealTimeline.Step(at: 0.58, event: .pulse(intensity: 0.5))))
+        #expect(steps.contains(RevealTimeline.Step(at: 0.86, event: .pulse(intensity: 0.7))))
         #expect(steps.contains(RevealTimeline.Step(at: 1.10, event: .flipMine)))
         #expect(steps.contains(RevealTimeline.Step(at: 1.55, event: .flipPartner)))
         #expect(steps.contains(RevealTimeline.Step(at: 2.10, event: .verdict(.meld))))
+        #expect(steps.contains(RevealTimeline.Step(at: 2.34, event: .contact)))
         #expect(steps.contains(RevealTimeline.Step(at: 2.60, event: .title)))
         #expect(steps.contains(RevealTimeline.Step(at: 2.90, event: .stats)))
-        #expect(steps.last == RevealTimeline.Step(at: 3.00, event: .actions))
+        #expect(steps.contains(RevealTimeline.Step(at: 3.00, event: .actions)))
         #expect(steps.map(\.at) == steps.map(\.at).sorted())
 
-        // The bloom ends 0.9 seconds after the verdict.
-        let bloomEnd = steps.first { $0.event == .bloomEnd }
-        #expect(abs((bloomEnd?.at ?? 0) - 3.0) < 0.001)
+        // The bloom ends 0.9 seconds after the cards touch, and is the last beat.
+        let bloomEnd = steps.last
+        #expect(bloomEnd?.event == .bloomEnd)
+        #expect(abs((bloomEnd?.at ?? 0) - 3.24) < 0.001)
+    }
+
+    @Test func theBuildUpPulsesSpeedUpIntoTheFlips() {
+        let schedule = MindMeldRevealSchedule.standard
+        let beats = schedule.pulses + [schedule.myFlip]
+        let gaps = zip(beats.dropFirst(), beats).map { $0 - $1 }
+
+        #expect(gaps == gaps.sorted(by: >))
     }
 
     @Test func onlyAMeldHasTheStatsLineAndTheBloomEnd() {
@@ -81,6 +91,7 @@ struct MindMeldRevealTests {
 
             #expect(!steps.contains { $0.event == .stats }, "\(outcome)")
             #expect(!steps.contains { $0.event == .bloomEnd }, "\(outcome)")
+            #expect(!steps.contains { $0.event == .contact }, "\(outcome)")
             #expect(steps.contains(RevealTimeline.Step(at: 2.10, event: .verdict(outcome))), "\(outcome)")
             #expect(steps.last == RevealTimeline.Step(at: 3.00, event: .actions), "\(outcome)")
         }
@@ -90,15 +101,17 @@ struct MindMeldRevealTests {
         #expect(MindMeldRevealSchedule.standard.bloomDuration == GamePetalBloom.duration)
     }
 
+    @Test func theCardsTouchWhenTheirSlideEnds() {
+        let schedule = MindMeldRevealSchedule.standard
+        #expect(abs(schedule.contact - schedule.verdict - RevealTimeline.slideDuration) < 0.001)
+    }
+
     @Test func theScriptFromANearMissKeepsTheGapsAfterTheVerdict() {
         let steps = MindMeldRevealScript.meldFromNearSteps(schedule: .standard)
 
-        #expect(steps.map(\.event).prefix(3) == [.merge, .title, .stats])
-        // The bloom ends and the buttons appear together, in either order.
-        #expect(steps.map(\.event).suffix(2).contains(.bloomEnd))
-        #expect(steps.map(\.event).suffix(2).contains(.actions))
+        #expect(steps.map(\.event) == [.merge, .contact, .title, .stats, .actions, .bloomEnd])
         let times = steps.map(\.at)
-        #expect(zip(times, [0, 0.5, 0.8, 0.9, 0.9]).allSatisfy { abs($0 - $1) < 0.001 })
+        #expect(zip(times, [0, 0.24, 0.5, 0.8, 0.9, 1.14]).allSatisfy { abs($0 - $1) < 0.001 })
     }
 
     // MARK: Run
@@ -114,7 +127,7 @@ struct MindMeldRevealTests {
         #expect(log.ticks == [0.3, 0.5, 0.7, 0.85, 0.85])
         #expect(timeline.pulse == 3)
         #expect(timeline.myCardFlipped && timeline.partnerCardFlipped && timeline.verdictShown)
-        #expect(timeline.merged && !timeline.leaning && !timeline.linkDrawn)
+        #expect(timeline.merged && timeline.joined && !timeline.leaning && !timeline.linkDrawn)
         #expect(timeline.titleShown && timeline.statsShown && timeline.actionsShown)
         #expect(timeline.glow == RevealTimeline.restingGlow)
     }
@@ -126,7 +139,8 @@ struct MindMeldRevealTests {
         await settle(timeline)
 
         #expect(log.events == buildUp + ["continued"])
-        #expect(timeline.leaning && !timeline.merged && !timeline.linkDrawn)
+        #expect(timeline.leaning && !timeline.merged && !timeline.joined && !timeline.linkDrawn)
+        #expect(timeline.glow == RevealTimeline.restingGlow)
         #expect(timeline.titleShown && !timeline.statsShown && timeline.actionsShown)
         #expect(timeline.bloomStart == nil)
     }
@@ -156,22 +170,61 @@ struct MindMeldRevealTests {
         await gate.open()
     }
 
-    @Test func theBloomStartsAtTheVerdictAndClearsWhenItEnds() async {
+    @Test func theGlowStepsUpWithEachPulse() async {
+        let gate = AsyncGate()
+        // The pulses play at once, and everything after them waits for the gate.
+        let schedule = MindMeldRevealSchedule(
+            pulses: [0, 0, 0], myFlip: 1, partnerFlip: 1, verdict: 1, title: 1, actions: 1
+        )
+        let log = HapticLog()
+        let timeline = RevealTimeline(schedule: schedule, haptics: log.haptics, sleep: { _ in await gate.wait() })
+        timeline.begin(plan(.miss), reduceMotion: false)
+        _ = await waitUntil { timeline.pulse == 3 }
+
+        let expected = RevealTimeline.restingGlow + 3 * RevealTimeline.pulseGlowStep
+        #expect(abs(timeline.glow - expected) < 0.001)
+        #expect(!timeline.myCardFlipped)
+        await gate.open()
+    }
+
+    @Test func theMeldHapticAndBloomWaitForTheCardsToTouch() async {
         let log = HapticLog()
         let gate = AsyncGate()
-        let verdictTime = Date(timeIntervalSince1970: 1_800_000_000)
+        var schedule = MindMeldRevealSchedule.instant
+        schedule.contact = 1
+        schedule.title = 1
+        schedule.stats = 1
+        schedule.actions = 1
+        let timeline = RevealTimeline(schedule: schedule, haptics: log.haptics, sleep: { _ in await gate.wait() })
+        timeline.begin(plan(.meld), reduceMotion: false)
+        _ = await waitUntil { timeline.merged }
+
+        // The cards are sliding: nothing has landed yet.
+        #expect(!timeline.joined && timeline.bloomStart == nil)
+        #expect(log.events == buildUp)
+
+        await gate.open()
+        await settle(timeline)
+        #expect(timeline.joined)
+        #expect(log.events == buildUp + ["celebrated", "continued"])
+    }
+
+    @Test func theBloomStartsWhenTheCardsTouchAndClearsWhenItEnds() async {
+        let log = HapticLog()
+        let gate = AsyncGate()
+        let contactTime = Date(timeIntervalSince1970: 1_800_000_000)
         var schedule = MindMeldRevealSchedule.instant
         schedule.bloomDuration = 0.9
         let timeline = RevealTimeline(
             schedule: schedule,
             haptics: log.haptics,
-            now: { verdictTime },
+            now: { contactTime },
             sleep: { _ in await gate.wait() }
         )
         timeline.begin(plan(.meld), reduceMotion: false)
         _ = await waitUntil { timeline.actionsShown }
 
-        #expect(timeline.bloomStart == verdictTime)
+        #expect(timeline.bloomStart == contactTime)
         #expect(timeline.glow == RevealTimeline.peakGlow)
         #expect(!timeline.isSettled)
 
@@ -344,7 +397,7 @@ struct MindMeldRevealMergeTests {
         _ = await waitUntil { timeline.bloomStart != nil }
 
         // The near title and buttons are gone, and the new ones are not up yet.
-        #expect(timeline.merged && !timeline.leaning)
+        #expect(timeline.merged && timeline.joined && !timeline.leaning)
         #expect(!timeline.titleShown && !timeline.actionsShown && !timeline.statsShown)
         #expect(!timeline.canSkip)
         #expect(timeline.glow == RevealTimeline.peakGlow)

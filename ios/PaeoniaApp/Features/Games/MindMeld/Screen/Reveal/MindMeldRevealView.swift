@@ -124,6 +124,7 @@ struct MindMeldRevealView: View {
             partnerCardFlipped: timeline.partnerCardFlipped,
             pulse: timeline.pulse,
             merged: timeline.merged,
+            joined: timeline.joined,
             leaning: timeline.leaning,
             linkDrawn: timeline.linkDrawn,
             glow: timeline.glow,

@@ -5,8 +5,9 @@ import SwiftUI
 /// reveal script changes the inputs, and the stage animates each change.
 ///
 /// - My card is on the leading side.
-/// - `merged` slides the cards together into one card that shows my word. The two
-///   avatars move together above it.
+/// - `merged` slides the cards together, and `joined` says they touched. Then the
+///   card thumps, its border turns green, and only my card shows. The two avatars
+///   move together above it.
 /// - `bloomStart` plays one burst. The script clears it when the burst is over,
 ///   because the bloom keeps redrawing while it is set.
 /// - With Reduce Motion there are no pulses, slides or bloom. Cards cross-fade and
@@ -23,6 +24,7 @@ struct MindMeldRevealStage: View {
     /// Each increase pulses both cards once.
     let pulse: Int
     let merged: Bool
+    let joined: Bool
     /// The cards lean toward each other, for words that are almost the same.
     let leaning: Bool
     /// A thin line with a plus draws between the cards.
@@ -36,6 +38,10 @@ struct MindMeldRevealStage: View {
     private static let avatarSize: CGFloat = 44
     private static let bloomIntensity: CGFloat = 1.6
     private static let flip = Animation.spring(duration: 0.4, bounce: 0.14)
+    /// The cards reach for each other, nearly touch, and settle a little apart.
+    private static let lean = Animation.spring(duration: 0.5, bounce: 0.4)
+    /// How far the merged card swells when the cards touch.
+    private static let thumpScale: CGFloat = 1.07
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -48,14 +54,14 @@ struct MindMeldRevealStage: View {
             MindMeldRevealLink(isDrawn: linkDrawn)
                 .zIndex(2)
         }
-        .motionOnly(PaeoniaMotion.heroMorph, value: merged)
-        .motionOnly(PaeoniaMotion.cardReveal, value: leaning)
+        .motionOnly(MindMeldRevealTimeline.slide, value: merged)
+        .motionOnly(Self.lean, value: leaning)
         .background { glowView }
         .overlay { bloom }
     }
 
     private var tone: MindMeldWordCard.Tone {
-        if merged { .success } else if leaning { .near } else { .plain }
+        if joined { .success } else if leaning { .near } else { .plain }
     }
 
     // MARK: Cards
@@ -69,14 +75,15 @@ struct MindMeldRevealStage: View {
             maxWidth: cardMaxWidth
         )
         .motionOnly(Self.flip, value: myCardFlipped)
-        .modifier(MindMeldPulse(trigger: pulse))
+        .modifier(MindMeldPulse(trigger: pulse, peak: pulsePeak))
+        .modifier(MindMeldPulse(trigger: joined, peak: Self.thumpScale))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(myCardLabel))
         // On top of the partner's card once they are one.
         .zIndex(1)
     }
 
-    /// When the cards are one, the partner's card fades out under mine.
+    /// The partner's card stays solid while it slides under mine, and hides once they touch.
     private var partnerCard: some View {
         MindMeldWordCard(
             word: partnerWord,
@@ -86,10 +93,15 @@ struct MindMeldRevealStage: View {
             maxWidth: cardMaxWidth
         )
         .motionOnly(Self.flip, value: partnerCardFlipped)
-        .opacity(merged ? 0 : 1)
-        .modifier(MindMeldPulse(trigger: pulse))
+        .opacity(joined ? 0 : 1)
+        .modifier(MindMeldPulse(trigger: pulse, peak: pulsePeak))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(partnerCardLabel))
+    }
+
+    /// Each pulse swells the cards a little more than the last.
+    private var pulsePeak: CGFloat {
+        1.02 + 0.015 * CGFloat(pulse)
     }
 
     private var myCardLabel: LocalizedStringResource {
@@ -154,7 +166,7 @@ struct MindMeldRevealStage: View {
 /// Places the avatars, the cards and the link. The subviews, in order, are my
 /// avatar, the partner's avatar, my card, the partner's card and the link.
 /// `merge` runs from 0 (side by side) to 1 (one card) and `lean` from 0 to 1
-/// (each card 8 pt toward the other). Both animate, so the cards slide.
+/// (each card 13 pt toward the other). Both animate, so the cards slide.
 private struct MindMeldStageLayout: Layout {
     var merge: CGFloat
     var lean: CGFloat
@@ -162,7 +174,7 @@ private struct MindMeldStageLayout: Layout {
 
     static let cardGap = PaeoniaSpacing.space40
     static let avatarGap = PaeoniaSpacing.space12
-    private static let leanDistance: CGFloat = 8
+    private static let leanDistance: CGFloat = 13
     /// Half the distance between the two avatar centers once the cards are one.
     private static let mergedAvatarSpread: CGFloat = 20
 
@@ -284,18 +296,23 @@ nonisolated private struct MindMeldLinkLine: Shape {
 
 // MARK: - Motion helpers
 
-/// Both cards grow to 1.04 and settle back each time `trigger` changes.
-private struct MindMeldPulse: ViewModifier {
-    let trigger: Int
+/// The card grows to `peak` and settles back each time `trigger` changes.
+private struct MindMeldPulse<Trigger: Equatable>: ViewModifier {
+    let trigger: Trigger
+    let peak: CGFloat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: 1.0, trigger: reduceMotion ? 0 : trigger) { view, scale in
-            view.scaleEffect(scale)
-        } keyframes: { _ in
-            KeyframeTrack {
-                CubicKeyframe(1.04, duration: 0.12)
-                CubicKeyframe(1.0, duration: 0.16)
+        if reduceMotion {
+            content
+        } else {
+            content.keyframeAnimator(initialValue: 1.0, trigger: trigger) { view, scale in
+                view.scaleEffect(scale)
+            } keyframes: { _ in
+                KeyframeTrack {
+                    CubicKeyframe(peak, duration: 0.12)
+                    CubicKeyframe(1.0, duration: 0.16)
+                }
             }
         }
     }
@@ -345,6 +362,7 @@ private struct MindMeldRevealStagePreview: View {
             partnerCardFlipped: flipped,
             pulse: 0,
             merged: merged,
+            joined: merged,
             leaning: leaning,
             linkDrawn: linkDrawn,
             glow: glow,
@@ -393,6 +411,7 @@ private struct MindMeldRevealStagePreview: View {
             partnerCardFlipped: true,
             pulse: 0,
             merged: merged,
+            joined: merged,
             leaning: false,
             linkDrawn: false,
             glow: merged ? 0.4 : 0.16,

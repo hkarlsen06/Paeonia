@@ -18,11 +18,14 @@ nonisolated struct MindMeldRevealPlan: Equatable, Sendable {
 
 /// When each beat happens, in seconds after the reveal starts.
 nonisolated struct MindMeldRevealSchedule: Sendable {
-    /// The three build-up pulses.
-    var pulses: [TimeInterval] = [0.20, 0.50, 0.80]
+    /// The three build-up pulses. The gaps shrink, so the beat speeds up into the flips.
+    var pulses: [TimeInterval] = [0.25, 0.58, 0.86]
     var myFlip: TimeInterval = 1.10
     var partnerFlip: TimeInterval = 1.55
     var verdict: TimeInterval = 2.10
+    /// The sliding cards of a meld touch. It is the verdict plus
+    /// `MindMeldRevealTimeline.slideDuration`, and a test keeps the two in step.
+    var contact: TimeInterval = 2.34
     var title: TimeInterval = 2.60
     /// The stats line, for a meld only.
     var stats: TimeInterval = 2.90
@@ -33,7 +36,8 @@ nonisolated struct MindMeldRevealSchedule: Sendable {
 
     static let standard = Self()
     static let instant = Self(
-        pulses: [0, 0, 0], myFlip: 0, partnerFlip: 0, verdict: 0, title: 0, stats: 0, actions: 0, bloomDuration: 0
+        pulses: [0, 0, 0], myFlip: 0, partnerFlip: 0, verdict: 0, contact: 0,
+        title: 0, stats: 0, actions: 0, bloomDuration: 0
     )
 }
 
@@ -44,6 +48,8 @@ nonisolated enum MindMeldRevealEvent: Equatable, Sendable {
     case flipMine
     case flipPartner
     case verdict(MindMeldRevealOutcome)
+    /// The cards of a meld touch: the bloom bursts and the meld haptic plays.
+    case contact
     /// The petals are done, so the canvas can stop.
     case bloomEnd
     case title
@@ -75,7 +81,8 @@ nonisolated enum MindMeldRevealScript {
         steps.append(Step(at: schedule.partnerFlip, event: .flipPartner))
         steps.append(Step(at: schedule.verdict, event: .verdict(plan.outcome)))
         if plan.outcome == .meld {
-            steps.append(Step(at: schedule.verdict + schedule.bloomDuration, event: .bloomEnd))
+            steps.append(Step(at: schedule.contact, event: .contact))
+            steps.append(Step(at: schedule.contact + schedule.bloomDuration, event: .bloomEnd))
         }
         steps.append(Step(at: schedule.title, event: .title))
         if plan.outcome == .meld {
@@ -88,9 +95,11 @@ nonisolated enum MindMeldRevealScript {
     /// The beats after a counted near miss, with the same gaps as after the
     /// verdict of a meld. Times are relative to the merge.
     static func meldFromNearSteps(schedule: Schedule) -> [Step] {
-        stable([
+        let contact = schedule.contact - schedule.verdict
+        return stable([
             Step(at: 0, event: .merge),
-            Step(at: schedule.bloomDuration, event: .bloomEnd),
+            Step(at: contact, event: .contact),
+            Step(at: contact + schedule.bloomDuration, event: .bloomEnd),
             Step(at: schedule.title - schedule.verdict, event: .title),
             Step(at: schedule.stats - schedule.verdict, event: .stats),
             Step(at: schedule.actions - schedule.verdict, event: .actions)

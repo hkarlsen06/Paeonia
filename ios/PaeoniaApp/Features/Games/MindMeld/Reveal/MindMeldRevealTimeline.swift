@@ -65,6 +65,8 @@ final class MindMeldRevealTimeline {
     private(set) var verdictShown = false
     /// The cards slide together into one.
     private(set) var merged = false
+    /// The sliding cards have touched. The partner's card hides under mine and the borders turn green.
+    private(set) var joined = false
     /// The cards lean toward each other.
     private(set) var leaning = false
     /// A line is drawn between the cards.
@@ -76,10 +78,6 @@ final class MindMeldRevealTimeline {
     /// The buttons appear.
     private(set) var actionsShown = false
     private(set) var isSettled = false
-
-    static let restingGlow = 0.16
-    static let peakGlow = 0.40
-    static let flipDuration: TimeInterval = 0.4
 
     @ObservationIgnored private let schedule: Schedule
     @ObservationIgnored private let haptics: Haptics
@@ -154,6 +152,7 @@ final class MindMeldRevealTimeline {
         partnerCardFlipped = false
         verdictShown = false
         merged = false
+        joined = false
         leaning = false
         linkDrawn = false
         bloomStart = nil
@@ -211,7 +210,7 @@ final class MindMeldRevealTimeline {
         switch event {
         case .start, .pulse, .flipMine, .flipPartner:
             applyBuildUp(event)
-        case .verdict, .bloomEnd, .merge:
+        case .verdict, .contact, .bloomEnd, .merge:
             applyVerdict(event)
         case .title, .stats, .actions:
             applyResult(event)
@@ -228,6 +227,9 @@ final class MindMeldRevealTimeline {
         case let .pulse(intensity):
             pulse += 1
             haptics.tick(intensity)
+            withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionDefault)) {
+                glow = Self.restingGlow + Self.pulseGlowStep * Double(pulse)
+            }
         case .flipMine:
             haptics.tick(MindMeldRevealScript.flipIntensity)
             withAnimation(PaeoniaMotion.standardCurve(duration: Self.flipDuration)) {
@@ -248,16 +250,24 @@ final class MindMeldRevealTimeline {
         switch event {
         case let .verdict(outcome):
             land(outcome)
-            playVerdictHaptic(outcome)
+            // A meld's haptic waits for the cards to touch.
+            if outcome != .meld {
+                playVerdictHaptic(outcome)
+            }
         case .merge:
-            bloomStart = now()
-            haptics.celebrated()
-            withAnimation(PaeoniaMotion.heroMorph) {
-                leaning = false
-                merged = true
+            // The near title and buttons leave quickly, so they never cross the meld's.
+            withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionFast)) {
                 titleShown = false
                 actionsShown = false
             }
+            withAnimation(Self.slide) {
+                leaning = false
+                merged = true
+            }
+        case .contact:
+            joined = true
+            bloomStart = now()
+            haptics.celebrated()
             withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionSlow)) {
                 glow = Self.peakGlow
             }
@@ -292,43 +302,13 @@ final class MindMeldRevealTimeline {
         }
     }
 
-    /// Shows the outcome on the cards. The haptic is the caller's.
-    private func land(_ outcome: MindMeldRevealOutcome) {
-        verdictShown = true
-        switch outcome {
-        case .meld:
-            bloomStart = now()
-            withAnimation(PaeoniaMotion.heroMorph) {
-                merged = true
-            }
-            withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionSlow)) {
-                glow = Self.peakGlow
-            }
-        case .near:
-            withAnimation(PaeoniaMotion.cardReveal) {
-                leaning = true
-            }
-        case .miss, .gotAway:
-            withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionMorph)) {
-                linkDrawn = true
-            }
-        }
-    }
-
-    private func playVerdictHaptic(_ outcome: MindMeldRevealOutcome) {
-        switch outcome {
-        case .meld: haptics.celebrated()
-        case .near: haptics.continued()
-        case .miss, .gotAway: haptics.soft()
-        }
-    }
-
     private func applySettledState(_ plan: Plan) {
         glow = Self.restingGlow
         myCardFlipped = true
         partnerCardFlipped = true
         verdictShown = true
         merged = plan.outcome == .meld
+        joined = merged
         leaning = plan.outcome == .near
         linkDrawn = plan.outcome == .miss || plan.outcome == .gotAway
         bloomStart = nil
@@ -343,4 +323,55 @@ final class MindMeldRevealTimeline {
         task?.cancel()
         task = nil
     }
+}
+
+// MARK: - Outcomes
+
+private extension MindMeldRevealTimeline {
+    /// Shows the outcome on the cards. The haptic is the caller's.
+    func land(_ outcome: MindMeldRevealOutcome) {
+        verdictShown = true
+        switch outcome {
+        case .meld:
+            withAnimation(Self.slide) {
+                merged = true
+            }
+        case .near:
+            withAnimation(PaeoniaMotion.cardReveal) {
+                leaning = true
+            }
+        case .miss, .gotAway:
+            withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionMorph)) {
+                linkDrawn = true
+            }
+        }
+        // The glow the pulses built up falls back, and a meld's rises again when the cards touch.
+        if outcome != .meld {
+            withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionMorph)) {
+                glow = Self.restingGlow
+            }
+        }
+    }
+
+    func playVerdictHaptic(_ outcome: MindMeldRevealOutcome) {
+        switch outcome {
+        case .meld: haptics.celebrated()
+        case .near: haptics.continued()
+        case .miss, .gotAway: haptics.soft()
+        }
+    }
+}
+
+// MARK: - Tuning
+
+extension MindMeldRevealTimeline {
+    static let restingGlow = 0.16
+    static let peakGlow = 0.40
+    static let flipDuration: TimeInterval = 0.4
+    /// How much the glow rises at each build-up pulse.
+    static let pulseGlowStep = 0.05
+    /// How long the cards of a meld slide before they touch.
+    static let slideDuration: TimeInterval = 0.24
+    /// The cards speed up into each other, like two magnets, so they hit instead of settling.
+    static let slide = Animation.timingCurve(0.55, 0, 0.9, 0.45, duration: slideDuration)
 }
