@@ -247,7 +247,6 @@ export async function materializeFirstDayDrafts(
     }
     // Fills the remaining slots and the challenge rows, which the answers below complete.
     await ensureDailyChallengeSlots(ctx, dayId);
-    const day = (await getByUuid(ctx, "couple_days", dayId))!;
     const reader = new QuestionContentReader(ctx);
     for (const { draft, versionId, instanceId } of seeded) {
       const answer = draft.answers.find((item) => item.question_version_id === versionId);
@@ -255,7 +254,6 @@ export async function materializeFirstDayDrafts(
       await insertDailyAnswer(ctx, {
         userId: draft.user_id,
         instance: (await getByUuid(ctx, "daily_question_instances", instanceId))!,
-        day,
         answerId: newUuid(),
         textBody: answer.body,
         selectedPartnerUserId: null,

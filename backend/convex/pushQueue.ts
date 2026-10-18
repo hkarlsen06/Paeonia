@@ -12,6 +12,7 @@ import { uuidArg } from "./lib/ids";
 import { hasStartedToday } from "./lib/questionTimeStatus";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { nowIso } from "./lib/time";
+import { hasTopicWaiting, topicPushTooSoon, topicQuestionOpen } from "./lib/topics";
 
 // The database side of one APNs send. Each outbox row is one pushWorkpool work item
 // (`enqueuePush` in lib/notifications.ts). `push:send_push` asks `prepare_*` whether the row
@@ -62,6 +63,7 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
     case "daily_challenge_completed":
       return preference?.daily_challenge_enabled ?? false;
     case "partner_answered":
+    case "topics_waiting":
       return preference?.partner_answered_enabled ?? false;
     case "widget_updated":
       return row.apns_push_type !== "alert" || (preference?.widget_updates_enabled ?? false);
@@ -100,6 +102,25 @@ async function rowStillWanted(
   }
   if (typeof payload.couple_id === "string" && !(await isActiveCoupleMember(ctx, recipientUserId, payload.couple_id))) {
     return { wanted: false, reason: "ineligible" };
+  }
+  // The topic push can wait up to 3 hours, so it goes out only if something still waits by then,
+  // and never sooner than 3 hours after the previous topic push really went out.
+  if (
+    row.kind === "topics_waiting" &&
+    typeof payload.couple_id === "string" &&
+    (!(await hasTopicWaiting(ctx, payload.couple_id, recipientUserId)) ||
+      (await topicPushTooSoon(ctx, recipientUserId, row.scheduled_for, nowIso())))
+  ) {
+    return { wanted: false, reason: "out_of_date" };
+  }
+  // A message in a Flirt chat that closed while its push waited stays quiet.
+  if (
+    row.kind === "thread_message_sent" &&
+    typeof payload.couple_id === "string" &&
+    typeof payload.question_id === "string" &&
+    !(await topicQuestionOpen(ctx, payload.couple_id, recipientUserId, payload.question_id))
+  ) {
+    return { wanted: false, reason: "out_of_date" };
   }
   if (
     row.kind === "question_time_reminder" &&

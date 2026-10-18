@@ -257,7 +257,11 @@ export function notificationAlertBody(
     case "story_posted":
       return nb ? "Åpne Paeonia for å se den." : "Open Paeonia to see it.";
     case "thread_message_sent":
+      // A Flirt chat's push is the title alone, so nothing about the chat shows on the lock screen.
+      if (payload.private_topic === true) return null;
       return nb ? "Åpne Paeonia for å lese og svare." : "Open Paeonia to read it and reply.";
+    case "topics_waiting":
+      return nb ? "Åpne Paeonia for å se hva som venter." : "Open Paeonia to see what's waiting.";
     case "game_turn_ready":
       return gamePushCopy(payload, language)?.turnReadyBody ?? gameReminderBody(nb);
     case "game_result":
@@ -308,7 +312,10 @@ export async function notificationAlertTitle(
     case "story_posted":
       return nb ? `${name} delte en story` : `${name} shared a story`;
     case "thread_message_sent":
+      if (payload.private_topic === true) return nb ? `Ny melding fra ${name}` : `New message from ${name}`;
       return nb ? `${name} sendte deg en melding` : `${name} sent you a message`;
+    case "topics_waiting":
+      return nb ? `Nye svar fra ${name}` : `New answers from ${name}`;
     case "game_turn_ready":
     case "game_turn_reminder": {
       const game = gamePushCopy(payload, nb ? "nb" : "en");

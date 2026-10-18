@@ -2,6 +2,7 @@ import type { Doc } from "../_generated/dataModel";
 import { canAccessCoupleContent } from "./access";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
+import { threadTopicOpen, topicQuestionOpen } from "./topics";
 import { fail } from "./errors";
 import { canReadCorpseAsset } from "./exquisiteCorpse"; // Exquisite corpse
 
@@ -58,8 +59,9 @@ export async function canViewDailyAnswer(ctx: ReaderCtx, userId: string, answerI
   const answer = await getByUuid(ctx, "daily_question_answers", answerId);
   if (!answer || answer.deleted_at !== undefined || answer.moderation_status !== "visible") return false;
   const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
-  const day = instance ? await getByUuid(ctx, "couple_days", instance.couple_day_id) : null;
-  if (!day || !(await canAccessCoupleContent(ctx, userId, day.couple_id))) return false;
+  if (!instance || !(await canAccessCoupleContent(ctx, userId, instance.couple_id))) return false;
+  // A closed Flirt topic keeps its answers' photos and voice notes closed too.
+  if (!(await topicQuestionOpen(ctx, instance.couple_id, userId, instance.question_id))) return false;
   if (answer.user_id === userId) return true;
   const own = await ctx.db
     .query("daily_question_answers")
@@ -124,7 +126,8 @@ async function canReadThreadMessageMedia(ctx: ReaderCtx, userId: string, asset: 
       thread.deleted_at !== undefined ||
       thread.moderation_status !== "visible" ||
       thread.couple_id !== asset.couple_id ||
-      !(await canAccessCoupleContent(ctx, userId, thread.couple_id))
+      !(await canAccessCoupleContent(ctx, userId, thread.couple_id)) ||
+      !(await threadTopicOpen(ctx, thread.id, userId))
     ) {
       continue;
     }

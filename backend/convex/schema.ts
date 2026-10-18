@@ -608,6 +608,9 @@ export default defineSchema({
     status: memberStatus,
     // Either partner can set either member's birthday. It belongs to this relationship only.
     birthday: v.optional(date),
+    // The Flirt topic's age check on this member's phone: confirmed is 18 or older, hidden is anything else.
+    adult_topics: v.optional(literals("confirmed", "hidden")),
+    adult_topics_at: optTs,
     joined_at: ts,
     left_at: optTs,
     ended_notice_seen_at: optTs,
@@ -690,7 +693,12 @@ export default defineSchema({
   // Active slot is unique per (couple_day_id, seeded_for_user_id, slot_number) while status is active.
   daily_question_instances: defineTable({
     id: uuid,
-    couple_day_id: uuid,
+    // Set on daily instances only. A topic instance has none, so day-based reads never see it.
+    couple_day_id: optUuid,
+    // Topic instances: the topic's collection, and the couple day the question was started on.
+    // `started_couple_day_id` only dates topic rows. Daily code never reads it.
+    topic_collection_id: optUuid,
+    started_couple_day_id: optUuid,
     // The day's couple and the version's question, stored so a question's rounds are one index read.
     couple_id: uuid,
     question_id: uuid,
@@ -711,6 +719,7 @@ export default defineSchema({
     ])
     .index("by_couple_day_id_question_version_id", ["couple_day_id", "question_version_id"])
     .index("by_couple_id_question_id", ["couple_id", "question_id"])
+    .index("by_couple_id_topic_collection_id", ["couple_id", "topic_collection_id"])
     .index("by_question_version_id", ["question_version_id"])
     .index("by_replaced_by_instance_id", ["replaced_by_instance_id"])
     .index("by_seeded_for_user_id_status", ["seeded_for_user_id", "status"]),
@@ -1110,7 +1119,11 @@ export default defineSchema({
   // FK: couple_id -> couples cascade. At most one active system collection.
   question_collections: defineTable({
     id: uuid,
-    kind: literals("system", "custom", "mini_game"),
+    kind: literals("system", "custom", "mini_game", "topic"),
+    // Topics only: the stable topic key, the shelf order, and whether only adults may open it.
+    key: optString,
+    sort_order: v.optional(v.number()),
+    adults_only: v.optional(v.boolean()),
     couple_id: optUuid,
     created_by_user_id: optUuid,
     status: literals("draft", "active", "retired", "archived"),
@@ -1120,7 +1133,18 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_couple_id", ["couple_id"])
     .index("by_created_by_user_id", ["created_by_user_id"])
-    .index("by_kind_status", ["kind", "status"]),
+    .index("by_kind_status", ["kind", "status"])
+    .index("by_kind_key", ["kind", "key"]),
+
+  // A topic's localized name. FK: collection_id -> question_collections cascade. (collection_id, locale) is unique.
+  question_collection_localizations: defineTable({
+    collection_id: uuid,
+    locale: literals("en", "nb"),
+    title: v.string(),
+    subtitle: v.string(),
+    created_at: ts,
+    updated_at: ts,
+  }).index("by_collection_id_locale", ["collection_id", "locale"]),
 
   // FK: question_version_id -> question_versions cascade. (question_version_id, locale) is unique.
   question_version_localizations: defineTable({
@@ -1156,6 +1180,8 @@ export default defineSchema({
     status: literals("draft", "active", "retired", "archived"),
     resurfaceable: v.boolean(),
     resurface_after_months: v.optional(v.number()),
+    // Topic questions: the order inside the topic.
+    sort_order: v.optional(v.number()),
     created_by_user_id: optUuid,
     created_at: ts,
     updated_at: ts,
@@ -1264,6 +1290,15 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_apple_product_id", ["apple_product_id"])
     .index("by_is_active_kind", ["is_active", "kind"]),
+
+  // A topic question the couple put aside. It leaves the topic's total until either partner brings it back.
+  // Stores no user id, so nobody can learn who skipped. FK: couple_id -> couples cascade; question_id -> questions cascade.
+  // (couple_id, question_id) is unique.
+  topic_question_skips: defineTable({
+    couple_id: uuid,
+    question_id: uuid,
+    skipped_at: ts,
+  }).index("by_couple_id_question_id", ["couple_id", "question_id"]),
 
   // New in Convex: how far each person has read a thread, for read receipts. One row per
   // (thread_id, user_id). FK: thread_id -> conversation_threads cascade; user_id -> users cascade.

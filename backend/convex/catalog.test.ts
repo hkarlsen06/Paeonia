@@ -214,3 +214,58 @@ describe("seed_subscription_products", () => {
     expect(rows.every((row) => row.is_active)).toBe(true);
   });
 });
+
+describe("sync_catalog topics", () => {
+  const topic = {
+    key: "travel_and_places",
+    status: "active" as const,
+    sort_order: 4,
+    adults_only: false,
+    localizations: {
+      en: { title: "Travel and places", subtitle: "Where you've been." },
+      nb: { title: "Reiser og steder", subtitle: "Hvor du har vært." },
+    },
+  };
+  const topicQuestion = (key: string, sortOrder: number) =>
+    question(key, { collection: "topic", topic: topic.key, sort_order: sortOrder, resurfaceable: false, resurface_after_months: null });
+
+  test("writes the topic, its names and its ordered questions, apart from the daily collection", async () => {
+    const t = newTest();
+    const result = await t.mutation(internal.catalog.sync_catalog, {
+      questions: [topicQuestion("travel_best_view", 1), topicQuestion("travel_best_walk", 14)],
+      topics: [topic],
+      apply: true,
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.changes).toContain("new topic travel_and_places");
+    const collections = await t.run((ctx) => ctx.db.query("question_collections").collect());
+    expect(collections).toMatchObject([{ kind: "topic", key: "travel_and_places", sort_order: 4, adults_only: false, status: "active" }]);
+    const names = await t.run((ctx) => ctx.db.query("question_collection_localizations").collect());
+    expect(names.map((row) => [row.locale, row.title]).sort()).toEqual([
+      ["en", "Travel and places"],
+      ["nb", "Reiser og steder"],
+    ]);
+    const stored = await t.run((ctx) => ctx.db.query("questions").collect());
+    expect(stored.map((row) => [row.key, row.sort_order, row.collection_id === collections[0].id]).sort()).toEqual([
+      ["travel_best_view", 1, true],
+      ["travel_best_walk", 14, true],
+    ]);
+
+    const again = await t.mutation(internal.catalog.sync_catalog, {
+      questions: [topicQuestion("travel_best_view", 1), topicQuestion("travel_best_walk", 14)],
+      topics: [topic],
+      apply: false,
+    });
+    expect(again.changes).toEqual([]);
+  });
+
+  test("a topic question without its topic in the payload is an error", async () => {
+    const t = newTest();
+    const result = await t.mutation(internal.catalog.sync_catalog, {
+      questions: [topicQuestion("travel_best_view", 1)],
+      apply: true,
+    });
+    expect(result.errors).toEqual(["topic/travel_and_places/travel_best_view names a topic that is not in the catalog"]);
+    expect(result.applied).toBe(false);
+  });
+});

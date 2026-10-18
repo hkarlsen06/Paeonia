@@ -20,6 +20,7 @@ import { consumeRateLimit } from "./lib/rateLimits";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
+import { adultGate, assertTopicQuestionOpen, threadTopicOpen, topicIsOpen, topicOfQuestion } from "./lib/topics";
 
 const nullableMediaIds = v.optional(v.union(v.null(), v.array(v.string())));
 
@@ -141,6 +142,8 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
       deeplink: `paeonia://daily/chat?questionId=${dailyLink.question_id}`,
       question_id: dailyLink.question_id,
     });
+    // A Flirt chat's push says only who wrote (notificationCopy.ts), never the topic or a preview.
+    if ((await topicOfQuestion(ctx, dailyLink.question_id))?.adults_only) payload.private_topic = true;
   } else {
     Object.assign(payload, { route: "memories", deeplink: "paeonia://memories", memory_id: memoryLink!.memory_id });
   }
@@ -267,6 +270,11 @@ export const send_thread_message = mutation({
       }),
       async () => {
         await consumeRateLimit(ctx, "threadMessage", userId);
+        const link = await ctx.db
+          .query("daily_question_threads")
+          .withIndex("by_thread_id", (q) => q.eq("thread_id", threadId))
+          .unique();
+        if (link) await assertTopicQuestionOpen(ctx, link.couple_id, userId, link.question_id);
         const messageId = await insertThreadMessage(
           ctx,
           userId,
@@ -306,6 +314,7 @@ export const edit_thread_message = mutation({
     ) {
       fail("42501", "active entitled thread access is required");
     }
+    if (!(await threadTopicOpen(ctx, thread.id, userId))) fail("42501", "adult topic is not open");
     if (message.deleted_at !== undefined || message.moderation_status !== "visible") {
       fail("23514", "message is not available");
     }
@@ -374,6 +383,8 @@ export const create_daily_question_thread_with_message = mutation({
         if (!(await getByUuid(ctx, "questions", questionId))) {
           return fail("22023", "daily question was not found");
         }
+        // A Flirt question's chat is closed while the topic is not open for the couple.
+        await assertTopicQuestionOpen(ctx, coupleId, userId, questionId);
 
         const rounds = await loadQuestionRounds(ctx, coupleId, questionId);
         if (!rounds.some((round) => round.answers.some((answer) => answer.user_id === userId))) {
@@ -471,6 +482,7 @@ export const get_conversation_threads = query({
       .query("conversation_threads")
       .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", coupleId))
       .collect();
+    const gate = await adultGate(ctx, coupleId, userId);
 
     const rows = [];
     for (const thread of threads) {
@@ -484,6 +496,9 @@ export const get_conversation_threads = query({
       if (daily) {
         if (!(await loadQuestionRounds(ctx, coupleId, daily.question_id)).some(isSharedRound)) continue;
       }
+      // A topic question's chat says which topic it is in. A closed Flirt topic hides its chats.
+      const topic = daily ? await topicOfQuestion(ctx, daily.question_id) : null;
+      if (topic && !topicIsOpen(topic, gate)) continue;
       const memory = await ctx.db
         .query("memory_threads")
         .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
@@ -532,6 +547,8 @@ export const get_conversation_threads = query({
         last_message_body: visible ? orNull(last.body) : null,
         last_message_media_type: orNull(lastMediaAsset?.media_type),
         viewer_read_through_at: orNull(viewerRead?.last_read_message_created_at),
+        topic_key: orNull(topic?.key),
+        adults_only: topic?.adults_only ?? false,
       });
     }
     // order by last_message_at desc (Postgres puts nulls first for desc), created_at desc, thread_id
@@ -567,6 +584,7 @@ export const get_thread_messages = query({
     const limit = Math.min(Math.floor(args.p_limit), MAX_MESSAGE_PAGE);
     const thread = await getByUuid(ctx, "conversation_threads", uuidArg(args.p_thread_id));
     if (!thread || !(await canAccessCoupleContent(ctx, userId, thread.couple_id))) return { messages: [], has_more: false };
+    if (!(await threadTopicOpen(ctx, thread.id, userId))) fail("42501", "adult topic is not open");
 
     const beforeAt = args.p_before_created_at ? timestampArg(args.p_before_created_at) : null;
     const beforeId = args.p_before_message_id ? uuidArg(args.p_before_message_id) : "";

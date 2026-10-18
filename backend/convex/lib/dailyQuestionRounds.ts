@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
-import { isLive, type DailyQuestionRow, visibleAnswersOf } from "./dailyQuestions";
+import { instanceDay, isLive, type DailyQuestionRow, visibleAnswersOf } from "./dailyQuestions";
 
 /**
  * A couple has one chat per question. Each time the question comes back it is a new
@@ -42,7 +42,7 @@ export async function loadQuestionRounds(ctx: ReaderCtx, coupleId: string, quest
   const rounds: QuestionRound[] = [];
   for (const instance of instances) {
     if (!isLive(instance)) continue;
-    const day = await getByUuid(ctx, "couple_days", instance.couple_day_id);
+    const day = await instanceDay(ctx, instance);
     if (!day) continue;
     const answers = await visibleAnswersOf(ctx, instance.id);
     if (answers.length > 0) rounds.push({ day, instance, answers });

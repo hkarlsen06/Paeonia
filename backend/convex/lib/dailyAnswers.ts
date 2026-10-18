@@ -9,8 +9,16 @@ import { jsonbByteLength, jsonbText } from "./json";
 import { enqueuePartnerAnsweredNotification, enqueuePartnerNotification } from "./notifications";
 import { tombstoneReportTargets } from "./reports";
 import { applyCoupleActivity } from "./streaks";
+import { assertTopicQuestionOpen } from "./topics";
 import { nowIso } from "./time";
-import { DAILY_QUESTION_SLOTS, ensureDailyChallengeSlots, isVisibleAnswer, visibleAnswersOf } from "./dailyQuestions";
+import {
+  DAILY_QUESTION_SLOTS,
+  ensureDailyChallengeSlots,
+  instanceDay,
+  isTopicInstance,
+  isVisibleAnswer,
+  visibleAnswersOf,
+} from "./dailyQuestions";
 
 /**
  * Daily answers: reveal rules, read models, and the answer writes. The reveal rule
@@ -213,8 +221,10 @@ async function viewerInstances(
   for (const answer of ownAnswers) {
     if (!isVisibleAnswer(answer)) continue;
     const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
-    const day = instance ? await getByUuid(ctx, "couple_days", instance.couple_day_id) : null;
-    if (instance && day && day.couple_id === coupleId) {
+    // Topic answers live only in their topic, so the daily history leaves them out.
+    if (!instance || isTopicInstance(instance)) continue;
+    const day = await getByUuid(ctx, "couple_days", instance.couple_day_id);
+    if (day && day.couple_id === coupleId) {
       found.push({ day, instance });
     }
   }
@@ -289,7 +299,7 @@ async function instanceContext(
   if (instance.status === "shuffled") {
     return fail("23514", shuffledMessage);
   }
-  const day = (await getByUuid(ctx, "couple_days", instance.couple_day_id))!;
+  const day = (await instanceDay(ctx, instance))!;
   return { instance, day };
 }
 
@@ -313,13 +323,12 @@ async function upsertAnswerPartnerChoice(
   ctx: WriterCtx,
   answer: Doc<"daily_question_answers">,
   instance: Doc<"daily_question_instances">,
-  day: Doc<"couple_days">,
   selectedUserId: string,
 ) {
   if (!(await answerKindsOf(ctx, instance.question_version_id)).includes("partner_choice")) {
     fail("23514", "partner choice answers are not allowed for this question");
   }
-  if (!(await isActiveCoupleMember(ctx, selectedUserId, day.couple_id))) {
+  if (!(await isActiveCoupleMember(ctx, selectedUserId, instance.couple_id))) {
     fail("23514", "partner choice must select an active couple member");
   }
   const existing = await ctx.db
@@ -338,7 +347,6 @@ async function insertAnswerMedia(
   ctx: WriterCtx,
   answer: Doc<"daily_question_answers">,
   instance: Doc<"daily_question_instances">,
-  day: Doc<"couple_days">,
   mediaAssetId: string,
   sortOrder: number,
 ) {
@@ -348,7 +356,7 @@ async function insertAnswerMedia(
     !asset ||
     requiredKind === null ||
     asset.owner_user_id !== answer.user_id ||
-    asset.couple_id !== day.couple_id ||
+    asset.couple_id !== instance.couple_id ||
     asset.reserved_parent_kind !== "daily_answer_media" ||
     asset.reserved_parent_id !== answer.id ||
     (asset.upload_purpose !== "daily_answer_media" && asset.upload_purpose !== "voice_note") ||
@@ -438,6 +446,103 @@ export type ClientOperationArgs = {
 
 const MAX_ANSWER_PAYLOAD_BYTES = 16_384;
 
+/** The object check and size cap that run before an answer's client operation. */
+export function assertAnswerPayloadShape(payload: unknown): Record<string, unknown> {
+  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+    fail("23514", "answer payload must be an object");
+  }
+  // Text is at most 2000 characters (8000 bytes) and the rest are a few ids, so a bigger body is not an answer.
+  if (jsonbByteLength(payload) > MAX_ANSWER_PAYLOAD_BYTES) {
+    fail("23514", "answer payload is too large");
+  }
+  return payload as Record<string, unknown>;
+}
+
+export type ParsedAnswer = {
+  answerId: string;
+  textBody: string;
+  selectedPartnerUserId: string | null;
+  mediaAssetIds: string[];
+};
+
+/**
+ * Checks an answer's parts against the instance's answer kinds and couple, and that the user
+ * has no answer on the instance yet. Daily and topic answers share it.
+ */
+export async function parseAnswerPayload(
+  ctx: WriterCtx,
+  userId: string,
+  instance: Doc<"daily_question_instances">,
+  body: Record<string, unknown>,
+): Promise<ParsedAnswer> {
+  const allowedKinds = await answerKindsOf(ctx, instance.question_version_id);
+  const providedKinds: string[] = [];
+
+  const textBody = btrim(payloadText(body.text));
+  if (textBody !== "") {
+    if (charLength(textBody) > 2000) {
+      fail("23514", "answer text is too long");
+    }
+    providedKinds.push("text");
+  }
+
+  const partnerChoiceText = payloadText(body.partner_choice_user_id);
+  const selectedPartnerUserId = partnerChoiceText === "" ? null : uuidArg(partnerChoiceText);
+  if (selectedPartnerUserId !== null) {
+    providedKinds.push("partner_choice");
+  }
+
+  if ("media_asset_ids" in body && !Array.isArray(body.media_asset_ids)) {
+    fail("23514", "media_asset_ids must be an array");
+  }
+  const mediaAssetIds: string[] = [];
+  for (const item of (body.media_asset_ids as unknown[] | undefined) ?? []) {
+    const mediaAssetId = item === null ? null : uuidArg(payloadText(item));
+    const asset = mediaAssetId === null ? null : await getByUuid(ctx, "media_assets", mediaAssetId);
+    const mediaKind = asset?.media_type === "image" ? "photo" : asset?.media_type === "voice" ? "voice" : null;
+    if (
+      !asset ||
+      mediaKind === null ||
+      asset.owner_user_id !== userId ||
+      asset.couple_id !== instance.couple_id ||
+      asset.reserved_parent_kind !== "daily_answer_media" ||
+      asset.upload_status !== "finalized" ||
+      asset.storage_delete_status !== "none" ||
+      asset.moderation_status !== "visible" ||
+      asset.deleted_at !== undefined
+    ) {
+      fail("23514", "daily answer media asset is not usable");
+    }
+    mediaAssetIds.push(asset.id);
+    if (!providedKinds.includes(mediaKind)) {
+      providedKinds.push(mediaKind);
+    }
+  }
+
+  if (providedKinds.length === 0) {
+    fail("23514", "answer payload must include at least one answer kind");
+  }
+  for (const kind of providedKinds) {
+    if (!allowedKinds.includes(kind)) {
+      fail("23514", "answer kind is not allowed for this question");
+    }
+  }
+
+  const answerIdText = payloadText(body.answer_id);
+  const answerId = answerIdText === "" ? newUuid() : uuidArg(answerIdText);
+  if (await getByUuid(ctx, "daily_question_answers", answerId)) {
+    uniqueViolation("daily_question_answers_pkey");
+  }
+  const existingOwn = await ctx.db
+    .query("daily_question_answers")
+    .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", userId))
+    .first();
+  if (existingOwn) {
+    uniqueViolation("daily_question_answers_instance_user_unique");
+  }
+  return { answerId, textBody, selectedPartnerUserId, mediaAssetIds };
+}
+
 /** Port of `internal.submit_daily_answer`. Returns the answer id. */
 export async function submitDailyAnswer(
   ctx: WriterCtx,
@@ -446,14 +551,7 @@ export async function submitDailyAnswer(
   payload: unknown,
   operation: ClientOperationArgs,
 ): Promise<string> {
-  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
-    fail("23514", "answer payload must be an object");
-  }
-  // Text is at most 2000 characters (8000 bytes) and the rest are a few ids, so a bigger body is not an answer.
-  if (jsonbByteLength(payload) > MAX_ANSWER_PAYLOAD_BYTES) {
-    fail("23514", "answer payload is too large");
-  }
-  const body = payload as Record<string, unknown>;
+  const body = assertAnswerPayloadShape(payload);
 
   const result = await runClientOperation(
     ctx,
@@ -469,6 +567,9 @@ export async function submitDailyAnswer(
     },
     async () => {
       const { instance, day } = await instanceContext(ctx, instanceId, "shuffled daily questions cannot be answered");
+      if (isTopicInstance(instance)) {
+        fail("23514", "topic questions are answered with submit_topic_answer");
+      }
 
       if (
         operation.localCreatedAt < day.starts_at ||
@@ -491,83 +592,10 @@ export async function submitDailyAnswer(
         }
       }
 
-      const allowedKinds = await answerKindsOf(ctx, instance.question_version_id);
-      const providedKinds: string[] = [];
-
-      const textBody = btrim(payloadText(body.text));
-      if (textBody !== "") {
-        if (charLength(textBody) > 2000) {
-          fail("23514", "answer text is too long");
-        }
-        providedKinds.push("text");
-      }
-
-      const partnerChoiceText = payloadText(body.partner_choice_user_id);
-      const selectedPartnerUserId = partnerChoiceText === "" ? null : uuidArg(partnerChoiceText);
-      if (selectedPartnerUserId !== null) {
-        providedKinds.push("partner_choice");
-      }
-
-      if ("media_asset_ids" in body && !Array.isArray(body.media_asset_ids)) {
-        fail("23514", "media_asset_ids must be an array");
-      }
-      const mediaAssetIds: string[] = [];
-      for (const item of (body.media_asset_ids as unknown[] | undefined) ?? []) {
-        const mediaAssetId = item === null ? null : uuidArg(payloadText(item));
-        const asset = mediaAssetId === null ? null : await getByUuid(ctx, "media_assets", mediaAssetId);
-        const mediaKind = asset?.media_type === "image" ? "photo" : asset?.media_type === "voice" ? "voice" : null;
-        if (
-          !asset ||
-          mediaKind === null ||
-          asset.owner_user_id !== userId ||
-          asset.couple_id !== day.couple_id ||
-          asset.reserved_parent_kind !== "daily_answer_media" ||
-          asset.upload_status !== "finalized" ||
-          asset.storage_delete_status !== "none" ||
-          asset.moderation_status !== "visible" ||
-          asset.deleted_at !== undefined
-        ) {
-          fail("23514", "daily answer media asset is not usable");
-        }
-        mediaAssetIds.push(asset.id);
-        if (!providedKinds.includes(mediaKind)) {
-          providedKinds.push(mediaKind);
-        }
-      }
-
-      if (providedKinds.length === 0) {
-        fail("23514", "answer payload must include at least one answer kind");
-      }
-      for (const kind of providedKinds) {
-        if (!allowedKinds.includes(kind)) {
-          fail("23514", "answer kind is not allowed for this question");
-        }
-      }
-
-      const answerIdText = payloadText(body.answer_id);
-      const answerId = answerIdText === "" ? newUuid() : uuidArg(answerIdText);
-      if (await getByUuid(ctx, "daily_question_answers", answerId)) {
-        uniqueViolation("daily_question_answers_pkey");
-      }
-      const existingOwn = await ctx.db
-        .query("daily_question_answers")
-        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", userId))
-        .first();
-      if (existingOwn) {
-        uniqueViolation("daily_question_answers_instance_user_unique");
-      }
+      const parsed = await parseAnswerPayload(ctx, userId, instance, body);
       // assert_daily_question_answer_member: the author is an active member (checked above).
-      await insertDailyAnswer(ctx, {
-        userId,
-        instance,
-        day,
-        answerId,
-        textBody,
-        selectedPartnerUserId,
-        mediaAssetIds,
-        notifyPartner: true,
-      });
-      return { answer_id: answerId };
+      await insertDailyAnswer(ctx, { userId, instance, ...parsed, notifyPartner: true });
+      return { answer_id: parsed.answerId };
     },
   );
   return result.answer_id;
@@ -584,7 +612,6 @@ export async function insertDailyAnswer(
   input: {
     userId: string;
     instance: Doc<"daily_question_instances">;
-    day: Doc<"couple_days">;
     answerId: string;
     textBody: string;
     selectedPartnerUserId: string | null;
@@ -592,7 +619,7 @@ export async function insertDailyAnswer(
     notifyPartner: boolean;
   },
 ): Promise<void> {
-  const { userId, instance, day } = input;
+  const { userId, instance } = input;
   const now = nowIso();
   const answerDocId = await ctx.db.insert("daily_question_answers", {
     id: input.answerId,
@@ -611,24 +638,27 @@ export async function insertDailyAnswer(
     await upsertAnswerText(ctx, answer, instance, input.textBody);
   }
   if (input.selectedPartnerUserId !== null) {
-    await upsertAnswerPartnerChoice(ctx, answer, instance, day, input.selectedPartnerUserId);
+    await upsertAnswerPartnerChoice(ctx, answer, instance, input.selectedPartnerUserId);
   }
   for (const [index, mediaAssetId] of input.mediaAssetIds.entries()) {
-    await insertAnswerMedia(ctx, answer, instance, day, mediaAssetId, index + 1);
+    await insertAnswerMedia(ctx, answer, instance, mediaAssetId, index + 1);
   }
 
   if (userId === instance.seeded_for_user_id) {
     if (instance.status === "active") {
       await ctx.db.patch(instance._id, { status: "answered" });
     }
+    // A topic instance has no couple day, so a topic answer never completes the daily challenge.
+    const coupleDayId = instance.couple_day_id;
+    if (coupleDayId === undefined) return;
     const ownInstances = await ctx.db
       .query("daily_question_instances")
       .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-        q.eq("couple_day_id", instance.couple_day_id).eq("seeded_for_user_id", userId).eq("status", "answered"),
+        q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", userId).eq("status", "answered"),
       )
       .collect();
     if (ownInstances.length === DAILY_QUESTION_SLOTS) {
-      await completeDailyChallenge(ctx, instance.couple_day_id, userId, input.notifyPartner);
+      await completeDailyChallenge(ctx, coupleDayId, userId, input.notifyPartner);
     }
   }
 }
@@ -657,12 +687,17 @@ async function editDailyAnswer(
     },
     async () => {
       const { instance, day } = await instanceContext(ctx, instanceId, "shuffled daily questions cannot be edited");
-      if (operation.localCreatedAt < day.starts_at || operation.localCreatedAt >= day.ends_at) {
+      // A topic question has no day to end, so its answer can change until the partner answers.
+      if (
+        !isTopicInstance(instance) &&
+        (operation.localCreatedAt < day.starts_at || operation.localCreatedAt >= day.ends_at)
+      ) {
         fail("23514", "daily answer timestamp is outside the question day");
       }
       if (!(await canAccessCoupleContent(ctx, userId, day.couple_id))) {
         fail("42501", "active entitled couple access is required");
       }
+      if (isTopicInstance(instance)) await assertTopicQuestionOpen(ctx, instance.couple_id, userId, instance.question_id);
       const own = await ctx.db
         .query("daily_question_answers")
         .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", userId))
@@ -681,7 +716,7 @@ async function editDailyAnswer(
       if (edit.kind === "text") {
         await upsertAnswerText(ctx, own, instance, edit.text!);
       } else {
-        await upsertAnswerPartnerChoice(ctx, own, instance, day, edit.selectedUserId!);
+        await upsertAnswerPartnerChoice(ctx, own, instance, edit.selectedUserId!);
       }
       // Restate the answer's effective time so "answered at" follows the edit.
       await ctx.db.patch(own._id, withUpdatedAt({ created_at: nowIso() }));

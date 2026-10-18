@@ -22,7 +22,8 @@ backend/questions/
 |                   |-- en.md
 |                   `-- nb.md
 |-- custom/
-`-- mini_game/
+|-- mini_game/
+`-- topic/          (see Topics below)
 ```
 
 `<question_key>` maps to `questions.key` and should stay stable for the
@@ -43,13 +44,41 @@ version in place.
 Use YAML front matter in each file:
 
 - `question.md`: `collection`, `key`, `status`, `resurfaceable`,
-  `resurface_after_months`.
+  `resurface_after_months`, and for topic questions `topic` and `sort_order`.
 - `version.md`: `version_number`, `status`, `active_from`, `retired_at`,
   `answer_kinds`.
 - `locales/<locale>.md`: `locale`, `prompt`, `short_prompt`.
 
 Keep generated database metadata intact when backfilling existing rows. For new
 drafts, use the same fields with draft status until content is applied.
+
+## Topics
+
+Each topic is its own collection under `topic/`, with its questions inside it:
+
+```text
+topic/
+`-- <topic_key>/
+    |-- topic.md
+    |-- locales/
+    |   |-- en.md
+    |   `-- nb.md
+    `-- <question_key>/
+        |-- question.md
+        `-- versions/v001/...
+```
+
+- `topic.md`: `key`, `status`, `sort_order` (the shelf order), `adults_only`.
+- `locales/<locale>.md`: `locale`, `title` (1-60 characters), `subtitle` (at
+  most 160).
+- A topic's `question.md` adds `topic` (the topic key) and `sort_order` (the
+  order inside the topic, easiest first). Topic questions use
+  `resurfaceable: false` and `resurface_after_months: null`, because a couple
+  answers each one once.
+
+The topic's `status` decides whether the app shows it. A draft topic stays
+hidden even when its questions are active. Read the Topics and Flirt sections
+of `docs/couple-question-guidelines.md` before writing topic questions.
 
 ## Sync Script
 

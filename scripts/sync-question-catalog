@@ -32,7 +32,7 @@ DEFAULT_CATALOG_ROOT = BACKEND / "questions"
 # Keeps each `convex run` argument well under the OS single-argument size limit.
 CHUNK_SIZE = 30
 REQUIRED_LOCALES = ("en", "nb")
-COLLECTION_KINDS = {"system", "custom", "mini_game"}
+COLLECTION_KINDS = {"system", "custom", "mini_game", "topic"}
 STATUSES = {"draft", "active", "retired", "archived"}
 VERSION_STATUSES = {"draft", "active", "retired"}
 ANSWER_KINDS = {"text", "photo", "voice", "partner_choice"}
@@ -67,6 +67,17 @@ class Question:
     resurface_after_months: int | None
     versions: tuple[Version, ...]
     path: Path
+    topic: str | None = None
+    sort_order: int | None = None
+
+
+@dataclass(frozen=True)
+class Topic:
+    key: str
+    status: str
+    sort_order: int
+    adults_only: bool
+    localizations: dict[str, tuple[str, str]]
 
 
 def fail(message: str) -> None:
@@ -143,55 +154,114 @@ def require_keys(path: Path, data: dict[str, Any], keys: tuple[str, ...]) -> Non
         fail(f"{path} is missing required fields: {', '.join(missing)}")
 
 
-def parse_catalog(root: Path) -> list[Question]:
+def parse_topic(topic_dir: Path) -> Topic:
+    topic_path = topic_dir / "topic.md"
+    if not topic_path.exists():
+        fail(f"{topic_dir} is missing topic.md")
+    data = parse_front_matter(topic_path)
+    require_keys(topic_path, data, ("key", "status", "sort_order", "adults_only"))
+    key = str(data["key"])
+    if key != topic_dir.name:
+        fail(f"{topic_path} key does not match folder name")
+    if not KEY_RE.fullmatch(key):
+        fail(f"{topic_path} has invalid key: {key}")
+    if str(data["status"]) not in STATUSES:
+        fail(f"{topic_path} has invalid status: {data['status']}")
+    if not isinstance(data["sort_order"], int) or not isinstance(data["adults_only"], bool):
+        fail(f"{topic_path} needs a whole-number sort_order and a true or false adults_only")
+    localizations: dict[str, tuple[str, str]] = {}
+    for locale in REQUIRED_LOCALES:
+        locale_path = topic_dir / "locales" / f"{locale}.md"
+        if not locale_path.exists():
+            fail(f"{topic_dir} is missing locales/{locale}.md")
+        locale_data = parse_front_matter(locale_path)
+        require_keys(locale_path, locale_data, ("locale", "title", "subtitle"))
+        if locale_data["locale"] != locale:
+            fail(f"{locale_path} locale does not match file name")
+        title = str(locale_data["title"]).strip()
+        subtitle = str(locale_data["subtitle"]).strip()
+        if not 1 <= len(title) <= 60 or len(subtitle) > 160:
+            fail(f"{locale_path} title must be 1-60 characters and subtitle at most 160")
+        localizations[locale] = (title, subtitle)
+    return Topic(
+        key=key,
+        status=str(data["status"]),
+        sort_order=data["sort_order"],
+        adults_only=data["adults_only"],
+        localizations=localizations,
+    )
+
+
+def parse_catalog(root: Path) -> tuple[list[Question], list[Topic]]:
     questions: list[Question] = []
+    topics: list[Topic] = []
     for collection_dir in sorted(path for path in root.iterdir() if path.is_dir()):
         collection = collection_dir.name
         if collection not in COLLECTION_KINDS:
             continue
+        if collection == "topic":
+            for topic_dir in sorted(path for path in collection_dir.iterdir() if path.is_dir()):
+                topic = parse_topic(topic_dir)
+                topics.append(topic)
+                for question_dir in sorted(
+                    path for path in topic_dir.iterdir() if path.is_dir() and path.name != "locales"
+                ):
+                    question = parse_question(question_dir, collection)
+                    if question.topic != topic.key:
+                        fail(f"{question_dir}/question.md topic does not match its folder")
+                    questions.append(question)
+            continue
         for question_dir in sorted(path for path in collection_dir.iterdir() if path.is_dir()):
-            question_path = question_dir / "question.md"
-            if not question_path.exists():
-                fail(f"{question_dir} is missing question.md")
-            question_data = parse_front_matter(question_path)
-            require_keys(
-                question_path,
-                question_data,
-                ("collection", "key", "status", "resurfaceable", "resurface_after_months"),
-            )
-            key = str(question_data["key"])
-            if question_data["collection"] != collection:
-                fail(f"{question_path} collection does not match folder name")
-            if key != question_dir.name:
-                fail(f"{question_path} key does not match folder name")
-            if not KEY_RE.fullmatch(key):
-                fail(f"{question_path} has invalid key: {key}")
-            status = str(question_data["status"])
-            if status not in STATUSES:
-                fail(f"{question_path} has invalid status: {status}")
+            questions.append(parse_question(question_dir, collection))
+    return questions, topics
 
-            versions_dir = question_dir / "versions"
-            if not versions_dir.exists():
-                fail(f"{question_dir} is missing versions/")
-            versions = tuple(parse_version(path) for path in sorted(versions_dir.iterdir()) if path.is_dir())
-            if not versions:
-                fail(f"{question_dir} must contain at least one version")
-            active_versions = [version for version in versions if version.status == "active"]
-            if status == "active" and len(active_versions) != 1:
-                fail(f"{question_dir} active questions must have exactly one active version")
 
-            questions.append(
-                Question(
-                    collection=collection,
-                    key=key,
-                    status=status,
-                    resurfaceable=bool(question_data["resurfaceable"]),
-                    resurface_after_months=question_data["resurface_after_months"],
-                    versions=versions,
-                    path=question_dir,
-                )
-            )
-    return questions
+def parse_question(question_dir: Path, collection: str) -> Question:
+    question_path = question_dir / "question.md"
+    if not question_path.exists():
+        fail(f"{question_dir} is missing question.md")
+    question_data = parse_front_matter(question_path)
+    require_keys(
+        question_path,
+        question_data,
+        ("collection", "key", "status", "resurfaceable", "resurface_after_months"),
+    )
+    key = str(question_data["key"])
+    if question_data["collection"] != collection:
+        fail(f"{question_path} collection does not match folder name")
+    if key != question_dir.name:
+        fail(f"{question_path} key does not match folder name")
+    if not KEY_RE.fullmatch(key):
+        fail(f"{question_path} has invalid key: {key}")
+    status = str(question_data["status"])
+    if status not in STATUSES:
+        fail(f"{question_path} has invalid status: {status}")
+
+    versions_dir = question_dir / "versions"
+    if not versions_dir.exists():
+        fail(f"{question_dir} is missing versions/")
+    versions = tuple(parse_version(path) for path in sorted(versions_dir.iterdir()) if path.is_dir())
+    if not versions:
+        fail(f"{question_dir} must contain at least one version")
+    active_versions = [version for version in versions if version.status == "active"]
+    if status == "active" and len(active_versions) != 1:
+        fail(f"{question_dir} active questions must have exactly one active version")
+
+    topic = question_data.get("topic")
+    sort_order = question_data.get("sort_order")
+    if collection == "topic" and (not topic or not isinstance(sort_order, int)):
+        fail(f"{question_path} topic questions need a topic and a whole-number sort_order")
+    return Question(
+        collection=collection,
+        key=key,
+        status=status,
+        resurfaceable=bool(question_data["resurfaceable"]),
+        resurface_after_months=question_data["resurface_after_months"],
+        versions=versions,
+        path=question_dir,
+        topic=str(topic) if topic else None,
+        sort_order=sort_order if isinstance(sort_order, int) else None,
+    )
 
 
 def parse_version(version_dir: Path) -> Version:
@@ -247,11 +317,28 @@ def parse_version(version_dir: Path) -> Version:
     )
 
 
+def build_topic_payload(topics: list[Topic]) -> list[dict[str, Any]]:
+    return [
+        {
+            "key": topic.key,
+            "status": topic.status,
+            "sort_order": topic.sort_order,
+            "adults_only": topic.adults_only,
+            "localizations": {
+                locale: {"title": title, "subtitle": subtitle} for locale, (title, subtitle) in topic.localizations.items()
+            },
+        }
+        for topic in topics
+    ]
+
+
 def build_payload(questions: list[Question]) -> list[dict[str, Any]]:
     return [
         {
             "collection": question.collection,
             "key": question.key,
+            "topic": question.topic,
+            "sort_order": question.sort_order,
             "status": question.status,
             "resurfaceable": question.resurfaceable,
             "resurface_after_months": question.resurface_after_months,
@@ -277,9 +364,11 @@ def build_payload(questions: list[Question]) -> list[dict[str, Any]]:
     ]
 
 
-def run_sync(questions: list[dict[str, Any]], *, apply: bool) -> dict[str, Any]:
-    """Runs catalog:sync_catalog for one chunk of questions and returns its result."""
-    args = json.dumps({"questions": questions, "apply": apply}, ensure_ascii=False, separators=(",", ":"))
+def run_sync(questions: list[dict[str, Any]], topics: list[dict[str, Any]], *, apply: bool) -> dict[str, Any]:
+    """Runs catalog:sync_catalog for one chunk of questions (and their topics) and returns its result."""
+    args = json.dumps(
+        {"questions": questions, "topics": topics, "apply": apply}, ensure_ascii=False, separators=(",", ":")
+    )
     completed = subprocess.run(
         ["npx", "convex", "run", "catalog:sync_catalog", args],
         check=False,
@@ -319,20 +408,36 @@ def main() -> None:
     parser.add_argument("--emit-json", action="store_true", help="Print the sync payload as JSON and exit.")
     args = parser.parse_args()
 
-    questions = parse_catalog(args.catalog_root)
+    questions, topics = parse_catalog(args.catalog_root)
     payload = build_payload(questions)
+    topic_payload = build_topic_payload(topics)
 
     if args.emit_json:
-        print(json.dumps({"questions": payload}, ensure_ascii=False, indent=2))
+        print(json.dumps({"questions": payload, "topics": topic_payload}, ensure_ascii=False, indent=2))
         return
 
-    chunks = chunked(payload, CHUNK_SIZE)
+    # Each chunk carries the topics its questions belong to, so a topic is written before its
+    # questions. Topics without questions ride along with the first chunk.
+    question_chunks = chunked(payload, CHUNK_SIZE) or [[]]
+    used = {question["topic"] for question in payload if question["topic"]}
+    chunks = [
+        (
+            chunk,
+            [
+                topic
+                for topic in topic_payload
+                if topic["key"] in {question["topic"] for question in chunk}
+                or (index == 0 and topic["key"] not in used)
+            ],
+        )
+        for index, chunk in enumerate(question_chunks)
+    ]
 
     # Compare every chunk first so one rejected version blocks the whole apply.
     changes: list[str] = []
     errors: list[str] = []
-    for chunk in chunks:
-        result = run_sync(chunk, apply=False)
+    for chunk, chunk_topics in chunks:
+        result = run_sync(chunk, chunk_topics, apply=False)
         changes.extend(result["changes"])
         errors.extend(result["errors"])
     if errors:
@@ -352,8 +457,8 @@ def main() -> None:
         print("\nDry run only. Re-run with --apply to upload these changes.")
         return
 
-    for chunk in chunks:
-        result = run_sync(chunk, apply=True)
+    for chunk, chunk_topics in chunks:
+        result = run_sync(chunk, chunk_topics, apply=True)
         if result["errors"]:
             for error in result["errors"]:
                 print(f"error: {error}", file=sys.stderr)

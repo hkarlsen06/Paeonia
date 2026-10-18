@@ -47,10 +47,15 @@ describe("payload builders", () => {
   });
 
   test("an alert without a title leaves the title out and sends no sender name", () => {
-    const payload = buildAppApsPayload({ ...alert, title: null, body: null });
-    expect(payload.aps).toMatchObject({ alert: { body: "" } });
+    const payload = buildAppApsPayload({ ...alert, title: null });
+    expect(payload.aps).toMatchObject({ alert: { body: "Open Paeonia to see it." } });
     expect((payload.aps as { alert: object }).alert).not.toHaveProperty("title");
     expect(JSON.parse(JSON.stringify(payload))).not.toHaveProperty("sender_name");
+  });
+
+  test("an alert without a body shows its title alone, with no empty body line", () => {
+    const payload = buildAppApsPayload({ ...alert, body: null });
+    expect((payload.aps as { alert: object }).alert).toEqual({ title: "Alex" });
   });
 
   test("background payload wakes the app without any visible text", () => {

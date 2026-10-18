@@ -27,8 +27,7 @@ const TYPING_TIMEOUT_MS = 4_000;
 async function instanceCoupleId(ctx: ReaderCtx, instanceId: string): Promise<string | null> {
   const instance = await getByUuid(ctx, "daily_question_instances", instanceId);
   if (!instance || instance.status === "shuffled") return null;
-  const day = await getByUuid(ctx, "couple_days", instance.couple_day_id);
-  return day?.couple_id ?? null;
+  return instance.couple_id;
 }
 
 /**

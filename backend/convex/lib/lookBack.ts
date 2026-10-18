@@ -176,6 +176,7 @@ async function questionCandidates(frame: Frame): Promise<Candidate[]> {
     for (const answer of answers) {
       if (instances.has(answer.instance_id)) continue;
       const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
+      // A topic answer has no couple day and stays out of Look Back.
       const day = instance ? await getByUuid(ctx, "couple_days", instance.couple_day_id) : null;
       if (instance && day) instances.set(instance.id, { instance, day });
     }

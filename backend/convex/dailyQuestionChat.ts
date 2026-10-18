@@ -8,6 +8,7 @@ import { addSeenStates, QuestionContentReader, questionRow, type DailyQuestionRo
 import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
+import { adultGate, topicIsOpen, topicOfQuestion } from "./lib/topics";
 
 /**
  * The question page: every round of one question in the named couple, oldest first,
@@ -28,6 +29,10 @@ export const get_daily_question_chat = query({
       return fail("42501", "active entitled couple access is required");
     }
     const questionId = uuidArg(args.p_question_id);
+    const topic = await topicOfQuestion(ctx, questionId);
+    if (topic && !topicIsOpen(topic, await adultGate(ctx, coupleId, userId))) {
+      return fail("42501", "adult topic is not open");
+    }
     const rounds = await loadQuestionRounds(ctx, coupleId, questionId);
 
     const reader = new QuestionContentReader(ctx);
@@ -38,7 +43,9 @@ export const get_daily_question_chat = query({
       if (!content) continue;
       const own = answers.find((answer) => answer.user_id === userId) ?? null;
       const partner = answers.find((answer) => answer.user_id !== userId) ?? null;
-      questions.push(questionRow(day, instance, content, own, partner, own !== null && partner !== null, false));
+      const row = questionRow(day, instance, content, own, partner, own !== null && partner !== null, false);
+      row.topic_key = topic?.key ?? null;
+      questions.push(row);
       for (const answer of answers) {
         answerDetails.push(await detailRow(ctx, userId, day, instance, answer, answer.user_id === userId || own !== null));
       }

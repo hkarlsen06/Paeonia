@@ -72,8 +72,10 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
   if (notification.apns_push_type === "background") {
     return { aps: { "content-available": 1 }, ...notification.payload };
   }
-  const alert: Record<string, string> = { body: notification.body ?? "" };
+  // A row without a body (a Flirt chat message) shows its title alone, never an empty line.
+  const alert: Record<string, string> = {};
   if (notification.title) alert.title = notification.title;
+  if (notification.body) alert.body = notification.body;
   // `mutable-content` lets the Notification Service Extension upgrade into a
   // communication notification. `content-available` also wakes the app so the
   // alert path refreshes widget data even if the separate silent push is

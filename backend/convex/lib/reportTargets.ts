@@ -124,12 +124,11 @@ export async function resolveContentReportTarget(
       const answer = await getByUuid(ctx, "daily_question_answers", targetId);
       if (!answer || answer.deleted_at !== undefined || answer.moderation_status !== "visible") return null;
       const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
-      const coupleDay = await getByUuid(ctx, "couple_days", instance?.couple_day_id);
-      if (!instance || !coupleDay) return null;
-      const pairId = await pairIdOf(ctx, coupleDay.couple_id);
+      if (!instance) return null;
+      const pairId = await pairIdOf(ctx, instance.couple_id);
       if (!pairId) return null;
       // Port of `internal.can_view_daily_answer`, evaluated for the reporter.
-      if (!(await canAccessCoupleContent(ctx, reporterUserId, coupleDay.couple_id))) return null;
+      if (!(await canAccessCoupleContent(ctx, reporterUserId, instance.couple_id))) return null;
       if (answer.user_id !== reporterUserId) {
         const own = await ctx.db
           .query("daily_question_answers")
@@ -148,7 +147,7 @@ export async function resolveContentReportTarget(
       return {
         target_kind: targetKind,
         reported_user_id: answer.user_id,
-        couple_id: coupleDay.couple_id,
+        couple_id: instance.couple_id,
         pair_id: pairId,
         snapshot: stripNulls({
           target_kind: targetKind,

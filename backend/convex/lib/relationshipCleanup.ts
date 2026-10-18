@@ -341,6 +341,13 @@ export async function purgeCoupleContent(
     if (budget.left <= 0) return unfinished();
     await remove(state);
   }
+  for (const skip of await ctx.db
+    .query("topic_question_skips")
+    .withIndex("by_couple_id_question_id", (q) => q.eq("couple_id", couple.id))
+    .take(Math.max(budget.left, 1))) {
+    if (budget.left <= 0) return unfinished();
+    await remove(skip);
+  }
 
   const threads = await ctx.db
     .query("conversation_threads")

@@ -32,6 +32,7 @@ const NOTIFICATION_KINDS = [
   "game_turn_reminder",
   "question_time_reminder",
   "partner_joined",
+  "topics_waiting",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -161,6 +162,7 @@ function preferenceAllows(
     case "daily_challenge_completed":
       return preference.daily_challenge_enabled;
     case "partner_answered":
+    case "topics_waiting":
       return preference.partner_answered_enabled;
     case "widget_updated":
       return pushType !== "alert" || preference.widget_updates_enabled;
@@ -467,7 +469,8 @@ export async function enqueuePartnerAnsweredNotification(
     return;
   }
   const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
-  if (!instance) return;
+  // Topic answers send the throttled `topics_waiting` push instead (lib/topics.ts).
+  if (!instance || instance.couple_day_id === undefined) return;
   const coupleDay = await getByUuid(ctx, "couple_days", instance.couple_day_id);
   if (!coupleDay) return;
 

@@ -41,6 +41,7 @@ export const activityKind = literals(
   "memory_updated",
   "thread_message_sent",
   "game_turn_completed",
+  "topic_answer_submitted",
 );
 export const notificationKind = literals(
   "streak_reminder",
@@ -58,6 +59,7 @@ export const notificationKind = literals(
   "game_turn_reminder",
   "question_time_reminder",
   "partner_joined",
+  "topics_waiting",
 );
 /** Every game, in catalog order. A new game adds its kind here and an entry in `GAME_BACKENDS` (lib/gameRegistry.ts). */
 export const GAME_KINDS = [

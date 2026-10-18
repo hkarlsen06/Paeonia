@@ -57,6 +57,8 @@ export type DailyQuestionRow = {
   latest_earlier_round_local_date?: string | null;
   /** Some day of this question has answers from both partners, so its chat can start. */
   chat_available?: boolean;
+  /** The topic a topic question belongs to. Null for daily questions. */
+  topic_key: string | null;
 };
 
 export function isVisibleAnswer(answer: Doc<"daily_question_answers"> | null | undefined): answer is Doc<"daily_question_answers"> {
@@ -146,6 +148,7 @@ export function questionRow(
     partner_answered_at: partnerAnswer?.created_at ?? null,
     can_view_partner_answer: canViewPartnerAnswer,
     is_current_day: isCurrentDay,
+    topic_key: null,
   };
 }
 
@@ -179,6 +182,19 @@ export async function instancesOfDay(ctx: ReaderCtx, coupleDayId: string): Promi
 
 export function isLive(instance: Doc<"daily_question_instances">): boolean {
   return instance.status === "active" || instance.status === "answered";
+}
+
+/** A topic question's instance. It has no couple day, so it never shows up in daily reads. */
+export function isTopicInstance(instance: Doc<"daily_question_instances">): boolean {
+  return instance.topic_collection_id !== undefined;
+}
+
+/** The day an instance is dated by: its daily couple day, or the day a topic question was started on. */
+export async function instanceDay(
+  ctx: ReaderCtx,
+  instance: Doc<"daily_question_instances">,
+): Promise<Doc<"couple_days"> | null> {
+  return await getByUuid(ctx, "couple_days", instance.couple_day_id ?? instance.started_couple_day_id);
 }
 
 /** What "today" means for the today read model. */
@@ -333,7 +349,8 @@ export async function getDailyQuestionsHistory(
   for (const ownAnswer of ownAnswers) {
     if (!isVisibleAnswer(ownAnswer)) continue;
     const instance = await getByUuid(ctx, "daily_question_instances", ownAnswer.instance_id);
-    if (!instance || !isLive(instance)) continue;
+    // Topic answers live only in their topic.
+    if (!instance || !isLive(instance) || isTopicInstance(instance)) continue;
     const day = await getByUuid(ctx, "couple_days", instance.couple_day_id);
     if (!day || day.couple_id !== coupleId) continue;
     const content = await reader.get(instance.question_version_id);
@@ -383,7 +400,7 @@ export async function loadAnsweredQuestions(ctx: ReaderCtx, userId: string): Pro
   for (const answer of answers) {
     if (answer.deleted_at !== undefined) continue;
     const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
-    if (!instance) continue;
+    if (!instance || isTopicInstance(instance)) continue;
     let questionId = questionByVersion.get(instance.question_version_id);
     if (questionId === undefined) {
       questionId = (await getByUuid(ctx, "question_versions", instance.question_version_id))?.question_id ?? null;

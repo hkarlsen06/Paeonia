@@ -91,6 +91,7 @@ import type * as lib_streaks from "../lib/streaks.js";
 import type * as lib_syncEvents from "../lib/syncEvents.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_time from "../lib/time.js";
+import type * as lib_topics from "../lib/topics.js";
 import type * as lib_ultimateTicTacToe from "../lib/ultimateTicTacToe.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as lib_widgetDrawings from "../lib/widgetDrawings.js";
@@ -114,6 +115,7 @@ import type * as stories from "../stories.js";
 import type * as storyChain from "../storyChain.js";
 import type * as streaks from "../streaks.js";
 import type * as threads from "../threads.js";
+import type * as topics from "../topics.js";
 import type * as widget from "../widget.js";
 
 import type {
@@ -206,6 +208,7 @@ declare const fullApi: ApiFromModules<{
   "lib/syncEvents": typeof lib_syncEvents;
   "lib/text": typeof lib_text;
   "lib/time": typeof lib_time;
+  "lib/topics": typeof lib_topics;
   "lib/ultimateTicTacToe": typeof lib_ultimateTicTacToe;
   "lib/validators": typeof lib_validators;
   "lib/widgetDrawings": typeof lib_widgetDrawings;
@@ -229,6 +232,7 @@ declare const fullApi: ApiFromModules<{
   storyChain: typeof storyChain;
   streaks: typeof streaks;
   threads: typeof threads;
+  topics: typeof topics;
   widget: typeof widget;
 }>;
 
