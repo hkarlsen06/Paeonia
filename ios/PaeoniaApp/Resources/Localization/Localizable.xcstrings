@@ -14547,6 +14547,42 @@
         }
       }
     },
+    "games.setup.callTip.message" : {
+      "comment" : "Tip in the first-time Games setup that asks the couple to call each other while they play",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Call or FaceTime each other while you play. It's more fun when you can hear each other react."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ring eller FaceTime hverandre mens dere spiller. Det er morsommere når dere hører hverandre reagere."
+          }
+        }
+      }
+    },
+    "games.setup.callTip.title" : {
+      "comment" : "Heading of the tip in the first-time Games setup that asks the couple to call each other while they play",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play on a call"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill mens dere snakker sammen"
+          }
+        }
+      }
+    },
     "games.setup.continue" : {
       "comment" : "Button that finishes the Games setup",
       "extractionState" : "manual",

@@ -9,6 +9,7 @@ struct GamesSetupView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
                 header
+                GamesCallTip()
                 GameSettingsOptions(playStyle: $viewModel.draftPlayStyle, language: $viewModel.draftLanguage)
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -51,6 +52,33 @@ struct GamesSetupView: View {
     }
 }
 
+/// Asks the couple to call each other while they play. Both first-time screens
+/// show it, so each partner sees it once.
+struct GamesCallTip: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: PaeoniaSpacing.space12) {
+            Image(systemName: "phone.fill")
+                .font(.title3)
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                Text(.gamesSetupCallTipTitle)
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                Text(.gamesSetupCallTipMessage)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(PaeoniaSpacing.cardContentPadding)
+        .background(.paeoniaSurfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// A round accent badge with a symbol, used at the top of the Games screens.
 struct GamesBadge: View {
     let systemImage: String
@@ -90,6 +118,8 @@ struct GamesPartnerPickedView: View {
                     summaryRow(title: .gamesSetupPlayStyleTitle, value: settings.playStyle.title)
                     summaryRow(title: .gamesSetupLanguageTitle, value: settings.language.title)
                 }
+
+                GamesCallTip()
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
