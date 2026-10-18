@@ -1,16 +1,18 @@
 import SwiftUI
 
-/// The reveal of a pick-one-of-two question, as a raised card. The same pick puts both
-/// avatars over the option in large type. Different picks split the card, each avatar
-/// over its own option. `PartnerChoiceMatchBanner` adds the bloom and reads the card to
-/// VoiceOver as one sentence.
-struct OptionPickMatchCard: View {
+/// How the two picks lined up, as a raised card: the option of a pick-one-of-two
+/// question, or the person picked on a partner-choice question. The same pick puts both
+/// avatars over it in large type. Different picks split the card, each avatar over its
+/// own pick. `PartnerChoiceMatchBanner` adds the bloom and reads the card to VoiceOver
+/// as one sentence.
+struct PickMatchCard: View {
     let yours: String
     let theirs: String
+    /// From the match, not the labels, so two people with the same name still split.
+    let isSamePick: Bool
     let participants: DailyChallengeParticipants
 
     private let avatarSize: CGFloat = 44
-    private var isSamePick: Bool { yours == theirs }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)

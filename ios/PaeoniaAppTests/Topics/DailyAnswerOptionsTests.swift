@@ -113,6 +113,17 @@ struct PickMatchTests {
         #expect(match?.isSamePick == true)
     }
 
+    @Test func personPicksShowTheNamesPicked() {
+        func picks(_ match: PartnerChoiceMatch) -> [String] {
+            let picks = match.picks(viewerName: "Hjalmar", partnerName: "Elena")
+            return [picks.yours, picks.theirs]
+        }
+        #expect(picks(.bothPickedPartner) == ["Elena", "Elena"])
+        #expect(picks(.bothPickedViewer) == ["Hjalmar", "Hjalmar"])
+        #expect(picks(.eachPickedTheOther) == ["Elena", "Hjalmar"])
+        #expect(picks(.eachPickedThemselves) == ["Hjalmar", "Elena"])
+    }
+
     @Test func differentPicksSayWhoPickedWhat() {
         let match = question(own: .first, partner: .second).partnerChoiceMatch(participants: .init())
         #expect(match == .pickedDifferentOptions(yours: "By the sea", theirs: "In the mountains"))

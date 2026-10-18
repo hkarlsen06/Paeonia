@@ -273,6 +273,9 @@ struct DailyPartnerAnswerRevealView: View {
     /// The partner's answer starts blurred behind a lock and clears a moment after it
     /// shows. This is the unlock the reveal plays.
     @State private var isPartnerAnswerClear = false
+    @State private var scrollPosition = ScrollPosition(edge: .top)
+    /// The match card shows after the answers have cleared.
+    @State private var showsMatch = false
 
     /// How long the lock shows before the answer clears. Short with Reduce Motion,
     /// which has no lock to look at.
@@ -291,6 +294,10 @@ struct DailyPartnerAnswerRevealView: View {
 
     private var isRevealed: Bool {
         shownQuestion != nil
+    }
+
+    private var hasMatch: Bool {
+        shownQuestion?.partnerChoiceMatch(participants: participants) != nil
     }
 
     var body: some View {
@@ -312,6 +319,7 @@ struct DailyPartnerAnswerRevealView: View {
                 .padding(.top, PaeoniaSpacing.space24)
                 .padding(.bottom, PaeoniaSpacing.space8)
             }
+            .scrollPosition($scrollPosition)
 
             Button(action: onDone) {
                 Text(.dailyChallengeFlowDoneButton)
@@ -337,11 +345,23 @@ struct DailyPartnerAnswerRevealView: View {
             withAnimation(PaeoniaMotion.standardCurve(duration: reduceMotion ? PaeoniaMotion.motionDefault : 0.7)) {
                 isPartnerAnswerClear = true
             }
+            // The match card comes once the answers have cleared. It lands under them,
+            // often below the fold, so the page follows it in and the bloom plays in
+            // view. A scroll during the unlock animation doesn't take.
+            guard hasMatch else { return }
+            try? await Task.sleep(for: .milliseconds(reduceMotion ? 250 : 750))
+            guard !Task.isCancelled else { return }
+            showsMatch = true
+            try? await Task.sleep(for: .milliseconds(50))
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
+                scrollPosition.scrollTo(edge: .bottom)
+            }
         }
     }
 
-    /// The partner's answer, unlocking from blurred to clear, then a line about how
-    /// the two picks lined up when this is a "who is more likely" question.
+    /// The partner's answer, unlocking from blurred to clear, then a card about how
+    /// the two picks lined up on a "who is more likely" or pick-one-of-two question.
     @ViewBuilder
     private func revealedContent(_ shownQuestion: DailyChallengeQuestion) -> some View {
         DailyQuestionStatusView(question: shownQuestion, participants: participants)
@@ -352,7 +372,7 @@ struct DailyPartnerAnswerRevealView: View {
         )
         .transition(.opacity)
 
-        if isPartnerAnswerClear,
+        if showsMatch,
            let match = shownQuestion.partnerChoiceMatch(participants: participants) {
             PartnerChoiceMatchBanner(
                 match: match,

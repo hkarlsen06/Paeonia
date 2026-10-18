@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// How the two picks on a "who is more likely" or a pick-one-of-two question line
-/// up. It is a small, warm line about the picks, never a score: nothing is counted and
+/// up. It is a warm note about the picks, never a score: nothing is counted and
 /// nothing is right or wrong.
 nonisolated enum PartnerChoiceMatch: Hashable {
     case bothPickedViewer
@@ -39,8 +39,17 @@ nonisolated enum PartnerChoiceMatch: Hashable {
         }
     }
 
-    fileprivate var systemImage: String {
-        isSamePick ? "heart.fill" : "person.2.fill"
+    /// What each person picked, as the card shows it: the option, or the picked
+    /// person's name. `viewerName` names the user.
+    func picks(viewerName: String, partnerName: String) -> (yours: String, theirs: String) {
+        switch self {
+        case .bothPickedViewer: (viewerName, viewerName)
+        case .bothPickedPartner: (partnerName, partnerName)
+        case .eachPickedThemselves: (viewerName, partnerName)
+        case .eachPickedTheOther: (partnerName, viewerName)
+        case let .bothPickedOption(option): (option, option)
+        case let .pickedDifferentOptions(yours, theirs): (yours, theirs)
+        }
     }
 }
 
@@ -64,12 +73,11 @@ extension DailyChallengeQuestion {
     }
 }
 
-/// How the revealed picks lined up: a raised card for a pick-one-of-two question
-/// (`OptionPickMatchCard`), one line for a partner-choice question. When both picked
-/// the same, a petal bloom and a soft haptic play the first time the card for
-/// `celebrationID` shows, and never again in this app session. A row the chat rebuilds
-/// mid-reveal carries on with the same burst. Reduce Motion skips the bloom and keeps the haptic. VoiceOver
-/// reads the match as one sentence.
+/// How the revealed picks lined up, as a `PickMatchCard`. When both picked the same, a
+/// petal bloom and a soft haptic play the first time the card for `celebrationID`
+/// shows, and never again in this app session. A row the chat rebuilds mid-reveal
+/// carries on with the same burst. Reduce Motion skips the bloom and keeps the haptic.
+/// VoiceOver reads the match as one sentence.
 struct PartnerChoiceMatchBanner: View {
     let match: PartnerChoiceMatch
     let participants: DailyChallengeParticipants
@@ -126,34 +134,17 @@ struct PartnerChoiceMatchBanner: View {
             }
     }
 
-    @ViewBuilder
     private var content: some View {
-        switch match {
-        case let .bothPickedOption(option):
-            OptionPickMatchCard(yours: option, theirs: option, participants: participants)
-        case let .pickedDifferentOptions(yours, theirs):
-            OptionPickMatchCard(yours: yours, theirs: theirs, participants: participants)
-        default:
-            pill
-        }
-    }
-
-    private var pill: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Image(systemName: match.systemImage)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .accessibilityHidden(true)
-
-            Text(title)
-                .font(PaeoniaTypography.bodyEmphasis)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, PaeoniaSpacing.space16)
-        .padding(.vertical, PaeoniaSpacing.space12)
-        .background(.paeoniaSurfaceSecondary, in: Capsule())
-        .frame(maxWidth: .infinity)
+        let picks = match.picks(
+            viewerName: participants.currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
+            partnerName: partnerName
+        )
+        return PickMatchCard(
+            yours: picks.yours,
+            theirs: picks.theirs,
+            isSamePick: match.isSamePick,
+            participants: participants
+        )
     }
 
     private var title: LocalizedStringResource {
