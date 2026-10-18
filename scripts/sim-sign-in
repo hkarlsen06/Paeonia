@@ -28,8 +28,8 @@ usage() {
 [[ $# -ge 2 ]] || usage
 simulator=$1
 case $2 in
-  first) subject=user_3KVUgELskLqEzQzJXz12wbkj2yS ;;
-  second) subject=user_3KVV3oyVHCORVwIObVOjvLojmpe ;;
+  first) subject=user_3KotMzS9muNMHFj5RwslQR71BN6 ;;
+  second) subject=user_3Kp1v73mYRtkjX4GuoRzlUxW1ym ;;
   *) usage ;;
 esac
 reset=${3:-}
