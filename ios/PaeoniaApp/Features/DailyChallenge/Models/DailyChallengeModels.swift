@@ -5,6 +5,8 @@ nonisolated enum DailyChallengeAnswerKind: Codable, Equatable, Hashable, Identif
     case photo
     case voice
     case partnerChoice
+    /// Pick one of two options, as in "Would you rather".
+    case eitherOr
     case unknown(String)
 
     var id: String { rawValue }
@@ -19,6 +21,8 @@ nonisolated enum DailyChallengeAnswerKind: Codable, Equatable, Hashable, Identif
             self = .voice
         case "partner_choice":
             self = .partnerChoice
+        case "either_or":
+            self = .eitherOr
         default:
             self = .unknown(rawValue)
         }
@@ -44,6 +48,8 @@ nonisolated enum DailyChallengeAnswerKind: Codable, Equatable, Hashable, Identif
             "voice"
         case .partnerChoice:
             "partner_choice"
+        case .eitherOr:
+            "either_or"
         case let .unknown(value):
             value
         }
@@ -66,6 +72,8 @@ extension DailyChallengeAnswerKind {
             .dailyChallengeKindVoice
         case .partnerChoice:
             .dailyChallengeKindChoice
+        case .eitherOr:
+            .dailyChallengeKindPick
         }
     }
 
@@ -79,6 +87,8 @@ extension DailyChallengeAnswerKind {
             "mic"
         case .partnerChoice:
             "person.2"
+        case .eitherOr:
+            "square.split.2x1"
         }
     }
 }
@@ -100,24 +110,28 @@ nonisolated struct DailyAnswerDraft: Codable, Equatable, Sendable {
     /// Describes a picked-but-not-yet-sent photo or voice note. The bytes live in the
     /// staged-media store keyed by the question instance.
     var media: DailyAnswerMediaDraft?
+    /// The option picked for a pick-one-of-two question.
+    var optionChoice: DailyAnswerOption?
 
     init(
         text: String = "",
         partnerChoiceUserID: UUID? = nil,
         selectedKind: DailyChallengeAnswerKind? = nil,
-        media: DailyAnswerMediaDraft? = nil
+        media: DailyAnswerMediaDraft? = nil,
+        optionChoice: DailyAnswerOption? = nil
     ) {
         self.text = text
         self.partnerChoiceUserID = partnerChoiceUserID
         self.selectedKind = selectedKind
         self.media = media
+        self.optionChoice = optionChoice
     }
 
     /// Whether the draft holds anything worth keeping. The store drops a draft once
     /// this is false, which is how clearing a field removes it from disk. The
     /// selected kind alone is not content — it's just a preference.
     var hasContent: Bool {
-        !text.isEmpty || partnerChoiceUserID != nil || media != nil
+        !text.isEmpty || partnerChoiceUserID != nil || media != nil || optionChoice != nil
     }
 
     /// The backend rejects answer text longer than this, counted in code points after
@@ -151,15 +165,22 @@ nonisolated struct DailyAnswerPayload: Equatable, Sendable {
     var text: String?
     var partnerChoiceUserID: UUID?
     var mediaAssetIDs: [UUID]
+    var optionChoice: DailyAnswerOption?
 
-    init(text: String? = nil, partnerChoiceUserID: UUID? = nil, mediaAssetIDs: [UUID] = []) {
+    init(
+        text: String? = nil,
+        partnerChoiceUserID: UUID? = nil,
+        mediaAssetIDs: [UUID] = [],
+        optionChoice: DailyAnswerOption? = nil
+    ) {
         self.text = text
         self.partnerChoiceUserID = partnerChoiceUserID
         self.mediaAssetIDs = mediaAssetIDs
+        self.optionChoice = optionChoice
     }
 
     var isEmpty: Bool {
-        (text?.isEmpty ?? true) && partnerChoiceUserID == nil && mediaAssetIDs.isEmpty
+        (text?.isEmpty ?? true) && partnerChoiceUserID == nil && mediaAssetIDs.isEmpty && optionChoice == nil
     }
 }
 
@@ -279,6 +300,10 @@ nonisolated struct DailyQuestionAnswerDetail: Equatable, Hashable, Sendable {
     let textBody: String?
     let selectedUserID: UUID?
     let mediaAssetIDs: [UUID]
+    /// The option picked on a pick-one-of-two question, and its label in the phone's
+    /// language (`labelingPick`).
+    var selectedOption: DailyAnswerOption?
+    var selectedOptionLabel: String?
 
     var hasMedia: Bool {
         !mediaAssetIDs.isEmpty
@@ -341,6 +366,8 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     /// The topic this question belongs to, or nil for a daily question. A topic question
     /// has no day to end and is answered from its topic, not from today's list.
     var topicKey: String?
+    /// The two options of a pick-one-of-two question.
+    var options: DailyAnswerOptions?
 
     var isTopicQuestion: Bool {
         topicKey != nil
@@ -394,7 +421,9 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
 
     /// Answer kinds the app can compose a reply for today.
     var composableAnswerKinds: [DailyChallengeAnswerKind] {
-        answerKinds.filter { $0 == .text || $0 == .partnerChoice || $0 == .photo || $0 == .voice }
+        answerKinds.filter {
+            $0 == .text || $0 == .partnerChoice || $0 == .photo || $0 == .voice || ($0 == .eitherOr && options != nil)
+        }
     }
 
     /// Which media kind a revealed media answer is. The reveal data only carries
@@ -423,7 +452,7 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
         let kinds = Set(composableAnswerKinds)
         guard kinds.contains(.text) else { return nil }
         let others = kinds.subtracting([.text])
-        guard others == [.photo] || others == [.partnerChoice] else { return nil }
+        guard others == [.photo] || others == [.partnerChoice] || others == [.eitherOr] else { return nil }
         return others.first
     }
 

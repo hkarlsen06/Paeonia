@@ -11,6 +11,7 @@ struct DailyAnswerStepVisualHold: Equatable {
     let composeKind: DailyChallengeAnswerKind?
     let mediaData: Data?
     let voiceDurationMs: Int?
+    let optionChoice: DailyAnswerOption?
 
     @MainActor
     init(question: DailyChallengeQuestion, viewModel: DailyChallengeViewModel) {
@@ -20,6 +21,7 @@ struct DailyAnswerStepVisualHold: Equatable {
         composeKind = viewModel.composeKind(for: question)
         mediaData = viewModel.stagedMediaData(for: question.id)
         voiceDurationMs = viewModel.stagedVoiceDurationMs(for: question.id)
+        optionChoice = viewModel.optionChoiceSelection(for: question.id)
     }
 }
 
@@ -220,6 +222,15 @@ struct DailyChallengeAnswerStep: View {
 
     var partnerChoiceSelection: UUID? {
         visualHold?.partnerChoiceUserID ?? viewModel.partnerChoiceSelection(for: question.id)
+    }
+
+    var optionChoiceSelection: DailyAnswerOption? {
+        visualHold?.optionChoice ?? viewModel.optionChoiceSelection(for: question.id)
+    }
+
+    func setOptionChoice(_ option: DailyAnswerOption) {
+        guard visualHold == nil else { return }
+        viewModel.setOptionChoice(option, for: question.id)
     }
 
     var stagedMediaData: Data? {

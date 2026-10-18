@@ -9,7 +9,7 @@ nonisolated enum AdultTopicsStatus: String, Encodable, Sendable {
 
 /// The topics backend: `backend/convex/topics.ts`. Answers go through the daily
 /// answer queue (`DailySubmitAnswerOperationPayload.topicQuestionID`).
-protocol TopicsGateway: Sendable {
+nonisolated protocol TopicsGateway: Sendable {
     func loadOverview() async throws -> RemoteTopicsOverview
     func loadTopic(key: String) async throws -> RemoteTopicDetail
     func setSkipped(questionID: UUID, skipped: Bool) async throws

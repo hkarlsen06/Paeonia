@@ -14,7 +14,8 @@ extension DailyChallengeViewModel {
     /// Whether the draft text is past the length the backend accepts. The composer
     /// shows a counter and keeps Send off until it's shortened.
     func isDraftTextTooLong(for questionID: UUID) -> Bool {
-        DailyAnswerDraft.measuredLength(of: draftText(for: questionID)) > DailyAnswerDraft.maxTextLength
+        let limit = knownQuestion(questionID)?.maxAnswerTextLength ?? DailyAnswerDraft.maxTextLength
+        return DailyAnswerDraft.measuredLength(of: draftText(for: questionID)) > limit
     }
 
     /// The trimmed draft text for a question, or nil when it's empty.
@@ -36,24 +37,16 @@ extension DailyChallengeViewModel {
     /// Whether the draft holds what the question needs, ignoring length and photo
     /// preparation (see `hasDraftToSubmit`).
     private func draftHasRequiredParts(for question: DailyChallengeQuestion) -> Bool {
-        let hasText = nonEmptyDraftText(for: question.id) != nil
-        let hasMedia = answerDrafts[question.id]?.media != nil
-        let hasChoice = partnerChoiceSelection(for: question.id) != nil
-
+        let parts = DraftParts(
+            hasText: nonEmptyDraftText(for: question.id) != nil,
+            hasMedia: answerDrafts[question.id]?.media != nil,
+            hasChoice: partnerChoiceSelection(for: question.id) != nil,
+            hasPick: optionChoiceSelection(for: question.id) != nil
+        )
         if question.usesCombinedCompose {
-            switch question.combinedSecondaryKind {
-            case .photo: return hasText || hasMedia
-            case .partnerChoice: return hasText || hasChoice
-            default: return hasText
-            }
+            return parts.satisfiesCombined(question.combinedSecondaryKind)
         }
-
-        switch composeKind(for: question) {
-        case .photo, .voice: return hasMedia
-        case .partnerChoice: return hasChoice
-        case .text: return hasText
-        default: return false
-        }
+        return parts.satisfies(composeKind(for: question))
     }
 
     /// The kind the user is composing with for a question, honouring an explicit
@@ -118,6 +111,17 @@ extension DailyChallengeViewModel {
     func setPartnerChoice(_ userID: UUID?, for questionID: UUID) {
         var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
         draft.partnerChoiceUserID = userID
+        answerDrafts[questionID] = draft
+        persist(draft, for: questionID)
+    }
+
+    func optionChoiceSelection(for questionID: UUID) -> DailyAnswerOption? {
+        answerDrafts[questionID]?.optionChoice
+    }
+
+    func setOptionChoice(_ option: DailyAnswerOption?, for questionID: UUID) {
+        var draft = answerDrafts[questionID] ?? DailyAnswerDraft()
+        draft.optionChoice = option
         answerDrafts[questionID] = draft
         persist(draft, for: questionID)
     }
@@ -285,6 +289,35 @@ extension DailyChallengeViewModel {
         }
         if returnedAny {
             notice = .submitFailed
+        }
+    }
+}
+
+/// What a draft holds, to decide whether it can be sent.
+private struct DraftParts {
+    let hasText: Bool
+    let hasMedia: Bool
+    let hasChoice: Bool
+    let hasPick: Bool
+
+    /// A combined question needs one of its parts. On a pick-one-of-two question the
+    /// why line is optional and the pick is the answer.
+    func satisfiesCombined(_ secondaryKind: DailyChallengeAnswerKind?) -> Bool {
+        switch secondaryKind {
+        case .photo: hasText || hasMedia
+        case .partnerChoice: hasText || hasChoice
+        case .eitherOr: hasPick
+        default: hasText
+        }
+    }
+
+    func satisfies(_ kind: DailyChallengeAnswerKind?) -> Bool {
+        switch kind {
+        case .photo, .voice: hasMedia
+        case .partnerChoice: hasChoice
+        case .eitherOr: hasPick
+        case .text: hasText
+        default: false
         }
     }
 }

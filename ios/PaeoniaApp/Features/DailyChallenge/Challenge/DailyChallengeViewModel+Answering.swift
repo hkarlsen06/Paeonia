@@ -74,9 +74,20 @@ extension DailyChallengeViewModel {
                 return (.partnerChoice(choice), SendingAnswer(partnerChoiceUserID: choice))
             }
             return textOnly(text)
+        case .eitherOr:
+            return resolvePick(for: question, why: text)
         default:
             return nil
         }
+    }
+
+    /// A pick-one-of-two answer, with its why line when one is written.
+    private func resolvePick(for question: DailyChallengeQuestion, why text: String?) -> OutgoingAnswer? {
+        guard let option = optionChoiceSelection(for: question.id) else { return nil }
+        if let text {
+            return (.textAndOptionChoice(text, option), SendingAnswer(text: text, optionChoice: option))
+        }
+        return (.optionChoice(option), SendingAnswer(optionChoice: option))
     }
 
     private func resolveSingleKindAnswer(for question: DailyChallengeQuestion, text: String?) -> OutgoingAnswer? {
@@ -87,6 +98,8 @@ extension DailyChallengeViewModel {
         case .partnerChoice:
             guard let choice = partnerChoiceSelection(for: question.id) else { return nil }
             return (.partnerChoice(choice), SendingAnswer(partnerChoiceUserID: choice))
+        case .eitherOr:
+            return resolvePick(for: question, why: nil)
         case .text:
             return textOnly(text)
         default:

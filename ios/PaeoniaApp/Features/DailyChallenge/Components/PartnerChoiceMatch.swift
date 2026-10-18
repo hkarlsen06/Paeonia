@@ -1,12 +1,17 @@
 import SwiftUI
 
-/// How the two picks on a "who is more likely" question line up. It is a small, warm
-/// line about the picks, never a score: nothing is counted and nothing is right or wrong.
-nonisolated enum PartnerChoiceMatch: Equatable {
+/// How the two picks on a "who is more likely" or a pick-one-of-two question line
+/// up. It is a small, warm line about the picks, never a score: nothing is counted and
+/// nothing is right or wrong.
+nonisolated enum PartnerChoiceMatch: Hashable {
     case bothPickedViewer
     case bothPickedPartner
     case eachPickedThemselves
     case eachPickedTheOther
+    /// Both picked the same option, with its label.
+    case bothPickedOption(String)
+    /// Each picked a different option: the user's, then the partner's.
+    case pickedDifferentOptions(yours: String, theirs: String)
 
     /// The match for the two picks, or nil when either pick is missing or names
     /// someone outside the couple.
@@ -26,13 +31,19 @@ nonisolated enum PartnerChoiceMatch: Equatable {
         }
     }
 
-    /// The two cases where both people chose the same person get a small bloom.
+    /// The cases where both people chose the same person or option get a small bloom.
     var isSamePick: Bool {
-        self == .bothPickedViewer || self == .bothPickedPartner
+        switch self {
+        case .bothPickedViewer, .bothPickedPartner, .bothPickedOption: true
+        default: false
+        }
     }
 
     fileprivate var systemImage: String {
-        isSamePick ? "heart.fill" : "person.2.fill"
+        switch self {
+        case .pickedDifferentOptions: "square.split.2x1.fill"
+        default: isSamePick ? "heart.fill" : "person.2.fill"
+        }
     }
 }
 
@@ -40,11 +51,13 @@ extension DailyChallengeQuestion {
     /// How the two picks line up, once both are visible to the user. Nil when either
     /// answer is missing or hidden, or the couple's identity is not known yet.
     nonisolated func partnerChoiceMatch(participants: DailyChallengeParticipants) -> PartnerChoiceMatch? {
-        guard
-            let viewerID = participants.currentUserID,
-            let partnerID = participants.partnerUserID,
-            partnerAnswerDetail?.canViewAnswer == true
-        else { return nil }
+        guard partnerAnswerDetail?.canViewAnswer == true else { return nil }
+        if let yours = ownAnswerDetail?.selectedOptionLabel, let theirs = partnerAnswerDetail?.selectedOptionLabel {
+            return yours == theirs ? .bothPickedOption(yours) : .pickedDifferentOptions(yours: yours, theirs: theirs)
+        }
+        guard let viewerID = participants.currentUserID, let partnerID = participants.partnerUserID else {
+            return nil
+        }
         return .make(
             viewerID: viewerID,
             partnerID: partnerID,
@@ -120,6 +133,9 @@ struct PartnerChoiceMatchBanner: View {
         case .bothPickedPartner: .dailyChallengeMatchBothPickedPartner(partnerName)
         case .eachPickedThemselves: .dailyChallengeMatchEachPickedThemselves
         case .eachPickedTheOther: .dailyChallengeMatchEachPickedTheOther
+        case let .bothPickedOption(option): .dailyChallengeMatchBothPickedOption(option)
+        case let .pickedDifferentOptions(yours, theirs):
+            .dailyChallengeMatchPickedDifferentOptions(yours, partnerName, theirs)
         }
     }
 }

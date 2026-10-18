@@ -8,6 +8,7 @@ extension DailyChallengeViewModel {
         var text: String?
         var partnerChoiceUserID: UUID?
         var media: Media?
+        var optionChoice: DailyAnswerOption?
         /// A try to send it failed, so it may stay on this phone a while.
         var isHeldOnPhone = false
 
@@ -32,11 +33,15 @@ extension DailyChallengeViewModel {
         sendingAnswers[instanceID]?.text
     }
 
-    /// The chosen person's name for a still-sending partner-choice answer. Nil
-    /// otherwise.
+    /// What a still-sending answer picked, for its preview: the chosen person's name on
+    /// a partner-choice answer, or the picked option's label on a pick-one-of-two
+    /// answer. Nil otherwise.
     func sendingPartnerChoiceName(for instanceID: UUID) -> String? {
-        guard let userID = sendingAnswers[instanceID]?.partnerChoiceUserID else { return nil }
-        return participants.name(for: userID)
+        if let userID = sendingAnswers[instanceID]?.partnerChoiceUserID {
+            return participants.name(for: userID)
+        }
+        guard let option = sendingAnswers[instanceID]?.optionChoice else { return nil }
+        return knownQuestion(instanceID)?.options?.label(for: option)
     }
 
     /// The staged media bytes for a still-sending media answer, for its "saved,
@@ -121,6 +126,10 @@ extension DailyChallengeViewModel {
             return SendingAnswer(text: body, media: .init(draft: media.draft, stagedData: media.stagedData))
         case let .textAndPartnerChoice(body, userID):
             return SendingAnswer(text: body, partnerChoiceUserID: userID)
+        case let .optionChoice(option):
+            return SendingAnswer(optionChoice: option)
+        case let .textAndOptionChoice(body, option):
+            return SendingAnswer(text: body, optionChoice: option)
         }
     }
 }

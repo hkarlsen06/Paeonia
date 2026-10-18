@@ -153,7 +153,9 @@ struct TopicArtwork: View {
                 content.offset(y: -lift * hop)
             } keyframes: { _ in
                 KeyframeTrack {
-                    LinearKeyframe(0, duration: delay)
+                    // A keyframe of no length gives the animation no valid value and
+                    // the sweet disappears, so the wait is never zero.
+                    LinearKeyframe(0, duration: max(delay, 0.05))
                     SpringKeyframe(1, duration: 0.25, spring: .snappy)
                     SpringKeyframe(0, duration: 0.45, spring: .bouncy)
                 }

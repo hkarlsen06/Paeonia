@@ -123,6 +123,7 @@ nonisolated struct DailyAnswerPayloadBody: Encodable {
         case text
         case partnerChoiceUserID = "partner_choice_user_id"
         case mediaAssetIDs = "media_asset_ids"
+        case optionChoice = "option_choice"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -138,6 +139,9 @@ nonisolated struct DailyAnswerPayloadBody: Encodable {
         }
         if !payload.mediaAssetIDs.isEmpty {
             try container.encode(payload.mediaAssetIDs, forKey: .mediaAssetIDs)
+        }
+        if let option = payload.optionChoice {
+            try container.encode(option, forKey: .optionChoice)
         }
     }
 }

@@ -6453,6 +6453,24 @@
         }
       }
     },
+    "dailyChallenge.kind.pick" : {
+      "comment" : "Answer-type pill for a question where you pick one of two options",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg én"
+          }
+        }
+      }
+    },
     "dailyChallenge.kind.text" : {
       "comment" : "Kind-picker pill: answer by writing text",
       "extractionState" : "manual",
@@ -6633,6 +6651,24 @@
         }
       }
     },
+    "dailyChallenge.match.bothPickedOption" : {
+      "comment" : "Line under two revealed answers that picked the same option. The option's label",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both picked \"%@\""
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte begge «%@»"
+          }
+        }
+      }
+    },
     "dailyChallenge.match.bothPickedPartner" : {
       "comment" : "Playful line under a 'who is more likely' reveal when both partners picked the partner. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -6701,6 +6737,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dere valgte hverandre"
+          }
+        }
+      }
+    },
+    "dailyChallenge.match.pickedDifferentOptions" : {
+      "comment" : "Line under two revealed answers that picked different options. 1: your option, 2: partner name, 3: partner's option",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You picked \"%1$@\". %2$@ picked \"%3$@\"."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du valgte «%1$@». %2$@ valgte «%3$@»."
           }
         }
       }
@@ -7043,6 +7097,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi kunne ikke bruke det bildet"
+          }
+        }
+      }
+    },
+    "dailyChallenge.pick.optionPosition" : {
+      "comment" : "VoiceOver value on one of the two options of a pick-one-of-two question. 1: position, 2: number of options",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Option %1$lld of %2$lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valg %1$lld av %2$lld"
+          }
+        }
+      }
+    },
+    "dailyChallenge.pick.whyLabel" : {
+      "comment" : "Label over the optional text field under a pick-one-of-two question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why? (optional)"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvorfor? (valgfritt)"
+          }
+        }
+      }
+    },
+    "dailyChallenge.pick.whyPlaceholder" : {
+      "comment" : "Placeholder in the optional why field under a pick-one-of-two question",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Say why, if you want"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si hvorfor, om du vil"
           }
         }
       }

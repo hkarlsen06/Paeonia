@@ -217,7 +217,12 @@ extension DailyChallengeQuestion {
             partnerAnswerDetail: nil,
             origin: .own,
             isCurrentDay: false,
-            topicKey: topicKey
+            topicKey: topicKey,
+            options: DailyAnswerOptions.make(
+                en: (remote.optionAEN, remote.optionBEN),
+                nb: (remote.optionANB, remote.optionBNB),
+                locale: locale
+            )
         )
     }
 }

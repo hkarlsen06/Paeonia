@@ -255,12 +255,34 @@ struct DailyAnswerContent: View {
                 )
             }
 
+            if let optionLabel = detail.selectedOptionLabel {
+                DailyPickedOptionView(label: optionLabel)
+            }
+
             if let textBody = detail.textBody, !textBody.isEmpty {
                 Text(textBody)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+}
+
+/// A revealed pick-one-of-two answer: the picked option, above its why line.
+private struct DailyPickedOptionView: View {
+    let label: String
+
+    var body: some View {
+        Label {
+            Text(verbatim: label)
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
         }
     }
 }
@@ -297,6 +319,10 @@ private struct DailyChosenPersonView: View {
 struct DailyAnswerTextField: View {
     @Binding var text: String
     var isFocused: FocusState<Bool>.Binding
+    var label: LocalizedStringResource = .dailyChallengeTextAnswerLabel
+    var placeholder: LocalizedStringResource = .dailyChallengeTextAnswerPlaceholder
+    /// The longest answer the field accepts, in code points.
+    var limit = DailyAnswerDraft.maxTextLength
 
     /// Mirrors the focus ring's color/width so they can be driven by an explicit
     /// `withAnimation` mutation instead of an `.animation(_:value:)` modifier. The
@@ -315,7 +341,7 @@ struct DailyAnswerTextField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(.dailyChallengeTextAnswerLabel)
+                Text(label)
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .foregroundStyle(.paeoniaTextSecondary)
 
@@ -326,10 +352,10 @@ struct DailyAnswerTextField: View {
 
             TextField(
                 text: $text,
-                prompt: Text(.dailyChallengeTextAnswerPlaceholder),
+                prompt: Text(placeholder),
                 axis: .vertical
             ) {
-                Text(.dailyChallengeTextAnswerLabel)
+                Text(label)
             }
             .lineLimit(3...8)
             .font(PaeoniaTypography.body)
@@ -354,8 +380,9 @@ struct DailyAnswerTextField: View {
     @ViewBuilder
     private var characterCount: some View {
         let length = DailyAnswerDraft.measuredLength(of: text)
-        let limit = DailyAnswerDraft.maxTextLength
-        if length > limit - Self.counterThreshold {
+        // A short why line shows its counter sooner than a full answer does.
+        let threshold = min(Self.counterThreshold, limit / 4)
+        if length > limit - threshold {
             Text(verbatim: "\(length.formatted()) / \(limit.formatted())")
                 .font(PaeoniaTypography.caption.monospacedDigit())
                 .foregroundStyle(length > limit ? Color.paeoniaError : Color.paeoniaTextTertiary)

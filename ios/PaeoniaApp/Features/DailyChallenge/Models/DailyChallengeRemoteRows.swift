@@ -62,6 +62,11 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
     var chatAvailable: Bool?
     /// The topic of a topic question, nil for a daily question.
     var topicKey: String?
+    /// The two options of a pick-one-of-two question, in both languages.
+    var optionAEN: String?
+    var optionBEN: String?
+    var optionANB: String?
+    var optionBNB: String?
 
     enum CodingKeys: String, CodingKey {
         case coupleDayID = "couple_day_id"
@@ -94,6 +99,10 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
         case latestEarlierRoundLocalDate = "latest_earlier_round_local_date"
         case chatAvailable = "chat_available"
         case topicKey = "topic_key"
+        case optionAEN = "option_a_en"
+        case optionBEN = "option_b_en"
+        case optionANB = "option_a_nb"
+        case optionBNB = "option_b_nb"
     }
 
     func prompt(for locale: Locale) -> String {
@@ -198,6 +207,7 @@ nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
     let textBody: String?
     let selectedUserID: UUID?
     let mediaAssetIDs: [UUID]
+    var selectedOption: DailyAnswerOption?
 
     enum CodingKeys: String, CodingKey {
         case coupleDayID = "couple_day_id"
@@ -212,6 +222,7 @@ nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
         case textBody = "text_body"
         case selectedUserID = "selected_user_id"
         case mediaAssetIDs = "media_asset_ids"
+        case selectedOption = "selected_option"
     }
 
     var detail: DailyQuestionAnswerDetail {
@@ -223,7 +234,8 @@ nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
             canViewAnswer: canViewAnswer,
             textBody: textBody,
             selectedUserID: selectedUserID,
-            mediaAssetIDs: mediaAssetIDs
+            mediaAssetIDs: mediaAssetIDs,
+            selectedOption: selectedOption
         )
     }
 }

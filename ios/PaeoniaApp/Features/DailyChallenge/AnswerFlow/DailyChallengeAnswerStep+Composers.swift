@@ -46,7 +46,14 @@ extension DailyChallengeAnswerStep {
     /// lets the keyboard push the still-tall content up past the progress bar before
     /// anything folds. VoiceOver skips the target and focuses the field directly.
     var answerTextField: some View {
-        DailyAnswerTextField(text: draftBinding, isFocused: isFocused)
+        let isWhyLine = question.answerKinds.contains(.eitherOr)
+        return DailyAnswerTextField(
+            text: draftBinding,
+            isFocused: isFocused,
+            label: isWhyLine ? .dailyChallengePickWhyLabel : .dailyChallengeTextAnswerLabel,
+            placeholder: isWhyLine ? .dailyChallengePickWhyPlaceholder : .dailyChallengeTextAnswerPlaceholder,
+            limit: question.maxAnswerTextLength
+        )
             .overlay {
                 if showsSecondaryComposer {
                     Color.clear
@@ -118,8 +125,18 @@ extension DailyChallengeAnswerStep {
                     )
                 }
             }
+        case .eitherOr:
+            optionPicker
         default:
             EmptyView()
+        }
+    }
+
+    /// The two options of a pick-one-of-two question.
+    @ViewBuilder
+    var optionPicker: some View {
+        if let options = question.options {
+            DailyOptionChoicePicker(options: options, selection: optionChoiceSelection, onSelect: setOptionChoice)
         }
     }
 
@@ -146,6 +163,8 @@ extension DailyChallengeAnswerStep {
             )
         case .voice:
             voiceComposer
+        case .eitherOr:
+            optionPicker
         default:
             answerTextField
         }

@@ -24,6 +24,9 @@ nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatab
         case media(Media)
         case textAndMedia(String, Media)
         case textAndPartnerChoice(String, UUID)
+        /// A pick-one-of-two answer, alone or with its why line.
+        case optionChoice(DailyAnswerOption)
+        case textAndOptionChoice(String, DailyAnswerOption)
 
         /// The editable draft this answer came from, so an answer the server refuses
         /// for good can go back into the composer instead of disappearing.
@@ -39,6 +42,10 @@ nonisolated struct DailySubmitAnswerOperationPayload: Codable, Sendable, Equatab
                 DailyAnswerDraft(text: body, media: media.draft)
             case let .textAndPartnerChoice(body, userID):
                 DailyAnswerDraft(text: body, partnerChoiceUserID: userID)
+            case let .optionChoice(option):
+                DailyAnswerDraft(optionChoice: option)
+            case let .textAndOptionChoice(body, option):
+                DailyAnswerDraft(text: body, optionChoice: option)
             }
         }
     }
@@ -143,6 +150,14 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
         case let .textAndPartnerChoice(body, userID):
             return try await submit(
                 DailyAnswerPayload(text: body, partnerChoiceUserID: userID),
+                payload: payload,
+                operation: operation
+            )
+        case let .optionChoice(option):
+            return try await submit(DailyAnswerPayload(optionChoice: option), payload: payload, operation: operation)
+        case let .textAndOptionChoice(body, option):
+            return try await submit(
+                DailyAnswerPayload(text: body, optionChoice: option),
                 payload: payload,
                 operation: operation
             )

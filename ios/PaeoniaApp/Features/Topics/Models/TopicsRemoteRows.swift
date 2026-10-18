@@ -77,6 +77,11 @@ nonisolated struct RemoteTopicQuestionRow: Codable, Equatable, Sendable {
     /// The couple's instance of the question, in the daily row shape. Nil until
     /// someone answers it.
     let row: DailyQuestionRow?
+    /// The two options of a pick-one-of-two question, in both languages.
+    var optionAEN: String?
+    var optionBEN: String?
+    var optionANB: String?
+    var optionBNB: String?
 
     enum CodingKeys: String, CodingKey {
         case questionID = "question_id"
@@ -90,6 +95,10 @@ nonisolated struct RemoteTopicQuestionRow: Codable, Equatable, Sendable {
         case answerKinds = "answer_kinds"
         case isSkipped = "is_skipped"
         case row
+        case optionAEN = "option_a_en"
+        case optionBEN = "option_b_en"
+        case optionANB = "option_a_nb"
+        case optionBNB = "option_b_nb"
     }
 }
 

@@ -40,6 +40,7 @@ extension DailyChallengeQuestion {
         detailsByAnswerID: [UUID: DailyQuestionAnswerDetail],
         locale: Locale
     ) {
+        let options = row.options(for: locale)
         self.init(
             id: row.instanceID,
             coupleDayID: row.coupleDayID,
@@ -60,8 +61,8 @@ extension DailyChallengeQuestion {
             ownAnswer: row.ownAnswerSummary,
             partnerAnswer: row.partnerAnswerSummary,
             canViewPartnerAnswer: row.canViewPartnerAnswer,
-            ownAnswerDetail: row.ownAnswerID.flatMap { detailsByAnswerID[$0] },
-            partnerAnswerDetail: row.partnerAnswerID.flatMap { detailsByAnswerID[$0] },
+            ownAnswerDetail: row.ownAnswerID.flatMap { detailsByAnswerID[$0] }?.labelingPick(with: options),
+            partnerAnswerDetail: row.partnerAnswerID.flatMap { detailsByAnswerID[$0] }?.labelingPick(with: options),
             origin: row.seededForUserID == currentUserID ? .own : .partner,
             isCurrentDay: row.isCurrentDay,
             partnerAnswerSeenAt: row.partnerAnswerSeenAt,
@@ -69,7 +70,8 @@ extension DailyChallengeQuestion {
             earlierRoundCount: row.earlierRoundCount ?? 0,
             latestEarlierRoundLocalDate: row.latestEarlierRoundLocalDate,
             hasSharedRound: row.chatAvailable ?? false,
-            topicKey: row.topicKey
+            topicKey: row.topicKey,
+            options: options
         )
     }
 }
