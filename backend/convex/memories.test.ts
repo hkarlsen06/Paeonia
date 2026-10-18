@@ -560,6 +560,122 @@ describe("get_memories", () => {
   });
 });
 
+const bryggen = { name: "Bryggen", latitude: 60.3975, longitude: 5.3245, city: "Bergen", country_code: "NO" };
+
+describe("memory places", () => {
+  type Place = { name: string; latitude: number; longitude: number; city?: string | null; country_code?: string | null };
+  const setPlace = (user: TestUser, memoryId: string, place: Place | null) =>
+    user.as.mutation(api.memories.set_memory_place, { ...op(), p_memory_id: memoryId, p_place: place });
+
+  test("create_memory stores a trimmed place and get_memories returns it", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first, {
+      p_place: { ...bryggen, name: "  Bryggen ", city: " Bergen " },
+    });
+    expect((await memoryRow(t, memoryId))?.place).toEqual(bryggen);
+    const [row] = await getMemories(couple.second);
+    expect(row.place).toEqual(bryggen);
+  });
+
+  test("a memory without a place returns null", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    expect((await memoryRow(t, memoryId))?.place).toBeUndefined();
+    const [row] = await getMemories(couple.first);
+    expect(row.place).toBeNull();
+  });
+
+  test("blank city and country are left out", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first, {
+      p_place: { name: "Somewhere at sea", latitude: 59.1, longitude: 10.2, city: "  ", country_code: null },
+    });
+    expect((await memoryRow(t, memoryId))?.place).toEqual({ name: "Somewhere at sea", latitude: 59.1, longitude: 10.2 });
+  });
+
+  test("either partner sets and clears the place without a revision bump", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    tick();
+    const rows = await setPlace(couple.second, memoryId, bryggen);
+    expect(rows).toEqual([{ memory_id: memoryId, revision: 1, updated_at: new Date().toISOString() }]);
+    expect(await memoryRow(t, memoryId)).toMatchObject({
+      place: bryggen,
+      revision: 1,
+      last_edited_by_user_id: couple.second.userId,
+      updated_at: new Date().toISOString(),
+    });
+
+    tick();
+    await setPlace(couple.first, memoryId, null);
+    const cleared = await memoryRow(t, memoryId);
+    expect(cleared?.place).toBeUndefined();
+    expect(cleared?.revision).toBe(1);
+    expect(cleared?.updated_at).toBe(new Date().toISOString());
+  });
+
+  test("a place change does not conflict with a title edit", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    await setPlace(couple.second, memoryId, bryggen);
+    await couple.first.as.mutation(api.memories.update_memory, {
+      ...op(),
+      p_memory_id: memoryId,
+      p_expected_revision: 1,
+      p_title: "Rain all weekend",
+      p_memory_date: "2026-10-01",
+    });
+    expect(await memoryRow(t, memoryId)).toMatchObject({ title: "Rain all weekend", place: bryggen, revision: 2 });
+  });
+
+  test("a replay with a different place is refused", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    const args = { ...op(), p_memory_id: memoryId, p_place: bryggen };
+    await couple.first.as.mutation(api.memories.set_memory_place, args);
+    await couple.first.as.mutation(api.memories.set_memory_place, args);
+    expect(
+      await failure(couple.first.as.mutation(api.memories.set_memory_place, { ...args, p_place: { ...bryggen, name: "Fløyen" } })),
+    ).toEqual({ code: "23505", message: "client operation replay hash mismatch" });
+  });
+
+  test.each([
+    [{ ...bryggen, name: "   " }, "memory place name is required"],
+    [{ ...bryggen, name: "x".repeat(161) }, "memory place name is too long"],
+    [{ ...bryggen, latitude: 91 }, "memory place latitude is out of range"],
+    [{ ...bryggen, latitude: Number.NaN }, "memory place latitude is out of range"],
+    [{ ...bryggen, longitude: -180.5 }, "memory place longitude is out of range"],
+    [{ ...bryggen, city: "x".repeat(121) }, "memory place city is too long"],
+    [{ ...bryggen, country_code: "nor" }, "memory place country code is not valid"],
+    [{ ...bryggen, country_code: "no" }, "memory place country code is not valid"],
+  ])("refuses a bad place: %j", async (place, message) => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    expect(await failure(setPlace(couple.first, memoryId, place))).toEqual({ code: "23514", message });
+    expect(await failure(newMemory(couple.first, { p_place: place }).call())).toEqual({ code: "23514", message });
+  });
+
+  test("a deleted memory hides its place and refuses a new one", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first, { p_place: bryggen });
+    await couple.first.as.mutation(api.memories.hide_memory, { ...op(), p_memory_id: memoryId, p_expected_revision: 1 });
+    const [row] = await getMemories(couple.second);
+    expect(row.place).toBeNull();
+    expect(await failure(setPlace(couple.second, memoryId, bryggen))).toEqual({
+      code: "42501",
+      message: "active entitled memory access is required",
+    });
+  });
+});
+
 describe("access", () => {
   type Caller = { name: string; user: (couple: TestCouple, t: TestConvex) => Promise<TestUser> };
   const callers: Caller[] = [
@@ -599,6 +715,9 @@ describe("access", () => {
     ).toEqual(memoryDenied);
     expect(
       await failure(caller.as.mutation(api.memories.attach_memory_media, { ...op(), p_memory_id: memoryId, p_media_asset_ids: [photoAsset.assetId] })),
+    ).toEqual(memoryDenied);
+    expect(
+      await failure(caller.as.mutation(api.memories.set_memory_place, { ...op(), p_memory_id: memoryId, p_place: bryggen })),
     ).toEqual(memoryDenied);
     const denied = { code: "42501", message: "active entitled couple access is required" };
     expect(await failure(getMemories(caller))).toEqual(denied);

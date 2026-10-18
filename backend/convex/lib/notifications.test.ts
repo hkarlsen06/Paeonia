@@ -177,6 +177,7 @@ describe("notification copy", () => {
   test("payload safety rejects sensitive keys, non-objects, and oversize payloads", () => {
     expect(notificationPayloadIsSafe({ type: "memory_created", route: "memories" })).toBe(true);
     expect(notificationPayloadIsSafe({ latitude: 1 })).toBe(false);
+    expect(notificationPayloadIsSafe({ place: { name: "Bryggen" } })).toBe(false);
     expect(notificationPayloadIsSafe({ nested: { Message_Body: "x" } })).toBe(false);
     expect(notificationPayloadIsSafe([])).toBe(false);
     expect(notificationPayloadIsSafe(null)).toBe(false);

@@ -193,7 +193,7 @@ function gamePushStep(payload: Record<string, unknown>, language: "en" | "nb") {
 const GAME_PUSH_KINDS: readonly string[] = ["game_turn_ready", "game_result", "game_invite", "game_turn_reminder"];
 
 const SENSITIVE_PAYLOAD_KEYS =
-  /"(answer_body|note_body|message_body|body_text|voice_transcript|media_url|signed_url|latitude|longitude|coordinate|invite_code|report_detail|precise_location)"/i;
+  /"(answer_body|note_body|message_body|body_text|voice_transcript|media_url|signed_url|latitude|longitude|coordinate|place|invite_code|report_detail|precise_location)"/i;
 
 /** Port of `internal.notification_payload_is_safe`. */
 export function notificationPayloadIsSafe(payload: unknown): boolean {

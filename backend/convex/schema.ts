@@ -928,6 +928,17 @@ export default defineSchema({
     couple_id: uuid,
     title: v.string(),
     memory_date: date,
+    // Where the memory happened, picked by a partner. City and country are stored with it so the
+    // memories map can count places without looking addresses up.
+    place: v.optional(
+      v.object({
+        name: v.string(),
+        latitude: v.number(),
+        longitude: v.number(),
+        city: optString,
+        country_code: optString,
+      }),
+    ),
     created_by_user_id: uuid,
     last_edited_by_user_id: uuid,
     revision: v.number(),
