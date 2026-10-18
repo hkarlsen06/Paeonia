@@ -39,8 +39,8 @@ struct DailyChatMessageRow: View {
 
     var body: some View {
         switch row.kind {
-        case let .partnerChoiceMatch(match, celebrates):
-            PartnerChoiceMatchBanner(match: match, partnerName: participants.partnerName, celebrates: celebrates)
+        case let .partnerChoiceMatch(match, celebrationID):
+            PartnerChoiceMatchBanner(match: match, participants: participants, celebrationID: celebrationID)
                 .padding(.horizontal, PaeoniaSpacing.space12)
                 .padding(.vertical, PaeoniaSpacing.space8)
         case let .waiting(waiting):

@@ -116,6 +116,7 @@ struct DailyPartnerAnswerFlow: View {
             isPrimaryDisabled: isPrimaryDisabled,
             isComposing: isComposerFocused,
             canSkip: onSkip != nil,
+            skipTitle: .dailyChallengeSkipButton,
             isSkipDisabled: isSubmitting,
             onPrimary: { Task { await submit() } },
             onClose: dismiss,
@@ -355,8 +356,8 @@ struct DailyPartnerAnswerRevealView: View {
            let match = shownQuestion.partnerChoiceMatch(participants: participants) {
             PartnerChoiceMatchBanner(
                 match: match,
-                partnerName: participants.partnerName,
-                celebrates: true
+                participants: participants,
+                celebrationID: shownQuestion.id
             )
             .transition(.opacity)
         }

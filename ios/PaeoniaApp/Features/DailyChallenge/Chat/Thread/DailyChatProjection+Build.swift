@@ -88,7 +88,7 @@ extension DailyChatProjection {
         if let match = round.match, let firstAnswer = round.answers.first {
             let row = decoration(
                 matchRowPrefix + round.instanceID.uuidString,
-                .partnerChoiceMatch(match, celebrates: round.celebratesMatch),
+                .partnerChoiceMatch(match, celebrationID: round.celebratesMatch ? round.instanceID : nil),
                 at: firstAnswer.answeredAt.addingTimeInterval(-step)
             )
             let key = MatchRedrawKey(match: match, celebrates: round.celebratesMatch, partnerName: input.partnerName)

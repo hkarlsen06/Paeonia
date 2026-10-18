@@ -89,12 +89,12 @@ extension DailyChatRoundsTests {
         #expect(ids.first == DailyChatProjection.questionRowID(for: first.id))
         #expect(ids[1] == DailyChatProjection.matchRowPrefix + first.id.uuidString)
         #expect(ids[2].hasPrefix(DailyChatProjection.answerRowPrefix))
-        guard case let .partnerChoiceMatch(match, celebrates)? = projection.rowsByID[ids[1]]?.kind else {
+        guard case let .partnerChoiceMatch(match, celebrationID)? = projection.rowsByID[ids[1]]?.kind else {
             Issue.record("The match line is missing")
             return
         }
         #expect(match == .eachPickedTheOther)
-        #expect(celebrates)
+        #expect(celebrationID == first.id)
     }
 
     @Test func aLateAnswerToAnOldDayStaysWithThatDay() throws {

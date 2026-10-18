@@ -103,7 +103,7 @@ struct DailyChatRow {
         /// that comes back can take another kind.
         case answer(DailyQuestionAnswerDetail, mediaKind: DailyChallengeAnswerKind)
         /// How two partner-choice picks line up, above the day's answers.
-        case partnerChoiceMatch(PartnerChoiceMatch, celebrates: Bool)
+        case partnerChoiceMatch(PartnerChoiceMatch, celebrationID: UUID?)
         /// What a day is still waiting for, under its answers.
         case waiting(DailyChatRound.Waiting)
         case message(DailyQuestionChatMessage)

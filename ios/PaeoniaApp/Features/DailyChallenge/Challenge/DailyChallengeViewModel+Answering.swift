@@ -261,6 +261,7 @@ extension DailyChallengeViewModel {
     /// a calm, plain-language notice instead of a generic error.
     func shuffle(_ question: DailyChallengeQuestion) async {
         guard
+            !question.isTopicQuestion,
             question.origin == .own,
             !question.hasOwnAnswer,
             !isSending(question.id),

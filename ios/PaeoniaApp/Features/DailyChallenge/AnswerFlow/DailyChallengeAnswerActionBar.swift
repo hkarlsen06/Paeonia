@@ -18,6 +18,9 @@ struct DailyChallengeAnswerActionBar: View {
     /// from Shuffle to Done. It never changes the bar's height.
     var isComposing = false
     var canSkip = false
+    /// A text label for Skip instead of the shuffle icon. A topic's Skip puts the
+    /// question aside, which isn't the daily swap the icon stands for.
+    var skipTitle: LocalizedStringResource?
     var isSkipBusy = false
     var isSkipDisabled = false
     let onPrimary: () -> Void
@@ -134,12 +137,16 @@ struct DailyChallengeAnswerActionBar: View {
         Button(action: onSkip) {
             if isSkipBusy {
                 ProgressView().controlSize(.small)
+            } else if let skipTitle {
+                Text(skipTitle)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             } else {
                 Image(systemName: "shuffle")
+                    .accessibilityLabel(Text(.dailyChallengeSkipButton))
             }
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
         .disabled(isSkipDisabled)
-        .accessibilityLabel(Text(.dailyChallengeSkipButton))
     }
 }

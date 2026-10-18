@@ -69,6 +69,27 @@ struct DailyChallengeEditingTests {
     }
 
     @MainActor
+    @Test func shuffleNeverSwapsATopicQuestion() async throws {
+        let service = RecordingDailyChallengeService(snapshots: [
+            makeDailySnapshot(rows: [
+                dailyQuestionRow(slotNumber: 0, seededForUserID: TestDailyChallengeIDs.currentUser),
+            ]),
+        ])
+        let viewModel = DailyChallengeViewModel(
+            service: service,
+            operationProvider: FixedDailyChallengeOperationProvider()
+        )
+
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        var topicQuestion = try #require(viewModel.snapshot.ownQuestions.first)
+        topicQuestion.topicKey = "would_you_rather"
+
+        await viewModel.shuffle(topicQuestion)
+
+        #expect(await service.shuffledSlots.isEmpty)
+    }
+
+    @MainActor
     @Test func shuffleIgnoresAlreadyAnsweredOwnQuestion() async throws {
         let answerID = UUID()
         let answeredSnapshot = makeDailySnapshot(

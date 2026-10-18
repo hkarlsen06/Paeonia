@@ -40,10 +40,7 @@ nonisolated enum PartnerChoiceMatch: Hashable {
     }
 
     fileprivate var systemImage: String {
-        switch self {
-        case .pickedDifferentOptions: "square.split.2x1.fill"
-        default: isSamePick ? "heart.fill" : "person.2.fill"
-        }
+        isSamePick ? "heart.fill" : "person.2.fill"
     }
 }
 
@@ -67,32 +64,81 @@ extension DailyChallengeQuestion {
     }
 }
 
-/// One line under the revealed picks that says how they lined up. When `celebrates`
-/// is true and both picked the same person, a short petal bloom and a soft haptic
-/// play once. Reduce Motion skips the animation and keeps the haptic.
+/// How the revealed picks lined up: a raised card for a pick-one-of-two question
+/// (`OptionPickMatchCard`), one line for a partner-choice question. When both picked
+/// the same, a petal bloom and a soft haptic play the first time the card for
+/// `celebrationID` shows, and never again in this app session. A row the chat rebuilds
+/// mid-reveal carries on with the same burst. Reduce Motion skips the bloom and keeps the haptic. VoiceOver
+/// reads the match as one sentence.
 struct PartnerChoiceMatchBanner: View {
     let match: PartnerChoiceMatch
-    let partnerName: String
-    let celebrates: Bool
+    let participants: DailyChallengeParticipants
+    /// The revealed day's instance, or nil when this showing doesn't celebrate.
+    let celebrationID: UUID?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var bloomStart: Date?
     @State private var isShown = false
 
-    /// The burst needs room around the banner. It draws outside the row without
-    /// taking layout space.
-    private static let bloomSize: CGFloat = 280
+    /// The burst needs room around the card. It draws outside the row without taking
+    /// layout space.
+    private static let bloomSize: CGFloat = 380
 
-    init(match: PartnerChoiceMatch, partnerName: String, celebrates: Bool) {
+    init(match: PartnerChoiceMatch, participants: DailyChallengeParticipants, celebrationID: UUID?) {
         self.match = match
-        self.partnerName = partnerName
-        self.celebrates = celebrates
+        self.participants = participants
+        self.celebrationID = celebrationID
         // Only the reveal fades the banner in. The chat rebuilds the row when the
         // reveal ends, and a second fade there reads as a flicker.
-        _isShown = State(initialValue: !celebrates)
+        _isShown = State(initialValue: celebrationID == nil)
     }
 
+    private var partnerName: String { participants.partnerName }
+
     var body: some View {
+        content
+            // In front, so the card doesn't hide the petals. The bloom takes no taps.
+            .overlay {
+                if let bloomStart {
+                    GamePetalBloom(start: bloomStart, seed: "partnerChoiceMatch")
+                        .frame(width: Self.bloomSize, height: Self.bloomSize)
+                }
+            }
+            .opacity(isShown ? 1 : 0)
+            .scaleEffect(isShown || reduceMotion ? 1 : 0.92)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(title))
+            .task {
+                withAnimation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.celebrationReveal) {
+                    isShown = true
+                }
+                guard match.isSamePick, let celebrationID else { return }
+                if let started = MatchCelebrationStarts.dates[celebrationID] {
+                    // A rebuilt row carries on with the same burst, or shows nothing
+                    // once it is over.
+                    bloomStart = started
+                } else {
+                    let now = Date()
+                    MatchCelebrationStarts.dates[celebrationID] = now
+                    bloomStart = now
+                    PaeoniaHaptics.partnerChoiceMatched()
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch match {
+        case let .bothPickedOption(option):
+            OptionPickMatchCard(yours: option, theirs: option, participants: participants)
+        case let .pickedDifferentOptions(yours, theirs):
+            OptionPickMatchCard(yours: yours, theirs: theirs, participants: participants)
+        default:
+            pill
+        }
+    }
+
+    private var pill: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
             Image(systemName: match.systemImage)
                 .font(PaeoniaTypography.caption.weight(.semibold))
@@ -108,23 +154,6 @@ struct PartnerChoiceMatchBanner: View {
         .padding(.vertical, PaeoniaSpacing.space12)
         .background(.paeoniaSurfaceSecondary, in: Capsule())
         .frame(maxWidth: .infinity)
-        .background {
-            if let bloomStart {
-                GamePetalBloom(start: bloomStart, seed: "partnerChoiceMatch")
-                    .frame(width: Self.bloomSize, height: Self.bloomSize)
-            }
-        }
-        .opacity(isShown ? 1 : 0)
-        .scaleEffect(isShown || reduceMotion ? 1 : 0.92)
-        .accessibilityElement(children: .combine)
-        .task {
-            withAnimation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.celebrationReveal) {
-                isShown = true
-            }
-            guard celebrates, match.isSamePick else { return }
-            bloomStart = Date()
-            PaeoniaHaptics.partnerChoiceMatched()
-        }
     }
 
     private var title: LocalizedStringResource {
@@ -140,20 +169,41 @@ struct PartnerChoiceMatchBanner: View {
     }
 }
 
+// ponytail: grows by one entry per same-pick reveal for the app's lifetime; tiny.
+/// When each round's match began to bloom. The chat can rebuild a row mid-reveal, so
+/// the new row picks up the same burst instead of starting another, and the haptic
+/// plays once.
+@MainActor
+private enum MatchCelebrationStarts {
+    static var dates: [UUID: Date] = [:]
+}
+
 #if DEBUG
+private func matchPreview(_ match: PartnerChoiceMatch, celebrates: Bool) -> some View {
+    PartnerChoiceMatchBanner(
+        match: match,
+        participants: .init(partnerDisplayName: "Oda"),
+        celebrationID: celebrates ? UUID() : nil
+    )
+    .padding(PaeoniaSpacing.screenHorizontalPadding)
+    .frame(maxHeight: .infinity)
+    .background(.paeoniaBackgroundPrimary)
+    .preferredColorScheme(.dark)
+}
+
 #Preview("Both picked partner, celebrating") {
-    PartnerChoiceMatchBanner(match: .bothPickedPartner, partnerName: "Oda", celebrates: true)
-        .padding(PaeoniaSpacing.screenHorizontalPadding)
-        .frame(maxHeight: .infinity)
-        .background(.paeoniaBackgroundPrimary)
-        .preferredColorScheme(.dark)
+    matchPreview(.bothPickedPartner, celebrates: true)
+}
+
+#Preview("Both picked an option") {
+    matchPreview(.bothPickedOption("Teleport once a week"), celebrates: true)
+}
+
+#Preview("Picked different options") {
+    matchPreview(.pickedDifferentOptions(yours: "The dinosaurs", theirs: "The year 3000"), celebrates: false)
 }
 
 #Preview("Each picked the other") {
-    PartnerChoiceMatchBanner(match: .eachPickedTheOther, partnerName: "Oda", celebrates: false)
-        .padding(PaeoniaSpacing.screenHorizontalPadding)
-        .frame(maxHeight: .infinity)
-        .background(.paeoniaBackgroundPrimary)
-        .preferredColorScheme(.dark)
+    matchPreview(.eachPickedTheOther, celebrates: false)
 }
 #endif

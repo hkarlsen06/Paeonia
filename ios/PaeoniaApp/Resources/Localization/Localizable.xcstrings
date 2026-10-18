@@ -6651,6 +6651,24 @@
         }
       }
     },
+    "dailyChallenge.match.bothPickedHeading" : {
+      "comment" : "Heading over the option both partners picked on a pick-one-of-two question, shown in large type below it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both picked"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere valgte begge"
+          }
+        }
+      }
+    },
     "dailyChallenge.match.bothPickedOption" : {
       "comment" : "Line under two revealed answers that picked the same option. The option's label",
       "extractionState" : "manual",
@@ -6755,6 +6773,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du valgte «%1$@». %2$@ valgte «%3$@»."
+          }
+        }
+      }
+    },
+    "dailyChallenge.match.youLabel" : {
+      "comment" : "Name under the user's own avatar when the two partners picked different options",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
           }
         }
       }
