@@ -17,7 +17,15 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 Decided on 2026-10-18.
 
 - **Dropped games.** Touch, Air hockey and Battleship with date ideas are out. Touch is too thin to ship. Air hockey needs both phones side by side, because each phone shows only its own half of the table, and Paeonia is for couples who are apart. Battleship with date ideas makes the couple come up with date ideas, which is the hard part they would want help with.
-- **Guess my spot takes any photo.** The sender can take a photo or pick one from the library.
+- **Guess my spot uses photos from the library.** There is no camera button. The couple may share their live location on the Home map, which would give away a photo taken right now, so the game is about where you were. Any photo in the camera roll can be sent, with no age rule. Memories are not a source.
+- **Guess my spot's spot comes from the photo.** The phone reads the photo's location. When it has none or it is wrong, the sender drops the pin. The sender always sees the spot on a map before sending and can move it, so nothing goes out that they didn't see.
+- **Guess my spot plays like Consensio.** The partners take turns, one photo each. It plays async with pushes, and live when both are in.
+- **Guess my spot scores by kilometres on a world scale.** Up to 5000 points, halving about every 1,500 km, as in GeoGuessr.
+- **Guess my spot's screens.** The guess shows the photo on the top half, pinch to look closer, and a map on the bottom half to drop the pin. The map is Apple's standard map in Paeonia's dark look, with a button for satellite. On the reveal the map zooms out from the guess, a gold line draws to the real spot, the camera lands there and the distance counts up, then the photo comes back with the place name and date. Only where is guessed, not when.
+- **Guess my spot keeps a map of our places.** Every round becomes a pin on one shared map, and each pin opens its photo and both spots.
+- **Guess my spot strips the photo.** The phone removes the photo's metadata, such as the camera, the time and the location, before uploading. The spot travels on its own and stays hidden until the guess.
+- **Guess my spot is "Gjett hvor" in Norwegian.**
+- **Guess my spot keeps the picker open until sending.** A picked photo can be swapped for another as often as the sender likes until the round is sent. A photo with no location the sender can't place is just swapped out, so there is no skip.
 
 Decided on 2026-10-14.
 
@@ -133,7 +141,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Exquisite corpse | Yes | Yes | M |
 | Story chain | No | Yes | S |
 | Consensio | Yes, the real spot until the guess | Yes, every revealed round | M |
-| Guess my spot | Yes, the location | No | M |
+| Guess my spot | Yes, the location until the guess | Yes, a map of every round | M |
 | Connect Four, Dots and Boxes, Ultimate tic-tac-toe | No | Yes, every finished game to watch again | S each |
 | Chess | No | No | L |
 | Wordfeud-style word game | Yes, the tile rack | No | L |
@@ -141,7 +149,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 - **Exquisite corpse.** Built. Partners take turns drawing the head, body and legs of a figure, and each sees only the bottom 12% of the part before. The whole figure unfolds part by part at the end and goes to "Our creatures". It plays live with a folded paper view and async with pushes. Its full design is in `docs/games/exquisite-corpse.md`.
 - **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed. Its design is in `docs/games/story-chain.md`.
 - **Consensio.** Built. One partner puts a marker where they honestly stand on a line between two ends, such as how they feel about camping. The other guesses where it went, and the reveal scores how close they came. It plays async with pushes and live with the guess marker moving on the placer's screen. Its design and the decisions are in `docs/games/consensio.md`.
-- **Guess my spot.** Send a photo of where you are, taken now or picked from the library. The partner drops a pin on a map and scores by distance. The sender's coordinates stay hidden until the guess.
+- **Guess my spot.** Send a photo from your library, and the partner drops a pin on a map where they think it was taken. The score is by distance, and the sender's spot stays hidden until the guess. The decisions from 2026-10-18 are above.
 - **Board games.** Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe share one turn engine (`make_move` with a pure rules function per kind). Each partner's own drawn mark is on every piece, the starter can play for something, and Dots and Boxes uncovers a random photo from Memories. Built. Design in `docs/games/board-games.md`.
 - **Ludo.** The fourth board game, on the same engine. Two pawns each race round the classic cross board. The phone rolls the die and the roll is part of the move, so a move can still be made offline. Design in `docs/games/ludo.md`.
 - **Chess and word games.** Popular but expensive. Chess needs a rules engine. A word game needs licensed English and Norwegian dictionaries. Deferred.
@@ -217,4 +225,3 @@ Draw & Guess comes first. It builds the turn engine, the drawing replay and the 
 ## Open questions
 
 - Which game comes after Draw & Guess.
-- How precise the location in Guess my spot is, and whether the sender can blur it to a neighborhood.
