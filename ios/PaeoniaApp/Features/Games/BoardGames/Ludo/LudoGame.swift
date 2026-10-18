@@ -2,10 +2,11 @@ import SwiftUI
 
 /// Ludo on the Games tab: its hub model and its screen.
 enum LudoGame {
-    /// My move covers the hops and a send-home. The partner's also covers the
-    /// throw of their die, up to 2.05 s (`LudoSceneStyle.tumbleDuration`), which
-    /// happens before their move exists on my phone.
-    static let timing = BoardGameMoveTiming(mine: .milliseconds(1_400), partner: .milliseconds(3_650))
+    /// My move covers the hops of a winning move, at most 6 at 0.16 s, so the result
+    /// follows the pawn home without a wait. The partner's also covers the throw of
+    /// their die, up to 2.05 s (`LudoSceneStyle.tumbleDuration`), which happens
+    /// before their move exists on my phone.
+    static let timing = BoardGameMoveTiming(mine: .milliseconds(1_000), partner: .milliseconds(3_650))
 
     static func hubModel(dependencies: GamesDependencies) -> BoardGameHubModel<LudoBoard> {
         BoardGameHubModel(
@@ -50,9 +51,13 @@ struct LudoScreen: View {
                 bloomSeed: viewModel.bloomSeed,
                 partnerName: viewModel.partnerName,
                 onRoll: roll.roll,
-                onChoose: { choice in Task { await roll.choose(choice) } }
+                onChoose: { choice in Task { await roll.choose(choice) } },
+                onShown: { viewModel.isWaitingForBoard = false },
+                onDieLanded: roll.dieLanded
             )
         }
+        // The partner's moves replay once the 3D board shows, not under the loading view.
+        .onAppear { viewModel.isWaitingForBoard = true }
         // The saved roll belongs to the signed-in person, so it is read once
         // they are known, and again if they change.
         .task(id: viewModel.currentUserID) {

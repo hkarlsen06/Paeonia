@@ -67,7 +67,7 @@ extension LudoStage {
         let moverDuration: Double
         if reduceMotion {
             moverDuration = LudoSceneStyle.fadeDuration
-            fadeMove(pawns[index], from: starts[index], start: begin, transition: transition)
+            fadeMove(pawns[index], from: starts[index], start: begin, transition: transition, board: new)
         } else {
             moverDuration = hopMove(
                 pawns[index],
@@ -105,10 +105,11 @@ extension LudoStage {
         let reachesHome = transition.path.last == .home(pawn.player)
         if reachesHome {
             let player = pawn.player
+            let wins = board.outcome?.winner == player
             events.append(LudoClip.Event(time: duration) { [weak self] in
                 PaeoniaHaptics.streakContinued()
                 GameSound.ludoHome.play()
-                self?.pulseHome(of: player)
+                self?.pulseHome(of: player, holds: wins)
             })
         }
         let startScale = start.1
@@ -157,7 +158,8 @@ extension LudoStage {
         _ pawn: LudoPawnNode,
         from start: (SIMD3<Float>, Float),
         start begin: Double,
-        transition: LudoTransition
+        transition: LudoTransition,
+        board: LudoBoard
     ) {
         let duration = LudoSceneStyle.fadeDuration
         let half = duration / 2
@@ -165,12 +167,13 @@ extension LudoStage {
         let restScale = pawn.restScale
         let reachesHome = transition.path.last == .home(pawn.player)
         let player = pawn.player
+        let wins = board.outcome?.winner == player
         let events = [LudoClip.Event(time: duration) { [weak self] in
             PaeoniaHaptics.streakTick(intensity: 0.5)
             GameSound.ludoStep.play(volume: 0.8)
             if reachesHome {
                 GameSound.ludoHome.play()
-                self?.pulseHome(of: player)
+                self?.pulseHome(of: player, holds: wins)
             }
         }]
         let clip = LudoClip(owner: .pawn(pawn.index), start: begin, duration: duration, events: events) { time in
@@ -227,9 +230,11 @@ extension LudoStage {
         add(clip)
     }
 
-    /// The pad where a pawn came home pulses in the player's color.
-    func pulseHome(of player: BoardPlayer) {
+    /// The half where a pawn came home pulses in the player's color. After the
+    /// winning pawn it stays lit, so the glow runs on into the result.
+    func pulseHome(of player: BoardPlayer, holds: Bool) {
         let slot = player.rawValue - 1
+        if holds { glowTargets[slot] = 1 }
         let duration = LudoSceneStyle.homePulseDuration
         let clip = LudoClip(owner: .glow(slot), start: clock, duration: duration) { [weak self] time in
             self?.glowPulses[slot] = Float(sin(Double.pi * time / duration))

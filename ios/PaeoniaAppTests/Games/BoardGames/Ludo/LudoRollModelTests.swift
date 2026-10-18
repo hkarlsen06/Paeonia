@@ -11,6 +11,7 @@ private final class RollHarness {
     var moves: [Int]
     var canPlayOverride: Bool?
     var holdsAutomaticMoves = false
+    var holdsTumble = false
     var dice: [Int]
     private(set) var kept: LudoSavedRoll?
     private(set) var savedRolls: [LudoSavedRoll] = []
@@ -45,11 +46,12 @@ private final class RollHarness {
 
     /// Records the wait. While `holdsAutomaticMoves` is set, the wait before a
     /// pass that plays by itself lasts until it is cleared, so a test can look at
-    /// the screen in between.
+    /// the screen in between. `holdsTumble` does the same for the longest throw.
     func recordSleep(_ duration: Duration) async {
         sleeps.append(duration)
         let isAutomatic = duration == LudoRollDecision.autoPassDelay
-        while holdsAutomaticMoves, isAutomatic, !Task.isCancelled {
+        let isTumble = duration == .milliseconds(800)
+        while (holdsAutomaticMoves && isAutomatic) || (holdsTumble && isTumble), !Task.isCancelled {
             try? await Task.sleep(for: .milliseconds(5))
         }
     }
@@ -120,6 +122,36 @@ struct LudoRollModelTests {
         #expect(harness.model.movableChoices == [.first, .second])
         // Two options wait for a tap.
         #expect(harness.played.isEmpty)
+    }
+
+    @Test func theChoicesShowAsSoonAsTheDieComesToRest() async {
+        let harness = RollHarness(moves: Self.twoPawns, dice: [3])
+        harness.holdsTumble = true
+        await harness.model.restore()
+        harness.model.roll()
+        // The roll is saved and the longest throw has begun.
+        _ = await waitUntil { harness.sleeps.contains(.milliseconds(800)) }
+        harness.model.dieLanded()
+        #expect(harness.model.die == .showing(die: 3, side: .one))
+        #expect(harness.model.movableChoices == [.first, .second])
+
+        // A pawn picked before the longest throw is over stays picked when it ends.
+        await harness.model.choose(.first)
+        harness.holdsTumble = false
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(harness.played == [LudoBoard.move(die: 3, choice: .first)])
+        #expect(harness.model.die == .idle(side: .two))
+    }
+
+    @Test func aDieThatLandsBeforeTheRollIsSavedWaits() async {
+        let harness = RollHarness(moves: Self.twoPawns, dice: [3])
+        await harness.model.restore()
+        harness.model.roll()
+        // The save has not run yet, so the landing is too early to count.
+        harness.model.dieLanded()
+        #expect(harness.model.die == .rolling(die: 3, side: .one, token: 1, toss: harness.tapToss))
+        let landed = await waitUntil { harness.model.die == .showing(die: 3, side: .one) }
+        #expect(landed)
     }
 
     @Test func tappingAPawnPlaysTheRollAndTheChoice() async {

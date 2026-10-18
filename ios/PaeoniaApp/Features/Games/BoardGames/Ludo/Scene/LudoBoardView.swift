@@ -40,8 +40,13 @@ struct LudoBoardView: View {
     /// Rolls the die. Carries the throw when the person threw the die by hand.
     let onRoll: (LudoToss?) -> Void
     let onChoose: (LudoChoice) -> Void
+    /// The loading view has faded and the scene shows. Moves that wait for it can play.
+    var onShown: () -> Void = {}
+    /// My thrown die came to rest.
+    var onDieLanded: () -> Void = {}
 
-    /// How long the die tumbles. The screen keeps the die rolling for this long.
+    /// The longest a throw takes. The screen keeps the die rolling for at most this
+    /// long, and shows the choices sooner when `onDieLanded` comes first.
     nonisolated static let tumbleDuration: Duration = .seconds(LudoSceneStyle.tumbleDuration)
 
     var body: some View {
@@ -118,6 +123,7 @@ private struct LudoBoardScene: View {
             onTarget: handleTap,
             onToss: handleToss,
             onSettled: { settledRig = $0 },
+            onDieLanded: inputs.onDieLanded,
             onZoom: handleZoom,
             onReady: revealScene
         )
@@ -141,6 +147,10 @@ private struct LudoBoardScene: View {
             withAnimation(reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: LudoLoadingView.fadeDuration)) {
                 isSceneReady = true
             }
+            if !reduceMotion {
+                try? await Task.sleep(for: .seconds(LudoLoadingView.fadeDuration))
+            }
+            inputs.onShown()
         }
     }
 
@@ -256,6 +266,7 @@ private struct LudoSceneView: UIViewRepresentable {
     let onTarget: (LudoStage.Target) -> Void
     let onToss: (LudoToss) -> Void
     let onSettled: (LudoCameraRig) -> Void
+    let onDieLanded: () -> Void
     /// The person started zooming the board.
     let onZoom: () -> Void
     let onReady: () -> Void
@@ -277,6 +288,7 @@ private struct LudoSceneView: UIViewRepresentable {
         context.coordinator.parent = self
         context.coordinator.attach(to: view)
         stage.onCameraSettled = onSettled
+        stage.onDieLanded = onDieLanded
         stage.onReady = onReady
         let stage = stage
         let input = input
@@ -291,6 +303,7 @@ private struct LudoSceneView: UIViewRepresentable {
     func updateUIView(_ view: ARView, context: Context) {
         context.coordinator.parent = self
         stage.onCameraSettled = onSettled
+        stage.onDieLanded = onDieLanded
     }
 
     /// Turns touches into play and camera moves. One finger plays: a tap picks a pawn,

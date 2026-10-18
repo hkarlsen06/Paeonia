@@ -37,6 +37,7 @@ extension BoardGameViewModel {
                 userID: userID
             )
         }
+        guard !isWaitingForBoard else { return }
         if keepEndingOnScreen(snapshot) {
             return
         }
@@ -194,10 +195,19 @@ extension BoardGameViewModel {
         return event
     }
 
+    /// The board can show moves now: the replay or the outcome that waited plays.
+    func resumeAfterWaitingForBoard() {
+        if isShowingMissedEnding {
+            startReplay()
+        } else {
+            recompute()
+        }
+    }
+
     /// Plays the moves the board is missing, one at a time. `leadIn` holds the
     /// board still first.
     private func startReplay(after leadIn: Duration = .zero) {
-        guard replayTask == nil else { return }
+        guard replayTask == nil, !isWaitingForBoard else { return }
         isReplaying = true
         updateScreen()
         replayTask = Task { [weak self] in

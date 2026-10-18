@@ -8,6 +8,8 @@ extension LudoStage {
     /// starts, which waits for the last move to finish. Nil when nothing starts now.
     func syncOutcome(_ new: Input) -> Double? {
         guard new.showsOutcome, let winner = new.board.outcome?.winner else {
+            // The winning pawn's glow waits here for the result to start.
+            if new.board.outcome?.winner != nil, outcomeWinner == nil { return nil }
             clearOutcome()
             return nil
         }
@@ -18,7 +20,8 @@ extension LudoStage {
             PaeoniaHaptics.answerRevealed()
             return 0
         }
-        let delay = remainingAnimationTime
+        // The pawns finish first. The die may still hop to the next yard.
+        let delay = pawnTimeLeft
         outcomeSchedule = OutcomeSchedule(start: clock + delay, winner: winner)
         return delay
     }
@@ -48,7 +51,7 @@ extension LudoStage {
     }
 
     private func clearOutcome() {
-        guard outcomeWinner != nil || outcomeSchedule != nil else { return }
+        guard outcomeWinner != nil || outcomeSchedule != nil || glowTargets != [0, 0] else { return }
         outcomeWinner = nil
         outcomeSchedule = nil
         for pawn in pawns {

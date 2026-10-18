@@ -134,10 +134,11 @@ extension LudoBoard {
 ### Rolling
 
 - On my turn the die sits in my yard and bobs gently. Any one-finger drag picks it up, wherever it starts on the screen. At other times a one-finger drag does nothing. A die still hopping into my yard lands at once when picked up. Once picked up, it rises 1.1 cells and follows my finger above the yard, and letting go throws it in the direction and at the speed of the flick, from 4 to 9 cells a second. A tap on the die does nothing, because a roll by accident cannot be taken back. VoiceOver's roll action throws it from where it rests, away from me, give or take a little. The die tumbles about two full turns, bounces off the yard's edges and the pawns waiting in it, and lands flat with the rolled face up wherever the throw takes it, usually in about 1.4 seconds and never later than 2.05 seconds. It plays `selection()` on each hard hit and a soft impact when it settles. It stays where it landed until it changes yards.
+- My pawns light up the moment the die comes to rest, with the settle tap. The screen waits for the longest throw, 2.05 seconds, only if the board never says the die landed. Waiting for the longest throw every time left a short throw resting on its number for over a second before anything happened.
 - The pawns I can move lift and glow in my color. Tapping one moves it. Tapping a pawn that can't move gives `gameWrongGuess()` and a small shake.
 - The pawn hops square by square, 0.16 seconds a square, with a light tick on each landing. Coming out of the base is one hop onto the start square.
 - Sending a partner's pawn home: my pawn lands, the partner's pawn pops up, arcs back to its base and settles, with `streakTick()`.
-- A pawn reaching home stands on my half of the middle, which glows in my color.
+- A pawn reaching home stands on my half of the middle, which pulses in my color. After the winning pawn the half stays lit and runs on into the result.
 - Another roll: the status row says "Roll again", or "2 tries left to roll a 6" after a missed 6, and the die returns to my tray.
 
 ### Your color
@@ -155,15 +156,15 @@ extension LudoBoard {
 
 - With the game open on both phones, the partner's die tumbles on my phone while it tumbles on theirs. Their phone sends `LudoLiveMessage` (the game, game number, move count, face and throw) to the `<couple>:ludo` relay room as the tumble starts, and again, without the throw, when I open the game in the middle of their turn. The throw is in the frame of the roller's own yard, and my phone turns it half a circle onto their yard. Both phones run the same simulation, so the die flies and lands the same way. A die not already in the hand rises into the throw over 0.15 seconds. A roll without a throw uses the tap throw of its position, which both phones make the same. A roll for a position my board has not reached yet waits for the move that leads there. When their move arrives, the die has already rolled, so only the pawn hops.
 - Without a live roll, for example when the relay is down or I open the game after they moved, the die tumbles to their roll when their move arrives, then their pawn hops the same way. A move that sends my pawn home plays a soft `partnerDrawingReceived()`.
-- Replays follow the board games rule: moves since this phone last showed the board play in order, and a tap skips to the end.
+- Replays follow the board games rule: moves since this phone last showed the board play in order, and a tap skips to the end. The replay waits until the loading view has faded (see "Loading"). It used to start at once, so a partner's move that sent my pawn home played under "Setting the table" and I only saw the result.
 
 ### Timing
 
-`BoardGameMoveTiming(mine: 1.4 s, partner: 3.05 s)`. My move's tumble happens before the move exists, so my timing covers only the hops and a send-home. The partner's covers the tumble too.
+`BoardGameMoveTiming(mine: 1.0 s, partner: 3.65 s)`. My move's tumble happens before the move exists, so my timing covers only the hops. It fits the longest winning move, 6 hops of 0.16 seconds, so the result follows my last pawn home without a wait. A send-home of mine takes up to 1.58 seconds, and when one replays, the next move ends it early. My own moves replay only when they were made on another phone. The partner's timing covers the tumble too.
 
 ### Result
 
-The result follows the board games table. At 0.15 the winner's home glows and the other pawns dim to 40%. At 0.70 the petal bloom rises from the center of the board.
+The result follows the board games table. The winner's half of the middle is already lit from the moment the last pawn arrived. At 0.15 the other pawns dim to 40%. At 0.70 the petal bloom rises from the center of the board. The result waits only for the pawns to stand still, not for the home pulse to fade or the die to hop to the next yard, so the bloom lands with the win sound.
 
 ### Reduce Motion
 
@@ -233,7 +234,7 @@ The mark fills 86 percent of the flat top. A pawn is the player's color all over
 
 - The die is blush white with rounded edges (corner radius 0.23 of a 1.3 die) and pips shaped as small plum hearts. Hearts match the heart discs of Connect Four and Ultimate Tic-Tac-Toe, and six hearts still count at a glance.
 - A heart pip is 0.27 cells wide, raised 0.04 cells, with rounded edges. Its point faces the face's `down` direction, so on the top face it points toward the viewer and reads upright. Pip places stay as they are.
-- There are no trays. The die rests in the base yard of whoever rolls: my corner on my roll, my partner's corner on theirs. It starts in the free space of the yard beside the two pawn spots, which sit in the yard's outer row. A throw can take it anywhere inside the base's carved panel, and it stays where it lands. A die that changes player hops from one yard to the other.
+- There are no trays. The die rests in the base yard of whoever rolls: my corner on my roll, my partner's corner on theirs. It starts in the free space of the yard beside the two pawn spots, which sit in the yard's outer row. A throw can take it anywhere inside the base's carved panel, and it stays where it lands. A die that changes player hops from one yard to the other once every pawn has landed. It used to hop the moment I picked a pawn, so it flew across the board while my pawn hopped and pulled the eye away from it.
 
 ### Materials
 
@@ -277,7 +278,7 @@ The board is a safe place in a cozy evening at home: it lies on a wooden table w
 
 ### Loading
 
-The scene takes a moment to build, longest on the first open. Until it has drawn three frames, the board shows `LudoLoadingView`: the room's dark color with a steaming mug that breathes softly (`cup.and.heat.waves.fill` in my mug's pink), and "Setting the table". The mug and the words come in softly. The loading view shows for at least 1.2 seconds, so a fast load never flashes it, then fades over 0.8 seconds into the scene, which sits on the same dark color. It stays in place and fades by its opacity: a view removed from the stack over the 3D view vanished at once instead of fading. Reduce Motion holds the mug still and switches without the fades.
+The scene takes a moment to build, longest on the first open. Until it has drawn three frames, the board shows `LudoLoadingView`: the room's dark color with a steaming mug that breathes softly (`cup.and.heat.waves.fill` in my mug's pink), and "Setting the table". The mug and the words come in softly. The loading view shows for at least 1.2 seconds, so a fast load never flashes it, then fades over 0.8 seconds into the scene, which sits on the same dark color. Moves waiting to replay start once the fade is over (`onShown`, which clears the view model's `isWaitingForBoard`). It stays in place and fades by its opacity: a view removed from the stack over the 3D view vanished at once instead of fading. Reduce Motion holds the mug still and switches without the fades.
 
 - The board painting and the room load side by side, and the studio light loads while the board builds.
 - The grooves' bump picture is the same for both players and every color, so it is made once and kept. The room is kept after the first build and copied for the next board, and the studio light is loaded once.

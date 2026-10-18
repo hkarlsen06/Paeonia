@@ -77,6 +77,8 @@ final class LudoStage {
     var onCameraSettled: ((LudoCameraRig) -> Void)?
     /// Called once the built scene has drawn a few frames, so the loading view can fade.
     var onReady: (() -> Void)?
+    /// Called when my thrown die comes to rest, so my pawns can light up at once.
+    var onDieLanded: (() -> Void)?
     private var framesSinceBuilt = 0
 
     struct CameraGlide {
@@ -301,9 +303,10 @@ final class LudoStage {
         }
     }
 
-    /// Seconds until every clip is over.
-    var remainingAnimationTime: Double {
-        max(0, (clips.map(\.end).max() ?? clock) - clock)
+    /// Seconds until every pawn stands still. The die and a home glow may still move.
+    var pawnTimeLeft: Double {
+        let pawnClips = clips.filter { if case .pawn = $0.owner { true } else { false } }
+        return max(0, (pawnClips.map(\.end).max() ?? clock) - clock)
     }
 
     // MARK: Pawn shake

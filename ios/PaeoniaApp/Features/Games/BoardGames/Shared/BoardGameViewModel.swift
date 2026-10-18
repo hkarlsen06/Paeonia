@@ -130,6 +130,13 @@ final class BoardGameViewModel<Board: BoardGameRules> {
 
     @ObservationIgnored var isRunning = false
     @ObservationIgnored var isActive = true
+    /// True while the board can't show moves yet, such as while Ludo's 3D scene
+    /// loads. The replay waits, so the partner's move plays where it can be seen.
+    @ObservationIgnored var isWaitingForBoard = false {
+        didSet {
+            if oldValue, !isWaitingForBoard { resumeAfterWaitingForBoard() }
+        }
+    }
     @ObservationIgnored var prefersReducedMotion = false
     @ObservationIgnored var replayTask: Task<Void, Never>?
     @ObservationIgnored var outcomeTask: Task<Void, Never>?

@@ -61,6 +61,27 @@ struct BoardGameViewModelTests {
         await harness.expectShown(game: 1, moves: 4)
     }
 
+    @Test func theReplayWaitsUntilTheBoardCanShowIt() async {
+        await harness.save(harness.game(moves: [3, 4]))
+        let viewModel = harness.makeViewModel()
+        defer { viewModel.stop() }
+        // Ludo's 3D board is still loading when the screen opens.
+        viewModel.isWaitingForBoard = true
+        await viewModel.start(prefersReducedMotion: true)
+
+        // The board shows where this phone left the game and holds the partner's move.
+        #expect(viewModel.displayedMoves == [3])
+        #expect(!viewModel.isReplaying)
+        #expect(harness.sleeps.waits.isEmpty)
+        #expect(!viewModel.canPlay)
+
+        viewModel.isWaitingForBoard = false
+        let caughtUp = await waitUntil { viewModel.displayedMoves == [3, 4] && !viewModel.isReplaying }
+        #expect(caughtUp)
+        #expect(viewModel.lastMove == BoardMoveEvent(number: 2, move: 4, player: .two, isMine: false))
+        #expect(viewModel.canPlay)
+    }
+
     @Test func aPartnerMoveThatArrivesWhileTheBoardIsOpenPlaysAsAMove() async {
         let viewModel = await harness.openBoard(harness.game(moves: [3]))
         defer { viewModel.stop() }

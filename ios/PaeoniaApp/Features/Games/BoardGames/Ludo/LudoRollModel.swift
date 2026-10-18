@@ -77,6 +77,8 @@ final class LudoRollModel {
     @ObservationIgnored private var isLoaded = false
     @ObservationIgnored private var turn: Turn?
     @ObservationIgnored private var tumbleCount = 0
+    /// My roll is saved, so the die may land before the longest throw is over.
+    @ObservationIgnored private var hasSavedRoll = false
     @ObservationIgnored private var task: Task<Void, Never>?
     /// The newest roll my partner sent live. It can arrive before the move that
     /// leads to its position, so it waits until the board gets there.
@@ -180,11 +182,13 @@ final class LudoRollModel {
         }
         task?.cancel()
         // The roll is saved before the die lands, and the tumble waits for it.
+        hasSavedRoll = false
         let store = store
         let sleep = sleep
         let tumbleDuration = tumbleDuration
         task = Task { [weak self] in
             await store.save(roll)
+            if !Task.isCancelled { self?.hasSavedRoll = true }
             if tumbles {
                 try? await sleep(tumbleDuration)
             }
@@ -193,9 +197,18 @@ final class LudoRollModel {
         }
     }
 
+    /// The board says my thrown die came to rest. The choices show now, instead of
+    /// after the longest throw.
+    func dieLanded() {
+        guard hasSavedRoll, let turn, case let .rolling(value) = turn.phase else { return }
+        landIfStillMine(value, at: turn.position)
+    }
+
     private func landIfStillMine(_ value: Int, at position: LudoPosition) {
         let context = context()
-        guard context.canPlay, context.position == position, turn?.position == position else { return }
+        guard context.canPlay, context.position == position, let turn, turn.position == position,
+              turn.phase == .rolling(value)
+        else { return }
         land(value, context: context, schedulesAutomaticPass: true)
     }
 

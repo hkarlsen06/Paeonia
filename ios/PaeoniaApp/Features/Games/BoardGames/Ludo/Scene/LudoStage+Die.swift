@@ -108,7 +108,7 @@ extension LudoStage {
         let turn = simd_normalize(start.orientation * joined.orientation.inverse)
         let still = simd_quatf(angle: 0, axis: SIMD3(0, 1, 0))
         let duration = lead + flight.duration
-        let events = flightEvents(flight, skipped: skipped, lead: lead)
+        let events = flightEvents(flight, skipped: skipped, lead: lead, isNear: isNear)
         let clip = LudoClip(
             owner: .die,
             start: clock - skipped,
@@ -142,17 +142,23 @@ extension LudoStage {
     }
 
     /// The knocks along a flight, then the settle. Each knock is a little quieter
-    /// than the one before, as the die loses speed.
-    private func flightEvents(_ flight: LudoDieFlight, skipped: Double, lead: Double) -> [LudoClip.Event] {
+    /// than the one before, as the die loses speed. My die tells the screen it landed.
+    private func flightEvents(
+        _ flight: LudoDieFlight,
+        skipped: Double,
+        lead: Double,
+        isNear: Bool
+    ) -> [LudoClip.Event] {
         var events = flight.knocks.filter { $0 >= skipped }.enumerated().map { index, time in
             LudoClip.Event(time: lead + time) {
                 PaeoniaHaptics.selection()
                 GameSound.ludoDieKnock.play(volume: max(0.35, 1 - 0.22 * Double(index)))
             }
         }
-        events.append(LudoClip.Event(time: lead + flight.duration) {
+        events.append(LudoClip.Event(time: lead + flight.duration) { [weak self] in
             PaeoniaHaptics.streakTick(intensity: 0.55)
             GameSound.ludoDieSettle.play(volume: 0.7)
+            if isNear { self?.onDieLanded?() }
         })
         return events
     }
@@ -180,6 +186,8 @@ extension LudoStage {
     }
 
     /// Puts the die where the state says. It hops there if it is somewhere else now.
+    /// A die that changes yards waits for the pawns to land, so the eye follows one
+    /// thing at a time.
     private func place(
         _ die: LudoDieNode,
         position: SIMD3<Float>,
@@ -202,8 +210,9 @@ extension LudoStage {
         let startPosition = die.currentPosition
         let startOrientation = die.currentOrientation
         let duration = LudoSceneStyle.trayHopDuration
+        let wait = die.restsOnNearTray == isNear ? 0 : pawnTimeLeft
         die.setRest(position: position, orientation: orientation, isNear: isNear, face: face)
-        add(LudoClip(owner: .die, start: clock, duration: duration) { time in
+        add(LudoClip(owner: .die, start: clock + wait, duration: duration) { time in
             let progress = LudoMotion.clamped(time / duration)
             die.apply(
                 position: LudoMotion.trayHop(from: startPosition, to: position, progress: progress),
