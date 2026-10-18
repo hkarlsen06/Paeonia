@@ -125,6 +125,7 @@ The database supports these answer kinds:
 - `photo`
 - `voice`
 - `partner_choice`
+- `either_or`
 
 A question version must have at least one answer kind and at most two answer kinds. The app receives `answer_kinds` from the daily question RPCs and shows the matching composer.
 
@@ -134,6 +135,7 @@ Use answer kinds this way:
 - `photo`: for prompts where the answer should be something the user can show, not just describe.
 - `voice`: for prompts where tone, presence, or hearing the person matters.
 - `partner_choice`: for prompts where the answer is one member of the couple.
+- `either_or`: "pick one of two", for prompts that offer exactly two options, such as "Would you rather spend a week by the sea or in the mountains?". The answer is one of the two.
 
 Use a single answer kind when the prompt clearly calls for one mode. Use two answer kinds when both modes naturally fit the same question.
 
@@ -144,6 +146,14 @@ Use a single answer kind when the prompt clearly calls for one mode. Use two ans
 Other two-kind pairings (anything involving `voice`) are **either/or**: the app shows a single-kind picker and the partner chooses one mode. So `text` + `voice` means "write it or say it," not both.
 
 The wording must match the answer kinds, and for combined questions it should invite both parts without demanding either (each is optional). Do not write "Record a voice note" unless `voice` is allowed. Do not write "Send a photo" unless `photo` is allowed. For `partner_choice`, make the prompt about choosing a person (optionally with a reason when paired with `text`).
+
+### `either_or` (pick one of two)
+
+An `either_or` version is `either_or` alone or `either_or` + `text`. It combines with nothing else. With `text`, the app shows the two options and a short optional "why" line under them. The pick is always required, and the why line never answers on its own.
+
+Each locale file of an `either_or` version also carries `option_a` and `option_b`, the two labels, in the same order as the prompt names them. Labels are short, at most 40 characters, and must read well in "You picked X. Robin picked Y." and "You both picked X". Write them as plain options, never in the first person: "By the sea", not "I'd pick the sea", and not "My favorite film". The labels are part of the version, like the prompts, so changing one needs a new version.
+
+Other versions carry no labels. The sync rejects missing labels, labels on a version without `either_or`, and `either_or` with any kind other than `text`.
 
 ## Localization
 
