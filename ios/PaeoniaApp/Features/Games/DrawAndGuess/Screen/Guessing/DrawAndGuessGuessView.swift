@@ -7,10 +7,18 @@ struct DrawAndGuessGuessView: View {
     @Bindable var viewModel: DrawAndGuessViewModel
 
     @State private var timeline = DrawAndGuessRevealTimeline()
+    /// The wrong words whose last tile has landed. The shake, the outline, the
+    /// haptic and the sound wait for it.
+    @State private var landedWrongCount: Int
     @Namespace private var tileNamespace
     @AccessibilityFocusState private var isTitleFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    init(viewModel: DrawAndGuessViewModel) {
+        self.viewModel = viewModel
+        _landedWrongCount = State(initialValue: viewModel.wrongGuessCount)
+    }
 
     private var isRevealed: Bool { viewModel.phase == .reveal }
     private var isLive: Bool { viewModel.phase == .watchingLive }
@@ -50,10 +58,15 @@ struct DrawAndGuessGuessView: View {
         .onChange(of: timeline.titleShown) { _, shown in
             if shown, UIAccessibility.isVoiceOverRunning { isTitleFocused = true }
         }
-        .onChange(of: viewModel.wrongGuessCount) {
-            PaeoniaHaptics.gameWrongGuess()
-            GameSound.wrong.play()
-            AccessibilityNotification.Announcement(String(localized: .gamesDrawAndGuessGuessWrong)).post()
+        .onChange(of: viewModel.wrongGuessCount) { _, count in
+            Task {
+                // With Reduce Motion the last tile cross-fades in at once.
+                if !reduceMotion { try? await Task.sleep(for: DrawAndGuessViewModel.tileFlight) }
+                landedWrongCount = count
+                PaeoniaHaptics.gameWrongGuess()
+                GameSound.wrong.play()
+                AccessibilityNotification.Announcement(String(localized: .gamesDrawAndGuessGuessWrong)).post()
+            }
         }
         .onDisappear { timeline.stop() }
         .gameStarToolbar(
@@ -155,8 +168,8 @@ struct DrawAndGuessGuessView: View {
             namespace: tileNamespace,
             isRevealed: isRevealed,
             litsGreen: viewModel.reveal?.isSolved == true,
-            wrongGuessCount: viewModel.wrongGuessCount,
-            isShowingWrongGuess: viewModel.isShowingWrongGuess,
+            wrongGuessCount: landedWrongCount,
+            isShowingWrongGuess: viewModel.isShowingWrongGuess && landedWrongCount == viewModel.wrongGuessCount,
             removeTile: { viewModel.removeTile(atSlot: $0) }
         )
         .overlay {
@@ -187,6 +200,7 @@ struct DrawAndGuessGuessView: View {
                         me: viewModel.me,
                         partner: viewModel.partner,
                         isCounting: timeline.scoreCounting,
+                        countProgress: timeline.scoreProgress,
                         animates: !timeline.wasSkipped,
                         showsSpeedBonus: timeline.speedBonusShown,
                         showsFirstTryBonus: timeline.firstTryBonusShown,

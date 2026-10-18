@@ -131,7 +131,7 @@ struct DrawAndGuessAnswerSlots: View {
             }
             .frame(width: slotWidth, height: Self.slotHeight)
             .overlay { outline(of: slot) }
-            .scaleEffect(timeline.rippleIndex == number - 1 ? 1.18 : 1)
+            .modifier(DrawAndGuessLetterPop(isLit: isLit, peak: 1.12, isEnabled: litsGreen && !timeline.wasSkipped))
             .contentShape(Rectangle().inset(by: -2))
         }
         .buttonStyle(.plain)

@@ -22,10 +22,9 @@ final class DrawAndGuessRevealTimeline {
 
     /// The rest of the drawing fades in over the replay.
     private(set) var finalDrawingShown = false
-    /// How many letters of the answer have lit up, left to right.
+    /// How many letters of the answer have lit up, left to right. Each letter
+    /// pops once as it lights, in the view.
     private(set) var litLetters = 0
-    /// The letter that is scaling up right now.
-    private(set) var rippleIndex: Int?
     private(set) var bloomStart: Date?
     private(set) var glow: Double = 0
     private(set) var gridCollapsed = false
@@ -34,6 +33,8 @@ final class DrawAndGuessRevealTimeline {
     private(set) var buttonShown = false
     private(set) var panelShown = false
     private(set) var scoreCounting = false
+    /// How far the totals have counted, from 0 to 1. Each score tick moves it on.
+    private(set) var scoreProgress: Double = 0
     private(set) var speedBonusShown = false
     private(set) var firstTryBonusShown = false
     /// The rows under the result appear, such as the reaction row.
@@ -117,7 +118,6 @@ final class DrawAndGuessRevealTimeline {
         plan = nil
         finalDrawingShown = false
         litLetters = 0
-        rippleIndex = nil
         bloomStart = nil
         glow = 0
         gridCollapsed = false
@@ -126,6 +126,7 @@ final class DrawAndGuessRevealTimeline {
         buttonShown = false
         panelShown = false
         scoreCounting = false
+        scoreProgress = 0
         speedBonusShown = false
         firstTryBonusShown = false
         actionsShown = false
@@ -174,13 +175,11 @@ final class DrawAndGuessRevealTimeline {
                 glow = Self.restingGlow
             }
         case let .lightLetter(index, tick):
-            withAnimation(.spring(duration: 0.22, bounce: 0.4)) {
-                litLetters = index + 1
-                rippleIndex = index
-            }
+            // The fill turns green at once, without a muddy mix of the two colors
+            // in between. The letter's pop carries the motion.
+            litLetters = index + 1
             if let tick { haptics.letterTick(tick) }
         case .bloom:
-            rippleIndex = nil
             bloomStart = now()
             haptics.answerRevealed()
             withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionSlow)) {
@@ -220,7 +219,8 @@ final class DrawAndGuessRevealTimeline {
                 panelShown = true
                 scoreCounting = true
             }
-        case let .scoreTick(intensity):
+        case let .scoreTick(progress, intensity):
+            scoreProgress = progress
             haptics.scoreTick(intensity)
         case .speedBonus:
             haptics.speedBonus()
@@ -244,7 +244,6 @@ final class DrawAndGuessRevealTimeline {
     private func applySettledState(_ plan: Plan) {
         finalDrawingShown = true
         litLetters = plan.letterCount
-        rippleIndex = nil
         bloomStart = nil
         glow = plan.kind == .solved ? Self.restingGlow : 0
         gridCollapsed = true
@@ -253,6 +252,7 @@ final class DrawAndGuessRevealTimeline {
         buttonShown = true
         panelShown = plan.kind == .solved && plan.pointsAdded > 0
         scoreCounting = panelShown
+        scoreProgress = panelShown ? 1 : 0
         speedBonusShown = plan.hasSpeedBonus
         firstTryBonusShown = plan.hasFirstTryBonus
         actionsShown = true

@@ -222,8 +222,12 @@ extension DrawAndGuessViewModel {
         dependencies.drawingStore.saveLiveSnapshot(snapshot.dataRepresentation(), ownerUserID: userID, roundID: roundID)
     }
 
-    /// How long the wrong word stays in the slots while they shake.
-    static let wrongGuessHold: Duration = .milliseconds(400)
+    /// How long a tile takes to fly into its slot. A wrong word shows as wrong
+    /// once its last tile has landed.
+    static let tileFlight: Duration = .milliseconds(160)
+    /// How long the wrong word stays in the slots: the last tile's flight, then
+    /// the shake and the outline.
+    static let wrongGuessHold: Duration = tileFlight + .milliseconds(400)
     /// The hold with Reduce Motion, which has no shake.
     static let wrongGuessHoldReducedMotion: Duration = .milliseconds(600)
     /// The tiles fly back one at a time, the last letter first.

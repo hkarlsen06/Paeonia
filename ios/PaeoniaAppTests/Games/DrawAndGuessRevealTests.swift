@@ -50,18 +50,43 @@ struct DrawAndGuessRevealTests {
         let steps = Timeline.steps(for: plan(letters: 8, firstTry: true), schedule: .standard)
 
         #expect(steps.first == Timeline.Step(at: 0, event: .start))
-        // Eight letters at 45 ms start at 0.10 s and the last one lights at 0.415 s.
+        // Eight letters at 45 ms start as the last tile lands at 0.16 s, and the last one lights at 0.475 s.
         let lights = steps.filter { if case .lightLetter = $0.event { true } else { false } }
         #expect(lights.count == 8)
-        #expect(abs((lights.last?.at ?? 0) - 0.415) < 0.001)
+        #expect(abs((lights.last?.at ?? 0) - 0.475) < 0.001)
         #expect(steps.contains(Timeline.Step(at: 0.70, event: .bloom)))
         #expect(steps.contains(Timeline.Step(at: 1.10, event: .title)))
         #expect(steps.contains(Timeline.Step(at: 1.40, event: .panel)))
-        #expect(steps.contains(Timeline.Step(at: 1.90, event: .speedBonus)))
-        // The first-try line has its own beat after the speed bonus.
-        #expect(steps.contains(Timeline.Step(at: 2.20, event: .firstTryBonus)))
-        #expect(steps.last == Timeline.Step(at: 2.50, event: .actions))
+        // The bonus lines land after the count, and the first-try line has its own beat.
+        #expect(steps.contains(Timeline.Step(at: 2.30, event: .speedBonus)))
+        #expect(steps.contains(Timeline.Step(at: 2.60, event: .firstTryBonus)))
+        #expect(steps.last == Timeline.Step(at: 2.90, event: .actions))
         #expect(steps.map(\.at) == steps.map(\.at).sorted())
+    }
+
+    @Test func theCountWaitsForThePanelAndEachTickMovesTheTotal() {
+        let steps = Timeline.steps(for: plan(points: 3), schedule: .standard)
+        let ticks = steps.compactMap { step -> (at: TimeInterval, progress: Double)? in
+            if case let .scoreTick(progress, _) = step.event { (step.at, progress) } else { nil }
+        }
+
+        #expect(ticks.count == 3)
+        #expect(abs(ticks[0].at - 1.70) < 0.001)
+        #expect(abs(ticks[2].at - 2.10) < 0.001)
+        #expect(ticks.map(\.progress) == [1.0 / 3, 2.0 / 3, 1])
+        // The count is over before the first bonus line lands.
+        #expect(ticks[2].at < 2.30)
+    }
+
+    @Test func aSinglePointCountsOnTheFirstBeatAtFullStrength() {
+        let steps = Timeline.steps(for: plan(points: 1), schedule: .standard)
+        let ticks = steps.filter { if case .scoreTick = $0.event { true } else { false } }
+
+        #expect(ticks.count == 1)
+        #expect(abs((ticks.first?.at ?? 0) - 1.70) < 0.001)
+        guard case let .scoreTick(progress, intensity) = ticks.first?.event else { return }
+        #expect(progress == 1)
+        #expect(abs(intensity - 0.85) < 0.001)
     }
 
     @Test func aLongPhraseStillFinishesLightingByHalfASecondAfterTheStart() {
@@ -112,6 +137,7 @@ struct DrawAndGuessRevealTests {
         #expect(timeline.litLetters == 4)
         #expect(timeline.titleShown && timeline.buttonShown && timeline.panelShown && timeline.actionsShown)
         #expect(timeline.speedBonusShown && timeline.firstTryBonusShown)
+        #expect(timeline.scoreProgress == 1)
         #expect(timeline.bloomStart != nil)
         #expect(log.events.filter { $0 == "revealed" }.count == 1)
         #expect(log.events.filter { $0 == "selection" }.count == 1)
@@ -183,6 +209,7 @@ struct DrawAndGuessRevealTests {
         #expect(!timeline.gridCollapsed && !timeline.canvasShrunk)
         #expect(!timeline.buttonShown && !timeline.titleShown && !timeline.isSettled)
         #expect(timeline.litLetters == 0 && !timeline.finalDrawingShown)
+        #expect(timeline.scoreProgress == 0)
         #expect(log.events == ["selection"])
     }
 

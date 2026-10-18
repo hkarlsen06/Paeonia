@@ -57,12 +57,21 @@ struct DrawAndGuessScreen: View {
         }
     }
 
-    /// Cross-fade and a 12 point rise. Reduce Motion keeps only the cross-fade.
+    /// The old screen fades out fast and the new one fades in with a 12 point rise
+    /// just after, so the titles of the two screens never sit over each other.
+    /// Reduce Motion keeps a plain cross-fade.
     private var phaseTransition: AnyTransition {
         reduceMotion
             ? .opacity
-            : .asymmetric(insertion: .opacity.combined(with: .offset(y: 12)), removal: .opacity)
+            : .asymmetric(
+                insertion: .opacity.combined(with: .offset(y: 12))
+                    .animation(PaeoniaMotion.meaningfulMoment.delay(Self.phaseInsertionDelay)),
+                removal: .opacity.animation(PaeoniaMotion.buttonPress)
+            )
     }
+
+    /// The new screen waits until the old one is mostly gone.
+    private static let phaseInsertionDelay: TimeInterval = 0.1
 
     /// Changes when the screen needs a new view, so state such as a replay starts
     /// fresh for each round. The guesser's screen and the drawer's result each

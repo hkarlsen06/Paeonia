@@ -20,19 +20,24 @@ nonisolated struct DrawAndGuessRevealPlan: Equatable, Sendable {
 
 /// When each beat happens, in seconds after the last tile lands.
 nonisolated struct DrawAndGuessRevealSchedule: Sendable {
-    var lightStart: TimeInterval = 0.10
-    var lightSpan: TimeInterval = 0.50
+    /// The first letter lights as the last tile lands in its slot, 0.16 s after the tap.
+    var lightStart: TimeInterval = 0.16
+    var lightSpan: TimeInterval = 0.44
     var maxLetterGap: TimeInterval = 0.045
     var bloom: TimeInterval = 0.70
     var glowSettle: TimeInterval = 1.30
     var title: TimeInterval = 1.10
     var panel: TimeInterval = 1.40
-    var countSpan: TimeInterval = 0.60
-    var speedBonus: TimeInterval = 1.90
+    /// The count waits for the panel to fade in, so the first tick has a number to move.
+    var countLead: TimeInterval = 0.30
+    /// From the first count tick to the last.
+    var countSpan: TimeInterval = 0.40
+    /// The bonus lines land after the count.
+    var speedBonus: TimeInterval = 2.30
     /// The first-try line lands after the speed bonus.
-    var firstTryBonus: TimeInterval = 2.20
+    var firstTryBonus: TimeInterval = 2.60
     /// The reaction row appears.
-    var actions: TimeInterval = 2.50
+    var actions: TimeInterval = 2.90
     /// The missed round fills the answer over this long, then moves on.
     var missedFill: TimeInterval = 0.50
     var missedTitle: TimeInterval = 0.90
@@ -41,7 +46,8 @@ nonisolated struct DrawAndGuessRevealSchedule: Sendable {
     static let standard = Self()
     static let instant = Self(
         lightStart: 0, lightSpan: 0, maxLetterGap: 0, bloom: 0, glowSettle: 0, title: 0, panel: 0,
-        countSpan: 0, speedBonus: 0, firstTryBonus: 0, actions: 0, missedFill: 0, missedTitle: 0, missedActions: 0
+        countLead: 0, countSpan: 0, speedBonus: 0, firstTryBonus: 0, actions: 0,
+        missedFill: 0, missedTitle: 0, missedActions: 0
     )
 }
 
@@ -91,7 +97,8 @@ nonisolated enum DrawAndGuessRevealEvent: Equatable, Sendable {
     case collapse
     case title
     case panel
-    case scoreTick(CGFloat)
+    /// The totals count one step further, to `progress` of the way, with a tick.
+    case scoreTick(progress: Double, intensity: CGFloat)
     case speedBonus
     case firstTryBonus
     case actions
@@ -132,11 +139,13 @@ nonisolated enum DrawAndGuessRevealScript {
         if plan.pointsAdded > 0 {
             steps.append(Step(at: schedule.panel, event: .panel))
             let ticks = min(plan.pointsAdded, maxLetterTicks)
+            // A single point lands on the first beat of the count, at full strength.
             for tick in 0..<ticks {
-                let progress = ticks > 1 ? CGFloat(tick) / CGFloat(ticks - 1) : 1
+                let rise = ticks > 1 ? Double(tick) / Double(ticks - 1) : 0
+                let strength = ticks > 1 ? rise : 1
                 steps.append(Step(
-                    at: schedule.panel + schedule.countSpan * Double(tick) / Double(ticks),
-                    event: .scoreTick(0.25 + 0.6 * progress)
+                    at: schedule.panel + schedule.countLead + schedule.countSpan * rise,
+                    event: .scoreTick(progress: Double(tick + 1) / Double(ticks), intensity: 0.25 + 0.6 * strength)
                 ))
             }
         }

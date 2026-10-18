@@ -188,16 +188,6 @@ struct DrawAndGuessDrawerResultView: View {
                     .transition(.opacity)
             }
             guessArea
-                .overlay {
-                    if let start = timeline.bloomStart {
-                        GamePetalBloom(
-                            start: start,
-                            seed: viewModel.round?.id.uuidString ?? "",
-                            intensity: 0.5
-                        )
-                        .frame(width: 480, height: 320)
-                    }
-                }
             if isRevealed, let reveal = viewModel.reveal {
                 revealSections(reveal)
             }
@@ -214,7 +204,9 @@ struct DrawAndGuessDrawerResultView: View {
                 wrongAttempts: visibleWrong,
                 correctWord: timeline.litLetters > 0 ? viewModel.round?.word : nil,
                 litLetters: timeline.litLetters,
-                rippleIndex: timeline.rippleIndex
+                popsLetters: !timeline.wasSkipped,
+                bloomStart: timeline.bloomStart,
+                bloomSeed: viewModel.round?.id.uuidString ?? ""
             )
         } else if !isRevealed {
             Text(.gamesDrawAndGuessResultNoTries(viewModel.partnerName))
@@ -245,6 +237,7 @@ struct DrawAndGuessDrawerResultView: View {
                     me: viewModel.me,
                     partner: viewModel.partner,
                     isCounting: timeline.scoreCounting,
+                    countProgress: timeline.scoreProgress,
                     animates: !timeline.wasSkipped,
                     showsSpeedBonus: timeline.speedBonusShown,
                     showsFirstTryBonus: timeline.firstTryBonusShown,
@@ -287,6 +280,9 @@ extension DrawAndGuessDrawerResultView {
                 PaeoniaHaptics.partnerDrawingReceived()
                 GameSound.tap.play(volume: 0.6)
             }
+            // The right word gets its own beat after the last wrong one.
+            try? await Task.sleep(for: .seconds(gap))
+            guard !Task.isCancelled else { return }
         }
         shownWrongCount = total
         beginReveal()

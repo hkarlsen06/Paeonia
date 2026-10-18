@@ -56,3 +56,28 @@ struct DrawAndGuessShake: ViewModifier {
         }
     }
 }
+
+/// A letter of the answer swells to `peak` and settles once, when it lights up
+/// on the reveal. Each letter keeps its own pop, so the pops ripple along the
+/// word as the letters light one after another.
+struct DrawAndGuessLetterPop: ViewModifier {
+    let isLit: Bool
+    let peak: CGFloat
+    /// False for a reveal that skipped to the end or runs with Reduce Motion.
+    let isEnabled: Bool
+
+    @State private var scale: CGFloat = 1
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(scale)
+            .onChange(of: isLit) { _, lit in
+                guard lit, isEnabled else { return }
+                withAnimation(.spring(duration: 0.12, bounce: 0)) {
+                    scale = peak
+                } completion: {
+                    withAnimation(.spring(duration: 0.3, bounce: 0.4)) { scale = 1 }
+                }
+            }
+    }
+}

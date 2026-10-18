@@ -8,6 +8,8 @@ struct DrawAndGuessScorePanel: View {
     let me: GamePlayer
     let partner: GamePlayer
     let isCounting: Bool
+    /// How far the totals have counted, from 0 to 1. The reveal's score ticks move it.
+    let countProgress: Double
     let animates: Bool
     let showsSpeedBonus: Bool
     let showsFirstTryBonus: Bool
@@ -54,10 +56,10 @@ struct DrawAndGuessScorePanel: View {
                 GameAvatar(player: partner, isMe: false, size: 44)
             }
             HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
-                DrawAndGuessCountingNumber(
+                DrawAndGuessSteppedNumber(
                     from: column.before,
                     to: column.after,
-                    isCounting: isCounting,
+                    progress: countProgress,
                     animates: animates
                 )
                 .font(PaeoniaTypography.countdownNumber)
@@ -98,10 +100,10 @@ struct DrawAndGuessScorePanel: View {
                     .foregroundStyle(.paeoniaTextSecondary)
             }
             HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space4) {
-                DrawAndGuessCountingNumber(
+                DrawAndGuessSteppedNumber(
                     from: data.before,
                     to: data.after,
-                    isCounting: isCounting,
+                    progress: countProgress,
                     animates: animates
                 )
                 .font(PaeoniaTypography.countdownNumber)
@@ -153,6 +155,27 @@ struct DrawAndGuessScorePanel: View {
                 String(localized: .gamesDrawAndGuessPoints(theirs.after))
             )
         }
+    }
+}
+
+/// A total that counts from the old number to the new one in steps, one for
+/// each score tick of the reveal, so every tick moves the number. A total the
+/// server changes later shows at once.
+private struct DrawAndGuessSteppedNumber: View {
+    let from: Int
+    let to: Int
+    let progress: Double
+    let animates: Bool
+
+    private var shown: Int {
+        from + Int((Double(to - from) * min(max(progress, 0), 1)).rounded())
+    }
+
+    var body: some View {
+        Text(verbatim: "\(shown)")
+            .monospacedDigit()
+            .contentTransition(.numericText(value: Double(shown)))
+            .animation(animates ? PaeoniaMotion.buttonPress : nil, value: shown)
     }
 }
 

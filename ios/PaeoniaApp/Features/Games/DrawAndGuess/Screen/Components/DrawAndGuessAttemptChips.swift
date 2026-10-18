@@ -7,9 +7,13 @@ struct DrawAndGuessAttemptChips: View {
     let wrongAttempts: [DrawAndGuessAttemptView]
     /// The right word, once it joins the row.
     let correctWord: String?
-    /// How many letters of the right word have lit up, and the one that is scaling up.
+    /// How many letters of the right word have lit up.
     var litLetters = 0
-    var rippleIndex: Int?
+    /// Each letter of the right word pops as it lights. False once the reveal skipped to the end.
+    var popsLetters = false
+    /// The petals burst from the right word.
+    var bloomStart: Date?
+    var bloomSeed = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -27,6 +31,12 @@ struct DrawAndGuessAttemptChips: View {
                 }
                 if let correctWord {
                     correctChip(correctWord)
+                        .overlay {
+                            if let bloomStart {
+                                GamePetalBloom(start: bloomStart, seed: bloomSeed, intensity: 0.5)
+                                    .frame(width: 480, height: 320)
+                            }
+                        }
                         .transition(chipTransition)
                 }
             }
@@ -60,7 +70,7 @@ struct DrawAndGuessAttemptChips: View {
                 let isLit = litLetters == 0 || item.letter.map { $0 < litLetters } ?? true
                 Text(String(item.character))
                     .opacity(isLit ? 1 : 0.35)
-                    .scaleEffect(item.letter != nil && rippleIndex == item.letter ? 1.3 : 1)
+                    .modifier(DrawAndGuessLetterPop(isLit: isLit, peak: 1.3, isEnabled: popsLetters))
             }
         }
         .font(PaeoniaTypography.caption.weight(.bold))
