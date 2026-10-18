@@ -20,6 +20,7 @@ extension MemoryRemoteRow {
             coupleID: coupleID,
             title: title,
             memoryDate: memoryDate,
+            place: nil,
             createdByUserID: ownerUserID,
             lastEditedByUserID: ownerUserID,
             revision: revision,

@@ -19,6 +19,7 @@ nonisolated protocol MemoryDataServicing: Actor {
         memoryDate: String,
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot],
+        place: MemoryPlace?,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord
     func updateMemory(
@@ -27,6 +28,12 @@ nonisolated protocol MemoryDataServicing: Actor {
         expectedRevision: Int,
         title: String,
         memoryDate: String,
+        operation: SyncClientOperation
+    ) async throws -> MemoryRecord
+    func setMemoryPlace(
+        ownerUserID: UUID,
+        memoryID: UUID,
+        place: MemoryPlace?,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord
     func hideMemory(
@@ -77,6 +84,8 @@ nonisolated enum MemoryDataServiceError: Error, Equatable, Sendable {
     case noteTooLong
     case emptyThreadMessage
     case emptyMediaAttachment
+    /// A place with no name or with coordinates off the globe. Map search never gives one.
+    case invalidPlace
 }
 
 actor MemoryDataService: MemoryDataServicing {
@@ -146,6 +155,7 @@ actor MemoryDataService: MemoryDataServicing {
         syncStatus: SyncRecordStatus,
         title: String? = nil,
         memoryDate: String? = nil,
+        place: MemoryPlace?? = nil,
         revision: Int? = nil,
         deletedAt: Date? = nil,
         lastEditedByUserID: UUID? = nil,
@@ -162,6 +172,7 @@ actor MemoryDataService: MemoryDataServicing {
                 coupleID: snapshot.coupleID,
                 title: title ?? snapshot.title,
                 memoryDate: memoryDate ?? snapshot.memoryDate,
+                place: place ?? snapshot.place,
                 createdByUserID: snapshot.createdByUserID,
                 lastEditedByUserID: lastEditedByUserID ?? snapshot.lastEditedByUserID,
                 revision: revision ?? snapshot.revision,
@@ -202,6 +213,34 @@ actor MemoryDataService: MemoryDataServicing {
             return count > limit
         } ?? text.endIndex
         return String(text[..<end])
+    }
+
+    static let placeNameCharacterLimit = 160
+    static let placeCityCharacterLimit = 120
+
+    /// The place in the form the server accepts: trimmed text cut to its limits, and a
+    /// country code only when it is two capital letters. Matching the server's checks
+    /// here means a queued place is never refused later, when nobody is looking.
+    static func normalizedPlace(_ place: MemoryPlace?) throws -> MemoryPlace? {
+        guard let place else { return nil }
+        let name = prefix(normalizedRequired(place.name), fittingCodePoints: placeNameCharacterLimit)
+        guard !name.isEmpty,
+              place.latitude.isFinite, (-90...90).contains(place.latitude),
+              place.longitude.isFinite, (-180...180).contains(place.longitude)
+        else {
+            throw MemoryDataServiceError.invalidPlace
+        }
+        let city = normalizedOptional(place.city).map { prefix($0, fittingCodePoints: placeCityCharacterLimit) }
+        let countryCode = normalizedOptional(place.countryCode).flatMap { code in
+            code.count == 2 && code.unicodeScalars.allSatisfy { ("A"..."Z").contains($0) } ? code : nil
+        }
+        return MemoryPlace(
+            name: name,
+            latitude: place.latitude,
+            longitude: place.longitude,
+            city: city,
+            countryCode: countryCode
+        )
     }
 
     static func normalizedRequired(_ value: String) -> String {

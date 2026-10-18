@@ -128,6 +128,10 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 gateway: memoryGateway,
                 memoryStore: memoryStore
             ),
+            SetMemoryPlacePendingOperationHandler(
+                gateway: memoryGateway,
+                memoryStore: memoryStore
+            ),
             HideMemoryPendingOperationHandler(
                 gateway: memoryGateway,
                 memoryStore: memoryStore

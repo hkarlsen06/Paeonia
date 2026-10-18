@@ -18,6 +18,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
     let memoryDate: String
     let noteBody: String?
     let mediaAssetIDs: [UUID]
+    let place: MemoryPlace?
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
@@ -29,6 +30,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
         memoryDate = payload.memoryDate
         noteBody = payload.noteBody
         mediaAssetIDs = payload.mediaAssetIDs
+        place = payload.place
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -41,6 +43,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
         case memoryDate = "p_memory_date"
         case noteBody = "p_note_body"
         case mediaAssetIDs = "p_media_asset_ids"
+        case place = "p_place"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"
@@ -54,6 +57,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
         try container.encode(memoryDate, forKey: .memoryDate)
         try container.encode(noteBody, forKey: .noteBody)
         try container.encode(mediaAssetIDs, forKey: .mediaAssetIDs)
+        try container.encode(place, forKey: .place)
         try container.encode(clientOperationID, forKey: .clientOperationID)
         try container.encode(clientID, forKey: .clientID)
         try container.encode(clientSequence, forKey: .clientSequence)
@@ -91,6 +95,44 @@ nonisolated struct UpdateMemoryRequest: Encodable {
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"
         case localCreatedAt = "p_local_created_at"
+    }
+}
+
+nonisolated struct SetMemoryPlaceRequest: Encodable {
+    let memoryID: UUID
+    let place: MemoryPlace?
+    let clientOperationID: UUID
+    let clientID: UUID
+    let clientSequence: Int64
+    let localCreatedAt: Date
+
+    init(payload: SetMemoryPlaceOperationPayload, operation: SyncClientOperation) {
+        memoryID = payload.memoryID
+        place = payload.place
+        clientOperationID = operation.id
+        clientID = operation.clientID
+        clientSequence = operation.clientSequence
+        localCreatedAt = operation.localCreatedAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case memoryID = "p_memory_id"
+        case place = "p_place"
+        case clientOperationID = "p_client_operation_id"
+        case clientID = "p_client_id"
+        case clientSequence = "p_client_sequence"
+        case localCreatedAt = "p_local_created_at"
+    }
+
+    // Sends null to clear the place, which the synthesized encoder would leave out.
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(memoryID, forKey: .memoryID)
+        try container.encode(place, forKey: .place)
+        try container.encode(clientOperationID, forKey: .clientOperationID)
+        try container.encode(clientID, forKey: .clientID)
+        try container.encode(clientSequence, forKey: .clientSequence)
+        try container.encode(localCreatedAt, forKey: .localCreatedAt)
     }
 }
 

@@ -81,6 +81,7 @@
           coupleID: coupleID,
           title: title,
           memoryDate: date,
+          place: nil,
           createdByUserID: currentUserID,
           lastEditedByUserID: currentUserID,
           revision: 1,
@@ -327,12 +328,13 @@
     // swiftlint:disable:next function_parameter_count
     func createMemory(
       ownerUserID: UUID, coupleID: UUID, memoryID: UUID, title: String, memoryDate: String,
-      noteBody: String?, optimisticMedia: [MemoryMediaSnapshot], operation: SyncClientOperation
+      noteBody: String?, optimisticMedia: [MemoryMediaSnapshot], place: MemoryPlace?,
+      operation: SyncClientOperation
     ) async throws -> MemoryRecord {
       try await service.createMemory(
         ownerUserID: ownerUserID, coupleID: coupleID, memoryID: memoryID, title: title,
         memoryDate: memoryDate, noteBody: noteBody, optimisticMedia: optimisticMedia,
-        operation: operation)
+        place: place, operation: operation)
     }
     // swiftlint:disable:next function_parameter_count
     func updateMemory(
@@ -342,6 +344,12 @@
       try await service.updateMemory(
         ownerUserID: ownerUserID, memoryID: memoryID, expectedRevision: expectedRevision,
         title: title, memoryDate: memoryDate, operation: operation)
+    }
+    func setMemoryPlace(
+      ownerUserID: UUID, memoryID: UUID, place: MemoryPlace?, operation: SyncClientOperation
+    ) async throws -> MemoryRecord {
+      try await service.setMemoryPlace(
+        ownerUserID: ownerUserID, memoryID: memoryID, place: place, operation: operation)
     }
     func hideMemory(
       ownerUserID: UUID, memoryID: UUID, expectedRevision: Int, operation: SyncClientOperation

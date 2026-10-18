@@ -48,9 +48,16 @@ struct MemoryCardView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Text(dayStartUTC, format: MemoryDateStyle.short)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaMemory)
+            Group {
+                if let place = record.snapshot.place {
+                    Text(verbatim: "\(dayStartUTC.formatted(MemoryDateStyle.short)) · \(place.shortName)")
+                } else {
+                    Text(dayStartUTC, format: MemoryDateStyle.short)
+                }
+            }
+            .font(PaeoniaTypography.caption)
+            .foregroundStyle(.paeoniaMemory)
+            .lineLimit(1)
 
             Text(record.snapshot.title ?? "")
                 .font(PaeoniaTypography.title)

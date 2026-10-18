@@ -129,6 +129,26 @@ nonisolated struct MemoryMediaSnapshot: Codable, Equatable, Sendable {
     }
 }
 
+/// Where a memory happened. The same JSON shape is stored on this device, queued for the
+/// server, and returned by `get_memories`. City and country are saved with the place so
+/// the map can count places without looking addresses up again.
+nonisolated struct MemoryPlace: Codable, Hashable, Sendable {
+    let name: String
+    let latitude: Double
+    let longitude: Double
+    let city: String?
+    /// ISO 3166 two-letter code, such as "NO".
+    let countryCode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case latitude
+        case longitude
+        case city
+        case countryCode = "country_code"
+    }
+}
+
 nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
     let ownerUserID: UUID
     let memoryID: UUID
@@ -136,6 +156,7 @@ nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
     let title: String?
     /// ISO `yyyy-MM-dd` couple-local date from the backend `date` column.
     let memoryDate: String
+    let place: MemoryPlace?
     let createdByUserID: UUID
     let lastEditedByUserID: UUID
     let revision: Int
@@ -157,6 +178,7 @@ nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
         coupleID: UUID,
         title: String?,
         memoryDate: String,
+        place: MemoryPlace?,
         createdByUserID: UUID,
         lastEditedByUserID: UUID,
         revision: Int,
@@ -177,6 +199,7 @@ nonisolated struct MemorySnapshot: Codable, Equatable, Sendable {
         self.coupleID = coupleID
         self.title = title
         self.memoryDate = memoryDate
+        self.place = place
         self.createdByUserID = createdByUserID
         self.lastEditedByUserID = lastEditedByUserID
         self.revision = revision

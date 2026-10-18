@@ -135,6 +135,7 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case sendThreadMessage = "send_thread_message"
     case createMemory = "create_memory"
     case updateMemory = "update_memory"
+    case setMemoryPlace = "set_memory_place"
     case hideMemory = "hide_memory"
     case upsertMemoryNote = "upsert_memory_note"
     case attachMemoryMedia = "attach_memory_media"

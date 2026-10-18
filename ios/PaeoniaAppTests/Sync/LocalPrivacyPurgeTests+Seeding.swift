@@ -121,6 +121,7 @@ extension LocalPrivacyPurgeTests {
                 coupleID: coupleID,
                 title: "Private memory",
                 memoryDate: "2026-07-10",
+                place: nil,
                 createdByUserID: ownerUserID,
                 lastEditedByUserID: ownerUserID,
                 revision: 1,
@@ -145,7 +146,8 @@ extension LocalPrivacyPurgeTests {
                 partnerNoteData: nil,
                 visibleMemoryMediaIDsData: emptyArrayData,
                 visibleMediaAssetIDsData: emptyArrayData,
-                mediaData: emptyArrayData
+                mediaData: emptyArrayData,
+                placeData: nil
             )
         )
     }

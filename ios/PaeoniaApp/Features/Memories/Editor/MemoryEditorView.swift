@@ -45,6 +45,8 @@ struct MemoryEditorView: View {
     let allowsPhotos: Bool
     /// Which photo is being sent while the memory saves, shown on the save button.
     var uploadProgress: MemoryPhotoUploadProgress?
+    /// Places on the couple's other memories, for the place sheet.
+    var knownPlaces: [MemoryPlace] = []
     /// Saves the memory. Returns whether it succeeded so the form can dismiss on success
     /// and stay put (with a banner already shown) on failure.
     let onSave: (
@@ -52,7 +54,8 @@ struct MemoryEditorView: View {
         _ date: String,
         _ note: String,
         _ photos: [Data],
-        _ removedMedia: [MemoryMediaSnapshot]
+        _ removedMedia: [MemoryMediaSnapshot],
+        _ place: MemoryPlace?
     ) async -> Bool
 
     @Environment(\.dismiss) private var dismiss
@@ -142,6 +145,8 @@ struct MemoryEditorView: View {
                 titleField
                 noteField
                 dateField
+                MemoryPlaceField(place: $draft.place, photos: draft.photos, knownPlaces: knownPlaces)
+                    .disabled(isSaving)
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
@@ -259,6 +264,7 @@ struct MemoryEditorView: View {
         guard mode == .edit, !isMemoryRemoved, let initialDraft else { return false }
         return draft.title != initialDraft.title
             || draft.note != initialDraft.note
+            || draft.place != initialDraft.place
             || !draft.photos.isEmpty
             || !removedExistingMediaIDs.isEmpty
             || MemoryTimeline.localDateString(for: draft.date) != MemoryTimeline.localDateString(for: initialDraft.date)
@@ -297,7 +303,8 @@ struct MemoryEditorView: View {
             MemoryTimeline.localDateString(for: draft.date),
             draft.note,
             draft.photos.map(\.data),
-            existingMedia.filter { removedExistingMediaIDs.contains($0.memoryMediaID) }
+            existingMedia.filter { removedExistingMediaIDs.contains($0.memoryMediaID) },
+            draft.place
         )
         if saved {
             dismiss()

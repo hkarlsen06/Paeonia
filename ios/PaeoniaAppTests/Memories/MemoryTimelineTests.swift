@@ -117,6 +117,7 @@ struct MemoryTimelineTests {
                 coupleID: UUID(),
                 title: "Memory",
                 memoryDate: date,
+                place: nil,
                 createdByUserID: UUID(),
                 lastEditedByUserID: UUID(),
                 revision: 1,

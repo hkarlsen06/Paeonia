@@ -6,9 +6,9 @@ import Testing
 /// conflict is rebased on the server copy instead of leaving the memory stuck, and a
 /// write to a memory the partner deleted stops retrying and shows the deletion.
 struct MemoryPendingOperationHandlerTests {
-    private let ownerUserID = UUID()
-    private let coupleID = UUID()
-    private let memoryID = UUID()
+    let ownerUserID = UUID()
+    let coupleID = UUID()
+    let memoryID = UUID()
 
     @Test func updateConflictKeepsThePartnersDateWhenOnlyTheTitleChanged() async throws {
         let gateway = ScriptedMemoryGateway(
@@ -269,11 +269,11 @@ extension MemoryPendingOperationHandlerTests {
         .server(code: "40001", message: "memory revision conflict")
     }
 
-    private var notWritable: PaeoniaConvexError {
+    var notWritable: PaeoniaConvexError {
         .server(code: "42501", message: "active entitled memory access is required")
     }
 
-    private func serverRow(
+    func serverRow(
         title: String,
         memoryDate: String = "2026-06-30",
         revision: Int,
@@ -291,7 +291,7 @@ extension MemoryPendingOperationHandlerTests {
         )
     }
 
-    private func snapshot(
+    func snapshot(
         _ kind: SyncPendingOperationKind,
         _ payload: some Encodable,
         operation: SyncClientOperation = SyncClientOperation(clientID: UUID(), clientSequence: 1)
@@ -343,7 +343,7 @@ extension MemoryPendingOperationHandlerTests {
         )
     }
 
-    private func context(
+    func context(
         pendingStore: any PendingSyncOperationPersisting = InMemoryPendingSyncOperationRepository()
     ) -> SyncContext {
         SyncContext(
@@ -357,13 +357,15 @@ extension MemoryPendingOperationHandlerTests {
 
 /// A gateway that fails each kind of write with the given errors, in order, and then
 /// succeeds. `loadMemories` returns `rows` once, as the server's only page.
-private actor ScriptedMemoryGateway: MemoryGateway {
+actor ScriptedMemoryGateway: MemoryGateway {
     private let rows: [MemoryRemoteRow]
     private var updateFailures: [PaeoniaConvexError]
     private var hideFailures: [PaeoniaConvexError]
     private var noteFailures: [PaeoniaConvexError]
     private var removeFailures: [PaeoniaConvexError]
+    private var placeFailures: [PaeoniaConvexError]
     private(set) var updates: [UpdateMemoryOperationPayload] = []
+    private(set) var places: [SetMemoryPlaceOperationPayload] = []
     private(set) var hides: [HideMemoryOperationPayload] = []
 
     init(
@@ -371,13 +373,15 @@ private actor ScriptedMemoryGateway: MemoryGateway {
         updateFailures: [PaeoniaConvexError] = [],
         hideFailures: [PaeoniaConvexError] = [],
         noteFailures: [PaeoniaConvexError] = [],
-        removeFailures: [PaeoniaConvexError] = []
+        removeFailures: [PaeoniaConvexError] = [],
+        placeFailures: [PaeoniaConvexError] = []
     ) {
         self.rows = rows
         self.updateFailures = updateFailures
         self.hideFailures = hideFailures
         self.noteFailures = noteFailures
         self.removeFailures = removeFailures
+        self.placeFailures = placeFailures
     }
 
     func loadMemories(updatedAfter: Date?, cursorMemoryID: UUID?, limit: Int) throws -> [MemoryRemoteRow] {
@@ -394,6 +398,15 @@ private actor ScriptedMemoryGateway: MemoryGateway {
     ) throws -> MemoryRevisionResponse? {
         updates.append(payload)
         if !updateFailures.isEmpty { throw updateFailures.removeFirst() }
+        return nil
+    }
+
+    func setMemoryPlace(
+        _ payload: SetMemoryPlaceOperationPayload,
+        operation: SyncClientOperation
+    ) throws -> MemoryRevisionResponse? {
+        places.append(payload)
+        if !placeFailures.isEmpty { throw placeFailures.removeFirst() }
         return nil
     }
 

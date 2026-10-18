@@ -12,13 +12,14 @@ struct MemoryEdit {
     let note: String
     let newPhotos: [Data]
     let removedMedia: [MemoryMediaSnapshot]
+    let place: MemoryPlace?
 }
 
 @MainActor
 @Observable
 final class MemoriesViewModel {
-    private let memoryService: any MemoryDataServicing
-    private let operationProvider: any SyncClientOperationProviding
+    let memoryService: any MemoryDataServicing
+    let operationProvider: any SyncClientOperationProviding
     private let photoUploads: MemoryPhotoUploads
     private let imageProvider: (any MemoryMediaImageProviding)?
     private let photoSaver: any PhotoLibrarySaving
@@ -192,7 +193,13 @@ final class MemoriesViewModel {
     /// uploaded first so the created memory references real assets; if any upload fails
     /// nothing is saved and the form stays put so the user can retry. Content is never
     /// silently dropped. Returns whether the memory was saved.
-    func createMemory(title: String, date: String, note: String, photos: [Data]) async -> Bool {
+    func createMemory(
+        title: String,
+        date: String,
+        note: String,
+        photos: [Data],
+        place: MemoryPlace? = nil
+    ) async -> Bool {
         guard !isSaving else { return false }
         guard let currentUserID, let coupleID else {
             notice = .createFailed
@@ -223,6 +230,7 @@ final class MemoriesViewModel {
                 memoryDate: date,
                 noteBody: trimmedNote.isEmpty ? nil : trimmedNote,
                 optimisticMedia: media,
+                place: place,
                 operation: self.operationProvider.makeOperation()
             )
         }
@@ -261,7 +269,7 @@ final class MemoriesViewModel {
                 syncInBackground()
             }
         }
-        let steps = [saveDetails, saveNote, removePhotos, addPhotos]
+        let steps = [saveDetails, savePlace, saveNote, removePhotos, addPhotos]
         for step in steps {
             // Each step reads the record the previous step left behind.
             let current = await storedVisibleRecord(latest.snapshot.memoryID) ?? latest
@@ -330,7 +338,8 @@ final class MemoriesViewModel {
 
 // MARK: - Edit steps
 
-private extension MemoriesViewModel {
+// Internal, not private, so `MemoriesViewModel+Place.swift` can use the shared steps.
+extension MemoriesViewModel {
     enum StepResult {
         case unchanged
         case saved

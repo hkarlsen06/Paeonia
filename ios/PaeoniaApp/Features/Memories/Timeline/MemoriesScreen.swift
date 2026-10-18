@@ -17,6 +17,7 @@ struct MemoriesScreen: View {
     @State private var viewModel: MemoriesViewModel
     @State private var isCreating = false
     @State private var isShowingStories = false
+    @State private var isShowingMap = false
     /// iPad landscape: memories sit in a grid of cards instead of one column.
     @State private var isWideLayout = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -45,6 +46,18 @@ struct MemoriesScreen: View {
             .navigationTitle(Text(.mainTabMemories))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // The map is useful from the first memory: with no places yet it lists
+                // the memories with "Add place" buttons.
+                if !viewModel.timeline.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            isShowingMap = true
+                        } label: {
+                            Image(systemName: "map")
+                        }
+                        .accessibilityLabel(Text(.memoriesMapOpenAccessibility))
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         openCreate()
@@ -59,6 +72,10 @@ struct MemoriesScreen: View {
                     StoriesArchiveView(viewModel: stories, people: storyPeople)
                         .analyticsScreen("stories_archive")
                 }
+            }
+            .navigationDestination(isPresented: $isShowingMap) {
+                MemoriesMapScreen(viewModel: viewModel, currentUserID: currentUserID)
+                    .analyticsScreen("memories_map")
             }
             .navigationDestination(for: UUID.self) { memoryID in
                 MemoryDetailView(
@@ -78,9 +95,10 @@ struct MemoriesScreen: View {
                 MemoryEditorView(
                     draft: draftBinding,
                     allowsPhotos: viewModel.canAttachPhotos,
-                    uploadProgress: viewModel.photoUploadProgress
-                ) { title, date, note, photos, _ in
-                    await viewModel.createMemory(title: title, date: date, note: note, photos: photos)
+                    uploadProgress: viewModel.photoUploadProgress,
+                    knownPlaces: viewModel.knownPlaces
+                ) { title, date, note, photos, _, place in
+                    await viewModel.createMemory(title: title, date: date, note: note, photos: photos, place: place)
                 }
             }
             .task(id: currentUserID) {

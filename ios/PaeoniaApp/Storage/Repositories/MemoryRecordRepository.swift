@@ -73,7 +73,8 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
                     partnerNoteData: try encode(remoteRecord.snapshot.partnerNote),
                     visibleMemoryMediaIDsData: try encode(remoteRecord.snapshot.visibleMemoryMediaIDs),
                     visibleMediaAssetIDsData: try encode(remoteRecord.snapshot.visibleMediaAssetIDs),
-                    mediaData: try encode(remoteRecord.snapshot.media)
+                    mediaData: try encode(remoteRecord.snapshot.media),
+                    placeData: try encode(remoteRecord.snapshot.place)
                 )
             } else {
                 context.insert(
@@ -100,7 +101,8 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
                 partnerNoteData: try encode(record.snapshot.partnerNote),
                 visibleMemoryMediaIDsData: try encode(record.snapshot.visibleMemoryMediaIDs),
                 visibleMediaAssetIDsData: try encode(record.snapshot.visibleMediaAssetIDs),
-                mediaData: try encode(record.snapshot.media)
+                mediaData: try encode(record.snapshot.media),
+                placeData: try encode(record.snapshot.place)
             )
         } else {
             context.insert(try localRecord(from: record))
@@ -196,7 +198,8 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
             partnerNoteData: encode(record.snapshot.partnerNote),
             visibleMemoryMediaIDsData: encode(record.snapshot.visibleMemoryMediaIDs),
             visibleMediaAssetIDsData: encode(record.snapshot.visibleMediaAssetIDs),
-            mediaData: encode(record.snapshot.media)
+            mediaData: encode(record.snapshot.media),
+            placeData: encode(record.snapshot.place)
         )
     }
 
@@ -208,6 +211,7 @@ actor SwiftDataMemoryRecordRepository: MemoryRecordPersisting {
                 coupleID: local.coupleID,
                 title: local.title,
                 memoryDate: local.memoryDate,
+                place: try decode(MemoryPlace.self, from: local.placeData),
                 createdByUserID: local.createdByUserID,
                 lastEditedByUserID: local.lastEditedByUserID,
                 revision: local.revision,

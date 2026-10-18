@@ -14,6 +14,10 @@ protocol MemoryGateway: Actor {
         _ payload: UpdateMemoryOperationPayload,
         operation: SyncClientOperation
     ) async throws -> MemoryRevisionResponse?
+    func setMemoryPlace(
+        _ payload: SetMemoryPlaceOperationPayload,
+        operation: SyncClientOperation
+    ) async throws -> MemoryRevisionResponse?
     func hideMemory(
         _ payload: HideMemoryOperationPayload,
         operation: SyncClientOperation
@@ -81,6 +85,19 @@ actor LiveMemoryGateway: MemoryGateway {
         let rows: [MemoryRevisionResponse] = try await client.mutation(
             "memories:update_memory",
             args: UpdateMemoryRequest(payload: payload, operation: operation)
+        )
+        return rows.first
+    }
+
+    func setMemoryPlace(
+        _ payload: SetMemoryPlaceOperationPayload,
+        operation: SyncClientOperation
+    ) async throws -> MemoryRevisionResponse? {
+        try await PaeoniaSignedIn.require(isSignedIn)
+
+        let rows: [MemoryRevisionResponse] = try await client.mutation(
+            "memories:set_memory_place",
+            args: SetMemoryPlaceRequest(payload: payload, operation: operation)
         )
         return rows.first
     }

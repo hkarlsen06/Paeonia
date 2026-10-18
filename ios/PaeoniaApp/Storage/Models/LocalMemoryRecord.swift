@@ -22,6 +22,7 @@ final class LocalMemoryRecord {
     var visibleMemoryMediaIDsData: Data
     var visibleMediaAssetIDsData: Data
     var mediaData: Data
+    var placeData: Data?
     var threadID: UUID?
     var syncStatusRawValue: String
     var pendingOperationID: UUID?
@@ -34,7 +35,8 @@ final class LocalMemoryRecord {
         partnerNoteData: Data?,
         visibleMemoryMediaIDsData: Data,
         visibleMediaAssetIDsData: Data,
-        mediaData: Data
+        mediaData: Data,
+        placeData: Data?
     ) {
         let snapshot = record.snapshot
         storageKey = Self.storageKey(ownerUserID: snapshot.ownerUserID, memoryID: snapshot.memoryID)
@@ -56,6 +58,7 @@ final class LocalMemoryRecord {
         self.visibleMemoryMediaIDsData = visibleMemoryMediaIDsData
         self.visibleMediaAssetIDsData = visibleMediaAssetIDsData
         self.mediaData = mediaData
+        self.placeData = placeData
         threadID = snapshot.threadID
         syncStatusRawValue = record.syncStatus.rawValue
         pendingOperationID = record.pendingOperationID
@@ -70,7 +73,8 @@ final class LocalMemoryRecord {
         partnerNoteData: Data?,
         visibleMemoryMediaIDsData: Data,
         visibleMediaAssetIDsData: Data,
-        mediaData: Data
+        mediaData: Data,
+        placeData: Data?
     ) {
         let snapshot = record.snapshot
         ownerUserID = snapshot.ownerUserID
@@ -91,6 +95,7 @@ final class LocalMemoryRecord {
         self.visibleMemoryMediaIDsData = visibleMemoryMediaIDsData
         self.visibleMediaAssetIDsData = visibleMediaAssetIDsData
         self.mediaData = mediaData
+        self.placeData = placeData
         threadID = snapshot.threadID
         syncStatusRawValue = record.syncStatus.rawValue
         pendingOperationID = record.pendingOperationID

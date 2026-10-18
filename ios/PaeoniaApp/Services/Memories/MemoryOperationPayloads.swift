@@ -8,6 +8,7 @@ nonisolated struct CreateMemoryOperationPayload: Codable, Equatable, Sendable {
     let noteBody: String?
     let mediaAssetIDs: [UUID]
     let optimisticMedia: [MemoryMediaSnapshot]
+    let place: MemoryPlace?
 }
 
 nonisolated struct UpdateMemoryOperationPayload: Codable, Equatable, Sendable {
@@ -20,6 +21,12 @@ nonisolated struct UpdateMemoryOperationPayload: Codable, Equatable, Sendable {
     /// left alone. A nil title means the memory had none.
     let baseTitle: String?
     let baseMemoryDate: String
+}
+
+/// Sets or clears (nil) the memory's place. The server keeps the newest one.
+nonisolated struct SetMemoryPlaceOperationPayload: Codable, Equatable, Sendable {
+    let memoryID: UUID
+    let place: MemoryPlace?
 }
 
 nonisolated struct HideMemoryOperationPayload: Codable, Equatable, Sendable {

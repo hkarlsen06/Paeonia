@@ -12,7 +12,12 @@ nonisolated enum PaeoniaFailure: Equatable, Sendable {
 
     init(_ error: any Error) {
         guard let urlError = error as? URLError else {
-            self = .other
+            // Frameworks such as MapKit wrap the network error in their own.
+            if let underlying = (error as NSError).userInfo[NSUnderlyingErrorKey] as? any Error {
+                self.init(underlying)
+            } else {
+                self = .other
+            }
             return
         }
         switch urlError.code {

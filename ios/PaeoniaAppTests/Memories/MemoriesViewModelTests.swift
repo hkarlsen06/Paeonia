@@ -99,7 +99,8 @@ struct MemoriesViewModelTests {
             date: "2026-06-30",
             note: "First",
             newPhotos: [makeImageData()],
-            removedMedia: []
+            removedMedia: [],
+            place: record.snapshot.place
         ))
 
         #expect(added)
@@ -133,7 +134,8 @@ struct MemoriesViewModelTests {
             date: "2026-06-30",
             note: "Updated note",
             newPhotos: [],
-            removedMedia: []
+            removedMedia: [],
+            place: record.snapshot.place
         ))
 
         #expect(saved)

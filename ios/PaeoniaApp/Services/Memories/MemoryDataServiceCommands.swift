@@ -12,6 +12,7 @@ extension MemoryDataService {
         memoryDate: String,
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot] = [],
+        place: MemoryPlace? = nil,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         let normalizedNote = Self.normalizedOptional(noteBody)
@@ -28,6 +29,7 @@ extension MemoryDataService {
         if let normalizedNote, Self.isOverLimit(normalizedNote, Self.noteCharacterLimit) {
             throw MemoryDataServiceError.noteTooLong
         }
+        let normalizedPlace = try Self.normalizedPlace(place)
 
         let payload = CreateMemoryOperationPayload(
             memoryID: memoryID,
@@ -36,7 +38,8 @@ extension MemoryDataService {
             memoryDate: memoryDate,
             noteBody: normalizedNote,
             mediaAssetIDs: optimisticMedia.map(\.mediaAssetID),
-            optimisticMedia: optimisticMedia
+            optimisticMedia: optimisticMedia,
+            place: normalizedPlace
         )
 
         let now = operation.localCreatedAt
@@ -47,6 +50,7 @@ extension MemoryDataService {
                 coupleID: coupleID,
                 title: payload.title,
                 memoryDate: memoryDate,
+                place: normalizedPlace,
                 createdByUserID: ownerUserID,
                 lastEditedByUserID: ownerUserID,
                 revision: 1,
@@ -135,6 +139,36 @@ extension MemoryDataService {
             operation: operation,
             kind: .updateMemory,
             scope: "memory:\(memoryID.uuidString.lowercased())",
+            payload: payload
+        )
+        try await memoryStore.saveLocal(next)
+        return next
+    }
+
+    /// Sets or clears the memory's place. It needs no revision: the server keeps the
+    /// newest place, and a title edit never conflicts with it.
+    func setMemoryPlace(
+        ownerUserID: UUID,
+        memoryID: UUID,
+        place: MemoryPlace?,
+        operation: SyncClientOperation
+    ) async throws -> MemoryRecord {
+        let normalizedPlace = try Self.normalizedPlace(place)
+        let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
+        let payload = SetMemoryPlaceOperationPayload(memoryID: memoryID, place: normalizedPlace)
+        let next = record(
+            from: existing,
+            operation: operation,
+            syncStatus: .dirty,
+            place: .some(normalizedPlace),
+            lastEditedByUserID: ownerUserID
+        )
+
+        try await enqueue(
+            ownerUserID: ownerUserID,
+            operation: operation,
+            kind: .setMemoryPlace,
+            scope: "memory-place:\(memoryID.uuidString.lowercased())",
             payload: payload
         )
         try await memoryStore.saveLocal(next)

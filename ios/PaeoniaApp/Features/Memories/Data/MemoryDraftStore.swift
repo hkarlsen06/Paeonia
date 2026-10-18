@@ -57,7 +57,13 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
         }
         // These files are what's on disk now, so typing in a restored draft doesn't rewrite them.
         writtenPhotos[userID] = photos.map(\.id)
-        let draft = MemoryDraft(title: stored.title, date: stored.date, note: stored.note, photos: photos)
+        let draft = MemoryDraft(
+            title: stored.title,
+            date: stored.date,
+            note: stored.note,
+            photos: photos,
+            place: stored.place
+        )
         return draft.isEmpty ? nil : draft
     }
 
@@ -84,7 +90,8 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
             title: draft.title,
             date: draft.date,
             note: draft.note,
-            photoCount: storedPhotoCount
+            photoCount: storedPhotoCount,
+            place: draft.place
         )
         if let data = try? encoder.encode(stored) {
             defaults.set(data, forKey: key(for: userID))
@@ -152,4 +159,5 @@ private struct StoredDraft: Codable {
     var date: Date
     var note: String
     var photoCount: Int
+    var place: MemoryPlace?
 }

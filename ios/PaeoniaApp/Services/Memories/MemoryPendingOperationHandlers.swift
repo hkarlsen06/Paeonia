@@ -28,7 +28,7 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let requestData = operation.requestData else {
             return .terminalFailure("Missing create memory payload")
@@ -39,7 +39,8 @@ struct CreateMemoryPendingOperationHandler: PendingSyncOperationHandling {
         return try await MemoryPendingOperationRefresh.succeeded(
             operation,
             gateway: gateway,
-            memoryStore: memoryStore
+            memoryStore: memoryStore,
+            context: context
         )
     }
 }
@@ -97,11 +98,63 @@ struct UpdateMemoryPendingOperationHandler: PendingSyncOperationHandling {
                 memoryID: payload.memoryID,
                 operation,
                 gateway: gateway,
-                memoryStore: memoryStore
+                memoryStore: memoryStore,
+                context: context
             )
         }
 
-        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore)
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore, context: context)
+    }
+}
+
+struct SetMemoryPlacePendingOperationHandler: PendingSyncOperationHandling {
+    nonisolated let operationKind: SyncPendingOperationKind = .setMemoryPlace
+
+    private let gateway: any MemoryGateway
+    private let memoryStore: any MemoryRecordPersisting
+
+    init(
+        gateway: any MemoryGateway,
+        memoryStore: any MemoryRecordPersisting
+    ) {
+        self.gateway = gateway
+        self.memoryStore = memoryStore
+    }
+
+    func send(
+        _ operation: PendingSyncOperationSnapshot,
+        context: SyncContext
+    ) async throws -> PendingSyncOperationSendResult {
+        guard let requestData = operation.requestData else {
+            return .terminalFailure("Missing set memory place payload")
+        }
+
+        let payload = try JSONDecoder().decodeQueuedPayload(SetMemoryPlaceOperationPayload.self, from: requestData)
+        let refresh = MemoryPendingOperationRefresh.self
+        // The server keeps the last place it receives, so an older place still waiting
+        // to retry must land first.
+        if let older = try await refresh.olderPendingWrite(
+            before: operation,
+            memoryID: payload.memoryID,
+            context: context,
+            memoryIDIn: { try? JSONDecoder().decode(SetMemoryPlaceOperationPayload.self, from: $0).memoryID }
+        ) {
+            return .retry(after: refresh.retryDate(after: older))
+        }
+
+        do {
+            _ = try await gateway.setMemoryPlace(payload, operation: operation.operation)
+        } catch {
+            return try await refresh.settleRejectedWrite(
+                error,
+                memoryID: payload.memoryID,
+                operation,
+                gateway: gateway,
+                memoryStore: memoryStore,
+                context: context
+            )
+        }
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore, context: context)
     }
 }
 
@@ -121,7 +174,7 @@ struct HideMemoryPendingOperationHandler: PendingSyncOperationHandling {
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let requestData = operation.requestData else {
             return .terminalFailure("Missing hide memory payload")
@@ -155,7 +208,7 @@ struct HideMemoryPendingOperationHandler: PendingSyncOperationHandling {
             )
         }
 
-        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore)
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore, context: context)
     }
 }
 
@@ -213,15 +266,12 @@ struct UpsertMemoryNotePendingOperationHandler: PendingSyncOperationHandling {
             )
         } catch {
             return try await refresh.settleRejectedWrite(
-                error,
-                memoryID: payload.memoryID,
-                operation,
-                gateway: gateway,
-                memoryStore: memoryStore
+                error, memoryID: payload.memoryID, operation,
+                gateway: gateway, memoryStore: memoryStore, context: context
             )
         }
 
-        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore)
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore, context: context)
     }
 }
 
@@ -241,7 +291,7 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let requestData = operation.requestData else {
             return .terminalFailure("Missing attach memory media payload")
@@ -256,13 +306,15 @@ struct AttachMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
                 memoryID: payload.memoryID,
                 operation,
                 gateway: gateway,
-                memoryStore: memoryStore
+                memoryStore: memoryStore,
+                context: context
             )
         }
         return try await MemoryPendingOperationRefresh.succeeded(
             operation,
             gateway: gateway,
-            memoryStore: memoryStore
+            memoryStore: memoryStore,
+            context: context
         )
     }
 }
@@ -283,7 +335,7 @@ struct RemoveMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let requestData = operation.requestData else {
             return .terminalFailure("Missing remove memory media payload")
@@ -306,11 +358,12 @@ struct RemoveMemoryMediaPendingOperationHandler: PendingSyncOperationHandling {
                     memoryID: payload.memoryID,
                     operation,
                     gateway: gateway,
-                    memoryStore: memoryStore
+                    memoryStore: memoryStore,
+                    context: context
                 )
             }
         }
-        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore)
+        return try await refresh.succeeded(operation, gateway: gateway, memoryStore: memoryStore, context: context)
     }
 }
 
@@ -331,7 +384,7 @@ struct CreateMemoryThreadMessagePendingOperationHandler: PendingSyncOperationHan
 
     func send(
         _ operation: PendingSyncOperationSnapshot,
-        context _: SyncContext
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         guard let requestData = operation.requestData else {
             return .terminalFailure("Missing memory thread message payload")
@@ -345,7 +398,8 @@ struct CreateMemoryThreadMessagePendingOperationHandler: PendingSyncOperationHan
         return try await MemoryPendingOperationRefresh.succeeded(
             operation,
             gateway: gateway,
-            memoryStore: memoryStore
+            memoryStore: memoryStore,
+            context: context
         )
     }
 }

@@ -210,6 +210,13 @@ private actor RecordingMemoryGateway: MemoryGateway {
         nil
     }
 
+    func setMemoryPlace(
+        _ payload: SetMemoryPlaceOperationPayload,
+        operation: SyncClientOperation
+    ) throws -> MemoryRevisionResponse? {
+        nil
+    }
+
     func hideMemory(
         _ payload: HideMemoryOperationPayload,
         operation: SyncClientOperation

@@ -51,6 +51,7 @@ actor GatedMemoryDataService {
         memoryDate: String,
         noteBody: String?,
         optimisticMedia: [MemoryMediaSnapshot],
+        place: MemoryPlace?,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         try await base.createMemory(
@@ -61,6 +62,21 @@ actor GatedMemoryDataService {
             memoryDate: memoryDate,
             noteBody: noteBody,
             optimisticMedia: optimisticMedia,
+            place: place,
+            operation: operation
+        )
+    }
+
+    func setMemoryPlace(
+        ownerUserID: UUID,
+        memoryID: UUID,
+        place: MemoryPlace?,
+        operation: SyncClientOperation
+    ) async throws -> MemoryRecord {
+        try await base.setMemoryPlace(
+            ownerUserID: ownerUserID,
+            memoryID: memoryID,
+            place: place,
             operation: operation
         )
     }

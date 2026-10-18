@@ -95,9 +95,15 @@ struct MemoryDetailView: View {
 
     private func header(for record: MemoryRecord) -> some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Text(dayStartUTC(for: record), format: MemoryDateStyle.long)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaMemory)
+            Group {
+                if let place = record.snapshot.place {
+                    Text(verbatim: "\(dayStartUTC(for: record).formatted(MemoryDateStyle.long)) · \(place.nameAndCity)")
+                } else {
+                    Text(dayStartUTC(for: record), format: MemoryDateStyle.long)
+                }
+            }
+            .font(PaeoniaTypography.caption)
+            .foregroundStyle(.paeoniaMemory)
 
             Text(record.snapshot.title ?? "")
                 .font(PaeoniaTypography.heroTitle)
@@ -211,8 +217,9 @@ struct MemoryDetailView: View {
                 hasExistingNote: visibleBody(of: current.snapshot.ownNote) != nil,
                 isMemoryRemoved: wasRemovedWhileEditing,
                 allowsPhotos: viewModel.canAttachPhotos,
-                uploadProgress: viewModel.photoUploadProgress
-            ) { title, date, note, photos, removedMedia in
+                uploadProgress: viewModel.photoUploadProgress,
+                knownPlaces: viewModel.knownPlaces
+            ) { title, date, note, photos, removedMedia, place in
                 await viewModel.saveEdits(
                     MemoryEdit(
                         base: base,
@@ -220,7 +227,8 @@ struct MemoryDetailView: View {
                         date: date,
                         note: note,
                         newPhotos: photos,
-                        removedMedia: removedMedia
+                        removedMedia: removedMedia,
+                        place: place
                     )
                 )
             }
@@ -250,7 +258,8 @@ struct MemoryDetailView: View {
             title: record.snapshot.title ?? "",
             date: MemoryTimeline.pickerDate(forLocalDate: record.snapshot.memoryDate) ?? record.snapshot.createdAt,
             note: visibleBody(of: record.snapshot.ownNote) ?? "",
-            photos: []
+            photos: [],
+            place: record.snapshot.place
         )
         editingRecord = record
         wasRemovedWhileEditing = false

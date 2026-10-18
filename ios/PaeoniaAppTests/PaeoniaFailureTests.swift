@@ -24,4 +24,16 @@ struct PaeoniaFailureTests {
         #expect(PaeoniaFailure(PaeoniaConvexError.http(status: 503, body: "")) == .other)
         #expect(PaeoniaFailure(CocoaError(.coderReadCorrupt)) == .other)
     }
+
+    @Test func aWrappedMissingConnectionIsOffline() {
+        // MapKit reports a failed search as its own error with the network error inside.
+        let offline = NSError(
+            domain: "MKErrorDomain",
+            code: 2,
+            userInfo: [NSUnderlyingErrorKey: URLError(.notConnectedToInternet) as NSError]
+        )
+        #expect(PaeoniaFailure(offline) == .offline)
+        let throttled = NSError(domain: "MKErrorDomain", code: 3)
+        #expect(PaeoniaFailure(throttled) == .other)
+    }
 }

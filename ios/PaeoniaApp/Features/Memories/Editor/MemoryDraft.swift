@@ -26,11 +26,13 @@ struct MemoryDraft: Equatable {
     var date: Date = Date()
     var note: String = ""
     var photos: [MemoryDraftPhoto] = []
+    var place: MemoryPlace?
 
     var isEmpty: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && photos.isEmpty
+            && place == nil
     }
 
     /// The written parts, for copying out when the memory can no longer be saved.

@@ -28,18 +28,22 @@ extension MemoryRemoteRow {
 /// Shared steps for the memory outbox handlers: pulling the server copy after a
 /// write, finding one memory's server row, and settling refused writes.
 enum MemoryPendingOperationRefresh {
-    /// Pulls the server copy after an accepted write. The local record is replaced only
-    /// while this operation is still its latest change, so a newer queued edit stays.
+    /// Pulls the server copy after an accepted write. The written memory's local record
+    /// is replaced only once none of its other writes is still waiting to be sent: an
+    /// older write waiting to retry (say, a place after a network error) keeps showing
+    /// until it goes through, and the last write to finish brings the record up to date.
     nonisolated static func succeeded(
         _ operation: PendingSyncOperationSnapshot,
         gateway: any MemoryGateway,
-        memoryStore: any MemoryRecordPersisting
+        memoryStore: any MemoryRecordPersisting,
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
         try await refresh(
             gateway: gateway,
             memoryStore: memoryStore,
             ownerUserID: operation.ownerUserID,
-            confirmedOperationID: operation.operation.id
+            confirmed: operation,
+            pendingStore: context.pendingOperationStore
         )
         return .succeeded
     }
@@ -50,9 +54,12 @@ enum MemoryPendingOperationRefresh {
         gateway: any MemoryGateway,
         memoryStore: any MemoryRecordPersisting,
         ownerUserID: UUID,
-        confirmedOperationID: UUID,
+        confirmed operation: PendingSyncOperationSnapshot,
+        pendingStore: any PendingSyncOperationPersisting,
         pageSize: Int = 100
     ) async throws {
+        let confirmedOperationID = operation.operation.id
+        let writtenMemoryID = operation.requestData.flatMap(memoryID(in:))
         var cursor = SyncCursor()
 
         while true {
@@ -66,11 +73,26 @@ enum MemoryPendingOperationRefresh {
                 return
             }
 
+            // Other memories keep any change of theirs that hasn't been sent.
+            let written = rows.filter { $0.memoryID == writtenMemoryID }
             try await memoryStore.saveRemote(
-                rows,
+                rows.filter { $0.memoryID != writtenMemoryID },
                 ownerUserID: ownerUserID,
                 mergePolicy: .overwriteIfPendingOperationMatches(confirmedOperationID)
             )
+            if let writtenMemoryID, !written.isEmpty {
+                // Read right before saving, so a write queued meanwhile counts too.
+                let isStillWriting = try await hasOtherWrites(
+                    to: writtenMemoryID,
+                    than: operation,
+                    in: pendingStore
+                )
+                try await memoryStore.saveRemote(
+                    written,
+                    ownerUserID: ownerUserID,
+                    mergePolicy: isStillWriting ? .preserveLocalChanges : .overwriteLocalChanges
+                )
+            }
 
             guard let last = rows.last, rows.count == pageSize else {
                 return
@@ -78,6 +100,37 @@ enum MemoryPendingOperationRefresh {
 
             cursor = SyncCursor(updatedAt: last.syncUpdatedAt, tieID: last.memoryID)
         }
+    }
+
+    /// Every kind of queued memory write. Each payload names its memory as `memoryID`.
+    nonisolated static let memoryWriteKinds: [SyncPendingOperationKind] = [
+        .createMemory, .updateMemory, .setMemoryPlace, .hideMemory, .upsertMemoryNote,
+        .attachMemoryMedia, .removeMemoryMedia, .createMemoryThreadWithMessage,
+    ]
+
+    private nonisolated struct QueuedMemoryID: Decodable {
+        let memoryID: UUID
+    }
+
+    nonisolated static func memoryID(in requestData: Data) -> UUID? {
+        try? JSONDecoder().decode(QueuedMemoryID.self, from: requestData).memoryID
+    }
+
+    /// Whether a write to the memory other than `operation` is still queued or sending.
+    nonisolated static func hasOtherWrites(
+        to memoryID: UUID,
+        than operation: PendingSyncOperationSnapshot,
+        in pendingStore: any PendingSyncOperationPersisting
+    ) async throws -> Bool {
+        for kind in memoryWriteKinds {
+            let pending = try await pendingStore.inFlightOperations(ownerUserID: operation.ownerUserID, kind: kind)
+            let isWriting = pending.contains { other in
+                other.operation.id != operation.operation.id
+                    && other.requestData.flatMap(memoryID(in:)) == memoryID
+            }
+            if isWriting { return true }
+        }
+        return false
     }
 
     /// An older write of the same kind to the same memory that hasn't gone through yet,
@@ -135,6 +188,7 @@ enum MemoryPendingOperationRefresh {
         }
     }
 
+    // swiftlint:disable function_parameter_count
     /// After the server refused a write: when the memory is gone there, show that on
     /// this device and stop retrying. When a check refused it (`23514`, such as a
     /// title or note over the length limit), stop retrying too, so newer edits to the
@@ -147,11 +201,13 @@ enum MemoryPendingOperationRefresh {
         memoryID: UUID,
         _ operation: PendingSyncOperationSnapshot,
         gateway: any MemoryGateway,
-        memoryStore: any MemoryRecordPersisting
+        memoryStore: any MemoryRecordPersisting,
+        context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
+    // swiftlint:enable function_parameter_count
         guard isServerRejection(error) else { throw error }
         if isReplayOfRebasedWrite(error) {
-            return try await succeeded(operation, gateway: gateway, memoryStore: memoryStore)
+            return try await succeeded(operation, gateway: gateway, memoryStore: memoryStore, context: context)
         }
         guard let row = try? await serverRow(memoryID: memoryID, gateway: gateway) else {
             throw error

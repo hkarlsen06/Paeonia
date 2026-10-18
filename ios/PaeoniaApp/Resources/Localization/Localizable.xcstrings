@@ -18699,6 +18699,312 @@
         }
       }
     },
+    "memories.map.addPlace" : {
+      "comment" : "Button next to a memory with no place. Opens the place picker",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til sted"
+          }
+        }
+      }
+    },
+    "memories.map.card.hint" : {
+      "comment" : "VoiceOver hint on a memory card under the map",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner minnet"
+          }
+        }
+      }
+    },
+    "memories.map.cluster.hint" : {
+      "comment" : "VoiceOver hint on a group of memory pins on the map",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows these memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viser disse minnene"
+          }
+        }
+      }
+    },
+    "memories.map.empty.message" : {
+      "comment" : "Text under the title of the panel on the memories map while no memory has a place",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add where each moment happened. It shows up here for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til hvor hvert øyeblikk skjedde. Det dukker opp her for dere begge."
+          }
+        }
+      }
+    },
+    "memories.map.empty.title" : {
+      "comment" : "Title of the panel on the memories map while no memory has a place",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Put your memories on the map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett minnene deres på kartet"
+          }
+        }
+      }
+    },
+    "memories.map.memoryCount" : {
+      "comment" : "How many memories a group of pins on the map holds. The value is the number, always 2 or more",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ minner"
+          }
+        }
+      }
+    },
+    "memories.map.memoryCount.one" : {
+      "comment" : "A group of pins on the map that holds one memory",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 minne"
+          }
+        }
+      }
+    },
+    "memories.map.open.accessibility" : {
+      "comment" : "VoiceOver label for the map button in the Memories toolbar",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show memories on the map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis minnene på kartet"
+          }
+        }
+      }
+    },
+    "memories.map.showAll" : {
+      "comment" : "VoiceOver label for the button that zooms the memories map out to show every memory",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show all places"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis alle stedene"
+          }
+        }
+      }
+    },
+    "memories.map.title" : {
+      "comment" : "Title of the screen that shows the couple's memories on a map",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Our places"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stedene våre"
+          }
+        }
+      }
+    },
+    "memories.map.totals.cities" : {
+      "comment" : "Part of the line at the top of the memories map. The value is a number of cities, always 2 or more",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ cities"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ byer"
+          }
+        }
+      }
+    },
+    "memories.map.totals.cities.one" : {
+      "comment" : "Part of the line at the top of the memories map when the memories are in one city",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 city"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 by"
+          }
+        }
+      }
+    },
+    "memories.map.totals.countries" : {
+      "comment" : "Part of the line at the top of the memories map. The value is a number of countries, always 2 or more",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ countries"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ land"
+          }
+        }
+      }
+    },
+    "memories.map.totals.countries.one" : {
+      "comment" : "Part of the line at the top of the memories map when the memories are in one country",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 country"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 land"
+          }
+        }
+      }
+    },
+    "memories.map.unplaced" : {
+      "comment" : "Button on the memories map. The value is how many memories have no place yet, always 2 or more",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ not on the map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ikke på kartet"
+          }
+        }
+      }
+    },
+    "memories.map.unplaced.one" : {
+      "comment" : "Button on the memories map when one memory has no place yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 not on the map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 ikke på kartet"
+          }
+        }
+      }
+    },
+    "memories.map.unplaced.title" : {
+      "comment" : "Title of the list of memories that have no place yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not on the map yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke på kartet ennå"
+          }
+        }
+      }
+    },
     "memories.notice.createFailed.title" : {
       "comment" : "Error banner title shown when saving a new memory failed.",
       "extractionState" : "manual",
@@ -19019,6 +19325,276 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lagre i Bilder"
+          }
+        }
+      }
+    },
+    "memories.place.add" : {
+      "comment" : "Button that adds a place to a memory, in the memory form",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til"
+          }
+        }
+      }
+    },
+    "memories.place.chooseOnMap" : {
+      "comment" : "Row in the place picker, and the title of the screen where the person moves a map under a pin",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose on the map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg på kartet"
+          }
+        }
+      }
+    },
+    "memories.place.label" : {
+      "comment" : "Label of the place row in the memory form",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sted"
+          }
+        }
+      }
+    },
+    "memories.place.noResults" : {
+      "comment" : "Shown when a place search finds nothing. The value is what the person typed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing found for \"%@\"."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fant ingenting for \"%@\"."
+          }
+        }
+      }
+    },
+    "memories.place.offline" : {
+      "comment" : "Shown when a place search fails because the phone has no internet connection",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Connect to the internet to search for places."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet. Koble til internett for å søke etter steder."
+          }
+        }
+      }
+    },
+    "memories.place.picker.hint" : {
+      "comment" : "Shown under the map where the person picks a spot, before the spot has a name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move the map so the pin is on the spot."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt kartet så nålen står på stedet."
+          }
+        }
+      }
+    },
+    "memories.place.picker.use" : {
+      "comment" : "Button that picks the spot under the pin as the memory's place",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this spot"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk dette stedet"
+          }
+        }
+      }
+    },
+    "memories.place.remove" : {
+      "comment" : "VoiceOver label for the button that removes a memory's place",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern sted"
+          }
+        }
+      }
+    },
+    "memories.place.search.prompt" : {
+      "comment" : "Placeholder in the place picker's search field",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search for a place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Søk etter et sted"
+          }
+        }
+      }
+    },
+    "memories.place.searchFailed" : {
+      "comment" : "Shown when a place search fails on a working connection",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search isn't working right now. Try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Søket virker ikke akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "memories.place.section.photos" : {
+      "comment" : "Section in the place picker listing places near where the memory's photos were taken",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra bildene dine"
+          }
+        }
+      }
+    },
+    "memories.place.section.used" : {
+      "comment" : "Section in the place picker listing places from the couple's other memories",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Places you've used"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steder dere har brukt"
+          }
+        }
+      }
+    },
+    "memories.place.sheet.changeTitle" : {
+      "comment" : "Title of the place picker when the memory already has a place. Also a VoiceOver hint on the chosen place",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre sted"
+          }
+        }
+      }
+    },
+    "memories.place.sheet.title" : {
+      "comment" : "Title of the place picker when the memory has no place yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til et sted"
+          }
+        }
+      }
+    },
+    "memories.place.suggestion" : {
+      "comment" : "Suggestion in the memory form. The value is the city a picked photo was taken in",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your photo: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra bildet ditt: %@"
           }
         }
       }

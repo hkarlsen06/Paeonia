@@ -5,6 +5,7 @@ nonisolated struct MemoryRemoteRow: Codable, Equatable, Sendable {
     let coupleID: UUID
     let title: String?
     let memoryDate: String
+    let place: MemoryPlace?
     let createdByUserID: UUID
     let lastEditedByUserID: UUID
     let revision: Int
@@ -36,6 +37,7 @@ nonisolated struct MemoryRemoteRow: Codable, Equatable, Sendable {
         case coupleID = "couple_id"
         case title
         case memoryDate = "memory_date"
+        case place
         case createdByUserID = "created_by_user_id"
         case lastEditedByUserID = "last_edited_by_user_id"
         case revision
@@ -70,6 +72,7 @@ nonisolated struct MemoryRemoteRow: Codable, Equatable, Sendable {
             coupleID: coupleID,
             title: title,
             memoryDate: memoryDate,
+            place: place,
             createdByUserID: createdByUserID,
             lastEditedByUserID: lastEditedByUserID,
             revision: revision,
