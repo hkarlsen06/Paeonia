@@ -257,6 +257,7 @@ export async function materializeFirstDayDrafts(
         answerId: newUuid(),
         textBody: answer.body,
         selectedPartnerUserId: null,
+        selectedOption: null,
         mediaAssetIds: [],
         notifyPartner: false,
       });

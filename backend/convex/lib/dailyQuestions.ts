@@ -40,6 +40,11 @@ export type DailyQuestionRow = {
   prompt_nb: string;
   short_prompt_nb: string;
   answer_kinds: string[];
+  /** The two labels of a "pick one of two" (`either_or`) question. Null for every other question. */
+  option_a_en: string | null;
+  option_b_en: string | null;
+  option_a_nb: string | null;
+  option_b_nb: string | null;
   own_answer_id: string | null;
   own_answered_at: string | null;
   partner_answer_id: string | null;
@@ -115,6 +120,17 @@ export class QuestionContentReader {
   }
 }
 
+/** A version's "pick one of two" labels, or nulls when its kinds don't include `either_or`. */
+export function optionLabels(content: QuestionContent) {
+  const either = content.answer_kinds.includes("either_or");
+  return {
+    option_a_en: either ? (content.en.option_a ?? null) : null,
+    option_b_en: either ? (content.en.option_b ?? null) : null,
+    option_a_nb: either ? (content.nb.option_a ?? null) : null,
+    option_b_nb: either ? (content.nb.option_b ?? null) : null,
+  };
+}
+
 export function questionRow(
   day: Doc<"couple_days">,
   instance: Doc<"daily_question_instances">,
@@ -142,6 +158,7 @@ export function questionRow(
     prompt_nb: content.nb.prompt,
     short_prompt_nb: content.nb.short_prompt,
     answer_kinds: content.answer_kinds,
+    ...optionLabels(content),
     own_answer_id: ownAnswer?.id ?? null,
     own_answered_at: ownAnswer?.created_at ?? null,
     partner_answer_id: partnerAnswer?.id ?? null,

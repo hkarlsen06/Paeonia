@@ -657,6 +657,12 @@ export default defineSchema({
     .index("by_answer_id", ["answer_id"])
     .index("by_selected_user_id", ["selected_user_id"]),
 
+  // The option an `either_or` answer picked. FK: answer_id -> daily_question_answers cascade. answer_id is unique.
+  daily_answer_option_choice: defineTable({
+    answer_id: uuid,
+    option: literals("a", "b"),
+  }).index("by_answer_id", ["answer_id"]),
+
   // FK: answer_id -> daily_question_answers cascade
   daily_answer_text: defineTable({
     answer_id: uuid,
@@ -1112,7 +1118,7 @@ export default defineSchema({
   // FK: question_version_id -> question_versions cascade. (question_version_id, answer_kind) is unique.
   question_answer_kinds: defineTable({
     question_version_id: uuid,
-    answer_kind: literals("text", "photo", "voice", "partner_choice"),
+    answer_kind: literals("text", "photo", "voice", "partner_choice", "either_or"),
     created_at: ts,
   }).index("by_question_version_id_answer_kind", ["question_version_id", "answer_kind"]),
 
@@ -1152,6 +1158,9 @@ export default defineSchema({
     locale: literals("en", "nb"),
     prompt: v.string(),
     short_prompt: v.string(),
+    // The two labels of an `either_or` ("pick one of two") version. Set only when its kinds include either_or.
+    option_a: optString,
+    option_b: optString,
     created_at: ts,
     updated_at: ts,
   })

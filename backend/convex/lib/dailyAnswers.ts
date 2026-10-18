@@ -39,6 +39,8 @@ export type DailyAnswerDetailRow = {
   can_view_answer: boolean;
   text_body: string | null;
   selected_user_id: string | null;
+  /** The option a "pick one of two" answer picked. */
+  selected_option: "a" | "b" | null;
   media_asset_ids: string[];
 };
 
@@ -113,6 +115,7 @@ export async function detailRow(
 ): Promise<DailyAnswerDetailRow> {
   let textBody: string | null = null;
   let selectedUserId: string | null = null;
+  let selectedOption: "a" | "b" | null = null;
   let mediaAssetIds: string[] = [];
   if (canView) {
     const text = await ctx.db
@@ -123,8 +126,13 @@ export async function detailRow(
       .query("daily_answer_partner_choice")
       .withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id))
       .unique();
+    const option = await ctx.db
+      .query("daily_answer_option_choice")
+      .withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id))
+      .unique();
     textBody = text?.body ?? null;
     selectedUserId = choice?.selected_user_id ?? null;
+    selectedOption = option?.option ?? null;
     mediaAssetIds = await visibleMediaAssetIds(ctx, answer.id);
   }
   return {
@@ -139,6 +147,7 @@ export async function detailRow(
     can_view_answer: canView,
     text_body: textBody,
     selected_user_id: selectedUserId,
+    selected_option: selectedOption,
     media_asset_ids: mediaAssetIds,
   };
 }
@@ -462,6 +471,7 @@ export type ParsedAnswer = {
   answerId: string;
   textBody: string;
   selectedPartnerUserId: string | null;
+  selectedOption: "a" | "b" | null;
   mediaAssetIds: string[];
 };
 
@@ -490,6 +500,15 @@ export async function parseAnswerPayload(
   const selectedPartnerUserId = partnerChoiceText === "" ? null : uuidArg(partnerChoiceText);
   if (selectedPartnerUserId !== null) {
     providedKinds.push("partner_choice");
+  }
+
+  const optionText = payloadText(body.option_choice);
+  if (optionText !== "" && optionText !== "a" && optionText !== "b") {
+    fail("23514", "option choice must be a or b");
+  }
+  const selectedOption = optionText === "" ? null : (optionText as "a" | "b");
+  if (selectedOption !== null) {
+    providedKinds.push("either_or");
   }
 
   if ("media_asset_ids" in body && !Array.isArray(body.media_asset_ids)) {
@@ -527,6 +546,10 @@ export async function parseAnswerPayload(
       fail("23514", "answer kind is not allowed for this question");
     }
   }
+  // A "pick one of two" answer always picks. The why line on its own is not an answer.
+  if (allowedKinds.includes("either_or") && selectedOption === null) {
+    fail("23514", "option choice is required");
+  }
 
   const answerIdText = payloadText(body.answer_id);
   const answerId = answerIdText === "" ? newUuid() : uuidArg(answerIdText);
@@ -540,7 +563,7 @@ export async function parseAnswerPayload(
   if (existingOwn) {
     uniqueViolation("daily_question_answers_instance_user_unique");
   }
-  return { answerId, textBody, selectedPartnerUserId, mediaAssetIds };
+  return { answerId, textBody, selectedPartnerUserId, selectedOption, mediaAssetIds };
 }
 
 /** Port of `internal.submit_daily_answer`. Returns the answer id. */
@@ -615,6 +638,7 @@ export async function insertDailyAnswer(
     answerId: string;
     textBody: string;
     selectedPartnerUserId: string | null;
+    selectedOption: "a" | "b" | null;
     mediaAssetIds: string[];
     notifyPartner: boolean;
   },
@@ -639,6 +663,9 @@ export async function insertDailyAnswer(
   }
   if (input.selectedPartnerUserId !== null) {
     await upsertAnswerPartnerChoice(ctx, answer, instance, input.selectedPartnerUserId);
+  }
+  if (input.selectedOption !== null) {
+    await ctx.db.insert("daily_answer_option_choice", { answer_id: answer.id, option: input.selectedOption });
   }
   for (const [index, mediaAssetId] of input.mediaAssetIds.entries()) {
     await insertAnswerMedia(ctx, answer, instance, mediaAssetId, index + 1);
@@ -840,6 +867,12 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
         }
         for (const row of await ctx.db
           .query("daily_answer_partner_choice")
+          .withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id))
+          .collect()) {
+          await ctx.db.delete(row._id);
+        }
+        for (const row of await ctx.db
+          .query("daily_answer_option_choice")
           .withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id))
           .collect()) {
           await ctx.db.delete(row._id);

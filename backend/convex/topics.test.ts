@@ -4,6 +4,7 @@ import { newUuid } from "./lib/ids";
 import { nowIso } from "./lib/time";
 import { failure, op, setMediaEnv } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
+import { purgeCoupleContent } from "./lib/relationshipCleanup";
 import { addDevice, createCouple, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 beforeEach(() => {
@@ -24,7 +25,12 @@ type SeededTopic = { key: string; collectionId: string; questionIds: string[] };
 async function seedTopic(
   t: TestConvex,
   key: string,
-  options: { count?: number; sortOrder?: number; adultsOnly?: boolean } = {},
+  options: {
+    count?: number;
+    sortOrder?: number;
+    adultsOnly?: boolean;
+    kinds?: ("text" | "either_or" | "partner_choice")[];
+  } = {},
 ): Promise<SeededTopic> {
   return await t.run(async (ctx) => {
     const now = nowIso();
@@ -77,11 +83,16 @@ async function seedTopic(
           locale,
           prompt: `${key} secret prompt ${index} ${locale}`,
           short_prompt: `${key} short ${index} ${locale}`,
+          ...((options.kinds ?? []).includes("either_or")
+            ? { option_a: `Sea ${locale}`, option_b: `Mountains ${locale}` }
+            : {}),
           created_at: now,
           updated_at: now,
         });
       }
-      await ctx.db.insert("question_answer_kinds", { question_version_id: versionId, answer_kind: "text", created_at: now });
+      for (const kind of options.kinds ?? ["text"]) {
+        await ctx.db.insert("question_answer_kinds", { question_version_id: versionId, answer_kind: kind, created_at: now });
+      }
       questionIds.push(id);
     }
     return { key, collectionId, questionIds };
@@ -530,5 +541,79 @@ describe("topic push spacing", () => {
     expect(delivered).toHaveLength(1);
     const rows = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
     expect(rows.filter((row) => row.last_error === "notification is out of date")).toHaveLength(1);
+  });
+});
+
+describe("pick one of two", () => {
+  const pick = (user: TestUser, questionId: string, payload: Record<string, unknown>) =>
+    user.as.mutation(api.topics.submit_topic_answer, {
+      ...op(),
+      p_question_id: questionId,
+      p_instance_id: newUuid(),
+      p_payload: payload,
+    });
+
+  test("rows carry the labels, and the pick is stored and shows only after the viewer answers", async () => {
+    const { t, a, b } = await setup();
+    const topic = await seedTopic(t, "wyr", { kinds: ["either_or", "text"] });
+    await seedTopic(t, "plain", { sortOrder: 2 });
+
+    const before = await topicOf(b, "wyr");
+    expect(before.questions[0]).toMatchObject({
+      option_a_en: "Sea en",
+      option_b_en: "Mountains en",
+      option_a_nb: "Sea nb",
+      option_b_nb: "Mountains nb",
+    });
+    expect((await topicOf(b, "plain")).questions[0]).toMatchObject({ option_a_en: null, option_b_nb: null });
+
+    await pick(a, topic.questionIds[0], { option_choice: "a", text: "waves" });
+    expect(await t.run((ctx) => ctx.db.query("daily_answer_option_choice").collect())).toMatchObject([{ option: "a" }]);
+
+    const hidden = await topicOf(b, "wyr");
+    expect(hidden.questions[0].row).toMatchObject({ option_a_en: "Sea en", option_b_nb: "Mountains nb" });
+    expect(hidden.answer_details[0]).toMatchObject({ can_view_answer: false, selected_option: null, text_body: null });
+
+    await pick(b, topic.questionIds[0], { option_choice: "b" });
+    const shown = await topicOf(b, "wyr");
+    const byUser = Object.fromEntries(shown.answer_details.map((row) => [row.answer_user_id, row]));
+    expect(byUser[a.userId]).toMatchObject({ selected_option: "a", text_body: "waves" });
+    expect(byUser[b.userId]).toMatchObject({ selected_option: "b", text_body: null });
+  });
+
+  test("the pick is required, must be a or b, and is refused where the question has no options", async () => {
+    const { t, a } = await setup();
+    const topic = await seedTopic(t, "wyr", { kinds: ["either_or", "text"], count: 2 });
+    const plain = await seedTopic(t, "plain", { sortOrder: 2 });
+
+    expect(await failure(pick(a, topic.questionIds[0], { text: "just a why" }))).toEqual({
+      code: "23514",
+      message: "option choice is required",
+    });
+    expect(await failure(pick(a, topic.questionIds[0], { option_choice: "c" }))).toEqual({
+      code: "23514",
+      message: "option choice must be a or b",
+    });
+    expect(await failure(pick(a, topic.questionIds[0], { option_choice: 1 }))).toMatchObject({ code: "23514" });
+    expect(await failure(pick(a, plain.questionIds[0], { option_choice: "a", text: "x" }))).toEqual({
+      code: "23514",
+      message: "answer kind is not allowed for this question",
+    });
+    await pick(a, topic.questionIds[1], { option_choice: "b" });
+  });
+
+  test("purging the couple deletes the picks", async () => {
+    const { t, couple, a, b } = await setup();
+    const topic = await seedTopic(t, "wyr", { kinds: ["either_or"] });
+    await pick(a, topic.questionIds[0], { option_choice: "a" });
+    await pick(b, topic.questionIds[0], { option_choice: "b" });
+    expect(await t.run((ctx) => ctx.db.query("daily_answer_option_choice").collect())).toHaveLength(2);
+
+    await t.run(async (ctx) => {
+      const row = (await ctx.db.query("couples").collect()).find((item) => item.id === couple.coupleId)!;
+      await purgeCoupleContent(ctx, row);
+    });
+    expect(await t.run((ctx) => ctx.db.query("daily_answer_option_choice").collect())).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("daily_question_answers").collect())).toEqual([]);
   });
 });

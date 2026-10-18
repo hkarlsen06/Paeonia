@@ -315,7 +315,12 @@ export async function purgeCoupleContent(
       .collect()) {
       if (budget.left <= 0) return unfinished();
       await tombstoneReportTargets(ctx, "daily_answer", answer.id);
-      for (const table of ["daily_answer_media", "daily_answer_partner_choice", "daily_answer_text"] as const) {
+      for (const table of [
+        "daily_answer_media",
+        "daily_answer_partner_choice",
+        "daily_answer_option_choice",
+        "daily_answer_text",
+      ] as const) {
         const rows =
           table === "daily_answer_media"
             ? await ctx.db.query(table).withIndex("by_answer_id_sort_order", (q) => q.eq("answer_id", answer.id)).collect()

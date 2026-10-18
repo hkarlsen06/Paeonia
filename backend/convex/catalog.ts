@@ -15,8 +15,14 @@ import { literals } from "./lib/validators";
  * not schema, so nothing else writes them.
  */
 
-const answerKind = literals("text", "photo", "voice", "partner_choice");
-const localization = v.object({ prompt: v.string(), short_prompt: v.string() });
+const answerKind = literals("text", "photo", "voice", "partner_choice", "either_or");
+const localization = v.object({
+  prompt: v.string(),
+  short_prompt: v.string(),
+  // The two labels of a "pick one of two" version.
+  option_a: v.optional(v.union(v.null(), v.string())),
+  option_b: v.optional(v.union(v.null(), v.string())),
+});
 const optionalTimestamp = v.optional(v.union(v.null(), v.string()));
 
 const versionPayload = v.object({
@@ -195,6 +201,28 @@ async function assertCollectionReady(ctx: ReaderCtx, collectionId: string): Prom
   }
 }
 
+/**
+ * The "pick one of two" rules: `either_or` comes alone or with `text`, and its version carries both
+ * option labels (1-40 characters) in both locales. Other versions carry no labels. Null when the version is fine.
+ */
+function eitherOrContractError(version: VersionPayload): string | null {
+  const either = version.answer_kinds.includes("either_or");
+  if (either && !version.answer_kinds.every((kind) => kind === "either_or" || kind === "text")) {
+    return "combines either_or with a kind other than text";
+  }
+  for (const locale of LOCALES) {
+    const { option_a: a, option_b: b } = version.localizations[locale];
+    if (!either && (a != null || b != null)) return `has options in ${locale} but no either_or answer kind`;
+    if (either) {
+      for (const option of [a, b]) {
+        const length = option == null ? 0 : charLength(option.trim());
+        if (length < 1 || length > 40) return `needs option_a and option_b of 1-40 characters in ${locale}`;
+      }
+    }
+  }
+  return null;
+}
+
 // ---- compare (dry run) ----
 
 async function compareCatalog(
@@ -240,6 +268,10 @@ async function compareCatalog(
           .collect()
       : [];
     if (!remoteQuestion || remoteVersions.length === 0) {
+      for (const version of question.versions) {
+        const contractError = eitherOrContractError(version);
+        if (contractError) errors.push(`${versionLabel(question, version)} ${contractError}`);
+      }
       changes.push(`new question ${name}`);
       continue;
     }
@@ -257,6 +289,11 @@ async function compareCatalog(
     }
     for (const version of question.versions) {
       const label = versionLabel(question, version);
+      const contractError = eitherOrContractError(version);
+      if (contractError) {
+        errors.push(`${label} ${contractError}`);
+        continue;
+      }
       const remote = remoteVersions.find((row) => row.version_number === version.number);
       if (!remote) {
         changes.push(`new version ${label}`);
@@ -276,7 +313,9 @@ async function compareCatalog(
           changes.push(`missing locale ${locale} for ${label}`);
         } else if (
           remoteLocalization.prompt !== version.localizations[locale].prompt ||
-          remoteLocalization.short_prompt !== version.localizations[locale].short_prompt
+          remoteLocalization.short_prompt !== version.localizations[locale].short_prompt ||
+          (remoteLocalization.option_a ?? null) !== (version.localizations[locale].option_a ?? null) ||
+          (remoteLocalization.option_b ?? null) !== (version.localizations[locale].option_b ?? null)
         ) {
           errors.push(`${label}/${locale} differs; ${NEW_VERSION_HINT}`);
         }
@@ -382,7 +421,7 @@ async function applyQuestion(ctx: WriterCtx, question: QuestionPayload): Promise
 
     for (const locale of LOCALES) {
       if (!(await localizationOf(ctx, row.id, locale))) {
-        const { prompt, short_prompt } = version.localizations[locale];
+        const { prompt, short_prompt, option_a, option_b } = version.localizations[locale];
         assertLocalization(prompt, short_prompt);
         const now = nowIso();
         await ctx.db.insert("question_version_localizations", {
@@ -390,6 +429,8 @@ async function applyQuestion(ctx: WriterCtx, question: QuestionPayload): Promise
           locale,
           prompt,
           short_prompt,
+          option_a: option_a ?? undefined,
+          option_b: option_b ?? undefined,
           created_at: now,
           updated_at: now,
         });

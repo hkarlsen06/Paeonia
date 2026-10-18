@@ -35,7 +35,7 @@ REQUIRED_LOCALES = ("en", "nb")
 COLLECTION_KINDS = {"system", "custom", "mini_game", "topic"}
 STATUSES = {"draft", "active", "retired", "archived"}
 VERSION_STATUSES = {"draft", "active", "retired"}
-ANSWER_KINDS = {"text", "photo", "voice", "partner_choice"}
+ANSWER_KINDS = {"text", "photo", "voice", "partner_choice", "either_or"}
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{2,120}$")
 VERSION_DIR_RE = re.compile(r"^v(\d{3})$")
 
@@ -45,6 +45,8 @@ class Localization:
     locale: str
     prompt: str
     short_prompt: str
+    option_a: str | None = None
+    option_b: str | None = None
 
 
 @dataclass(frozen=True)
@@ -287,6 +289,9 @@ def parse_version(version_dir: Path) -> Version:
         fail(f"{version_path} has invalid answer kinds: {', '.join(invalid_answer_kinds)}")
     if len(set(answer_kinds)) != len(answer_kinds):
         fail(f"{version_path} has duplicate answer_kinds")
+    either_or = "either_or" in answer_kinds
+    if either_or and not set(answer_kinds) <= {"either_or", "text"}:
+        fail(f"{version_path} can combine either_or only with text")
 
     locales_dir = version_dir / "locales"
     localizations: dict[str, Localization] = {}
@@ -304,7 +309,19 @@ def parse_version(version_dir: Path) -> Version:
             fail(f"{locale_path} prompt must be 3-500 characters")
         if not 3 <= len(short_prompt) <= 160:
             fail(f"{locale_path} short_prompt must be 3-160 characters")
-        localizations[locale] = Localization(locale=locale, prompt=prompt, short_prompt=short_prompt)
+        options = [locale_data.get("option_a"), locale_data.get("option_b")]
+        if either_or:
+            if any(option is None or not 1 <= len(str(option).strip()) <= 40 for option in options):
+                fail(f"{locale_path} needs option_a and option_b of 1-40 characters for an either_or version")
+        elif any(option is not None for option in options):
+            fail(f"{locale_path} has option_a or option_b but the version has no either_or answer kind")
+        localizations[locale] = Localization(
+            locale=locale,
+            prompt=prompt,
+            short_prompt=short_prompt,
+            option_a=str(options[0]).strip() if either_or else None,
+            option_b=str(options[1]).strip() if either_or else None,
+        )
 
     return Version(
         number=expected_number,
@@ -353,6 +370,11 @@ def build_payload(questions: list[Question]) -> list[dict[str, Any]]:
                         locale: {
                             "prompt": localization.prompt,
                             "short_prompt": localization.short_prompt,
+                            **(
+                                {"option_a": localization.option_a, "option_b": localization.option_b}
+                                if localization.option_a is not None
+                                else {}
+                            ),
                         }
                         for locale, localization in version.localizations.items()
                     },

@@ -269,3 +269,79 @@ describe("sync_catalog topics", () => {
     expect(result.applied).toBe(false);
   });
 });
+
+describe("sync_catalog pick one of two", () => {
+  const withOptions = (overrides: Record<string, unknown> = {}) =>
+    version(1, "Sea or mountains?", {
+      answer_kinds: ["either_or", "text"],
+      localizations: {
+        en: { prompt: "Sea or mountains?", short_prompt: "Sea or mountains", option_a: "By the sea", option_b: "In the mountains" },
+        nb: { prompt: "Sjø eller fjell?", short_prompt: "Sjø eller fjell", option_a: "Ved sjøen", option_b: "På fjellet" },
+      },
+      ...overrides,
+    });
+
+  test("stores the labels with the version", async () => {
+    const t = newTest();
+    const result = await sync(t, [question("sea_or_mountains", { versions: [withOptions()] })], true);
+    expect(result.errors).toEqual([]);
+    const rows = await t.run((ctx) => ctx.db.query("question_version_localizations").collect());
+    expect(rows.map((row) => [row.locale, row.option_a, row.option_b]).sort()).toEqual([
+      ["en", "By the sea", "In the mountains"],
+      ["nb", "Ved sjøen", "På fjellet"],
+    ]);
+    const kinds = await t.run((ctx) => ctx.db.query("question_answer_kinds").collect());
+    expect(kinds.map((row) => row.answer_kind).sort()).toEqual(["either_or", "text"]);
+  });
+
+  test("rejects missing labels, labels without either_or, and either_or with another kind", async () => {
+    const t = newTest();
+    const missing = withOptions({
+      localizations: {
+        en: { prompt: "Sea or mountains?", short_prompt: "Sea or mountains", option_a: "By the sea" },
+        nb: { prompt: "Sjø eller fjell?", short_prompt: "Sjø eller fjell", option_a: "Ved sjøen", option_b: "På fjellet" },
+      },
+    });
+    const tooLong = withOptions({
+      localizations: {
+        en: { prompt: "Sea or mountains?", short_prompt: "Sea or mountains", option_a: "x".repeat(41), option_b: "In the mountains" },
+        nb: { prompt: "Sjø eller fjell?", short_prompt: "Sjø eller fjell", option_a: "Ved sjøen", option_b: "På fjellet" },
+      },
+    });
+    const extra = withOptions({ answer_kinds: ["text"] });
+    const mixed = withOptions({ answer_kinds: ["either_or", "photo"] });
+    const result = await sync(
+      t,
+      [
+        question("missing_label", { versions: [missing] }),
+        question("long_label", { versions: [tooLong] }),
+        question("extra_labels", { versions: [extra] }),
+        question("mixed_kinds", { versions: [mixed] }),
+      ],
+      true,
+    );
+    expect(result.applied).toBe(false);
+    expect(result.errors).toEqual([
+      "system/missing_label/v001 needs option_a and option_b of 1-40 characters in en",
+      "system/long_label/v001 needs option_a and option_b of 1-40 characters in en",
+      "system/extra_labels/v001 has options in en but no either_or answer kind",
+      "system/mixed_kinds/v001 combines either_or with a kind other than text",
+    ]);
+    expect(await t.run((ctx) => ctx.db.query("questions").collect())).toEqual([]);
+  });
+
+  test("a changed label is drift and needs a new version", async () => {
+    const t = newTest();
+    await sync(t, [question("sea_or_mountains", { versions: [withOptions()] })], true);
+    const changed = withOptions({
+      localizations: {
+        en: { prompt: "Sea or mountains?", short_prompt: "Sea or mountains", option_a: "The sea", option_b: "In the mountains" },
+        nb: { prompt: "Sjø eller fjell?", short_prompt: "Sjø eller fjell", option_a: "Ved sjøen", option_b: "På fjellet" },
+      },
+    });
+    const result = await sync(t, [question("sea_or_mountains", { versions: [changed] })], false);
+    expect(result.errors).toEqual([
+      "system/sea_or_mountains/v001/en differs; create a new version instead of editing an existing one",
+    ]);
+  });
+});

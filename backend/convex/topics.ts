@@ -14,6 +14,7 @@ import {
 import {
   addSeenStates,
   instanceDay,
+  optionLabels,
   QuestionContentReader,
   questionRow,
   type DailyQuestionRow,
@@ -55,6 +56,10 @@ type TopicQuestionRow = {
   prompt_nb: string;
   short_prompt_nb: string;
   answer_kinds: string[];
+  option_a_en: string | null;
+  option_b_en: string | null;
+  option_a_nb: string | null;
+  option_b_nb: string | null;
   is_skipped: boolean;
   /** The started question, shaped like a daily question row. Null before anyone answered it. */
   row: DailyQuestionRow | null;
@@ -123,6 +128,7 @@ export const get_topic = query({
         prompt_nb: content.nb.prompt,
         short_prompt_nb: content.nb.short_prompt,
         answer_kinds: content.answer_kinds,
+        ...optionLabels(content),
         is_skipped: skipped.has(question.id),
         row,
       });

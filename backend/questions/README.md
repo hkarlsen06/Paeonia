@@ -47,7 +47,9 @@ Use YAML front matter in each file:
   `resurface_after_months`, and for topic questions `topic` and `sort_order`.
 - `version.md`: `version_number`, `status`, `active_from`, `retired_at`,
   `answer_kinds`.
-- `locales/<locale>.md`: `locale`, `prompt`, `short_prompt`.
+- `locales/<locale>.md`: `locale`, `prompt`, `short_prompt`, and for an
+  `either_or` version also `option_a` and `option_b` (the two labels, 1-40
+  characters, same `>-` block style). `either_or` combines only with `text`.
 
 Keep generated database metadata intact when backfilling existing rows. For new
 drafts, use the same fields with draft status until content is applied.
