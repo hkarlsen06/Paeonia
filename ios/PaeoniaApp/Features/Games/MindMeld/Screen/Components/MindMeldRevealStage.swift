@@ -297,7 +297,7 @@ nonisolated private struct MindMeldLinkLine: Shape {
 // MARK: - Motion helpers
 
 /// The card grows to `peak` and settles back each time `trigger` changes.
-private struct MindMeldPulse<Trigger: Equatable>: ViewModifier {
+private struct MindMeldPulse<Trigger: Equatable & Sendable>: ViewModifier {
     let trigger: Trigger
     let peak: CGFloat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
