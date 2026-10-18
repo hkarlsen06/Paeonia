@@ -44,8 +44,6 @@ struct ConsensioScale: View {
     var thread: Thread?
     /// The track and the ends fade back while the reveal builds up. The pins stay bright.
     var isDimmed = false
-    /// Shown over the track while the editable pin is not placed.
-    var hint: LocalizedStringResource?
     /// The track between `warmth.from` and `warmth.to` glows gold, for the placer's
     /// "close" while the partner guesses live.
     var warmth: (from: Int, to: Int)?
@@ -53,6 +51,9 @@ struct ConsensioScale: View {
     var pinScale: CGFloat = 1
 
     @State private var isTouching = false
+    /// Where the editable pin was when the finger came down. The pin moves by
+    /// how far the finger moves, so it never jumps to the finger.
+    @State private var dragStart: Int?
     @State private var lastTickBucket: Int?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -95,12 +96,13 @@ struct ConsensioScale: View {
         .frame(height: areaHeight)
     }
 
-    /// The track, its glow and dots, the thread, and the hint.
+    /// The track, its glow and the thread. The track ends where a pin at either
+    /// end stands.
     @ViewBuilder
     private func trackLayer(width: CGFloat) -> some View {
         Capsule()
             .fill(.paeoniaSurfacePrimary)
-            .frame(width: width, height: Self.trackHeight)
+            .frame(width: max(0, width - 2 * inset), height: Self.trackHeight)
             .opacity(isDimmed ? 0.3 : 1)
             .position(x: width / 2, y: trackY)
         if let warmth {
@@ -112,23 +114,8 @@ struct ConsensioScale: View {
                 .position(x: (start + end) / 2, y: trackY)
                 .transition(.opacity)
         }
-        ForEach([25, 50, 75], id: \.self) { mark in
-            Circle()
-                .fill(.paeoniaTextTertiary)
-                .frame(width: 5, height: 5)
-                .position(x: x(for: mark, width: width), y: trackY)
-        }
         if let thread {
             threadView(thread, width: width)
-        }
-        if let hint, let editable, editable.position == nil {
-            Text(hint)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-                .multilineTextAlignment(.center)
-                .frame(width: width)
-                .position(x: width / 2, y: trackY - PaeoniaSpacing.space32)
-                .transition(.opacity)
         }
     }
 
@@ -228,16 +215,19 @@ struct ConsensioScale: View {
         inset + (width - 2 * inset) * CGFloat(position) / CGFloat(ConsensioRules.maxSpot)
     }
 
-    private func position(for x: CGFloat, width: CGFloat) -> Int {
+    /// The spot `translation` points away from `start`, at the same scale the pins are drawn.
+    private func position(from start: Int, moved translation: CGFloat, width: CGFloat) -> Int {
         let usable = max(1, width - 2 * inset)
-        let value = ((x - inset) / usable * CGFloat(ConsensioRules.maxSpot)).rounded()
+        let value = CGFloat(start) + (translation / usable * CGFloat(ConsensioRules.maxSpot)).rounded()
         return Int(min(max(value, 0), CGFloat(ConsensioRules.maxSpot)))
     }
 
     private func dragGesture(_ editable: Editable, width: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
-                let position = position(for: value.location.x, width: width)
+                let start = dragStart ?? editable.position ?? ConsensioRules.middle
+                dragStart = start
+                let position = position(from: start, moved: value.translation.width, width: width)
                 if !isTouching {
                     isTouching = true
                     PaeoniaHaptics.selection()
@@ -247,9 +237,11 @@ struct ConsensioScale: View {
                 editable.move(position, true)
             }
             .onEnded { value in
+                let start = dragStart ?? editable.position ?? ConsensioRules.middle
                 isTouching = false
                 lastTickBucket = nil
-                editable.move(position(for: value.location.x, width: width), false)
+                dragStart = nil
+                editable.move(position(from: start, moved: value.translation.width, width: width), false)
             }
     }
 
@@ -266,8 +258,7 @@ struct ConsensioScale: View {
 // MARK: - VoiceOver
 
 /// The line is one adjustable element. A swipe moves the pin by 5, the custom
-/// actions by 1. Before the pin is placed, "Place your marker" puts it in the
-/// middle. A read-only line reads where each pin is.
+/// actions by 1. A read-only line reads where each pin is.
 private struct ScaleAccessibility: ViewModifier {
     let subject: String
     let leftEnd: String
@@ -282,21 +273,18 @@ private struct ScaleAccessibility: ViewModifier {
                 .accessibilityValue(Text(Self.value(editable.position, leftEnd: leftEnd, rightEnd: rightEnd)))
                 .accessibilityHint(Text(.consensioScaleHint(Self.inSentence(leftEnd), Self.inSentence(rightEnd))))
                 .accessibilityAdjustableAction { direction in
-                    let current = editable.position ?? 50
+                    let current = editable.position ?? ConsensioRules.middle
                     switch direction {
                     case .increment: editable.move(min(current + 5, ConsensioRules.maxSpot), false)
                     case .decrement: editable.move(max(current - 5, 0), false)
                     @unknown default: break
                     }
                 }
-                .accessibilityAction(named: Text(.consensioScalePlace)) {
-                    if editable.position == nil { editable.move(50, false) }
-                }
                 .accessibilityAction(named: Text(.consensioScaleLeft)) {
-                    editable.move(max((editable.position ?? 50) - 1, 0), false)
+                    editable.move(max((editable.position ?? ConsensioRules.middle) - 1, 0), false)
                 }
                 .accessibilityAction(named: Text(.consensioScaleRight)) {
-                    editable.move(min((editable.position ?? 50) + 1, ConsensioRules.maxSpot), false)
+                    editable.move(min((editable.position ?? ConsensioRules.middle) + 1, ConsensioRules.maxSpot), false)
                 }
                 .accessibilityIdentifier("consensio.scale")
         } else {

@@ -27,7 +27,7 @@ Decided by the developer on 2026-10-18.
 Agreed with the developer on 2026-10-18, first proposed by the agent:
 
 - **The real spot stays on the server until the guess.** The guesser's phone never holds it, so the reveal needs one answer from the server. An offline guess is kept on the phone and plays its reveal when the phone is back online.
-- **The marker starts off the line.** A default spot pulls answers and guesses toward it. The marker appears where the finger first touches the line, and "Lock it in" stays off until it is there.
+- **The marker starts in the middle.** It stands on the line from the start, so it is clear what to drag. A marker that only appeared on the first touch left people unsure what to do. The developer chose this on 2026-10-18, knowing a default spot can pull answers toward the middle.
 - **A placed marker is final.** Once locked, it can't move.
 - **How to play cards.** Three cards, because "put it where you stand, your partner guesses" is not obvious from the first screen.
 - **Placing counts toward the streak.** Guessing alone does not, because the turn isn't done until you place yours.
@@ -46,7 +46,7 @@ Agreed with the developer on 2026-10-18, first proposed by the agent:
 A couple has one ongoing Consensio game. A round has a placer and a guesser.
 
 1. **Pick a topic.** The placer sees three topics, each with its two ends, and a fourth row, "Write your own". Picking one and tapping "Start" opens the line.
-2. **Place.** The placer touches the line where they honestly stand and taps "Lock it in". The round goes to the partner.
+2. **Place.** The placer drags the marker to where they honestly stand and taps "Lock it in". The round goes to the partner.
 3. **Guess.** The guesser sees the same topic and ends, and the line without the placer's marker. They touch the line where they think the partner is and tap "Lock in my guess".
 4. **Reveal.** The real spot appears next to the guess, and the points land.
 5. **Your turn to place.** The guesser picks a topic and places their own marker. That is the next round.
@@ -63,8 +63,8 @@ The very first turn of a new game skips the guess and starts at "Pick a topic".
 ### The line
 
 - Positions are whole numbers from 0 (the left end) to 100 (the right end). The phone never shows a number on the line. Distances show as a percent of the line (see "Reveal").
-- The marker appears where the finger first touches the line and follows the finger from there. Lifting the finger leaves it there. Touching the line again moves it to the new spot.
-- For VoiceOver and Switch Control the line is one adjustable element. Before a marker is placed, its action "Place your marker" puts it in the middle, and swiping moves it from there.
+- The marker starts in the middle. A drag anywhere on the line moves it by as far as the finger moves, so it never jumps to the finger. Lifting the finger leaves it there.
+- For VoiceOver and Switch Control the line is one adjustable element, and swiping moves the marker from the middle.
 
 ### Topics
 
@@ -149,7 +149,7 @@ Placing a marker counts toward the couple's streak through the `game_turn_comple
 "What we know" lists the couple's revealed rounds, newest first.
 
 - **Records** at the top, one column per partner with its avatar: spot-ons as the guesser, and the average distance of their guesses ("12% off"). Under them, one shared line with a heart: "142 points together". There is no winner. The records show once there is a guess.
-- **Row.** The subject in `bodyEmphasis`, a small line with both markers in their places (the real spot with the placer's mark, the guess with the guesser's), then "[Name] guessed · 4 points · Oct 12".
+- **Row.** The subject in `bodyEmphasis`, a small line with both markers in their places (the real spot with the placer's mark, the guess with the guesser's, as 26 pt heads in the owner's color), then "[Name] guessed · 4 points · Oct 12".
 - **Detail.** The topic with its two ends, the line at full size with both markers and the gold thread between them, the verdict, and "You put it here" or "[Name] put it here" under the real spot.
 - Pages by round number, 30 rounds a page. Only guessed rounds are listed, so an open round's spot never leaves the server.
 
@@ -171,12 +171,12 @@ Copy keys start with `consensio.`, so their Swift symbols start with `consensio`
 
 `ConsensioScale` is the one piece every phase shares. It is a straight line, not a dial.
 
-- A thin track, 4 pt, `.paeoniaSurfacePrimary`, with rounded ends, as wide as the content. Soft dots mark a quarter, the middle and three quarters, in `.paeoniaTextTertiary`.
+- A thin track, 4 pt, `.paeoniaSurfacePrimary`, with rounded ends. It runs from where a pin at 0 stands to where a pin at 100 stands, so a pin at either end sits on the end of the track. There are no marks on it.
 - The two ends sit under the track, left-aligned under the left end and right-aligned under the right end, in `callout` semibold, `.paeoniaTextSecondary`, up to two lines each.
-- A marker (`ConsensioMarker`) is a pin: a 36 pt round head on a thin stem that stands on the track. The head is filled with its owner's color (`.boardGameMine` pink and `.boardGamePartner` lavender, as on the board games) and holds the owner's drawn mark in dark ink, as a Connect Four disc does, or their initial (`BoardMarkView` in `Features/Games/BoardGames/Shared/BoardPieces.swift`). The marks come from the board games cache. The stem lifts the head above the finger, so a finger never covers it. The whole line area takes touches. "What we know" draws the pins with initials only.
+- A marker (`ConsensioMarker`) is a pin: a 36 pt round head on a thin stem that stands on the track. The head is filled with its owner's color (`.boardGameMine` pink and `.boardGamePartner` lavender, as on the board games) and holds the owner's drawn mark in dark ink, as a Connect Four disc does, or their initial (`BoardMarkView` in `Features/Games/BoardGames/Shared/BoardPieces.swift`). The marks come from the board games cache. The stem lifts the head above the finger, so a finger never covers it. The whole line area takes touches. "What we know" draws the same marks. On a row, two heads that would overlap move apart until they touch (`ConsensioMiniLine.headCenters`).
 - While the finger is down the head lifts 6 pt and grows 10 percent. Every 5 positions it moves gives `selection()` and `GameSound.tick` at volume 0.4. Lifting the finger settles it with `cardReveal`.
 - The hidden spot is never drawn before the reveal. Nothing on the guesser's screen hints at it.
-- VoiceOver. The track is one adjustable element. Its label is the subject, its value "62 percent of the way to book it now" (or "in the middle" from 45 to 55, or "not placed yet"), and its hint "From never again to book it now. Swipe up or down to move it." A swipe moves it 5, and the custom actions "Move a little left" and "Move a little right" move it 1. "Place your marker" puts an unplaced marker in the middle. On the waiting screen the value reads where the partner's live guess is, and it is never announced as it moves.
+- VoiceOver. The track is one adjustable element. Its label is the subject, its value "62 percent of the way to book it now" (or "in the middle" from 45 to 55), and its hint "From never again to book it now. Swipe up or down to move it." A swipe moves it 5, and the custom actions "Move a little left" and "Move a little right" move it 1. On the waiting screen the value reads where the partner's live guess is, and it is never announced as it moves.
 
 ### Haptics and sounds
 
@@ -243,9 +243,9 @@ Purpose. Answer honestly, in one move.
 Layout, centered.
 
 1. The subject (`heroTitle`), then "Where are you on this?" (`body`, `.paeoniaTextSecondary`).
-2. The line, with no marker yet, and a soft hint over the track, "Tap where you stand", that fades when the marker appears.
+2. The line, with my marker in the middle.
 3. One quiet line under it: "Be honest. [Name] won't see it until they've guessed."
-4. Pinned bottom: primary "Lock it in" (`lock.fill`), off until the marker is on the line. Back in the toolbar returns to the topic list without sending.
+4. Pinned bottom: primary "Lock it in" (`lock.fill`), Back in the toolbar returns to the topic list without sending.
 
 "Lock it in" fires `drawingSent()` and `send`, and the phase moves to waiting. Offline, the spot is saved on this phone and the waiting screen shows the offline line.
 
@@ -255,13 +255,11 @@ Layout, centered.
 | `place.hint` | Be honest. %@ won't see it until they've guessed. | Vær ærlig. %@ ser det ikke før gjetningen er låst. |
 | `place.lock` | Lock it in | Lås svaret |
 | `place.question` | Where are you on this? | Hvor står du her? |
-| `place.tapHint` | Tap where you stand | Trykk der du står |
 | `scale.empty` | not placed yet | ikke satt ennå |
 | `scale.hint` | From %1$@ to %2$@. Swipe up or down to move it. | Fra «%1$@» til «%2$@». Sveip opp eller ned for å flytte den. |
 | `scale.left` | Move a little left | Flytt litt til venstre |
 | `scale.middle` | in the middle | midt på |
 | `scale.partner.a11y` | %1$@'s guess, %2$@ | Gjetningen til %1$@, %2$@ |
-| `scale.place` | Place your marker | Sett brikken din |
 | `scale.range` | From %1$@ to %2$@ | Fra «%1$@» til «%2$@» |
 | `scale.right` | Move a little right | Flytt litt til høyre |
 | `scale.value` | %1$lld percent of the way to %2$@ | %1$lld prosent av veien mot «%2$@» |
@@ -295,8 +293,8 @@ Layout, centered.
 
 1. The live row (`GameLiveRow`): the partner's avatar and "[Name] is watching" with the accent ring while the placer is in the game, or "[Name] will see your guess later".
 2. The subject (`heroTitle`), then "Where is [Name] on this?".
-3. The line, with no marker until I touch it, and "Tap where you think [Name] is" over the track.
-4. Pinned bottom: primary "Lock in my guess" (`lock.fill`), off until my marker is on the line.
+3. The line, with my marker in the middle.
+4. Pinned bottom: primary "Lock in my guess" (`lock.fill`).
 
 Lock in fires `drawingSent()` and `send`, and the reveal opens at once.
 
@@ -305,7 +303,6 @@ Lock in fires `drawingSent()` and `send`, and the reveal opens at once.
 | `guess.later` | %@ will see your guess later | %@ ser gjetningen din senere |
 | `guess.lock` | Lock in my guess | Lås gjetningen |
 | `guess.question` | Where is %@ on this? | Hvor står %@ her? |
-| `guess.tapHint` | Tap where you think %@ is | Trykk der du tror %@ står |
 | `guess.watching` | %@ is watching | %@ ser på |
 
 ### 5. Reveal
@@ -331,7 +328,7 @@ Verdict.
 
 - **Spot on** (0 to 3). Both heads glow gold, the glow behind them swells to 0.55, and a petal bloom bursts over the whole screen from where the heads meet (`GamePetalBloom`, intensity 2.2, seeded by the round id). `streakCelebrated()`, `win`. Title "Spot on!". Line "You know [Name] well." on the guesser's phone, "[Name] knows you well." on the placer's.
 - **So close** (4 to 11) and **Close** (12 to 19). The glow swells to 0.3. `streakContinued()`, `bonus`. Titles "So close!" and "Close". The line names the distance: "Only 6% off."
-- **Now you know more** (20 or more). The dashed arc stays, and the glow falls to 0.1. `partnerDrawingReceived()`, `soft`. Title "Now you know more". On the guesser's phone the line is "[Name] is closer to book it now than you thought.", naming the end the real spot is nearer to. On the placer's: "[Name] thought you were closer to never again." When the real spot is in the middle (45 to 55), the line is "[Name] is right in the middle." or "[Name] thought you'd lean more to one side."
+- **Now you know more** (20 or more). The dashed arc stays, and the glow falls to 0.1. `partnerDrawingReceived()`, `soft`. Title "Now you know more". On the guesser's phone the line is "[Name] is closer to book it now than you thought.", naming the end the real spot lies toward, seen from the guess. On the placer's: "[Name] thought you were closer to never again.", naming the end the guess lies toward, seen from the real spot. A spot at 8 and a guess at 35 name the right end on both phones. When the real spot is in the middle (45 to 55), the line is "[Name] is right in the middle." or "[Name] thought you'd lean more to one side."
 
 Once the partner's pin has landed, a small legend right under the line names the pins: a dot in each color with "You" and "[Name]". Captions under the pins would collide when the pins stand close.
 

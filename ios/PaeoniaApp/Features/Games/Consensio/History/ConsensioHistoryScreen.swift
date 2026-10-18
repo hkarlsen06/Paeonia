@@ -193,8 +193,8 @@ private struct ConsensioHistoryRow: View {
             ConsensioMiniLine(
                 spot: round.spot,
                 guess: round.guess,
-                spotColor: color(of: round.placerUserID),
-                guessColor: color(of: round.guesserUserID)
+                spotStyle: viewModel.style(of: round.placerUserID),
+                guessStyle: viewModel.style(of: round.guesserUserID)
             )
             Text(.consensioHistoryRowCaption(
                 guesserName,
@@ -216,42 +216,73 @@ private struct ConsensioHistoryRow: View {
         )))
         .accessibilityAddTraits(.isButton)
     }
-
-    private func color(of userID: UUID) -> Color {
-        userID == viewModel.currentUserID ? .boardGameMine : .boardGamePartner
-    }
 }
 
-/// A thin track with two dots: the real spot and the guess.
+/// A thin track with each person's mark where they were: the real spot and the
+/// guess. Heads that would overlap move apart until they touch, and the gold
+/// segment still joins the real places.
 struct ConsensioMiniLine: View {
     let spot: Int?
     let guess: Int?
-    let spotColor: Color
-    let guessColor: Color
+    let spotStyle: BoardPieceStyle
+    let guessStyle: BoardPieceStyle
+
+    private static let head: CGFloat = 26
 
     var body: some View {
         GeometryReader { proxy in
             let width = proxy.size.width
-            let x = { (value: Int) in 5 + (width - 10) * CGFloat(value) / 100 }
-            ZStack(alignment: .leading) {
-                Capsule().fill(.paeoniaSurfacePrimary).frame(height: 3)
+            let head = Self.head
+            let x = { (value: Int) in head / 2 + (width - head) * CGFloat(value) / CGFloat(ConsensioRules.maxSpot) }
+            let heads = Self.headCenters(spot: spot.map(x), guess: guess.map(x), head: head, width: width)
+            ZStack {
+                Capsule()
+                    .fill(.paeoniaSurfacePrimary)
+                    .frame(width: max(0, width - head), height: 3)
+                    .position(x: width / 2, y: head / 2)
                 if let spot, let guess {
                     Capsule()
                         .fill(Color.paeoniaInkGold.opacity(0.6))
                         .frame(width: abs(x(spot) - x(guess)), height: 3)
-                        .offset(x: min(x(spot), x(guess)))
+                        .position(x: (x(spot) + x(guess)) / 2, y: head / 2)
                 }
-                if let guess {
-                    Circle().fill(guessColor).frame(width: 10, height: 10).offset(x: x(guess) - 5)
+                if let center = heads.guess {
+                    markHead(guessStyle).position(x: center, y: head / 2)
                 }
-                if let spot {
-                    Circle().fill(spotColor).frame(width: 10, height: 10).offset(x: x(spot) - 5)
+                if let center = heads.spot {
+                    markHead(spotStyle).position(x: center, y: head / 2)
                 }
             }
-            .frame(height: 10)
         }
-        .frame(height: 10)
+        .frame(height: Self.head)
         .accessibilityHidden(true)
+    }
+
+    private func markHead(_ style: BoardPieceStyle) -> some View {
+        ZStack {
+            Circle().fill(style.color)
+            Circle().strokeBorder(.paeoniaTextPrimary.opacity(0.85), lineWidth: 1.5)
+            BoardMarkView(style: style, tint: .paeoniaTextInverse)
+                .padding(Self.head * 0.2)
+        }
+        .frame(width: Self.head, height: Self.head)
+        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+    }
+
+    /// Where the heads go: on their places, or pushed apart until they touch,
+    /// kept inside the line.
+    nonisolated static func headCenters(
+        spot: CGFloat?,
+        guess: CGFloat?,
+        head: CGFloat,
+        width: CGFloat
+    ) -> (spot: CGFloat?, guess: CGFloat?) {
+        guard let spot, let guess, abs(spot - guess) < head else { return (spot, guess) }
+        let spotIsLeft = spot <= guess
+        let middle = min(max((spot + guess) / 2, head), width - head)
+        let left = middle - head / 2
+        let right = middle + head / 2
+        return spotIsLeft ? (left, right) : (right, left)
     }
 }
 
@@ -335,25 +366,13 @@ struct ConsensioHistoryDetailScreen: View {
         }
     }
 
-    private func style(of userID: UUID, name: String) -> BoardPieceStyle {
-        BoardPieceStyle(
-            color: userID == history.currentUserID ? .boardGameMine : .boardGamePartner,
-            mark: nil,
-            initial: BoardPieceStyle.initial(of: name)
-        )
-    }
-
     private var pins: [ConsensioScale.Pin] {
-        let placerName = placedByMe ? history.me.name : history.partnerName
-        let guesserName = placedByMe ? history.partnerName : history.me.name
         var pins: [ConsensioScale.Pin] = []
         if let guess = round.guess {
-            let guesser = style(of: round.guesserUserID, name: guesserName)
-            pins.append(ConsensioScale.Pin(id: "guess", position: guess, style: guesser))
+            pins.append(ConsensioScale.Pin(id: "guess", position: guess, style: history.style(of: round.guesserUserID)))
         }
         if let spot = round.spot {
-            let placer = style(of: round.placerUserID, name: placerName)
-            pins.append(ConsensioScale.Pin(id: "spot", position: spot, style: placer))
+            pins.append(ConsensioScale.Pin(id: "spot", position: spot, style: history.style(of: round.placerUserID)))
         }
         return pins
     }

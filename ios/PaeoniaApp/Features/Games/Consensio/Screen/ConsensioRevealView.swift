@@ -248,13 +248,15 @@ struct ConsensioRevealView: View {
                 if ConsensioRules.middleRange.contains(spot), !ConsensioRules.middleRange.contains(guess) {
                     return .consensioRevealFarMiddlePlacer(name)
                 }
-                let end = guess > 50 ? round.rightEnd : round.leftEnd
+                // The end the partner's guess leaned toward, seen from the real spot.
+                let end = guess > spot ? round.rightEnd : round.leftEnd
                 return .consensioRevealFarPlacer(name, ConsensioEndText.inSentence(end))
             }
             if ConsensioRules.middleRange.contains(spot) {
                 return .consensioRevealFarMiddleGuesser(name)
             }
-            let end = spot > 50 ? round.rightEnd : round.leftEnd
+            // The end the real spot is toward, seen from the guess.
+            let end = spot > guess ? round.rightEnd : round.leftEnd
             return .consensioRevealFarGuesser(name, ConsensioEndText.inSentence(end))
         }
     }

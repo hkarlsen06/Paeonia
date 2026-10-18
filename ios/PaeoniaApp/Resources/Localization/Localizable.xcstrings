@@ -4443,24 +4443,6 @@
         }
       }
     },
-    "consensio.guess.tapHint" : {
-      "comment" : "Hint over the empty line while guessing. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap where you think %@ is"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trykk der du tror %@ står"
-          }
-        }
-      }
-    },
     "consensio.guess.watching" : {
       "comment" : "Status line while the partner watches the guess live. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -5091,24 +5073,6 @@
         }
       }
     },
-    "consensio.place.tapHint" : {
-      "comment" : "Hint over the empty line before the marker is placed.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap where you stand"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trykk der du står"
-          }
-        }
-      }
-    },
     "consensio.pointsTogether" : {
       "comment" : "The couple's shared Consensio score. %lld is the count.",
       "extractionState" : "manual",
@@ -5579,24 +5543,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gjetningen til %1$@, %2$@"
-          }
-        }
-      }
-    },
-    "consensio.scale.place" : {
-      "comment" : "VoiceOver action that puts the marker in the middle of the line.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Place your marker"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sett brikken din"
           }
         }
       }

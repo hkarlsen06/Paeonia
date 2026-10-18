@@ -45,7 +45,8 @@ final class ConsensioViewModel {
     var ownSubject = ""
     var ownLeftEnd = ""
     var ownRightEnd = ""
-    /// Where this person's marker is while placing or guessing. Nil until the line is touched.
+    /// Where this person's marker is while placing or guessing. It starts in the
+    /// middle when a line opens, and is nil when no line is open.
     var marker: Int?
     /// The partner's guess marker while they guess live.
     var partnerMarker: Int?

@@ -15,6 +15,8 @@ nonisolated enum ConsensioVerdict: Equatable, Sendable {
 /// The rules the phone and the server share (`backend/convex/lib/consensio.ts`).
 nonisolated enum ConsensioRules {
     static let maxSpot = 100
+    /// Where a marker starts when a line opens.
+    static let middle = 50
     static let subjectLength = 2...60
     static let endLength = 1...24
     /// The real spot is "in the middle" from here to `100 - middleRange.lowerBound`.

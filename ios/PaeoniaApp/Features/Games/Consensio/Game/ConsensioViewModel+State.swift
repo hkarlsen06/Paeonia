@@ -119,12 +119,15 @@ extension ConsensioViewModel {
         runEffects()
     }
 
-    /// A new guess starts with no marker on the line. Leaving the place phase does too.
+    /// A new guess starts with the marker in the middle. Leaving the guess phase
+    /// takes it off the line, unless the place phase is showing its own.
     func followMarkerRound() {
         let roundID = phase == .guess ? round?.id : nil
         if roundID != markerRoundID {
             markerRoundID = roundID
-            if !showsPlacing, marker != nil {
+            if roundID != nil {
+                marker = ConsensioRules.middle
+            } else if !showsPlacing, marker != nil {
                 marker = nil
             }
         }

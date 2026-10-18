@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UIKit
 
 /// "What we know": every guessed round, newest first, and each partner's record
 /// as a guesser. It shows what the Consensio cache holds first, so the screen
@@ -15,6 +16,9 @@ final class ConsensioHistoryViewModel {
     private(set) var hasMore = false
     private(set) var me: GamePlayer
     private(set) var partner: GamePlayer
+    /// The drawn marks from the board games cache, nil until read or when not drawn.
+    private(set) var myMark: UIImage?
+    private(set) var partnerMark: UIImage?
 
     nonisolated static let defaultPageSize = 30
     nonisolated static let loadMoreDistance = 6
@@ -46,6 +50,17 @@ final class ConsensioHistoryViewModel {
         partner.name
     }
 
+    /// The pin of whoever placed or guessed: their color with their drawn mark,
+    /// or their initial.
+    func style(of userID: UUID) -> BoardPieceStyle {
+        let isMine = userID == currentUserID
+        return BoardPieceStyle(
+            color: isMine ? .boardGameMine : .boardGamePartner,
+            mark: isMine ? myMark : partnerMark,
+            initial: BoardPieceStyle.initial(of: isMine ? me.name : partner.name)
+        )
+    }
+
     func round(_ id: UUID) -> RemoteConsensioRound? {
         rounds.first { $0.id == id }
     }
@@ -58,6 +73,8 @@ final class ConsensioHistoryViewModel {
         if identityChanged {
             rounds = []
             records = nil
+            myMark = nil
+            partnerMark = nil
             isLoading = true
             loadFailure = nil
             loadMoreFailed = false
@@ -74,6 +91,7 @@ final class ConsensioHistoryViewModel {
     func load() async {
         guard let userID = currentUserID else { return }
         await readCache(for: userID)
+        await readMarks(for: userID)
         do {
             let page = try await dependencies.consensioGateway.loadConsensioHistory(
                 beforeRoundNumber: nil,
@@ -87,6 +105,22 @@ final class ConsensioHistoryViewModel {
             loadFailure = rounds.isEmpty ? PaeoniaFailure(error) : nil
         }
         isLoading = false
+    }
+
+    /// The marks both partners drew for the board games.
+    private func readMarks(for userID: UUID) async {
+        let marks = await dependencies.boardGamesCache.document(ownerUserID: userID).marks
+        let mine = await Self.image(of: marks?.mine, key: "\(userID.uuidString):mine")
+        let theirs = await Self.image(of: marks?.partner, key: "\(userID.uuidString):partner")
+        guard currentUserID == userID else { return }
+        myMark = mine
+        partnerMark = theirs
+    }
+
+    /// `key` names the owner. The drawing's date makes a redrawn mark a new image.
+    private static func image(of mark: RemoteBoardGameMark?, key: String) async -> UIImage? {
+        guard let mark, let data = BoardMarkRenderer.data(fromBase64: mark.drawing) else { return nil }
+        return await BoardMarkRenderer.image(from: data, cacheKey: "\(key):\(mark.updatedAt.timeIntervalSince1970)")
     }
 
     private func readCache(for userID: UUID) async {

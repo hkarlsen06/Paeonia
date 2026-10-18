@@ -33,7 +33,7 @@ extension ConsensioViewModel {
         } else {
             placingTopic = selectedChoice
         }
-        marker = nil
+        marker = ConsensioRules.middle
         return true
     }
 

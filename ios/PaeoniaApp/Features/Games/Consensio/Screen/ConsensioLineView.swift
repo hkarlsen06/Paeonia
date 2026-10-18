@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The line with this person's own pin: placing it where they stand, or
-/// guessing where the partner put theirs. The pin appears where the finger first
-/// touches the line, and the button stays off until it is there.
+/// guessing where the partner put theirs. The pin starts in the middle and is
+/// dragged either way.
 struct ConsensioLineView: View {
     enum Role {
         case place
@@ -72,8 +72,7 @@ struct ConsensioLineView: View {
                         viewModel.moveMarker(to: position, isTouching: isTouching)
                     }
                 }
-            ),
-            hint: role == .place ? .consensioPlaceTapHint : .consensioGuessTapHint(viewModel.partnerName)
+            )
         )
     }
 
