@@ -73,6 +73,32 @@ The first prompt gives the user a concrete reference point and emotional angle.
 The second makes the user invent the context, the content, and the reason it
 should be a voice note before they can answer.
 
+## Topics
+
+Topics are extra questions grouped by theme, such as Travel and places or Someday, which a couple answers as many of as they like, apart from the daily questions. They live in `backend/questions/topic/<topic_key>/` (see `backend/questions/README.md`).
+
+- Topic questions are evergreen. They ask who someone is, what they have lived and what they hope for, not what happened today. Avoid "today" and "this week".
+- Check for duplicates across both `system/` and `topic/`. A topic question must not repeat the intent of a daily question, and the other way round.
+- Order each topic so the easiest questions come first. `sort_order` in `question.md` sets the order.
+- Everything else in this document applies to topic questions too.
+
+## Flirt topic (adults only)
+
+Flirt is the one place where questions may be flirty and suggestive. Only couples where both partners confirmed they are 18 or older can see it. The rest of this document still applies.
+
+Flirt questions may ask about attraction, what someone likes about how their partner looks or dresses, kissing and being held, flirting, romantic evenings, and messages they would like to get.
+
+Flirt questions never:
+
+- Mention sex acts, nudity, or anything explicit.
+- Ask for a detailed fantasy or say "describe in detail".
+- Assume the couple has sex, or ask how often, how good, or with whom.
+- Ask about past partners.
+- Use the `photo` answer kind, so no prompt ever invites a photo of a body.
+- Make "no" or skipping feel like a failure.
+
+Every Flirt question must work for a couple who isn't having sex. It must be answerable in a few playful words, or skipped without a second thought. Flirt questions must also work for couples who are apart, so a question about being together is a what-if, such as "If your partner were next to you right now". The short prompt names the theme, never the detail. Flirt content never appears in pushes, widgets, Look Back or Home. If a draft would push the App Store rating above "frequent mature or suggestive themes" (16+), it doesn't belong in Paeonia. In Norwegian, keep the tone light and natural, and don't translate English slang.
+
 ## Copy Shape
 
 Write full prompts as complete, direct questions or instructions.
@@ -151,7 +177,7 @@ For app chrome around the question UI, keep using String Catalog symbols and the
 
 System questions use these tables:
 
-- `question_collections`: owns a system, custom, or mini-game collection.
+- `question_collections`: owns a system, custom, mini-game or topic collection. Each topic is its own collection, with its key, shelf order, `adults_only` flag and names (`question_collection_localizations`).
 - `questions`: stable question identity and resurfacing rules.
 - `question_versions`: versioned copy and answer contract for a question.
 - `question_version_localizations`: localized full and short prompts.
