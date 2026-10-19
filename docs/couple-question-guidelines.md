@@ -82,9 +82,9 @@ Topics are extra questions grouped by theme, such as Travel and places or Someda
 - Order each topic so the easiest questions come first. `sort_order` in `question.md` sets the order.
 - Everything else in this document applies to topic questions too.
 
-## Flirt topic (adults only)
+## Flirt topic
 
-Flirt is the one place where questions may be flirty and suggestive. Only couples where both partners confirmed they are 18 or older can see it. The rest of this document still applies.
+Flirt is the one place where questions may be flirty and suggestive. Every couple can see it, so Flirt content must stay within the 16+ rating, suggestive and never explicit. The rest of this document still applies.
 
 Flirt questions may ask about attraction, what someone likes about how their partner looks or dresses, kissing and being held, flirting, romantic evenings, and messages they would like to get.
 
@@ -187,7 +187,7 @@ For app chrome around the question UI, keep using String Catalog symbols and the
 
 System questions use these tables:
 
-- `question_collections`: owns a system, custom, mini-game or topic collection. Each topic is its own collection, with its key, shelf order, `adults_only` flag and names (`question_collection_localizations`).
+- `question_collections`: owns a system, custom, mini-game or topic collection. Each topic is its own collection, with its key, shelf order, `private` flag (Flirt: its chat pushes name only the sender) and names (`question_collection_localizations`).
 - `questions`: stable question identity and resurfacing rules.
 - `question_versions`: versioned copy and answer contract for a question.
 - `question_version_localizations`: localized full and short prompts.

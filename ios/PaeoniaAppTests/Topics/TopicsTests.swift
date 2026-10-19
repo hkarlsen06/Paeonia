@@ -1,4 +1,3 @@
-import DeclaredAgeRange
 import Foundation
 import Testing
 @testable import PaeoniaApp
@@ -16,16 +15,15 @@ private enum TopicIDs {
 
 private func summaryJSON(
     key: String = "travel_and_places",
-    adultsOnly: Bool = false,
-    adultState: String = "open",
+    isPrivate: Bool = false,
     total: Int = 2,
     together: Int = 0,
     forYou: Int = 1
 ) -> String {
     """
     {"topic_key":"\(key)","collection_id":"\(TopicIDs.collection)","sort_order":4,
-     "adults_only":\(adultsOnly),"title_en":"Travel and places","subtitle_en":"Where you've been.",
-     "title_nb":"Reiser og steder","subtitle_nb":"Hvor du har vært.","adult_state":"\(adultState)",
+     "private":\(isPrivate),"title_en":"Travel and places","subtitle_en":"Where you've been.",
+     "title_nb":"Reiser og steder","subtitle_nb":"Hvor du har vært.",
      "total_count":\(total),"together_count":\(together),"for_you_count":\(forYou),
      "waiting_for_partner_count":0}
     """
@@ -140,16 +138,16 @@ struct TopicModelTests {
 }
 
 struct TopicsHookTests {
-    private func summary(_ key: String, adultsOnly: Bool = false, forYou: Int) throws -> TopicSummary {
-        let json = summaryJSON(key: key, adultsOnly: adultsOnly, forYou: forYou)
+    private func summary(_ key: String, isPrivate: Bool = false, forYou: Int) throws -> TopicSummary {
+        let json = summaryJSON(key: key, isPrivate: isPrivate, forYou: forYou)
         return TopicSummary(try decode(RemoteTopicSummary.self, json))
     }
 
-    private func chat(topicKey: String?, adult: Bool) -> DailyQuestionThreadSummary {
+    private func chat(topicKey: String?, isPrivate: Bool) -> DailyQuestionThreadSummary {
         DailyQuestionThreadSummary(
             threadID: UUID(), coupleID: TopicIDs.couple, questionID: UUID(), createdAt: Date(), updatedAt: Date(),
             lastMessageID: UUID(), lastMessageAt: Date(), lastMessageSenderUserID: TopicIDs.partner,
-            lastMessageBody: "hi", topicKey: topicKey, isAdultTopic: adult
+            lastMessageBody: "hi", topicKey: topicKey, isPrivateTopic: isPrivate
         )
     }
 
@@ -159,13 +157,13 @@ struct TopicsHookTests {
         #expect(hook == .answeredIn(partner: "Robin", count: 2, topic: "Travel and places"))
     }
 
-    @Test func neverNamesTheAdultsOnlyTopic() throws {
-        let overview = [try summary("flirt", adultsOnly: true, forYou: 1)]
+    @Test func neverNamesAPrivateTopic() throws {
+        let overview = [try summary("flirt", isPrivate: true, forYou: 1)]
         let hook = TopicsHook.make(overview: overview, unreadTopicChats: [], partnerName: "Robin")
         #expect(hook == .answeredForYou(partner: "Robin", count: 1))
         let chatHook = TopicsHook.make(
-            overview: [try summary("flirt", adultsOnly: true, forYou: 0)],
-            unreadTopicChats: [chat(topicKey: "flirt", adult: true)],
+            overview: [try summary("flirt", isPrivate: true, forYou: 0)],
+            unreadTopicChats: [chat(topicKey: "flirt", isPrivate: true)],
             partnerName: "Robin"
         )
         #expect(chatHook == .messageFrom(partner: "Robin"))
@@ -182,27 +180,10 @@ struct TopicsHookTests {
 
     @Test func fallsBackToAnUnreadChatAndThenNothing() throws {
         let overview = [try summary("travel_and_places", forYou: 0)]
-        let unread = [chat(topicKey: "travel_and_places", adult: false)]
+        let unread = [chat(topicKey: "travel_and_places", isPrivate: false)]
         let hook = TopicsHook.make(overview: overview, unreadTopicChats: unread, partnerName: "Robin")
         #expect(hook == .messageIn(topic: "Travel and places"))
         #expect(TopicsHook.make(overview: overview, unreadTopicChats: [], partnerName: "Robin") == nil)
-    }
-}
-
-struct AdultAgeCheckTests {
-    @Test func onlyEighteenAndOverOpensTheTopic() {
-        #expect(AdultAgeCheck.status(lowerBound: 18) == .confirmed)
-        #expect(AdultAgeCheck.status(lowerBound: 25) == .confirmed)
-        #expect(AdultAgeCheck.status(lowerBound: 16) == .hidden)
-        #expect(AdultAgeCheck.status(lowerBound: nil) == .hidden)
-    }
-
-    @Test func unknownAgeHidesAndPassingFailuresDont() {
-        #expect(AdultAgeCheck.hidesTopic(.notAvailable))
-        #expect(AdultAgeCheck.hidesTopic(.invalidAccount))
-        #expect(AdultAgeCheck.hidesTopic(.declinedOnboarding))
-        #expect(!AdultAgeCheck.hidesTopic(.network))
-        #expect(!AdultAgeCheck.hidesTopic(.invalidRequest))
     }
 }
 
@@ -247,7 +228,6 @@ private actor StubTopicsGateway: TopicsGateway {
     var detail: RemoteTopicDetail
     var skipError: (any Error)?
     private(set) var skipCalls: [(UUID, Bool)] = []
-    private(set) var statuses: [AdultTopicsStatus] = []
 
     init(overview: RemoteTopicsOverview, detail: RemoteTopicDetail) {
         self.overview = overview
@@ -264,7 +244,6 @@ private actor StubTopicsGateway: TopicsGateway {
         skipCalls.append((questionID, skipped))
         if let skipError { throw skipError }
     }
-    func setAdultTopicsStatus(_ status: AdultTopicsStatus) { statuses.append(status) }
     nonisolated func topicUpdates(key _: String) -> AsyncStream<RemoteTopicDetail> { AsyncStream { $0.finish() } }
 }
 
@@ -291,11 +270,8 @@ private actor InMemoryTopicsCache: TopicsCaching {
 
 @MainActor
 struct TopicsViewModelTests {
-    private func makeViewModel(hiddenByViewer: Bool = false) async throws -> (TopicsViewModel, StubTopicsGateway) {
-        let overview = try decode(
-            RemoteTopicsOverview.self,
-            #"{"topics":[\#(summaryJSON())],"adult_topics_hidden_by_viewer":\#(hiddenByViewer)}"#
-        )
+    private func makeViewModel() async throws -> (TopicsViewModel, StubTopicsGateway) {
+        let overview = try decode(RemoteTopicsOverview.self, #"{"topics":[\#(summaryJSON())]}"#)
         let gateway = StubTopicsGateway(overview: overview, detail: try decode(RemoteTopicDetail.self, detailJSON()))
         let viewModel = TopicsViewModel(
             gateway: gateway,
@@ -307,9 +283,8 @@ struct TopicsViewModelTests {
     }
 
     @Test func loadsTheOverviewAndATopic() async throws {
-        let (viewModel, _) = try await makeViewModel(hiddenByViewer: true)
+        let (viewModel, _) = try await makeViewModel()
         #expect(viewModel.overview.map(\.id) == ["travel_and_places"])
-        #expect(viewModel.adultTopicsHiddenByViewer)
         await viewModel.follow("travel_and_places")
         #expect(viewModel.items["travel_and_places"]?.count == 2)
         #expect(viewModel.sections(for: "travel_and_places").forYou.count == 1)
@@ -328,16 +303,16 @@ struct TopicsViewModelTests {
         #expect(await gateway.skipCalls.first?.0 == TopicIDs.freshQuestion)
     }
 
-    @Test func aTopicThatClosesLeavesThePhone() async throws {
+    @Test func aTopicThatLeavesTheShelfLeavesThePhone() async throws {
         let (viewModel, gateway) = try await makeViewModel()
         await viewModel.follow("travel_and_places")
         #expect(viewModel.items["travel_and_places"] != nil)
 
-        let empty = #"{"topics":[],"adult_topics_hidden_by_viewer":false}"#
+        let empty = #"{"topics":[]}"#
         await gateway.setOverview(try decode(RemoteTopicsOverview.self, empty))
         await viewModel.refreshOverview()
         #expect(viewModel.items["travel_and_places"] == nil)
-        // A late read of the closed topic doesn't bring it back.
+        // A late read of the removed topic doesn't bring it back.
         await viewModel.follow("travel_and_places")
         #expect(viewModel.items["travel_and_places"] == nil)
     }
@@ -360,11 +335,5 @@ struct TopicsViewModelTests {
         await viewModel.follow("travel_and_places")
         let first = try #require(viewModel.sections(for: "travel_and_places").nextToAnswer)
         #expect(viewModel.nextQuestion(after: first.question)?.questionID == TopicIDs.freshQuestion)
-    }
-
-    @Test func savesTheAgeCheckOutcomeOnly() async throws {
-        let (viewModel, gateway) = try await makeViewModel()
-        await viewModel.saveAdultTopicsStatus(.hidden)
-        #expect(await gateway.statuses == [.hidden])
     }
 }

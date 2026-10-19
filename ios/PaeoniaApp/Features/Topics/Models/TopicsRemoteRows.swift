@@ -1,29 +1,19 @@
 import Foundation
 
-/// `topics:get_topics_overview`: every topic the couple can see, in shelf order.
-/// The adults-only topic is missing while either partner has it hidden.
+/// `topics:get_topics_overview`: every topic, in shelf order.
 nonisolated struct RemoteTopicsOverview: Codable, Equatable, Sendable {
     let topics: [RemoteTopicSummary]
-    /// The viewer hid the adults-only topic, so the shelf offers to show it again.
-    let adultTopicsHiddenByViewer: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case topics
-        case adultTopicsHiddenByViewer = "adult_topics_hidden_by_viewer"
-    }
 }
 
 nonisolated struct RemoteTopicSummary: Codable, Equatable, Sendable {
     let topicKey: String
     let collectionID: UUID
     let sortOrder: Int
-    let adultsOnly: Bool
+    let isPrivate: Bool
     let titleEN: String
     let subtitleEN: String
     let titleNB: String
     let subtitleNB: String
-    /// `open`, `locked` or `waiting_for_partner`. Always `open` for other topics.
-    let adultState: String
     /// Questions the couple hasn't skipped.
     let totalCount: Int
     /// Questions both partners answered.
@@ -37,12 +27,11 @@ nonisolated struct RemoteTopicSummary: Codable, Equatable, Sendable {
         case topicKey = "topic_key"
         case collectionID = "collection_id"
         case sortOrder = "sort_order"
-        case adultsOnly = "adults_only"
+        case isPrivate = "private"
         case titleEN = "title_en"
         case subtitleEN = "subtitle_en"
         case titleNB = "title_nb"
         case subtitleNB = "subtitle_nb"
-        case adultState = "adult_state"
         case totalCount = "total_count"
         case togetherCount = "together_count"
         case forYouCount = "for_you_count"

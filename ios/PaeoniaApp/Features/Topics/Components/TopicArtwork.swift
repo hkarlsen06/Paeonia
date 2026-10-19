@@ -25,16 +25,12 @@ struct TopicArtwork: View {
     let height: CGFloat
     /// False where many pictures sit together and the movement would be too much.
     var playsBeat = true
-    /// The adults-only topic before both partners confirmed: the picture shows soft.
-    var isFrosted = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var beat = 0
 
     var body: some View {
         artwork
-            .blur(radius: isFrosted ? height * 0.06 : 0)
-            .saturation(isFrosted ? 0.7 : 1)
             .accessibilityHidden(true)
             .task {
                 guard playsBeat, !reduceMotion else { return }

@@ -8,7 +8,7 @@ import { addSeenStates, QuestionContentReader, questionRow, type DailyQuestionRo
 import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
-import { adultGate, topicIsOpen, topicOfQuestion } from "./lib/topics";
+import { topicOfQuestion } from "./lib/topics";
 
 /**
  * The question page: every round of one question in the named couple, oldest first,
@@ -30,9 +30,6 @@ export const get_daily_question_chat = query({
     }
     const questionId = uuidArg(args.p_question_id);
     const topic = await topicOfQuestion(ctx, questionId);
-    if (topic && !topicIsOpen(topic, await adultGate(ctx, coupleId, userId))) {
-      return fail("42501", "adult topic is not open");
-    }
     const rounds = await loadQuestionRounds(ctx, coupleId, questionId);
 
     const reader = new QuestionContentReader(ctx);

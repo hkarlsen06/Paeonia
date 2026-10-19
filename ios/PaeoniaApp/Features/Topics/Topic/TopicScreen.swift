@@ -112,7 +112,7 @@ struct TopicScreen: View {
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .multilineTextAlignment(.center)
-                TopicProgressLine(topic: topic, partnerName: participants.partnerName, ringSize: 18)
+                TopicProgressLine(topic: topic, ringSize: 18)
                     .padding(.top, PaeoniaSpacing.space4)
             }
         }

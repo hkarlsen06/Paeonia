@@ -5,7 +5,6 @@ import SwiftUI
 /// answered questions waiting for this person.
 struct TopicShelfCard: View {
     let topic: TopicSummary
-    let partnerName: String
     let newCount: Int
 
     private let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
@@ -15,7 +14,7 @@ struct TopicShelfCard: View {
     }
 
     private var isWaitingForYou: Bool {
-        topic.isOpen && topic.forYouCount > 0
+        topic.forYouCount > 0
     }
 
     /// A pink glow while something waits for this person, a soft shadow otherwise.
@@ -25,7 +24,7 @@ struct TopicShelfCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            TopicArtwork(topicKey: topic.id, height: 88, isFrosted: !topic.isOpen)
+            TopicArtwork(topicKey: topic.id, height: 88)
                 .frame(maxWidth: .infinity)
                 .frame(height: 104)
                 .padding(.bottom, PaeoniaSpacing.space8)
@@ -42,7 +41,7 @@ struct TopicShelfCard: View {
 
             Spacer(minLength: PaeoniaSpacing.space8)
 
-            TopicProgressLine(topic: topic, partnerName: partnerName)
+            TopicProgressLine(topic: topic)
         }
         .padding(PaeoniaSpacing.space12)
         .frame(maxWidth: .infinity, minHeight: 236, alignment: .topLeading)
@@ -75,9 +74,7 @@ struct TopicShelfCard: View {
 
     @ViewBuilder
     private var badge: some View {
-        if topic.adultsOnly {
-            TopicBadge(text: .topicsBadgeAdults, isProminent: false)
-        } else if isWaitingForYou {
+        if isWaitingForYou {
             TopicBadge(text: .topicsBadgeForYou(topic.forYouCount))
         } else if newCount > 0 {
             TopicBadge(text: .topicsBadgeNew(newCount))

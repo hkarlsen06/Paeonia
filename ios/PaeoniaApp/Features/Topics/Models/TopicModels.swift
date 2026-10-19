@@ -1,16 +1,6 @@
 import CryptoKit
 import Foundation
 
-/// Where the couple stands with the adults-only topic. Other topics are always open.
-nonisolated enum TopicAdultState: String, Equatable, Sendable {
-    /// Both partners confirmed they are 18 or older.
-    case open
-    /// This person hasn't confirmed yet.
-    case locked
-    /// This person confirmed, the partner hasn't yet.
-    case waitingForPartner = "waiting_for_partner"
-}
-
 /// One topic on the shelf, with its copy in the phone's language.
 nonisolated struct TopicSummary: Identifiable, Equatable, Sendable {
     /// The topic key, such as `travel_and_places`.
@@ -18,8 +8,8 @@ nonisolated struct TopicSummary: Identifiable, Equatable, Sendable {
     let title: String
     let subtitle: String
     let sortOrder: Int
-    let adultsOnly: Bool
-    let adultState: TopicAdultState
+    /// Flirt: kept off the lock screen and never named outside the topic.
+    let isPrivate: Bool
     let totalCount: Int
     let togetherCount: Int
     let forYouCount: Int
@@ -31,16 +21,11 @@ nonisolated struct TopicSummary: Identifiable, Equatable, Sendable {
         title = norwegian ? remote.titleNB : remote.titleEN
         subtitle = norwegian ? remote.subtitleNB : remote.subtitleEN
         sortOrder = remote.sortOrder
-        adultsOnly = remote.adultsOnly
-        adultState = TopicAdultState(rawValue: remote.adultState) ?? .locked
+        isPrivate = remote.isPrivate
         totalCount = remote.totalCount
         togetherCount = remote.togetherCount
         forYouCount = remote.forYouCount
         waitingForPartnerCount = remote.waitingForPartnerCount
-    }
-
-    var isOpen: Bool {
-        adultState == .open
     }
 
     /// Every question the couple kept has answers from both of them.

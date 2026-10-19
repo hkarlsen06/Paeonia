@@ -1,7 +1,7 @@
 import Foundation
 
-/// The Topics card's line about what's waiting for this person. It never names the
-/// adults-only topic, because the Questions tab is often open where others see it.
+/// The Topics card's line about what's waiting for this person. It never names a
+/// private topic (Flirt), because the Questions tab is often open where others see it.
 nonisolated enum TopicsHook: Equatable, Sendable {
     /// The partner answered questions in one topic this person hasn't answered.
     case answeredIn(partner: String, count: Int, topic: String)
@@ -15,16 +15,18 @@ nonisolated enum TopicsHook: Equatable, Sendable {
         unreadTopicChats: [DailyQuestionThreadSummary],
         partnerName: String
     ) -> TopicsHook? {
-        let waiting = overview.filter { $0.isOpen && $0.forYouCount > 0 }
+        let waiting = overview.filter { $0.forYouCount > 0 }
         let total = waiting.reduce(0) { $0 + $1.forYouCount }
         if total > 0 {
-            if waiting.count == 1, let topic = waiting.first, !topic.adultsOnly {
+            if waiting.count == 1, let topic = waiting.first, !topic.isPrivate {
                 return .answeredIn(partner: partnerName, count: total, topic: topic.title)
             }
             return .answeredForYou(partner: partnerName, count: total)
         }
         guard let chat = unreadTopicChats.first else { return nil }
-        if chat.isAdultTopic != true, let topic = overview.first(where: { $0.id == chat.topicKey }), !topic.adultsOnly {
+        if chat.isPrivateTopic != true,
+           let topic = overview.first(where: { $0.id == chat.topicKey }),
+           !topic.isPrivate {
             return .messageIn(topic: topic.title)
         }
         return .messageFrom(partner: partnerName)

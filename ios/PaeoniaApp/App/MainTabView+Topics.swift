@@ -17,7 +17,6 @@ extension MainTabView {
         case .topics:
             TopicsShelfView(
                 viewModel: topicsViewModel,
-                partnerName: dailyChallengeParticipants.partnerName,
                 onOpenTopic: { questionsPath.append(.topic($0)) }
             )
         case let .topic(key):

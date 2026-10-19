@@ -608,9 +608,6 @@ export default defineSchema({
     status: memberStatus,
     // Either partner can set either member's birthday. It belongs to this relationship only.
     birthday: v.optional(date),
-    // The Flirt topic's age check on this member's phone: confirmed is 18 or older, hidden is anything else.
-    adult_topics: v.optional(literals("confirmed", "hidden")),
-    adult_topics_at: optTs,
     joined_at: ts,
     left_at: optTs,
     ended_notice_seen_at: optTs,
@@ -1126,10 +1123,11 @@ export default defineSchema({
   question_collections: defineTable({
     id: uuid,
     kind: literals("system", "custom", "mini_game", "topic"),
-    // Topics only: the stable topic key, the shelf order, and whether only adults may open it.
+    // Topics only: the stable topic key, the shelf order, and whether the topic stays off the lock
+    // screen (Flirt): its chat pushes name only the sender.
     key: optString,
     sort_order: v.optional(v.number()),
-    adults_only: v.optional(v.boolean()),
+    private: v.optional(v.boolean()),
     couple_id: optUuid,
     created_by_user_id: optUuid,
     status: literals("draft", "active", "retired", "archived"),

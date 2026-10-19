@@ -9,7 +9,6 @@ import { jsonbByteLength, jsonbText } from "./json";
 import { enqueuePartnerAnsweredNotification, enqueuePartnerNotification } from "./notifications";
 import { tombstoneReportTargets } from "./reports";
 import { applyCoupleActivity } from "./streaks";
-import { assertTopicQuestionOpen } from "./topics";
 import { nowIso } from "./time";
 import {
   DAILY_QUESTION_SLOTS,
@@ -724,7 +723,6 @@ async function editDailyAnswer(
       if (!(await canAccessCoupleContent(ctx, userId, day.couple_id))) {
         fail("42501", "active entitled couple access is required");
       }
-      if (isTopicInstance(instance)) await assertTopicQuestionOpen(ctx, instance.couple_id, userId, instance.question_id);
       const own = await ctx.db
         .query("daily_question_answers")
         .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", userId))

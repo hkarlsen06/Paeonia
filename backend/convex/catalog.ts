@@ -52,7 +52,7 @@ const topicPayload = v.object({
   key: v.string(),
   status: literals("draft", "active", "retired", "archived"),
   sort_order: v.number(),
-  adults_only: v.boolean(),
+  private: v.boolean(),
   localizations: v.object({ en: topicLocalization, nb: topicLocalization }),
 });
 
@@ -241,7 +241,7 @@ async function compareCatalog(
     if (
       remote.status !== topic.status ||
       remote.sort_order !== topic.sort_order ||
-      (remote.adults_only ?? false) !== topic.adults_only
+      (remote.private ?? false) !== topic.private
     ) {
       changes.push(`topic update for ${topic.key}`);
     }
@@ -511,14 +511,14 @@ async function applyTopic(ctx: WriterCtx, topic: TopicPayload): Promise<Doc<"que
       kind: "topic",
       key: topic.key,
       sort_order: topic.sort_order,
-      adults_only: topic.adults_only,
+      private: topic.private,
       status: "draft",
       created_at: now,
       updated_at: now,
     });
     collection = (await getByUuid(ctx, "question_collections", id))!;
-  } else if (collection.sort_order !== topic.sort_order || (collection.adults_only ?? false) !== topic.adults_only) {
-    await ctx.db.patch(collection._id, withUpdatedAt({ sort_order: topic.sort_order, adults_only: topic.adults_only }));
+  } else if (collection.sort_order !== topic.sort_order || (collection.private ?? false) !== topic.private) {
+    await ctx.db.patch(collection._id, withUpdatedAt({ sort_order: topic.sort_order, private: topic.private }));
   }
   for (const locale of LOCALES) {
     const { title, subtitle } = topic.localizations[locale];

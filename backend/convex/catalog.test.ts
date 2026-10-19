@@ -220,7 +220,7 @@ describe("sync_catalog topics", () => {
     key: "travel_and_places",
     status: "active" as const,
     sort_order: 4,
-    adults_only: false,
+    private: false,
     localizations: {
       en: { title: "Travel and places", subtitle: "Where you've been." },
       nb: { title: "Reiser og steder", subtitle: "Hvor du har vært." },
@@ -239,7 +239,7 @@ describe("sync_catalog topics", () => {
     expect(result.errors).toEqual([]);
     expect(result.changes).toContain("new topic travel_and_places");
     const collections = await t.run((ctx) => ctx.db.query("question_collections").collect());
-    expect(collections).toMatchObject([{ kind: "topic", key: "travel_and_places", sort_order: 4, adults_only: false, status: "active" }]);
+    expect(collections).toMatchObject([{ kind: "topic", key: "travel_and_places", sort_order: 4, private: false, status: "active" }]);
     const names = await t.run((ctx) => ctx.db.query("question_collection_localizations").collect());
     expect(names.map((row) => [row.locale, row.title]).sort()).toEqual([
       ["en", "Travel and places"],

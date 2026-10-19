@@ -19,22 +19,19 @@ import {
   questionRow,
   type DailyQuestionRow,
 } from "./lib/dailyQuestions";
-import { getByUuid, withUpdatedAt } from "./lib/db";
+import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
 import { timestampArg, uuidArg } from "./lib/ids";
 import { applyCoupleActivity } from "./lib/streaks";
 import {
   activeTopics,
-  adultGate,
   answerState,
-  assertTopicOpen,
   queueTopicPush,
   requireActiveTopic,
   skippedQuestionIds,
   skipRow,
   topicInstanceFor,
   topicInstances,
-  topicIsOpen,
   topicOfQuestion,
   topicQuestions,
   topicSummary,
@@ -68,18 +65,16 @@ type TopicQuestionRow = {
 /** The shelf: every topic the couple can see, with its counts. */
 export const get_topics_overview = query({
   args: {},
-  handler: async (ctx): Promise<{ topics: TopicSummary[]; adult_topics_hidden_by_viewer: boolean }> => {
+  handler: async (ctx): Promise<{ topics: TopicSummary[] }> => {
     const userId = await requireUserId(ctx);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const gate = await adultGate(ctx, coupleId, userId);
     const skipped = await skippedQuestionIds(ctx, coupleId);
     const reader = new QuestionContentReader(ctx);
     const topics: TopicSummary[] = [];
     for (const topic of await activeTopics(ctx)) {
-      if (topic.collection.adults_only && gate.hidden) continue;
-      topics.push(await topicSummary(ctx, reader, topic, coupleId, userId, gate, skipped));
+      topics.push(await topicSummary(ctx, reader, topic, coupleId, userId, skipped));
     }
-    return { topics, adult_topics_hidden_by_viewer: gate.hiddenByViewer };
+    return { topics };
   },
 });
 
@@ -90,10 +85,6 @@ export const get_topic = query({
     const userId = await requireUserId(ctx);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const topic = await requireActiveTopic(ctx, args.p_topic_key);
-    const gate = await adultGate(ctx, coupleId, userId);
-    if (!topicIsOpen(topic.collection, gate)) {
-      return fail("42501", "adult topic is not open");
-    }
     const skipped = await skippedQuestionIds(ctx, coupleId);
     const reader = new QuestionContentReader(ctx);
     const instances = await topicInstances(ctx, coupleId, topic.collection.id);
@@ -135,21 +126,20 @@ export const get_topic = query({
     }
     await addSeenStates(ctx, userId, startedRows);
     return {
-      topic: await topicSummary(ctx, reader, topic, coupleId, userId, gate, skipped),
+      topic: await topicSummary(ctx, reader, topic, coupleId, userId, skipped),
       questions,
       answer_details: answerDetails,
     };
   },
 });
 
-/** The topic of a question the caller may answer or skip now. */
-async function requireOpenTopicQuestion(ctx: Parameters<typeof topicOfQuestion>[0], questionId: string, coupleId: string, userId: string) {
+/** An active topic question and its topic. */
+async function requireTopicQuestion(ctx: Parameters<typeof topicOfQuestion>[0], questionId: string) {
   const question = await getByUuid(ctx, "questions", questionId);
   const topic = await topicOfQuestion(ctx, questionId);
   if (!question || question.status !== "active" || !topic || topic.status !== "active") {
     return fail("22023", "topic question was not found");
   }
-  await assertTopicOpen(ctx, topic, coupleId, userId);
   return { question, topic };
 }
 
@@ -190,7 +180,7 @@ export const submit_topic_answer = mutation({
         request: { kind: "submit_topic_answer", question_id: questionId, instance_id: instanceId, payload: args.p_payload },
       },
       async () => {
-        const { topic } = await requireOpenTopicQuestion(ctx, questionId, coupleId, userId);
+        const { topic } = await requireTopicQuestion(ctx, questionId);
         const now = nowIso();
         const dayId = await getOrCreateCoupleDayAt(ctx, coupleId, now);
         let instance = await topicInstanceFor(ctx, coupleId, questionId);
@@ -247,7 +237,7 @@ export const set_topic_question_skipped = mutation({
     const userId = await requireUserId(ctx);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const questionId = uuidArg(args.p_question_id);
-    await requireOpenTopicQuestion(ctx, questionId, coupleId, userId);
+    await requireTopicQuestion(ctx, questionId);
     const existing = await skipRow(ctx, coupleId, questionId);
     if (args.p_skipped && !existing) {
       await ctx.db.insert("topic_question_skips", { couple_id: coupleId, question_id: questionId, skipped_at: nowIso() });
@@ -258,20 +248,3 @@ export const set_topic_question_skipped = mutation({
   },
 });
 
-/**
- * Saves the caller's age check for adults-only topics: `confirmed` when the phone said 18 or older,
- * `hidden` for anything else. The phone reports only that, never an age or a reason.
- */
-export const set_adult_topics_status = mutation({
-  args: { p_status: v.union(v.literal("confirmed"), v.literal("hidden")) },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
-    const member = (await listActiveMembers(ctx, coupleId)).find((row) => row.user_id === userId);
-    if (!member) return fail("42501", "active entitled couple access is required");
-    if (member.adult_topics !== args.p_status) {
-      await ctx.db.patch(member._id, withUpdatedAt({ adult_topics: args.p_status, adult_topics_at: nowIso() }));
-    }
-    return null;
-  },
-});

@@ -5,7 +5,7 @@ import { nowIso } from "./lib/time";
 import { failure, op, setMediaEnv } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
 import { purgeCoupleContent } from "./lib/relationshipCleanup";
-import { addDevice, createCouple, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
+import { addDevice, createCouple, newTest, type TestConvex, type TestUser } from "./test.setup";
 
 beforeEach(() => {
   setMediaEnv();
@@ -28,7 +28,7 @@ async function seedTopic(
   options: {
     count?: number;
     sortOrder?: number;
-    adultsOnly?: boolean;
+    private?: boolean;
     kinds?: ("text" | "either_or" | "partner_choice")[];
   } = {},
 ): Promise<SeededTopic> {
@@ -40,7 +40,7 @@ async function seedTopic(
       kind: "topic",
       key,
       sort_order: options.sortOrder ?? 1,
-      adults_only: options.adultsOnly ?? false,
+      private: options.private ?? false,
       status: "active",
       created_at: now,
       updated_at: now,
@@ -111,18 +111,11 @@ const overview = (user: TestUser) => user.as.query(api.topics.get_topics_overvie
 const topicOf = (user: TestUser, key: string) => user.as.query(api.topics.get_topic, { p_topic_key: key });
 const skip = (user: TestUser, questionId: string, skipped = true) =>
   user.as.mutation(api.topics.set_topic_question_skipped, { p_question_id: questionId, p_skipped: skipped });
-const setAdult = (user: TestUser, status: "confirmed" | "hidden") =>
-  user.as.mutation(api.topics.set_adult_topics_status, { p_status: status });
 
 async function setup() {
   const t = newTest();
   const couple = await createCouple(t);
   return { t, couple, a: couple.first, b: couple.second };
-}
-
-async function openAdults(couple: TestCouple) {
-  await setAdult(couple.first, "confirmed");
-  await setAdult(couple.second, "confirmed");
 }
 
 describe("overview", () => {
@@ -136,12 +129,10 @@ describe("overview", () => {
     await answer(a, first.questionIds[2]);
 
     const result = await overview(a);
-    expect(result.adult_topics_hidden_by_viewer).toBe(false);
     expect(result.topics.map((topic) => topic.topic_key)).toEqual(["first", "later"]);
     expect(result.topics[0]).toMatchObject({
       title_en: "first en",
       title_nb: "first nb",
-      adult_state: "open",
       total_count: 4,
       together_count: 1,
       for_you_count: 1,
@@ -241,45 +232,6 @@ describe("answering", () => {
   });
 });
 
-describe("adult topics", () => {
-  test("locked, then waiting for the partner, then open", async () => {
-    const { t, a, b } = await setup();
-    const flirt = await seedTopic(t, "flirt", { adultsOnly: true });
-    expect((await overview(a)).topics[0]).toMatchObject({ topic_key: "flirt", adult_state: "locked" });
-    expect(await failure(topicOf(a, "flirt"))).toEqual({ code: "42501", message: "adult topic is not open" });
-    expect(await failure(answer(a, flirt.questionIds[0]))).toEqual({ code: "42501", message: "adult topic is not open" });
-    expect(await failure(skip(a, flirt.questionIds[0]))).toMatchObject({ code: "42501" });
-
-    await setAdult(a, "confirmed");
-    expect((await overview(a)).topics[0].adult_state).toBe("waiting_for_partner");
-    expect((await overview(b)).topics[0].adult_state).toBe("locked");
-
-    await setAdult(b, "confirmed");
-    expect((await overview(b)).topics[0].adult_state).toBe("open");
-    expect((await topicOf(b, "flirt")).questions).toHaveLength(3);
-    await answer(b, flirt.questionIds[0]);
-  });
-
-  test("a hidden adult topic is gone for both, and only the hider is told it can come back", async () => {
-    const { t, a, b } = await setup();
-    await seedTopic(t, "know", { sortOrder: 1 });
-    const flirt = await seedTopic(t, "flirt", { adultsOnly: true, sortOrder: 2 });
-    await setAdult(a, "confirmed");
-    await setAdult(b, "hidden");
-
-    const forB = await overview(b);
-    expect(forB.topics.map((topic) => topic.topic_key)).toEqual(["know"]);
-    expect(forB.adult_topics_hidden_by_viewer).toBe(true);
-    const forA = await overview(a);
-    expect(forA.topics.map((topic) => topic.topic_key)).toEqual(["know"]);
-    expect(forA.adult_topics_hidden_by_viewer).toBe(false);
-    expect(await failure(answer(a, flirt.questionIds[0]))).toMatchObject({ code: "42501" });
-
-    await setAdult(b, "confirmed");
-    expect((await overview(a)).topics.map((topic) => topic.adult_state)).toEqual(["open", "open"]);
-  });
-});
-
 describe("pushes", () => {
   test("one push per 3 hours, only while something waits, and it never names the topic or the question", async () => {
     const { t, a, b } = await setup();
@@ -333,8 +285,7 @@ describe("pushes", () => {
   test("a Flirt chat message pushes only who wrote, with no body, no message and no prompt", async () => {
     const { t, couple, a, b } = await setup();
     await addDevice(t, b.userId, { locale: "en", token: "b" });
-    const flirt = await seedTopic(t, "flirt", { adultsOnly: true });
-    await openAdults(couple);
+    const flirt = await seedTopic(t, "flirt", { private: true });
     await answer(a, flirt.questionIds[0]);
     await answer(b, flirt.questionIds[0]);
     await t.run(async (ctx) => {
@@ -358,143 +309,7 @@ describe("pushes", () => {
     expect(stored).not.toContain("flirt");
 
     const threads = await b.as.query(api.threads.get_conversation_threads, {});
-    expect(threads[0]).toMatchObject({ topic_key: "flirt", adults_only: true });
-
-    // Once the topic is hidden, its chat is closed too.
-    await setAdult(b, "hidden");
-    expect(await b.as.query(api.threads.get_conversation_threads, {})).toEqual([]);
-    expect(
-      await failure(
-        b.as.query(api.dailyQuestionChat.get_daily_question_chat, {
-          p_couple_id: couple.coupleId,
-          p_question_id: flirt.questionIds[0],
-        }),
-      ),
-    ).toMatchObject({ code: "42501" });
-  });
-});
-
-describe("a Flirt topic that closes", () => {
-  /** Opens Flirt, has both partners answer its first question, and starts its chat with one message. */
-  async function flirtWithChat() {
-    const { t, couple, a, b } = await setup();
-    await addDevice(t, b.userId, { locale: "en", token: "b" });
-    const flirt = await seedTopic(t, "flirt", { adultsOnly: true });
-    await openAdults(couple);
-    const first = await answer(a, flirt.questionIds[0], "a flirty answer");
-    await answer(b, flirt.questionIds[0], "b flirty answer");
-    const [chat] = await a.as.mutation(api.threads.create_daily_question_thread_with_message, {
-      ...op(),
-      p_couple_id: couple.coupleId,
-      p_question_id: flirt.questionIds[0],
-      p_body: "hello there",
-    });
-    return { t, couple, a, b, flirt, first, chat };
-  }
-
-  test("closes its chat messages, message edits and chat photos", async () => {
-    const { t, couple, a, b, chat } = await flirtWithChat();
-    const assetId = await t.run(async (ctx) => {
-      const id = newUuid();
-      const now = nowIso();
-      await ctx.db.insert("media_assets", {
-        id,
-        owner_user_id: a.userId,
-        couple_id: couple.coupleId,
-        reserved_parent_kind: "thread_message_media",
-        reserved_parent_id: chat.message_id,
-        reserved_by_client_operation_id: newUuid(),
-        bucket: "couple-media",
-        storage_path: `${couple.coupleId}/${id}`,
-        media_type: "image",
-        upload_purpose: "thread_media",
-        expected_media_type: "image",
-        expected_bucket: "couple-media",
-        upload_status: "finalized",
-        upload_expires_at: now,
-        upload_finalized_at: now,
-        moderation_status: "visible",
-        storage_delete_status: "none",
-        storage_delete_attempts: 0,
-        created_at: now,
-        updated_at: now,
-      });
-      await ctx.db.insert("thread_message_media", { message_id: chat.message_id, media_asset_id: id, sort_order: 1 });
-      return id;
-    });
-    const signedUrl = (user: TestUser) =>
-      user.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: assetId, p_expires_in_seconds: 300 });
-    expect(await signedUrl(b)).toHaveLength(1);
-    expect((await b.as.query(api.threads.get_thread_messages, { p_thread_id: chat.thread_id, p_limit: 50 })).messages).toHaveLength(1);
-
-    await setAdult(b, "hidden");
-    const closed = { code: "42501", message: "adult topic is not open" };
-    expect(await failure(b.as.query(api.threads.get_thread_messages, { p_thread_id: chat.thread_id, p_limit: 50 }))).toEqual(closed);
-    expect(await failure(a.as.query(api.threads.get_thread_messages, { p_thread_id: chat.thread_id, p_limit: 50 }))).toEqual(closed);
-    expect(
-      await failure(a.as.mutation(api.threads.edit_thread_message, { p_message_id: chat.message_id, p_body: "edited" })),
-    ).toEqual(closed);
-    expect(await failure(a.as.mutation(api.threads.send_thread_message, { ...op(), p_thread_id: chat.thread_id, p_body: "hi" }))).toEqual(closed);
-    expect((await failure(signedUrl(b))).code).toBe("42501");
-  });
-
-  test("closes its answer photos and answer edits", async () => {
-    const { t, couple, a, b } = await setup();
-    const flirt = await seedTopic(t, "flirt", { adultsOnly: true });
-    await openAdults(couple);
-    const first = await answer(a, flirt.questionIds[0], "a flirty answer");
-    // A photo on a's answer (Flirt questions never ask for one, but the gate must hold for any media).
-    const assetId = await t.run(async (ctx) => {
-      const id = newUuid();
-      const now = nowIso();
-      await ctx.db.insert("media_assets", {
-        id,
-        owner_user_id: a.userId,
-        couple_id: couple.coupleId,
-        reserved_parent_kind: "daily_answer_media",
-        reserved_parent_id: first.answer_id,
-        reserved_by_client_operation_id: newUuid(),
-        bucket: "couple-media",
-        storage_path: `${couple.coupleId}/${id}`,
-        media_type: "image",
-        upload_purpose: "daily_answer_media",
-        expected_media_type: "image",
-        expected_bucket: "couple-media",
-        upload_status: "finalized",
-        upload_expires_at: now,
-        upload_finalized_at: now,
-        moderation_status: "visible",
-        storage_delete_status: "none",
-        storage_delete_attempts: 0,
-        created_at: now,
-        updated_at: now,
-      });
-      await ctx.db.insert("daily_answer_media", { answer_id: first.answer_id, media_asset_id: id, sort_order: 1 });
-      return id;
-    });
-    const signedUrl = () => a.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: assetId, p_expires_in_seconds: 300 });
-    const edit = () =>
-      a.as.mutation(api.daily.update_daily_answer_text, { ...op(), p_instance_id: first.instance_id, p_text: "changed" });
-    expect(await signedUrl()).toHaveLength(1);
-    await edit();
-
-    await setAdult(b, "hidden");
-    expect((await failure(signedUrl())).code).toBe("42501");
-    expect(await failure(edit())).toEqual({ code: "42501", message: "adult topic is not open" });
-  });
-
-  test("a Flirt chat push queued before the topic closed is dropped when it is due", async () => {
-    const { t, b } = await flirtWithChat();
-    const queued = (await t.run((ctx) => ctx.db.query("notification_outbox").collect())).filter(
-      (row) => row.kind === "thread_message_sent" && row.sent_at === undefined,
-    );
-    expect(queued).toHaveLength(1);
-    await setAdult(b, "hidden");
-    expect(await deliverDuePushes(t)).toEqual(
-      expect.not.arrayContaining([expect.objectContaining({ outbox_id: queued[0].id })]),
-    );
-    const row = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
-    expect(row.find((item) => item.id === queued[0].id)!.last_error).toBe("notification is out of date");
+    expect(threads[0]).toMatchObject({ topic_key: "flirt", private_topic: true });
   });
 });
 

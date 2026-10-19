@@ -1,5 +1,4 @@
 import type { Doc } from "../_generated/dataModel";
-import { listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid } from "./db";
 import { isLive, QuestionContentReader, type QuestionContent, visibleAnswersOf } from "./dailyQuestions";
@@ -13,25 +12,22 @@ import { addMs, nowIso } from "./time";
  * `daily_question_instances` row with `topic_collection_id` and no `couple_day_id`, so the daily reads
  * never see it, while answers, the reveal rule, seen marks, reports and the question's chat work as for
  * daily questions. Whoever answers first starts it (`seeded_for_user_id`), and the partner answers the
- * same instance. A topic marked `adults_only` (Flirt) opens only once every active member confirmed on
- * their phone that they are 18 or older.
+ * same instance. A topic marked `private` (Flirt) is kept off the lock screen: its chat pushes name only
+ * the sender.
  */
 
 /** At most one "new answers" topic push per person in this window. */
 export const TOPIC_PUSH_INTERVAL_MS = 3 * 60 * 60 * 1000;
 
-export type AdultState = "open" | "locked" | "waiting_for_partner";
-
 export type TopicSummary = {
   topic_key: string;
   collection_id: string;
   sort_order: number;
-  adults_only: boolean;
+  private: boolean;
   title_en: string;
   subtitle_en: string;
   title_nb: string;
   subtitle_nb: string;
-  adult_state: AdultState;
   total_count: number;
   together_count: number;
   for_you_count: number;
@@ -45,14 +41,6 @@ export type Topic = {
 };
 
 export type TopicQuestion = { question: Doc<"questions">; content: QuestionContent };
-
-/** The couple's age-check state for adults-only topics. */
-export type AdultGate = {
-  /** Some active member's phone hid the topic, so it is gone for both. */
-  hidden: boolean;
-  hiddenByViewer: boolean;
-  state: AdultState;
-};
 
 function compareStrings(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -160,36 +148,6 @@ export async function skippedQuestionIds(ctx: ReaderCtx, coupleId: string): Prom
   return new Set(rows.map((row) => row.question_id));
 }
 
-/** Where the couple stands on adults-only topics, as `viewerId` sees it. */
-export async function adultGate(ctx: ReaderCtx, coupleId: string, viewerId: string): Promise<AdultGate> {
-  const members = await listActiveMembers(ctx, coupleId);
-  const viewer = members.find((member) => member.user_id === viewerId);
-  const hidden = members.some((member) => member.adult_topics === "hidden");
-  const allConfirmed = members.length >= 2 && members.every((member) => member.adult_topics === "confirmed");
-  return {
-    hidden,
-    hiddenByViewer: viewer?.adult_topics === "hidden",
-    state: allConfirmed ? "open" : viewer?.adult_topics === "confirmed" ? "waiting_for_partner" : "locked",
-  };
-}
-
-/** Whether the couple may read and answer this topic now. */
-export function topicIsOpen(topic: Doc<"question_collections">, gate: AdultGate): boolean {
-  return !topic.adults_only || (!gate.hidden && gate.state === "open");
-}
-
-/** Fails unless an adults-only topic is open for the couple. */
-export async function assertTopicOpen(
-  ctx: ReaderCtx,
-  topic: Doc<"question_collections">,
-  coupleId: string,
-  viewerId: string,
-): Promise<void> {
-  if (!topicIsOpen(topic, await adultGate(ctx, coupleId, viewerId))) {
-    fail("42501", "adult topic is not open");
-  }
-}
-
 /** Who has answered an instance, as seen by `viewerId`. */
 export async function answerState(ctx: ReaderCtx, instance: Doc<"daily_question_instances">, viewerId: string) {
   const answers = await visibleAnswersOf(ctx, instance.id);
@@ -198,14 +156,13 @@ export async function answerState(ctx: ReaderCtx, instance: Doc<"daily_question_
   return { answers, own, partner };
 }
 
-/** A topic's card: its names, the adult state, and the counts over questions the couple has not put aside. */
+/** A topic's card: its names and the counts over questions the couple has not put aside. */
 export async function topicSummary(
   ctx: ReaderCtx,
   reader: QuestionContentReader,
   topic: Topic,
   coupleId: string,
   viewerId: string,
-  gate: AdultGate,
   skipped: Set<string>,
 ): Promise<TopicSummary> {
   const { collection } = topic;
@@ -226,12 +183,11 @@ export async function topicSummary(
     topic_key: collection.key!,
     collection_id: collection.id,
     sort_order: collection.sort_order ?? 0,
-    adults_only: collection.adults_only ?? false,
+    private: collection.private ?? false,
     title_en: topic.en.title,
     subtitle_en: topic.en.subtitle,
     title_nb: topic.nb.title,
     subtitle_nb: topic.nb.subtitle,
-    adult_state: collection.adults_only ? gate.state : "open",
     total_count: questions.length,
     together_count: together,
     for_you_count: forYou,
@@ -247,15 +203,13 @@ export async function topicOfQuestion(ctx: ReaderCtx, questionId: string): Promi
 }
 
 /**
- * Whether something in an open topic waits for `userId`: a question the partner answered that the
+ * Whether something in a topic waits for `userId`: a question the partner answered that the
  * user has not answered or put aside, or a question both answered whose partner answer the user has
  * not seen yet.
  */
 export async function hasTopicWaiting(ctx: ReaderCtx, coupleId: string, userId: string): Promise<boolean> {
-  const gate = await adultGate(ctx, coupleId, userId);
   const skipped = await skippedQuestionIds(ctx, coupleId);
   for (const { collection } of await activeTopics(ctx)) {
-    if (!topicIsOpen(collection, gate)) continue;
     for (const instance of (await topicInstances(ctx, coupleId, collection.id)).values()) {
       const { own, partner } = await answerState(ctx, instance, userId);
       if (!partner) continue;
@@ -346,36 +300,4 @@ export async function queueTopicPush(
     apns_collapse_id: `topics:${coupleId}`,
     scheduled_for: scheduledFor,
   });
-}
-
-/** Whether `viewerId`'s couple may read a question now: always for daily questions, and for topic ones while the topic is open. */
-export async function topicQuestionOpen(
-  ctx: ReaderCtx,
-  coupleId: string,
-  viewerId: string,
-  questionId: string,
-): Promise<boolean> {
-  const topic = await topicOfQuestion(ctx, questionId);
-  return !topic || topicIsOpen(topic, await adultGate(ctx, coupleId, viewerId));
-}
-
-/** Fails with 42501 when the question belongs to a topic that is not open for the couple (a closed Flirt). */
-export async function assertTopicQuestionOpen(
-  ctx: ReaderCtx,
-  coupleId: string,
-  viewerId: string,
-  questionId: string,
-): Promise<void> {
-  if (!(await topicQuestionOpen(ctx, coupleId, viewerId, questionId))) {
-    fail("42501", "adult topic is not open");
-  }
-}
-
-/** Whether a conversation thread may be read: a question chat only while its question's topic is open. */
-export async function threadTopicOpen(ctx: ReaderCtx, threadId: string, viewerId: string): Promise<boolean> {
-  const link = await ctx.db
-    .query("daily_question_threads")
-    .withIndex("by_thread_id", (q) => q.eq("thread_id", threadId))
-    .unique();
-  return !link || (await topicQuestionOpen(ctx, link.couple_id, viewerId, link.question_id));
 }

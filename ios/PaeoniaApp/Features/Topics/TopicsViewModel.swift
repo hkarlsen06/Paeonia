@@ -12,7 +12,6 @@ final class TopicsViewModel {
     enum Notice: Equatable {
         case loadFailed(PaeoniaFailure)
         case skipFailed(PaeoniaFailure)
-        case adultCheckFailed(PaeoniaFailure)
     }
 
     private let gateway: (any TopicsGateway)?
@@ -23,8 +22,6 @@ final class TopicsViewModel {
     private(set) var currentUserID: UUID?
     private(set) var coupleID: UUID?
     private(set) var overview: [TopicSummary] = []
-    /// The viewer hid the adults-only topic, so the shelf offers to show it again.
-    private(set) var adultTopicsHiddenByViewer = false
     /// The overview has been read once, from the phone or the server.
     private(set) var hasLoadedOverview = false
     /// Each opened topic's questions, by topic key.
@@ -78,7 +75,6 @@ final class TopicsViewModel {
         }
         self.currentUserID = currentUserID
         overview = []
-        adultTopicsHiddenByViewer = false
         hasLoadedOverview = false
         items = [:]
         failedTopics = [:]
@@ -134,8 +130,7 @@ extension TopicsViewModel {
 
     /// The topics the Topics card shows small: the ones with the most going on.
     var cardTopics: [TopicSummary] {
-        let shown = overview.filter(\.isOpen)
-        let busy = shown.sorted {
+        let busy = overview.sorted {
             ($0.forYouCount, $0.togetherCount, -$0.sortOrder) > ($1.forYouCount, $1.togetherCount, -$1.sortOrder)
         }
         return Array(busy.prefix(3))
@@ -245,25 +240,6 @@ extension TopicsViewModel {
         }
     }
 
-    // MARK: - Adults-only topic
-
-    /// Saves the age check's outcome. Nothing about the person's age is sent, only
-    /// whether the topic may open.
-    func saveAdultTopicsStatus(_ status: AdultTopicsStatus) async {
-        guard let gateway else { return }
-        do {
-            try await gateway.setAdultTopicsStatus(status)
-            await refreshOverview()
-        } catch {
-            guard !error.isCancellation else { return }
-            notice = .adultCheckFailed(PaeoniaFailure(error))
-        }
-    }
-
-    func reportAdultCheckFailure(_ failure: PaeoniaFailure) {
-        notice = .adultCheckFailed(failure)
-    }
-
     func dismissNotice() {
         notice = nil
     }
@@ -307,7 +283,7 @@ extension TopicsViewModel {
         guard currentUserID == userID else { return }
         seenQuestionIDs = document.seenQuestionIDs
         celebratedTopicKeys = document.celebratedTopicKeys
-        // Topics show only once the overview says which ones are open.
+        // Topics show only once the overview says which ones exist.
         guard let overview = document.overview else { return }
         apply(overview)
         for detail in document.details.values {
@@ -317,18 +293,17 @@ extension TopicsViewModel {
 
     private func apply(_ remote: RemoteTopicsOverview) {
         overview = remote.topics.map { TopicSummary($0, locale: locale) }.sorted { $0.sortOrder < $1.sortOrder }
-        adultTopicsHiddenByViewer = remote.adultTopicsHiddenByViewer
         hasLoadedOverview = true
-        // A topic the couple can no longer open, such as the adults-only one after a
-        // partner hid it, leaves the phone: its questions, answers and saved copy.
-        let closed = Set(details.keys).union(items.keys).union(followTasks.keys).subtracting(openTopicKeys)
+        // A topic that left the shelf leaves the phone: its questions, answers and
+        // saved copy.
+        let closed = Set(details.keys).union(items.keys).union(followTasks.keys).subtracting(shelfTopicKeys)
         for key in closed {
             close(key)
         }
     }
 
-    private var openTopicKeys: Set<String> {
-        Set(overview.filter(\.isOpen).map(\.id))
+    private var shelfTopicKeys: Set<String> {
+        Set(overview.map(\.id))
     }
 
     private func close(_ key: String) {
@@ -345,7 +320,7 @@ extension TopicsViewModel {
     }
 
     private func store(_ detail: RemoteTopicDetail, ownerUserID: UUID) async {
-        guard openTopicKeys.contains(detail.topic.topicKey) else { return }
+        guard shelfTopicKeys.contains(detail.topic.topicKey) else { return }
         await cache.saveDetail(detail, ownerUserID: ownerUserID)
         guard currentUserID == ownerUserID else { return }
         applyDetail(detail)
@@ -354,7 +329,7 @@ extension TopicsViewModel {
     /// Builds a topic's questions only while the overview says it is open.
     private func applyDetail(_ detail: RemoteTopicDetail) {
         let key = detail.topic.topicKey
-        guard openTopicKeys.contains(key) else {
+        guard shelfTopicKeys.contains(key) else {
             close(key)
             return
         }

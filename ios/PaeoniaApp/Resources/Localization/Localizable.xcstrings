@@ -30992,96 +30992,6 @@
         }
       }
     },
-    "topics.adult.body" : {
-      "comment" : "Sheet before the age check. Apple shows its own sheet after Continue",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "These questions are playful and a little daring. Apple will ask if you're happy to share that you're 18 or older. Paeonia only learns yes or no, never your birthday."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disse spørsmålene er lekne og litt dristige. Apple spør om du vil dele at du er 18 eller eldre. Paeonia får bare vite ja eller nei, aldri bursdagen din."
-          }
-        }
-      }
-    },
-    "topics.adult.continue" : {
-      "comment" : "Button that starts Apple's age check",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fortsett"
-          }
-        }
-      }
-    },
-    "topics.adult.notNow" : {
-      "comment" : "Button that closes the age check sheet",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not now"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ikke nå"
-          }
-        }
-      }
-    },
-    "topics.adult.partnerLine" : {
-      "comment" : "Second line of the age check sheet. Partner name",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ confirms on their own phone. Flirt opens once you both have."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ bekrefter på sin egen telefon. Flørt åpnes når dere begge har gjort det."
-          }
-        }
-      }
-    },
-    "topics.adult.title" : {
-      "comment" : "Title of the sheet before the adults-only topic asks for the person's age",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flirt is 18+"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flørt er for 18+"
-          }
-        }
-      }
-    },
     "topics.answerNext" : {
       "comment" : "Button at the bottom of a topic screen that opens the next question to answer",
       "extractionState" : "manual",
@@ -31096,24 +31006,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Svar på neste"
-          }
-        }
-      }
-    },
-    "topics.badge.adults" : {
-      "comment" : "Badge on the adults-only topic card",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "18+"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "18+"
           }
         }
       }
@@ -31240,60 +31132,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dere har svart på alt i %@ sammen"
-          }
-        }
-      }
-    },
-    "topics.flirt.locked" : {
-      "comment" : "Line on the adults-only topic card before this person confirmed their age",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "18+. You both confirm your age first."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "18+. Dere bekrefter begge alderen først."
-          }
-        }
-      }
-    },
-    "topics.flirt.showAgain" : {
-      "comment" : "Button at the bottom of the Topics shelf, shown only to the person who hid the adults-only topic",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show Flirt again"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vis Flørt igjen"
-          }
-        }
-      }
-    },
-    "topics.flirt.waiting" : {
-      "comment" : "Line on the adults-only topic card after this person confirmed. Partner name",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opens when %@ taps it too."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Åpnes når %@ også trykker på det."
           }
         }
       }

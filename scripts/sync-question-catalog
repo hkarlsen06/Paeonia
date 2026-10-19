@@ -78,7 +78,7 @@ class Topic:
     key: str
     status: str
     sort_order: int
-    adults_only: bool
+    private: bool
     localizations: dict[str, tuple[str, str]]
 
 
@@ -161,7 +161,7 @@ def parse_topic(topic_dir: Path) -> Topic:
     if not topic_path.exists():
         fail(f"{topic_dir} is missing topic.md")
     data = parse_front_matter(topic_path)
-    require_keys(topic_path, data, ("key", "status", "sort_order", "adults_only"))
+    require_keys(topic_path, data, ("key", "status", "sort_order", "private"))
     key = str(data["key"])
     if key != topic_dir.name:
         fail(f"{topic_path} key does not match folder name")
@@ -169,8 +169,8 @@ def parse_topic(topic_dir: Path) -> Topic:
         fail(f"{topic_path} has invalid key: {key}")
     if str(data["status"]) not in STATUSES:
         fail(f"{topic_path} has invalid status: {data['status']}")
-    if not isinstance(data["sort_order"], int) or not isinstance(data["adults_only"], bool):
-        fail(f"{topic_path} needs a whole-number sort_order and a true or false adults_only")
+    if not isinstance(data["sort_order"], int) or not isinstance(data["private"], bool):
+        fail(f"{topic_path} needs a whole-number sort_order and a true or false private")
     localizations: dict[str, tuple[str, str]] = {}
     for locale in REQUIRED_LOCALES:
         locale_path = topic_dir / "locales" / f"{locale}.md"
@@ -189,7 +189,7 @@ def parse_topic(topic_dir: Path) -> Topic:
         key=key,
         status=str(data["status"]),
         sort_order=data["sort_order"],
-        adults_only=data["adults_only"],
+        private=data["private"],
         localizations=localizations,
     )
 
@@ -340,7 +340,7 @@ def build_topic_payload(topics: list[Topic]) -> list[dict[str, Any]]:
             "key": topic.key,
             "status": topic.status,
             "sort_order": topic.sort_order,
-            "adults_only": topic.adults_only,
+            "private": topic.private,
             "localizations": {
                 locale: {"title": title, "subtitle": subtitle} for locale, (title, subtitle) in topic.localizations.items()
             },

@@ -70,7 +70,8 @@ topic/
         `-- versions/v001/...
 ```
 
-- `topic.md`: `key`, `status`, `sort_order` (the shelf order), `adults_only`.
+- `topic.md`: `key`, `status`, `sort_order` (the shelf order), `private` (true
+  for Flirt: its chat pushes name only the sender).
 - `locales/<locale>.md`: `locale`, `title` (1-60 characters), `subtitle` (at
   most 160).
 - A topic's `question.md` adds `topic` (the topic key) and `sort_order` (the

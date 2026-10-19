@@ -12,7 +12,7 @@ import { uuidArg } from "./lib/ids";
 import { hasStartedToday } from "./lib/questionTimeStatus";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { nowIso } from "./lib/time";
-import { hasTopicWaiting, topicPushTooSoon, topicQuestionOpen } from "./lib/topics";
+import { hasTopicWaiting, topicPushTooSoon } from "./lib/topics";
 
 // The database side of one APNs send. Each outbox row is one pushWorkpool work item
 // (`enqueuePush` in lib/notifications.ts). `push:send_push` asks `prepare_*` whether the row
@@ -110,15 +110,6 @@ async function rowStillWanted(
     typeof payload.couple_id === "string" &&
     (!(await hasTopicWaiting(ctx, payload.couple_id, recipientUserId)) ||
       (await topicPushTooSoon(ctx, recipientUserId, row.scheduled_for, nowIso())))
-  ) {
-    return { wanted: false, reason: "out_of_date" };
-  }
-  // A message in a Flirt chat that closed while its push waited stays quiet.
-  if (
-    row.kind === "thread_message_sent" &&
-    typeof payload.couple_id === "string" &&
-    typeof payload.question_id === "string" &&
-    !(await topicQuestionOpen(ctx, payload.couple_id, recipientUserId, payload.question_id))
   ) {
     return { wanted: false, reason: "out_of_date" };
   }

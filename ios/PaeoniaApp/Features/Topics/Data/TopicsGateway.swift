@@ -1,19 +1,11 @@
 import Foundation
 
-/// What the person decided when asked to confirm they are 18 or older for the
-/// adults-only topic. Saved per relationship.
-nonisolated enum AdultTopicsStatus: String, Encodable, Sendable {
-    case confirmed
-    case hidden
-}
-
 /// The topics backend: `backend/convex/topics.ts`. Answers go through the daily
 /// answer queue (`DailySubmitAnswerOperationPayload.topicQuestionID`).
 nonisolated protocol TopicsGateway: Sendable {
     func loadOverview() async throws -> RemoteTopicsOverview
     func loadTopic(key: String) async throws -> RemoteTopicDetail
     func setSkipped(questionID: UUID, skipped: Bool) async throws
-    func setAdultTopicsStatus(_ status: AdultTopicsStatus) async throws
     /// Follows one topic while its screen is open. Ends when the consuming task is cancelled.
     func topicUpdates(key: String) -> AsyncStream<RemoteTopicDetail>
 }
@@ -43,10 +35,6 @@ nonisolated struct LiveTopicsGateway: TopicsGateway {
             "topics:set_topic_question_skipped",
             args: TopicSkipRequest(questionID: questionID, skipped: skipped)
         )
-    }
-
-    func setAdultTopicsStatus(_ status: AdultTopicsStatus) async throws {
-        try await client.mutation("topics:set_adult_topics_status", args: AdultTopicsStatusRequest(status: status))
     }
 
     func topicUpdates(key: String) -> AsyncStream<RemoteTopicDetail> {
@@ -81,13 +69,5 @@ nonisolated struct TopicSkipRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case questionID = "p_question_id"
         case skipped = "p_skipped"
-    }
-}
-
-nonisolated struct AdultTopicsStatusRequest: Encodable {
-    let status: AdultTopicsStatus
-
-    enum CodingKeys: String, CodingKey {
-        case status = "p_status"
     }
 }
