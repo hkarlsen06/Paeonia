@@ -533,7 +533,7 @@ describe("get_memories", () => {
         "own_note_revision", "own_note_updated_at", "own_note_deleted_at", "own_note_moderation_status", "partner_note_id",
         "partner_note_user_id", "partner_note_body", "partner_note_revision", "partner_note_updated_at",
         "partner_note_deleted_at", "partner_note_moderation_status", "memory_media_ids", "media_asset_ids",
-        "memory_media_states", "thread_id",
+        "memory_media_states", "thread_id", "place",
       ].sort(),
     );
     expect(row).toMatchObject({
@@ -543,6 +543,7 @@ describe("get_memories", () => {
       partner_note_body: "Warm sand",
       deleted_at: null,
       thread_id: null,
+      place: null,
       memory_media_ids: [],
       memory_media_states: [],
     });

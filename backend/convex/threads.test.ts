@@ -612,6 +612,8 @@ describe("reads", () => {
       updated_at: expect.any(String),
       deleted_at: null,
       moderation_status: "visible",
+      private_topic: false,
+      topic_key: null,
       last_message_id: last.message_id,
       last_message_at: new Date().toISOString(),
       last_message_sender_user_id: couple.first.userId,
