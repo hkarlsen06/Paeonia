@@ -154,9 +154,9 @@ The developer may run multiple agents in parallel in the same worktree.
 - Run commands from the repository root unless explicitly stated otherwise.
 - Do not build just to check that your change compiles. The developer runs several agents at once and builds on their own device, which catches compile errors and warnings. A 10-minute agent build after a 10-minute change doubles the wait, and parallel builds fight over the simulator and DerivedData. Do not work around this with scratch copies of the repo or loops that wait for another agent's build. To settle a compiler warning or error, reproduce it in a small file with `scripts/swift-typecheck`.
 - Building and running the app on a device is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Keep those runs to what the investigation needs, and use the device or simulator that [Devices And Simulators](#devices-and-simulators) allows.
-- Do not run tests without asking. If you think a test run is needed, ask the developer. They run tests themselves once all agents have finished. Still write or update tests for changed behavior.
+- Do not run tests without asking. If you think a test run is needed, ask the developer. They run tests themselves once all agents have finished. [Testing](#testing) says when a change needs a new test.
 - `swiftlint --quiet` on the files you touched is fine. In the handoff, list what you did not verify and what the developer should check on the device.
-- See [iOS verification](docs/agent-guides/ios-verification.md) for what to test and the wrapper commands the developer uses.
+- See [iOS verification](docs/agent-guides/ios-verification.md) for where each kind of iOS test lives and the wrapper commands the developer uses.
 - Avoid verbose command modes unless the extra output is needed to debug the issue.
 - Use `rg` for searching text or files when available.
 - Prefer existing project patterns over introducing new abstractions.
@@ -164,6 +164,28 @@ The developer may run multiple agents in parallel in the same worktree.
 - Use Tidex's project setup as the default template. Do not introduce a generated Xcode project, alternative build system, different package manager, or different deployment workflow without first discussing the tradeoff with the user.
 - The Xcode project uses filesystem-synchronized groups (`PBXFileSystemSynchronizedRootGroup`), so new `.swift` files under synchronized source folders are auto-included. Do not edit `project.pbxproj` just to add those files.
 - Install local hooks with `./scripts/install-git-hooks.sh` after cloning if they are not already active.
+
+## Testing
+
+Most of the test weight sits on integration and end-to-end tests. Unit tests are a thin layer for pure logic. A test an agent writes for its own change mostly restates the agent's reading of the task, so it costs review time and rarely catches a real bug.
+
+- Do not add tests unless the developer asks for them or a rule in the list below requires one. A behavior change alone does not need a new test.
+- These changes need a test in the same change:
+  - A new or changed public backend function gets a `convex-test` test that someone outside the couple, or without access, is refused.
+  - A new cross-screen journey in an interactive local flow gets one UI test (`docs/developer-scenario-harness.md`).
+  - A bug fix in the pure logic below gets a test that fails without the fix.
+  - A new rule in the pure logic below gets a case in that logic's existing tests.
+- Pure logic that keeps unit tests:
+  - parsers and decoders of wire formats
+  - date, calendar and time zone math, such as couple-local days, daylight saving and countdowns
+  - entitlement, subscription, pricing and access rules
+  - authorization checks and the privacy purge on sign-out, leaving and account deletion
+  - sync, outbox, retry, merge, conflict and ordering logic
+  - game rule engines and streak rules
+- When a test is needed, write it at the highest layer that can catch the bug. A UI test in `ios/PaeoniaAppUITests/` drives a real journey through the production root. An integration test runs real components with a fake only at the network or OS boundary: backend `convex-test` tests in `backend/convex/*.test.ts`, or an iOS test that wires a real view model, repository and local store. Use a unit test only for the pure logic above.
+- Do not write tests that check constants, copy, colors, layout numbers or default values, that repeat the implementation's formula, or that only assert a mock was called.
+- Never delete, skip or weaken a failing test to get a green suite. Find out why it fails. If the behavior changed on purpose, update the test to the new behavior and say so in the handoff.
+- Delete a test only when the developer asks for a cleanup or the code it covers is removed.
 
 ## Devices And Simulators
 

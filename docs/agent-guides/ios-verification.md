@@ -1,41 +1,15 @@
 # iOS verification
 
-## Testing Requirements
+## Testing rules
 
-Agents should add or update tests when implementing behavior.
+The root [AGENTS.md](../../AGENTS.md#testing) says when a change needs a test. Agents do not add tests otherwise.
 
-### Default Rule
+### Where tests go
 
-- Feature work should include test coverage for changed behavior, not just compile-clean code.
-- If behavior changes and no tests are added, explain why in the final handoff.
+- `ios/PaeoniaAppUITests/`: user journeys through the production root. Launch an interactive local flow with `app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-<seed>"` and find controls by accessibility identifier, never by copy, so the tests pass in any language. Add an identifier to the control when it has none. `AccountJourneyUITests` and `PaeoniaAppUITests` show the pattern.
+- `ios/PaeoniaAppTests/`: integration tests that wire a real view model, repository and local store with a fake only at the network or OS boundary, the two-phone game simulations under `Games/Simulation/` and `Games/ExquisiteCorpse/Simulation/`, and unit tests for the pure logic the root rules list.
 
-### What To Test
-
-- Happy path: primary user flow works and returns expected values.
-- Edge cases: invalid input, empty states, timezone boundaries, date changes, offline states.
-- Regression guard: at least one test that would fail if the changed logic was removed.
-- Bug fixes: add a test that reproduces the bug when feasible.
-
-### Important Test Areas
-
-- prompt reveal logic
-- streak and streak repair logic
-- countdown date math
-- timezone behavior
-- notification scheduling
-- couple pairing state
-- memory timeline ordering
-- local save/load behavior
-- sync conflict behavior
-- widget payload generation
-- privacy/export/delete flows
-
-### Where To Place Tests
-
-- Business logic, repositories, services, sync, and view models: `ios/PaeoniaAppTests/`
-- UI launch/smoke and critical interactions: `ios/PaeoniaAppUITests/`
-
-Prefer small focused unit tests over broad UI tests unless behavior is UI-only.
+Prefer the UI test when the bug would show on screen, and the integration test when it would show in what is stored or sent. A unit test of a view model's loading flag, banner text or animation timing catches nothing that the device check misses.
 
 ## iOS Build And Test Commands
 

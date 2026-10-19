@@ -164,20 +164,7 @@ Define shared spacing, typography, corner radii, animation durations, and haptic
 
 ### Testing Expectations
 
-Add focused tests for behavior, not just compile safety.
-
-Important areas:
-
-- prompt reveal rules
-- streak repair rules
-- time-zone behavior
-- countdown calculations
-- save/load round trips
-- notification scheduling
-- pairing state
-- sync conflicts
-- privacy/delete/export flows
-- widget data snapshots
+Most tests are integration and end-to-end tests: UI tests that walk a journey through the interactive local flows, backend `convex-test` tests of the function contracts, and iOS tests that wire real view models, repositories and the local store. Unit tests cover pure logic where a bug is costly and hard to see from outside, such as time zone math, access rules, sync ordering and game rules. The [Testing](AGENTS.md#testing) rules in `AGENTS.md` say when a change needs a new test.
 
 ### Build And Release Discipline
 

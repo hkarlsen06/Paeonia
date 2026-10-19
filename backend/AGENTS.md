@@ -125,6 +125,8 @@ Rules that come with them:
 
 ## Tests
 
+The root [Testing](../AGENTS.md#testing) rules say when a change needs a test. The `convex/*.test.ts` files run the real functions against an in-memory database, so they are the backend's integration tests and the main check of the iOS contract. `convex/lib/*.test.ts` are unit tests for pure logic.
+
 - `vitest.config.ts` runs tests in the `edge-runtime` environment. Test files are `convex/**/*.test.ts`. The two dots keep Convex from bundling them.
 - `convex/test.setup.ts` (also two dots) has the shared helpers: `newTest()`, `createSignedInUser(t, { name, timeZone, claims })`, `createCouple(t, { timeZones, entitled })`, `setTimeZone`, `addDevice`, `grantLifetime`. Run helpers as a user with `user.as.run(...)` or `user.as.mutation(...)`.
 - For time-dependent code use `vi.useFakeTimers({ toFake: ["Date"] })` and `vi.setSystemTime(...)`. End tests that queue a push with `await t.finishAllScheduledFunctions(vi.runAllTimers)`. Tests have no APNs keys, so queued pushes stay unsent. `deliverDuePushes(t)` in `push.testing.ts` runs the send-time checks on the due rows and marks the ones that pass as sent. `pushQueue.test.ts` mocks `sendWithEnvironmentFallback` to test real sends, retries included.
