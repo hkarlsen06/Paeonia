@@ -44,14 +44,16 @@ final class PaeoniaAppUITests: XCTestCase {
         appleSignInButton.tap()
 
         // Setup needs a photo. The system photo picker runs out of process, but its
-        // grid still shows up in the app's element tree.
+        // grid still shows up in the app's element tree. Match the grid cells by their
+        // identifier, because a looser query finds the app's own placeholder image
+        // behind the picker while the picker is still loading.
         let photoButton = app.buttons["auth.onboarding.profilePhoto"]
         XCTAssertTrue(photoButton.waitForExistence(timeout: 5))
         photoButton.tap()
-        let firstPhoto = app.scrollViews.otherElements.images.firstMatch
+        let firstPhoto = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
         XCTAssertTrue(firstPhoto.waitForExistence(timeout: 10))
         firstPhoto.tap()
-        let cropDone = app.buttons.matching(NSPredicate(format: "label IN %@", ["Done", "Ferdig"])).firstMatch
+        let cropDone = app.buttons["imageCrop.done"]
         XCTAssertTrue(cropDone.waitForExistence(timeout: 5))
         cropDone.tap()
 
@@ -60,6 +62,10 @@ final class PaeoniaAppUITests: XCTestCase {
         nameField.tap()
         // The keyboard covers the complete button. Its continue key does the same.
         nameField.typeText("Alex\n")
+
+        let skipStartDate = app.buttons["auth.onboarding.startDate.skip"]
+        XCTAssertTrue(skipStartDate.waitForExistence(timeout: 5))
+        skipStartDate.tap()
 
         let purchaseButton = app.buttons["paywall.primaryAction"]
         XCTAssertTrue(purchaseButton.waitForExistence(timeout: 5))

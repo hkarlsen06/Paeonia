@@ -35,6 +35,12 @@ private struct CropControllerRepresentable: UIViewControllerRepresentable {
         cropViewController.aspectRatioPickerButtonHidden = true
         cropViewController.doneButtonTitle = String(localized: .imageCropDone)
         cropViewController.cancelButtonTitle = String(localized: .commonCancel)
+        // From iOS 26 the toolbar shows only icon buttons, which ignore the titles
+        // above and have no labels of their own, so VoiceOver read the checkmark as "selected".
+        let toolbar = cropViewController.toolbar
+        toolbar.doneIconButton.accessibilityLabel = String(localized: .imageCropDone)
+        toolbar.doneIconButton.accessibilityIdentifier = "imageCrop.done"
+        toolbar.cancelIconButton.accessibilityLabel = String(localized: .commonCancel)
 
         let navigationController = UINavigationController(rootViewController: cropViewController)
         navigationController.modalPresentationStyle = .fullScreen
