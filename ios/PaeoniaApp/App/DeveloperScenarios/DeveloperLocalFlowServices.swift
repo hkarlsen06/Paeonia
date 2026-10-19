@@ -314,6 +314,14 @@
   @MainActor
   final class DeveloperLocalFlowCelebrationStore: PairingCelebrationStoring {
     private var seenPairIDs = Set<UUID>()
+
+    /// The paired local flow starts in the tabs, past the celebration and the first day.
+    init(startsPastFirstDay: Bool = false) {
+      guard startsPastFirstDay else { return }
+      seenPairIDs.insert(DeveloperLocalFlowIDs.pairID)
+      progressByPairID[DeveloperLocalFlowIDs.pairID] = PostPairingProgress(isFinished: true)
+    }
+
     func hasSeenCelebration(forPairID pairID: UUID) -> Bool { seenPairIDs.contains(pairID) }
     func markCelebrationSeen(forPairID pairID: UUID) { seenPairIDs.insert(pairID) }
     private var progressByPairID: [UUID: PostPairingProgress] = [:]

@@ -21,10 +21,12 @@ replaced with in-memory implementations.
 - `local-flow-fresh`: begin signed out and use either provider button.
 - `local-flow-onboarding`: begin at profile setup.
 - `local-flow-paywall`: begin before the simulated subscription purchase.
-- `local-flow-pairing`: begin entitled and unpaired. Create an invite, then tap
-  **Check pairing** to simulate the partner joining.
-- `local-flow-paired`: begin in the paired app with local questions, memories,
-  settings, countdown, location, and widget dependencies.
+- `local-flow-pairing`: begin entitled and unpaired, on the invite screen. Nothing
+  simulates the partner joining yet.
+- `local-flow-paired`: begin in the paired app, past the pairing celebration and
+  the first day, with local questions, memories, settings, countdown, location, and
+  widget dependencies. `AccountJourneyUITests` logs out, leaves, and deletes the
+  account from here.
 
 The purchase button grants local entitlement, invite acceptance creates the local
 relationship, sign-out and deletion clear the local session, leaving the
@@ -74,8 +76,9 @@ Every new user-facing feature must decide which coverage it needs:
    StoreKit or sign-in result.
 6. Ensure reset constructs a fresh dependency graph. Do not share scenario state
    with `UserDefaults`, the production local store, App Groups, keychain, or files.
-7. Give important controls stable accessibility identifiers and add at least one UI
-   regression test for each new cross-screen local flow.
+7. Give important controls stable accessibility identifiers and add one UI test
+   for each new cross-screen journey in a local flow. This is one of the testing
+   rules in the root `AGENTS.md`.
 8. Keep the `App` scheme as the live configured app. A future dedicated live
    integration mode must use an explicitly non-production backend, such as a local Convex backend
    (`CONVEX_AGENT_MODE=anonymous npx convex dev` in `backend/`), and visibly name

@@ -235,6 +235,7 @@ extension SettingsView {
             }
             .padding(.vertical, PaeoniaSpacing.space4)
         }
+        .accessibilityIdentifier("settings.profile")
     }
 
     private var profileRowName: String {

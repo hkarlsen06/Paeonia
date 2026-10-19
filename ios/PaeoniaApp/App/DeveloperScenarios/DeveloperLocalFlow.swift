@@ -72,7 +72,7 @@
         accessRouteService: accessService,
         accessSnapshotStore: accessSnapshotStore,
         inviteStore: inviteStore,
-        pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(),
+        pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(startsPastFirstDay: seed == .paired),
         systemSideEffects: NoOpRootSystemSideEffects()
       )
 

@@ -61,7 +61,7 @@
     )
     static let localFlowPairing = localFlow(
       "local-flow-pairing", "Local flow · pairing",
-      "Create an invite and use Check pairing to simulate a partner joining", seed: .pairing
+      "Create and share an invite", seed: .pairing
     )
     static let localFlowPaired = localFlow(
       "local-flow-paired", "Local flow · paired app",

@@ -47,10 +47,12 @@ struct SettingsAccountSection: View {
         ) {
             isConfirmingLogout = true
         }
+        .accessibilityIdentifier("settings.account.logout")
         .alert(Text(.settingsAccountLogoutConfirmTitle), isPresented: $isConfirmingLogout) {
             Button(role: .destructive, action: onLogout) {
                 Text(.settingsAccountLogoutButton)
             }
+            .accessibilityIdentifier("settings.account.logout.confirm")
             Button(role: .cancel, action: {}) {
                 Text(.commonCancel)
             }
@@ -69,10 +71,12 @@ struct SettingsAccountSection: View {
             isConfirmingLeave = true
         }
         .disabled(isLoggingOut)
+        .accessibilityIdentifier("settings.account.leave")
         .alert(Text(.pairingUnpairConfirmTitle(partnerName)), isPresented: $isConfirmingLeave) {
             Button(role: .destructive, action: leaveRelationship) {
                 Text(.pairingUnpairConfirmAction)
             }
+            .accessibilityIdentifier("settings.account.leave.confirm")
             Button(role: .cancel, action: {}) {
                 Text(.pairingUnpairConfirmCancel)
             }
@@ -90,10 +94,12 @@ struct SettingsAccountSection: View {
             isConfirmingDelete = true
         }
         .disabled(viewModel.isLeavingRelationship || isLoggingOut)
+        .accessibilityIdentifier("settings.account.delete")
         .alert(Text(.authDeleteAccountConfirmTitle), isPresented: $isConfirmingDelete) {
             Button(role: .destructive, action: onDeleteAccount) {
                 Text(.authDeleteAccountConfirmAction)
             }
+            .accessibilityIdentifier("settings.account.delete.confirm")
             Button(role: .cancel, action: {}) {
                 Text(.authDeleteAccountConfirmCancel)
             }
