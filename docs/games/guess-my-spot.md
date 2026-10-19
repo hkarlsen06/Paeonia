@@ -480,7 +480,7 @@ Errors follow Consensio: `42501` for access, `23514` for rules ("this round alre
 - **Live room.** One `WidgetLiveDrawing` connection on the `guess_my_spot` channel, for presence, roles and a `GameLiveChannel<GuessMySpotLiveMessage>`.
 - **Memory map.** `GuessMySpotHistoryViewModel+MemoryMap.swift` turns guessed rounds into `MemoryMapEntry` values of kind `.guessMySpotRound`. `MainTabView+Tabs` hands the hub's history model to `MemoriesScreen`, which passes it to `MemoriesMapScreen`.
 - **Privacy purge.** The purge clears the cache and the photo store. Downloaded photos are in the shared media image cache, which the purge already clears.
-- **Registration.** `guess_my_spot` joins `GAME_KINDS`, `ALLOWED_CHANNELS` and `GameKind`. The relay deploys on its own, and a relay without the channel drops every live message for it, so the relay deploys before any build that opens the room.
+- **Registration.** `guess_my_spot` joins `GAME_KINDS`, `ALLOWED_CHANNELS` and `GameKind`. `scripts/deploy-backend` deploys the relay with the backend, and a relay without the channel drops every live message for it, so the relay deploys before any build that opens the room.
 
 ### Developer scenarios
 

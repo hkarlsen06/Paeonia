@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Deploys backend/ to the hosted Convex at api.paeonia.no.
+# Deploys backend/ to the hosted Convex at api.paeonia.no, then relay/ to the
+# Cloudflare Worker at relay.paeonia.no. The relay goes out every time because a
+# stale relay refuses tickets for new game kinds without any error.
 #
 # A deploy replaces every function on the deployment, so only local main is
 # deployed: the checkout must be clean and at main's commit. Test a branch on a
@@ -12,8 +14,8 @@ set -euo pipefail
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 cd "$ROOT_DIR"
 
-if [ -n "$(git status --porcelain -- backend)" ]; then
-  echo "[deploy-backend] backend/ has uncommitted changes. Commit them on main first." >&2
+if [ -n "$(git status --porcelain -- backend relay)" ]; then
+  echo "[deploy-backend] backend/ or relay/ has uncommitted changes. Commit them on main first." >&2
   exit 1
 fi
 
@@ -36,6 +38,10 @@ deploy() {
     CONVEX_SELF_HOSTED_ADMIN_KEY="$(ssh one-s cat /srv/paeonia/convex/admin-key)" \
     npx convex deploy -y
   echo "[deploy-backend] deployed $(git rev-parse --short HEAD) to api.paeonia.no"
+
+  cd "$ROOT_DIR/relay"
+  npx wrangler deploy --message "main $(git rev-parse --short HEAD)"
+  echo "[deploy-backend] deployed $(git rev-parse --short HEAD) to relay.paeonia.no"
 }
 
 export -f deploy

@@ -257,7 +257,7 @@ Agents have docker access on `one-s` through passwordless `sudo`. The `administr
 
 The admin key is in `/srv/paeonia/convex/admin-key` on `one-s` (owner-only). Never commit it, paste it into a file in the repository, or print it into logs.
 
-Deploy with `scripts/deploy-backend` from the repository root of a clean checkout of local `main`. It refuses any other commit and holds the hosted-backend lock from `scripts/lock` while it deploys.
+Deploy with `scripts/deploy-backend` from the repository root of a clean checkout of local `main`. It deploys Convex to `api.paeonia.no` and then the relay (`relay/`) with `npx wrangler deploy`. It refuses any other commit and holds the hosted-backend lock from `scripts/lock` while it deploys.
 
 `backend/.env.local` sets `CONVEX_DEPLOYMENT` for local development. The CLI refuses to run when that variable is set next to `CONVEX_SELF_HOSTED_URL`, so add `CONVEX_DEPLOYMENT=` (empty) to hosted commands when the file exists.
 
@@ -307,4 +307,4 @@ Game sockets use their own room. `games:create_game_live_ticket` adds a channel 
 
 The ticket mutations return null while `PAEONIA_LIVE_RELAY_URL` or `PAEONIA_LIVE_RELAY_SECRET` is unset, and the app then draws without the relay. The Worker secret `RELAY_TICKET_SECRET` must equal `PAEONIA_LIVE_RELAY_SECRET`. To rotate it, generate one value and set it in both places (`npx wrangler secret put RELAY_TICKET_SECRET` from `relay/`, and `npx convex env set`).
 
-From `relay/`: `npm test`, `npm run typecheck`, and `npx wrangler deploy`.
+From `relay/`: `npm test` and `npm run typecheck`. `scripts/deploy-backend` deploys the relay together with Convex.

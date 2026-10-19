@@ -477,7 +477,7 @@ Relationship cleanup deletes the three tables with the other game rows.
 - **Cache.** `ConsensioCache` keeps the last `get_consensio` result and the first history page per person, in its own `GamesDocumentStore` file. It never takes a state behind the one it holds (a lower `version`), and `isOlder(than:)` is false across different `data_epoch` values.
 - **Live feed.** `ConsensioLiveFeed` subscribes to `consensio:get_consensio` and writes into the cache.
 - **Live room.** One `WidgetLiveDrawing` connection on the `consensio` channel, for presence, roles and a `GameLiveChannel<ConsensioLiveMessage>`.
-- **Registration.** `consensio` joins `GAME_KINDS`, `ALLOWED_CHANNELS` and `GameKind`. The relay deploys on its own, and a relay without the channel drops every live message for it, so the relay deploys before any build that opens the room.
+- **Registration.** `consensio` joins `GAME_KINDS`, `ALLOWED_CHANNELS` and `GameKind`. `scripts/deploy-backend` deploys the relay with the backend, and a relay without the channel drops every live message for it, so the relay deploys before any build that opens the room.
 
 ### Developer scenarios
 
