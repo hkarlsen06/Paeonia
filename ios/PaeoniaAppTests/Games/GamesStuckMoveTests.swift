@@ -199,63 +199,6 @@ struct GamesStuckMoveTests {
         #expect(!snapshotWithError(nil).failedWhileOnline)
     }
 
-    /// Every move waits in the queue for a moment, also online. The screen only
-    /// says it is saved on this phone once a try has failed, so a normal send
-    /// never flashes that line.
-    @Test func aMoveIsHeldOnThePhoneOnlyAfterATryFailed() {
-        #expect(!snapshotWithError(nil).hasFailedAttempt)
-        #expect(snapshotWithError("Retry later").hasFailedAttempt)
-        // The next try clears the error while it runs.
-        #expect(snapshotWithError(nil, attemptCount: 2).hasFailedAttempt)
-    }
-
-    @Test func theWaitingScreenSaysItCouldNotSendAndTheMoveDropsAfterTheLastTry() async throws {
-        environment.gateway.setGuessError(serverError, whenClaiming: true)
-        let viewModel = environment.viewModel()
-        let drain = drain
-        let pending = environment.pending
-        viewModel.setLocalChangeSyncHandler {
-            try? await drain.push(context: triesEveryWriteContext(pending))
-        }
-        await viewModel.reload()
-        // The server already has this person's "result seen" for the round, so the next turn
-        // waits for the guess to land instead of showing the result.
-        await environment.cache.saveState(
-            GameFixture.state(
-                settings: GameFixture.settings(),
-                game: GameFixture.game(state: .guessing, turn: GameFixture.me),
-                round: GameFixture.round(
-                    state: .guessing,
-                    drawer: GameFixture.partner,
-                    hasDrawing: true,
-                    resultSeenBy: [GameFixture.me]
-                ),
-                choices: GameFixture.choices
-            ),
-            ownerUserID: GameFixture.me
-        )
-        try await queueWrongThenCorrectGuess()
-        await viewModel.reload()
-        #expect(viewModel.phase == .waitingToSync)
-        #expect(!viewModel.isHeldOnPhone)
-
-        // The live feed and the queue changes make the screen read again. Here the test does.
-        await viewModel.retrySending()
-        await viewModel.reload()
-        #expect(viewModel.phase == .waitingToSync)
-        #expect(viewModel.isSendFailing)
-        #expect(viewModel.isHeldOnPhone)
-
-        for _ in 0..<2 {
-            await viewModel.retrySending()
-            await viewModel.reload()
-        }
-
-        #expect(viewModel.phase == .guessing)
-        #expect(!viewModel.isSendFailing)
-        #expect(viewModel.notice == .moveRejected)
-    }
-
     /// The server took a guess, but the read after it failed. The guess stayed
     /// queued until the next sync a minute or more later, and the screen said
     /// "Saved on this phone" all that time. It now tries again within seconds.

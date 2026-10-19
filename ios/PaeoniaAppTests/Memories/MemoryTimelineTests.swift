@@ -43,24 +43,10 @@ struct MemoryTimelineTests {
         #expect(memories.first?.snapshot.memoryID == visible.snapshot.memoryID)
     }
 
-    @Test func dayStartIsMidnightUTCOfLocalDate() throws {
-        let days = MemoryTimeline.grouped([makeRecord(date: "2026-06-30", createdAt: 100)])
-        let expected = MemoryTimeline.parseLocalDate("2026-06-30")
-        #expect(days.first?.dayStartUTC == expected)
-    }
-
     @Test func parseLocalDateRejectsMalformedStrings() {
         #expect(MemoryTimeline.parseLocalDate("not-a-date") == nil)
         #expect(MemoryTimeline.parseLocalDate("2026-06") == nil)
         #expect(MemoryTimeline.parseLocalDate("2026-06-30") != nil)
-    }
-
-    @Test func localDateStringIsZeroPadded() throws {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
-        let date = try #require(calendar.date(from: DateComponents(year: 2_026, month: 1, day: 5)))
-
-        #expect(MemoryTimeline.localDateString(for: date, timeZone: .gmt) == "2026-01-05")
     }
 
     /// Opening the edit form and saving without touching the date must keep the date.

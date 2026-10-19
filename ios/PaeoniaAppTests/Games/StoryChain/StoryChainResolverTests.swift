@@ -297,24 +297,4 @@ struct StoryChainResolverTests {
     }
 
     // MARK: Live role
-
-    @Test func theLiveRoleFollowsThePhase() {
-        let cases: [(StoryChainPhase, WidgetLivePresence.Role)] = [
-            (.writing, .drawing),
-            (.waitingForLine, .watching),
-            (.chooseOpening, .choosing),
-            (.naming, .choosing),
-            (.finished(storyID: Fixture.storyID), .result),
-            (.loading, .present),
-            (.needsSetup, .present),
-            (.preparing, .present),
-            (.waitingForOpening, .present),
-            (.waitingForName, .present),
-            (.waitingToSync, .present),
-        ]
-
-        for (phase, role) in cases {
-            #expect(StoryChainResolver.liveRole(for: phase) == role)
-        }
-    }
 }

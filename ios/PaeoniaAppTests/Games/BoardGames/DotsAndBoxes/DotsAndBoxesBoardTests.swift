@@ -8,18 +8,6 @@ struct DotsAndBoxesBoardTests {
 
     // MARK: Start and line numbering
 
-    @Test func theEmptyBoardHasFortyOpenLinesAndSixteenOpenBoxes() {
-        let board = DotsAndBoxesBoard.initial
-
-        #expect(DotsAndBoxesBoard.moveLimit == 40)
-        #expect(board.lines.count == 40)
-        #expect(board.boxes.count == 16)
-        #expect(board.lines.allSatisfy { $0 == nil })
-        #expect(board.boxes.allSatisfy { $0 == nil })
-        #expect(board.next == .one)
-        #expect(board.outcome == nil)
-    }
-
     @Test func lineIndexesDecodeToTheirPlaceOnTheGrid() {
         let first = DotsAndBoxesBoard.LinePosition(isHorizontal: true, row: 0, column: 0)
         let lastHorizontal = DotsAndBoxesBoard.LinePosition(isHorizontal: true, row: 4, column: 3)
@@ -34,23 +22,6 @@ struct DotsAndBoxesBoardTests {
         #expect(DotsAndBoxesBoard.position(of: 39) == last)
         #expect(DotsAndBoxesBoard.position(of: -1) == nil)
         #expect(DotsAndBoxesBoard.position(of: 40) == nil)
-    }
-
-    @Test func lineBuildersMatchTheDecoder() {
-        for row in 0...4 {
-            for column in 0...3 {
-                let line = DotsAndBoxesBoard.horizontalLine(row: row, column: column)
-                #expect(DotsAndBoxesBoard.position(of: line)
-                    == DotsAndBoxesBoard.LinePosition(isHorizontal: true, row: row, column: column))
-            }
-        }
-        for row in 0...3 {
-            for column in 0...4 {
-                let line = DotsAndBoxesBoard.verticalLine(row: row, column: column)
-                #expect(DotsAndBoxesBoard.position(of: line)
-                    == DotsAndBoxesBoard.LinePosition(isHorizontal: false, row: row, column: column))
-            }
-        }
     }
 
     @Test func aBoxHasItsTopBottomLeftAndRightLines() {

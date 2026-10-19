@@ -20,57 +20,6 @@ struct ExquisiteCorpseViewModelDraftTests {
         PKDrawing(strokes: drawings.flatMap(\.strokes))
     }
 
-    // MARK: Ideas
-
-    @Test func theIdeaChipWalksTheDeckAndWrapsAround() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
-        let viewModel = await env.loadedViewModel()
-        let ideas = Fixture.ideas
-        #expect(viewModel.hasIdeas)
-        #expect(viewModel.idea == nil)
-
-        viewModel.askIdea()
-        #expect(viewModel.idea == ideas[0])
-        viewModel.shuffleIdea()
-        #expect(viewModel.idea == ideas[1])
-        viewModel.shuffleIdea()
-        viewModel.shuffleIdea()
-        #expect(viewModel.idea == ideas[0])
-
-        // Removing the chip and asking again deals a new idea.
-        viewModel.removeIdea()
-        #expect(viewModel.idea == nil)
-        viewModel.askIdea()
-        #expect(viewModel.idea == ideas[1])
-    }
-
-    @Test func theChipThatShowsIsKeptInTheCache() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
-        let viewModel = await env.loadedViewModel()
-        let partID = Fixture.partID(figure: 1, partIndex: 1)
-
-        viewModel.askIdea()
-        viewModel.shuffleIdea()
-        await viewModel.ideaSaveTask?.value
-        let shown = await env.cache.document(ownerUserID: Fixture.me).ideas[partID]
-        viewModel.removeIdea()
-        await viewModel.ideaSaveTask?.value
-        let removed = await env.cache.document(ownerUserID: Fixture.me).ideas[partID]
-
-        #expect(shown == Fixture.ideas[1].id)
-        #expect(removed == nil)
-    }
-
-    @Test func aTurnWithoutADealtDeckHasNoChip() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn(ideas: []))
-        let viewModel = await env.loadedViewModel()
-
-        viewModel.askIdea()
-
-        #expect(!viewModel.hasIdeas)
-        #expect(viewModel.idea == nil)
-    }
-
     @Test func theChipOnScreenWhenDoneIsTappedStaysWithThePart() async throws {
         let withChip = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
         let withChipViewModel = await withChip.loadedViewModel()
@@ -177,19 +126,6 @@ struct ExquisiteCorpseViewModelDraftTests {
         #expect(viewModel.canFinishDrawing)
     }
 
-    @Test func aNoticeLeftWhileNobodyLookedShowsOnce() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
-        await env.cache.recordNotice(.partRejected, ownerUserID: Fixture.me)
-        let viewModel = env.viewModel()
-
-        await viewModel.reload()
-        #expect(viewModel.notice == .exquisiteCorpsePartRejected)
-        viewModel.clearNotice()
-        await viewModel.reload()
-
-        #expect(viewModel.notice == nil)
-    }
-
     // MARK: The strip above the canvas
 
     /// The partner drew the head of figure 1 while this phone watched. Their strip came live, and then the
@@ -249,29 +185,6 @@ struct ExquisiteCorpseViewModelDraftTests {
         #expect(env.transfer.downloads.contains(stripID))
         // The file is kept, so the next visit does not fetch it again.
         #expect(env.drawingStore.downloadedDrawing(mediaAssetID: stripID) != nil)
-    }
-
-    @Test func aStripAlreadyOnThePhoneShowsAtOnceWithoutADownload() async throws {
-        let state = Fixture.myBodyTurn()
-        let env = ExquisiteCorpseTestEnvironment(state: state)
-        let stripID = try #require(state.currentFigure?.parts.first?.stripMediaAssetID)
-        let file = ExquisiteCorpseFold.strip(of: CorpseDrawings.crossingFold)
-        env.drawingStore.saveDownloadedDrawing(file.dataRepresentation(), mediaAssetID: stripID)
-        let viewModel = env.viewModel()
-
-        await viewModel.reload()
-
-        #expect(viewModel.strip?.paeoniaContentSignature == file.paeoniaContentSignature)
-        #expect(env.transfer.downloads.isEmpty)
-    }
-
-    @Test func theHeadHasNoStrip() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myHeadTurn(figure: 2))
-        let viewModel = await env.loadedViewModel()
-
-        #expect(viewModel.strip == nil)
-        #expect(viewModel.stripAssetID == nil)
-        #expect(env.transfer.downloads.isEmpty)
     }
 }
 

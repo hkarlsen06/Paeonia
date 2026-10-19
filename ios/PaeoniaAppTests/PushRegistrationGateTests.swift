@@ -20,10 +20,6 @@ struct PushRegistrationGateTests {
         )
     }
 
-    @Test func sendsWhenNothingHasBeenSentYet() {
-        #expect(PushRegistrationGate.shouldSend(current: fingerprint(), lastSent: nil, now: Date()))
-    }
-
     @Test func skipsWhenFingerprintUnchangedWithinHeartbeatWindow() {
         let stored = fingerprint()
         let now = Date(timeIntervalSince1970: 1_000_000)

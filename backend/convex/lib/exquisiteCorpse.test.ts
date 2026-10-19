@@ -3,14 +3,12 @@ import {
   canSeePartContent,
   DECK_SIZE,
   dealIdeas,
-  deckSeed,
   findIdea,
   hasStrip,
   isPartIndex,
   PART_NAMES,
   partJson,
   progressAfter,
-  revealSeenAt,
   seededRandom,
   shuffledDeck,
   turnPushPart,
@@ -60,10 +58,6 @@ describe("idea decks", () => {
     const deck = shuffledDeck(list, "game:1:0");
     expect([...ids(deck)].sort()).toEqual([...before].sort());
     expect(ids(list)).toEqual(before);
-  });
-
-  test("the seed names the game, the figure number, and the part", () => {
-    expect(deckSeed({ id: "abc", figure_number: 3, part_index: 2 })).toBe("abc:3:2");
   });
 
   test("every real list has unique ids and deals 12 ideas of its own", () => {
@@ -169,12 +163,6 @@ describe("hiding", () => {
     expect(canSeePartContent(part, "bob", true)).toBe(true);
     expect(canSeePartContent(part, "bob", false)).toBe(false);
     expect(canSeePartContent(part, "alice", false)).toBe(true);
-  });
-
-  test("each partner has their own reveal seen time", () => {
-    const figure = { starter_user_id: "alice", starter_reveal_seen_at: "2026-10-10T12:00:00.000Z", partner_reveal_seen_at: undefined };
-    expect(revealSeenAt(figure, "alice")).toBe("2026-10-10T12:00:00.000Z");
-    expect(revealSeenAt(figure, "bob")).toBeUndefined();
   });
 });
 

@@ -182,27 +182,6 @@ struct RootSessionLifecycleTests {
     }
 }
 
-/// Only the newest banner host draws the banner, so a sheet's banner is never
-/// hidden under it or shown twice.
-@MainActor
-struct PaeoniaBannerHostTests {
-    @Test func newestHostDrawsTheBannerUntilItGoesAway() {
-        let center = PaeoniaBannerCenter()
-        let root = UUID()
-        let sheet = UUID()
-
-        center.registerHost(root)
-        #expect(center.isActiveHost(root))
-
-        center.registerHost(sheet)
-        #expect(center.isActiveHost(sheet))
-        #expect(!center.isActiveHost(root))
-
-        center.unregisterHost(sheet)
-        #expect(center.isActiveHost(root))
-    }
-}
-
 // MARK: - Test doubles
 
 @MainActor

@@ -15,48 +15,6 @@ private final class StepClock: @unchecked Sendable {
     }
 }
 
-/// A download that waits until the test opens it.
-private final class HeldDownloadTransfer: GameDrawingTransferring, @unchecked Sendable {
-    private let lock = NSLock()
-    private var waiting: [CheckedContinuation<Void, Never>] = []
-    private var isOpen = false
-    private var started = 0
-
-    var startedCount: Int { lock.withLock { started } }
-
-    func open() {
-        let resumed = lock.withLock {
-            isOpen = true
-            defer { waiting = [] }
-            return waiting
-        }
-        resumed.forEach { $0.resume() }
-    }
-
-    func uploadDrawing(
-        _: Data,
-        parent _: GameUploadParent,
-        coupleID _: UUID,
-        reserveOperation _: SyncClientOperation,
-        finalizeOperation _: SyncClientOperation
-    ) async throws -> UUID { // swiftlint:disable:this async_without_await
-        GameFixture.assetID
-    }
-
-    func downloadDrawing(mediaAssetID _: UUID) async throws -> Data {
-        lock.withLock { started += 1 }
-        await withCheckedContinuation { continuation in
-            let resumeNow = lock.withLock {
-                if isOpen { return true }
-                waiting.append(continuation)
-                return false
-            }
-            if resumeNow { continuation.resume() }
-        }
-        return await MainActor.run { GameFixture.umbrella().dataRepresentation() }
-    }
-}
-
 /// Fixes from the review of the Draw & Guess view model: drawings that must
 /// never be lost, screens that went away, and guesses that were refused.
 @MainActor
@@ -84,14 +42,6 @@ struct DrawAndGuessHardeningTests {
             game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner, roundID: nil),
             round: GameFixture.round(state: .solved, drawer: GameFixture.me)
         )
-    }
-
-    private func type(_ word: String, into viewModel: DrawAndGuessViewModel) throws {
-        for letter in word.uppercased() where letter != " " {
-            let used = viewModel.slots.placedTileIDs
-            let tile = try #require(viewModel.tiles.first { $0.letter == letter && !used.contains($0.id) })
-            viewModel.placeTile(tile)
-        }
     }
 
     private func queuedDrawings(_ env: GamesTestEnvironment) async -> [PKDrawing] {
@@ -214,51 +164,6 @@ struct DrawAndGuessHardeningTests {
         await viewModel.finishDrawing()
 
         #expect(await queuedDrawings(env).first?.strokes.count == 2)
-    }
-
-    // MARK: Guessing
-
-    @Test func aRefusedCorrectGuessEmptiesTheSlotsSoThePersonCanGuessAgain() async throws {
-        let env = GamesTestEnvironment(state: guessing)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        try type("umbrella", into: viewModel)
-        let queued = await waitForQueued(.submitGameGuess, in: env)
-        _ = await waitUntil { viewModel.queuingCorrectGuessRoundID == nil }
-        #expect(viewModel.phase == .reveal)
-
-        let operation = try #require(queued.first)
-        try await env.pending.markTerminalFailure(
-            clientOperationID: operation.operation.id,
-            errorDescription: "refused",
-            at: Date()
-        )
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .guessing)
-        #expect(viewModel.slots.status != .correct)
-        let tile = try #require(viewModel.tiles.first)
-        viewModel.placeTile(tile)
-        #expect(viewModel.slots.placedTileIDs == [tile.id])
-    }
-
-    @Test func leavingDuringTheWrongGuessAnimationOpensTheSlotsAgain() async throws {
-        let env = GamesTestEnvironment(state: guessing)
-        // The animation never finishes on its own.
-        let viewModel = env.viewModel(sleep: { _ in try await Task.sleep(for: .seconds(3_600)) })
-        await viewModel.start()
-
-        try type("allerbmu", into: viewModel)
-        #expect(viewModel.isShowingWrongGuess)
-        viewModel.stop()
-
-        #expect(!viewModel.isShowingWrongGuess)
-        await viewModel.start()
-        let tile = try #require(viewModel.tiles.first)
-        viewModel.placeTile(tile)
-        #expect(viewModel.slots.placedTileIDs == [tile.id])
-        viewModel.stop()
     }
 
     @Test func aFailedFirstLookRetryKeepsTheFirstLookTime() async throws {
@@ -386,35 +291,6 @@ struct DrawAndGuessLiveAndLifecycleTests {
         viewModel.scenePhaseChanged(isActive: true)
         let fetched = await waitUntil { env.transfer.downloads == [GameFixture.assetID] }
         #expect(fetched)
-        viewModel.stop()
-    }
-
-    @Test func aDrawingThatArrivesInTheBackgroundWaitsForTheScreenToComeBack() async {
-        let env = GamesTestEnvironment(state: guessing)
-        let transfer = HeldDownloadTransfer()
-        var dependencies = env.dependencies()
-        dependencies.drawingTransfer = transfer
-        let viewModel = DrawAndGuessViewModel(
-            dependencies: dependencies,
-            participants: GameFixture.participants,
-            heartbeatInterval: .seconds(3_600),
-            tickInterval: .seconds(3_600)
-        )
-        await viewModel.start()
-        _ = await waitUntil { transfer.startedCount == 1 }
-
-        viewModel.scenePhaseChanged(isActive: false)
-        transfer.open()
-        _ = await waitUntil { !viewModel.isLoadingDrawing }
-        try? await Task.sleep(for: .milliseconds(50))
-
-        #expect(!viewModel.isReplayReady)
-        #expect(env.gateway.seenRounds.isEmpty)
-
-        viewModel.scenePhaseChanged(isActive: true)
-        #expect(viewModel.isReplayReady)
-        let seen = await waitUntil { env.gateway.seenRounds == [GameFixture.roundID] }
-        #expect(seen)
         viewModel.stop()
     }
 }

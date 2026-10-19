@@ -169,55 +169,7 @@ struct AccessRouteResolverTests {
         #expect(route == .relationshipEndedNotice)
         #expect(route.appState == .relationshipEndedNotice)
     }
-
-    @Test func serviceLoadsRpcContractsBeforeResolvingRoute() async throws {
-        let gateway = FakeAccessGateway(
-            userEntitlement: .entitled(),
-            coupleEntitlement: nil,
-            relationshipState: nil
-        )
-        let service = RemoteAccessRouteService(gateway: gateway)
-
-        let route = try await service.resolveRoute()
-
-        #expect(route == .unpaired)
-        #expect(await gateway.calls == [.loadAccessSnapshot])
-    }
 }
-
-// swiftlint:disable async_without_await
-private actor FakeAccessGateway: AccessGateway {
-    enum Call: Equatable, Sendable {
-        case loadAccessSnapshot
-    }
-
-    private let userEntitlement: RemoteUserEntitlement?
-    private let coupleEntitlement: RemoteCoupleEntitlement?
-    private let relationshipState: RemoteRelationshipState?
-    private(set) var calls: [Call] = []
-
-    init(
-        userEntitlement: RemoteUserEntitlement?,
-        coupleEntitlement: RemoteCoupleEntitlement?,
-        relationshipState: RemoteRelationshipState?
-    ) {
-        self.userEntitlement = userEntitlement
-        self.coupleEntitlement = coupleEntitlement
-        self.relationshipState = relationshipState
-    }
-
-    func loadAccessSnapshot() async throws -> RemoteAccessSnapshot {
-        calls.append(.loadAccessSnapshot)
-        return RemoteAccessSnapshot(
-            userEntitlement: userEntitlement,
-            coupleEntitlement: coupleEntitlement,
-            relationshipState: relationshipState
-        )
-    }
-
-    func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
-}
-// swiftlint:enable async_without_await
 
 private extension AccessRouteSnapshot {
     static func test(

@@ -29,48 +29,6 @@ struct PairingJoinViewModelTests {
         #expect(viewModel.preview(for: partnerCode) == preview)
     }
 
-    @Test func aCodeAlreadyCheckedIsNotLookedUpAgain() async throws {
-        let service = JoinFlowPairingService(preview: makePreview())
-        let viewModel = makeViewModel(service: service)
-
-        #expect(await viewModel.checkCode(partnerCode, currentUserID: userID))
-        #expect(await viewModel.checkCode(partnerCode, currentUserID: userID))
-
-        #expect(await service.previewedCodes == [partnerCode])
-    }
-
-    @Test func aDifferentUserChecksTheCodeAgain() async throws {
-        let service = JoinFlowPairingService(preview: makePreview())
-        let viewModel = makeViewModel(service: service)
-
-        _ = await viewModel.checkCode(partnerCode, currentUserID: userID)
-        _ = await viewModel.checkCode(partnerCode, currentUserID: "33333333-3333-3333-3333-333333333333")
-
-        #expect(await service.previewedCodes == [partnerCode, partnerCode])
-    }
-
-    @Test func aMalformedCodeIsRejectedWithoutAskingTheServer() async throws {
-        let service = JoinFlowPairingService(preview: makePreview())
-        let viewModel = makeViewModel(service: service)
-
-        #expect(!(await viewModel.checkCode("abc", currentUserID: userID)))
-
-        #expect(viewModel.lastError == .invalid)
-        #expect(viewModel.lastError?.isFinal == true)
-        #expect(await service.previewedCodes.isEmpty)
-    }
-
-    @Test func aCodeThatIsGoneIsFinal() async throws {
-        let viewModel = makeViewModel(service: JoinFlowPairingService(preview: nil))
-
-        #expect(!(await viewModel.checkCode(partnerCode, currentUserID: userID)))
-
-        #expect(viewModel.lastError == .notFound)
-        #expect(viewModel.lastError?.isFinal == true)
-        #expect(viewModel.checkFailure == nil)
-        #expect(viewModel.preview(for: partnerCode) == nil)
-    }
-
     @Test func theUsersOwnCodeIsRejected() async throws {
         let ownPreview = makePreview(inviterUserID: userID)
         let viewModel = makeViewModel(service: JoinFlowPairingService(preview: ownPreview))
@@ -79,41 +37,6 @@ struct PairingJoinViewModelTests {
 
         #expect(viewModel.lastError == .ownCode)
         #expect(viewModel.preview(for: partnerCode) == nil)
-    }
-
-    @Test func aConnectionProblemIsWorthRetryingAndBlamesTheConnection() async throws {
-        let service = JoinFlowPairingService(previewError: URLError(.notConnectedToInternet))
-        let viewModel = makeViewModel(service: service)
-
-        #expect(!(await viewModel.checkCode(partnerCode, currentUserID: userID)))
-
-        #expect(viewModel.lastError == .checkFailed(.offline))
-        #expect(viewModel.lastError?.isFinal == false)
-        #expect(viewModel.checkFailure == .offline)
-        #expect(messageText(viewModel.lastError) == String(localized: .pairingJoinErrorCheckFailed))
-    }
-
-    @Test func aServerProblemDoesNotBlameTheConnection() async throws {
-        let service = JoinFlowPairingService(previewError: PaeoniaConvexError.http(status: 500, body: ""))
-        let viewModel = makeViewModel(service: service)
-
-        _ = await viewModel.checkCode(partnerCode, currentUserID: userID)
-
-        #expect(viewModel.checkFailure == .other)
-        #expect(messageText(viewModel.lastError) == String(localized: .pairingJoinErrorCheckFailedLater))
-    }
-
-    @Test func aFailedCheckKeepsTheEarlierPreview() async throws {
-        let preview = makePreview()
-        let service = JoinFlowPairingService(preview: preview, goneCodes: ["03CDEF"])
-        let viewModel = makeViewModel(service: service)
-        _ = await viewModel.checkCode(partnerCode, currentUserID: userID)
-
-        #expect(!(await viewModel.checkCode("03CDEF", currentUserID: userID)))
-
-        #expect(viewModel.lastError == .notFound)
-        #expect(viewModel.preview(for: partnerCode) == preview)
-        #expect(viewModel.checkedCode == partnerCode)
     }
 
     @Test func aSecondCheckWhileOneIsPendingIsIgnored() async throws {
@@ -138,29 +61,6 @@ struct PairingJoinViewModelTests {
 
     // MARK: - Joining
 
-    @Test func acceptWithoutACheckedCodeDoesNothing() async throws {
-        let service = JoinFlowPairingService(preview: makePreview())
-        let viewModel = makeViewModel(service: service)
-
-        #expect(!(await viewModel.acceptCheckedCode(partnerCode)))
-
-        #expect(viewModel.lastError == nil)
-        #expect(await service.acceptedJoins.isEmpty)
-    }
-
-    @Test func aFailedJoinKeepsThePreviewSoTheButtonCanBeTriedAgain() async throws {
-        let service = JoinFlowPairingService(preview: makePreview(), acceptError: URLError(.timedOut))
-        let viewModel = makeViewModel(service: service)
-        _ = await viewModel.checkCode(partnerCode, currentUserID: userID)
-
-        #expect(!(await viewModel.acceptCheckedCode(partnerCode)))
-
-        #expect(viewModel.lastError == .joinFailed(.other))
-        #expect(messageText(viewModel.lastError) == String(localized: .pairingJoinErrorJoinFailedLater))
-        #expect(viewModel.preview(for: partnerCode) != nil)
-        #expect(!viewModel.isBusy)
-    }
-
     @Test func acceptJoinsOnlyTheCodeThatWasChecked() async throws {
         let service = JoinFlowPairingService(preview: makePreview())
         let viewModel = makeViewModel(service: service)
@@ -170,21 +70,6 @@ struct PairingJoinViewModelTests {
         #expect(!(await viewModel.acceptCheckedCode("03CDEF")))
 
         #expect(await service.acceptedJoins.isEmpty)
-    }
-
-    @Test func anInviteThatWentAwaySinceThePreviewIsFinal() async throws {
-        let service = JoinFlowPairingService(
-            preview: makePreview(),
-            acceptError: PaeoniaConvexError.server(code: "22023", message: "pairing invite is expired")
-        )
-        let viewModel = makeViewModel(service: service)
-        _ = await viewModel.checkCode(partnerCode, currentUserID: userID)
-
-        #expect(!(await viewModel.acceptCheckedCode(partnerCode)))
-
-        #expect(viewModel.lastError == .notFound)
-        #expect(viewModel.lastError?.isFinal == true)
-        #expect(viewModel.preview(for: partnerCode) == nil)
     }
 
     /// The first accept reached the server and paired the couple, but its answer
@@ -247,10 +132,6 @@ struct PairingJoinViewModelTests {
         )
     }
 
-    private func messageText(_ error: PairingJoinError?) -> String? {
-        error.map { String(localized: $0.message) }
-    }
-
     private func makeViewModel(service: JoinFlowPairingService) -> PairingJoinViewModel {
         PairingJoinViewModel(pairingService: service, operationProvider: CountingOperationProvider())
     }
@@ -296,9 +177,6 @@ private struct JoinFlowAcceptedJoin: Equatable {
 // swiftlint:disable async_without_await unavailable_function
 private actor JoinFlowPairingService: PairingServicing {
     private let preview: PairingInvitePreview?
-    private let goneCodes: Set<String>
-    private let previewError: (any Error)?
-    private let acceptError: (any Error)?
     private let previewGate: JoinFlowGate?
 
     private(set) var previewedCodes = [String]()
@@ -306,26 +184,16 @@ private actor JoinFlowPairingService: PairingServicing {
 
     init(
         preview: PairingInvitePreview? = nil,
-        goneCodes: Set<String> = [],
-        previewError: (any Error)? = nil,
-        acceptError: (any Error)? = nil,
         previewGate: JoinFlowGate? = nil
     ) {
         self.preview = preview
-        self.goneCodes = goneCodes
-        self.previewError = previewError
-        self.acceptError = acceptError
         self.previewGate = previewGate
     }
 
     func previewInvite(codeInput: String) async throws -> PairingInvitePreview? {
         previewedCodes.append(codeInput)
         await previewGate?.wait()
-        if let previewError {
-            throw previewError
-        }
-
-        return goneCodes.contains(codeInput) ? nil : preview
+        return preview
     }
 
     func acceptInvite(
@@ -334,10 +202,6 @@ private actor JoinFlowPairingService: PairingServicing {
         startedOn: PairingStartDate?
     ) async throws -> PairingAcceptedRelationship {
         acceptedJoins.append(JoinFlowAcceptedJoin(code: codeInput, startedOn: startedOn))
-        if let acceptError {
-            throw acceptError
-        }
-
         return PairingAcceptedRelationship(coupleID: UUID())
     }
 

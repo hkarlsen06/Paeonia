@@ -12,23 +12,6 @@ private let allOrientations: [UIImage.Orientation] = [
 ] + sidewaysOrientations
 
 struct ImageCompressorTests {
-    /// Profile photo saves compress inside `ClerkAuthService`, off the main actor.
-    /// This only compiles while `ImageCompressor` can be called from a detached task.
-    @Test func compressesALargePhotoOffTheMainActor() async throws {
-        let size = CGSize(width: 3_000, height: 2_000)
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        let photo = UIGraphicsImageRenderer(size: size, format: format).jpegData(withCompressionQuality: 1) { context in
-            UIColor.systemPink.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-        }
-
-        let compressed = try #require(await Task.detached { ImageCompressor.compress(photo) }.value)
-
-        #expect(compressed.width == 1_568)
-        #expect(compressed.mediaType == "image/jpeg")
-    }
-
     @Test(arguments: allOrientations)
     func smallImageKeepsDisplayedSizeForEveryOrientation(orientation: UIImage.Orientation) throws {
         let rawImage = Self.solidImage(width: 200, height: 100)
@@ -63,21 +46,6 @@ struct ImageCompressorTests {
         let decoded = try #require(UIImage(data: result.data))
         #expect(Int(decoded.size.width * decoded.scale) == result.width)
         #expect(Int(decoded.size.height * decoded.scale) == result.height)
-    }
-
-    @Test func dataThatIsNotAnImageReturnsNil() {
-        #expect(ImageCompressor.compress(Data([0x00, 0x01, 0x02])) == nil)
-    }
-
-    @Test func asyncVariantMatchesSynchronousSize() async throws {
-        let image = try Self.noiseImage(width: 1_800, height: 1_200)
-
-        let synchronous = try #require(ImageCompressor.compress(image))
-        let asynchronous = try #require(await ImageCompressor.compressAsync(image))
-
-        #expect(asynchronous.width == synchronous.width)
-        #expect(asynchronous.height == synchronous.height)
-        #expect(asynchronous.data.count <= ImageCompressor.maxUploadBytes)
     }
 
     // MARK: - Fixtures

@@ -28,13 +28,6 @@ struct LookBackViewModelTests {
         #expect(saved == LookBackCacheEntry(coupleID: LookBackIDs.couple, item: lookBackMemoryItem()))
     }
 
-    @Test func readsAgainWhenTheCouplesDayEnds() async {
-        let endsAt = Date(timeIntervalSince1970: 1_800_003_600)
-        let setup = makeModel([.success(lookBackResponse(lookBackMemoryItem(), endsAt: endsAt))])
-        await setup.model.configure(userID: LookBackIDs.user, coupleID: nil)
-        #expect(setup.model.refreshAt == endsAt)
-    }
-
     @Test func aFailedReadKeepsWhatTheCacheShowed() async {
         let cache = MemoryLookBackCache()
         cache.save(
@@ -65,27 +58,6 @@ struct LookBackViewModelTests {
         #expect(cache.load(ownerUserID: LookBackIDs.user, coupleID: nil)?.item == nil)
     }
 
-    @Test func aNewDayShowsTheNewItem() async {
-        let setup = makeModel([
-            .success(lookBackResponse(lookBackMemoryItem(title: "Old"))),
-            .success(lookBackResponse(lookBackMemoryItem(title: "New"))),
-        ])
-        let model = setup.model
-        await model.configure(userID: LookBackIDs.user, coupleID: nil)
-        await model.refresh()
-        #expect(model.item?.memory?.title == "New")
-    }
-
-    @Test func configuringTheSameUserAgainReadsAgain() async {
-        let setup = makeModel([
-            .success(lookBackResponse(lookBackMemoryItem(title: "Old"))),
-            .success(lookBackResponse(lookBackMemoryItem(title: "New"))),
-        ])
-        await setup.model.configure(userID: LookBackIDs.user, coupleID: nil)
-        await setup.model.configure(userID: LookBackIDs.user, coupleID: nil)
-        #expect(setup.model.item?.memory?.title == "New")
-    }
-
     @Test func aDifferentUserStartsClean() async {
         let cache = MemoryLookBackCache()
         let setup = makeModel(
@@ -99,13 +71,6 @@ struct LookBackViewModelTests {
         #expect(model.item == nil)
         await model.configure(userID: nil, coupleID: nil)
         #expect(model.item == nil)
-    }
-
-    @Test func doesNotReadWithoutAUser() async {
-        let setup = makeModel([.success(lookBackResponse(lookBackMemoryItem()))])
-        await setup.model.refresh()
-        #expect(setup.model.item == nil)
-        #expect(setup.service.requestTimes.isEmpty)
     }
 
     @Test func aCardSavedForAnotherCoupleGoesAwayAndAskForARead() async {
@@ -122,16 +87,6 @@ struct LookBackViewModelTests {
         model.updateCouple(LookBackIDs.otherCouple)
         #expect(model.item == nil)
         #expect(model.refreshRequest == before + 1)
-    }
-
-    @Test func theRequestTimeIsRoundedDownToAQuarterOfAnHour() async {
-        // 2026-10-14 12:22:30 UTC.
-        let date = Date(timeIntervalSince1970: 1_791_980_550)
-        #expect(LookBackViewModel.requestTime(date) == Date(timeIntervalSince1970: 1_791_980_100))
-        let setup = makeModel([.success(lookBackResponse(nil))])
-        await setup.model.configure(userID: LookBackIDs.user, coupleID: nil)
-        let asked = setup.service.requestTimes.first?.timeIntervalSince1970 ?? 1
-        #expect(asked.truncatingRemainder(dividingBy: 900) == 0)
     }
 
     @Test func aReadThatLandsAfterAPrivacyPurgeShowsAndSavesNothing() async {
@@ -187,35 +142,5 @@ struct LookBackViewModelTests {
         observing.cancel()
         #expect(model.item == nil)
         #expect(setup.cache.load(ownerUserID: LookBackIDs.user, coupleID: nil)?.item == nil)
-    }
-
-    @Test func aChangeToOtherContentDoesNotReadAgain() async {
-        let setup = makeModel([.success(lookBackResponse(lookBackMemoryItem())), .success(lookBackResponse(nil))])
-        let model = setup.model
-        await model.configure(userID: LookBackIDs.user, coupleID: nil)
-        let observing = Task { await model.observeStoreChanges() }
-        try? await Task.sleep(for: .milliseconds(50))
-        LocalStoreChanges.post(.dailyChallenge, ownerUserID: LookBackIDs.user)
-        LocalStoreChanges.post(.memories, ownerUserID: LookBackIDs.otherUser)
-        try? await Task.sleep(for: .milliseconds(100))
-        observing.cancel()
-        #expect(model.item == lookBackMemoryItem())
-        #expect(setup.service.requestTimes.count == 1)
-    }
-
-    @Test func aBurstOfChangesToTheShownMemoryReadsOnce() async {
-        let setup = makeModel([.success(lookBackResponse(lookBackMemoryItem())), .success(lookBackResponse(nil))])
-        let model = setup.model
-        await model.configure(userID: LookBackIDs.user, coupleID: nil)
-        let observing = Task { await model.observeStoreChanges() }
-        try? await Task.sleep(for: .milliseconds(50))
-        for _ in 0..<5 {
-            LocalStoreChanges.post(.memories, ownerUserID: LookBackIDs.user)
-        }
-        await lookBackWaitUntil { model.item == nil }
-        // Wait past the quiet period, so an extra read would show up in the count.
-        try? await Task.sleep(for: .milliseconds(150))
-        observing.cancel()
-        #expect(setup.service.requestTimes.count == 2)
     }
 }

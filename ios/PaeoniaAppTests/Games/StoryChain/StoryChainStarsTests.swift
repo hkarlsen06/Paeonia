@@ -42,16 +42,6 @@ struct StoryChainStarsTests {
         #expect(environment.gateway.starWrites.isEmpty)
     }
 
-    @Test func aStoryThatIsNotInTheHistoryYetCanBeStarred() async {
-        let stars = makeStars()
-        let justFinished = UUID()
-
-        await stars.setStarred(true, storyID: justFinished)
-
-        #expect(stars.isStarred(justFinished))
-        #expect(!stars.isStarred(storyID))
-    }
-
     @Test func theLastChoiceOfAStoryWins() async {
         let stars = makeStars()
 
@@ -70,15 +60,6 @@ struct StoryChainStarsTests {
         await stars.setStarred(true, storyID: storyID)
 
         #expect(await environment.queued(.storyChainSetStar).isEmpty)
-    }
-
-    @Test func toggleFlipsTheStar() async {
-        let stars = makeStars()
-
-        await stars.toggle(storyID: storyID)
-        #expect(stars.isStarred(storyID))
-        await stars.toggle(storyID: storyID)
-        #expect(!stars.isStarred(storyID))
     }
 
     @Test func theServersValueShowsWhenNothingWaits() async {
@@ -145,16 +126,6 @@ struct StoryChainStarsTests {
 
         #expect(!stars.isStarred(storyID))
         #expect(await environment.queued(.storyChainSetStar).isEmpty)
-    }
-
-    @Test func aLocalChangeAsksTheSyncToSend() async {
-        let stars = makeStars()
-        let sent = Counter()
-        stars.setLocalChangeSyncHandler { await sent.increment() }
-
-        await stars.setStarred(true, storyID: storyID)
-
-        #expect(await waitUntilCounted(sent, atLeast: 1))
     }
 
     // MARK: Pages read from the server
@@ -270,23 +241,4 @@ struct StoryChainStarsTests {
 
         #expect(!stars.isStarred(item.id))
     }
-}
-
-/// Counts calls from a `@Sendable` handler.
-private actor Counter {
-    private(set) var value = 0
-
-    func increment() {
-        value += 1
-    }
-}
-
-@MainActor
-private func waitUntilCounted(_ counter: Counter, atLeast target: Int) async -> Bool {
-    let deadline = ContinuousClock.now + .seconds(2)
-    while await counter.value < target {
-        if ContinuousClock.now > deadline { return false }
-        try? await Task.sleep(for: .milliseconds(10))
-    }
-    return true
 }

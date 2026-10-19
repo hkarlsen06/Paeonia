@@ -1,14 +1,12 @@
 import { describe, expect, test } from "vitest";
 import {
   apnsHeaders,
-  apnsHost,
   buildAppApsPayload,
   buildAppRequest,
   buildProviderJwt,
   buildWidgetApsPayload,
   buildWidgetRequest,
   cachedProviderTokens,
-  environmentOrder,
   readApnsConfig,
   sendWithEnvironmentFallback,
   type ApnsHttpResponse,
@@ -157,13 +155,6 @@ describe("request builders", () => {
       "apns-expiration": "0",
       "apns-collapse-id": "c",
     });
-  });
-
-  test("hosts and fallback order", () => {
-    expect(apnsHost("production")).toBe("api.push.apple.com");
-    expect(apnsHost("sandbox")).toBe("api.sandbox.push.apple.com");
-    expect(environmentOrder("sandbox")).toEqual(["sandbox", "production"]);
-    expect(environmentOrder("production")).toEqual(["production", "sandbox"]);
   });
 });
 

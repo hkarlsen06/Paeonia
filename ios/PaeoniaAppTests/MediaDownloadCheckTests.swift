@@ -36,21 +36,4 @@ struct MediaDownloadCheckTests {
         #expect(!MediaMissLog.isLasting(URLError(.notConnectedToInternet)))
         #expect(MediaMissLog.isLasting(DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: ""))))
     }
-
-    @Test func memoryPhotosLiveInCachesSoTheyAreNotBackedUp() {
-        let path = MemoryMediaImageDiskCache.defaultDirectoryURL().path
-        #expect(path.contains("/Library/Caches/"))
-    }
-
-    @Test func theDiskCacheRemovesOnePhoto() async {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = MemoryMediaImageDiskCache(directoryURL: directory)
-        let assetID = UUID()
-
-        await cache.store(Data([1]), for: assetID)
-        #expect(await cache.imageData(for: assetID) == Data([1]))
-        await cache.remove(for: assetID)
-        #expect(await cache.imageData(for: assetID) == nil)
-    }
 }

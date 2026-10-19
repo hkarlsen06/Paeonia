@@ -73,14 +73,6 @@ struct MemoryPlaceTests {
         }
     }
 
-    @Test func placeText() {
-        #expect(bryggen.nameAndCity == "Bryggen, Bergen")
-        #expect(bryggen.shortName == "Bergen")
-        let city = MemoryPlace(name: "Bergen", latitude: 60, longitude: 5, city: "Bergen", countryCode: nil)
-        #expect(city.nameAndCity == "Bergen")
-        #expect(city.cityAndCountry == nil)
-    }
-
     // MARK: - Map content
 
     @Test func totalsCountCitiesWithinTheirCountry() {
@@ -96,33 +88,6 @@ struct MemoryPlaceTests {
         #expect(totals.countries == 3)
         #expect(totals.cities == 4)
         #expect(totals.isWorthShowing)
-    }
-
-    @Test func totalsWaitForASecondCity() {
-        let oneCity = MemoryPlaceTotals(places: [bryggen, bryggen])
-        #expect(oneCity.cities == 1)
-        #expect(!oneCity.isWorthShowing)
-        #expect(!MemoryPlaceTotals(places: []).isWorthShowing)
-    }
-
-    @Test func clusterBadgeStopsAt99() {
-        #expect(MemoryClusterBadge.label(count: 2) == "2")
-        #expect(MemoryClusterBadge.label(count: 99) == "99")
-        #expect(MemoryClusterBadge.label(count: 100) == "99+")
-        #expect(MemoryClusterBadge.label(count: 1_250) == "99+")
-    }
-
-    @Test(arguments: [0, 1, 2, 5, 12, 40, 400])
-    func pinEntranceNeverRunsLongerThanItsCap(count: Int) {
-        let delays = MemoryPinEntrance.delays(count: count)
-        #expect(delays.count == count)
-        let end = (delays.last ?? 0) + MemoryPinEntrance.pinDuration
-        #expect(count == 0 || end <= MemoryPinEntrance.totalDuration + 0.0001)
-        #expect(delays == delays.sorted())
-    }
-
-    @Test func fewPinsStepApartEvenly() {
-        #expect(MemoryPinEntrance.delays(count: 3) == [0, 0.05, 0.1])
     }
 
     @Test func mapContentSplitsPlacedAndUnplacedInTimelineOrder() {

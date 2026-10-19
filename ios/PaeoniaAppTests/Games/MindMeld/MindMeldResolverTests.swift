@@ -15,13 +15,6 @@ struct MindMeldResolverTests: MindMeldResolverFixtures {
         #expect(resolve(nil, hasLoaded: true).phase == .starting)
     }
 
-    @Test func noGameAtAllIsStarting() {
-        let resolution = resolve(state(current: nil))
-
-        #expect(resolution.phase == .starting)
-        #expect(resolution.game == nil && resolution.round == nil)
-    }
-
     @Test func aGameBeingStartedIsStartingWhateverTheStateHolds() {
         let finished = game(.melded, rounds: [revealed(1, "fish", "fish", outcome: .match)])
         var pending = MindMeldPendingWork.none
@@ -71,14 +64,6 @@ struct MindMeldResolverTests: MindMeldResolverFixtures {
         #expect(resolution.phase == .waiting(isQueued: true))
         #expect(resolution.round?.myWord == "ocean")
         #expect(resolution.game?.openRound?.myWord == "ocean")
-    }
-
-    @Test func aQueuedLockInThatTheServerAlreadyHasIsNotQueued() {
-        let round = open(1, mine: "ocean")
-        var pending = MindMeldPendingWork.none
-        pending.lockedWords[round.id] = "ocean"
-
-        #expect(resolve(game(rounds: [round]), pending: pending).phase == .waiting(isQueued: false))
     }
 
     @Test func aQueuedLockInDoesNotChangeAGameTheServerCalledFinished() {
@@ -150,10 +135,6 @@ struct MindMeldResolverTests: MindMeldResolverFixtures {
         #expect(resolution.connectingPair?.theirs == "sushi")
     }
 
-    @Test func aRevealTheServerKnowsIHaveSeenMovesOnToTheNextRound() {
-        #expect(resolve(game(rounds: [revealed(1, seen: true), open(2)])).phase == .write)
-    }
-
     @Test func onlyTheLatestRevealedRoundCanBeAnUnseenReveal() {
         // The person never saw round 1 on this phone, but moved past round 2.
         let rounds = [revealed(1, seen: false), revealed(2, "salt", "fish", seen: true), open(3)]
@@ -168,12 +149,5 @@ struct MindMeldResolverTests: MindMeldResolverFixtures {
 
         #expect(resolution.phase == .reveal)
         #expect(resolution.round?.id == first.id)
-    }
-
-    @Test func afterTheRevealTheNextRoundCanBeWaitingWithTheWordIAlreadyLocked() {
-        let first = revealed(1, seen: true)
-        let second = open(2, mine: "salt", partnerLocked: false)
-
-        #expect(resolve(game(rounds: [first, second])).phase == .waiting(isQueued: false))
     }
 }

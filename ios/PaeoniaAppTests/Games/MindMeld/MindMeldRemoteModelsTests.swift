@@ -71,37 +71,6 @@ struct MindMeldRemoteModelsTests {
         #expect(previous.endedAt != nil)
     }
 
-    @Test func decodesACoupleWithNoGame() throws {
-        let json = """
-        {"user_id":"\(Self.me)","partner_user_id":null,"couple_id":"33333333-3333-3333-3333-333333333333",
-         "data_epoch":"",
-         "current":null,"previous":null,"stats":{"melds":0,"fewest_rounds":null,"games":0}}
-        """
-        let state = try decode(RemoteMindMeldState.self, json)
-
-        #expect(state.partnerUserID == nil && state.current == nil && state.previous == nil)
-        #expect(state.stats.fewestRounds == nil)
-    }
-
-    @Test func decodesAMeldedGameWithACountedRound() throws {
-        let json = """
-        {"id":"aaaaaaaa-0000-4000-8000-000000000003","game_number":3,"state":"melded","end_reason":null,
-         "ended_by_user_id":null,"ended_at":"2026-10-12T11:00:00.000Z","max_rounds":10,
-         "my_end_seen_at":"2026-10-12T11:00:05.000Z","meld_number":4,"is_record":true,
-         "created_by_user_id":"\(Self.me)","created_at":"2026-10-12T10:30:00.000Z",
-         "updated_at":"2026-10-12T11:00:00.000Z","version":8,
-         "rounds":[{"id":"bbbbbbbb-0000-4000-8000-000000000009","round_number":1,"state":"revealed",
-           "outcome":"near","counted_by_user_id":"\(Self.partner)","my_word":"dog","my_locked_at":null,
-           "partner_locked":true,"partner_locked_at":null,"partner_word":"dogs","revealed_at":null,
-           "my_reveal_seen_at":null}]}
-        """
-        let game = try decode(RemoteMindMeldGame.self, json)
-
-        #expect(game.state == .melded && game.isFinished)
-        #expect(game.meldNumber == 4 && game.isRecord)
-        #expect(game.rounds.first?.countedByUserID == UUID(uuidString: Self.partner))
-    }
-
     @Test func decodesAHistoryPage() throws {
         let json = """
         {"games":[

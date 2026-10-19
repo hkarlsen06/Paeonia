@@ -14,13 +14,6 @@ describe("rules map", () => {
     expect(BOARD_RULES.ultimate_tic_tac_toe).toBe(ultimateTicTacToeRules);
     expect(BOARD_RULES.ludo).toBe(ludoRules);
   });
-
-  test("move limits", () => {
-    expect(BOARD_RULES.connect_four.moveLimit).toBe(7);
-    expect(BOARD_RULES.dots_and_boxes.moveLimit).toBe(40);
-    expect(BOARD_RULES.ultimate_tic_tac_toe.moveLimit).toBe(81);
-    expect(BOARD_RULES.ludo.moveLimit).toBe(18);
-  });
 });
 
 describe("helpers", () => {

@@ -30,16 +30,6 @@ func lookBackMemoryItem(title: String = "Beach weekend", date: String = "2026-09
     )
 }
 
-func lookBackAnswer(
-    _ userID: UUID,
-    text: String? = nil,
-    picked: UUID? = nil,
-    photo: Bool = false,
-    voice: Bool = false
-) -> LookBackItem.Answer {
-    .init(userID: userID, text: text, selectedUserID: picked, hasPhoto: photo, hasVoice: voice)
-}
-
 nonisolated final class MemoryLookBackCache: LookBackCaching, @unchecked Sendable {
     let lock = NSLock()
     var entries: [UUID: LookBackCacheEntry] = [:]

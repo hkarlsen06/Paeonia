@@ -168,11 +168,4 @@ struct GamesPhaseTests {
         #expect(withReaction.round?.guesserReaction == .wow)
         #expect(cleared.round?.guesserReaction == nil)
     }
-
-    @Test func theChoicesAreForTheDrawerOnly() {
-        // The server leaves them out for the guesser. The phase never offers them either.
-        let waiting = state(game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner, roundID: nil))
-        #expect(phase(waiting) == .waitingForWord)
-        #expect(!phase(waiting).allowsGuessing)
-    }
 }

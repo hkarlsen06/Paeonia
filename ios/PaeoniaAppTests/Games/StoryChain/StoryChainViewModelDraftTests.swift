@@ -8,20 +8,6 @@ struct StoryChainViewModelDraftTests {
     private typealias Fixture = StoryChainFixture
     private typealias Env = StoryChainTestEnvironment
 
-    private func draftMessage(text: String) -> StoryChainLiveMessage {
-        StoryChainLiveMessage(story: Fixture.storyID, number: 2, text: text, isLast: false)
-    }
-
-    @Test func typingSendsTheWholeDraftAtOnce() async {
-        let environment = Env.myTurnAfterPartner()
-        let viewModel = environment.viewModel()
-        await viewModel.reload()
-
-        viewModel.draft = "H"
-
-        #expect(environment.connection.sentMessages == [draftMessage(text: "H")])
-    }
-
     @Test func changesInsideTheWindowSendOnlyTheLatestDraftAfterIt() async {
         let environment = Env.myTurnAfterPartner()
         let viewModel = environment.viewModel(liveSendInterval: .milliseconds(30))

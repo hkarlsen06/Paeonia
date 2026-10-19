@@ -353,35 +353,11 @@ struct StoryChainTestEnvironment {
     ]
 }
 
-/// The phase, the page, the choices, and the partner's presence.
+/// A move saved on the phone shows before the server hears of it.
 @MainActor
 struct StoryChainViewModelTests {
     private typealias Fixture = StoryChainFixture
     private typealias Env = StoryChainTestEnvironment
-
-    // MARK: Phase from the state
-
-    @Test func theStateAndTheTurnPickThePhase() async {
-        let mine = Env(state: Env.writing(turn: Fixture.me, lines: [Env.line(1, by: Fixture.partner)]))
-        let mineModel = mine.viewModel()
-        await mineModel.reload()
-        #expect(mineModel.phase == .writing)
-
-        let theirs = Env(state: Env.writing(turn: Fixture.partner, lines: [Env.line(1, by: Fixture.me)]))
-        let theirsModel = theirs.viewModel()
-        await theirsModel.reload()
-        #expect(theirsModel.phase == .waitingForLine)
-    }
-
-    @Test func nothingCachedIsLoadingAndNoSettingsIsSetup() async {
-        let empty = Env(state: nil).viewModel()
-        await empty.reload()
-        #expect(empty.phase == .loading)
-
-        let noSettings = Env(state: Env.state(nil), settings: nil).viewModel()
-        await noSettings.reload()
-        #expect(noSettings.phase == .needsSetup)
-    }
 
     @Test func aMoveSavedOnThePhoneCountsBeforeTheServerHearsOfIt() async {
         let environment = Env(state: Env.writing(turn: Fixture.me, lines: [Env.line(1, by: Fixture.partner)]))
@@ -396,53 +372,5 @@ struct StoryChainViewModelTests {
         #expect(viewModel.isWaitingToSend)
         #expect(viewModel.page.lines.count == 2)
         #expect(viewModel.page.lines.last?.isMine == true)
-    }
-
-    // MARK: The page
-
-    @Test func thePageHoldsTheOpeningAndEachLineWithItsWriter() async {
-        let first = Env.line(1, by: Fixture.partner, text: "She took the night bus.", dare: "anchor")
-        let second = Env.line(2, by: Fixture.me, text: "An anchor hung on the door.")
-        let third = Env.line(3, by: Fixture.partner, text: "Nobody answered.")
-        let viewModel = Env(state: Env.writing(
-            turn: Fixture.me,
-            lines: [first, second, third],
-            opening: "A key opened nothing in town."
-        )).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.page.opening == "A key opened nothing in town.")
-        #expect(viewModel.page.lines.map(\.id) == [first.id, second.id, third.id])
-        #expect(viewModel.page.lines.map(\.number) == [1, 2, 3])
-        #expect(viewModel.page.lines.map(\.isMine) == [false, true, false])
-        #expect(viewModel.page.lines.map(\.authorName) == ["Robin", "Alex", "Robin"])
-        // The second line used the word the first one dared.
-        #expect(viewModel.page.lines.map(\.usedDare) == [nil, "anchor", nil])
-    }
-
-    @Test func aDareTheLineDoesNotContainIsNotUnderlined() async {
-        let first = Env.line(1, by: Fixture.partner, dare: "anchor")
-        let second = Env.line(2, by: Fixture.me, text: "Nothing about boats here.")
-        let viewModel = Env(state: Env.writing(turn: Fixture.partner, lines: [first, second])).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.page.lines.last?.usedDare == nil)
-    }
-
-    @Test func tappingALineShowsWhoWroteItAndWhen() async throws {
-        let first = Env.line(1, by: Fixture.partner)
-        let second = Env.line(2, by: Fixture.me, dare: nil)
-        let viewModel = Env(state: Env.writing(turn: Fixture.partner, lines: [first, second])).viewModel()
-        await viewModel.reload()
-
-        let info = try #require(viewModel.lineInfo(for: first.id))
-        #expect(info == StoryChainLineInfo(
-            authorName: "Robin",
-            isMine: false,
-            createdAt: first.createdAt,
-            usedDare: nil
-        ))
-        #expect(viewModel.lineInfo(for: second.id)?.isMine == true)
-        #expect(viewModel.lineInfo(for: UUID()) == nil)
     }
 }

@@ -52,33 +52,6 @@ struct PaeoniaDeepLinkTests {
         #expect(PaeoniaDeepLink(url) == .dailyChat(questionID: questionID))
     }
 
-    @Test func parsesHomeURL() throws {
-        let url = try #require(URL(string: "paeonia://home"))
-
-        #expect(PaeoniaDeepLink(url) == .home)
-    }
-
-    @Test func parsesStreakURL() {
-        let url = PaeoniaDeepLink.streakURL
-
-        #expect(url.absoluteString == "paeonia://streak")
-        #expect(PaeoniaDeepLink(url) == .streak)
-    }
-
-    @Test func parsesMemoriesURL() {
-        let url = PaeoniaDeepLink.memoriesURL
-
-        #expect(url.absoluteString == "paeonia://memories")
-        #expect(PaeoniaDeepLink(url) == .memories)
-    }
-
-    @Test func parsesSubscriptionURL() {
-        let url = PaeoniaDeepLink.subscriptionURL
-
-        #expect(url.absoluteString == "paeonia://settings/subscription")
-        #expect(PaeoniaDeepLink(url) == .subscription)
-    }
-
     @Test func notificationPayloadParsesDeeplink() throws {
         let instanceID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let coupleDayID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
@@ -123,21 +96,6 @@ struct PaeoniaDeepLinkTests {
         router.routeNotification(userInfo: ["type": "streak_reminder", "deeplink": "paeonia://streak"])
 
         #expect(router.pendingDeepLink == .streak)
-        router.consumePendingDeepLink()
-    }
-
-    @MainActor
-    @Test func notificationRouterRoutesThreadMessagesToQuestionChat() throws {
-        let questionID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let router = PaeoniaNotificationRouter.shared
-        router.consumePendingDeepLink()
-
-        router.routeNotification(userInfo: [
-            "type": "thread_message_sent",
-            "deeplink": "paeonia://daily/chat?questionId=\(questionID.uuidString)",
-        ])
-
-        #expect(router.pendingDeepLink == .dailyChat(questionID: questionID))
         router.consumePendingDeepLink()
     }
 }

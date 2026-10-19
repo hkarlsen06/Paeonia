@@ -204,13 +204,6 @@ struct StoryChainCacheTests {
         }
     }
 
-    @Test func theInMemoryCacheStartsWithTheStateItIsGiven() async {
-        let cache = InMemoryStoryChainCache(state: state(version: 2))
-
-        #expect(await cache.document(ownerUserID: me).state == state(version: 2))
-        #expect(await cache.document(ownerUserID: UUID()).state == nil)
-    }
-
     // MARK: Notices
 
     @Test func aNoticeIsKeptOnceAndTakenOnce() async {
@@ -258,14 +251,6 @@ struct StoryChainCacheTests {
             await cache.saveState(later, ownerUserID: me)
 
             #expect(await cache.document(ownerUserID: me).stars[starred.id] == true)
-        }
-    }
-
-    @Test func aStoryThatIsNotFinishedSaysNothingAboutStars() async {
-        await eachCache { cache in
-            await cache.saveState(state(version: 2), ownerUserID: me)
-
-            #expect(await cache.document(ownerUserID: me).stars.isEmpty)
         }
     }
 

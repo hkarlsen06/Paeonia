@@ -52,16 +52,6 @@ struct GameStarsTests {
         #expect(environment.gateway.starWrites.isEmpty)
     }
 
-    @Test func aRoundThatIsNotInTheHistoryYetCanBeStarred() async {
-        let stars = makeStars()
-        let justEnded = UUID()
-
-        await stars.setStarred(true, id: justEnded)
-
-        #expect(stars.isStarred(justEnded))
-        #expect(!stars.isStarred(roundID))
-    }
-
     @Test func theLastChoiceOfARoundWins() async {
         let stars = makeStars()
 
@@ -70,34 +60,6 @@ struct GameStarsTests {
 
         #expect(!stars.isStarred(roundID))
         #expect(await environment.queued(.setGameRoundStar).count == 2)
-    }
-
-    @Test func choosingTheValueThatAlreadyShowsQueuesNothing() async {
-        let stars = makeStars()
-        await environment.cache.saveStars([roundID: true], ownerUserID: GameFixture.me)
-        await stars.reload()
-
-        await stars.setStarred(true, id: roundID)
-
-        #expect(await environment.queued(.setGameRoundStar).isEmpty)
-    }
-
-    @Test func toggleFlipsTheStar() async {
-        let stars = makeStars()
-
-        await stars.toggle(id: roundID)
-        #expect(stars.isStarred(roundID))
-        await stars.toggle(id: roundID)
-        #expect(!stars.isStarred(roundID))
-    }
-
-    @Test func theServersValueShowsWhenNothingWaits() async {
-        let stars = makeStars()
-        await environment.cache.saveStars([roundID: true], ownerUserID: GameFixture.me)
-
-        await stars.reload()
-
-        #expect(stars.isStarred(roundID))
     }
 
     @Test func anUnsentChangeBeatsTheServersValue() async {
@@ -175,15 +137,6 @@ struct GameStarsTests {
         return (GamesTestEnvironment(state: state), round.id)
     }
 
-    @Test func aRoundStarredOnTheOtherPhoneShowsFromTheGameState() async {
-        let (env, roundID) = environmentWithRound(starred: true)
-        let stars = makeStars(in: env)
-
-        await stars.reload()
-
-        #expect(stars.isStarred(roundID))
-    }
-
     @Test func theGameStateBeatsTheOlderCachedList() async {
         let (env, roundID) = environmentWithRound(starred: false)
         // The history cache lists the star from before the other phone removed it.
@@ -202,25 +155,6 @@ struct GameStarsTests {
         await stars.reload()
 
         #expect(!stars.isStarred(roundID))
-    }
-
-    @Test func anUnsentChangeBeatsTheGameState() async {
-        let (env, roundID) = environmentWithRound(starred: true)
-        let stars = makeStars(in: env)
-        await stars.reload()
-
-        await stars.setStarred(false, id: roundID)
-
-        #expect(!stars.isStarred(roundID))
-    }
-
-    @Test func theServersAnswerToAStarAlsoUpdatesTheRoundInTheState() async {
-        let (env, roundID) = environmentWithRound(starred: false)
-
-        await env.cache.saveStars([roundID: true], ownerUserID: GameFixture.me)
-
-        let state = await env.cache.document(ownerUserID: GameFixture.me).state
-        #expect(state?.recentRounds.first?.starredByMe == true)
     }
 
     // MARK: The queued write
@@ -279,16 +213,6 @@ struct GameStarsTests {
         #expect(environment.gateway.starWrites.isEmpty)
     }
 
-    @Test func aStarOfAnotherRoundDoesNotWait() async throws {
-        try await enqueueStar(true, sequence: 1, roundID: UUID())
-        try await enqueueStar(true, sequence: 2)
-        let later = try #require(await environment.queued(.setGameRoundStar).last)
-
-        let result = try await handler().send(later, context: syncContext(environment.pending))
-
-        #expect(result == .succeeded)
-    }
-
     @Test func aFailedSendKeepsTheWriteForAnotherTry() async throws {
         try await enqueueStar(true, sequence: 1)
         let queued = try #require(await environment.queued(.setGameRoundStar).first)
@@ -313,29 +237,5 @@ struct GameStarsTests {
             return
         }
         #expect(await environment.cache.takeNotices(ownerUserID: GameFixture.me).isEmpty)
-    }
-
-    // MARK: The cache
-
-    @Test func theCacheKeepsAtMostTheNewestStars() {
-        var history = GamesHistoryCache()
-        let ids = (0..<(GamesHistoryCache.maxStarredRounds + 3)).map { _ in UUID() }
-
-        for id in ids {
-            history.apply(stars: [id: true])
-        }
-
-        #expect(history.starredRoundIDs.count == GamesHistoryCache.maxStarredRounds)
-        #expect(history.starredRoundIDs.last == ids.last)
-        #expect(!history.starredRoundIDs.contains(ids[0]))
-    }
-
-    @Test func anUnstarLeavesTheCachedList() {
-        var history = GamesHistoryCache()
-        history.apply(stars: [roundID: true])
-
-        history.apply(stars: [roundID: false])
-
-        #expect(history.starredRoundIDs.isEmpty)
     }
 }

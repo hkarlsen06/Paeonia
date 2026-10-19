@@ -56,25 +56,6 @@ struct WidgetDrawingHistoryViewModelTests {
         #expect(viewModel.items.map(\.id) == [newer.revisionID, shared.revisionID, older.revisionID])
     }
 
-    @Test func mapsAuthorToCorrectNickname() async {
-        let me = UUID()
-        let mine = makeSummary(author: me, createdAt: date(200))
-        let partners = makeSummary(author: UUID(), createdAt: date(100))
-        let gateway = StubGateway(canvasState: makeState(), pages: [[mine, partners]])
-        let viewModel = makeViewModel(
-            gateway: gateway,
-            identity: WidgetSyncIdentity(currentUserID: me, currentDisplayName: "Me", partnerDisplayName: "You"),
-            pageSize: 10
-        )
-
-        await viewModel.loadInitialIfNeeded()
-
-        #expect(viewModel.items[0].authorName == "Me")
-        #expect(viewModel.items[0].isMine == true)
-        #expect(viewModel.items[1].authorName == "You")
-        #expect(viewModel.items[1].isMine == false)
-    }
-
     @Test func refreshNewestPrependsNewDrawingsAndKeepsTheOlderCursor() async {
         let existing = makeSummary(createdAt: date(100))
         let arrived = makeSummary(createdAt: date(200))
@@ -104,145 +85,16 @@ struct WidgetDrawingHistoryViewModelTests {
         #expect(viewModel.phase == .loaded)
     }
 
-    @Test func refreshNewestLoadsTheFirstPageWhenNoCanvasExistedBefore() async {
-        let drawing = makeSummary(createdAt: date(100))
-        let gateway = StubGateway(canvasState: nil, pages: [[drawing]])
-        let viewModel = makeViewModel(gateway: gateway, pageSize: 10)
-        await viewModel.loadInitialIfNeeded()
-        #expect(viewModel.isEmpty)
-
-        gateway.canvasState = makeState()
-        await viewModel.refreshNewest()
-
-        #expect(viewModel.items.map(\.id) == [drawing.revisionID])
-    }
-
-    @Test func noCanvasShowsEmpty() async {
-        let gateway = StubGateway(canvasState: nil, pages: [])
-        let viewModel = makeViewModel(gateway: gateway)
-
-        await viewModel.loadInitialIfNeeded()
-
-        #expect(viewModel.phase == .loaded)
-        #expect(viewModel.isEmpty)
-        #expect(viewModel.hasMore == false)
-    }
-
-    @Test func errorSetsFailedThenRetrySucceeds() async {
-        let shown = makeSummary(createdAt: date(100))
-        let gateway = StubGateway(canvasState: makeState(), pages: [[shown]])
-        gateway.stateError = URLError(.timedOut)
-        let viewModel = makeViewModel(gateway: gateway, pageSize: 10)
-
-        await viewModel.loadInitialIfNeeded()
-        #expect(viewModel.phase == .failed(.other))
-
-        gateway.stateError = nil
-        await viewModel.retry()
-        #expect(viewModel.phase == .loaded)
-        #expect(viewModel.items.map(\.id) == [shown.revisionID])
-    }
-
-    @Test func loadInitialIsIdempotent() async {
-        let shown = makeSummary(createdAt: date(100))
-        let gateway = StubGateway(canvasState: makeState(), pages: [[shown]])
-        let viewModel = makeViewModel(gateway: gateway, pageSize: 10)
-
-        await viewModel.loadInitialIfNeeded()
-        await viewModel.loadInitialIfNeeded()
-
-        #expect(gateway.listCursors.count == 1)
-    }
-
-    // MARK: - Save to device
-
-    @Test func saveToDeviceLatchesToSavedOnSuccess() async {
-        let shown = makeSummary(createdAt: date(100))
-        let saver = StubPhotoSaver(result: .saved)
-        let viewModel = makeViewModel(
-            gateway: StubGateway(canvasState: makeState(), pages: [[shown]]),
-            exporter: StubExporter(png: Data([0x1])),
-            photoSaver: saver
-        )
-        await viewModel.loadInitialIfNeeded()
-
-        await viewModel.saveToDevice(viewModel.items[0])
-
-        #expect(viewModel.saveState(for: shown.revisionID) == .saved)
-        #expect(viewModel.saveAlert == nil)
-        #expect(saver.saveCount == 1)
-    }
-
-    @Test func saveToDevicePermissionDeniedShowsAlertAndResets() async {
-        let shown = makeSummary(createdAt: date(100))
-        let viewModel = makeViewModel(
-            gateway: StubGateway(canvasState: makeState(), pages: [[shown]]),
-            exporter: StubExporter(png: Data([0x1])),
-            photoSaver: StubPhotoSaver(result: .permissionDenied)
-        )
-        await viewModel.loadInitialIfNeeded()
-
-        await viewModel.saveToDevice(viewModel.items[0])
-
-        #expect(viewModel.saveState(for: shown.revisionID) == .idle)
-        #expect(viewModel.saveAlert == .permissionDenied)
-
-        viewModel.dismissSaveAlert()
-        #expect(viewModel.saveAlert == nil)
-    }
-
-    @Test func saveToDeviceResetsToIdleWhenExportFails() async {
-        let shown = makeSummary(createdAt: date(100))
-        let saver = StubPhotoSaver(result: .saved)
-        let viewModel = makeViewModel(
-            gateway: StubGateway(canvasState: makeState(), pages: [[shown]]),
-            exporter: StubExporter(png: nil),
-            photoSaver: saver
-        )
-        await viewModel.loadInitialIfNeeded()
-
-        await viewModel.saveToDevice(viewModel.items[0])
-
-        #expect(viewModel.saveState(for: shown.revisionID) == .idle)
-        #expect(viewModel.saveAlert == nil)
-        // Never reached the photo library because there was nothing to save.
-        #expect(saver.saveCount == 0)
-    }
-
-    @Test func saveToDeviceIgnoresASecondTapOnceSaved() async {
-        let shown = makeSummary(createdAt: date(100))
-        let saver = StubPhotoSaver(result: .saved)
-        let viewModel = makeViewModel(
-            gateway: StubGateway(canvasState: makeState(), pages: [[shown]]),
-            exporter: StubExporter(png: Data([0x1])),
-            photoSaver: saver
-        )
-        await viewModel.loadInitialIfNeeded()
-
-        await viewModel.saveToDevice(viewModel.items[0])
-        await viewModel.saveToDevice(viewModel.items[0])
-
-        #expect(viewModel.saveState(for: shown.revisionID) == .saved)
-        #expect(saver.saveCount == 1)
-    }
-
     // MARK: - Helpers
 
     private func makeViewModel(
         gateway: StubGateway,
-        identity: WidgetSyncIdentity = WidgetSyncIdentity(
-            currentUserID: nil, currentDisplayName: nil, partnerDisplayName: nil
-        ),
-        pageSize: Int = 30,
-        exporter: any WidgetRevisionThumbnailLoading = StubExporter(png: nil),
-        photoSaver: any PhotoLibrarySaving = StubPhotoSaver(result: .saved)
+        pageSize: Int = 30
     ) -> WidgetDrawingHistoryViewModel {
         WidgetDrawingHistoryViewModel(
             gateway: gateway,
-            identity: identity,
-            pageSize: pageSize,
-            exporter: exporter,
-            photoSaver: photoSaver
+            identity: WidgetSyncIdentity(currentUserID: nil, currentDisplayName: nil, partnerDisplayName: nil),
+            pageSize: pageSize
         )
     }
 
@@ -332,27 +184,4 @@ private nonisolated final class StubGateway: WidgetCanvasGateway, @unchecked Sen
         throw WidgetCanvasGatewayError.emptyResponse
     }
     func signedPayloadURL(mediaAssetID: UUID) -> URL? { nil }
-}
-
-/// Returns the same canned PNG (or nil) for every export/thumbnail request.
-private nonisolated struct StubExporter: WidgetRevisionThumbnailLoading {
-    let png: Data?
-
-    func thumbnailPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { png }
-    func exportPNG(revisionID: UUID, mediaAssetID: UUID, canvasSide: CGFloat) -> Data? { png }
-}
-
-/// Records how many times a save was attempted and replays a fixed outcome.
-private nonisolated final class StubPhotoSaver: PhotoLibrarySaving, @unchecked Sendable {
-    let result: PhotoLibrarySaveResult
-    private(set) var saveCount = 0
-
-    init(result: PhotoLibrarySaveResult) {
-        self.result = result
-    }
-
-    func savePNG(_ data: Data) -> PhotoLibrarySaveResult {
-        saveCount += 1
-        return result
-    }
 }

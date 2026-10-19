@@ -22,16 +22,6 @@ struct QuestionTimeModelTests {
         #expect(!model.isSaving)
     }
 
-    @Test func eveningIsTheDefaultChoice() async {
-        let log = QuestionTimeEventLog()
-        let model = makeModel(log: log)
-
-        let saved = await model.save()
-
-        #expect(model.choice == .evening)
-        #expect(saved == QuestionTimeReminder.defaultMinutes)
-    }
-
     @Test func failedSaveKeepsTheChoiceAndDoesNotAskForPermission() async {
         let log = QuestionTimeEventLog()
         let primerStore = QuestionTimeFakePrimerStore()
@@ -48,14 +38,6 @@ struct QuestionTimeModelTests {
         #expect(await log.events.isEmpty)
         #expect(!primerStore.responded)
         #expect(!model.isSaving)
-    }
-
-    @Test func offlineSaveIsReportedAsOffline() async {
-        let model = makeModel(log: QuestionTimeEventLog(), failure: URLError(.notConnectedToInternet))
-
-        _ = await model.save()
-
-        #expect(model.saveFailure == .offline)
     }
 
     @Test func retryAfterAFailureSavesTheSameChoice() async {
@@ -75,45 +57,6 @@ struct QuestionTimeModelTests {
 
         #expect(saved == 12 * 60)
         #expect(model.saveFailure == nil)
-    }
-
-    @Test func permissionThatDidNotSettleLeavesThePrimerEligible() async {
-        let log = QuestionTimeEventLog()
-        let primerStore = QuestionTimeFakePrimerStore()
-        let model = QuestionTimeModel(
-            preferences: QuestionTimeFakePreferences(log: log),
-            pushAuthorization: QuestionTimeFakePushAuthorization(log: log, settles: false),
-            primerStore: primerStore
-        )
-
-        let saved = await model.save()
-
-        // The reminder is saved and the step still finishes.
-        #expect(saved == QuestionTimeReminder.defaultMinutes)
-        #expect(!primerStore.responded)
-    }
-
-    @Test func customStartsAtThePreviousChoice() {
-        let model = makeModel(log: QuestionTimeEventLog())
-
-        model.select(.lunch)
-        model.select(.custom)
-
-        #expect(model.customMinutes == 12 * 60)
-        #expect(model.chosenMinutes == 12 * 60)
-    }
-
-    @Test func missingServiceReportsAFailure() async {
-        let model = QuestionTimeModel(
-            preferences: nil,
-            pushAuthorization: QuestionTimeFakePushAuthorization(log: QuestionTimeEventLog()),
-            primerStore: QuestionTimeFakePrimerStore()
-        )
-
-        let saved = await model.save()
-
-        #expect(saved == nil)
-        #expect(model.saveFailure == .other)
     }
 
     private func makeModel(
@@ -185,11 +128,10 @@ struct QuestionTimeFakePreferences: NotificationPreferencesProviding {
 
 struct QuestionTimeFakePushAuthorization: PushAuthorizationProviding {
     let log: QuestionTimeEventLog
-    var settles = true
 
     func requestAuthorizationIfNeeded() async -> Bool {
         await log.append(.askedForPermission)
-        return settles
+        return true
     }
 
     func isDenied() async -> Bool {

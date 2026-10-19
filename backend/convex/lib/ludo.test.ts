@@ -116,10 +116,6 @@ describe("move numbers and squares", () => {
       expect(ludoTrackSquare(2, progress)).toBeNull();
     }
   });
-
-  test("pawn indexes are 0 and 1 for player 1 and 2 and 3 for player 2", () => {
-    expect([ludoPawnIndex(1, 0), ludoPawnIndex(1, 1), ludoPawnIndex(2, 0), ludoPawnIndex(2, 1)]).toEqual([0, 1, 2, 3]);
-  });
 });
 
 describe("initial board", () => {

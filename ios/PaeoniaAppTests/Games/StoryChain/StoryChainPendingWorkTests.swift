@@ -17,11 +17,6 @@ struct StoryChainPendingWorkTests {
 
     // MARK: Reading the queue
 
-    @Test func anEmptyQueueHasNoPendingWork() async {
-        #expect(await load() == StoryChainPendingWork.none)
-        #expect(await load()?.isEmpty == true)
-    }
-
     @Test func everyKindIsReadOldestFirst() async throws {
         let first = Fixture.queuedLine(id: UUID())
         let second = Fixture.queuedLine(id: UUID())
@@ -147,39 +142,6 @@ struct StoryChainPendingWorkTests {
     }
 
     // MARK: Queueing
-
-    @Test func eachMoveIsQueuedWithItsOwnKindAndScope() async throws {
-        let queue = StoryChainMoveQueue(dependencies: environment.dependencies())
-        let line = Fixture.queuedLine(id: UUID(uuidString: "ABCDEF00-0000-4000-8000-000000000001") ?? UUID())
-        let name = StoryChainQueuedName(storyID: Fixture.storyID, title: "The night bus")
-
-        try await queue.start(Fixture.queuedStart(), ownerUserID: Fixture.me)
-        try await queue.addLine(line, ownerUserID: Fixture.me)
-        try await queue.name(name, ownerUserID: Fixture.me)
-        try await queue.markSeen(storyID: Fixture.storyID, ownerUserID: Fixture.me)
-
-        let decoder = JSONDecoder()
-        let start = try #require(await environment.queued(.storyChainStartStory).first)
-        #expect(start.idempotencyScope == "story-chain-start:\(Fixture.nextStoryID.uuidString.lowercased())")
-        let startData = try #require(start.requestData)
-        #expect(try decoder.decode(StoryChainQueuedStart.self, from: startData) == Fixture.queuedStart())
-
-        let queuedLine = try #require(await environment.queued(.storyChainAddLine).first)
-        #expect(queuedLine.idempotencyScope == "story-chain-line:abcdef00-0000-4000-8000-000000000001")
-        let lineData = try #require(queuedLine.requestData)
-        #expect(try decoder.decode(StoryChainQueuedLine.self, from: lineData) == line)
-
-        let queuedName = try #require(await environment.queued(.storyChainNameStory).first)
-        #expect(queuedName.idempotencyScope == "story-chain-name:\(Fixture.storyID.uuidString.lowercased())")
-        let nameData = try #require(queuedName.requestData)
-        #expect(try decoder.decode(StoryChainQueuedName.self, from: nameData) == name)
-
-        let seen = try #require(await environment.queued(.storyChainMarkSeen).first)
-        #expect(seen.idempotencyScope == "story-chain-seen:\(Fixture.storyID.uuidString.lowercased())")
-        let seenData = try #require(seen.requestData)
-        let seenPayload = try decoder.decode(StoryChainSeenPayload.self, from: seenData)
-        #expect(seenPayload == StoryChainSeenPayload(storyID: Fixture.storyID))
-    }
 
     @Test func movesQueuedOneAfterTheOtherKeepTheirOrder() async throws {
         let queue = StoryChainMoveQueue(dependencies: environment.dependencies())

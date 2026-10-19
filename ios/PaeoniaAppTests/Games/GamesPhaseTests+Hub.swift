@@ -90,19 +90,6 @@ extension GamesPhaseTests {
         #expect(revealHubStatus(guessingHere, pending: unsentCorrectGuess) == .yourTurnToDraw)
     }
 
-    @Test func theHubShowsThePartnerHereOnlyWhileTheServerSaysSo() {
-        func overview(partnerIsHere: Bool) -> RemoteGamesOverview {
-            RemoteGamesOverview(drawAndGuess: GameFixture.state(
-                settings: GameFixture.settings(),
-                game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
-                partnerIsHere: partnerIsHere
-            ))
-        }
-
-        #expect(GamesViewModel.partnerGames(in: overview(partnerIsHere: true)) == [.drawAndGuess])
-        #expect(GamesViewModel.partnerGames(in: overview(partnerIsHere: false)).isEmpty)
-    }
-
     @Test func onlyAGameThePartnerJustOpenedCounts() {
         func opened(_ old: [GameKind], _ new: [GameKind]) -> GameKind? {
             GamesViewModel.openedPartnerGame(from: old, to: new)

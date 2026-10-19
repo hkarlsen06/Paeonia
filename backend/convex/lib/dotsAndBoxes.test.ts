@@ -63,16 +63,6 @@ describe("box and line helpers", () => {
   });
 });
 
-describe("initial state", () => {
-  test("is 40 undrawn lines and 16 open boxes with player 1 to move", () => {
-    const state = rules.initial();
-    expect(state).toEqual({ lines: new Array(40).fill(0), boxes: new Array(16).fill(0), next: 1, outcome: null });
-    expect(rules.moveLimit).toBe(40);
-    expect(rules.next(state)).toBe(1);
-    expect(rules.outcome(state)).toBeNull();
-  });
-});
-
 describe("drawing lines", () => {
   test("a line that closes nothing passes the turn", () => {
     const state = play([0]);

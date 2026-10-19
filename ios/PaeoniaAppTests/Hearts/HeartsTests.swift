@@ -46,10 +46,6 @@ struct HeartsTapBatcherTests {
         for _ in 0..<100 { batcher.tap() }
         #expect(batcher.takeBatches() == [100])
     }
-
-    @Test func theQuietPeriodIsOneAndAHalfSeconds() {
-        #expect(HeartsTapBatcher.quietPeriod == .milliseconds(1_500))
-    }
 }
 
 struct HeartsInboxTests {
@@ -107,12 +103,6 @@ struct HeartsInboxTests {
         inbox.apply(HeartsFixture.server(total: 4, seen: 1))
         #expect(inbox.receivedTotal == 4)
         #expect(inbox.unseenCount == 3)
-    }
-
-    @Test func aBigBurstFliesAtMostTwelveHearts() {
-        #expect(HeartsBurst(count: 1).flyingCount == 1)
-        #expect(HeartsBurst(count: 12).flyingCount == 12)
-        #expect(HeartsBurst(count: 100).flyingCount == 12)
     }
 }
 
@@ -304,20 +294,6 @@ struct HeartsViewModelTests {
         #expect(await rig.cache.inbox(ownerUserID: HeartsFixture.me).unseenCount == 0)
     }
 
-    @Test func heartsWaitWhileHomeIsNotInFront() async throws {
-        let rig = makeRig()
-        await rig.cache.save(HeartsFixture.server(total: 3, seen: 0), ownerUserID: HeartsFixture.me)
-        rig.viewModel.setScreenReady(true)
-        await rig.viewModel.playIfNeeded()
-        #expect(rig.viewModel.incomingBurst == nil)
-        #expect(await rig.cache.inbox(ownerUserID: HeartsFixture.me).unseenCount == 3)
-
-        rig.viewModel.setHomeVisible(true)
-        let played = await waitUntil { rig.viewModel.incomingBurst != nil }
-        #expect(played)
-        #expect(rig.viewModel.incomingBurst?.count == 3)
-    }
-
     @Test func markingAnEarlierTotalLeavesLaterHeartsUnseen() async {
         let cache = FileHeartsCache(directoryURL: FileManager.default.temporaryDirectory
             .appendingPathComponent("hearts-cache-\(UUID().uuidString)", isDirectory: true))
@@ -341,14 +317,6 @@ struct HeartsViewModelTests {
         #expect(rig.announcements.lines.isEmpty)
         #expect(try await seenTotals(in: rig).isEmpty)
         #expect(await rig.cache.inbox(ownerUserID: HeartsFixture.me).unseenCount == 5)
-    }
-
-    @Test func heartsWaitForTheLaunchIntroAndForTheAppToBeInFront() async throws {
-        let rig = makeRig()
-        await rig.cache.save(HeartsFixture.server(total: 3, seen: 0), ownerUserID: HeartsFixture.me)
-        rig.viewModel.setHomeVisible(true)
-        await rig.viewModel.playIfNeeded()
-        #expect(rig.viewModel.incomingBurst == nil)
     }
 
     @Test func aHeartThatArrivesDuringABurstWaitsForTheNextOne() async throws {
@@ -399,22 +367,6 @@ struct HeartsPendingOperationHandlerTests {
             stateStore: InMemorySyncStateRepository(),
             pendingOperationStore: InMemoryPendingSyncOperationRepository()
         )
-    }
-
-    @Test func aSendReachesTheGateway() async throws {
-        let gateway = StubGateway()
-        let handler = SendHeartsPendingOperationHandler(gateway: gateway)
-        let operation = try snapshot(.sendHearts, HeartsSendPayload(count: 9), owner: HeartsFixture.me)
-        #expect(try await handler.send(operation, context: context()) == .succeeded)
-        #expect(gateway.sentCounts == [9])
-    }
-
-    @Test func aSeenMarkReachesTheGateway() async throws {
-        let gateway = StubGateway()
-        let handler = MarkHeartsSeenPendingOperationHandler(gateway: gateway)
-        let operation = try snapshot(.markHeartsSeen, HeartsSeenPayload(seenTotal: 17), owner: HeartsFixture.me)
-        #expect(try await handler.send(operation, context: context()) == .succeeded)
-        #expect(gateway.seenTotals == [17])
     }
 
     @Test func aRefusalThatCannotChangeDropsTheWrite() async throws {

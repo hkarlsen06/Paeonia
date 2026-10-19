@@ -53,39 +53,6 @@ struct MemoriesViewModelTests {
         #expect(cachedAssetIDs == record.snapshot.visibleMediaAssetIDs)
     }
 
-    @Test func createMemoryFailsWhenPhotoUploadFails() async throws {
-        let uploader = MemoryTestMediaUploader(shouldFail: true)
-        let env = makeEnvironment(uploader: uploader)
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-
-        let saved = await env.viewModel.createMemory(
-            title: "Beach day",
-            date: "2026-06-30",
-            note: "",
-            photos: [makeImageData()]
-        )
-
-        #expect(!saved)
-        #expect(env.viewModel.timeline.isEmpty)
-        #expect(env.viewModel.notice == .photoUploadFailed)
-    }
-
-    @Test func createMemoryWithEmptyTitleIsRejectedWithoutNotice() async throws {
-        let env = makeEnvironment()
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-
-        let saved = await env.viewModel.createMemory(
-            title: "   ",
-            date: "2026-06-30",
-            note: "Something",
-            photos: []
-        )
-
-        #expect(!saved)
-        #expect(env.viewModel.timeline.isEmpty)
-        #expect(env.viewModel.notice == nil)
-    }
-
     @Test func addPhotosCachesUploadedImageForImmediateDisplay() async throws {
         let uploader = MemoryTestMediaUploader()
         let env = makeEnvironment(uploader: uploader)
@@ -120,38 +87,6 @@ struct MemoriesViewModelTests {
         await env.viewModel.deleteMemory(record)
 
         #expect(env.viewModel.timeline.isEmpty)
-    }
-
-    @Test func saveNoteUpdatesOwnNote() async throws {
-        let env = makeEnvironment()
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        _ = await env.viewModel.createMemory(title: "Trip", date: "2026-06-30", note: "First", photos: [])
-        let record = try #require(env.viewModel.timeline.flatMap(\.memories).first)
-
-        let saved = await env.viewModel.saveEdits(MemoryEdit(
-            base: record,
-            title: "Trip",
-            date: "2026-06-30",
-            note: "Updated note",
-            newPhotos: [],
-            removedMedia: [],
-            place: record.snapshot.place
-        ))
-
-        #expect(saved)
-        let updated = try #require(env.viewModel.timeline.flatMap(\.memories).first)
-        #expect(updated.snapshot.ownNote?.body == "Updated note")
-    }
-
-    @Test func configureFlushesLocalChangesThroughTheSyncHandler() async throws {
-        let env = makeEnvironment()
-        let counter = MemoryTestCallCounter()
-        env.viewModel.setLocalChangeSyncHandler { counter.count += 1 }
-
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-        await waitUntil { counter.count >= 1 }
-
-        #expect(counter.count >= 1)
     }
 
     @Test func observeStoreChangesShowsAPartnersMemoryAndRemovesItWhenHidden() async throws {

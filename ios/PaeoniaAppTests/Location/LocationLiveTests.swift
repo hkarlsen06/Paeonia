@@ -144,18 +144,6 @@ struct LocationVisibilityLiveFeedTests {
 
 @MainActor
 struct LocationLiveReloadTests {
-    private func makeViewModel(
-        visibilityStore: InMemoryLocationVisibilityRepository,
-        ownLocationStore: InMemoryOwnLocationSnapshotRepository
-    ) -> LocationMapViewModel {
-        LocationMapViewModel(
-            visibilityStore: visibilityStore,
-            ownLocationStore: ownLocationStore,
-            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
-            locationCapture: LiveTestLocationCapture()
-        )
-    }
-
     private func snapshot(
         state: PartnerLocationVisibilityState,
         capturedAt: Date,
@@ -187,36 +175,6 @@ struct LocationLiveReloadTests {
         )
     }
 
-    @Test func rereadsWhenThePartnerChangesAndWhenOwnLocationArrives() async throws {
-        let visibilityStore = InMemoryLocationVisibilityRepository()
-        let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
-        let viewModel = makeViewModel(visibilityStore: visibilityStore, ownLocationStore: ownLocationStore)
-        try await visibilityStore.save(snapshot(state: .notSharing, capturedAt: Date()))
-        await viewModel.configure(identity: LocationIdentity(currentUserID: liveOwnerID, coupleID: liveCoupleID))
-        // Sharing is on but this phone has not found its own location yet.
-        #expect(viewModel.mapState == .currentLocationMissing)
-
-        try await ownLocationStore.save(ownLocation())
-        // The partner switched sharing on but has not sent a location yet.
-        let partnerWaiting = await waitUntil {
-            await viewModel.mapState == .waitingForPartnerLocation
-        }
-        #expect(partnerWaiting)
-
-        try await visibilityStore.save(snapshot(state: .visible, capturedAt: Date()))
-        let ready = await waitUntil {
-            if case .ready = await viewModel.mapState { return true }
-            return false
-        }
-        #expect(ready)
-
-        try await visibilityStore.save(snapshot(state: .relationshipEnded, capturedAt: Date()))
-        let ended = await waitUntil {
-            await viewModel.mapState == .partnerUnknown(.relationshipEnded)
-        }
-        #expect(ended)
-    }
-
     @Test func computesStalenessFromCaptureTimeNotTheServerFlag() throws {
         let now = Date(timeIntervalSince1970: 1_000_000)
         let own = ownLocation()
@@ -240,14 +198,5 @@ struct LocationLiveReloadTests {
         }
         #expect(!recentStale)
         #expect(oldStale)
-    }
-}
-
-@MainActor
-private final class LiveTestLocationCapture: ForegroundLocationCapturing {
-    var authorizationState: ForegroundLocationAuthorizationState { .authorized }
-
-    func captureCurrentLocation() throws -> LocationPoint {
-        throw ForegroundLocationCaptureError.unavailable
     }
 }

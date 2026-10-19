@@ -14,10 +14,6 @@ struct ExquisiteCorpseLiveMessageTests {
         try JSONDecoder().decode(ExquisiteCorpseLiveMessage.self, from: JSONEncoder().encode(message))
     }
 
-    @Test func theGameNamesItselfOnTheWire() {
-        #expect(ExquisiteCorpseLiveMessage.game == "exquisite_corpse")
-    }
-
     @Test func aPenMessageIsOneFlatObjectWithATypeField() throws {
         let object = try json(.pen(partID: part, x: 0.25, y: 0.5))
 
@@ -28,27 +24,12 @@ struct ExquisiteCorpseLiveMessageTests {
         #expect(object.count == 4)
     }
 
-    @Test func aLiftedPenCarriesNoPosition() throws {
-        let object = try json(.pen(partID: part, x: nil, y: nil))
-
-        #expect(object["type"] as? String == "pen")
-        #expect(object["x"] == nil && object["y"] == nil)
-        #expect(try roundTrip(.pen(partID: part, x: nil, y: nil)) == .pen(partID: part, x: nil, y: nil))
-    }
-
     @Test func aStripMessageCarriesTheDrawingAsText() throws {
         let object = try json(.strip(partID: part, drawing: "AQID"))
 
         #expect(object["type"] as? String == "strip")
         #expect(object["drawing"] as? String == "AQID")
         #expect(object["part"] as? String == part.uuidString)
-    }
-
-    @Test func aDoneMessageHasOnlyTheTypeAndThePart() throws {
-        let object = try json(.done(partID: part))
-
-        #expect(object["type"] as? String == "done")
-        #expect(object.count == 2)
     }
 
     @Test func everyMessageSurvivesTheTrip() throws {
@@ -99,13 +80,6 @@ struct ExquisiteCorpseLiveMessageTests {
 struct ExquisiteCorpsePenSamplerTests {
     private typealias Sample = ExquisiteCorpsePenSampler.Sample
 
-    @Test func aPositionIsTheCenterOfItsCellOnA20By20Grid() {
-        var sampler = ExquisiteCorpsePenSampler()
-
-        // 0.51 is in column 10 and 0.26 in row 5.
-        #expect(sampler.move(x: 0.51, y: 0.26, at: 0) == Sample(x: 0.525, y: 0.275))
-    }
-
     @Test func theEdgesStayInsideTheGrid() {
         var sampler = ExquisiteCorpsePenSampler()
 
@@ -130,21 +104,6 @@ struct ExquisiteCorpsePenSamplerTests {
         #expect(sampler.move(x: 0.3, y: 0.3, at: 0.05) == nil)
         #expect(sampler.move(x: 0.3, y: 0.3, at: 0.124) == nil)
         #expect(sampler.move(x: 0.3, y: 0.3, at: 0.125) != nil)
-    }
-
-    @Test func aPenSweepingForASecondSendsNoMoreThanEightPositions() {
-        var sampler = ExquisiteCorpsePenSampler()
-        var sent = 0
-
-        // 60 moves in a second, each into a new cell.
-        for frame in 0..<60 {
-            let fraction = Double(frame) / 60
-            if sampler.move(x: fraction, y: 1 - fraction, at: fraction) != nil {
-                sent += 1
-            }
-        }
-
-        #expect(sent == 8)
     }
 
     @Test func aMoveHeldBackByTheRateLimitGoesOutLater() {

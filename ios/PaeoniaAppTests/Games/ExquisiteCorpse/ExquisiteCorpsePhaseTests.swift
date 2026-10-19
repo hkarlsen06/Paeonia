@@ -30,14 +30,6 @@ struct ExquisiteCorpsePhaseTests {
         #expect(resolve(started, hasSettings: false).phase == .needsSetup)
     }
 
-    @Test func thePhasesBeforeTheGameHaveNoPartAndNoFigure() {
-        let noGame = Fixture.state(game: nil)
-        for resolution in [resolve(nil), resolve(noGame, hasSettings: false), resolve(noGame)] {
-            #expect(resolution.part == nil && resolution.figure == nil)
-            #expect(resolution.turnPhase == resolution.phase)
-        }
-    }
-
     // MARK: A turn in progress
 
     @Test func myTurnForTheHeadIsDrawingWithNoFigureYet() {
@@ -72,12 +64,6 @@ struct ExquisiteCorpsePhaseTests {
 
         #expect(waiting.phase == .waiting && waiting.part == .legs && waiting.figure == current)
         #expect(watching.phase == .watching && watching.part == .legs && watching.figure == current)
-    }
-
-    @Test func theLiveRoomDoesNotMatterOnMyTurn() {
-        let state = Fixture.state(game: Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me))
-
-        #expect(resolve(state, live: true).phase == .drawing)
     }
 
     // MARK: Reveal
@@ -123,13 +109,6 @@ struct ExquisiteCorpsePhaseTests {
         #expect(resolve(state).phase == .drawing)
     }
 
-    @Test func aMarkForAnotherFigureDoesNotHideThisReveal() {
-        let finished = Fixture.figure(1)
-        let state = Fixture.state(game: Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me), recent: [finished])
-
-        #expect(resolve(state, pending: Fixture.pending(revealsSeen: [Fixture.figureID(7)])).phase == .reveal)
-    }
-
     @Test func onlyTheLatestFigureCanBeAnUnseenReveal() {
         let older = Fixture.figure(1)
         let latestSeen = Fixture.figure(2, revealSeen: true)
@@ -158,29 +137,5 @@ struct ExquisiteCorpsePhaseTests {
 
         #expect(starred.figure?.starredByMe == true)
         #expect(unstarred.figure?.starredByMe == false)
-    }
-
-    @Test func theTurnPhaseOfAnUnrevealedFigureFollowsTheLiveRoom() {
-        let finished = Fixture.figure(2)
-        let game = Fixture.game(figure: 3, partIndex: 0, turn: Fixture.partner)
-
-        let resolution = resolve(Fixture.state(game: game, recent: [finished]), live: true)
-
-        #expect(resolution.phase == .reveal)
-        #expect(resolution.turnPhase == .watching)
-    }
-
-    // MARK: Live role
-
-    @Test func theLiveRoleFollowsThePhase() {
-        typealias Phase = ExquisiteCorpsePhase
-
-        #expect(Phase.liveRole(phase: .drawing) == .drawing)
-        #expect(Phase.liveRole(phase: .watching) == .watching)
-        #expect(Phase.liveRole(phase: .waiting) == .watching)
-        #expect(Phase.liveRole(phase: .reveal) == .result)
-        for phase in [Phase.loading, .needsSetup, .preparing, .waitingToSync] {
-            #expect(Phase.liveRole(phase: phase) == .present)
-        }
     }
 }

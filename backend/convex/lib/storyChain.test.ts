@@ -62,10 +62,6 @@ const codePoints = (text: string) => [...text].length;
 describe.each(LANGUAGES)("openings %s", (language) => {
   const openings = STORY_OPENINGS[language];
 
-  test("has 40 openings", () => {
-    expect(openings).toHaveLength(40);
-  });
-
   test("has unique snake_case ascii ids and unique texts", () => {
     const ids = openings.map((opening) => opening.id);
     const texts = openings.map((opening) => opening.text);

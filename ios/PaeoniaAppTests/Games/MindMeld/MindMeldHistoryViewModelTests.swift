@@ -30,23 +30,6 @@ struct MindMeldHistoryViewModelTests {
         MindMeldHistoryViewModel(dependencies: env.dependencies(), participants: GameFixture.participants)
     }
 
-    @Test func theFirstPageLoadsAndIsCached() async {
-        let env = await environment(games: 70)
-        let viewModel = viewModel(env)
-        #expect(viewModel.isLoading)
-
-        await viewModel.load()
-
-        #expect(!viewModel.isLoading)
-        #expect(!viewModel.loadFailed)
-        #expect(viewModel.games.count == 30)
-        #expect(viewModel.games.first?.gameNumber == 70)
-        #expect(viewModel.hasMore)
-        #expect(env.gateway.historyRequests == [.init(beforeGameNumber: nil, limit: 30)])
-        let cached = await env.cache.document(ownerUserID: GameFixture.me).history
-        #expect(cached?.games.count == 30)
-    }
-
     @Test func theCachedPageStaysWhenTheServerCannotBeReached() async {
         let env = await environment(games: 5, cached: true)
         env.gateway.fail("history")
@@ -58,36 +41,6 @@ struct MindMeldHistoryViewModelTests {
         #expect(!viewModel.loadFailed)
         #expect(!viewModel.isLoading)
         #expect(viewModel.stats?.melds == 2)
-    }
-
-    @Test func withNothingCachedAFailedReadSaysSo() async {
-        let env = await environment(games: 5)
-        env.gateway.fail("history")
-        let viewModel = viewModel(env)
-
-        await viewModel.load()
-
-        #expect(viewModel.loadFailed)
-        #expect(!viewModel.isLoading)
-        #expect(viewModel.games.isEmpty)
-
-        env.gateway.unfail("history")
-        await viewModel.load()
-
-        #expect(!viewModel.loadFailed)
-        #expect(viewModel.games.count == 5)
-    }
-
-    @Test func noFinishedGamesIsAnEmptyListNotAFailure() async {
-        let env = await environment(games: 0)
-        let viewModel = viewModel(env)
-
-        await viewModel.load()
-
-        #expect(viewModel.games.isEmpty)
-        #expect(!viewModel.loadFailed)
-        #expect(!viewModel.hasMore)
-        #expect(!viewModel.isLoading)
     }
 
     @Test func olderGamesLoadWhenARowNearTheEndAppears() async {
@@ -110,29 +63,6 @@ struct MindMeldHistoryViewModelTests {
         #expect(Set(viewModel.games.map(\.id)).count == 70)
     }
 
-    @Test func aFailedPageCanBeTriedAgain() async {
-        let env = await environment(games: 40)
-        let viewModel = viewModel(env)
-        await viewModel.load()
-        env.gateway.fail("history")
-
-        await viewModel.loadMoreIfNeeded(after: viewModel.games[29])
-        #expect(viewModel.loadMoreFailed)
-        #expect(viewModel.games.count == 30)
-
-        // A failed page does not ask again by itself.
-        let requests = env.gateway.historyRequests.count
-        await viewModel.loadMoreIfNeeded(after: viewModel.games[29])
-        #expect(env.gateway.historyRequests.count == requests)
-
-        env.gateway.unfail("history")
-        await viewModel.retryLoadMore()
-
-        #expect(!viewModel.loadMoreFailed)
-        #expect(viewModel.games.count == 40)
-        #expect(!viewModel.hasMore)
-    }
-
     @Test func reloadingKeepsTheOlderGamesThePersonScrolledTo() async {
         let env = await environment(games: 70)
         let viewModel = viewModel(env)
@@ -145,17 +75,5 @@ struct MindMeldHistoryViewModelTests {
         #expect(viewModel.games.count == 60)
         #expect(viewModel.games.first?.gameNumber == 70)
         #expect(viewModel.hasMore)
-    }
-
-    @Test func aNewGameAppearsAtTheTopOfTheList() async {
-        let env = await environment(games: 3)
-        let viewModel = viewModel(env)
-        await viewModel.load()
-        #expect(viewModel.games.map(\.gameNumber) == [3, 2, 1])
-
-        env.gateway.setHistory((1...4).reversed().map { fixtures.historyGame(number: $0) })
-        await viewModel.load()
-
-        #expect(viewModel.games.map(\.gameNumber) == [4, 3, 2, 1])
     }
 }

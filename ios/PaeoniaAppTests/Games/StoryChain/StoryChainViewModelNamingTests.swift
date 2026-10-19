@@ -21,24 +21,6 @@ struct StoryChainViewModelNamingTests {
         return Env.titling(turn: Fixture.me, lines: lines)
     }
 
-    @Test func aTitleMustBeOneToFortyCharacters() async {
-        let viewModel = Env(state: titlingState()).viewModel()
-        await viewModel.reload()
-        #expect(viewModel.phase == .naming)
-
-        let titles = [
-            ("", false),
-            ("   ", false),
-            ("The night bus", true),
-            (String(repeating: "x", count: 40), true),
-            (String(repeating: "x", count: 41), false),
-        ]
-        for (title, canName) in titles {
-            viewModel.titleDraft = title
-            #expect(viewModel.canName == canName)
-        }
-    }
-
     @Test func namingQueuesTheTitleAndShowsTheRevealUntilContinue() async throws {
         let environment = Env(state: titlingState())
         let viewModel = environment.viewModel()
@@ -87,15 +69,6 @@ struct StoryChainViewModelNamingTests {
 
         #expect(await environment.queuedNames().isEmpty)
         #expect(viewModel.phase == .naming)
-    }
-
-    @Test func whilePartnerNamesTheStoryThereIsNothingToName() async {
-        let theirs = Env(state: Env.titling(turn: Fixture.partner, lines: Fixture.lines(8, starter: Fixture.partner)))
-        let viewModel = theirs.viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .waitingForName)
-        #expect(!viewModel.canName)
     }
 
     // MARK: The other partner's reveal

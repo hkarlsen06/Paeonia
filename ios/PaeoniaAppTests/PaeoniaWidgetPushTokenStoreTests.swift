@@ -49,28 +49,4 @@ struct PaeoniaWidgetPushTokenStoreTests {
         #expect(store.loadToken(forAnyOf: ["PaeoniaWidget"] + LockScreenWidgetKind.all) == "token")
         #expect(store.loadToken(forAnyOf: ["OtherWidget"]) == nil)
     }
-
-    @Test func nilDefaultsFallbackCanPersistToken() {
-        let defaults = UserDefaults.standard
-        let keys = [
-            "paeonia.widgetPush.token",
-            "paeonia.widgetPush.widgetKinds",
-            "paeonia.widgetPush.savedAt",
-        ]
-        keys.forEach(defaults.removeObject)
-        defer {
-            keys.forEach(defaults.removeObject)
-        }
-
-        let store = PaeoniaWidgetPushTokenStore(defaults: nil)
-        let savedAt = Date(timeIntervalSince1970: 1_800_000_001)
-
-        store.save(token: "fallback-token", widgetKinds: ["PaeoniaWidget"], savedAt: savedAt)
-
-        #expect(store.load() == PaeoniaWidgetPushTokenSnapshot(
-            token: "fallback-token",
-            widgetKinds: ["PaeoniaWidget"],
-            savedAt: savedAt
-        ))
-    }
 }

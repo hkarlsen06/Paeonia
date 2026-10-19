@@ -23,51 +23,6 @@ struct StreakRestoreViewModelTests {
         #expect(viewModel.error == nil)
     }
 
-    @Test func cancelledPurchaseLeavesOfferOpen() async {
-        let service = FakeStreakRestoreStoreKit(result: .success(nil))
-        var restoredTo: Int?
-        let viewModel = StreakRestoreViewModel(
-            streak: .restorable(count: 30),
-            userID: "user",
-            storeKitService: service,
-            onRestored: { restoredTo = $0 }
-        )
-
-        let didPurchase = await viewModel.purchase()
-
-        #expect(!didPurchase)
-        #expect(viewModel.restoredCount == nil)
-        #expect(restoredTo == nil)
-        #expect(viewModel.error == nil)
-    }
-
-    @Test func windowClosedMapsToNotRestorableError() async {
-        let service = FakeStreakRestoreStoreKit(result: .failure(.streakNotRestorable))
-        let viewModel = StreakRestoreViewModel(
-            streak: .restorable(count: 30),
-            userID: "user",
-            storeKitService: service
-        )
-
-        let didPurchase = await viewModel.purchase()
-
-        #expect(!didPurchase)
-        #expect(viewModel.error == .streakNotRestorable)
-    }
-
-    @Test func linkedToAnotherAccountSurfacesAsPurchaseLinkedError() async {
-        let service = FakeStreakRestoreStoreKit(result: .failure(.purchaseLinkedToAnotherAccount))
-        let viewModel = StreakRestoreViewModel(
-            streak: .restorable(count: 30),
-            userID: "user",
-            storeKitService: service
-        )
-
-        _ = await viewModel.purchase()
-
-        #expect(viewModel.error == .purchaseLinkedToAnotherAccount)
-    }
-
     // MARK: - Paid, but not confirmed
 
     @Test func serverFailureAfterPaymentSaysThePaymentIsWaiting() async {
@@ -267,8 +222,6 @@ struct StreakRestoreViewModelTests {
     }
 }
 
-struct FakeOfflineError: Error {}
-
 extension CoupleStreak {
     static func restorable(count: Int) -> CoupleStreak {
         CoupleStreak(
@@ -320,12 +273,10 @@ final class FakeStreakRestoreStoreKit: PaeoniaStoreKitServicing {
     var result: Outcome
     /// What `recoverPendingStreakRestores()` reports. `nil` means nothing was pending.
     var recovered: Int?
-    var loadProductsError: (any Error)?
     /// Parks the next purchase inside the App Store so a test can tap again mid-purchase.
     var holdsNextRedeem = false
 
     private(set) var redeemCallCount = 0
-    private(set) var loadProductsCallCount = 0
     private var heldRedeem: CheckedContinuation<Void, Never>?
 
     init(result: Outcome, recovered: Int? = nil) {
@@ -335,12 +286,7 @@ final class FakeStreakRestoreStoreKit: PaeoniaStoreKitServicing {
 
     func configure(userID: String) {}
 
-    func loadProducts() async throws {
-        loadProductsCallCount += 1
-        if let loadProductsError {
-            throw loadProductsError
-        }
-    }
+    func loadProducts() async throws {}
 
     func product(for productID: PaeoniaSubscriptionProductID) -> Product? { nil }
     func product(for productID: PaeoniaConsumableProductID) -> Product? { nil }

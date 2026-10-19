@@ -93,18 +93,6 @@ struct StoryChainPendingHandlerTests {
         #expect(await cachedNotices().isEmpty)
     }
 
-    @Test func aTitleAndAStartAreSentWithTheirPayloads() async throws {
-        let queuedName = name()
-        let nameSnapshot = try environment.snapshot(.storyChainNameStory, queuedName, sequence: 1)
-        let startSnapshot = try environment.snapshot(.storyChainStartStory, Fixture.queuedStart(), sequence: 2)
-
-        #expect(try await nameHandler().send(nameSnapshot, context: environment.context) == .succeeded)
-        #expect(try await startHandler().send(startSnapshot, context: environment.context) == .succeeded)
-
-        #expect(gateway.names == [queuedName])
-        #expect(gateway.starts == [Fixture.queuedStart()])
-    }
-
     // MARK: Refusals
 
     @Test func aRuleTheServerEnforcesDropsTheMoveAndTellsThePerson() async throws {

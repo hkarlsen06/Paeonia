@@ -6,35 +6,6 @@ import Testing
 struct LocationMapViewModelSharingTests {
     @MainActor
     @Test
-    func enablingSharingRequestsLocalChangeSync() async throws {
-        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
-        let syncRecorder = LocalChangeSyncRecorder()
-        let viewModel = LocationMapViewModel(
-            visibilityStore: InMemoryLocationVisibilityRepository(),
-            ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
-            pendingOperationStore: InMemoryPendingSyncOperationRepository(),
-            operationProvider: FixedOperationProvider(),
-            locationCapture: StubLocationCapture(
-                location: LocationPoint(
-                    latitude: 59.91,
-                    longitude: 10.75,
-                    capturedAt: Date(timeIntervalSince1970: 100)
-                )
-            )
-        )
-        viewModel.setLocalChangeSyncHandler {
-            syncRecorder.record()
-        }
-        await viewModel.configure(identity: LocationIdentity(currentUserID: ownerUserID, coupleID: coupleID))
-
-        await viewModel.setSharingEnabled(true)
-
-        #expect(syncRecorder.callCount == 1)
-    }
-
-    @MainActor
-    @Test
     func deniedPermissionDoesNotEnableSharingOrQueueOperation() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let coupleID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))

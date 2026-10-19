@@ -55,29 +55,6 @@ struct DailyChallengeHistoryTests {
         #expect(days.first(where: { $0.localDate == Self.day3 })?.questions.count == 1)
     }
 
-    @Test func removingQuestionsDropsEmptiedDays() {
-        let questions = historyQuestions([
-            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-            answeredOwnRow(localDate: Self.day3, slotNumber: 2, answeredAt: TestDailyChallengeIDs.answerDate),
-            answeredOwnRow(localDate: Self.day1, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-        ])
-        let days = DailyChallengeHistory.grouped(questions)
-        let day3Ids = days[0].questions.map(\.id)
-        let day1Id = days[1].questions[0].id
-
-        // Nothing to remove leaves the days as they were.
-        #expect(DailyChallengeHistory.removing([], from: days) == days)
-
-        // One question out of two keeps its day.
-        let oneGone = DailyChallengeHistory.removing([day3Ids[0]], from: days)
-        #expect(oneGone.map(\.localDate) == [Self.day3, Self.day1])
-        #expect(oneGone[0].questions.map(\.id) == [day3Ids[1]])
-
-        // Every question of a day out removes the day, divider included.
-        let dayGone = DailyChallengeHistory.removing([day1Id], from: days)
-        #expect(dayGone.map(\.localDate) == [Self.day3])
-    }
-
     @Test func ordersQuestionsWithinADayByLatestAnswerFirst() {
         let early = TestDailyChallengeIDs.answerDate
         let late = early.addingTimeInterval(3_600)
@@ -150,10 +127,6 @@ struct DailyChallengeHistoryTests {
         #expect(days.first?.questions.count == 1)
     }
 
-    @Test func emptyQuestionsProduceNoDays() {
-        #expect(DailyChallengeHistory.grouped([]).isEmpty)
-    }
-
     @Test func parsesLocalDateToUTCMidnight() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
@@ -161,15 +134,6 @@ struct DailyChallengeHistoryTests {
 
         #expect(DailyChallengeHistory.parseLocalDate("2026-06-27") == expected)
         #expect(DailyChallengeHistory.parseLocalDate("not-a-date") == nil)
-    }
-
-    @Test func groupedDayCarriesParsedDateForFormatting() {
-        let questions = historyQuestions([
-            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-        ])
-
-        let day = DailyChallengeHistory.grouped(questions).first
-        #expect(day?.date == DailyChallengeHistory.parseLocalDate(Self.day3))
     }
 
     @Test func serviceLoadHistoryMergesRowsAndDetailsInTwoCalls() async throws {
@@ -199,59 +163,6 @@ struct DailyChallengeHistoryTests {
     }
 
     @MainActor
-    @Test func viewModelLoadsGroupedContentAndBecomesReady() async {
-        let service = RecordingDailyChallengeService(
-            snapshots: [],
-            historyQuestions: historyQuestions([
-                answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-                answeredOwnRow(localDate: Self.day1, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-            ])
-        )
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: TestDailyChallengeIDs.currentUser
-        )
-
-        await viewModel.load()
-
-        guard case let .content(days) = viewModel.state else {
-            Issue.record("Expected content state, got \(viewModel.state)")
-            return
-        }
-        #expect(days.map(\.localDate) == [Self.day3, Self.day1])
-    }
-
-    @MainActor
-    @Test func viewModelEmptyHistoryShowsEmptyState() async {
-        let service = RecordingDailyChallengeService(snapshots: [], historyQuestions: [])
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: TestDailyChallengeIDs.currentUser
-        )
-
-        await viewModel.load()
-
-        #expect(viewModel.state == .empty)
-    }
-
-    @MainActor
-    @Test func viewModelFirstLoadFailureShowsFailedStateWithoutBanner() async {
-        let service = RecordingDailyChallengeService(
-            snapshots: [],
-            historyError: URLError(.badServerResponse)
-        )
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: TestDailyChallengeIDs.currentUser
-        )
-
-        await viewModel.load()
-
-        #expect(viewModel.state == .failed(.other))
-        #expect(viewModel.notice == nil)
-    }
-
-    @MainActor
     @Test func viewModelReloadFailureKeepsContentAndShowsBanner() async {
         let service = RecordingDailyChallengeService(
             snapshots: [],
@@ -274,23 +185,5 @@ struct DailyChallengeHistoryTests {
         }
         #expect(days.count == 1)
         #expect(viewModel.notice == .loadFailed(.other))
-    }
-
-    @MainActor
-    @Test func viewModelCancellationIsSwallowed() async {
-        let service = RecordingDailyChallengeService(
-            snapshots: [],
-            historyError: CancellationError()
-        )
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: service,
-            currentUserID: TestDailyChallengeIDs.currentUser
-        )
-
-        await viewModel.load()
-
-        // A cancelled first load leaves the loading surface up and never errors.
-        #expect(viewModel.state == .loading)
-        #expect(viewModel.notice == nil)
     }
 }

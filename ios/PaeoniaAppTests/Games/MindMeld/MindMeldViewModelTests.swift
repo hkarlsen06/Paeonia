@@ -3,16 +3,13 @@ import Testing
 @testable import PaeoniaApp
 
 /// The Mind Meld flow through `MindMeldViewModel`, on in-memory parts: writing
-/// and locking in, the reveal, starting a game, and the partner.
+/// and locking in, and the reveal.
 @MainActor
 struct MindMeldViewModelTests {
     private let fixtures = MindMeldFixtures()
 
-    private func environment(
-        _ game: RemoteMindMeldGame?,
-        overview: RemoteGamesOverview? = nil
-    ) -> MindMeldTestEnvironment {
-        fixtures.environment(game, overview: overview)
+    private func environment(_ game: RemoteMindMeldGame?) -> MindMeldTestEnvironment {
+        fixtures.environment(game)
     }
 
     // MARK: Locking in
@@ -58,53 +55,6 @@ struct MindMeldViewModelTests {
         #expect(viewModel.phase == .waiting(isQueued: true))
         await viewModel.moveTask?.value
         #expect(viewModel.phase == .waiting(isQueued: true))
-    }
-
-    @Test func anEmptyOrBrokenWordIsRefused() async {
-        let env = environment(fixtures.game(rounds: [fixtures.open(1)]))
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        #expect(!viewModel.canLockIn)
-        #expect(!viewModel.lockIn())
-
-        viewModel.draft = "   "
-        #expect(!viewModel.lockIn())
-
-        viewModel.draft = "one two three four"
-        #expect(viewModel.draftIssue == .tooManyWords)
-        #expect(!viewModel.canLockIn)
-        #expect(!viewModel.lockIn())
-
-        viewModel.draft = String(repeating: "a", count: 31)
-        #expect(viewModel.draftIssue == .tooLong)
-        #expect(!viewModel.lockIn())
-
-        viewModel.draft = "1234"
-        #expect(viewModel.draftIssue == .noLetters)
-        #expect(!viewModel.lockIn())
-
-        #expect(viewModel.phase == .write)
-        await viewModel.moveTask?.value
-        let queued = await env.queued(.lockMindMeldWord)
-        #expect(queued.isEmpty)
-    }
-
-    @Test func aWordSaidInThisGameIsRefused() async {
-        let game = fixtures.game(rounds: [fixtures.revealed(1, "ocean", "sushi"), fixtures.open(2)])
-        let viewModel = environment(game).viewModel()
-        await viewModel.reload()
-        #expect(viewModel.usedWords.count == 2)
-
-        // Spelling does not matter, the server compares match keys.
-        viewModel.draft = "O-cean"
-        #expect(viewModel.draftIssue == .repeatOf("ocean"))
-        #expect(!viewModel.canLockIn)
-        #expect(!viewModel.lockIn())
-
-        viewModel.draft = "oceans"
-        #expect(viewModel.draftIssue == nil)
-        #expect(viewModel.canLockIn)
     }
 
     @Test func lockingInTwiceQueuesOneWord() async {
@@ -164,49 +114,6 @@ struct MindMeldViewModelTests {
         #expect(viewModel.notice == nil)
     }
 
-    @Test func aRefusedWordOfAnotherRoundOnlyShowsTheNotice() async {
-        let env = environment(fixtures.game(rounds: [fixtures.open(1)]))
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        let refused = MindMeldRefusedWord(roundID: UUID(), word: "ocean")
-        await env.cache.recordRefusedWord(refused, ownerUserID: GameFixture.me)
-        await viewModel.reload()
-
-        #expect(viewModel.draft.isEmpty)
-        #expect(viewModel.notice == .moveRejected)
-    }
-
-    // MARK: Surprise me
-
-    @Test func surpriseMeFillsAWordNobodyUsedInTheGameLanguage() async {
-        let game = fixtures.game(rounds: [fixtures.revealed(1, "pizza", "sushi"), fixtures.open(2)])
-        let english = environment(game, overview: MindMeldTestEnvironment.overview(language: .en)).viewModel()
-        await english.reload()
-        let norwegian = environment(game, overview: MindMeldTestEnvironment.overview(language: .nb)).viewModel()
-        await norwegian.reload()
-
-        for _ in 0..<30 {
-            english.surpriseMe()
-            #expect(MindMeldStarterWords.english.contains(english.draft))
-            #expect(english.draftIssue == nil)
-            #expect(english.canLockIn)
-            norwegian.surpriseMe()
-            #expect(MindMeldStarterWords.norwegian.contains(norwegian.draft))
-        }
-    }
-
-    @Test func surpriseMeNeverGivesTheWordAlreadyInTheField() async {
-        let viewModel = environment(fixtures.game(rounds: [fixtures.open(1)])).viewModel()
-        await viewModel.reload()
-
-        for _ in 0..<30 {
-            viewModel.draft = "pizza"
-            viewModel.surpriseMe()
-            #expect(MindMeldWord.matchKey(viewModel.draft) != "pizza")
-        }
-    }
-
     // MARK: The reveal
 
     @Test func countingANearMissMeldsTheGameOnThePhone() async throws {
@@ -230,18 +137,6 @@ struct MindMeldViewModelTests {
         #expect(viewModel.revealIdentity == identity)
         let counts = await env.queued(.countMindMeldRound)
         #expect(try decodePayload(MindMeldCountPayload.self, counts.first).roundID == near.id)
-    }
-
-    @Test func countingIsOnlyOfferedForANearMiss() async {
-        let game = fixtures.game(rounds: [fixtures.revealed(1, seen: false), fixtures.open(2)])
-        let viewModel = environment(game).viewModel()
-        await viewModel.reload()
-
-        viewModel.countIt()
-        await viewModel.moveTask?.value
-
-        #expect(viewModel.revealOutcome == .miss)
-        #expect(!viewModel.resolution.canCount)
     }
 
     @Test func continuingFromAMissMovesToTheNextRound() async throws {

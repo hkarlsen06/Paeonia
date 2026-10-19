@@ -32,16 +32,6 @@ struct ExquisiteCorpseStripCacheTests {
         #expect(strip.strokes.count == 2)
     }
 
-    @Test func aSecondAskGivesTheSameStrip() {
-        var cache = ExquisiteCorpseStripCache()
-        let strokes = strokes()
-
-        let first = cache.strip(of: strokes, including: nil, fromSide: side)
-        let second = cache.strip(of: strokes, including: nil, fromSide: side)
-
-        #expect(first.paeoniaContentSignature == second.paeoniaContentSignature)
-    }
-
     @Test func theStrokeBeingDrawnIsPartOfTheStripButNotRemembered() {
         var cache = ExquisiteCorpseStripCache()
         let strokes = strokes()

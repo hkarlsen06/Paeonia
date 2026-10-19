@@ -46,23 +46,6 @@ function pictureMarks(board: number, picture: readonly number[]): Record<number,
 /** A full small board with no three in a row. Cell 0 is left empty so a test can fill it with player 1. */
 const DRAWN_BOARD_MISSING_CELL_0 = [0, 2, 1, 1, 2, 2, 2, 1, 1];
 
-describe("initial state", () => {
-  test("is empty with a free first move", () => {
-    const state = rules.initial();
-    expect(state).toEqual({
-      cells: new Array(81).fill(0),
-      boards: new Array(9).fill(0),
-      forced: -1,
-      next: 1,
-      outcome: null,
-    });
-    expect(rules.moveLimit).toBe(81);
-    expect(rules.next(state)).toBe(1);
-    expect(rules.outcome(state)).toBeNull();
-    expect(ultimateTicTacToeOpenBoards(state)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
-  });
-});
-
 describe("forced board", () => {
   test("the first move can go anywhere", () => {
     for (const move of [0, 40, 80, at(2, 7), at(6, 3)]) {

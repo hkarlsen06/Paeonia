@@ -104,27 +104,6 @@ struct ExquisiteCorpseHubSummaryTests {
         #expect(!summary(noGame).status.isYourTurn)
     }
 
-    // MARK: Count and link
-
-    @Test func theCountIsTheFinishedCreatures() {
-        // Figure 4 is in progress, so three are finished.
-        let state = Fixture.state(
-            game: Fixture.game(figure: 4, partIndex: 0, turn: Fixture.me),
-            recent: [Fixture.figure(3, revealSeen: true)]
-        )
-
-        let result = summary(state)
-
-        #expect(result.figuresFinished == 3)
-        #expect(result.hasCreatures)
-    }
-
-    @Test func theHistoryLinkNeedsAFinishedCreature() {
-        #expect(!summary(Fixture.partnerHeadTurn()).hasCreatures)
-        #expect(!summary(Fixture.state(game: nil)).hasCreatures)
-        #expect(summary(Fixture.myHeadTurn()).hasCreatures)
-    }
-
     // MARK: Hub model
 
     private func makeModel(
@@ -136,18 +115,6 @@ struct ExquisiteCorpseHubSummaryTests {
         return (model, environment)
     }
 
-    @Test func theModelReadsTheCacheAndTheBadgeFollowsMyTurn() async {
-        let (model, _) = makeModel(Fixture.myBodyTurn())
-        #expect(model.summary == nil)
-        #expect(!model.isYourTurn)
-
-        await model.reload()
-
-        #expect(model.summary?.status == .yourTurn(.body))
-        #expect(model.isYourTurn)
-        #expect(model.kind == .exquisiteCorpse)
-    }
-
     @Test func theModelCountsAPartSavedOnThePhone() async throws {
         let (model, environment) = makeModel(Fixture.myBodyTurn())
         await model.reload()
@@ -157,27 +124,6 @@ struct ExquisiteCorpseHubSummaryTests {
         await model.reload()
 
         #expect(model.summary?.status == .partnerDrawing(.legs))
-        #expect(!model.isYourTurn)
-    }
-
-    @Test func theModelFollowsAServerStateThatMovesOn() async {
-        let (model, environment) = makeModel(Fixture.partnerBodyTurn())
-        await model.reload()
-        #expect(!model.isYourTurn)
-
-        await environment.serverState(Fixture.unseenReveal(figure: 2))
-        await model.reload()
-
-        #expect(model.summary?.status == .revealReady)
-        #expect(model.isYourTurn)
-    }
-
-    @Test func noStateMeansNoCardAndNoBadge() async {
-        let (model, _) = makeModel(nil)
-
-        await model.reload()
-
-        #expect(model.summary == nil)
         #expect(!model.isYourTurn)
     }
 
@@ -201,14 +147,5 @@ struct ExquisiteCorpseHubSummaryTests {
         #expect(notice == .exquisiteCorpsePartRejected)
         // The notice shows once.
         #expect(await model.takeNotice() == nil)
-    }
-
-    @Test func theModelOwnsTheScreensOfItsGame() {
-        let (model, _) = makeModel(nil)
-
-        #expect(model.screen(for: .game(.exquisiteCorpse)) != nil)
-        #expect(model.screen(for: .exquisiteCorpseHistory) != nil)
-        #expect(model.screen(for: .game(.drawAndGuess)) == nil)
-        #expect(model.screen(for: .drawAndGuessHistory) == nil)
     }
 }

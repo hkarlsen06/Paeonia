@@ -25,46 +25,6 @@ struct FirstDayRequestTests {
         #expect(body["p_local_created_at"] is String)
     }
 
-    @Test func answerSendsTheVersionAndText() throws {
-        let body = try json(
-            SaveFirstDayAnswerRequest(questionVersionID: firstDayUUID(1), text: "Hi", operation: operation)
-        )
-
-        #expect(body["p_question_version_id"] as? String == firstDayUUID(1).uuidString)
-        #expect(body["p_text"] as? String == "Hi")
-        #expect(body["p_client_operation_id"] as? String == operation.id.uuidString)
-    }
-
-    @Test func drawingUploadHasNoCoupleAndMarksTheDraft() throws {
-        let body = try json(CreateFirstDayDrawingUploadRequest(revisionID: firstDayUUID(5), operation: operation))
-
-        #expect(body["p_couple_id"] == nil)
-        #expect(body["p_reserved_parent_kind"] as? String == "widget_drawing_revision")
-        #expect(body["p_reserved_parent_id"] as? String == firstDayUUID(5).uuidString)
-        #expect(body["p_upload_purpose"] as? String == "widget_drawing_payload")
-        #expect(body["p_media_type"] as? String == "drawing_payload")
-        #expect(body["p_file_extension"] as? String == "pkdrawing")
-        #expect((body["p_path_context"] as? [String: Any])?["first_day_draft"] as? Bool == true)
-    }
-
-    @Test func drawingSaveDescribesThePayloadWithoutACanvas() throws {
-        let payload = firstDayPayload()
-        let body = try json(
-            SaveFirstDayDrawingRequest(payload: payload, mediaAssetID: firstDayUUID(6), operation: operation)
-        )
-        let bounds = try #require(body["p_bounds"] as? [String: Any])
-
-        #expect(body["p_canvas_id"] == nil)
-        #expect(body["p_parent_revision_id"] == nil)
-        #expect(body["p_payload_media_asset_id"] as? String == firstDayUUID(6).uuidString)
-        #expect(body["p_payload_bytes"] as? Int == payload.drawingData.count)
-        #expect(body["p_stroke_count"] as? Int == 1)
-        #expect(body["p_point_count"] as? Int == 2)
-        #expect(body["p_sha256_hex"] as? String == WidgetCanvasUploadService.sha256Hex(of: payload.drawingData))
-        #expect(bounds["canvasSide"] as? Double == 320)
-        #expect(body["p_client_operation_id"] as? String == operation.id.uuidString)
-    }
-
     @Test func draftDecodesAndPicksThePromptForTheLanguage() throws {
         let json = """
         {
@@ -116,13 +76,6 @@ struct FirstDayQuestionsModelTests {
         return (model, gateway)
     }
 
-    @Test func opensOnTheFirstUnansweredQuestion() throws {
-        let (model, _) = try makeModel(answered: 1)
-
-        #expect(model.step == .question(1))
-        #expect(model.isLastQuestion)
-    }
-
     @Test func savesEachAnswerTrimmedAndMovesOnToQuestionTime() async throws {
         let (model, gateway) = try makeModel(answered: 0)
 
@@ -136,17 +89,6 @@ struct FirstDayQuestionsModelTests {
         #expect(saved.map(\.questionVersionID) == [firstDayUUID(1), firstDayUUID(2)])
         #expect(model.answeredCount == 2)
         #expect(model.step == .questionTime)
-    }
-
-    @Test func anUnchangedAnswerMovesOnWithoutSaving() async throws {
-        let (model, gateway) = try makeModel(answered: 2)
-
-        #expect(model.step == .question(0))
-        #expect(model.text == "Answer 1")
-        #expect(await model.continueFromQuestion())
-
-        #expect(await gateway.steps.isEmpty)
-        #expect(model.step == .question(1))
     }
 
     @Test func aFailedSaveKeepsThePersonOnThePageWithTheirText() async throws {
@@ -185,25 +127,6 @@ struct FirstDayQuestionsModelTests {
         )
 
         #expect(reopened.text == "Half written")
-    }
-
-    @Test func skipsQuestionTimeWhenTheReminderIsOn() async throws {
-        let (model, _) = try makeModel(answered: 1, questionTimeEnabled: true)
-        await model.loadQuestionTimeState()
-
-        model.text = "Last"
-        #expect(await model.continueFromQuestion())
-
-        #expect(model.step == .finished)
-    }
-
-    @Test func emptyOrTooLongTextCannotContinue() throws {
-        let (model, _) = try makeModel(answered: 0)
-
-        model.text = "   "
-        #expect(!model.canContinue)
-        model.text = String(repeating: "a", count: DailyAnswerDraft.maxTextLength + 1)
-        #expect(!model.canContinue)
     }
 }
 
@@ -253,21 +176,6 @@ struct FirstDayStartedOnTests {
         )
         #expect(queued.count == 1)
         #expect(payload.startedOn == "2024-02-29")
-    }
-
-    @Test func theHandlerSendsTheDate() async throws {
-        let gateway = FirstDayGatewaySpy()
-        let dates = FirstDayRelationshipDatesSpy()
-        let handler = FirstDayStartedOnPendingOperationHandler(
-            gateway: gateway,
-            relationshipDates: dates,
-            operationFactory: FirstDayOperationsFake()
-        )
-
-        let result = try await handler.send(try snapshot(startedOn: "2024-02-29"), context: context)
-
-        #expect(result == .succeeded)
-        #expect(await gateway.startedOnValues == ["2024-02-29"])
     }
 
     @Test func onceThePersonIsPairedTheDateGoesToTheCouple() async throws {

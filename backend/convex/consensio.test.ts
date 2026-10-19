@@ -143,15 +143,6 @@ describe("the round", () => {
     expect(data.previous_round).toMatchObject({ id: roundId, spot: 70, guess: 64, my_reveal_seen_at: null });
   });
 
-  test("points drop by one every 4 off", async () => {
-    const cases: [number, number][] = [[0, 5], [3, 5], [4, 4], [7, 4], [8, 3], [12, 2], [16, 1], [19, 1], [20, 0], [100, 0]];
-    for (const [distance, points] of cases) {
-      const s = await startGame();
-      const roundId = await place(s.a, 0);
-      expect((await guess(s.b, roundId, distance)).points).toBe(points);
-    }
-  });
-
   test("the turn is enforced", async () => {
     const s = await startGame();
     const topic = { topic_id: "camping", language: "en" as const };

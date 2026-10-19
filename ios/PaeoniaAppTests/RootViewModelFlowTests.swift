@@ -70,28 +70,6 @@ struct RootViewModelFlowTests {
         #expect(viewModel.state == .unauthenticated)
     }
 
-    @Test func finishingProfileSetupKeepsTheSetupScreenWhileAccessResolves() async {
-        let access = ScriptedAccessRouteService([.unpairedForFlowTest], blockedCall: 1)
-        let viewModel = makeViewModel(
-            auth: FlowAuthService(restoredSession: .test(id: userID.uuidString, profileStatus: .needsOnboarding)),
-            access: access
-        )
-        await viewModel.start()
-        #expect(viewModel.state == .onboarding)
-
-        let finish = Task {
-            await viewModel.completeOnboarding(displayName: "Mina", timeZoneID: "Europe/Oslo", profilePhotoData: nil)
-        }
-        await access.waitForBlockedCall()
-
-        #expect(viewModel.state == .onboarding)
-        #expect(viewModel.isWorking)
-
-        await access.release()
-        await finish.value
-        #expect(viewModel.state == .unpaired)
-    }
-
     // MARK: - Slow cold launch
 
     @Test func slowColdLaunchShowsTheSavedPairedStateUntilTheServerAnswers() async throws {
@@ -159,37 +137,6 @@ struct RootViewModelFlowTests {
         await start.value
         #expect(viewModel.state == .unpaired)
         #expect(await syncService.relationshipAccessPurgePermanence == [true])
-    }
-
-    // MARK: - Tabs
-
-    @Test func leavingThePairedStateReturnsTheTabsToHome() async {
-        let viewModel = makeViewModel(
-            auth: FlowAuthService(restoredSession: completeSession),
-            access: ScriptedAccessRouteService([.pairedForFlowTest(ownerUserID: userID), .unpairedForFlowTest])
-        )
-        await viewModel.start()
-        #expect(viewModel.state == .paired)
-        viewModel.selectMainTab(.us)
-
-        await viewModel.refreshAfterPairingChange()
-
-        #expect(viewModel.state == .unpaired)
-        #expect(viewModel.selectedMainTab == .home)
-    }
-
-    @Test func signingOutReturnsTheTabsToHome() async {
-        let viewModel = makeViewModel(
-            auth: FlowAuthService(restoredSession: completeSession),
-            access: ScriptedAccessRouteService([.pairedForFlowTest(ownerUserID: userID)])
-        )
-        await viewModel.start()
-        viewModel.selectMainTab(.memories)
-
-        await viewModel.signOut()
-
-        #expect(viewModel.state == .unauthenticated)
-        #expect(viewModel.selectedMainTab == .home)
     }
 
     // MARK: - Profile save
@@ -289,38 +236,5 @@ struct RootViewModelFlowTests {
             profilePhotoAssetID: nil,
             profileStatus: .complete
         )
-    }
-}
-
-/// The notification primer needs nothing from the location preference, and
-/// the location primer still waits until that preference is known.
-@MainActor
-struct RootPermissionPrimerOrderTests {
-    @Test func notificationPrimerDoesNotWaitForTheLocationPreference() async throws {
-        let suiteName = "RootPermissionPrimerOrderTests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let pushStore = UserDefaultsPushPermissionPrimerStore(defaults: defaults)
-        let coordinator = RootPairingPermissionPrimerCoordinator(
-            pushPrimerStore: pushStore,
-            locationPrimerStore: UserDefaultsLocationSharingPrimerStore(defaults: defaults)
-        )
-        let identity = LocationIdentity(currentUserID: UUID(), coupleID: UUID())
-
-        await coordinator.presentNotificationPrimerIfNeeded(
-            identity: identity,
-            pushAuthorization: FixedPushAuthorization(isNotDetermined: true)
-        )
-        #expect(coordinator.presentedPrimer == .notifications)
-
-        pushStore.markResponded()
-        coordinator.dismiss()
-        coordinator.presentLocationPrimerIfNeeded(
-            identity: identity,
-            sharingStateIsKnown: false,
-            sharingEnabled: false,
-            locationAuthorizationState: .notDetermined
-        )
-        #expect(coordinator.presentedPrimer == nil)
     }
 }

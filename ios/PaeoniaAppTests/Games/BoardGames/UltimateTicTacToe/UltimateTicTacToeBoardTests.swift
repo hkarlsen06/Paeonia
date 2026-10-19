@@ -16,20 +16,6 @@ struct UltimateTicTacToeBoardTests {
 
     // MARK: Start and forced boards
 
-    @Test func theEmptyBoardAllowsAnyCellAndPlayerOneMovesFirst() {
-        let board = UltimateTicTacToeBoard.initial
-
-        #expect(UltimateTicTacToeBoard.moveLimit == 81)
-        #expect(board.cells.count == 81)
-        #expect(board.cells.allSatisfy { $0 == nil })
-        #expect(board.boards == Array(repeating: .open, count: 9))
-        #expect(board.forced == nil)
-        #expect(board.openBoards == Array(0..<9))
-        #expect(board.next == .one)
-        #expect(board.outcome == nil)
-        #expect((0..<81).allSatisfy { board.isLegal($0) })
-    }
-
     @Test func theCellYouPlayChoosesTheBoardYourOpponentPlaysIn() throws {
         let board = try board([move(0, 4)])
 

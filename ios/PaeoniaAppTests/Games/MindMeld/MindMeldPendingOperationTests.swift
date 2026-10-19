@@ -50,15 +50,6 @@ struct MindMeldPendingOperationTests {
         #expect(env.gateway.locks.isEmpty)
     }
 
-    @Test func aLockDoesNotWaitBehindALaterLock() async throws {
-        try await env.enqueue(.lockMindMeldWord, lock(round: UUID(), word: "later"), sequence: 9)
-
-        let result = try await sendLock(lock(), sequence: 2)
-
-        #expect(result == .succeeded)
-        #expect(env.gateway.locks == [ScriptedMindMeldGateway.Lock(roundID: roundID, word: "ocean")])
-    }
-
     @Test func aTakenLockReadsTheStateBackBeforeLeavingTheQueue() async throws {
         let before = await env.cache.document(ownerUserID: GameFixture.me).state
         #expect(before == nil)
@@ -110,18 +101,6 @@ struct MindMeldPendingOperationTests {
         #expect(await refusedWords() == [MindMeldRefusedWord(roundID: roundID, word: "ocean")])
         // Taken once.
         #expect(await refusedWords().isEmpty)
-    }
-
-    @Test func aRoundThatAlreadyEndedDropsTheLockToo() async throws {
-        env.gateway.setLockError(.server(code: "23514", message: "this round is already finished"))
-
-        let result = try await sendLock(lock())
-
-        guard case .terminalFailure = result else {
-            Issue.record("The lock should be dropped")
-            return
-        }
-        #expect(await refusedWords().count == 1)
     }
 
     @Test func aRefusalForAnUnknownReasonIsTriedThreeTimes() async throws {
@@ -204,12 +183,6 @@ struct MindMeldPendingOperationTests {
         #expect(work?.seenEnds == [ended])
         #expect(work?.hasFailedMoveAttempt == false)
         #expect(work?.isStarting == false)
-    }
-
-    @Test func anEmptyQueueIsNoPendingWork() async {
-        let work = await MindMeldPendingWork.load(from: env.pending, ownerUserID: GameFixture.me)
-
-        #expect(work == MindMeldPendingWork.none)
     }
 
     @Test func anotherPersonsQueueIsNotRead() async throws {

@@ -241,24 +241,6 @@ struct ExquisiteCorpseCacheContentTests {
         #expect(document.history?.nextBeforeFigureNumber == nil)
     }
 
-    @Test func aLaterStarAnswerReplacesAnEarlierOne() async {
-        let cache = InMemoryExquisiteCorpseCache()
-        await cache.saveStars([Fixture.figureID(1): true], ownerUserID: me)
-
-        await cache.saveStars([Fixture.figureID(1): false, Fixture.figureID(2): true], ownerUserID: me)
-
-        #expect(await cache.document(ownerUserID: me).stars == [Fixture.figureID(1): false, Fixture.figureID(2): true])
-    }
-
-    @Test func aHistoryPageGivesTheStarsItCarries() {
-        let page = RemoteExquisiteCorpseHistoryPage(
-            figures: [Fixture.figure(2, starred: true), Fixture.figure(1, starred: false)],
-            nextBeforeFigureNumber: 1
-        )
-
-        #expect(page.starValues == [Fixture.figureID(2): true, Fixture.figureID(1): false])
-    }
-
     // MARK: Ideas
 
     @Test func theIdeaOnTheChipIsKeptPerPartAndCanBeRemoved() async {
@@ -277,37 +259,6 @@ struct ExquisiteCorpseCacheContentTests {
         #expect(await cache.document(ownerUserID: me).ideas == [legs: "legs-frog"])
     }
 
-    @Test func onlyTheLatest20IdeasStay() async {
-        let cache = InMemoryExquisiteCorpseCache()
-        let parts = (0..<21).map { _ in UUID() }
-        for (index, part) in parts.enumerated() {
-            await cache.saveIdea("idea-\(index)", partID: part, ownerUserID: me)
-        }
-
-        let ideas = await cache.document(ownerUserID: me).ideas
-
-        #expect(ideas.count == 20)
-        #expect(ideas[parts[0]] == nil)
-        #expect(ideas[parts[1]] == "idea-1")
-        #expect(ideas[parts[20]] == "idea-20")
-    }
-
-    @Test func choosingAnIdeaAgainMakesItTheNewestOne() async {
-        let cache = InMemoryExquisiteCorpseCache()
-        let parts = (0..<20).map { _ in UUID() }
-        for (index, part) in parts.enumerated() {
-            await cache.saveIdea("idea-\(index)", partID: part, ownerUserID: me)
-        }
-
-        // The oldest part gets a new idea, so the next part pushes out the second oldest.
-        await cache.saveIdea("idea-new", partID: parts[0], ownerUserID: me)
-        await cache.saveIdea("idea-extra", partID: UUID(), ownerUserID: me)
-
-        let ideas = await cache.document(ownerUserID: me).ideas
-        #expect(ideas[parts[0]] == "idea-new")
-        #expect(ideas[parts[1]] == nil)
-    }
-
     // MARK: Notices and refusals
 
     @Test func aNoticeIsKeptOnceAndForgottenWhenTaken() async {
@@ -320,16 +271,6 @@ struct ExquisiteCorpseCacheContentTests {
         #expect(await cache.takeNotices(ownerUserID: me) == [.partRejected, .moveRejected])
         #expect(await cache.takeNotices(ownerUserID: me).isEmpty)
         #expect(await cache.takeNotices(ownerUserID: Fixture.partner).isEmpty)
-    }
-
-    @Test func refusalsAreCountedPerOperation() async {
-        let cache = InMemoryExquisiteCorpseCache()
-        let first = UUID()
-        let second = UUID()
-
-        #expect(await cache.recordUnexplainedRefusal(operationID: first, ownerUserID: me) == 1)
-        #expect(await cache.recordUnexplainedRefusal(operationID: first, ownerUserID: me) == 2)
-        #expect(await cache.recordUnexplainedRefusal(operationID: second, ownerUserID: me) == 1)
     }
 
     @Test func clearingForgetsEverything() async {

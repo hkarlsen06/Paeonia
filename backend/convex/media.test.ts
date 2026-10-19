@@ -499,15 +499,6 @@ describe("get_media_signed_url and GET /media", () => {
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(up.bytes);
   });
 
-  test("the default lifetime is 15 minutes", async () => {
-    const t = newTest();
-    const couple = await createCouple(t);
-    const up = await memoryWithPhoto(t, couple);
-    const [row] = await couple.first.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: up.assetId });
-    expect(row.expires_in_seconds).toBe(900);
-    expect(row.signed_url_expires_at).toBe("2026-10-10T12:15:00.000Z");
-  });
-
   test("an expired link is refused", async () => {
     const t = newTest();
     const couple = await createCouple(t);

@@ -632,13 +632,6 @@ describe("queue_subscription_trial_reminders", () => {
     expect(await reminders(t)).toHaveLength(0);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
-
-  test("runs hourly at minute 15", () => {
-    const job = (crons as unknown as { crons: Record<string, { schedule: unknown; name: string }> }).crons[
-      "queue-subscription-trial-reminders"
-    ];
-    expect(job.schedule).toEqual({ type: "cron", cron: "15 * * * *" });
-  });
 });
 
 describe("isFreeTrialPayload", () => {

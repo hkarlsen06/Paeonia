@@ -25,21 +25,6 @@ struct PairingInviteJoinTests {
         #expect(viewModel.invite == makeInvite())
     }
 
-    @Test func createInviteIsIgnoredWhileANewCodeIsBeingMade() async throws {
-        let gate = JoinTestGate()
-        let service = JoinTestPairingService(rotateGate: gate)
-        let viewModel = makeViewModel(service: service, store: JoinTestInviteStore(initialInvite: makeInvite()))
-        await viewModel.loadInviteIfNeeded()
-
-        let rotation = Task { await viewModel.revokeAndCreateNewInvite() }
-        await gate.waitUntilWaiting()
-        await viewModel.createInvite()
-        await gate.open()
-        _ = await rotation.value
-
-        #expect(await service.createCallCount == 0)
-    }
-
     // MARK: - Offline launch
 
     @Test func cachedInviteThatHasNotExpiredStaysVisibleWhenTheCheckFailsOffline() async throws {

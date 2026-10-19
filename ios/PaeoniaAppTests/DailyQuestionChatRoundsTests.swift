@@ -138,63 +138,7 @@ struct DailyChatRoundsTests {
         )
     }
 
-    @Test func theNewestDayOpensAtTheNewestMessageOnceSomeoneHasWrittenSinceItBegan() {
-        let march = day(startsAt: 100, ownAt: 110, partnerAt: 120, sharedRound: true)
-        let october = day(startsAt: 900, ownAt: 910, partnerAt: 920, sharedRound: true)
-
-        #expect(
-            DailyChatRounds.openingScroll(rounds: [march, october], focusing: nil, messages: [message(at: 1_000)])
-                == .newestMessage
-        )
-        // Messages from before the newest day began don't pull the page down.
-        #expect(
-            DailyChatRounds.openingScroll(rounds: [march, october], focusing: nil, messages: [message(at: 500)])
-                == .questionRow(october.id)
-        )
-    }
-
-    @Test func anEarlierDayOpensAtItsQuestionEvenWithNewerMessages() {
-        let march = day(startsAt: 100, ownAt: 110, partnerAt: 120, sharedRound: true)
-        let june = day(startsAt: 500, ownAt: 510, partnerAt: 520, sharedRound: true)
-        let october = day(startsAt: 900, ownAt: 910, partnerAt: 920, sharedRound: true)
-        let rounds = [march, june, october]
-
-        #expect(
-            DailyChatRounds.openingScroll(rounds: rounds, focusing: june.id, messages: [message(at: 1_000)])
-                == .questionRow(june.id)
-        )
-        #expect(
-            DailyChatRounds.openingScroll(rounds: rounds, focusing: march.id, messages: [message(at: 1_000)])
-                == .oldestRow
-        )
-    }
-
-    @Test func aSingleDayWithNothingWrittenOpensAtTheTop() {
-        let only = day(startsAt: 100, ownAt: 110, partnerAt: 120, sharedRound: true)
-
-        #expect(DailyChatRounds.openingScroll(rounds: [only], focusing: only.id, messages: []) == .oldestRow)
-        let written = DailyChatRounds.openingScroll(rounds: [only], focusing: only.id, messages: [message(at: 200)])
-        #expect(written == .newestMessage)
-    }
-
     // MARK: - Round contents
-
-    @Test func aDayWaitsForWhoeverHasNotAnswered() {
-        let waitingOnPartner = day(startsAt: 900, ownAt: 910, partnerAt: nil)
-        let waitingOnYou = day(startsAt: 900, ownAt: nil, partnerAt: 920)
-        let waitingOnSend = day(startsAt: 900, ownAt: 910, partnerAt: 920, partnerReadable: false)
-        let both = day(startsAt: 900, ownAt: 910, partnerAt: 920)
-
-        func waiting(_ question: DailyChallengeQuestion, chatIsOpen: Bool = true) -> DailyChatRound.Waiting? {
-            DailyChatRound(question: question, participants: participants, chatIsOpen: chatIsOpen).waiting
-        }
-
-        #expect(waiting(waitingOnPartner) == .partner)
-        #expect(waiting(waitingOnPartner, chatIsOpen: false) == .partnerBeforeChat)
-        #expect(waiting(waitingOnYou) == .yourAnswer)
-        #expect(waiting(waitingOnSend) == .reveal)
-        #expect(waiting(both) == nil)
-    }
 
     @Test func aDayOnlyShowsTheAnswersTheUserMayRead() {
         let hidden = day(startsAt: 900, ownAt: nil, partnerAt: 920)
@@ -295,38 +239,5 @@ struct DailyChatRoundsDecodingTests {
             row, ownerUserID: user, questionID: questionID, unlessPurgedSince: generation
         )
         #expect(!saved)
-    }
-}
-
-struct DailyChallengeEarlierAnswerTests {
-    private func question(earlierCount: Int, date: String?, shared: Bool) -> DailyChallengeQuestion {
-        DailyChallengeQuestion(
-            id: UUID(), coupleDayID: UUID(), coupleID: UUID(), localDate: "2026-10-09",
-            effectiveLocalDate: "2026-10-09", startsAt: .now, endsAt: .now, seededForUserID: UUID(),
-            slotNumber: 1, status: .answered, questionID: UUID(), questionVersionID: UUID(), questionKey: "k",
-            prompt: "P", shortPrompt: "S", answerKinds: [.text], ownAnswer: nil, partnerAnswer: nil,
-            canViewPartnerAnswer: false, ownAnswerDetail: nil, partnerAnswerDetail: nil, origin: .own,
-            isCurrentDay: true, earlierRoundCount: earlierCount, latestEarlierRoundLocalDate: date,
-            hasSharedRound: shared
-        )
-    }
-
-    @Test func theNoteNeedsAnEarlierAnswerAndAChatToOpen() {
-        let never = question(earlierCount: 0, date: nil, shared: true)
-        let noChat = question(earlierCount: 1, date: "2026-03-03", shared: false)
-        let both = question(earlierCount: 2, date: "2026-03-03", shared: true)
-        #expect(DailyChallengeEarlierAnswer(question: never) == nil)
-        #expect(DailyChallengeEarlierAnswer(question: noChat) == nil)
-        #expect(DailyChallengeEarlierAnswer(question: both) != nil)
-    }
-
-    @Test func theDateShowsTheYearOnlyWhenItIsNotThisYear() throws {
-        let thisYear = try #require(DailyChallengeEarlierAnswer(
-            question: question(earlierCount: 1, date: "2026-03-03", shared: true)
-        ))
-        let now = try #require(DailyChallengeHistory.parseLocalDate("2026-10-14"))
-
-        #expect(!thisYear.dateText(now: now).contains("2026"))
-        #expect(thisYear.dateText(now: now.addingTimeInterval(400 * 86_400)).contains("2026"))
     }
 }

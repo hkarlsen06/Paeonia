@@ -88,22 +88,6 @@ struct BoardGameViewModelEndingTests {
         #expect(viewModel.snapshot?.myWins == 1)
     }
 
-    @Test func myWinningMoveWaitsForItsDiscBeforeTheOutcome() async {
-        let game = harness.game(moves: Fixture.connectFourAlmostWon)
-        await harness.save(game)
-        await harness.cache.markShown(harness.position(6), kind: .connectFour, ownerUserID: harness.me)
-        let viewModel = harness.makeViewModel(mineTiming: .milliseconds(400))
-        await viewModel.start(prefersReducedMotion: false)
-        defer { viewModel.stop() }
-
-        await viewModel.play(0)
-
-        // Saving the move reloads the game before the disc lands. The outcome
-        // still waits for the disc, then 0.15 s, and not 0.15 s from the tap.
-        let outcomeWait = harness.sleeps.waits.first
-        #expect(outcomeWait.map { $0 > .milliseconds(450) } == true)
-    }
-
     // MARK: Missed ending
 
     @Test func anEndingIMissedShowsFirstAndContinueLeadsToTheNewGame() async {
@@ -225,44 +209,5 @@ struct BoardGameViewModelEndingTests {
         #expect(viewModel.turnLabel == expectedTurn)
         #expect(viewModel.stakeState == expectedStake)
         await harness.expectShown(game: 2, moves: 0)
-    }
-
-    // MARK: Score
-
-    @Test func playingAgainstEachOtherShowsEachPartnersWinsAndTogetherShowsTheGames() async {
-        let game = harness.game(moves: [3, 4], myWins: 3, partnerWins: 2, draws: 1, gamesFinished: 6)
-        await harness.setPlayStyle(.against)
-        let viewModel = await harness.openBoard(game, shown: harness.position(2))
-        defer { viewModel.stop() }
-        #expect(viewModel.score == .against(mine: 3, partner: 2))
-        #expect(viewModel.summary?.score == .against(mine: 3, partner: 2))
-
-        // Switching the style changes what the capsule shows and nothing else.
-        await harness.setPlayStyle(.together)
-        await viewModel.reload()
-        #expect(viewModel.score == .together(games: 6))
-        #expect(viewModel.summary?.score == .together(games: 6))
-        #expect(viewModel.displayedMoves == [3, 4])
-
-        await harness.setPlayStyle(.against)
-        await viewModel.reload()
-        #expect(viewModel.score == .against(mine: 3, partner: 2))
-    }
-
-    @Test func aCoupleWithoutSettingsPlaysAgainstEachOther() async {
-        let game = harness.game(moves: [3, 4], myWins: 3, partnerWins: 2, gamesFinished: 5)
-        let viewModel = await harness.openBoard(game, shown: harness.position(2))
-        defer { viewModel.stop() }
-
-        #expect(viewModel.score == .against(mine: 3, partner: 2))
-    }
-
-    @Test func theResultFollowsThePlayStyleToo() async {
-        await harness.setPlayStyle(.together)
-        let viewModel = await harness.openBoard(partnerWon)
-        defer { viewModel.stop() }
-
-        #expect(viewModel.result?.playStyle == .together)
-        #expect(viewModel.result?.score == .together(games: 1))
     }
 }

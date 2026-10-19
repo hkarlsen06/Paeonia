@@ -14,10 +14,6 @@ const ALPHABETS: Record<GameLanguage, RegExp> = { en: /^[a-z]+$/, nb: /^[a-zæø
 describe.each(["en", "nb"] as const)("word list %s", (language) => {
   const catalog = WORD_CATALOGS[language];
 
-  test("names its language", () => {
-    expect(catalog.language).toBe(language);
-  });
-
   test("has at least 90 words per difficulty", () => {
     for (const difficulty of WORD_DIFFICULTIES) {
       expect(catalog.words.filter((word) => word.difficulty === difficulty).length).toBeGreaterThanOrEqual(90);

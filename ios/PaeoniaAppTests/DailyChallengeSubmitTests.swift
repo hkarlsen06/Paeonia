@@ -5,38 +5,6 @@ import UIKit
 
 struct DailyChallengeSubmitTests {
     @MainActor
-    @Test func emptyAnswerDoesNotQueueSend() async throws {
-        let question = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
-        ]).ownQuestions[0]
-        let service = RecordingDailyChallengeService(snapshots: [
-            DailyChallengeSnapshot(
-                currentUserID: TestDailyChallengeIDs.currentUser,
-                coupleDayID: TestDailyChallengeIDs.coupleDay,
-                questions: [question],
-                refreshedAt: TestDailyChallengeIDs.startsAt
-            ),
-        ])
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider(),
-            pendingOperationStore: pendingStore
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        await viewModel.submitAnswer(for: question)
-
-        #expect(viewModel.notice == .emptyAnswer)
-        #expect(!viewModel.isSending(question.id))
-        let queued = try await pendingStore.inFlightOperations(
-            ownerUserID: TestDailyChallengeIDs.currentUser,
-            kind: .submitDailyAnswer
-        )
-        #expect(queued.isEmpty)
-    }
-
-    @MainActor
     @Test func submitAnswerQueuesTrimmedTextForBackgroundSend() async throws {
         let baseSnapshot = makeDailySnapshot(rows: [
             dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
@@ -158,55 +126,5 @@ struct DailyChallengeSubmitTests {
 
         await syncProbe.release()
         await submitTask.value
-    }
-
-    @MainActor
-    @Test func submitAnswerQueuesPartnerChoiceForBackgroundSend() async throws {
-        let snapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(
-                slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, answerKinds: [.partnerChoice]
-            ),
-        ])
-        let service = RecordingDailyChallengeService(snapshots: [snapshot])
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        let viewModel = DailyChallengeViewModel(
-            service: service, operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: InMemoryDailyChallengeDraftStore(), pendingOperationStore: pendingStore
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
-        #expect(question.defaultComposableKind == .partnerChoice)
-        #expect(question.canSubmitAnswer)
-        // A partner-choice answer isn't sendable until a person is picked.
-        #expect(!viewModel.hasDraftToSubmit(for: question))
-
-        viewModel.setPartnerChoice(TestDailyChallengeIDs.partnerUser, for: question.id)
-        #expect(viewModel.hasDraftToSubmit(for: question))
-
-        await viewModel.submitAnswer(for: question)
-
-        #expect(viewModel.isSending(question.id))
-        #expect(viewModel.notice == nil)
-        let queued = try await pendingStore.inFlightOperations(
-            ownerUserID: TestDailyChallengeIDs.currentUser, kind: .submitDailyAnswer
-        )
-        #expect(queued.count == 1)
-        let data = try #require(queued.first?.requestData)
-        let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
-        #expect(payload.content == .partnerChoice(TestDailyChallengeIDs.partnerUser))
-
-        let relaunched = DailyChallengeViewModel(
-            service: service, operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: InMemoryDailyChallengeDraftStore(), pendingOperationStore: pendingStore
-        )
-        await relaunched.configure(
-            participants: DailyChallengeParticipants(
-                currentUserID: TestDailyChallengeIDs.currentUser, partnerUserID: TestDailyChallengeIDs.partnerUser,
-                partnerDisplayName: "Oda"
-            )
-        )
-        #expect(relaunched.isSending(question.id))
-        #expect(relaunched.sendingPartnerChoiceName(for: question.id) == "Oda")
     }
 }

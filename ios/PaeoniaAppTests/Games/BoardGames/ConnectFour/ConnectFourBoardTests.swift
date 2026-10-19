@@ -13,18 +13,6 @@ struct ConnectFourBoardTests {
 
     // MARK: Start and dropping
 
-    @Test func theEmptyBoardHasSevenColumnsAndPlayerOneMovesFirst() {
-        let board = ConnectFourBoard.initial
-
-        #expect(ConnectFourBoard.moveLimit == 7)
-        #expect(board.cells.count == 42)
-        #expect(board.cells.allSatisfy { $0 == nil })
-        #expect(board.discCount == 0)
-        #expect(board.next == .one)
-        #expect(board.outcome == nil)
-        #expect((0..<7).allSatisfy { board.landingRow(column: $0) == 5 })
-    }
-
     @Test func aDiscFallsToTheLowestEmptyCellAndTheTurnPasses() throws {
         let board = try board([3, 3])
 

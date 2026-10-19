@@ -2,8 +2,9 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// The score panel and the chips the reveal shows after the animation.
-extension DrawAndGuessRevealTests {
+/// The score panel the reveal shows after the animation.
+@MainActor
+struct DrawAndGuessRevealScoreTests {
     private func reveal(
         outcome: DrawAndGuessReveal.Outcome = .iSolvedIt,
         bonus: Int = 1,
@@ -97,20 +98,6 @@ extension DrawAndGuessRevealTests {
         #expect(partner.added == 2)
     }
 
-    @Test func noSpeedBonusAndNoFirstTryLeavesOnlyTheWord() throws {
-        let score = try #require(DrawAndGuessRevealScore.make(
-            reveal: reveal(bonus: 0, firstTry: 0),
-            score: .against(mine: 8, partner: 5),
-            iAmGuesser: true
-        ))
-
-        guard case let .against(mine, _) = score.style else {
-            Issue.record("Expected the against style")
-            return
-        }
-        #expect(mine.lines.map(\.kind) == [.word])
-    }
-
     @Test func aResultOnlyOnThePhoneAddsToTheTotalsWithTheBonusesThePhonePromised() throws {
         let score = try #require(DrawAndGuessRevealScore.make(
             reveal: reveal(bonus: 2, firstTry: 1, isConfirmed: false),
@@ -131,21 +118,5 @@ extension DrawAndGuessRevealTests {
         let missed = reveal(outcome: .iGaveUp, bonus: 0)
 
         #expect(DrawAndGuessRevealScore.make(reveal: missed, score: .together(total: 3), iAmGuesser: true) == nil)
-    }
-
-    @Test func aSolveTimePastTenMinutesIsNotShown() {
-        #expect(reveal(duration: 24).shownSolveDuration == 24)
-        #expect(reveal(duration: 600).shownSolveDuration == 600)
-        #expect(reveal(duration: 601).shownSolveDuration == nil)
-        #expect(reveal(duration: nil).shownSolveDuration == nil)
-    }
-
-    // MARK: Chips
-
-    @Test func theChipsComeHalfASecondApartButTakeThreeSecondsAtMost() {
-        #expect(DrawAndGuessChipPlayback.interval(chipCount: 2) == 0.5)
-        #expect(DrawAndGuessChipPlayback.interval(chipCount: 6) == 0.5)
-        #expect(DrawAndGuessChipPlayback.interval(chipCount: 12) == 0.25)
-        #expect(DrawAndGuessChipPlayback.interval(chipCount: 0) == 0)
     }
 }

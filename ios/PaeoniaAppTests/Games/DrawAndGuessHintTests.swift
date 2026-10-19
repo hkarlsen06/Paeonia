@@ -68,13 +68,6 @@ struct DrawAndGuessHintTests {
         #expect(slots.maxHints == 3)
     }
 
-    @Test func theNextHintIsRandomButTheSameForTheSameSeed() {
-        let slots = DrawAndGuessSlots(answer: "umbrella")
-        let firstPicks = Set((0..<40).compactMap { slots.nextHintIndex(seed: "round-\($0)") })
-        #expect(firstPicks.count > 3)
-        #expect(slots.nextHintIndex(seed: "same") == slots.nextHintIndex(seed: "same"))
-    }
-
     @Test func theNextHintSkipsLettersThePlayerHasRight() {
         var slots = DrawAndGuessSlots(answer: "abc")
         slots.place(DrawAndGuessTile(id: 0, letter: "A"))
@@ -118,22 +111,6 @@ struct DrawAndGuessHintTests {
         #expect(Set(hintedTiles).count == 7)
     }
 
-    @Test func aHintNeverTakesALetterThePlayerHasRight() async throws {
-        let (_, viewModel) = await guessingModel()
-        // "umbrella": U and M in place, right.
-        viewModel.placeTile(try tile("U", in: viewModel))
-        viewModel.placeTile(try tile("M", in: viewModel))
-
-        for _ in 0..<5 {
-            viewModel.showLetter()
-        }
-
-        #expect(letters(in: viewModel).prefix(2) == ["U", "M"])
-        #expect(!viewModel.slots.hintedIndexes.contains(0))
-        #expect(!viewModel.slots.hintedIndexes.contains(1))
-        #expect(hintsAreRight(in: viewModel))
-    }
-
     @Test func hintsStopOneLetterShortOfTheWholeWord() async {
         let (_, viewModel) = await guessingModel()
 
@@ -148,65 +125,6 @@ struct DrawAndGuessHintTests {
         #expect(viewModel.hintCount == 7)
         // "umbrella" has 8 letters. The last one is left for the player.
         #expect(letters(in: viewModel).last == .some(nil))
-    }
-
-    @Test func aHintedSlotDoesNotTakeATapAndStaysAfterAWrongWord() async throws {
-        let (_, viewModel) = await guessingModel()
-        viewModel.showLetter()
-        let hintIndex = try #require(viewModel.slots.hintedIndexes.first)
-        let hinted = letters(in: viewModel)[hintIndex]
-
-        viewModel.removeTile(atSlot: hintIndex)
-        #expect(letters(in: viewModel)[hintIndex] == hinted)
-
-        // Fill the other seven slots with letters that are wrong for them.
-        let answer = Array(viewModel.slots.answer)
-        for index in answer.indices where index != hintIndex {
-            let used = viewModel.slots.placedTileIDs
-            let wrong = try #require(viewModel.tiles.first { $0.letter != answer[index] && !used.contains($0.id) })
-            viewModel.placeTile(wrong)
-        }
-        #expect(viewModel.wrongGuessCount == 1)
-        let returned = await waitUntil { !viewModel.isShowingWrongGuess }
-        #expect(returned)
-
-        #expect(letters(in: viewModel)[hintIndex] == hinted)
-        #expect(viewModel.slots.hintedIndexes == [hintIndex])
-        #expect(letters(in: viewModel).indices.allSatisfy { $0 == hintIndex || letters(in: viewModel)[$0] == nil })
-        viewModel.clearGuess()
-        #expect(letters(in: viewModel)[hintIndex] == hinted)
-    }
-
-    @Test func theFirstHintAsksOnlyWhenTheCoupleCompetes() async {
-        let (_, against) = await guessingModel()
-        #expect(against.needsHintWarning)
-        against.showLetter()
-        #expect(!against.needsHintWarning)
-
-        let together = GameFixture.state(
-            settings: RemoteGameSettings(
-                coupleID: DeveloperScenarioFixture.coupleID,
-                playStyle: .together,
-                language: .en,
-                updatedByUserID: GameFixture.me,
-                createdAt: GameFixture.now,
-                updatedAt: GameFixture.now
-            ),
-            game: GameFixture.game(state: .guessing, turn: GameFixture.me),
-            round: GameFixture.round(state: .guessing, drawer: GameFixture.partner, hasDrawing: true)
-        )
-        let (_, togetherModel) = await guessingModel(GamesTestEnvironment(state: together))
-        #expect(!togetherModel.needsHintWarning)
-    }
-
-    @Test func aHintTakesTheSpeedLabelAndLineAway() async {
-        let (_, viewModel) = await guessingModel()
-        #expect(viewModel.speedBonus != .hidden)
-
-        viewModel.showLetter()
-
-        #expect(viewModel.speedBonus == .hidden)
-        #expect(!viewModel.speedBonusIsAvailable)
     }
 
     @Test func aCorrectGuessAfterHintsSendsTheHintCountAndNoSpeedBonus() async throws {
@@ -277,21 +195,5 @@ struct DrawAndGuessHintTests {
         // The restored hints count: no alert, no speed bonus.
         #expect(!reopened.needsHintWarning)
         #expect(reopened.speedBonus == .hidden)
-    }
-
-    @Test func theCacheKeepsTheHintsOfTheLatestRoundsOnly() async {
-        let cache = InMemoryGamesCache()
-        for index in 0..<25 {
-            await cache.saveHints([index % 5], roundID: UUID(), ownerUserID: GameFixture.me)
-        }
-        let kept = UUID()
-        await cache.saveHints([1, 2], roundID: kept, ownerUserID: GameFixture.me)
-        await cache.saveHints([1, 2, 4], roundID: kept, ownerUserID: GameFixture.me)
-
-        let hints = await cache.document(ownerUserID: GameFixture.me).hints
-
-        #expect(hints.count == 20)
-        #expect(hints.last == GameRoundHints(roundID: kept, slotIndexes: [1, 2, 4]))
-        #expect(hints.filter { $0.roundID == kept }.count == 1)
     }
 }

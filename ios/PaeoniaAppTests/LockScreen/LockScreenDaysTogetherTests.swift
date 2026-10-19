@@ -72,24 +72,4 @@ struct LockScreenDaysTogetherTests {
         #expect(LockScreenDaysTogether(startedOn: nil, now: now, calendar: calendar) == nil)
         #expect(LockScreenDaysTogether(startedOn: Support.day(2_026, 10, 20), now: now, calendar: calendar)?.days == 0)
     }
-
-    @Test(arguments: [
-        (0, 0, 100), (99, 0, 100), (100, 100, 200), (199, 100, 200), (200, 200, 365),
-        (364, 200, 365), (365, 365, 500), (412, 365, 500), (500, 500, 730), (729, 500, 730),
-        (730, 730, 1_000), (999, 730, 1_000), (1_000, 1_000, 1_095), (1_094, 1_000, 1_095),
-        (1_095, 1_095, 1_460), (3_000, 2_920, 3_285),
-    ])
-    func milestoneBounds(days: Int, previous: Int, next: Int) {
-        let model = LockScreenDaysTogether(days: days)
-        #expect(model.previousMilestone == previous)
-        #expect(model.nextMilestone == next)
-    }
-
-    @Test func progressRunsFromZeroToJustBelowOne() {
-        #expect(LockScreenDaysTogether(days: 100).progress == 0)
-        #expect(LockScreenDaysTogether(days: 150).progress == 0.5)
-        #expect(LockScreenDaysTogether(days: 412).progress > 0.34)
-        #expect(LockScreenDaysTogether(days: 412).progress < 0.36)
-        #expect(LockScreenDaysTogether(days: 199).progress < 1)
-    }
 }

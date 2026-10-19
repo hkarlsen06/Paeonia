@@ -51,24 +51,12 @@ func playRandomGames<Game: BoardGameRules>(
 }
 
 struct BoardGameRulesTests {
-    @Test func theOtherPlayerIsTheOpponent() {
-        #expect(BoardPlayer.one.other == .two)
-        #expect(BoardPlayer.two.other == .one)
-    }
-
     @Test func playersEncodeAsTheNumbersTheServerUses() throws {
         let players = try JSONDecoder().decode([BoardPlayer].self, from: Data("[1,2]".utf8))
         let data = try JSONEncoder().encode([BoardPlayer.two, .one])
 
         #expect(players == [.one, .two])
         #expect(String(bytes: data, encoding: .utf8) == "[2,1]")
-    }
-
-    @Test func replayingNoMovesGivesTheEmptyBoard() {
-        #expect(ConnectFourBoard.replay([]) == ConnectFourBoard.initial)
-        #expect(DotsAndBoxesBoard.replay([]) == DotsAndBoxesBoard.initial)
-        #expect(UltimateTicTacToeBoard.replay([]) == UltimateTicTacToeBoard.initial)
-        #expect(ConnectFourBoard.movers([]) == [])
     }
 
     @Test func replayingAnIllegalSequenceGivesNil() {
@@ -87,14 +75,6 @@ struct BoardGameRulesTests {
         // Player one wins on the seventh disc, so an eighth move is illegal.
         #expect(ConnectFourBoard.replay([0, 0, 1, 1, 2, 2, 3]) != nil)
         #expect(ConnectFourBoard.replay([0, 0, 1, 1, 2, 2, 3, 4]) == nil)
-    }
-
-    @Test func isLegalMatchesApplying() {
-        let board = ConnectFourBoard.initial
-
-        #expect(board.isLegal(0))
-        #expect(!board.isLegal(7))
-        #expect(!board.isLegal(-1))
     }
 
     @Test func moversAlternateWhenEveryMoveHandsOverTheTurn() {

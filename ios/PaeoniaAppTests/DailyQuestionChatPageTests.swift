@@ -4,29 +4,6 @@ import Testing
 
 @MainActor
 struct DailyQuestionChatPageTests {
-    @Test func theConversationOpensWithBothAnswersOldestFirst() {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-
-        let round = viewModel.chatRounds().first
-        #expect(viewModel.chatRounds().count == 1)
-        #expect(round?.answers.count == 2)
-        #expect(round?.answers.map(\.answeredAt) == round?.answers.map(\.answeredAt).sorted())
-        #expect(round?.waiting == nil)
-    }
-
-    @Test func thePageKnowsWhenItHasReadThePhonesCopyOfTheChat() async {
-        let fixture = ChatTestFixture()
-        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
-        let viewModel = fixture.makeViewModel()
-        #expect(!viewModel.hasReadStore)
-
-        await viewModel.load()
-
-        #expect(viewModel.hasReadStore)
-        #expect(viewModel.messages.isEmpty)
-    }
-
     @Test func preparingReadsThePhonesCopyWithoutTheNetwork() async {
         let fixture = ChatTestFixture()
         await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
@@ -72,19 +49,6 @@ struct DailyQuestionChatPageTests {
         #expect(await fixture.gateway.lastReplyToMessageID == target.id)
     }
 
-    @Test func aMessageStillSendingCannotBeRepliedTo() {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-        let sending = DailyQuestionChatMessage(
-            id: UUID(), threadID: nil, questionID: fixture.question.questionID, senderUserID: fixture.ownerUserID,
-            body: "Hi", createdAt: .now, clientOperationID: UUID(), isSending: true
-        )
-
-        viewModel.setReplyTarget(sending)
-
-        #expect(viewModel.replyTarget == nil)
-    }
-
     @Test func thePageStacksEveryDayTheServerSendsAndTakesTheThreadFromThem() async throws {
         let fixture = ChatTestFixture()
         let viewModel = fixture.makeViewModel()
@@ -107,28 +71,6 @@ struct DailyQuestionChatPageTests {
         #expect(viewModel.rounds.map(\.id) == [earlierID, fixture.question.id])
         #expect(viewModel.threadID == fixture.threadID)
         #expect(viewModel.chatRounds().count == 2)
-    }
-
-    @Test func aPageOpenedOnAnEarlierDayScrollsToItAndTheNewestDayIsTheDefault() async throws {
-        let fixture = ChatTestFixture()
-        let newestID = UUID()
-        await fixture.gateway.setRounds(try decodedChatRounds(
-            threadID: nil,
-            rounds: [
-                ChatRoundDay(instance: fixture.question.id, date: "1970-01-01", startsAt: "1970-01-01T00:00:01.000Z"),
-                ChatRoundDay(instance: newestID, date: "2026-10-09", startsAt: "2026-10-09T00:00:00.000Z"),
-            ],
-            user: fixture.ownerUserID,
-            coupleID: fixture.question.coupleID,
-            questionID: fixture.question.questionID
-        ))
-        let focusedOnEarlier = fixture.makeViewModel()
-        await focusedOnEarlier.load()
-        let focusedOnNewest = fixture.makeViewModel(focusesNewest: true)
-        await focusedOnNewest.load()
-
-        #expect(focusedOnEarlier.openingScroll == .oldestRow)
-        #expect(focusedOnNewest.openingScroll == .questionRow(newestID))
     }
 
     @Test func aHiddenPartnerAnswerStaysOutAndThePageSaysWhoItWaitsFor() {

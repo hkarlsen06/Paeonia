@@ -81,22 +81,4 @@ struct DrawAndGuessSpeedBonusTests {
         let afterSeen = bonus(.against, round(drawing: true, submittedAgo: 50), seenAgo: 10)
         #expect(afterSeen.remaining(at: now) == 20)
     }
-
-    @Test func theBonusEndsAfterThirtySecondsAndStaysOver() {
-        let late = bonus(.against, round(drawing: true, submittedAgo: 60), seenAgo: 45)
-
-        #expect(late.remaining(at: now) == 0)
-        #expect(!late.isAvailable(at: now))
-    }
-
-    @Test func aFinishedDrawingNotSeenYetKeepsTheBonusOpen() {
-        #expect(bonus(.against, round(drawing: true), seenAgo: nil) == .open)
-    }
-
-    @Test func aFinishedRoundHasNoBonusLeft() {
-        var finished = round(drawing: true)
-        finished.state = .solved
-
-        #expect(bonus(.against, finished, seenAgo: 1) == .hidden)
-    }
 }

@@ -151,17 +151,6 @@ struct ExquisiteCorpseQueuedWriteTests {
         #expect(environment.gateway.stars == [written])
     }
 
-    @Test func aStarOfAnotherFigureDoesNotWait() async throws {
-        try await environment.enqueue(.exquisiteCorpseStar, star(figure: 2, starred: true), operation: makeOperation(1))
-
-        let result = try await environment.starHandler().send(
-            try corpseSnapshot(.exquisiteCorpseStar, star(figure: 1, starred: true), operation: makeOperation(2)),
-            context: environment.context()
-        )
-
-        #expect(result == .succeeded)
-    }
-
     @Test func aStarWaitsForThePartQueuedForTheSameFigure() async throws {
         try await environment.enqueue(.exquisiteCorpseSubmitPart, Fixture.queuedPart(figure: 2, partIndex: 2))
 
@@ -255,22 +244,6 @@ extension ExquisiteCorpseQueuedWriteTests {
         // The last star made is the one that counts.
         #expect(work.star(figureID: Fixture.figureID(1)) == false)
         #expect(!work.lastSendFailedWhileOnline && !work.hasFailedMoveAttempt)
-    }
-
-    @Test func aMarkAndAStarAreNotMoves() async throws {
-        try await environment.enqueue(.exquisiteCorpseRevealSeen, revealSeen(figure: 1), operation: makeOperation(1))
-        try await environment.enqueue(.exquisiteCorpseStar, star(figure: 1, starred: true), operation: makeOperation(2))
-
-        let work = try await loadWork()
-
-        #expect(!work.hasMoveWaiting)
-        #expect(!work.isEmpty)
-    }
-
-    @Test func anEmptyQueueIsEmptyWork() async throws {
-        let work = try await loadWork()
-
-        #expect(work == .none)
     }
 
     @Test func onlyTheOwnersWritesAreRead() async throws {

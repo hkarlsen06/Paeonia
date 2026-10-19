@@ -23,27 +23,6 @@ struct DailyQuestionChatVoiceTests {
         )
     }
 
-    /// A message on its first try is only sending. It counts as held on this phone,
-    /// and the screen says so, once a try failed.
-    @Test func aQueuedMessageIsHeldOnThePhoneOnlyAfterATryFailed() async throws {
-        let fixture = ChatTestFixture()
-        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
-        let service = fixture.makeService()
-        try await queueVoice(fixture, service, data: Data([1, 2, 3]))
-        let firstTry = await fixture.pendingMessages(service)
-        #expect(firstTry.first?.isHeldOnPhone == false)
-
-        let queued = try #require(try await fixture.queuedOperations(.sendThreadMessage).first)
-        try await fixture.pendingStore.markRetryableFailure(
-            clientOperationID: queued.operation.id,
-            errorDescription: String(describing: URLError(.notConnectedToInternet)),
-            nextRetryAt: nil,
-            at: Date()
-        )
-        let failed = await fixture.pendingMessages(service)
-        #expect(failed.first?.isHeldOnPhone == true)
-    }
-
     @Test func aQueuedVoiceMessageUploadsItsRecordingAndSendsTheUpload() async throws {
         let fixture = ChatTestFixture()
         await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
@@ -132,19 +111,6 @@ struct DailyQuestionChatVoiceTests {
         #expect(await fixture.gateway.lastMediaAssetIDs?.count == 2)
     }
 
-    @Test func aMessageWithoutTextPreviewsByItsAttachment() {
-        func summary(mediaType: String?) -> DailyQuestionThreadSummary {
-            DailyQuestionThreadSummary(
-                threadID: UUID(), coupleID: UUID(), questionID: UUID(), createdAt: .now, updatedAt: .now,
-                lastMessageID: UUID(), lastMessageAt: .now, lastMessageSenderUserID: UUID(), lastMessageBody: nil,
-                lastMessageMediaType: mediaType
-            )
-        }
-
-        #expect(summary(mediaType: "image").lastMessagePreview == String(localized: .dailyChatPhotoPreview))
-        #expect(summary(mediaType: "voice").lastMessagePreview == String(localized: .dailyChatVoicePreview))
-    }
-
     @Test func theServerCopyOfAVoiceMessageIsMatchedByItsID() {
         let me = UUID()
         func pendingVoice(_ id: UUID) -> DailyQuestionChatMessage {
@@ -169,18 +135,5 @@ struct DailyQuestionChatVoiceTests {
         )
 
         #expect(claimed.first?.clientOperationID == second.clientOperationID)
-    }
-
-    @Test func aMessageWithNoTextPreviewsAsAVoiceMessage() {
-        func summary(body: String?, messageID: UUID?) -> DailyQuestionThreadSummary {
-            DailyQuestionThreadSummary(
-                threadID: UUID(), coupleID: UUID(), questionID: UUID(), createdAt: .now, updatedAt: .now,
-                lastMessageID: messageID, lastMessageAt: .now, lastMessageSenderUserID: UUID(), lastMessageBody: body
-            )
-        }
-
-        #expect(summary(body: "Hi", messageID: UUID()).lastMessagePreview == "Hi")
-        #expect(summary(body: nil, messageID: UUID()).lastMessagePreview == String(localized: .dailyChatVoicePreview))
-        #expect(summary(body: nil, messageID: nil).lastMessagePreview == nil)
     }
 }

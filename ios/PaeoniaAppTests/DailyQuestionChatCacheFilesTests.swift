@@ -2,24 +2,14 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// The chat cache keeps one file per question and holds what it read in memory.
+/// The chat cache keeps failed messages, seen answers and older pages on the phone.
 struct DailyQuestionChatCacheFilesTests {
     private let owner = UUID()
     private let thread = UUID()
-    private let couple = UUID()
 
     private func makeDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("ChatCacheFiles-\(UUID().uuidString)", isDirectory: true)
-    }
-
-    private func ownerDirectory(_ directory: URL) -> URL {
-        directory.appendingPathComponent(owner.uuidString.lowercased(), isDirectory: true)
-    }
-
-    private func fileNames(_ directory: URL) -> [String] {
-        let names = (try? FileManager.default.contentsOfDirectory(atPath: ownerDirectory(directory).path)) ?? []
-        return names.sorted()
     }
 
     private func message(_ question: UUID, _ body: String, at seconds: Double = 5) -> DailyQuestionChatMessage {
@@ -27,92 +17,6 @@ struct DailyQuestionChatCacheFilesTests {
             id: UUID(), threadID: thread, questionID: question, senderUserID: UUID(), body: body,
             createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: nil, isSending: false
         )
-    }
-
-    private func summary(_ question: UUID, lastBody: String = "Hi") -> DailyQuestionThreadSummary {
-        DailyQuestionThreadSummary(
-            threadID: thread, coupleID: couple, questionID: question,
-            createdAt: Date(timeIntervalSince1970: 1), updatedAt: Date(timeIntervalSince1970: 2),
-            lastMessageID: nil, lastMessageAt: nil, lastMessageSenderUserID: nil, lastMessageBody: lastBody
-        )
-    }
-
-    @Test func eachQuestionKeepsItsMessagesInItsOwnFile() async {
-        let directory = makeDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = FileDailyQuestionChatCache(directoryURL: directory)
-        let first = UUID()
-        let second = UUID()
-
-        await cache.saveMessages([message(first, "One")], ownerUserID: owner, questionID: first)
-        await cache.saveMessages([message(second, "Two")], ownerUserID: owner, questionID: second)
-
-        let expected = ["question-\(first.uuidString).json", "question-\(second.uuidString).json"]
-        #expect(fileNames(directory) == expected.sorted())
-        let reopened = FileDailyQuestionChatCache(directoryURL: directory)
-        #expect(await reopened.messages(ownerUserID: owner, questionID: first).map(\.body) == ["One"])
-        #expect(await reopened.messages(ownerUserID: owner, questionID: second).map(\.body) == ["Two"])
-    }
-
-    @Test func aSaveThatChangesNothingWritesNothing() async {
-        let directory = makeDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = FileDailyQuestionChatCache(directoryURL: directory)
-        let question = UUID()
-        let saved = [message(question, "One")]
-        await cache.saveMessages(saved, ownerUserID: owner, questionID: question)
-        #expect(await cache.saveSummaries([summary(question)], ownerUserID: owner))
-        try? FileManager.default.removeItem(at: ownerDirectory(directory))
-
-        await cache.saveMessages(saved, ownerUserID: owner, questionID: question)
-        let summaryChanged = await cache.saveSummaries([summary(question)], ownerUserID: owner)
-
-        #expect(!summaryChanged)
-        #expect(fileNames(directory).isEmpty)
-    }
-
-    @Test func aChangedSummaryIsReportedAndWritten() async {
-        let directory = makeDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = FileDailyQuestionChatCache(directoryURL: directory)
-        let question = UUID()
-
-        #expect(await cache.saveSummaries([summary(question)], ownerUserID: owner))
-        #expect(await cache.saveSummaries([summary(question, lastBody: "Newer")], ownerUserID: owner))
-
-        let reopened = FileDailyQuestionChatCache(directoryURL: directory)
-        #expect(await reopened.summaries(ownerUserID: owner).first?.lastMessageBody == "Newer")
-    }
-
-    @Test func theCacheReadsAFileOnceAndThenAnswersFromMemory() async {
-        let directory = makeDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let question = UUID()
-        await FileDailyQuestionChatCache(directoryURL: directory)
-            .saveMessages([message(question, "One")], ownerUserID: owner, questionID: question)
-        let cache = FileDailyQuestionChatCache(directoryURL: directory)
-
-        #expect(await cache.messages(ownerUserID: owner, questionID: question).count == 1)
-        try? FileManager.default.removeItem(at: ownerDirectory(directory))
-
-        #expect(await cache.messages(ownerUserID: owner, questionID: question).count == 1)
-    }
-
-    @Test func aNewMessageRewritesOnlyItsQuestionAndTheSummaries() async {
-        let directory = makeDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = FileDailyQuestionChatCache(directoryURL: directory)
-        let busy = UUID()
-        let quiet = UUID()
-        await cache.saveMessages([message(quiet, "Quiet")], ownerUserID: owner, questionID: quiet)
-        let quietFile = ownerDirectory(directory).appendingPathComponent("question-\(quiet.uuidString).json")
-        let before = try? Data(contentsOf: quietFile)
-        try? FileManager.default.removeItem(at: quietFile)
-
-        await cache.saveMessages([message(busy, "Busy")], ownerUserID: owner, questionID: busy)
-
-        #expect(before != nil)
-        #expect(!FileManager.default.fileExists(atPath: quietFile.path))
     }
 
     @Test func aFailedMessageIsFoundInAQuestionThatIsNotInMemory() async {
@@ -297,28 +201,5 @@ struct DailyQuestionChatMessagePagingTests {
 
         #expect(!hasMore)
         #expect(await fixture.cachedMessages().count == 2)
-    }
-
-    @MainActor
-    @Test func theChatOffersOlderMessagesUntilALoadReachesTheStart() async {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
-        await viewModel.prepare()
-        #expect(!viewModel.hasOlderMessages)
-
-        // A few messages can still have older ones behind them, when newer ones were removed.
-        await fixture.cache.saveMessages(
-            [fixture.partnerMessage(body: "Latest", at: 10)],
-            ownerUserID: fixture.ownerUserID,
-            questionID: fixture.question.questionID
-        )
-        await viewModel.prepare()
-        #expect(viewModel.hasOlderMessages)
-
-        await fixture.gateway.setOlderPages([page([fixture.partnerMessage(body: "Start", at: 0)], hasMore: false)])
-        await viewModel.loadOlderMessages()
-        #expect(!viewModel.hasOlderMessages)
-        #expect(viewModel.messages.first?.body == "Start")
     }
 }

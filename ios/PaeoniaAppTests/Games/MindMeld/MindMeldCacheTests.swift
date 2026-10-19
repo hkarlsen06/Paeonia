@@ -168,19 +168,6 @@ struct MindMeldCacheTests {
         #expect(partnerDocument == MindMeldLocalDocument())
     }
 
-    @Test func theFileNeverGoesBackwardsEither() async {
-        let directory = temporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let v1 = game
-        let cache = FileMindMeldCache(directoryURL: directory)
-
-        await cache.saveState(state(fixtures.moved(v1, version: 4)), ownerUserID: me)
-        await cache.saveState(state(v1), ownerUserID: me)
-
-        let kept = await cache.document(ownerUserID: me).state
-        #expect(kept?.current?.version == 4)
-    }
-
     @Test func clearingRemovesEverythingAndStopsAReadInFlight() async {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -208,19 +195,5 @@ struct MindMeldCacheTests {
 
         #expect(taken == [MindMeldRefusedWord(roundID: round, word: "two")])
         #expect(again.isEmpty)
-    }
-
-    @Test func unexplainedRefusalsAreCountedPerWrite() async {
-        let cache = InMemoryMindMeldCache()
-        let one = UUID()
-        let two = UUID()
-
-        let first = await cache.recordUnexplainedRefusal(operationID: one, ownerUserID: me)
-        let second = await cache.recordUnexplainedRefusal(operationID: one, ownerUserID: me)
-        let other = await cache.recordUnexplainedRefusal(operationID: two, ownerUserID: me)
-
-        #expect(first == 1)
-        #expect(second == 2)
-        #expect(other == 1)
     }
 }

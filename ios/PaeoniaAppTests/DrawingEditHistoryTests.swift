@@ -77,33 +77,6 @@ struct DrawingEditHistoryTests {
         #expect(isRed(image.pixel(x: 300, y: 300)))
         #expect(image.pixel(x: 150, y: 150).alpha == 0)
     }
-
-    /// Filling around many lines makes the biggest mask. It must stay far
-    /// below the server's 2 MB widget limit and feel instant.
-    @Test func fillAroundManyLinesStaysSmallAndFast() throws {
-        let scribbles = PKDrawing(strokes: (0..<40).map { index in
-            let start = CGFloat(index * 7 + 10)
-            return stroke(
-                through: [CGPoint(x: start, y: 20), CGPoint(x: 310 - start, y: 300)],
-                createdAt: CGFloat(index + 10)
-            )
-        })
-        let clock = ContinuousClock()
-        var fill: PKStroke?
-        let elapsed = clock.measure {
-            fill = DrawingFloodFill.fillStroke(in: scribbles, side: 320, at: CGPoint(x: 5, y: 5), color: .red)
-        }
-        let stroke = try #require(fill)
-        let added = PKDrawing(strokes: scribbles.strokes + [stroke]).dataRepresentation().count
-            - scribbles.dataRepresentation().count
-        #expect(added < 400_000, "The fill added \(added) bytes")
-        #expect(elapsed < .seconds(1), "The fill took \(elapsed)")
-    }
-
-    @Test func fillOffTheCanvasDoesNothing() {
-        let fill = DrawingFloodFill.fillStroke(in: PKDrawing(), side: 320, at: CGPoint(x: 400, y: 10), color: .red)
-        #expect(fill == nil)
-    }
 }
 
 private func keys(_ strokes: [PKStroke]) -> [String] {

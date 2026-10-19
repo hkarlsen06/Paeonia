@@ -339,15 +339,6 @@ describe("accept_pairing_invite", () => {
     expect(state).toMatchObject({ couple_id: coupleId, partner_user_id: owner.userId, started_on: "2024-02-29" });
   });
 
-  test("the started date defaults to unset", async () => {
-    const t = newTest();
-    const owner = await inviter(t);
-    const guest = await createSignedInUser(t, {});
-    await createInvite(owner);
-    await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() });
-    expect((await t.run((ctx) => ctx.db.query("couples").first()))?.started_on).toBeUndefined();
-  });
-
   test("rejects unknown codes, your own invite, closed invites, and expired invites", async () => {
     const t = newTest();
     const owner = await inviter(t);

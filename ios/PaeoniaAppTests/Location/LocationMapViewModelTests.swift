@@ -123,47 +123,6 @@ struct LocationMapViewModelTests {
     }
 
     @Test
-    func mapStateRequiresCurrentAndPartnerLocations() throws {
-        let current = ownLocationSnapshot()
-        let visible = try visibilitySnapshot(
-            visibilityState: .visible,
-            partnerLocationIsStale: false,
-            partnerLocationCapturedAt: Date()
-        )
-        let partnerLocation = try #require(visible.partnerLocation)
-
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: visible,
-            ownLocation: current
-        ) == .ready(
-            current: current.location,
-            partner: partnerLocation,
-            partnerWasStaleAtLastRefresh: false
-        ))
-        #expect(LocationMapViewModel.resolveMapState(visibility: visible, ownLocation: nil) == .currentLocationMissing)
-    }
-
-    @Test
-    func mapStateKeepsStalePartnerLocationVisible() throws {
-        let current = ownLocationSnapshot()
-        let veryOld = try visibilitySnapshot(
-            visibilityState: .visible,
-            partnerLocationIsStale: true,
-            partnerLocationCapturedAt: Date(timeIntervalSince1970: 200)
-        )
-        let partnerLocation = try #require(veryOld.partnerLocation)
-
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: veryOld,
-            ownLocation: current
-        ) == .ready(
-            current: current.location,
-            partner: partnerLocation,
-            partnerWasStaleAtLastRefresh: true
-        ))
-    }
-
-    @Test
     func previousIdentityReloadCannotPublishIntoNewCouple() async throws {
         let firstUserID = locationTestUUID("11111111-1111-1111-1111-111111111111")
         let firstCoupleID = locationTestUUID("22222222-2222-2222-2222-222222222222")

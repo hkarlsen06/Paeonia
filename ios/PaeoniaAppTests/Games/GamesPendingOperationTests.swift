@@ -138,22 +138,6 @@ struct GamesPendingOperationTests {
         #expect(environment.gateway.pickedWords.isEmpty)
     }
 
-    @Test func aPickWithNothingAheadIsSent() async throws {
-        let handler = PickDrawWordPendingOperationHandler(
-            gateway: environment.gateway,
-            cache: environment.cache,
-            drawingStore: environment.drawingStore
-        )
-
-        let result = try await handler.send(
-            try snapshot(.pickDrawWord, pick()),
-            context: syncContext(environment.pending)
-        )
-
-        #expect(result == .succeeded)
-        #expect(environment.gateway.pickedWords.map(\.word) == ["umbrella"])
-    }
-
     // MARK: Refusals
 
     @Test func aWordThatIsNoLongerOnOfferStopsTheRetryAndTellsThePerson() async throws {

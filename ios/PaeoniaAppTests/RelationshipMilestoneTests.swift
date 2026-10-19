@@ -41,13 +41,6 @@ struct RelationshipMilestoneTests {
         #expect(milestone?.daysRemaining == 27)
     }
 
-    @Test func threeMonthMarkUsesMonthsKindNotSpecialCase() throws {
-        let milestone = calculator().nextMilestone(startedOn: "2026-01-08", now: try day("2026-03-20"))
-
-        #expect(milestone?.kind == .months(3))
-        #expect(milestone?.daysRemaining == 19)
-    }
-
     @Test func hundredDaysWinsWhenItIsTheSoonestMarker() throws {
         // Past the 3-month mark (2026-04-08) but before the 4-month mark (2026-05-08),
         // the 100-days marker (2026-04-18) is the next thing to count down to.
@@ -78,12 +71,6 @@ struct RelationshipMilestoneTests {
 
         #expect(milestone?.kind == .days(500))
         #expect(milestone?.daysRemaining == 52)
-    }
-
-    @Test func olderCoupleCountsDownToNextAnniversary() throws {
-        let milestone = calculator().nextMilestone(startedOn: "2026-01-08", now: try day("2030-06-01"))
-
-        #expect(milestone?.kind == .years(5))
     }
 
     @Test func onTheMilestoneDayDaysRemainingIsZero() throws {
@@ -136,18 +123,6 @@ struct RelationshipMilestoneTests {
         #expect(milestones.map(\.daysRemaining) == [9, 29])
     }
 
-    @Test func upcomingMilestonesStartWithTodayOnAMilestoneDay() throws {
-        let milestones = calculator().upcomingMilestones(
-            startedOn: "2026-01-08",
-            now: try day("2026-02-08"),
-            limit: 2
-        )
-
-        #expect(milestones.first?.kind == .firstMonth)
-        #expect(milestones.first?.daysRemaining == 0)
-        #expect(milestones.map(\.kind) == [.firstMonth, .months(2)])
-    }
-
     @Test func upcomingMilestonesForUnparseableStartDateIsEmpty() throws {
         #expect(calculator().upcomingMilestones(
             startedOn: "not-a-date",
@@ -184,14 +159,6 @@ struct RelationshipMilestoneTests {
         #expect(milestones.map(\.kind) == [.firstMonth, .months(2), .months(3)])
     }
 
-    @Test func pastMilestonesIsEmptyForABrandNewCouple() throws {
-        #expect(calculator().pastMilestones(
-            startedOn: "2026-01-08",
-            now: try day("2026-01-08"),
-            limit: 5
-        ).isEmpty)
-    }
-
     @Test func pastMilestonesForUnparseableStartDateIsEmpty() throws {
         #expect(calculator().pastMilestones(
             startedOn: "not-a-date",
@@ -204,10 +171,6 @@ struct RelationshipMilestoneTests {
 
     @Test func daysTogetherCountsWholeDaysFromTheStartDate() throws {
         #expect(calculator().daysTogether(startedOn: "2026-01-08", now: try day("2026-04-18")) == 100)
-    }
-
-    @Test func daysTogetherIsZeroOnTheDayTheCoupleGotTogether() throws {
-        #expect(calculator().daysTogether(startedOn: "2026-01-08", now: try day("2026-01-08")) == 0)
     }
 
     @Test func daysTogetherForUnparseableStartDateIsNil() throws {

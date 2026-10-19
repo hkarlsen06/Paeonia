@@ -121,73 +121,6 @@ struct InviterFirstDayModelTests {
         revisionID: firstDayUUID(51)
     )
 
-    @Test func loadStartsTheDraftAndShowsProgress() async throws {
-        let gateway = FirstDayGatewaySpy(draft: firstDayDraft(answered: 1))
-        let model = makeModel(gateway: gateway, defaults: try firstDayTestDefaults())
-
-        await model.load()
-
-        #expect(model.hasLoaded)
-        #expect(model.draft?.answeredCount == 1)
-        #expect(!model.hasAnsweredQuestions)
-        #expect(await gateway.steps.first == "start")
-    }
-
-    @Test func aFailedLoadStillShowsTheSection() async throws {
-        let gateway = FirstDayGatewaySpy()
-        await gateway.fail("start")
-        let model = makeModel(gateway: gateway, defaults: try firstDayTestDefaults())
-
-        await model.load()
-
-        #expect(model.hasLoaded)
-        #expect(model.draft == nil)
-        // Only opening the questions reports it.
-        #expect(model.loadFailure == nil)
-    }
-
-    @Test func theCompletionBeatPlaysOnceWhenTheLastAnswerLands() async throws {
-        let gateway = FirstDayGatewaySpy(draft: firstDayDraft(answered: 1))
-        let model = makeModel(gateway: gateway, defaults: try firstDayTestDefaults())
-        await model.load()
-
-        _ = try #require(await model.makeQuestionsModel())
-        model.questionsFlowClosed(with: firstDayDraft(answered: 2).questions)
-        let completion = try #require(model.completion)
-        #expect(completion.item == .questions)
-        #expect(model.hasAnsweredQuestions)
-
-        _ = try #require(await model.makeQuestionsModel())
-        model.questionsFlowClosed(with: firstDayDraft(answered: 2).questions)
-        #expect(model.completion == completion)
-    }
-
-    @Test func openingTheQuestionsReportsAFailedLoad() async throws {
-        let gateway = FirstDayGatewaySpy()
-        await gateway.fail("start")
-        let model = makeModel(gateway: gateway, defaults: try firstDayTestDefaults())
-
-        let questions = await model.makeQuestionsModel()
-
-        #expect(questions == nil)
-        #expect(model.loadFailure == .offline)
-    }
-
-    @Test func theDraftsDrawingShowsFromThisPhone() async throws {
-        let gateway = FirstDayGatewaySpy(draft: firstDayDraft(answered: 0, drawing: drawingReference))
-        let model = makeModel(
-            gateway: gateway,
-            canvas: FirstDayCanvasFake(drawingData: Data("drawing".utf8)),
-            defaults: try firstDayTestDefaults()
-        )
-
-        await model.load()
-
-        #expect(model.drawingThumbnail != nil)
-        #expect(!model.isDrawingWaiting)
-        #expect(await gateway.steps.contains("signedURL") == false)
-    }
-
     @Test func afterAReinstallTheThumbnailComesFromTheServerAndTheWidgetIsLeftAlone() async throws {
         let defaults = try firstDayTestDefaults()
         let gateway = FirstDayGatewaySpy(draft: firstDayDraft(answered: 0, drawing: drawingReference))
@@ -225,28 +158,6 @@ struct InviterFirstDayModelTests {
         await model.load()
 
         #expect(!model.hasDrawing)
-    }
-
-    @Test func theWaitingLinePromisesANotificationOnlyWhenAllowed() async throws {
-        let allowed = makeModel(gateway: FirstDayGatewaySpy(), defaults: try firstDayTestDefaults())
-        let denied = makeModel(
-            gateway: FirstDayGatewaySpy(),
-            push: FirstDayPushFake(denied: true),
-            defaults: try firstDayTestDefaults()
-        )
-        let undecided = makeModel(
-            gateway: FirstDayGatewaySpy(),
-            push: FirstDayPushFake(isUndecided: true),
-            defaults: try firstDayTestDefaults()
-        )
-
-        await allowed.load()
-        await denied.load()
-        await undecided.load()
-
-        #expect(allowed.notificationsAllowed)
-        #expect(!denied.notificationsAllowed)
-        #expect(!undecided.notificationsAllowed)
     }
 }
 

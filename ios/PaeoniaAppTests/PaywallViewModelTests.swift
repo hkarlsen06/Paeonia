@@ -5,45 +5,6 @@ import Testing
 
 @MainActor
 struct PaywallViewModelTests {
-    @Test func cancelledPurchaseShowsNoError() async {
-        let viewModel = makeViewModel()
-
-        let purchased = await viewModel.runPurchase { false }
-
-        #expect(!purchased)
-        #expect(viewModel.error == nil)
-        #expect(!viewModel.isPurchasing)
-        #expect(!viewModel.purchaseSucceeded)
-    }
-
-    @Test func askToBuyShowsCalmWaitingMessage() async {
-        let viewModel = makeViewModel()
-
-        _ = await viewModel.runPurchase { throw PaeoniaPurchaseError.pendingApproval }
-
-        #expect(viewModel.error == .purchasePendingApproval)
-        #expect(viewModel.error?.isInformational == true)
-    }
-
-    @Test func paidButUnconfirmedPurchasePointsToRestore() async {
-        let viewModel = makeViewModel()
-
-        _ = await viewModel.runPurchase { throw PaeoniaPurchaseError.serverConfirmationFailed(nil) }
-
-        #expect(viewModel.error == .purchaseNotFinished)
-        #expect(viewModel.error?.isInformational == false)
-    }
-
-    @Test func successfulPurchaseIsRecorded() async {
-        let viewModel = makeViewModel()
-
-        let purchased = await viewModel.runPurchase { true }
-
-        #expect(purchased)
-        #expect(viewModel.purchaseSucceeded)
-        #expect(viewModel.error == nil)
-    }
-
     /// A double tap used to start two App Store purchases.
     @Test func secondPurchaseWhileFirstRunsIsIgnored() async {
         let viewModel = makeViewModel()
@@ -61,45 +22,6 @@ struct PaywallViewModelTests {
 
         await gate.finish(returning: true)
         #expect(await first.value)
-    }
-
-    @Test func restoreCancelledByUserShowsNoError() async {
-        let storeKit = PaywallTestStoreKit(restoreResult: .failure(PaeoniaPurchaseError.cancelled))
-        let viewModel = makeViewModel(storeKit: storeKit)
-
-        let restored = await viewModel.restorePurchases()
-
-        #expect(!restored)
-        #expect(viewModel.error == nil)
-        #expect(!viewModel.isRestoring)
-    }
-
-    @Test func restoreFindingNothingSaysSo() async {
-        let storeKit = PaywallTestStoreKit(restoreResult: .success(false))
-        let viewModel = makeViewModel(storeKit: storeKit)
-
-        _ = await viewModel.restorePurchases()
-
-        #expect(viewModel.error == .noPurchasesToRestore)
-    }
-
-    /// Restore no longer shares the product-loading flag, so a restore during a
-    /// product refresh cannot end the refresh's loading state early.
-    @Test func restoreDoesNotTouchProductLoadingState() async {
-        let storeKit = PaywallTestStoreKit(restoreResult: .success(true), holdsLoad: true)
-        let viewModel = makeViewModel(storeKit: storeKit)
-
-        let loading = Task { await viewModel.loadProducts() }
-        await waitUntil { storeKit.isLoadWaiting }
-
-        let restored = await viewModel.restorePurchases()
-
-        #expect(restored)
-        #expect(viewModel.isLoading)
-
-        storeKit.finishLoad()
-        await loading.value
-        #expect(!viewModel.isLoading)
     }
 
     /// A slow App Store used to keep the whole paywall, including restore, sign

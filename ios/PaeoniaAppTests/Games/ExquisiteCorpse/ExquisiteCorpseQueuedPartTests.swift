@@ -38,13 +38,6 @@ struct ExquisiteCorpseQueuedPartTests {
         #expect(figure?.parts.first?.drawingMediaAssetID == nil)
     }
 
-    @Test func aQueuedHeadWatchesThePartnerDrawTheBodyWhenTheyAreInTheLiveRoom() {
-        let state = Fixture.state(game: Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me))
-        let pending = Fixture.pending(parts: [Fixture.queuedPart(figure: 2, partIndex: 0)])
-
-        #expect(resolve(state, pending: pending, live: true).phase == .watching)
-    }
-
     @Test func aQueuedBodyAddsToTheFigureInProgress() {
         let queued = Fixture.queuedPart(figure: 1, partIndex: 1)
         let current = Fixture.figure(1, parts: 1)

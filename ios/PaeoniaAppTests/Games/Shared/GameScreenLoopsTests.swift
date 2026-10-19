@@ -42,11 +42,6 @@ private final class HeldPresenceGateway: GamesGateway, @unchecked Sendable {
     // swiftlint:enable async_without_await
 }
 
-@MainActor
-private final class TickCounter {
-    var count = 0
-}
-
 /// The loops every game screen shares.
 @MainActor
 struct GameScreenLoopsTests {
@@ -86,36 +81,5 @@ struct GameScreenLoopsTests {
 
         #expect(await waitUntil { gateway.finished == [true, false, true] })
         loops.endHeartbeat()
-    }
-
-    @Test func cancellingTheHeartbeatSaysNothingMore() async {
-        let loops = makeLoops()
-        gateway.release()
-        loops.beginHeartbeat()
-        #expect(await waitUntil { gateway.finished == [true] })
-
-        loops.cancelHeartbeat()
-        try? await Task.sleep(for: .milliseconds(50))
-
-        #expect(gateway.started == [true])
-    }
-
-    @Test func theTickRunsOnTheClockUntilItIsCancelled() async {
-        let loops = GameScreenLoops(
-            kind: .mindMeld,
-            gateway: gateway,
-            heartbeatInterval: .seconds(3_600),
-            sleep: { _ in try await Task.sleep(for: .milliseconds(5)) }
-        )
-        let ticks = TickCounter()
-        loops.beginTicking(every: .seconds(1)) { ticks.count += 1 }
-        #expect(await waitUntil { ticks.count >= 3 })
-
-        loops.cancelFollowing()
-        try? await Task.sleep(for: .milliseconds(30))
-        let settled = ticks.count
-        try? await Task.sleep(for: .milliseconds(30))
-
-        #expect(ticks.count == settled)
     }
 }

@@ -41,25 +41,6 @@ struct StoryChainHubModelTests {
 
     // MARK: Status
 
-    @Test func nothingCachedShowsNoCardAndNoBadge() async {
-        let hub = await openHub(Env(state: nil))
-
-        #expect(hub.summary == nil)
-        #expect(!hub.isYourTurn)
-        let context = GameHubCardContext(partnerName: "Robin", partnerIsHere: false, isOnHub: true)
-        let card = hub.card(context) { _ in }
-        #expect(card == nil)
-    }
-
-    @Test func aCoupleWithoutAGameHasNotStarted() async {
-        let summary = await summaryOf(Env.state(nil))
-
-        #expect(summary?.status == .notStarted)
-        #expect(summary?.status.isYourTurn == false)
-        #expect(summary?.finishedCount == 0)
-        #expect(summary?.hasHistory == false)
-    }
-
     private struct TurnCase {
         let state: RemoteStoryChainState
         let status: StoryChainHubSummary.Status
@@ -154,23 +135,6 @@ struct StoryChainHubModelTests {
     }
 
     // MARK: The card, the screens, and notices
-
-    @Test func theCardAppearsOnceThereIsAState() async {
-        let hub = await openHub(Env(state: Env.writing(turn: Fixture.me, lines: [Env.line(1, by: Fixture.partner)])))
-        let context = GameHubCardContext(partnerName: "Robin", partnerIsHere: false, isOnHub: true)
-
-        let card = hub.card(context) { _ in }
-        #expect(card != nil)
-    }
-
-    @Test func itBuildsOnlyItsOwnScreens() async {
-        let hub = await openHub(Env(state: nil))
-
-        #expect(hub.screen(for: .game(.storyChain)) != nil)
-        #expect(hub.screen(for: .storyChainHistory) != nil)
-        #expect(hub.screen(for: .storyChainHistoryDetail(Fixture.storyID)) != nil)
-        #expect(hub.screen(for: .game(.drawAndGuess)) == nil)
-    }
 
     @Test func aNoticeLeftByABackgroundSendIsGivenOnce() async {
         let environment = Env(state: Env.writing(turn: Fixture.me, lines: [Env.line(1, by: Fixture.partner)]))

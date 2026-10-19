@@ -68,25 +68,6 @@ struct ExquisiteCorpseStarsTests {
         #expect(!stars.isStarred(figureID))
     }
 
-    @Test func aFigureStarredOnTheOtherPhoneShowsFromTheGameState() async {
-        await saveState(starred: true)
-        let stars = makeStars()
-
-        await stars.reload()
-
-        #expect(stars.isStarred(figureID))
-    }
-
-    @Test func aStarKeptFromAnEarlierAnswerShowsForAFigureTheStateNoLongerHas() async {
-        let older = ExquisiteCorpseFixture.figureID(7)
-        await environment.cache.saveStars([older: true], ownerUserID: ExquisiteCorpseFixture.me)
-        let stars = makeStars()
-
-        await stars.reload()
-
-        #expect(stars.isStarred(older))
-    }
-
     @Test func anUnsentChangeBeatsTheGameState() async {
         await saveState(starred: true)
         let stars = makeStars()

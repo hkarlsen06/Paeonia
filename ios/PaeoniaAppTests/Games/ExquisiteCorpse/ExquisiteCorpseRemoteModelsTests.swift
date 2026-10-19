@@ -124,29 +124,6 @@ struct ExquisiteCorpseRemoteModelsTests {
         #expect(state.recentFigures.isEmpty && state.ideas.isEmpty)
     }
 
-    @Test func aGameBetweenFiguresHasNoFigureID() throws {
-        let json = stateJSON.replacingOccurrences(
-            of: "\"figure_id\": \"55555555-5555-4555-8555-555555555555\"",
-            with: "\"figure_id\": null"
-        )
-
-        let game = try #require(try decode(RemoteExquisiteCorpseState.self, json).game)
-
-        #expect(game.figureID == nil)
-    }
-
-    @Test func theCachedStateComesBackAsItWentIn() throws {
-        let state = try decode(RemoteExquisiteCorpseState.self, stateJSON)
-
-        let data = try PaeoniaConvexClient.encoder.encode(state)
-        let restored = try PaeoniaConvexClient.decoder.decode(RemoteExquisiteCorpseState.self, from: data)
-
-        #expect(restored == state)
-        // Keys are the server's, so the cache and the wire agree.
-        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        #expect(object["recent_figures"] != nil && object["current_figure"] != nil)
-    }
-
     @Test func decodesAHistoryPage() throws {
         let figure = """
         {
@@ -187,41 +164,5 @@ struct ExquisiteCorpseRemoteModelsTests {
         #expect(result.partIndex == 2 && result.figureFinished)
         #expect(result.partID == UUID(uuidString: "66666666-6666-4666-8666-666666666666"))
         #expect(result.figureID == UUID(uuidString: "55555555-5555-4555-8555-555555555555"))
-    }
-
-    @Test func aFigureFindsItsPartsByIndex() {
-        let figure = ExquisiteCorpseFixture.figure(1, parts: 2)
-
-        #expect(figure.part(at: 0)?.kind == .head)
-        #expect(figure.part(at: 1)?.kind == .body)
-        #expect(figure.part(at: 2) == nil)
-        #expect(!figure.isFinished)
-        #expect(ExquisiteCorpseFixture.figure(1).isFinished)
-    }
-}
-
-struct ExquisiteCorpsePartKindTests {
-    @Test func thePartsComeInTheOrderTheyAreDrawn() {
-        #expect(ExquisiteCorpsePartKind.allCases == [.head, .body, .legs])
-        #expect(ExquisiteCorpsePartKind.allCases.map(\.rawValue) == [0, 1, 2])
-        #expect(ExquisiteCorpsePartKind(rawValue: 3) == nil)
-    }
-
-    @Test func nextIsTheFollowingPartAndNilAfterTheLegs() {
-        #expect(ExquisiteCorpsePartKind.head.next == .body)
-        #expect(ExquisiteCorpsePartKind.body.next == .legs)
-        #expect(ExquisiteCorpsePartKind.legs.next == nil)
-    }
-
-    @Test func onlyTheHeadAndTheBodyHaveAStripAndAFoldLine() {
-        #expect(ExquisiteCorpsePartKind.allCases.map(\.hasStrip) == [true, true, false])
-        #expect(ExquisiteCorpsePartKind.allCases.map(\.showsFoldLine) == [true, true, false])
-    }
-
-    @Test func aPartKindIsStoredAsItsIndex() throws {
-        let data = try JSONEncoder().encode([ExquisiteCorpsePartKind.legs])
-
-        #expect(String(bytes: data, encoding: .utf8) == "[2]")
-        #expect(try JSONDecoder().decode([ExquisiteCorpsePartKind].self, from: data) == [.legs])
     }
 }

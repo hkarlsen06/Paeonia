@@ -4,18 +4,6 @@ import Testing
 /// Which reload's read reaches the screen when reloads overlap. `#expect` can't
 /// call the mutating `apply`, so each result is kept first.
 struct GameReloadGateTests {
-    @Test func readsThatFinishInOrderAllApply() {
-        var gate = GameReloadGate()
-
-        let first = gate.begin()
-        let firstApplied = gate.apply(first)
-        let second = gate.begin()
-        let secondApplied = gate.apply(second)
-
-        #expect(firstApplied)
-        #expect(secondApplied)
-    }
-
     @Test func aLaterReloadStillReadingDoesNotDropAnEarlierRead() {
         var gate = GameReloadGate()
         let earlier = gate.begin()

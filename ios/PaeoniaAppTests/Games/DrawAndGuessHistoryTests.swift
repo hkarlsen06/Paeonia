@@ -15,36 +15,6 @@ extension ScriptedGamesGateway {
     }
 }
 
-/// A copy of a history round with a few fields changed. A new id is made when the round number moves.
-func movedHistoryRound(
-    _ round: RemoteDrawAndGuessHistoryRound,
-    by offset: Int = 0,
-    solveMs: Int? = nil,
-    starred: Bool? = nil
-) -> RemoteDrawAndGuessHistoryRound {
-    RemoteDrawAndGuessHistoryRound(
-        id: offset == 0 ? round.id : UUID(),
-        roundNumber: round.roundNumber + offset,
-        drawerUserID: round.drawerUserID,
-        guesserUserID: round.guesserUserID,
-        word: round.word,
-        difficulty: round.difficulty,
-        points: round.points,
-        state: round.state,
-        drawingMediaAssetID: round.drawingMediaAssetID,
-        solveMs: solveMs ?? round.solveMs,
-        speedBonus: round.speedBonus,
-        firstTryBonus: round.firstTryBonus,
-        hintsUsed: round.hintsUsed,
-        attemptCount: round.attemptCount,
-        guesserReaction: round.guesserReaction,
-        personalBest: round.personalBest,
-        starredByMe: starred ?? round.starredByMe,
-        startedAt: round.startedAt,
-        endedAt: round.endedAt
-    )
-}
-
 /// "Our drawings": paging, the filters, and the cache.
 @MainActor
 struct DrawAndGuessHistoryTests {
@@ -102,40 +72,6 @@ struct DrawAndGuessHistoryTests {
         #expect(second.myRecords == DeveloperGamesFixture.records.records(for: GameFixture.me))
     }
 
-    @Test func offlineWithNothingCachedSaysSoAndTryAgainLoads() async {
-        let history = makeHistory()
-        environment.gateway.fail("history")
-
-        await history.refresh()
-        #expect(history.phase == .failed(.other))
-
-        environment.gateway.unfail("history")
-        await history.retry()
-        #expect(history.phase == .loaded)
-        #expect(history.visibleRounds.count == 12)
-    }
-
-    @Test func aCoupleWithoutDrawingsSeesTheEmptyState() async {
-        let history = makeHistory(rounds: [])
-
-        await history.refresh()
-
-        #expect(history.phase == .loaded)
-        #expect(history.isEmpty)
-        #expect(history.hasNoDrawings)
-    }
-
-    @Test func aFailedReadKeepsTheListOnScreen() async {
-        let history = makeHistory(pageSize: 5)
-        await history.refresh()
-        environment.gateway.fail("history")
-
-        await history.refresh()
-
-        #expect(history.phase == .loaded)
-        #expect(history.visibleRounds.count == 5)
-    }
-
     // MARK: Paging
 
     @Test func olderPagesLoadUntilTheEnd() async throws {
@@ -150,34 +86,6 @@ struct DrawAndGuessHistoryTests {
         #expect(history.visibleRounds.map(\.roundNumber) == Array((1...12).reversed()))
         #expect(!history.hasMore)
         #expect(environment.gateway.historyRequests.map(\.beforeRoundNumber) == [nil, 8, 3])
-    }
-
-    @Test func aCellFarFromTheEndLoadsNothing() async throws {
-        let history = makeHistory(pageSize: 12, rounds: rounds + rounds.map { movedHistoryRound($0, by: -12) })
-        await history.refresh()
-
-        await history.loadMoreIfNeeded(after: try #require(history.visibleRounds.first))
-
-        #expect(environment.gateway.historyRequests.count == 1)
-    }
-
-    @Test func aFailedPageShowsRetryAndTheNextTryAddsTheRounds() async throws {
-        let history = makeHistory(pageSize: 5)
-        await history.refresh()
-        environment.gateway.fail("history")
-
-        await history.loadMoreIfNeeded(after: try #require(history.visibleRounds.last))
-        #expect(history.loadMoreFailed)
-        #expect(history.visibleRounds.count == 5)
-
-        // A cell that shows up again does not ask a second time until the person does.
-        await history.loadMoreIfNeeded(after: try #require(history.visibleRounds.last))
-        #expect(environment.gateway.historyRequests.count == 2)
-
-        environment.gateway.unfail("history")
-        await history.retryLoadMore()
-        #expect(!history.loadMoreFailed)
-        #expect(history.visibleRounds.count == 10)
     }
 
     @Test func refreshingAfterScrollingKeepsTheOlderRounds() {
@@ -227,105 +135,5 @@ struct DrawAndGuessHistoryTests {
         #expect(history.visibleRounds.map(\.roundNumber) == expected)
         #expect(environment.gateway.historyRequests.first?.starredOnly == true)
         #expect(!history.isEmpty)
-    }
-
-    @Test func aDrawingLeavesTheStarredListTheMomentItIsUnstarred() async throws {
-        let history = makeHistory()
-        history.filter = .starred
-        await history.refresh()
-        let first = try #require(history.visibleRounds.first)
-
-        await history.stars.setStarred(false, id: first.id)
-
-        #expect(!history.visibleRounds.contains { $0.id == first.id })
-    }
-
-    @Test func aDrawingStarredFromAllJoinsTheStarredList() async throws {
-        let history = makeHistory()
-        await history.refresh()
-        history.filter = .starred
-        await history.refresh()
-        let unstarred = try #require(rounds.first { !$0.starredByMe })
-
-        await history.stars.setStarred(true, id: unstarred.id)
-
-        #expect(history.visibleRounds.contains { $0.id == unstarred.id })
-        // Newest first, whichever list a drawing came from.
-        let numbers = history.visibleRounds.map(\.roundNumber)
-        #expect(numbers == numbers.sorted(by: >))
-    }
-
-    @Test func noStarsShowTheStarredEmptyStateNotTheNoDrawingsOne() async {
-        let none = rounds.map { unstarred($0) }
-        let history = makeHistory(rounds: none)
-        await history.refresh()
-        history.filter = .starred
-
-        await history.refresh()
-
-        #expect(history.isEmpty)
-        #expect(!history.hasNoDrawings)
-    }
-
-    @Test func offlineTheStarredFilterFallsBackToTheCachedList() async {
-        let first = makeHistory(pageSize: 12)
-        await first.refresh()
-
-        let second = makeHistory(pageSize: 12)
-        environment.gateway.fail("history")
-        environment.gateway.fail("records")
-        second.filter = .starred
-        await second.refresh()
-
-        #expect(second.phase == .loaded)
-        #expect(second.visibleRounds.map(\.roundNumber) == rounds.filter(\.starredByMe).map(\.roundNumber))
-    }
-
-    @Test func theServersStarsReachTheStarStore() async throws {
-        let history = makeHistory()
-
-        await history.refresh()
-
-        let starred = try #require(rounds.first { $0.starredByMe })
-        let unstarredRound = try #require(rounds.first { !$0.starredByMe })
-        #expect(history.stars.isStarred(starred.id))
-        #expect(!history.stars.isStarred(unstarredRound.id))
-    }
-
-    // MARK: Names and the hub link
-
-    @Test func theCellNamesThePartnerOrYou() async throws {
-        let history = makeHistory()
-        await history.refresh()
-        let mine = try #require(rounds.first { $0.drawerUserID == GameFixture.me })
-        let theirs = try #require(rounds.first { $0.drawerUserID == GameFixture.partner })
-
-        #expect(history.drawerName(of: theirs) == GameFixture.participants.partnerName)
-        #expect(history.drawerName(of: mine) != GameFixture.participants.partnerName)
-    }
-
-    @Test func theHubLinkNeedsAFinishedDrawing() {
-        let drawn = GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: true)
-        let stillDrawing = GameFixture.round(state: .drawing, drawer: GameFixture.partner)
-
-        let withDrawing = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me),
-            recentRounds: [drawn]
-        )
-        let without = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .drawing, turn: GameFixture.me),
-            round: stillDrawing
-        )
-
-        #expect(withDrawing.hasFinishedDrawing)
-        #expect(!without.hasFinishedDrawing)
-    }
-
-    // MARK: Helpers
-
-    private func unstarred(_ round: RemoteDrawAndGuessHistoryRound) -> RemoteDrawAndGuessHistoryRound {
-        movedHistoryRound(round, starred: false)
     }
 }

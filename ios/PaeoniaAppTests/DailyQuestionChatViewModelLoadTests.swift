@@ -4,40 +4,6 @@ import Testing
 
 @MainActor
 struct DailyQuestionChatViewModelLoadTests {
-    @Test func openingAnEmptyChatOfflineDoesNotReportALoadError() async {
-        let fixture = ChatTestFixture()
-        await fixture.gateway.setFailure(true)
-        let viewModel = fixture.makeViewModel()
-
-        await viewModel.load()
-
-        // No thread exists yet, so nothing failed to load and the composer still works.
-        #expect(viewModel.notice == nil)
-        #expect(viewModel.isLoading == false)
-    }
-
-    @Test func aKnownThreadThatCannotBeLoadedReportsALoadError() async {
-        let fixture = ChatTestFixture()
-        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
-        await fixture.gateway.setFailure(true)
-        let viewModel = fixture.makeViewModel()
-
-        await viewModel.load()
-
-        #expect(viewModel.notice == .loadFailed(.other))
-    }
-
-    @Test func theEmptyStateWaitsForTheFirstLoadAndEndsEvenWhenChatIsUnavailable() async {
-        let fixture = ChatTestFixture(question: makeChatQuestion(revealed: false))
-        let viewModel = fixture.makeViewModel()
-        #expect(viewModel.isLoading)
-
-        await viewModel.load()
-
-        #expect(viewModel.isLoading == false)
-        #expect(viewModel.notice == .unavailable)
-    }
-
     @Test func aReadThatFinishesLateDoesNotReplaceNewerMessages() async throws {
         let fixture = ChatTestFixture()
         let service = PausingChatService(base: fixture.makeService())

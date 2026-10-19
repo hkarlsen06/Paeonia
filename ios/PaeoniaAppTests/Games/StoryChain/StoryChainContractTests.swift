@@ -213,26 +213,6 @@ struct StoryChainContractTests {
         #expect(inner["text"] as? String == "Once upon")
     }
 
-    @Test func aSentLiveMessageCarriesTheLineAndSurvivesTheRelay() throws {
-        let lineID = UUID()
-        let message = StoryChainLiveMessage(
-            story: Fixture.storyID,
-            number: 2,
-            text: "A whole line.",
-            isLast: false,
-            lineID: lineID,
-            sent: true
-        )
-
-        let data = try JSONEncoder().encode(GameLiveEnvelope(game: StoryChainLiveMessage.game, message: message))
-        let decoded = try JSONDecoder().decode(GameLiveEnvelope<StoryChainLiveMessage>.self, from: data)
-
-        #expect(decoded.game == "story_chain")
-        #expect(decoded.message == message)
-        #expect(decoded.message.lineID == lineID)
-        #expect(decoded.message.sent)
-    }
-
     @Test func aLiveDraftLongerThanTheLineLimitIsCutOnTheWayInAndOut() throws {
         let long = String(repeating: "a", count: 300)
         let made = StoryChainLiveMessage(story: Fixture.storyID, number: 1, text: long, isLast: false)

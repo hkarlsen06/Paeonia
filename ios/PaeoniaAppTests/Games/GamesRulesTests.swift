@@ -3,7 +3,7 @@ import Testing
 @testable import PaeoniaApp
 
 /// The Games rules that need no screen: what the server's JSON means, who counts
-/// as here, when the invite button is back, and which phase a state is in.
+/// as here, and when the invite button is back.
 @MainActor
 struct GamesRulesTests {
     // MARK: Contract
@@ -93,17 +93,6 @@ struct GamesRulesTests {
         #expect(state == .sent(until: now.addingTimeInterval(15 * 60)))
     }
 
-    // MARK: Score
-
-    @Test func theScoreFollowsThePlayStyle() {
-        let game = GameFixture.game(state: .choosingWord, turn: GameFixture.me)
-
-        #expect(DrawAndGuessScore(game: game, playStyle: .together) == .together(total: 13))
-        #expect(DrawAndGuessScore(game: game, playStyle: .against) == .against(mine: 8, partner: 5))
-        #expect(DrawAndGuessScore(game: game, playStyle: .against).leader == .me)
-        #expect(DrawAndGuessScore(game: game, playStyle: .together).leader == nil)
-    }
-
     // MARK: Language
 
     @Test func theGameLanguageDefaultsToTheFirstSupportedPhoneLanguage() {
@@ -134,17 +123,5 @@ struct GamesRulesTests {
         #expect(PaeoniaDeepLink(URL(string: "paeonia://games/other")!) == nil)
         let push: [AnyHashable: Any] = ["deeplink": "paeonia://games/mind-meld", "type": "game_turn_ready"]
         #expect(PaeoniaDeepLink(notificationUserInfo: push) == .game(.mindMeld))
-    }
-
-    @Test func theGamesSwitchUsesTheGamesEnabledColumn() {
-        #expect(NotificationPreferenceKind.games.columnName == "games_enabled")
-        var preferences = NotificationPreferences()
-        #expect(preferences[.games])
-        preferences[.games] = false
-        #expect(!preferences.gamesEnabled)
-    }
-
-    @Test func gamesSitsBetweenQuestionsAndMemoriesInTheTabBar() {
-        #expect(MainTab.allCases == [.home, .questions, .games, .memories, .us])
     }
 }

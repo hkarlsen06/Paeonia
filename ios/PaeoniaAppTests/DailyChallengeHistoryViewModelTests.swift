@@ -137,45 +137,6 @@ struct DailyChallengeHistoryViewModelTests {
         #expect(days.first?.questions.map(\.id) == [kept.id])
         #expect(await service.loadHistoryCount == 1)
     }
-
-    @MainActor
-    @Test func daysAreEmptyUntilContentLoads() async {
-        let viewModel = DailyChallengeHistoryViewModel(
-            service: GatedHistoryService(immediateResult: []),
-            currentUserID: HistoryTestIDs.currentUser
-        )
-
-        #expect(viewModel.days(excluding: []).isEmpty)
-        await viewModel.load()
-        #expect(viewModel.state == .empty)
-        #expect(viewModel.days(excluding: []).isEmpty)
-    }
-
-    @MainActor
-    @Test func needsLoadUntilFirstLoadSettlesToContentOrEmpty() async {
-        let failing = DailyChallengeHistoryViewModel(
-            service: GatedHistoryService(failure: URLError(.notConnectedToInternet)),
-            currentUserID: HistoryTestIDs.currentUser
-        )
-        #expect(failing.needsLoad)
-        await failing.load()
-        #expect(failing.state == .failed(.offline))
-        #expect(failing.needsLoad)
-
-        let loaded = DailyChallengeHistoryViewModel(
-            service: GatedHistoryService(immediateResult: [makeQuestion(localDate: Self.day1)]),
-            currentUserID: HistoryTestIDs.currentUser
-        )
-        await loaded.load()
-        #expect(!loaded.needsLoad)
-
-        let empty = DailyChallengeHistoryViewModel(
-            service: GatedHistoryService(immediateResult: []),
-            currentUserID: HistoryTestIDs.currentUser
-        )
-        await empty.load()
-        #expect(!empty.needsLoad)
-    }
 }
 
 // MARK: - Fixtures

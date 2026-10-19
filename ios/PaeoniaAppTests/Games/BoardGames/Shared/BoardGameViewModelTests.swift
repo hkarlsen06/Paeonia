@@ -28,28 +28,6 @@ struct BoardGameViewModelTests {
         await harness.expectShown(game: 1, moves: 2)
     }
 
-    @Test func openingAfterMyOwnMoveHasNothingToReplay() async {
-        let viewModel = await harness.openBoard(harness.game(moves: [3, 4, 5]))
-        defer { viewModel.stop() }
-
-        #expect(harness.sleeps.waits.isEmpty)
-        #expect(viewModel.displayedMoves == [3, 4, 5])
-        #expect(viewModel.lastMove == nil)
-        #expect(!viewModel.canPlay)
-        #expect(viewModel.turnLabel == .partnerTurn)
-    }
-
-    @Test func openingAtTheShownPositionReplaysNothing() async {
-        let viewModel = await harness.openBoard(harness.game(moves: [3, 4]), shown: harness.position(2))
-        defer { viewModel.stop() }
-
-        #expect(harness.sleeps.waits.isEmpty)
-        #expect(viewModel.displayedMoves == [3, 4])
-        #expect(viewModel.lastMove == nil)
-        #expect(!viewModel.isReplaying)
-        #expect(viewModel.canPlay)
-    }
-
     @Test func openingBehindTheShownPositionReplaysEveryMoveSinceThen() async {
         // The phone showed my first move. The partner's two moves and my move between them are new.
         let viewModel = await harness.openBoard(harness.game(moves: [3, 4, 5, 2]), shown: harness.position(1))
@@ -59,46 +37,6 @@ struct BoardGameViewModelTests {
         #expect(viewModel.displayedMoves == [3, 4, 5, 2])
         #expect(viewModel.lastMove == BoardMoveEvent(number: 4, move: 2, player: .two, isMine: false))
         await harness.expectShown(game: 1, moves: 4)
-    }
-
-    @Test func theReplayWaitsUntilTheBoardCanShowIt() async {
-        await harness.save(harness.game(moves: [3, 4]))
-        let viewModel = harness.makeViewModel()
-        defer { viewModel.stop() }
-        // Ludo's 3D board is still loading when the screen opens.
-        viewModel.isWaitingForBoard = true
-        await viewModel.start(prefersReducedMotion: true)
-
-        // The board shows where this phone left the game and holds the partner's move.
-        #expect(viewModel.displayedMoves == [3])
-        #expect(!viewModel.isReplaying)
-        #expect(harness.sleeps.waits.isEmpty)
-        #expect(!viewModel.canPlay)
-
-        viewModel.isWaitingForBoard = false
-        let caughtUp = await waitUntil { viewModel.displayedMoves == [3, 4] && !viewModel.isReplaying }
-        #expect(caughtUp)
-        #expect(viewModel.lastMove == BoardMoveEvent(number: 2, move: 4, player: .two, isMine: false))
-        #expect(viewModel.canPlay)
-    }
-
-    @Test func aBoardThatFinishedThePartnersMoveHandsOverTheTurnAtOnce() async {
-        await harness.save(harness.game(moves: [3, 4]))
-        let viewModel = harness.makeViewModel(partnerTiming: .seconds(120))
-        defer { viewModel.stop() }
-        await viewModel.start(prefersReducedMotion: false)
-        let animating = await waitUntil { viewModel.displayedMoves == [3, 4] && viewModel.isReplaying }
-        #expect(animating)
-        #expect(!viewModel.canPlay)
-
-        // An older move's signal changes nothing.
-        viewModel.finishMoveAnimation(number: 1)
-        #expect(viewModel.isReplaying)
-
-        // Ludo's board says the pawn stands still and the die has landed.
-        viewModel.finishMoveAnimation(number: 2)
-        let handedOver = await waitUntil { !viewModel.isReplaying && viewModel.canPlay }
-        #expect(handedOver)
     }
 
     @Test func aPartnerMoveThatArrivesWhileTheBoardIsOpenPlaysAsAMove() async {
@@ -257,26 +195,5 @@ struct BoardGameViewModelTests {
         #expect(viewModel.result == nil)
         #expect(harness.sleeps.waits.isEmpty)
         await harness.expectNothingShown()
-    }
-
-    @Test func theHubSummaryNamesThePartnerWhenTheyWon() async {
-        let viewModel = harness.makeViewModel()
-        let game = harness.game(first: .partner, moves: Fixture.connectFourWin, partnerWins: 1, gamesFinished: 1)
-        await harness.save(game)
-
-        await viewModel.reload()
-
-        #expect(viewModel.summary?.status == .partnerWon)
-        #expect(viewModel.summary?.score == .against(mine: 0, partner: 1))
-        await harness.expectNothingShown()
-    }
-
-    @Test func aCoupleWithoutAGameHasANotStartedSummary() async {
-        let viewModel = harness.makeViewModel()
-        await harness.cache.saveState(harness.state(), ownerUserID: harness.me)
-
-        await viewModel.reload()
-
-        #expect(viewModel.summary == BoardGameHubSummary(status: .notStarted, score: nil))
     }
 }

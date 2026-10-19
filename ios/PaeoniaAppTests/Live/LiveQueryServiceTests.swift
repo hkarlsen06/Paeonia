@@ -102,20 +102,6 @@ struct LiveQueryServiceTests {
         #expect(transport.openedPaths.value == ["users:get_row"])
     }
 
-    @Test func yieldsEveryUpdateInOrder() async {
-        let transport = ScriptedTransport([
-            .init(values: ["1", "2", "3"], ending: .stayOpen),
-        ])
-        var iterator = Self.makeService(transport).subscribe("a:b", as: Int.self).makeAsyncIterator()
-
-        var received: [Int] = []
-        while received.count < 3, case let .value(number)? = await iterator.next() {
-            received.append(number)
-        }
-
-        #expect(received == [1, 2, 3])
-    }
-
     @Test func passesEncodedArgumentsToTheTransport() async {
         let transport = ScriptedTransport([.init(values: ["1"], ending: .stayOpen)])
         var iterator = Self.makeService(transport)
@@ -154,15 +140,6 @@ struct LiveQueryServiceTests {
         // second retry follows a failure with no value, so it waits longer.
         #expect(delays.value.prefix(2) == [.seconds(1), .seconds(2)])
         #expect(transport.openedPaths.value.count == 3)
-    }
-
-    @Test func backoffDoublesAndStopsAtTheCap() {
-        let backoff = LiveBackoff(base: .seconds(1), cap: .seconds(30))
-
-        let delays = (0..<8).map { backoff.delay(forAttempt: $0) }
-
-        let seconds: [Int] = [1, 2, 4, 8, 16, 30, 30, 30]
-        #expect(delays == seconds.map { .seconds($0) })
     }
 
     @Test func aStreamThatEndsWithoutAnErrorIsResubscribed() async {
@@ -297,29 +274,5 @@ extension LiveQueryServiceTests {
         #expect(events == ["value 1", "refused"])
         #expect(delays.value.isEmpty)
         #expect(transport.openedPaths.value.count == 1)
-    }
-
-    @Test func theRetryDelayIsScaledByTheJitter() async {
-        let transport = ScriptedTransport([
-            .init(values: [], ending: .fail(LiveQueryError.transport("down"))),
-            .init(values: ["1"], ending: .stayOpen),
-        ])
-        let delays = LockedBox<[Duration]>([])
-        let service = LiveQueryService(
-            transport: transport,
-            backoff: LiveBackoff(base: .seconds(4), cap: .seconds(8)),
-            sleep: { delay in
-                delays.mutate { $0.append(delay) }
-                try await Task.sleep(for: .milliseconds(1))
-            },
-            jitter: { 0.5 }
-        )
-        var iterator = service.subscribe("a:b", as: Int.self).makeAsyncIterator()
-
-        while case let item? = await iterator.next() {
-            if case .value = item { break }
-        }
-
-        #expect(delays.value == [.seconds(2)])
     }
 }

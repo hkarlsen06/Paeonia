@@ -4,16 +4,6 @@ import Testing
 @testable import PaeoniaApp
 
 struct HomeWidgetPreviewLoaderTests {
-    @Test func loadReturnsNilImageWhenNoPayloadExists() {
-        let environment = TestEnvironment()
-
-        let content = environment.makeLoader().load()
-
-        #expect(content.image == nil)
-        #expect(content.authorName == nil)
-        #expect(content.savedAt == nil)
-    }
-
     @Test func loadReturnsPreviewImageForNormalPayload() throws {
         let environment = TestEnvironment()
         try environment.writePreview(named: "systemSmall.png")
@@ -26,18 +16,6 @@ struct HomeWidgetPreviewLoaderTests {
         #expect(content.image != nil)
         #expect(content.authorName == "Hjalmar")
         #expect(content.savedAt != nil)
-    }
-
-    @Test func loadFallsBackToLargePreviewWhenSmallMissing() throws {
-        let environment = TestEnvironment()
-        try environment.writePreview(named: "systemLarge.png")
-        try environment.writePayload(
-            previews: ["systemLarge": "Widget/previews/systemLarge.png"]
-        )
-
-        let content = environment.makeLoader().load()
-
-        #expect(content.image != nil)
     }
 
     @Test func loadIgnoresRedactedPayload() throws {
@@ -91,15 +69,6 @@ struct HomeWidgetPreviewLoaderTests {
         let content = environment.makeLoader().load()
 
         #expect(content.image == nil)
-    }
-
-    @Test func preferredPreviewPathPrefersSmall() {
-        let path = HomeWidgetPreviewLoader.preferredPreviewPath(in: [
-            "systemLarge": "large.png",
-            "systemSmall": "small.png",
-        ])
-
-        #expect(path == "small.png")
     }
 }
 

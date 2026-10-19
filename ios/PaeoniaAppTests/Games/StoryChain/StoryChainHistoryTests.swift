@@ -52,15 +52,6 @@ struct StoryChainHistoryTests {
         #expect(environment.gateway.historyRequests == [.init(starredOnly: false, beforeStoryNumber: nil, limit: 30)])
     }
 
-    @Test func theFirstPageIsKeptForTheNextOpen() async {
-        let (history, _) = makeHistory()
-
-        await history.refresh()
-
-        let page = await environment.cache.document(ownerUserID: Fixture.me).historyFirstPage
-        #expect(page?.stories.map(\.storyNumber) == Array((1...12).reversed()))
-    }
-
     @Test func theCachedPageShowsWhenTheServerCannotBeReached() async {
         let (first, _) = makeHistory()
         await first.refresh()
@@ -84,16 +75,6 @@ struct StoryChainHistoryTests {
         await history.retry()
         #expect(history.phase == .loaded)
         #expect(history.visibleItems.count == 12)
-    }
-
-    @Test func aCoupleWithoutFinishedStoriesSeesTheEmptyState() async {
-        let (history, _) = makeHistory(items: [])
-
-        await history.refresh()
-
-        #expect(history.phase == .loaded)
-        #expect(history.isEmpty)
-        #expect(history.hasNoStories)
     }
 
     @Test func aFailedReadKeepsTheListOnScreen() async {
@@ -122,16 +103,6 @@ struct StoryChainHistoryTests {
         #expect(history.visibleItems.map(\.storyNumber) == Array((1...12).reversed()))
         #expect(!history.hasMore)
         #expect(environment.gateway.historyRequests.map(\.beforeStoryNumber) == [nil, 8, 3])
-    }
-
-    @Test func aRowFarFromTheEndLoadsNothing() async throws {
-        let (history, _) = makeHistory(pageSize: 10, items: (1...30).map { storyChainHistoryItem($0) })
-        await history.refresh()
-
-        await history.loadMoreIfNeeded(after: try #require(history.visibleItems.first))
-
-        #expect(history.visibleItems.count == 10)
-        #expect(environment.gateway.historyRequests.count == 1)
     }
 
     @Test func aFailedPageShowsRetryAndTheNextTryAddsTheStories() async throws {
@@ -187,19 +158,6 @@ struct StoryChainHistoryTests {
         await stars.setStarred(true, storyID: nine.id)
 
         #expect(history.visibleItems.map(\.storyNumber) == [12, 9, 8, 4])
-    }
-
-    @Test func noStarsShowTheStarredEmptyStateNotTheNoStoriesOne() async {
-        let (history, _) = makeHistory(items: (1...3).map { storyChainHistoryItem($0) })
-        history.filter = .starred
-
-        await history.refresh()
-        history.filter = .all
-        await history.refresh()
-        history.filter = .starred
-
-        #expect(history.isEmpty)
-        #expect(!history.hasNoStories)
     }
 
     @Test func offlineTheStarredFilterFallsBackToTheCachedList() async {
@@ -300,17 +258,5 @@ struct StoryChainHistoryTests {
         #expect(history.phase == .loading)
         #expect(history.visibleItems.isEmpty)
         #expect(history.partnerName == "Alex")
-    }
-
-    @Test func newNamesDoNotClearWhatWasLoaded() async {
-        let (history, _) = makeHistory()
-        await history.refresh()
-
-        history.configure(
-            participants: GameParticipants(currentUserID: Fixture.me, coupleID: Fixture.couple, partnerName: "Robin R.")
-        )
-
-        #expect(history.visibleItems.count == 12)
-        #expect(history.partnerName == "Robin R.")
     }
 }

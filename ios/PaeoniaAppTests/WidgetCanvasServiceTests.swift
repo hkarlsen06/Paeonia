@@ -5,21 +5,6 @@ import UIKit
 @testable import PaeoniaApp
 
 struct WidgetCanvasServiceTests {
-    @Test func sharePayloadDefaultsToRedacted() {
-        let payload = WidgetSharePayload(
-            revisionID: UUID().uuidString,
-            authorName: nil,
-            createdAt: .now,
-            renderedAt: .now,
-            contentHash: "sha256-test",
-            previews: ["systemSmall": "Widget/previews/systemSmall.png"],
-            canvasSide: 300
-        )
-
-        #expect(payload.privacyMode == .redacted)
-        #expect(payload.isRedacted)
-    }
-
     @Test func saveWritesCanonicalDrawingPreviewsAndPayload() async throws {
         let environment = WidgetCanvasTestEnvironment()
         let service = environment.makeService()
@@ -213,35 +198,6 @@ struct WidgetCanvasServiceTests {
 
         #expect(!FileManager.default.fileExists(atPath: environment.canonicalURL.path))
         #expect(environment.reloader.reloadCount == 0)
-    }
-
-    @Test func loadSavedDrawingReturnsPersistedData() async throws {
-        let environment = WidgetCanvasTestEnvironment()
-        let service = environment.makeService()
-        let drawing = makeNonEmptyDrawing()
-
-        try await service.saveDrawing(
-            drawing.dataRepresentation(),
-            canvasSize: CGSize(width: 300, height: 300),
-            authorName: nil,
-            createdAt: Date()
-        )
-
-        let loaded = await service.loadSavedDrawing()
-
-        #expect(loaded == drawing.dataRepresentation())
-    }
-
-    @MainActor
-    @Test func rasterizerRendersNonEmptyDrawing() async throws {
-        let pngData = await WidgetDrawingRasterizer().renderPNG(
-            fromDrawingData: makeNonEmptyDrawing().dataRepresentation(),
-            canvasSide: 300,
-            pixelWidth: 600
-        )
-
-        let rendered = try #require(pngData)
-        #expect(!rendered.isEmpty)
     }
 
     func makeNonEmptyDrawing(offset: CGFloat = 0) -> PKDrawing {

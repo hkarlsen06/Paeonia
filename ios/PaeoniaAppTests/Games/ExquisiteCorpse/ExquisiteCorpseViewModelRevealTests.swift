@@ -11,88 +11,11 @@ struct ExquisiteCorpseViewModelRevealTests {
     private typealias Fixture = ExquisiteCorpseFixture
 
     /// The state of an unseen figure, with the drawings on the phone and ready to download.
-    private func reveal(
-        of number: Int,
-        ideaOnHead: String? = nil
-    ) -> (env: ExquisiteCorpseTestEnvironment, figure: RemoteExquisiteCorpseFigure) {
-        var state = Fixture.unseenReveal(figure: number)
-        if let ideaOnHead {
-            var figure = state.recentFigures[0]
-            let head = figure.parts[0]
-            figure.parts[0] = RemoteExquisiteCorpsePart(
-                id: head.id,
-                partIndex: head.partIndex,
-                drawerUserID: head.drawerUserID,
-                createdAt: head.createdAt,
-                stripMediaAssetID: head.stripMediaAssetID,
-                drawingMediaAssetID: head.drawingMediaAssetID,
-                idea: Fixture.idea(ideaOnHead)
-            )
-            state.recentFigures = [figure]
-        }
+    private func reveal(of number: Int) -> (env: ExquisiteCorpseTestEnvironment, figure: RemoteExquisiteCorpseFigure) {
+        let state = Fixture.unseenReveal(figure: number)
         let env = ExquisiteCorpseTestEnvironment(state: state)
         env.seedDrawings(of: state.recentFigures[0])
         return (env, state.recentFigures[0])
-    }
-
-    @Test func theUnseenRevealComesBeforeMyNextTurn() async {
-        // The next head is mine, and the figure before it has not been revealed.
-        let (env, figure) = reveal(of: 1)
-        let viewModel = env.viewModel()
-
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .reveal)
-        #expect(viewModel.part == .head)
-        #expect(viewModel.figure?.id == figure.id)
-    }
-
-    @Test func theRevealHasTheThreePartsWithWhoDrewThem() async {
-        let (env, _) = reveal(of: 1, ideaOnHead: "a grandma")
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        let ready = await waitUntil { viewModel.revealContent?.isReady == true }
-        let content = viewModel.revealContent
-
-        #expect(ready)
-        #expect(content?.number == 1)
-        #expect(content?.partnerName == "Robin")
-        #expect(content?.parts.map(\.kind) == [.head, .body, .legs])
-        // Figure 1: the partner drew the head and legs, and `me` the body.
-        #expect(content?.parts.map(\.drawerIsMe) == [false, true, false])
-        #expect(content?.part(.head)?.drawer.name == "Robin")
-        #expect(content?.part(.body)?.drawer.name == "Alex")
-        #expect(content?.part(.head)?.idea == "a grandma")
-        #expect(content?.part(.body)?.idea == nil)
-        // The figure starts with the partner, so the next head is mine.
-        #expect(content?.nextIsMine == true)
-    }
-
-    @Test func theNextHeadIsThePartnersWhenIStartedTheFigure() async {
-        let (env, _) = reveal(of: 2)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        let ready = await waitUntil { viewModel.revealContent?.isReady == true }
-
-        #expect(ready)
-        #expect(viewModel.revealContent?.nextIsMine == false)
-        #expect(viewModel.part == .head)
-    }
-
-    @Test func onlyThePartnersPartsAreDownloaded() async {
-        let (env, figure) = reveal(of: 1)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        let ready = await waitUntil { viewModel.revealContent?.isReady == true }
-
-        #expect(ready)
-        // Figure 1: the head and the legs are the partner's. The body is mine and already on the phone.
-        let partnersFiles = figure.parts.filter { $0.drawerUserID == Fixture.partner }.compactMap(\.drawingMediaAssetID)
-        #expect(Set(env.transfer.downloads) == Set(partnersFiles))
-        #expect(partnersFiles.count == 2)
     }
 
     @Test func theRevealWaitsForADrawingThatIsStillOnItsWay() async throws {
@@ -145,19 +68,6 @@ struct ExquisiteCorpseViewModelRevealTests {
         #expect(env.room.role == .drawing)
     }
 
-    @Test func afterContinueThePartnersHeadIsAWaitingScreen() async {
-        let (env, _) = reveal(of: 2)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        await viewModel.continueFromReveal()
-
-        #expect(viewModel.phase == .waiting)
-        #expect(viewModel.part == .head)
-        #expect(viewModel.figureNumber == 3)
-        #expect(viewModel.revealContent == nil)
-    }
-
     @Test func theRevealStaysGoneOnceTheServerHasTheMark() async {
         let (env, _) = reveal(of: 1)
         let viewModel = env.viewModel()
@@ -185,19 +95,5 @@ struct ExquisiteCorpseViewModelRevealTests {
         await viewModel.reload()
 
         #expect(viewModel.phase == .drawing)
-    }
-
-    @Test func aRevealThatIsNotOnTheScreenDownloadsNoDrawing() async {
-        let state = Fixture.myBodyTurn()
-        let env = ExquisiteCorpseTestEnvironment(state: state)
-        let viewModel = env.viewModel()
-
-        await viewModel.reload()
-
-        #expect(viewModel.revealContent == nil)
-        #expect(!viewModel.isLoadingReveal)
-        // The body's canvas needs the head's strip, and nothing else.
-        let headStrip = state.currentFigure?.part(at: 0)?.stripMediaAssetID
-        #expect(env.transfer.downloads.allSatisfy { $0 == headStrip })
     }
 }

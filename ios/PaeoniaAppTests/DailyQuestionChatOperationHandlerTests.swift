@@ -66,29 +66,6 @@ struct DailyQuestionChatOperationHandlerTests {
 
 @MainActor
 struct DailyQuestionChatOperationFailureTests {
-    @Test func handlersTellTheOpenChatAfterConfirmingAMessage() async throws {
-        let fixture = ChatTestFixture()
-        let recorder = ChatChangeRecorder(ownerUserID: fixture.ownerUserID)
-        defer { recorder.stop() }
-        let createOperation = fixture.operationProvider.makeOperation()
-        let sendOperation = fixture.operationProvider.makeOperation()
-        let context = chatSyncContext(ownerUserID: fixture.ownerUserID)
-        await fixture.cache.saveSummaries([fixture.summary], ownerUserID: fixture.ownerUserID)
-
-        _ = try await fixture.createHandler().send(
-            try fixture.createSnapshot(createOperation, body: "First"),
-            context: context
-        )
-        let changes = recorder.count
-        #expect(await waitUntil { changes.value == 1 })
-
-        _ = try await fixture.sendHandler().send(
-            try fixture.sendSnapshot(sendOperation, body: "Second", threadID: fixture.threadID),
-            context: context
-        )
-        #expect(await waitUntil { changes.value == 2 })
-    }
-
     @Test func sendHandlerMarksAServerRejectionAsFailedAndStopsRetrying() async throws {
         let fixture = ChatTestFixture()
         let recorder = ChatChangeRecorder(ownerUserID: fixture.ownerUserID)

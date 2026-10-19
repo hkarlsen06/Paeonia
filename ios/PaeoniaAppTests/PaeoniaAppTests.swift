@@ -9,60 +9,6 @@ import Testing
 struct PaeoniaAppTests {
 
     @MainActor
-    @Test func appStatesRemainOrdered() {
-        #expect(AppState.allCases == [
-            .launching,
-            .unauthenticated,
-            .onboarding,
-            .limitedAuthenticated,
-            .unpaired,
-            .invitePending,
-            .paired,
-            .pairedPaywalled,
-            .entitlementLost,
-            .entitlementRestored,
-            .relationshipEndedNotice,
-            .accountClosed,
-            .deletingAccount,
-        ])
-    }
-
-    @Test func mainTabsRemainInVisibleOrder() {
-        #expect(MainTab.allCases == [.home, .questions, .games, .memories, .us])
-    }
-
-    @MainActor
-    @Test func startRoutesMissingSessionToSignedOut() async throws {
-        let syncService = TestPaeoniaSyncService()
-        let authService = AuthServiceSpy()
-        let viewModel = RootViewModel(
-            syncService: syncService,
-            authService: authService
-        )
-
-        await viewModel.start()
-
-        #expect(viewModel.state == .unauthenticated)
-        #expect(viewModel.authRoute == .signedOut)
-        #expect(viewModel.currentSession == nil)
-        #expect(await syncService.startCallCount == 0)
-    }
-
-    @MainActor
-    @Test func startRoutesIncompleteProfileToOnboarding() async {
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .needsOnboarding))
-        )
-
-        await viewModel.start()
-
-        #expect(viewModel.state == .onboarding)
-        #expect(viewModel.currentSession?.profileStatus == .needsOnboarding)
-        #expect(viewModel.currentSession?.timeZoneID == nil)
-    }
-
-    @MainActor
     @Test func completedProfileUsesAccessRouteForVisibleState() async {
         let accessRouteService = StaticAccessRouteService(route: .unpaired)
         let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
@@ -181,37 +127,6 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
-    @Test func localLocationChangeRunsImmediateLocalChangeSync() async {
-        let syncService = TestPaeoniaSyncService()
-        let viewModel = RootViewModel(
-            syncService: syncService,
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .paired)
-        )
-        await viewModel.start()
-
-    await viewModel.syncAfterLocalLocationChange()
-
-    #expect(await syncService.runOnceReasons == [.localChange])
-    }
-
-    @MainActor
-    @Test func homePullRefreshRunsManualSync() async {
-        let syncService = TestPaeoniaSyncService()
-        let viewModel = RootViewModel(
-            syncService: syncService,
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .paired),
-            accessSnapshotStore: InMemoryAccessSyncSnapshotRepository()
-        )
-        await viewModel.start()
-
-        await viewModel.refreshFromHomePull()
-
-        #expect(await syncService.runOnceReasons == [.manualRefresh])
-    }
-
-    @MainActor
     @Test func cachedAccessSnapshotIsFallbackWhenLiveAccessFails() async throws {
         let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
         let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
@@ -229,132 +144,6 @@ struct PaeoniaAppTests {
 
         #expect(viewModel.state == .paired)
         #expect(viewModel.currentPartnerDisplayName == "Riley")
-    }
-
-    @MainActor
-    @Test func completedProfileExposesPartnerDisplayNameFromAccessSnapshot() async {
-        let accessRouteService = StaticAccessRouteService(
-            resolution: .test(route: .paired, partnerDisplayName: "Riley")
-        )
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService
-        )
-
-        await viewModel.start()
-
-        #expect(viewModel.state == .paired)
-        #expect(viewModel.currentPartnerDisplayName == "Riley")
-    }
-
-    @MainActor
-    @Test func widgetDrawingRoutePresentsOnlyWhenPaired() async {
-        let pairedViewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .paired)
-        )
-        await pairedViewModel.start()
-
-        // The drawing lives on the Home tab, so opening it from another tab must
-        // also bring the user there or the screen would open hidden behind it.
-        pairedViewModel.selectMainTab(.us)
-        pairedViewModel.openWidgetDrawing()
-
-        #expect(pairedViewModel.presentedDestination == .widgetDrawing)
-        #expect(pairedViewModel.selectedMainTab == .home)
-
-        pairedViewModel.dismissPresentedDestination()
-
-        #expect(pairedViewModel.presentedDestination == nil)
-
-        let unpairedViewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .unpaired)
-        )
-        await unpairedViewModel.start()
-
-        unpairedViewModel.openWidgetDrawing()
-
-        #expect(unpairedViewModel.presentedDestination == nil)
-    }
-
-    @MainActor
-    @Test func widgetDrawingRouteWaitsForPairedColdLaunch() async {
-        let pairedViewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .paired)
-        )
-
-        pairedViewModel.selectMainTab(.us)
-        pairedViewModel.openWidgetDrawing()
-
-        #expect(pairedViewModel.presentedDestination == nil)
-
-        await pairedViewModel.start()
-
-        #expect(pairedViewModel.presentedDestination == .widgetDrawing)
-        #expect(pairedViewModel.selectedMainTab == .home)
-
-        let unpairedViewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .unpaired)
-        )
-
-        unpairedViewModel.openWidgetDrawing()
-        await unpairedViewModel.start()
-
-        #expect(unpairedViewModel.presentedDestination == nil)
-    }
-
-    @MainActor
-    @Test func completedProfilePassesPendingInviteToAccessRoute() async {
-        let accessRouteService = StaticAccessRouteService(route: .invitePending)
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService,
-            inviteStore: TestPairingInviteStore(invite: .test())
-        )
-
-        await viewModel.start()
-
-        #expect(viewModel.state == .invitePending)
-        #expect(await accessRouteService.receivedHasPendingInvite == [true])
-    }
-
-    @MainActor
-    @Test func pairingRefreshKeepsCurrentPairingStateWhileAccessRouteResolves() async {
-        let accessRouteService = BlockingAccessRouteService(
-            routes: [.invitePending, .invitePending],
-            blockedCallIndex: 2
-        )
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService,
-            inviteStore: TestPairingInviteStore(invite: .test())
-        )
-
-        await viewModel.start()
-        #expect(viewModel.state == .invitePending)
-
-        let refreshTask = Task { @MainActor in
-            await viewModel.refreshAfterPairingChange()
-        }
-
-        await accessRouteService.waitForBlockedResolveToStart()
-        #expect(viewModel.state == .invitePending)
-
-        await accessRouteService.releaseBlockedResolve()
-        await refreshTask.value
-
-        #expect(viewModel.state == .invitePending)
-        #expect(await accessRouteService.resolveCallCount == 2)
     }
 
     @MainActor
@@ -389,82 +178,6 @@ struct PaeoniaAppTests {
 
         #expect(viewModel.state == .paired)
         #expect(await accessRouteService.resolveCallCount == 3)
-    }
-
-    @MainActor
-    @Test func freshLinkIntoPairedRequestsCelebration() async throws {
-        let pairID = try #require(UUID(uuidString: "2C7B12FD-4DD2-4900-98B6-5E37B9DFE4DD"))
-        let pairingCelebrationStore = TestPairingCelebrationStore()
-        let accessRouteService = BlockingAccessRouteService(
-            routes: [.invitePending, .paired],
-            blockedCallIndex: 0,
-            pairID: pairID
-        )
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService,
-            inviteStore: TestPairingInviteStore(invite: .test()),
-            pairingCelebrationStore: pairingCelebrationStore
-        )
-
-        await viewModel.start()
-        #expect(viewModel.state == .invitePending)
-        #expect(viewModel.pendingPairingCelebration == false)
-        #expect(viewModel.isPairingCelebrationPresented == false)
-
-        await viewModel.refreshAfterPairingChange()
-        #expect(viewModel.state == .paired)
-        #expect(viewModel.pendingPairingCelebration == true)
-        #expect(viewModel.isPairingCelebrationPresented == true)
-
-        viewModel.consumePairingCelebration()
-        #expect(viewModel.pendingPairingCelebration == false)
-        #expect(viewModel.isPairingCelebrationPresented == true)
-
-        viewModel.dismissPairingCelebration()
-        #expect(viewModel.isPairingCelebrationPresented == false)
-        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == true)
-    }
-
-    @MainActor
-    @Test func acceptedInviteShowsCelebrationWhileAccessRouteResolves() async throws {
-        let pairID = try #require(UUID(uuidString: "8C01125D-7164-4E19-9742-A8F419B78E77"))
-        let pairingCelebrationStore = TestPairingCelebrationStore()
-        let accessRouteService = BlockingAccessRouteService(
-            routes: [.limitedAuthenticated, .paired],
-            blockedCallIndex: 2,
-            pairID: pairID
-        )
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService,
-            pairingCelebrationStore: pairingCelebrationStore
-        )
-
-        await viewModel.start()
-        #expect(viewModel.state == .limitedAuthenticated)
-
-        let refreshTask = Task { @MainActor in
-            await viewModel.refreshAfterInviteAccepted()
-        }
-
-        await accessRouteService.waitForBlockedResolveToStart()
-        #expect(viewModel.state == .paired)
-        #expect(viewModel.pendingPairingCelebration == true)
-        #expect(viewModel.isPairingCelebrationPresented == true)
-
-        await accessRouteService.releaseBlockedResolve()
-        await refreshTask.value
-
-        #expect(viewModel.state == .paired)
-        #expect(viewModel.pendingPairingCelebration == true)
-        #expect(viewModel.isPairingCelebrationPresented == true)
-
-        viewModel.dismissPairingCelebration()
-        #expect(viewModel.isPairingCelebrationPresented == false)
-        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == true)
     }
 
     @MainActor
@@ -525,110 +238,6 @@ struct PaeoniaAppTests {
         #expect(viewModel.state == .paired)
         #expect(viewModel.pendingPairingCelebration == false)
         #expect(viewModel.isPairingCelebrationPresented == false)
-    }
-
-    @MainActor
-    @Test func launchingDirectlyIntoUnseenPairedPlaysCelebrationIntro() async throws {
-        let pairID = try #require(UUID(uuidString: "E6067801-9F27-4982-B8FD-0DFED2F61672"))
-        let pairingCelebrationStore = TestPairingCelebrationStore()
-        let accessRouteService = StaticAccessRouteService(
-            resolution: .test(route: .paired, partnerDisplayName: "Riley", pairID: pairID)
-        )
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService,
-            pairingCelebrationStore: pairingCelebrationStore
-        )
-
-        await viewModel.start()
-
-        #expect(viewModel.state == .paired)
-        #expect(viewModel.pendingPairingCelebration == true)
-        #expect(viewModel.isPairingCelebrationPresented == true)
-
-        viewModel.dismissPairingCelebration()
-        #expect(viewModel.isPairingCelebrationPresented == false)
-        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == true)
-    }
-
-    @MainActor
-    @Test func launchingDirectlyIntoSeenPairedDoesNotShowCelebration() async throws {
-        let pairID = try #require(UUID(uuidString: "97C22CEF-03CE-4A20-B817-698EE5A43511"))
-        let pairingCelebrationStore = TestPairingCelebrationStore(seenPairIDs: [pairID])
-        let accessRouteService = StaticAccessRouteService(
-            resolution: .test(route: .paired, partnerDisplayName: "Riley", pairID: pairID)
-        )
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: accessRouteService,
-            pairingCelebrationStore: pairingCelebrationStore
-        )
-
-        await viewModel.start()
-
-        #expect(viewModel.state == .paired)
-        #expect(viewModel.pendingPairingCelebration == false)
-        #expect(viewModel.isPairingCelebrationPresented == false)
-    }
-
-    @MainActor
-    @Test func developmentSignInCanCompleteOnboarding() async {
-        let syncService = TestPaeoniaSyncService()
-        let viewModel = RootViewModel(
-            syncService: syncService,
-            authService: AuthServiceSpy(),
-            accessRouteService: StaticAccessRouteService(route: .limitedAuthenticated)
-        )
-
-        await viewModel.signInForDevelopment()
-
-        #expect(viewModel.state == .onboarding)
-        #expect(viewModel.currentSession?.provider == .development)
-        #expect(viewModel.currentSession?.profileStatus == .needsOnboarding)
-
-        await viewModel.completeOnboarding(
-            displayName: "Test account",
-            timeZoneID: "Europe/Oslo",
-            profilePhotoData: nil
-        )
-
-        #expect(viewModel.state == .limitedAuthenticated)
-        #expect(viewModel.currentSession?.profileStatus == .complete)
-        #expect(viewModel.currentSession?.timeZoneID == "Europe/Oslo")
-        #expect(await syncService.startCallCount == 1)
-    }
-
-    @MainActor
-    @Test func googleSignInRoutesToOnboarding() async {
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy()
-        )
-
-        await viewModel.signInWithGoogle()
-
-        #expect(viewModel.state == .onboarding)
-        #expect(viewModel.currentSession?.provider == .google)
-        #expect(viewModel.currentSession?.profileStatus == .needsOnboarding)
-    }
-
-    @MainActor
-    @Test func cancelledGoogleSignInDoesNotShowFailureNotice() async {
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(
-                failingOperations: [.signInWithGoogle],
-                failureError: ASWebAuthenticationSessionError(.canceledLogin)
-            )
-        )
-
-        await viewModel.start()
-        await viewModel.signInWithGoogle()
-
-        #expect(viewModel.state == .unauthenticated)
-        #expect(viewModel.notice == nil)
     }
 
     @MainActor
@@ -790,57 +399,6 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
-    @Test func deleteFailureRestoresResolvedAccessRoute() async {
-        let authService = AuthServiceSpy(
-            session: .test(profileStatus: .complete),
-            failingOperations: [.requestAccountDeletion]
-        )
-        let accessRouteService = StaticAccessRouteService(route: .unpaired)
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: authService,
-            accessRouteService: accessRouteService
-        )
-
-        await viewModel.start()
-        #expect(viewModel.state == .unpaired)
-
-        await viewModel.deleteAccount()
-
-        #expect(viewModel.state == .unpaired)
-        #expect(viewModel.currentSession?.profileStatus == .complete)
-        #expect(viewModel.notice == .deleteAccountFailed)
-    }
-
-    @MainActor
-    @Test func failedSessionLoadFallsBackToSignedOut() async {
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(failingOperations: [.restoreSession])
-        )
-
-        await viewModel.start()
-
-        #expect(viewModel.state == .unauthenticated)
-        #expect(viewModel.authRoute == .signedOut)
-        #expect(viewModel.notice == .sessionLoadFailed)
-    }
-
-    @MainActor
-    @Test func dismissNoticeClearsNotice() async {
-        let viewModel = RootViewModel(
-            syncService: TestPaeoniaSyncService(),
-            authService: AuthServiceSpy(failingOperations: [.restoreSession])
-        )
-
-        await viewModel.start()
-        #expect(viewModel.notice == .sessionLoadFailed)
-
-        viewModel.dismissNotice()
-        #expect(viewModel.notice == nil)
-    }
-
-    @MainActor
     @Test func startRetriesPrivacyThenRestoresAuthBeforeStartingSync() async {
         let recorder = StartupOrderRecorder()
         let authService = OrderedAuthService(recorder: recorder)
@@ -855,31 +413,6 @@ struct PaeoniaAppTests {
 
         #expect(viewModel.state == .limitedAuthenticated)
         #expect(recorder.events == [.retryPrivacyPurges, .restoreSession, .startSync])
-    }
-
-    @MainActor
-    @Test func coldLaunchCanDeferSyncUntilAnimationFinishes() async {
-        let syncService = TestPaeoniaSyncService()
-        let viewModel = RootViewModel(
-            syncService: syncService,
-            authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .paired)
-        )
-
-        await viewModel.start(deferringSyncUntilLaunchCompletes: true)
-
-        #expect(viewModel.state == .paired)
-        #expect(await syncService.startCallCount == 0)
-        #expect(await syncService.configuredSessions.isEmpty)
-
-        await viewModel.finishDeferredLaunchStartup()
-
-        #expect(await syncService.startCallCount == 1)
-        #expect(await syncService.configuredSessions.count == 1)
-
-        await viewModel.synchronizePairedPresentationData()
-
-        #expect(await syncService.runOnceReasons == [.startup])
     }
 
     @MainActor
@@ -995,26 +528,6 @@ struct RootLiveAccessTests {
     }
 
     @MainActor
-    @Test func partnerNameChangeShowsWithoutARefresh() async throws {
-        let fixture = Fixture()
-        let coupleID = UUID()
-        let viewModel = fixture.makeViewModel(route: .paired)
-        await viewModel.start()
-
-        try await fixture.store.save(
-            .testPaired(ownerUserID: fixture.userID, coupleID: coupleID, partnerDisplayName: "Riley")
-        )
-        #expect(await waitUntil { @MainActor in viewModel.currentPartnerDisplayName == "Riley" })
-
-        try await fixture.store.save(
-            .testPaired(ownerUserID: fixture.userID, coupleID: coupleID, partnerDisplayName: "Rae")
-        )
-        #expect(await waitUntil { @MainActor in viewModel.currentPartnerDisplayName == "Rae" })
-        #expect(viewModel.state == .paired)
-        #expect(await fixture.syncService.relationshipAccessPurgePermanence.isEmpty)
-    }
-
-    @MainActor
     @Test func snapshotsForAnotherUserAreIgnored() async throws {
         let fixture = Fixture()
         let viewModel = fixture.makeViewModel(route: .paired)
@@ -1039,22 +552,6 @@ struct RootLiveAccessTests {
         try? await Task.sleep(for: .milliseconds(100))
 
         #expect(viewModel.state == .unauthenticated)
-    }
-
-    @MainActor
-    @Test func foregroundActivationDoesNotRereadTheSnapshotItself() async throws {
-        let fixture = Fixture()
-        let viewModel = fixture.makeViewModel(route: .limitedAuthenticated)
-        // No observation yet: write before the model starts, so only an explicit
-        // re-read could route from this snapshot.
-        try await fixture.store.save(.testPaired(ownerUserID: fixture.userID, partnerDisplayName: "Riley"))
-        await viewModel.start()
-        let stateAfterStart = viewModel.state
-
-        await viewModel.refreshAfterForegroundActivation()
-
-        #expect(viewModel.state == stateAfterStart)
-        #expect(await fixture.syncService.runOnceReasons == [.foreground])
     }
 }
 

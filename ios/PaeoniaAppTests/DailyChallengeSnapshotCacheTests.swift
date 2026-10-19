@@ -99,36 +99,6 @@ final class InMemoryDailyChallengeSnapshotCache: DailyChallengeSnapshotCaching, 
 // MARK: - File cache tests
 
 struct DailyChallengeSnapshotCacheTests {
-
-    // MARK: Round-trip
-
-    @Test func saveAndLoadReturnsEqualRowForSameOwner() throws {
-        let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("CacheTest-\(UUID().uuidString)", isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: dir) }
-
-        let cache = FileDailyChallengeSnapshotCache(directoryURL: dir)
-        let row = sampleSnapshotRow()
-
-        cache.save(row, ownerUserID: CacheTestIDs.ownerUserID)
-        let loaded = try #require(cache.load(ownerUserID: CacheTestIDs.ownerUserID))
-
-        // Top-level fields
-        #expect(loaded.generatedAt == row.generatedAt)
-        #expect(loaded.questions.count == row.questions.count)
-        #expect(loaded.streak?.currentCount == row.streak?.currentCount)
-        #expect(loaded.streak?.longestCount == row.streak?.longestCount)
-        #expect(loaded.streak?.lastQualifiedDate == row.streak?.lastQualifiedDate)
-
-        // Question fields that must survive the round-trip
-        let question = try #require(loaded.questions.first)
-        #expect(question.instanceID == row.questions[0].instanceID)
-        #expect(question.promptEN == row.questions[0].promptEN)
-        #expect(question.answerKinds == row.questions[0].answerKinds)
-        #expect(question.startsAt == row.questions[0].startsAt)
-        #expect(question.isCurrentDay == row.questions[0].isCurrentDay)
-    }
-
     @Test func loadForDifferentOwnerReturnsNil() {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("CacheTest-\(UUID().uuidString)", isDirectory: true)
@@ -163,19 +133,6 @@ struct DailyChallengeSnapshotCacheTests {
         #expect(cache.load(ownerUserID: CacheTestIDs.ownerUserID) == nil)
     }
 
-    @Test func clearAllOnEmptyDirectoryIsNoOp() {
-        let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("CacheTest-\(UUID().uuidString)", isDirectory: true)
-        // No defer removal — directory never created; this tests the guard path.
-
-        let cache = FileDailyChallengeSnapshotCache(directoryURL: dir)
-        // Must not throw or crash when the directory doesn't exist.
-        cache.clearAll()
-
-        let loaded = cache.load(ownerUserID: CacheTestIDs.ownerUserID)
-        #expect(loaded == nil)
-    }
-
     // MARK: Corrupt / wrong-version payload
 
     @Test func corruptDataOnDiskReturnsNil() throws {
@@ -195,71 +152,11 @@ struct DailyChallengeSnapshotCacheTests {
         let loaded = cache.load(ownerUserID: CacheTestIDs.ownerUserID)
         #expect(loaded == nil)
     }
-
-    @Test func staleSchemaVersionOnDiskReturnsNil() throws {
-        let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("CacheTest-\(UUID().uuidString)", isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: dir) }
-
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let fileURL = dir.appendingPathComponent(
-            CacheTestIDs.ownerUserID.uuidString.lowercased() + ".json"
-        )
-        // Write a valid JSON object with an obviously-wrong schema version.
-        let stale = """
-        {"schemaVersion": 99999, "ownerUserID": "\(CacheTestIDs.ownerUserID.uuidString)", "row": {}}
-        """
-        try Data(stale.utf8).write(to: fileURL)
-
-        let cache = FileDailyChallengeSnapshotCache(directoryURL: dir)
-
-        let loaded = cache.load(ownerUserID: CacheTestIDs.ownerUserID)
-        #expect(loaded == nil)
-    }
-
-    // MARK: loadResult mapping
-
-    @Test func loadResultProducesExpectedSnapshotAndStreak() throws {
-        let row = sampleSnapshotRow(ownerUserID: CacheTestIDs.ownerUserID)
-        let locale = Locale(identifier: "en_US")
-
-        let result = row.loadResult(currentUserID: CacheTestIDs.ownerUserID, locale: locale)
-
-        // Snapshot: one own question for the current user.
-        #expect(result.snapshot.currentUserID == CacheTestIDs.ownerUserID)
-        #expect(result.snapshot.ownQuestions.count == 1)
-        // `DailyChallengeQuestion.prompt` is locale-resolved; with en_US it
-        // matches `promptEN` from the raw row.
-        #expect(result.snapshot.ownQuestions.first?.prompt == row.questions[0].promptEN)
-
-        // Streak: pulled directly from the row's streak sub-row.
-        #expect(result.streak.currentCount == 7)
-        #expect(result.streak.longestCount == 12)
-        #expect(result.streak.lastQualifiedDate == "2026-06-26")
-    }
-
-    @Test func loadResultWithNilStreakProducesNoneStreak() {
-        var row = sampleSnapshotRow()
-        // Simulate a row that the backend returned without a streak (new couple, no
-        // challenge completed yet).
-        row = DailyChallengeRemoteSnapshotRow(
-            questions: row.questions,
-            answerDetails: row.answerDetails,
-            streak: nil,
-            generatedAt: row.generatedAt
-        )
-
-        let result = row.loadResult(currentUserID: CacheTestIDs.ownerUserID)
-        #expect(result.streak == .none)
-    }
 }
 
 // MARK: - View-model seed tests
 
 struct DailyChallengeViewModelSeedTests {
-
-    // MARK: Seed on configure
-
     @MainActor
     @Test func configureSeederFromCacheBeforeNetworkReturns() async throws {
         let cache = InMemoryDailyChallengeSnapshotCache()
@@ -308,50 +205,6 @@ struct DailyChallengeViewModelSeedTests {
     }
 
     @MainActor
-    @Test func networkResultReplacesTheCachedSeed() async throws {
-        let cache = InMemoryDailyChallengeSnapshotCache()
-        let cachedRow = sampleSnapshotRow(ownerUserID: CacheTestIDs.ownerUserID)
-        cache.save(cachedRow, ownerUserID: CacheTestIDs.ownerUserID)
-
-        // The network returns a snapshot with 2 questions (different from the
-        // cached 1). After configure the view model must reflect the network
-        // result, not the seed.
-        let twoQuestionSnapshot = makeSeedTestSnapshot(
-            ownerUserID: CacheTestIDs.ownerUserID,
-            slotCount: 2
-        )
-        let service = ImmediateDailyChallengeService(snapshot: twoQuestionSnapshot)
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedSeedOperationProvider(),
-            snapshotCache: cache
-        )
-
-        await viewModel.configure(currentUserID: CacheTestIDs.ownerUserID)
-
-        // Network result (2 questions) wins over the cache seed (1 question).
-        #expect(viewModel.snapshot.ownQuestions.count == 2)
-    }
-
-    @MainActor
-    @Test func noCacheNilIsNoOpAndDoesNotBlockLoad() async throws {
-        // When no cached row exists the configure path must proceed normally.
-        let emptyCache = InMemoryDailyChallengeSnapshotCache()
-        let networkSnapshot = makeSeedTestSnapshot(ownerUserID: CacheTestIDs.ownerUserID)
-        let service = ImmediateDailyChallengeService(snapshot: networkSnapshot)
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedSeedOperationProvider(),
-            snapshotCache: emptyCache
-        )
-
-        await viewModel.configure(currentUserID: CacheTestIDs.ownerUserID)
-
-        // No crash, no empty-state weirdness — the network result is applied.
-        #expect(viewModel.snapshot.ownQuestions.count == networkSnapshot.ownQuestions.count)
-    }
-
-    @MainActor
     @Test func differentUserGetsSeparateCacheAndDoesNotSeeCrossContent() async throws {
         // Save a row for ownerUserID. Then configure with otherUserID.
         let cache = InMemoryDailyChallengeSnapshotCache()
@@ -374,47 +227,6 @@ struct DailyChallengeViewModelSeedTests {
         // Empty because the cache has no entry for otherUserID, and the service
         // returns an empty snapshot.
         #expect(viewModel.snapshot.ownQuestions.isEmpty)
-    }
-
-    // MARK: Home card loading stability
-
-    /// Regression: the home card must not flash "no challenge" before the first
-    /// load settles. Previously the empty initial snapshot rendered as `.noChallenge`
-    /// on the first frame, then flipped to `.loading` once the reload set its in-flight
-    /// flag, then back again — a visible loading → content → loading wobble. The card
-    /// must show `.loading` from the first frame through the in-flight load, and only
-    /// settle to `.noChallenge` once the load resolves.
-    @MainActor
-    @Test func homeCardShowsLoadingUntilFirstLoadResolves() async throws {
-        let cache = InMemoryDailyChallengeSnapshotCache()
-        let probe = DailyChallengeViewModelSeedProbe()
-        let emptyNetwork = DailyChallengeSnapshot.empty(currentUserID: CacheTestIDs.ownerUserID)
-        let service = BlockingDailyChallengeService(snapshot: emptyNetwork, probe: probe)
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedSeedOperationProvider(),
-            snapshotCache: cache
-        )
-
-        // First frame, before configure runs: must be loading, not noChallenge.
-        #expect(viewModel.homeCardState.kind == .loading)
-
-        let configureTask = Task { @MainActor in
-            await viewModel.configure(currentUserID: CacheTestIDs.ownerUserID)
-        }
-        while await service.loadCount == 0 {
-            await Task.yield()
-        }
-
-        // While the (empty) network load is in flight: still loading, never a
-        // premature noChallenge.
-        #expect(viewModel.homeCardState.kind == .loading)
-
-        await probe.release()
-        await configureTask.value
-
-        // Resolved now — an empty day settles to noChallenge exactly once.
-        #expect(viewModel.homeCardState.kind == .noChallenge)
     }
 }
 

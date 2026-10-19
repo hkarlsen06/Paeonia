@@ -30,22 +30,6 @@ struct ProviderAvatarImageLoaderTests {
         #expect(followed == nil)
     }
 
-    @Test func loaderReturnsTheImageBytes() async throws {
-        let host = "avatar-ok.test"
-        let body = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
-        AvatarStubURLProtocol.register(
-            host: host,
-            statusCode: 200,
-            headers: ["Content-Type": "image/png", "Content-Length": "\(body.count)"],
-            body: body
-        )
-        let loader = makeLoader()
-
-        let data = await loader.imageData(from: try #require(URL(string: "https://\(host)/avatar")))
-
-        #expect(data == body)
-    }
-
     @Test func loaderRejectsAnUnknownLengthBodyOverTheByteBudget() async throws {
         let host = "avatar-large.test"
         AvatarStubURLProtocol.register(

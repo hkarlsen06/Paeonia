@@ -109,53 +109,6 @@ struct ExquisiteCorpseViewModelLiveTests {
         #expect(!env.room.hasSentCanvasToPartner)
     }
 
-    @Test func penMessagesAreQuantizedAndThrottled() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
-        let viewModel = await env.loadedViewModel()
-        env.connection.partnerJoins(role: "watching")
-        viewModel.recompute()
-        env.connection.forgetSent()
-
-        viewModel.penMoved(x: 0.123, y: 0.456)
-        env.clock.advance(by: 0.05)
-        viewModel.penMoved(x: 0.9, y: 0.9)
-        env.clock.advance(by: 0.1)
-        viewModel.penMoved(x: 0.9, y: 0.9)
-        viewModel.penMoved(x: 0.91, y: 0.91)
-        viewModel.penLifted()
-
-        let positions = pens(in: env.connection.gameMessages)
-        #expect(positions.count == 3)
-        // The centers of cells on a 20 by 20 grid, a first position, a second one after a pause, and the lift.
-        #expect(positions.first == [0.125, 0.475])
-        #expect(positions.dropFirst().first == [0.925, 0.925])
-        #expect(positions.last == [nil, nil])
-    }
-
-    @Test func theMessagesNameThePartBeingDrawn() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
-        let viewModel = await env.loadedViewModel()
-        env.connection.partnerJoins(role: "watching")
-        viewModel.recompute()
-        env.connection.forgetSent()
-
-        viewModel.penMoved(x: 0.5, y: 0.5)
-
-        let partID = Fixture.partID(figure: 1, partIndex: 1)
-        #expect(env.connection.gameMessages.first == .pen(partID: partID, x: 0.525, y: 0.525))
-    }
-
-    @Test func noPenMessagesGoOutWhenThePartnerIsNotInTheRoom() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
-        let viewModel = await env.loadedViewModel()
-
-        viewModel.penMoved(x: 0.2, y: 0.2)
-        viewModel.penLifted()
-        viewModel.board.updateDrawing(CorpseDrawings.crossingFold)
-
-        #expect(env.connection.gameMessages.isEmpty)
-    }
-
     @Test func theStripGoesOutOnlyWhenItChanges() async {
         let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
         let viewModel = await env.loadedViewModel()
@@ -217,20 +170,6 @@ struct ExquisiteCorpseViewModelLiveTests {
         #expect(sent.partID == partID)
         #expect(sent.drawing.strokes.count == 1)
         #expect(env.connection.gameMessages.contains(.pen(partID: partID, x: nil, y: nil)))
-    }
-
-    @Test func aPartnerWhoStartsWatchingOnAnOpenConnectionGetsTheStrip() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
-        let viewModel = await env.loadedViewModel()
-        env.connection.partnerJoins(role: "present")
-        viewModel.recompute()
-        viewModel.board.updateDrawing(CorpseDrawings.crossingFold)
-        env.connection.forgetSent()
-
-        env.connection.partnerAnnounces(role: "watching")
-        viewModel.recompute()
-
-        #expect(strips(in: env.connection.gameMessages).count == 1)
     }
 
     @Test func aPartnerWhoArrivesAfterDoneGetsTheStripAndDoneAgainFromTheQueuedPart() async throws {

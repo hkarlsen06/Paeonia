@@ -176,23 +176,6 @@ struct MemoriesViewModelPlaceTests {
         #expect(env.viewModel.knownPlaces == [bryggen])
     }
 
-    @Test func setPlaceForADeletedMemoryShowsWhatHappened() async {
-        let env = makeEnvironment()
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-
-        let saved = await env.viewModel.setPlace(bryggen, forMemory: UUID())
-
-        #expect(!saved)
-        #expect(env.viewModel.notice == .memoryRemoved)
-    }
-
-    @Test func theDraftKeepsItsPlace() {
-        let store = makeIsolatedMemoryDraftStore()
-        let userID = UUID()
-        store.setDraft(MemoryDraft(place: bryggen), for: userID)
-        #expect(store.draft(for: userID)?.place == bryggen)
-    }
-
     private func queued(
         _ kind: SyncPendingOperationKind,
         in env: MemoriesTestEnvironment

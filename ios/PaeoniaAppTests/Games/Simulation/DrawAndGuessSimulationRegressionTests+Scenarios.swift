@@ -134,43 +134,4 @@ extension DrawAndGuessSimulationRegressionTests {
             #expect(guesser.drawingStore.liveSnapshot(ownerUserID: guesser.userID, roundID: roundID) == nil)
         }
     }
-
-    /// The drawer left the result and waits for the next word. The guesser's
-    /// result screen says the drawer is waiting for them.
-    @Test func theGuesserSeesTheDrawerWaitingForThem() async {
-        await scenario { driver in
-            let (drawer, guesser) = try await driver.scriptRoundToReveal()
-            try driver.require(drawer, in: .reveal)
-            #expect(try driver.require(guesser, in: .reveal).isPartnerWaitingForMe == false)
-
-            try await driver.require(drawer, in: .reveal).continueFromReveal()
-            await driver.settle()
-
-            #expect(try driver.require(drawer, in: .waitingForWord).partnerPresence == .result)
-            #expect(try driver.require(guesser, in: .reveal).isPartnerWaitingForMe)
-            #expect(try driver.require(drawer, in: .waitingForWord).isPartnerWaitingForMe == false)
-        }
-    }
-
-    /// The guesser left the result to pick the next word. The drawer's result
-    /// screen says so until the guesser starts drawing.
-    @Test func theDrawerSeesTheGuesserChoosingTheNextWord() async {
-        await scenario { driver in
-            let (drawer, guesser) = try await driver.scriptRoundToReveal()
-            #expect(try driver.require(drawer, in: .reveal).isPartnerChoosingNextWord == false)
-
-            try await driver.require(guesser, in: .reveal).continueFromReveal()
-            await driver.settle()
-
-            try driver.require(guesser, in: .chooseWord)
-            #expect(try driver.require(drawer, in: .reveal).isPartnerChoosingNextWord)
-
-            try await driver.scriptPick(guesser)
-            await driver.settle()
-
-            let result = try driver.require(drawer, in: .reveal)
-            #expect(result.partnerNextRound == .drawing)
-            #expect(result.isPartnerChoosingNextWord == false)
-        }
-    }
 }

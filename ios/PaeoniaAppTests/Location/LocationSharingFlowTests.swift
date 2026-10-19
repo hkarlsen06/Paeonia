@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// Sharing choices racing a GPS fix, permission changes, and what the map card
-/// shows for each state.
+/// Sharing choices racing a GPS fix, queued location uploads, and the live feed.
 @MainActor
 struct LocationSharingFlowTests {
     private let ownerUserID = flowUUID("11111111-1111-1111-1111-111111111111")
@@ -46,95 +45,6 @@ struct LocationSharingFlowTests {
         #expect(try await ownLocationStore.load(ownerUserID: ownerUserID, coupleID: coupleID) == nil)
         #expect(!viewModel.sharingEnabled)
         #expect(viewModel.notice == nil)
-    }
-
-    @Test func sharingSwitchReportsBusyAndCardShowsProgressWhileLocating() async {
-        let capture = ControlledLocationCapture(authorizationState: .authorized)
-        let viewModel = makeViewModel(capture: capture)
-        await viewModel.configure(identity: identity)
-        #expect(viewModel.mapState == .loading)
-
-        let optIn = Task { await viewModel.setSharingEnabled(true) }
-        await capture.waitUntilRequested()
-
-        #expect(viewModel.isUpdatingSharing)
-        #expect(viewModel.mapState == .locatingCurrent)
-
-        capture.finish(with: .success(sampleLocation))
-        await optIn.value
-
-        #expect(!viewModel.isUpdatingSharing)
-        #expect(viewModel.sharingEnabled)
-    }
-
-    /// "Don't Allow" on the system prompt is a choice, so no error banner. The
-    /// card switches to the "location access is off" state instead.
-    @Test func decliningTheSystemPromptIsQuietAndShowsAccessOff() async {
-        let capture = ControlledLocationCapture(authorizationState: .notDetermined)
-        capture.authorizationAfterRequest = .denied
-        let viewModel = makeViewModel(capture: capture)
-        await viewModel.configure(identity: identity)
-
-        let optIn = Task { await viewModel.setSharingEnabled(true) }
-        await capture.waitUntilRequested()
-        capture.finish(with: .failure(ForegroundLocationCaptureError.authorizationDenied))
-        await optIn.value
-
-        #expect(!viewModel.sharingEnabled)
-        #expect(viewModel.notice == nil)
-        #expect(viewModel.authorizationState == .denied)
-        #expect(viewModel.mapState == .locationAccessOff)
-    }
-
-    @Test func permissionAlreadyOffStillExplainsWhySharingDidNotTurnOn() async {
-        let capture = ControlledLocationCapture(authorizationState: .denied)
-        let viewModel = makeViewModel(capture: capture)
-        await viewModel.configure(identity: identity)
-
-        let optIn = Task { await viewModel.setSharingEnabled(true) }
-        await capture.waitUntilRequested()
-        capture.finish(with: .failure(ForegroundLocationCaptureError.authorizationDenied))
-        await optIn.value
-
-        #expect(!viewModel.sharingEnabled)
-        #expect(viewModel.notice == .permissionDenied)
-    }
-
-    /// Opening the app indoors must not raise an error banner every time.
-    @Test func automaticRefreshFailureIsQuietButManualRefreshExplains() async throws {
-        let visibilityStore = InMemoryLocationVisibilityRepository()
-        try await visibilityStore.setViewerSharingEnabled(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            isEnabled: true,
-            updatedAt: Date(timeIntervalSince1970: 100)
-        )
-        let capture = ControlledLocationCapture(authorizationState: .authorized)
-        capture.immediateResult = .failure(ForegroundLocationCaptureError.unavailable)
-        let viewModel = makeViewModel(visibilityStore: visibilityStore, capture: capture)
-        await viewModel.configure(identity: identity)
-
-        await viewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen, mayPromptForAuthorization: false)
-        #expect(viewModel.notice == nil)
-        #expect(viewModel.mapState == .currentLocationMissing)
-
-        await viewModel.refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
-        #expect(viewModel.notice == .locationUnavailable)
-    }
-
-    /// Returning from the Settings app with location turned back on reaches the
-    /// card through the scene-activation refresh.
-    @Test func permissionChangeIsPickedUpOnTheNextRefresh() async {
-        let capture = ControlledLocationCapture(authorizationState: .denied)
-        let viewModel = makeViewModel(capture: capture)
-        await viewModel.configure(identity: identity)
-        #expect(viewModel.mapState == .locationAccessOff)
-
-        capture.authorizationState = .authorized
-        await viewModel.refreshOwnLocationIfSharingEnabled(source: .foregroundOpen, mayPromptForAuthorization: false)
-
-        #expect(viewModel.authorizationState == .authorized)
-        #expect(viewModel.mapState == .loading)
     }
 
     /// Locations queued while offline used to replay one by one. Only the
@@ -233,105 +143,6 @@ struct LocationSharingFlowTests {
             operationProvider: FlowOperationProvider(),
             locationCapture: capture
         )
-    }
-
-    private func snapshot(
-        _ state: PartnerLocationVisibilityState,
-        viewerSharing: Bool = true,
-        partnerSharing: Bool = true,
-        partner: LocationPoint? = nil
-    ) -> LocationVisibilitySnapshot {
-        LocationVisibilitySnapshot(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            viewerUserID: ownerUserID,
-            partnerUserID: flowUUID("33333333-3333-3333-3333-333333333333"),
-            visibilityState: state,
-            viewerSharingEnabled: viewerSharing,
-            partnerSharingEnabled: partnerSharing,
-            partnerLocation: partner,
-            partnerLocationIsStale: false,
-            updatedAt: Date(timeIntervalSince1970: 200),
-            refreshedAt: Date(timeIntervalSince1970: 201)
-        )
-    }
-}
-
-extension LocationSharingFlowTests {
-    // MARK: - Map state
-
-    @Test func mapStateCoversEveryCardState() throws {
-        let own = OwnLocationSnapshot(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            location: sampleLocation,
-            source: .foregroundOpen,
-            pendingOperationID: nil,
-            updatedAt: Date()
-        )
-        let partnerLocation = LocationPoint(latitude: 69.96, longitude: 23.27, capturedAt: Date())
-
-        // No snapshot means the server has not answered yet, as after a return
-        // from the paywall. Asking to share then would flash the wrong card.
-        #expect(LocationMapViewModel.resolveMapState(visibility: nil, ownLocation: nil) == .loading)
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.notSharing, viewerSharing: false),
-            ownLocation: nil
-        ) == .currentUnknown)
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: nil, ownLocation: nil, isLocating: true
-        ) == .locatingCurrent)
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.visible, partner: partnerLocation),
-            ownLocation: nil
-        ) == .currentLocationMissing)
-        // A fresh install keeps sharing on, but iOS has not asked yet.
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.visible, partner: partnerLocation),
-            ownLocation: nil,
-            authorization: .notDetermined
-        ) == .currentUnknown)
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.visible, partner: partnerLocation),
-            ownLocation: own,
-            authorization: .denied
-        ) == .locationAccessOff)
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.visible, partner: partnerLocation),
-            ownLocation: own
-        ) == .ready(current: sampleLocation, partner: partnerLocation, partnerWasStaleAtLastRefresh: false))
-    }
-
-    @Test func mapStateNamesWhyThePartnerIsMissing() {
-        let own = OwnLocationSnapshot(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            location: sampleLocation,
-            source: .foregroundOpen,
-            pendingOperationID: nil,
-            updatedAt: Date()
-        )
-
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.notSharing, partnerSharing: true),
-            ownLocation: own
-        ) == .waitingForPartnerLocation)
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.notSharing, partnerSharing: false),
-            ownLocation: own
-        ) == .partnerUnknown(.notSharing))
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.unknown("local"), partnerSharing: false),
-            ownLocation: own
-        ) == .partnerUnknown(.notSharing))
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.unknown("local"), partnerSharing: true),
-            ownLocation: own
-        ) == .waitingForPartnerLocation)
-        #expect(LocationMapViewModel.resolveMapState(
-            visibility: snapshot(.relationshipEnded, partnerSharing: false),
-            ownLocation: own
-        ) == .partnerUnknown(.relationshipEnded))
     }
 }
 

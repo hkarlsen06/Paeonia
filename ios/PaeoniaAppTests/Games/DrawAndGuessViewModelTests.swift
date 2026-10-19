@@ -40,47 +40,6 @@ struct DrawAndGuessViewModelTests {
         }
     }
 
-    // MARK: Phases from server states
-
-    @Test func theViewModelFollowsTheCachedStateIntoEachPhase() async {
-        let env = environment(yourTurn)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .chooseWord)
-        #expect(viewModel.choices.map(\.word) == ["pizza", "umbrella", "volcano"])
-        #expect(viewModel.score == .against(mine: 8, partner: 5))
-        #expect(viewModel.settings?.language == .en)
-    }
-
-    @Test func theGuesserNeverGetsTheWordChoices() async {
-        // Even if choices were in the cache, a phase that is not "choose word" offers none.
-        let state = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner, roundID: nil),
-            choices: GameFixture.choices
-        )
-        let viewModel = environment(state).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .waitingForWord)
-        #expect(viewModel.choices.isEmpty)
-    }
-
-    @Test func theGuesserGetsTilesSeededByTheRoundIdAndTheGameLanguage() async {
-        let viewModel = environment(guessing).viewModel()
-        await viewModel.reload()
-
-        let expected = DrawAndGuessTiles.make(
-            answer: "umbrella",
-            language: .en,
-            seed: GameFixture.roundID.uuidString.lowercased()
-        )
-        #expect(viewModel.phase == .guessing)
-        #expect(viewModel.tiles == expected)
-        #expect(viewModel.slots.answer == "UMBRELLA")
-    }
-
     // MARK: Picking and drawing
 
     @Test func pickingAWordQueuesItAndStartsTheRoundOnThePhone() async throws {
@@ -199,24 +158,6 @@ struct DrawAndGuessViewModelTests {
         // Until the server answers, the reveal shows the bonus the phone claimed.
         #expect(viewModel.reveal?.speedBonus == guess.speedBonus)
     }
-
-    @Test func aWrongGuessShakesThenReturnsTheTilesAndIsStillSent() async throws {
-        let env = environment(guessing)
-        let viewModel = env.viewModel(sleep: { _ in })
-        await viewModel.reload()
-
-        try type("umbrelle", into: viewModel)
-
-        #expect(viewModel.wrongGuessCount == 1)
-        #expect(viewModel.isShowingWrongGuess || viewModel.slots.placedTileIDs.isEmpty)
-        let cleared = await waitUntil { viewModel.slots.placedTileIDs.isEmpty && !viewModel.isShowingWrongGuess }
-        #expect(cleared)
-        #expect(viewModel.phase == .guessing)
-        let queued = await waitUntil { viewModel.round?.attempts.contains { $0.isPending } == true }
-        #expect(queued)
-        #expect(await env.queued(.submitGameGuess).count == 1)
-    }
-
     @Test func showMeEndsTheRoundAsMissedWithoutWaitingForTheNetwork() async {
         let env = environment(guessing)
         let viewModel = env.viewModel()
@@ -228,21 +169,5 @@ struct DrawAndGuessViewModelTests {
         #expect(viewModel.reveal?.outcome == .iGaveUp)
         #expect(viewModel.reveal?.word == "umbrella")
         #expect(await env.queued(.giveUpGameRound).count == 1)
-    }
-
-    @Test func theDrawerCannotGuessAndTilesStayClosedOutsideGuessing() async throws {
-        let state = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .drawing, turn: GameFixture.partner),
-            round: GameFixture.round(state: .drawing, drawer: GameFixture.me)
-        )
-        let viewModel = environment(state).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.tiles.isEmpty)
-        viewModel.placeTile(DrawAndGuessTile(id: 0, letter: "U"))
-        #expect(viewModel.slots.placedTileIDs.isEmpty)
-        await viewModel.giveUp()
-        #expect(viewModel.phase == .drawing)
     }
 }

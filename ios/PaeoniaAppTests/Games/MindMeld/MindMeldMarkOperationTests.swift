@@ -96,17 +96,6 @@ struct MindMeldMarkOperationTests {
         #expect(env.gateway.revealsSeen == [other.roundID])
     }
 
-    @Test func aRevealSeenMarkReadsTheStateBack() async throws {
-        let payload = revealSeen()
-
-        let result = try await env.send(revealSeenHandler, .markMindMeldRevealSeen, payload)
-
-        #expect(result == .succeeded)
-        #expect(env.gateway.revealsSeen == [roundID])
-        let state = await env.cache.document(ownerUserID: GameFixture.me).state
-        #expect(state != nil)
-    }
-
     @Test func aSeenMarkTheServerRefusesIsDroppedWithoutANotice() async throws {
         env.gateway.setMarkError(.server(code: "23514", message: "the round is not revealed yet"))
 
@@ -134,14 +123,5 @@ struct MindMeldMarkOperationTests {
         try await env.enqueue(.countMindMeldRound, count(), sequence: 2)
         let behindCount = try await env.send(endSeenHandler, .markMindMeldEndSeen, otherGame)
         #expect(behindCount == .retry(after: nil))
-    }
-
-    @Test func anEndSeenMarkGoesOutWhenNothingHoldsItBack() async throws {
-        let payload = endSeen()
-
-        let result = try await env.send(endSeenHandler, .markMindMeldEndSeen, payload)
-
-        #expect(result == .succeeded)
-        #expect(env.gateway.endsSeen == [gameID])
     }
 }

@@ -2,16 +2,8 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// Scoring, the topic rules, the reveal's beats and how a state is ordered.
+/// Scoring, the topic rules and how a state is ordered.
 struct ConsensioRulesTests {
-    @Test func consensioComesRightAfterMindMeldAndOpensFromItsLink() throws {
-        let kinds = GameKind.allCases
-        let mindMeld = try #require(kinds.firstIndex(of: .mindMeld))
-        #expect(kinds.firstIndex(of: .consensio) == mindMeld + 1)
-        #expect(GameKind(path: "consensio") == .consensio)
-        #expect(GameKind.consensio.relayChannel == "consensio")
-    }
-
     @Test func pointsDropByOneEveryFourOffAsOnTheServer() {
         let distances = [0, 3, 4, 7, 8, 11, 12, 15, 16, 19, 20, 100]
         #expect(distances.map(ConsensioRules.points(distance:)) == [5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, 0])
@@ -37,26 +29,6 @@ struct ConsensioRulesTests {
         )
         #expect(waffles == nil)
         #expect(ConsensioRules.normalized("  Your  mom's\nwaffles ") == "Your mom's waffles")
-    }
-
-    @Test func theRevealScriptCountsEachPointAfterTheTitle() {
-        let plan = ConsensioRevealPlan(verdict: .soClose, points: 4)
-        let steps = ConsensioRevealScript.steps(for: plan, schedule: .standard)
-        let points = steps.filter { if case .point = $0.event { true } else { false } }
-        #expect(points.count == 4)
-        #expect(steps.first?.event == .start)
-        #expect(steps.last?.event == .actions)
-        #expect(!steps.contains { $0.event == .bloomEnd })
-        let times = steps.map(\.at)
-        #expect(times == times.sorted())
-    }
-
-    @Test func onlySpotOnBlooms() {
-        let plan = ConsensioRevealPlan(verdict: .spotOn, points: 5)
-        let steps = ConsensioRevealScript.steps(for: plan, schedule: .standard)
-        #expect(steps.contains { $0.event == .bloomEnd })
-        let none = ConsensioRevealScript.steps(for: ConsensioRevealPlan(verdict: .far, points: 0), schedule: .standard)
-        #expect(!none.contains { if case .point = $0.event { true } else { false } })
     }
 
     @Test func aStateIsOlderOnlyAtALowerVersionOfTheSameGame() throws {

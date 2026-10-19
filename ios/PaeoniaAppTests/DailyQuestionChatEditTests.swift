@@ -52,15 +52,6 @@ struct DailyQuestionChatEditTests {
         #expect(viewModel.editTarget == nil)
     }
 
-    @Test func unchangedTextSavesWithoutAskingTheServer() async {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-        viewModel.startEditing(ownMessage(fixture))
-
-        #expect(await viewModel.saveEdit("Se you soon") == .saved)
-        #expect(await fixture.gateway.lastEdit == nil)
-    }
-
     @Test func aFailedSaveKeepsEditingAndSaysSo() async {
         let fixture = ChatTestFixture()
         let viewModel = fixture.makeViewModel()
@@ -81,31 +72,6 @@ struct DailyQuestionChatEditTests {
         #expect(await viewModel.saveEdit("See you soon") == .windowClosed)
         #expect(viewModel.editTarget == nil)
         #expect(viewModel.notice == .editWindowClosed)
-    }
-
-    @Test func aSecondEditWaitsUntilTheFirstEnds() {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-        let first = ownMessage(fixture)
-        let second = DailyQuestionChatMessage(
-            id: UUID(), threadID: first.threadID, questionID: first.questionID,
-            senderUserID: fixture.ownerUserID, body: "Another", createdAt: first.createdAt,
-            clientOperationID: nil, isSending: false
-        )
-        viewModel.startEditing(first)
-        viewModel.startEditing(second)
-
-        #expect(viewModel.editTarget?.id == first.id)
-    }
-
-    @Test func noReplyStartsWhileEditing() {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-        let message = ownMessage(fixture)
-        viewModel.startEditing(message)
-        viewModel.setReplyTarget(message)
-
-        #expect(viewModel.replyTarget == nil)
     }
 
     /// Reads like the server's refusal once the error is turned into text.

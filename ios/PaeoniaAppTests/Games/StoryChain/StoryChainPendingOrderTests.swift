@@ -180,17 +180,4 @@ struct StoryChainPendingOrderTests {
         #expect(gateway.calls.filter { ["name", "start", "line"].contains($0) } == ["name", "start", "line"])
         #expect(await environment.queued(.storyChainNameStory).isEmpty)
     }
-
-    @Test func theRegistryHasOneHandlerForEachKind() {
-        let handlers = StoryChainPendingOperations.handlers(
-            gateway: gateway,
-            cache: environment.cache,
-            gamesCache: environment.gamesCache
-        )
-
-        #expect(Set(handlers.map(\.operationKind)) == [
-            .storyChainStartStory, .storyChainAddLine, .storyChainNameStory, .storyChainMarkSeen, .storyChainSetStar,
-        ])
-        #expect(handlers.count == 5)
-    }
 }

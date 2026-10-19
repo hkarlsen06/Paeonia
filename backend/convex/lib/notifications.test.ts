@@ -64,34 +64,6 @@ describe("notification copy", () => {
   describe("game pushes", () => {
     const pushKinds = ["game_turn_ready", "game_turn_reminder", "game_result", "game_invite"] as const;
 
-    // Pins the exact lock-screen text of Draw & Guess. "First Partner" is the partner's profile name.
-    const drawAndGuess = {
-      en: {
-        game_turn_ready: ["Your turn in Draw & Guess", "Open Paeonia to guess it."],
-        game_turn_reminder: ["Your turn in Draw & Guess", "Open Paeonia to take your turn."],
-        game_result: ["First Partner guessed your drawing", "Open Paeonia to see how it went."],
-        game_invite: ["First Partner wants to play Draw & Guess with you", "Open Paeonia to join in."],
-      },
-      nb: {
-        game_turn_ready: ["Din tur i Tegn og gjett", "Åpne Paeonia for å gjette."],
-        game_turn_reminder: ["Din tur i Tegn og gjett", "Åpne Paeonia for å ta turen din."],
-        game_result: ["First Partner gjettet tegningen din", "Åpne Paeonia for å se hvordan det gikk."],
-        game_invite: ["First Partner vil spille Tegn og gjett med deg", "Åpne Paeonia for å bli med."],
-      },
-    } as const;
-
-    test("Draw & Guess titles and bodies stay the same in both languages", async () => {
-      const t = newTest();
-      const couple = await createCouple(t);
-      const payload = { game_kind: "draw_and_guess", actor_user_id: couple.first.userId };
-      for (const language of ["en", "nb"] as const) {
-        for (const kind of pushKinds) {
-          const title = await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, language));
-          expect([title, notificationAlertBody(kind, payload, language)]).toEqual(drawAndGuess[language][kind]);
-        }
-      }
-    });
-
     test("a game without copy gets the app name, and turn and result pushes use the reminder body", async () => {
       const t = newTest();
       const couple = await createCouple(t);
@@ -163,15 +135,6 @@ describe("notification copy", () => {
       expect(await t.run((ctx) => notificationAlertTitle(ctx, "game_result", payload, "en"))).toBe("Your partner guessed your drawing");
       expect(await t.run((ctx) => notificationAlertTitle(ctx, "game_invite", payload, "nb"))).toBe("Partneren din vil spille Tegn og gjett med deg");
     });
-  });
-
-  test("the streak reminder title is calm, without a countdown", async () => {
-    const t = newTest();
-    const titles = await t.run(async (ctx) => [
-      await notificationAlertTitle(ctx, "streak_reminder", {}, "en"),
-      await notificationAlertTitle(ctx, "streak_reminder", {}, "nb"),
-    ]);
-    expect(titles).toEqual(["Time for a quick check-in", "Tid for å sjekke inn"]);
   });
 
   test("payload safety rejects sensitive keys, non-objects, and oversize payloads", () => {

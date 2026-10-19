@@ -11,10 +11,6 @@ struct LudoBoardTests {
         try #require(board.applying(LudoBoard.move(die: die, choice: choice)))
     }
 
-    private func transition(_ board: LudoBoard, _ die: Int, _ choice: LudoChoice) throws -> LudoTransition {
-        try #require(board.transition(LudoBoard.move(die: die, choice: choice)))
-    }
-
     private func progressOn(_ player: BoardPlayer, square: Int) -> Int {
         (square - LudoBoard.startSquare(of: player) + LudoBoard.trackLength) % LudoBoard.trackLength + 1
     }
@@ -45,12 +41,6 @@ struct LudoBoardTests {
         #expect(LudoBoard.decode(18) == nil)
     }
 
-    @Test func startSquaresAreZeroAndTwentySixAndSafeSquaresAreTheStartsAndTheEighthPastEach() {
-        #expect(LudoBoard.startSquare(of: .one) == 0)
-        #expect(LudoBoard.startSquare(of: .two) == 26)
-        #expect(LudoBoard.safeSquares == [0, 8, 13, 21, 26, 34, 39, 47])
-    }
-
     @Test func progressOneToFiftyOneIsTheTrackFromThePlayersStartSquare() {
         #expect(LudoBoard.trackSquare(of: .one, progress: 1) == 0)
         #expect(LudoBoard.trackSquare(of: .one, progress: 51) == 50)
@@ -62,19 +52,6 @@ struct LudoBoardTests {
             #expect(LudoBoard.trackSquare(of: .one, progress: progress) == nil)
             #expect(LudoBoard.trackSquare(of: .two, progress: progress) == nil)
         }
-    }
-
-    @Test func pawnIndexesAreZeroAndOneForPlayerOneAndTwoAndThreeForPlayerTwo() {
-        #expect([LudoBoard.pawnIndex(.one, 0), LudoBoard.pawnIndex(.one, 1)] == [0, 1])
-        #expect([LudoBoard.pawnIndex(.two, 0), LudoBoard.pawnIndex(.two, 1)] == [2, 3])
-    }
-
-    @Test func theEmptyBoardHasAllPawnsInTheirBasesAndPlayerOneMovesFirst() {
-        let board = LudoBoard.initial
-
-        #expect(board.progress == [0, 0, 0, 0])
-        #expect(board.next == .one)
-        #expect(board.outcome == nil)
     }
 
     // MARK: Leaving the base

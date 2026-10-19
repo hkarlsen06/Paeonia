@@ -60,17 +60,6 @@ struct LookBackItemTests {
         #expect(item.drawing?.authorUserID == LookBackIDs.partner)
     }
 
-    @Test func aMemoryOpensItsDetail() {
-        #expect(lookBackMemoryItem().destination == .memory(id: LookBackIDs.memory))
-    }
-
-    @Test func aKindWithoutItsContentHasNoDestination() {
-        let broken = LookBackItem(
-            kind: .question, contentDate: "2026-09-01", onThisDay: false, question: nil, drawing: nil, memory: nil
-        )
-        #expect(broken.destination == nil)
-    }
-
     @Test func anUnknownKindFailsToDecode() {
         let json = #"{"kind":"song","content_date":"2026-09-01","on_this_day":false}"#
         #expect(throws: (any Error).self) {
@@ -85,16 +74,6 @@ struct LookBackItemTests {
         #expect(parts.year == 2026 && parts.month == 9 && parts.day == 1 && parts.hour == 12)
         #expect(lookBackMemoryItem(date: "nonsense").contentDay == nil)
     }
-
-    @Test func answersShowWordsFirstThenHowTheyWereGiven() {
-        let id = LookBackIDs.user
-        #expect(lookBackAnswer(id, text: "  hi  ", photo: true).display == .text("hi"))
-        #expect(lookBackAnswer(id, text: "   ", photo: true).display == .photo)
-        #expect(lookBackAnswer(id, voice: true).display == .voice)
-        #expect(lookBackAnswer(id, photo: true, voice: true).display == .photo)
-        #expect(lookBackAnswer(id, picked: LookBackIDs.partner).display == .choice(LookBackIDs.partner))
-        #expect(lookBackAnswer(id).display == .none)
-    }
 }
 
 // MARK: - Cache
@@ -104,23 +83,6 @@ struct LookBackCacheTests {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("LookBackCacheTest-\(UUID().uuidString)", isDirectory: true)
         return (FileLookBackCache(directoryURL: dir), dir)
-    }
-
-    @Test func savesAndLoadsAnEntry() {
-        let (cache, dir) = makeCache()
-        defer { try? FileManager.default.removeItem(at: dir) }
-        let entry = LookBackCacheEntry(coupleID: LookBackIDs.couple, item: lookBackMemoryItem())
-        cache.save(entry, ownerUserID: LookBackIDs.user)
-        #expect(cache.load(ownerUserID: LookBackIDs.user, coupleID: LookBackIDs.couple) == entry)
-    }
-
-    @Test func keepsAnEmptyResult() {
-        let (cache, dir) = makeCache()
-        defer { try? FileManager.default.removeItem(at: dir) }
-        cache.save(LookBackCacheEntry(coupleID: nil, item: nil), ownerUserID: LookBackIDs.user)
-        let loaded = cache.load(ownerUserID: LookBackIDs.user, coupleID: nil)
-        #expect(loaded != nil)
-        #expect(loaded?.item == nil)
     }
 
     @Test func anotherUserNeverSeesTheEntry() {

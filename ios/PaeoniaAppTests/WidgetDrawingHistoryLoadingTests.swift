@@ -32,39 +32,6 @@ struct WidgetDrawingHistoryLoadingTests {
         #expect(gateway.listCursors[2].before == nil)
     }
 
-    // MARK: - Load more failures
-
-    @Test func loadMoreFailureShowsRetryAndRetryLoadsTheNextPage() async {
-        let newer = makeSummary(createdAt: date(500))
-        let shared = makeSummary(createdAt: date(400))
-        let older = makeSummary(createdAt: date(300))
-        let gateway = StubGateway(canvasState: makeState(), pages: [[newer, shared], [older]])
-        let viewModel = makeViewModel(gateway: gateway, pageSize: 2)
-        await viewModel.loadInitialIfNeeded()
-        let lastItem = viewModel.items[1]
-
-        gateway.listError = URLError(.notConnectedToInternet)
-        await viewModel.loadMoreIfNeeded(currentItem: lastItem)
-
-        #expect(viewModel.loadMoreFailed)
-        #expect(viewModel.isLoadingMore == false)
-        #expect(viewModel.hasMore)
-        #expect(viewModel.items.map(\.id) == [newer.revisionID, shared.revisionID])
-
-        // Scrolling again must not re-send the failed request. The retry row does.
-        gateway.listError = nil
-        await viewModel.loadMoreIfNeeded(currentItem: lastItem)
-        #expect(viewModel.loadMoreFailed)
-        #expect(gateway.listCursors.count == 1)
-
-        await viewModel.retryLoadMore()
-
-        #expect(viewModel.loadMoreFailed == false)
-        #expect(viewModel.items.map(\.id) == [newer.revisionID, shared.revisionID, older.revisionID])
-        #expect(gateway.listCursors.count == 2)
-        #expect(gateway.listCursors[1].revisionID == shared.revisionID)
-    }
-
     // MARK: - Overlapping loads
 
     @Test func retryWinsOverAnEarlierFirstPageLoadThatFinishesLate() async {

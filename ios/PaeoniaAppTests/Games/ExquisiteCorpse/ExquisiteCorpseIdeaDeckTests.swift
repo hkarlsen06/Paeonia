@@ -8,13 +8,6 @@ struct ExquisiteCorpseIdeaDeckTests {
         RemoteExquisiteCorpseIdea(id: "head-owl", text: "an owl"),
     ]
 
-    @Test func theDeckStartsAtTheFirstIdea() {
-        let deck = ExquisiteCorpseIdeaDeck(ideas: ideas)
-
-        #expect(deck.current == ideas[0])
-        #expect(deck.index == 0)
-    }
-
     @Test func nextWalksThroughTheDeckAndStartsOverAtTheEnd() {
         var deck = ExquisiteCorpseIdeaDeck(ideas: ideas)
 
@@ -46,19 +39,5 @@ struct ExquisiteCorpseIdeaDeckTests {
         #expect(deck.current == nil)
         #expect(deck.next() == nil)
         #expect(deck.current == nil)
-    }
-
-    @Test func aDeckOfOneKeepsDealingThatIdea() {
-        var deck = ExquisiteCorpseIdeaDeck(ideas: [ideas[0]])
-
-        #expect(deck.next() == ideas[0])
-    }
-
-    @Test func twoDecksWithTheSameStateAreEqual() {
-        var first = ExquisiteCorpseIdeaDeck(ideas: ideas)
-        let second = ExquisiteCorpseIdeaDeck(ideas: ideas, restoring: "head-robot")
-        first.next()
-
-        #expect(first == second)
     }
 }

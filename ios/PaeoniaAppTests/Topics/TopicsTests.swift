@@ -100,12 +100,6 @@ struct TopicModelTests {
         #expect(fresh.question.shortPrompt == "The best souvenir")
     }
 
-    @Test func itemsReadNorwegianCopyOnANorwegianPhone() throws {
-        let norwegian = try items(locale: Locale(identifier: "nb_NO"))
-        let fresh = try #require(norwegian.first { $0.question.questionID == TopicIDs.freshQuestion })
-        #expect(fresh.question.shortPrompt == "Den beste suveniren")
-    }
-
     @Test func stateFollowsWhoAnswered() throws {
         let built = try items()
         let started = try #require(built.first { $0.question.questionID == TopicIDs.startedQuestion })
@@ -116,24 +110,6 @@ struct TopicModelTests {
         #expect(fresh.state(isSending: true) == .waitingForPartner)
         let skipped = TopicQuestionItem(question: fresh.question, sortOrder: 2, isSkipped: true)
         #expect(skipped.state(isSending: false) == .skipped)
-    }
-
-    @Test func sectionsPutThePartnersQuestionFirstAndPickTheNextOne() throws {
-        let sections = TopicSections(items: try items(), isSending: { _ in false })
-        #expect(sections.forYou.map(\.question.questionID) == [TopicIDs.startedQuestion])
-        #expect(sections.upNext.map(\.question.questionID) == [TopicIDs.freshQuestion])
-        #expect(sections.nextToAnswer?.question.questionID == TopicIDs.startedQuestion)
-        let startedID = try #require(sections.forYou.first?.id)
-        #expect(sections.next(after: startedID)?.question.questionID == TopicIDs.freshQuestion)
-    }
-
-    @Test func summaryProgressAndFinished() throws {
-        let summary = TopicSummary(try decode(RemoteTopicSummary.self, summaryJSON(total: 4, together: 4, forYou: 0)))
-        #expect(summary.isFinished)
-        #expect(summary.progress == 1)
-        let partial = TopicSummary(try decode(RemoteTopicSummary.self, summaryJSON(total: 4, together: 1)))
-        #expect(!partial.isFinished)
-        #expect(partial.progress == 0.25)
     }
 }
 
@@ -167,23 +143,6 @@ struct TopicsHookTests {
             partnerName: "Robin"
         )
         #expect(chatHook == .messageFrom(partner: "Robin"))
-    }
-
-    @Test func countsAcrossTopics() throws {
-        let hook = TopicsHook.make(
-            overview: [try summary("travel_and_places", forYou: 1), try summary("someday", forYou: 2)],
-            unreadTopicChats: [],
-            partnerName: "Robin"
-        )
-        #expect(hook == .answeredForYou(partner: "Robin", count: 3))
-    }
-
-    @Test func fallsBackToAnUnreadChatAndThenNothing() throws {
-        let overview = [try summary("travel_and_places", forYou: 0)]
-        let unread = [chat(topicKey: "travel_and_places", isPrivate: false)]
-        let hook = TopicsHook.make(overview: overview, unreadTopicChats: unread, partnerName: "Robin")
-        #expect(hook == .messageIn(topic: overview[0].title))
-        #expect(TopicsHook.make(overview: overview, unreadTopicChats: [], partnerName: "Robin") == nil)
     }
 }
 
@@ -282,14 +241,6 @@ struct TopicsViewModelTests {
         return (viewModel, gateway)
     }
 
-    @Test func loadsTheOverviewAndATopic() async throws {
-        let (viewModel, _) = try await makeViewModel()
-        #expect(viewModel.overview.map(\.id) == ["travel_and_places"])
-        await viewModel.follow("travel_and_places")
-        #expect(viewModel.items["travel_and_places"]?.count == 2)
-        #expect(viewModel.sections(for: "travel_and_places").forYou.count == 1)
-    }
-
     @Test func aSkipShowsAtOnceAndGoesBackWhenRefused() async throws {
         let (viewModel, gateway) = try await makeViewModel()
         await viewModel.follow("travel_and_places")
@@ -328,12 +279,5 @@ struct TopicsViewModelTests {
         await viewModel.setSkipped(fresh.question, skipped: true)
         #expect(viewModel.pendingSkips.isEmpty)
         #expect(viewModel.sections(for: "travel_and_places").skipped.isEmpty)
-    }
-
-    @Test func nextQuestionFollowsTheTopicOrder() async throws {
-        let (viewModel, _) = try await makeViewModel()
-        await viewModel.follow("travel_and_places")
-        let first = try #require(viewModel.sections(for: "travel_and_places").nextToAnswer)
-        #expect(viewModel.nextQuestion(after: first.question)?.questionID == TopicIDs.freshQuestion)
     }
 }

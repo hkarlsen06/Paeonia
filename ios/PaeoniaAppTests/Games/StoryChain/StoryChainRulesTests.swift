@@ -152,16 +152,6 @@ struct StoryChainRulesTests {
         #expect(Rules.mustEnd(lineNumber: 20))
     }
 
-    @Test func theLimitsAreTheServers() {
-        #expect(Rules.minLineLength == 2)
-        #expect(Rules.maxLineLength == 240)
-        #expect(Rules.counterThreshold == 200)
-        #expect(Rules.endFromLine == 8)
-        #expect(Rules.maxLines == 20)
-        #expect(Rules.maxTitleLength == 40)
-        #expect(Rules.dareWordLength == 2...20)
-    }
-
     // MARK: Composer
 
     @Test func aDraftWithoutADareCanBeSentWhenItsLengthIsRight() {

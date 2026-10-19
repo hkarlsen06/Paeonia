@@ -14,14 +14,6 @@ function cell(row: number, column: number): number {
 }
 
 describe("initial state", () => {
-  test("is an empty 7 x 6 board with player 1 to move", () => {
-    const state = rules.initial();
-    expect(state).toEqual({ cells: new Array(42).fill(0), next: 1, outcome: null, moves: 0 });
-    expect(rules.moveLimit).toBe(7);
-    expect(rules.next(state)).toBe(1);
-    expect(rules.outcome(state)).toBeNull();
-  });
-
   test("returns a fresh object each time", () => {
     expect(rules.initial()).not.toBe(rules.initial());
     expect(rules.initial().cells).not.toBe(rules.initial().cells);

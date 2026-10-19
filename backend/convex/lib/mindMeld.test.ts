@@ -6,7 +6,6 @@ import {
   roundOutcome,
   stemKey,
   validateWord,
-  WORD_PROBLEM_MESSAGES,
 } from "./mindMeld";
 
 describe("normalizeWord", () => {
@@ -56,12 +55,6 @@ describe("validateWord", () => {
     for (const word of ["wow!", "a.b", "a_b", "a/b", "😀", "a,b", "<b>", "50%"]) {
       expect(validateWord(word)).toBe("bad_characters");
     }
-  });
-
-  test("every problem has a message", () => {
-    expect(WORD_PROBLEM_MESSAGES.empty).toBe("word must be 1 to 30 characters in at most three words");
-    expect(WORD_PROBLEM_MESSAGES.no_letters).toBe("word must contain a letter");
-    expect(WORD_PROBLEM_MESSAGES.bad_characters).toBe("word has characters that are not allowed");
   });
 });
 

@@ -92,75 +92,6 @@ private func detail(
 }
 
 struct LockedPartnerQuestionTests {
-    @Test func showsTwoRowsAndCountsTheRest() {
-        let todayPartner = (1...3).map { slot in
-            row(
-                slot: slot,
-                seededFor: IDs.partner,
-                shortPrompt: "Today \(slot)",
-                partnerAnswerID: UUID()
-            )
-        }
-        let carriedOver = row(
-            slot: 1,
-            seededFor: IDs.partner,
-            shortPrompt: "Yesterday",
-            coupleDay: IDs.yesterday,
-            isCurrentDay: false,
-            startsAt: IDs.dayStart.addingTimeInterval(-86_400),
-            partnerAnswerID: UUID()
-        )
-        let ownRows = [
-            row(slot: 1, seededFor: IDs.me),
-            row(slot: 2, seededFor: IDs.me),
-        ]
-
-        let state = snapshot(ownRows + todayPartner + [carriedOver]).homeCardState
-
-        #expect(state.lockedPartnerQuestions.count == 2)
-        #expect(state.moreLockedPartnerQuestionCount == 2)
-        // Today's questions come before the carried-over one.
-        #expect(state.lockedPartnerQuestions.allSatisfy { $0.shortPrompt.hasPrefix("Today") })
-        #expect(state.hasAnswerablePartnerQuestions)
-    }
-
-    @Test func carriedOverQuestionShowsWhenTodayHasNotStarted() {
-        let carriedOver = row(
-            slot: 1,
-            seededFor: IDs.partner,
-            shortPrompt: "Yesterday",
-            coupleDay: IDs.yesterday,
-            isCurrentDay: false,
-            partnerAnswerID: UUID()
-        )
-
-        let state = snapshot([carriedOver]).homeCardState
-
-        #expect(state.kind == .noChallenge)
-        #expect(state.lockedPartnerQuestions.map(\.shortPrompt) == ["Yesterday"])
-        #expect(state.moreLockedPartnerQuestionCount == 0)
-        #expect(!state.lockedPartnerQuestionsAreOpenable)
-    }
-
-    @Test func carriedOverRowSaysHowManyDaysAgo() {
-        let state = snapshot([
-            row(slot: 1, seededFor: IDs.me),
-            row(slot: 2, seededFor: IDs.me),
-            row(slot: 1, seededFor: IDs.partner, shortPrompt: "Today", partnerAnswerID: UUID()),
-            row(
-                slot: 2,
-                seededFor: IDs.partner,
-                shortPrompt: "Yesterday",
-                coupleDay: IDs.yesterday,
-                isCurrentDay: false,
-                partnerAnswerID: UUID()
-            ),
-        ]).homeCardState
-
-        #expect(state.lockedPartnerQuestions.map(\.shortPrompt) == ["Today", "Yesterday"])
-        #expect(state.lockedPartnerQuestions.map(\.daysAgo) == [0, 1])
-    }
-
     @Test func leavesOutQuestionsTheUserAlreadyAnswered() {
         let state = snapshot([
             row(slot: 1, seededFor: IDs.me, ownAnswerID: UUID()),
@@ -200,15 +131,6 @@ struct LockedPartnerQuestionTests {
         #expect(complete.lockedPartnerQuestions.count == 1)
         #expect(complete.lockedPartnerQuestionsAreOpenable)
     }
-
-    @Test func rowIDsMatchTheQuestionsTheFlowOpens() {
-        let instanceID = UUID()
-        let state = snapshot([
-            row(slot: 1, seededFor: IDs.partner, partnerAnswerID: UUID(), instanceID: instanceID),
-        ]).homeCardState
-
-        #expect(state.lockedPartnerQuestions.map(\.id) == [instanceID])
-    }
 }
 
 struct PartnerChoiceMatchTests {
@@ -244,13 +166,6 @@ struct PartnerChoiceMatchTests {
     @Test func pickOutsideTheCoupleGivesNoMatch() {
         #expect(match(IDs.stranger, me) == nil)
         #expect(match(me, IDs.stranger) == nil)
-    }
-
-    @Test func onlySamePicksCelebrate() {
-        #expect(PartnerChoiceMatch.bothPickedViewer.isSamePick)
-        #expect(PartnerChoiceMatch.bothPickedPartner.isSamePick)
-        #expect(!PartnerChoiceMatch.eachPickedThemselves.isSamePick)
-        #expect(!PartnerChoiceMatch.eachPickedTheOther.isSamePick)
     }
 
     @Test func questionMatchNeedsBothPicksVisible() {

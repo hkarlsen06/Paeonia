@@ -133,25 +133,6 @@ struct BoardGameHarness {
         await cache.saveState(state(game), ownerUserID: me)
     }
 
-    func setPlayStyle(_ playStyle: GamePlayStyle) async {
-        let settings = RemoteGameSettings(
-            coupleID: Fixture.coupleID,
-            playStyle: playStyle,
-            language: .en,
-            updatedByUserID: me,
-            createdAt: Fixture.now,
-            updatedAt: Fixture.now
-        )
-        let overview = RemoteGamesOverview(
-            userID: me,
-            partnerUserID: partner,
-            coupleID: Fixture.coupleID,
-            settings: settings,
-            presence: []
-        )
-        await env.cache.saveOverview(overview, ownerUserID: me)
-    }
-
     /// How far this phone showed a game.
     func position(_ moveCount: Int, game gameNumber: Int = 1) -> BoardGameShownPosition {
         BoardGameShownPosition(gameNumber: gameNumber, moveCount: moveCount)
@@ -216,17 +197,13 @@ struct BoardGameHarness {
 
     /// `partnerTiming` of a minute or more holds the board inside a partner's
     /// move animation (see `BoardGameSleepRecorder`).
-    func makeViewModel(
-        partnerTiming: Duration = .zero,
-        mineTiming: Duration = .zero,
-        openLeadIn: Duration = .zero
-    ) -> ConnectFourViewModel {
+    func makeViewModel(partnerTiming: Duration = .zero) -> ConnectFourViewModel {
         var dependencies = env.dependencies()
         dependencies.boardGamesGateway = gateway
         dependencies.boardGamesCache = cache
         let viewModel = ConnectFourViewModel(
             kind: .connectFour,
-            timing: BoardGameMoveTiming(mine: mineTiming, partner: partnerTiming, openLeadIn: openLeadIn),
+            timing: BoardGameMoveTiming(mine: .zero, partner: partnerTiming),
             dependencies: dependencies,
             heartbeatInterval: .seconds(3_600),
             tickInterval: .seconds(3_600),

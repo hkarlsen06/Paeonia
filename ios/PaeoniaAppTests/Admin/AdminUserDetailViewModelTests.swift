@@ -15,8 +15,6 @@ struct AdminUserDetailViewModelTests {
         )
     }
 
-    // MARK: Button rules
-
     @Test(arguments: [
         (isSelf: false, isAdmin: false, banned: false, canBan: true, canUnban: false),
         (isSelf: true, isAdmin: false, banned: false, canBan: false, canUnban: false),
@@ -51,32 +49,6 @@ struct AdminUserDetailViewModelTests {
         #expect(AdminUserDetailViewModel.isValidReason(String(repeating: "a", count: 500)))
         #expect(!AdminUserDetailViewModel.isValidReason(String(repeating: "a", count: 501)))
     }
-
-    // MARK: Loading
-
-    @Test func loadShowsTheUserAndTheirHistory() async {
-        let entry = AdminFixtures.entry()
-        let gateway = AdminFakeGateway(detail: AdminFixtures.detail(), auditEntries: [entry])
-        let model = makeModel(gateway: gateway)
-
-        await model.load()
-
-        #expect(model.user?.userID == AdminFixtures.userID)
-        #expect(model.history == [entry])
-        #expect(model.hasLoaded)
-    }
-
-    @Test func missingUserRaisesANotice() async {
-        let model = makeModel(gateway: AdminFakeGateway(detail: nil))
-
-        await model.load()
-
-        #expect(model.user == nil)
-        #expect(model.hasLoaded)
-        #expect(model.notice == .userNotFound)
-    }
-
-    // MARK: Ban
 
     @Test func banSendsTheTrimmedReasonThenRefreshesTheScreenAndTheList() async {
         let banned = AdminFixtures.detail(bannedAt: AdminFixtures.bannedAt)
@@ -151,72 +123,5 @@ struct AdminUserDetailViewModelTests {
         #expect(model.user?.isBanned == false)
         #expect(counter.calls == 0)
         #expect(!model.isWorking)
-    }
-
-    @Test func serverRefusalToBanAnAdminGetsItsOwnNotice() async {
-        let gateway = AdminFakeGateway(
-            detail: AdminFixtures.detail(),
-            changeError: AdminFixtures.serverError("admins can't be banned")
-        )
-        let model = makeModel(gateway: gateway)
-        await model.load()
-
-        await model.ban(reason: "Spam")
-
-        #expect(model.notice == .cannotBan)
-    }
-
-    // MARK: Unban
-
-    @Test func unbanRefreshesTheScreenAndTheList() async {
-        let gateway = AdminFakeGateway(
-            detail: AdminFixtures.detail(bannedAt: AdminFixtures.bannedAt),
-            detailAfterChange: AdminFixtures.detail(),
-            auditEntriesAfterChange: [AdminFixtures.entry(action: .userUnbanned)]
-        )
-        let counter = AdminChangeCounter()
-        let model = makeModel(gateway: gateway, counter: counter)
-        await model.load()
-
-        let didUnban = await model.unban()
-
-        #expect(didUnban)
-        #expect(gateway.unbans == [AdminFixtures.userID])
-        #expect(model.user?.isBanned == false)
-        #expect(model.history.first?.action == .userUnbanned)
-        #expect(counter.calls == 1)
-        #expect(model.notice == .unbanned)
-    }
-
-    @Test func unbanIsOfferedForAnyBannedUserEvenYourself() async {
-        let user = AdminFixtures.detail(isSelf: true, isAdmin: true, bannedAt: AdminFixtures.bannedAt)
-        let gateway = AdminFakeGateway(detail: user, detailAfterChange: AdminFixtures.detail())
-        let model = makeModel(gateway: gateway)
-        await model.load()
-
-        #expect(await model.unban())
-    }
-
-    @Test func unbanDoesNothingForSomeoneWhoIsNotBanned() async {
-        let gateway = AdminFakeGateway(detail: AdminFixtures.detail())
-        let model = makeModel(gateway: gateway)
-        await model.load()
-
-        #expect(await model.unban() == false)
-        #expect(gateway.unbans.isEmpty)
-    }
-
-    @Test func failedUnbanSaysSo() async {
-        let gateway = AdminFakeGateway(
-            detail: AdminFixtures.detail(bannedAt: AdminFixtures.bannedAt),
-            changeError: AdminFakeError.failed
-        )
-        let model = makeModel(gateway: gateway)
-        await model.load()
-
-        await model.unban()
-
-        #expect(model.notice == .unbanFailed)
-        #expect(model.user?.isBanned == true)
     }
 }

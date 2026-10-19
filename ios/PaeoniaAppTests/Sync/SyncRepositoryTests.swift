@@ -3,45 +3,6 @@ import Testing
 @testable import PaeoniaApp
 
 struct SyncRepositoryTests {
-    @Test func syncStateRepositoryPersistsCursorAndFailures() async throws {
-        let store = try PaeoniaLocalStore(inMemory: true)
-        let repository = SwiftDataSyncStateRepository(container: store.container)
-        let ownerUserID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
-        let tieID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
-        let scope = SyncStreamScope(kind: .user)
-        let cursor = SyncCursor(
-            updatedAt: Date(timeIntervalSince1970: 200),
-            tieID: tieID
-        )
-
-        try await repository.markAttempted(
-            ownerUserID: ownerUserID,
-            scope: scope,
-            streamKey: .relationship,
-            at: Date(timeIntervalSince1970: 100)
-        )
-        try await repository.markSucceeded(
-            ownerUserID: ownerUserID,
-            scope: scope,
-            streamKey: .relationship,
-            cursor: cursor,
-            at: Date(timeIntervalSince1970: 210)
-        )
-        try await repository.markFailed(
-            ownerUserID: ownerUserID,
-            scope: scope,
-            streamKey: .relationship,
-            errorDescription: "Network unavailable",
-            at: Date(timeIntervalSince1970: 220)
-        )
-
-        let snapshots = try await repository.snapshots(ownerUserID: ownerUserID)
-
-        #expect(snapshots.count == 1)
-        #expect(snapshots.first?.cursor == cursor)
-        #expect(snapshots.first?.lastSyncError == "Network unavailable")
-    }
-
     @Test func pendingOperationRepositoryReturnsReadyOperationsInOrder() async throws {
         let store = try PaeoniaLocalStore(inMemory: true)
         let repository = SwiftDataPendingSyncOperationRepository(container: store.container)

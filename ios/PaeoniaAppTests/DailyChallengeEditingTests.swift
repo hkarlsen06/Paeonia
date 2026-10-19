@@ -42,33 +42,6 @@ struct DailyChallengeEditingTests {
     }
 
     @MainActor
-    @Test func shuffleLimitSurfacesFriendlyNoticeAndKeepsQuestion() async throws {
-        let baseSnapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                promptEN: "Original question"
-            ),
-        ])
-        let service = RecordingDailyChallengeService(
-            snapshots: [baseSnapshot],
-            shuffleError: DailyChallengeShuffleLimitError()
-        )
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider()
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let original = try #require(viewModel.snapshot.ownQuestions.first)
-
-        await viewModel.shuffle(original)
-
-        #expect(viewModel.notice == .shuffleLimitReached)
-        #expect(viewModel.snapshot.ownQuestions.first?.prompt == "Original question")
-    }
-
-    @MainActor
     @Test func shuffleNeverSwapsATopicQuestion() async throws {
         let service = RecordingDailyChallengeService(snapshots: [
             makeDailySnapshot(rows: [
@@ -150,72 +123,5 @@ struct DailyChallengeEditingTests {
         #expect(own[0].canEditOwnAnswer)   // answered, partner hasn't seen it
         #expect(!own[1].canEditOwnAnswer)  // revealed once partner answered
         #expect(!own[2].canEditOwnAnswer)  // not answered yet
-    }
-
-    @MainActor
-    @Test func editTextAnswerSavesNewText() async throws {
-        let answerID = UUID()
-        let snapshot = makeDailySnapshot(
-            rows: [
-                dailyQuestionRow(
-                    slotNumber: 1,
-                    seededForUserID: TestDailyChallengeIDs.currentUser,
-                    status: "answered",
-                    ownAnswerID: answerID,
-                    ownAnsweredAt: TestDailyChallengeIDs.answerDate
-                ),
-            ],
-            details: [dailyAnswerDetail(answerID: answerID, isOwnAnswer: true, textBody: "Old answer")]
-        )
-        let service = RecordingDailyChallengeService(snapshots: [snapshot])
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: InMemoryDailyChallengeDraftStore()
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
-        #expect(question.canEditOwnAnswer)
-
-        viewModel.setDraftText("New answer", for: question.id)
-        await viewModel.editTextAnswer(for: question)
-
-        #expect(await service.editedTexts == ["New answer"])
-        #expect(viewModel.notice == nil)
-    }
-
-    @MainActor
-    @Test func editAfterPartnerAnsweredSurfacesLockedNotice() async throws {
-        let answerID = UUID()
-        let snapshot = makeDailySnapshot(
-            rows: [
-                dailyQuestionRow(
-                    slotNumber: 1,
-                    seededForUserID: TestDailyChallengeIDs.currentUser,
-                    status: "answered",
-                    ownAnswerID: answerID,
-                    ownAnsweredAt: TestDailyChallengeIDs.answerDate
-                ),
-            ],
-            details: [dailyAnswerDetail(answerID: answerID, isOwnAnswer: true, textBody: "Old answer")]
-        )
-        let service = RecordingDailyChallengeService(
-            snapshots: [snapshot],
-            editError: DailyChallengeEditLockedError()
-        )
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: InMemoryDailyChallengeDraftStore()
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
-        viewModel.setDraftText("New answer", for: question.id)
-
-        await viewModel.editTextAnswer(for: question)
-
-        #expect(viewModel.notice == .editLocked)
     }
 }

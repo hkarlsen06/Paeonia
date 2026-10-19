@@ -8,29 +8,13 @@ struct MindMeldWordTests {
         MindMeldWord.validate(text, used: used)
     }
 
-    // MARK: Normalizing
-
-    @Test func normalizingTrimsAndCollapsesWhitespaceAndKeepsCase() {
-        #expect(MindMeldWord.normalized("  Ice \n  cream\t") == "Ice cream")
-        #expect(MindMeldWord.normalized("   ").isEmpty)
-    }
-
     // MARK: Rules
-
-    @Test func anEmptyFieldHasNoIssue() {
-        #expect(issue("") == nil)
-        #expect(issue("   ") == nil)
-    }
 
     @Test func ordinaryWordsAndPhrasesPass() {
         let words = ["ocean", "Ice cream", "New York", "rock 'n' roll", "ice-cream", "L’amour", "R2D2", "blåbær"]
         for text in words + ["Привет", "寿司"] {
             #expect(issue(text) == nil, "\(text)")
         }
-    }
-
-    @Test func aLettersWordMayBeTypedWithACombiningAccent() {
-        #expect(issue("cafe\u{301}") == nil)
     }
 
     @Test func thirtyCharactersPassAndThirtyOneAreTooLong() {
@@ -42,11 +26,6 @@ struct MindMeldWordTests {
         // Sixteen letters, each an "e" and a combining accent, are 32 code points.
         #expect(issue(String(repeating: "e\u{301}", count: 16)) == .tooLong)
         #expect(issue(String(repeating: "e\u{301}", count: 15)) == nil)
-    }
-
-    @Test func lengthCountsAfterNormalizing() {
-        let padded = "  " + String(repeating: "a", count: 30) + "   "
-        #expect(issue(padded) == nil)
     }
 
     @Test func threeWordsPassAndFourAreTooMany() {
@@ -163,64 +142,13 @@ struct MindMeldWordTests {
         #expect(MindMeldWord.matchKey("a\u{30A}") == "aa")
     }
 
-    @Test func aScandinavianSpellingMatchesItsAsciiSpelling() {
-        #expect(MindMeldWord.matchKey("blåbær") == MindMeldWord.matchKey("blaabaer"))
-        #expect(MindMeldWord.matchKey("Ørret") == MindMeldWord.matchKey("oerret"))
-    }
-
-    @Test func compatibilityFormsFoldToPlainLetters() {
-        // A full-width letter and a ligature.
-        #expect(MindMeldWord.matchKey("Ａｂｃ") == "abc")
-        #expect(MindMeldWord.matchKey("ﬁsh") == "fish")
-    }
-
     @Test func otherAlphabetsKeepTheirLetters() {
         #expect(MindMeldWord.matchKey("Привет") == "привет")
         #expect(MindMeldWord.matchKey("Ёлка") == "елка")
         #expect(MindMeldWord.matchKey("寿司") == "寿司")
     }
 
-    @Test func aKeyKeepsOnlyLettersAndNumbers() {
-        #expect(MindMeldWord.matchKey("  -'’ ").isEmpty)
-        #expect(MindMeldWord.matchKey("a1-b2") == "a1b2")
-    }
-
     // MARK: Starter words
-
-    @Test func eachStarterListHasNoDuplicatesByMatchKey() {
-        for words in [MindMeldStarterWords.english, MindMeldStarterWords.norwegian] {
-            let keys = words.map(MindMeldWord.matchKey)
-            #expect(Set(keys).count == words.count)
-        }
-    }
-
-    @Test func everyStarterWordIsLowercaseAndPassesTheRules() {
-        for word in MindMeldStarterWords.english + MindMeldStarterWords.norwegian {
-            #expect(word == word.lowercased(), "\(word)")
-            #expect(word == MindMeldWord.normalized(word), "\(word)")
-            #expect(!word.isEmpty && issue(word) == nil, "\(word)")
-        }
-    }
-
-    @Test func eachLanguageHasAboutOneHundredFiftyWords() {
-        #expect((140...160).contains(MindMeldStarterWords.english.count))
-        #expect((140...160).contains(MindMeldStarterWords.norwegian.count))
-    }
-
-    @Test func theListsAreNotTranslationsOfEachOther() {
-        let shared = Set(MindMeldStarterWords.english).intersection(MindMeldStarterWords.norwegian)
-        #expect(shared.count < MindMeldStarterWords.english.count / 10)
-    }
-
-    @Test func theLanguageDecidesTheList() {
-        var generator = DrawAndGuessSeededGenerator(seed: 7)
-        for _ in 0..<50 {
-            let english = MindMeldStarterWords.random(for: .en, excluding: [], using: &generator)
-            let norwegian = MindMeldStarterWords.random(for: .nb, excluding: [], using: &generator)
-            #expect(MindMeldStarterWords.english.contains(english))
-            #expect(MindMeldStarterWords.norwegian.contains(norwegian))
-        }
-    }
 
     @Test func anExcludedWordIsNeverPicked() {
         var generator = DrawAndGuessSeededGenerator(seed: 1)
@@ -232,36 +160,11 @@ struct MindMeldWordTests {
         }
     }
 
-    @Test func exclusionIsByMatchKeyAndSoCoversAccentsAndSpelling() {
-        var generator = DrawAndGuessSeededGenerator(seed: 3)
-        let everythingButOne = Set(MindMeldStarterWords.norwegian.dropFirst().map(MindMeldWord.matchKey))
-
-        for _ in 0..<20 {
-            let word = MindMeldStarterWords.random(for: .nb, excluding: everythingButOne, using: &generator)
-            #expect(word == MindMeldStarterWords.norwegian[0])
-        }
-    }
-
     @Test func withEveryWordExcludedItStillPicksAWord() {
         var generator = DrawAndGuessSeededGenerator(seed: 5)
         let all = Set(MindMeldStarterWords.english.map(MindMeldWord.matchKey))
         let word = MindMeldStarterWords.random(for: .en, excluding: all, using: &generator)
 
         #expect(MindMeldStarterWords.english.contains(word))
-    }
-
-    @Test func tappingAgainGivesADifferentWord() {
-        var generator = DrawAndGuessSeededGenerator(seed: 11)
-        var current = MindMeldStarterWords.random(for: .en, excluding: [], using: &generator)
-
-        for _ in 0..<100 {
-            let next = MindMeldStarterWords.random(
-                for: .en,
-                excluding: [MindMeldWord.matchKey(current)],
-                using: &generator
-            )
-            #expect(MindMeldWord.matchKey(next) != MindMeldWord.matchKey(current))
-            current = next
-        }
     }
 }

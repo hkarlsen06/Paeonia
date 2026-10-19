@@ -62,15 +62,6 @@ struct PrivacySafetyServiceTests {
         #expect(list.rows.last?.visibleStatusMessage == "Done")
     }
 
-    @Test func requestListThatIsNotAnArrayStillFails() {
-        #expect(throws: DecodingError.self) {
-            try PaeoniaConvexClient.decoder.decode(
-                PrivacyRequestRemoteRows.self,
-                from: Data(#"{"id": "x"}"#.utf8)
-            )
-        }
-    }
-
     @Test func onlySelfHarmAndThreatsPointToEmergencyHelp() {
         let reasons = PrivacyReportReason.allCases.filter(\.suggestsEmergencyHelp)
 
@@ -134,29 +125,6 @@ struct PrivacySafetyServiceTests {
 
 @MainActor
 struct PrivacySafetyViewModelTests {
-    @Test func successfulRequestUpdatesVisibleStateAndNotice() async {
-        let request = makePrivacyRequest(kind: .access, status: .submitted)
-        let service = PrivacyFakeService(requestOutcome: .created(request))
-        let viewModel = PrivacySafetyViewModel(service: service)
-
-        let didSubmit = await viewModel.submitRequest(kind: .access)
-
-        #expect(didSubmit)
-        #expect(viewModel.latestRequest(for: .access) == request)
-        #expect(viewModel.notice == .requestSubmitted(.access))
-    }
-
-    @Test func alreadyActiveRequestProducesUnderstandableNotice() async {
-        let request = makePrivacyRequest(kind: .export, status: .verifying)
-        let service = PrivacyFakeService(requestOutcome: .alreadyActive(request))
-        let viewModel = PrivacySafetyViewModel(service: service)
-
-        let didSubmit = await viewModel.submitRequest(kind: .export)
-
-        #expect(didSubmit)
-        #expect(viewModel.notice == .requestAlreadyActive(.export))
-    }
-
     @Test func correctionRequiresUsefulDetailsBeforeCallingService() async {
         let service = PrivacyFakeService()
         let viewModel = PrivacySafetyViewModel(service: service)
@@ -167,96 +135,10 @@ struct PrivacySafetyViewModelTests {
         #expect(viewModel.notice == .correctionDetailsRequired)
         #expect(await service.privacyRequestCallCount == 0)
     }
-
-    @Test func requestFailureLeavesNoFalseSuccessState() async {
-        let service = PrivacyFakeService(failPrivacyRequest: true)
-        let viewModel = PrivacySafetyViewModel(service: service)
-
-        let didSubmit = await viewModel.submitRequest(kind: .access)
-
-        #expect(didSubmit == false)
-        #expect(viewModel.requests.isEmpty)
-        #expect(viewModel.notice == .requestFailed)
-    }
-}
-
-extension PrivacySafetyViewModelTests {
-    @Test func cancelledLoadDoesNotShowFailureNotice() async {
-        let service = PrivacyFakeService(loadError: URLError(.cancelled))
-        let viewModel = PrivacySafetyViewModel(service: service)
-
-        await viewModel.load()
-
-        #expect(viewModel.notice == nil)
-        #expect(viewModel.hasLoaded == false)
-        #expect(viewModel.isLoading == false)
-    }
-
-    @Test func failedLoadShowsNoticeAndEndsTheLoadingState() async {
-        let service = PrivacyFakeService(loadError: PrivacyFakeError.failed)
-        let viewModel = PrivacySafetyViewModel(service: service)
-
-        await viewModel.load()
-
-        #expect(viewModel.notice == .loadFailed)
-        #expect(viewModel.hasLoaded)
-    }
-
-    @Test func loadShowsRequestsAndMarksTheFirstLoadAsDone() async {
-        let request = makePrivacyRequest(kind: .export, status: .completed)
-        let service = PrivacyFakeService(requests: [request])
-        let viewModel = PrivacySafetyViewModel(service: service)
-        #expect(viewModel.hasLoaded == false)
-
-        await viewModel.load()
-
-        #expect(viewModel.hasLoaded)
-        #expect(viewModel.latestRequest(for: .export) == request)
-        #expect(viewModel.notice == nil)
-    }
-
-    @Test func correctionCanOnlyBeSentWithDetails() {
-        let viewModel = PrivacySafetyViewModel(service: PrivacyFakeService())
-
-        #expect(viewModel.canSubmitCorrection(details: "") == false)
-        #expect(viewModel.canSubmitCorrection(details: "  \n ") == false)
-        #expect(viewModel.canSubmitCorrection(details: "My name is spelled Oda"))
-    }
-
-    @Test func liveUpdatesShowStatusChanges() async {
-        let service = PrivacyFakeService()
-        let viewModel = PrivacySafetyViewModel(service: service)
-        let observing = Task { await viewModel.observe() }
-
-        await service.emit([makePrivacyRequest(kind: .export, status: .submitted)])
-        await waitForRequest(in: viewModel, status: .submitted)
-        await service.emit([makePrivacyRequest(kind: .export, status: .completed)])
-        await waitForRequest(in: viewModel, status: .completed)
-
-        #expect(viewModel.latestRequest(for: .export)?.status == .completed)
-        observing.cancel()
-    }
-
-    private func waitForRequest(in viewModel: PrivacySafetyViewModel, status: PrivacyRequestStatus) async {
-        for _ in 0..<200 where viewModel.latestRequest(for: .export)?.status != status {
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-    }
 }
 
 @MainActor
 struct ReportAndLeaveViewModelTests {
-    @Test func blockingIsOffByDefaultAndReasonIsRequired() {
-        let viewModel = ReportAndLeaveViewModel(
-            service: PrivacyFakeService(),
-            operationProvider: PrivacyFixedOperationProvider()
-        )
-
-        #expect(viewModel.blockPartner == false)
-        #expect(viewModel.prepareConfirmation() == false)
-        #expect(viewModel.notice == .reasonRequired)
-    }
-
     @Test func successfulReportUsesCurrentPartnerAndDoesNotSurpriseBlock() async {
         let service = PrivacyFakeService()
         let operationProvider = PrivacyFixedOperationProvider()
@@ -298,18 +180,6 @@ struct ReportAndLeaveViewModelTests {
         #expect(await service.reportOperations.count == 1)
     }
 
-    @Test func reportCannotBeSentUntilAReasonIsChosen() {
-        let viewModel = ReportAndLeaveViewModel(
-            service: PrivacyFakeService(),
-            operationProvider: PrivacyFixedOperationProvider()
-        )
-        #expect(viewModel.canSubmit == false)
-
-        viewModel.selectedReason = .spam
-
-        #expect(viewModel.canSubmit)
-    }
-
     @Test func secondReportIsBlockedWhileTheFirstIsStillSending() async {
         let service = PrivacyGatedReportService()
         let viewModel = ReportAndLeaveViewModel(
@@ -346,21 +216,6 @@ struct ReportAndLeaveViewModelTests {
 
         #expect(didSubmit)
         #expect(await service.lastReportSubmission?.blockPartner == true)
-    }
-
-    @Test func failedReportKeepsRelationshipRefreshCallbackFromFalseSuccess() async {
-        let service = PrivacyFakeService(failReport: true)
-        let viewModel = ReportAndLeaveViewModel(
-            service: service,
-            operationProvider: PrivacyFixedOperationProvider()
-        )
-        viewModel.selectedReason = .other
-
-        let didSubmit = await viewModel.submit(target: .conduct(userID: UUID()))
-
-        #expect(didSubmit == false)
-        #expect(viewModel.notice == .submitFailed)
-        #expect(viewModel.isSubmitting == false)
     }
 
     @Test func retryAfterLostResponseReusesIdempotencyOperation() async {

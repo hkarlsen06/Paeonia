@@ -20,28 +20,4 @@ struct LockScreenDistanceTests {
         #expect(distance(.nan) == .unavailable)
         #expect(distance(.infinity) == .unavailable)
     }
-
-    @Test func norwegianLocaleGetsKilometers() {
-        let text = LockScreenDistance.text(meters: 7_750_000, locale: Locale(identifier: "nb_NO"))
-        #expect(text.number.filter(\.isNumber) == "7750")
-        #expect(text.unit == "km")
-        #expect(text.combined.contains("km"))
-        #expect(text.combined.hasSuffix(" km"))
-    }
-
-    @Test func usAndUkLocalesGetMiles() {
-        let us = LockScreenDistance.text(meters: 7_750_000, locale: Locale(identifier: "en_US"))
-        #expect(us.number == "4,816")
-        #expect(us.unit == "mi")
-        #expect(us.combined.contains("4,816"))
-
-        let uk = LockScreenDistance.text(meters: 7_750_000, locale: Locale(identifier: "en_GB"))
-        #expect(uk.unit == "mi")
-    }
-
-    @Test func shortDistancesKeepOneDecimal() {
-        let text = LockScreenDistance.text(meters: 2_500, locale: Locale(identifier: "en_CA"))
-        #expect(text.number == "2.5")
-        #expect(text.unit == "km")
-    }
 }

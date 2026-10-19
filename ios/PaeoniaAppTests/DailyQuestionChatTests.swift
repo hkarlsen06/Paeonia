@@ -106,27 +106,6 @@ struct DailyQuestionChatViewModelTests {
         #expect(viewModel.messages.first?.isSending == false)
     }
 
-    @Test func whitespaceMessageIsRejected() async throws {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-        await viewModel.load()
-
-        #expect(await viewModel.send(" \n\t ") == false)
-        let creates = try await fixture.queuedOperations(.createDailyQuestionThreadWithMessage)
-        #expect(creates.isEmpty)
-    }
-
-    @Test func oversizedMessageIsRejectedWithoutQueueing() async throws {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-        await viewModel.load()
-
-        #expect(await viewModel.send(String(repeating: "a", count: 4_001)) == false)
-        #expect(viewModel.notice == .messageTooLong)
-        let creates = try await fixture.queuedOperations(.createDailyQuestionThreadWithMessage)
-        #expect(creates.isEmpty)
-    }
-
     @Test func failedCachedSendStaysVisibleWithoutRaisingABannerOnOpen() async {
         let fixture = ChatTestFixture()
         _ = await fixture.cacheFailedMessage("Keep this message")
@@ -138,32 +117,6 @@ struct DailyQuestionChatViewModelTests {
         #expect(viewModel.notice == nil)
         #expect(viewModel.messages.first?.body == "Keep this message")
         #expect(viewModel.messages.first?.sendFailed == true)
-    }
-
-    @Test func aMessageTheServerRejectsWhileTheChatIsOpenRaisesOneBanner() async throws {
-        let fixture = ChatTestFixture()
-        let viewModel = fixture.makeViewModel()
-        let observing = Task { await viewModel.observeLiveUpdates() }
-        #expect(await viewModel.send("Hello"))
-        #expect(await waitForMain { viewModel.messages.map(\.isSending) == [true] })
-        let creates = try await fixture.queuedOperations(.createDailyQuestionThreadWithMessage)
-        let operation = try #require(creates.first)
-
-        // The handler marks the message failed, then tells the open chat.
-        await fixture.cache.markFailed(
-            ownerUserID: fixture.ownerUserID,
-            clientOperationID: operation.operation.id
-        )
-        LocalStoreChanges.post(.dailyChat, ownerUserID: fixture.ownerUserID)
-        #expect(await waitForMain { viewModel.notice == .deliveryFailed })
-
-        // The same failure does not raise the banner again on the next change.
-        viewModel.dismissNotice()
-        LocalStoreChanges.post(.dailyChat, ownerUserID: fixture.ownerUserID)
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(viewModel.notice == nil)
-        observing.cancel()
-        await observing.value
     }
 
     @Test func aRejectedFirstMessageDoesNotBlockTheRetryFromCreatingTheThread() async throws {

@@ -76,19 +76,4 @@ struct DailyChallengeGatewayRequestTests {
         #expect(keys.count == 2)
         #expect(Set(keys).count == 2)
     }
-
-    @Test func startAndShuffleStayMutations() async throws {
-        let gateway = makeGateway()
-        let operation = dailyFixedClientOperation()
-
-        _ = try await gateway.startDailyChallenge(operation: operation)
-        _ = try await gateway.shuffleQuestion(slotNumber: 1, operation: operation)
-
-        let requests = DailyGatewayStubProtocol.requests
-        #expect(requests.map(\.path) == ["/api/mutation", "/api/mutation"])
-        #expect(requests.map { $0.body["path"] as? String } == [
-            "daily:start_daily_challenge_snapshot",
-            "daily:shuffle_daily_question_snapshot",
-        ])
-    }
 }

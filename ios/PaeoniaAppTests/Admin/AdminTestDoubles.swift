@@ -53,8 +53,6 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
         var searchGate: AdminGate?
         var searches = [AdminSearchCall]()
         var bans = [AdminBanCall]()
-        var unbans = [UUID]()
-        var detailLoads = 0
     }
 
     private let lock = NSLock()
@@ -84,15 +82,9 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
 
     var searches: [AdminSearchCall] { locked { $0.searches } }
     var bans: [AdminBanCall] { locked { $0.bans } }
-    var unbans: [UUID] { locked { $0.unbans } }
-    var detailLoads: Int { locked { $0.detailLoads } }
 
     func holdSearches(with gate: AdminGate) {
         locked { $0.searchGate = gate }
-    }
-
-    func setUsers(_ users: [AdminUserSummary]) {
-        locked { $0.users = users }
     }
 
     func loadIsAdmin() async throws -> Bool {
@@ -122,7 +114,6 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
 
     func loadUser(id: UUID) async throws -> AdminUserDetail? {
         try locked { state in
-            state.detailLoads += 1
             if let error = state.error {
                 throw error
             }
@@ -139,7 +130,6 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
 
     func unbanUser(id: UUID) async throws {
         try locked { state in
-            state.unbans.append(id)
             try Self.applyChange(&state)
         }
     }

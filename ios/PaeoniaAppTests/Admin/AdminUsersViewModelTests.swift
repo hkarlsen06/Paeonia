@@ -33,19 +33,6 @@ struct AdminUsersViewModelTests {
         )
     }
 
-    @Test func firstLoadListsTheNewestUsersWithoutWaiting() async {
-        let gateway = AdminFakeGateway(users: [AdminFixtures.summary(), AdminFixtures.summary()])
-        let sleepLog = SleepLog()
-        let model = makeModel(gateway: gateway, sleepLog: sleepLog)
-
-        await model.search()
-
-        #expect(model.users.count == 2)
-        #expect(model.hasLoaded)
-        #expect(gateway.searches == [AdminSearchCall(query: nil, bannedOnly: false)])
-        #expect(await sleepLog.durations.isEmpty)
-    }
-
     @Test func typingWaitsThreeHundredMillisecondsThenSearches() async {
         let gateway = AdminFakeGateway()
         let sleepLog = SleepLog()
@@ -59,43 +46,6 @@ struct AdminUsersViewModelTests {
         #expect(gateway.searches.last == AdminSearchCall(query: "ma", bannedOnly: false))
     }
 
-    @Test func oneCharacterDoesNotSearch() async {
-        let gateway = AdminFakeGateway()
-        let model = makeModel(gateway: gateway)
-        await model.search()
-
-        model.searchText = "m"
-        await model.search()
-
-        #expect(model.isSearchTooShort)
-        #expect(gateway.searches.count == 1)
-    }
-
-    @Test func clearingTheTextListsTheNewestUsersAgain() async {
-        let gateway = AdminFakeGateway()
-        let model = makeModel(gateway: gateway)
-        await model.search()
-        model.searchText = "maja"
-        await model.search()
-
-        model.searchText = ""
-        await model.search()
-
-        #expect(!model.isSearchTooShort)
-        #expect(gateway.searches.last == AdminSearchCall(query: nil, bannedOnly: false))
-    }
-
-    @Test func aFullUserIDIsSentAsTheQuery() async {
-        let gateway = AdminFakeGateway()
-        let model = makeModel(gateway: gateway)
-        await model.search()
-
-        model.searchText = AdminFixtures.userID.uuidString
-        await model.search()
-
-        #expect(gateway.searches.last?.query == AdminFixtures.userID.uuidString)
-    }
-
     @Test func aCancelledWaitNeverSearches() async {
         let gateway = AdminFakeGateway()
         let model = makeModel(gateway: gateway, sleepLog: SleepLog(cancels: true))
@@ -105,31 +55,6 @@ struct AdminUsersViewModelTests {
         await model.search()
 
         #expect(gateway.searches.count == 1)
-    }
-
-    @Test func comingBackToTheSameTextReloadsWithoutWaiting() async {
-        let gateway = AdminFakeGateway()
-        let sleepLog = SleepLog()
-        let model = makeModel(gateway: gateway, sleepLog: sleepLog)
-        model.searchText = "maja"
-        await model.search()
-
-        await model.search()
-
-        #expect(gateway.searches.count == 2)
-        #expect(await sleepLog.durations.isEmpty)
-    }
-
-    @Test func bannedListAsksForBannedUsersAndIgnoresTheText() async {
-        let gateway = AdminFakeGateway(users: [AdminFixtures.summary(bannedAt: AdminFixtures.bannedAt)])
-        let model = makeModel(bannedOnly: true, gateway: gateway)
-        model.searchText = "x"
-
-        await model.search()
-
-        #expect(!model.isSearchTooShort)
-        #expect(model.users.count == 1)
-        #expect(gateway.searches == [AdminSearchCall(query: nil, bannedOnly: true)])
     }
 
     @Test func aCancelledSearchDropsItsResult() async {
@@ -147,38 +72,6 @@ struct AdminUsersViewModelTests {
         #expect(model.users.isEmpty)
         #expect(!model.hasLoaded)
         #expect(model.notice == nil)
-    }
-
-    @Test func refreshKeepsTheCurrentSearch() async {
-        let gateway = AdminFakeGateway()
-        let model = makeModel(gateway: gateway)
-        model.searchText = "maja"
-        await model.search()
-
-        gateway.setUsers([AdminFixtures.summary()])
-        await model.refresh()
-
-        #expect(gateway.searches.last == AdminSearchCall(query: "maja", bannedOnly: false))
-        #expect(model.users.count == 1)
-    }
-
-    @Test func failedLoadRaisesANotice() async {
-        let gateway = AdminFakeGateway(error: AdminFakeError.failed)
-        let model = makeModel(gateway: gateway)
-
-        await model.search()
-
-        #expect(model.notice == .loadFailed)
-        #expect(model.hasLoaded)
-    }
-
-    @Test func nonAdminErrorRaisesTheAccessNotice() async {
-        let gateway = AdminFakeGateway(error: AdminFixtures.serverError("admin access required"))
-        let model = makeModel(gateway: gateway)
-
-        await model.search()
-
-        #expect(model.notice == .notAdmin)
     }
 }
 

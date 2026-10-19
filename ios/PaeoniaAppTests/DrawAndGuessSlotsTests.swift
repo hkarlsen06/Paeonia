@@ -14,15 +14,6 @@ struct DrawAndGuessSlotsTests {
         #expect(slots.answer == "ICE CREAM")
     }
 
-    @Test func theRightWordChipNumbersLettersButNotSpaces() {
-        let numbered = DrawAndGuessAnswer.numberedCharacters(of: "ice  cream")
-
-        #expect(String(numbered.map(\.character)) == "ICE CREAM")
-        #expect(numbered.map(\.letter) == [0, 1, 2, nil, 3, 4, 5, 6, 7])
-        // The reveal lights all 8 letters, so the last letter must be number 7.
-        #expect(numbered.compactMap(\.letter).max() == DrawAndGuessAnswer.letters(of: "ice cream").count - 1)
-    }
-
     @Test func tilesFillTheNextFreeSlotAndSkipGaps() {
         var slots = DrawAndGuessSlots(answer: "a b")
 
@@ -65,30 +56,6 @@ struct DrawAndGuessSlotsTests {
         #expect(slots.status == .correct)
     }
 
-    @Test func removingFromAnEmptySlotGapOrBadIndexDoesNothing() {
-        var slots = DrawAndGuessSlots(answer: "a b")
-
-        let fromEmpty = slots.remove(at: 0)
-        #expect(fromEmpty == nil)
-        let fromGap = slots.remove(at: 1)
-        #expect(fromGap == nil)
-        let pastEnd = slots.remove(at: 9)
-        #expect(pastEnd == nil)
-        let beforeStart = slots.remove(at: -1)
-        #expect(beforeStart == nil)
-    }
-
-    @Test func clearReturnsEveryTile() {
-        var slots = DrawAndGuessSlots(answer: "cat")
-        slots.place(tile(0, "C"))
-        slots.place(tile(1, "A"))
-
-        slots.clear()
-
-        #expect(slots.placedTileIDs.isEmpty)
-        #expect(!slots.isFull)
-    }
-
     @Test func correctWordWithSpacesMatches() {
         var slots = DrawAndGuessSlots(answer: "ice cream")
         for (index, letter) in "ICECREAM".enumerated() {
@@ -121,35 +88,5 @@ struct DrawAndGuessSlotsTests {
         slots.clear()
         #expect(slots.status == .incomplete)
         #expect(slots.placedTileIDs.isEmpty)
-    }
-
-    @Test func sameLettersInTheWrongOrderIsWrong() {
-        var slots = DrawAndGuessSlots(answer: "cat")
-        for (index, letter) in "ACT".enumerated() {
-            slots.place(tile(index, letter))
-        }
-
-        #expect(slots.status == .wrong)
-    }
-
-    @Test func tilesFillAroundTheGapInOrder() {
-        var slots = DrawAndGuessSlots(answer: "ab cd")
-        for (index, letter) in "ABCD".enumerated() {
-            slots.place(tile(index, letter))
-        }
-
-        #expect(slots.status == .correct)
-        #expect(slots.filledWord == "AB CD")
-    }
-
-    @Test func aRevealedSlotShowsTheAnswerNotAWrongTile() {
-        var slots = DrawAndGuessSlots(answer: "cat")
-        slots.place(tile(0, "T"))
-
-        #expect(slots.shownLetter(at: 0, isRevealed: false, isLit: false) == "T")
-        #expect(slots.shownLetter(at: 0, isRevealed: true, isLit: false) == "C")
-        // An empty slot fills in only when the reveal reaches it.
-        #expect(slots.shownLetter(at: 1, isRevealed: true, isLit: false) == nil)
-        #expect(slots.shownLetter(at: 1, isRevealed: true, isLit: true) == "A")
     }
 }

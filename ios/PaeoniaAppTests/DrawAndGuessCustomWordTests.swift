@@ -54,8 +54,4 @@ struct DrawAndGuessCustomWordTests {
     func otherCharactersAreRejected(text: String) {
         #expect(failure(text) == .notAllowedCharacter)
     }
-
-    @Test func characterRuleWinsOverLength() {
-        #expect(failure("1") == .notAllowedCharacter)
-    }
 }

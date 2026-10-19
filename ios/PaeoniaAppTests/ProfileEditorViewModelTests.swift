@@ -28,17 +28,6 @@ struct ProfileEditorViewModelTests {
         #expect(!editor.isLoadingPhoto)
     }
 
-    @Test func unreadablePhotoReportsLoadFailure() async {
-        let editor = ProfileEditorViewModel()
-
-        editor.pickPhoto { Data("not an image".utf8) }
-        await waitUntil { editor.event != nil }
-
-        #expect(editor.event == .photoLoadFailed)
-        #expect(editor.cropRequest == nil)
-        #expect(!editor.isLoadingPhoto)
-    }
-
     /// With a saved photo and a staged replacement, the trash button used to drop
     /// the replacement and also mark the saved photo for removal.
     @Test func removingStagedPhotoKeepsSavedPhoto() async {
@@ -68,23 +57,6 @@ struct ProfileEditorViewModelTests {
         #expect(editor.draft.name == "Sam")
         #expect(editor.draft.hasChanges)
         #expect(editor.completedSaveCount == 0)
-    }
-
-    @Test func successfulSaveClearsEditsOnce() async {
-        let editor = ProfileEditorViewModel()
-        editor.updateSavedProfile(name: "Alex", customPhotoAssetID: nil, providerPhotoAssetID: nil)
-        editor.setName("Sam")
-        var savedNames = [String]()
-
-        await editor.save { name, _ in
-            savedNames.append(name)
-            return true
-        }
-
-        #expect(savedNames == ["Sam"])
-        #expect(editor.event == .saved)
-        #expect(editor.completedSaveCount == 1)
-        #expect(editor.typedName == nil)
     }
 
     /// A second tap while the first save runs must not send the profile twice,

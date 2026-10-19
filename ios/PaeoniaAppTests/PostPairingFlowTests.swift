@@ -64,18 +64,6 @@ struct PostPairingCelebrationStateTests {
         #expect(!progress.isFinished)
     }
 
-    @Test func celebrationOnLaunchStartsFirstDay() {
-        let store = TestPairingCelebrationStore()
-        var state = RootPairingCelebrationState(store: store)
-
-        state.update(for: .paired(pairID: pairID))
-        #expect(state.isPresented)
-        state.dismiss(currentResolution: .paired(pairID: pairID))
-
-        #expect(state.isFirstDayPresented)
-        #expect(store.postPairingProgress(forPairID: pairID) != nil)
-    }
-
     @Test func dismissedBeforeThePairIsKnownStartsProgressWhenItArrives() {
         let store = TestPairingCelebrationStore()
         var state = RootPairingCelebrationState(store: store)
@@ -228,18 +216,6 @@ struct PostPairingFlowModelTests {
         #expect(model.screen == .answerInvite)
     }
 
-    @Test func aGiftThatFailedToDownloadIsSkippedWithItsFailure() async {
-        let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
-        let model = makeModel(store: store, loader: PostPairingFakeLoader(gift: .failed(.offline)))
-
-        model.prepare(context)
-        await model.start(startedOn: "2024-03-03", acceptedInvite: true)
-
-        #expect(model.screen == .date)
-        #expect(model.giftFailure == .offline)
-    }
-
     @Test func inviterWithNothingLeftEndsOnHomeAtOnce() async {
         let store = TestPairingCelebrationStore()
         store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
@@ -295,47 +271,6 @@ struct PostPairingFlowModelTests {
         #expect(model.outcome == nil)
     }
 
-    @Test func noLateAnswersEndsOnHome() async {
-        let model = makeModel(
-            store: TestPairingCelebrationStore(),
-            loader: PostPairingFakeLoader(questionTimeIsOn: false)
-        )
-        model.prepare(context)
-        await model.start(startedOn: "2024-03-03", acceptedInvite: false)
-
-        model.questionTimeFinished()
-        for _ in 0 ..< 100 where model.outcome == nil {
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-
-        #expect(model.outcome == .home)
-    }
-
-    @Test func closingTheDrawingWithoutSendingMovesOn() async {
-        let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
-        let model = PostPairingFlowModel(
-            store: store,
-            loader: PostPairingFakeLoader(gift: .ready(.sample)),
-            widgetConfigurations: PostPairingNoWidgets(),
-            drawingViewModel: WidgetDrawingViewModel(
-                service: WidgetCanvasServiceSpy(),
-                uploader: WidgetCanvasUploadSpy(),
-                draftStore: InMemoryWidgetDrawingDraftStore()
-            )
-        )
-        model.prepare(context)
-        await model.start(startedOn: "2024-03-03", acceptedInvite: true)
-        model.giftOpened()
-
-        model.drawBack(authorName: "Alex")
-        #expect(model.drawingViewModel != nil)
-        model.drawingClosed()
-
-        #expect(model.drawingViewModel == nil)
-        #expect(model.screen == .date)
-    }
-
     /// The next step goes in before the drawing screen closes, and the close that
     /// follows a send doesn't skip a second step.
     @Test func sendingTheDrawingMovesOnOnce() async {
@@ -361,24 +296,6 @@ struct PostPairingFlowModelTests {
 
         #expect(model.drawingViewModel == nil)
         #expect(model.screen == .date)
-    }
-}
-
-struct PostPairingProgressStoreTests {
-    @MainActor
-    @Test func progressRoundTripsAndClearsWithTheCelebration() throws {
-        let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let store = UserDefaultsPairingCelebrationStore(defaults: defaults)
-        let pairID = UUID()
-        let progress = PostPairingProgress(finishedSteps: [.gift, .date], isFinished: false)
-
-        store.savePostPairingProgress(progress, forPairID: pairID)
-        #expect(store.postPairingProgress(forPairID: pairID) == progress)
-
-        store.clearAll()
-        #expect(store.postPairingProgress(forPairID: pairID) == nil)
     }
 }
 

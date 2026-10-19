@@ -15,22 +15,8 @@ struct AdminAccessModelTests {
         #expect(!regular.isAdmin)
     }
 
-    @Test func hidesTheRowBeforeTheCheckFinishes() {
-        let model = AdminAccessModel(gateway: AdminFakeGateway(isAdmin: true))
-
-        #expect(!model.isAdmin)
-    }
-
     @Test func anyErrorHidesTheRow() async {
         let model = AdminAccessModel(gateway: AdminFakeGateway(error: AdminFakeError.failed))
-
-        await model.refresh()
-
-        #expect(!model.isAdmin)
-    }
-
-    @Test func withoutAGatewayTheRowStaysHidden() async {
-        let model = AdminAccessModel(gateway: nil)
 
         await model.refresh()
 

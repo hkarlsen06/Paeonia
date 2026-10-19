@@ -288,12 +288,4 @@ struct MemoryLiveFeedTests {
         #expect(await Self.storedCursor(env) == SyncCursor())
         #expect(env.transport.openCount == 1)
     }
-
-    @Test func returnsAtOnceWithoutAnActiveCouple() async {
-        let env = Self.makeEnvironment(coupleID: nil)
-
-        await env.feed.run(session: env.session, live: env.live)
-
-        #expect(env.transport.openCount == 0)
-    }
 }

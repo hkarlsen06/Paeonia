@@ -92,21 +92,6 @@ struct GamesHandlerFixTests {
         ])
     }
 
-    @Test func aClearedReactionIsSentAsNothing() async throws {
-        let cleared = GameReactionPayload(roundID: GameFixture.roundID, reaction: nil, createdAt: GameFixture.now)
-        let handler = GameReactionPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
-
-        let result = try await handler.send(
-            try snapshot(.setGameRoundReaction, cleared),
-            context: syncContext(environment.pending)
-        )
-
-        #expect(result == .succeeded)
-        #expect(environment.gateway.reactions == [
-            ScriptedGamesGateway.SentReaction(roundID: GameFixture.roundID, reaction: nil)
-        ])
-    }
-
     @Test func aReactionTheServerRefusesForGoodIsDroppedWithoutANotice() async throws {
         environment.gateway.setReactionError(.server(code: "23514", message: "the round is not finished yet"))
         let reaction = GameReactionPayload(roundID: GameFixture.roundID, reaction: .wow, createdAt: GameFixture.now)

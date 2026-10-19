@@ -60,11 +60,6 @@ func waitForMemoryTestCondition(_ condition: @MainActor () -> Bool, timeout: Dur
 }
 
 @MainActor
-final class MemoryTestCallCounter {
-    var count = 0
-}
-
-@MainActor
 final class MemoryTestOperationProvider: SyncClientOperationProviding {
     private var sequence: Int64 = 0
     private let clientID = UUID()
@@ -129,12 +124,6 @@ nonisolated final class MemoryTestPhotoSaver: PhotoLibrarySaving, @unchecked Sen
 
     func savePNG(_ data: Data) -> PhotoLibrarySaveResult {
         result
-    }
-}
-
-nonisolated struct MemoryTestImageProvider: MemoryMediaImageProviding {
-    func imageData(for mediaAssetID: UUID?) -> Data? {
-        Data([1, 2, 3])
     }
 }
 

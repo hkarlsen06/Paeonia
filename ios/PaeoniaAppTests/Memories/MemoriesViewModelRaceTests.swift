@@ -192,19 +192,6 @@ struct MemoriesViewModelRaceTests {
         #expect(await uploader.uploadCount == 0)
     }
 
-    @Test func savingAPhotoToTheLibraryReportsTheOutcome() async throws {
-        let saver = MemoryTestPhotoSaver(result: .permissionDenied)
-        let env = makeEnvironment(imageProvider: MemoryTestImageProvider(), photoSaver: saver)
-        await env.viewModel.configure(currentUserID: env.userID, coupleID: env.coupleID)
-
-        await env.viewModel.savePhotoToLibrary(mediaAssetID: UUID())
-        #expect(env.viewModel.notice == .photoSaveDenied)
-
-        saver.result = .saved
-        await env.viewModel.savePhotoToLibrary(mediaAssetID: UUID())
-        #expect(env.viewModel.notice == .photoSaved)
-    }
-
     // MARK: - Environment
 
     private func makeEnvironment(

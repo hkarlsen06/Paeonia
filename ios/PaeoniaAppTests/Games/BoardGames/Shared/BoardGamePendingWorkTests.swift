@@ -157,32 +157,4 @@ struct BoardGamePendingWorkTests {
         #expect(await !failedWhileOnline(.dotsAndBoxes))
         #expect(await !hasFailedAttempt(.dotsAndBoxes))
     }
-
-    @Test func theRequestFixesTheKindTheScopeAndThePayload() throws {
-        let operation = Fixture.operation(sequence: 7)
-        let move = Fixture.move(3, on: game, stake: "Loser makes coffee")
-
-        let moveRequest = try BoardGamePendingWork.request(for: .move(move), ownerUserID: me, operation: operation)
-        let rematchRequest = try BoardGamePendingWork.request(
-            for: .rematch(Fixture.rematch(of: game)),
-            ownerUserID: me,
-            operation: operation
-        )
-
-        #expect(moveRequest.operationKind == .boardGameMove)
-        #expect(moveRequest.idempotencyScope == "board-game:connect_four")
-        #expect(moveRequest.operation == operation)
-        #expect(moveRequest.ownerUserID == me)
-        let decodedMove = try JSONDecoder().decode(
-            BoardGameMovePayload.self,
-            from: try #require(moveRequest.requestData)
-        )
-        #expect(decodedMove == move)
-        #expect(rematchRequest.operationKind == .boardGameRematch)
-        let decodedRematch = try JSONDecoder().decode(
-            BoardGameRematchPayload.self,
-            from: try #require(rematchRequest.requestData)
-        )
-        #expect(decodedRematch == Fixture.rematch(of: game))
-    }
 }

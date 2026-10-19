@@ -67,47 +67,22 @@ actor PrivacyFakeGateway {
 extension PrivacyFakeGateway: PrivacySafetyGateway {}
 
 actor PrivacyFakeService {
-    private let requests: [PrivacyRequest]
-    private let requestOutcome: PrivacyRequestSubmissionOutcome?
-    private let failPrivacyRequest: Bool
-    private let failReport: Bool
     private let failFirstReport: Bool
-    private let loadError: (any Error)?
     private var didFailFirstReport = false
-    private let updates = AsyncStream<[PrivacyRequest]>.makeStream()
     private(set) var privacyRequestCallCount = 0
     private(set) var lastReportSubmission: PrivacyCapturedReportSubmission?
     private(set) var reportOperations = [SyncClientOperation]()
 
-    init(
-        requests: [PrivacyRequest] = [],
-        requestOutcome: PrivacyRequestSubmissionOutcome? = nil,
-        failPrivacyRequest: Bool = false,
-        failReport: Bool = false,
-        failFirstReport: Bool = false,
-        loadError: (any Error)? = nil
-    ) {
-        self.loadError = loadError
-        self.requests = requests
-        self.requestOutcome = requestOutcome
-        self.failPrivacyRequest = failPrivacyRequest
-        self.failReport = failReport
+    init(failFirstReport: Bool = false) {
         self.failFirstReport = failFirstReport
     }
 
     func loadPrivacyRequests() throws -> [PrivacyRequest] {
-        if let loadError {
-            throw loadError
-        }
-        return requests
+        []
     }
 
     nonisolated func privacyRequestUpdates() -> AsyncStream<[PrivacyRequest]> {
-        updates.stream
-    }
-
-    func emit(_ requests: [PrivacyRequest]) {
-        updates.continuation.yield(requests)
+        AsyncStream { _ in }
     }
 
     func submitPrivacyRequest(
@@ -115,13 +90,7 @@ actor PrivacyFakeService {
         requesterNote: String?
     ) throws -> PrivacyRequestSubmissionOutcome {
         privacyRequestCallCount += 1
-        if failPrivacyRequest {
-            throw PrivacyFakeError.failed
-        }
-        guard let requestOutcome else {
-            throw PrivacyFakeError.failed
-        }
-        return requestOutcome
+        throw PrivacyFakeError.failed
     }
 
     func submitReportAndLeave(
@@ -132,7 +101,7 @@ actor PrivacyFakeService {
         operation: SyncClientOperation
     ) throws -> UUID {
         reportOperations.append(operation)
-        if failReport || (failFirstReport && !didFailFirstReport) {
+        if failFirstReport && !didFailFirstReport {
             didFailFirstReport = true
             throw PrivacyFakeError.failed
         }
@@ -221,20 +190,6 @@ final class PrivacyIncrementingOperationProvider: SyncClientOperationProviding {
             localCreatedAt: Date(timeIntervalSince1970: TimeInterval(nextSequence))
         )
     }
-}
-
-nonisolated func makePrivacyRequest(
-    kind: PrivacyRequestKind,
-    status: PrivacyRequestStatus,
-    requestedAt: Date = Date(timeIntervalSince1970: 10)
-) -> PrivacyRequest {
-    PrivacyRequest(
-        id: UUID(),
-        kind: kind,
-        status: status,
-        requestedAt: requestedAt,
-        visibleStatusMessage: nil
-    )
 }
 
 nonisolated func makePrivacyRemoteRequest(

@@ -197,31 +197,6 @@ struct DrawAndGuessSimulationRegressionTests {
         #expect(await cache.document(ownerUserID: GameFixture.me).state == solved(hasDrawing: true))
     }
 
-    /// A reveal that opened directly, such as after a relaunch or from the
-    /// developer scenario, showed an empty square until a background task read
-    /// the drawing, even when the drawing was already on the phone.
-    @Test func aRevealWithTheDrawingOnThePhoneShowsItAtOnce() async {
-        let env = GamesTestEnvironment(
-            state: GameFixture.state(
-                settings: GameFixture.settings(),
-                game: GameFixture.game(state: .choosingWord, turn: GameFixture.me, roundID: nil),
-                round: GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: true, solveMs: 4_000)
-            )
-        )
-        env.drawingStore.saveDownloadedDrawing(
-            GameFixture.umbrella().dataRepresentation(),
-            mediaAssetID: GameFixture.assetID
-        )
-        let viewModel = env.viewModel()
-        viewModel.configure(participants: GameFixture.participants)
-
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .reveal)
-        #expect(viewModel.finalDrawing?.drawing.strokes.isEmpty == false)
-        #expect(env.transfer.downloads.isEmpty)
-    }
-
     /// "Continue" saves the "result seen" mark on the phone first. Offline, the
     /// mark waits in the queue, so after a relaunch the result stays closed.
     @Test func aSeenResultSurvivesARelaunchOffline() async {

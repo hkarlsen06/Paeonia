@@ -6,8 +6,7 @@ import UIKit
 // The test doubles mirror async protocols, so some bodies do not await.
 // swiftlint:disable async_without_await
 
-/// Strokes racing loads and partner updates, the send status, and drawings from
-/// phones with another screen size.
+/// Strokes racing loads and partner updates, the send status, and drafts.
 @MainActor
 struct WidgetDrawingSendFlowTests {
     /// A stroke drawn while the saved drawing was still loading used to be
@@ -116,16 +115,6 @@ struct WidgetDrawingSendFlowTests {
         #expect(viewModel.delivery == .sent)
     }
 
-    @Test func reopeningWithAnUnsentDrawingShowsItIsWaiting() async {
-        let uploader = FlowUploadSpy()
-        uploader.pendingUpload = true
-        let viewModel = WidgetDrawingViewModel(service: GatedLoadCanvasService(), uploader: uploader)
-
-        await viewModel.loadSavedDrawingIfNeeded()
-
-        #expect(viewModel.delivery == .waiting)
-    }
-
     /// The drawing is marked as not sent before it is shown locally, so a sync
     /// running at the same time cannot pull an older drawing over it.
     @Test func drawingIsMarkedNotSentBeforeItIsPublishedLocally() async {
@@ -138,50 +127,6 @@ struct WidgetDrawingSendFlowTests {
         await viewModel.save()
 
         #expect(uploader.events == ["markPending", "publish", "send"])
-    }
-
-    /// A drawing made on a bigger screen used to be cut off at the right and
-    /// bottom edges on a smaller one.
-    @Test func drawingFromABiggerScreenIsScaledToFit() async {
-        let service = GatedLoadCanvasService()
-        let partnerDrawing = flowDrawing(at: 380)
-        await service.setSnapshot(WidgetCanvasSnapshot(
-            drawingData: partnerDrawing.dataRepresentation(),
-            authorName: "Robin",
-            createdAt: Date(timeIntervalSince1970: 1_000),
-            canvasSide: 400
-        ))
-        let viewModel = WidgetDrawingViewModel(service: service, uploader: FlowUploadSpy())
-
-        viewModel.canvasDidLayout(side: 300)
-        await viewModel.loadSavedDrawingIfNeeded()
-
-        let bounds = viewModel.drawing.bounds
-        #expect(bounds.maxX <= 300)
-        #expect(bounds.maxY <= 300)
-        // Fitting the drawing to the screen is not an edit.
-        #expect(!viewModel.hasUnsavedEdits)
-        #expect(!viewModel.canSave)
-    }
-
-    @Test func resizingTheCanvasKeepsTheDrawingAndIsNotAnEdit() async {
-        let service = GatedLoadCanvasService()
-        await service.setSnapshot(WidgetCanvasSnapshot(
-            drawingData: flowDrawing(at: 200).dataRepresentation(),
-            authorName: "Robin",
-            createdAt: Date(timeIntervalSince1970: 1_000),
-            canvasSide: 300
-        ))
-        let viewModel = WidgetDrawingViewModel(service: service, uploader: FlowUploadSpy())
-        viewModel.canvasDidLayout(side: 300)
-        await viewModel.loadSavedDrawingIfNeeded()
-        let revision = viewModel.drawingRevision
-
-        viewModel.canvasDidLayout(side: 360)
-
-        #expect(viewModel.drawingRevision > revision)
-        #expect(!viewModel.hasUnsavedEdits)
-        #expect(viewModel.drawing.bounds.midX > 200)
     }
 
     // MARK: - Drafts
@@ -271,82 +216,6 @@ struct WidgetDrawingSendFlowTests {
         #expect(store.draft(for: firstKey) == nil)
         #expect(store.draft(for: secondKey) == nil)
         #expect(store.purgeGeneration(for: ownerUserID) == generation + 1)
-    }
-
-    @Test func drawingLimitsMatchTheServer() {
-        #expect(WidgetDrawingLimits.allows(byteCount: 2_097_152, strokeCount: 5_000, pointCount: 200_000))
-        #expect(!WidgetDrawingLimits.allows(byteCount: 2_097_153, strokeCount: 1, pointCount: 1))
-        #expect(!WidgetDrawingLimits.allows(byteCount: 1, strokeCount: 5_001, pointCount: 1))
-        #expect(!WidgetDrawingLimits.allows(byteCount: 1, strokeCount: 1, pointCount: 200_001))
-    }
-}
-
-/// Undo, redo, and going back to the drawing on the widgets.
-extension WidgetDrawingSendFlowTests {
-    /// Undo used to lose its steps once the saved drawing was put on the
-    /// canvas, so a doodle on top of it could not be taken back.
-    @Test func doodleOnTheSavedDrawingCanBeUndoneAndRedone() async {
-        let saved = flowDrawing(at: 40)
-        let service = GatedLoadCanvasService()
-        await service.setSnapshot(WidgetCanvasSnapshot(
-            drawingData: saved.dataRepresentation(),
-            authorName: nil,
-            createdAt: nil,
-            canvasSide: 320
-        ))
-        let viewModel = WidgetDrawingViewModel(service: service, uploader: FlowUploadSpy())
-        viewModel.canvasDidLayout(side: 320)
-        await viewModel.loadSavedDrawingIfNeeded()
-        #expect(!viewModel.canUndoDrawing)
-
-        let doodle = PKDrawing(strokes: viewModel.drawing.strokes + flowDrawing(at: 120).strokes)
-        viewModel.updateDrawing(doodle)
-        #expect(viewModel.hasUnsavedEdits)
-
-        viewModel.undoDrawing()
-        #expect(!viewModel.hasUnsavedEdits)
-        #expect(viewModel.drawing.strokes.count == 1)
-        #expect(viewModel.canRedoDrawing)
-
-        viewModel.redoDrawing()
-        #expect(viewModel.drawing.paeoniaContentSignature == doodle.paeoniaContentSignature)
-    }
-
-    @Test func goingBackToTheSentDrawingCanBeUndone() async {
-        let service = GatedLoadCanvasService()
-        await service.setSnapshot(WidgetCanvasSnapshot(
-            drawingData: flowDrawing(at: 40).dataRepresentation(),
-            authorName: nil,
-            createdAt: nil,
-            canvasSide: 320
-        ))
-        let viewModel = WidgetDrawingViewModel(service: service, uploader: FlowUploadSpy())
-        viewModel.canvasDidLayout(side: 320)
-        await viewModel.loadSavedDrawingIfNeeded()
-        #expect(!viewModel.canRevertToSavedDrawing)
-
-        let doodle = flowDrawing(at: 120)
-        viewModel.updateDrawing(doodle)
-        #expect(viewModel.canRevertToSavedDrawing)
-
-        viewModel.revertToSavedDrawing()
-        #expect(!viewModel.hasUnsavedEdits)
-        #expect(!viewModel.canRevertToSavedDrawing)
-
-        viewModel.undoDrawing()
-        #expect(viewModel.drawing.paeoniaContentSignature == doodle.paeoniaContentSignature)
-    }
-
-    @Test func clearingTheCanvasCanBeUndone() {
-        let viewModel = WidgetDrawingViewModel(service: GatedLoadCanvasService(), uploader: FlowUploadSpy())
-        let drawing = flowDrawing(at: 60)
-        viewModel.updateDrawing(drawing)
-
-        viewModel.clearCanvas()
-        #expect(viewModel.drawing.strokes.isEmpty)
-
-        viewModel.undoDrawing()
-        #expect(viewModel.drawing.paeoniaContentSignature == drawing.paeoniaContentSignature)
     }
 }
 

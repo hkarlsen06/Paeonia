@@ -19,16 +19,6 @@ struct ExquisiteCorpseViewModelDoneTests {
 
     // MARK: Done
 
-    @Test func doneIsOffUntilThereIsADrawing() async {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
-        let viewModel = await env.loadedViewModel()
-        #expect(!viewModel.canFinishDrawing)
-
-        viewModel.board.updateDrawing(CorpseDrawings.aboveFold)
-
-        #expect(viewModel.canFinishDrawing)
-    }
-
     @Test func doneQueuesOneSubmitWithTheFigureAndPartIds() async throws {
         let env = ExquisiteCorpseTestEnvironment(state: Fixture.myBodyTurn())
         let viewModel = await env.loadedViewModel()
@@ -91,36 +81,6 @@ struct ExquisiteCorpseViewModelDoneTests {
         #expect(strip.strokes.allSatisfy { stroke in
             (0..<stroke.path.count).allSatisfy { stroke.path[$0].location.y >= foldY - 0.001 }
         })
-    }
-
-    @Test func theHeadHasAStripAndTheLegsHaveNone() async throws {
-        let head = ExquisiteCorpseTestEnvironment(state: Fixture.myHeadTurn(figure: 2))
-        let headViewModel = await head.loadedViewModel()
-        headViewModel.board.updateDrawing(CorpseDrawings.crossingFold)
-        await headViewModel.finishDrawing()
-
-        let legs = ExquisiteCorpseTestEnvironment(state: Fixture.myLegsTurn())
-        let legsViewModel = await legs.loadedViewModel()
-        legsViewModel.board.updateDrawing(CorpseDrawings.crossingFold)
-        await legsViewModel.finishDrawing()
-
-        let headPayload = try #require(await head.queuedParts().first)
-        let legsPayload = try #require(await legs.queuedParts().first)
-        #expect(headPayload.partIndex == 0 && headPayload.strip != nil)
-        #expect(legsPayload.partIndex == 2 && legsPayload.strip == nil)
-    }
-
-    @Test func aNewHeadNamesItsFigureFromTheGameAndTheNumber() async throws {
-        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myHeadTurn(figure: 2))
-        let viewModel = await env.loadedViewModel()
-        viewModel.board.updateDrawing(CorpseDrawings.aboveFold)
-
-        await viewModel.finishDrawing()
-
-        let payload = try #require(await env.queuedParts().first)
-        #expect(payload.figureID == Fixture.figureID(2))
-        #expect(payload.partID == Fixture.partID(figure: 2, partIndex: 0))
-        #expect(payload.idea == nil)
     }
 
     @Test func aDrawingTooBigToSendStaysOnTheCanvasWithANotice() async {

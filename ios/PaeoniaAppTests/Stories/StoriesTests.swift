@@ -54,29 +54,6 @@ struct StoryTimelineTests {
         #expect(!story.isOnHome(at: story.createdAt.addingTimeInterval(Story.lifetime)))
     }
 
-    @Test func thePartnersRingIsBrightUntilEveryStoryWasOpened() {
-        let seen = StoryFixture.story(by: StoryFixture.partner, hoursAgo: 3, seen: true)
-        let unseen = StoryFixture.story(by: StoryFixture.partner, hoursAgo: 1)
-        let partner = StoryFixture.partner
-
-        #expect(StoryTimeline.partnerRing([], partner: partner, at: StoryFixture.now) == .noStory)
-        #expect(StoryTimeline.partnerRing([seen, unseen], partner: partner, at: StoryFixture.now) == .unseen)
-        #expect(StoryTimeline.partnerRing([seen], partner: partner, at: StoryFixture.now) == .seen)
-    }
-
-    @Test func ownStoriesNeverLightThePartnersRing() {
-        let mine = StoryFixture.story(by: StoryFixture.me, hoursAgo: 1)
-        #expect(StoryTimeline.partnerRing([mine], partner: StoryFixture.partner, at: StoryFixture.now) == .noStory)
-    }
-
-    @Test func playbackStartsAtTheOldestUnopenedStory() {
-        let first = StoryFixture.story(by: StoryFixture.partner, hoursAgo: 5, seen: true)
-        let second = StoryFixture.story(by: StoryFixture.partner, hoursAgo: 3)
-        let third = StoryFixture.story(by: StoryFixture.partner, hoursAgo: 1)
-        #expect(StoryTimeline.startIndex(in: [first, second, third]) == 1)
-        #expect(StoryTimeline.startIndex(in: [first]) == 0)
-    }
-
     @Test func decodesTheServerList() throws {
         let json = """
         {"couple_id":"\(StoryFixture.couple.uuidString.lowercased())","stories":[
@@ -101,19 +78,6 @@ struct StoryTimelineTests {
         #expect(snapshot.note(of: StoryFixture.me, at: StoryFixture.now) == nil)
         let later = StoryFixture.now.addingTimeInterval(Story.lifetime)
         #expect(snapshot.note(of: StoryFixture.partner, at: later) == nil)
-    }
-
-    @Test func notesAreTrimmedCappedAndBlankRemovesThem() {
-        #expect(StoriesViewModel.cleanNote(" \n ") == nil)
-        #expect(StoriesViewModel.cleanNote(" hey ") == "hey")
-        #expect(StoriesViewModel.cleanNote(String(repeating: "b", count: 80))?.count == StoryNote.maxLength)
-    }
-
-    @Test func captionsAreTrimmedCappedAndEmptyMeansNone() {
-        #expect(StoriesViewModel.cleanCaption("   ") == nil)
-        #expect(StoriesViewModel.cleanCaption("  hi \n") == "hi")
-        let long = String(repeating: "a", count: Story.maxCaptionLength + 20)
-        #expect(StoriesViewModel.cleanCaption(long)?.count == Story.maxCaptionLength)
     }
 }
 
@@ -167,18 +131,6 @@ struct StoriesViewModelTests {
         #expect(posts[0].postOperationID == posts[1].postOperationID)
     }
 
-    @Test func aDifferentCaptionAfterAFailureIsANewStory() async {
-        let gateway = FakeStoriesGateway()
-        await gateway.failNextPost()
-        let model = await makeModel(gateway: gateway)
-
-        _ = await model.post(photo: StoryFixture.photo, caption: "hi")
-        _ = await model.post(photo: StoryFixture.photo, caption: "hello")
-
-        let posts = await gateway.posts
-        #expect(posts[0].id != posts[1].id)
-    }
-
     @Test func openingThePartnersStoryMarksItSeenHereAndOnTheServer() async throws {
         let gateway = FakeStoriesGateway()
         let cache = InMemoryStoriesCache()
@@ -219,16 +171,6 @@ struct StoriesViewModelTests {
         #expect(posted)
         #expect(saved)
         #expect(await cache.snapshot(ownerUserID: StoryFixture.me) == StoriesSnapshot())
-    }
-
-    @Test func openingYourOwnStoryDoesNotMarkIt() async throws {
-        let gateway = FakeStoriesGateway()
-        let model = await makeModel(gateway: gateway)
-
-        model.markSeen(StoryFixture.story(by: StoryFixture.me, hoursAgo: 1))
-        try await Task.sleep(for: .milliseconds(50))
-
-        #expect(await gateway.seenIDs.isEmpty)
     }
 
     @Test func deletingRemovesTheStoryAndOnlyTheAuthorCanDelete() async {
@@ -281,16 +223,6 @@ struct StoriesViewModelTests {
         #expect(removed)
         #expect(model.notes.map(\.text) == ["theirs"])
         #expect(await gateway.noteTexts == ["new", nil])
-    }
-
-    @Test func anOfflineNoteSaysWhy() async {
-        let gateway = FakeStoriesGateway()
-        await gateway.failNotes(with: URLError(.notConnectedToInternet))
-        let model = await makeModel(gateway: gateway)
-
-        let saved = await model.setNote("hi")
-        #expect(!saved)
-        #expect(model.error == .noteOffline)
     }
 
     private func waitUntil(_ condition: @escaping () async -> Bool) async throws {

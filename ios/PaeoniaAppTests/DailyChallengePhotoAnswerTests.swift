@@ -4,21 +4,6 @@ import UIKit
 @testable import PaeoniaApp
 
 struct DailyChallengePhotoAnswerTests {
-    @Test func photoCapableQuestionDefaultsToTextAndExposesBothKinds() throws {
-        let snapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                answerKinds: [.photo, .text]
-            ),
-        ])
-
-        let question = try #require(snapshot.ownQuestions.first)
-        #expect(question.composableAnswerKinds == [.photo, .text])
-        #expect(question.defaultComposableKind == .text)
-        #expect(question.canSubmitAnswer)
-    }
-
     @MainActor
     @Test func submitPhotoAnswerQueuesForBackgroundSendAndMarksSending() async throws {
         let snapshot = makeDailySnapshot(rows: [

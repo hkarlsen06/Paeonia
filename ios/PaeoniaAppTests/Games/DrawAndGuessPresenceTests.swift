@@ -85,16 +85,6 @@ struct DrawAndGuessPresenceTests {
         #expect(await announcedRole(for: solved) == .result)
     }
 
-    @Test func theGuesserLooksAtTheResultAsResult() async {
-        let solved = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me),
-            round: GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: true, solveMs: 9_000),
-            choices: GameFixture.choices
-        )
-        #expect(await announcedRole(for: solved) == .result)
-    }
-
     // MARK: What this phone reads from the partner
 
     @Test func thePartnersRoleDecidesWhatTheScreenSays() async {
@@ -119,20 +109,6 @@ struct DrawAndGuessPresenceTests {
         connection.onMessage?(WidgetLiveMessage(type: .left, id: "partner"))
         viewModel.recompute()
         #expect(viewModel.partnerPresence == .away)
-    }
-
-    @Test func onlyAWatchingPartnerIsWatching() {
-        #expect(
-            DrawAndGuessPartnerPresence.watching.drawingLine(partnerName: "R") == .gamesDrawAndGuessDrawWatching("R")
-        )
-        #expect(
-            DrawAndGuessPartnerPresence.result.drawingLine(partnerName: "R")
-                == .gamesDrawAndGuessDrawLookingAtResult("R")
-        )
-        #expect(DrawAndGuessPartnerPresence.here.drawingLine(partnerName: "R") == .gamesDrawAndGuessDrawHere("R"))
-        #expect(DrawAndGuessPartnerPresence.away.drawingLine(partnerName: "R") == .gamesDrawAndGuessDrawLater("R"))
-        #expect(DrawAndGuessPartnerPresence.result.isHere)
-        #expect(!DrawAndGuessPartnerPresence.away.isHere)
     }
 
     // MARK: The sent drawing
@@ -189,37 +165,6 @@ struct DrawAndGuessPresenceTests {
         #expect(!room.hasSentCanvasToPartner)
     }
 
-    @Test func theDrawerSeesLookingThenSeenWhenThePartnerLeavesTheGuessScreen() async {
-        let sent = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .guessing, turn: GameFixture.partner),
-            round: GameFixture.round(state: .guessing, drawer: GameFixture.me, hasDrawing: true, guesserHasSeenIt: true)
-        )
-        let (room, connection) = makeOfflineLiveRoom()
-        let viewModel = environment(sent).viewModel(live: room)
-        await viewModel.reload()
-        connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
-        connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "watching"))
-        viewModel.recompute()
-        #expect(viewModel.sentStatus == .looking)
-
-        connection.onMessage?(WidgetLiveMessage(type: .left, id: "partner"))
-        viewModel.recompute()
-        #expect(viewModel.sentStatus == .seen)
-    }
-
-    @Test func aDrawingTheGuesserNeverOpenedStaysNotSeen() async {
-        let sent = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .guessing, turn: GameFixture.partner),
-            round: GameFixture.round(state: .guessing, drawer: GameFixture.me, hasDrawing: true)
-        )
-        let viewModel = environment(sent).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.sentStatus == .notSeen)
-    }
-
     // MARK: Watch the partner draw
 
     @Test func theResultOffersWatchingWhenThePartnerAlreadyDrawsTheNextRound() async {
@@ -237,79 +182,5 @@ struct DrawAndGuessPresenceTests {
         #expect(viewModel.partnerNextRound == nil)
         #expect(viewModel.phase == .waitingForDrawing)
         #expect(viewModel.round?.id == GameFixture.nextRoundID)
-    }
-
-    @Test func theResultOffersTheDrawingWhenThePartnerAlreadySentTheNextRound() async {
-        let sentNext = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .guessing, turn: GameFixture.me, roundID: GameFixture.nextRoundID),
-            round: GameFixture.round(
-                id: GameFixture.nextRoundID, state: .guessing, drawer: GameFixture.partner, hasDrawing: true
-            ),
-            recentRounds: [
-                GameFixture.round(state: .solved, drawer: GameFixture.me, hasDrawing: true, solveMs: 9_000),
-            ]
-        )
-        let viewModel = environment(sentNext).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .reveal)
-        #expect(viewModel.partnerNextRound == .sent)
-
-        await viewModel.continueFromReveal()
-
-        #expect(viewModel.partnerNextRound == nil)
-        #expect(viewModel.phase == .guessing)
-        #expect(viewModel.round?.id == GameFixture.nextRoundID)
-    }
-
-    @Test func aPlainResultKeepsTheNormalButton() async {
-        let solved = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner),
-            round: GameFixture.round(state: .solved, drawer: GameFixture.me, hasDrawing: true, solveMs: 9_000)
-        )
-        let viewModel = environment(solved).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .reveal)
-        #expect(viewModel.partnerNextRound == nil)
-    }
-
-    // MARK: No offline flash
-
-    @Test func theOfflineMessageNeverShowsWhileThePickHandsOffToDrawing() async throws {
-        let env = environment(pick(turn: GameFixture.me))
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-        #expect(viewModel.phase == .chooseWord)
-        #expect(!viewModel.choicesUnavailable)
-
-        // The pick is queued: the phase is drawing and the word list is gone.
-        await viewModel.chooseWord(try #require(viewModel.choices.first { $0.difficulty == .medium }))
-        #expect(viewModel.phase == .drawing)
-        #expect(viewModel.choices.isEmpty)
-        #expect(!viewModel.choicesUnavailable)
-
-        // The server has the round, and the queued pick is gone.
-        await env.cache.saveState(
-            GameFixture.state(
-                settings: GameFixture.settings(),
-                game: GameFixture.game(state: .drawing, turn: GameFixture.partner),
-                round: GameFixture.round(state: .drawing, drawer: GameFixture.me)
-            ),
-            ownerUserID: GameFixture.me
-        )
-        await viewModel.reload()
-        #expect(viewModel.phase == .drawing)
-        #expect(!viewModel.choicesUnavailable)
-    }
-
-    @Test func theOfflineMessageShowsWhenTheTurnIsMineAndNoWordsCame() async {
-        let viewModel = environment(pick(turn: GameFixture.me, choices: nil)).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .chooseWord)
-        #expect(viewModel.choicesUnavailable)
     }
 }

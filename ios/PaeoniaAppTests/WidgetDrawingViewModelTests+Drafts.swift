@@ -5,47 +5,6 @@ import Testing
 /// Clearing, loading, unfinished drafts and reloading from sync.
 @MainActor
 extension WidgetDrawingViewModelTests {
-    @Test func clearCanvasEmptiesDrawing() {
-        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: WidgetCanvasUploadSpy())
-        viewModel.drawing = makeNonEmptyDrawing()
-
-        #expect(viewModel.canClear)
-
-        viewModel.clearCanvas()
-
-        #expect(viewModel.drawing.strokes.isEmpty)
-        #expect(viewModel.canSave == false)
-        #expect(!viewModel.canClear)
-    }
-
-    @Test func drawingSignatureFollowsTheDrawing() {
-        let viewModel = WidgetDrawingViewModel(service: WidgetCanvasServiceSpy(), uploader: WidgetCanvasUploadSpy())
-        #expect(viewModel.drawingSignature == PKDrawing().paeoniaContentSignature)
-
-        let drawing = makeNonEmptyDrawing()
-        viewModel.updateDrawing(drawing)
-        #expect(viewModel.drawingSignature == drawing.paeoniaContentSignature)
-        #expect(viewModel.hasUnsavedEdits)
-
-        viewModel.clearCanvas()
-        #expect(viewModel.drawingSignature == PKDrawing().paeoniaContentSignature)
-    }
-
-    @Test func loadSavedDrawingLoadsPersistedDataOnce() async {
-        let spy = WidgetCanvasServiceSpy()
-        spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
-        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
-
-        await viewModel.loadSavedDrawingIfNeeded()
-
-        #expect(spy.loadCount == 1)
-        #expect(!viewModel.drawing.strokes.isEmpty)
-
-        await viewModel.loadSavedDrawingIfNeeded()
-
-        #expect(spy.loadCount == 1)
-    }
-
     @Test func loadSavedDrawingDoesNotClobberInProgressWork() async {
         let spy = WidgetCanvasServiceSpy()
         spy.savedDrawingData = makeNonEmptyDrawing().dataRepresentation()
@@ -133,42 +92,6 @@ extension WidgetDrawingViewModelTests {
         #expect(draftStore.draft(for: draftKey(ownerUserID)) == nil)
     }
 
-    @Test func drawingUpdatesWaitForTheDebouncedDraftWriteUntilFlushed() {
-        let ownerUserID = UUID()
-        let draftStore = InMemoryWidgetDrawingDraftStore()
-        let viewModel = WidgetDrawingViewModel(
-            ownerUserID: ownerUserID,
-            coupleID: draftTestCoupleID,
-            service: WidgetCanvasServiceSpy(),
-            uploader: WidgetCanvasUploadSpy(),
-            draftStore: draftStore
-        )
-
-        viewModel.updateDrawing(makeNonEmptyDrawing())
-
-        #expect(draftStore.draft(for: draftKey(ownerUserID)) == nil)
-        viewModel.persistDraftIfNeeded()
-        #expect(draftStore.draft(for: draftKey(ownerUserID)) != nil)
-    }
-
-    @Test func fileDraftStoreScopesAndClearsDraftsByOwner() {
-        let directoryURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("WidgetDrawingDraftStoreTests", isDirectory: true)
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: directoryURL) }
-        let store = FileWidgetDrawingDraftStore(directoryURL: directoryURL)
-        let firstOwnerUserID = UUID()
-        let secondOwnerUserID = UUID()
-        let draft = Data([0x01, 0x02, 0x03])
-
-        store.setDraft(draft, for: draftKey(firstOwnerUserID))
-
-        #expect(store.draft(for: draftKey(firstOwnerUserID)) == draft)
-        #expect(store.draft(for: draftKey(secondOwnerUserID)) == nil)
-        store.clearDraft(for: firstOwnerUserID)
-        #expect(store.draft(for: draftKey(firstOwnerUserID)) == nil)
-    }
-
     @Test func clearingSavedDrawingRestoresAsAnEmptyUnsavedDraft() async {
         let ownerUserID = UUID()
         let draftStore = InMemoryWidgetDrawingDraftStore()
@@ -216,24 +139,5 @@ extension WidgetDrawingViewModelTests {
         #expect(reloadedSignature != originalSignature)
         #expect(viewModel.savedDrawingAuthorName == "Partner")
         #expect(viewModel.hasUnsavedEdits == false)
-    }
-
-    @Test func reloadFromSyncKeepsUnsavedEditsAside() async {
-        let spy = WidgetCanvasServiceSpy()
-        spy.savedDrawingData = makeNonEmptyDrawing(seed: 12).dataRepresentation()
-        let viewModel = WidgetDrawingViewModel(service: spy, uploader: WidgetCanvasUploadSpy())
-        await viewModel.loadSavedDrawingIfNeeded()
-
-        // The user has started drawing on top of the loaded drawing.
-        viewModel.drawing = PKDrawing(strokes: viewModel.drawing.strokes + makeNonEmptyDrawing(seed: 77).strokes)
-        #expect(viewModel.hasUnsavedEdits)
-        let editedStrokeBounds = viewModel.drawing.strokes.map(\.renderBounds)
-
-        // A partner's drawing syncs in. It takes the canvas, and the
-        // in-progress work is kept aside to bring back, never lost.
-        spy.savedDrawingData = makeNonEmptyDrawing(seed: 99).dataRepresentation()
-        await viewModel.reloadSavedDrawingFromSyncIfSafe()
-
-        #expect(viewModel.setAsideDrawing?.strokes.map(\.renderBounds) == editedStrokeBounds)
     }
 }

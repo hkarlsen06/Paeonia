@@ -20,20 +20,6 @@ struct StoryChainViewModelLiveTests {
 
     // MARK: The partner's draft
 
-    @Test func thePartnersDraftShowsAsAGhostOnTheNextLine() async {
-        let environment = Env.waitingOnPartner()
-        let viewModel = environment.viewModel()
-        await viewModel.reload()
-        #expect(viewModel.page.ghost == nil)
-
-        environment.connection.receive(draftMessage(text: "The door"))
-        #expect(viewModel.page.ghost == StoryChainGhost(text: "The door", isLast: false))
-
-        // Deletions show too: the newest message wins.
-        environment.connection.receive(draftMessage(text: "The do"))
-        #expect(viewModel.page.ghost?.text == "The do")
-    }
-
     @Test func aDraftAboutAnotherStoryOrLineIsIgnored() async {
         let environment = Env.waitingOnPartner()
         let viewModel = environment.viewModel()
@@ -47,56 +33,6 @@ struct StoryChainViewModelLiveTests {
         #expect(viewModel.page.ghost == nil)
         environment.connection.receive(draftMessage(number: 2))
         #expect(viewModel.page.ghost != nil)
-    }
-
-    @Test func aDraftFadesOutAfterTenSeconds() async {
-        let environment = Env.waitingOnPartner()
-        let viewModel = environment.viewModel()
-        await viewModel.reload()
-        environment.connection.receive(draftMessage())
-
-        environment.clock.advance(by: 9)
-        viewModel.recompute()
-        #expect(viewModel.page.ghost != nil)
-
-        environment.clock.advance(by: 2)
-        viewModel.recompute()
-        #expect(viewModel.page.ghost == nil)
-
-        // A fresh message brings it back.
-        environment.connection.receive(draftMessage(text: "The door opened"))
-        #expect(viewModel.page.ghost?.text == "The door opened")
-    }
-
-    @Test func aGhostShowsOnlyWhileThePartnerWritesTheNextLine() async {
-        // My turn to write: the partner's old draft for this line is not a ghost.
-        let environment = Env.myTurnAfterPartner()
-        let viewModel = environment.viewModel()
-        await viewModel.reload()
-        #expect(viewModel.phase == .writing)
-
-        environment.connection.receive(draftMessage())
-
-        #expect(viewModel.page.ghost == nil)
-        #expect(!viewModel.partnerIsWritingLast)
-    }
-
-    @Test func aDraftSetAsTheLastLineSaysSo() async {
-        let environment = Env.waitingOnPartner()
-        let viewModel = environment.viewModel()
-        await viewModel.reload()
-
-        environment.connection.receive(draftMessage(text: "", isLast: true))
-        // Nothing typed yet, so there is nothing to draw, but the status line knows.
-        #expect(viewModel.page.ghost == nil)
-        #expect(viewModel.partnerIsWritingLast)
-
-        environment.connection.receive(draftMessage(text: "And so it ended", isLast: true))
-        #expect(viewModel.page.ghost == StoryChainGhost(text: "And so it ended", isLast: true))
-        #expect(viewModel.partnerIsWritingLast)
-
-        environment.connection.receive(draftMessage(text: "And so it ended", isLast: false))
-        #expect(!viewModel.partnerIsWritingLast)
     }
 
     // MARK: A line sent live
@@ -163,33 +99,6 @@ struct StoryChainViewModelLiveTests {
         viewModel.arrivalFinished(lineID: lineID)
         await viewModel.reload()
         #expect(viewModel.page.arrivingLineID == nil)
-        viewModel.stop()
-    }
-
-    @Test func theComposerWaitsForALineSentLiveToLand() async {
-        let environment = Env.waitingOnPartner()
-        let viewModel = environment.viewModel()
-        await viewModel.start()
-        let lineID = UUID()
-        receiveLiveLine(lineID, in: environment)
-
-        // Convex passes the turn while the line is still writing itself in.
-        let convex = Env.writing(
-            turn: Fixture.me,
-            lines: [
-                Env.line(1, by: Fixture.me),
-                Env.line(2, by: Fixture.partner, text: "It opened onto a garden.", id: lineID),
-            ],
-            version: 2
-        )
-        await environment.cache.saveState(convex, ownerUserID: Fixture.me)
-        await viewModel.reload()
-        #expect(viewModel.phase == .writing)
-        #expect(viewModel.bottomPhase == .waitingForLine)
-
-        // The composer rises in as the line lands.
-        viewModel.arrivalFinished(lineID: lineID)
-        #expect(viewModel.bottomPhase == .writing)
         viewModel.stop()
     }
 

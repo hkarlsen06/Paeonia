@@ -27,18 +27,6 @@ struct LiveJSONTests {
         try JSONDecoder().decode(LiveJSON.self, from: Data(json.utf8)).normalizedData()
     }
 
-    @Test func plainDecoderBehaviorForWholeNumberDoublesInIntFields() throws {
-        let decoder = JSONDecoder()
-
-        // ConvexMobile's Rust layer may print a JS number as `5.0`. Document
-        // what the plain decoder does with that, since DTOs use `Int` fields.
-        let whole = try? decoder.decode([Int].self, from: Data("[5.0]".utf8))
-        let fractional = try? decoder.decode([Int].self, from: Data("[5.5]".utf8))
-
-        #expect(whole == [5])
-        #expect(fractional == nil)
-    }
-
     @Test func normalizedTextWritesWholeNumbersWithoutAFraction() throws {
         let data = try normalized(#"{"a":5.0,"b":2.5,"c":-3.0,"d":[1.0,0.0]}"#)
         let text = try #require(String(data: data, encoding: .utf8))

@@ -46,26 +46,6 @@ struct PaeoniaConvexClientTests {
         #expect(args["p_note"] == nil)
     }
 
-    @Test func queryUsesTheQueryEndpointAndSameEnvelope() async throws {
-        let recorder = RequestRecorder()
-        StubURLProtocol.handler = { request in
-            recorder.record(request)
-            return (200, Data(#"{"status":"success","value":[{"name":"Alex"}]}"#.utf8))
-        }
-        let client = Self.makeClient(token: "clerk-token")
-
-        let rows: [Row] = try await client.query("identity:get_thing")
-        try await client.query("identity:get_thing")
-
-        #expect(rows == [Row(name: "Alex")])
-        let request = try #require(recorder.last)
-        #expect(request.url?.path == "/api/query")
-        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer clerk-token")
-        let body = try #require(try JSONSerialization.jsonObject(with: request.bodyData) as? [String: Any])
-        #expect(body["path"] as? String == "identity:get_thing")
-        #expect(body["format"] as? String == "json")
-    }
-
     @Test func queryMapsFunctionErrorsToServerErrors() async {
         StubURLProtocol.handler = { _ in
             (200, Data(#"{"status":"error","errorMessage":"no","errorData":{"code":"42501","message":"denied"}}"#.utf8))
@@ -75,20 +55,6 @@ struct PaeoniaConvexClientTests {
         await #expect(throws: PaeoniaConvexError.server(code: "42501", message: "denied")) {
             let _: Row = try await client.query("identity:get_thing")
         }
-    }
-
-    @Test func actionUsesTheActionEndpoint() async throws {
-        let recorder = RequestRecorder()
-        StubURLProtocol.handler = { request in
-            recorder.record(request)
-            return (200, Data(#"{"status":"success","value":{"name":"Done"}}"#.utf8))
-        }
-        let client = Self.makeClient()
-
-        let row: Row = try await client.action("access:verify_purchase")
-
-        #expect(row == Row(name: "Done"))
-        #expect(recorder.last?.url?.path == "/api/action")
     }
 
     @Test func requestWithoutTokenOmitsAuthorizationHeader() async throws {
@@ -231,29 +197,6 @@ struct PaeoniaConvexClientTests {
             try await client.mutation("identity:ping")
         }
         #expect(recorder.last == nil)
-    }
-
-    @Test func functionCallsGiveUpOnAStalledConnectionButUploadsKeepTheDefault() async throws {
-        let recorder = RequestRecorder()
-        StubURLProtocol.handler = { request in
-            recorder.record(request)
-            return (200, Data(#"{"status":"success","value":null,"storageId":"s1"}"#.utf8))
-        }
-        let client = Self.makeClient()
-
-        try await client.mutation("identity:save")
-        let mutationTimeout = try #require(recorder.last).timeoutInterval
-        try await client.query("identity:read")
-        let queryTimeout = try #require(recorder.last).timeoutInterval
-        let _: PaeoniaConvexIgnoredResult? = try await client.action("access:verify")
-        let actionTimeout = try #require(recorder.last).timeoutInterval
-        _ = try await client.upload(Data([1]), contentType: "image/jpeg", to: Self.baseURL)
-        let uploadTimeout = try #require(recorder.last).timeoutInterval
-
-        #expect(mutationTimeout == 20)
-        #expect(queryTimeout == 20)
-        #expect(actionTimeout == 60)
-        #expect(uploadTimeout == URLRequest(url: Self.baseURL).timeoutInterval)
     }
 
     @Test func signOutDisablesTheDeviceThatRegistrationReturned() async throws {

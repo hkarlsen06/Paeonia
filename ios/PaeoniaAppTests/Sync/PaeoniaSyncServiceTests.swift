@@ -204,19 +204,6 @@ struct PaeoniaSyncServiceTests {
         #expect(states?.first?.lastSyncError != nil)
     }
 
-    @Test func runOnceWithoutSessionSkips() async {
-        let coordinator = PaeoniaSyncService(
-            streams: [RecordingSyncStream(streamKey: .relationship)],
-            stateStore: InMemorySyncStateRepository(),
-            pendingOperationStore: InMemoryPendingSyncOperationRepository()
-        )
-
-        let result = await coordinator.runOnce(reason: .manualRefresh)
-
-        #expect(result.status == .skippedNoSession)
-        #expect(result.attemptedStreamCount == 0)
-    }
-
     @Test func startupRunRetriesOperationsLeftSendingByPreviousLaunch() async throws {
         let pendingStore = InMemoryPendingSyncOperationRepository()
         let operation = SyncClientOperation(

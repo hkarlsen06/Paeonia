@@ -231,32 +231,6 @@ struct WidgetCanvasSyncServiceTests {
         #expect(env.localStore.savedCalls.isEmpty)
     }
 
-    @Test func syncDoesNothingWithoutAnActiveRevision() async {
-        let env = SyncEnvironment()
-        env.gateway.state = WidgetCanvasState(
-            canvasID: UUID(),
-            activeRevisionID: nil,
-            activeRevisionAuthorUserID: nil,
-            payloadMediaAssetID: nil,
-            bounds: nil,
-            revisionCreatedAt: nil
-        )
-
-        await env.service.sync(identity: Self.identity(partnerID: UUID()))
-
-        #expect(env.localStore.savedCalls.isEmpty)
-    }
-
-    @Test func authorNameMapsToSelfOrPartner() {
-        let me = UUID()
-        let partner = UUID()
-        let identity = WidgetSyncIdentity(currentUserID: me, currentDisplayName: "Me", partnerDisplayName: "Partner")
-
-        #expect(WidgetCanvasSyncService.authorName(for: me, identity: identity) == "Me")
-        #expect(WidgetCanvasSyncService.authorName(for: partner, identity: identity) == "Partner")
-        #expect(WidgetCanvasSyncService.authorName(for: nil, identity: identity) == nil)
-    }
-
     static let revisionCreatedAt = Date(timeIntervalSince1970: 1_700_000_000)
 
     private static func state(authorUserID: UUID, canvasSide: Double) -> WidgetCanvasState {

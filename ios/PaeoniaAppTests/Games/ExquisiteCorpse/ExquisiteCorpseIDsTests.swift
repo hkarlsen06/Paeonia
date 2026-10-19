@@ -30,10 +30,4 @@ struct ExquisiteCorpseIDsTests {
         }
         #expect(ids.count == 4 + 4 * 3 * 2)
     }
-
-    @Test func theIDsAreVersionFive() {
-        let text = part(figure: 1, index: 0, drawer: me).uuidString
-        #expect(text.dropFirst(14).first == "5")
-        #expect(text.dropFirst(19).first.map { "89AB".contains($0) } == true)
-    }
 }

@@ -97,15 +97,6 @@ actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersisting {
 }
 
 @MainActor
-final class LocalChangeSyncRecorder {
-    private(set) var callCount = 0
-
-    func record() {
-        callCount += 1
-    }
-}
-
-@MainActor
 final class FixedOperationProvider: SyncClientOperationProviding {
     private var sequence: Int64 = 0
     private let clientID = locationTestUUID("99999999-9999-9999-9999-999999999999")
@@ -285,61 +276,6 @@ actor FailingLocationPendingOperationStore: PendingSyncOperationPersisting {
     func resetInFlight(ownerUserID _: UUID) async throws {}
     // swiftlint:enable async_without_await
 }
-
-struct StaticPushAuthorization: PushAuthorizationProviding {
-    let isNotDeterminedValue: Bool
-
-    init(isNotDetermined: Bool) {
-        isNotDeterminedValue = isNotDetermined
-    }
-
-    // swiftlint:disable async_without_await
-    func isNotDetermined() async -> Bool { isNotDeterminedValue }
-    func requestAuthorizationIfNeeded() async -> Bool { true }
-    func isDenied() async -> Bool { false }
-    // swiftlint:enable async_without_await
-}
-
-actor SequencedPushAuthorization {
-    private var evaluationCount = 0
-    private var firstEvaluationContinuation: CheckedContinuation<Bool, Never>?
-    private var firstEvaluationStartWaiters: [CheckedContinuation<Void, Never>] = []
-
-    func isNotDetermined() async -> Bool {
-        evaluationCount += 1
-        guard evaluationCount == 1 else {
-            return true
-        }
-
-        let waiters = firstEvaluationStartWaiters
-        firstEvaluationStartWaiters.removeAll()
-        waiters.forEach { $0.resume() }
-        return await withCheckedContinuation { continuation in
-            firstEvaluationContinuation = continuation
-        }
-    }
-
-    func waitUntilFirstEvaluationStarts() async {
-        guard evaluationCount == 0 else {
-            return
-        }
-        await withCheckedContinuation { continuation in
-            firstEvaluationStartWaiters.append(continuation)
-        }
-    }
-
-    func finishFirstEvaluation() {
-        firstEvaluationContinuation?.resume(returning: true)
-        firstEvaluationContinuation = nil
-    }
-
-    // swiftlint:disable async_without_await
-    func requestAuthorizationIfNeeded() async -> Bool { true }
-    func isDenied() async -> Bool { false }
-    // swiftlint:enable async_without_await
-}
-
-extension SequencedPushAuthorization: PushAuthorizationProviding {}
 
 func visibilitySnapshot(
     ownerUserID: UUID = locationTestUUID("11111111-1111-1111-1111-111111111111"),

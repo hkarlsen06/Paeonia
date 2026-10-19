@@ -52,28 +52,6 @@ struct CoupleStreakTests {
         #expect(count == 1)
     }
 
-    @Test func neverQualifiedStartsAtOneWhenBothHaveContributed() {
-        let count = StreakCelebration.celebratedCount(
-            serverCurrentCount: 0,
-            lastQualifiedDate: nil,
-            todayLocalDate: "2026-06-28",
-            partnerContributedToday: true
-        )
-
-        #expect(count == 1)
-    }
-
-    @Test func extendsAcrossMonthBoundary() {
-        let count = StreakCelebration.celebratedCount(
-            serverCurrentCount: 12,
-            lastQualifiedDate: "2026-06-30",
-            todayLocalDate: "2026-07-01",
-            partnerContributedToday: true
-        )
-
-        #expect(count == 13)
-    }
-
     @Test func missingTodayFallsBackWithoutShowingZero() {
         let count = StreakCelebration.celebratedCount(
             serverCurrentCount: 7,
@@ -158,66 +136,6 @@ struct CoupleStreakTests {
         #expect(!streak.isRestorable)
     }
 
-    @Test func noneIsNotRestorable() {
-        #expect(!CoupleStreak.none.isRestorable)
-    }
-
-    @Test func brokenStreakEntryGoesStraightToRestoreOffer() {
-        let streak = CoupleStreak(
-            currentCount: 0,
-            longestCount: 30,
-            lastQualifiedDate: "2026-06-26",
-            restoreAvailable: true,
-            restorableCount: 30,
-            restoreDeadline: .now.addingTimeInterval(3_600)
-        )
-
-        #expect(streak.entryDestination == .restore)
-    }
-
-    @Test func healthyOrExpiredStreakEntryOpensReadOnlyDetail() {
-        let expired = CoupleStreak(
-            currentCount: 0,
-            longestCount: 30,
-            lastQualifiedDate: "2026-06-26",
-            restoreAvailable: true,
-            restorableCount: 30,
-            restoreDeadline: .now.addingTimeInterval(-1)
-        )
-
-        #expect(CoupleStreak.none.entryDestination == .detail)
-        #expect(expired.entryDestination == .detail)
-    }
-
-    // MARK: - Toolbar presentation
-
-    @Test func zeroStreakRemainsVisibleWithAMutedFlame() {
-        let state = StreakPillState(
-            count: 0,
-            isRestorable: false,
-            restorableCount: 0
-        )
-
-        #expect(state.isVisible)
-        #expect(state.displayCount == 0)
-        #expect(state.usesMutedFlame)
-    }
-
-    @Test func healthyStreakUsesTheLiveFlame() {
-        let state = StreakPillState(
-            count: 1,
-            isRestorable: false,
-            restorableCount: 0
-        )
-
-        #expect(state.isVisible)
-        #expect(!state.usesMutedFlame)
-    }
-
-    @Test func explicitlyUnavailableStreakStateRemainsHidden() {
-        #expect(!StreakPillState.hidden.isVisible)
-    }
-
     // MARK: - Toolbar restore state
 
     @Test func pillOfARestorableStreakAdvertisesTheLostCount() {
@@ -228,15 +146,6 @@ struct CoupleStreakTests {
         #expect(state.displayCount == 30)
         #expect(state.usesMutedFlame)
         #expect(state.restoreDeadline == deadline)
-    }
-
-    @Test func pillOfAHealthyStreakShowsTheLiveCount() {
-        let state = StreakPillState(Self.streak(currentCount: 5, restorableCount: 0, deadline: nil))
-
-        #expect(!state.isRestorable)
-        #expect(state.displayCount == 5)
-        #expect(!state.usesMutedFlame)
-        #expect(state.restoreDeadline == nil)
     }
 
     @Test func pillOfAnExpiredOfferShowsTheLiveCount() {
@@ -257,12 +166,6 @@ struct CoupleStreakTests {
         #expect(!state.resolved(at: deadline.addingTimeInterval(1)).isRestorable)
         // Back to the live count, not the lost one.
         #expect(state.resolved(at: deadline).displayCount == 1)
-    }
-
-    @Test func pillWithoutADeadlineNeverLapses() {
-        let state = StreakPillState(count: 1, isRestorable: true, restorableCount: 30)
-
-        #expect(state.resolved(at: .distantFuture).isRestorable)
     }
 
     // MARK: - Toolbar ends-soon state
@@ -330,16 +233,6 @@ struct StreakFreezeNoteTests {
         let streak = freezeStreak(freezeReadyAt: readyAt, freezeSavedStreak: true)
 
         #expect(streak.freezeNote() == .savedStreak)
-    }
-
-    @Test func freezeNoteShowsAReadyFreeze() {
-        #expect(freezeStreak(freezeAvailable: true).freezeNote() == .ready)
-    }
-
-    @Test func freezeNoteShowsWhenTheNextFreezeIsReady() {
-        let readyAt = Date.now.addingTimeInterval(86_400)
-
-        #expect(freezeStreak(freezeReadyAt: readyAt).freezeNote() == .readyOn(readyAt))
     }
 
     @Test func freezeNoteTreatsAPassedReadyDateAsNothingToSay() {

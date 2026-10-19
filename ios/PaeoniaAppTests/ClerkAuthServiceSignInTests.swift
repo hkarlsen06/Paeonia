@@ -60,22 +60,6 @@ struct ClerkAuthServiceSignInTests {
         #expect(await gateway.signOutCallCount == 1)
     }
 
-    @Test func googleSignInUsesOAuthGatewaySession() async throws {
-        let gateway = FakeAuthGateway(
-            remoteSession: .test(provider: .unknown, displayName: "Riley"),
-            profile: .test(displayName: nil, onboardingCompletedAt: nil)
-        )
-        let service = ClerkAuthService(gateway: gateway)
-
-        let session = try await service.signInWithGoogle()
-
-        #expect(await gateway.googleSignInCallCount == 1)
-        #expect(session.provider == .google)
-        #expect(session.displayName == "Riley")
-        #expect(await gateway.updatedProfileDisplayName == nil)
-        #expect(session.profileStatus == .needsOnboarding)
-    }
-
     @Test func googleSignInImportsProviderAvatarIntoPrivateProfileAndOnboardingKeepsIt() async throws {
         let importedAssetID = try #require(
             UUID(uuidString: "A6B39D76-11D0-4A4D-8B77-5AF09A9E85E1")
@@ -129,25 +113,6 @@ struct ClerkAuthServiceSignInTests {
         #expect(session.profilePhotoAssetID == existingAssetID)
         #expect(session.customProfilePhotoAssetID == existingAssetID)
         #expect(session.providerProfilePhotoAssetID == fallbackAssetID)
-    }
-
-    @Test func completeOnboardingUpdatesProfileFields() async throws {
-        let gateway = FakeAuthGateway(
-            remoteSession: .test(provider: .apple),
-            profile: .test(displayName: nil, onboardingCompletedAt: nil)
-        )
-        let service = ClerkAuthService(gateway: gateway)
-
-        let session = try await service.completeOnboarding(
-            displayName: "  Anne   Marie  ",
-            timeZoneID: "Europe/Oslo",
-            profilePhotoData: ClerkAuthServiceTests.makeJPEGData()
-        )
-
-        #expect(await gateway.updatedProfileDisplayName == "Anne Marie")
-        #expect(await gateway.updatedTimeZoneID == "Europe/Oslo")
-        #expect(session.displayName == "Anne Marie")
-        #expect(session.profileStatus == .complete)
     }
 
     @Test func completeOnboardingUploadsProfilePhotoBeforeProfileUpdate() async throws {

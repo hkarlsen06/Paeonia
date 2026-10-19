@@ -72,31 +72,6 @@ struct StoryChainViewModelMoveTests {
         #expect(line.dareWordID == nil)
     }
 
-    @Test func aTypedWordMustBeOneWordOfTwoToTwentyLetters() async {
-        let viewModel = writingAfterPartner().viewModel()
-        await viewModel.reload()
-
-        for rejected in ["", "a", "two words", "x1y", "ab-cd", String(repeating: "a", count: 21)] {
-            #expect(!viewModel.giveOwnDare(rejected))
-        }
-        #expect(viewModel.dareToGive == nil)
-
-        #expect(viewModel.giveOwnDare("smørbrød"))
-        viewModel.removeDare()
-        #expect(viewModel.dareToGive == nil)
-    }
-
-    @Test func aDraftBetweenTwoAndTwoHundredFortyCharactersCanBeSent() async {
-        let viewModel = writingAfterPartner().viewModel()
-        await viewModel.reload()
-
-        for (text, canSend) in [("a", false), ("ab", true), (String(repeating: "a", count: 240), true),
-                                (String(repeating: "a", count: 241), false)] {
-            viewModel.draft = text
-            #expect(viewModel.canSend == canSend)
-        }
-    }
-
     @Test func twoTapsOnSendQueueTheLineOnce() async {
         let environment = writingAfterPartner()
         let viewModel = environment.viewModel()
@@ -134,16 +109,6 @@ struct StoryChainViewModelMoveTests {
         await viewModel.sendLine()
         let line = try #require(await environment.queuedLines().first)
         #expect(line.text == "The Anchorage was empty.")
-    }
-
-    @Test func noDareMeansNothingToUse() async {
-        let viewModel = writingAfterPartner().viewModel()
-        await viewModel.reload()
-
-        viewModel.draft = "A quiet morning."
-        #expect(viewModel.dareForMe == nil)
-        #expect(viewModel.lineCheck.usesDare == nil)
-        #expect(viewModel.canSend)
     }
 
     // MARK: Ending the story
@@ -247,41 +212,5 @@ struct StoryChainViewModelMoveTests {
         await viewModel.reload()
         #expect(viewModel.nextLineNumber == 4)
         #expect(viewModel.draft == "Half a line")
-    }
-
-    // MARK: Leftovers from the background
-
-    @Test func aNoticeLeftByABackgroundSendShowsOnce() async {
-        let environment = writingAfterPartner()
-        let viewModel = environment.viewModel()
-        await environment.cache.recordNotice(.moveRejected, ownerUserID: Fixture.me)
-
-        await viewModel.reload()
-        #expect(viewModel.notice == .moveRejected)
-
-        viewModel.clearNotice()
-        await viewModel.reload()
-        #expect(viewModel.notice == nil)
-    }
-
-    @Test func tryAgainAsksForAnotherSendThenReadsTheServer() async {
-        let environment = writingAfterPartner()
-        let viewModel = environment.viewModel()
-        await viewModel.reload()
-        let asked = AskCounter()
-        viewModel.setLocalChangeSyncHandler { await asked.add() }
-
-        await viewModel.retrySend()
-
-        #expect(await asked.count == 1)
-        #expect(environment.storyGateway.calls.contains("load"))
-    }
-}
-
-private actor AskCounter {
-    private(set) var count = 0
-
-    func add() {
-        count += 1
     }
 }

@@ -10,7 +10,6 @@ import {
   hasActiveRelationshipBlock,
   isActiveCoupleMember,
   isActiveEntitledCoupleMember,
-  isAdmin,
   isCouplePairMember,
   resolveCurrentCoupleEntitlement,
   resolveUserEntitlement,
@@ -342,9 +341,5 @@ describe("relationship pairs and blocks", () => {
       }),
     );
     expect(await t.run((ctx) => hasActiveRelationshipBlock(ctx, couple.pairId))).toBe(false);
-  });
-
-  test("app users are never admins", () => {
-    expect(isAdmin()).toBe(false);
   });
 });

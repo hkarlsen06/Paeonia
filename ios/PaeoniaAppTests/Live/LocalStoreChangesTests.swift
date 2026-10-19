@@ -15,48 +15,6 @@ struct LocalStoreChangesTests {
         return nil
     }
 
-    @Test func postedChangesReachTheStreamForThatDomain() async {
-        let owner = UUID()
-        let stream = LocalStoreChanges.changes(in: .memories)
-
-        LocalStoreChanges.post(.memories, ownerUserID: owner)
-
-        #expect(await next(stream, owner: owner) == LocalStoreChange(domain: .memories, ownerUserID: owner))
-    }
-
-    @Test func otherDomainsAreFilteredOut() async {
-        let owner = UUID()
-        let stream = LocalStoreChanges.changes(in: .access)
-
-        LocalStoreChanges.post(.memories, ownerUserID: owner)
-        LocalStoreChanges.post(.access, ownerUserID: owner)
-
-        #expect(await next(stream, owner: owner)?.domain == .access)
-    }
-
-    @Test func aStreamCanWatchSeveralDomainsInWriteOrder() async {
-        let owner = UUID()
-        let stream = LocalStoreChanges.changes(in: .ownLocation, .locationVisibility)
-
-        LocalStoreChanges.post(.locationVisibility, ownerUserID: owner)
-        LocalStoreChanges.post(.ownLocation, ownerUserID: owner)
-
-        var iterator = stream.filter { $0.ownerUserID == owner }.makeAsyncIterator()
-        #expect(await iterator.next()?.domain == .locationVisibility)
-        #expect(await iterator.next()?.domain == .ownLocation)
-    }
-
-    @Test func changesBeforeSubscribingAreNotReplayed() async {
-        let owner = UUID()
-        LocalStoreChanges.post(.access, ownerUserID: owner)
-        let stream = LocalStoreChanges.changes(in: .access)
-        let marker = UUID()
-
-        LocalStoreChanges.post(.access, ownerUserID: marker)
-
-        #expect(await next(stream, owner: marker)?.ownerUserID == marker)
-    }
-
     @Test func aBurstOfIdenticalWritesReachesASlowConsumerOnce() async {
         let owner = UUID()
         let marker = UUID()

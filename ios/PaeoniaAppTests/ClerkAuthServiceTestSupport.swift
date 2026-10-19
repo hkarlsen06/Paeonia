@@ -10,7 +10,6 @@ actor FakeAuthGateway: AuthGateway {
     private var profile: RemoteProfile
     private let profilePhotoAssetID: UUID
     private(set) var appleIDToken: String?
-    private(set) var googleSignInCallCount = 0
     private(set) var updatedProfileDisplayName: String?
     private(set) var updatedTimeZoneID: String?
     private(set) var uploadedProfilePhotoUserID: String?
@@ -71,7 +70,6 @@ actor FakeAuthGateway: AuthGateway {
     }
 
     func signInWithGoogle() async throws -> RemoteAuthSession {
-        googleSignInCallCount += 1
         return remoteSession ?? .test(provider: .google)
     }
 

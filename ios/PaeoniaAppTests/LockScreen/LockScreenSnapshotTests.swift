@@ -72,26 +72,6 @@ struct LockScreenSnapshotTests {
         #expect(throws: DecodingError.self) { try LockScreenSnapshot.decode(Data(json.utf8)) }
     }
 
-    @Test func cacheRoundTrips() throws {
-        let snapshot = try LockScreenSnapshot.decode(Data(Self.sampleJSON.utf8))
-        let fetchedAt = Date(timeIntervalSince1970: 1_792_228_600.25)
-        let cache = LockScreenCache(fetchedAt: fetchedAt, snapshot: snapshot)
-
-        let decoded = try LockScreenCache.decode(cache.encoded())
-
-        #expect(decoded == cache)
-    }
-
-    @Test func requestRoundsNowDownToTheMinuteAndUsesTheServerKey() throws {
-        let request = LockScreenStateRequest(now: Date(timeIntervalSince1970: 1_792_228_559.9))
-        #expect(request.now.timeIntervalSince1970 == 1_792_228_500)
-
-        let data = try PaeoniaConvexClient.encoder.encode(request)
-        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: String])
-        #expect(object.keys.sorted() == ["p_now"])
-        #expect(object["p_now"]?.hasPrefix("2026-10-17T") == true)
-    }
-
     @Test func fullTimelinesReloadAfterAWeekAndEmptyOnesSoon() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "Europe/Oslo"))

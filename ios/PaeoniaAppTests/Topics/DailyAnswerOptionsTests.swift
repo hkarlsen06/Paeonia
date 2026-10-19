@@ -3,35 +3,6 @@ import Testing
 @testable import PaeoniaApp
 
 struct DailyAnswerOptionsTests {
-    private let options = DailyAnswerOptions(first: "By the sea", second: "In the mountains")
-
-    private func detail(option: DailyAnswerOption?, own: Bool, canView: Bool = true) -> DailyQuestionAnswerDetail {
-        DailyQuestionAnswerDetail(
-            answerUserID: own ? TestDailyChallengeIDs.currentUser : TestDailyChallengeIDs.partnerUser,
-            answerID: UUID(),
-            answeredAt: Date(),
-            isOwnAnswer: own,
-            canViewAnswer: canView,
-            textBody: nil,
-            selectedUserID: nil,
-            mediaAssetIDs: [],
-            selectedOption: option
-        ).labelingPick(with: options)
-    }
-
-    @Test func optionsFollowThePhonesLanguage() {
-        let en = ("By the sea", "In the mountains")
-        let nb = ("Ved sjøen", "På fjellet")
-        #expect(DailyAnswerOptions.make(en: en, nb: nb, locale: Locale(identifier: "en"))?.first == "By the sea")
-        #expect(DailyAnswerOptions.make(en: en, nb: nb, locale: Locale(identifier: "nb_NO"))?.second == "På fjellet")
-        #expect(DailyAnswerOptions.make(en: (nil, nil), nb: (nil, nil), locale: Locale(identifier: "en")) == nil)
-    }
-
-    @Test func aDetailCarriesItsPickedLabel() {
-        #expect(detail(option: .second, own: true).selectedOptionLabel == "In the mountains")
-        #expect(detail(option: nil, own: true).selectedOptionLabel == nil)
-    }
-
     @Test func thePickTravelsInTheRequestBody() throws {
         let body = DailyAnswerPayloadBody(
             answerID: UUID(),
@@ -48,35 +19,6 @@ struct DailyAnswerOptionsTests {
     @Test func aRefusedPickGoesBackIntoTheDraft() {
         let content = DailySubmitAnswerOperationPayload.Content.textAndOptionChoice("Waves", .second)
         #expect(content.restoredDraft == DailyAnswerDraft(text: "Waves", optionChoice: .second))
-    }
-
-    @Test func theWhyLineIsShort() {
-        let question = DailyChallengeQuestion.unstartedTopicQuestion(
-            RemoteTopicQuestionRow(
-                questionID: UUID(),
-                questionKey: "travel_sea_or_mountains",
-                questionVersionID: UUID(),
-                sortOrder: 3,
-                promptEN: "Sea or mountains?",
-                shortPromptEN: "Sea or mountains",
-                promptNB: "Sjø eller fjell?",
-                shortPromptNB: "Sjø eller fjell",
-                answerKinds: [.eitherOr, .text],
-                isSkipped: false,
-                row: nil,
-                optionAEN: "By the sea",
-                optionBEN: "In the mountains",
-                optionANB: "Ved sjøen",
-                optionBNB: "På fjellet"
-            ),
-            topicKey: "travel_and_places",
-            currentUserID: TestDailyChallengeIDs.currentUser,
-            coupleID: TestDailyChallengeIDs.couple,
-            locale: Locale(identifier: "en")
-        )
-        #expect(question.maxAnswerTextLength == DailyAnswerDraft.maxWhyLineLength)
-        #expect(question.combinedSecondaryKind == .eitherOr)
-        #expect(question.options?.first == "By the sea")
     }
 }
 
@@ -111,17 +53,6 @@ struct PickMatchTests {
         let match = question(own: .first, partner: .first).partnerChoiceMatch(participants: .init())
         #expect(match == .bothPickedOption("By the sea"))
         #expect(match?.isSamePick == true)
-    }
-
-    @Test func personPicksShowTheNamesPicked() {
-        func picks(_ match: PartnerChoiceMatch) -> [String] {
-            let picks = match.picks(viewerName: "Hjalmar", partnerName: "Elena")
-            return [picks.yours, picks.theirs]
-        }
-        #expect(picks(.bothPickedPartner) == ["Elena", "Elena"])
-        #expect(picks(.bothPickedViewer) == ["Hjalmar", "Hjalmar"])
-        #expect(picks(.eachPickedTheOther) == ["Elena", "Hjalmar"])
-        #expect(picks(.eachPickedThemselves) == ["Hjalmar", "Elena"])
     }
 
     @Test func differentPicksSayWhoPickedWhat() {

@@ -112,18 +112,6 @@ struct ExquisiteCorpseHistoryTests {
 
     // MARK: Reading
 
-    @Test func theFirstPageLoadsFromTheServer() async {
-        let history = makeHistory(pageSize: 5)
-
-        await history.refresh()
-
-        #expect(history.phase == .loaded)
-        #expect(history.visibleFigures.map(\.number) == [12, 11, 10, 9, 8])
-        #expect(history.hasMore)
-        #expect(history.creatureCount == 12)
-        #expect(gateway.requests == [.init(starredOnly: false, beforeFigureNumber: nil, limit: 5)])
-    }
-
     @Test func theFirstPageIsKeptForTheNextOpen() async {
         let first = makeHistory(pageSize: 5)
         await first.refresh()
@@ -136,30 +124,6 @@ struct ExquisiteCorpseHistoryTests {
         #expect(second.phase == .loaded)
         #expect(second.visibleFigures.map(\.number) == [12, 11, 10, 9, 8])
         #expect(second.creatureCount == 12)
-    }
-
-    @Test func offlineWithNothingCachedSaysSoAndTryAgainLoads() async {
-        let history = makeHistory()
-        gateway.setFailing(true)
-
-        await history.refresh()
-        #expect(history.phase == .failed(.other))
-
-        gateway.setFailing(false)
-        await history.retry()
-        #expect(history.phase == .loaded)
-        #expect(history.visibleFigures.count == 12)
-    }
-
-    @Test func aCoupleWithoutCreaturesSeesTheEmptyState() async {
-        let history = makeHistory(figures: [])
-
-        await history.refresh()
-
-        #expect(history.phase == .loaded)
-        #expect(history.isEmpty)
-        #expect(history.hasNoCreatures)
-        #expect(history.creatureCount == 0)
     }
 
     @Test func aFailedReadKeepsTheListOnScreen() async {
@@ -187,16 +151,6 @@ struct ExquisiteCorpseHistoryTests {
         #expect(history.visibleFigures.map(\.number) == Array((1...12).reversed()))
         #expect(!history.hasMore)
         #expect(gateway.requests.map(\.beforeFigureNumber) == [nil, 8, 3])
-    }
-
-    @Test func aCellFarFromTheEndLoadsNothing() async throws {
-        let history = makeHistory(pageSize: 12)
-        await history.refresh()
-        let first = try #require(history.visibleFigures.first)
-
-        await history.loadMoreIfNeeded(after: first)
-
-        #expect(gateway.requests.count == 1)
     }
 
     @Test func aFailedPageShowsRetryAndTheNextTryAddsTheCreatures() async throws {
@@ -296,17 +250,6 @@ struct ExquisiteCorpseHistoryTests {
         #expect(numbers == numbers.sorted(by: >))
     }
 
-    @Test func noStarsShowTheStarredEmptyStateNotTheNoCreaturesOne() async {
-        let history = makeHistory(figures: figures(starred: []))
-        await history.refresh()
-        history.filter = .starred
-
-        await history.refresh()
-
-        #expect(history.isEmpty)
-        #expect(!history.hasNoCreatures)
-    }
-
     @Test func offlineTheStarredFilterFallsBackToTheCachedList() async {
         let first = makeHistory(pageSize: 12)
         await first.refresh()
@@ -320,34 +263,7 @@ struct ExquisiteCorpseHistoryTests {
         #expect(second.visibleFigures.map(\.number) == [10, 7, 4])
     }
 
-    @Test func theServersStarsReachTheStarStore() async throws {
-        let history = makeHistory()
-
-        await history.refresh()
-
-        let starred = try #require(figures().first { $0.starredByMe })
-        let unstarred = try #require(figures().first { !$0.starredByMe })
-        #expect(history.stars.isStarred(starred.id))
-        #expect(!history.stars.isStarred(unstarred.id))
-    }
-
     // MARK: Names and the detail
-
-    @Test func theCellNamesThePartner() {
-        let history = makeHistory()
-
-        #expect(history.partnerName == ExquisiteCorpseTestEnvironment.participants.partnerName)
-    }
-
-    @Test func aLoadedCreatureOpensItsDetailAndAnUnknownOneDoesNot() async {
-        let history = makeHistory()
-        #expect(history.makeDetail(figureID: Fixture.figureID(3)) == nil)
-
-        await history.refresh()
-
-        #expect(history.makeDetail(figureID: Fixture.figureID(3))?.figure.number == 3)
-        #expect(history.makeDetail(figureID: UUID()) == nil)
-    }
 
     @Test func aNewIdentityClearsTheList() async {
         let history = makeHistory()

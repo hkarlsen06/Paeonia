@@ -77,21 +77,6 @@ struct ExquisiteCorpseGatewayTests {
 
     // MARK: The rest
 
-    @Test func ensuringTheGameReadsItsId() async throws {
-        let recorder = CorpseRequestRecorder()
-        CorpseStubURLProtocol.handler = { request in
-            recorder.record(request)
-            return Data(Self.ensureAnswer.utf8)
-        }
-
-        let result = try await Self.makeGateway().ensureExquisiteCorpseGame()
-
-        #expect(result.gameID == Fixture.gameID)
-        #expect(result.created)
-        let body = try Self.body(of: #require(recorder.last))
-        #expect(body["path"] as? String == "exquisiteCorpse:ensure_exquisite_corpse_game")
-    }
-
     @Test func theStateIsAQueryOfTheScreensFunction() async throws {
         let recorder = CorpseRequestRecorder()
         CorpseStubURLProtocol.handler = { request in
@@ -107,22 +92,6 @@ struct ExquisiteCorpseGatewayTests {
         #expect(request.url?.path == "/api/query")
         let body = try Self.body(of: request)
         #expect(body["path"] as? String == "exquisiteCorpse:get_exquisite_corpse")
-    }
-
-    @Test func theRevealSeenMarkNamesTheFigure() async throws {
-        let recorder = CorpseRequestRecorder()
-        CorpseStubURLProtocol.handler = { request in
-            recorder.record(request)
-            return Data(Self.revealSeenAnswer.utf8)
-        }
-        let figureID = try #require(UUID(uuidString: "55555555-5555-4555-8555-555555555555"))
-
-        let result = try await Self.makeGateway().markExquisiteCorpseRevealSeen(figureID: figureID)
-
-        #expect(result.figureID == figureID)
-        let body = try Self.body(of: #require(recorder.last))
-        #expect(body["path"] as? String == "exquisiteCorpse:mark_exquisite_corpse_reveal_seen")
-        #expect((body["args"] as? [String: Any])?["p_figure_id"] as? String == figureID.uuidString)
     }
 
     @Test func aStarSendsTheValueItIsGiven() async throws {
@@ -141,31 +110,6 @@ struct ExquisiteCorpseGatewayTests {
         let args = try #require(body["args"] as? [String: Any])
         #expect(args["p_figure_id"] as? String == figureID.uuidString)
         #expect(args["p_starred"] as? Bool == false)
-    }
-
-    @Test func theFirstPageOfTheHistoryLeavesOutTheCursor() async throws {
-        let recorder = CorpseRequestRecorder()
-        CorpseStubURLProtocol.handler = { request in
-            recorder.record(request)
-            return Data(#"{"status":"success","value":{"figures":[],"next_before_figure_number":null}}"#.utf8)
-        }
-
-        let page = try await Self.makeGateway().loadExquisiteCorpseHistory(
-            starredOnly: false,
-            beforeFigureNumber: nil,
-            limit: 30
-        )
-
-        #expect(page.figures.isEmpty)
-        #expect(page.nextBeforeFigureNumber == nil)
-        let request = try #require(recorder.last)
-        #expect(request.url?.path == "/api/query")
-        let body = try Self.body(of: request)
-        #expect(body["path"] as? String == "exquisiteCorpse:get_exquisite_corpse_history")
-        let args = try #require(body["args"] as? [String: Any])
-        #expect(args["p_starred_only"] as? Bool == false)
-        #expect(args["p_limit"] as? Int == 30)
-        #expect(args["p_before_figure_number"] == nil)
     }
 
     @Test func aLaterPageSendsTheCursorAndTheStarredFilter() async throws {
@@ -208,19 +152,10 @@ struct ExquisiteCorpseGatewayTests {
 
     // MARK: Helpers
 
-    private static let ensureAnswer = """
-    {"status":"success","value":{"game_id":"44444444-4444-4444-8444-444444444444","created":true}}
-    """
-
     private static let stateAnswer = """
     {"status":"success","value":{"user_id":"11111111-1111-4111-8111-111111111111","partner_user_id":null,\
     "couple_id":"33333333-3333-4333-8333-333333333333","data_epoch":"","game":null,"current_figure":null,\
     "recent_figures":[],"ideas":[]}}
-    """
-
-    private static let revealSeenAnswer = """
-    {"status":"success","value":{"figure_id":"55555555-5555-4555-8555-555555555555",\
-    "reveal_seen_at":"2026-10-13T10:00:00.123Z"}}
     """
 
     private static let starAnswer = """

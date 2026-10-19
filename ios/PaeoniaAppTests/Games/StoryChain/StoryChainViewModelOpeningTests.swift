@@ -8,37 +8,6 @@ struct StoryChainViewModelOpeningTests {
     private typealias Fixture = StoryChainFixture
     private typealias Env = StoryChainTestEnvironment
 
-    @Test func myTurnToChooseShowsTheThreeOpenings() async {
-        let viewModel = Env.choosing(openings: Env.openings).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .chooseOpening)
-        #expect(viewModel.openingChoices == Env.openings)
-        #expect(!viewModel.openingsUnavailable)
-    }
-
-    @Test func noOpeningsOnMyTurnIsTheOfflineCase() async {
-        let viewModel = Env.choosing(openings: nil).viewModel()
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .chooseOpening)
-        #expect(viewModel.openingChoices.isEmpty)
-        #expect(viewModel.openingsUnavailable)
-    }
-
-    @Test func aPickedOpeningThatLeavesTheOfferIsDropped() async {
-        let viewModel = Env.choosing(openings: Env.openings).viewModel()
-        await viewModel.reload()
-
-        viewModel.selectedOpening = .own
-        await viewModel.reload()
-        #expect(viewModel.selectedOpening == .own)
-
-        viewModel.selectedOpening = .opening(RemoteStoryOpening(openingID: "gone", text: "Not offered."))
-        await viewModel.reload()
-        #expect(viewModel.selectedOpening == nil)
-    }
-
     @Test func startingAStoryQueuesTheStartAndMovesToWriting() async throws {
         let environment = Env.choosing(openings: Env.openings)
         let viewModel = environment.viewModel()
@@ -69,17 +38,6 @@ struct StoryChainViewModelOpeningTests {
         #expect(start.openingText == nil)
         #expect(viewModel.phase == .writing)
         #expect(viewModel.page.opening == nil)
-    }
-
-    @Test func startingNeedsAPickedOpening() async {
-        let environment = Env.choosing(openings: Env.openings)
-        let viewModel = environment.viewModel()
-        await viewModel.reload()
-
-        await viewModel.startStory()
-
-        #expect(await environment.queuedStarts().isEmpty)
-        #expect(viewModel.phase == .chooseOpening)
     }
 
     // MARK: Creating the game

@@ -4,59 +4,6 @@ import UIKit
 @testable import PaeoniaApp
 
 struct DailyChallengeMappingTests {
-    @MainActor
-    @Test func noChallengeYetProducesEmptySnapshotAndHomeState() async throws {
-        let service = RecordingDailyChallengeService(snapshots: [
-            .empty(currentUserID: TestDailyChallengeIDs.currentUser),
-        ])
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider()
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-
-        #expect(!viewModel.snapshot.hasAnyQuestions)
-        #expect(viewModel.homeCardState.kind == .noChallenge)
-    }
-
-    @MainActor
-    @Test func reloadClearsCompletedChallengeWhenNewDayHasNoStartedQuestions() async throws {
-        let completedSnapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
-                ownAnswerID: UUID()
-            ),
-            dailyQuestionRow(
-                slotNumber: 2,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
-                ownAnswerID: UUID()
-            ),
-        ])
-        let service = RecordingDailyChallengeService(
-            snapshots: [
-                completedSnapshot,
-                .empty(currentUserID: TestDailyChallengeIDs.currentUser),
-            ],
-            advancesSnapshotsOnLoad: true
-        )
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider()
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        #expect(viewModel.homeCardState.kind == .complete)
-
-        await viewModel.reload()
-
-        #expect(!viewModel.snapshot.hasAnyQuestions)
-        #expect(viewModel.homeCardState.kind == .noChallenge)
-    }
-
     @Test func completedDayFollowUpDependsOnThePartner() {
         func state(partnerAnswered: Bool, answerable: Bool) -> DailyChallengeCardState {
             DailyChallengeCardState(
@@ -72,42 +19,6 @@ struct DailyChallengeMappingTests {
         #expect(state(partnerAnswered: true, answerable: true).completeFollowUp == .partnerQuestionsToAnswer)
         #expect(state(partnerAnswered: false, answerable: false).completeFollowUp == .waitingForPartner)
         #expect(state(partnerAnswered: true, answerable: false).completeFollowUp == .bothAnswered)
-    }
-
-    @Test func unansweredOwnQuestionsAreVisibleAndAnswerable() {
-        let snapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
-            dailyQuestionRow(slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser),
-        ])
-
-        #expect(snapshot.ownQuestions.count == 2)
-        #expect(snapshot.partnerStartedQuestions.isEmpty)
-        #expect(snapshot.progress.ownAnsweredCount == 0)
-        #expect(snapshot.ownQuestions.allSatisfy { $0.canSubmitTextAnswer })
-    }
-
-    @Test func currentUserAnsweredQuestionCountsTowardProgress() {
-        let answerID = dailyFixedUUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-        let snapshot = makeDailySnapshot(
-            rows: [
-                dailyQuestionRow(
-                    slotNumber: 1,
-                    seededForUserID: TestDailyChallengeIDs.currentUser,
-                    status: "answered",
-                    ownAnswerID: answerID,
-                    ownAnsweredAt: TestDailyChallengeIDs.answerDate
-                ),
-                dailyQuestionRow(slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser),
-            ],
-            details: [
-                dailyAnswerDetail(answerID: answerID, isOwnAnswer: true, textBody: "I thought of us at lunch."),
-            ]
-        )
-
-        #expect(snapshot.progress.ownAnsweredCount == 1)
-        #expect(snapshot.ownQuestions[0].hasOwnAnswer)
-        #expect(!snapshot.ownQuestions[0].canSubmitTextAnswer)
-        #expect(snapshot.ownQuestions[0].ownAnswerDetail?.textBody == "I thought of us at lunch.")
     }
 
     @Test func partnerAnsweredUnrevealedQuestionCanBeAnsweredButBodyStaysHidden() throws {

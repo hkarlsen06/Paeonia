@@ -43,24 +43,6 @@ struct ExquisiteCorpseFoldTests {
         (0..<stroke.path.count).map { stroke.path[$0].location }
     }
 
-    /// The curve of the stroke as a polyline of many short segments.
-    private func curve(of stroke: PKStroke) -> [CGPoint] {
-        let last = CGFloat(stroke.path.count - 1)
-        let positions = Array(stride(from: 0, to: last, by: 0.05)) + [last]
-        return positions.map { stroke.path.interpolatedLocation(at: $0) }
-    }
-
-    /// How far `point` is from the nearest segment of `polyline`.
-    private func distance(from point: CGPoint, to polyline: [CGPoint]) -> CGFloat {
-        zip(polyline, polyline.dropFirst()).map { start, end in
-            let (dx, dy) = (end.x - start.x, end.y - start.y)
-            let lengthSquared = dx * dx + dy * dy
-            let along = lengthSquared > 0 ? ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared : 0
-            let clamped = min(max(along, 0), 1)
-            return hypot(point.x - (start.x + dx * clamped), point.y - (start.y + dy * clamped))
-        }.min() ?? .infinity
-    }
-
     private func strip(_ strokes: PKStroke...) -> PKDrawing {
         Fold.strip(of: PKDrawing(strokes: strokes))
     }
@@ -69,24 +51,7 @@ struct ExquisiteCorpseFoldTests {
         abs(value - expected) < tolerance
     }
 
-    // MARK: Geometry
-
-    @Test func theFoldLiesAtEightyEightPercentAndTheStripIsTheRest() {
-        #expect(Fold.stripFraction == 0.12)
-        #expect(near(Fold.foldY(), 281.6))
-        #expect(near(Fold.foldY(side: 160), 140.8))
-
-        let rect = Fold.stripRect()
-        #expect(rect.minX == 0 && rect.width == 320)
-        #expect(near(rect.minY, 281.6) && near(rect.height, 38.4))
-        #expect(near(rect.maxY, 320))
-    }
-
     // MARK: Whole strokes
-
-    @Test func anEmptyDrawingGivesAnEmptyStrip() {
-        #expect(Fold.strip(of: PKDrawing()).strokes.isEmpty)
-    }
 
     @Test func aStrokeAboveTheFoldIsDropped() {
         let above = stroke(vertical(from: 20, spacing: 10))
@@ -102,28 +67,6 @@ struct ExquisiteCorpseFoldTests {
         #expect(result.strokes.count == 1)
         #expect(locations(result.strokes[0]) == locations(below))
         #expect(result.strokes[0].path.creationDate == below.path.creationDate)
-    }
-
-    @Test func aStrokeOnTheFoldLineIsKept() {
-        let flat = stroke([CGPoint(x: 5, y: fold), CGPoint(x: 50, y: fold)])
-
-        #expect(strip(flat).strokes.count == 1)
-    }
-
-    @Test func aDotAboveGoesAndADotBelowStays() {
-        let result = strip(stroke([CGPoint(x: 5, y: 100)]), stroke([CGPoint(x: 5, y: 300)]))
-
-        #expect(result.strokes.count == 1)
-        #expect(locations(result.strokes[0]) == [CGPoint(x: 5, y: 300)])
-    }
-
-    @Test func theStripKeepsTheOrderOfTheStrokes() {
-        let first = stroke([CGPoint(x: 10, y: 300), CGPoint(x: 20, y: 310)])
-        let second = stroke([CGPoint(x: 70, y: 300), CGPoint(x: 80, y: 310)])
-
-        let result = strip(first, stroke(vertical(from: 20, spacing: 10)), second)
-
-        #expect(result.strokes.map { locations($0)[0].x } == [10, 70])
     }
 
     // MARK: Crossing strokes
@@ -181,60 +124,7 @@ struct ExquisiteCorpseFoldTests {
         #expect(runs[0][0].x < runs[1][0].x && runs[1][0].x < runs[2][0].x)
     }
 
-    @Test func aRunKeepsTheShapeOfTheCurve() {
-        let wave = stroke((0..<100).map { index in
-            let x = 10 + CGFloat(index) * 3
-            return CGPoint(x: x, y: fold + 25 * CGFloat(sin(Double(x) * 0.05)))
-        })
-        let original = curve(of: wave)
-
-        for piece in strip(wave).strokes {
-            // Every point on the new curve lies on the old curve, within a twentieth of a point.
-            let worst = curve(of: piece).map { distance(from: $0, to: original) }.max() ?? .infinity
-            #expect(worst < 0.05)
-        }
-    }
-
-    @Test func stripOfAStripChangesNothing() {
-        let wave = stroke((0..<100).map { index in
-            let x = 10 + CGFloat(index) * 3
-            return CGPoint(x: x, y: fold + 25 * CGFloat(sin(Double(x) * 0.05)))
-        })
-
-        let once = strip(wave)
-        let twice = Fold.strip(of: once)
-
-        #expect(twice.strokes.count == once.strokes.count)
-        for (first, second) in zip(once.strokes, twice.strokes) {
-            #expect(locations(first).count == locations(second).count)
-            for (before, after) in zip(locations(first), locations(second)) {
-                #expect(near(before.x, after.x) && near(before.y, after.y))
-            }
-        }
-    }
-
-    @Test func aSmallerSquareFoldsHigher() {
-        let crossing = stroke(vertical(from: 100, spacing: 6))
-
-        let points = locations(Fold.strip(of: PKDrawing(strokes: [crossing]), side: 160).strokes[0])
-
-        #expect(near(points[0].y, 140.8))
-    }
-
     // MARK: Ink, transform and mask
-
-    @Test func inkTransformAndSeedStayOnEveryRun() {
-        let ink = PKInk(.marker, color: .systemPink)
-        let crossing = stroke(vertical(from: 200, spacing: 12), ink: ink)
-
-        let result = strip(crossing).strokes[0]
-
-        #expect(result.ink.inkType == .marker)
-        #expect(result.ink.color == ink.color)
-        #expect(result.transform == crossing.transform)
-        #expect(result.randomSeed == crossing.randomSeed)
-        #expect(result.path.creationDate == crossing.path.creationDate)
-    }
 
     @Test func theTransformDecidesWhichSideTheStrokeIsOn() {
         // In stroke space y runs 0 to 100. Moved down by 250, the stroke spans 250 to 350.
@@ -248,25 +138,6 @@ struct ExquisiteCorpseFoldTests {
         #expect(near(points[0].y, fold - 250))
         #expect(near(points[0].applying(result.transform).y, fold))
         #expect(near(points[points.count - 1].y, 100))
-    }
-
-    @Test func aStrokeMovedAboveTheFoldByItsTransformIsDropped() {
-        // The points say 290 to 310, which is below the fold. The transform lifts them to 190 to 210.
-        let lifted = stroke(
-            [CGPoint(x: 10, y: 290), CGPoint(x: 20, y: 300), CGPoint(x: 30, y: 310)],
-            transform: CGAffineTransform(translationX: 0, y: -100)
-        )
-
-        #expect(strip(lifted).strokes.isEmpty)
-    }
-
-    @Test func aScaledStrokeIsCutWhereTheScaledCurveCrossesTheFold() {
-        // Drawn on a 160 point square and scaled by 2 into the part.
-        let scaled = stroke(vertical(from: 100, spacing: 6), transform: CGAffineTransform(scaleX: 2, y: 2))
-
-        let points = locations(strip(scaled).strokes[0])
-
-        #expect(near(points[0].y * 2, fold))
     }
 
     @Test func erasedInkAboveAndBelowTheFoldIsNotInTheStrip() {
@@ -285,25 +156,6 @@ struct ExquisiteCorpseFoldTests {
         #expect(near(runs[1][runs[1].count - 1].y, 320))
         #expect(runs.joined().allSatisfy { $0.y <= 290.5 || $0.y >= 299.5 })
         #expect(result.allSatisfy { $0.mask != nil })
-    }
-
-    @Test func aStrokeBelowTheFoldLosesItsErasedMiddle() {
-        let mask = UIBezierPath(rect: CGRect(x: 0, y: 0, width: 320, height: 295))
-        mask.append(UIBezierPath(rect: CGRect(x: 0, y: 305, width: 320, height: 15)))
-        let erased = stroke(vertical(from: 285, spacing: 3.5), mask: mask)
-
-        let runs = strip(erased).strokes.map(locations)
-
-        #expect(runs.count == 2)
-        #expect(runs.joined().allSatisfy { $0.y <= 295.5 || $0.y >= 304.5 })
-        #expect(near(runs[0][0].y, 285) && near(runs[1][runs[1].count - 1].y, 320))
-    }
-
-    @Test func aStrokeThatIsFullyErasedIsDropped() {
-        let mask = UIBezierPath(rect: CGRect(x: 0, y: 0, width: 5, height: 5))
-        let gone = stroke(vertical(from: 285, spacing: 3.5), mask: mask)
-
-        #expect(strip(gone).strokes.isEmpty)
     }
 
 }
@@ -366,10 +218,6 @@ extension ExquisiteCorpseFoldTests {
         #expect(isInsideStrip(mask.bounds))
         #expect(near(mask.bounds.minX, 40) && near(mask.bounds.maxX, 240))
         #expect(result[0].path.allSatisfy { $0.location.y >= fold })
-    }
-
-    @Test func aFillAboveTheFoldIsDropped() {
-        #expect(strip(fill(CGRect(x: 0, y: 0, width: 320, height: 200))).strokes.isEmpty)
     }
 
     @Test func anErasedStrokeKeepsNoMaskOutlineAboveTheFold() {

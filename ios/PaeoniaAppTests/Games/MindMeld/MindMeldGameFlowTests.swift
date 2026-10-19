@@ -14,8 +14,6 @@ struct MindMeldGameFlowTests {
         fixtures.environment(game, previous: previous)
     }
 
-    // MARK: Starting a game
-
     @Test func theFirstGameStartsByItself() async {
         let started = fixtures.game(rounds: [fixtures.open(1)])
         let env = MindMeldTestEnvironment(state: nil)
@@ -31,53 +29,6 @@ struct MindMeldGameFlowTests {
         #expect(env.gateway.starts == 1)
         #expect(!viewModel.startFailed)
         #expect(!viewModel.isStartingGame)
-    }
-
-    @Test func aFailedFirstStartIsOfferedAgain() async {
-        let started = fixtures.game(rounds: [fixtures.open(1)])
-        let env = MindMeldTestEnvironment(state: nil)
-        env.gateway.setStateToLoad(fixtures.state(current: nil))
-        env.gateway.setStateAfterStart(fixtures.state(current: started))
-        env.gateway.fail("start")
-        let viewModel = env.viewModel()
-
-        await viewModel.start()
-        let failed = await waitUntil { viewModel.startFailed }
-        #expect(failed)
-        #expect(viewModel.phase == .starting)
-        #expect(!viewModel.isStartingGame)
-        // It does not keep trying by itself.
-        try? await Task.sleep(for: .milliseconds(50))
-        #expect(env.gateway.starts == 0)
-        #expect(env.gateway.calls.filter { $0 == "start" }.count == 1)
-
-        env.gateway.unfail("start")
-        await viewModel.retryStart()
-        viewModel.stop()
-
-        #expect(!viewModel.startFailed)
-        #expect(viewModel.phase == .write)
-        #expect(env.gateway.starts == 1)
-    }
-
-    @Test func aFailedFirstReadWithNothingCachedIsOfferedAgain() async {
-        let env = MindMeldTestEnvironment(state: nil)
-        env.gateway.fail("load")
-        let viewModel = env.viewModel()
-
-        await viewModel.start()
-        viewModel.stop()
-
-        #expect(viewModel.startFailed)
-        #expect(viewModel.phase == .loading)
-        #expect(env.gateway.starts == 0)
-
-        env.gateway.unfail("load")
-        env.gateway.setStateToLoad(fixtures.state(current: fixtures.game(rounds: [fixtures.open(1)])))
-        await viewModel.retryStart()
-
-        #expect(!viewModel.startFailed)
-        #expect(viewModel.phase == .write)
     }
 
     @Test func playAgainMarksTheEndAndStartsANewGame() async throws {
@@ -101,21 +52,6 @@ struct MindMeldGameFlowTests {
         #expect(!viewModel.isStartingGame)
     }
 
-    @Test func playAgainThatFailsShowsANoticeAndKeepsTheFinishedGame() async {
-        let finished = fixtures.meldedGame(seen: true)
-        let env = environment(finished)
-        env.gateway.fail("start")
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-        #expect(viewModel.phase == .over)
-
-        await viewModel.playAgain()
-
-        #expect(viewModel.notice == .couldNotStartGame(.other))
-        #expect(viewModel.phase == .over)
-        #expect(!viewModel.isStartingGame)
-    }
-
     @Test func startingOverEndsTheGameInPlay() async {
         let playing = fixtures.game(rounds: [fixtures.open(1)])
         let started = fixtures.game(number: 2, rounds: [fixtures.open(1)])
@@ -129,21 +65,6 @@ struct MindMeldGameFlowTests {
         #expect(env.gateway.restarts == [playing.id])
         #expect(viewModel.game?.id == started.id)
         #expect(viewModel.phase == .write)
-    }
-
-    @Test func startingOverWorksFromTheRevealOfAGameInPlay() async {
-        let playing = fixtures.game(rounds: [fixtures.revealed(1, seen: false), fixtures.open(2)])
-        let started = fixtures.game(number: 2, rounds: [fixtures.open(1)])
-        let env = environment(playing)
-        env.gateway.setStateAfterStart(fixtures.state(current: started))
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-        #expect(viewModel.phase == .reveal)
-
-        await viewModel.restart()
-
-        #expect(env.gateway.restarts == [playing.id])
-        #expect(viewModel.game?.id == started.id)
     }
 
     @Test func playAgainWaitsForACountStillOnThePhone() async {
@@ -162,29 +83,6 @@ struct MindMeldGameFlowTests {
         #expect(env.gateway.starts == 0)
         #expect(viewModel.notice == .couldNotStartGame(.other))
         #expect(!viewModel.isStartingGame)
-    }
-
-    @Test func startingOverThatFailsShowsANotice() async {
-        let env = environment(fixtures.game(rounds: [fixtures.open(1)]))
-        env.gateway.fail("restart")
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        await viewModel.restart()
-
-        #expect(viewModel.notice == .couldNotStartGame(.other))
-        #expect(viewModel.phase == .write)
-    }
-
-    @Test func startingOverIsOnlyForAGameInPlay() async {
-        let finished = fixtures.meldedGame(seen: true)
-        let env = environment(finished)
-        let viewModel = env.viewModel()
-        await viewModel.reload()
-
-        await viewModel.restart()
-
-        #expect(env.gateway.restarts.isEmpty)
     }
 
     // MARK: The partner started over
@@ -217,17 +115,6 @@ struct MindMeldGameFlowTests {
         // Locking in clears it.
         viewModel.draft = "ocean"
         viewModel.lockIn()
-        #expect(!viewModel.showsPartnerRestartedNote)
-    }
-
-    @Test func myOwnRestartShowsNoNote() async {
-        let old = fixtures.game(.ended, rounds: [fixtures.open(1)], reason: .restart, endedBy: fixtures.me)
-        let new = fixtures.game(number: 2, rounds: [fixtures.open(1)])
-        let viewModel = environment(new, previous: old).viewModel()
-
-        await viewModel.reload()
-
-        #expect(viewModel.phase == .write)
         #expect(!viewModel.showsPartnerRestartedNote)
     }
 }

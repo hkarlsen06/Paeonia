@@ -230,24 +230,4 @@ final class GatedAppleSignInProvider: AppleSignInProviding {
     }
 }
 
-struct FixedPushAuthorization: PushAuthorizationProviding {
-    let isNotDeterminedValue: Bool
-
-    init(isNotDetermined: Bool) {
-        isNotDeterminedValue = isNotDetermined
-    }
-
-    func isNotDetermined() async -> Bool {
-        isNotDeterminedValue
-    }
-
-    func requestAuthorizationIfNeeded() async -> Bool {
-        true
-    }
-
-    func isDenied() async -> Bool {
-        false
-    }
-}
-
 // swiftlint:enable async_without_await

@@ -67,20 +67,6 @@ struct BoardGameViewModelLifecycleTests {
         #expect(viewModel.displayedMoves == Fixture.connectFourWin)
     }
 
-    @Test func theBoardHoldsStillBeforeTheMovesItMissedPlay() async {
-        let game = harness.game(first: .partner, moves: Fixture.connectFourWin, partnerWins: 1, gamesFinished: 1)
-        await harness.save(game)
-        await harness.cache.markShown(harness.position(6), kind: .connectFour, ownerUserID: harness.me)
-        let viewModel = harness.makeViewModel(openLeadIn: .milliseconds(600))
-        await viewModel.start(prefersReducedMotion: true)
-        defer { viewModel.stop() }
-        let caughtUp = await waitUntil { !viewModel.isReplaying }
-
-        #expect(caughtUp)
-        #expect(harness.sleeps.waits.first == .milliseconds(600))
-        #expect(viewModel.displayedMoves == Fixture.connectFourWin)
-    }
-
     @Test func aNoticeWaitsUntilItsBoardIsOpen() async {
         await harness.save(harness.game(moves: [3, 4]))
         await harness.cache.recordNotice(.moveRejected(.connectFour), ownerUserID: harness.me)

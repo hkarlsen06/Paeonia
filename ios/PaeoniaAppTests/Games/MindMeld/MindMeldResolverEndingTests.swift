@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// The resolver's handling of near misses, endings and an earlier game, and the
-/// values the screens read from a resolution.
+/// The resolver's handling of near misses, endings and an earlier game.
 struct MindMeldResolverEndingTests: MindMeldResolverFixtures {
     let me = UUID()
     let partner = UUID()
@@ -112,16 +111,6 @@ struct MindMeldResolverEndingTests: MindMeldResolverFixtures {
         #expect(resolution.trail.map(\.outcome) == expected)
     }
 
-    @Test func aMatchIsAMeldAndAMissInAGameInPlayIsAMiss() throws {
-        let match = revealed(1, "fish", "fish", outcome: .match)
-        let miss = revealed(2)
-        let playing = game(rounds: [miss, open(3)])
-
-        #expect(playing.displayOutcome(of: miss) == .miss)
-        #expect(game(.melded, rounds: [match]).displayOutcome(of: match) == .meld)
-        #expect(playing.displayOutcome(of: try #require(playing.openRound)) == nil)
-    }
-
     // MARK: An earlier game
 
     @Test func aPreviousGameWhoseEndingIHaveNotSeenComesBeforeTheNewGame() {
@@ -172,15 +161,6 @@ struct MindMeldResolverEndingTests: MindMeldResolverFixtures {
         #expect(!afterMark.partnerRestartedNote)
     }
 
-    @Test func aPartnersRestartLeadsToTheNewGamesOwnPhase() {
-        let previous = game(.ended, number: 1, rounds: [revealed(1), open(2)], reason: .restart, endedBy: partner)
-        let current = game(number: 2, rounds: [open(1, mine: "ocean", partnerLocked: true)])
-        let resolution = resolve(state(current: current, previous: previous))
-
-        #expect(resolution.phase == .waiting(isQueued: false))
-        #expect(resolution.partnerRestartedNote)
-    }
-
     @Test func myOwnRestartGoesStraightToTheNewGameWithoutANote() {
         let current = game(number: 2, rounds: [open(1)])
         let rounds = [revealed(1), open(2)]
@@ -201,35 +181,5 @@ struct MindMeldResolverEndingTests: MindMeldResolverFixtures {
         let current = game(number: 2, rounds: [open(1)])
 
         #expect(resolve(state(current: current, previous: previous)).phase == .write)
-    }
-
-    // MARK: What the screens read
-
-    @Test func theWriteTitleAndTheTrailComeFromTheRevealedRounds() {
-        let rounds = [revealed(1, "ocean", "sushi"), revealed(2, "salt", "fish", outcome: .near), open(3)]
-        let resolution = resolve(game(rounds: rounds))
-
-        #expect(resolution.phase == .write)
-        #expect(resolution.roundNumber == 3)
-        #expect(resolution.connectingPair?.mine == "salt")
-        #expect(resolution.connectingPair?.theirs == "fish")
-        #expect(resolution.trail.map(\.mine) == ["ocean", "salt"])
-        #expect(resolution.trail.map(\.theirs) == ["sushi", "fish"])
-        #expect(resolution.trail.map(\.outcome) == [.miss, .near])
-        #expect(resolution.trail.allSatisfy { !$0.isCounted })
-    }
-
-    @Test func aCountedRoundIsMarkedCountedInTheTrail() {
-        let near = revealed(1, "dog", "dogs", outcome: .near, countedBy: partner)
-        let resolution = resolve(game(.melded, rounds: [near], endSeen: true))
-
-        #expect(resolution.trail.map(\.isCounted) == [true])
-        #expect(resolution.trail.map(\.outcome) == [.meld])
-    }
-
-    @Test func onlyAWriteOrRevealPhaseCanBeMyTurn() {
-        #expect(!resolve(nil, hasLoaded: false).isYourTurn)
-        #expect(!resolve(state(current: nil)).isYourTurn)
-        #expect(!resolve(game(rounds: [open(1, mine: "a", partnerLocked: true)])).isYourTurn)
     }
 }

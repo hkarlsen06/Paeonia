@@ -126,15 +126,4 @@ struct CoupleDateTimelineTests {
         #expect(local.countdowns == [renamed])
         #expect(local.birthdays == [partner: "1999-12-01"])
     }
-
-    @Test func birthdayTitlesNameThePerson() {
-        let names = CoupleDateNames(currentUserID: me, partnerUserID: partner, partnerName: "Oda")
-        let today = Date()
-
-        let mine = CoupleDateEvent(kind: .birthday(userID: me), date: today, daysRemaining: 0)
-        let theirs = CoupleDateEvent(kind: .birthday(userID: partner), date: today, daysRemaining: 0)
-
-        #expect(mine.title(names: names) == String(localized: .homeMilestoneBirthdayYours))
-        #expect(theirs.title(names: names) == String(localized: .homeMilestoneBirthdayPartner("Oda")))
-    }
 }

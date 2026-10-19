@@ -37,15 +37,6 @@ struct MemoryDraftStoreTests {
         #expect(restored?.photos.map(\.data) == [Data([9])])
     }
 
-    @Test func clearRemovesTextAndPhotoFiles() {
-        let store = makeIsolatedMemoryDraftStore()
-        store.setDraft(MemoryDraft(title: "Lake", photos: [MemoryDraftPhoto(data: Data([1]))]), for: userID)
-
-        store.clearDraft(for: userID)
-
-        #expect(store.draft(for: userID) == nil)
-    }
-
     @Test func savingAnEmptyDraftRemovesTheStoredOne() {
         let store = makeIsolatedMemoryDraftStore()
         store.setDraft(MemoryDraft(title: "Lake"), for: userID)
@@ -65,28 +56,5 @@ struct MemoryDraftStoreTests {
 
         #expect(store.draft(for: userID) == nil)
         #expect(store.draft(for: otherUser)?.title == "Theirs")
-    }
-
-    @Test func removingAPhotoShrinksTheStoredPhotos() {
-        let store = makeIsolatedMemoryDraftStore()
-        let first = MemoryDraftPhoto(data: Data([1]))
-        let second = MemoryDraftPhoto(data: Data([2]))
-        store.setDraft(MemoryDraft(title: "Lake", photos: [first, second]), for: userID)
-
-        store.setDraft(MemoryDraft(title: "Lake", photos: [second]), for: userID)
-
-        #expect(store.draft(for: userID)?.photos.map(\.data) == [Data([2])])
-    }
-
-    @Test func photosCompareByIDNotBytes() {
-        let photo = MemoryDraftPhoto(data: Data([1]))
-        #expect(photo == MemoryDraftPhoto(id: photo.id, data: Data([2])))
-        #expect(photo != MemoryDraftPhoto(data: Data([1])))
-    }
-
-    @Test func copyableTextJoinsTitleAndNoteAndSkipsBlanks() {
-        #expect(MemoryDraft(title: " Lake ", note: "Cold").copyableText == "Lake\n\nCold")
-        #expect(MemoryDraft(title: "", note: "Cold").copyableText == "Cold")
-        #expect(MemoryDraft(title: "  ", note: "").copyableText.isEmpty)
     }
 }

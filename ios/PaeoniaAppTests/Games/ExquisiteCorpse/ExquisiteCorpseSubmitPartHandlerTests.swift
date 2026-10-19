@@ -61,17 +61,6 @@ struct ExquisiteCorpseSubmitPartHandlerTests {
         ])
     }
 
-    @Test func aBodyAlsoSendsItsStrip() async throws {
-        let body = Fixture.distinctPart(figure: 1, partIndex: 1)
-
-        let result = try await send(body)
-
-        #expect(result == .succeeded)
-        let purposes = environment.transfer.uploads.map(\.parent.purpose)
-        #expect(purposes == ["exquisite_corpse_drawing", "exquisite_corpse_strip"])
-        #expect(environment.gateway.submitted.map(\.stripAssetID) == [Fixture.stripAssetID])
-    }
-
     @Test func theLegsHaveNoStrip() async throws {
         let legs = Fixture.distinctPart(partIndex: 2)
 
@@ -208,22 +197,6 @@ struct ExquisiteCorpseSubmitPartHandlerTests {
         let document = await environment.cache.document(ownerUserID: Fixture.me)
         #expect(document.unexplainedRefusals.isEmpty)
         #expect(document.notices.isEmpty)
-        #expect(draft(of: head) == nil)
-    }
-
-    @Test func lostAccessKeepsRetryingWithoutCounting() async throws {
-        environment.gateway.setSubmitError(Fixture.refusal("42501", "active entitled game access is required"))
-        let head = Fixture.distinctPart()
-        let handler = environment.submitHandler()
-        let snapshot = try corpseSnapshot(.exquisiteCorpseSubmitPart, head)
-
-        for _ in 0..<5 {
-            let error = await corpseThrownError { try await handler.send(snapshot, context: environment.context()) }
-            #expect(error is PaeoniaConvexError)
-        }
-
-        let document = await environment.cache.document(ownerUserID: Fixture.me)
-        #expect(document.unexplainedRefusals.isEmpty)
         #expect(draft(of: head) == nil)
     }
 

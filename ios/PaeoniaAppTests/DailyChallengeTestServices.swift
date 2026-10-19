@@ -7,46 +7,34 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
     private var snapshots: [DailyChallengeSnapshot]
     private let advancesSnapshotsOnLoad: Bool
     private let shuffleSnapshot: DailyChallengeSnapshot?
-    private let shuffleError: Error?
-    private let editError: Error?
     private let loadError: Error?
     private let loadErrorsByAttempt: [Int: Error]
     private let loadProbe: DailyChallengeSyncNudgeProbe?
     private let historyQuestions: [DailyChallengeQuestion]
-    private let historyError: Error?
     private let historyReloadError: Error?
     private let streak: CoupleStreak
-    private(set) var editedTexts: [String] = []
-    private(set) var editedChoices: [UUID] = []
+    private var historyLoadCount = 0
     private(set) var shuffledSlots: [Int] = []
-    private(set) var streakLoadCount = 0
     private(set) var loadCount = 0
-    private(set) var historyLoadCount = 0
 
     init(
         snapshots: [DailyChallengeSnapshot],
         advancesSnapshotsOnLoad: Bool = false,
         shuffleSnapshot: DailyChallengeSnapshot? = nil,
-        shuffleError: Error? = nil,
-        editError: Error? = nil,
         loadError: Error? = nil,
         loadErrorsByAttempt: [Int: Error] = [:],
         loadProbe: DailyChallengeSyncNudgeProbe? = nil,
         historyQuestions: [DailyChallengeQuestion] = [],
-        historyError: Error? = nil,
         historyReloadError: Error? = nil,
         streak: CoupleStreak = .none
     ) {
         self.snapshots = snapshots
         self.advancesSnapshotsOnLoad = advancesSnapshotsOnLoad
         self.shuffleSnapshot = shuffleSnapshot
-        self.shuffleError = shuffleError
-        self.editError = editError
         self.loadError = loadError
         self.loadErrorsByAttempt = loadErrorsByAttempt
         self.loadProbe = loadProbe
         self.historyQuestions = historyQuestions
-        self.historyError = historyError
         self.historyReloadError = historyReloadError
         self.streak = streak
     }
@@ -74,15 +62,11 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
         if historyLoadCount > 1, let historyReloadError {
             throw historyReloadError
         }
-        if let historyError {
-            throw historyError
-        }
         return historyQuestions
     }
 
     func loadStreak() throws -> CoupleStreak {
-        streakLoadCount += 1
-        return streak
+        streak
     }
 
     func startToday(
@@ -97,26 +81,18 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
 
     func editTextAnswer(
         instanceID _: UUID,
-        text: String,
+        text _: String,
         operation _: SyncClientOperation
     ) throws -> UUID {
-        editedTexts.append(text)
-        if let editError {
-            throw editError
-        }
-        return UUID()
+        UUID()
     }
 
     func editPartnerChoice(
         instanceID _: UUID,
-        selectedUserID: UUID,
+        selectedUserID _: UUID,
         operation _: SyncClientOperation
     ) throws -> UUID {
-        editedChoices.append(selectedUserID)
-        if let editError {
-            throw editError
-        }
-        return UUID()
+        UUID()
     }
 
     func shuffleQuestion(
@@ -125,9 +101,6 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
         operation _: SyncClientOperation
     ) throws -> DailyChallengeLoadResult {
         shuffledSlots.append(slotNumber)
-        if let shuffleError {
-            throw shuffleError
-        }
         return DailyChallengeLoadResult(
             snapshot: shuffleSnapshot ?? snapshots.first ?? .empty(currentUserID: currentUserID),
             streak: streak

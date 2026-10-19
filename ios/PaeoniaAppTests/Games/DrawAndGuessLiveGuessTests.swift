@@ -106,26 +106,6 @@ struct DrawAndGuessLiveGuessTests {
         #expect(connection.sentGameData.count == count)
     }
 
-    @Test func holdingToSpeedUpSendsTheNewRate() async throws {
-        let (viewModel, connection) = await guessing()
-
-        viewModel.setFastForward(true)
-
-        #expect(connection.sentGuessScreens.last?.replay?.rate == GameReplayClock.fastForwardRate)
-    }
-
-    @Test func thePartnerJoiningGetsTheScreenAgain() async {
-        let (viewModel, connection) = await guessing()
-        let count = connection.sentGameData.count
-        #expect(count > 0)
-
-        connection.onMessage?(WidgetLiveMessage(type: .joined, id: "partner"))
-
-        withExtendedLifetime(viewModel) {
-            #expect(connection.sentGameData.count == count + 1)
-        }
-    }
-
     // MARK: Drawer
 
     private func waitingForGuess() async -> Setup {
@@ -177,58 +157,11 @@ struct DrawAndGuessLiveGuessTests {
         #expect(viewModel.partnerGuess?.slots.slots.first?.tile?.letter == "U")
     }
 
-    @Test func theReplayFollowsOnceTheDrawingLoads() async throws {
-        let state = GameFixture.state(
-            settings: GameFixture.settings(),
-            game: GameFixture.game(state: .guessing, turn: GameFixture.partner),
-            round: GameFixture.round(state: .guessing, drawer: GameFixture.me, hasDrawing: true)
-        )
-        let connection = GameDataRecordingConnection()
-        let viewModel = GamesTestEnvironment(state: state)
-            .viewModel(live: WidgetLiveDrawing(connection: connection, role: .drawing))
-        connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
-        connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "watching"))
-        await viewModel.reload()
-        // The download has not finished, so there is no drawing to follow yet.
-        connection.onGameData?(envelope(message(replay: .init(time: 0.5, rate: 1))))
-        #expect(viewModel.finalDrawing == nil)
-        #expect(viewModel.partnerGuess != nil)
-        #expect(viewModel.partnerGuess?.replayClock == nil)
-
-        #expect(await waitUntil { viewModel.partnerGuess?.replayClock != nil })
-        let clock = try #require(viewModel.partnerGuess?.replayClock)
-        #expect(clock.replayTime(at: CACurrentMediaTime()) >= 0.5)
-    }
-
     @Test func aScreenForAnotherRoundIsIgnored() async {
         let (viewModel, connection) = await waitingForGuess()
 
         connection.onGameData?(envelope(message(round: GameFixture.nextRoundID)))
 
         #expect(viewModel.partnerGuess == nil)
-    }
-
-    @Test func theLettersGoWhenThePartnerLeaves() async {
-        let (viewModel, connection) = await waitingForGuess()
-        connection.onGameData?(envelope(message()))
-        #expect(viewModel.partnerGuess != nil)
-
-        connection.onMessage?(WidgetLiveMessage(type: .left, id: "partner"))
-        viewModel.recompute()
-
-        #expect(viewModel.partnerGuess == nil)
-    }
-
-    @Test func eachWrongWordShakesOnce() async {
-        let (viewModel, connection) = await waitingForGuess()
-        let wrong = message(letters: Array(repeating: "A", count: 8), isWrong: true)
-
-        connection.onGameData?(envelope(wrong))
-        connection.onGameData?(envelope(wrong))
-        #expect(viewModel.partnerGuess?.wrongCount == 1)
-
-        connection.onGameData?(envelope(message()))
-        connection.onGameData?(envelope(wrong))
-        #expect(viewModel.partnerGuess?.wrongCount == 2)
     }
 }

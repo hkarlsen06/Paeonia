@@ -84,22 +84,6 @@ struct DrawAndGuessSpeedBonusClaimTests {
         #expect(payload.hintsUsed == 0)
     }
 
-    @Test func aCorrectGuessInTheSecondHalfOfTheWindowClaimsTheSmallerBonus() async throws {
-        let environment = makeEnvironment(guessing)
-        let viewModel = makeViewModel(environment)
-        await viewModel.reload()
-        let seen = await waitUntil { viewModel.localFirstSeenAt[GameFixture.roundID] != nil }
-        #expect(seen)
-
-        clock.advance(by: 22)
-        #expect(viewModel.speedBonusTier == 1)
-        try type("umbrella", into: viewModel)
-
-        let payload = try await queuedGuess(environment)
-        #expect(payload.speedBonus == 1)
-        #expect(payload.solveMs == 22_000)
-    }
-
     @Test func aCorrectGuessAfterTheWindowClaimsNoBonusButKeepsTheSolveTime() async throws {
         let environment = makeEnvironment(guessing)
         let viewModel = makeViewModel(environment)

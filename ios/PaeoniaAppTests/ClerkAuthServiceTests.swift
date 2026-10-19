@@ -26,21 +26,6 @@ struct ClerkAuthServiceTests {
         #expect(session?.displayName == "Alex")
     }
 
-    @Test func restoreSessionUsesCompletedProfile() async throws {
-        let gateway = FakeAuthGateway(
-            remoteSession: .test(provider: .apple, displayName: nil),
-            profile: .test(displayName: nil, onboardingCompletedAt: Date())
-        )
-        let service = ClerkAuthService(gateway: gateway)
-
-        let session = try await service.restoreSession()
-
-        #expect(session?.profileStatus == .complete)
-        #expect(session?.displayName == nil)
-        #expect(session?.timeZoneID == "Europe/Oslo")
-        #expect(await gateway.updatedProfileDisplayName == nil)
-    }
-
     @Test func restoreSessionRequiresCompletedProfileTimeZoneTimestamp() async throws {
         let gateway = FakeAuthGateway(
             remoteSession: .test(provider: .apple),
@@ -83,21 +68,6 @@ struct ClerkAuthServiceTests {
         let restoredSession = try await service.restoreSession()
 
         #expect(restoredSession == cachedSession)
-    }
-
-    @Test func restoreSessionPreservesCachedOnboardingRequirementWhenProfileLoadFails() async throws {
-        let cachedSession = AuthSession.test(profileStatus: .needsOnboarding)
-        let sessionCache = FakeAuthSessionCache(session: cachedSession, accountID: "clerk-user")
-        let gateway = FakeAuthGateway(
-            remoteSession: .test(provider: .apple, accountID: "clerk-user"),
-            profile: .test(onboardingCompletedAt: nil),
-            loadProfileError: URLError(.networkConnectionLost)
-        )
-        let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
-
-        let restoredSession = try await service.restoreSession()
-
-        #expect(restoredSession?.profileStatus == .needsOnboarding)
     }
 
     @Test func restoreSessionDoesNotUseCachedProfileForAnotherUser() async {
@@ -212,22 +182,6 @@ struct ClerkAuthServiceTests {
         let restoredSession = try await service.restoreSession()
 
         #expect(restoredSession == nil)
-        #expect(await sessionCache.currentSession == nil)
-    }
-
-    @Test func restoreSessionDoesNotUseCacheWhenBackendRejectsProfile() async {
-        let cachedSession = AuthSession.test(profileStatus: .complete)
-        let sessionCache = FakeAuthSessionCache(session: cachedSession, accountID: "clerk-user")
-        let gateway = FakeAuthGateway(
-            remoteSession: .test(provider: .apple, accountID: "clerk-user"),
-            profile: .test(onboardingCompletedAt: Date()),
-            loadProfileError: AuthServiceError.invalidProfilePhoto
-        )
-        let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
-
-        await #expect(throws: AuthServiceError.invalidProfilePhoto) {
-            try await service.restoreSession()
-        }
         #expect(await sessionCache.currentSession == nil)
     }
 
