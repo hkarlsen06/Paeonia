@@ -154,7 +154,7 @@ struct TopicsHookTests {
     @Test func namesTheOneTopicWithAnswers() throws {
         let overview = [try summary("travel_and_places", forYou: 2)]
         let hook = TopicsHook.make(overview: overview, unreadTopicChats: [], partnerName: "Robin")
-        #expect(hook == .answeredIn(partner: "Robin", count: 2, topic: "Travel and places"))
+        #expect(hook == .answeredIn(partner: "Robin", count: 2, topic: overview[0].title))
     }
 
     @Test func neverNamesAPrivateTopic() throws {
@@ -182,7 +182,7 @@ struct TopicsHookTests {
         let overview = [try summary("travel_and_places", forYou: 0)]
         let unread = [chat(topicKey: "travel_and_places", isPrivate: false)]
         let hook = TopicsHook.make(overview: overview, unreadTopicChats: unread, partnerName: "Robin")
-        #expect(hook == .messageIn(topic: "Travel and places"))
+        #expect(hook == .messageIn(topic: overview[0].title))
         #expect(TopicsHook.make(overview: overview, unreadTopicChats: [], partnerName: "Robin") == nil)
     }
 }
