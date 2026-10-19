@@ -15105,6 +15105,114 @@
         }
       }
     },
+    "games.tutorial.guessMySpot.close.message" : {
+      "comment" : "Message of the third Guess my spot card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The closer the pin, the more points. A pin right on the spot gives 5,000."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jo nærmere nålen er, jo flere poeng. En nål midt på stedet gir 5 000."
+          }
+        }
+      }
+    },
+    "games.tutorial.guessMySpot.close.title" : {
+      "comment" : "Title of the third Guess my spot card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closer means more points"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jo nærmere, jo flere poeng"
+          }
+        }
+      }
+    },
+    "games.tutorial.guessMySpot.guess.message" : {
+      "comment" : "Message of the second Guess my spot card. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ looks at the photo and drops a pin on the map. Then you swap."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser på bildet og setter en nål på kartet. Så bytter dere."
+          }
+        }
+      }
+    },
+    "games.tutorial.guessMySpot.guess.title" : {
+      "comment" : "Title of the second Guess my spot card. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ guesses"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjetter"
+          }
+        }
+      }
+    },
+    "games.tutorial.guessMySpot.send.message" : {
+      "comment" : "Message of the first Guess my spot card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a photo from somewhere you've been. We hide where it was taken."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et bilde fra et sted du har vært. Vi skjuler hvor det er tatt."
+          }
+        }
+      }
+    },
+    "games.tutorial.guessMySpot.send.title" : {
+      "comment" : "Title of the first Guess my spot card.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send a place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send et sted"
+          }
+        }
+      }
+    },
     "games.tutorial.mindMeld.connect.message" : {
       "comment" : "Mind Meld card about the next rounds. The example words are ocean, sushi and fish.",
       "extractionState" : "manual",
@@ -15461,6 +15569,1572 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi fikk ikke sendt trekket ditt ennå"
+          }
+        }
+      }
+    },
+    "guessMySpot.check.another" : {
+      "comment" : "VoiceOver label of the back button on the check screen. It goes back to the camera roll without sending.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose another photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et annet bilde"
+          }
+        }
+      }
+    },
+    "guessMySpot.check.found.hint" : {
+      "comment" : "Check screen hint when the photo said where it was taken.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We found it in the photo. Tap the map to move it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fant det i bildet. Trykk på kartet for å flytte det."
+          }
+        }
+      }
+    },
+    "guessMySpot.check.found.title" : {
+      "comment" : "Check screen title when the photo said where it was taken.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Is this the spot?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Er dette stedet?"
+          }
+        }
+      }
+    },
+    "guessMySpot.check.missing.hint" : {
+      "comment" : "Check screen hint when the photo did not say where it was taken.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo doesn't say where it was taken. Tap the map where it was."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet sier ikke hvor det er tatt. Trykk på kartet der det var."
+          }
+        }
+      }
+    },
+    "guessMySpot.check.missing.title" : {
+      "comment" : "Check screen title when the photo did not say where it was taken.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where was this?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvor var dette?"
+          }
+        }
+      }
+    },
+    "guessMySpot.check.moved.hint" : {
+      "comment" : "Check screen hint when the sender placed the pin themselves, such as after a send that didn't go through was put back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the map to move the pin."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på kartet for å flytte nålen."
+          }
+        }
+      }
+    },
+    "guessMySpot.check.private" : {
+      "comment" : "Quiet line on the check screen: the place and time are removed from the photo before it is sent. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We take the place and time out of the photo. %@ only sees the picture."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi tar sted og tid ut av bildet. %@ ser bare selve bildet."
+          }
+        }
+      }
+    },
+    "guessMySpot.check.send" : {
+      "comment" : "Button that sends the photo and its spot. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send to %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send til %@"
+          }
+        }
+      }
+    },
+    "guessMySpot.guess.hint" : {
+      "comment" : "Hint over the guess map before the first pin.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the map where you think it is."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trykk på kartet der du tror det er."
+          }
+        }
+      }
+    },
+    "guessMySpot.guess.later" : {
+      "comment" : "Line on the guess screen while the partner is away. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will see your guess later"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser gjetningen din senere"
+          }
+        }
+      }
+    },
+    "guessMySpot.guess.lock" : {
+      "comment" : "Button that locks in the guess.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock in my guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås gjetningen"
+          }
+        }
+      }
+    },
+    "guessMySpot.guess.photoFailed" : {
+      "comment" : "The photo could not be fetched. A Try again button follows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't get the photo. Try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke hentet bildet. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "guessMySpot.guess.watching" : {
+      "comment" : "Line on the guess screen while the partner is in the game. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is watching"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser på"
+          }
+        }
+      }
+    },
+    "guessMySpot.handoff.continue" : {
+      "comment" : "Reveal button for the partner who sent the photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett"
+          }
+        }
+      }
+    },
+    "guessMySpot.handoff.send" : {
+      "comment" : "Reveal button for the guesser, who sends the next photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn to send a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur til å sende et bilde"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.delete" : {
+      "comment" : "Button in a past round of Guess my spot that the sender may delete.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett dette bildet"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.delete.confirm.action" : {
+      "comment" : "The destructive button that deletes a sent photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.delete.confirm.message" : {
+      "comment" : "Explains deleting a sent photo. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ won't see it on the map anymore, and the photo is gone from Paeonia. Your points stay."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ser det ikke på kartet lenger, og bildet er borte fra Paeonia. Poengene blir stående."
+          }
+        }
+      }
+    },
+    "guessMySpot.history.delete.confirm.title" : {
+      "comment" : "Title of the question before a sent photo is deleted for both partners.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this photo for both of you?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slette bildet for dere begge?"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.detail.guess" : {
+      "comment" : "How far off the partner's guess was. %1$@ the partner's name, %2$@ the distance, such as '3.2 km'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ guessed %2$@ off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ gjettet %2$@ unna"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.detail.guessYou" : {
+      "comment" : "How far off this person's guess was. %@ is the distance, such as '3.2 km'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You guessed %@ off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du gjettet %@ unna"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.detail.sentBy" : {
+      "comment" : "Who sent the photo of a past round. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sent this one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sendte dette"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.detail.sentByYou" : {
+      "comment" : "This person sent the photo of a past round.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You sent this one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du sendte dette"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.empty.message" : {
+      "comment" : "Our places before the first guess.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every photo you guess becomes a pin here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvert bilde dere gjetter, blir en nål her."
+          }
+        }
+      }
+    },
+    "guessMySpot.history.empty.title" : {
+      "comment" : "Our places before the first guess.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No places yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen steder ennå"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.failed.message" : {
+      "comment" : "Our places could not load on a working connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your places. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste stedene deres. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "guessMySpot.history.offline.message" : {
+      "comment" : "Our places could not load because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to see your places."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å se stedene deres."
+          }
+        }
+      }
+    },
+    "guessMySpot.history.places" : {
+      "comment" : "How many places are on the map. %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld place"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld places"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld sted"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld steder"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "guessMySpot.history.records.average" : {
+      "comment" : "A partner's average distance off. %@ is the distance, such as '340 km'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On average %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I snitt %@"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.records.closest" : {
+      "comment" : "A partner's closest guess. %@ is the distance, such as '120 m'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closest %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nærmest %@"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.records.none" : {
+      "comment" : "A partner who has not guessed yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No guesses yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen gjetninger ennå"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.somewhere" : {
+      "comment" : "Stands in for the place name when a round has none.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Somewhere"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et sted"
+          }
+        }
+      }
+    },
+    "guessMySpot.history.title" : {
+      "comment" : "Title of the Guess my spot map with a pin for every round the couple played. The Memories tab has its own map called Our places.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Our guesses"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjetningene våre"
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.guess" : {
+      "comment" : "Hub card button when the partner's photo waits for a guess.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guess"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjett"
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.open" : {
+      "comment" : "Hub card button while the partner has the turn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne"
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.play" : {
+      "comment" : "Hub card button before the couple has a game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.seeReveal" : {
+      "comment" : "Hub card button when a guess waits to be seen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See how close"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se hvor nær"
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.send" : {
+      "comment" : "Hub card button when it's this person's turn to send a photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send et bilde"
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.status.choosing" : {
+      "comment" : "Hub card status while the partner picks a photo. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is picking a photo."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ velger et bilde."
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.status.guess" : {
+      "comment" : "Hub card status when the partner's photo waits for a guess. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sent a photo. Your turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har sendt et bilde. Din tur."
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.status.new" : {
+      "comment" : "Hub card status before the couple has a game. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send a photo. Then %@ guesses where."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send et bilde. Så gjetter %@ hvor."
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.status.reveal" : {
+      "comment" : "Hub card status when a guess waits to be seen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A guess is in."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En gjetning er klar."
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.status.send" : {
+      "comment" : "Hub card status when it's this person's turn to send a photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your turn to send a photo."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din tur til å sende et bilde."
+          }
+        }
+      }
+    },
+    "guessMySpot.hub.status.waiting" : {
+      "comment" : "Hub card status while this person's photo waits for the partner's guess. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@ to guess."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på at %@ skal gjette."
+          }
+        }
+      }
+    },
+    "guessMySpot.map.a11y" : {
+      "comment" : "VoiceOver label of the map in Guess my spot.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kart"
+          }
+        }
+      }
+    },
+    "guessMySpot.map.dropCenter" : {
+      "comment" : "VoiceOver action on the map that drops the pin at the middle of the map.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop the pin in the middle"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett nålen midt på"
+          }
+        }
+      }
+    },
+    "guessMySpot.map.noPin" : {
+      "comment" : "VoiceOver value of the map before a pin is on it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pin yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen nål ennå"
+          }
+        }
+      }
+    },
+    "guessMySpot.map.pinDropped" : {
+      "comment" : "VoiceOver value of the map once a pin is on it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin dropped"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nålen er satt"
+          }
+        }
+      }
+    },
+    "guessMySpot.map.satellite" : {
+      "comment" : "VoiceOver label of the button that switches the map to satellite images.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Satellite"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Satellitt"
+          }
+        }
+      }
+    },
+    "guessMySpot.map.standard" : {
+      "comment" : "VoiceOver label of the button that switches the map back from satellite images.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kart"
+          }
+        }
+      }
+    },
+    "guessMySpot.menu.a11y" : {
+      "comment" : "VoiceOver label of the ••• menu in the Guess my spot toolbar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More options"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere valg"
+          }
+        }
+      }
+    },
+    "guessMySpot.offline.message" : {
+      "comment" : "Guess my spot could not start because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to start the game."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å starte spillet."
+          }
+        }
+      }
+    },
+    "guessMySpot.photo.a11y" : {
+      "comment" : "VoiceOver label of the photo in Guess my spot.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photo. Pinch to look closer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet. Klyp for å se nærmere."
+          }
+        }
+      }
+    },
+    "guessMySpot.pick.subtitle" : {
+      "comment" : "Subtitle over the camera roll. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Somewhere you've been. %@ guesses where."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et sted du har vært. %@ gjetter hvor."
+          }
+        }
+      }
+    },
+    "guessMySpot.pick.subtitleFirst" : {
+      "comment" : "Subtitle over the camera roll on the very first turn, which teaches the game. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send a photo from somewhere you've been. %@ guesses where it was taken."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send et bilde fra et sted du har vært. %@ gjetter hvor det er tatt."
+          }
+        }
+      }
+    },
+    "guessMySpot.pick.title" : {
+      "comment" : "Title over the camera roll when it's this person's turn to send a photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et bilde"
+          }
+        }
+      }
+    },
+    "guessMySpot.pick.unreadable" : {
+      "comment" : "Banner when a picked photo could not be opened.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't open that photo. Try another one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke åpnet det bildet. Prøv et annet."
+          }
+        }
+      }
+    },
+    "guessMySpot.pointsTogether" : {
+      "comment" : "The couple's shared Guess my spot score. %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld point together"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld points together"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng sammen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng sammen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.announcement.guesser" : {
+      "comment" : "VoiceOver announcement of the reveal for the guesser. %1$@ the distance, such as '3.2 km', %2$@ the verdict, %3$@ the points.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your guess was %1$@ off. %2$@. Points: %3$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjetningen din var %1$@ unna. %2$@. Poeng: %3$@."
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.announcement.place" : {
+      "comment" : "First part of the VoiceOver reveal announcement. %@ is the place, such as 'Bergen, Norway'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taken in %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tatt i %@."
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.announcement.sender" : {
+      "comment" : "VoiceOver announcement of the reveal for the sender. %1$@ the partner's name, %2$@ the distance, %3$@ the verdict, %4$@ the points.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@'s guess was %2$@ off. %3$@. Points: %4$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjetningen til %1$@ var %2$@ unna. %3$@. Poeng: %4$@."
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.close.title" : {
+      "comment" : "Reveal title when the guess is within 300 km.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nær"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.far.title" : {
+      "comment" : "Reveal title when the guess is more than 300 km off.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now you know where"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nå vet du hvor"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.off" : {
+      "comment" : "Reveal line naming how far off the guess was. %@ is the distance, such as '3.2 km'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ off."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ unna."
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.points" : {
+      "comment" : "This round's points beside the counting total. %@ is the number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.pointsTogether" : {
+      "comment" : "Under the counting total on the reveal.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "points together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "poeng sammen"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.soClose.title" : {
+      "comment" : "Reveal title when the guess is within 25 km.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "So close!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Så nær!"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.spotOn.guesser" : {
+      "comment" : "Reveal line for the guesser on a spot on guess.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You found it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du fant det."
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.spotOn.sender" : {
+      "comment" : "Reveal line for the sender on a spot on guess. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ found it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ fant det."
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.spotOn.title" : {
+      "comment" : "Reveal title when the guess is within 1 km.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spot on!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Midt i blinken!"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.waitingServer" : {
+      "comment" : "The guess is saved on the phone and waits for a connection before the reveal can play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this phone. We'll show where it was when you're online."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret på telefonen. Vi viser hvor det var når du er på nett."
+          }
+        }
+      }
+    },
+    "guessMySpot.score.against.a11y" : {
+      "comment" : "VoiceOver for each partner's own Guess my spot score. %1$@ is this person's points, such as '12,340 points', %2$@ the partner's name, %3$@ the partner's points.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You have %1$@. %2$@ has %3$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har %1$@. %2$@ har %3$@."
+          }
+        }
+      }
+    },
+    "guessMySpot.startFailed.message" : {
+      "comment" : "Guess my spot could not start on a working connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't start the game. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke startet spillet. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "guessMySpot.stats.points" : {
+      "comment" : "Points, such as on the hub card's badge or for one round. %lld is the count.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld point"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld points"
+                }
+              }
+            }
+          }
+        },
+        "nb" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld poeng"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "guessMySpot.title" : {
+      "comment" : "The game's name in Guess my spot: one partner sends a photo and the other guesses on a map where it was taken.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guess my spot"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjett hvor"
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.choosing" : {
+      "comment" : "Waiting screen title while the partner picks a photo. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is picking a photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ velger et bilde"
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.guessing" : {
+      "comment" : "Waiting screen title while the partner guesses live. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is guessing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjetter"
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.hintGuess" : {
+      "comment" : "Waiting screen hint while the partner is away and has a photo to guess. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll tell you when %@ guesses."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sier fra når %@ har gjettet."
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.hintLive" : {
+      "comment" : "Waiting screen hint while the partner is in the game and guessing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll both see it the moment %@ locks in."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere ser det begge så snart %@ har låst gjetningen."
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.hintTurn" : {
+      "comment" : "Waiting screen hint while the partner picks a photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll tell you when it's your turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sier fra når det er din tur."
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.partnerPin.a11y" : {
+      "comment" : "VoiceOver value of the map when the partner's live guess pin is on it. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s guess is on the map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjetningen til %@ er på kartet"
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.title" : {
+      "comment" : "Waiting screen title. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Venter på %@"
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.yourSpot.a11y" : {
+      "comment" : "VoiceOver value of the map with this person's own spot, which the partner can't see yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your spot. Only you can see it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stedet ditt. Bare du ser det."
           }
         }
       }
@@ -18897,6 +20571,24 @@
         }
       }
     },
+    "memories.map.cluster.placesHint" : {
+      "comment" : "VoiceOver hint on a group of pins that holds memories and Guess my spot rounds.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows these places"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viser disse stedene"
+          }
+        }
+      }
+    },
     "memories.map.empty.message" : {
       "comment" : "Text under the title of the panel on the memories map while no memory has a place",
       "extractionState" : "manual",
@@ -18929,6 +20621,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sett minnene deres på kartet"
+          }
+        }
+      }
+    },
+    "memories.map.fromGuessMySpot" : {
+      "comment" : "On the Our places map, a label on a pin's card that came from the Guess my spot game, not a memory. Gjett hvor is the game's Norwegian name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From Guess my spot"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fra Gjett hvor"
           }
         }
       }
@@ -18983,6 +20693,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vis minnene på kartet"
+          }
+        }
+      }
+    },
+    "memories.map.placeCount" : {
+      "comment" : "How many memories and Guess my spot rounds a group of pins on the map holds. The value is the number, always 2 or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ places"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ steder"
+          }
+        }
+      }
+    },
+    "memories.map.placeCount.one" : {
+      "comment" : "One memory or Guess my spot round in a group on the map.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 sted"
+          }
+        }
+      }
+    },
+    "memories.map.roundCard.hint" : {
+      "comment" : "VoiceOver hint on a map card for a Guess my spot round.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the round"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpner runden"
           }
         }
       }

@@ -13,6 +13,8 @@ struct MemoriesScreen: View {
     /// The couple's stories, shown as a row that opens the Stories archive. Nil hides it.
     let stories: StoriesViewModel?
     let storyPeople: StoryPeople
+    /// Guess my spot's guessed rounds, which "Our places" shows next to the memories.
+    let gameRounds: GuessMySpotHistoryViewModel?
 
     @State private var viewModel: MemoriesViewModel
     @State private var isCreating = false
@@ -30,8 +32,10 @@ struct MemoriesScreen: View {
         viewModel: MemoriesViewModel? = nil,
         stories: StoriesViewModel? = nil,
         storyPeople: StoryPeople = StoryPeople(currentName: "", partnerName: ""),
+        gameRounds: GuessMySpotHistoryViewModel? = nil,
         onLocalChange: @escaping @MainActor @Sendable () async -> Void = {}
     ) {
+        self.gameRounds = gameRounds
         self.currentUserID = currentUserID
         self.coupleID = coupleID
         _viewModel = State(initialValue: viewModel ?? MemoriesViewModel())
@@ -74,7 +78,7 @@ struct MemoriesScreen: View {
                 }
             }
             .navigationDestination(isPresented: $isShowingMap) {
-                MemoriesMapScreen(viewModel: viewModel, currentUserID: currentUserID)
+                MemoriesMapScreen(viewModel: viewModel, currentUserID: currentUserID, gameRounds: gameRounds)
                     .analyticsScreen("memories_map")
             }
             .navigationDestination(for: UUID.self) { memoryID in

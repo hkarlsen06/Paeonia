@@ -139,6 +139,17 @@ export const create_pending_media_upload = mutation({
           bucket = "couple-media";
           coupleId = coupleArg;
           storagePath = `${coupleArg}/${mediaType}/${assetId}.${extension}`;
+        } else if (purpose === "guess_my_spot_photo") {
+          // Guess my spot: the round id is the client's, and the round names the photo when it is sent.
+          if (kind !== "guess_my_spot_round" || mediaType !== "image" || coupleArg === undefined) {
+            fail("23514", "guess my spot photo upload contract is invalid");
+          }
+          if (!(await canAccessCoupleContent(ctx, userId, coupleArg))) {
+            fail("42501", "active entitled couple access is required");
+          }
+          bucket = "couple-media";
+          coupleId = coupleArg;
+          storagePath = `${coupleArg}/${mediaType}/${assetId}.${extension}`;
         } else if (purpose === "widget_drawing_payload" && pathContext.first_day_draft === true) {
           // The inviter's first drawing, before the couple exists (firstDay.ts).
           if (kind !== "widget_drawing_revision" || mediaType !== "drawing_payload" || coupleArg !== undefined) {

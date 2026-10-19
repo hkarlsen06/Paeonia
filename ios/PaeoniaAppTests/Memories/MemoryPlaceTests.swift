@@ -140,6 +140,27 @@ struct MemoryPlaceTests {
         #expect(content.unplaced.map(\.snapshot.title) == ["No place"])
     }
 
+    @Test func gameRoundsJoinTheMapByDateAfterMemoriesOfTheSameDay() {
+        let owner = UUID()
+        let records = [
+            record(owner: owner, title: "New", date: "2026-07-01", place: bryggen, photo: nil),
+            record(owner: owner, title: "Old", date: "2026-05-01", place: bryggen, photo: nil),
+        ]
+        let round = { (title: String, date: String) in
+            MemoryMapEntry(
+                id: UUID(), title: title, memoryDate: date, place: .bryggen, photoAssetID: nil,
+                kind: .guessMySpotRound
+            )
+        }
+        let content = MemoriesMapContent(
+            records: records,
+            rounds: [round("Newest round", "2026-08-01"), round("Same day", "2026-07-01")]
+        )
+        #expect(content.placed.map(\.title) == ["Newest round", "New", "Same day", "Old"])
+        #expect(content.placedMemories.map(\.title) == ["New", "Old"])
+        #expect(content.totals == MemoryPlaceTotals(places: [.bryggen]))
+    }
+
     // MARK: - Helpers
 
     private func photo(gps: [CFString: Any]?) throws -> Data {

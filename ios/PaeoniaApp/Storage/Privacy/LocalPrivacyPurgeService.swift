@@ -196,6 +196,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let gameDrawingStore: any GameDrawingStoring
     private let mindMeldCache: any MindMeldCaching
     private let consensioCache: any ConsensioCaching
+    private let guessMySpotCache: any GuessMySpotCaching
+    private let guessMySpotPhotos: any GuessMySpotPhotoStoring
     private let lookBackCache: any LookBackCaching
     private let heartsCache: any HeartsCaching
     private let coupleDatesCache: any CoupleDatesCaching
@@ -221,6 +223,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         gameDrawingStore: any GameDrawingStoring = FileGameDrawingStore.shared,
         mindMeldCache: any MindMeldCaching = FileMindMeldCache.shared,
         consensioCache: any ConsensioCaching = FileConsensioCache.shared,
+        guessMySpotCache: any GuessMySpotCaching = FileGuessMySpotCache.shared,
+        guessMySpotPhotos: any GuessMySpotPhotoStoring = FileGuessMySpotPhotoStore.shared,
         lookBackCache: any LookBackCaching = FileLookBackCache.shared,
         heartsCache: any HeartsCaching = FileHeartsCache.shared,
         coupleDatesCache: any CoupleDatesCaching = FileCoupleDatesCache.shared,
@@ -245,6 +249,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.gameDrawingStore = gameDrawingStore
         self.mindMeldCache = mindMeldCache
         self.consensioCache = consensioCache
+        self.guessMySpotCache = guessMySpotCache
+        self.guessMySpotPhotos = guessMySpotPhotos
         self.lookBackCache = lookBackCache
         self.heartsCache = heartsCache
         self.coupleDatesCache = coupleDatesCache
@@ -340,6 +346,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await storyChainCache.clearAll()
         await mindMeldCache.clearAll()
         await consensioCache.clearAll()
+        await guessMySpotCache.clearAll()
+        guessMySpotPhotos.clearAll()
         await heartsCache.clearAll()
         await coupleDatesCache.clearAll()
         await storiesCache.clearAll()

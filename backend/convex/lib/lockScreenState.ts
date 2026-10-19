@@ -89,8 +89,8 @@ async function dailyQuestionState(ctx: ReaderCtx, coupleDayId: string, userId: s
 type Turn = { kind: string; updated_at: string };
 
 /**
- * The games where the caller is the one to act. Draw & Guess, Story Chain, Exquisite Corpse, Consensio
- * and the board games store `turn_user_id`. Mind Meld has no turns, so it counts when the partner locked in a
+ * The games where the caller is the one to act. Draw & Guess, Story Chain, Exquisite Corpse, Consensio,
+ * Guess my spot and the board games store `turn_user_id`. Mind Meld has no turns, so it counts when the partner locked in a
  * word for the open round and the caller has not.
  */
 async function myTurnGames(ctx: ReaderCtx, coupleId: string, userId: string): Promise<Turn[]> {
@@ -109,6 +109,9 @@ async function myTurnGames(ctx: ReaderCtx, coupleId: string, userId: string): Pr
 
   const consensio = await ctx.db.query("consensio_games").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).first();
   if (consensio?.turn_user_id === userId) turns.push({ kind: "consensio", updated_at: consensio.updated_at });
+
+  const spot = await ctx.db.query("guess_my_spot_games").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).first();
+  if (spot?.turn_user_id === userId) turns.push({ kind: "guess_my_spot", updated_at: spot.updated_at });
 
   const boards = await ctx.db.query("board_games").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect();
   for (const board of boards) {

@@ -21,6 +21,8 @@ nonisolated enum GamesDestination: Hashable, Sendable {
     /// "What we know".
     case consensioHistory
     case consensioHistoryDetail(UUID)
+    /// "Our guesses".
+    case guessMySpotHistory
     /// "Our creatures".
     case exquisiteCorpseHistory
     case exquisiteCorpseHistoryDetail(UUID)
@@ -77,6 +79,7 @@ final class GamesViewModel {
     let storyChain: StoryChainHubModel
     let mindMeld: MindMeldHubModel
     let consensio: ConsensioHubModel
+    let guessMySpot: GuessMySpotHubModel
     let exquisiteCorpse: ExquisiteCorpseHubModel
     let connectFour: BoardGameHubModel<ConnectFourBoard>
     let dotsAndBoxes: BoardGameHubModel<DotsAndBoxesBoard>
@@ -86,8 +89,8 @@ final class GamesViewModel {
     /// The built games, in `GameKind` order. A kind that is not here shows nowhere.
     var games: [any GameHubModel] {
         [
-            ludo, drawAndGuess, connectFour, mindMeld, consensio, dotsAndBoxes, ultimateTicTacToe, storyChain,
-            exquisiteCorpse,
+            ludo, drawAndGuess, connectFour, mindMeld, consensio, guessMySpot, dotsAndBoxes, ultimateTicTacToe,
+            storyChain, exquisiteCorpse,
         ]
     }
 
@@ -108,6 +111,7 @@ final class GamesViewModel {
         storyChain = StoryChainHubModel(dependencies: dependencies)
         mindMeld = MindMeldHubModel(dependencies: dependencies)
         consensio = ConsensioHubModel(dependencies: dependencies)
+        guessMySpot = GuessMySpotHubModel(dependencies: dependencies)
         exquisiteCorpse = ExquisiteCorpseHubModel(dependencies: dependencies)
         connectFour = ConnectFourGame.hubModel(dependencies: dependencies)
         dotsAndBoxes = DotsAndBoxesGame.hubModel(dependencies: dependencies)
@@ -177,26 +181,6 @@ final class GamesViewModel {
         for game in games {
             game.setLocalChangeSyncHandler(handler)
         }
-    }
-
-    /// The sheet for this person's mark, shared by every board game. A phone that
-    /// has never read the marks asks the server first, so a saved mark is not
-    /// shown as missing.
-    func makeMarkEditor() async -> BoardMarkEditorModel? {
-        guard let userID = currentUserID else { return nil }
-        let cache = dependencies.boardGamesCache
-        var marks = await cache.document(ownerUserID: userID).marks
-        if marks == nil {
-            _ = try? await cache.fetchMarks(from: dependencies.boardGamesGateway, ownerUserID: userID)
-            marks = await cache.document(ownerUserID: userID).marks
-        }
-        guard currentUserID == userID else { return nil }
-        return .live(
-            savedMark: marks?.mine,
-            initial: BoardPieceStyle.initial(of: participants.currentName),
-            userID: userID,
-            dependencies: dependencies
-        )
     }
 
     // MARK: - Reading
@@ -369,6 +353,26 @@ final class GamesViewModel {
 }
 
 extension GamesViewModel {
+    /// The sheet for this person's mark, shared by every board game. A phone that
+    /// has never read the marks asks the server first, so a saved mark is not
+    /// shown as missing.
+    func makeMarkEditor() async -> BoardMarkEditorModel? {
+        guard let userID = currentUserID else { return nil }
+        let cache = dependencies.boardGamesCache
+        var marks = await cache.document(ownerUserID: userID).marks
+        if marks == nil {
+            _ = try? await cache.fetchMarks(from: dependencies.boardGamesGateway, ownerUserID: userID)
+            marks = await cache.document(ownerUserID: userID).marks
+        }
+        guard currentUserID == userID else { return nil }
+        return .live(
+            savedMark: marks?.mine,
+            initial: BoardPieceStyle.initial(of: participants.currentName),
+            userID: userID,
+            dependencies: dependencies
+        )
+    }
+
     /// Follows writes to the Games cache and the pending operations. The change
     /// carries no rows, so a send queued for chat or a memory reloads too. The
     /// reload skips unchanged values, and a burst of writes while one reload runs

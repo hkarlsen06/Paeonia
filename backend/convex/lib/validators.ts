@@ -72,6 +72,7 @@ export const GAME_KINDS = [
   "ultimate_tic_tac_toe",
   "ludo",
   "consensio",
+  "guess_my_spot",
 ] as const;
 export const gameKind = literals(...GAME_KINDS);
 export const gamePlayStyle = literals("together", "against");

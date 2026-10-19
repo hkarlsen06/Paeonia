@@ -226,7 +226,7 @@
         memoryPhotos: DeveloperBoardPhotoProvider()
       )
       ExquisiteCorpseDeveloperScenarioFactory.configure(&dependencies, for: scenario)
-      return dependencies
+      return DeveloperGuessMySpotScenarioFactory.configured(dependencies, for: scenario)
     }
 
     private static func seededDrawingStore(isLoading: Bool) -> InMemoryGameDrawingStore {

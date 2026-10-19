@@ -9,6 +9,8 @@ import SwiftUI
 struct MemoriesMapScreen: View {
     let viewModel: MemoriesViewModel
     let currentUserID: UUID?
+    /// Guess my spot's guessed rounds, shown as pins next to the memories. Nil leaves them out.
+    let gameRounds: GuessMySpotHistoryViewModel?
 
     @State private var selectedID: UUID?
     @State private var isShowingAll = true
@@ -16,8 +18,8 @@ struct MemoriesMapScreen: View {
     @State private var homeRegion: MKCoordinateRegion?
     @State private var cluster: MemoriesMapCluster?
     @State private var isShowingUnplaced = false
-    @State private var openedMemoryID: UUID?
-    /// A memory picked in the cluster sheet, opened once the sheet is gone.
+    @State private var opened: MemoriesMapDestination?
+    /// A memory or round picked in the cluster sheet, opened once the sheet is gone.
     @State private var memoryToOpen: UUID?
     @State private var screenHeight: CGFloat = 800
 
@@ -26,11 +28,13 @@ struct MemoriesMapScreen: View {
     init(
         viewModel: MemoriesViewModel,
         currentUserID: UUID?,
+        gameRounds: GuessMySpotHistoryViewModel? = nil,
         initialSelectedID: UUID? = nil,
         initialCluster: [MemoryMapEntry]? = nil
     ) {
         self.viewModel = viewModel
         self.currentUserID = currentUserID
+        self.gameRounds = gameRounds
         _selectedID = State(initialValue: initialSelectedID)
         _cluster = State(initialValue: initialCluster.map { MemoriesMapCluster(ids: $0.map(\.id)) })
         initialFocusIDs = initialCluster.map { Set($0.map(\.id)) }
@@ -39,8 +43,18 @@ struct MemoriesMapScreen: View {
     /// The scenario's cluster, which the first fit frames so its pin is the one on screen.
     private let initialFocusIDs: Set<UUID>?
 
+    private var content: MemoriesMapContent {
+        viewModel.mapContent(rounds: gameRounds?.memoryMapEntries ?? [])
+    }
+
+    /// The "Add place" panel, while no memory has a place. Game rounds don't count, but a
+    /// picked round pin swaps the panel for its card.
+    private func showsEmptyPanel(_ content: MemoriesMapContent) -> Bool {
+        content.placedMemories.isEmpty && selectedID == nil
+    }
+
     var body: some View {
-        let content = viewModel.mapContent
+        let content = self.content
         GeometryReader { proxy in
             ZStack {
                 MemoriesMapView(
@@ -90,13 +104,27 @@ struct MemoriesMapScreen: View {
         .sheet(isPresented: $isShowingUnplaced) {
             MemoriesUnplacedSheet(viewModel: viewModel)
         }
-        .navigationDestination(item: $openedMemoryID) { memoryID in
-            MemoryDetailView(memoryID: memoryID, currentUserID: currentUserID, viewModel: viewModel)
-                .analyticsScreen("memory_detail")
+        .navigationDestination(item: $opened) { destination in
+            switch destination {
+            case let .memory(memoryID):
+                MemoryDetailView(memoryID: memoryID, currentUserID: currentUserID, viewModel: viewModel)
+                    .analyticsScreen("memory_detail")
+            case let .guessMySpotRound(roundID):
+                if let gameRounds, let round = gameRounds.rounds.first(where: { $0.id == roundID }) {
+                    GuessMySpotRoundDetail(round: round, history: gameRounds, showsClose: false)
+                        .analyticsScreen("guess_my_spot_round")
+                }
+            }
         }
         .task {
-            guard content.placed.isEmpty else { return }
+            // The rounds come from the game's cache first, then the server.
+            await gameRounds?.load()
+            // Read again: the rounds may have just arrived.
+            guard self.content.placed.isEmpty else { return }
             homeRegion = await MemoriesMapRegion.home()
+        }
+        .task {
+            await gameRounds?.follow()
         }
     }
 
@@ -105,7 +133,7 @@ struct MemoriesMapScreen: View {
     /// Room the map keeps clear for the title, the totals, and the bottom controls when
     /// it frames the pins.
     private func overlayInsets(_ content: MemoriesMapContent, safeArea: EdgeInsets, height: CGFloat) -> UIEdgeInsets {
-        let bottom: CGFloat = if content.placed.isEmpty {
+        let bottom: CGFloat = if showsEmptyPanel(content) {
             height * 0.5
         } else if selectedID != nil {
             150
@@ -164,7 +192,7 @@ struct MemoriesMapScreen: View {
 
     @ViewBuilder
     private func bottomControls(_ content: MemoriesMapContent, maxPanelHeight: CGFloat) -> some View {
-        if content.placed.isEmpty {
+        if showsEmptyPanel(content) {
             MemoriesMapEmptyPanel(viewModel: viewModel, records: content.unplaced, maxHeight: maxPanelHeight)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         } else {
@@ -183,7 +211,7 @@ struct MemoriesMapScreen: View {
 
                 if selectedID != nil {
                     MemoriesMapCarousel(entries: content.placed, selectedID: $selectedID) { id in
-                        openedMemoryID = id
+                        open(id, in: content)
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -228,8 +256,20 @@ struct MemoriesMapScreen: View {
     private func openPickedMemory() {
         guard let memoryToOpen else { return }
         self.memoryToOpen = nil
-        openedMemoryID = memoryToOpen
+        open(memoryToOpen, in: content)
     }
+
+    /// A memory opens its detail, a round opens the game's round.
+    private func open(_ id: UUID, in content: MemoriesMapContent) {
+        let kind = content.placed.first { $0.id == id }?.kind ?? .memory
+        opened = kind == .guessMySpotRound ? .guessMySpotRound(id) : .memory(id)
+    }
+}
+
+/// What a card or a cluster row opens.
+enum MemoriesMapDestination: Hashable {
+    case memory(UUID)
+    case guessMySpotRound(UUID)
 }
 
 /// The memories in a cluster that zooming can't separate. The sheet reads their

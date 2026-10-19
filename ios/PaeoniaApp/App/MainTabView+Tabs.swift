@@ -60,6 +60,7 @@ extension MainTabView {
                 viewModel: memoriesViewModel,
                 stories: storiesViewModel,
                 storyPeople: storyPeople,
+                gameRounds: gamesViewModel.guessMySpot.history,
                 onLocalChange: actions.syncAfterLocalChange
             )
             .analyticsScreen("memories")

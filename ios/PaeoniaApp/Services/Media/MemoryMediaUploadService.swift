@@ -6,23 +6,28 @@ nonisolated enum MemoryMediaPurpose: String, Codable, Sendable, Equatable {
     case voice = "voice_note"
     /// A story photo. It goes through the same upload as a memory photo.
     case story = "story_photo"
+    /// A Guess my spot photo, stripped of its metadata before upload.
+    case guessMySpot = "guess_my_spot_photo"
 
     var mediaType: String {
         switch self {
-        case .photo, .story:
+        case .photo, .story, .guessMySpot:
             "image"
         case .voice:
             "voice"
         }
     }
 
-    /// What the upload is reserved for. A story photo belongs to its story.
+    /// What the upload is reserved for. A story photo belongs to its story, and a
+    /// Guess my spot photo to its round.
     var reservedParentKind: String {
         switch self {
         case .photo, .voice:
             "memory_media"
         case .story:
             "story"
+        case .guessMySpot:
+            "guess_my_spot_round"
         }
     }
 }

@@ -34,6 +34,17 @@ struct GamesDependencies {
     /// The Consensio relay room for the couple: presence, roles and the live guess pin.
     var makeConsensioLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
 
+    // Guess my spot
+    var guessMySpotGateway: any GuessMySpotGateway = UnavailableGamesGateway()
+    var guessMySpotCache: any GuessMySpotCaching = InMemoryGuessMySpotCache()
+    /// The stripped photos of sends that have not reached the server.
+    var guessMySpotPhotos: any GuessMySpotPhotoStoring = InMemoryGuessMySpotPhotoStore()
+    var guessMySpotPlaceNamer: any GuessMySpotPlaceNaming = FixedGuessMySpotPlaceNamer()
+    /// Where the check map opens for a photo without a location.
+    var guessMySpotHomeArea: any GuessMySpotHomeAreaProviding = FixedGuessMySpotHomeArea()
+    /// The Guess my spot relay room for the couple: presence, roles and the live guess pin.
+    var makeGuessMySpotLive: @MainActor (UUID) -> WidgetLiveDrawing? = { _ in nil }
+
     // Exquisite corpse
     var exquisiteCorpseGateway: any ExquisiteCorpseGateway = UnavailableExquisiteCorpseGateway()
     var exquisiteCorpseCache: any ExquisiteCorpseCaching = InMemoryExquisiteCorpseCache()
@@ -72,6 +83,12 @@ struct GamesDependencies {
             consensioGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
             consensioCache: FileConsensioCache.shared,
             makeConsensioLive: { GameLiveRoom.make(.consensio, coupleID: $0) },
+            guessMySpotGateway: client.map { LiveGamesGateway(client: $0) } ?? UnavailableGamesGateway(),
+            guessMySpotCache: FileGuessMySpotCache.shared,
+            guessMySpotPhotos: FileGuessMySpotPhotoStore.shared,
+            guessMySpotPlaceNamer: LiveGuessMySpotPlaceNamer(),
+            guessMySpotHomeArea: LiveGuessMySpotHomeArea(),
+            makeGuessMySpotLive: { GameLiveRoom.make(.guessMySpot, coupleID: $0) },
             exquisiteCorpseGateway: client.map { LiveExquisiteCorpseGateway(client: $0) }
                 ?? UnavailableExquisiteCorpseGateway(),
             exquisiteCorpseCache: FileExquisiteCorpseCache.shared,

@@ -4,6 +4,7 @@ import { consensioBackend } from "./consensio";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { drawAndGuessBackend } from "./drawAndGuess";
 import { exquisiteCorpseBackend } from "./exquisiteCorpse";
+import { guessMySpotBackend } from "./guessMySpot";
 import { mindMeldBackend } from "./mindMeld";
 import { storyChainBackend } from "./storyChain";
 import type { GameLanguage } from "./gameWords";
@@ -43,6 +44,7 @@ export const GAME_BACKENDS: Record<GameKind, GameBackend | null> = {
   ultimate_tic_tac_toe: boardGameBackend,
   ludo: boardGameBackend,
   consensio: consensioBackend,
+  guess_my_spot: guessMySpotBackend,
 };
 
 const registered = (): GameBackend[] => GAME_KINDS.flatMap((kind) => GAME_BACKENDS[kind] ?? []);

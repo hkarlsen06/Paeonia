@@ -40,7 +40,7 @@ test("a ticket with an allowed channel joins that channel's room", async () => {
 });
 
 test("every game kind is an allowed channel", async () => {
-  for (const ch of ["mind_meld", "exquisite_corpse", "story_chain", "connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo", "consensio"]) {
+  for (const ch of ["mind_meld", "exquisite_corpse", "story_chain", "connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo", "consensio", "guess_my_spot"]) {
     const ticket = await verifyTicket(sign({ c: "couple-1", u: "user-1", e: now + 60_000, ch }), secret, now);
     assert.deepEqual(ticket, { coupleId: "couple-1", userId: "user-1", expiresAt: now + 60_000, channel: ch });
     assert.equal(roomName(ticket!), `couple-1:${ch}`);

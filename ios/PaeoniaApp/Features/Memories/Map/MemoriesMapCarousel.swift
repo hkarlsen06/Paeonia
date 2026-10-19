@@ -43,6 +43,7 @@ struct MemoriesMapCarousel: View {
     }
 
     /// The title, then the place without its city (the map shows where it is), then
+    /// the date. A Guess my spot round shows its place, then "From Guess my spot", then
     /// the date. Nothing is cut off: long text wraps, and at the largest text sizes the
     /// photo moves above the text.
     private func card(_ entry: MemoryMapEntry) -> some View {
@@ -59,7 +60,7 @@ struct MemoriesMapCarousel: View {
                     Text(entry.title)
                         .font(PaeoniaTypography.bodyEmphasis)
                         .foregroundStyle(.paeoniaTextPrimary)
-                    Text(entry.place.name)
+                    Text(entry.kind == .memory ? entry.place.name : String(localized: .memoriesMapFromGuessMySpot))
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaMemory)
                     if let date = MemoryMapText.date(entry.memoryDate) {
@@ -79,7 +80,7 @@ struct MemoriesMapCarousel: View {
         }
         .buttonStyle(.paeoniaPressableCard)
         .accessibilityElement(children: .combine)
-        .accessibilityHint(Text(.memoriesMapCardHint))
+        .accessibilityHint(Text(entry.kind == .guessMySpotRound ? .memoriesMapRoundCardHint : .memoriesMapCardHint))
     }
 }
 
@@ -112,9 +113,22 @@ struct MemoryMapThumbnail: View {
 }
 
 enum MemoryMapText {
-    /// "14 Feb 2026 · Bryggen, Bergen".
+    /// "14 Feb 2026 · Bryggen, Bergen", or "14 Feb 2026 · From Guess my spot" for a round.
     static func dateAndPlace(_ entry: MemoryMapEntry) -> String {
-        [date(entry.memoryDate), entry.place.nameAndCity].compactMap(\.self).joined(separator: " · ")
+        let second = entry.kind == .guessMySpotRound
+            ? String(localized: .memoriesMapFromGuessMySpot)
+            : entry.place.nameAndCity
+        return [date(entry.memoryDate), second].compactMap(\.self).joined(separator: " · ")
+    }
+
+    /// "3 memories", or "3 places" when Guess my spot rounds are among them.
+    static func count(_ entries: [MemoryMapEntry]) -> String {
+        let mixed = entries.contains { $0.kind == .guessMySpotRound }
+        if entries.count == 1 {
+            return String(localized: mixed ? .memoriesMapPlaceCountOne : .memoriesMapMemoryCountOne)
+        }
+        let count = entries.count.formatted()
+        return String(localized: mixed ? .memoriesMapPlaceCount(count) : .memoriesMapMemoryCount(count))
     }
 
     static func date(_ memoryDate: String) -> String? {

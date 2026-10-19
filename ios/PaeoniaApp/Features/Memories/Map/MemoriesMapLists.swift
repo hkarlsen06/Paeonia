@@ -208,7 +208,7 @@ struct MemoriesMapClusterSheet: View {
         }
         .buttonStyle(.paeoniaPressableRow)
         .accessibilityElement(children: .combine)
-        .accessibilityHint(Text(.memoriesMapCardHint))
+        .accessibilityHint(Text(entry.kind == .guessMySpotRound ? .memoriesMapRoundCardHint : .memoriesMapCardHint))
     }
 
     /// "Oslo" over "2 memories".
@@ -239,8 +239,6 @@ struct MemoriesMapClusterSheet: View {
     }
 
     private var countText: String {
-        entries.count == 1
-            ? String(localized: .memoriesMapMemoryCountOne)
-            : String(localized: .memoriesMapMemoryCount(entries.count.formatted()))
+        MemoryMapText.count(entries)
     }
 }

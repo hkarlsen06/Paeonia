@@ -49,6 +49,7 @@ The scene is the final frame of the game's moment, with one element left out. Th
 | Odd Creatures | The folded strip with its creature, two crayons | A pink glow swells over the sweater's heart |
 | Ludo | The board with one pawn of each partner and the dome empty | A pink pawn hops home onto the dome, and the dome glows gold |
 | Consensio | A cream rail with gold end caps and one pink pin planted in it | A lavender pin drops onto the rail beside it and plants, and a gold glow swells between the two heads |
+| Guess my spot | A folded paper map with lavender water and a gold edge, an instant photo of a harbor leaning on its left side | A pink pin drops onto the map's right half and plants with a small squash, and a gold glow swells under it |
 
 - Measure the beat's spot on the object's pixels and give it as fractions of the image (`GameHubPlacement.point`), so it lands on the spot at every size.
 - An element that moves across an object must share its camera. The Ludo pawn is cut out of the Ludo board image for that reason.

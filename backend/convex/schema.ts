@@ -21,6 +21,7 @@ import {
 } from "./lib/validators";
 import { LUDO_COLORS } from "./lib/ludo";
 import { consensioTables } from "./lib/consensio";
+import { guessMySpotTables } from "./lib/guessMySpot";
 import { mindMeldTables } from "./lib/mindMeld";
 
 // Conventions (see backend/AGENTS.md):
@@ -875,6 +876,7 @@ export default defineSchema({
       "game_move",
       "exquisite_corpse_part", // Exquisite corpse
       "story",
+      "guess_my_spot_round", // Guess my spot
       "report_snapshot",
     ),
     reserved_parent_id: uuid,
@@ -893,6 +895,7 @@ export default defineSchema({
       "exquisite_corpse_drawing", // Exquisite corpse
       "exquisite_corpse_strip", // Exquisite corpse
       "story_photo",
+      "guess_my_spot_photo", // Guess my spot
       "report_snapshot",
     ),
     expected_media_type: mediaType,
@@ -1696,6 +1699,8 @@ export default defineSchema({
   ...mindMeldTables,
   // Consensio: consensio_games, consensio_rounds, consensio_used_topics (lib/consensio.ts, docs/games/consensio.md).
   ...consensioTables,
+  // Guess my spot: guess_my_spot_games, guess_my_spot_rounds (lib/guessMySpot.ts, docs/games/guess-my-spot.md).
+  ...guessMySpotTables,
   // Exquisite corpse (docs/games/exquisite-corpse.md). Four tables, deleted with the couple's other game rows (lib/exquisiteCorpse.ts).
   // FK: couple_id -> couples cascade. couple_id is unique. part_index (0 head, 1 body, 2 legs) is the next part.
   exquisite_corpse_games: defineTable({

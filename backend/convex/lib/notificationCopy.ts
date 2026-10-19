@@ -173,6 +173,26 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
       },
     },
   },
+  guess_my_spot: {
+    en: {
+      name: "Guess my spot",
+      turnReadyBody: "Open Paeonia to guess where it was taken.",
+      resultTitle: (actor) => `${actor} made a guess`,
+      resultBody: "Open Paeonia to see how close they got.",
+      steps: {
+        guessed: { title: (actor) => `${actor} guessed and sent you a photo`, body: "Open Paeonia to see how close they got." },
+      },
+    },
+    nb: {
+      name: "Gjett hvor",
+      turnReadyBody: "Åpne Paeonia for å gjette hvor bildet er tatt.",
+      resultTitle: (actor) => `${actor} har gjettet`,
+      resultBody: "Åpne Paeonia for å se hvor nær gjetningen var.",
+      steps: {
+        guessed: { title: (actor) => `${actor} har gjettet og sendt deg et bilde`, body: "Åpne Paeonia for å se hvor nær gjetningen var." },
+      },
+    },
+  },
 };
 
 /** The copy of the game a push names in `payload.game_kind`, or null when the game has no entry. */

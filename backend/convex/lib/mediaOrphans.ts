@@ -2,6 +2,7 @@ import type { WriterCtx, ReaderCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import { fail } from "./errors";
 import { isCorpseAssetReferenced } from "./exquisiteCorpse"; // Exquisite corpse
+import { roundWithPhoto } from "./guessMySpot"; // Guess my spot
 import { addMs, nowIso } from "./time";
 import type { Doc } from "../_generated/dataModel";
 
@@ -83,6 +84,7 @@ export async function mediaAssetHasLiveReference(ctx: ReaderCtx, assetId: string
     .withIndex("by_drawing_media_asset_id", (q) => q.eq("drawing_media_asset_id", assetId))
     .first();
   if (moves !== null) return true;
+  if ((await roundWithPhoto(ctx, assetId)) !== null) return true; // Guess my spot
   return await isCorpseAssetReferenced(ctx, assetId); // Exquisite corpse
 }
 

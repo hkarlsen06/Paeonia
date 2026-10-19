@@ -1,24 +1,35 @@
 import Foundation
 
-/// One memory on the map.
+/// What a pin on the map stands for.
+nonisolated enum MemoryMapEntryKind: Hashable, Sendable {
+    case memory
+    /// A guessed round of Guess my spot: its photo at the real spot. Its card says it
+    /// came from the game and opens the round. Rounds never count in the totals.
+    case guessMySpotRound
+}
+
+/// One memory, or one Guess my spot round, on the map.
 nonisolated struct MemoryMapEntry: Identifiable, Hashable, Sendable {
     let id: UUID
+    /// The memory's title, or the round's place name.
     let title: String
-    /// Couple-local `yyyy-MM-dd`.
+    /// Couple-local `yyyy-MM-dd`. For a round, the day its photo was taken.
     let memoryDate: String
     let place: MemoryPlace
     /// The first photo, shown on the pin. Nil shows the heart tile.
     let photoAssetID: UUID?
+    var kind: MemoryMapEntryKind = .memory
 }
 
 /// What the map shows, worked out from the timeline. Pure, so it is unit-tested.
 nonisolated struct MemoriesMapContent: Equatable, Sendable {
-    /// Memories with a place, newest first like the timeline.
+    /// Memories with a place and Guess my spot rounds, newest first like the timeline.
     let placed: [MemoryMapEntry]
     /// Memories without one, newest first.
     let unplaced: [MemoryRecord]
 
-    init(records: [MemoryRecord]) {
+    /// `rounds` are Guess my spot rounds, as `MemoryMapEntry` values of that kind.
+    init(records: [MemoryRecord], rounds: [MemoryMapEntry] = []) {
         var placed: [MemoryMapEntry] = []
         var unplaced: [MemoryRecord] = []
         for record in records {
@@ -35,12 +46,24 @@ nonisolated struct MemoriesMapContent: Equatable, Sendable {
                 photoAssetID: snapshot.visibleMediaAssetIDs.first
             ))
         }
-        self.placed = placed
+        // Newest first. On the same day a memory comes before a round.
+        self.placed = (placed + rounds).enumerated().sorted { lhs, rhs in
+            guard lhs.element.memoryDate == rhs.element.memoryDate else {
+                return lhs.element.memoryDate > rhs.element.memoryDate
+            }
+            return lhs.offset < rhs.offset
+        }.map(\.element)
         self.unplaced = unplaced
     }
 
+    /// The memories with a place, without the game's rounds.
+    var placedMemories: [MemoryMapEntry] {
+        placed.filter { $0.kind == .memory }
+    }
+
+    /// Countries and cities of memories only. Game rounds don't count.
     var totals: MemoryPlaceTotals {
-        MemoryPlaceTotals(places: placed.map(\.place))
+        MemoryPlaceTotals(places: placedMemories.map(\.place))
     }
 }
 
@@ -99,6 +122,10 @@ extension MemoriesViewModel {
     }
 
     var mapContent: MemoriesMapContent {
-        MemoriesMapContent(records: timeline.flatMap(\.memories))
+        mapContent(rounds: [])
+    }
+
+    func mapContent(rounds: [MemoryMapEntry]) -> MemoriesMapContent {
+        MemoriesMapContent(records: timeline.flatMap(\.memories), rounds: rounds)
     }
 }

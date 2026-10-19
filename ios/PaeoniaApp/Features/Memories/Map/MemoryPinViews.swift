@@ -204,7 +204,10 @@ final class MemoryPinAnnotationView: MKAnnotationView {
     static func accessibilityLabel(for entry: MemoryMapEntry) -> String {
         let date = MemoryTimeline.parseLocalDate(entry.memoryDate)
             .map { $0.formatted(MemoryDateStyle.long) }
-        return [entry.title, entry.place.nameAndCity, date].compactMap(\.self).joined(separator: ", ")
+        let second = entry.kind == .guessMySpotRound
+            ? String(localized: .memoriesMapFromGuessMySpot)
+            : entry.place.nameAndCity
+        return [entry.title, second, date].compactMap(\.self).joined(separator: ", ")
     }
 }
 
@@ -319,9 +322,9 @@ final class MemoryClusterAnnotationView: MKAnnotationView {
         let tileRight = frontTile.frame.maxX
         badge.frame = CGRect(x: tileRight - width + 10, y: frontTile.frame.minY - 9, width: width, height: 22)
 
-        accessibilityLabel = entries.count == 1
-            ? String(localized: .memoriesMapMemoryCountOne)
-            : String(localized: .memoriesMapMemoryCount(entries.count.formatted()))
-        accessibilityHint = String(localized: .memoriesMapClusterHint)
+        accessibilityLabel = MemoryMapText.count(entries)
+        accessibilityHint = String(localized: entries.contains { $0.kind == .guessMySpotRound }
+            ? .memoriesMapClusterPlacesHint
+            : .memoriesMapClusterHint)
     }
 }

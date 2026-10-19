@@ -13,6 +13,7 @@ nonisolated enum GamesPendingOperationRegistry {
             + storyChainHandlers(gateway: gateway, cache: cache)
             + mindMeldHandlers(gateway: gateway)
             + consensioHandlers(gateway: gateway)
+            + guessMySpotHandlers(gateway: gateway)
             + exquisiteCorpseHandlers(client: client)
             + boardGameHandlers(client: client)
     }
@@ -68,6 +69,22 @@ nonisolated enum GamesPendingOperationRegistry {
             ConsensioPlacePendingOperationHandler(gateway: gateway, cache: FileConsensioCache.shared),
             ConsensioGuessPendingOperationHandler(gateway: gateway, cache: FileConsensioCache.shared),
             ConsensioRevealSeenOperationHandler(gateway: gateway, cache: FileConsensioCache.shared),
+        ]
+    }
+
+    private static func guessMySpotHandlers(gateway: LiveGamesGateway) -> [any PendingSyncOperationHandling] {
+        let cache = FileGuessMySpotCache.shared
+        return [
+            GuessMySpotSendPendingOperationHandler(
+                gateway: gateway,
+                cache: cache,
+                photos: FileGuessMySpotPhotoStore.shared,
+                namer: LiveGuessMySpotPlaceNamer(),
+                imageCache: MemoryMediaImageDiskCache()
+            ),
+            GuessMySpotGuessPendingOperationHandler(gateway: gateway, cache: cache),
+            GuessMySpotRevealSeenOperationHandler(gateway: gateway, cache: cache),
+            GuessMySpotDeleteRoundOperationHandler(gateway: gateway, cache: cache),
         ]
     }
 
