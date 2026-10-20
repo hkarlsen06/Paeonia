@@ -12,7 +12,9 @@ struct GuessMySpotCheckView: View {
     private var draft: GuessMySpotDraft? { viewModel.draft }
 
     var body: some View {
-        GuessMySpotSplitLayout {
+        // The person just picked this photo, so it shrinks to a reminder and the map
+        // gets the room for panning and zooming.
+        GuessMySpotSplitLayout(photoShare: 0.25) {
             EmptyView()
         } photo: {
             GuessMySpotPhotoPane(image: draft?.image)
@@ -56,10 +58,11 @@ struct GuessMySpotCheckView: View {
                 .font(PaeoniaTypography.title)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .accessibilityAddTraits(.isHeader)
-            Text(hint)
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextSecondary)
-            if let name = draft?.placeName, draft?.spot != nil {
+            if draft?.spot == nil {
+                Text(.guessMySpotCheckMissingHint)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            } else if let name = draft?.placeName {
                 Label {
                     Text(verbatim: name)
                 } icon: {
@@ -73,16 +76,10 @@ struct GuessMySpotCheckView: View {
             Text(.guessMySpotCheckPrivate(viewModel.partnerName))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextTertiary)
-                .padding(.top, PaeoniaSpacing.space4)
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
         .animation(PaeoniaMotion.stateChange, value: draft?.placeName)
-    }
-
-    private var hint: LocalizedStringResource {
-        if draft?.spotFromPhoto == true { return .guessMySpotCheckFoundHint }
-        return draft?.spot == nil ? .guessMySpotCheckMissingHint : .guessMySpotCheckMovedHint
     }
 
     private var sendButton: some View {

@@ -36,8 +36,7 @@ extension GuessMySpotViewModel {
             roundID: UUID(),
             photo: prepared,
             image: image,
-            spot: prepared.spot,
-            spotFromPhoto: prepared.spot != nil
+            spot: prepared.spot
         )
         namePlaceSoon()
     }
@@ -63,7 +62,6 @@ extension GuessMySpotViewModel {
             ),
             image: image,
             spot: send.details.spot,
-            spotFromPhoto: false,
             place: send.details.placeName.map {
                 GuessMySpotPlace(name: $0, city: send.details.placeCity, countryCode: send.details.placeCountryCode)
             },

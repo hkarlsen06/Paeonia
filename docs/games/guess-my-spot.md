@@ -60,7 +60,7 @@ Decided by the agent on 2026-10-19. The developer can change any of them.
 A couple has one ongoing game. A round has a sender and a guesser.
 
 1. **Pick a photo.** The sender sees their camera roll in the screen and taps a photo.
-2. **Check the spot.** The photo sits on the top half and the map on the bottom half, with a pin at the spot read from the photo, or a prompt to tap the map when the photo has none. A tap moves the pin. "Choose another photo" goes back to the camera roll, as often as the sender likes. "Send to [Name]" sends the round.
+2. **Check the spot.** A small photo sits on top and the map takes most of the screen, with a pin at the spot read from the photo, or a prompt to tap the map when the photo has none. A tap moves the pin. "Choose another photo" goes back to the camera roll, as often as the sender likes. "Send to [Name]" sends the round.
 3. **Guess.** The guesser sees the photo on the top half and a map of the whole world on the bottom half. They tap where they think it was taken and tap "Lock in my guess".
 4. **Reveal.** The camera travels from the guess to the real spot, the distance counts up and the points land. Then the photo comes back with the place name and date.
 5. **Your turn to send.** The guesser picks the next photo. That is the next round.
@@ -242,9 +242,9 @@ Tapping a photo plays `selection()` and `tap`, reads it, and opens the check. Wh
 
 Layout.
 
-1. The photo on the top half, aspect fit on `.paeoniaSurfacePrimary`, rounded `radius16`.
-2. The map on the bottom half, rounded `radius16`, with this person's pin.
-3. Under the map: the title "Is this the spot?" once there is a pin, or "Where was this?" before. The hint is "We found it in the photo. Tap the map to move it." when the spot came from the photo, "This photo doesn't say where it was taken. Tap the map where it was." before a pin, and "Tap the map to move the pin." when the sender placed it, such as on a send that didn't go through and was put back. Under that, the place name with `mappin.and.ellipse` once there is a pin.
+1. The photo on the top quarter, aspect fit on `.paeoniaSurfacePrimary`, rounded `radius16`. The sender just picked it, so it is only a reminder.
+2. The map on the other three quarters, rounded `radius16`, with this person's pin. It is big so it is easy to pan and zoom.
+3. Under the map: the title "Is this the spot?" once there is a pin, or "Where was this?" before. Before a pin, the hint "This photo doesn't say where it was taken. Tap the map where it was." With a pin, the place name with `mappin.and.ellipse` instead.
 4. A quiet line: "We take the place and time out of the photo. [Name] only sees the picture."
 5. Pinned bottom: primary "Send to [Name]" (`paperplane.fill`), off until there is a pin. Back in the toolbar reads "Choose another photo" and returns to the picker without sending.
 
@@ -253,9 +253,7 @@ Layout.
 | Key | English | Norwegian |
 |---|---|---|
 | `check.another` | Choose another photo | Velg et annet bilde |
-| `check.found.hint` | We found it in the photo. Tap the map to move it. | Vi fant det i bildet. Trykk på kartet for å flytte det. |
 | `check.found.title` | Is this the spot? | Er dette stedet? |
-| `check.moved.hint` | Tap the map to move the pin. | Trykk på kartet for å flytte nålen. |
 | `check.missing.hint` | This photo doesn't say where it was taken. Tap the map where it was. | Bildet sier ikke hvor det er tatt. Trykk på kartet der det var. |
 | `check.missing.title` | Where was this? | Hvor var dette? |
 | `check.private` | We take the place and time out of the photo. %@ only sees the picture. | Vi tar sted og tid ut av bildet. %@ ser bare selve bildet. |
@@ -437,7 +435,7 @@ Artwork (`GuessMySpotHubArtwork`), following `docs/games/hub-artwork.md`. `GameH
 
 ### Wide layouts and Dynamic Type
 
-- Wide (700 pt or more and wider than tall): the photo goes on the left half and the map on the right, for check, guess and waiting.
+- Wide (700 pt or more and wider than tall): the photo goes on the left and the map on the right, for check, guess and waiting. Guess and waiting split the room in half. Check gives the photo a quarter.
 - Nothing on the photo and map screens scrolls, so the map's pan and pinch never fight a scroll view. Larger text takes its room from the photo and the map, and the button stays pinned.
 - iPad keeps the tab bar.
 

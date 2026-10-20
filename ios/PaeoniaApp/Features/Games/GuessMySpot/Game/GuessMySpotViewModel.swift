@@ -19,8 +19,6 @@ struct GuessMySpotDraft: Equatable {
     let photo: GuessMySpotPreparedPhoto
     let image: UIImage
     var spot: GuessMySpotCoordinate?
-    /// The spot came from the photo's own data.
-    let spotFromPhoto: Bool
     /// What Apple's maps call the spot, once looked up.
     var place: GuessMySpotPlace?
     /// The refused send this draft puts back. Its record and photo stay on the phone

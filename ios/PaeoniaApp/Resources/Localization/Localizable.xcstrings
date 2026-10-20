@@ -15591,24 +15591,6 @@
         }
       }
     },
-    "guessMySpot.check.found.hint" : {
-      "comment" : "Check screen hint when the photo said where it was taken.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We found it in the photo. Tap the map to move it."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi fant det i bildet. Trykk på kartet for å flytte det."
-          }
-        }
-      }
-    },
     "guessMySpot.check.found.title" : {
       "comment" : "Check screen title when the photo said where it was taken.",
       "extractionState" : "manual",
@@ -15659,24 +15641,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hvor var dette?"
-          }
-        }
-      }
-    },
-    "guessMySpot.check.moved.hint" : {
-      "comment" : "Check screen hint when the sender placed the pin themselves, such as after a send that didn't go through was put back.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap the map to move the pin."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trykk på kartet for å flytte nålen."
           }
         }
       }

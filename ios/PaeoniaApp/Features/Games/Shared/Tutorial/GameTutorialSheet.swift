@@ -122,8 +122,9 @@ struct GameTutorialSheet: View {
             .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        // Room for the page dots.
-        .padding(.bottom, PaeoniaSpacing.space40)
+        // Room for the page dots, which sit about 27 points above the bottom
+        // of the pages, plus a clear gap between them and the text.
+        .padding(.bottom, PaeoniaSpacing.space40 + PaeoniaSpacing.space16)
         .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
     }
 

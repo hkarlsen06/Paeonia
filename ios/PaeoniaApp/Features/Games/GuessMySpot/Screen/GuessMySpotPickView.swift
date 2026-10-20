@@ -5,6 +5,9 @@ import SwiftUI
 /// the app gets only the photo the person taps and needs no photo library
 /// permission. Screenshots and videos are left out. It stays alive under the
 /// check, so "Choose another photo" comes back to the same place in the roll.
+/// The system draws the picker on black that the app can't recolor, and clipping
+/// or covering it stops it taking touches. So its top bar is hidden, and the photo
+/// grid starts right under the header without a black band above it.
 struct GuessMySpotPickView: View {
     @Bindable var viewModel: GuessMySpotViewModel
 
@@ -70,7 +73,7 @@ struct GuessMySpotPickView: View {
         }
         .photosPickerStyle(.inline)
         .photosPickerDisabledCapabilities([.selectionActions])
-        .photosPickerAccessoryVisibility(.hidden, edges: .bottom)
+        .photosPickerAccessoryVisibility(.hidden, edges: .all)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay {
             if viewModel.isPreparingPhoto {

@@ -245,7 +245,6 @@
         photo: prepared,
         image: image,
         spot: spot,
-        spotFromPhoto: spot != nil,
         place: spot == nil ? nil : GuessMySpotPlace(name: "Bergen, Norway", city: "Bergen", countryCode: "NO")
       )
     }
