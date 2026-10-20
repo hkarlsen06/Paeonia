@@ -31,12 +31,13 @@ nonisolated enum GuessMySpotGlobe {
     /// farther apart. This tries both and keeps the camera that fits nearest the
     /// spots' own latitude, so the arc stays in the middle of the globe, or for
     /// spots too far apart, nearly opposite on the earth, the one that leaves the least outside.
+    /// `fits` is false then.
     static func framing(
         _ guess: GuessMySpotCoordinate,
         _ spot: GuessMySpotCoordinate,
         height: Double,
         room: Room
-    ) -> MapCamera {
+    ) -> (camera: MapCamera, fits: Bool) {
         let focal = height * focalPerHeight
         var fitting: (camera: MapCamera, step: Int)?
         var nearest: (camera: MapCamera, over: Double)?
@@ -66,8 +67,8 @@ nonisolated enum GuessMySpotGlobe {
                 }
             }
         }
-        return fitting?.camera ?? nearest?.camera
-            ?? MapCamera(centerCoordinate: spot.location, distance: farthestAtEquator)
+        if let fitting { return (fitting.camera, true) }
+        return (nearest?.camera ?? MapCamera(centerCoordinate: spot.location, distance: farthestAtEquator), false)
     }
 
     /// How far above `centre` the camera must be for `point` to show inside `room`.

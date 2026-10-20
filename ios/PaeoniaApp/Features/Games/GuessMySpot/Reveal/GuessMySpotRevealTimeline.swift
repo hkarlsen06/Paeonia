@@ -203,9 +203,15 @@ final class GuessMySpotRevealTimeline {
         case .zoomOut:
             camera = .overview
         case .line:
-            // Eases out: the line leaves the guess at once and slows into the spot.
+            // Eases out: the line leaves the guess at once and slows into the spot. MapKit
+            // draws a line whose points change every frame only once they stop changing,
+            // so it showed nothing and then the whole line. The line grows in steps it
+            // holds for a few frames instead, which MapKit draws one by one.
+            let steps = (schedule.lineDuration / Self.lineStepDuration).rounded(.up)
             tween(schedule.lineDuration) { [weak self] fraction in
-                self?.lineProgress = 1 - pow(1 - fraction, 2)
+                let stepped = (fraction * steps).rounded(.down) / steps
+                let progress = 1 - pow(1 - stepped, 2)
+                if self?.lineProgress != progress { self?.lineProgress = progress }
             }
         case .drop:
             drop()
@@ -316,6 +322,8 @@ final class GuessMySpotRevealTimeline {
 
     /// How high the real pin starts its drop, in points.
     static let dropHeight: CGFloat = 70
+    /// How long the line holds each step as it draws.
+    static let lineStepDuration: TimeInterval = 0.05
 
     /// Moves a value over `duration`, once a frame, in this run only. A map's pins
     /// and lines don't take SwiftUI's animations, so the timeline steps them. Each

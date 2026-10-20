@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The reveal's card: the photo back with where and when it was taken, the
 /// verdict, how far off the guess was, and the shared total counting up.
+/// Collapsed it shows only the total, so the map has nearly the whole screen.
 struct GuessMySpotResultCard: View {
     let round: RemoteGuessMySpotRound?
     let plan: GuessMySpotRevealPlan
@@ -10,28 +11,33 @@ struct GuessMySpotResultCard: View {
     let viewModel: GuessMySpotViewModel
     let countedPoints: Int
     var isTitleFocused: AccessibilityFocusState<Bool>.Binding
+    var isCollapsed = false
+    /// Collapses or expands the card. Nil: the card can't, as while the reveal plays.
+    var onToggle: (() -> Void)?
+
+    private var canToggle: Bool { onToggle != nil }
 
     var body: some View {
+        // Collapsed, the card is a button. It has the trait then.
+        // swiftlint:disable:next accessibility_trait_for_button
         VStack(spacing: PaeoniaSpacing.space12) {
-            GuessMySpotPhotoCaption(
-                image: image,
-                placeName: round?.placeName,
-                takenOn: round?.takenOn,
-                height: 180
-            )
-            VStack(spacing: PaeoniaSpacing.space4) {
-                Text(Self.title(for: plan.verdict, isSender: isSender, partnerName: viewModel.partnerName))
-                    .font(PaeoniaTypography.largeTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .accessibilityAddTraits(.isHeader)
-                Text(line)
-                    .font(PaeoniaTypography.body)
+            if isCollapsed {
+                Image(systemName: "chevron.compact.up")
+                    .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextSecondary)
+                    .accessibilityHidden(true)
+                    .transition(.opacity)
+            } else {
+                GuessMySpotPhotoCaption(
+                    image: image,
+                    placeName: round?.placeName,
+                    takenOn: round?.takenOn,
+                    height: 180
+                )
+                .transition(.opacity)
+                verdict
+                    .transition(.opacity)
             }
-            .multilineTextAlignment(.center)
-            .accessibilityElement(children: .combine)
-            .accessibilityFocused(isTitleFocused)
-            .accessibilityIdentifier("guessMySpot.reveal.title")
             GuessMySpotScoreLine(
                 me: viewModel.me,
                 partner: viewModel.partner,
@@ -48,7 +54,61 @@ struct GuessMySpotResultCard: View {
             .paeoniaSurfaceSecondary,
             in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
         )
+        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+        .onTapGesture { onToggle?() }
+        // Expanded, it has nothing to tap but its button, so a pan or pinch on it moves
+        // the map under it. Collapsed, a tap anywhere on it expands it.
+        .allowsHitTesting(isCollapsed && canToggle)
+        .overlay(alignment: .topTrailing) {
+            if !isCollapsed, canToggle {
+                collapseButton
+            }
+        }
+        .accessibilityElement(children: isCollapsed ? .combine : .contain)
+        .accessibilityAddTraits(isCollapsed && canToggle ? .isButton : [])
+        .accessibilityHint(isCollapsed && canToggle ? Text(.guessMySpotRevealCardExpand) : Text(verbatim: ""))
+        .accessibilityAction {
+            if isCollapsed { onToggle?() }
+        }
         .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+        .accessibilityIdentifier("guessMySpot.reveal.card")
+    }
+
+    private var verdict: some View {
+        VStack(spacing: PaeoniaSpacing.space4) {
+            Text(Self.title(for: plan.verdict, isSender: isSender, partnerName: viewModel.partnerName))
+                .font(PaeoniaTypography.largeTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityAddTraits(.isHeader)
+            Text(line)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+        }
+        .multilineTextAlignment(.center)
+        .accessibilityElement(children: .combine)
+        .accessibilityFocused(isTitleFocused)
+        .accessibilityIdentifier("guessMySpot.reveal.title")
+    }
+
+    /// On the photo's top corner.
+    private var collapseButton: some View {
+        Button {
+            PaeoniaHaptics.selection()
+            onToggle?()
+        } label: {
+            Image(systemName: "chevron.down")
+                .font(PaeoniaTypography.caption.weight(.bold))
+                .foregroundStyle(.paeoniaTextPrimary)
+                .frame(width: 32, height: 32)
+                .glassEffect(.regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6)), in: Circle())
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(PaeoniaSpacing.space12)
+        .accessibilityLabel(Text(.guessMySpotRevealCardCollapse))
+        .accessibilityIdentifier("guessMySpot.reveal.card.collapse")
+        .transition(.opacity)
     }
 
     /// The sender already knows where the photo was taken, so a far guess

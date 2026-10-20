@@ -187,10 +187,12 @@ struct GuessMySpotMap: View {
             MapPolyline(coordinates: coordinates, contourStyle: .geodesic)
                 .stroke(Color.paeoniaTextSecondary, style: StrokeStyle(lineWidth: 4, lineCap: .butt, dash: [6, 7]))
         } else {
+            // Round ends, so the glow wraps the line evenly and each end is a soft dot
+            // under the pin's foot instead of a square cut.
             MapPolyline(coordinates: coordinates, contourStyle: .geodesic)
-                .stroke(Color.paeoniaInkGold.opacity(0.3), style: StrokeStyle(lineWidth: 12, lineCap: .butt))
+                .stroke(Color.paeoniaInkGold.opacity(0.3), style: StrokeStyle(lineWidth: 12, lineCap: .round))
             MapPolyline(coordinates: coordinates, contourStyle: .geodesic)
-                .stroke(Color.paeoniaInkGold, style: StrokeStyle(lineWidth: 4, lineCap: .butt))
+                .stroke(Color.paeoniaInkGold, style: StrokeStyle(lineWidth: 4, lineCap: .round))
         }
     }
 

@@ -16809,6 +16809,42 @@
         }
       }
     },
+    "guessMySpot.reveal.card.collapse" : {
+      "comment" : "VoiceOver label for the button on the Guess my spot result card that shrinks the card to just the scores, so more of the map shows",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show more of the map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis mer av kartet"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.card.expand" : {
+      "comment" : "VoiceOver hint on the shrunk Guess my spot result card. Tapping it shows the photo and the result again",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows the photo and the result again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viser bildet og resultatet igjen."
+          }
+        }
+      }
+    },
     "guessMySpot.reveal.close.title" : {
       "comment" : "Reveal title when the guess is within 300 km.",
       "extractionState" : "manual",

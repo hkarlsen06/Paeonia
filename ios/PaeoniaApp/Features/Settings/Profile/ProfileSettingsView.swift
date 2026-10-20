@@ -52,8 +52,10 @@ struct ProfileSettingsView: View {
             }
         }
         // The name field lives on this screen, so the keyboard needs the standard
-        // Done button and tap/scroll-away dismissal here.
-        .keyboardDismissable()
+        // Done button and scroll-away dismissal here. Not tap-away: a tap gesture
+        // on a Form swallows the taps on its button rows, so the account rows
+        // below would never open their confirmations.
+        .keyboardDoneToolbar()
         .scrollDismissesKeyboard(.interactively)
         .onChange(of: savedProfile, initial: true) { _, saved in
             editor.updateSavedProfile(

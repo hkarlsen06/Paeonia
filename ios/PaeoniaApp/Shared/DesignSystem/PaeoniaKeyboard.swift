@@ -42,7 +42,9 @@ extension View {
     /// Dismisses the keyboard when the user taps anywhere on this view that isn't an
     /// interactive control. A convenience for sighted users, not an accessibility
     /// control, so it intentionally carries no button trait — VoiceOver dismisses the
-    /// keyboard through its own affordances. Interactive subviews keep their own taps.
+    /// keyboard through its own affordances. Interactive subviews keep their own taps,
+    /// except button rows in a `Form` or `List`: the gesture swallows those, so don't
+    /// put it on one. Use `keyboardDoneToolbar` and `scrollDismissesKeyboard` there.
     func dismissesKeyboardOnBackgroundTap() -> some View {
         contentShape(Rectangle())
             .onTapGesture {

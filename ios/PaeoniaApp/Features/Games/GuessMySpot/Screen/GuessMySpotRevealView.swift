@@ -35,6 +35,8 @@ struct GuessMySpotRevealView: View {
     @State private var isSatellite = true
     /// The pin or pins the settled map shows, for the buttons beside the distance.
     @State private var focus: GuessMySpotRevealCameraButtons.Focus?
+    /// The settled card shows only the scores, so the map has nearly the whole screen.
+    @State private var isCardCollapsed = false
     @AccessibilityFocusState private var isTitleFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -120,11 +122,23 @@ struct GuessMySpotRevealView: View {
         .onChange(of: timeline.isSettled) { _, settled in
             guard settled else { return }
             moveCamera(to: timeline.camera)
-            // Reduce Motion settles on both pins. Otherwise on the pin that dropped, the partner's.
-            focus = timeline.camera == .overview ? .both : .partner
+            // Reduce Motion settles on both pins when they fit above the card. Otherwise
+            // on the pin that dropped, the partner's.
+            focus = timeline.camera == .overview && settledOverview()?.fits != false ? .both : .partner
         }
         .onChange(of: camera.positionedByUser) { _, byUser in
             if byUser { focus = nil }
+        }
+        // The card collapsed or expanded: the pin or pins frame again in the room it leaves.
+        // Both pins that don't fit above the expanded card stay where they are, and the
+        // button turns on again, so a tap collapses the card again.
+        .onChange(of: cardHeight) {
+            guard timeline.isSettled, let focus else { return }
+            if focus == .both, !isCardCollapsed, settledOverview()?.fits == false {
+                self.focus = nil
+                return
+            }
+            show(focus)
         }
         .onChange(of: timeline.verdict) { _, verdict in
             guard verdict != nil else { return }
@@ -241,14 +255,14 @@ struct GuessMySpotRevealView: View {
                     isSender: isSender,
                     viewModel: viewModel,
                     countedPoints: timeline.countedPoints,
-                    isTitleFocused: $isTitleFocused
+                    isTitleFocused: $isTitleFocused,
+                    isCollapsed: isCardCollapsed,
+                    onToggle: cardToggle
                 )
                     // A short fade under the rise, so the card lands rather than cuts in.
                     .opacity(timeline.cardShown ? 1 : 0)
                     .animation(.easeOut(duration: 0.2), value: timeline.cardShown)
                     .offset(y: timeline.cardShown || reduceMotion ? 0 : 120)
-                    // It has nothing to tap, so a pan or pinch on it moves the map under it.
-                    .allowsHitTesting(false)
                     .accessibilityHidden(!timeline.cardShown)
             }
         }
@@ -259,6 +273,18 @@ struct GuessMySpotRevealView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
             cardHeight = $0
             preloadIfReady()
+        }
+    }
+
+    /// Collapses or expands the card, once the reveal settled.
+    private var cardToggle: (() -> Void)? {
+        guard timeline.isSettled else { return nil }
+        return { toggleCard() }
+    }
+
+    private func toggleCard() {
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.cardReveal) {
+            isCardCollapsed.toggle()
         }
     }
 
@@ -304,18 +330,29 @@ extension GuessMySpotRevealView {
                 partnerStyle: viewModel.partnerStyle,
                 partnerName: viewModel.partnerName,
                 focus: focus,
-                onSelect: show
+                onSelect: select
             )
             .frame(maxWidth: .infinity, alignment: .leading)
             .transition(.opacity)
         }
     }
 
+    /// A camera button. Out to both pins always collapses the card first, so they get
+    /// nearly the whole screen, and its new height frames them.
+    private func select(_ focus: GuessMySpotRevealCameraButtons.Focus) {
+        if focus == .both, !isCardCollapsed {
+            self.focus = focus
+            toggleCard()
+            return
+        }
+        show(focus)
+    }
+
     /// Moves the settled map to a button's pin, or out to both pins.
     private func show(_ focus: GuessMySpotRevealCameraButtons.Focus) {
         guard let round, let guess = round.guess, let spot = round.spot else { return }
         let position: MapCameraPosition? = switch focus {
-        case .both: settledOverview()
+        case .both: settledOverview()?.position
         // The real spot is the sender's pin.
         case .mine where isSender, .partner where !isSender:
             framed(GuessMySpotCamera.landing(on: spot, guess: guess))
@@ -354,14 +391,17 @@ extension GuessMySpotRevealView {
         }
         // Too far apart for any flat view: the globe. It needs every point it can get,
         // so a pin may stand anywhere it shows whole. The distance capsule comes later.
-        return globe(top: GuessMySpotPin.height + PaeoniaSpacing.space8, bottom: mapSize.height - PaeoniaSpacing.space8)
+        return globe(
+            top: GuessMySpotPin.height + PaeoniaSpacing.space8, bottom: mapSize.height - PaeoniaSpacing.space8
+        )?.position
     }
 
     /// Both pins once the card is up, in the room between the camera buttons and
-    /// the card. The flight's overview may use the card's room, because the card
-    /// rises only after it, so it would hide a pin here. A guess too far to fit
-    /// shows on the globe in that room.
-    private func settledOverview() -> MapCameraPosition? {
+    /// the card, as tall as it is now. The flight's overview may use the card's room,
+    /// because the card rises only after it, so it would hide a pin here. A guess too
+    /// far to fit shows on the globe in that room. `fits` is false when the globe
+    /// can't show both pins in it either.
+    private func settledOverview() -> (position: MapCameraPosition, fits: Bool)? {
         guard let round, let guess = round.guess, let spot = round.spot else { return nil }
         let both = GuessMySpotCamera.framing(guess, spot, padding: 0.2)
         let insets = EdgeInsets(
@@ -372,12 +412,12 @@ extension GuessMySpotRevealView {
         )
         guard let asked = GuessMySpotCamera.filling(both, size: mapSize, insets: insets).rect else { return nil }
         let widest = shown(asked)
-        guard widest.width < asked.width * 0.99 else { return .rect(widest) }
+        guard widest.width < asked.width * 0.99 else { return (.rect(widest), true) }
         return globe(top: insets.top, bottom: mapSize.height - insets.bottom)
     }
 
     /// Both ends on the globe, their pins between `top` and `bottom` of the map. See `GuessMySpotGlobe`.
-    private func globe(top: CGFloat, bottom: CGFloat) -> MapCameraPosition? {
+    private func globe(top: CGFloat, bottom: CGFloat) -> (position: MapCameraPosition, fits: Bool)? {
         guard let ends else { return nil }
         let below = max(0, drawnHeight - mapSize.height)
         let height = mapSize.height + topInset + below
@@ -386,20 +426,31 @@ extension GuessMySpotRevealView {
         let room = GuessMySpotGlobe.Room(
             up: middle - top, down: bottom - middle, side: mapSize.width / 2 - PaeoniaSpacing.space24
         )
-        return .camera(GuessMySpotGlobe.framing(ends.from, ends.to, height: height, room: room))
+        let framing = GuessMySpotGlobe.framing(ends.from, ends.to, height: height, room: room)
+        return (.camera(framing.camera), framing.fits)
     }
 
     private func shown(_ rect: MKMapRect) -> MKMapRect {
         GuessMySpotFlight.shown(rect, size: mapSize, above: topInset, below: max(0, drawnHeight - mapSize.height))
     }
 
+    /// Reduce Motion settles on both pins, with the card already up. Pins too far
+    /// apart to show above it settle on the pin that dropped, as the reveal ends.
+    private func settleOnOverview() {
+        guard let overview = settledOverview() else { return }
+        if overview.fits {
+            camera = overview.position
+        } else if let landing = target(for: .landed) {
+            camera = landing
+        }
+    }
+
     /// Flies along `GuessMySpotFlight` instead of with a SwiftUI animation, which
     /// MapKit runs its own way. See `GuessMySpotFlight`.
     private func moveCamera(to stage: GuessMySpotRevealTimeline.Camera) {
         flight?.cancel()
-        // Reduce Motion settles on both pins, with the card already up.
-        if timeline.isSettled, stage == .overview, let overview = settledOverview() {
-            camera = overview
+        if timeline.isSettled, stage == .overview {
+            settleOnOverview()
             return
         }
         guard let target = flightEnds[stage] ?? target(for: stage) else { return }

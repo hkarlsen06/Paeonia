@@ -48,11 +48,25 @@ struct GuessMySpotPhotoCaption: View {
             }
         }
         .foregroundStyle(.white)
+        // A bright sky or sea can sit right behind the words, so they carry their own
+        // shadow on top of the scrim.
+        .shadow(color: .black.opacity(0.6), radius: 3, y: 1)
         .padding(.horizontal, PaeoniaSpacing.space12)
-        .padding(.top, PaeoniaSpacing.space24)
+        .padding(.top, PaeoniaSpacing.space32)
         .padding(.bottom, PaeoniaSpacing.space12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .top, endPoint: .bottom))
+        // The scrim is already dark where the text starts, not only at the photo's edge.
+        .background(
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.45), location: 0.4),
+                    .init(color: .black.opacity(0.75), location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
         .accessibilityElement(children: .combine)
     }
 }
