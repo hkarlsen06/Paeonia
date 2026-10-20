@@ -14,27 +14,28 @@ nonisolated struct GuessMySpotRevealSchedule: Sendable {
     /// The camera zooms out until both spots fit.
     var zoomOut: TimeInterval = 0.90
     var zoomOutDuration: TimeInterval = 0.9
-    /// The line starts drawing from the guess.
-    var line: TimeInterval = 1.55
+    /// The line starts drawing from the guess, once the zoom out has settled and the
+    /// pictures that covered its gray have faded.
+    var line: TimeInterval = 2.05
     var lineDuration: TimeInterval = 0.7
     /// The real pin drops onto the end of the line.
-    var drop: TimeInterval = 2.30
-    /// How long the real pin falls. The chime plays when it hits.
+    var drop: TimeInterval = 2.80
+    /// How long the real pin falls. The chime plays when it hits, and the map turns to satellite.
     var fallDuration: TimeInterval = 0.25
     /// The camera flies down to the real spot, and the distance counts up on the way.
     /// After the pin has planted and the screen held still for a moment.
-    var land: TimeInterval = 2.85
+    var land: TimeInterval = 3.35
     var landDuration: TimeInterval = 1.8
     var distanceSteps = 10
     var distanceGap: TimeInterval = 0.15
     /// As the flight settles.
-    var verdict: TimeInterval = 4.45
+    var verdict: TimeInterval = 4.95
     /// The result card rises with the photo.
-    var card: TimeInterval = 4.75
-    var points: TimeInterval = 5.05
+    var card: TimeInterval = 5.25
+    var points: TimeInterval = 5.55
     var pointSteps = 10
     var pointGap: TimeInterval = 0.07
-    var actions: TimeInterval = 5.75
+    var actions: TimeInterval = 6.25
     /// How long the petal bloom runs. It is `GamePetalBloom.duration`.
     var bloomDuration: TimeInterval = 0.9
 

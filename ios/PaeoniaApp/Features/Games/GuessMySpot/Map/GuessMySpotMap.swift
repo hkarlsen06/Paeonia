@@ -54,8 +54,9 @@ struct GuessMySpotMap: View {
     static let satelliteKey = "paeonia.games.guessMySpot.satellite"
     @AppStorage(GuessMySpotMap.satelliteKey) private var savedSatellite = false
     @State private var center: CLLocationCoordinate2D?
-    /// Where the map sits in its window, for the picture of it a style switch fades out.
-    @State private var frame: CGRect = .zero
+    /// Where the map sits in its window, and the safe area under it.
+    @State private var layoutFrame: CGRect = .zero
+    @State private var bottomInset: CGFloat = 0
     /// The map as it looked before the style switched. It fades out over the new style,
     /// so the switch dissolves instead of cutting while the new images load.
     @State private var styleCover: UIImage?
@@ -87,15 +88,17 @@ struct GuessMySpotMap: View {
                 dropped(at: GuessMySpotCoordinate(coordinate), onTap)
             }
         }
-        .overlay {
+        .overlay(alignment: .top) {
             if let styleCover {
                 Image(uiImage: styleCover)
                     .resizable()
+                    .frame(width: frame.width, height: frame.height)
                     // A hole where the button is, so the button's glass doesn't show the old one.
                     .mask {
                         Rectangle()
                             .overlay(alignment: .topTrailing) {
                                 Circle()
+                                    .opacity(showsSatelliteButton ? 1 : 0)
                                     .frame(width: 44, height: 44)
                                     .padding(PaeoniaSpacing.space8)
                                     .blendMode(.destinationOut)
@@ -107,7 +110,8 @@ struct GuessMySpotMap: View {
                     .transition(.opacity)
             }
         }
-        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame = $0 }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { layoutFrame = $0 }
+        .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { bottomInset = $0 }
         .overlay(alignment: .topTrailing) {
             if showsSatelliteButton {
                 satelliteButton
@@ -115,6 +119,8 @@ struct GuessMySpotMap: View {
             }
         }
         .animation(PaeoniaMotion.stateChange, value: showsSatelliteButton)
+        // From the button or the reveal's landing. The map on screen still shows the old style here.
+        .onChange(of: isSatellite) { coverStyleSwitch() }
         .accessibilityElement(children: onPinTap == nil ? .ignore : .contain)
         .accessibilityLabel(Text(.guessMySpotMapA11Y))
         .accessibilityValue(Text(accessibilityValue))
@@ -190,21 +196,12 @@ struct GuessMySpotMap: View {
         Button {
             PaeoniaHaptics.selection()
             GameSound.tap.play(volume: 0.5)
-            let cover = reduceMotion ? nil : snapshot()
-            styleCover = cover
             withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
                 if let satellite {
                     satellite.wrappedValue.toggle()
                 } else {
                     savedSatellite.toggle()
                 }
-            }
-            guard let cover else { return }
-            Task {
-                // A moment for the new style's first images to draw.
-                try? await Task.sleep(for: .milliseconds(150))
-                guard styleCover === cover else { return }
-                withAnimation(.easeInOut(duration: 0.45)) { styleCover = nil }
             }
         } label: {
             // The style the map shows now.
@@ -224,17 +221,43 @@ struct GuessMySpotMap: View {
 }
 
 extension GuessMySpotMap {
+    /// Lays the map as it looked over the new style and fades it out, so a style
+    /// switch dissolves instead of showing gray while the new images load.
+    private func coverStyleSwitch() {
+        guard !reduceMotion, let cover = snapshot() else { return }
+        styleCover = cover
+        Task {
+            // A moment for the new style's first images to draw.
+            try? await Task.sleep(for: .milliseconds(100))
+            guard styleCover === cover else { return }
+            withAnimation(.easeInOut(duration: 0.3)) { styleCover = nil }
+        }
+    }
+
     /// The map as it is on screen now, cut from its window.
     private func snapshot() -> UIImage? {
-        guard frame.width > 0, frame.height > 0,
-              let window = UIApplication.shared.connectedScenes
-              .compactMap({ $0 as? UIWindowScene })
-              .flatMap(\.windows)
-              .first(where: \.isKeyWindow)
-        else { return nil }
+        guard frame.width > 0, frame.height > 0, let window = Self.keyWindow else { return nil }
         return UIGraphicsImageRenderer(bounds: frame).image { _ in
             window.drawHierarchy(in: window.bounds, afterScreenUpdates: false)
         }
+    }
+
+    /// Where the map draws in its window, for the picture of it a style switch fades out.
+    private var frame: CGRect {
+        Self.drawnFrame(layoutFrame, bottomInset: bottomInset)
+    }
+
+    /// Where a map whose frame is `frame` draws. MapKit draws on through the safe area
+    /// under it, `bottomInset` tall, such as under a bottom bar and the home indicator.
+    static func drawnFrame(_ frame: CGRect, bottomInset: CGFloat) -> CGRect {
+        CGRect(x: frame.minX, y: frame.minY, width: frame.width, height: frame.height + max(0, bottomInset))
+    }
+
+    private static var keyWindow: UIWindow? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)
     }
 }
 

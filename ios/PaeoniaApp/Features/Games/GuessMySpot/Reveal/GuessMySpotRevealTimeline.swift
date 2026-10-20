@@ -78,6 +78,8 @@ final class GuessMySpotRevealTimeline {
     private(set) var dropped = false
     /// How far above its spot the real pin still floats while it drops, in points.
     private(set) var dropLift: CGFloat = 0
+    /// The real pin has hit the map, and the screen holds still before the flight down.
+    private(set) var planted = false
     /// How far the distance has counted, in steps of `schedule.distanceSteps`.
     private(set) var distanceStep = 0
     private(set) var verdict: GuessMySpotVerdict?
@@ -96,6 +98,8 @@ final class GuessMySpotRevealTimeline {
     @ObservationIgnored private(set) var plan: Plan?
     @ObservationIgnored private var runID = 0
     @ObservationIgnored private var task: Task<Void, Never>?
+    /// Runs before each camera move, until that move's map images are ready.
+    @ObservationIgnored private var prepare: @MainActor (Camera) async -> Void = { _ in }
 
     init(
         schedule: Schedule = .standard,
@@ -109,23 +113,6 @@ final class GuessMySpotRevealTimeline {
         self.sleep = sleep
     }
 
-    var hasBegun: Bool { plan != nil }
-
-    /// A tap can end the reveal early once the verdict is in.
-    var canSkip: Bool { hasBegun && verdict != nil && !isSettled }
-
-    /// The distance as the capsule shows it right now.
-    var countedDistance: Int {
-        guard let plan else { return 0 }
-        return GuessMySpotRevealScript.counted(plan.distanceMeters, step: distanceStep, of: schedule.distanceSteps)
-    }
-
-    /// How many of the round's points have counted up.
-    var countedPoints: Int {
-        guard let plan else { return 0 }
-        return GuessMySpotRevealScript.counted(plan.points, step: pointStep, of: schedule.pointSteps)
-    }
-
     /// The first frame of a held reveal: the guess pin alone on the map.
     func hold() {
         guard plan == nil else { return }
@@ -134,10 +121,16 @@ final class GuessMySpotRevealTimeline {
         }
     }
 
-    /// Starts the reveal. Later calls do nothing.
-    func begin(_ plan: Plan, reduceMotion: Bool) {
+    /// Starts the reveal. Later calls do nothing. Each camera move waits for
+    /// `prepare` to return, and every beat after it waits as long.
+    func begin(
+        _ plan: Plan,
+        reduceMotion: Bool,
+        prepare: @escaping @MainActor (Camera) async -> Void = { _ in }
+    ) {
         guard self.plan == nil else { return }
         self.plan = plan
+        self.prepare = prepare
         if reduceMotion {
             applySettledState(plan, camera: .overview)
             playVerdictHaptic(plan.verdict)
@@ -181,6 +174,10 @@ final class GuessMySpotRevealTimeline {
                 elapsed = step.at
             }
             guard id == runID, !Task.isCancelled else { return }
+            if let stage = Self.camera(after: step.event) {
+                await prepare(stage)
+                guard id == runID, !Task.isCancelled else { return }
+            }
             apply(step.event)
         }
         guard id == runID, !Task.isCancelled else { return }
@@ -275,6 +272,7 @@ final class GuessMySpotRevealTimeline {
         lineProgress = 1
         dropped = true
         dropLift = 0
+        planted = true
         distanceStep = schedule.distanceSteps
         verdict = plan.verdict
         bloomStart = nil
@@ -292,7 +290,10 @@ final class GuessMySpotRevealTimeline {
             guard let self else { return }
             dropLift = Self.dropHeight * (1 - fraction * fraction)
             // The last step is the only one at 1.
-            if fraction >= 1 { haptics.landed() }
+            if fraction >= 1 {
+                planted = true
+                haptics.landed()
+            }
         }
     }
 
@@ -320,14 +321,6 @@ final class GuessMySpotRevealTimeline {
         }
     }
 
-    static func glow(for verdict: GuessMySpotVerdict) -> CGFloat {
-        switch verdict {
-        case .spotOn: 1
-        case .soClose, .close: 0.8
-        case .far: 0
-        }
-    }
-
     /// How high the real pin starts its drop, in points.
     static let dropHeight: CGFloat = 70
 
@@ -352,5 +345,41 @@ final class GuessMySpotRevealTimeline {
         runID += 1
         task?.cancel()
         task = nil
+    }
+}
+
+extension GuessMySpotRevealTimeline {
+    var hasBegun: Bool { plan != nil }
+
+    /// A tap can end the reveal early once the verdict is in.
+    var canSkip: Bool { hasBegun && verdict != nil && !isSettled }
+
+    /// The distance as the capsule shows it right now.
+    var countedDistance: Int {
+        guard let plan else { return 0 }
+        return GuessMySpotRevealScript.counted(plan.distanceMeters, step: distanceStep, of: schedule.distanceSteps)
+    }
+
+    /// How many of the round's points have counted up.
+    var countedPoints: Int {
+        guard let plan else { return 0 }
+        return GuessMySpotRevealScript.counted(plan.points, step: pointStep, of: schedule.pointSteps)
+    }
+
+    static func glow(for verdict: GuessMySpotVerdict) -> CGFloat {
+        switch verdict {
+        case .spotOn: 1
+        case .soClose, .close: 0.8
+        case .far: 0
+        }
+    }
+
+    /// Where `event` moves the camera, if it does.
+    private static func camera(after event: GuessMySpotRevealEvent) -> Camera? {
+        switch event {
+        case .zoomOut: .overview
+        case .land: .landed
+        default: nil
+        }
     }
 }
