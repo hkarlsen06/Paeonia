@@ -32,48 +32,48 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
   draw_and_guess: {
     en: {
       name: "Draw & Guess",
-      turnReadyBody: "Open Paeonia to guess it.",
+      turnReadyBody: "Guess what they drew.",
       resultTitle: (actor) => `${actor} guessed your drawing`,
-      resultBody: "Open Paeonia to see how it went.",
+      resultBody: "See how it went.",
     },
     nb: {
       name: "Tegn og gjett",
-      turnReadyBody: "Åpne Paeonia for å gjette.",
+      turnReadyBody: "Gjett hva som er tegnet.",
       resultTitle: (actor) => `${actor} gjettet tegningen din`,
-      resultBody: "Åpne Paeonia for å se hvordan det gikk.",
+      resultBody: "Se hvordan det gikk.",
     },
   },
   mind_meld: {
     en: {
       name: "Mind Meld",
-      turnReadyBody: "Open Paeonia to pick your word.",
+      turnReadyBody: "Pick your word.",
       resultTitle: () => "Your words are in",
-      resultBody: "Open Paeonia to see what you both said.",
+      resultBody: "See what you both said.",
     },
     nb: {
       name: "Tenk likt",
-      turnReadyBody: "Åpne Paeonia for å velge ordet ditt.",
+      turnReadyBody: "Velg ordet ditt.",
       resultTitle: () => "Ordene deres er klare",
-      resultBody: "Åpne Paeonia for å se hva dere sa.",
+      resultBody: "Se hva dere begge sa.",
     },
   },
   story_chain: {
     en: {
       name: "Story Chain",
-      turnReadyBody: "Open Paeonia to read the newest line.",
+      turnReadyBody: "Read the newest line and add yours.",
       resultTitle: (actor) => `${actor} named your story`,
-      resultBody: "Open Paeonia to read it.",
+      resultBody: "Read the whole story.",
       steps: {
-        last_line: { title: (actor) => `${actor} wrote the last line`, body: "Open Paeonia to give your story a title." },
+        last_line: { title: (actor) => `${actor} wrote the last line`, body: "Give your story a title." },
       },
     },
     nb: {
       name: "Skrivestafett",
-      turnReadyBody: "Åpne Paeonia for å lese den nyeste linjen.",
+      turnReadyBody: "Les den nyeste linjen og skriv din.",
       resultTitle: (actor) => `${actor} ga historien deres en tittel`,
-      resultBody: "Åpne Paeonia for å lese den.",
+      resultBody: "Les hele historien.",
       steps: {
-        last_line: { title: (actor) => `${actor} skrev den siste linjen`, body: "Åpne Paeonia for å gi historien en tittel." },
+        last_line: { title: (actor) => `${actor} skrev den siste linjen`, body: "Gi historien en tittel." },
       },
     },
   },
@@ -81,7 +81,7 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
     en: {
       name: "Odd Creatures",
       resultTitle: (actor) => `${actor} finished your creature`,
-      resultBody: "Open it to see the whole thing.",
+      resultBody: "See the whole creature.",
       steps: {
         body: { title: (actor) => `${actor} drew the head`, body: "Your turn to draw the body." },
         legs: { title: (actor) => `${actor} drew the body`, body: "Your turn to draw the legs." },
@@ -90,7 +90,7 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
     nb: {
       name: "Rare skapninger",
       resultTitle: (actor) => `${actor} gjorde ferdig skapningen deres`,
-      resultBody: "Åpne den for å se hele.",
+      resultBody: "Se hele skapningen.",
       steps: {
         body: { title: (actor) => `${actor} har tegnet hodet`, body: "Din tur til å tegne kroppen." },
         legs: { title: (actor) => `${actor} har tegnet kroppen`, body: "Din tur til å tegne beina." },
@@ -100,96 +100,96 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
   connect_four: {
     en: {
       name: "Connect Four",
-      turnReadyBody: "Open Paeonia to make your move.",
-      resultTitle: () => "Your game of Connect Four is over",
-      resultBody: "Open Paeonia to see how it ended.",
+      turnReadyBody: "Make your move.",
+      resultTitle: (actor) => `${actor} finished your game of Connect Four`,
+      resultBody: "See how it ended.",
     },
     nb: {
       name: "Fire på rad",
-      turnReadyBody: "Åpne Paeonia for å gjøre trekket ditt.",
-      resultTitle: () => "Spillet deres i Fire på rad er ferdig",
-      resultBody: "Åpne Paeonia for å se hvordan det endte.",
+      turnReadyBody: "Gjør trekket ditt.",
+      resultTitle: (actor) => `${actor} avsluttet spillet deres i Fire på rad`,
+      resultBody: "Se hvordan det endte.",
     },
   },
   dots_and_boxes: {
     en: {
       name: "Dots and Boxes",
-      turnReadyBody: "Open Paeonia to make your move.",
-      resultTitle: () => "Your game of Dots and Boxes is over",
-      resultBody: "Open Paeonia to see how it ended.",
+      turnReadyBody: "Make your move.",
+      resultTitle: (actor) => `${actor} finished your game of Dots and Boxes`,
+      resultBody: "See how it ended.",
     },
     nb: {
       name: "Prikker og streker",
-      turnReadyBody: "Åpne Paeonia for å gjøre trekket ditt.",
-      resultTitle: () => "Spillet deres i Prikker og streker er ferdig",
-      resultBody: "Åpne Paeonia for å se hvordan det endte.",
+      turnReadyBody: "Gjør trekket ditt.",
+      resultTitle: (actor) => `${actor} avsluttet spillet deres i Prikker og streker`,
+      resultBody: "Se hvordan det endte.",
     },
   },
   ultimate_tic_tac_toe: {
     en: {
       name: "Ultimate Tic-Tac-Toe",
-      turnReadyBody: "Open Paeonia to make your move.",
-      resultTitle: () => "Your game of Ultimate Tic-Tac-Toe is over",
-      resultBody: "Open Paeonia to see how it ended.",
+      turnReadyBody: "Make your move.",
+      resultTitle: (actor) => `${actor} finished your game of Ultimate Tic-Tac-Toe`,
+      resultBody: "See how it ended.",
     },
     nb: {
       name: "Ultimat bondesjakk",
-      turnReadyBody: "Åpne Paeonia for å gjøre trekket ditt.",
-      resultTitle: () => "Spillet deres i Ultimat bondesjakk er ferdig",
-      resultBody: "Åpne Paeonia for å se hvordan det endte.",
+      turnReadyBody: "Gjør trekket ditt.",
+      resultTitle: (actor) => `${actor} avsluttet spillet deres i Ultimat bondesjakk`,
+      resultBody: "Se hvordan det endte.",
     },
   },
   ludo: {
     en: {
       name: "Ludo",
-      turnReadyBody: "Open Paeonia to make your move.",
-      resultTitle: () => "Your game of Ludo is over",
-      resultBody: "Open Paeonia to see how it ended.",
+      turnReadyBody: "Make your move.",
+      resultTitle: (actor) => `${actor} finished your game of Ludo`,
+      resultBody: "See how it ended.",
     },
     nb: {
       name: "Ludo",
-      turnReadyBody: "Åpne Paeonia for å gjøre trekket ditt.",
-      resultTitle: () => "Spillet deres i Ludo er ferdig",
-      resultBody: "Åpne Paeonia for å se hvordan det endte.",
+      turnReadyBody: "Gjør trekket ditt.",
+      resultTitle: (actor) => `${actor} avsluttet spillet deres i Ludo`,
+      resultBody: "Se hvordan det endte.",
     },
   },
   consensio: {
     en: {
       name: "Consensio",
-      turnReadyBody: "Open Paeonia to make your guess.",
+      turnReadyBody: "Make your guess.",
       resultTitle: (actor) => `${actor} made a guess`,
-      resultBody: "Open Paeonia to see how close they got.",
+      resultBody: "See how close they got.",
       steps: {
-        guessed: { title: (actor) => `${actor} guessed and placed one for you`, body: "Open Paeonia to see how close they got." },
+        guessed: { title: (actor) => `${actor} guessed and left you one to guess`, body: "See how close they got." },
       },
     },
     nb: {
       name: "Consensio",
-      turnReadyBody: "Åpne Paeonia for å gjette.",
+      turnReadyBody: "Gjør gjetningen din.",
       resultTitle: (actor) => `${actor} har gjettet`,
-      resultBody: "Åpne Paeonia for å se hvor nær gjetningen var.",
+      resultBody: "Se hvor nær gjetningen var.",
       steps: {
-        guessed: { title: (actor) => `${actor} har gjettet og satt en brikke til deg`, body: "Åpne Paeonia for å se hvor nær gjetningen var." },
+        guessed: { title: (actor) => `${actor} har gjettet og lagt igjen en til deg`, body: "Se hvor nær gjetningen var." },
       },
     },
   },
   guess_my_spot: {
     en: {
       name: "Guess my spot",
-      turnReadyBody: "Open Paeonia to guess where it was taken.",
+      turnReadyBody: "Guess where the photo was taken.",
       resultTitle: (actor) => `${actor} made a guess`,
-      resultBody: "Open Paeonia to see how close they got.",
+      resultBody: "See how close they got.",
       steps: {
-        guessed: { title: (actor) => `${actor} guessed and sent you a photo`, body: "Open Paeonia to see how close they got." },
+        guessed: { title: (actor) => `${actor} guessed and sent you a photo`, body: "See how close they got." },
       },
     },
     nb: {
       name: "Gjett hvor",
-      turnReadyBody: "Åpne Paeonia for å gjette hvor bildet er tatt.",
+      turnReadyBody: "Gjett hvor bildet er tatt.",
       resultTitle: (actor) => `${actor} har gjettet`,
-      resultBody: "Åpne Paeonia for å se hvor nær gjetningen var.",
+      resultBody: "Se hvor nær gjetningen var.",
       steps: {
-        guessed: { title: (actor) => `${actor} har gjettet og sendt deg et bilde`, body: "Åpne Paeonia for å se hvor nær gjetningen var." },
+        guessed: { title: (actor) => `${actor} har gjettet og sendt deg et bilde`, body: "Se hvor nær gjetningen var." },
       },
     },
   },
@@ -247,7 +247,20 @@ export async function notificationActorDisplayName(
   return name ? name : null;
 }
 
-const gameReminderBody = (nb: boolean) => (nb ? "Åpne Paeonia for å ta turen din." : "Open Paeonia to take your turn.");
+const gameReminderBody = (nb: boolean) => (nb ? "Fortsett der dere slapp." : "Pick up where you left off.");
+
+/**
+ * Which of `count` wordings a daily reminder uses. `seed` is a time that moves one day per day (the
+ * end of the local day, or the streak deadline), so the wording changes from one day to the next, and
+ * the title, the body and every retry of one reminder agree.
+ */
+function dailyVariant(seed: unknown, count: number): number {
+  const ms = typeof seed === "string" ? Date.parse(seed) : Number.NaN;
+  return Number.isNaN(ms) ? 0 : Math.floor(ms / 86_400_000) % count;
+}
+
+const QUESTION_TIME_VARIANTS = 3;
+const STREAK_VARIANTS = 3;
 
 /** Port of `internal.notification_alert_body`. Returns null for kinds without alert copy. */
 export function notificationAlertBody(
@@ -263,43 +276,70 @@ export function notificationAlertBody(
   if (step) return step.body;
   switch (kind) {
     case "widget_updated":
-      return nb ? "La til en ny tegning" : "Added a new drawing";
+      return nb ? "Tegnet noe til deg" : "Drew something for you";
     case "partner_answered":
-      return nb
-        ? "Dere har svart på samme spørsmål. Åpne Paeonia for å se svaret."
-        : "You both answered the same question. Open Paeonia to see what they said.";
+      // `question_count` is how many of the recipient's questions the partner answered in this push.
+      if (typeof payload.question_count === "number" && payload.question_count > 1) {
+        return nb ? "Nå kan du se svarene." : "Their answers are ready to see.";
+      }
+      return nb ? "Nå kan du se svaret." : "Their answer is ready to see.";
     case "daily_challenge_completed":
-      return nb
-        ? "Åpne Paeonia for å svare og se hva partneren din skrev."
-        : "Open Paeonia to answer and reveal what they wrote.";
+      // `to_answer`: the partner's questions still wait for the recipient's answer. `to_see`: the
+      // partner answered the recipient's questions too. Set at send time (lib/dailyPartnerPush.ts).
+      if (payload.to_answer === false) {
+        return nb ? "Nå kan du se svarene." : "Their answers are ready to see.";
+      }
+      if (payload.to_see === true) {
+        return nb
+          ? "Se svarene, og svar så på spørsmålene som venter."
+          : "See their answers, then answer their questions.";
+      }
+      return nb ? "Svar selv, så ser du svarene." : "Answer their questions to see what they wrote.";
     case "memory_created":
-      return nb ? "Åpne Paeonia for å se det." : "Open Paeonia to see it.";
+      return nb ? "Se det blant minnene deres." : "See it in your memories.";
     case "story_posted":
-      return nb ? "Åpne Paeonia for å se den." : "Open Paeonia to see it.";
+      return nb ? "Den ligger på Hjem i 24 timer." : "It's on Home for 24 hours.";
     case "thread_message_sent":
-      // A Flirt chat's push is the title alone, so nothing about the chat shows on the lock screen.
-      if (payload.private_topic === true) return null;
-      return nb ? "Åpne Paeonia for å lese og svare." : "Open Paeonia to read it and reply.";
+      // Every chat push has the same shape and never names the topic, so a Flirt chat looks like any other.
+      return nb ? "Sendte deg en melding" : "Sent you a message";
     case "topics_waiting":
-      return nb ? "Åpne Paeonia for å se hva som venter." : "Open Paeonia to see what's waiting.";
+      return nb ? "Se hva som venter i Temaer." : "See what's waiting in Topics.";
     case "game_turn_ready":
       return gamePushCopy(payload, language)?.turnReadyBody ?? gameReminderBody(nb);
     case "game_result":
       return gamePushCopy(payload, language)?.resultBody ?? gameReminderBody(nb);
     case "game_invite":
-      return nb ? "Åpne Paeonia for å bli med." : "Open Paeonia to join in.";
+      return nb ? "Bli med når du er klar." : "Join in when you're ready.";
     case "game_turn_reminder":
       return gameReminderBody(nb);
     case "partner_joined":
-      return nb ? "Åpne Paeonia for å se deres første dag sammen." : "Open Paeonia to see your first day together.";
+      return nb ? "Se deres første dag sammen." : "See your first day together.";
     case "question_time_reminder":
-      return nb
-        ? "To spørsmål venter på deg. Det tar bare noen minutter."
-        : "Two questions are waiting for you. They take a few minutes.";
+      switch (dailyVariant(payload.expires_at, QUESTION_TIME_VARIANTS)) {
+        case 1:
+          return nb ? "Svar på dine, så ser du hva partneren din sa." : "Answer yours, then see what your partner said.";
+        case 2:
+          return nb ? "Svar når du har noen minutter." : "Answer when you have a few minutes.";
+        default:
+          return nb ? "To spørsmål venter. Det tar bare noen minutter." : "Two questions are waiting. They take a few minutes.";
+      }
     case "streak_reminder":
-      return nb
-        ? "En rask tegning holder. Rekken fortsetter når dere begge har sjekket inn."
-        : "A quick drawing is enough. Your streak continues once you've both checked in.";
+      // `partner_checked_in`: the partner already did their part today (streaks.ts).
+      if (payload.partner_checked_in === true) {
+        return nb ? "Noe lite fra deg holder rekken i gang." : "Anything small from you keeps your streak going.";
+      }
+      switch (dailyVariant(payload.next_activity_deadline_at, STREAK_VARIANTS)) {
+        case 1:
+          return nb
+            ? "Litt fra hver av dere holder rekken i gang."
+            : "One small thing from each of you keeps your streak going.";
+        case 2:
+          return nb
+            ? "En melding, en tegning eller et svar teller som innsjekk."
+            : "A message, a drawing or an answer all count as a check-in.";
+        default:
+          return nb ? "Noe lite holder, som en melding eller en tegning." : "Anything small counts, like a message or a drawing.";
+      }
     case "subscription_trial_reminder":
       return nb
         ? `${daysLeft}${daysLeft === 1 ? " dag igjen. " : " dager igjen. "}Se over abonnementet ditt i App Store.`
@@ -317,48 +357,71 @@ export async function notificationAlertTitle(
   locale: string | null | undefined,
 ): Promise<string> {
   const nb = notificationLocaleLanguage(locale) === "nb";
-  const name = (await notificationActorDisplayName(ctx, payload)) ?? (nb ? "Partneren din" : "Your partner");
+  const actorName = await notificationActorDisplayName(ctx, payload);
+  // `name` starts a title. `inSentence` goes later in one, so a missing name reads "your partner".
+  const name = actorName ?? (nb ? "Partneren din" : "Your partner");
+  const inSentence = actorName ?? (nb ? "partneren din" : "your partner");
+  // For a push whose game or kind has no copy. iOS already shows the app name, so the title never repeats it.
+  const fallback = nb ? `Noe nytt fra ${inSentence}` : `Something new from ${inSentence}`;
   const step = GAME_PUSH_KINDS.includes(kind) ? gamePushStep(payload, nb ? "nb" : "en") : null;
   if (step) return step.title(name);
   switch (kind) {
-    case "widget_updated":
-      return name;
     case "partner_answered":
       return nb ? `${name} svarte også` : `${name} answered too`;
     case "daily_challenge_completed":
       return nb ? `${name} fullførte dagens spørsmål` : `${name} finished today's questions`;
     case "memory_created":
-      return nb ? `${name} la til et nytt minne` : `${name} added a new memory`;
+      return nb ? `${name} la til et minne` : `${name} added a memory`;
     case "story_posted":
       return nb ? `${name} delte en story` : `${name} shared a story`;
+    case "widget_updated":
     case "thread_message_sent":
-      if (payload.private_topic === true) return nb ? `Ny melding fra ${name}` : `New message from ${name}`;
-      return nb ? `${name} sendte deg en melding` : `${name} sent you a message`;
+      // The notification service extension shows these as messages from the sender.
+      return name;
     case "topics_waiting":
       return nb ? `Nye svar fra ${name}` : `New answers from ${name}`;
     case "game_turn_ready":
     case "game_turn_reminder": {
       const game = gamePushCopy(payload, nb ? "nb" : "en");
-      if (!game) return "Paeonia";
+      if (!game) return fallback;
       return nb ? `Din tur i ${game.name}` : `Your turn in ${game.name}`;
     }
     case "game_result":
-      return gamePushCopy(payload, nb ? "nb" : "en")?.resultTitle?.(name) ?? "Paeonia";
+      return gamePushCopy(payload, nb ? "nb" : "en")?.resultTitle?.(name) ?? fallback;
     case "game_invite": {
       const game = gamePushCopy(payload, nb ? "nb" : "en");
-      if (!game) return "Paeonia";
+      if (!game) return fallback;
       return nb ? `${name} vil spille ${game.name} med deg` : `${name} wants to play ${game.name} with you`;
     }
     case "partner_joined":
-      return nb ? `${name} ble med deg på Paeonia` : `${name} joined you on Paeonia`;
+      return nb ? `${name} ble med deg` : `${name} joined you`;
     case "question_time_reminder":
-      return nb ? "Dagens spørsmål er klare" : "Today's questions are ready";
+      // Paeonia's own voice: the payload names nobody, so no wording sounds like the partner sent it.
+      switch (dailyVariant(payload.expires_at, QUESTION_TIME_VARIANTS)) {
+        case 1:
+          return nb ? "Spørsmålstid" : "Question time";
+        case 2:
+          return nb ? "De to spørsmålene dine er her" : "Your two questions are here";
+        default:
+          return nb ? "Dagens spørsmål er klare" : "Today's questions are ready";
+      }
     case "streak_reminder":
-      return nb ? "Tid for å sjekke inn" : "Time for a quick check-in";
+      // `actor_user_id` is the partner here (streaks.ts).
+      if (payload.partner_checked_in === true) {
+        return nb ? `${name} har sjekket inn i dag` : `${name} checked in today`;
+      }
+      switch (dailyVariant(payload.next_activity_deadline_at, STREAK_VARIANTS)) {
+        case 1:
+          return nb ? `Sjekk inn med ${inSentence} i dag` : `Check in with ${inSentence} today`;
+        case 2:
+          return nb ? `Si hei til ${inSentence}` : `Say hi to ${inSentence}`;
+        default:
+          return nb ? "Tid for å sjekke inn" : "Time for a quick check-in";
+      }
     case "subscription_trial_reminder":
       return nb ? "Prøveperioden avsluttes snart" : "Your free trial ends soon";
     default:
-      return "Paeonia";
+      return fallback;
   }
 }
 

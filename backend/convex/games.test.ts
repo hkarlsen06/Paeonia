@@ -257,8 +257,8 @@ describe("presence and invites for every kind", () => {
       const [row] = await outbox(s.t);
       expect(row).toMatchObject({
         recipient_user_id: s.b.userId,
-        title: "Paeonia",
-        body: "Open Paeonia to join in.",
+        title: "Something new from First Partner",
+        body: "Join in when you're ready.",
         payload: { type: "game_invite", game_kind: kind, couple_id: s.couple.coupleId, route: "games", deeplink: gameDeepLink(kind) },
       });
       expect(row.payload).not.toHaveProperty("game_id");

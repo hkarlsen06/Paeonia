@@ -66,6 +66,32 @@ export async function isGamePresent(ctx: ReaderCtx, coupleId: string, kind: Game
   return (await onlineUserIds(ctx, gameRoom(coupleId, kind))).includes(userId);
 }
 
+// --- Invites ----------------------------------------------------------------
+
+/**
+ * The partner's invites that still wait for `userId`: sent within `INVITE_INTERVAL_MS`, the time its
+ * sender waits before another one, and not answered. Opening the game answers an invite.
+ */
+export async function openGameInvitesFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+  const since = addMs(nowIso(), -INVITE_INTERVAL_MS);
+  const invites = await ctx.db
+    .query("game_invites")
+    .withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  return invites.filter((invite) => invite.sender_user_id !== userId && invite.answered_at === undefined && invite.sent_at > since).length;
+}
+
+/** `userId` opened the game, which answers the partner's invite to it. Writes once per invite. */
+export async function answerGameInvite(ctx: WriterCtx, coupleId: string, kind: GameKind, userId: string): Promise<void> {
+  const invites = await ctx.db
+    .query("game_invites")
+    .withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId).eq("kind", kind))
+    .collect();
+  for (const invite of invites) {
+    if (invite.sender_user_id !== userId && invite.answered_at === undefined) await ctx.db.patch(invite._id, { answered_at: nowIso() });
+  }
+}
+
 // --- Notifications ----------------------------------------------------------
 
 /**

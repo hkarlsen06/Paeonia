@@ -25,7 +25,7 @@ struct MainTabActions {
     /// The map card's Share button. Turns sharing on and offers sharing while closed.
     var shareLocation: @MainActor () async -> Void = {}
     /// The person answered a question or sent a drawing.
-    var sentSomethingToPartner: () -> Void = {}
+    var sentSomethingToPartner: (PartnerShare) -> Void = { _ in }
     /// Pull-to-refresh on Home, after the daily challenge refresh.
     var refreshHome: () async -> Void = {}
     /// Runs one sync pass so a daily challenge refresh sees partner answers.

@@ -4,7 +4,6 @@ import { newUuid } from "./ids";
 import {
   enqueueMemoryCreatedNotification,
   enqueueNotificationForUser,
-  enqueuePartnerAnsweredNotification,
   enqueuePartnerNotification,
   enqueueWidgetPushForUser,
   enqueueWidgetUpdateAlert,
@@ -12,6 +11,7 @@ import {
   notificationLocaleLanguage,
   notificationPayloadIsSafe,
 } from "./notifications";
+import { enqueuePartnerAnsweredNotification } from "./dailyPartnerPush";
 import { enqueueGamePush } from "./games";
 import { GAME_PUSH_COPY, notificationAlertTitle } from "./notificationCopy";
 import { GAME_KINDS } from "./validators";
@@ -39,16 +39,12 @@ describe("notification copy", () => {
   });
 
   test("alert bodies", () => {
-    expect(notificationAlertBody("streak_reminder", {}, "en")).toBe(
-      "A quick drawing is enough. Your streak continues once you've both checked in.",
+    expect(notificationAlertBody("streak_reminder", {}, "en")).toBe("Anything small counts, like a message or a drawing.");
+    expect(notificationAlertBody("streak_reminder", { partner_checked_in: true }, "nb")).toBe(
+      "Noe lite fra deg holder rekken i gang.",
     );
-    expect(notificationAlertBody("streak_reminder", {}, "nb")).toBe(
-      "En rask tegning holder. Rekken fortsetter når dere begge har sjekket inn.",
-    );
-    expect(notificationAlertBody("partner_answered", {}, "nb")).toBe(
-      "Dere har svart på samme spørsmål. Åpne Paeonia for å se svaret.",
-    );
-    expect(notificationAlertBody("thread_message_sent", {}, "en")).toBe("Open Paeonia to read it and reply.");
+    expect(notificationAlertBody("partner_answered", {}, "nb")).toBe("Nå kan du se svaret.");
+    expect(notificationAlertBody("thread_message_sent", {}, "en")).toBe("Sent you a message");
     expect(notificationAlertBody("subscription_trial_reminder", { days_left: 1 }, "en")).toBe(
       "1 day left. Review your subscription in the App Store.",
     );
@@ -64,7 +60,7 @@ describe("notification copy", () => {
   describe("game pushes", () => {
     const pushKinds = ["game_turn_ready", "game_turn_reminder", "game_result", "game_invite"] as const;
 
-    test("a game without copy gets the app name, and turn and result pushes use the reminder body", async () => {
+    test("a game without copy gets a title naming the partner, and turn and result pushes use the reminder body", async () => {
       const t = newTest();
       const couple = await createCouple(t);
       // A kind that has no copy yet, while there is one.
@@ -72,12 +68,12 @@ describe("notification copy", () => {
       for (const gameKind of [uncopied, "constructor", undefined]) {
         const payload = { game_kind: gameKind, actor_user_id: couple.first.userId };
         for (const kind of pushKinds) {
-          expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "en"))).toBe("Paeonia");
-          expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "nb"))).toBe("Paeonia");
+          expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "en"))).toBe("Something new from First Partner");
+          expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "nb"))).toBe("Noe nytt fra First Partner");
         }
-        expect(notificationAlertBody("game_turn_ready", payload, "en")).toBe("Open Paeonia to take your turn.");
-        expect(notificationAlertBody("game_result", payload, "nb")).toBe("Åpne Paeonia for å ta turen din.");
-        expect(notificationAlertBody("game_invite", payload, "en")).toBe("Open Paeonia to join in.");
+        expect(notificationAlertBody("game_turn_ready", payload, "en")).toBe("Pick up where you left off.");
+        expect(notificationAlertBody("game_result", payload, "nb")).toBe("Fortsett der dere slapp.");
+        expect(notificationAlertBody("game_invite", payload, "en")).toBe("Join in when you're ready.");
       }
     });
 
@@ -119,8 +115,8 @@ describe("notification copy", () => {
         ]);
         expect(rows.find((row) => (row.dedupe_key ?? "").startsWith("with-step:"))?.payload).toMatchObject({ step: "last_line" });
         expect(copy("without-step")).toEqual([
-          ["Din tur i Historiekjede", "Åpne Paeonia for å ta turen din."],
-          ["Your turn in Story chain", "Open Paeonia to take your turn."],
+          ["Din tur i Historiekjede", "Fortsett der dere slapp."],
+          ["Your turn in Story chain", "Pick up where you left off."],
         ]);
         expect(copy("unknown-step")).toEqual(copy("without-step"));
         await t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -169,8 +165,8 @@ describe("enqueueNotificationForUser", () => {
     expect(queued).toBe(2);
     const rows = (await outbox(t)).sort((a, b) => (a.body ?? "").localeCompare(b.body ?? ""));
     expect(rows.map((row) => [row.title, row.body])).toEqual([
-      ["First Partner la til et nytt minne", "Åpne Paeonia for å se det."],
-      ["First Partner added a new memory", "Open Paeonia to see it."],
+      ["First Partner la til et minne", "Se det blant minnene deres."],
+      ["First Partner added a memory", "See it in your memories."],
     ]);
     expect(rows[0]).toMatchObject({
       kind: "memory_created",
@@ -230,7 +226,7 @@ describe("enqueueNotificationForUser", () => {
     await addDevice(t, couple.second.userId, { locale: "en" });
     expect(
       await t.run((ctx) => notificationAlertTitle(ctx, "thread_message_sent", { sender_user_id: newUuid() }, "en")),
-    ).toBe("Your partner sent you a message");
+    ).toBe("Your partner");
     await t.run((ctx) =>
       enqueueNotificationForUser(ctx, {
         recipient_user_id: couple.second.userId,
@@ -239,8 +235,8 @@ describe("enqueueNotificationForUser", () => {
       }),
     );
     const [row] = await outbox(t);
-    expect(row.title).toBe("First Partner sent you a message");
-    expect(row.body).toBe("Open Paeonia to read it and reply.");
+    expect(row.title).toBe("First Partner");
+    expect(row.body).toBe("Sent you a message");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -310,7 +306,7 @@ describe("trigger helpers", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       recipient_user_id: couple.second.userId,
-      title: "First Partner added a new memory",
+      title: "First Partner added a memory",
       apns_collapse_id: `memory:${memoryId}`,
     });
     expect(rows[0].payload).toEqual({
@@ -363,8 +359,13 @@ describe("trigger helpers", () => {
       kind: "partner_answered",
       title: "Second Partner answered too",
       apns_collapse_id: `daily:${couple.coupleId}`,
+      // The push waits in the recipient's daily lane, so more answers right after join it.
+      scheduled_for: "2026-10-10T12:01:15.000Z",
     });
-    expect(rows[0].payload.deeplink).toBe(`paeonia://daily/reveal?instanceId=${instanceId}&coupleDayId=${dayId}`);
+    expect(rows[0].payload).toMatchObject({
+      instance_ids: [instanceId],
+      deeplink: `paeonia://daily/reveal?instanceId=${instanceId}&coupleDayId=${dayId}`,
+    });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -379,7 +380,7 @@ describe("trigger helpers", () => {
     expect(row).toMatchObject({
       kind: "widget_updated",
       title: "First Partner",
-      body: "La til en ny tegning",
+      body: "Tegnet noe til deg",
       apns_collapse_id: `widget-alert:${couple.coupleId}`,
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);

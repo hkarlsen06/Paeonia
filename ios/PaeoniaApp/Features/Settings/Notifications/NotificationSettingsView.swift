@@ -56,19 +56,21 @@ struct NotificationSettingsView: View {
     private var partnerSection: some View {
         Section {
             toggleRow(
+                .dailyChallenge,
+                title: .settingsNotificationsDailyChallengeTitle,
+                subtitle: .settingsNotificationsDailyChallengeSubtitle(partnerName)
+            )
+            // Covers both the daily "answered too" push and the Topics push.
+            toggleRow(
                 .partnerAnswered,
                 title: .settingsNotificationsPartnerAnsweredTitle,
                 subtitle: .settingsNotificationsPartnerAnsweredSubtitle(partnerName)
             )
+            // Covers chats on questions and on memories.
             toggleRow(
                 .messages,
                 title: .dailyChatNotificationsTitle,
                 subtitle: .dailyChatNotificationsSubtitle(partnerName)
-            )
-            toggleRow(
-                .dailyChallenge,
-                title: .settingsNotificationsDailyChallengeTitle,
-                subtitle: .settingsNotificationsDailyChallengeSubtitle(partnerName)
             )
             toggleRow(
                 .widgetUpdates,

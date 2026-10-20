@@ -246,7 +246,7 @@ describe("pushes", () => {
       kind: "topics_waiting",
       recipient_user_id: b.userId,
       title: "New answers from First Partner",
-      body: "Open Paeonia to see what's waiting.",
+      body: "See what's waiting in Topics.",
       apns_collapse_id: `topics:${(await t.run((ctx) => ctx.db.query("couples").first()))!.id}`,
     });
     expect(JSON.stringify(rows[0])).not.toMatch(/travel|secret prompt|short/);
@@ -282,7 +282,7 @@ describe("pushes", () => {
     expect(dropped.last_error).toBe("notification is out of date");
   });
 
-  test("a Flirt chat message pushes only who wrote, with no body, no message and no prompt", async () => {
+  test("a Flirt chat message pushes the same as any chat, with no message, prompt or topic", async () => {
     const { t, couple, a, b } = await setup();
     await addDevice(t, b.userId, { locale: "en", token: "b" });
     const flirt = await seedTopic(t, "flirt", { private: true });
@@ -300,8 +300,8 @@ describe("pushes", () => {
     });
     const rows = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ kind: "thread_message_sent", title: "New message from First Partner" });
-    expect(rows[0].body).toBeUndefined();
+    expect(rows[0]).toMatchObject({ kind: "thread_message_sent", title: "First Partner", body: "Sent you a message" });
+    expect(rows[0].payload).not.toHaveProperty("private_topic");
     const stored = JSON.stringify(rows[0]);
     expect(stored).not.toContain("Very flirty words");
     expect(stored).not.toContain("secret prompt");

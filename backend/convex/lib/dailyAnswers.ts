@@ -6,7 +6,7 @@ import { getByUuid, withUpdatedAt } from "./db";
 import { checkViolation, fail, uniqueViolation } from "./errors";
 import { newUuid, uuidArg } from "./ids";
 import { jsonbByteLength, jsonbText } from "./json";
-import { enqueuePartnerAnsweredNotification, enqueuePartnerNotification } from "./notifications";
+import { enqueueDailyChallengeCompletedNotification, enqueuePartnerAnsweredNotification } from "./dailyPartnerPush";
 import { tombstoneReportTargets } from "./reports";
 import { applyCoupleActivity } from "./streaks";
 import { nowIso } from "./time";
@@ -393,7 +393,8 @@ async function insertAnswerMedia(
 
 /**
  * Port of the `handle_daily_challenge_completed` trigger. Call after a user's last
- * own slot is answered. Counts the day for the streak and, with `notifyPartner`, tells the partner once.
+ * own slot is answered. Counts the day for the streak and, with `notifyPartner`, tells the partner once
+ * through their daily push lane (lib/dailyPartnerPush.ts).
  */
 async function completeDailyChallenge(
   ctx: WriterCtx,
@@ -421,23 +422,10 @@ async function completeDailyChallenge(
       metadata: { source: "daily_challenge" },
     });
     if (notifyPartner) {
-      await enqueuePartnerNotification(ctx, {
+      await enqueueDailyChallengeCompletedNotification(ctx, {
         couple_id: day.couple_id,
+        couple_day_id: coupleDayId,
         actor_user_id: userId,
-        kind: "daily_challenge_completed",
-        payload: {
-          type: "daily_challenge_completed",
-          couple_id: day.couple_id,
-          couple_day_id: coupleDayId,
-          actor_user_id: userId,
-          route: "daily",
-          deeplink: `paeonia://daily/today?coupleDayId=${coupleDayId}`,
-        },
-        dedupe_key: dedupeKey,
-        redaction_level: "private",
-        apns_push_type: "alert",
-        apns_collapse_id: `daily:${day.couple_id}`,
-        scheduled_for: completedAt,
       });
       partnerNotifiedAt = completedAt;
     }

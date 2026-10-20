@@ -132,9 +132,9 @@ Placing a marker counts toward the couple's streak through the `game_turn_comple
 
 | Push kind | When | Title | Body |
 |---|---|---|---|
-| `game_turn_ready` | The partner locked in a marker. | Your turn in Consensio / Din tur i Consensio | Open Paeonia to make your guess. / Åpne Paeonia for å gjette. |
-| `game_turn_ready`, step `guessed` | The partner guessed your marker and then placed one for you within 5 minutes. | [Name] guessed and placed one for you / [Name] har gjettet og satt en brikke til deg | Open Paeonia to see how close they got. / Åpne Paeonia for å se hvor nær gjetningen var. |
-| `game_result` | The partner guessed your marker and placed nothing for 5 minutes. Goes to the placer. | [Name] made a guess / [Name] har gjettet | Open Paeonia to see how close they got. / Åpne Paeonia for å se hvor nær gjetningen var. |
+| `game_turn_ready` | The partner locked in a marker. | Your turn in Consensio / Din tur i Consensio | Make your guess. / Gjør gjetningen din. |
+| `game_turn_ready`, step `guessed` | The partner guessed your marker and then placed one for you within 5 minutes. | [Name] guessed and left you one to guess / [Name] har gjettet og lagt igjen en til deg | See how close they got. / Se hvor nær gjetningen var. |
+| `game_result` | The partner guessed your marker and placed nothing for 5 minutes. Goes to the placer. | [Name] made a guess / [Name] har gjettet | See how close they got. / Se hvor nær gjetningen var. |
 | `game_invite` | Invite bell. | [Name] wants to play Consensio with you / [Name] vil spille Consensio med deg | Shared invite body. |
 | `game_turn_reminder` | The turn waited 72 hours. Once per turn. | Your turn in Consensio / Din tur i Consensio | Shared reminder body. |
 

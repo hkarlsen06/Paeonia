@@ -173,9 +173,19 @@ extension DailyChallengeViewModel {
         sendingAnswers[question.id] = outgoing.sending
         sendingGeneration += 1
         hasSentAnswer = true
+        if !question.isTopicQuestion, question.partnerAnswer == nil {
+            hasAnswerAwaitingPartner = true
+        }
         clearDraft(for: question.id)
         submittingQuestionID = nil
         syncQueuedAnswerInBackground()
+    }
+
+    /// Whether an answer sent since the last call still waits for the partner's
+    /// answer. The later notification ask waits for one. Reading it clears it.
+    func takeAnswerAwaitingPartner() -> Bool {
+        defer { hasAnswerAwaitingPartner = false }
+        return hasAnswerAwaitingPartner
     }
 
     /// Saves an edit to an answer the user already sent. Only allowed while the

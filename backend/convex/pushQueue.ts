@@ -2,16 +2,18 @@ import { vOnCompleteArgs } from "@convex-dev/workpool";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
-import { notificationStaleAt, type PreparedNotification, type PreparedWidgetPush } from "./lib/apns";
+import { isQuietNight, notificationStaleAt, type PreparedNotification, type PreparedWidgetPush } from "./lib/apns";
 import type { WriterCtx } from "./lib/db";
 import { isActiveCoupleMember } from "./lib/access";
+import { badgeCountForUser } from "./lib/badges";
 import { getByUuid, withTouch } from "./lib/db";
+import { isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPartnerPush";
 import { gamePushStillWanted } from "./lib/gameRegistry";
 import type { GamePushKind } from "./lib/games";
 import { uuidArg } from "./lib/ids";
 import { hasStartedToday } from "./lib/questionTimeStatus";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
-import { nowIso } from "./lib/time";
+import { isValidTimeZone, nowIso } from "./lib/time";
 import { hasTopicWaiting, topicPushTooSoon } from "./lib/topics";
 
 // The database side of one APNs send. Each outbox row is one pushWorkpool work item
@@ -124,9 +126,46 @@ async function rowStillWanted(
 }
 
 /**
+ * The app icon number an alert carries, read at send time. A badge-only push always carries it,
+ * zero too. Any other alert carries it only when something waits, so it never clears the icon on
+ * its own. Background pushes leave the icon alone.
+ */
+async function sendBadge(ctx: WriterCtx, row: Doc<"notification_outbox">, userId: string): Promise<number | null> {
+  if (row.apns_push_type !== "alert") return null;
+  const count = await badgeCountForUser(ctx, userId);
+  return row.kind === "badge_update" || count > 0 ? count : null;
+}
+
+/** The user picked the time of these alerts, so they keep their sound at night. */
+const LOUD_AT_NIGHT_KINDS: readonly string[] = ["question_time_reminder"];
+
+/**
+ * Whether an alert should land quietly because it is night where the phone is. Uses the device's
+ * zone, else the profile zone. With neither, the alert keeps its sound rather than guess.
+ */
+async function deliverQuietly(
+  ctx: WriterCtx,
+  row: Doc<"notification_outbox">,
+  device: Doc<"user_devices">,
+): Promise<boolean> {
+  if (row.apns_push_type !== "alert" || LOUD_AT_NIGHT_KINDS.includes(row.kind)) return false;
+  let timeZone = device.time_zone_id;
+  if (!isValidTimeZone(timeZone)) {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user_id", (q) => q.eq("user_id", device.user_id))
+      .unique();
+    timeZone = profile?.time_zone_id;
+  }
+  return isValidTimeZone(timeZone) && isQuietNight(Date.now(), timeZone);
+}
+
+/**
  * Runs right before each send, so a row queued for later is checked when it is due. Fails the row
  * when its device is gone or disabled, the user turned its kind off, its couple or game turn no
- * longer needs it, or its reminder passed. Returns what the send needs, or null.
+ * longer needs it, or its reminder passed. A partner's daily answer push decides here what it says.
+ * Returns what the send needs, or null. An alert sent at night goes out at once but quietly
+ * (`deliverQuietly`).
  */
 export const prepare_notification = internalMutation({
   args: { outbox_id: v.string() },
@@ -140,10 +179,21 @@ export const prepare_notification = internalMutation({
       .query("notification_preferences")
       .withIndex("by_user_id", (q) => q.eq("user_id", device.user_id))
       .unique();
-    if (!kindAllowed(row, preference)) return await drop(ctx, row, TARGET_INELIGIBLE);
-    const still = await rowStillWanted(ctx, row, device.user_id);
+    let sendable = row;
+    // A partner's daily answer push waits in a lane and picks its kind and copy now
+    // (lib/dailyPartnerPush.ts). The row keeps what went out.
+    if (isDailyPartnerPushKind(row.kind)) {
+      const resolved = await resolveDailyPartnerPush(ctx, row, device.user_id, device.locale, (kind) =>
+        kindAllowed({ ...row, kind }, preference),
+      );
+      if (!resolved.push) return await drop(ctx, row, resolved.reason === "ineligible" ? TARGET_INELIGIBLE : OUT_OF_DATE);
+      await ctx.db.patch(row._id, resolved.push);
+      sendable = { ...row, ...resolved.push };
+    }
+    if (!kindAllowed(sendable, preference)) return await drop(ctx, row, TARGET_INELIGIBLE);
+    const still = await rowStillWanted(ctx, sendable, device.user_id);
     if (!still.wanted) return await drop(ctx, row, still.reason === "ineligible" ? TARGET_INELIGIBLE : OUT_OF_DATE);
-    const staleAt = notificationStaleAt(row.payload);
+    const staleAt = notificationStaleAt(sendable.payload);
     if (staleAt !== null && Date.parse(staleAt) <= Date.now()) return await drop(ctx, row, OUT_OF_DATE);
     return {
       outbox_id: row.id,
@@ -152,9 +202,11 @@ export const prepare_notification = internalMutation({
       apns_environment: row.apns_environment,
       apns_push_type: row.apns_push_type,
       apns_collapse_id: row.apns_collapse_id ?? null,
-      title: row.title ?? null,
-      body: row.body ?? null,
-      payload: row.payload,
+      title: sendable.title ?? null,
+      body: sendable.body ?? null,
+      payload: sendable.payload,
+      deliver_quietly: await deliverQuietly(ctx, sendable, device),
+      badge: await sendBadge(ctx, sendable, device.user_id),
     };
   },
 });

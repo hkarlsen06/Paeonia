@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { liveInstancesFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
+import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, setTimeZone, type TestConvex, type TestUser } from "./test.setup";
 
 const OSLO: [string, string] = ["Europe/Oslo", "Europe/Oslo"];
@@ -342,6 +343,95 @@ describe("answers and the reveal rule", () => {
     await submit(b, first.id, { text: "hi" });
     const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
     expect(outbox.map((row) => [row.kind, row.recipient_user_id])).toEqual([["partner_answered", a.userId]]);
+    // The push waits a little in case the partner answers more right after.
+    expect(await deliverDuePushes(t)).toEqual([]);
+    vi.setSystemTime(new Date("2026-10-10T10:01:15.000Z"));
+    const [push] = await deliverDuePushes(t);
+    expect(push.payload).toMatchObject({
+      type: "partner_answered",
+      instance_ids: [first.id],
+      question_count: 1,
+      deeplink: `paeonia://daily/reveal?instanceId=${first.id}&coupleDayId=${first.couple_day_id}`,
+    });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("partner pushes", () => {
+  const ownInstances = async (t: TestConvex, user: TestUser) =>
+    (await liveInstancesFor(t, user.userId)).filter((row) => row.seeded_for_user_id === user.userId);
+  const outboxFor = (t: TestConvex, user: TestUser) =>
+    t.run(async (ctx) =>
+      (await ctx.db.query("notification_outbox").collect()).filter((row) => row.recipient_user_id === user.userId),
+    );
+  const pushesDue = async (t: TestConvex) => {
+    vi.setSystemTime(new Date("2026-10-10T10:01:15.000Z"));
+    return await deliverDuePushes(t);
+  };
+
+  test("a partner who answers your questions and finishes their own sends one push", async () => {
+    const { t, a, b } = await readyCouple();
+    await addDevice(t, a.userId);
+    await completeDay(t, a);
+    const mine = await ownInstances(t, a);
+    for (const instance of mine) await submit(b, instance.id, { text: "yours" });
+    await completeDay(t, b);
+    expect(await outboxFor(t, a)).toHaveLength(1);
+
+    const pushes = await pushesDue(t);
+    expect(pushes).toHaveLength(1);
+    expect(pushes[0].payload).toMatchObject({
+      type: "daily_challenge_completed",
+      to_answer: true,
+      to_see: true,
+      deeplink: `paeonia://daily/today?coupleDayId=${mine[0].couple_day_id}`,
+    });
+    expect([...(pushes[0].payload.instance_ids as string[])].sort()).toEqual(mine.map((row) => row.id).sort());
+    expect((await outboxFor(t, a)).map((row) => row.kind)).toEqual(["daily_challenge_completed"]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("answering the partner's questions before the push goes out takes the answer prompt out of it", async () => {
+    const { t, a, b } = await readyCouple();
+    await addDevice(t, a.userId);
+    await completeDay(t, a);
+    for (const instance of await ownInstances(t, a)) await submit(b, instance.id, { text: "yours" });
+    await completeDay(t, b);
+    for (const instance of await ownInstances(t, b)) await submit(a, instance.id, { text: "back" });
+
+    const [push] = await pushesDue(t);
+    expect(push.payload).toMatchObject({ type: "daily_challenge_completed", to_answer: false, to_see: true });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a finished day with nothing left to answer or see sends nothing", async () => {
+    const { t, a, b } = await readyCouple();
+    await addDevice(t, a.userId);
+    await completeDay(t, b);
+    for (const instance of await ownInstances(t, b)) await submit(a, instance.id, { text: "back" });
+
+    expect(await pushesDue(t)).toEqual([]);
+    expect(await outboxFor(t, a)).toEqual([
+      expect.objectContaining({ kind: "daily_challenge_completed", last_error: "notification is out of date" }),
+    ]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("answers to several of your questions in a row send one push for all of them", async () => {
+    const { t, a, b } = await readyCouple();
+    await addDevice(t, a.userId);
+    await completeDay(t, a);
+    const mine = await ownInstances(t, a);
+    for (const instance of mine) await submit(b, instance.id, { text: "yours" });
+
+    const pushes = await pushesDue(t);
+    expect(pushes).toHaveLength(1);
+    expect(pushes[0].payload).toMatchObject({
+      type: "partner_answered",
+      question_count: 2,
+      deeplink: `paeonia://daily/today?coupleDayId=${mine[0].couple_day_id}`,
+    });
+    expect([...(pushes[0].payload.instance_ids as string[])].sort()).toEqual(mine.map((row) => row.id).sort());
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });

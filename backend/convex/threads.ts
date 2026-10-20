@@ -142,8 +142,6 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
       deeplink: `paeonia://daily/chat?questionId=${dailyLink.question_id}`,
       question_id: dailyLink.question_id,
     });
-    // A Flirt chat's push says only who wrote (notificationCopy.ts), never the topic or a preview.
-    if ((await topicOfQuestion(ctx, dailyLink.question_id))?.private) payload.private_topic = true;
   } else {
     Object.assign(payload, { route: "memories", deeplink: "paeonia://memories", memory_id: memoryLink!.memory_id });
   }

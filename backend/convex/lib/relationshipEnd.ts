@@ -2,6 +2,7 @@ import type { WriterCtx } from "./db";
 import { withUpdatedAt } from "./db";
 import { fail } from "./errors";
 import { deleteHeartsForCouple } from "./hearts";
+import { queueBadgeUpdate } from "./badges";
 import { enqueueLockScreenRefreshForUser } from "./notifications";
 import { removePresenceRooms } from "./presence";
 import { createRelationshipSyncEvent } from "./syncEvents";
@@ -94,6 +95,8 @@ export async function endRelationshipForPair(
     if (member.user_id !== initiatedByUserId) {
       await enqueueLockScreenRefreshForUser(ctx, { couple_id: couple.id, user_id: member.user_id, delay_seconds: 0 });
     }
+    // Nothing waits for either of them any more, so the badge goes to zero on every phone.
+    await queueBadgeUpdate(ctx, member.user_id);
   }
   return true;
 }

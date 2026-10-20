@@ -1,6 +1,13 @@
 import Foundation
 import Observation
 
+/// What the person just sent their partner. The asks after sharing use it.
+enum PartnerShare: Equatable {
+    case drawing
+    /// `awaitsPartner` is true for a daily question the partner has not answered yet.
+    case answer(awaitsPartner: Bool)
+}
+
 /// Decides when the permission primers show. The location primer is offered
 /// when Home settles. The notification primer waits until the person has sent
 /// their partner something, so the ask comes when it makes sense to them.
@@ -10,13 +17,21 @@ final class RootPairingPermissionPrimerCoordinator {
     enum Primer: String, Identifiable {
         case location
         case notifications
+        /// The one later ask after "Not now", shown while the partner's answer is still to come.
+        case notificationsWhileWaiting
 
         var id: String { rawValue }
     }
 
+    private struct PushPrimed: Hashable {
+        let identity: LocationIdentity
+        let primer: Primer
+    }
+
     private let pushPrimerStore: any PushPermissionPrimerPersisting
     private let locationPrimerStore: any LocationSharingPrimerPersisting
-    private var pushPrimedIdentities: Set<LocationIdentity> = []
+    /// Each notification ask shows at most once per identity while the app runs.
+    private var pushPrimed: Set<PushPrimed> = []
     private var locationPrimedIdentities: Set<LocationIdentity> = []
     private var evaluationGeneration = 0
 
@@ -65,10 +80,15 @@ final class RootPairingPermissionPrimerCoordinator {
     }
 
     /// Offered after the person answers a question or sends a drawing, while
-    /// iOS has not asked about notifications yet.
+    /// iOS has not asked about notifications yet. After "Not now" one more ask
+    /// is left. It waits for a later day, when the person answers a daily
+    /// question before their partner, so the partner's answer is what they would
+    /// hear about. The day is the phone's calendar day.
     func presentNotificationPrimerIfNeeded(
         identity: LocationIdentity,
-        pushAuthorization: any PushAuthorizationProviding
+        share: PartnerShare,
+        pushAuthorization: any PushAuthorizationProviding,
+        now: Date = .now
     ) async {
         if let presentedIdentity, presentedIdentity != identity {
             dismiss()
@@ -77,8 +97,8 @@ final class RootPairingPermissionPrimerCoordinator {
         guard identity.currentUserID != nil,
               identity.coupleID != nil,
               presentedPrimer == nil,
-              !pushPrimerStore.hasResponded(),
-              !pushPrimedIdentities.contains(identity)
+              let primer = duePushPrimer(share: share, now: now),
+              !pushPrimed.contains(PushPrimed(identity: identity, primer: primer))
         else {
             return
         }
@@ -90,20 +110,40 @@ final class RootPairingPermissionPrimerCoordinator {
         guard !Task.isCancelled,
               activeEvaluationGeneration == evaluationGeneration,
               presentedPrimer == nil,
-              !pushPrimerStore.hasResponded(),
-              !pushPrimedIdentities.contains(identity)
+              duePushPrimer(share: share, now: now) == primer,
+              !pushPrimed.contains(PushPrimed(identity: identity, primer: primer))
         else {
             return
         }
 
         if isNotDetermined {
-            pushPrimedIdentities.insert(identity)
+            pushPrimed.insert(PushPrimed(identity: identity, primer: primer))
             presentedIdentity = identity
-            presentedPrimer = .notifications
+            presentedPrimer = primer
+            // The second ask counts once it is on screen, so it can never show twice.
+            if primer == .notificationsWhileWaiting {
+                pushPrimerStore.markFinished()
+            }
         } else {
-            // A prior system choice makes the primer irrelevant on every paired
+            // A prior system choice makes both asks irrelevant on every paired
             // transition on this installation.
-            pushPrimerStore.markResponded()
+            pushPrimerStore.markFinished()
+        }
+    }
+
+    private func duePushPrimer(share: PartnerShare, now: Date) -> Primer? {
+        switch pushPrimerStore.progress() {
+        case .notAsked:
+            return .notifications
+        case let .declinedFirstAsk(declinedAt):
+            guard share == .answer(awaitsPartner: true),
+                  !Calendar.current.isDate(declinedAt, inSameDayAs: now)
+            else {
+                return nil
+            }
+            return .notificationsWhileWaiting
+        case .finished:
+            return nil
         }
     }
 
@@ -150,8 +190,12 @@ final class RootPairingPermissionPrimerCoordinator {
         )
     }
 
-    func markPushResponded() {
-        pushPrimerStore.markResponded()
+    func markPushDeclined(at date: Date = .now) {
+        pushPrimerStore.markDeclinedFirstAsk(at: date)
+    }
+
+    func markPushFinished() {
+        pushPrimerStore.markFinished()
     }
 
     func dismiss() {

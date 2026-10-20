@@ -46,6 +46,15 @@ export const boardGameBackend: GameBackend = {
     }
   },
 
+  /**
+   * Each of the couple's board games in play whose turn is the user's. A finished game counts for
+   * nobody: no row keeps whether a partner has seen the ending.
+   */
+  async waitingFor(ctx, coupleId, userId) {
+    const games = await ctx.db.query("board_games").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect();
+    return games.filter((game) => game.status === "playing" && game.turn_user_id === userId).length;
+  },
+
   async deleteCoupleRows(ctx, coupleId) {
     const games = await ctx.db.query("board_games").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect();
     const marks = await ctx.db.query("board_game_marks").withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId)).collect();

@@ -88,6 +88,8 @@ describe("prepare_notification", () => {
       title: "Alex",
       body: "Open Paeonia to see it.",
       payload: { type: "memory_created", route: "memories" },
+      deliver_quietly: false,
+      badge: null,
     });
     // A sent row is not sent again.
     await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: (await rowByDedupe(t, "a")).id });

@@ -227,6 +227,28 @@ export async function hasTopicWaiting(ctx: ReaderCtx, coupleId: string, userId: 
   return false;
 }
 
+/** How many topic questions wait for `userId`, by the rule of `hasTopicWaiting`. For the app icon badge. */
+export async function topicsWaitingCount(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+  const skipped = await skippedQuestionIds(ctx, coupleId);
+  let count = 0;
+  for (const { collection } of await activeTopics(ctx)) {
+    for (const instance of (await topicInstances(ctx, coupleId, collection.id)).values()) {
+      const { own, partner } = await answerState(ctx, instance, userId);
+      if (!partner) continue;
+      if (!own) {
+        if (!skipped.has(instance.question_id)) count += 1;
+        continue;
+      }
+      const seen = await ctx.db
+        .query("daily_answer_seen_states")
+        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", userId))
+        .unique();
+      if (!seen) count += 1;
+    }
+  }
+  return count;
+}
+
 /**
  * How far back the outbox can hold a topic push that still matters: one queued up to an interval before it
  * is due, plus an interval since it went out, plus room for send retries.

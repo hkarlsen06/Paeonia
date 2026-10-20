@@ -142,11 +142,13 @@ struct QuestionTimeFakePushAuthorization: PushAuthorizationProviding {
 final class QuestionTimeFakePrimerStore: PushPermissionPrimerPersisting {
     private(set) var responded = false
 
-    func hasResponded() -> Bool {
-        responded
+    func progress() -> PushPermissionPrimerProgress {
+        responded ? .finished : .notAsked
     }
 
-    func markResponded() {
+    func markDeclinedFirstAsk(at _: Date) {}
+
+    func markFinished() {
         responded = true
     }
 }

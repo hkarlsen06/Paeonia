@@ -243,6 +243,44 @@ export async function mindMeldPushStillWanted(
 }
 
 /**
+ * The couple's two newest games, the ones the app shows. A game in play counts when the partner
+ * locked in and the user has not, or when one of its two newest rounds is revealed and the user has
+ * not seen it. A finished game counts until the user has seen how it ended.
+ */
+export async function mindMeldWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+  const games = await ctx.db
+    .query("mind_meld_games")
+    .withIndex("by_couple_id_game_number", (q) => q.eq("couple_id", coupleId))
+    .order("desc")
+    .take(2);
+  let waiting = 0;
+  for (const game of games) {
+    if (game.state !== "playing") {
+      if (game.end_seen_by_user[userId] === undefined) waiting += 1;
+      continue;
+    }
+    const rounds = await ctx.db
+      .query("mind_meld_rounds")
+      .withIndex("by_game_id_round_number", (q) => q.eq("game_id", game.id))
+      .order("desc")
+      .take(2);
+    for (const round of rounds) {
+      const mine = await ctx.db
+        .query("mind_meld_words")
+        .withIndex("by_round_id_user_id", (q) => q.eq("round_id", round.id).eq("user_id", userId))
+        .unique();
+      const myTurn = round.state === "open" && round.waiting_since !== undefined && mine === null;
+      const unseenReveal = round.state === "revealed" && mine !== null && mine.reveal_seen_at === undefined;
+      if (myTurn || unseenReveal) {
+        waiting += 1;
+        break;
+      }
+    }
+  }
+  return waiting;
+}
+
+/**
  * Deletes the couple's rows in the three Mind Meld tables and returns how many.
  * ponytail: runs in one mutation like the other couple cleanup. A couple with a few hundred finished
  * games may exceed the write limit. Upgrade path: delete in chunks and reschedule.
@@ -299,6 +337,7 @@ export async function sendDueMindMeldReminders(ctx: WriterCtx, now: string): Pro
 /** What the shared games code asks of Mind Meld. Registered in `GAME_BACKENDS` (gameRegistry.ts). */
 export const mindMeldBackend: GameBackend = {
   pushStillWanted: mindMeldPushStillWanted,
+  waitingFor: mindMeldWaitingFor,
   deleteCoupleRows: deleteCoupleMindMeldRows,
   sendDueTurnReminders: sendDueMindMeldReminders,
 };

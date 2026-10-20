@@ -1,9 +1,17 @@
 import SwiftUI
 
-/// A one-benefit explanation shown after pairing and before iOS asks for
-/// notification permission. Either choice is final for automatic priming; the
-/// app does not keep interrupting a user who chooses "Not now".
+/// A one-benefit explanation shown before iOS asks for notification permission.
+/// After "Not now" the app asks once more, on a later day, and never again after
+/// that (`RootPairingPermissionPrimerCoordinator`).
 struct PushPermissionPrimerView: View {
+    enum Ask {
+        /// The first ask, after the person first sends their partner something.
+        case afterSharing
+        /// The one later ask, right after an answer the partner has not answered yet.
+        case whileWaitingForPartner
+    }
+
+    let ask: Ask
     let partnerName: String
     let onEnable: () -> Void
     let onNotNow: () -> Void
@@ -46,16 +54,34 @@ struct PushPermissionPrimerView: View {
                 .accessibilityHidden(true)
 
             VStack(spacing: PaeoniaSpacing.space12) {
-                Text(.notificationsPermissionPrimerTitle)
+                Text(title)
                     .font(PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(.notificationsPermissionPrimerMessage(partnerName))
+                Text(message)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
             }
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var title: LocalizedStringResource {
+        switch ask {
+        case .afterSharing:
+            .notificationsPermissionPrimerTitle
+        case .whileWaitingForPartner:
+            .notificationsPermissionPrimerWaitingTitle(partnerName)
+        }
+    }
+
+    private var message: LocalizedStringResource {
+        switch ask {
+        case .afterSharing:
+            .notificationsPermissionPrimerMessage(partnerName)
+        case .whileWaitingForPartner:
+            .notificationsPermissionPrimerWaitingMessage(partnerName)
         }
     }
 
@@ -80,6 +106,20 @@ struct PushPermissionPrimerView: View {
     Color.paeoniaBackgroundPrimary
         .sheet(isPresented: .constant(true)) {
             PushPermissionPrimerView(
+                ask: .afterSharing,
+                partnerName: "Riley",
+                onEnable: {},
+                onNotNow: {}
+            )
+        }
+        .preferredColorScheme(.dark)
+}
+
+#Preview("While waiting for the partner") {
+    Color.paeoniaBackgroundPrimary
+        .sheet(isPresented: .constant(true)) {
+            PushPermissionPrimerView(
+                ask: .whileWaitingForPartner,
                 partnerName: "Riley",
                 onEnable: {},
                 onNotNow: {}

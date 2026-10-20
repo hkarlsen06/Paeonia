@@ -269,8 +269,8 @@ describe("accept_pairing_invite with a first day draft", () => {
     expect(joined).toEqual([
       expect.objectContaining({
         recipient_user_id: creator.userId,
-        title: "Partner joined you on Paeonia",
-        body: "Open Paeonia to see your first day together.",
+        title: "Partner joined you",
+        body: "See your first day together.",
         payload: expect.objectContaining({ couple_id: coupleId, deeplink: "paeonia://home" }),
       }),
     ]);

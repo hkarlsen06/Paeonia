@@ -138,7 +138,7 @@ describe("memory created notifications", () => {
     const rows = await outbox(t);
     expect(rows).toHaveLength(2);
     expect(new Set(rows.map((row) => row.recipient_user_id))).toEqual(new Set([couple.second.userId]));
-    expect(rows.map((row) => row.title).sort()).toEqual(["First Partner added a new memory", "First Partner la til et nytt minne"]);
+    expect(rows.map((row) => row.title).sort()).toEqual(["First Partner added a memory", "First Partner la til et minne"]);
     expect(rows[0].payload).toEqual({
       type: "memory_created",
       couple_id: couple.coupleId,

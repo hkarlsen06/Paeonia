@@ -97,6 +97,7 @@ Import these instead of re-porting the SQL.
 | `dailyQuestionRounds.ts` | a couple has one chat per question and each day the question came back is a round: `loadQuestionRounds`, `isSharedRound`, `dailyQuestionThreadLink`, and `addRoundInfo` (the round fields on question rows) |
 | `streaks.ts`, `streakDeadlines.ts` | streak core, restore, and the zone-change refreshes |
 | `notifications.ts`, `notificationCopy.ts` | outbox inserts, enqueue helpers, notification copy |
+| `dailyPartnerPush.ts` | the partner's daily answer pushes (`partner_answered`, `daily_challenge_completed`): `enqueuePartnerAnsweredNotification`, `enqueueDailyChallengeCompletedNotification`, and `resolveDailyPartnerPush`. Each recipient has one lane. The first answer queues a push `DAILY_PARTNER_PUSH_DELAY_SECONDS` out, later answers before it is due join it, and `prepare_notification` picks the kind and copy from what still waits for the recipient |
 | `reports.ts` | `tombstoneReportTargets` |
 | `mediaOrphans.ts` | live-reference check and orphan queueing |
 | `games.ts` | what every game shares: `GameKind`, settings, `isGamePresent`, `enqueueGamePush`, `gameDeepLink`, `settingsJson`. It never imports a game or the registry |

@@ -122,7 +122,7 @@ describe("memory threads", () => {
     });
     expect(row.dedupe_key).toBe(`thread_message_sent:${result.message_id}:${device.id}`);
     expect(row.apns_collapse_id).toBe(`thread:${result.thread_id}`);
-    expect([row.title, row.body]).toEqual(["First Partner sent you a message", "Open Paeonia to read it and reply."]);
+    expect([row.title, row.body]).toEqual(["First Partner", "Sent you a message"]);
     expect(JSON.stringify(rows)).not.toContain("Secret message");
 
     const events = await t.run((ctx) => ctx.db.query("couple_activity_events").collect());
@@ -157,7 +157,7 @@ describe("memory threads", () => {
     const memoryId = await createMemory(couple.first);
     await memoryThread(couple.first, memoryId);
     const row = (await outbox(t)).find((item) => item.kind === "thread_message_sent")!;
-    expect([row.title, row.body]).toEqual(["First Partner sendte deg en melding", "Åpne Paeonia for å lese og svare."]);
+    expect([row.title, row.body]).toEqual(["First Partner", "Sendte deg en melding"]);
     expect(JSON.stringify(row)).not.toContain("Secret message");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });

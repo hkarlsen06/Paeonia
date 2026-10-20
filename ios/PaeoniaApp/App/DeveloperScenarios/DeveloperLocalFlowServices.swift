@@ -332,8 +332,9 @@
   }
 
   nonisolated struct DeveloperLocalFlowPrimerStore: PushPermissionPrimerPersisting {
-    func hasResponded() -> Bool { true }
-    func markResponded() {}
+    func progress() -> PushPermissionPrimerProgress { .finished }
+    func markDeclinedFirstAsk(at _: Date) {}
+    func markFinished() {}
   }
 
   nonisolated struct DeveloperLocalFlowLocationPrimerStore: LocationSharingPrimerPersisting {

@@ -72,9 +72,10 @@ extension MainTabView {
     /// Home card's seal moment to finish first.
     private func offerNotificationsIfAnswered() {
         guard dailyChallengeViewModel.hasSentAnswer else { return }
+        let share = PartnerShare.answer(awaitsPartner: dailyChallengeViewModel.takeAnswerAwaitingPartner())
         Task {
             try? await Task.sleep(for: DailyPromptCard.momentLength)
-            actions.sentSomethingToPartner()
+            actions.sentSomethingToPartner(share)
         }
     }
 

@@ -854,7 +854,7 @@ describe("pushes", () => {
       recipient_user_id: s.b.userId,
       dedupe_key: expect.stringContaining(`exquisite_corpse:finished:${figureId}`),
       payload: { type: "game_result", game_kind: "exquisite_corpse", round_id: figureId, actor_user_id: s.a.userId },
-      body: "Open it to see the whole thing.",
+      body: "See the whole creature.",
     });
     expect(results[0].payload).not.toHaveProperty("step");
     // The payload holds ids only. It never names a drawing, a strip, or an idea.

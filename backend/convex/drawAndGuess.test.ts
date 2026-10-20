@@ -733,7 +733,7 @@ describe("pushes", () => {
       recipient_user_id: s.b.userId,
       apns_push_type: "alert",
       title: "Your turn in Draw & Guess",
-      body: "Open Paeonia to guess it.",
+      body: "Guess what they drew.",
       payload: {
         type: "game_turn_ready",
         game_kind: "draw_and_guess",
@@ -776,7 +776,7 @@ describe("pushes", () => {
     const picked = await pick(s.a, s.gameId, "easy");
     await sendDrawing(s, s.a, picked.round_id);
     const [row] = await outbox(t);
-    expect(row).toMatchObject({ title: "Din tur i Tegn og gjett", body: "Åpne Paeonia for å gjette." });
+    expect(row).toMatchObject({ title: "Din tur i Tegn og gjett", body: "Gjett hva som er tegnet." });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

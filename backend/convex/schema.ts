@@ -1614,6 +1614,8 @@ export default defineSchema({
     kind: gameKind,
     sender_user_id: uuid,
     sent_at: ts,
+    // When the partner first opened the game after this invite. A new invite clears it.
+    answered_at: optTs,
   }).index("by_couple_id_kind_sender_user_id", ["couple_id", "kind", "sender_user_id"]),
 
   // When either partner last had each game open, so the Games tab lists the games played most

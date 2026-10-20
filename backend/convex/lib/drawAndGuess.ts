@@ -350,6 +350,23 @@ export const drawAndGuessBackend: GameBackend = {
     return sent;
   },
 
+  /**
+   * The couple's one game, when it is the user's turn or one of the two newest rounds ended without
+   * the user dismissing its result. A user outside both roles of a round has nothing to see.
+   */
+  async waitingFor(ctx, coupleId, userId) {
+    const game = await getGame(ctx, coupleId, "draw_and_guess");
+    if (!game) return 0;
+    if (game.turn_user_id === userId) return 1;
+    const unseen = (await getMovesByGame(ctx, game.id, 2)).some(
+      (move) =>
+        (move.state === "solved" || move.state === "missed") &&
+        ((move.drawer_user_id === userId && move.drawer_result_seen_at === undefined) ||
+          (move.guesser_user_id === userId && move.guesser_result_seen_at === undefined)),
+    );
+    return unseen ? 1 : 0;
+  },
+
   /** Words already offered for the open turn come from the old language. */
   async onLanguageChanged(ctx, coupleId, language) {
     const game = await getGame(ctx, coupleId, "draw_and_guess");

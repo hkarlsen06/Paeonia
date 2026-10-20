@@ -237,7 +237,7 @@ describe("submit_widget_drawing_revision", () => {
     const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
     expect(outbox.map((row) => [row.apns_push_type, row.recipient_user_id, row.title ?? null, row.body ?? null])).toEqual([
       ["background", couple.second.userId, null, null],
-      ["alert", couple.second.userId, "First Partner", "La til en ny tegning"],
+      ["alert", couple.second.userId, "First Partner", "Tegnet noe til deg"],
     ]);
     expect(outbox[0].payload).toEqual(payload);
     expect(outbox[0].dedupe_key).toBe(`widget_updated:${revisionId}:${partnerDevice.id}`);

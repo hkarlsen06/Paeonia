@@ -102,7 +102,7 @@ final class QuestionTimeModel {
         // the notification primer after sharing doesn't ask again. Unrecorded if the
         // app quits mid-prompt, like the primer.
         if await pushAuthorization.requestAuthorizationIfNeeded() {
-            primerStore.markResponded()
+            primerStore.markFinished()
         }
         return minutes
     }

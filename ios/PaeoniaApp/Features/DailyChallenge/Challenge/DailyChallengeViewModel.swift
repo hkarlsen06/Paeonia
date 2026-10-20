@@ -96,6 +96,9 @@ final class DailyChallengeViewModel {
     /// The user sent an answer since the app started. The notification ask
     /// waits for this.
     @ObservationIgnored var hasSentAnswer = false
+    /// An answer sent since the last `takeAnswerAwaitingPartner()` was to a daily
+    /// question, not a topic one, that the partner had not answered yet.
+    @ObservationIgnored var hasAnswerAwaitingPartner = false
     /// The chat screen to open next, already read from this phone by `prepareChat(for:)`.
     @ObservationIgnored var preparedChat: DailyQuestionChatViewModel?
 

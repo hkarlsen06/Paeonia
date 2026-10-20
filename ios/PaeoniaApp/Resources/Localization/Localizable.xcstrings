@@ -8794,25 +8794,25 @@
       }
     },
     "dailyChat.notifications.subtitle" : {
-      "comment" : "Description for question chat message notifications; placeholder is partner name",
+      "comment" : "Explains the messages switch. It covers chats about questions and chats on memories. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when %@ sends a message about a question."
+            "value" : "Get a notification when %@ writes in a chat about a question or a memory."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når %@ sender en melding om et spørsmål."
+            "value" : "Få et varsel når %@ skriver i en chat om et spørsmål eller et minne."
           }
         }
       }
     },
     "dailyChat.notifications.title" : {
-      "comment" : "Title for the question chat message notification preference",
+      "comment" : "Title of the notification switch for chat messages about questions and memories",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -23295,6 +23295,114 @@
         }
       }
     },
+    "notifications.hiddenPreview.answer" : {
+      "comment" : "Lock screen text for a notification when the person has turned off notification previews in iOS Settings. Says only what kind of notification it is. For the partner answering a question.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt svar"
+          }
+        }
+      }
+    },
+    "notifications.hiddenPreview.drawing" : {
+      "comment" : "Lock screen text for a notification when the person has turned off notification previews in iOS Settings. Says only what kind of notification it is. For a new drawing from the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny tegning"
+          }
+        }
+      }
+    },
+    "notifications.hiddenPreview.game" : {
+      "comment" : "Lock screen text for a notification when the person has turned off notification previews in iOS Settings. Says only what kind of notification it is. For a game: the partner's move, an invite, or a finished game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New in a game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt i et spill"
+          }
+        }
+      }
+    },
+    "notifications.hiddenPreview.message" : {
+      "comment" : "Lock screen text for a notification when the person has turned off notification previews in iOS Settings. Says only what kind of notification it is. For a chat message from the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny melding"
+          }
+        }
+      }
+    },
+    "notifications.hiddenPreview.partner" : {
+      "comment" : "Lock screen text for a notification when the person has turned off notification previews in iOS Settings. Says only what kind of notification it is. For something the partner added or did, such as a memory, a story, or joining.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New from your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt fra partneren din"
+          }
+        }
+      }
+    },
+    "notifications.hiddenPreview.reminder" : {
+      "comment" : "Lock screen text for a notification when the person has turned off notification previews in iOS Settings. Says only what kind of notification it is. For a reminder from Paeonia.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Påminnelse"
+          }
+        }
+      }
+    },
     "notifications.permissionPrimer.enable" : {
       "comment" : "Primary action that continues from the primer to the iOS notification permission dialog",
       "extractionState" : "manual",
@@ -23363,6 +23471,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se når noe nytt kommer"
+          }
+        }
+      }
+    },
+    "notifications.permissionPrimer.waiting.message" : {
+      "comment" : "Message of the one later notification ask, shown right after the user answers a daily question their partner has not answered yet. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia can let you know when %@ answers, so you can see what they wrote right away."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia kan gi deg beskjed når %@ svarer, så du kan se svaret med en gang."
+          }
+        }
+      }
+    },
+    "notifications.permissionPrimer.waiting.title" : {
+      "comment" : "Title of the one later notification ask, shown right after the user answers a daily question their partner has not answered yet. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Want to know when %@ answers?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vil du vite når %@ svarer?"
           }
         }
       }
@@ -28098,19 +28242,19 @@
       }
     },
     "settings.notifications.games.subtitle" : {
-      "comment" : "Explains the games notification switch. %@ is the partner's name.",
+      "comment" : "Explains the games notification switch: invites, your turn, turn reminders and finished games. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when it's your turn or %@ wants to play."
+            "value" : "Get a notification when %@ wants to play, when it's your turn, and when a game ends."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når det er din tur eller %@ vil spille."
+            "value" : "Få et varsel når %@ vil spille, når det er din tur, og når et spill er over."
           }
         }
       }
@@ -28242,37 +28386,37 @@
       }
     },
     "settings.notifications.partnerAnswered.subtitle" : {
-      "comment" : "Explains same-question reveal notifications. %@ is the partner's name.",
+      "comment" : "Explains the new answers switch. It covers daily questions both partners answered and answers in Topics. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when %@ answers a question you can reveal."
+            "value" : "Get a notification when %@ answers a daily question you answered too, or answers something in Topics."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når %@ svarer på et spørsmål du kan se."
+            "value" : "Få et varsel når %@ svarer på et daglig spørsmål som du også har svart på, eller svarer på noe i Temaer."
           }
         }
       }
     },
     "settings.notifications.partnerAnswered.title" : {
-      "comment" : "Toggle title: get notified when partner answers a question the user can reveal",
+      "comment" : "Toggle title: get notified when the partner answers a daily question the user answered too, or answers questions in Topics",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Same-question reveals"
+            "value" : "New answers"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar på samme spørsmål"
+            "value" : "Nye svar"
           }
         }
       }
@@ -28566,13 +28710,13 @@
       }
     },
     "settings.notifications.widgetAlerts.title" : {
-      "comment" : "Toggle title: get a banner when the partner updates the shared widget drawing",
+      "comment" : "Toggle title: get a notification when the partner sends a new drawing",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drawing updates"
+            "value" : "New drawings"
           }
         },
         "nb" : {

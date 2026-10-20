@@ -390,7 +390,7 @@ describe("enqueue_due_streak_reminders", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("reminds each partner at 19:00 local on the last day, once, then again in the last hour", async () => {
+  test("reminds each partner at 19:00 local on the last day, once, and not again in the last hour", async () => {
     const { t, a, b } = await streakCouple();
     await addDevice(t, a.userId);
     await addDevice(t, b.userId);
@@ -413,8 +413,37 @@ describe("enqueue_due_streak_reminders", () => {
     // The hour after 19:00 has passed, so a late run does not send it.
     expect(await evening("2026-10-11T18:05:00Z")).toBe(0);
 
-    await clearOutbox();
-    expect(await t.mutation(internal.streaks.enqueue_due_streak_reminders, { p_now: "2026-10-11T21:30:00Z" })).toBe(2);
+    // Both partners had the evening reminder, so the last hour stays quiet.
+    expect(await t.mutation(internal.streaks.enqueue_due_streak_reminders, { p_now: "2026-10-11T21:30:00Z" })).toBe(0);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("the last-hour reminder goes only to a partner who did not get the evening reminder", async () => {
+    const { t, a, b } = await streakCouple();
+    await addDevice(t, a.userId);
+    await addDevice(t, b.userId);
+    await answerAll(t, a);
+    await answerAll(t, b);
+    await t.run(async (ctx) => {
+      for (const row of await ctx.db.query("notification_outbox").collect()) await ctx.db.delete(row._id);
+    });
+    const setStreakReminders = (userId: string, enabled: boolean) =>
+      t.run(async (ctx) => {
+        const preference = await ctx.db
+          .query("notification_preferences")
+          .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+          .unique();
+        await ctx.db.patch(preference!._id, { streak_reminders_enabled: enabled });
+      });
+
+    // B has streak reminders off at 19:00, so only A gets the evening reminder.
+    await setStreakReminders(b.userId, false);
+    expect(await t.mutation(internal.streaks.enqueue_evening_streak_reminders, { p_now: "2026-10-11T17:00:00Z" })).toBe(1);
+    // B turns them on later that evening, and gets the last-hour reminder instead. A does not get a second one.
+    await setStreakReminders(b.userId, true);
+    expect(await t.mutation(internal.streaks.enqueue_due_streak_reminders, { p_now: "2026-10-11T21:30:00Z" })).toBe(1);
+    const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
+    expect(outbox.map((row) => row.recipient_user_id)).toEqual([a.userId, b.userId]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -449,15 +478,15 @@ describe("enqueue_due_streak_reminders", () => {
       return await t.mutation(internal.streaks.enqueue_due_streak_reminders, {});
     };
 
-    // The missed day 2026-10-11: both reminders, for both partners.
+    // The missed day 2026-10-11: the evening reminder for both partners, so no last-hour reminder.
     expect(await evening("2026-10-11T17:00:00Z")).toBe(2);
-    expect(await lastHour("2026-10-11T21:30:00Z")).toBe(2);
+    expect(await lastHour("2026-10-11T21:30:00Z")).toBe(0);
     // The deadline passes and the freeze moves it to 2026-10-12T22:00Z.
     expect(await lastHour("2026-10-11T22:05:00Z")).toBe(0);
     expect((await t.run((ctx) => ctx.db.query("streak_states").first()))!.freeze_used_at).toBe("2026-10-11T22:00:00.000Z");
-    // The frozen day 2026-10-12 is when the streak is at risk, so it gets reminded again.
+    // The frozen day 2026-10-12 is when the streak is at risk, so it gets its own evening reminder.
     expect(await evening("2026-10-12T17:00:00Z")).toBe(2);
-    expect(await lastHour("2026-10-12T21:30:00Z")).toBe(2);
+    expect(await lastHour("2026-10-12T21:30:00Z")).toBe(0);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

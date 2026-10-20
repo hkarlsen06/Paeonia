@@ -227,6 +227,24 @@ export async function guessMySpotPushStillWanted(
 }
 
 /**
+ * The couple's one game, when it is the user's turn or one of the two newest guessed rounds has a
+ * reveal they have not seen. A round its sender deleted has nothing left to see.
+ */
+export async function guessMySpotWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+  const game = await getCoupleGame(ctx, coupleId);
+  if (!game) return 0;
+  if (game.turn_user_id === userId) return 1;
+  const unseen = (await newestRounds(ctx, game.id, 2)).some(
+    (round) =>
+      round.guess_latitude !== undefined &&
+      round.deleted_at === undefined &&
+      ((round.sender_user_id === userId && round.sender_reveal_seen_at === undefined) ||
+        (round.guesser_user_id === userId && round.guesser_reveal_seen_at === undefined)),
+  );
+  return unseen ? 1 : 0;
+}
+
+/**
  * Deletes the couple's rows in both tables and returns how many. The photos go with the couple
  * media sweep (lib/relationshipCleanup.ts).
  * ponytail: runs in one mutation like the other couple cleanup. Upgrade path: delete in chunks.
@@ -279,6 +297,7 @@ export async function sendDueGuessMySpotReminders(ctx: WriterCtx, now: string): 
 /** What the shared games code asks of Guess my spot. Registered in `GAME_BACKENDS` (gameRegistry.ts). */
 export const guessMySpotBackend: GameBackend = {
   pushStillWanted: guessMySpotPushStillWanted,
+  waitingFor: guessMySpotWaitingFor,
   deleteCoupleRows: deleteCoupleGuessMySpotRows,
   sendDueTurnReminders: sendDueGuessMySpotReminders,
 };

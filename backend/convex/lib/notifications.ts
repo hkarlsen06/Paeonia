@@ -3,13 +3,13 @@ import { components, internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { listActiveMembers } from "./access";
 import type { WriterCtx } from "./db";
-import { getByUuid } from "./db";
 import { checkViolation, fail } from "./errors";
 import { isJsonObject, jsonbByteLength } from "./json";
 import { newUuid } from "./ids";
 import {
   notificationAlertBody,
   notificationAlertTitle,
+  notificationLocaleLanguage,
   notificationPayloadIsSafe,
 } from "./notificationCopy";
 import { addMs, nowIso } from "./time";
@@ -33,6 +33,7 @@ const NOTIFICATION_KINDS = [
   "question_time_reminder",
   "partner_joined",
   "topics_waiting",
+  "badge_update",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -149,7 +150,7 @@ export async function insertNotificationOutbox(
   return true;
 }
 
-function preferenceAllows(
+export function preferenceAllows(
   kind: NotificationKind,
   pushType: string,
   preference: Doc<"notification_preferences">,
@@ -456,53 +457,6 @@ export async function enqueueLockScreenRefreshForUser(
   }
 }
 
-/**
- * Port of the `enqueue_partner_answered_notification` trigger. Call after
- * inserting a daily_question_answers row. Notifies the first partner when the
- * second visible answer arrives.
- */
-export async function enqueuePartnerAnsweredNotification(
-  ctx: WriterCtx,
-  answer: Doc<"daily_question_answers">,
-): Promise<void> {
-  if (answer.deleted_at !== undefined || answer.moderation_status !== "visible") {
-    return;
-  }
-  const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
-  // Topic answers send the throttled `topics_waiting` push instead (lib/topics.ts).
-  if (!instance || instance.couple_day_id === undefined) return;
-  const coupleDay = await getByUuid(ctx, "couple_days", instance.couple_day_id);
-  if (!coupleDay) return;
-
-  const answers = await ctx.db
-    .query("daily_question_answers")
-    .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", answer.instance_id))
-    .collect();
-  const visible = answers.filter((item) => item.deleted_at === undefined && item.moderation_status === "visible");
-  if (visible.length !== 2) return;
-  const recipient = visible.find((item) => item.user_id !== answer.user_id);
-  if (!recipient) return;
-
-  await enqueueNotificationForUser(ctx, {
-    recipient_user_id: recipient.user_id,
-    kind: "partner_answered",
-    payload: {
-      type: "partner_answered",
-      couple_id: coupleDay.couple_id,
-      couple_day_id: instance.couple_day_id,
-      instance_id: answer.instance_id,
-      actor_user_id: answer.user_id,
-      route: "daily",
-      deeplink: `paeonia://daily/reveal?instanceId=${answer.instance_id}&coupleDayId=${instance.couple_day_id}`,
-    },
-    dedupe_key: `partner_answered:${answer.instance_id}:${answer.user_id}:${recipient.user_id}`,
-    redaction_level: "private",
-    apns_push_type: "alert",
-    apns_collapse_id: `daily:${coupleDay.couple_id}`,
-    scheduled_for: nowIso(),
-  });
-}
-
 /** Port of the `enqueue_memory_created_notification` trigger. Call after inserting a memories row. */
 export async function enqueueMemoryCreatedNotification(
   ctx: WriterCtx,
@@ -600,7 +554,7 @@ export async function enqueueWidgetUpdateAlert(
       dedupe_key: `widget_updated_alert:${args.revision_id}:${device.id}`,
       apns_push_type: "alert",
       apns_collapse_id: `widget-alert:${args.couple_id}`,
-      title: authorName ?? "Paeonia",
+      title: authorName ?? (notificationLocaleLanguage(device.locale) === "nb" ? "Partneren din" : "Your partner"),
       body: notificationAlertBody("widget_updated", {}, device.locale),
       scheduled_for: nowIso(),
     });

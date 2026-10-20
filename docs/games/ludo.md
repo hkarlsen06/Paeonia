@@ -317,7 +317,7 @@ The kind, the live roll and the colors. `ludo` joins `BOARD_GAME_KINDS`, `GAME_K
 
 Colors. `board_games.colors_by_user` maps each player's user id to `pink`, `lavender`, `gold` or `sky`, always two different colors. `ensure_board_game` sets player one to pink and the partner to lavender, and the colors stay through rematches. `make_move` takes an optional `p_ludo_color`. It counts only when the mover has no move yet in this game (the server replays the moves to check) and the partner does not have that color. Any other pick is ignored without refusing the move. A color sent with another board game is refused with `23514 that color is not allowed`. `get_board_games` returns `my_color` and `partner_color` for the caller, both null outside Ludo. The pick is part of the move's request hash. On the phone `BoardGameMovePayload.ludoColor` carries it and `BoardGameResolver` shows it on top of the server's colors, and `BoardGameViewModel.ludoColors` is what the screen shows.
 
-Notifications follow the board games: "Your turn in Ludo", "Your game of Ludo is over", "[Name] wants to play Ludo with you", and one reminder after 72 hours.
+Notifications follow the board games: "Your turn in Ludo", "[Name] finished your game of Ludo", "[Name] wants to play Ludo with you", and one reminder after 72 hours.
 
 ## Hub card
 

@@ -31,7 +31,7 @@ Made on 2026-10-14 while the developer was away. Each is the option that was rec
 - **The stake counts Unicode scalars.** The server counts them, so the phone counts them the same way and never sends a stake the server refuses.
 - **An empty stake means no stake.** The server accepts it from anyone on any move and stores nothing.
 - **A mark can be drawn before the partner joins.** Starting a game needs both partners. Drawing a mark doesn't.
-- **The reminder uses the shared body.** "Open Paeonia to take your turn." The title names the game.
+- **The reminder uses the shared body.** "Pick up where you left off." The title names the game.
 - **Turn pushes carry a turn token.** `round_id` holds `<game number>:<move count>`, so the drain can tell whether the push is still wanted. It never holds the move.
 - **The petal bloom comes from the board.** The result panel draws none, so a win blooms once, from the winning line.
 - **"Whole board" also shows in a forced zoom** in Ultimate Tic-Tac-Toe, so a player who was sent to a board can still look at the whole game.
@@ -116,7 +116,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 - **Offline.** A move made offline shows on the board at once and is saved on the phone as a pending operation. The screen says "Saved on this phone. We'll send it when you're online." Moves leave in order. A move the server refuses as stale or illegal is dropped with "Your move wasn't sent", and the board shows the server's state again.
 - **Notifications.**
   - "Your turn in Connect Four" when the turn passes to you, skipped while you have that game open.
-  - "Your game of Connect Four is over" when the partner's move ends the game, skipped while you have it open.
+  - "[Name] finished your game of Connect Four" when the partner's move ends the game, skipped while you have it open.
   - "[Name] wants to play Connect Four with you" for an invite.
   - One reminder, "Your turn in Connect Four", when a turn has waited 72 hours. A turn never gets a second one, and a finished game gets none.
   - Pushes name only the game. They never show the move, the stake or the result.

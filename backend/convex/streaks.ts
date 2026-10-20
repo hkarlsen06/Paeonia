@@ -84,8 +84,9 @@ export const detect_streak_breaks = internalMutation({
 /**
  * Port of `internal.enqueue_due_streak_reminders`. Queues a check-in reminder for
  * each partner who has not contributed today, for streaks whose deadline falls
- * within the next hour, unless it is night where that partner is
- * (`lastHourReminderAllowed`). Returns how many notifications this page queued.
+ * within the next hour. It skips a partner for whom it is night
+ * (`lastHourReminderAllowed`) and a partner who already got the evening reminder
+ * for this streak day, so nobody gets both. Returns how many notifications this page queued.
  */
 export const enqueue_due_streak_reminders = internalMutation({
   args: cronArgs,
@@ -156,7 +157,8 @@ export const enqueue_evening_streak_reminders = internalMutation({
  * Queues one streak reminder for each active partner of a live streak who is due
  * and has not contributed to today's couple day. Deduped per partner, reminder
  * kind, and streak day. A freeze starts a new streak day without a newly
- * qualified date, so its stamp is part of the key.
+ * qualified date, so its stamp is part of the key. The last-hour reminder goes
+ * only to a partner without an evening reminder for the same streak day.
  */
 async function remindPartners(
   ctx: MutationCtx,
@@ -184,12 +186,22 @@ async function remindPartners(
     if (!(await isDue(member.user_id, deadline))) continue;
     contributed ??= await contributorsToday(ctx, state.couple_id, now);
     if (contributed.has(member.user_id)) continue;
+    if (
+      reminder === "last_hour" &&
+      streakDay !== null &&
+      (await gotReminder(ctx, reminderKey("evening", state.couple_id, streakDay, member.user_id)))
+    ) {
+      continue;
+    }
+    // The copy names the partner and says when they already did their part today (notificationCopy.ts).
+    const partner = members.find((other) => other.user_id !== member.user_id);
     queued += await enqueueNotificationForUser(ctx, {
       recipient_user_id: member.user_id,
       kind: "streak_reminder",
       payload: {
         type: "streak_reminder",
         couple_id: state.couple_id,
+        ...(partner ? { actor_user_id: partner.user_id, partner_checked_in: contributed.has(partner.user_id) } : {}),
         current_count: state.current_count,
         last_qualified_date: state.last_qualified_date ?? null,
         next_activity_deadline_at: deadline,
@@ -197,12 +209,7 @@ async function remindPartners(
         route: "streak",
         deeplink: "paeonia://streak",
       },
-      dedupe_key:
-        streakDay === null
-          ? null
-          : reminder === "evening"
-            ? `streak_reminder:evening:${state.couple_id}:${streakDay}:${member.user_id}`
-            : `streak_reminder:${state.couple_id}:${streakDay}:${member.user_id}`,
+      dedupe_key: streakDay === null ? null : reminderKey(reminder, state.couple_id, streakDay, member.user_id),
       redaction_level: "private",
       apns_push_type: "alert",
       apns_collapse_id: `streak:${state.couple_id}`,
@@ -210,6 +217,23 @@ async function remindPartners(
     });
   }
   return queued;
+}
+
+/** The dedupe key of one partner's streak reminder. The outbox adds the device id to it. */
+function reminderKey(reminder: "last_hour" | "evening", coupleId: string, streakDay: string, userId: string): string {
+  return reminder === "evening"
+    ? `streak_reminder:evening:${coupleId}:${streakDay}:${userId}`
+    : `streak_reminder:${coupleId}:${streakDay}:${userId}`;
+}
+
+/** True when a reminder with this key went out, or still waits to, on any of the partner's phones. */
+async function gotReminder(ctx: MutationCtx, key: string): Promise<boolean> {
+  // Every device row is `${key}:${deviceId}`, and ";" is the character after ":".
+  const rows = await ctx.db
+    .query("notification_outbox")
+    .withIndex("by_dedupe_key", (q) => q.gte("dedupe_key", `${key}:`).lt("dedupe_key", `${key};`))
+    .collect();
+  return rows.some((row) => row.failed_at === undefined);
 }
 
 /** Who has contributed to the couple day running at `now`. */

@@ -7,6 +7,7 @@ import { orNull, type WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { gameLanguageChanged, sendDueGameTurnReminders } from "./lib/gameRegistry";
 import {
+  answerGameInvite,
   enqueueGamePush,
   GAME_PRESENCE_TIMEOUT_MS,
   type GameKind,
@@ -159,7 +160,7 @@ export const send_game_invite = mutation({
       fail("53300", "you can send one invite every 15 minutes");
     }
     if (previous) {
-      await ctx.db.patch(previous._id, { sent_at: now });
+      await ctx.db.patch(previous._id, { sent_at: now, answered_at: undefined });
     } else {
       await ctx.db.insert("game_invites", { couple_id: coupleId, kind: args.p_kind, sender_user_id: userId, sent_at: now });
     }
@@ -179,7 +180,7 @@ export const send_game_invite = mutation({
  * The open game screen. The app sends `true` when the screen opens and every 30 seconds
  * after, and `false` when it closes. The presence component marks the screen closed 60
  * seconds after the last `true`, such as when the app was killed. Each call also moves the
- * game's last played time forward (`recordPlayed`).
+ * game's last played time forward (`recordPlayed`), and a `true` answers the partner's invite to the game.
  */
 export const set_game_presence = mutation({
   args: { p_kind: gameKind, p_present: v.boolean() },
@@ -189,6 +190,7 @@ export const set_game_presence = mutation({
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     await setPresent(ctx, gameRoom(coupleId, args.p_kind), userId, args.p_present, GAME_PRESENCE_TIMEOUT_MS);
     await recordPlayed(ctx, coupleId, args.p_kind, args.p_present);
+    if (args.p_present) await answerGameInvite(ctx, coupleId, args.p_kind, userId);
     return null;
   },
 });

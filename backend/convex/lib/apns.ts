@@ -1,6 +1,9 @@
 // Pure APNs helpers: request builders, provider JWT, and the sandbox/production
 // fallback. The HTTP/2 transport lives in push.ts ("use node").
 
+import { localWallClockMs } from "./time";
+import type { NotificationKind } from "./notifications";
+
 export type ApnsEnvironment = "sandbox" | "production";
 
 export type PreparedNotification = {
@@ -13,7 +16,16 @@ export type PreparedNotification = {
   title: string | null;
   body: string | null;
   payload: Record<string, unknown>;
+  /** Night where the phone is, so the alert lands in Notification Center without sound or a lit screen. */
+  deliver_quietly: boolean;
+  /** The app icon number at send time (lib/badges.ts), or null to leave the icon as it is. */
+  badge: number | null;
 };
+
+/** A badge-only push (`queueBadgeUpdate` in lib/badges.ts): it changes the app icon number and shows nothing. */
+export function isBadgeUpdate(notification: PreparedNotification): boolean {
+  return notification.payload.type === "badge_update";
+}
 
 export type PreparedWidgetPush = {
   outbox_id: string;
@@ -59,6 +71,18 @@ export const DEFAULT_BUNDLE_ID = "no.paeonia.app";
 /** Refresh well under the 60 minute APNs cap. */
 export const PROVIDER_TOKEN_MAX_AGE_SECONDS = 2400;
 
+/** Local hour, inclusive, when night starts for alerts. */
+export const QUIET_NIGHT_START_HOUR = 22;
+/** Local hour, exclusive, when night ends for alerts. */
+export const QUIET_NIGHT_END_HOUR = 7;
+
+/** True when `instant` falls between 22:00 and 07:00 on the local clock in `timeZone`. */
+export function isQuietNight(instant: string | number, timeZone: string): boolean {
+  const ms = typeof instant === "number" ? instant : Date.parse(instant);
+  const hour = new Date(localWallClockMs(ms, timeZone)).getUTCHours();
+  return hour >= QUIET_NIGHT_START_HOUR || hour < QUIET_NIGHT_END_HOUR;
+}
+
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -72,19 +96,101 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
   if (notification.apns_push_type === "background") {
     return { aps: { "content-available": 1 }, ...notification.payload };
   }
-  // A row without a body (a Flirt chat message) shows its title alone, never an empty line.
+  if (isBadgeUpdate(notification)) return { aps: { badge: notification.badge ?? 0 } };
+  // A row without a body shows its title alone, never an empty line.
   const alert: Record<string, string> = {};
   if (notification.title) alert.title = notification.title;
   if (notification.body) alert.body = notification.body;
+  // At night a passive alert with no sound waits in Notification Center instead of waking the phone.
+  const interruption = notification.deliver_quietly ? { "interruption-level": "passive" } : { sound: "default" };
   // `mutable-content` lets the Notification Service Extension upgrade into a
   // communication notification. `content-available` also wakes the app so the
   // alert path refreshes widget data even if the separate silent push is
   // throttled.
   return {
-    aps: { alert, sound: "default", "mutable-content": 1, "content-available": 1 },
+    aps: {
+      alert,
+      ...interruption,
+      "mutable-content": 1,
+      "content-available": 1,
+      ...notificationGrouping(notification.payload),
+      ...(notification.badge === null ? {} : { badge: notification.badge }),
+    },
     ...notification.payload,
     sender_name: notification.title ?? undefined,
   };
+}
+
+/**
+ * The category of each alert kind. The app registers one `UNNotificationCategory` per value
+ * (`PaeoniaNotificationCategory`), which gives the lock screen a short line such as "New message"
+ * when Show Previews is off. Keep the two lists the same.
+ */
+const NOTIFICATION_CATEGORY: Record<Exclude<NotificationKind, "location_updated" | "badge_update">, string> = {
+  thread_message_sent: "message",
+  widget_updated: "drawing",
+  partner_answered: "answer",
+  daily_challenge_completed: "answer",
+  topics_waiting: "answer",
+  game_turn_ready: "game",
+  game_turn_reminder: "game",
+  game_invite: "game",
+  game_result: "game",
+  memory_created: "partner",
+  story_posted: "partner",
+  partner_joined: "partner",
+  question_time_reminder: "reminder",
+  streak_reminder: "reminder",
+  subscription_trial_reminder: "reminder",
+};
+
+/**
+ * The stack an alert joins in Notification Center. A chat stacks by its thread and a game by its
+ * kind. The notification service extension keeps this id, and the app reads the `widget` id to
+ * spot a drawing alert. Null for a kind without a stack.
+ */
+export function notificationThreadId(payload: Record<string, unknown>): string | null {
+  switch (payload.type) {
+    case "thread_message_sent":
+      return typeof payload.thread_id === "string" ? `chat:${payload.thread_id}` : "chat";
+    case "game_turn_ready":
+    case "game_turn_reminder":
+    case "game_invite":
+    case "game_result":
+      return typeof payload.game_kind === "string" ? `game:${payload.game_kind}` : "game";
+    case "widget_updated":
+      return "widget";
+    case "partner_answered":
+    case "daily_challenge_completed":
+    case "question_time_reminder":
+      return "daily";
+    case "topics_waiting":
+      return "topics";
+    case "memory_created":
+      return "memories";
+    case "story_posted":
+      return "stories";
+    case "partner_joined":
+      return "pairing";
+    case "streak_reminder":
+      return "streak";
+    case "subscription_trial_reminder":
+      return "subscription";
+    default:
+      return null;
+  }
+}
+
+/** The `thread-id` and `category` keys of an alert's `aps`, leaving out any it has no value for. */
+function notificationGrouping(payload: Record<string, unknown>): Record<string, string> {
+  const grouping: Record<string, string> = {};
+  const threadId = notificationThreadId(payload);
+  if (threadId) grouping["thread-id"] = threadId;
+  const kind = payload.type;
+  if (typeof kind === "string" && Object.hasOwn(NOTIFICATION_CATEGORY, kind)) {
+    grouping.category = NOTIFICATION_CATEGORY[kind as keyof typeof NOTIFICATION_CATEGORY];
+  }
+  return grouping;
 }
 
 /**
@@ -112,7 +218,8 @@ export function buildAppRequest(notification: PreparedNotification, bundleId: st
     preferredEnvironment: notification.apns_environment,
     topic: bundleId,
     pushType: notification.apns_push_type,
-    priority: notification.apns_push_type === "background" ? "5" : "10",
+    // A badge-only push shows nothing, so it never needs to wake the phone at once.
+    priority: notification.apns_push_type === "background" || isBadgeUpdate(notification) ? "5" : "10",
     expiration: staleAt === null ? undefined : String(Math.floor(Date.parse(staleAt) / 1000)),
     collapseId: notification.apns_collapse_id,
     body: JSON.stringify(buildAppApsPayload(notification)),

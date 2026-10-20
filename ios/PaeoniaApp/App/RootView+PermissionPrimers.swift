@@ -61,7 +61,7 @@ extension RootView {
     /// answer cover or the drawing screen has gone away. Notifications come
     /// first, then location, then the usage statistics question. At most one
     /// shows per visit, so each later one waits for a later visit.
-    func offerPrimersAfterSharing() {
+    func offerPrimersAfterSharing(_ share: PartnerShare) {
         guard allowsSystemIntegrations,
               !primerShownThisVisit,
               let identity = stablePairedLocationIdentity
@@ -72,6 +72,7 @@ extension RootView {
         Task { @MainActor in
             await permissionPrimerCoordinator.presentNotificationPrimerIfNeeded(
                 identity: identity,
+                share: share,
                 pushAuthorization: pushAuthorization
             )
             if permissionPrimerCoordinator.presentedPrimer == nil, isCurrentStableIdentity(identity) {
@@ -124,11 +125,20 @@ extension RootView {
             .analyticsScreen("location_primer")
         case .notifications:
             PushPermissionPrimerView(
+                ask: .afterSharing,
                 partnerName: partnerNameForCopy,
                 onEnable: enablePushNotifications,
                 onNotNow: dismissPushPermissionPrimer
             )
             .analyticsScreen("push_primer")
+        case .notificationsWhileWaiting:
+            PushPermissionPrimerView(
+                ask: .whileWaitingForPartner,
+                partnerName: partnerNameForCopy,
+                onEnable: enablePushNotifications,
+                onNotNow: dismissPushPermissionPrimer
+            )
+            .analyticsScreen("push_primer_waiting")
         }
     }
 
@@ -170,13 +180,18 @@ extension RootView {
             // primer remains eligible on the next launch instead of disappearing
             // forever while iOS is still `.notDetermined`.
             if didSettleAuthorization {
-                permissionPrimerCoordinator.markPushResponded()
+                permissionPrimerCoordinator.markPushFinished()
             }
         }
     }
 
+    /// "Not now" on the first ask leaves one later ask. On that later ask it is final.
     private func dismissPushPermissionPrimer() {
-        permissionPrimerCoordinator.markPushResponded()
+        if permissionPrimerCoordinator.presentedPrimer == .notifications {
+            permissionPrimerCoordinator.markPushDeclined()
+        } else {
+            permissionPrimerCoordinator.markPushFinished()
+        }
         permissionPrimerCoordinator.dismiss()
     }
 }

@@ -131,8 +131,8 @@ Locking in a word counts toward the couple's streak through the `game_turn_compl
 
 | Push kind | When | Title | Body |
 |---|---|---|---|
-| `game_turn_ready` | The partner locked in first. | Your turn in Mind Meld / Din tur i Tenk likt | Open Paeonia to pick your word. / Åpne Paeonia for å velge ordet ditt. |
-| `game_result` | The partner locked in second, so the round is revealed. Goes to the partner who locked in first. | Your words are in / Ordene deres er klare | Open Paeonia to see what you both said. / Åpne Paeonia for å se hva dere sa. |
+| `game_turn_ready` | The partner locked in first. | Your turn in Mind Meld / Din tur i Tenk likt | Pick your word. / Velg ordet ditt. |
+| `game_result` | The partner locked in second, so the round is revealed. Goes to the partner who locked in first. | Your words are in / Ordene deres er klare | See what you both said. / Se hva dere begge sa. |
 | `game_invite` | Invite button. | [Name] wants to play Mind Meld with you / [Name] vil spille Tenk likt med deg | Shared invite body. |
 | `game_turn_reminder` | The partner's lock-in waited 72 hours. Once per round. | Your turn in Mind Meld / Din tur i Tenk likt | Shared reminder body. |
 

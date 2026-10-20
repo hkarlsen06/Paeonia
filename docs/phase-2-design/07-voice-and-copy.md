@@ -163,6 +163,14 @@ Instead of:
 Do not lose your streak
 ```
 
+Writing rules for push copy (`backend/convex/lib/notificationCopy.ts`):
+
+- Never write "Open Paeonia" or the app name. Tapping opens the app, and iOS already shows its name. Use the body for what is waiting: "Their answer is ready to see."
+- Name the partner in the title when the push is about something they did. A missing name reads "Your partner" at the start of a title and "your partner" inside one.
+- Never put an answer, a message, a topic, a game move or a place in a push. Every chat push has the same shape, so a Flirt chat looks like any other.
+- The daily reminders (question time and check-in) rotate between three wordings, one per day, so they don't wear out. Question time stays in Paeonia's own voice and never names the partner.
+- A check-in reminder names what counts and never mentions losing the streak.
+
 ## Error Copy
 
 Every error should answer two questions:

@@ -4,9 +4,9 @@ import UserNotifications
 /// Removes alerts from Notification Center once the person has seen what they
 /// point to in the app, so old alerts don't pile up. Alerts are matched on the
 /// `type` and ids the server puts in every push, which the notification service
-/// extension keeps when it rewrites a drawing alert. Content alerts are matched
-/// by id against what is on screen, so an alert for something that hasn't
-/// reached this phone yet stays.
+/// extension keeps when it rewrites a drawing or chat alert. Content alerts are
+/// matched by id against what is on screen, so an alert for something that
+/// hasn't reached this phone yet stays.
 nonisolated enum DeliveredNotifications {
     /// The Questions tab is open, so the "question time" reminder has done its job.
     static func clearQuestionTimeReminders() async {
@@ -22,15 +22,16 @@ nonisolated enum DeliveredNotifications {
 
     /// The person opened this question and saw the partner's answer: its reveal
     /// alert is read, and "finished today's questions" has done its job. A question's
-    /// page shows every day it came up, so it passes all their instance ids. Chat
-    /// alerts go only for the messages on screen.
+    /// page shows every day it came up, so it passes all their instance ids. One
+    /// "answered too" alert can cover several questions, and opening any of them
+    /// clears it. Chat alerts go only for the messages on screen.
     static func clearQuestion(instanceIDs: Set<UUID>, shownMessageIDs: Set<UUID> = []) async {
         await remove { userInfo in
             switch userInfo["type"] as? String {
             case "daily_challenge_completed":
                 true
             case "partner_answered":
-                uuid(userInfo["instance_id"]).map(instanceIDs.contains) ?? false
+                ((userInfo["instance_ids"] as? [Any]) ?? []).contains { uuid($0).map(instanceIDs.contains) ?? false }
             case "thread_message_sent":
                 uuid(userInfo["message_id"]).map(shownMessageIDs.contains) ?? false
             default:
@@ -52,6 +53,8 @@ nonisolated enum DeliveredNotifications {
     /// that names the partner.
     static func clearAll() {
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        // Nothing waits any more, so the icon number goes too.
+        Task { await AppBadgeLiveFeed.setBadge(0) }
     }
 
     private static func uuid(_ value: Any?) -> UUID? {

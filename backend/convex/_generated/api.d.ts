@@ -12,6 +12,7 @@ import type * as access from "../access.js";
 import type * as accountDeletion from "../accountDeletion.js";
 import type * as admin from "../admin.js";
 import type * as analytics from "../analytics.js";
+import type * as badges from "../badges.js";
 import type * as boardGames from "../boardGames.js";
 import type * as catalog from "../catalog.js";
 import type * as chatPresence from "../chatPresence.js";
@@ -36,6 +37,7 @@ import type * as lib_appleNotificationVerifier from "../lib/appleNotificationVer
 import type * as lib_appleStoreKit from "../lib/appleStoreKit.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_backgroundWorkpool from "../lib/backgroundWorkpool.js";
+import type * as lib_badges from "../lib/badges.js";
 import type * as lib_bans from "../lib/bans.js";
 import type * as lib_boardGameBackend from "../lib/boardGameBackend.js";
 import type * as lib_boardGameRules from "../lib/boardGameRules.js";
@@ -48,6 +50,7 @@ import type * as lib_consensio from "../lib/consensio.js";
 import type * as lib_coupleDays from "../lib/coupleDays.js";
 import type * as lib_crypto from "../lib/crypto.js";
 import type * as lib_dailyAnswers from "../lib/dailyAnswers.js";
+import type * as lib_dailyPartnerPush from "../lib/dailyPartnerPush.js";
 import type * as lib_dailyQuestionRounds from "../lib/dailyQuestionRounds.js";
 import type * as lib_dailyQuestions from "../lib/dailyQuestions.js";
 import type * as lib_db from "../lib/db.js";
@@ -131,6 +134,7 @@ declare const fullApi: ApiFromModules<{
   accountDeletion: typeof accountDeletion;
   admin: typeof admin;
   analytics: typeof analytics;
+  badges: typeof badges;
   boardGames: typeof boardGames;
   catalog: typeof catalog;
   chatPresence: typeof chatPresence;
@@ -155,6 +159,7 @@ declare const fullApi: ApiFromModules<{
   "lib/appleStoreKit": typeof lib_appleStoreKit;
   "lib/auth": typeof lib_auth;
   "lib/backgroundWorkpool": typeof lib_backgroundWorkpool;
+  "lib/badges": typeof lib_badges;
   "lib/bans": typeof lib_bans;
   "lib/boardGameBackend": typeof lib_boardGameBackend;
   "lib/boardGameRules": typeof lib_boardGameRules;
@@ -167,6 +172,7 @@ declare const fullApi: ApiFromModules<{
   "lib/coupleDays": typeof lib_coupleDays;
   "lib/crypto": typeof lib_crypto;
   "lib/dailyAnswers": typeof lib_dailyAnswers;
+  "lib/dailyPartnerPush": typeof lib_dailyPartnerPush;
   "lib/dailyQuestionRounds": typeof lib_dailyQuestionRounds;
   "lib/dailyQuestions": typeof lib_dailyQuestions;
   "lib/db": typeof lib_db;

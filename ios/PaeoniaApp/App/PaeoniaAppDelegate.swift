@@ -26,6 +26,7 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         // Required so a tapped widget alert (and foreground presentation) reaches
         // the delegate methods below.
         UNUserNotificationCenter.current().delegate = self
+        PaeoniaNotificationCategory.registerAll()
         // iOS relaunches a closed app in the background after a significant
         // move. The location manager must be ready before this returns so the
         // position reaches it.
@@ -95,22 +96,29 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         // Detect a widget update from several signals: the notification service
         // extension rewrites the alert into a communication notification before
         // this runs, and `updating(from:)` can drop custom `userInfo`. The
-        // thread identifier it sets ("widget:<sender>") survives that rewrite.
+        // thread identifier ("widget", or "chat:<thread>" for a message) survives
+        // that rewrite.
         let userInfo = content.userInfo
         let isWidgetUpdate = (userInfo["type"] as? String) == "widget_updated"
             || (userInfo["route"] as? String) == "widget"
-            || content.threadIdentifier.hasPrefix("widget:")
+            || content.threadIdentifier == "widget"
 
-        let type = (userInfo["type"] as? String) ?? ""
+        let type = (userInfo["type"] as? String)
+            ?? (content.threadIdentifier.hasPrefix("chat:") ? "thread_message_sent" : "")
 
         #if DEBUG
         let detail = "widget=\(isWidgetUpdate) thread=\(content.threadIdentifier) type=\(type)"
         logger.debug("willPresent \(detail, privacy: .public)")
         #endif
 
+        // A badge-only push shows nothing. Its number goes on the icon.
+        if type == "badge_update" {
+            completionHandler([.badge])
+            return
+        }
+
         // Question activity and a partner joining already show live in the
-        // app, and their alert copy says "Open Paeonia", so drop the system
-        // banner while the app is open.
+        // app, so drop the system banner while the app is open.
         if Self.typesShownLiveInApp.contains(type) {
             completionHandler([])
             return

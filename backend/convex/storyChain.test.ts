@@ -1233,7 +1233,7 @@ describe("pushes", () => {
       recipient_user_id: s.b.userId,
       apns_push_type: "alert",
       title: "Your turn in Story Chain",
-      body: "Open Paeonia to read the newest line.",
+      body: "Read the newest line and add yours.",
       payload: {
         type: "game_turn_ready",
         game_kind: "story_chain",
@@ -1258,7 +1258,7 @@ describe("pushes", () => {
     expect(last[0]).toMatchObject({
       recipient_user_id: s.a.userId,
       title: "Second Partner wrote the last line",
-      body: "Open Paeonia to give your story a title.",
+      body: "Give your story a title.",
       payload: { type: "game_turn_ready", step: "last_line", round_id: reached.lastLineId, actor_user_id: s.b.userId, deeplink: "paeonia://games/story-chain" },
     });
     // The seven earlier lines are plain turn pushes.
@@ -1271,7 +1271,7 @@ describe("pushes", () => {
       recipient_user_id: s.b.userId,
       apns_push_type: "alert",
       title: "First Partner named your story",
-      body: "Open Paeonia to read it.",
+      body: "Read the whole story.",
       payload: {
         type: "game_result",
         game_kind: "story_chain",
@@ -1291,14 +1291,14 @@ describe("pushes", () => {
     const s = await startGame({ language: "nb", locales: { a: "nb-NO", b: "nb-NO" } });
     const reached = await reachTitling(s, s.a);
     const turn = (await pushesOf(s.t, "game_turn_ready")).filter((row) => (row.payload as { step?: string }).step === undefined);
-    expect(turn[0]).toMatchObject({ title: "Din tur i Skrivestafett", body: "Åpne Paeonia for å lese den nyeste linjen." });
+    expect(turn[0]).toMatchObject({ title: "Din tur i Skrivestafett", body: "Les den nyeste linjen og skriv din." });
     const last = (await pushesOf(s.t, "game_turn_ready")).find((row) => (row.payload as { step?: string }).step === "last_line");
-    expect(last).toMatchObject({ title: "Second Partner skrev den siste linjen", body: "Åpne Paeonia for å gi historien en tittel." });
+    expect(last).toMatchObject({ title: "Second Partner skrev den siste linjen", body: "Gi historien en tittel." });
 
     await name(reached.namer, reached.storyId, "Tyveriet");
     expect((await pushesOf(s.t, "game_result"))[0]).toMatchObject({
       title: "First Partner ga historien deres en tittel",
-      body: "Åpne Paeonia for å lese den.",
+      body: "Les hele historien.",
     });
   });
 
@@ -1446,7 +1446,7 @@ describe("turn reminder", () => {
     expect(rows[0]).toMatchObject({
       recipient_user_id: s.a.userId,
       title: "Your turn in Story Chain",
-      body: "Open Paeonia to take your turn.",
+      body: "Pick up where you left off.",
       payload: {
         type: "game_turn_reminder",
         game_kind: "story_chain",

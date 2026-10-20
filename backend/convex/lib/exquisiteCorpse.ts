@@ -380,6 +380,20 @@ export const exquisiteCorpseBackend: GameBackend = {
     }
   },
 
+  /** The couple's one game, when it is the user's turn or the newest finished figure's reveal is unseen by them. */
+  async waitingFor(ctx, coupleId, userId) {
+    const game = await getCorpseGame(ctx, coupleId);
+    if (!game) return 0;
+    if (game.turn_user_id === userId) return 1;
+    const finished = await ctx.db
+      .query("exquisite_corpse_figures")
+      .withIndex("by_game_id_number", (q) => q.eq("game_id", game.id))
+      .order("desc")
+      .filter((q) => q.neq(q.field("finished_at"), undefined))
+      .first();
+    return finished !== null && revealSeenAt(finished, userId) === undefined ? 1 : 0;
+  },
+
   async deleteCoupleRows(ctx, coupleId) {
     let deleted = 0;
     const remove = async (row: { _id: Parameters<WriterCtx["db"]["delete"]>[0] }) => {

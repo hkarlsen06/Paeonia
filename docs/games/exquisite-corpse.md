@@ -144,7 +144,7 @@ Sending a part counts toward the couple's streak as `game_turn_completed`, with 
 ## Notifications
 
 - Turn: title "Robin drew the head", body "Your turn to draw the body." After the body: "Robin drew the body", "Your turn to draw the legs." Sent when a head or body arrives, and not sent when the partner has the game open. The push carries `step: "body"` or `step: "legs"`, the part that is now the partner's turn, and the copy for each step is in `GAME_PUSH_COPY` (`lib/notificationCopy.ts`).
-- Finished: title "Robin finished your creature", body "Open it to see the whole thing." Sent when the legs arrive, and not sent when the partner has the game open.
+- Finished: title "Robin finished your creature", body "See the whole creature." Sent when the legs arrive, and not sent when the partner has the game open.
 - A new figure needs no push of its own. The partner who draws the next head gets the finished push for the last figure, and that opens the reveal and then their turn.
 - Reminder: "Your turn in Odd Creatures", once, when a turn has waited 72 hours.
 - Invite: the shared "[Name] wants to play Odd Creatures with you".
@@ -155,8 +155,8 @@ Sending a part counts toward the couple's streak as `game_turn_completed`, with 
 |---|---|---|
 | Turn, head done | %@ drew the head / %@ har tegnet hodet | Your turn to draw the body. / Din tur til å tegne kroppen. |
 | Turn, body done | %@ drew the body / %@ har tegnet kroppen | Your turn to draw the legs. / Din tur til å tegne beina. |
-| Finished | %@ finished your creature / %@ gjorde ferdig skapningen deres | Open it to see the whole thing. / Åpne den for å se hele. |
-| Reminder | Your turn in Odd Creatures / Din tur i Rare skapninger | Open Paeonia to take your turn. / Åpne Paeonia for å ta turen din. |
+| Finished | %@ finished your creature / %@ gjorde ferdig skapningen deres | See the whole creature. / Se hele skapningen. |
+| Reminder | Your turn in Odd Creatures / Din tur i Rare skapninger | Pick up where you left off. / Fortsett der dere slapp. |
 | Invite | %@ wants to play Odd Creatures with you / %@ vil spille Rare skapninger med deg | The shared invite body |
 
 ## Data

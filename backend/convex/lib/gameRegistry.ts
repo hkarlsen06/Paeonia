@@ -8,7 +8,7 @@ import { guessMySpotBackend } from "./guessMySpot";
 import { mindMeldBackend } from "./mindMeld";
 import { storyChainBackend } from "./storyChain";
 import type { GameLanguage } from "./gameWords";
-import type { GameKind, GamePushKind } from "./games";
+import { openGameInvitesFor, type GameKind, type GamePushKind } from "./games";
 import { GAME_KINDS } from "./validators";
 
 // The one place a game registers its backend hooks. The shared games code (games.ts, pushQueue.ts,
@@ -30,6 +30,12 @@ export type GameBackend = {
   sendDueTurnReminders?(ctx: WriterCtx, now: string): Promise<number>;
   /** The couple changed the game language. Redo content already offered in the old language. */
   onLanguageChanged?(ctx: WriterCtx, coupleId: string, language: GameLanguage): Promise<void>;
+  /**
+   * How many of the couple's games of this backend wait for `userId`: it is their turn, or they have
+   * not seen the newest result. A game counts once even when both are true, and never for what waits
+   * for the partner. Leave out for a game that only plays while both are online.
+   */
+  waitingFor?(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number>;
 };
 
 /** A kind without an entry has no backend yet. */
@@ -68,6 +74,17 @@ export async function gamePushStillWanted(
   const backend = kind ? GAME_BACKENDS[kind] : null;
   const wanted = backend ? await backend.pushStillWanted(ctx, push, payload, recipientUserId) : false;
   return wanted ? { wanted: true } : { wanted: false, reason: "out_of_date" };
+}
+
+/**
+ * How many games wait for `userId` in the couple, for the app icon badge: each backend's
+ * `waitingFor`, plus the partner's invites that are still open. The board games share one backend,
+ * which counts all of them, so each backend counts once. The caller checks couple access.
+ */
+export async function gamesWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+  let waiting = await openGameInvitesFor(ctx, coupleId, userId);
+  for (const backend of new Set(registered())) waiting += (await backend.waitingFor?.(ctx, coupleId, userId)) ?? 0;
+  return waiting;
 }
 
 /** Tells every game that the couple changed the game language. */

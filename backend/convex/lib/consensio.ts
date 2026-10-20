@@ -256,6 +256,20 @@ export async function consensioPushStillWanted(
   }
 }
 
+/** The couple's one game, when it is the user's turn or one of the two newest guessed rounds has a reveal they have not seen. */
+export async function consensioWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+  const game = await getCoupleGame(ctx, coupleId);
+  if (!game) return 0;
+  if (game.turn_user_id === userId) return 1;
+  const unseen = (await newestRounds(ctx, game.id, 2)).some(
+    (round) =>
+      round.guess !== undefined &&
+      ((round.placer_user_id === userId && round.placer_reveal_seen_at === undefined) ||
+        (round.guesser_user_id === userId && round.guesser_reveal_seen_at === undefined)),
+  );
+  return unseen ? 1 : 0;
+}
+
 /**
  * Deletes the couple's rows in the three Consensio tables and returns how many.
  * ponytail: runs in one mutation like the other couple cleanup. A couple with thousands of rounds may
@@ -310,6 +324,7 @@ export async function sendDueConsensioReminders(ctx: WriterCtx, now: string): Pr
 /** What the shared games code asks of Consensio. Registered in `GAME_BACKENDS` (gameRegistry.ts). */
 export const consensioBackend: GameBackend = {
   pushStillWanted: consensioPushStillWanted,
+  waitingFor: consensioWaitingFor,
   deleteCoupleRows: deleteCoupleConsensioRows,
   sendDueTurnReminders: sendDueConsensioReminders,
 

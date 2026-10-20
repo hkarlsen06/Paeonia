@@ -146,9 +146,9 @@ Sending a photo counts toward the couple's streak through `game_turn_completed`.
 
 | Push kind | When | Title | Body |
 |---|---|---|---|
-| `game_turn_ready` | The partner sent a photo. | Your turn in Guess my spot / Din tur i Gjett hvor | Open Paeonia to guess where it was taken. / Åpne Paeonia for å gjette hvor bildet er tatt. |
-| `game_turn_ready`, step `guessed` | The partner guessed your photo and sent one back within 1 minute. | [Name] guessed and sent you a photo / [Name] har gjettet og sendt deg et bilde | Open Paeonia to see how close they got. / Åpne Paeonia for å se hvor nær gjetningen var. |
-| `game_result` | The partner guessed your photo and sent nothing for 1 minute. | [Name] made a guess / [Name] har gjettet | Open Paeonia to see how close they got. / Åpne Paeonia for å se hvor nær gjetningen var. |
+| `game_turn_ready` | The partner sent a photo. | Your turn in Guess my spot / Din tur i Gjett hvor | Guess where the photo was taken. / Gjett hvor bildet er tatt. |
+| `game_turn_ready`, step `guessed` | The partner guessed your photo and sent one back within 1 minute. | [Name] guessed and sent you a photo / [Name] har gjettet og sendt deg et bilde | See how close they got. / Se hvor nær gjetningen var. |
+| `game_result` | The partner guessed your photo and sent nothing for 1 minute. | [Name] made a guess / [Name] har gjettet | See how close they got. / Se hvor nær gjetningen var. |
 | `game_invite` | Invite bell. | [Name] wants to play Guess my spot with you / [Name] vil spille Gjett hvor med deg | Shared invite body. |
 | `game_turn_reminder` | The turn waited 72 hours. Once per turn. | Your turn in Guess my spot / Din tur i Gjett hvor | Shared reminder body. |
 

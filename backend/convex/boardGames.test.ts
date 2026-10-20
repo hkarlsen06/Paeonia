@@ -1198,7 +1198,7 @@ describe("pushes", () => {
       recipient_user_id: s.b.userId,
       apns_push_type: "alert",
       title: "Your turn in Connect Four",
-      body: "Open Paeonia to make your move.",
+      body: "Make your move.",
     });
     expect(row.payload).toEqual({
       type: "game_turn_ready",
@@ -1243,15 +1243,16 @@ describe("pushes", () => {
   });
 
   test.each([
-    ["connect_four", CONNECT_FOUR_WIN, "Your game of Connect Four is over"],
-    ["dots_and_boxes", DOTS_AND_BOXES_WIN, "Your game of Dots and Boxes is over"],
-    ["ultimate_tic_tac_toe", ULTIMATE_WIN, "Your game of Ultimate Tic-Tac-Toe is over"],
-    ["ludo", LUDO_WIN, "Your game of Ludo is over"],
-  ] as const)("%s: the move that ends the game queues one result push for the partner instead of a turn push", async (kind, moves, title) => {
+    ["connect_four", CONNECT_FOUR_WIN, "Connect Four"],
+    ["dots_and_boxes", DOTS_AND_BOXES_WIN, "Dots and Boxes"],
+    ["ultimate_tic_tac_toe", ULTIMATE_WIN, "Ultimate Tic-Tac-Toe"],
+    ["ludo", LUDO_WIN, "Ludo"],
+  ] as const)("%s: the move that ends the game queues one result push for the partner instead of a turn push", async (kind, moves, gameName) => {
     const s = await startPushCouple();
     const players = movers(rulesFor(kind), moves)!;
     const finisher = players.at(-1) === 1 ? s.a : s.b;
     const receiver = finisher === s.a ? s.b : s.a;
+    const title = `${finisher === s.a ? "First Partner" : "Second Partner"} finished your game of ${gameName}`;
     const game = await ensure(s.a, kind);
     const beforeLast = await playMoves(s, game, moves.slice(0, -1));
     expect(await pushesOf(s.t, "game_result")).toEqual([]);
@@ -1262,7 +1263,7 @@ describe("pushes", () => {
     expect((await turnsOf(s, "game_turn_ready")).filter(([, token]) => token === turn)).toEqual([]);
     const [row, ...rest] = await pushesOf(s.t, "game_result");
     expect(rest).toEqual([]);
-    expect(row).toMatchObject({ recipient_user_id: receiver.userId, title, body: "Open Paeonia to see how it ended." });
+    expect(row).toMatchObject({ recipient_user_id: receiver.userId, title, body: "See how it ended." });
     expect(row.payload).toEqual({
       type: "game_result",
       game_kind: kind,
@@ -1292,12 +1293,12 @@ describe("pushes", () => {
     const game = await ensure(s.a, "connect_four");
     await playMoves(s, game, CONNECT_FOUR_WIN);
     const [turn] = await pushesOf(s.t, "game_turn_ready");
-    expect(turn).toMatchObject({ recipient_user_id: s.b.userId, title: "Din tur i Fire på rad", body: "Åpne Paeonia for å gjøre trekket ditt." });
+    expect(turn).toMatchObject({ recipient_user_id: s.b.userId, title: "Din tur i Fire på rad", body: "Gjør trekket ditt." });
     const [result] = await pushesOf(s.t, "game_result");
     expect(result).toMatchObject({
       recipient_user_id: s.b.userId,
-      title: "Spillet deres i Fire på rad er ferdig",
-      body: "Åpne Paeonia for å se hvordan det endte.",
+      title: "First Partner avsluttet spillet deres i Fire på rad",
+      body: "Se hvordan det endte.",
     });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -1363,7 +1364,7 @@ describe("pushes", () => {
       await rematch(s.a, done);
       const rows = (await pushesOf(s.t, "game_turn_ready")).slice(before);
       expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ recipient_user_id: s.b.userId, title: "Your turn in Connect Four", body: "Open Paeonia to make your move." });
+      expect(rows[0]).toMatchObject({ recipient_user_id: s.b.userId, title: "Your turn in Connect Four", body: "Make your move." });
       expect(rows[0].payload).toMatchObject({ game_id: done.id, round_id: "2:0", actor_user_id: s.a.userId, deeplink: "paeonia://games/connect-four" });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
@@ -1482,7 +1483,7 @@ describe("turn reminder", () => {
     expect(rows[0]).toMatchObject({
       recipient_user_id: s.a.userId,
       title: "Your turn in Connect Four",
-      body: "Open Paeonia to take your turn.",
+      body: "Pick up where you left off.",
     });
     expect(rows[0].payload).toEqual({
       type: "game_turn_reminder",
@@ -1673,16 +1674,16 @@ describe("push copy", () => {
   // The exact lock-screen text of every board game push. "First Partner" is the partner's profile name.
   const WORDING = {
     en: {
-      game_turn_ready: (name: string) => [`Your turn in ${name}`, "Open Paeonia to make your move."],
-      game_turn_reminder: (name: string) => [`Your turn in ${name}`, "Open Paeonia to take your turn."],
-      game_result: (name: string) => [`Your game of ${name} is over`, "Open Paeonia to see how it ended."],
-      game_invite: (name: string) => [`First Partner wants to play ${name} with you`, "Open Paeonia to join in."],
+      game_turn_ready: (name: string) => [`Your turn in ${name}`, "Make your move."],
+      game_turn_reminder: (name: string) => [`Your turn in ${name}`, "Pick up where you left off."],
+      game_result: (name: string) => [`First Partner finished your game of ${name}`, "See how it ended."],
+      game_invite: (name: string) => [`First Partner wants to play ${name} with you`, "Join in when you're ready."],
     },
     nb: {
-      game_turn_ready: (name: string) => [`Din tur i ${name}`, "Åpne Paeonia for å gjøre trekket ditt."],
-      game_turn_reminder: (name: string) => [`Din tur i ${name}`, "Åpne Paeonia for å ta turen din."],
-      game_result: (name: string) => [`Spillet deres i ${name} er ferdig`, "Åpne Paeonia for å se hvordan det endte."],
-      game_invite: (name: string) => [`First Partner vil spille ${name} med deg`, "Åpne Paeonia for å bli med."],
+      game_turn_ready: (name: string) => [`Din tur i ${name}`, "Gjør trekket ditt."],
+      game_turn_reminder: (name: string) => [`Din tur i ${name}`, "Fortsett der dere slapp."],
+      game_result: (name: string) => [`First Partner avsluttet spillet deres i ${name}`, "Se hvordan det endte."],
+      game_invite: (name: string) => [`First Partner vil spille ${name} med deg`, "Bli med når du er klar."],
     },
   } as const;
 

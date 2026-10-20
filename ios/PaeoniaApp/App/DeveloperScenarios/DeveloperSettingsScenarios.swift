@@ -9,6 +9,7 @@
       switch scenario {
       case .notificationPrimer:
         PushPermissionPrimerView(
+          ask: .afterSharing,
           partnerName: "Robin",
           onEnable: {},
           onNotNow: {}

@@ -160,9 +160,9 @@ None of these show story text, a title, or a dare word. The payload holds ids an
 
 | Moment | Push kind | English | Norwegian |
 |---|---|---|---|
-| A line arrives | `game_turn_ready` | Your turn in Story Chain / Open Paeonia to read the newest line. | Din tur i Skrivestafett / Åpne Paeonia for å lese den nyeste linjen. |
-| The last line arrives | `game_turn_ready`, step `last_line` | [Name] wrote the last line / Open Paeonia to give your story a title. | [Name] skrev den siste linjen / Åpne Paeonia for å gi historien en tittel. |
-| The story was named | `game_result` | [Name] named your story / Open Paeonia to read it. | [Name] ga historien deres en tittel / Åpne Paeonia for å lese den. |
+| A line arrives | `game_turn_ready` | Your turn in Story Chain / Read the newest line and add yours. | Din tur i Skrivestafett / Les den nyeste linjen og skriv din. |
+| The last line arrives | `game_turn_ready`, step `last_line` | [Name] wrote the last line / Give your story a title. | [Name] skrev den siste linjen / Gi historien en tittel. |
+| The story was named | `game_result` | [Name] named your story / Read the whole story. | [Name] ga historien deres en tittel / Les hele historien. |
 | Invite | `game_invite` | [Name] wants to play Story Chain with you | [Name] vil spille Skrivestafett med deg |
 | 72 hours waited | `game_turn_reminder` | Your turn in Story Chain | Din tur i Skrivestafett |
 

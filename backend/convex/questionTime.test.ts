@@ -151,7 +151,7 @@ describe("enqueue_question_time_reminders", () => {
       kind: "question_time_reminder",
       recipient_user_id: a.userId,
       title: "Today's questions are ready",
-      body: "Two questions are waiting for you. They take a few minutes.",
+      body: "Two questions are waiting. They take a few minutes.",
       payload: {
         type: "question_time_reminder",
         route: "daily",
@@ -176,7 +176,7 @@ describe("enqueue_question_time_reminders", () => {
     expect(await run(t, "2026-10-10T18:00:00Z")).toBe(1);
     expect((await outbox(t))[0]).toMatchObject({
       title: "Dagens spørsmål er klare",
-      body: "To spørsmål venter på deg. Det tar bare noen minutter.",
+      body: "To spørsmål venter. Det tar bare noen minutter.",
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
