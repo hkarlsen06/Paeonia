@@ -137,6 +137,11 @@ final class SimServer {
         return json
     }
 
+    func markSettingsSeen() throws -> RemoteGameSettings {
+        guard let settingsJSON else { throw Self.fail("23514", "game settings are required") }
+        return settingsJSON
+    }
+
     private var settingsJSON: RemoteGameSettings? {
         settings.map {
             RemoteGameSettings(

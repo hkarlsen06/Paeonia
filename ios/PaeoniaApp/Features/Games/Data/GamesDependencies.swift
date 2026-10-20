@@ -113,6 +113,10 @@ nonisolated struct UnavailableGamesGateway: GamesGateway {
         throw Unavailable()
     }
 
+    func markSettingsSeen() async throws -> RemoteGameSettings {
+        throw Unavailable()
+    }
+
     func loadOverview() async throws -> RemoteGamesOverview {
         throw Unavailable()
     }

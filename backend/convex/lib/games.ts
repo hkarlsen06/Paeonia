@@ -134,6 +134,7 @@ export function settingsJson(settings: GameSettings) {
     play_style: settings.play_style,
     language: settings.language,
     updated_by_user_id: settings.updated_by_user_id,
+    seen_by_user_ids: settings.seen_by_user_ids,
     created_at: settings.created_at,
     updated_at: settings.updated_at,
   };

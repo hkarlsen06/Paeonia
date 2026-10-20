@@ -82,8 +82,7 @@
       dependencies.cache = InMemoryGamesCache(
         state: DeveloperGamesScenarioFactory.state(for: scenario),
         overview: Fixture.overview(partnerIsHere: partnerIsHere(in: scenario)),
-        ownerUserID: Fixture.me,
-        hasSeenSettings: true
+        ownerUserID: Fixture.me
       )
       let cache = InMemoryExquisiteCorpseCache(state: state(for: scenario), ownerUserID: Fixture.me)
       dependencies.exquisiteCorpseCache = cache

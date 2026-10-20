@@ -6,6 +6,8 @@ import Foundation
 /// operation id once.
 nonisolated protocol GamesGateway: Sendable {
     func setSettings(playStyle: GamePlayStyle, language: GameLanguage) async throws -> RemoteGameSettings
+    /// This person has seen what their partner picked, on every phone.
+    func markSettingsSeen() async throws -> RemoteGameSettings
     /// One-shot read of what the Games tab shares: the settings, and for each game
     /// who has it open and this person's last invite.
     func loadOverview() async throws -> RemoteGamesOverview
@@ -23,6 +25,10 @@ nonisolated struct LiveGamesGateway: GamesGateway {
             "games:set_game_settings",
             args: SetGameSettingsRequest(playStyle: playStyle, language: language)
         )
+    }
+
+    func markSettingsSeen() async throws -> RemoteGameSettings {
+        try await client.mutation("games:mark_game_settings_seen")
     }
 
     func loadOverview() async throws -> RemoteGamesOverview {

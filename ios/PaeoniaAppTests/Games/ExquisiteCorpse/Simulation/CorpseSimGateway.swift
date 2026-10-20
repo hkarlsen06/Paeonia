@@ -76,6 +76,10 @@ final class CorpseSimGateway: DrawAndGuessGateway, ExquisiteCorpseGateway, @unch
         try await call("setSettings") { server, _ in server.settings }
     }
 
+    func markSettingsSeen() async throws -> RemoteGameSettings {
+        try await call("markSettingsSeen") { server, _ in server.settings }
+    }
+
     func loadOverview() async throws -> RemoteGamesOverview {
         try await call("overview") { $0.overview(for: $1) }
     }

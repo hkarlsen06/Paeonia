@@ -32,6 +32,10 @@ private final class HeldPresenceGateway: GamesGateway, @unchecked Sendable {
         throw Unused()
     }
 
+    func markSettingsSeen() async throws -> RemoteGameSettings {
+        throw Unused()
+    }
+
     func loadOverview() async throws -> RemoteGamesOverview {
         throw Unused()
     }

@@ -141,6 +141,10 @@ final class ScriptedStoryChainGateway: StoryChainGateway, @unchecked Sendable {
         throw Failure()
     }
 
+    func markSettingsSeen() async throws -> RemoteGameSettings {
+        throw Failure()
+    }
+
     func loadOverview() async throws -> RemoteGamesOverview {
         throw Failure()
     }

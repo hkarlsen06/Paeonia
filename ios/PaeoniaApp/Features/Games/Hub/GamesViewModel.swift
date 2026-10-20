@@ -218,7 +218,7 @@ final class GamesViewModel {
                 notice = gameNotice
             }
         }
-        await updateScreen(userID: userID)
+        updateScreen(userID: userID)
     }
 
     /// Reads the server's overview and every game's state once and caches them.
@@ -241,7 +241,7 @@ final class GamesViewModel {
         }
     }
 
-    private func updateScreen(userID: UUID) async {
+    private func updateScreen(userID: UUID) {
         guard hasLoaded else {
             screen = .loading
             return
@@ -251,15 +251,10 @@ final class GamesViewModel {
             screen = overview == nil ? .loading : .hub
             return
         }
-        if await dependencies.cache.hasSeenSettings(coupleID: settings.coupleID, ownerUserID: userID) {
-            neededIntro = nil
-        } else if settings.updatedByUserID == userID {
-            // This person chose them, so there is nothing new to show.
-            await dependencies.cache.markSettingsSeen(coupleID: settings.coupleID, ownerUserID: userID)
-            neededIntro = nil
-        } else {
-            neededIntro = .partnerPicked(settings)
-        }
+        // Whoever chose them has seen them. The server keeps who else has.
+        neededIntro = settings.seenByUserIDs.contains(userID) || settings.updatedByUserID == userID
+            ? nil
+            : .partnerPicked(settings)
         screen = .hub
     }
 
@@ -323,28 +318,29 @@ final class GamesViewModel {
     /// Saves a change from the settings sheet. Returns whether it saved.
     @discardableResult
     func saveSettings(playStyle: GamePlayStyle, language: GameLanguage) async -> Bool {
-        guard !isSavingSettings, let userID = currentUserID else { return false }
+        guard !isSavingSettings, currentUserID != nil else { return false }
         isSavingSettings = true
         defer { isSavingSettings = false }
-        let saved: RemoteGameSettings
         do {
-            saved = try await dependencies.gateway.setSettings(playStyle: playStyle, language: language)
+            _ = try await dependencies.gateway.setSettings(playStyle: playStyle, language: language)
         } catch {
             notice = .couldNotSaveSettings(PaeoniaFailure(error))
             return false
         }
-        await dependencies.cache.markSettingsSeen(coupleID: saved.coupleID, ownerUserID: userID)
         // Read the overview and the games again, so the hub and every game agree.
         await refresh()
         return true
     }
 
     /// "Sounds good" on the moment that shows what the partner picked.
+    /// When that does not reach the server, the game still opens, and the moment
+    /// shows again before the next game.
     func acknowledgePartnerPicked() async {
-        guard let userID = currentUserID, let settings else { return }
-        await dependencies.cache.markSettingsSeen(coupleID: settings.coupleID, ownerUserID: userID)
-        await reload()
+        let marked = (try? await dependencies.gateway.markSettingsSeen()) != nil
         await continueIntro()
+        guard marked, let userID = currentUserID else { return }
+        _ = try? await dependencies.cache.fetchOverview(from: dependencies.gateway, ownerUserID: userID)
+        await reload()
     }
 
     func clearNotice() {

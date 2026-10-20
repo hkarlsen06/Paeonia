@@ -77,11 +77,6 @@ protocol GamesCaching: Actor {
     func saveRecords(_ records: RemoteDrawAndGuessRecords, ownerUserID: UUID)
     /// Keeps what the server said about this person's star on rounds.
     func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID)
-    /// This person has seen the settings screen or the "here's what your partner
-    /// picked" moment for this couple, so setup never shows again. It is kept
-    /// apart from the document, which a version change or a purge throws away.
-    func hasSeenSettings(coupleID: UUID, ownerUserID: UUID) -> Bool
-    func markSettingsSeen(coupleID: UUID, ownerUserID: UUID)
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID)
     /// Returns the notices and forgets them.
     func takeNotices(ownerUserID: UUID) -> [GameStoredNotice]
@@ -183,13 +178,11 @@ actor FileGamesCache: GamesCaching {
     static let shared = FileGamesCache()
 
     private var store: GamesDocumentStore<GamesLocalDocument>
-    private let defaults: UserDefaults
     private var order = GamesStateWriteOrder()
     private var overviewOrder = GamesStateWriteOrder()
 
-    init(directoryURL: URL = FileGamesCache.defaultDirectoryURL(), defaults: UserDefaults = .standard) {
-        store = GamesDocumentStore(directoryURL: directoryURL, schemaVersion: 5)
-        self.defaults = defaults
+    init(directoryURL: URL = FileGamesCache.defaultDirectoryURL()) {
+        store = GamesDocumentStore(directoryURL: directoryURL, schemaVersion: 6)
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
@@ -257,18 +250,6 @@ actor FileGamesCache: GamesCaching {
         store.update(ownerUserID: ownerUserID) { $0.saveStars(stars) }
     }
 
-    func hasSeenSettings(coupleID: UUID, ownerUserID: UUID) -> Bool {
-        defaults.bool(forKey: Self.settingsSeenKey(coupleID: coupleID, ownerUserID: ownerUserID))
-    }
-
-    func markSettingsSeen(coupleID: UUID, ownerUserID: UUID) {
-        defaults.set(true, forKey: Self.settingsSeenKey(coupleID: coupleID, ownerUserID: ownerUserID))
-    }
-
-    private static func settingsSeenKey(coupleID: UUID, ownerUserID: UUID) -> String {
-        "paeonia.games.settingsSeen.\(ownerUserID.uuidString).\(coupleID.uuidString)"
-    }
-
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {
         store.update(ownerUserID: ownerUserID) { $0.record(notice) }
     }
@@ -292,7 +273,6 @@ actor FileGamesCache: GamesCaching {
 /// For tests and the developer scenarios.
 actor InMemoryGamesCache: GamesCaching {
     private var documents: [UUID: GamesLocalDocument] = [:]
-    private var seenSettings: Set<[UUID]> = []
     private var order = GamesStateWriteOrder()
     private var overviewOrder = GamesStateWriteOrder()
 
@@ -301,16 +281,12 @@ actor InMemoryGamesCache: GamesCaching {
     init(
         state: RemoteDrawAndGuessState? = nil,
         overview: RemoteGamesOverview? = nil,
-        ownerUserID: UUID? = nil,
-        hasSeenSettings: Bool = false
+        ownerUserID: UUID? = nil
     ) {
         guard let ownerUserID else { return }
         let overview = overview ?? state.map { RemoteGamesOverview(drawAndGuess: $0) }
         guard state != nil || overview != nil else { return }
         documents[ownerUserID] = GamesLocalDocument(overview: overview, state: state)
-        if hasSeenSettings, let coupleID = overview?.settings?.coupleID {
-            seenSettings.insert([coupleID, ownerUserID])
-        }
     }
 
     func document(ownerUserID: UUID) -> GamesLocalDocument {
@@ -370,14 +346,6 @@ actor InMemoryGamesCache: GamesCaching {
 
     func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
         documents[ownerUserID, default: GamesLocalDocument()].saveStars(stars)
-    }
-
-    func hasSeenSettings(coupleID: UUID, ownerUserID: UUID) -> Bool {
-        seenSettings.contains([coupleID, ownerUserID])
-    }
-
-    func markSettingsSeen(coupleID: UUID, ownerUserID: UUID) {
-        seenSettings.insert([coupleID, ownerUserID])
     }
 
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {

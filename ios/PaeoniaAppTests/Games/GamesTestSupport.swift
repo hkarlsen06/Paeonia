@@ -46,6 +46,7 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         var reactionError: PaeoniaConvexError?
         var inviteError: (any Error)?
         var stateToLoad: RemoteDrawAndGuessState?
+        var settingsSeen = false
         var roundsToLoad: [UUID: RemoteDrawAndGuessRound] = [:]
         var historyRounds: [RemoteDrawAndGuessHistoryRound] = []
         var historyRequests: [HistoryRequest] = []
@@ -124,6 +125,14 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
     /// What `loadDrawAndGuessRound` finds. A round not set here does not exist.
     func setRoundToLoad(_ round: RemoteDrawAndGuessRound) {
         write { $0.roundsToLoad[round.id] = round }
+    }
+
+    /// Like the server, this person counts as having seen the settings from now on.
+    func markSettingsSeen() throws -> RemoteGameSettings {
+        try begin("markSettingsSeen")
+        write { $0.settingsSeen = true }
+        guard let settings = try overviewToLoad().settings else { throw Failure() }
+        return settings
     }
 
     private func begin(_ name: String) throws {
@@ -317,8 +326,21 @@ extension ScriptedGamesGateway {
     // swiftlint:disable:next async_without_await
     func loadOverview() async throws -> RemoteGamesOverview {
         try begin("overview")
+        return try overviewToLoad()
+    }
+
+    private func overviewToLoad() throws -> RemoteGamesOverview {
         guard let state = read(\.stateToLoad) else { throw Failure() }
-        return RemoteGamesOverview(drawAndGuess: state)
+        let overview = RemoteGamesOverview(drawAndGuess: state)
+        guard read(\.settingsSeen), var settings = overview.settings else { return overview }
+        settings.seenByUserIDs.append(GameFixture.me)
+        return RemoteGamesOverview(
+            userID: overview.userID,
+            partnerUserID: overview.partnerUserID,
+            coupleID: overview.coupleID,
+            settings: settings,
+            presence: overview.presence
+        )
     }
 }
 
@@ -358,12 +380,8 @@ struct GamesTestEnvironment {
     let drawingStore = InMemoryGameDrawingStore()
     let operations = DeveloperScenarioOperationProvider()
 
-    init(state: RemoteDrawAndGuessState?, hasSeenSettings: Bool = true) {
-        cache = InMemoryGamesCache(
-            state: state,
-            ownerUserID: GameFixture.me,
-            hasSeenSettings: hasSeenSettings
-        )
+    init(state: RemoteDrawAndGuessState?) {
+        cache = InMemoryGamesCache(state: state, ownerUserID: GameFixture.me)
     }
 
     func dependencies(live: WidgetLiveDrawing? = nil) -> GamesDependencies {

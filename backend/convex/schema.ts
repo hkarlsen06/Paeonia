@@ -1492,6 +1492,9 @@ export default defineSchema({
     play_style: gamePlayStyle,
     language: gameLanguage,
     updated_by_user_id: uuid,
+    // Who has seen the settings: whoever set them, and a partner who tapped through what the other
+    // picked. The app shows that moment once, to a partner who is not in this list.
+    seen_by_user_ids: v.array(uuid),
     created_at: ts,
     updated_at: ts,
   }).index("by_couple_id", ["couple_id"]),

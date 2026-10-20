@@ -25,7 +25,7 @@ struct GamesViewModelTests {
     }
 
     @Test func finishingSetupSavesTheChoicesThenAsksForAMarkThenOpensTheGame() async {
-        let env = GamesTestEnvironment(state: GameFixture.state(settings: nil, game: nil), hasSeenSettings: false)
+        let env = GamesTestEnvironment(state: GameFixture.state(settings: nil, game: nil))
         let afterSetup = GameFixture.state(
             settings: GameFixture.settings(),
             game: nil
@@ -41,8 +41,6 @@ struct GamesViewModelTests {
 
         #expect(env.gateway.calls.contains("setSettings"))
         #expect(viewModel.screen == .hub)
-        let coupleID = DeveloperScenarioFixture.coupleID
-        #expect(await env.cache.hasSeenSettings(coupleID: coupleID, ownerUserID: GameFixture.me))
         #expect(step(viewModel) == "mark")
         #expect(viewModel.destinationToOpen == nil)
 
@@ -62,7 +60,7 @@ struct GamesViewModelTests {
             settings: GameFixture.settings(by: GameFixture.partner),
             game: nil
         )
-        let env = GamesTestEnvironment(state: state, hasSeenSettings: false)
+        let env = GamesTestEnvironment(state: state)
         let viewModel = viewModel(env)
 
         await viewModel.load()
@@ -75,6 +73,7 @@ struct GamesViewModelTests {
         #expect(settings.updatedByUserID == GameFixture.partner)
 
         await viewModel.acknowledgePartnerPicked()
+        #expect(env.gateway.calls.contains("markSettingsSeen"))
         #expect(step(viewModel) == "mark")
 
         // A new view model on the same cache opens games at once.

@@ -53,6 +53,8 @@ nonisolated struct RemoteGameSettings: Codable, Equatable, Sendable {
     let playStyle: GamePlayStyle
     let language: GameLanguage
     let updatedByUserID: UUID
+    /// Whoever set them, and a partner who has seen what the other picked.
+    var seenByUserIDs: [UUID] = []
     let createdAt: Date
     let updatedAt: Date
 
@@ -61,6 +63,7 @@ nonisolated struct RemoteGameSettings: Codable, Equatable, Sendable {
         case playStyle = "play_style"
         case language
         case updatedByUserID = "updated_by_user_id"
+        case seenByUserIDs = "seen_by_user_ids"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }

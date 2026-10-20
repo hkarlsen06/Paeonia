@@ -192,8 +192,7 @@
         state: drawState,
         overview: DeveloperMindMeldScenarioFactory.overview(for: scenario, drawAndGuess: drawState)
           ?? DeveloperBoardGamesFixture.overview(for: scenario, drawAndGuess: drawState),
-        ownerUserID: DeveloperGamesFixture.me,
-        hasSeenSettings: scenario != .gamesPartnerPicked
+        ownerUserID: DeveloperGamesFixture.me
       )
       let storyChainCache = InMemoryStoryChainCache(
         state: DeveloperStoryChainScenarios.state(for: scenario),
@@ -295,6 +294,11 @@
         createdAt: DeveloperGamesFixture.now,
         updatedAt: DeveloperGamesFixture.now
       )
+    }
+
+    // The scenarios read the overview from the cache, so nothing reads this answer.
+    func markSettingsSeen() throws -> RemoteGameSettings {
+      try setSettings(playStyle: .against, language: .en)
     }
 
     func ensureDrawAndGuessGame() throws -> RemoteEnsureGameResult {

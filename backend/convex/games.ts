@@ -11,6 +11,7 @@ import {
   GAME_PRESENCE_TIMEOUT_MS,
   getGameSettings,
   INVITE_INTERVAL_MS,
+  requireGameSettings,
   requirePartnerId,
   settingsJson,
 } from "./lib/games";
@@ -39,6 +40,7 @@ export const set_game_settings = mutation({
         play_style: args.p_play_style,
         language: args.p_language,
         updated_by_user_id: userId,
+        seen_by_user_ids: withSeen(existing.seen_by_user_ids, userId),
         updated_at: now,
       });
       if (existing.language !== args.p_language) await gameLanguageChanged(ctx, coupleId, args.p_language);
@@ -48,6 +50,7 @@ export const set_game_settings = mutation({
         play_style: args.p_play_style,
         language: args.p_language,
         updated_by_user_id: userId,
+        seen_by_user_ids: [userId],
         created_at: now,
         updated_at: now,
       });
@@ -55,6 +58,26 @@ export const set_game_settings = mutation({
     return settingsJson((await getGameSettings(ctx, coupleId))!);
   },
 });
+
+/**
+ * The caller has seen what their partner picked, so the app stops showing it on any phone. Safe to
+ * repeat. Returns the settings.
+ */
+export const mark_game_settings_seen = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    await assertNoPendingAccountDeletion(ctx, userId);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    const settings = await requireGameSettings(ctx, coupleId);
+    await ctx.db.patch(settings._id, { seen_by_user_ids: withSeen(settings.seen_by_user_ids, userId) });
+    return settingsJson((await getGameSettings(ctx, coupleId))!);
+  },
+});
+
+function withSeen(userIds: string[], userId: string): string[] {
+  return userIds.includes(userId) ? userIds : [...userIds, userId];
+}
 
 /**
  * What the Games tab and every game share, for the caller. Subscribe to it. It does not read the

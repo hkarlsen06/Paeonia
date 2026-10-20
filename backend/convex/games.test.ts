@@ -55,6 +55,7 @@ describe("access", () => {
     const loner = await createSignedInUser(t, { name: "Loner" });
     expect((await failure(loner.as.query(api.games.get_games_overview, {}))).code).toBe("42501");
     expect((await failure(loner.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" }))).code).toBe("42501");
+    expect((await failure(loner.as.mutation(api.games.mark_game_settings_seen, {}))).code).toBe("42501");
     for (const kind of GAME_KINDS) {
       expect((await failure(loner.as.mutation(api.games.send_game_invite, { p_kind: kind }))).code).toBe("42501");
       expect((await failure(loner.as.mutation(api.games.set_game_presence, { p_kind: kind, p_present: true }))).code).toBe("42501");
@@ -67,6 +68,7 @@ describe("access", () => {
     const couple = await createCouple(t, { entitled: false });
     expect((await failure(couple.first.as.query(api.games.get_games_overview, {}))).code).toBe("42501");
     expect((await failure(couple.first.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" }))).code).toBe("42501");
+    expect((await failure(couple.first.as.mutation(api.games.mark_game_settings_seen, {}))).code).toBe("42501");
     expect((await failure(couple.first.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true }))).code).toBe("42501");
   });
 
@@ -88,6 +90,17 @@ describe("settings", () => {
     expect(changed).toMatchObject({ play_style: "against", language: "nb", updated_by_user_id: couple.second.userId, couple_id: couple.coupleId });
     expect((await couple.first.as.query(api.games.get_games_overview, {})).settings).toMatchObject({ play_style: "against", language: "nb" });
     expect(await t.run((ctx) => ctx.db.query("game_settings").collect())).toHaveLength(1);
+  });
+
+  test("whoever sets them has seen them, and the partner is seen once they say so", async () => {
+    const s = await startCouple();
+    expect((await failure(s.b.as.mutation(api.games.mark_game_settings_seen, {}))).code).toBe("23514");
+    const set = await s.a.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
+    expect(set.seen_by_user_ids).toEqual([s.a.userId]);
+    expect((await s.b.as.mutation(api.games.mark_game_settings_seen, {})).seen_by_user_ids).toEqual([s.a.userId, s.b.userId]);
+    expect((await s.b.as.mutation(api.games.mark_game_settings_seen, {})).seen_by_user_ids).toEqual([s.a.userId, s.b.userId]);
+    const changed = await s.b.as.mutation(api.games.set_game_settings, { p_play_style: "against", p_language: "nb" });
+    expect(changed.seen_by_user_ids).toEqual([s.a.userId, s.b.userId]);
   });
 
   test("a language change reaches every game that registered a hook, and the same language does not", async () => {

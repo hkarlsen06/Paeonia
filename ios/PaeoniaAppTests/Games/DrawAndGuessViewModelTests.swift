@@ -6,11 +6,8 @@ import Testing
 /// The whole Draw & Guess flow through `DrawAndGuessViewModel`, on in-memory parts.
 @MainActor
 struct DrawAndGuessViewModelTests {
-    func environment(
-        _ state: RemoteDrawAndGuessState,
-        hasSeenSettings: Bool = true
-    ) -> GamesTestEnvironment {
-        GamesTestEnvironment(state: state, hasSeenSettings: hasSeenSettings)
+    func environment(_ state: RemoteDrawAndGuessState) -> GamesTestEnvironment {
+        GamesTestEnvironment(state: state)
     }
 
     var yourTurn: RemoteDrawAndGuessState {

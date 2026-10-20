@@ -201,6 +201,10 @@ final class SimGateway: DrawAndGuessGateway, @unchecked Sendable {
         try await call("setSettings") { $0.setSettings(user: $1, playStyle: playStyle, language: language) }
     }
 
+    func markSettingsSeen() async throws -> RemoteGameSettings {
+        try await call("markSettingsSeen") { server, _ in try server.markSettingsSeen() }
+    }
+
     func ensureDrawAndGuessGame() async throws -> RemoteEnsureGameResult {
         try await call("ensure") { try $0.ensureGame(user: $1) }
     }

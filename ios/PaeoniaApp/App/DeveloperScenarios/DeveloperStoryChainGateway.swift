@@ -20,6 +20,10 @@
       try games.setSettings(playStyle: playStyle, language: language)
     }
 
+    func markSettingsSeen() async throws -> RemoteGameSettings {
+      try games.markSettingsSeen()
+    }
+
     func loadOverview() async throws -> RemoteGamesOverview {
       try await games.loadOverview()
     }
