@@ -139,26 +139,51 @@ describe("get_games_overview", () => {
     expect((await s.b.as.query(api.games.get_games_overview, {})).settings).toEqual(set);
   });
 
-  test("lists a kind only while either partner has it open, or with an invite from the caller", async () => {
+  test("lists a kind while either partner has it open, once either partner opened it, or with an invite from the caller", async () => {
     const s = await startCouple();
+    const opened = new Date(START).toISOString();
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true });
     await s.b.as.mutation(api.games.set_game_presence, { p_kind: "connect_four", p_present: true });
     const invited = await s.a.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
-    // Another kind that was opened and closed again leaves no entry.
+    // A kind that was opened and closed again keeps its entry for the time it was played.
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "dots_and_boxes", p_present: true });
+    tick(90);
+    const closed = new Date(Date.now()).toISOString();
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "dots_and_boxes", p_present: false });
 
-    // Entries follow the order of GAME_KINDS: mind_meld, story_chain, connect_four.
+    // Entries follow the order of GAME_KINDS: mind_meld, story_chain, connect_four, dots_and_boxes.
     expect((await s.a.as.query(api.games.get_games_overview, {})).presence).toEqual([
-      { kind: "mind_meld", my_present: true, partner_present: false, last_invite_at: null },
-      { kind: "story_chain", my_present: false, partner_present: false, last_invite_at: invited.sent_at },
-      { kind: "connect_four", my_present: false, partner_present: true, last_invite_at: null },
+      { kind: "mind_meld", my_present: true, partner_present: false, last_invite_at: null, last_played_at: opened },
+      { kind: "story_chain", my_present: false, partner_present: false, last_invite_at: invited.sent_at, last_played_at: null },
+      { kind: "connect_four", my_present: false, partner_present: true, last_invite_at: null, last_played_at: opened },
+      { kind: "dots_and_boxes", my_present: false, partner_present: false, last_invite_at: null, last_played_at: closed },
     ]);
-    // The partner's view swaps the two sides, and the invite belongs to the sender only.
+    // The partner's view swaps the two sides, the invite belongs to the sender only, and play times are shared.
     expect((await s.b.as.query(api.games.get_games_overview, {})).presence).toEqual([
-      { kind: "mind_meld", my_present: false, partner_present: true, last_invite_at: null },
-      { kind: "connect_four", my_present: true, partner_present: false, last_invite_at: null },
+      { kind: "mind_meld", my_present: false, partner_present: true, last_invite_at: null, last_played_at: opened },
+      { kind: "connect_four", my_present: true, partner_present: false, last_invite_at: null, last_played_at: opened },
+      { kind: "dots_and_boxes", my_present: false, partner_present: false, last_invite_at: null, last_played_at: closed },
     ]);
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("an open screen moves the play time forward every 5 minutes, and closing it moves it at once", async () => {
+    const s = await startCouple();
+    const playedAt = async () => (await s.b.as.query(api.games.get_games_overview, {})).presence[0]?.last_played_at;
+    const heartbeat = () => s.a.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: true });
+    await heartbeat();
+    expect(await playedAt()).toBe(new Date(START).toISOString());
+
+    tick(4 * 60 + 59);
+    await heartbeat();
+    expect(await playedAt()).toBe(new Date(START).toISOString());
+    tick(1);
+    await heartbeat();
+    expect(await playedAt()).toBe(new Date(START + 5 * 60_000).toISOString());
+
+    tick(30);
+    await s.a.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: false });
+    expect(await playedAt()).toBe(new Date(START + 5 * 60_000 + 30_000).toISOString());
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -419,6 +444,8 @@ describe("registry", () => {
     await other.first.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
     await s.a.as.mutation(api.games.send_game_invite, { p_kind: "connect_four" });
     await s.b.as.mutation(api.games.send_game_invite, { p_kind: "story_chain" });
+    await s.a.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: false });
+    await other.first.as.mutation(api.games.set_game_presence, { p_kind: "ludo", p_present: false });
     const { game_id } = await s.a.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
     expect(game_id).toBeDefined();
     await other.first.as.mutation(api.drawAndGuess.ensure_draw_and_guess_game, {});
@@ -426,10 +453,10 @@ describe("registry", () => {
     const deleteCoupleRows = vi.fn<GameBackend["deleteCoupleRows"]>(async () => 5);
     GAME_BACKENDS.mind_meld = { ...nullBackend, deleteCoupleRows };
     try {
-      // 1 settings + 2 invites, 1 game and its used words from Draw & Guess, 5 from the fake entry.
+      // 1 settings + 2 invites + 1 play time, 1 game and its used words from Draw & Guess, 5 from the fake entry.
       const usedWords = (await s.t.run((ctx) => ctx.db.query("game_used_words").collect())).filter((row) => row.couple_id === s.couple.coupleId);
       expect(usedWords).toHaveLength(3);
-      expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.couple.coupleId))).toBe(1 + 2 + 1 + 3 + 5);
+      expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.couple.coupleId))).toBe(1 + 2 + 1 + 1 + 3 + 5);
       expect(deleteCoupleRows).toHaveBeenCalledWith(expect.anything(), s.couple.coupleId);
     } finally {
       GAME_BACKENDS.mind_meld = null;
@@ -438,12 +465,14 @@ describe("registry", () => {
     const left = await s.t.run(async (ctx) => ({
       settings: (await ctx.db.query("game_settings").collect()).map((row) => row.couple_id),
       invites: (await ctx.db.query("game_invites").collect()).map((row) => row.couple_id),
+      plays: (await ctx.db.query("game_plays").collect()).map((row) => row.couple_id),
       games: (await ctx.db.query("games").collect()).map((row) => row.couple_id),
     }));
     // The other couple keeps everything.
     expect(left).toEqual({
       settings: [other.coupleId],
       invites: [],
+      plays: [other.coupleId],
       games: [other.coupleId],
     });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);

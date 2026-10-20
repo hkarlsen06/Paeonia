@@ -9,8 +9,8 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
     let coupleID: UUID
     /// Nil until the couple finished setup.
     let settings: RemoteGameSettings?
-    /// One entry per game that either partner has open or this person sent an
-    /// invite for. Other games are left out.
+    /// One entry per game that either partner has open or has ever opened, or this
+    /// person sent an invite for. Other games are left out.
     let presence: [RemoteGamePresence]
 
     enum CodingKeys: String, CodingKey {
@@ -34,11 +34,14 @@ nonisolated struct RemoteGamePresence: Codable, Equatable, Sendable {
     let partnerPresent: Bool
     /// This person's last "Tell [Name] you want to play" for this game.
     let lastInviteAt: Date?
+    /// When either partner last had the game open. Nil when neither ever opened it.
+    var lastPlayedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case kind
         case myPresent = "my_present"
         case partnerPresent = "partner_present"
         case lastInviteAt = "last_invite_at"
+        case lastPlayedAt = "last_played_at"
     }
 }

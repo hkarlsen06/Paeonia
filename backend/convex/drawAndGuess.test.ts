@@ -1511,6 +1511,7 @@ describe("relationship end", () => {
       "game_round_stars",
       "game_used_words",
       "game_invites",
+      "game_plays",
     ] as const;
     const count = (t: TestConvex, coupleId: string) =>
       t.run(async (ctx) => {

@@ -24,7 +24,7 @@ export type GameBackend = {
     payload: Record<string, unknown>,
     recipientUserId: string,
   ): Promise<boolean>;
-  /** Deletes the couple's rows in this game's own tables and returns how many. Shared rows (settings, presence, invites) are deleted for it. */
+  /** Deletes the couple's rows in this game's own tables and returns how many. Shared rows (settings, presence, invites, play times) are deleted for it. */
   deleteCoupleRows(ctx: WriterCtx, coupleId: string): Promise<number>;
   /** Sends the single reminder for each turn that waited TURN_REMINDER_AFTER_MS. Returns the pushes queued. Leave out for a game without turns. */
   sendDueTurnReminders?(ctx: WriterCtx, now: string): Promise<number>;
@@ -83,7 +83,7 @@ export async function sendDueGameTurnReminders(ctx: WriterCtx, now: string): Pro
 }
 
 /**
- * Deletes every game row of a couple: the shared settings and invites, then each game's own rows.
+ * Deletes every game row of a couple: the shared settings, invites, and play times, then each game's own rows.
  * Returns the number of rows deleted. Presence went when the relationship ended
  * (`endRelationshipForPair`). Drawing media is queued for deletion by the couple media sweep in
  * `cleanupCoupleContent`.
@@ -93,6 +93,7 @@ export async function deleteCoupleGameRows(ctx: WriterCtx, coupleId: string): Pr
   const shared = [
     ...(await ctx.db.query("game_settings").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()),
     ...(await ctx.db.query("game_invites").withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId)).collect()),
+    ...(await ctx.db.query("game_plays").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect()),
   ];
   for (const row of shared) {
     await ctx.db.delete(row._id);

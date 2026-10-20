@@ -3,14 +3,16 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
-import { orNull } from "./lib/db";
+import { orNull, type WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { gameLanguageChanged, sendDueGameTurnReminders } from "./lib/gameRegistry";
 import {
   enqueueGamePush,
   GAME_PRESENCE_TIMEOUT_MS,
+  type GameKind,
   getGameSettings,
   INVITE_INTERVAL_MS,
+  PLAYED_AT_INTERVAL_MS,
   requireGameSettings,
   requirePartnerId,
   settingsJson,
@@ -85,9 +87,11 @@ function withSeen(userIds: string[], userId: string): string[] {
  *
  * Result: `{ user_id, partner_user_id, couple_id, settings, presence }`. `partner_user_id` is null
  * without an active partner, and `settings` is null until the couple sets them. `presence` has one
- * entry per game kind (in `GAME_KINDS` order) that either partner has open or the caller sent an
- * invite for, and leaves the other kinds out. An entry is `{ kind, my_present, partner_present,
- * last_invite_at }`. `last_invite_at` is the caller's own last invite for that kind, or null.
+ * entry per game kind (in `GAME_KINDS` order) that either partner has open or has ever opened, or
+ * the caller sent an invite for, and leaves the other kinds out. An entry is `{ kind, my_present,
+ * partner_present, last_invite_at, last_played_at }`. `last_invite_at` is the caller's own last
+ * invite for that kind, or null. `last_played_at` is when either partner last had the game open, or
+ * null when neither ever opened it.
  */
 export const get_games_overview = query({
   args: {},
@@ -101,6 +105,11 @@ export const get_games_overview = query({
       .withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId))
       .collect();
 
+    const plays = await ctx.db
+      .query("game_plays")
+      .withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId))
+      .collect();
+
     const myOpen = await openGameKinds(ctx, coupleId, userId);
     const partnerOpen = partnerId === null ? new Set<string>() : await openGameKinds(ctx, coupleId, partnerId);
     const presence = [];
@@ -108,8 +117,15 @@ export const get_games_overview = query({
       const invite = invites.find((row) => row.kind === kind && row.sender_user_id === userId);
       const myPresent = myOpen.has(kind);
       const partnerPresent = partnerOpen.has(kind);
-      if (!myPresent && !partnerPresent && !invite) continue;
-      presence.push({ kind, my_present: myPresent, partner_present: partnerPresent, last_invite_at: orNull(invite?.sent_at) });
+      const play = plays.find((row) => row.kind === kind);
+      if (!myPresent && !partnerPresent && !invite && !play) continue;
+      presence.push({
+        kind,
+        my_present: myPresent,
+        partner_present: partnerPresent,
+        last_invite_at: orNull(invite?.sent_at),
+        last_played_at: orNull(play?.last_played_at),
+      });
     }
 
     return {
@@ -162,7 +178,8 @@ export const send_game_invite = mutation({
 /**
  * The open game screen. The app sends `true` when the screen opens and every 30 seconds
  * after, and `false` when it closes. The presence component marks the screen closed 60
- * seconds after the last `true`, such as when the app was killed.
+ * seconds after the last `true`, such as when the app was killed. Each call also moves the
+ * game's last played time forward (`recordPlayed`).
  */
 export const set_game_presence = mutation({
   args: { p_kind: gameKind, p_present: v.boolean() },
@@ -171,9 +188,28 @@ export const set_game_presence = mutation({
     await assertNoPendingAccountDeletion(ctx, userId);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     await setPresent(ctx, gameRoom(coupleId, args.p_kind), userId, args.p_present, GAME_PRESENCE_TIMEOUT_MS);
+    await recordPlayed(ctx, coupleId, args.p_kind, args.p_present);
     return null;
   },
 });
+
+/**
+ * Sets when the couple last played a game to now. A heartbeat writes at most every
+ * `PLAYED_AT_INTERVAL_MS`, so an open screen does not rerun every overview subscription every 30
+ * seconds. Closing the screen always writes.
+ */
+async function recordPlayed(ctx: WriterCtx, coupleId: string, kind: GameKind, present: boolean): Promise<void> {
+  const now = nowIso();
+  const row = await ctx.db
+    .query("game_plays")
+    .withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId).eq("kind", kind))
+    .unique();
+  if (!row) {
+    await ctx.db.insert("game_plays", { couple_id: coupleId, kind, last_played_at: now });
+  } else if (!present || row.last_played_at <= addMs(now, -PLAYED_AT_INTERVAL_MS)) {
+    await ctx.db.patch(row._id, { last_played_at: now });
+  }
+}
 
 /**
  * A 60-second ticket for the game's own relay room (`<couple>:<kind>`), so game sockets do not

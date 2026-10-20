@@ -16,6 +16,8 @@ export type GameSettings = Doc<"game_settings">;
 /** The game screen counts as closed this long after its last heartbeat. The app sends one every 30 seconds. */
 export const GAME_PRESENCE_TIMEOUT_MS = 60_000;
 export const INVITE_INTERVAL_MS = 15 * 60_000;
+/** An open game screen moves the game's last played time forward at most this often. Closing the screen always does. */
+export const PLAYED_AT_INTERVAL_MS = 5 * 60_000;
 export const TURN_REMINDER_AFTER_MS = 72 * 3_600_000;
 
 /**
