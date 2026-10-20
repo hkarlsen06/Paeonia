@@ -19,6 +19,9 @@ struct GuessMySpotPhotoCaption: View {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
+                        // The clip cuts only the drawing. The filled image would still
+                        // take touches past the box and keep them from the map.
+                        .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
             }

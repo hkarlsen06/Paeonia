@@ -18,9 +18,7 @@ struct GuessMySpotCheckView: View {
     private var draft: GuessMySpotDraft? { viewModel.draft }
 
     var body: some View {
-        // The person just picked this photo, so it shrinks to a reminder and the map
-        // gets the room for panning and zooming.
-        GuessMySpotSplitLayout(photoShare: 0.25) {
+        GuessMySpotSplitLayout {
             EmptyView()
         } photo: {
             GuessMySpotPhotoPane(image: draft?.image)

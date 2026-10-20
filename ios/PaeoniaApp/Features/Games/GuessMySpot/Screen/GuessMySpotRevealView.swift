@@ -4,7 +4,7 @@ import SwiftUI
 /// The reveal of a guessed round, from the guess to where the photo was taken.
 /// The photo slides away and the map fills the screen. The guess pin pulses, the
 /// camera zooms out, a gold line draws to the real spot, the real pin drops at its
-/// end, and the camera lands there while the distance counts up. Then the verdict
+/// end, and the camera flies down close to it while the distance counts up. Then the verdict
 /// lands and the photo comes back with the place and the date. A guess still on its
 /// way holds the first frame until the server answers with the real spot.
 struct GuessMySpotRevealView: View {
@@ -13,9 +13,11 @@ struct GuessMySpotRevealView: View {
     @State private var timeline = GuessMySpotRevealTimeline()
     @State private var camera: MapCameraPosition = GuessMySpotCamera.world
     @State private var cardHeight: CGFloat = 0
-    /// The whole map, under the top room and the card too.
-    @State private var mapSize: CGSize = .zero
+    /// The whole map on the screen, under the top room and the card too.
+    @State private var mapFrame: CGRect = .zero
     @State private var hasPlacedCamera = false
+    /// Starts as the guess screen's map, and turns to satellite as the camera lands.
+    @State private var isSatellite = UserDefaults.standard.bool(forKey: GuessMySpotMap.satelliteKey)
     @AccessibilityFocusState private var isTitleFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -24,6 +26,8 @@ struct GuessMySpotRevealView: View {
     private var isHeld: Bool {
         viewModel.phase == .reveal(isHeld: true)
     }
+
+    private var mapSize: CGSize { mapFrame.size }
 
     /// A wide screen keeps the guess screen's columns: the photo and then the card
     /// on the left, and the camera frames the map to their right. The same test as
@@ -106,25 +110,36 @@ struct GuessMySpotRevealView: View {
             timeline.hold()
             return
         }
+        if !reduceMotion { loadLandingImages() }
         timeline.begin(plan, reduceMotion: reduceMotion)
     }
 
-    /// The first frame: where the guesser left the map, when the guess pin is in it
-    /// and it shows less than a continent, or else the guess at about 300 km across.
+    /// The first frame, placed once the map has its size: the guess map as the
+    /// guesser left it, lined up with where it sat, when the guess pin is in it and
+    /// it shows less than a continent. Then the two maps match under the fade.
+    /// Otherwise the guess at about 300 km across.
     private func placeCameraOnGuess() {
-        guard !hasPlacedCamera, let guess = round?.guess else { return }
+        guard !hasPlacedCamera, mapSize != .zero, let guess = round?.guess else { return }
         hasPlacedCamera = true
-        if !isSender, let region = viewModel.guessRegion,
-           region.span.latitudeDelta < 30, region.span.longitudeDelta < 40,
-           abs(region.center.latitude - guess.latitude) < region.span.latitudeDelta / 2,
-           abs(region.center.longitude - guess.longitude) < region.span.longitudeDelta / 2 {
-            withAnimation(.easeOut(duration: 0.25)) { camera = .region(region) }
+        if !isSender, let rect = viewModel.guessMapRect, let source = viewModel.guessMapFrame,
+           rect.width < MKMapSize.world.width * 40 / 360, rect.contains(MKMapPoint(guess.location)) {
+            camera = GuessMySpotCamera.continuing(rect, from: source, to: mapFrame)
         } else {
-            // Under the photo's fade, so the change from the guess screen's map isn't a cut.
-            withAnimation(.easeOut(duration: 0.25)) {
-                camera = GuessMySpotCamera.around(guess, meters: isSender ? 60_000 : 300_000)
-            }
+            camera = framed(GuessMySpotCamera.around(guess, meters: isSender ? 60_000 : 300_000))
         }
+    }
+
+    /// The part of the map a camera move frames: under the top room and a pin's head,
+    /// and clear of the card. The card's room is kept from the start, so nothing
+    /// slides when it rises.
+    private func framed(_ position: MapCameraPosition) -> MapCameraPosition {
+        let insets = EdgeInsets(
+            top: Self.topRoom + GuessMySpotPin.headSize,
+            leading: isWide ? Self.cardColumn : 0,
+            bottom: isWide ? PaeoniaSpacing.space8 : cardHeight + PaeoniaSpacing.space8,
+            trailing: 0
+        )
+        return GuessMySpotCamera.filling(position, size: mapSize, insets: insets)
     }
 
     private func moveCamera(to stage: GuessMySpotRevealTimeline.Camera) {
@@ -132,14 +147,15 @@ struct GuessMySpotRevealView: View {
         let target: MapCameraPosition = switch stage {
         case .guess: GuessMySpotCamera.around(guess, meters: 60_000)
         case .overview: GuessMySpotCamera.framing(guess, spot)
-        // A far guess has no landing: the view of both spots tells the story.
-        case .landed: GuessMySpotCamera.landing(on: spot, guess: guess) ?? GuessMySpotCamera.framing(guess, spot)
+        case .landed: GuessMySpotCamera.landing(on: spot, guess: guess)
         }
         let duration = stage == .landed ? timeline.schedule.landDuration : timeline.schedule.zoomOutDuration
+        // From the start of the flight, so the photos load on the way down, when the map is already moving.
+        if stage == .landed { isSatellite = true }
         if reduceMotion || timeline.isSettled {
-            camera = target
+            camera = framed(target)
         } else {
-            withAnimation(.easeInOut(duration: duration)) { camera = target }
+            withAnimation(.easeInOut(duration: duration)) { camera = framed(target) }
         }
     }
 
@@ -181,16 +197,15 @@ struct GuessMySpotRevealView: View {
             line: line,
             isInteractive: timeline.isSettled,
             showsSatelliteButton: timeline.isSettled,
-            accessibilityValue: .guessMySpotMapPinDropped
+            accessibilityValue: .guessMySpotMapPinDropped,
+            satellite: $isSatellite
         )
-        .safeAreaPadding(.top, Self.topRoom)
-        // The card's room is kept from the start, so every camera move frames the part
-        // of the map the card leaves, and nothing slides when it rises.
-        .safeAreaPadding(.leading, isWide ? Self.cardColumn : 0)
-        .safeAreaPadding(.bottom, isWide ? PaeoniaSpacing.space8 : cardHeight + PaeoniaSpacing.space8)
-        .onGeometryChange(for: CGSize.self) { proxy in
-            proxy.size
-        } action: { mapSize = $0 }
+        .onGeometryChange(for: CGRect.self) { proxy in
+            proxy.frame(in: .global)
+        } action: {
+            mapFrame = $0
+            placeCameraOnGuess()
+        }
         .accessibilityHidden(!timeline.isSettled)
     }
 
@@ -251,6 +266,8 @@ struct GuessMySpotRevealView: View {
                     .opacity(timeline.cardShown ? 1 : 0)
                     .animation(.easeOut(duration: 0.2), value: timeline.cardShown)
                     .offset(y: timeline.cardShown || reduceMotion ? 0 : 120)
+                    // It has nothing to tap, so a pan or pinch on it moves the map under it.
+                    .allowsHitTesting(false)
                     .accessibilityHidden(!timeline.cardShown)
             }
         }
@@ -283,19 +300,20 @@ struct GuessMySpotRevealView: View {
 // MARK: Photo and distance
 
 extension GuessMySpotRevealView {
-    /// The photo where the guess screen had it, on the top half or on a wide screen
-    /// the left half, until it slides away up or to the left.
+    /// The photo where the guess screen had it, on top or on a wide screen on the
+    /// left, until it slides away up or to the left.
     private var photo: some View {
         GeometryReader { proxy in
             let size = proxy.size
             let slides = timeline.photoAway && !reduceMotion
             let padding = PaeoniaSpacing.screenHorizontalPadding
+            let share = GuessMySpotPhotoPane.splitShare
             GuessMySpotPhotoPane(image: viewModel.roundPhoto)
                 .frame(
-                    width: isWide ? max(0, (size.width - 2 * padding - PaeoniaSpacing.space12) / 2) : nil,
+                    width: isWide ? max(0, (size.width - 2 * padding - PaeoniaSpacing.space12) * share) : nil,
                     height: max(0, isWide
                         ? size.height - PaeoniaSpacing.space8 - PaeoniaSpacing.space12
-                        : size.height / 2 - PaeoniaSpacing.space12)
+                        : size.height * share - PaeoniaSpacing.space12)
                 )
                 .background(.paeoniaSurfacePrimary)
                 .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
@@ -324,6 +342,35 @@ extension GuessMySpotRevealView {
             .frame(maxWidth: .infinity)
             .padding(.leading, isWide ? Self.cardColumn : 0)
             .transition(.opacity.combined(with: .scale(scale: 0.9)))
+        }
+    }
+}
+
+// MARK: Landing images
+
+extension GuessMySpotRevealView {
+    /// Draws the flight's satellite views off screen while the reveal builds up: both
+    /// spots, halfway down and the landing. Their images are then on the phone when
+    /// the camera passes, and the map doesn't go blank for a moment.
+    func loadLandingImages() {
+        guard let round, let guess = round.guess, let spot = round.spot else { return }
+        let views = [
+            GuessMySpotCamera.framing(guess, spot),
+            GuessMySpotCamera.around(spot, meters: 60_000),
+            GuessMySpotCamera.landing(on: spot, guess: guess),
+        ]
+        for view in views {
+            let options = MKMapSnapshotter.Options()
+            options.preferredConfiguration = MKHybridMapConfiguration(elevationStyle: .flat)
+            if let rect = view.rect {
+                options.mapRect = rect
+            } else if let region = view.region {
+                options.region = region
+            }
+            options.size = mapSize == .zero ? CGSize(width: 400, height: 800) : mapSize
+            let snapshotter = MKMapSnapshotter(options: options)
+            // The closure keeps the snapshotter alive until it finishes.
+            snapshotter.start { _, _ in _ = snapshotter }
         }
     }
 }

@@ -45,11 +45,20 @@ struct GuessMySpotMap: View {
     /// Makes each pin a button that reports its id, as on "Our guesses".
     var onPinTap: ((String) -> Void)?
     /// Where the camera settled after each move.
-    var onCameraChange: ((MKCoordinateRegion) -> Void)?
+    var onCameraChange: ((MapCameraUpdateContext) -> Void)?
     var accessibilityValue: LocalizedStringResource = .guessMySpotMapNoPin
+    /// The satellite choice for this screen alone, as the reveal's landing sets it.
+    /// Nil: the saved choice, which the button changes.
+    var satellite: Binding<Bool>?
 
-    @AppStorage("paeonia.games.guessMySpot.satellite") private var isSatellite = false
+    static let satelliteKey = "paeonia.games.guessMySpot.satellite"
+    @AppStorage(GuessMySpotMap.satelliteKey) private var savedSatellite = false
     @State private var center: CLLocationCoordinate2D?
+    /// Where the map sits in its window, for the picture of it a style switch fades out.
+    @State private var frame: CGRect = .zero
+    /// The map as it looked before the style switched. It fades out over the new style,
+    /// so the switch dissolves instead of cutting while the new images load.
+    @State private var styleCover: UIImage?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -66,18 +75,39 @@ struct GuessMySpotMap: View {
                 }
             }
             .mapStyle(mapStyle)
-            // Room for a pin's head above its foot, so a pin framed near the top edge isn't cut off.
-            .safeAreaPadding(.top, GuessMySpotPin.headSize)
+            // No safe area padding here: a map that opens cold draws inside its padding
+            // for its first frames and jumps when it grows. The cameras leave the room.
             .mapControls {}
             .onMapCameraChange(frequency: .onEnd) { context in
                 center = context.region.center
-                onCameraChange?(context.region)
+                onCameraChange?(context)
             }
             .onTapGesture(coordinateSpace: .local) { point in
                 guard let onTap, let coordinate = proxy.convert(point, from: .local) else { return }
                 dropped(at: GuessMySpotCoordinate(coordinate), onTap)
             }
         }
+        .overlay {
+            if let styleCover {
+                Image(uiImage: styleCover)
+                    .resizable()
+                    // A hole where the button is, so the button's glass doesn't show the old one.
+                    .mask {
+                        Rectangle()
+                            .overlay(alignment: .topTrailing) {
+                                Circle()
+                                    .frame(width: 44, height: 44)
+                                    .padding(PaeoniaSpacing.space8)
+                                    .blendMode(.destinationOut)
+                            }
+                            .compositingGroup()
+                    }
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                    .transition(.opacity)
+            }
+        }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame = $0 }
         .overlay(alignment: .topTrailing) {
             if showsSatelliteButton {
                 satelliteButton
@@ -124,6 +154,10 @@ struct GuessMySpotMap: View {
         .opacity(pin.opacity)
     }
 
+    private var isSatellite: Bool {
+        satellite?.wrappedValue ?? savedSatellite
+    }
+
     private var mapStyle: MapStyle {
         isSatellite
             ? .hybrid(elevation: .flat, pointsOfInterest: .excludingAll)
@@ -156,11 +190,26 @@ struct GuessMySpotMap: View {
         Button {
             PaeoniaHaptics.selection()
             GameSound.tap.play(volume: 0.5)
+            let cover = reduceMotion ? nil : snapshot()
+            styleCover = cover
             withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
-                isSatellite.toggle()
+                if let satellite {
+                    satellite.wrappedValue.toggle()
+                } else {
+                    savedSatellite.toggle()
+                }
+            }
+            guard let cover else { return }
+            Task {
+                // A moment for the new style's first images to draw.
+                try? await Task.sleep(for: .milliseconds(150))
+                guard styleCover === cover else { return }
+                withAnimation(.easeInOut(duration: 0.45)) { styleCover = nil }
             }
         } label: {
-            Image(systemName: isSatellite ? "map.fill" : "globe.europe.africa.fill")
+            // The style the map shows now.
+            Image(systemName: isSatellite ? "globe.europe.africa.fill" : "map.fill")
+                .contentTransition(.symbolEffect(.replace))
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .frame(width: 44, height: 44)
@@ -168,8 +217,24 @@ struct GuessMySpotMap: View {
         }
         .buttonStyle(.plain)
         .padding(PaeoniaSpacing.space8)
-        .accessibilityLabel(Text(isSatellite ? .guessMySpotMapStandard : .guessMySpotMapSatellite))
+        .accessibilityLabel(Text(.guessMySpotMapSatellite))
+        .accessibilityAddTraits(isSatellite ? [.isToggle, .isSelected] : .isToggle)
         .accessibilityIdentifier("guessMySpot.map.satellite")
+    }
+}
+
+extension GuessMySpotMap {
+    /// The map as it is on screen now, cut from its window.
+    private func snapshot() -> UIImage? {
+        guard frame.width > 0, frame.height > 0,
+              let window = UIApplication.shared.connectedScenes
+              .compactMap({ $0 as? UIWindowScene })
+              .flatMap(\.windows)
+              .first(where: \.isKeyWindow)
+        else { return nil }
+        return UIGraphicsImageRenderer(bounds: frame).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: false)
+        }
     }
 }
 
@@ -181,6 +246,48 @@ enum GuessMySpotCamera {
     /// About `meters` across, centered on `spot`.
     static func around(_ spot: GuessMySpotCoordinate, meters: Double) -> MapCameraPosition {
         .region(MKCoordinateRegion(center: spot.location, latitudinalMeters: meters, longitudinalMeters: meters))
+    }
+
+    /// `position` fitted inside `insets` of a map `size` points big, given as the rect
+    /// of the whole map. The reveal frames its camera this way instead of with safe
+    /// area padding, because a new map draws inside its padding for its first frames
+    /// and jumps when it grows, and a padding that changes moves the camera.
+    static func filling(_ position: MapCameraPosition, size: CGSize, insets: EdgeInsets) -> MapCameraPosition {
+        guard let target = position.rect ?? position.region.map(mapRect), size.width > 0, size.height > 0
+        else { return position }
+        let width = max(1, size.width - insets.leading - insets.trailing)
+        let height = max(1, size.height - insets.top - insets.bottom)
+        // Map points per screen point, so the whole target fits.
+        let scale = max(target.width / width, target.height / height)
+        return .rect(MKMapRect(
+            x: target.midX - (insets.leading + width / 2) * scale,
+            y: target.midY - (insets.top + height / 2) * scale,
+            width: size.width * scale,
+            height: size.height * scale
+        ))
+    }
+
+    /// The rect a map at `frame` shows when it lines up point for point with another
+    /// map at `source` that showed `rect`, both frames on the same screen.
+    static func continuing(_ rect: MKMapRect, from source: CGRect, to frame: CGRect) -> MapCameraPosition {
+        let scale = rect.width / max(1, source.width)
+        return .rect(MKMapRect(
+            x: rect.minX + (frame.minX - source.minX) * scale,
+            y: rect.minY + (frame.minY - source.minY) * scale,
+            width: frame.width * scale,
+            height: frame.height * scale
+        ))
+    }
+
+    /// A region's box in map points, measured from its center so it never wraps at the 180th meridian.
+    private static func mapRect(_ region: MKCoordinateRegion) -> MKMapRect {
+        let center = MKMapPoint(region.center)
+        let latitude = region.center.latitude, longitude = region.center.longitude
+        let half = region.span.latitudeDelta / 2
+        let north = MKMapPoint(CLLocationCoordinate2D(latitude: min(85, latitude + half), longitude: longitude))
+        let south = MKMapPoint(CLLocationCoordinate2D(latitude: max(-85, latitude - half), longitude: longitude))
+        let width = MKMapSize.world.width * region.span.longitudeDelta / 360
+        return MKMapRect(x: center.x - width / 2, y: north.y, width: width, height: south.y - north.y)
     }
 
     /// Both spots with room around them. Across the 180th meridian the box goes the short way.
@@ -229,23 +336,26 @@ enum GuessMySpotCamera {
         return .rect(rect)
     }
 
-    /// The landing on the real spot: centered on it, close enough to see the place,
-    /// with the guess still in view. Nil when that would be more than 400 km across,
-    /// as for a far guess, which stays on the view of both spots.
-    static func landing(on spot: GuessMySpotCoordinate, guess: GuessMySpotCoordinate) -> MapCameraPosition? {
-        let metersPerDegree = 111_320.0
-        let north = abs(guess.latitude - spot.latitude) * metersPerDegree
-        var degreesEast = abs(guess.longitude - spot.longitude)
-        if degreesEast > 180 { degreesEast = 360 - degreesEast }
-        let east = degreesEast * metersPerDegree * cos(spot.latitude * .pi / 180)
-        // The guess sits inside the middle 85 percent of the view.
-        let latitudeMeters = max(500, 2 * north / 0.85)
-        let longitudeMeters = max(500, 2 * east / 0.85)
-        guard max(latitudeMeters, longitudeMeters) <= 400_000 else { return nil }
-        return .region(MKCoordinateRegion(
-            center: spot.location,
-            latitudinalMeters: latitudeMeters,
-            longitudinalMeters: longitudeMeters
-        ))
+    /// The landing on the real spot: centered on it and close enough to see the
+    /// streets around it, however far the guess was. A guess within 1 km stays in
+    /// view, and a close one fills it, down to 150 m across.
+    static func landing(on spot: GuessMySpotCoordinate, guess: GuessMySpotCoordinate) -> MapCameraPosition {
+        let center = MKMapPoint(spot.location)
+        var point = MKMapPoint(guess.location)
+        let worldWidth = MKMapSize.world.width
+        if point.x - center.x > worldWidth / 2 {
+            point.x -= worldWidth
+        } else if center.x - point.x > worldWidth / 2 {
+            point.x += worldWidth
+        }
+        let perMeter = MKMapPointsPerMeterAtLatitude(spot.latitude)
+        // The guess sits inside the middle 85 percent of the view. Each side on its
+        // own, so a guess beside the spot fills a wide view instead of a square one.
+        func side(_ offset: Double) -> Double {
+            min(max(150 * perMeter, 2 * offset / 0.85), 2_400 * perMeter)
+        }
+        let width = side(abs(point.x - center.x))
+        let height = side(abs(point.y - center.y))
+        return .rect(MKMapRect(x: center.x - width / 2, y: center.y - height / 2, width: width, height: height))
     }
 }

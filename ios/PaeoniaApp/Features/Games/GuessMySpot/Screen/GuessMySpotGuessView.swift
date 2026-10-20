@@ -1,7 +1,7 @@
 import MapKit
 import SwiftUI
 
-/// The partner's photo on the top half and the whole world on the bottom half.
+/// The partner's photo on top, a tap away from full screen, and the whole world under it.
 /// A tap drops the guess pin, the next tap moves it, and "Lock in my guess"
 /// sends it.
 struct GuessMySpotGuessView: View {
@@ -28,9 +28,10 @@ struct GuessMySpotGuessView: View {
                         viewModel.dropGuess(at: spot)
                     }
                 },
-                onCameraChange: { viewModel.guessRegion = $0 },
+                onCameraChange: { viewModel.guessMapRect = $0.rect },
                 accessibilityValue: viewModel.guessPin == nil ? .guessMySpotMapNoPin : .guessMySpotMapPinDropped
             )
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewModel.guessMapFrame = $0 }
             .overlay(alignment: .bottom) {
                 if viewModel.guessPin == nil {
                     Text(.guessMySpotGuessHint)

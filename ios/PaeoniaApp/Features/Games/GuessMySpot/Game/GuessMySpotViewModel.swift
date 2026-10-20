@@ -123,8 +123,10 @@ final class GuessMySpotViewModel {
     /// The rendered marks and the keys they were rendered for.
     @ObservationIgnored var markImages: [UUID: (key: String, image: UIImage)] = [:]
     @ObservationIgnored var hasFetchedMarks = false
-    /// Where the guess map was when the guess locked in, so the reveal starts there.
-    @ObservationIgnored var guessRegion: MKCoordinateRegion?
+    /// What the guess map showed when the guess locked in, and where on the screen
+    /// it sat, so the reveal starts on the same view in the same place.
+    @ObservationIgnored var guessMapRect: MKMapRect?
+    @ObservationIgnored var guessMapFrame: CGRect?
     /// The round the guess pin belongs to, so a new round starts with no pin.
     @ObservationIgnored var guessPinRoundID: UUID?
     /// The round `roundPhoto` belongs to, and its load.

@@ -13,6 +13,7 @@ struct GuessMySpotHistoryScreen: View {
     @State private var selected: RemoteGuessMySpotRound?
     @State private var oneSpot: GuessMySpotCluster?
     @State private var hasFramed = false
+    @State private var mapSize: CGSize = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -23,6 +24,8 @@ struct GuessMySpotHistoryScreen: View {
             .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
+            // A swipe on the map pans it. Only the left edge goes back.
+            .background(GameEdgeSwipeOnly())
             .task { await viewModel.load() }
             .task { await viewModel.follow() }
             .sheet(item: $selected) { round in
@@ -95,10 +98,13 @@ struct GuessMySpotHistoryScreen: View {
             position: $camera,
             pins: clusters.compactMap(pin),
             onPinTap: { id in open(clusters.first { $0.id.uuidString == id }) },
-            onCameraChange: { span = $0.span }
+            onCameraChange: { span = $0.region.span }
         )
-        .safeAreaPadding(.top, 130)
         .ignoresSafeArea(edges: .bottom)
+        .onGeometryChange(for: CGSize.self) { $0.size } action: {
+            mapSize = $0
+            frameAllRounds()
+        }
         .overlay(alignment: .top) {
             if let records = viewModel.records {
                 GuessMySpotRecordsCard(
@@ -110,11 +116,21 @@ struct GuessMySpotHistoryScreen: View {
                 )
             }
         }
-        .onChange(of: viewModel.rounds.map(\.id), initial: true) { _, _ in
-            guard !hasFramed else { return }
-            hasFramed = true
-            camera = GuessMySpotCamera.framing(viewModel.rounds.compactMap(\.spot))
-        }
+        .onChange(of: viewModel.rounds.map(\.id), initial: true) { _, _ in frameAllRounds() }
+    }
+
+    /// Every pin in view once the map has its size and the rounds are here.
+    private func frameAllRounds() {
+        guard !hasFramed, mapSize != .zero, !viewModel.rounds.isEmpty else { return }
+        hasFramed = true
+        camera = framed(GuessMySpotCamera.framing(viewModel.rounds.compactMap(\.spot)))
+    }
+
+    /// `position` under the records card. The camera keeps that room itself, because a
+    /// map with safe area padding draws inside it for its first frames when it opens cold.
+    private func framed(_ position: MapCameraPosition) -> MapCameraPosition {
+        let insets = EdgeInsets(top: 130, leading: 0, bottom: 0, trailing: 0)
+        return GuessMySpotCamera.filling(position, size: mapSize, insets: insets)
     }
 
     /// One round opens. Rounds at one spot list. Anything else zooms in until it splits.
@@ -127,7 +143,7 @@ struct GuessMySpotHistoryScreen: View {
         } else {
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.6)) {
                 // Its spots are over 300 m apart, so a 500 m minimum always splits it.
-                camera = GuessMySpotCamera.framing(cluster.spots, minimumMeters: 500)
+                camera = framed(GuessMySpotCamera.framing(cluster.spots, minimumMeters: 500))
             }
         }
     }

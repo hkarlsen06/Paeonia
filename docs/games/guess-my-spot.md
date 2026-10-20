@@ -16,8 +16,8 @@ Decided by the developer on 2026-10-18 (the "Guess my spot" bullets in `docs/gam
 - **The photo is stripped.** The phone removes the photo's metadata (camera, time, location) before uploading. The spot travels on its own and stays hidden from the guesser until they guess, as Consensio's spot does.
 - **Turns like Consensio.** The partners take turns, one photo each. It plays async with pushes, and live when both are in the game.
 - **Scoring by kilometres on a world scale.** Up to 5000 points, halving about every 1,500 km, as in GeoGuessr.
-- **The guess screen.** The photo on the top half, pinch to look closer. The map on the bottom half to drop the pin. Apple's standard map in Paeonia's dark look, with a button for satellite.
-- **The reveal.** The map zooms out from the guess, a gold line draws to the real spot, the camera lands there and the distance counts up. Then the photo comes back with the place name and date. Only "where" is guessed, not "when".
+- **The guess screen.** A small photo on top that fills its frame, tap to see it full screen. The map under it takes most of the screen to drop the pin. Apple's standard map in Paeonia's dark look, with a button for satellite.
+- **The reveal.** The map zooms out from the guess, a gold line draws to the real spot, the camera flies down close to it, and the distance counts up on the way. Every reveal ends on the streets around the spot, however far the guess was, because the place is the sender's memory. Then the photo comes back with the place name and date. Only "where" is guessed, not "when".
 - **History.** "A map of our places": one shared map with a pin per round. Each pin opens its photo and both spots.
 - **Name.** "Gjett hvor" in Norwegian.
 
@@ -61,7 +61,7 @@ A couple has one ongoing game. A round has a sender and a guesser.
 
 1. **Pick a photo.** The sender sees their camera roll in the screen and taps a photo.
 2. **Check the spot.** A small photo sits on top and the map takes most of the screen, with a pin at the spot read from the photo, or a prompt to tap the map when the photo has none. A tap moves the pin. "Choose another photo" goes back to the camera roll, as often as the sender likes. "Send to [Name]" sends the round.
-3. **Guess.** The guesser sees the photo on the top half and a map of the whole world on the bottom half. They tap where they think it was taken and tap "Lock in my guess".
+3. **Guess.** The guesser sees a small photo on top and a map of the whole world under it. They tap where they think it was taken and tap "Lock in my guess".
 4. **Reveal.** The camera travels from the guess to the real spot, the distance counts up and the points land. Then the photo comes back with the place name and date.
 5. **Your turn to send.** The guesser picks the next photo. That is the next round.
 
@@ -163,7 +163,7 @@ Sending a photo counts toward the couple's streak through `game_turn_completed`.
 - **Pins.** Each pin is the sender's pin (their color and drawn mark, as everywhere in the game). Tapping one opens the round.
 - **Clusters.** Pins closer than about a ninth of the visible height and a sixth of the width join into one pin with a count, at the newest round's spot (`GuessMySpotClustering`). Tapping a cluster zooms in on its rounds. The zoom may go as close as 500 m across, so it always splits rounds more than 300 m apart. A cluster whose rounds are all within 300 m of each other opens a list sheet instead, because zooming would never split it.
 - **Header.** A glass card over the top of the map: "12 places", then the score as the play style shows it. Together: the shared total, then each partner's closest guess and average. Against each other: each partner's own points with their closest guess and average ("Closest 120 m · On average 340 km").
-- **Detail.** Tapping a pin opens a sheet with the photo (pinch to zoom), the place name and date, a small map with both pins and the line between them, "You sent this one" or "[Name] sent this one", and "[Name] guessed 3.2 km off · 4,993 points".
+- **Detail.** Tapping a pin opens a sheet with the photo (tap to see it full screen), the place name and date, a small map with both pins and the line between them, "You sent this one" or "[Name] sent this one", and "[Name] guessed 3.2 km off · 4,993 points".
 - **Delete.** The sender's detail has "Delete this photo" once both partners saw the reveal (`can_delete`). A confirmation says the partner won't see it anymore and the points stay. The round leaves the map at once and the delete goes through the pending operations. A refusal drops it with the shared banner, and the next read puts the round back.
 - The map opens framing every pin. Only guessed rounds are listed, so an open round's spot never leaves the server. The server returns the newest 500.
 
@@ -192,8 +192,12 @@ Copy keys start with `guessMySpot.`, so their Swift symbols start with `guessMyS
 
 `GuessMySpotMap` is the one map every phase shares.
 
-- Apple's standard map, flat, muted, with no points of interest, in the dark color scheme. The satellite button in its top trailing corner switches to the hybrid satellite map with labels, and back. The choice is kept on this phone (`@AppStorage`).
+- Apple's standard map, flat, muted, with no points of interest, in the dark color scheme. The satellite button in its top trailing corner switches to the hybrid satellite map with labels, and back. Its icon shows the style the map has now: `map.fill` for the standard map, `globe.europe.africa.fill` for satellite. VoiceOver reads it as the switch "Satellite", selected while satellite shows. The choice is kept on this phone (`@AppStorage`).
+- A switch dissolves: the map's picture from just before the switch covers the new style and fades out over 0.45 s after 0.15 s, while the new images load. Reduce Motion switches at once.
 - Pan and zoom only. A tap drops this person's pin or moves it.
+- The game's screens and "Our guesses" turn off the full-width back swipe (`GameEdgeSwipeOnly`), so a swipe or pinch on the map moves the map. The swipe from the left edge still goes back.
+- Nothing over the map takes a pan or pinch it doesn't need. The reveal's result card has nothing to tap, so a pan or pinch on it moves the map under it. A photo that fills its box (`GuessMySpotPhotoPane`, `GuessMySpotPhotoCaption`) takes touches only inside the box, not where the filled image runs past its edge.
+- The map has no safe area padding. A map that opens cold draws inside its padding for its first frames and then jumps when it grows. A screen that keeps room over the map, such as the reveal's top room and card or the records card on "Our guesses", fits its camera into that room itself (`GuessMySpotCamera.filling`).
 - A pin (`GuessMySpotPin`) is Consensio's pin shape: a 36 pt round head on a thin stem, filled with its owner's color (`.boardGameMine` pink and `.boardGamePartner` lavender) with the owner's drawn mark or initial (`BoardMarkView`). The stem's foot is the spot.
 - A drop plays `selection()` and `GameSound.tap` at 0.6. The pin appears at once: a map's pins don't take SwiftUI's animations.
 - VoiceOver. The map is one element with the label "Map" and, where a tap drops a pin, the custom action "Drop the pin in the middle", which drops it at the center of the map. Its value is "Pin dropped" or "No pin yet". On "Our guesses" each pin is a button that reads its place and date.
@@ -242,8 +246,8 @@ Tapping a photo plays `selection()` and `tap`, reads it, and opens the check. Wh
 
 Layout.
 
-1. The photo on the top quarter, aspect fit on `.paeoniaSurfacePrimary`, rounded `radius16`. The sender just picked it, so it is only a reminder.
-2. The map on the other three quarters, rounded `radius16`, with this person's pin. It is big so it is easy to pan and zoom.
+1. The photo on top at the guess screen's size, filling its frame, rounded `radius16`. A tap opens it full screen.
+2. The map under it, rounded `radius16`, with this person's pin. It takes most of the screen so it is easy to pan and zoom.
 3. Over the map's lower edge before the first pin, the hint "Tap the map where it was taken." in a glass capsule, as on the guess screen.
 4. Under the map: the title "Is this the spot?" once there is a pin, or "Where was this?" before. Under it, the place name with `mappin.and.ellipse` once it is known. The line keeps its height while there is no name and while a moved pin is looked up again, and each line under the map is one line long, so the map never changes size on this screen. The map opens on the spot, near home, or on the world in the first frame.
 5. A quiet line: "We take the place and time out of the photo. [Name] only sees the picture."
@@ -264,14 +268,13 @@ Layout.
 | `map.noPin` | No pin yet | Ingen nål ennå |
 | `map.pinDropped` | Pin dropped | Nålen er satt |
 | `map.satellite` | Satellite | Satellitt |
-| `map.standard` | Map | Kart |
 | `photo.a11y` | The photo. Pinch to look closer. | Bildet. Klyp for å se nærmere. |
 
 ### 3. Waiting
 
 Two cases.
 
-- **Waiting for the guess.** The photo I sent on the top half and the map on the bottom half, with my pin at the spot at 0.6 opacity. Live, the partner's pin appears where they tap, and the camera frames both pins. While the partner's pin is within 25 km, my pin shows at full strength and glows gold. Title "[Name] is guessing" while live, "Waiting for [Name]" otherwise.
+- **Waiting for the guess.** The photo I sent on top and the map under it, as on the guess screen, with my pin at the spot at 0.6 opacity. Live, the partner's pin appears where they tap, and the camera frames both pins. While the partner's pin is within 25 km, my pin shows at full strength and glows gold. Title "[Name] is guessing" while live, "Waiting for [Name]" otherwise.
 - **Waiting for a photo.** The partner's avatar, 96 pt, with a breathing ring while they are in the game. Title "[Name] is picking a photo" while their role is `choosing`, "Waiting for [Name]" otherwise.
 
 Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." Away: "We'll tell you when [Name] guesses." or "We'll tell you when it's your turn." When the send is still on the phone after a failed try, the shared offline line shows, or "We couldn't send your move yet" with Try again. When the partner's photo arrives while this screen waits for it, the guess opens with `partnerDrawingReceived()` and `nudge`.
@@ -292,8 +295,8 @@ Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." 
 Layout.
 
 1. The live row (`GameLiveRow`): "[Name] is watching" with the accent ring while the sender is in the game, or "[Name] will see your guess later".
-2. The photo on the top half, pinch and double tap to zoom (`PaeoniaZoomableImageView`). While it downloads, a spinner. When it can't be fetched, "We couldn't get the photo. Try again in a moment." with Try again.
-3. The map on the bottom half, on the whole world, with the hint "Tap the map where you think it is." over it until the first pin.
+2. The photo on top, at 30% of the room it shares with the map (`GuessMySpotPhotoPane.splitShare`). It fills its frame, and a tap or a pinch outward opens it in the full-screen viewer (`paeoniaImageViewer`) to pinch and zoom. While it downloads, a spinner. When it can't be fetched, "We couldn't get the photo. Try again in a moment." with Try again.
+3. The map under it, on the whole world, with the hint "Tap the map where you think it is." over it until the first pin.
 4. Pinned bottom: primary "Lock in my guess" (`lock.fill`), off until there is a pin.
 
 Lock in fires `drawingSent()` and `send`, and the reveal opens at once.
@@ -310,22 +313,22 @@ Lock in fires `drawingSent()` and `send`, and the reveal opens at once.
 
 Purpose. The guesser sees how far their guess was from the real spot, and the sender sees how well their partner knows the place.
 
-Both partners see the same reveal, always from the guess to the real spot. The guesser's phone plays it right after the guess. It starts from the map as they left it when the guess pin is in view and the map shows less than a continent, and otherwise on the guess at about 300 km across. The sender's phone starts on the guess at about 60 km across. The photo half slides up and away, and the map fills the screen. The map keeps the result card's height as bottom padding from the start, so every camera move frames the part of the map the card leaves, and nothing slides when the card rises. On a wide screen the reveal keeps the guess screen's columns. The photo starts on the left half and slides away to the left, the card rises in a left column with the button under it, and the map keeps that column as padding on its left, so the camera frames the map to the right of the card. A map's pins and line don't take SwiftUI's animations, so the timeline steps the pulses, the line and the drop itself, reading the clock about 60 times a second.
+Both partners see the same reveal, always from the guess to the real spot. The guesser's phone plays it right after the guess. It starts from the map as they left it when the guess pin is in view and the map shows less than a continent, and otherwise on the guess at about 300 km across. The sender's phone starts on the guess at about 60 km across. The photo slides up and away, and the map fills the screen. Every camera move frames the part of the map the card leaves, with the card's height kept from the start, so nothing slides when the card rises. On a wide screen the reveal keeps the guess screen's columns. The photo starts on the left and slides away to the left, the card rises in a left column with the button under it, and the camera frames the map to the right of that column. A map's pins and line don't take SwiftUI's animations, so the timeline steps the pulses, the line and the drop itself, reading the clock about 60 times a second.
 
 Beats, in seconds after the reveal starts.
 
 | Time | What happens |
 |---|---|
-| 0.00 | The photo slides up and fades out while the screen crosses over from the guess, and the map fills the screen (`meaningfulMoment`). The camera eases to its start over 0.25 s under that fade. The guess pin stands. On the guesser's phone the reveal waits here until the server answers. |
+| 0.00 | The photo slides up and fades out while the screen crosses over from the guess, and the map fills the screen (`meaningfulMoment`). The camera starts there in the first frame. On the guesser's phone, when the guess map showed the guess pin and less than a continent, the reveal's map lines up point for point with where the guess map sat, so the two maps match under the fade. The screen only fades in here, without the rise the other phases use. The guess pin stands. On the guesser's phone the reveal waits here until the server answers. |
 | 0.20, 0.45, 0.70 | Three build-up beats. The guess pin's head pulses 1 to 1.16 and back, each with `streakTick` and `tick`. |
 | 0.90 | The camera zooms out over 0.9 s until both spots fit, with room around them. |
 | 1.55 | The line draws from the guess toward the real spot along the great circle over 0.7 s, easing out: a 4 pt `.paeoniaInkGold` line on a 12 pt gold glow at 0.3, with square ends. A far guess draws a dashed 4 pt `.paeoniaTextSecondary` line instead, as in Consensio. |
 | 2.30 | The real pin falls 70 pt onto the end of the line over 0.25 s. `answerRevealed()` and `chime` play as it hits, at 2.55. The map keeps 110 pt at its top for the distance capsule and the fall. The screen holds still for 0.3 s. |
-| 2.85 | The camera lands on the real spot over 1.0 s, centered on it and wide enough that the guess stays in view (at least 500 m across, so a close guess lands closer than the view of both spots). A far guess, which would need more than 400 km, stays on the view of both spots. The distance capsule appears at the top and counts up from 0 over 0.7 s in 10 steps, with plain digits and the width of the final number. |
-| 3.60 | The verdict. Both heads glow gold over 0.3 s (0.8 for So close and Close, 1 for Spot on), a 4 pt gold ring widens from the real pin's head from 36 to 72 pt and fades over 0.4 s, and the distance capsule pulses 1 to 1.1 and back. Far has no glow or ring. See below. |
-| 3.90 | The photo comes back: the result card rises 120 pt on a spring (0.3 s, bounce 0.1) with a 0.2 s fade, with the photo, the place name and date on it, the verdict title and line. |
-| 4.20 | The shared total counts up over 0.7 s in 10 steps, with "+4,993" beside it. |
-| 4.90 | The button appears. |
+| 2.85 | The camera flies down to the real spot over 1.8 s and lands centered on it, at most 2.4 km across, close enough to see the streets. The map turns to satellite as the flight starts, so the landing shows the real place, and the satellite button can turn it back once the reveal settles. This lasts for the reveal only and doesn't change the saved choice. While the reveal builds up, the phone draws the satellite views of both spots, of 60 km around the spot and of the landing off screen (`MKMapSnapshotter`), so their images are ready and the map doesn't go blank on the way down. A guess within 1 km stays in view, inside the middle 85 percent of it. The view's width and height each fit the guess on their own, down to 150 m, so a close guess fills the view. The line runs off the screen toward a farther guess. The distance capsule appears at the top and counts up from 0 over 1.35 s in 10 steps while the camera travels, with plain digits and the width of the final number. |
+| 4.45 | The verdict, as the flight settles. Both heads glow gold over 0.3 s (0.8 for So close and Close, 1 for Spot on), a 4 pt gold ring widens from the real pin's head from 36 to 72 pt and fades over 0.4 s, and the distance capsule pulses 1 to 1.1 and back. Far has no glow or ring. See below. |
+| 4.75 | The photo comes back: the result card rises 120 pt on a spring (0.3 s, bounce 0.1) with a 0.2 s fade, with the photo, the place name and date on it, the verdict title and line. |
+| 5.05 | The shared total counts up over 0.7 s in 10 steps, with "+4,993" beside it. |
+| 5.75 | The button appears. |
 
 Verdict.
 
@@ -335,7 +338,7 @@ Verdict.
 
 The result card. A `.paeoniaSurfaceSecondary` card on `radius28` over the bottom of the map. The photo fills its top, 180 pt tall (aspect fill, rounded `radius16`), with the place name in `bodyEmphasis` and the date in `caption` over a dark gradient at its bottom. Under the photo: the verdict title (`largeTitle`), the line (`body`, `.paeoniaTextSecondary`), and the score line. Together: both avatars, the counting total, "+points" and "points together". Against each other: each partner's avatar and own total, with "+points" beside the guesser's as it counts up.
 
-Everything is tappable from 3.60. A tap jumps to the settled state, without repeating haptics. Reduce Motion: no pulses, zoom, line draw, drop, ring or bloom. The map shows both pins and the line framed together, the card is up, and only the verdict haptic and sound play.
+Everything is tappable from 4.45. A tap jumps to the settled state, without repeating haptics. Reduce Motion: no pulses, zoom, line draw, drop, ring or bloom. The map shows both pins and the line framed together, the card is up, and only the verdict haptic and sound play.
 
 Buttons. The guesser gets the primary "Your turn to send a photo". The sender gets "Continue", which goes to the guess when the partner already sent the next photo, and to waiting otherwise. Leaving the reveal marks it seen once its verdict has shown. A reveal left before the verdict plays again next time.
 
@@ -436,7 +439,7 @@ Artwork (`GuessMySpotHubArtwork`), following `docs/games/hub-artwork.md`. `GameH
 
 ### Wide layouts and Dynamic Type
 
-- Wide (700 pt or more and wider than tall): the photo goes on the left and the map on the right, for check, guess and waiting. Guess and waiting split the room in half. Check gives the photo a quarter.
+- Wide (700 pt or more and wider than tall): the photo goes on the left and the map on the right, for check, guess and waiting. The photo gets 30% of the width there too.
 - Nothing on the photo and map screens scrolls, so the map's pan and pinch never fight a scroll view. Larger text takes its room from the photo and the map, and the button stays pinned.
 - iPad keeps the tab bar.
 

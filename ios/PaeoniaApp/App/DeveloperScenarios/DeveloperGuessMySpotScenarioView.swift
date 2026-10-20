@@ -1,6 +1,5 @@
 #if DEBUG
   import Foundation
-  import MapKit
   import SwiftUI
 
   /// One round of "Our places".
@@ -239,18 +238,14 @@
       }
     }
 
-    /// Drops the guess pin on the guess screen, as if Alex zoomed in and tapped, then
-    /// lets the server's answer arrive.
+    /// Drops the guess pin on the guess screen, as if Alex tapped, then lets the
+    /// server's answer arrive. The guess map shows the whole world, so the reveal
+    /// opens on the guess at about 300 km across.
     private func playStagedReveal() async {
       guard let revealed = DeveloperGuessMySpotScenarioFactory.revealed(for: scenario),
             let guess = revealed.currentRound?.guess
       else { return }
       let game = hub.game
-      game.guessRegion = MKCoordinateRegion(
-        center: guess.location,
-        latitudinalMeters: 300_000,
-        longitudinalMeters: 300_000
-      )
       game.dropGuess(at: guess)
       try? await Task.sleep(for: .seconds(2))
       await game.dependencies.guessMySpotCache.saveState(revealed, ownerUserID: DeveloperGamesFixture.me)

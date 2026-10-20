@@ -77,7 +77,7 @@ struct LudoScreen: View {
             live = nil
         }
         // A drag throws the die, so only the edge swipe goes back.
-        .background(LudoEdgeSwipeOnly())
+        .background(GameEdgeSwipeOnly())
     }
 
     private func startLive(coupleID: UUID?) {

@@ -21,19 +21,20 @@ nonisolated struct GuessMySpotRevealSchedule: Sendable {
     var drop: TimeInterval = 2.30
     /// How long the real pin falls. The chime plays when it hits.
     var fallDuration: TimeInterval = 0.25
-    /// The camera lands on the real spot, and the distance counts up.
+    /// The camera flies down to the real spot, and the distance counts up on the way.
     /// After the pin has planted and the screen held still for a moment.
     var land: TimeInterval = 2.85
-    var landDuration: TimeInterval = 1.0
+    var landDuration: TimeInterval = 1.8
     var distanceSteps = 10
-    var distanceGap: TimeInterval = 0.07
-    var verdict: TimeInterval = 3.60
+    var distanceGap: TimeInterval = 0.15
+    /// As the flight settles.
+    var verdict: TimeInterval = 4.45
     /// The result card rises with the photo.
-    var card: TimeInterval = 3.90
-    var points: TimeInterval = 4.20
+    var card: TimeInterval = 4.75
+    var points: TimeInterval = 5.05
     var pointSteps = 10
     var pointGap: TimeInterval = 0.07
-    var actions: TimeInterval = 4.90
+    var actions: TimeInterval = 5.75
     /// How long the petal bloom runs. It is `GamePetalBloom.duration`.
     var bloomDuration: TimeInterval = 0.9
 

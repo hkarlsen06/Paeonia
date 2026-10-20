@@ -16462,7 +16462,7 @@
       }
     },
     "guessMySpot.map.satellite" : {
-      "comment" : "VoiceOver label of the button that switches the map to satellite images.",
+      "comment" : "VoiceOver label of the switch on the map that shows satellite images. VoiceOver adds whether it is on.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -16475,24 +16475,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Satellitt"
-          }
-        }
-      }
-    },
-    "guessMySpot.map.standard" : {
-      "comment" : "VoiceOver label of the button that switches the map back from satellite images.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Map"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kart"
           }
         }
       }

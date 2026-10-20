@@ -1,10 +1,11 @@
 import SwiftUI
 import UIKit
 
-/// Turns off the full-width back swipe while the Ludo board is open, so a drag
-/// that throws the die never leaves the screen. The swipe from the left edge
-/// still goes back. The full-width swipe comes back when the screen closes.
-struct LudoEdgeSwipeOnly: UIViewRepresentable {
+/// Turns off the full-width back swipe while a game screen is open, so a drag on
+/// the board, such as throwing Ludo's die or panning Guess my spot's map, never
+/// leaves the screen. The swipe from the left edge still goes back. The
+/// full-width swipe comes back when the screen closes.
+struct GameEdgeSwipeOnly: UIViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
@@ -32,8 +33,11 @@ struct LudoEdgeSwipeOnly: UIViewRepresentable {
 
         func disableContentPop(from view: UIView) {
             guard recognizer == nil,
-                  let navigationController = view.ludoNavigationController(),
-                  let contentPop = navigationController.interactiveContentPopGestureRecognizer
+                  let navigationController = view.gameNavigationController(),
+                  let contentPop = navigationController.interactiveContentPopGestureRecognizer,
+                  // A screen pushed over another game screen leaves the swipe to that one,
+                  // so going back to it doesn't turn the swipe on.
+                  contentPop.isEnabled
             else { return }
             contentPop.isEnabled = false
             recognizer = contentPop
@@ -47,7 +51,7 @@ struct LudoEdgeSwipeOnly: UIViewRepresentable {
 }
 
 private extension UIView {
-    func ludoNavigationController() -> UINavigationController? {
+    func gameNavigationController() -> UINavigationController? {
         var responder: UIResponder? = self
         while let current = responder {
             if let controller = current as? UIViewController, let navigation = controller.navigationController {

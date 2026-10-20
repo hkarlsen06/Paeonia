@@ -27,6 +27,8 @@ struct GuessMySpotScreen: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { toolbarItems }
         .preferredColorScheme(.dark)
+        // A swipe on the map pans it. Only the left edge goes back.
+        .background(GameEdgeSwipeOnly())
         .task { await viewModel.start() }
         .onAppear { viewModel.prefersReducedMotion = reduceMotion }
         .onChange(of: reduceMotion) { _, newValue in viewModel.prefersReducedMotion = newValue }
@@ -53,10 +55,11 @@ struct GuessMySpotScreen: View {
 
     // MARK: Phases
 
+    /// The reveal only fades in, so its map lines up with the guess map it replaces.
     private var phaseTransition: AnyTransition {
-        reduceMotion
-            ? .opacity
-            : .asymmetric(insertion: .opacity.combined(with: .offset(y: 12)), removal: .opacity)
+        if reduceMotion { return .opacity }
+        if case .reveal = viewModel.phase { return .opacity }
+        return .asymmetric(insertion: .opacity.combined(with: .offset(y: 12)), removal: .opacity)
     }
 
     /// Changes when the screen needs a new view, so a reveal starts fresh for each

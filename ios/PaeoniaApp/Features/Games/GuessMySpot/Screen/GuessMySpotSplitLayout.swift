@@ -1,12 +1,10 @@
 import SwiftUI
 
-/// The photo on the top half and the map on the bottom half, or side by side on a
-/// wide screen, with text above and under them and a pinned button bar. Nothing
-/// here scrolls, so the map's pan and pinch never fight a scroll view. Larger text
-/// takes its room from the photo and the map. `photoShare` is the photo's part of
-/// that room, so a screen whose photo the person already knows can give the map more.
+/// A small photo on top and the map under it, or side by side on a wide screen,
+/// with text above and under them and a pinned button bar. Nothing here scrolls,
+/// so the map's pan and pinch never fight a scroll view. Larger text takes its room
+/// from the photo and the map.
 struct GuessMySpotSplitLayout<Header: View, Photo: View, MapPane: View, Footer: View, Bottom: View>: View {
-    var photoShare: CGFloat = 0.5
     @ViewBuilder var header: Header
     @ViewBuilder var photo: Photo
     @ViewBuilder var map: MapPane
@@ -19,9 +17,10 @@ struct GuessMySpotSplitLayout<Header: View, Photo: View, MapPane: View, Footer: 
         VStack(spacing: PaeoniaSpacing.space12) {
             header
             // Read in the same pass that lays out the panes, so the photo never
-            // starts at half and then shrinks.
+            // starts at another size and then changes.
             GeometryReader { proxy in
                 let spacing = PaeoniaSpacing.space12
+                let photoShare = GuessMySpotPhotoPane.splitShare
                 if isWide {
                     HStack(spacing: spacing) {
                         pane { photo }

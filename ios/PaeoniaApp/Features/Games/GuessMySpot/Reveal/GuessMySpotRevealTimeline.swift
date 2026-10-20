@@ -129,7 +129,9 @@ final class GuessMySpotRevealTimeline {
     /// The first frame of a held reveal: the guess pin alone on the map.
     func hold() {
         guard plan == nil else { return }
-        photoAway = true
+        withAnimation(PaeoniaMotion.meaningfulMoment) {
+            photoAway = true
+        }
     }
 
     /// Starts the reveal. Later calls do nothing.
