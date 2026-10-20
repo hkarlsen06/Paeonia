@@ -13845,6 +13845,42 @@
         }
       }
     },
+    "games.hub.section.more" : {
+      "comment" : "Games tab heading above the grid of the other games, shown under the Right now cards",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More games"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere spill"
+          }
+        }
+      }
+    },
+    "games.hub.section.rightNow" : {
+      "comment" : "Games tab heading above the games the partner is in or that wait for this person",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akkurat nå"
+          }
+        }
+      }
+    },
     "games.hub.status.notStarted" : {
       "comment" : "Hub status before the couple has played Draw and Guess",
       "extractionState" : "manual",

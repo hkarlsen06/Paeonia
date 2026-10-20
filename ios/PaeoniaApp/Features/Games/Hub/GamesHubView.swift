@@ -1,15 +1,18 @@
 import SwiftUI
 
-/// The list of built games, one card each. The game the partner is in comes
-/// first, then games waiting for this person, then catalog order. A wide iPad shows
-/// two columns.
+/// The built games. "Right now" shows full cards for the games the partner is in, then
+/// the games waiting for this person. Every other game is a small tile in a grid below,
+/// in catalog order, so the whole catalog fits in about two screens. Without a game for
+/// "Right now", the grid is all there is and has no heading. A wide iPad shows two
+/// columns of full cards.
 ///
-/// A move in a game can change that order while the game is open. The card the
-/// game opened from then keeps its place on screen, so closing the game lands on it.
+/// A move in a game can move its card between the two while the game is open. The card
+/// the game opened from then keeps its place on screen, so closing the game lands on it.
 struct GamesHubView: View {
     let viewModel: GamesViewModel
     let isShowingGame: Bool
     let open: (GamesDestination) -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isChangingSettings = false
     @State private var isWideLayout = false
     @State private var cardFrames = CardFrames()
@@ -19,22 +22,18 @@ struct GamesHubView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
-                    ForEach(viewModel.hubGames, id: \.kind) { game in
-                        card(for: game)
-                    }
-                }
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space16)
-                .padding(.bottom, PaeoniaSpacing.space32)
-                .paeoniaReadableWidth(
-                    isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
-                )
+                sections
+                    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                    .padding(.top, PaeoniaSpacing.space16)
+                    .padding(.bottom, PaeoniaSpacing.space32)
+                    .paeoniaReadableWidth(
+                        isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
+                    )
             }
             .onScrollGeometryChange(for: CGFloat.self) { $0.containerSize.height } action: { _, height in
                 viewportHeight = height
             }
-            .onChange(of: viewModel.hubGames.map(\.kind)) {
+            .onChange(of: viewModel.hubFeaturedGames.map(\.kind)) {
                 guard isShowingGame, let openedCard else { return }
                 proxy.scrollTo(openedCard.kind, anchor: openedCard.anchor)
             }
@@ -69,6 +68,41 @@ struct GamesHubView: View {
         .accessibilityIdentifier("games.hub")
     }
 
+    private var sections: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+            let featured = viewModel.hubFeaturedGames
+            if !featured.isEmpty {
+                section(.gamesHubSectionRightNow) {
+                    featuredGrid(featured)
+                }
+            }
+            section(featured.isEmpty ? nil : .gamesHubSectionMore) {
+                LazyVGrid(columns: gridColumns, spacing: PaeoniaSpacing.space16) {
+                    ForEach(viewModel.hubGridGames, id: \.kind) { game in
+                        card(for: game)
+                            .environment(\.gameHubCardIsCompact, true)
+                    }
+                }
+            }
+        }
+    }
+
+    /// One card per row, two on a wide iPad. A `Grid` rather than a lazy grid, so the
+    /// two cards in a row share the taller one's height.
+    private func featuredGrid(_ featured: [any GameHubModel]) -> some View {
+        let perRow = isWideLayout ? 2 : 1
+        let spacing = PaeoniaSpacing.sectionSpacing
+        return Grid(horizontalSpacing: spacing, verticalSpacing: spacing) {
+            ForEach(Array(stride(from: 0, to: featured.count, by: perRow)), id: \.self) { start in
+                GridRow(alignment: .top) {
+                    ForEach(featured[start ..< min(start + perRow, featured.count)], id: \.kind) { game in
+                        card(for: game)
+                    }
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private func card(for game: any GameHubModel) -> some View {
         let card = game.card(viewModel.cardContext(for: game.kind, isOnHub: true)) { destination in
@@ -76,15 +110,34 @@ struct GamesHubView: View {
             open(destination)
         }
         if let card {
-            card.onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView) } action: { frame in
+            card.id(game.kind).onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView) } action: { frame in
                 cardFrames.frames[game.kind] = frame
             }
         }
     }
 
-    private var columns: [GridItem] {
-        let column = GridItem(.flexible(), spacing: PaeoniaSpacing.sectionSpacing, alignment: .top)
-        return isWideLayout ? [column, column] : [column]
+    private func section(
+        _ title: LocalizedStringResource?,
+        @ViewBuilder content: () -> some View
+    ) -> some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            if let title {
+                Text(title)
+                    .font(PaeoniaTypography.sectionTitle)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            content()
+        }
+    }
+
+    /// Two tiles across on every iPhone, more on iPad. With the largest text sizes a tile
+    /// takes the full width, so its name and status still fit.
+    private var gridColumns: [GridItem] {
+        if dynamicTypeSize.isAccessibilitySize {
+            return [GridItem(.flexible(), alignment: .top)]
+        }
+        return [GridItem(.adaptive(minimum: 150), spacing: PaeoniaSpacing.space16, alignment: .top)]
     }
 }
 

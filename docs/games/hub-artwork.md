@@ -22,6 +22,8 @@ A card's picture is laid out on a canvas of 1024 by 1536 pixels. It is as wide a
 | Gap | 640 to 720 | Nothing. The backdrop starts going out of focus here, and the partner chip sits right under it. |
 | Text | 720 to 1536 | The backdrop continues, out of focus, under the text. On it, centered: the partner chip when the partner is in the game, then the name, the status line, the button and the links. |
 
+The hub's grid shows most games as small tiles, about 160 pt wide on iPhone, with the same picture and beat. The canvas scales down with the tile, so the zones above hold there too. A tile has no badge, so the badge zone is only walls.
+
 The card's text starts at 720 pixels at every width (`GameHubArtworkLayout.sceneShare`), so the scene keeps its shape on every phone and on iPad. Under the text the backdrop goes out of focus with a Gaussian blur (radius 20 pt), with a light plum shadow on top, 25 percent at the name and 50 percent at the bottom. Both fade in from 24 pt above the text to 16 pt into it. There is no frosted material and no color panel.
 
 An object is placed with `GameHubPlacement`: the middle of its lower edge and its width, in canvas pixels, and its width divided by its height as the import measured it. `GameHubObject` draws it with a soft shadow right under its lower edge, so it stands on the floor. Props that lie on something else, such as a pen, go without the shadow.
@@ -70,7 +72,7 @@ The daily question card on the Home tab is in the same series (`DailyPromptHeroA
 
 ## Checklist
 
-1. Open the hub with the `games-hub-partner-here` and `games-hub-board-games` developer scenarios, so the partner chip and the score badge show. Look at the cards on the narrowest iPhone and on iPad.
+1. Open the hub with the `games-hub-partner-here` and `games-hub-board-games` developer scenarios, so the partner chip and the score badge show. Look at the full cards and the grid tiles on the narrowest iPhone and on iPad.
 2. The zones hold: nothing under or near the badge, nothing past 640, nothing within 110 pixels of the sides.
 3. `art_asset.py text` passes for the backdrop after any change to it.
 4. The beat lands on its spot, and the last frame looks like one picture.

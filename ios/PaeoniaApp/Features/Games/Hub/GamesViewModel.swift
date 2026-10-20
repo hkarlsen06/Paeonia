@@ -124,14 +124,20 @@ final class GamesViewModel {
         games.contains { $0.isYourTurn }
     }
 
-    /// The hub's order: the game the partner is in first, then games waiting for
-    /// this person, then catalog order.
-    var hubGames: [any GameHubModel] {
-        Self.hubOrder(
+    /// The hub's full cards: the games the partner is in, then the games waiting for
+    /// this person in catalog order.
+    var hubFeaturedGames: [any GameHubModel] {
+        Self.featuredOrder(
             games.map(\.kind),
             partnerGames: partnerGameKinds,
             yourTurn: Set(games.filter(\.isYourTurn).map(\.kind))
         ).compactMap { game($0) }
+    }
+
+    /// The hub's grid of small cards: every other game, in catalog order.
+    var hubGridGames: [any GameHubModel] {
+        let featured = hubFeaturedGames.map(\.kind)
+        return games.filter { !featured.contains($0.kind) }
     }
 
     /// The game the partner opened most recently, while they have it open. The
@@ -402,8 +408,8 @@ extension GamesViewModel {
     }
 
     /// The games the partner is in, then the games waiting for this person in
-    /// catalog order, then the rest in catalog order.
-    nonisolated static func hubOrder(
+    /// catalog order.
+    nonisolated static func featuredOrder(
         _ kinds: [GameKind],
         partnerGames: [GameKind],
         yourTurn: Set<GameKind>
@@ -411,6 +417,5 @@ extension GamesViewModel {
         let catalog = GameKind.allCases.filter(kinds.contains)
         let rest = catalog.filter { !partnerGames.contains($0) }
         return partnerGames.filter(catalog.contains) + rest.filter(yourTurn.contains)
-            + rest.filter { !yourTurn.contains($0) }
     }
 }
