@@ -20,7 +20,8 @@ struct GuessMySpotScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .navigationTitle(Text(.guessMySpotTitle))
+        // The bell and the score don't both fit beside the title, so the title gives way.
+        .navigationTitle(showsInviteBell ? Text(verbatim: "") : Text(.guessMySpotTitle))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(viewModel.showsCheck)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
@@ -109,6 +110,15 @@ struct GuessMySpotScreen: View {
 
     // MARK: Toolbar
 
+    /// Matches where the phase views put `gameInviteToolbar`'s bell.
+    private var showsInviteBell: Bool {
+        guard viewModel.invite != .hidden, !viewModel.showsCheck else { return false }
+        switch viewModel.phase {
+        case .send, .guess, .waitingForGuess, .waitingForPhoto: return true
+        case .loading, .starting, .reveal: return false
+        }
+    }
+
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         if viewModel.showsCheck {
@@ -165,6 +175,7 @@ struct GuessMySpotPointsLink: View {
                 .accessibilityValue(Text(GuessMySpotScoreCapsule.accessibilityText(score, partnerName: partner.name)))
         }
         .buttonStyle(.plain)
+        .fixedSize()
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .accessibilityIdentifier("guessMySpot.history.open")
     }

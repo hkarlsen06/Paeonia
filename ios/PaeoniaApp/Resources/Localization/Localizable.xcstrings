@@ -13989,6 +13989,60 @@
         }
       }
     },
+    "games.invite.confirm.message" : {
+      "comment" : "Message in the alert that asks before notifying the partner that you want to play. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will get a notification on their phone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ får et varsel på telefonen."
+          }
+        }
+      }
+    },
+    "games.invite.confirm.send" : {
+      "comment" : "Button in the alert that sends the partner a notification asking them to play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send"
+          }
+        }
+      }
+    },
+    "games.invite.confirm.title" : {
+      "comment" : "Title of the alert that asks before the bell in a game's top bar notifies the partner. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell %@ you want to play?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si fra til %@ at du vil spille?"
+          }
+        }
+      }
+    },
     "games.invite.sent" : {
       "comment" : "Label of the invite button after an invite was sent",
       "extractionState" : "manual",
@@ -16697,6 +16751,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gjetningen til %1$@ var %2$@ unna. %3$@. Poeng: %4$@."
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.camera.both" : {
+      "comment" : "VoiceOver label of the reveal's button that zooms the map out to show both pins.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show both pins"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis begge nålene"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.camera.mine" : {
+      "comment" : "VoiceOver label of the reveal's button that moves the map to your own pin.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show my pin"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis nålen min"
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.camera.partner" : {
+      "comment" : "VoiceOver label of the reveal's button that moves the map to the partner's pin. %@ the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show %@'s pin"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis nålen til %@"
           }
         }
       }

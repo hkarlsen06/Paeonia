@@ -50,6 +50,9 @@ struct GuessMySpotMap: View {
     /// The satellite choice for this screen alone, as the reveal's landing sets it.
     /// Nil: the saved choice, which the button changes.
     var satellite: Binding<Bool>?
+    /// False while something else covers the map, such as the reveal's pictures, so
+    /// a style switch under it skips the picture of the window it costs.
+    var coversStyleSwitch = true
 
     static let satelliteKey = "paeonia.games.guessMySpot.satellite"
     @AppStorage(GuessMySpotMap.satelliteKey) private var savedSatellite = false
@@ -224,7 +227,7 @@ extension GuessMySpotMap {
     /// Lays the map as it looked over the new style and fades it out, so a style
     /// switch dissolves instead of showing gray while the new images load.
     private func coverStyleSwitch() {
-        guard !reduceMotion, let cover = snapshot() else { return }
+        guard coversStyleSwitch, !reduceMotion, let cover = snapshot() else { return }
         styleCover = cover
         Task {
             // A moment for the new style's first images to draw.
@@ -275,13 +278,20 @@ enum GuessMySpotCamera {
     /// of the whole map. The reveal frames its camera this way instead of with safe
     /// area padding, because a new map draws inside its padding for its first frames
     /// and jumps when it grows, and a padding that changes moves the camera.
-    static func filling(_ position: MapCameraPosition, size: CGSize, insets: EdgeInsets) -> MapCameraPosition {
+    /// `maxScale` caps the map points per screen point, for a target wider than
+    /// MapKit zooms out. The target's middle then still sits in the middle of the insets.
+    static func filling(
+        _ position: MapCameraPosition,
+        size: CGSize,
+        insets: EdgeInsets,
+        maxScale: Double = .infinity
+    ) -> MapCameraPosition {
         guard let target = position.rect ?? position.region.map(mapRect), size.width > 0, size.height > 0
         else { return position }
         let width = max(1, size.width - insets.leading - insets.trailing)
         let height = max(1, size.height - insets.top - insets.bottom)
         // Map points per screen point, so the whole target fits.
-        let scale = max(target.width / width, target.height / height)
+        let scale = min(maxScale, max(target.width / width, target.height / height))
         return .rect(MKMapRect(
             x: target.midX - (insets.leading + width / 2) * scale,
             y: target.midY - (insets.top + height / 2) * scale,

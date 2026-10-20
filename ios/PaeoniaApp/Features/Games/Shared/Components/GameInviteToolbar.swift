@@ -3,8 +3,9 @@ import SwiftUI
 extension View {
     /// "Tell [Name] you want to play" as a bell in the leading toolbar, for games
     /// with no room for `GameInviteButton` under their content. It shows only while
-    /// the partner is not in the game. After a send the bell fills, and a banner
-    /// says when the next invite can go. A tap on the filled bell says it again.
+    /// the partner is not in the game. A tap asks first, then sends. After a send
+    /// the bell fills, and a banner says when the next invite can go. A tap on the
+    /// filled bell says it again.
     func gameInviteToolbar(
         invite: GameInviteState,
         partnerName: String,
@@ -22,8 +23,9 @@ private struct GameInviteToolbar: ViewModifier {
     let identifier: String
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    /// True from a tap on the bell until the invite reads as sent.
+    /// True from a confirmed send until the invite reads as sent.
     @State private var isSending = false
+    @State private var confirmsSend = false
 
     func body(content: Content) -> some View {
         content
@@ -33,6 +35,20 @@ private struct GameInviteToolbar: ViewModifier {
                         bell
                     }
                 }
+            }
+            .alert(Text(.gamesInviteConfirmTitle(partnerName)), isPresented: $confirmsSend) {
+                Button(role: .cancel) {} label: {
+                    Text(.commonCancel)
+                }
+                Button {
+                    isSending = true
+                    Task { await send() }
+                } label: {
+                    Text(.gamesInviteConfirmSend)
+                }
+                .accessibilityIdentifier("\(identifier).confirm")
+            } message: {
+                Text(.gamesInviteConfirmMessage(partnerName))
             }
             .onChange(of: invite) { _, invite in
                 if isSending, case let .sent(until) = invite {
@@ -49,8 +65,7 @@ private struct GameInviteToolbar: ViewModifier {
             if let sentUntil {
                 showSent(until: sentUntil)
             } else {
-                isSending = true
-                Task { await send() }
+                confirmsSend = true
             }
         } label: {
             Label {

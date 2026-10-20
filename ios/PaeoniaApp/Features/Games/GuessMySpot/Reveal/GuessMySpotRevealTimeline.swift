@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 import SwiftUI
 
 /// The haptics and sounds of the reveal, injected so tests can record them.
@@ -324,17 +325,18 @@ final class GuessMySpotRevealTimeline {
     /// How high the real pin starts its drop, in points.
     static let dropHeight: CGFloat = 70
 
-    /// Moves a value over `duration`, about 60 times a second, in this run only. A
-    /// map's pins and lines don't take SwiftUI's animations, so the timeline steps
-    /// them. Each step reads the clock, so a late frame never makes the move run long.
+    /// Moves a value over `duration`, once a frame, in this run only. A map's pins
+    /// and lines don't take SwiftUI's animations, so the timeline steps them. Each
+    /// step reads the time its frame shows, so a late frame never makes the move run
+    /// long, and every move steps in the same frame as the camera.
     private func tween(_ duration: TimeInterval, _ update: @escaping @MainActor (Double) -> Void) {
         let id = runID
-        let start = ContinuousClock.now
-        Task { [weak self, sleep] in
+        let start = CACurrentMediaTime()
+        Task { [weak self] in
             while true {
-                try? await sleep(.milliseconds(16))
+                let time = await GuessMySpotFrameClock.nextFrame()
                 guard let self, id == runID, !Task.isCancelled else { return }
-                let fraction = min(1, (ContinuousClock.now - start) / .seconds(duration))
+                let fraction = min(1, max(0, time - start) / duration)
                 update(fraction)
                 if fraction >= 1 { return }
             }
