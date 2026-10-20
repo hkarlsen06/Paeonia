@@ -1,4 +1,5 @@
 import MapKit
+import SwiftUI
 import UIKit
 
 /// The reveal's camera flights. MapKit's own animation ignores the duration it is
@@ -97,123 +98,47 @@ nonisolated enum GuessMySpotFlight {
     }
 }
 
-/// Draws map views off screen before the camera gets to them (`MKMapSnapshotter`),
-/// so their images are on the phone when it does and the map doesn't show gray
-/// squares on the way.
+/// Draws map views off screen before the camera gets to them (`MKMapSnapshotter`).
+/// That puts their images in the phone's storage, from where the map reads them
+/// faster than over the network. MapKit has no way to load them into the map itself.
 @MainActor
 final class GuessMySpotMapPreloader {
     typealias Stage = GuessMySpotRevealTimeline.Camera
 
     private var loading: [Stage: Int] = [:]
-    private var requested: [Stage: Int] = [:]
     private var snapshotters: [MKMapSnapshotter] = []
     private var isCancelled = false
 
-    struct Picture {
-        let rect: MKMapRect
-        let image: UIImage
-    }
-
-    /// Each stage's views as they finish drawing.
-    private(set) var pictures: [Stage: [Picture]] = [:]
-
-    /// Starts drawing `rects` for `stage`, each over a whole map of `size` points.
-    func load(_ rects: [MKMapRect], size: CGSize, satellite: Bool, for stage: Stage) {
+    /// Starts drawing `views` for `stage`, each over a whole map of `size` points,
+    /// in the reveal's satellite look, with realistic elevation as its map has.
+    /// A view is a part of the flat map or a camera on the globe.
+    func load(_ views: [MapCameraPosition], size: CGSize, for stage: Stage) {
         guard !isCancelled, size.width > 0, size.height > 0 else { return }
-        let widest = rects.map(\.width).max() ?? 0
-        for rect in rects {
+        for view in views {
+            let configuration = MKHybridMapConfiguration(elevationStyle: .realistic)
+            configuration.pointOfInterestFilter = .excludingAll
             let options = MKMapSnapshotter.Options()
-            options.preferredConfiguration = Self.configuration(satellite: satellite)
-            options.mapRect = rect
+            options.preferredConfiguration = configuration
+            if let rect = view.rect {
+                options.mapRect = rect
+            } else if let camera = view.camera {
+                options.camera = MKMapCamera(
+                    lookingAtCenter: camera.centerCoordinate, fromDistance: camera.distance,
+                    pitch: camera.pitch, heading: camera.heading
+                )
+            }
             options.size = size
-            // The map's dark look, so the picture of the last view can stand in for it.
             options.traitCollection = UITraitCollection(userInterfaceStyle: .dark)
             let snapshotter = MKMapSnapshotter(options: options)
             loading[stage, default: 0] += 1
-            requested[stage, default: 0] += 1
             snapshotters.append(snapshotter)
             // On the main queue.
-            snapshotter.start { [weak self] snapshot, _ in
+            snapshotter.start { [weak self] _, _ in
                 guard let self else { return }
                 snapshotters.removeAll { $0 === snapshotter }
-                guard let image = snapshot?.image else {
-                    loading[stage, default: 1] -= 1
-                    return
-                }
-                // Only satellite images change color between levels. The widest view fills
-                // the screen at one end of the flight, so it keeps its edges.
-                let feathers = satellite && rect.width < widest
-                Task {
-                    let image = feathers ? await Self.feathered(image) : image
-                    loading[stage, default: 1] -= 1
-                    guard !isCancelled else { return }
-                    pictures[stage, default: []].append(Picture(rect: rect, image: image))
-                }
+                loading[stage, default: 1] -= 1
             }
         }
-    }
-
-    /// Every view of `stage`, widest first, once all of them have drawn. Nil while
-    /// one is still drawing, or when one failed.
-    func complete(_ stage: Stage) -> [Picture]? {
-        guard let drawn = pictures[stage], !drawn.isEmpty, drawn.count == requested[stage] else { return nil }
-        return drawn.sorted { $0.rect.width > $1.rect.width }
-    }
-
-    /// Lets go of a stage's pictures once its flight is over. A picture is a whole screen.
-    func release(_ stage: Stage) {
-        pictures[stage] = nil
-        requested[stage] = nil
-    }
-
-    /// `image` fading out toward its edges. Satellite images change their colors from
-    /// one zoom level to the next, so a closer picture over a wider one showed as a
-    /// box. Faded, it blends in. Drawn once, off the main thread.
-    @concurrent
-    private nonisolated static func feathered(_ image: UIImage) async -> UIImage {
-        let size = image.size
-        let feather = min(size.width, size.height) * 0.12
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = image.scale
-        return UIGraphicsImageRenderer(size: size, format: format).image { context in
-            image.draw(at: .zero)
-            let cg = context.cgContext
-            guard let gradient = CGGradient(
-                colorSpace: CGColorSpaceCreateDeviceGray(),
-                colorComponents: [0, 0, 0, 1],
-                locations: [0, 1],
-                count: 2
-            ) else { return }
-            // Each edge's band keeps its pixels from none at the edge to all `feather` in.
-            cg.setBlendMode(.destinationIn)
-            let whole = CGRect(origin: .zero, size: size)
-            for edge in [CGRectEdge.minXEdge, .maxXEdge, .minYEdge, .maxYEdge] {
-                let band = whole.divided(atDistance: feather, from: edge).slice
-                let (from, to): (CGPoint, CGPoint) = switch edge {
-                case .minXEdge: (CGPoint(x: band.minX, y: 0), CGPoint(x: band.maxX, y: 0))
-                case .maxXEdge: (CGPoint(x: band.maxX, y: 0), CGPoint(x: band.minX, y: 0))
-                case .minYEdge: (CGPoint(x: 0, y: band.minY), CGPoint(x: 0, y: band.maxY))
-                case .maxYEdge: (CGPoint(x: 0, y: band.maxY), CGPoint(x: 0, y: band.minY))
-                }
-                cg.saveGState()
-                cg.clip(to: band)
-                cg.drawLinearGradient(gradient, start: from, end: to, options: [])
-                cg.restoreGState()
-            }
-        }
-    }
-
-    /// The live map's look, points of interest left out as it leaves them out, so a
-    /// picture and the map match when one fades into the other.
-    private static func configuration(satellite: Bool) -> MKMapConfiguration {
-        if satellite {
-            let configuration = MKHybridMapConfiguration(elevationStyle: .flat)
-            configuration.pointOfInterestFilter = .excludingAll
-            return configuration
-        }
-        let configuration = MKStandardMapConfiguration(elevationStyle: .flat, emphasisStyle: .muted)
-        configuration.pointOfInterestFilter = .excludingAll
-        return configuration
     }
 
     /// Stops every view still drawing, and any later `load`, once the reveal has gone.

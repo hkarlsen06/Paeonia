@@ -40,6 +40,10 @@ struct GuessMySpotRevealHaptics {
 /// view calls `begin` once. The beats then play on a schedule, or the settled
 /// state shows at once (Reduce Motion or a tap).
 ///
+/// The comments here tell the guesser's reveal, from the guess pin to the real
+/// pin. The sender's phone plays the same beats the other way round, from the real
+/// pin to the guess (`GuessMySpotRevealView.ends`).
+///
 /// Every run has an id and each step checks it after sleeping, so no step or
 /// haptic can happen after the timeline settled or stopped.
 @MainActor
@@ -50,11 +54,11 @@ final class GuessMySpotRevealTimeline {
 
     /// Where the camera is in the reveal. The view moves the map's camera when it changes.
     enum Camera: Equatable {
-        /// On the guess.
-        case guess
+        /// On the pin the reveal starts from: the guess, or the real spot on the sender's phone.
+        case start
         /// Both spots in view.
         case overview
-        /// On the real spot.
+        /// On the pin that dropped: the real spot, or the guess on the sender's phone.
         case landed
     }
 
@@ -72,7 +76,7 @@ final class GuessMySpotRevealTimeline {
     private(set) var glow: CGFloat = 0
     /// The gold ring that widens from the real pin at the verdict, 0 to 1. Nil when there is none.
     private(set) var ring: CGFloat?
-    private(set) var camera: Camera = .guess
+    private(set) var camera: Camera = .start
     /// How much of the line is drawn, 0 to 1.
     private(set) var lineProgress: Double = 0
     /// The real pin is on the map.
@@ -99,8 +103,6 @@ final class GuessMySpotRevealTimeline {
     @ObservationIgnored private(set) var plan: Plan?
     @ObservationIgnored private var runID = 0
     @ObservationIgnored private var task: Task<Void, Never>?
-    /// Runs before each camera move, until that move's map images are ready.
-    @ObservationIgnored private var prepare: @MainActor (Camera) async -> Void = { _ in }
 
     init(
         schedule: Schedule = .standard,
@@ -122,16 +124,10 @@ final class GuessMySpotRevealTimeline {
         }
     }
 
-    /// Starts the reveal. Later calls do nothing. Each camera move waits for
-    /// `prepare` to return, and every beat after it waits as long.
-    func begin(
-        _ plan: Plan,
-        reduceMotion: Bool,
-        prepare: @escaping @MainActor (Camera) async -> Void = { _ in }
-    ) {
+    /// Starts the reveal. Later calls do nothing.
+    func begin(_ plan: Plan, reduceMotion: Bool) {
         guard self.plan == nil else { return }
         self.plan = plan
-        self.prepare = prepare
         if reduceMotion {
             applySettledState(plan, camera: .overview)
             playVerdictHaptic(plan.verdict)
@@ -175,10 +171,6 @@ final class GuessMySpotRevealTimeline {
                 elapsed = step.at
             }
             guard id == runID, !Task.isCancelled else { return }
-            if let stage = Self.camera(after: step.event) {
-                await prepare(stage)
-                guard id == runID, !Task.isCancelled else { return }
-            }
             apply(step.event)
         }
         guard id == runID, !Task.isCancelled else { return }
@@ -373,15 +365,6 @@ extension GuessMySpotRevealTimeline {
         case .spotOn: 1
         case .soClose, .close: 0.8
         case .far: 0
-        }
-    }
-
-    /// Where `event` moves the camera, if it does.
-    private static func camera(after event: GuessMySpotRevealEvent) -> Camera? {
-        switch event {
-        case .zoomOut: .overview
-        case .land: .landed
-        default: nil
         }
     }
 }

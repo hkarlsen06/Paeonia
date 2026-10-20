@@ -1,9 +1,11 @@
 import MapKit
 import SwiftUI
 
-/// The reveal of a guessed round, from the guess to where the photo was taken.
-/// The photo slides away and the map fills the screen. The guess pin pulses, the
-/// camera zooms out, a gold line draws to the real spot, the real pin drops at its
+/// The reveal of a guessed round. The guesser's runs from the guess to where the
+/// photo was taken, and the sender's the other way, from the real spot to the
+/// partner's guess, so each partner finds out where the other one was.
+/// The photo slides away and the map fills the screen. The first pin pulses, the
+/// camera zooms out, a gold line draws to the other spot, its pin drops at the line's
 /// end, and the camera flies down close to it while the distance counts up. Then the verdict
 /// lands and the photo comes back with the place and the date. A guess still on its
 /// way holds the first frame until the server answers with the real spot.
@@ -22,17 +24,15 @@ struct GuessMySpotRevealView: View {
     @State private var hasPlacedCamera = false
     @State private var preloader = GuessMySpotMapPreloader()
     @State private var hasPreloaded = false
-    /// Where the camera is while it flies.
-    @State private var flightPosition = GuessMySpotFlightPosition()
-    /// Each flight's end, worked out once with its pictures, so a flight starts
-    /// without asking MapKit again and flies the exact views that were drawn.
-    @State private var flightEnds: [GuessMySpotRevealTimeline.Camera: MKMapRect] = [:]
-    /// The zoom out's pictures over the map while it zooms out. See `GuessMySpotFlightBackdrop`.
-    @State private var backdrop: GuessMySpotFlightBackdrop.Pictures?
+    /// Each flight's end, worked out once with its stops, so a flight starts without
+    /// asking MapKit again and flies the exact views that were loaded.
+    @State private var flightEnds: [GuessMySpotRevealTimeline.Camera: MapCameraPosition] = [:]
     /// The camera flight in progress, stepped once a frame.
     @State private var flight: Task<Void, Never>?
-    /// Starts as the guess screen's map, and turns to satellite once the real pin is planted.
-    @State private var isSatellite = UserDefaults.standard.bool(forKey: GuessMySpotMap.satelliteKey)
+    /// Satellite for the whole reveal. Where its images are still loading, satellite
+    /// shows a soft picture where the standard map shows gray, and a switch partway
+    /// would drop the images the map has loaded. The settled map's button can turn it back.
+    @State private var isSatellite = true
     /// The pin or pins the settled map shows, for the buttons beside the distance.
     @State private var focus: GuessMySpotRevealCameraButtons.Focus?
     @AccessibilityFocusState private var isTitleFocused: Bool
@@ -60,6 +60,12 @@ struct GuessMySpotRevealView: View {
 
     private var isSender: Bool {
         round?.senderUserID == viewModel.currentUserID
+    }
+
+    /// Where the reveal starts and where it lands.
+    private var ends: (from: GuessMySpotCoordinate, to: GuessMySpotCoordinate)? {
+        guard let guess = round?.guess, let spot = round?.spot else { return nil }
+        return isSender ? (spot, guess) : (guess, spot)
     }
 
     private var plan: GuessMySpotRevealPlan? {
@@ -106,7 +112,7 @@ struct GuessMySpotRevealView: View {
         .simultaneousGesture(TapGesture().onEnded {
             if timeline.canSkip { timeline.skip() }
         })
-        .onAppear(perform: placeCameraOnGuess)
+        .onAppear(perform: placeFirstCamera)
         .onChange(of: plan, initial: true) { beginIfNeeded() }
         .onChange(of: timeline.camera) { _, stage in moveCamera(to: stage) }
         // A tap can settle the reveal while the camera still flies down. It lands at once
@@ -114,15 +120,11 @@ struct GuessMySpotRevealView: View {
         .onChange(of: timeline.isSettled) { _, settled in
             guard settled else { return }
             moveCamera(to: timeline.camera)
-            // Reduce Motion settles on both pins. Otherwise on the real spot, the sender's pin.
-            focus = timeline.camera == .overview ? .both : isSender ? .mine : .partner
+            // Reduce Motion settles on both pins. Otherwise on the pin that dropped, the partner's.
+            focus = timeline.camera == .overview ? .both : .partner
         }
         .onChange(of: camera.positionedByUser) { _, byUser in
             if byUser { focus = nil }
-        }
-        // While the screen holds still, so the switch dissolves before the camera flies.
-        .onChange(of: timeline.planted) { _, planted in
-            if planted, !timeline.isSettled { turnSatellite() }
         }
         .onChange(of: timeline.verdict) { _, verdict in
             guard verdict != nil else { return }
@@ -140,6 +142,8 @@ struct GuessMySpotRevealView: View {
 
     /// The map's room at the top for the distance capsule and for a pin's drop.
     static let topRoom: CGFloat = 110
+    /// The settled map's room at the top for the camera buttons.
+    static let buttonsRoom: CGFloat = 60
     /// The card's column on a wide screen, its side padding included.
     static let cardColumn: CGFloat = PaeoniaSpacing.focusedContentWidth
 
@@ -151,36 +155,41 @@ struct GuessMySpotRevealView: View {
             timeline.hold()
             return
         }
-        timeline.begin(plan, reduceMotion: reduceMotion) { [preloader] stage in
-            // A slow connection holds the reveal on the planted pin a moment rather than fly over gray.
-            await preloader.wait(for: stage, atMost: stage == .landed ? .seconds(2) : .seconds(1))
-        }
+        timeline.begin(plan, reduceMotion: reduceMotion)
         preloadIfReady()
     }
 
-    /// The first frame, placed once the map has its size: the guess map as the
-    /// guesser left it, lined up with where it sat, when the guess pin is in it and
-    /// it shows less than a continent. Then the two maps match under the fade.
-    /// Otherwise the guess at about 300 km across.
-    private func placeCameraOnGuess() {
+    /// The first frame, placed once the map has its size. On the guesser's phone:
+    /// the guess map as they left it, lined up with where it sat, when the guess pin
+    /// is in it and it shows less than a continent. Then the two maps match under the
+    /// fade. Otherwise the guess at about 300 km across. On the sender's phone: their
+    /// own pin, the real spot, at about 60 km across.
+    private func placeFirstCamera() {
         guard !hasPlacedCamera, mapSize != .zero, let guess = round?.guess else { return }
-        hasPlacedCamera = true
-        if !isSender, let rect = viewModel.guessMapRect, let source = viewModel.guessMapFrame,
-           rect.width < MKMapSize.world.width * 40 / 360, rect.contains(MKMapPoint(guess.location)) {
+        if isSender {
+            guard let spot = round?.spot else { return }
+            camera = framed(GuessMySpotCamera.around(spot, meters: 60_000))
+        } else if let rect = viewModel.guessMapRect, let source = viewModel.guessMapFrame,
+                  rect.width < MKMapSize.world.width * 40 / 360, rect.contains(MKMapPoint(guess.location)) {
             camera = GuessMySpotCamera.continuing(rect, from: source, to: mapFrame)
         } else {
-            camera = framed(GuessMySpotCamera.around(guess, meters: isSender ? 60_000 : 300_000))
+            camera = framed(GuessMySpotCamera.around(guess, meters: 300_000))
         }
+        hasPlacedCamera = true
     }
 
     /// The part of the map a camera move frames: under the top room and a pin's head,
     /// and clear of the card. The card's room is kept from the start, so nothing
     /// slides when it rises.
-    private func framed(_ position: MapCameraPosition, maxScale: Double = .infinity) -> MapCameraPosition {
+    private func framed(
+        _ position: MapCameraPosition,
+        keepsCardRoom: Bool = true,
+        maxScale: Double = .infinity
+    ) -> MapCameraPosition {
         let insets = EdgeInsets(
             top: Self.topRoom + GuessMySpotPin.headSize,
             leading: isWide ? Self.cardColumn : 0,
-            bottom: isWide ? PaeoniaSpacing.space8 : cardHeight + PaeoniaSpacing.space8,
+            bottom: isWide || !keepsCardRoom ? PaeoniaSpacing.space8 : cardHeight + PaeoniaSpacing.space8,
             trailing: 0
         )
         return GuessMySpotCamera.filling(position, size: mapSize, insets: insets, maxScale: maxScale)
@@ -197,19 +206,9 @@ struct GuessMySpotRevealView: View {
             showsSatelliteButton: timeline.isSettled,
             accessibilityValue: .guessMySpotMapPinDropped,
             satellite: $isSatellite,
-            coversStyleSwitch: backdrop == nil
+            // Only a map with realistic elevation draws the globe. See `GuessMySpotGlobe`.
+            elevation: .realistic
         )
-        .overlay(alignment: .top) {
-            if let backdrop {
-                GuessMySpotFlightBackdrop(
-                    pictures: backdrop,
-                    position: flightPosition,
-                    size: CGSize(width: mapSize.width, height: max(mapSize.height, drawnHeight)),
-                    pins: pins,
-                    line: line
-                )
-            }
-        }
         .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: {
             bottomInset = $0
             preloadIfReady()
@@ -219,44 +218,10 @@ struct GuessMySpotRevealView: View {
             proxy.frame(in: .global)
         } action: {
             mapFrame = $0
-            placeCameraOnGuess()
+            placeFirstCamera()
             preloadIfReady()
         }
         .accessibilityHidden(!timeline.isSettled)
-    }
-
-    private var pins: [GuessMySpotMap.Pin] {
-        guard let round else { return [] }
-        var pins: [GuessMySpotMap.Pin] = []
-        if let guess = round.guess {
-            pins.append(GuessMySpotMap.Pin(
-                id: "guess",
-                coordinate: guess,
-                style: viewModel.style(of: round.guesserUserID),
-                glow: timeline.glow,
-                scale: timeline.pulseScale * timeline.verdictScale
-            ))
-        }
-        if timeline.dropped, let spot = round.spot {
-            pins.append(GuessMySpotMap.Pin(
-                id: "spot",
-                coordinate: spot,
-                style: viewModel.style(of: round.senderUserID),
-                glow: timeline.glow,
-                scale: timeline.verdictScale,
-                lift: timeline.dropLift,
-                ring: timeline.ring
-            ))
-        }
-        return pins
-    }
-
-    private var line: GuessMySpotMap.Line? {
-        guard let round, let guess = round.guess, let spot = round.spot else { return nil }
-        let progress = timeline.lineProgress
-        guard progress > 0 else { return nil }
-        // A far guess draws quiet and dashed from the start, as in Consensio.
-        return GuessMySpotMap.Line(from: guess, to: spot, progress: progress, isFar: plan?.verdict == .far)
     }
 
     // MARK: Card
@@ -327,7 +292,7 @@ extension GuessMySpotRevealView {
                 final: plan.distanceMeters,
                 scale: timeline.capsuleScale
             )
-            .padding(.top, PaeoniaSpacing.space12)
+            .padding(.top, PaeoniaSpacing.space8)
             // Centered over the map the camera frames.
             .frame(maxWidth: .infinity)
             .padding(.leading, isWide ? Self.cardColumn : 0)
@@ -350,7 +315,7 @@ extension GuessMySpotRevealView {
     private func show(_ focus: GuessMySpotRevealCameraButtons.Focus) {
         guard let round, let guess = round.guess, let spot = round.spot else { return }
         let position: MapCameraPosition? = switch focus {
-        case .both: target(for: .overview)
+        case .both: settledOverview()
         // The real spot is the sender's pin.
         case .mine where isSender, .partner where !isSender:
             framed(GuessMySpotCamera.landing(on: spot, guess: guess))
@@ -370,22 +335,58 @@ extension GuessMySpotRevealView {
 extension GuessMySpotRevealView {
     /// The framed camera of each stage.
     private func target(for stage: GuessMySpotRevealTimeline.Camera) -> MapCameraPosition? {
-        guard let round, let guess = round.guess, let spot = round.spot else { return nil }
+        guard let ends else { return nil }
         let target: MapCameraPosition = switch stage {
-        case .guess: GuessMySpotCamera.around(guess, meters: 60_000)
-        case .overview: GuessMySpotCamera.framing(guess, spot)
-        case .landed: GuessMySpotCamera.landing(on: spot, guess: guess)
+        case .start: GuessMySpotCamera.around(ends.from, meters: 60_000)
+        case .overview: GuessMySpotCamera.framing(ends.from, ends.to)
+        case .landed: GuessMySpotCamera.landing(on: ends.to, guess: ends.from)
         }
         guard stage == .overview else { return framed(target) }
-        // A far guess asks for more of the world than MapKit shows. Frame both spots
-        // at MapKit's widest view instead, and fly to the view it really shows.
+        // A far guess asks for more of the world than MapKit's flat map shows. Fly to
+        // the view it really shows when that fits both spots, and to the globe when not.
         guard let asked = framed(target).rect else { return framed(target) }
         let widest = shown(asked)
         guard widest.width < asked.width * 0.99 else { return .rect(widest) }
-        guard let capped = framed(target, maxScale: widest.width / max(1, mapSize.width)).rect else {
-            return .rect(widest)
+        // The card rises only after the flight down, so a guess too far to fit over
+        // its room may use it, and both pins show.
+        if !isWide, let open = framed(target, keepsCardRoom: false).rect, shown(open).width >= open.width * 0.99 {
+            return .rect(shown(open))
         }
-        return .rect(shown(capped))
+        // Too far apart for any flat view: the globe. It needs every point it can get,
+        // so a pin may stand anywhere it shows whole. The distance capsule comes later.
+        return globe(top: GuessMySpotPin.height + PaeoniaSpacing.space8, bottom: mapSize.height - PaeoniaSpacing.space8)
+    }
+
+    /// Both pins once the card is up, in the room between the camera buttons and
+    /// the card. The flight's overview may use the card's room, because the card
+    /// rises only after it, so it would hide a pin here. A guess too far to fit
+    /// shows on the globe in that room.
+    private func settledOverview() -> MapCameraPosition? {
+        guard let round, let guess = round.guess, let spot = round.spot else { return nil }
+        let both = GuessMySpotCamera.framing(guess, spot, padding: 0.2)
+        let insets = EdgeInsets(
+            top: Self.buttonsRoom + GuessMySpotPin.height,
+            leading: isWide ? Self.cardColumn : PaeoniaSpacing.space16,
+            bottom: isWide ? PaeoniaSpacing.space8 : cardHeight + PaeoniaSpacing.space8,
+            trailing: PaeoniaSpacing.space16
+        )
+        guard let asked = GuessMySpotCamera.filling(both, size: mapSize, insets: insets).rect else { return nil }
+        let widest = shown(asked)
+        guard widest.width < asked.width * 0.99 else { return .rect(widest) }
+        return globe(top: insets.top, bottom: mapSize.height - insets.bottom)
+    }
+
+    /// Both ends on the globe, their pins between `top` and `bottom` of the map. See `GuessMySpotGlobe`.
+    private func globe(top: CGFloat, bottom: CGFloat) -> MapCameraPosition? {
+        guard let ends else { return nil }
+        let below = max(0, drawnHeight - mapSize.height)
+        let height = mapSize.height + topInset + below
+        // MapKit's camera looks at the middle of its whole view, which reaches under the bars.
+        let middle = height / 2 - topInset
+        let room = GuessMySpotGlobe.Room(
+            up: middle - top, down: bottom - middle, side: mapSize.width / 2 - PaeoniaSpacing.space24
+        )
+        return .camera(GuessMySpotGlobe.framing(ends.from, ends.to, height: height, room: room))
     }
 
     private func shown(_ rect: MKMapRect) -> MKMapRect {
@@ -396,136 +397,91 @@ extension GuessMySpotRevealView {
     /// MapKit runs its own way. See `GuessMySpotFlight`.
     private func moveCamera(to stage: GuessMySpotRevealTimeline.Camera) {
         flight?.cancel()
-        flightPosition.rect = nil
-        flightPosition.blur = 0
-        backdrop = nil
-        guard let target = flightEnds[stage].map(MapCameraPosition.rect) ?? target(for: stage) else { return }
-        guard !reduceMotion, !timeline.isSettled, let start = camera.rect, let end = target.rect else {
+        // Reduce Motion settles on both pins, with the card already up.
+        if timeline.isSettled, stage == .overview, let overview = settledOverview() {
+            camera = overview
+            return
+        }
+        guard let target = flightEnds[stage] ?? target(for: stage) else { return }
+        guard !reduceMotion, !timeline.isSettled, let path = path(from: camera, to: target) else {
             camera = target
             return
         }
         let duration = stage == .landed ? timeline.schedule.landDuration : timeline.schedule.zoomOutDuration
-        // Every view drawn: the flight is all pictures, and the map jumps to its end
-        // under them, so it loads that one view for the whole flight. See `GuessMySpotFlightBackdrop`.
-        let complete = preloader.complete(stage)
-        let isPictures = complete != nil
-        if let pictures = complete {
-            backdrop = GuessMySpotFlightBackdrop.Pictures(pictures: pictures, loaded: nil)
-            flightPosition.rect = start
-            // MapKit drops a camera move made in the same update as a style switch.
-            if isSatellite || stage == .overview {
-                camera = target
-            } else {
-                isSatellite = true
-            }
-        } else if stage == .overview, let pictures = preloader.pictures[.overview], !pictures.isEmpty {
-            backdrop = GuessMySpotFlightBackdrop.Pictures(
-                pictures: pictures.sorted { $0.rect.width > $1.rect.width }, loaded: drawn(start)
-            )
-            flightPosition.blur = 4
-        }
-        flight = Task { await fly(stage, from: start, to: target, duration: duration, isPictures: isPictures) }
-    }
-
-    /// Steps a flight once a frame: the map's camera, or over pictures only the
-    /// backdrop. Then the pictures fade over the map, and are let go.
-    private func fly(
-        _ stage: GuessMySpotRevealTimeline.Camera,
-        from start: MKMapRect,
-        to target: MapCameraPosition,
-        duration: TimeInterval,
-        isPictures: Bool
-    ) async {
-        guard let end = target.rect else { return }
-        let began = CACurrentMediaTime()
-        while !Task.isCancelled {
-            let time = await GuessMySpotFrameClock.nextFrame()
-            guard !Task.isCancelled else { return }
-            let fraction = min(1, max(0, time - began) / duration)
-            guard fraction < 1 else { break }
-            let eased = stage == .landed ? GuessMySpotFlight.easedDown(fraction) : GuessMySpotFlight.eased(fraction)
-            let rect = GuessMySpotFlight.view(from: start, to: end, at: eased)
-            if isPictures {
-                if !MKMapRectEqualToRect(camera.rect ?? .null, end) { camera = target }
-                // Soft with speed, so the flight starts and lands sharp on the map.
-                flightPosition.blur = 4 * sin(.pi * fraction)
-            } else {
-                camera = .rect(rect)
-            }
-            flightPosition.rect = rect
-        }
-        guard !Task.isCancelled else { return }
-        camera = target
-        guard backdrop != nil else { return }
-        await fadeBackdrop(stage, at: GuessMySpotFlight.view(from: start, to: end, at: 1), isPictures: isPictures)
-    }
-
-    /// Fades the pictures over the map once a flight has ended, then lets them go.
-    private func fadeBackdrop(_ stage: GuessMySpotRevealTimeline.Camera, at end: MKMapRect, isPictures: Bool) async {
-        // The map's own images of the end view arrive about now. The line waits for this fade.
-        flightPosition.rect = end
-        if isPictures {
-            flightPosition.blur = 0
-            // The last picture is the view the map is loading. The flight down holds it while
-            // the map finishes; the zoom out can't, because the line waits for its fade.
-            if stage == .landed { try? await Task.sleep(for: .milliseconds(400)) }
-            guard !Task.isCancelled else { return }
-        }
-        withAnimation(.easeOut(duration: 0.25)) { backdrop?.opacity = 0 }
-        // Then the drawn pins a moment longer, while MapKit's own fade back in under them.
-        try? await Task.sleep(for: .milliseconds(isPictures ? 550 : 250))
-        guard !Task.isCancelled else { return }
-        flightPosition.rect = nil
-        backdrop = nil
-        preloader.release(stage)
-    }
-
-    /// The map turns to satellite while the screen holds still. With every view of the
-    /// flight down drawn, its first picture dissolves in over the map, which switches
-    /// under it out of sight and without the picture of the window a switch costs.
-    private func turnSatellite() {
-        guard let pictures = preloader.complete(.landed), let start = camera.rect else {
-            isSatellite = true
-            return
-        }
-        flight?.cancel()
-        flightPosition.rect = start
-        flightPosition.blur = 0
-        backdrop = GuessMySpotFlightBackdrop.Pictures(pictures: pictures, loaded: nil, opacity: 0)
-        withAnimation(.easeInOut(duration: 0.2)) { backdrop?.opacity = 1 }
         flight = Task {
-            // Before the flight down, so its camera move isn't made with the switch.
-            try? await Task.sleep(for: .milliseconds(200))
+            let began = CACurrentMediaTime()
+            while !Task.isCancelled {
+                let time = await GuessMySpotFrameClock.nextFrame()
+                guard !Task.isCancelled else { return }
+                let fraction = min(1, max(0, time - began) / duration)
+                guard fraction < 1 else { break }
+                let eased = stage == .landed ? GuessMySpotFlight.easedDown(fraction) : GuessMySpotFlight.eased(fraction)
+                camera = path(eased)
+            }
             guard !Task.isCancelled else { return }
-            isSatellite = true
+            camera = target
         }
     }
 
-    /// Draws every stop of both flights off screen while the reveal builds up: the
-    /// zoom out in the map's style, and the flight down in satellite. It waits for
-    /// the map's size and the card's height, because the stops must be the exact
-    /// views the camera passes, at the same zoom.
+    /// Draws every stop of both flights off screen while the reveal builds up
+    /// (`MKMapSnapshotter`), which puts their images in the phone's storage, from
+    /// where the map reads them faster than over the network. The reveal never
+    /// waits for them. The stops must be the exact views the camera passes, so
+    /// this waits for the map's size and the card's height.
     private func preloadIfReady() {
-        guard !hasPreloaded, !reduceMotion, timeline.hasBegun, !timeline.isSettled, timeline.camera == .guess,
+        guard !hasPreloaded, !reduceMotion, timeline.hasBegun, !timeline.isSettled, timeline.camera == .start,
               hasPlacedCamera, mapSize != .zero, bottomInset != nil, isWide || cardHeight > 0,
               let start = camera.rect,
-              let overview = target(for: .overview)?.rect,
-              let landing = target(for: .landed)?.rect
+              let overview = target(for: .overview),
+              let landing = target(for: .landed)
         else { return }
         hasPreloaded = true
         flightEnds = [.overview: overview, .landed: landing]
         let size = CGSize(width: mapSize.width, height: max(mapSize.height, drawnHeight))
-        // The overview first: its picture covers the zoom out. See `GuessMySpotFlightBackdrop`.
-        preloader.load(
-            GuessMySpotFlight.stops(from: start, to: overview).reversed().map(drawn), size: size,
-            satellite: isSatellite, for: .overview
-        )
-        // The zoom out comes first and needs its pictures sooner, so the flight down waits its turn.
-        let landingStops = GuessMySpotFlight.stops(from: overview, to: landing).map(drawn)
+        let overviewStops = stops(from: .rect(start), to: overview)
+        let landingStops = stops(from: overview, to: landing)
+        preloader.load(overviewStops.map(drawn), size: size, for: .overview)
+        // The zoom out comes first and needs its images sooner, so the flight down waits its turn.
         Task { [preloader] in
             await preloader.wait(for: .overview, atMost: .seconds(1))
-            preloader.load(landingStops, size: size, satellite: true, for: .landed)
+            preloader.load(landingStops.map(drawn), size: size, for: .landed)
         }
+    }
+
+    /// Where a flight from `start` to `end` is at each eased fraction: across the
+    /// flat map, or as a camera when either end is on the globe.
+    private func path(
+        from start: MapCameraPosition,
+        to end: MapCameraPosition
+    ) -> ((Double) -> MapCameraPosition)? {
+        if let start = start.rect, let end = end.rect {
+            return { .rect(GuessMySpotFlight.view(from: start, to: end, at: $0)) }
+        }
+        guard let start = mapCamera(start), let end = mapCamera(end) else { return nil }
+        return { .camera(GuessMySpotGlobe.view(from: start, to: end, at: $0)) }
+    }
+
+    /// The views to load ahead of a flight. See `GuessMySpotFlight.stops`.
+    private func stops(from start: MapCameraPosition, to end: MapCameraPosition) -> [MapCameraPosition] {
+        if let start = start.rect, let end = end.rect {
+            return GuessMySpotFlight.stops(from: start, to: end).map { .rect($0) }
+        }
+        guard let start = mapCamera(start), let end = mapCamera(end) else { return [] }
+        return GuessMySpotGlobe.stops(from: start, to: end).map { .camera($0) }
+    }
+
+    /// `position` as a camera, a part of the flat map as the camera that shows it.
+    private func mapCamera(_ position: MapCameraPosition) -> MapCamera? {
+        position.camera ?? position.rect.map {
+            GuessMySpotGlobe.camera(
+                showing: $0, size: mapSize, above: topInset, below: max(0, drawnHeight - mapSize.height)
+            )
+        }
+    }
+
+    /// `view` grown down to where the map draws, when it is a part of the flat map.
+    private func drawn(_ view: MapCameraPosition) -> MapCameraPosition {
+        view.rect.map { .rect(drawn($0)) } ?? view
     }
 
     /// `rect`, a camera's view of the map's frame, grown down to where the map draws.
@@ -538,7 +494,7 @@ extension GuessMySpotRevealView {
 // MARK: Verdict
 
 extension GuessMySpotRevealView {
-    /// Where the real pin stands on screen once the camera landed: the middle of the
+    /// Where the dropped pin stands on screen once the camera landed: the middle of the
     /// map the card leaves, above it or on a wide screen to its right.
     private var bloomOrigin: UnitPoint {
         guard mapSize.height > Self.topRoom, mapSize.width > Self.cardColumn else { return UnitPoint(x: 0.5, y: 0.3) }
@@ -555,7 +511,11 @@ extension GuessMySpotRevealView {
     private func announce() {
         guard let plan else { return }
         let distance = GuessMySpotText.distance(plan.distanceMeters)
-        let verdict = String(localized: GuessMySpotResultCard.title(for: plan.verdict))
+        let verdict = String(localized: GuessMySpotResultCard.title(
+            for: plan.verdict,
+            isSender: isSender,
+            partnerName: viewModel.partnerName
+        ))
             .trimmingCharacters(in: .punctuationCharacters)
         let points = GuessMySpotText.number(plan.points)
         var text = isSender
@@ -565,5 +525,46 @@ extension GuessMySpotRevealView {
             text = String(localized: .guessMySpotRevealAnnouncementPlace(place)) + " " + text
         }
         AccessibilityNotification.Announcement(text).post()
+    }
+}
+
+// MARK: Pins and line
+
+extension GuessMySpotRevealView {
+    /// The pin the reveal starts from stands and pulses, and the other one drops.
+    /// A held guess has only its own pin.
+    private var pins: [GuessMySpotMap.Pin] {
+        guard let round, let guess = round.guess else { return [] }
+        let guessPin = GuessMySpotMap.Pin(
+            id: "guess", coordinate: guess, style: viewModel.style(of: round.guesserUserID)
+        )
+        guard let spot = round.spot else { return [standing(guessPin)] }
+        let spotPin = GuessMySpotMap.Pin(id: "spot", coordinate: spot, style: viewModel.style(of: round.senderUserID))
+        let (first, second) = isSender ? (spotPin, guessPin) : (guessPin, spotPin)
+        return timeline.dropped ? [standing(first), dropping(second)] : [standing(first)]
+    }
+
+    private func standing(_ pin: GuessMySpotMap.Pin) -> GuessMySpotMap.Pin {
+        var pin = pin
+        pin.glow = timeline.glow
+        pin.scale = timeline.pulseScale * timeline.verdictScale
+        return pin
+    }
+
+    private func dropping(_ pin: GuessMySpotMap.Pin) -> GuessMySpotMap.Pin {
+        var pin = pin
+        pin.glow = timeline.glow
+        pin.scale = timeline.verdictScale
+        pin.lift = timeline.dropLift
+        pin.ring = timeline.ring
+        return pin
+    }
+
+    private var line: GuessMySpotMap.Line? {
+        guard let ends else { return nil }
+        let progress = timeline.lineProgress
+        guard progress > 0 else { return nil }
+        // A far guess draws quiet and dashed from the start, as in Consensio.
+        return GuessMySpotMap.Line(from: ends.from, to: ends.to, progress: progress, isFar: plan?.verdict == .far)
     }
 }

@@ -16845,6 +16845,24 @@
         }
       }
     },
+    "guessMySpot.reveal.far.title.sender" : {
+      "comment" : "Reveal title on the sender's phone when the partner's guess is more than 300 km off. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now %@ knows where"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nå vet %@ hvor"
+          }
+        }
+      }
+    },
     "guessMySpot.reveal.off" : {
       "comment" : "Reveal line naming how far off the guess was. %@ is the distance, such as '3.2 km'.",
       "extractionState" : "manual",
@@ -16859,6 +16877,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ unna."
+          }
+        }
+      }
+    },
+    "guessMySpot.reveal.off.sender" : {
+      "comment" : "Reveal line on the sender's phone naming how far off the partner's guess was. %1$@ is the partner's name, %2$@ the distance, such as '3.2 km'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@'s guess was %2$@ off."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjetningen til %1$@ var %2$@ unna."
           }
         }
       }

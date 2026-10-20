@@ -20,7 +20,7 @@ struct GuessMySpotResultCard: View {
                 height: 180
             )
             VStack(spacing: PaeoniaSpacing.space4) {
-                Text(Self.title(for: plan.verdict))
+                Text(Self.title(for: plan.verdict, isSender: isSender, partnerName: viewModel.partnerName))
                     .font(PaeoniaTypography.largeTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .accessibilityAddTraits(.isHeader)
@@ -51,18 +51,23 @@ struct GuessMySpotResultCard: View {
         .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
     }
 
-    static func title(for verdict: GuessMySpotVerdict) -> LocalizedStringResource {
+    /// The sender already knows where the photo was taken, so a far guess
+    /// reads from the partner's side on the sender's phone.
+    static func title(for verdict: GuessMySpotVerdict, isSender: Bool, partnerName: String) -> LocalizedStringResource {
         switch verdict {
         case .spotOn: .guessMySpotRevealSpotOnTitle
         case .soClose: .guessMySpotRevealSoCloseTitle
         case .close: .guessMySpotRevealCloseTitle
-        case .far: .guessMySpotRevealFarTitle
+        case .far: isSender ? .guessMySpotRevealFarTitleSender(partnerName) : .guessMySpotRevealFarTitle
         }
     }
 
     private var line: LocalizedStringResource {
         guard plan.verdict == .spotOn else {
-            return .guessMySpotRevealOff(GuessMySpotText.distance(plan.distanceMeters))
+            let distance = GuessMySpotText.distance(plan.distanceMeters)
+            return isSender
+                ? .guessMySpotRevealOffSender(viewModel.partnerName, distance)
+                : .guessMySpotRevealOff(distance)
         }
         return isSender ? .guessMySpotRevealSpotOnSender(viewModel.partnerName) : .guessMySpotRevealSpotOnGuesser
     }

@@ -141,7 +141,7 @@
         return state(game: game(turn: Fixture.partner), current: harbor(sender: Fixture.me))
       case .guessMySpotGuess, .guessMySpotRevealHeld:
         return state(game: game(turn: Fixture.me), current: lakeRound(sender: Fixture.partner, hidden: true))
-      case .guessMySpotRevealSpotOn, .guessMySpotRevealClose, .guessMySpotRevealFar:
+      case .guessMySpotRevealSpotOn, .guessMySpotRevealClose, .guessMySpotRevealFar, .guessMySpotRevealWorld:
         return guessing(revealed(for: scenario))
       default:
         return revealed(for: scenario) ?? hubState(for: scenario)
@@ -152,7 +152,7 @@
     /// the server's answer arrives a moment later (`DeveloperGuessMySpotScenarioView`).
     /// So the recording shows the photo leave and the build-up, as on a phone.
     static let stagedReveals: Set<DeveloperScenario> = [
-      .guessMySpotRevealSpotOn, .guessMySpotRevealClose, .guessMySpotRevealFar,
+      .guessMySpotRevealSpotOn, .guessMySpotRevealClose, .guessMySpotRevealFar, .guessMySpotRevealWorld,
     ]
 
     /// The same round before the guess: the spot, place and date hidden, at an older version.
@@ -179,6 +179,8 @@
         reveal(lakeRound(sender: Fixture.partner, guess: Spot(latitude: 60.75, longitude: 9.95)))
       case .guessMySpotRevealFar:
         reveal(harbor(sender: Fixture.partner, guess: Spot(latitude: 41.9028, longitude: 12.4964)))
+      case .guessMySpotRevealWorld:
+        reveal(harbor(sender: Fixture.partner, guess: Spot(latitude: -33.8688, longitude: 151.2093)))
       case .guessMySpotRevealSender:
         reveal(harbor(sender: Fixture.me, guess: Spot(latitude: 60.3400, longitude: 5.2200)))
       default:

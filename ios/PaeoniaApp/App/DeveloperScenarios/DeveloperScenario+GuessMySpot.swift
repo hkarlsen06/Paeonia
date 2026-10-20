@@ -6,7 +6,7 @@
     static let guessMySpot: [DeveloperScenario] = [
       guessMySpotFirstTurn, guessMySpotCheckFound, guessMySpotCheckMissing, guessMySpotWaitChoosing,
       guessMySpotWaitLive, guessMySpotWaitLater, guessMySpotGuess, guessMySpotRevealSpotOn, guessMySpotRevealClose,
-      guessMySpotRevealFar, guessMySpotRevealSender, guessMySpotRevealHeld, guessMySpotHistory,
+      guessMySpotRevealFar, guessMySpotRevealWorld, guessMySpotRevealSender, guessMySpotRevealHeld, guessMySpotHistory,
       memoriesMapWithGame,
     ]
 
@@ -44,6 +44,10 @@
     )
     static let guessMySpotRevealFar = guessMySpotScreen(
       "guess-my-spot-reveal-far", "Guess my spot · reveal, far", "You guessed Rome for Bergen: Now you know where"
+    )
+    static let guessMySpotRevealWorld = guessMySpotScreen(
+      "guess-my-spot-reveal-world", "Guess my spot · reveal, other side of the world",
+      "You guessed Sydney for Bergen: too far apart for a flat map, so the overview is the globe"
     )
     static let guessMySpotRevealSender = guessMySpotScreen(
       "guess-my-spot-reveal-sender", "Guess my spot · reveal, Robin guessed",

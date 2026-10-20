@@ -50,9 +50,8 @@ struct GuessMySpotMap: View {
     /// The satellite choice for this screen alone, as the reveal's landing sets it.
     /// Nil: the saved choice, which the button changes.
     var satellite: Binding<Bool>?
-    /// False while something else covers the map, such as the reveal's pictures, so
-    /// a style switch under it skips the picture of the window it costs.
-    var coversStyleSwitch = true
+    /// `.realistic` lets the camera back off to the globe, as the reveal's overview of a far guess does.
+    var elevation: MapStyle.Elevation = .flat
 
     static let satelliteKey = "paeonia.games.guessMySpot.satellite"
     @AppStorage(GuessMySpotMap.satelliteKey) private var savedSatellite = false
@@ -169,8 +168,8 @@ struct GuessMySpotMap: View {
 
     private var mapStyle: MapStyle {
         isSatellite
-            ? .hybrid(elevation: .flat, pointsOfInterest: .excludingAll)
-            : .standard(elevation: .flat, emphasis: .muted, pointsOfInterest: .excludingAll)
+            ? .hybrid(elevation: elevation, pointsOfInterest: .excludingAll)
+            : .standard(elevation: elevation, emphasis: .muted, pointsOfInterest: .excludingAll)
     }
 
     private func dropped(at coordinate: GuessMySpotCoordinate, _ onTap: (GuessMySpotCoordinate) -> Void) {
@@ -227,7 +226,7 @@ extension GuessMySpotMap {
     /// Lays the map as it looked over the new style and fades it out, so a style
     /// switch dissolves instead of showing gray while the new images load.
     private func coverStyleSwitch() {
-        guard coversStyleSwitch, !reduceMotion, let cover = snapshot() else { return }
+        guard !reduceMotion, let cover = snapshot() else { return }
         styleCover = cover
         Task {
             // A moment for the new style's first images to draw.

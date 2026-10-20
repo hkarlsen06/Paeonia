@@ -94,6 +94,9 @@ struct CoupleMapSnapshot: View {
     /// A sweep that's mounted but not started yet (holds its `revealToken`). It starts
     /// once the cold-launch intro has opened far enough for the map to be seen.
     @State private var pendingSweep: Int?
+    /// Whether the tile is scrolled into view. Home builds every card up front, so a map
+    /// below the fold holds its sweep until the person scrolls to it.
+    @State private var isOnScreen = false
     /// The positions the on-screen map was last *swept* for. The next sweep is measured
     /// from here (not the last silent swap), so a series of tiny drifts accumulates toward
     /// the threshold instead of resetting each time.
@@ -143,10 +146,14 @@ struct CoupleMapSnapshot: View {
                 .task(id: snapshotRequest(size: size)) {
                     await loadSnapshot(size: size)
                 }
-                // Both the render finishing and the intro opening can come first, so
-                // whichever lands second starts the sweep.
+                // The render finishing, the intro opening and the tile scrolling into
+                // view can come in any order, so whichever lands last starts the sweep.
                 .onChange(of: pendingSweep) { startPendingSweepIfReady() }
                 .onChange(of: launchSidesUncovered) { startPendingSweepIfReady() }
+                .onScrollVisibilityChange(threshold: 0.8) { isVisible in
+                    isOnScreen = isVisible
+                    startPendingSweepIfReady()
+                }
                 .onChange(of: incomingBurst) { _, burst in
                     // Hearts only fly between avatars that are on screen. The line
                     // and the haptic still tell the person about a burst without a map.
@@ -478,10 +485,10 @@ extension CoupleMapSnapshot {
     }
 
     /// Starts the pending sweep once the cold-launch intro's opening hole reaches the
-    /// screen's sides, so it plays where the user can see it rather than behind the
-    /// overlay. Outside the cold launch it starts right away.
+    /// screen's sides and the tile is scrolled into view, so it plays where the user can
+    /// see it rather than behind the overlay or below the fold.
     private func startPendingSweepIfReady() {
-        guard launchSidesUncovered, let token = pendingSweep else { return }
+        guard launchSidesUncovered, isOnScreen, let token = pendingSweep else { return }
         pendingSweep = nil
         startSweep(token: token)
     }
