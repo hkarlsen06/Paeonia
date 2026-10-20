@@ -61,6 +61,7 @@ struct StoryChainActionBar: View {
         let title: LocalizedStringResource =
             finished.isNamer ? .storyChainFinishedStartNew : .storyChainFinishedContinue
         return Button {
+            PaeoniaHaptics.gameContinued()
             Task { await viewModel.continueFromFinished() }
         } label: {
             Text(title)

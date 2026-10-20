@@ -267,6 +267,7 @@ struct ConsensioRevealView: View {
     private var actions: some View {
         let isShown = (isHeld && viewModel.isHeldOnPhone) || timeline.actionsShown
         Button {
+            PaeoniaHaptics.gameContinued()
             viewModel.continueFromReveal()
         } label: {
             Text(isPlacer ? .consensioHandoffContinue : .consensioHandoffPlace)

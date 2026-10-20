@@ -245,6 +245,7 @@ struct MindMeldRevealView: View {
 
     private var nextRoundButton: some View {
         Button {
+            PaeoniaHaptics.gameContinued()
             viewModel.continueFromReveal()
         } label: {
             Text(.mindMeldRevealNext)
@@ -255,6 +256,7 @@ struct MindMeldRevealView: View {
 
     private var playAgainButton: some View {
         Button {
+            PaeoniaHaptics.gameContinued()
             Task { await viewModel.playAgain() }
         } label: {
             Text(.mindMeldRevealPlayAgain)

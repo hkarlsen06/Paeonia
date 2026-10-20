@@ -251,6 +251,7 @@ struct DrawAndGuessGuessView: View {
         }
         if isRevealed, timeline.buttonShown {
             Button {
+                PaeoniaHaptics.gameContinued()
                 Task { await viewModel.continueFromReveal() }
             } label: {
                 Text(viewModel.isNextTurnMine ? .gamesDrawAndGuessHandoffDraw : .gamesDrawAndGuessHandoffContinue)

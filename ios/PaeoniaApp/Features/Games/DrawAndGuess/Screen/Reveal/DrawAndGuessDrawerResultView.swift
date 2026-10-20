@@ -69,6 +69,7 @@ struct DrawAndGuessDrawerResultView: View {
             }
             if isRevealed, timeline.buttonShown {
                 Button {
+                    PaeoniaHaptics.gameContinued()
                     Task { await viewModel.continueFromReveal() }
                 } label: {
                     switch viewModel.partnerNextRound {

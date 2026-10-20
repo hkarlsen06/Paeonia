@@ -195,6 +195,8 @@ extension StoryChainViewModel {
             isSavingMove = false
             isNamingInFlight = false
         }
+        PaeoniaHaptics.drawingSent()
+        GameSound.send.play()
         do {
             try await moveQueue.name(StoryChainQueuedName(storyID: storyID, title: title), ownerUserID: userID)
         } catch {

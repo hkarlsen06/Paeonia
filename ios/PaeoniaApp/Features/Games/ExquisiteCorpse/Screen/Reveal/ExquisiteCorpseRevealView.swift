@@ -209,7 +209,10 @@ struct ExquisiteCorpseRevealView: View {
     private var buttons: some View {
         let isShown = timeline.showsButtons
         return VStack(spacing: PaeoniaSpacing.space12) {
-            Button(action: onContinue) {
+            Button {
+                PaeoniaHaptics.gameContinued()
+                onContinue()
+            } label: {
                 Text(content.nextIsMine ? .exquisiteCorpseRevealNextHead : .exquisiteCorpseRevealContinue)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())

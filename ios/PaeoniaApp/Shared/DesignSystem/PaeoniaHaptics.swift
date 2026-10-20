@@ -170,6 +170,13 @@ enum PaeoniaHaptics {
         impact(.light)
     }
 
+    /// A game's main button that moves on without sending anything, such as
+    /// "Continue" after a reveal or "Play" on the hub. The same light tap as the
+    /// buttons that send a move, so every pink button in a game answers the finger.
+    static func gameContinued() {
+        impact(.light)
+    }
+
     static func partnerDrawingReceived() {
         impact(.soft)
     }

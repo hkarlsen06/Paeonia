@@ -21,6 +21,7 @@ struct GamesSetupView: View {
         .background(.paeoniaBackgroundPrimary)
         .safeAreaInset(edge: .bottom) {
             Button {
+                PaeoniaHaptics.gameContinued()
                 Task { await viewModel.finishSetup() }
             } label: {
                 Text(.gamesSetupContinue)
@@ -130,6 +131,7 @@ struct GamesPartnerPickedView: View {
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: PaeoniaSpacing.space8) {
                 Button {
+                    PaeoniaHaptics.gameContinued()
                     Task { await viewModel.acknowledgePartnerPicked() }
                 } label: {
                     Text(.gamesPartnerPickedContinue)

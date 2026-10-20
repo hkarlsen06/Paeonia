@@ -129,6 +129,7 @@ struct GameTutorialSheet: View {
     }
 
     private func advance() {
+        PaeoniaHaptics.gameContinued()
         guard !isLastPage else {
             dismiss()
             return

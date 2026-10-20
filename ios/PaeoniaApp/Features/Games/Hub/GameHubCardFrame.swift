@@ -149,7 +149,10 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
             .frame(maxWidth: .infinity)
             .redacted(reason: isLoading ? .placeholder : [])
 
-            Button(action: open) {
+            Button {
+                PaeoniaHaptics.gameContinued()
+                open()
+            } label: {
                 Text(actionTitle)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
