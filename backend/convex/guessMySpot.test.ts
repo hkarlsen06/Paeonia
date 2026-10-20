@@ -387,25 +387,25 @@ describe("pushes", () => {
     expect(JSON.stringify(await outbox(s.t))).not.toMatch(/Bergen|60\.39|latitude|points/);
   });
 
-  test("a guess then a send within 5 minutes send one push", async () => {
+  test("a guess then a send within a minute send one push", async () => {
     const s = await startGame();
     const roundId = await send(s, s.a);
     await deliverDuePushes(s.t);
     await guess(s.b, roundId, OSLO);
     expect(await deliverDuePushes(s.t)).toEqual([]);
-    tick(60);
+    tick(30);
     await send(s, s.b);
-    tick(5 * 60);
+    tick(60);
     expect(types(await deliverDuePushes(s.t))).toEqual(["guessed"]);
     expect((await rowsOf(s, "game_result"))[0].last_error).toBe("notification is out of date");
   });
 
-  test("a guess with no send sends the result push after 5 minutes", async () => {
+  test("a guess with no send sends the result push after a minute", async () => {
     const s = await startGame();
     const roundId = await send(s, s.a);
     await deliverDuePushes(s.t);
     await guess(s.b, roundId, OSLO);
-    tick(5 * 60);
+    tick(60);
     expect(types(await deliverDuePushes(s.t))).toEqual(["game_result"]);
     tick(60);
     await send(s, s.b);
@@ -418,7 +418,7 @@ describe("pushes", () => {
     await deliverDuePushes(s.t);
     await guess(s.b, roundId, OSLO);
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "guess_my_spot", p_present: true });
-    tick(5 * 60);
+    tick(60);
     expect(await deliverDuePushes(s.t)).toEqual([]);
 
     const s2 = await startGame();
@@ -426,7 +426,7 @@ describe("pushes", () => {
     await deliverDuePushes(s2.t);
     await guess(s2.b, second, OSLO);
     await s2.a.as.mutation(api.guessMySpot.mark_guess_my_spot_reveal_seen, { p_round_id: second });
-    tick(5 * 60);
+    tick(60);
     expect(await deliverDuePushes(s2.t)).toEqual([]);
   });
 

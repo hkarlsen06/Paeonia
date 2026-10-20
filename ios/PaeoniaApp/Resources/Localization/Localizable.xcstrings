@@ -15610,19 +15610,19 @@
       }
     },
     "guessMySpot.check.missing.hint" : {
-      "comment" : "Check screen hint when the photo did not say where it was taken.",
+      "comment" : "Hint over the check map, before the first pin, when the photo did not say where it was taken.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This photo doesn't say where it was taken. Tap the map where it was."
+            "value" : "Tap the map where it was taken."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bildet sier ikke hvor det er tatt. Trykk på kartet der det var."
+            "value" : "Trykk på kartet der bildet ble tatt."
           }
         }
       }

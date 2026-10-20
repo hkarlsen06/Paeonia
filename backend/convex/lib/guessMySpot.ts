@@ -24,7 +24,7 @@ export const CLOSE_METERS = 300_000;
 export const PLACE_NAME_MAX = 120;
 export const PLACE_CITY_MAX = 80;
 /** The guesser of a round gets one push for a guess and a send made within this long of each other. */
-export const RESULT_PUSH_DELAY_MS = 5 * 60_000;
+export const RESULT_PUSH_DELAY_MS = 60_000;
 
 // --- Tables -----------------------------------------------------------------
 
@@ -209,7 +209,7 @@ export async function guessMySpotPushStillWanted(
       return !(await isGamePresent(ctx, round.couple_id, "guess_my_spot", recipientUserId));
     case "game_result": {
       if (!round || round.sender_user_id !== recipientUserId || round.sender_reveal_seen_at !== undefined) return false;
-      // The push waited 5 minutes, so the sender may have opened the game since.
+      // The push waited a minute, so the sender may have opened the game since.
       if (await isGamePresent(ctx, round.couple_id, "guess_my_spot", recipientUserId)) return false;
       const next = await ctx.db
         .query("guess_my_spot_rounds")

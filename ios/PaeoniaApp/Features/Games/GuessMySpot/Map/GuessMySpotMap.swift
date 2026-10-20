@@ -239,8 +239,8 @@ enum GuessMySpotCamera {
         if degreesEast > 180 { degreesEast = 360 - degreesEast }
         let east = degreesEast * metersPerDegree * cos(spot.latitude * .pi / 180)
         // The guess sits inside the middle 85 percent of the view.
-        let latitudeMeters = max(1_500, 2 * north / 0.85)
-        let longitudeMeters = max(1_500, 2 * east / 0.85)
+        let latitudeMeters = max(500, 2 * north / 0.85)
+        let longitudeMeters = max(500, 2 * east / 0.85)
         guard max(latitudeMeters, longitudeMeters) <= 400_000 else { return nil }
         return .region(MKCoordinateRegion(
             center: spot.location,

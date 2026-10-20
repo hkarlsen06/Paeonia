@@ -227,7 +227,7 @@ export const ensure_guess_my_spot_game = mutation({
  * `guess_my_spot_photo` upload reserved for `p_round_id`. `p_round_number` is the round it makes,
  * and a send for a turn that already moved on is refused. The partner guesses next. Counts toward
  * the streak. Queues the turn push, or one push for the guess and this send when the caller
- * guessed the partner's photo less than 5 minutes ago.
+ * guessed the partner's photo less than a minute ago.
  *
  * Result: the new round as `get_guess_my_spot` shows it to the caller.
  */
@@ -379,7 +379,7 @@ export const send_guess_my_spot_photo = mutation({
 
 /**
  * The caller's guess for a round that waits for it. Scores it by distance, adds the points to the
- * shared total and to the caller's own total, and starts the caller's turn to send. Queues the result push 5 minutes ahead, so a
+ * shared total and to the caller's own total, and starts the caller's turn to send. Queues the result push a minute ahead, so a
  * send in that time sends one push for both.
  *
  * Result: the guessed round with the real spot.

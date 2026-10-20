@@ -33,7 +33,7 @@ Decided by the agent on 2026-10-18 while writing this file. The developer can ch
 - **Distances are metric in both languages.** Under 10 m the reveal shows whole metres, under 1 km tens of metres, under 10 km one decimal of a kilometre, and above that whole kilometres.
 - **Sending counts toward the streak.** Guessing alone does not, as in Consensio, because the turn isn't done until you send yours.
 - **The partner who opens the game first sends first.**
-- **One push for a guess and a send.** As in Consensio, the result push waits 5 minutes, and a send in that window sends one push that covers both.
+- **One push for a guess and a send.** The result push waits 1 minute, and a send in that window sends one push that covers both. Consensio waits 5 minutes.
 - **How to play cards.** Three cards, because "pick a photo, your partner guesses where" is not obvious from the picker.
 - **Catalog order.** Right after Consensio, the other guessing game.
 
@@ -147,8 +147,8 @@ Sending a photo counts toward the couple's streak through `game_turn_completed`.
 | Push kind | When | Title | Body |
 |---|---|---|---|
 | `game_turn_ready` | The partner sent a photo. | Your turn in Guess my spot / Din tur i Gjett hvor | Open Paeonia to guess where it was taken. / Åpne Paeonia for å gjette hvor bildet er tatt. |
-| `game_turn_ready`, step `guessed` | The partner guessed your photo and sent one back within 5 minutes. | [Name] guessed and sent you a photo / [Name] har gjettet og sendt deg et bilde | Open Paeonia to see how close they got. / Åpne Paeonia for å se hvor nær gjetningen var. |
-| `game_result` | The partner guessed your photo and sent nothing for 5 minutes. | [Name] made a guess / [Name] har gjettet | Open Paeonia to see how close they got. / Åpne Paeonia for å se hvor nær gjetningen var. |
+| `game_turn_ready`, step `guessed` | The partner guessed your photo and sent one back within 1 minute. | [Name] guessed and sent you a photo / [Name] har gjettet og sendt deg et bilde | Open Paeonia to see how close they got. / Åpne Paeonia for å se hvor nær gjetningen var. |
+| `game_result` | The partner guessed your photo and sent nothing for 1 minute. | [Name] made a guess / [Name] har gjettet | Open Paeonia to see how close they got. / Åpne Paeonia for å se hvor nær gjetningen var. |
 | `game_invite` | Invite bell. | [Name] wants to play Guess my spot with you / [Name] vil spille Gjett hvor med deg | Shared invite body. |
 | `game_turn_reminder` | The turn waited 72 hours. Once per turn. | Your turn in Guess my spot / Din tur i Gjett hvor | Shared reminder body. |
 
@@ -244,9 +244,10 @@ Layout.
 
 1. The photo on the top quarter, aspect fit on `.paeoniaSurfacePrimary`, rounded `radius16`. The sender just picked it, so it is only a reminder.
 2. The map on the other three quarters, rounded `radius16`, with this person's pin. It is big so it is easy to pan and zoom.
-3. Under the map: the title "Is this the spot?" once there is a pin, or "Where was this?" before. Before a pin, the hint "This photo doesn't say where it was taken. Tap the map where it was." With a pin, the place name with `mappin.and.ellipse` instead.
-4. A quiet line: "We take the place and time out of the photo. [Name] only sees the picture."
-5. Pinned bottom: primary "Send to [Name]" (`paperplane.fill`), off until there is a pin. Back in the toolbar reads "Choose another photo" and returns to the picker without sending.
+3. Over the map's lower edge before the first pin, the hint "Tap the map where it was taken." in a glass capsule, as on the guess screen.
+4. Under the map: the title "Is this the spot?" once there is a pin, or "Where was this?" before. Under it, the place name with `mappin.and.ellipse` once it is known. The line keeps its height while there is no name and while a moved pin is looked up again, and each line under the map is one line long, so the map never changes size on this screen. The map opens on the spot, near home, or on the world in the first frame.
+5. A quiet line: "We take the place and time out of the photo. [Name] only sees the picture."
+6. Pinned bottom: primary "Send to [Name]" (`paperplane.fill`), off until there is a pin. Back in the toolbar reads "Choose another photo" and returns to the picker without sending.
 
 "Send" fires `drawingSent()` and `send`, and the phase moves to waiting. Offline, the round is saved on this phone with its photo.
 
@@ -254,7 +255,7 @@ Layout.
 |---|---|---|
 | `check.another` | Choose another photo | Velg et annet bilde |
 | `check.found.title` | Is this the spot? | Er dette stedet? |
-| `check.missing.hint` | This photo doesn't say where it was taken. Tap the map where it was. | Bildet sier ikke hvor det er tatt. Trykk på kartet der det var. |
+| `check.missing.hint` | Tap the map where it was taken. | Trykk på kartet der bildet ble tatt. |
 | `check.missing.title` | Where was this? | Hvor var dette? |
 | `check.private` | We take the place and time out of the photo. %@ only sees the picture. | Vi tar sted og tid ut av bildet. %@ ser bare selve bildet. |
 | `check.send` | Send to %@ | Send til %@ |
@@ -309,7 +310,7 @@ Lock in fires `drawingSent()` and `send`, and the reveal opens at once.
 
 Purpose. The guesser sees how far their guess was from the real spot, and the sender sees how well their partner knows the place.
 
-Both partners see the same reveal, always from the guess to the real spot. The guesser's phone plays it right after the guess. It starts from the map as they left it when the guess pin is in view and the map shows less than a continent, and otherwise on the guess at about 300 km across. The sender's phone starts on the guess at about 60 km across. The photo half slides up and away, and the map fills the screen. The map keeps the result card's height as bottom padding from the start, so every camera move frames the part of the map the card leaves, and nothing slides when the card rises. A map's pins and line don't take SwiftUI's animations, so the timeline steps the pulses, the line and the drop itself, reading the clock about 60 times a second.
+Both partners see the same reveal, always from the guess to the real spot. The guesser's phone plays it right after the guess. It starts from the map as they left it when the guess pin is in view and the map shows less than a continent, and otherwise on the guess at about 300 km across. The sender's phone starts on the guess at about 60 km across. The photo half slides up and away, and the map fills the screen. The map keeps the result card's height as bottom padding from the start, so every camera move frames the part of the map the card leaves, and nothing slides when the card rises. On a wide screen the reveal keeps the guess screen's columns. The photo starts on the left half and slides away to the left, the card rises in a left column with the button under it, and the map keeps that column as padding on its left, so the camera frames the map to the right of the card. A map's pins and line don't take SwiftUI's animations, so the timeline steps the pulses, the line and the drop itself, reading the clock about 60 times a second.
 
 Beats, in seconds after the reveal starts.
 
@@ -320,7 +321,7 @@ Beats, in seconds after the reveal starts.
 | 0.90 | The camera zooms out over 0.9 s until both spots fit, with room around them. |
 | 1.55 | The line draws from the guess toward the real spot along the great circle over 0.7 s, easing out: a 4 pt `.paeoniaInkGold` line on a 12 pt gold glow at 0.3, with square ends. A far guess draws a dashed 4 pt `.paeoniaTextSecondary` line instead, as in Consensio. |
 | 2.30 | The real pin falls 70 pt onto the end of the line over 0.25 s. `answerRevealed()` and `chime` play as it hits, at 2.55. The map keeps 110 pt at its top for the distance capsule and the fall. The screen holds still for 0.3 s. |
-| 2.85 | The camera lands on the real spot over 1.0 s, centered on it and wide enough that the guess stays in view (at least 1.5 km across). A far guess, which would need more than 400 km, stays on the view of both spots. The distance capsule appears at the top and counts up from 0 over 0.7 s in 10 steps, with plain digits and the width of the final number. |
+| 2.85 | The camera lands on the real spot over 1.0 s, centered on it and wide enough that the guess stays in view (at least 500 m across, so a close guess lands closer than the view of both spots). A far guess, which would need more than 400 km, stays on the view of both spots. The distance capsule appears at the top and counts up from 0 over 0.7 s in 10 steps, with plain digits and the width of the final number. |
 | 3.60 | The verdict. Both heads glow gold over 0.3 s (0.8 for So close and Close, 1 for Spot on), a 4 pt gold ring widens from the real pin's head from 36 to 72 pt and fades over 0.4 s, and the distance capsule pulses 1 to 1.1 and back. Far has no glow or ring. See below. |
 | 3.90 | The photo comes back: the result card rises 120 pt on a spring (0.3 s, bounce 0.1) with a 0.2 s fade, with the photo, the place name and date on it, the verdict title and line. |
 | 4.20 | The shared total counts up over 0.7 s in 10 steps, with "+4,993" beside it. |

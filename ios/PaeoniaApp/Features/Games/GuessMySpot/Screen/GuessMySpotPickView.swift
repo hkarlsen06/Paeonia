@@ -75,6 +75,9 @@ struct GuessMySpotPickView: View {
         .photosPickerDisabledCapabilities([.selectionActions])
         .photosPickerAccessoryVisibility(.hidden, edges: .all)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // The photos run under the home indicator, and the system insets the grid's
+        // last row above it.
+        .ignoresSafeArea(edges: .bottom)
         .overlay {
             if viewModel.isPreparingPhoto {
                 ZStack {

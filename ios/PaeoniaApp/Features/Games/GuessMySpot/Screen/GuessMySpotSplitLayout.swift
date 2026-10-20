@@ -14,28 +14,28 @@ struct GuessMySpotSplitLayout<Header: View, Photo: View, MapPane: View, Footer: 
     @ViewBuilder var bottom: Bottom
 
     @State private var isWide = false
-    @State private var paneSpace = CGSize.zero
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             header
-            Group {
+            // Read in the same pass that lays out the panes, so the photo never
+            // starts at half and then shrinks.
+            GeometryReader { proxy in
+                let spacing = PaeoniaSpacing.space12
                 if isWide {
-                    HStack(spacing: PaeoniaSpacing.space12) {
+                    HStack(spacing: spacing) {
                         pane { photo }
-                            .frame(width: photoLength(of: paneSpace.width))
+                            .frame(width: max(0, proxy.size.width - spacing) * photoShare)
                         pane { map }
                     }
                 } else {
-                    VStack(spacing: PaeoniaSpacing.space12) {
+                    VStack(spacing: spacing) {
                         pane { photo }
-                            .frame(height: photoLength(of: paneSpace.height))
+                            .frame(height: max(0, proxy.size.height - spacing) * photoShare)
                         pane { map }
                     }
                 }
             }
-            .frame(maxHeight: .infinity)
-            .onGeometryChange(for: CGSize.self) { $0.size } action: { paneSpace = $0 }
             footer
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -54,12 +54,6 @@ struct GuessMySpotSplitLayout<Header: View, Photo: View, MapPane: View, Footer: 
             .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
             .background(.paeoniaBackgroundSecondary)
         }
-    }
-
-    /// Nil until the room is measured, so the first pass splits it evenly.
-    private func photoLength(of total: CGFloat) -> CGFloat? {
-        guard total > 0 else { return nil }
-        return max(0, (total - PaeoniaSpacing.space12) * photoShare)
     }
 
     private func pane(@ViewBuilder _ content: () -> some View) -> some View {

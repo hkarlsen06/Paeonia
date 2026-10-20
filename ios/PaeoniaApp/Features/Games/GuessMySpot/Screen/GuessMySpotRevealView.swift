@@ -13,6 +13,7 @@ struct GuessMySpotRevealView: View {
     @State private var timeline = GuessMySpotRevealTimeline()
     @State private var camera: MapCameraPosition = GuessMySpotCamera.world
     @State private var cardHeight: CGFloat = 0
+    /// The whole map, under the top room and the card too.
     @State private var mapSize: CGSize = .zero
     @State private var hasPlacedCamera = false
     @AccessibilityFocusState private var isTitleFocused: Bool
@@ -22,6 +23,13 @@ struct GuessMySpotRevealView: View {
 
     private var isHeld: Bool {
         viewModel.phase == .reveal(isHeld: true)
+    }
+
+    /// A wide screen keeps the guess screen's columns: the photo and then the card
+    /// on the left, and the camera frames the map to their right. The same test as
+    /// `GuessMySpotSplitLayout`, so the reveal matches the screen before it.
+    private var isWide: Bool {
+        mapSize.width >= 700 && mapSize.width > mapSize.height
     }
 
     private var isSender: Bool {
@@ -65,7 +73,9 @@ struct GuessMySpotRevealView: View {
             actions
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.vertical, PaeoniaSpacing.space8)
-                .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+                // Under the card, in its column on a wide screen.
+                .frame(maxWidth: Self.cardColumn)
+                .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
         }
         .simultaneousGesture(TapGesture().onEnded {
             if timeline.canSkip { timeline.skip() }
@@ -85,6 +95,8 @@ struct GuessMySpotRevealView: View {
 
     /// The map's room at the top for the distance capsule and for a pin's drop.
     static let topRoom: CGFloat = 110
+    /// The card's column on a wide screen, its side padding included.
+    static let cardColumn: CGFloat = PaeoniaSpacing.focusedContentWidth
 
     // MARK: Timeline
 
@@ -132,11 +144,17 @@ struct GuessMySpotRevealView: View {
     }
 
     /// Where the real pin stands on screen once the camera landed: the middle of the
-    /// map above the card.
+    /// map the card leaves, above it or on a wide screen to its right.
     private var bloomOrigin: UnitPoint {
-        let total = mapSize.height + Self.topRoom
-        guard total > Self.topRoom else { return UnitPoint(x: 0.5, y: 0.3) }
-        return UnitPoint(x: 0.5, y: (Self.topRoom + max(0, mapSize.height - cardHeight) / 2) / total)
+        guard mapSize.height > Self.topRoom, mapSize.width > Self.cardColumn else { return UnitPoint(x: 0.5, y: 0.3) }
+        let framed = mapSize.height - Self.topRoom
+        if isWide {
+            return UnitPoint(
+                x: (Self.cardColumn + (mapSize.width - Self.cardColumn) / 2) / mapSize.width,
+                y: (Self.topRoom + framed / 2) / mapSize.height
+            )
+        }
+        return UnitPoint(x: 0.5, y: (Self.topRoom + max(0, framed - cardHeight) / 2) / mapSize.height)
     }
 
     private func announce() {
@@ -168,10 +186,11 @@ struct GuessMySpotRevealView: View {
         .safeAreaPadding(.top, Self.topRoom)
         // The card's room is kept from the start, so every camera move frames the part
         // of the map the card leaves, and nothing slides when it rises.
-        .safeAreaPadding(.bottom, cardHeight + PaeoniaSpacing.space8)
+        .safeAreaPadding(.leading, isWide ? Self.cardColumn : 0)
+        .safeAreaPadding(.bottom, isWide ? PaeoniaSpacing.space8 : cardHeight + PaeoniaSpacing.space8)
         .onGeometryChange(for: CGSize.self) { proxy in
             proxy.size
-        } action: { mapSize = CGSize(width: $0.width, height: max(0, $0.height - Self.topRoom)) }
+        } action: { mapSize = $0 }
         .accessibilityHidden(!timeline.isSettled)
     }
 
@@ -209,37 +228,6 @@ struct GuessMySpotRevealView: View {
         return GuessMySpotMap.Line(from: guess, to: spot, progress: progress, isFar: plan?.verdict == .far)
     }
 
-    // MARK: Photo and distance
-
-    /// The photo on the top half, as the guess screen had it, until it slides away.
-    private var photo: some View {
-        GeometryReader { proxy in
-            GuessMySpotPhotoPane(image: viewModel.roundPhoto)
-                .frame(height: max(0, proxy.size.height / 2 - PaeoniaSpacing.space12))
-                .background(.paeoniaSurfacePrimary)
-                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space8)
-                .offset(y: timeline.photoAway && !reduceMotion ? -proxy.size.height / 2 - 40 : 0)
-                .opacity(timeline.photoAway ? 0 : 1)
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    @ViewBuilder
-    private var distanceCapsule: some View {
-        if timeline.distanceStep > 0, let plan {
-            GuessMySpotDistanceCapsule(
-                counted: timeline.countedDistance,
-                final: plan.distanceMeters,
-                scale: timeline.capsuleScale
-            )
-            .padding(.top, PaeoniaSpacing.space12)
-            .transition(.opacity.combined(with: .scale(scale: 0.9)))
-        }
-    }
-
     // MARK: Card
 
     @ViewBuilder
@@ -268,7 +256,8 @@ struct GuessMySpotRevealView: View {
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.bottom, PaeoniaSpacing.space8)
-        .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+        .frame(maxWidth: Self.cardColumn)
+        .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
     }
 
@@ -288,5 +277,53 @@ struct GuessMySpotRevealView: View {
         .allowsHitTesting(isShown)
         .accessibilityHidden(!isShown)
         .accessibilityIdentifier("guessMySpot.reveal.continue")
+    }
+}
+
+// MARK: Photo and distance
+
+extension GuessMySpotRevealView {
+    /// The photo where the guess screen had it, on the top half or on a wide screen
+    /// the left half, until it slides away up or to the left.
+    private var photo: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            let slides = timeline.photoAway && !reduceMotion
+            let padding = PaeoniaSpacing.screenHorizontalPadding
+            GuessMySpotPhotoPane(image: viewModel.roundPhoto)
+                .frame(
+                    width: isWide ? max(0, (size.width - 2 * padding - PaeoniaSpacing.space12) / 2) : nil,
+                    height: max(0, isWide
+                        ? size.height - PaeoniaSpacing.space8 - PaeoniaSpacing.space12
+                        : size.height / 2 - PaeoniaSpacing.space12)
+                )
+                .background(.paeoniaSurfacePrimary)
+                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+                .padding(.horizontal, padding)
+                .padding(.top, PaeoniaSpacing.space8)
+                .offset(
+                    x: slides && isWide ? -size.width / 2 - 40 : 0,
+                    y: slides && !isWide ? -size.height / 2 - 40 : 0
+                )
+                .opacity(timeline.photoAway ? 0 : 1)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var distanceCapsule: some View {
+        if timeline.distanceStep > 0, let plan {
+            GuessMySpotDistanceCapsule(
+                counted: timeline.countedDistance,
+                final: plan.distanceMeters,
+                scale: timeline.capsuleScale
+            )
+            .padding(.top, PaeoniaSpacing.space12)
+            // Centered over the map the camera frames.
+            .frame(maxWidth: .infinity)
+            .padding(.leading, isWide ? Self.cardColumn : 0)
+            .transition(.opacity.combined(with: .scale(scale: 0.9)))
+        }
     }
 }
