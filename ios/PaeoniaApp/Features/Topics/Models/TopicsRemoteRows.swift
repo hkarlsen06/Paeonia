@@ -18,7 +18,8 @@ nonisolated struct RemoteTopicSummary: Codable, Equatable, Sendable {
     let totalCount: Int
     /// Questions both partners answered.
     let togetherCount: Int
-    /// Questions the partner answered that the viewer hasn't.
+    /// Questions the partner answered that the viewer hasn't, and questions both
+    /// answered whose partner answer the viewer hasn't opened yet.
     let forYouCount: Int
     /// Questions the viewer answered that the partner hasn't.
     let waitingForPartnerCount: Int

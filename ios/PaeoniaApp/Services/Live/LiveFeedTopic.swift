@@ -10,8 +10,8 @@ nonisolated enum LiveFeedTopic: Hashable, Sendable {
     case gamesTab
     case memoriesTab
     case usTab
-    /// The partner has this game open. The Home card and the Games tab badge
-    /// follow the game while the partner plays it.
+    /// The partner has this game open. The Home card follows the game while the
+    /// partner plays it.
     case partnerInGame(GameKind)
     /// A moment when every game's turn state should be current: the app opens or
     /// returns to the front, or a game push arrives. It is touched, not held.

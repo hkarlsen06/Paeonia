@@ -16,7 +16,7 @@ struct LiveRootSystemSideEffects: RootSystemSideEffecting {
     }
 
     func clearAppBadge() {
-        Task { await AppBadgeLiveFeed.setBadge(0) }
+        Task { await AppBadgeLiveFeed.clear() }
     }
 }
 

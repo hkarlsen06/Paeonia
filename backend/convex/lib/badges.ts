@@ -15,6 +15,10 @@ import { topicsWaitingCount } from "./topics";
 // trial notice never count. A kind the person switched off in Notifications does not count either.
 // The server sends the number as `aps.badge`: in every alert, and in a badge-only push
 // (`queueBadgeUpdate`) when something was read on another phone.
+//
+// The app's tab badges show the same counts split by tab, so the icon never shows a number that no
+// tab explains. The tabs ignore the Notifications switches, since those turn off pushes and not
+// what the app shows.
 
 /** How long a story stays on Home, so how long an unseen one counts. */
 const STORY_BADGE_MS = 24 * 60 * 60 * 1000;
@@ -23,25 +27,46 @@ const BADGE_UPDATE_DELAY_MS = 30 * 1000;
 /** How far back a pending badge-only push can be. More than its delay plus send retries. */
 const BADGE_UPDATE_LOOKBACK_MS = 10 * 60 * 1000;
 
-/** The number on the app icon for `userId`. Zero without an entitled couple. */
-export async function badgeCountForUser(ctx: ReaderCtx, userId: string, now: string = nowIso()): Promise<number> {
+/** What waits for one person, by the tab that shows it, and the number on the app icon. */
+export type BadgeCounts = {
+  /** Unread chats, today's answers to open, and Topics questions that wait. */
+  questions: number;
+  /** Games that wait on this person, and open invites. */
+  games: number;
+  /** The partner's stories still on Home that this person has not opened. */
+  home: number;
+  /** The tabs' items of the kinds whose alerts are on in Notifications. */
+  icon: number;
+};
+
+const NO_BADGES: BadgeCounts = { questions: 0, games: 0, home: 0, icon: 0 };
+
+/** What waits for `userId`. All zero without an entitled couple. */
+export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: string = nowIso()): Promise<BadgeCounts> {
   const coupleId = await getEntitledCoupleIdForUser(ctx, userId);
-  if (coupleId === null) return 0;
+  if (coupleId === null) return NO_BADGES;
+  const chats = await unreadChats(ctx, coupleId, userId);
+  const answers = (await answersWaiting(ctx, coupleId, userId, now)) + (await topicsWaitingCount(ctx, coupleId, userId));
+  const stories = await unseenStories(ctx, coupleId, userId, now);
+  const games = await gamesWaitingFor(ctx, coupleId, userId);
   const preference = await ctx.db
     .query("notification_preferences")
     .withIndex("by_user_id", (q) => q.eq("user_id", userId))
     .unique();
   // Every counted kind has a switch, and a missing preference row blocks those kinds.
-  if (!preference) return 0;
-  const allows = (kind: Parameters<typeof preferenceAllows>[0]) => preferenceAllows(kind, "alert", preference);
-  let count = 0;
-  if (allows("thread_message_sent")) count += await unreadChats(ctx, coupleId, userId);
-  if (allows("partner_answered")) {
-    count += (await answersWaiting(ctx, coupleId, userId, now)) + (await topicsWaitingCount(ctx, coupleId, userId));
-  }
-  if (allows("story_posted")) count += await unseenStories(ctx, coupleId, userId, now);
-  if (allows("game_turn_ready")) count += await gamesWaitingFor(ctx, coupleId, userId);
-  return count;
+  const allows = (kind: Parameters<typeof preferenceAllows>[0]) =>
+    preference !== null && preferenceAllows(kind, "alert", preference);
+  const icon =
+    (allows("thread_message_sent") ? chats : 0) +
+    (allows("partner_answered") ? answers : 0) +
+    (allows("story_posted") ? stories : 0) +
+    (allows("game_turn_ready") ? games : 0);
+  return { questions: chats + answers, games, home: stories, icon };
+}
+
+/** The number on the app icon for `userId`. Zero without an entitled couple. */
+export async function badgeCountForUser(ctx: ReaderCtx, userId: string, now: string = nowIso()): Promise<number> {
+  return (await badgeCountsForUser(ctx, userId, now)).icon;
 }
 
 /**

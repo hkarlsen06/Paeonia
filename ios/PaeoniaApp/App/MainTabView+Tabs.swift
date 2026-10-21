@@ -20,8 +20,9 @@ extension MainTabView {
 
     func badgeCount(for tab: MainTab) -> Int {
         switch tab {
-        case .questions: dailyChallengeViewModel.unreadChats.count
-        case .games: gamesViewModel.isYourTurn ? 1 : 0
+        // The server's counts, the same ones the app icon adds up.
+        case .questions: AppBadges.shared.counts.questions
+        case .games: AppBadges.shared.counts.games
         case .home:
             StoryTimeline.unseenCount(storiesViewModel.stories, partner: identity.partnerUserID, at: storyBadgeDate)
         case .us, .memories: 0

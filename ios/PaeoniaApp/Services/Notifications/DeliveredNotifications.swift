@@ -54,7 +54,7 @@ nonisolated enum DeliveredNotifications {
     static func clearAll() {
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
         // Nothing waits any more, so the icon number goes too.
-        Task { await AppBadgeLiveFeed.setBadge(0) }
+        Task { await AppBadgeLiveFeed.clear() }
     }
 
     private static func uuid(_ value: Any?) -> UUID? {

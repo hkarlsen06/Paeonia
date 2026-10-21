@@ -120,8 +120,14 @@ export async function answerState(ctx: ReaderCtx, instance: Doc<"daily_question_
   return { answers, own, partner };
 }
 
-/** The started questions of a topic that are in its catalog, by question id, with who answered. */
-export type TopicStates = Map<string, Awaited<ReturnType<typeof answerState>> & { instance: Doc<"daily_question_instances"> }>;
+/**
+ * The started questions of a topic that are in its catalog, by question id, with who answered.
+ * `seen` is whether the viewer opened the partner's answer since both answered.
+ */
+export type TopicStates = Map<
+  string,
+  Awaited<ReturnType<typeof answerState>> & { instance: Doc<"daily_question_instances">; seen: boolean }
+>;
 
 /**
  * The couple's started questions of `topic`, read once for both the topic screen and its card.
@@ -138,20 +144,34 @@ export async function topicStates(
   const states: TopicStates = new Map();
   for (const [questionId, instance] of await topicInstances(ctx, coupleId, topic.collection_id)) {
     if (!inTopic.has(questionId) || leaveOut.has(questionId)) continue;
-    states.set(questionId, { instance, ...(await answerState(ctx, instance, viewerId)) });
+    const state = await answerState(ctx, instance, viewerId);
+    const seen =
+      state.own !== null &&
+      state.partner !== null &&
+      (await ctx.db
+        .query("daily_answer_seen_states")
+        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", viewerId))
+        .unique()) !== null;
+    states.set(questionId, { instance, ...state, seen });
   }
   return states;
 }
 
-/** A topic's card: its names and the counts over questions the couple has not put aside. */
+/**
+ * A topic's card: its names and the counts over questions the couple has not put aside. A question
+ * is for the viewer while the partner answered and the viewer has not, and again once both answered
+ * until the viewer opens the partner's answer. The app icon badge counts the same questions.
+ */
 export function topicSummary(topic: Topic, skipped: Set<string>, states: TopicStates): TopicSummary {
   let together = 0;
   let forYou = 0;
   let waitingForPartner = 0;
-  for (const [questionId, { own, partner }] of states) {
+  for (const [questionId, { own, partner, seen }] of states) {
     if (skipped.has(questionId)) continue;
-    if (own && partner) together += 1;
-    else if (partner) forYou += 1;
+    if (own && partner) {
+      together += 1;
+      if (!seen) forYou += 1;
+    } else if (partner) forYou += 1;
     else if (own) waitingForPartner += 1;
   }
   return {
@@ -177,49 +197,17 @@ export async function topicOfQuestion(ctx: ReaderCtx, questionId: string): Promi
   return collection?.kind === "topic" ? collection : null;
 }
 
-/**
- * Whether something in a topic waits for `userId`: a question the partner answered that the
- * user has not answered or put aside, or a question both answered whose partner answer the user has
- * not seen yet.
- */
+/** Whether a topic question waits for `userId`, by the rule of `topicSummary`. */
 export async function hasTopicWaiting(ctx: ReaderCtx, coupleId: string, userId: string): Promise<boolean> {
-  const skipped = await skippedQuestionIds(ctx, coupleId);
-  for (const topic of await activeTopics(ctx)) {
-    for (const instance of (await topicInstances(ctx, coupleId, topic.collection_id)).values()) {
-      const { own, partner } = await answerState(ctx, instance, userId);
-      if (!partner) continue;
-      if (!own) {
-        if (!skipped.has(instance.question_id)) return true;
-        continue;
-      }
-      const seen = await ctx.db
-        .query("daily_answer_seen_states")
-        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", userId))
-        .unique();
-      if (!seen) return true;
-    }
-  }
-  return false;
+  return (await topicsWaitingCount(ctx, coupleId, userId)) > 0;
 }
 
-/** How many topic questions wait for `userId`, by the rule of `hasTopicWaiting`. For the app icon badge. */
+/** How many topic questions wait for `userId`: the Topics cards' "for you" counts added up. */
 export async function topicsWaitingCount(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
   const skipped = await skippedQuestionIds(ctx, coupleId);
   let count = 0;
   for (const topic of await activeTopics(ctx)) {
-    for (const instance of (await topicInstances(ctx, coupleId, topic.collection_id)).values()) {
-      const { own, partner } = await answerState(ctx, instance, userId);
-      if (!partner) continue;
-      if (!own) {
-        if (!skipped.has(instance.question_id)) count += 1;
-        continue;
-      }
-      const seen = await ctx.db
-        .query("daily_answer_seen_states")
-        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instance.id).eq("user_id", userId))
-        .unique();
-      if (!seen) count += 1;
-    }
+    count += topicSummary(topic, skipped, await topicStates(ctx, topic, coupleId, userId, skipped)).for_you_count;
   }
   return count;
 }
