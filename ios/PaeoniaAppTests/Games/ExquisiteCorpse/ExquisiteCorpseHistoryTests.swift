@@ -18,6 +18,7 @@ final class ScriptedCorpseHistoryGateway: ExquisiteCorpseGateway, @unchecked Sen
 
     private let lock = NSLock()
     private var figures: [RemoteExquisiteCorpseFigure] = []
+    private var starred: Set<UUID> = []
     private var recordedRequests: [Request] = []
     private var isFailing = false
 
@@ -25,6 +26,11 @@ final class ScriptedCorpseHistoryGateway: ExquisiteCorpseGateway, @unchecked Sen
 
     func setFigures(_ figures: [RemoteExquisiteCorpseFigure]) {
         lock.withLock { self.figures = figures }
+    }
+
+    /// The figures this person favorited, which the "starred only" read returns.
+    func setStarred(_ ids: Set<UUID>) {
+        lock.withLock { starred = ids }
     }
 
     func setFailing(_ failing: Bool) {
@@ -36,19 +42,26 @@ final class ScriptedCorpseHistoryGateway: ExquisiteCorpseGateway, @unchecked Sen
         beforeFigureNumber: Int?,
         limit: Int
     ) async throws -> RemoteExquisiteCorpseHistoryPage {
-        let (figures, failing) = lock.withLock {
+        let (figures, starred, failing) = lock.withLock {
             recordedRequests.append(
                 Request(starredOnly: starredOnly, beforeFigureNumber: beforeFigureNumber, limit: limit)
             )
-            return (self.figures, isFailing)
+            return (self.figures, self.starred, isFailing)
         }
         if failing { throw Failure() }
         return ExquisiteCorpseDeveloperFixture.historyPage(
             from: figures,
+            starred: starred,
             starredOnly: starredOnly,
             before: beforeFigureNumber,
             limit: limit
         )
+    }
+
+    func loadExquisiteCorpseFigure(figureID: UUID) async throws -> RemoteExquisiteCorpseFigure? {
+        let (figures, failing) = lock.withLock { (self.figures, isFailing) }
+        if failing { throw Failure() }
+        return figures.first { $0.id == figureID }
     }
 
     func ensureExquisiteCorpseGame() async throws -> RemoteExquisiteCorpseEnsureResult {
@@ -71,25 +84,33 @@ final class ScriptedCorpseHistoryGateway: ExquisiteCorpseGateway, @unchecked Sen
     func markExquisiteCorpseRevealSeen(figureID _: UUID) async throws -> RemoteExquisiteCorpseRevealSeenResult {
         throw Failure()
     }
-
-    func setExquisiteCorpseStar(figureID _: UUID, starred _: Bool) async throws -> RemoteExquisiteCorpseStarResult {
-        throw Failure()
-    }
 }
 
 // swiftlint:enable async_without_await
 
-/// "Our creatures": paging, the filters, the cache and the stars.
+/// "Our creatures": paging, the filters, the cache and the favorites.
 @MainActor
 struct ExquisiteCorpseHistoryTests {
     private typealias Fixture = ExquisiteCorpseFixture
 
     private let environment = ExquisiteCorpseTestEnvironment(state: nil)
     private let gateway = ScriptedCorpseHistoryGateway()
+    /// Creatures 10, 7 and 4 are starred.
+    private let starredIDs = Set([10, 7, 4].map(Fixture.figureID))
+    private let favorites: FavoritesStore
 
-    /// Twelve finished creatures, newest first. The ones in `starred` are starred.
-    private func figures(starred: Set<Int> = [10, 7, 4]) -> [RemoteExquisiteCorpseFigure] {
-        (1...12).reversed().map { Fixture.figure($0, revealSeen: true, starred: starred.contains($0)) }
+    init() {
+        favorites = FavoritesStore.preloaded(
+            ownerUserID: Fixture.me,
+            favorites: Set([10, 7, 4].map(Fixture.figureID)).map {
+                FavoriteRef(target: .corpseFigure($0), createdAt: Fixture.now)
+            }
+        )
+    }
+
+    /// Twelve finished creatures, newest first.
+    private func figures() -> [RemoteExquisiteCorpseFigure] {
+        (1...12).reversed().map { Fixture.figure($0, revealSeen: true) }
     }
 
     private func makeHistory(
@@ -97,14 +118,12 @@ struct ExquisiteCorpseHistoryTests {
         figures: [RemoteExquisiteCorpseFigure]? = nil
     ) -> ExquisiteCorpseHistoryViewModel {
         gateway.setFigures(figures ?? self.figures())
+        gateway.setStarred(starredIDs)
         var dependencies = environment.dependencies(withRoom: false)
         dependencies.exquisiteCorpseGateway = gateway
-        let stars = GameStars(source: .exquisiteCorpse(cache: environment.cache), dependencies: dependencies) {
-            Fixture.me
-        }
+        dependencies.favorites = favorites
         return ExquisiteCorpseHistoryViewModel(
             dependencies: dependencies,
-            stars: stars,
             participants: ExquisiteCorpseTestEnvironment.participants,
             pageSize: pageSize
         )
@@ -230,7 +249,7 @@ struct ExquisiteCorpseHistoryTests {
         await history.refresh()
         let first = try #require(history.visibleFigures.first)
 
-        await history.stars.setStarred(false, id: first.id)
+        await favorites.setFavorite(false, target: .corpseFigure(first.id))
 
         #expect(!history.visibleFigures.contains { $0.id == first.id })
     }
@@ -240,9 +259,9 @@ struct ExquisiteCorpseHistoryTests {
         await history.refresh()
         history.filter = .starred
         await history.refresh()
-        let unstarred = try #require(figures().first { !$0.starredByMe })
+        let unstarred = try #require(figures().first { !starredIDs.contains($0.id) })
 
-        await history.stars.setStarred(true, id: unstarred.id)
+        await favorites.setFavorite(true, target: .corpseFigure(unstarred.id))
 
         #expect(history.visibleFigures.contains { $0.id == unstarred.id })
         // Newest first, whichever list a creature came from.

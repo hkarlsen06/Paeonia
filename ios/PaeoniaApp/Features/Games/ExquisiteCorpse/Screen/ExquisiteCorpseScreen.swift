@@ -29,11 +29,9 @@ struct ExquisiteCorpseScreen: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { historyButton }
-        .gameStarToolbar(
-            stars: viewModel.stars,
-            id: viewModel.figure?.id,
+        .favoriteToolbarItem(
+            viewModel.figure.map { .corpseFigure($0.id) },
             isShown: viewModel.phase == .reveal,
-            hintKey: "games.exquisiteCorpse.starHintShown",
             identifier: "corpse.reveal.star"
         )
         .preferredColorScheme(.dark)

@@ -99,14 +99,6 @@ final class ExquisiteCorpseViewModel {
     @ObservationIgnored let dependencies: GamesDependencies
     @ObservationIgnored var gateway: any ExquisiteCorpseGateway { dependencies.exquisiteCorpseGateway }
     @ObservationIgnored var cache: any ExquisiteCorpseCaching { dependencies.exquisiteCorpseCache }
-    /// This person's private stars on finished figures. The reveal and "Our creatures"
-    /// share it.
-    @ObservationIgnored lazy var stars = GameStars(
-        source: .exquisiteCorpse(cache: dependencies.exquisiteCorpseCache),
-        dependencies: dependencies
-    ) { [weak self] in
-        self?.currentUserID
-    }
     /// The loops that run while the screen is open: heartbeat, data changes and the clock.
     @ObservationIgnored let loops: GameScreenLoops
     @ObservationIgnored let tickInterval: Duration
@@ -254,7 +246,6 @@ final class ExquisiteCorpseViewModel {
 
     func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
         syncAfterLocalChange = handler
-        stars.setLocalChangeSyncHandler(handler)
     }
 
     func clearNotice() {

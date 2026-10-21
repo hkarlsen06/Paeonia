@@ -186,64 +186,18 @@ struct ExquisiteCorpseRevealSeenHandler: PendingSyncOperationHandling {
     }
 }
 
-// MARK: - Star
+// MARK: - Favorite gate
 
-/// Sends a star or an unstar for a finished figure. The server sets the value it
-/// is given, so sending the same write twice changes nothing, and the writes of
-/// one figure go in the order they were made, which makes the last one win.
-///
-/// It also waits for this person's queued part of the figure, because the server
-/// stars only a finished figure. A refusal that a retry can't fix drops the
-/// write without a notice: the star then shows the server's value again.
-struct ExquisiteCorpseStarHandler: PendingSyncOperationHandling {
-    nonisolated let operationKind: SyncPendingOperationKind = .exquisiteCorpseStar
-
-    private let gateway: any ExquisiteCorpseGateway
-    private let cache: any ExquisiteCorpseCaching
-
-    init(gateway: any ExquisiteCorpseGateway, cache: any ExquisiteCorpseCaching) {
-        self.gateway = gateway
-        self.cache = cache
-    }
-
-    func send(
-        _ operation: PendingSyncOperationSnapshot,
+/// An Exquisite corpse figure can be favorited once it is finished, so a favorite waits for
+/// this person's queued part of the figure. The server would otherwise refuse it as
+/// "not finished".
+struct ExquisiteCorpseFavoriteGate: FavoriteSendGating {
+    func mustWait(
+        for target: FavoriteTarget,
+        operation: PendingSyncOperationSnapshot,
         context: SyncContext
-    ) async throws -> PendingSyncOperationSendResult {
-        guard let data = operation.requestData,
-              let payload = try? JSONDecoder().decode(ExquisiteCorpseStarPayload.self, from: data)
-        else {
-            return .terminalFailure("Missing star payload")
-        }
-        // An earlier star of the same figure goes first, so the last write wins.
-        let hasQueuedPart = try await hasQueuedWrite(
-            .exquisiteCorpseSubmitPart,
-            forFigure: payload.figureID,
-            of: operation,
-            context: context
-        )
-        let hasEarlierStar = try await hasQueuedWrite(
-            .exquisiteCorpseStar,
-            forFigure: payload.figureID,
-            of: operation,
-            earlierOnly: true,
-            context: context
-        )
-        if hasQueuedPart || hasEarlierStar {
-            return .retry(after: nil)
-        }
-        do {
-            let result = try await gateway.setExquisiteCorpseStar(figureID: payload.figureID, starred: payload.starred)
-            // Kept before the write leaves the queue, so the star never flips back
-            // to the server's old value in between.
-            await cache.saveStars([payload.figureID: result.starred], ownerUserID: operation.ownerUserID)
-            LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
-            return .succeeded
-        } catch let error as PaeoniaConvexError {
-            guard await shouldDrop(error, of: operation, cache: cache) else { throw error }
-            LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
-            return .terminalFailure(error.description)
-        }
+    ) async throws -> Bool {
+        try await hasQueuedWrite(.exquisiteCorpseSubmitPart, forFigure: target.id, of: operation, context: context)
     }
 }
 

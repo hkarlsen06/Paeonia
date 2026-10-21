@@ -19,7 +19,7 @@ struct DrawAndGuessSpeedBonusTests {
                 word: remote.word, points: remote.points, drawingMediaAssetID: remote.drawingMediaAssetID,
                 drawingSubmittedAt: now.addingTimeInterval(-submittedAgo), startedAt: remote.startedAt,
                 guesserFirstSeenAt: nil, endedAt: nil, solveMs: nil, speedBonus: 0, firstTryBonus: 0,
-                hintsUsed: 0, personalBest: false, guesserReaction: nil, starredByMe: false, drawerResultSeenAt: nil,
+                hintsUsed: 0, personalBest: false, guesserReaction: nil, drawerResultSeenAt: nil,
                 guesserResultSeenAt: nil, attempts: []
             )
         }

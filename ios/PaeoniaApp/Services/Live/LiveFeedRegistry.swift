@@ -36,6 +36,7 @@ nonisolated enum LiveFeedRegistry {
             CoupleDatesLiveFeed(cache: FileCoupleDatesCache.shared),
             StoriesLiveFeed(cache: FileStoriesCache.shared),
             TopicsLiveFeed(cache: FileTopicsCache.shared),
+            FavoritesLiveFeed(cache: FileFavoritesCache.shared),
             AppBadgeLiveFeed(),
         ]
     }

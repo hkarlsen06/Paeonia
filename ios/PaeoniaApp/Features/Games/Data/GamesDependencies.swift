@@ -14,6 +14,8 @@ struct GamesDependencies {
     /// Builds the live drawing room for the couple, or nil when there is none.
     var makeLive: @MainActor (UUID) -> WidgetLiveDrawing?
     var now: @Sendable () -> Date = { Date() }
+    /// This person's favorites. The history screens read which items are starred from it.
+    var favorites: FavoritesStore = .shared
     // Each built game adds its own dependency fields here, after `now`. Give each
     // a default that works offline, so a test that builds `GamesDependencies`
     // memberwise does not change when a game adds a field.
@@ -191,11 +193,11 @@ nonisolated extension UnavailableGamesGateway: DrawAndGuessGateway {
         throw Unavailable()
     }
 
-    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+    func loadDrawAndGuessHistoryRound(roundID _: UUID) async throws -> RemoteDrawAndGuessHistoryRound? {
         throw Unavailable()
     }
 
-    func setRoundStar(roundID _: UUID, starred _: Bool) async throws -> RemoteRoundStarResult {
+    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
         throw Unavailable()
     }
 }

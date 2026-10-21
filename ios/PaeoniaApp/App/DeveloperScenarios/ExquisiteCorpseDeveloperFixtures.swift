@@ -102,8 +102,7 @@
       _ number: Int,
       parts count: Int = 3,
       ideas: [String?] = [],
-      isRevealSeen: Bool = true,
-      isStarred: Bool = false
+      isRevealSeen: Bool = true
     ) -> RemoteExquisiteCorpseFigure {
       let isFinished = count == ExquisiteCorpsePartKind.allCases.count
       let finishedAt = now.addingTimeInterval(-Double(number) * 86_400)
@@ -114,7 +113,6 @@
         createdAt: finishedAt.addingTimeInterval(-7_200),
         finishedAt: isFinished ? finishedAt : nil,
         myRevealSeenAt: isFinished && isRevealSeen ? finishedAt.addingTimeInterval(600) : nil,
-        starredByMe: isStarred,
         parts: (0..<count).map { index in
           let idea = ideas.indices.contains(index) ? ideas[index] : nil
           return part(figure: number, partIndex: index, idea: idea, isFinished: isFinished)
@@ -229,20 +227,33 @@
     /// Newest first, creature 12 down to creature 1.
     nonisolated static func historyFigures() -> [RemoteExquisiteCorpseFigure] {
       (1...12).reversed().map { number in
-        figure(number, ideas: historyIdeas[number % historyIdeas.count], isStarred: [12, 9, 6, 3].contains(number))
+        figure(number, ideas: historyIdeas[number % historyIdeas.count])
       }
+    }
+
+    /// The creatures this person has starred: 12, 9, 6 and 3.
+    nonisolated static let historyStarredFigureIDs: Set<UUID> = Set([12, 9, 6, 3].map(figureID))
+
+    /// The favorites of the "Our creatures" scenarios: the starred creatures.
+    @MainActor
+    static func favoritesStore() -> FavoritesStore {
+      FavoritesStore.preloaded(
+        ownerUserID: me,
+        favorites: historyStarredFigureIDs.map { FavoriteRef(target: .corpseFigure($0), createdAt: now) }
+      )
     }
 
     /// The server's answer for a page: creatures before the cursor, optionally
     /// only the starred ones. The tests use it too.
     nonisolated static func historyPage(
       from figures: [RemoteExquisiteCorpseFigure] = historyFigures(),
+      starred: Set<UUID> = historyStarredFigureIDs,
       starredOnly: Bool,
       before: Int?,
       limit: Int
     ) -> RemoteExquisiteCorpseHistoryPage {
       let matching = figures.filter { figure in
-        (before.map { figure.number < $0 } ?? true) && (!starredOnly || figure.starredByMe)
+        (before.map { figure.number < $0 } ?? true) && (!starredOnly || starred.contains(figure.id))
       }
       let page = Array(matching.prefix(limit))
       return RemoteExquisiteCorpseHistoryPage(

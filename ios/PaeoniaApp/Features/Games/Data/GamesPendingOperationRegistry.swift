@@ -18,6 +18,15 @@ nonisolated enum GamesPendingOperationRegistry {
             + boardGameHandlers(client: client)
     }
 
+    /// What each game's items wait for before they can be favorited (see `FavoriteSendGating`).
+    static func favoriteGates() -> [FavoriteKind: any FavoriteSendGating] {
+        [
+            .gameRound: GameRoundFavoriteGate(),
+            .storyChainStory: StoryChainFavoriteGate(),
+            .corpseFigure: ExquisiteCorpseFavoriteGate(),
+        ]
+    }
+
     private static func drawAndGuessHandlers(
         client: PaeoniaConvexClient,
         gateway: LiveGamesGateway,
@@ -37,7 +46,6 @@ nonisolated enum GamesPendingOperationRegistry {
             ),
             SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
             GiveUpGameRoundPendingOperationHandler(gateway: gateway, cache: cache),
-            SetGameRoundStarPendingOperationHandler(gateway: gateway, cache: cache),
             GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
             GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
         ]
@@ -58,9 +66,6 @@ nonisolated enum GamesPendingOperationRegistry {
                 gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
             ),
             StoryChainSeenPendingOperationHandler(gateway: gateway, cache: FileStoryChainCache.shared),
-            StoryChainStarPendingOperationHandler(
-                gateway: gateway, cache: FileStoryChainCache.shared, gamesCache: cache
-            ),
         ]
     }
 
@@ -110,7 +115,6 @@ nonisolated enum GamesPendingOperationRegistry {
                 drawingStore: FileGameDrawingStore.shared
             ),
             ExquisiteCorpseRevealSeenHandler(gateway: corpseGateway, cache: corpseCache),
-            ExquisiteCorpseStarHandler(gateway: corpseGateway, cache: corpseCache),
         ]
     }
 

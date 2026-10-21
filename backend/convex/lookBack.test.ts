@@ -252,7 +252,7 @@ async function insertRound(
         moderation_status: "visible",
         ...overrides,
       });
-      if (text !== null) await ctx.db.insert("daily_answer_text", { answer_id: answerId, body: text });
+      if (text !== null) await ctx.db.insert("daily_answer_text", { answer_id: answerId, couple_id: couple.coupleId, body: text });
     }
   });
   return instanceId;

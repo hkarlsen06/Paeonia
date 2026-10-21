@@ -88,12 +88,14 @@ struct DrawAndGuessDrawerResultView: View {
         }
         .animation(PaeoniaMotion.stateChange, value: viewModel.isPartnerChoosingNextWord)
         .simultaneousGesture(TapGesture().onEnded { finishNow() })
-        .gameStarToolbar(
-            stars: viewModel.stars,
-            id: viewModel.round?.id,
+        .favoriteToolbarItem(
+            viewModel.round.map { .gameRound($0.id) },
             isShown: isRevealed && timeline.actionsShown,
-            hintKey: "games.drawAndGuess.starHintShown",
             identifier: "draw.reveal.star"
+        )
+        .paeoniaShareToolbar(
+            isRevealed && timeline.actionsShown ? viewModel.shareable : nil,
+            identifier: "draw.reveal.share"
         )
         .onChange(of: viewModel.phase, initial: true) { _, phase in
             if phase == .reveal {

@@ -86,6 +86,7 @@
       )
       let cache = InMemoryExquisiteCorpseCache(state: state(for: scenario), ownerUserID: Fixture.me)
       dependencies.exquisiteCorpseCache = cache
+      dependencies.favorites = Fixture.favoritesStore()
       dependencies.exquisiteCorpseGateway = ExquisiteCorpseDeveloperGateway(
         historyIsEmpty: scenario == .exquisiteCorpseHistoryEmpty
       )
@@ -206,10 +207,6 @@
       RemoteExquisiteCorpseRevealSeenResult(figureID: figureID, revealSeenAt: ExquisiteCorpseDeveloperFixture.now)
     }
 
-    func setExquisiteCorpseStar(figureID: UUID, starred: Bool) async throws -> RemoteExquisiteCorpseStarResult {
-      RemoteExquisiteCorpseStarResult(figureID: figureID, starred: starred)
-    }
-
     func loadExquisiteCorpseHistory(
       starredOnly: Bool,
       beforeFigureNumber: Int?,
@@ -221,6 +218,11 @@
         before: beforeFigureNumber,
         limit: limit
       )
+    }
+
+    func loadExquisiteCorpseFigure(figureID: UUID) async throws -> RemoteExquisiteCorpseFigure? {
+      guard !historyIsEmpty else { return nil }
+      return ExquisiteCorpseDeveloperFixture.historyFigures().first { $0.id == figureID }
     }
   }
 

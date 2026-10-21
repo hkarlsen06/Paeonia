@@ -146,7 +146,6 @@
       var startingAt: Date
       var state = StoryChainStoryState.finished
       var seenByMe = true
-      var starred = false
     }
 
     private static func lighthouseStory(
@@ -185,7 +184,6 @@
         titledByUserID: isFinished ? (lastWriter == me ? partner : me) : nil,
         finishedAt: isFinished ? lines.last.map { $0.createdAt.addingTimeInterval(1_800) } : nil,
         seenByMe: spec.seenByMe,
-        starredByMe: spec.starred,
         createdAt: spec.startingAt,
         updatedAt: lines.last?.createdAt ?? spec.startingAt
       )
@@ -230,8 +228,7 @@
           title: "The Goat Who Was Expected",
           beats: goatBeats,
           starter: me,
-          startingAt: now.addingTimeInterval(-4 * 86_400),
-          starred: true
+          startingAt: now.addingTimeInterval(-4 * 86_400)
         )
       case 2:
         StorySpec(
@@ -255,8 +252,7 @@
           title: "Who Knitted the River?",
           beats: scarfBeats,
           starter: me,
-          startingAt: now.addingTimeInterval(-24 * 86_400),
-          starred: true
+          startingAt: now.addingTimeInterval(-24 * 86_400)
         )
       }
     }
@@ -274,17 +270,28 @@
           title: story.title ?? "",
           firstLine: story.openingText ?? story.lines.first?.text ?? "",
           lineCount: story.lines.count,
-          finishedAt: story.finishedAt ?? story.updatedAt,
-          starredByMe: story.starredByMe
+          finishedAt: story.finishedAt ?? story.updatedAt
         )
       }
+    }
+
+    /// The stories this person has starred: stories 3 and 1.
+    static let starredStoryIDs: Set<UUID> = [storyID(3), storyID(1)]
+
+    /// The favorites of the "Our stories" scenarios: the starred stories.
+    @MainActor
+    static func favoritesStore() -> FavoritesStore {
+      FavoritesStore.preloaded(
+        ownerUserID: me,
+        favorites: starredStoryIDs.map { FavoriteRef(target: .storyChainStory($0), createdAt: now) }
+      )
     }
 
     /// The server's answer for a page: stories before the cursor, optionally only
     /// the starred ones.
     static func historyPage(starredOnly: Bool, before: Int?, limit: Int) -> RemoteStoryChainHistoryPage {
       let matching = historyItems().filter { item in
-        (before.map { item.storyNumber < $0 } ?? true) && (!starredOnly || item.starredByMe)
+        (before.map { item.storyNumber < $0 } ?? true) && (!starredOnly || starredStoryIDs.contains(item.id))
       }
       let page = Array(matching.prefix(limit))
       return RemoteStoryChainHistoryPage(

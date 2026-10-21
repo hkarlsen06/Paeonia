@@ -22,7 +22,6 @@ final class ExquisiteCorpseHistoryViewModel {
 
     var filter: Filter = .all
 
-    let stars: GameStars
     let drawings: GameHistoryDrawings
 
     nonisolated static let defaultPageSize = 30
@@ -37,12 +36,10 @@ final class ExquisiteCorpseHistoryViewModel {
 
     init(
         dependencies: GamesDependencies,
-        stars: GameStars,
         participants: GameParticipants = GameParticipants(),
         pageSize: Int = ExquisiteCorpseHistoryViewModel.defaultPageSize
     ) {
         self.dependencies = dependencies
-        self.stars = stars
         self.participants = participants
         self.pageSize = pageSize
         drawings = GameHistoryDrawings(store: dependencies.drawingStore, transfer: dependencies.drawingTransfer)
@@ -75,7 +72,7 @@ final class ExquisiteCorpseHistoryViewModel {
     }
 
     /// The creatures of the selected filter, newest first. "Starred" shows the
-    /// creatures this person starred, with unsent changes applied: one that was
+    /// creatures this person favorited, with unsent changes applied: one that was
     /// just unstarred leaves the list, and one that was just starred joins it.
     var visibleFigures: [RemoteExquisiteCorpseFigure] {
         switch filter {
@@ -87,9 +84,14 @@ final class ExquisiteCorpseHistoryViewModel {
                 byID[figure.id] = figure
             }
             return byID.values
-                .filter { stars.isStarred($0.id) }
+                .filter { isFavorite($0) }
                 .sorted { $0.number > $1.number }
         }
+    }
+
+    /// Whether this person starred the creature, with their unsent changes applied.
+    func isFavorite(_ figure: RemoteExquisiteCorpseFigure) -> Bool {
+        dependencies.favorites.isFavorite(.corpseFigure(figure.id))
     }
 
     var phase: Phase {
@@ -97,7 +99,7 @@ final class ExquisiteCorpseHistoryViewModel {
         if current.hasLoaded {
             return .loaded
         }
-        // The starred read failed, but the cached "All" list still tells which are starred.
+        // The starred read failed, but the cached "All" list and the favorites still tell which are starred.
         if filter == .starred, current.failure != nil, listing(.all).hasLoaded {
             return .loaded
         }
@@ -138,14 +140,25 @@ final class ExquisiteCorpseHistoryViewModel {
     }
 
     func makeDetail(figureID: UUID) -> ExquisiteCorpseHistoryDetailViewModel? {
-        figure(withID: figureID).map {
-            ExquisiteCorpseHistoryDetailViewModel(
-                figure: $0,
-                participants: participants,
-                stars: stars,
-                drawings: drawings
-            )
-        }
+        figure(withID: figureID).map(makeDetail(figure:))
+    }
+
+    func makeDetail(figure: RemoteExquisiteCorpseFigure) -> ExquisiteCorpseHistoryDetailViewModel {
+        ExquisiteCorpseHistoryDetailViewModel(figure: figure, participants: participants, drawings: drawings)
+    }
+
+    /// A finished figure for the detail screen: from the loaded lists or the cache when they
+    /// hold it, otherwise from the server. A saved or searched creature may not be in either,
+    /// for example right after a launch. Nil when the couple has no such figure. Throws when
+    /// the figure is not on the phone and the read failed.
+    func loadFigure(id figureID: UUID) async throws -> RemoteExquisiteCorpseFigure? {
+        if let known = figure(withID: figureID) { return known }
+        await readCache()
+        if let cached = figure(withID: figureID) { return cached }
+        guard let userID = currentUserID else { return nil }
+        let fetched = try await dependencies.exquisiteCorpseGateway.loadExquisiteCorpseFigure(figureID: figureID)
+        guard !Task.isCancelled, currentUserID == userID else { return nil }
+        return fetched
     }
 
     // MARK: - Reading
@@ -171,12 +184,10 @@ final class ExquisiteCorpseHistoryViewModel {
             cached.refresh(with: page, pageSize: pageSize)
             listings[.all] = cached
         }
-        await stars.reload()
     }
 
     private func fetchFirstPage(_ filter: Filter) async {
         guard let userID = currentUserID else { return }
-        let mark = stars.changeMark
         do {
             let page = try await dependencies.exquisiteCorpseGateway.loadExquisiteCorpseHistory(
                 starredOnly: filter == .starred,
@@ -190,7 +201,6 @@ final class ExquisiteCorpseHistoryViewModel {
             if filter == .all {
                 await dependencies.exquisiteCorpseCache.saveHistoryFirstPage(page, ownerUserID: userID)
             }
-            await stars.applyServerStars(page.starValues, readSince: mark)
         } catch {
             guard !error.isCancellation, currentUserID == userID else { return }
             // A failed read keeps the list that is on screen. Only a screen with
@@ -223,7 +233,6 @@ final class ExquisiteCorpseHistoryViewModel {
         current.isLoadingMore = true
         current.loadMoreFailed = false
         listings[filter] = current
-        let mark = stars.changeMark
         do {
             let page = try await dependencies.exquisiteCorpseGateway.loadExquisiteCorpseHistory(
                 starredOnly: filter == .starred,
@@ -233,7 +242,6 @@ final class ExquisiteCorpseHistoryViewModel {
             guard currentUserID == userID else { return }
             listings[filter, default: ExquisiteCorpseHistoryListing()].append(page)
             listings[filter]?.isLoadingMore = false
-            await stars.applyServerStars(page.starValues, readSince: mark)
         } catch {
             guard currentUserID == userID else { return }
             listings[filter]?.isLoadingMore = false

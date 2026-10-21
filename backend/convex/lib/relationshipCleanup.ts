@@ -3,6 +3,7 @@ import { deleteCoupleGameRows } from "./gameRegistry";
 import { deleteHeartsForCouple } from "./hearts";
 import { deleteLatestLocationsForCouple } from "./relationshipEnd";
 import { withTouch, withUpdatedAt, type WriterCtx } from "./db";
+import { deleteCoupleFavorites } from "./favoriteRows";
 import { tombstoneReportTargets } from "./reports";
 import { createRelationshipSyncEvent } from "./syncEvents";
 import { nowIso } from "./time";
@@ -238,6 +239,8 @@ export async function cleanupCoupleContent(
   // Game rows have no soft delete. Their drawing media is queued with the couple's other media below.
   // The registry deletes them in one go, so a couple with a long game history can still be large.
   budget.left -= await deleteCoupleGameRows(ctx, couple.id);
+  // A favorite is private to one person, so it goes with the content it points at.
+  budget.left -= await deleteCoupleFavorites(ctx, couple.id);
 
   for (const asset of await coupleAssets(ctx, couple.id)) {
     const status = asset.storage_delete_status;
@@ -462,6 +465,9 @@ export async function purgeCoupleContent(
   const gameRows = await deleteCoupleGameRows(ctx, couple.id);
   contentDeleted += gameRows;
   budget.left -= gameRows;
+  const favoriteRows = await deleteCoupleFavorites(ctx, couple.id);
+  contentDeleted += favoriteRows;
+  budget.left -= favoriteRows;
   for (const deleted of [
     await deleteHeartsForCouple(ctx, couple.id),
     await deleteCoupleDates(ctx, couple.id),

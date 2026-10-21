@@ -71,7 +71,7 @@ nonisolated struct StoryChainHubSummary: Equatable, Sendable {
 final class StoryChainHubModel: GameHubModel {
     let kind = GameKind.storyChain
     let game: StoryChainViewModel
-    /// "Our stories". It shares the star state of `game.stars`.
+    /// "Our stories".
     let history: StoryChainHistoryViewModel
     private(set) var summary: StoryChainHubSummary?
 
@@ -82,7 +82,7 @@ final class StoryChainHubModel: GameHubModel {
         self.dependencies = dependencies
         let game = game ?? StoryChainViewModel(dependencies: dependencies)
         self.game = game
-        history = StoryChainHistoryViewModel(dependencies: dependencies, stars: game.stars)
+        history = StoryChainHistoryViewModel(dependencies: dependencies)
     }
 
     var isYourTurn: Bool {
@@ -99,7 +99,6 @@ final class StoryChainHubModel: GameHubModel {
     }
 
     func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
-        // The game passes it on to the stars.
         game.setLocalChangeSyncHandler(handler)
     }
 
@@ -109,8 +108,6 @@ final class StoryChainHubModel: GameHubModel {
         let document = await dependencies.storyChainCache.document(ownerUserID: userID)
         let work = await StoryChainPendingWork.load(from: dependencies.pendingOperationStore, ownerUserID: userID)
         guard self.userID == userID else { return }
-        // Stars follow the same writes as the rest of the Games cache.
-        await game.stars.reload()
         // A queue that could not be read keeps the card as it is.
         guard let work else { return }
         let newSummary = document.state.map { state in

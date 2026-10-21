@@ -94,7 +94,7 @@ struct ExquisiteCorpseHistoryScreen: View {
                         ExquisiteCorpseHistoryCell(
                             figure: figure,
                             partnerName: viewModel.partnerName,
-                            isStarred: viewModel.stars.isStarred(figure.id),
+                            isStarred: viewModel.isFavorite(figure),
                             drawings: viewModel.drawings
                         )
                     }

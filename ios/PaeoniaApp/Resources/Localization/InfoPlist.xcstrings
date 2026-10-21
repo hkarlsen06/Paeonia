@@ -103,13 +103,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia saves a photo or drawing to your photo library when you tap Save to Photos."
+            "value" : "Paeonia saves a picture to your photo library when you tap Save to Photos."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paeonia lagrer et bilde eller en tegning i bildebiblioteket ditt når du trykker på Lagre i Bilder."
+            "value" : "Paeonia lagrer et bilde i bildebiblioteket ditt når du trykker på Lagre i Bilder."
           }
         }
       }

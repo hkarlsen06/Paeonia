@@ -108,6 +108,9 @@ async function playFigure(s: Setup, starter: TestUser, other: TestUser, ideas: {
 const signed = (user: TestUser, assetId: string) =>
   user.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: assetId, p_expires_in_seconds: 300 });
 
+const favoriteFigure = (user: TestUser, figureId: string, favorited = true) =>
+  user.as.mutation(api.favorites.set_favorite, { p_kind: "corpse_figure", p_target_id: figureId, p_favorited: favorited });
+
 describe("access", () => {
   test("a user without a couple cannot use the game", async () => {
     const t = newTest();
@@ -116,7 +119,7 @@ describe("access", () => {
     expect((await failure(loner.as.query(api.exquisiteCorpse.get_exquisite_corpse, {}))).code).toBe("42501");
     expect((await failure(loner.as.query(api.exquisiteCorpse.get_exquisite_corpse_history, { p_starred_only: false, p_limit: 10 }))).code).toBe("42501");
     expect((await failure(loner.as.mutation(api.exquisiteCorpse.mark_exquisite_corpse_reveal_seen, { p_figure_id: newUuid() }))).code).toBe("42501");
-    expect((await failure(loner.as.mutation(api.exquisiteCorpse.set_exquisite_corpse_star, { p_figure_id: newUuid(), p_starred: true }))).code).toBe("42501");
+    expect((await failure(favoriteFigure(loner, newUuid()))).code).toBe("42501");
   });
 
   test("a couple without a subscription cannot use the game", async () => {
@@ -132,7 +135,7 @@ describe("access", () => {
     const prepared = await prepare(s, s.b, { figureId: newUuid(), index: 0 });
     expect((await failure(submit(other.first, prepared.args))).code).toBe("42501");
     expect((await failure(other.first.as.mutation(api.exquisiteCorpse.mark_exquisite_corpse_reveal_seen, { p_figure_id: figureId }))).code).toBe("42501");
-    expect((await failure(other.first.as.mutation(api.exquisiteCorpse.set_exquisite_corpse_star, { p_figure_id: figureId, p_starred: true }))).code).toBe("42501");
+    expect((await failure(favoriteFigure(other.first, figureId))).code).toBe("23514");
     expect(await other.first.as.query(api.exquisiteCorpse.get_exquisite_corpse, {})).toMatchObject({ game: null, current_figure: null, recent_figures: [] });
     await settle(s);
   });
@@ -169,7 +172,7 @@ describe("access", () => {
     };
     expect((await failure(submit(s.a, args))).message).toMatch(/account deletion/);
     expect((await failure(s.a.as.mutation(api.exquisiteCorpse.mark_exquisite_corpse_reveal_seen, { p_figure_id: newUuid() }))).message).toMatch(/account deletion/);
-    expect((await failure(s.a.as.mutation(api.exquisiteCorpse.set_exquisite_corpse_star, { p_figure_id: newUuid(), p_starred: true }))).message).toMatch(/account deletion/);
+    expect((await failure(favoriteFigure(s.a, newUuid()))).message).toMatch(/account deletion/);
   });
 });
 
@@ -408,7 +411,6 @@ describe("submit_exquisite_corpse_part", () => {
       "my_reveal_seen_at",
       "number",
       "parts",
-      "starred_by_me",
       "starter_user_id",
     ]);
     expect(Object.keys(data.current_figure!.parts[0]).sort()).toEqual([
@@ -671,41 +673,6 @@ describe("reveal seen", () => {
   });
 });
 
-describe("stars", () => {
-  const star = (user: TestUser, figureId: string, starred: boolean) =>
-    user.as.mutation(api.exquisiteCorpse.set_exquisite_corpse_star, { p_figure_id: figureId, p_starred: starred });
-  const stars = (t: TestConvex) => t.run((ctx) => ctx.db.query("exquisite_corpse_stars").collect());
-
-  test("a star is private, idempotent, and removed by unstarring, and nobody is told", async () => {
-    const s = await startGame();
-    const { figureId } = await playFigure(s, s.a, s.b);
-    const queued = (await outbox(s.t)).length;
-
-    expect(await star(s.a, figureId, true)).toEqual({ figure_id: figureId, starred: true });
-    await star(s.a, figureId, true);
-    expect(await stars(s.t)).toMatchObject([{ couple_id: s.couple.coupleId, user_id: s.a.userId, figure_id: figureId, figure_number: 1 }]);
-    expect((await view(s.a)).recent_figures[0].starred_by_me).toBe(true);
-    expect((await view(s.b)).recent_figures[0].starred_by_me).toBe(false);
-    await star(s.b, figureId, true);
-    expect(await stars(s.t)).toHaveLength(2);
-    expect((await outbox(s.t)).length).toBe(queued);
-
-    expect(await star(s.a, figureId, false)).toEqual({ figure_id: figureId, starred: false });
-    await star(s.a, figureId, false);
-    expect(await stars(s.t)).toMatchObject([{ user_id: s.b.userId }]);
-    await settle(s);
-  });
-
-  test("only a finished figure can be starred", async () => {
-    const s = await startGame();
-    const figureId = newUuid();
-    await send(s, s.a, { figureId, index: 0 });
-    expect((await failure(star(s.a, figureId, true))).message).toMatch(/not finished/);
-    expect(await stars(s.t)).toHaveLength(0);
-    await settle(s);
-  });
-});
-
 describe("history", () => {
   const history = (user: TestUser, args: { starredOnly?: boolean; before?: number | null; limit?: number } = {}) =>
     user.as.query(api.exquisiteCorpse.get_exquisite_corpse_history, {
@@ -738,12 +705,12 @@ describe("history", () => {
     });
   }
 
-  test("lists finished figures newest first with their parts, and the caller's own star", async () => {
+  test("lists finished figures newest first with their parts, and only a person's own favorites when asked", async () => {
     const s = await startGame();
     const one = await playFigure(s, s.a, s.b, { head: EXQUISITE_CORPSE_IDEAS.en.head[0].id });
     const two = await playFigure(s, s.b, s.a);
     await send(s, s.a, { figureId: newUuid(), index: 0 });
-    await s.a.as.mutation(api.exquisiteCorpse.set_exquisite_corpse_star, { p_figure_id: one.figureId, p_starred: true });
+    await favoriteFigure(s.a, one.figureId);
 
     for (const user of [s.a, s.b]) {
       const page = await history(user);
@@ -755,8 +722,6 @@ describe("history", () => {
         expect(figure.parts.every((part: { drawing_media_asset_id: string | null }) => part.drawing_media_asset_id !== null)).toBe(true);
       }
     }
-    expect((await history(s.a)).figures.map((figure: { starred_by_me: boolean }) => figure.starred_by_me)).toEqual([false, true]);
-    expect((await history(s.b)).figures.map((figure: { starred_by_me: boolean }) => figure.starred_by_me)).toEqual([false, false]);
     expect(numbers(await history(s.a, { starredOnly: true }))).toEqual([1]);
     expect(numbers(await history(s.b, { starredOnly: true }))).toEqual([]);
     const idea = EXQUISITE_CORPSE_IDEAS.en.head[0];
@@ -768,7 +733,7 @@ describe("history", () => {
     const s = await startGame();
     const ids = await insertFigures(s, 5);
     for (const number of [1, 2, 4, 5]) {
-      await s.a.as.mutation(api.exquisiteCorpse.set_exquisite_corpse_star, { p_figure_id: ids[number - 1], p_starred: true });
+      await favoriteFigure(s.a, ids[number - 1]);
     }
 
     const first = await history(s.a, { limit: 2 });
@@ -807,6 +772,27 @@ describe("history", () => {
     const other = await startGame();
     expect(await history(other.a)).toEqual({ figures: [], next_before_figure_number: null });
     expect(await history(other.a, { starredOnly: true })).toEqual({ figures: [], next_before_figure_number: null });
+    await settle(s);
+    await settle(other);
+  });
+
+  test("one finished figure can be read by id, and nobody outside the couple can read it", async () => {
+    const s = await startGame();
+    const done = await playFigure(s, s.a, s.b);
+    const open = newUuid();
+    await send(s, s.b, { figureId: open, index: 0 });
+    const byId = (user: TestUser, id: string) => user.as.query(api.exquisiteCorpse.get_exquisite_corpse_figure, { p_figure_id: id });
+    const listed = (await history(s.a)).figures.find((figure) => figure.id === done.figureId);
+    expect(listed).toBeDefined();
+    expect(await byId(s.a, done.figureId)).toEqual(listed);
+    expect(await byId(s.b, done.figureId)).toEqual((await history(s.b)).figures.find((figure) => figure.id === done.figureId));
+    // A figure still in progress or an unknown one is not a history figure.
+    expect(await byId(s.a, open)).toBeNull();
+    expect(await byId(s.a, newUuid())).toBeNull();
+    const other = await startGame();
+    expect(await byId(other.a, done.figureId)).toBeNull();
+    const loner = await createSignedInUser(s.t, { name: "Loner" });
+    expect((await failure(byId(loner, done.figureId))).code).toBe("42501");
     await settle(s);
     await settle(other);
   });
@@ -1018,12 +1004,12 @@ describe("relationship end", () => {
   test("cleanup deletes every row of the game and queues the drawings, and another couple keeps its game", async () => {
     const s = await startGame();
     const { figureId, head } = await playFigure(s, s.a, s.b);
-    await s.a.as.mutation(api.exquisiteCorpse.set_exquisite_corpse_star, { p_figure_id: figureId, p_starred: true });
+    await favoriteFigure(s.a, figureId);
     await send(s, s.b, { figureId: newUuid(), index: 0 });
     const keep = await startGame({ t: s.t });
     await playFigure(keep, keep.a, keep.b);
 
-    const tables = ["exquisite_corpse_games", "exquisite_corpse_figures", "exquisite_corpse_parts", "exquisite_corpse_stars"] as const;
+    const tables = ["exquisite_corpse_games", "exquisite_corpse_figures", "exquisite_corpse_parts", "favorites"] as const;
     const count = (t: TestConvex, coupleId: string) =>
       t.run(async (ctx) => {
         const result: Record<string, number> = {};
@@ -1036,7 +1022,7 @@ describe("relationship end", () => {
       exquisite_corpse_games: 1,
       exquisite_corpse_figures: 2,
       exquisite_corpse_parts: 4,
-      exquisite_corpse_stars: 1,
+      favorites: 1,
     });
 
     await s.a.as.mutation(api.relationship.leave_relationship, op());

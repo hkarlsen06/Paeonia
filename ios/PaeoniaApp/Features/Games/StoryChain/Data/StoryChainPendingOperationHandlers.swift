@@ -23,7 +23,6 @@ nonisolated enum StoryChainPendingOperations {
             StoryChainLinePendingOperationHandler(gateway: gateway, cache: cache, gamesCache: gamesCache),
             StoryChainNamePendingOperationHandler(gateway: gateway, cache: cache, gamesCache: gamesCache),
             StoryChainSeenPendingOperationHandler(gateway: gateway, cache: cache),
-            StoryChainStarPendingOperationHandler(gateway: gateway, cache: cache, gamesCache: gamesCache),
         ]
     }
 }
@@ -117,7 +116,7 @@ private func sendStoryChainMove(
 /// the title has landed.
 ///
 /// When the server refuses the start, the story never exists. The lines, title,
-/// seen mark and star queued for it stop too, because nothing can send them.
+/// seen mark queued for it stop too, because nothing can send them.
 struct StoryChainStartPendingOperationHandler: PendingSyncOperationHandling {
     nonisolated let operationKind: SyncPendingOperationKind = .storyChainStartStory
 
@@ -161,7 +160,7 @@ struct StoryChainStartPendingOperationHandler: PendingSyncOperationHandling {
     private func stopMoves(of storyID: UUID, owner: UUID, context: SyncContext) async throws {
         let decoder = JSONDecoder()
         let kinds: [SyncPendingOperationKind] = [
-            .storyChainAddLine, .storyChainNameStory, .storyChainMarkSeen, .storyChainSetStar,
+            .storyChainAddLine, .storyChainNameStory, .storyChainMarkSeen,
         ]
         for kind in kinds {
             let queued = try await context.pendingOperationStore.inFlightOperations(ownerUserID: owner, kind: kind)
@@ -314,70 +313,6 @@ struct StoryChainSeenPendingOperationHandler: PendingSyncOperationHandling {
             return await readStoryChainAfterAcceptedMove(operation, gateway: gateway, cache: cache)
         } catch let error as PaeoniaConvexError {
             guard GameServerRejection.isPermanent(error) else { throw error }
-            LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
-            return .terminalFailure(error.description)
-        }
-    }
-}
-
-/// Sends a star or an unstar for a finished story. The server sets the value it
-/// is given, so sending the same write twice changes nothing, and the writes of
-/// one story go in the order they were made, which makes the last one win.
-///
-/// It waits for the title of the story, because the server stars only a finished
-/// story. A refusal that a retry can't fix drops the write without a notice: the
-/// star then shows the server's value again.
-struct StoryChainStarPendingOperationHandler: PendingSyncOperationHandling {
-    nonisolated let operationKind: SyncPendingOperationKind = .storyChainSetStar
-
-    private let gateway: any StoryChainGateway
-    private let cache: any StoryChainCaching
-    private let gamesCache: any GamesCaching
-
-    init(gateway: any StoryChainGateway, cache: any StoryChainCaching, gamesCache: any GamesCaching) {
-        self.gateway = gateway
-        self.cache = cache
-        self.gamesCache = gamesCache
-    }
-
-    func send(
-        _ operation: PendingSyncOperationSnapshot,
-        context: SyncContext
-    ) async throws -> PendingSyncOperationSendResult {
-        guard let data = operation.requestData,
-              let payload = try? JSONDecoder().decode(StoryChainStarPayload.self, from: data)
-        else {
-            return .terminalFailure("Missing story star payload")
-        }
-        if try await hasQueuedStoryChainWrite(
-            of: [.storyChainNameStory],
-            storyID: payload.storyID,
-            besides: operation,
-            context: context
-        ) {
-            return .retry(after: nil)
-        }
-        // An earlier star of the same story goes first, so the last write wins.
-        if try await hasQueuedStoryChainWrite(
-            of: [.storyChainSetStar],
-            storyID: payload.storyID,
-            besides: operation,
-            onlyEarlier: true,
-            context: context
-        ) {
-            return .retry(after: nil)
-        }
-        do {
-            let result = try await gateway.setStoryStar(storyID: payload.storyID, starred: payload.starred)
-            // Kept before the write leaves the queue, so the star never flips back
-            // to the server's old value in between.
-            await cache.saveStars([payload.storyID: result.starred], ownerUserID: operation.ownerUserID)
-            LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
-            // The star moved the game's version. Reading the state now keeps a
-            // live update from before the star from setting it back.
-            return await readStoryChainAfterAcceptedMove(operation, gateway: gateway, cache: cache)
-        } catch let error as PaeoniaConvexError {
-            guard await GameServerRejection.shouldDrop(error, of: operation, cache: gamesCache) else { throw error }
             LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
             return .terminalFailure(error.description)
         }

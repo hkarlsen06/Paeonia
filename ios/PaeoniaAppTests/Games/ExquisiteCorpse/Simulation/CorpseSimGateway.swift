@@ -55,16 +55,16 @@ final class CorpseSimGateway: DrawAndGuessGateway, ExquisiteCorpseGateway, @unch
         try await call("revealSeen") { try $0.markRevealSeen(user: $1, figureID: figureID) }
     }
 
-    func setExquisiteCorpseStar(figureID: UUID, starred: Bool) async throws -> RemoteExquisiteCorpseStarResult {
-        try await call("star") { try $0.setStar(user: $1, figureID: figureID, starred: starred) }
-    }
-
     // swiftlint:disable async_without_await
     func loadExquisiteCorpseHistory(
         starredOnly _: Bool,
         beforeFigureNumber _: Int?,
         limit _: Int
     ) async throws -> RemoteExquisiteCorpseHistoryPage {
+        throw URLError(.notConnectedToInternet)
+    }
+
+    func loadExquisiteCorpseFigure(figureID _: UUID) async throws -> RemoteExquisiteCorpseFigure? {
         throw URLError(.notConnectedToInternet)
     }
 
@@ -147,8 +147,11 @@ final class CorpseSimGateway: DrawAndGuessGateway, ExquisiteCorpseGateway, @unch
         throw Unused()
     }
 
+    func loadDrawAndGuessHistoryRound(roundID _: UUID) async throws -> RemoteDrawAndGuessHistoryRound? {
+        throw Unused()
+    }
+
     func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords { throw Unused() }
-    func setRoundStar(roundID _: UUID, starred _: Bool) async throws -> RemoteRoundStarResult { throw Unused() }
 
     // swiftlint:enable async_without_await
 

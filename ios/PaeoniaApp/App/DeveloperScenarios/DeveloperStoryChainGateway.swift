@@ -97,10 +97,6 @@
 
     func markStorySeen(storyID _: UUID) async throws {}
 
-    func setStoryStar(storyID: UUID, starred: Bool) async throws -> RemoteStoryStarResult {
-      RemoteStoryStarResult(storyID: storyID, starred: starred)
-    }
-
     // swiftlint:enable async_without_await
   }
 #endif

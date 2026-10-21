@@ -3,7 +3,7 @@ import PencilKit
 @testable import PaeoniaApp
 
 // What a person does with the game: draws above and below the fold, clears, asks
-// for an idea, taps Done, stars, continues from the reveal, invites, leaves the screen.
+// for an idea, taps Done, continues from the reveal, invites, leaves the screen.
 extension CorpseSimDriver {
     /// Gets the phone to the game screen, or does the one thing it needs first. Nil until it is there.
     private func readyScreen(of phone: CorpseSimPhone) -> ExquisiteCorpseViewModel? {
@@ -143,12 +143,6 @@ extension CorpseSimDriver {
 
     private func reveal(_ phone: CorpseSimPhone, _ viewModel: ExquisiteCorpseViewModel) async {
         guard let figureID = viewModel.figure?.id else { return }
-        if random.chance(0.3) {
-            await viewModel.stars.toggle(id: figureID)
-            starIntent[phone.name, default: [:]][figureID] = viewModel.stars.isStarred(figureID)
-            log.add("\(phone.name) star \(viewModel.stars.isStarred(figureID))")
-            return
-        }
         log.add("\(phone.name) continue")
         let kind = SyncPendingOperationKind.exquisiteCorpseRevealSeen
         let before = await ledgerCount(phone, kind)

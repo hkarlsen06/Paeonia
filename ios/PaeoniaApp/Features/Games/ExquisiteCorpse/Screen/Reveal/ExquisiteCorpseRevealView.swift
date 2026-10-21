@@ -12,7 +12,7 @@ import SwiftUI
 ///
 /// Give each figure its own view (`.id(content.figureID)`). The reveal plays once
 /// per view.
-struct ExquisiteCorpseRevealView: View {
+struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_length
     let content: ExquisiteCorpseRevealContent
     let reduceMotion: Bool
     let onContinue: () -> Void
@@ -67,6 +67,9 @@ struct ExquisiteCorpseRevealView: View {
                 bottomBar
             }
         }
+        // The share button waits for the reveal to settle, so the picture in the share
+        // screen never gives away the creature before the paper has opened.
+        .paeoniaShareToolbar(timeline.isSettled ? content.shareable : nil, identifier: "corpse.reveal.share")
         .onGeometryChange(for: Bool.self) { GameMetrics.isWide($0.size) } action: { isWide = $0 }
         .onChange(of: content.isReady, initial: true) { startIfReady() }
         .onChange(of: timeline.stage) { _, stage in

@@ -28,7 +28,6 @@ struct ExquisiteCorpseRemoteModelsTests {
         "created_at": "2026-10-13T09:00:00.000Z",
         "finished_at": null,
         "my_reveal_seen_at": null,
-        "starred_by_me": false,
         "parts": [
           {
             "id": "66666666-6666-4666-8666-666666666666",
@@ -49,7 +48,6 @@ struct ExquisiteCorpseRemoteModelsTests {
           "created_at": "2026-10-12T09:00:00.000Z",
           "finished_at": "2026-10-12T09:30:00.000Z",
           "my_reveal_seen_at": "2026-10-12T10:00:00Z",
-          "starred_by_me": true,
           "parts": [
             {
               "id": "99999999-9999-4999-8999-999999999999",
@@ -95,7 +93,6 @@ struct ExquisiteCorpseRemoteModelsTests {
 
         let finished = try #require(state.recentFigures.first)
         #expect(finished.isFinished)
-        #expect(finished.starredByMe)
         #expect(finished.myRevealSeenAt != nil)
         let legs = try #require(finished.part(at: 2))
         #expect(legs.kind == .legs)
@@ -130,7 +127,7 @@ struct ExquisiteCorpseRemoteModelsTests {
           "id": "88888888-8888-4888-8888-888888888888", "number": 2,
           "starter_user_id": "11111111-1111-4111-8111-111111111111",
           "created_at": "2026-10-12T09:00:00.000Z", "finished_at": "2026-10-12T09:30:00.000Z",
-          "my_reveal_seen_at": null, "starred_by_me": false, "parts": []
+          "my_reveal_seen_at": null, "parts": []
         }
         """
 

@@ -102,16 +102,10 @@ struct DailyChatMessageRow: View {
             replySwipeContainer {
                 bubbleBody(fill: bubbleFill) {
                     VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                        Label {
-                            Text(isCurrentUser
-                                ? .dailyChallengeYourAnswerTitle
-                                : .dailyChatAnswerPartnerTitle(participants.partnerName))
-                        } icon: {
-                            Image(systemName: "quote.opening")
-                        }
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(
-                            isCurrentUser ? Color.paeoniaTextPrimary.opacity(0.72) : Color.paeoniaAccentPrimary
+                        DailyChatAnswerHeader(
+                            answerID: answer.answerID,
+                            isCurrentUser: isCurrentUser,
+                            partnerName: participants.partnerName
                         )
 
                         DailyAnswerContent(detail: answer, participants: participants, mediaKind: mediaKind)

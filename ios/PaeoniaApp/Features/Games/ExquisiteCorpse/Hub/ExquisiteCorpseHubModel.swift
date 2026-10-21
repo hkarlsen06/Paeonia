@@ -9,7 +9,7 @@ import SwiftUI
 final class ExquisiteCorpseHubModel: GameHubModel {
     let kind = GameKind.exquisiteCorpse
     let game: ExquisiteCorpseViewModel
-    /// "Our creatures". It shares the star state of `game.stars`.
+    /// "Our creatures".
     let history: ExquisiteCorpseHistoryViewModel
     private(set) var summary: ExquisiteCorpseHubSummary?
 
@@ -23,7 +23,7 @@ final class ExquisiteCorpseHubModel: GameHubModel {
         self.dependencies = dependencies
         let game = game ?? ExquisiteCorpseViewModel(dependencies: dependencies)
         self.game = game
-        history = ExquisiteCorpseHistoryViewModel(dependencies: dependencies, stars: game.stars)
+        history = ExquisiteCorpseHistoryViewModel(dependencies: dependencies)
     }
 
     /// The game waits for this person: their part to draw, or a creature to look at.
@@ -42,7 +42,6 @@ final class ExquisiteCorpseHubModel: GameHubModel {
     }
 
     func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
-        // The game passes the handler on to the stars it shares with "Our creatures".
         game.setLocalChangeSyncHandler(handler)
     }
 
@@ -58,8 +57,6 @@ final class ExquisiteCorpseHubModel: GameHubModel {
         if let work {
             pending = work
         }
-        // Stars follow the same writes as the rest of the cache.
-        await game.stars.reload()
         let newSummary = document.state.map { state in
             let resolution = ExquisiteCorpseResolver(userID: userID).resolve(
                 state: state,

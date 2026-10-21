@@ -63,6 +63,7 @@ extension MainTabView {
                 gameRounds: gamesViewModel.guessMySpot.history,
                 onLocalChange: actions.syncAfterLocalChange
             )
+            .searchToolbarButton(action: openSearch)
             .analyticsScreen("memories")
         }
     }
@@ -72,6 +73,8 @@ extension MainTabView {
             // Home hides its navigation bar and draws the brand mark and streak in its
             // own header. Screens pushed from it keep their bar.
             pairedHome
+                // Shows only where Home has a navigation bar, on a wide iPad.
+                .searchToolbarButton(placement: .topBarTrailing, action: openSearch)
                 .analyticsScreen("home")
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(isPresented: widgetDrawingPresented) {
@@ -170,6 +173,7 @@ extension MainTabView {
                     onOpen: openTopics
                 )
             )
+            .searchToolbarButton(action: openSearch)
             .analyticsScreen("questions")
             .navigationDestination(for: QuestionsDestination.self, destination: questionsDestination)
         }
@@ -178,6 +182,7 @@ extension MainTabView {
     private var usTab: some View {
         NavigationStack {
             settingsView
+                .searchToolbarButton(action: openSearch)
                 .analyticsScreen("us")
         }
     }

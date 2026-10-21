@@ -65,7 +65,6 @@ extension CorpseSimServer {
             createdAt: figure.createdAt,
             finishedAt: figure.finishedAt,
             myRevealSeenAt: figure.seenAt[user],
-            starredByMe: figure.starredBy.contains(user),
             parts: figureParts.map { part in
                 let isVisible = isFinished || part.drawer == user
                 return RemoteExquisiteCorpsePart(

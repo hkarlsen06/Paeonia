@@ -86,3 +86,17 @@ export const reviewScenario = literals(
   "purchase_flow_unentitled",
   "pre_paired_paywalled",
 );
+
+/**
+ * What a person can favorite. Each kind has a loader in `lib/favorites.ts`, so adding a kind means
+ * adding a name here and one loader there.
+ */
+export const FAVORITE_KINDS = [
+  "daily_question",
+  "daily_answer",
+  "widget_drawing",
+  "game_round",
+  "corpse_figure",
+  "story_chain_story",
+] as const;
+export const favoriteKind = literals(...FAVORITE_KINDS);

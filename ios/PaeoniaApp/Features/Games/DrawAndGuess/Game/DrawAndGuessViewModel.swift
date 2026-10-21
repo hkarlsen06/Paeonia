@@ -111,14 +111,6 @@ final class DrawAndGuessViewModel {
 
     @ObservationIgnored let dependencies: GamesDependencies
     @ObservationIgnored var gateway: any DrawAndGuessGateway { dependencies.gateway }
-    /// This person's private stars on finished rounds. The result screens and
-    /// "Our drawings" share it: `stars.isStarred(roundID)` and `stars.toggle(id:)`.
-    @ObservationIgnored lazy var stars = GameStars(
-        source: .drawAndGuess(cache: dependencies.cache),
-        dependencies: dependencies
-    ) { [weak self] in
-        self?.currentUserID
-    }
     /// The loops that run while the screen is open: heartbeat, data changes and the clock.
     @ObservationIgnored let loops: GameScreenLoops
     @ObservationIgnored let tickInterval: Duration

@@ -22,7 +22,7 @@ Decided on 2026-10-13.
 - **Streak.** Sending a line counts toward the couple's streak. Naming a story alone does not.
 - **Reading.** The story reads as one flowing page in the system serif. Each partner's sentences have their own ink, Paeonia's opening is muted italic, and a dared word has a gold underline. Tapping a sentence shows who wrote it and when.
 - **Pushes.** Five kinds, none showing story text: your turn, the last line was written, the story was named, an invite, and one reminder after 72 hours.
-- **History.** Finished stories are kept in "Our stories" with private stars, like "Our drawings".
+- **History.** Finished stories are kept in "Our stories" with private stars, like "Our drawings". A star is a favorite (`FavoritesStore`, kind `story_chain_story`).
 
 ## Why this game
 
@@ -120,10 +120,10 @@ Rules for dare words:
 
 ## History and stars
 
-- **Our stories.** Every finished story, newest first, paged by story number, 30 a page. A filter shows starred stories only. Each entry has the title, the first line, the date it finished, the number of lines, and whether I starred it.
-- **Stars.** Either partner can star or unstar a finished story. A star is private. The server returns only the caller's own stars.
+- **Our stories.** Every finished story, newest first, paged by story number, 30 a page. A filter shows starred stories only. Each entry has the title, the first line, the date it finished and the number of lines. The app shows the star from my favorites.
+- **Stars.** Either partner can star or unstar a finished story. A star is a private favorite (`favorites:set_favorite`, kind `story_chain_story`), and the server saves it only for a finished story. A queued star waits for this person's queued title of the story (`StoryChainFavoriteGate`). The server returns no star state with the story, and `p_starred_only` reads the favorites.
 - **The detail.** A story opens as the finished page: title, byline, the full text, the end mark, and the star in the toolbar.
-- Stars and stories are deleted with the rest of the couple's game rows.
+- Stars are `favorites` rows. They are deleted with the rest of the couple's content.
 
 ## Data
 
@@ -131,7 +131,6 @@ The functions are in `backend/convex/storyChain.ts` and the rules in `backend/co
 
 - `story_chain_games`: one row per couple, created by `ensure_story_chain_game` (the caller starts). `state` is `choosing_opening`, `writing` or `titling`. `turn_user_id` is the partner who acts next. The row also holds `turn_number` (seeds the suggestions), `current_story_id`, `story_count`, `finished_count`, `turn_started_at`, `turn_reminder_sent_at` and `version`. `version` goes up with every change.
 - `story_chain_stories`: one row per story. It holds `story_number`, `starter_user_id`, the opening (`opening_id`, `opening_text`) when there is one, `state` (`writing`, `titling` or `finished`), and the `lines`. A line is `{ id, number, author_user_id, text, dare_word?, dare_word_id?, created_at }`, where `dare_word` is the word this line gave to the next line. A finished story adds `last_line_user_id`, `title`, `titled_by_user_id`, `finished_at`, and `seen_by` (the user ids that saw the finished story). The client creates the story id and each line id, so a line queued offline can name its story.
-- `story_chain_stars`: one row per partner and starred story, with the story number so one partner's stars page in order.
 - `story_chain_used`: the openings and words the couple has already used, per language. A kind starts over when all its entries were used.
 
 Functions:
@@ -145,7 +144,6 @@ Functions:
 | `add_story_line` | mutation, client op | `p_story_id, p_line_id, p_text, p_is_last, p_dare_word?, p_dare_word_id?` | `{ line_id, number, story_state }` |
 | `name_story` | mutation, client op | `p_story_id, p_title` | `{ story_id, title }` |
 | `mark_story_seen` | mutation | `p_story_id` | `{ story_id }` |
-| `set_story_star` | mutation | `p_story_id, p_starred` | `{ story_id, starred }` |
 | `get_story_chain_history` | query | `p_starred_only, p_before_story_number?, p_limit` | `{ stories, next_before_story_number }` |
 
 - `opening_choices` and `word_choices` go only to the partner whose turn it is, in the states that use them. They are computed in the query: a seeded pick from the unused entries of the couple's language, seeded by the game id and `turn_number`. The query reads no clock, and a language change recomputes them, so nothing is stored or redrawn.

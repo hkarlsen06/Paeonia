@@ -37,6 +37,7 @@ struct StoryViewerHeader: View {
     let story: Story
     let people: StoryPeople
     let mode: StoryViewerContent.Mode
+    let onShare: () -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -60,6 +61,7 @@ struct StoryViewerHeader: View {
             .foregroundStyle(.white)
             .accessibilityElement(children: .combine)
             Spacer(minLength: 0)
+            shareButton
             Button(action: onClose) {
                 Image(systemName: "xmark")
                     .font(.body.weight(.semibold))
@@ -70,6 +72,22 @@ struct StoryViewerHeader: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text(.commonClose))
         }
+    }
+
+    /// Your own story opens Share. A story from your partner opens Save to Photos, since
+    /// only its author can send it on.
+    private var shareButton: some View {
+        let canShare = people.isOwn(story)
+        return Button(action: onShare) {
+            Image(systemName: canShare ? "square.and.arrow.up" : "square.and.arrow.down")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(canShare ? .commonShare : .shareSave))
+        .accessibilityIdentifier("story.share")
     }
 
     /// On Home: when it was shared and how long it stays. In the archive: the date.

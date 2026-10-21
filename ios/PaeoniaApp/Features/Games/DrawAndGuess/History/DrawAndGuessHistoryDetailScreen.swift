@@ -3,20 +3,78 @@ import SwiftUI
 /// Opens the detail of one drawing. The view model is made once per visit, so
 /// the replay keeps its place when the stack redraws this screen.
 struct DrawAndGuessHistoryDetailHost: View {
-    @State private var viewModel: DrawAndGuessHistoryDetailViewModel?
+    private enum Load {
+        case loading
+        case loaded(DrawAndGuessHistoryDetailViewModel)
+        case failed(PaeoniaFailure)
+    }
 
+    let history: DrawAndGuessHistoryViewModel
+    let roundID: UUID
+    @State private var load: Load
+
+    /// A round that is already on the phone opens at once. Any other, such as a saved drawing
+    /// opened right after a launch, is read first.
     init(history: DrawAndGuessHistoryViewModel, roundID: UUID) {
-        _viewModel = State(initialValue: history.makeDetail(roundID: roundID))
+        self.history = history
+        self.roundID = roundID
+        _load = State(initialValue: history.makeDetail(roundID: roundID).map(Load.loaded) ?? .loading)
     }
 
     var body: some View {
-        if let viewModel {
+        switch load {
+        case let .loaded(viewModel):
             DrawAndGuessHistoryDetailScreen(viewModel: viewModel)
-        } else {
-            Color.paeoniaBackgroundSecondary
-                .ignoresSafeArea()
-                .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
-                .toolbarColorScheme(.dark, for: .navigationBar)
+        case .loading:
+            placeholder {
+                ProgressView()
+                    .tint(.paeoniaAccentPrimary)
+                    .controlSize(.large)
+            }
+            .task { await loadRound() }
+        case let .failed(failure):
+            placeholder {
+                PaeoniaLoadFailureView(
+                    failure: failure,
+                    offlineTitle: .gamesDrawAndGuessChooseOfflineTitle,
+                    offlineMessage: .gamesDrawAndGuessHistoryOfflineMessage,
+                    failedMessage: .gamesDrawAndGuessHistoryFailedMessage
+                ) {
+                    Button {
+                        load = .loading
+                    } label: {
+                        Text(.commonTryAgain)
+                    }
+                    .buttonStyle(PaeoniaSecondaryButtonStyle())
+                }
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+            }
+        }
+    }
+
+    private func placeholder(@ViewBuilder content: () -> some View) -> some View {
+        content()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .preferredColorScheme(.dark)
+    }
+
+    private func loadRound() async {
+        do {
+            if let round = try await history.loadRound(id: roundID) {
+                load = .loaded(history.makeDetail(round: round))
+            } else if !Task.isCancelled {
+                // The couple has no such drawing, which no connection would fix.
+                load = .failed(.other)
+            }
+        } catch {
+            if !Task.isCancelled {
+                load = .failed(PaeoniaFailure(error))
+            }
         }
     }
 }
@@ -26,7 +84,6 @@ struct DrawAndGuessHistoryDetailHost: View {
 struct DrawAndGuessHistoryDetailScreen: View {
     let viewModel: DrawAndGuessHistoryDetailViewModel
 
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The square stops growing here, like the widget canvas, so strokes keep their weight.
@@ -38,7 +95,7 @@ struct DrawAndGuessHistoryDetailScreen: View {
                 drawing
                 replayRow
                 details
-                Text(.gamesStarPrivacy)
+                Text(.favoritesPrivacyHint)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextTertiary)
                     .multilineTextAlignment(.center)
@@ -54,38 +111,10 @@ struct DrawAndGuessHistoryDetailScreen: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) { starButton }
-        }
+        .favoriteToolbarItem(.gameRound(viewModel.round.id), identifier: "draw.history.star")
+        .paeoniaShareToolbar(viewModel.shareable, identifier: "draw.history.share")
         .task { await viewModel.load(showsAtOnce: reduceMotion) }
-        .onChange(of: viewModel.stars.notice) { _, notice in
-            guard let notice else { return }
-            bannerCenter.show(notice.banner)
-            viewModel.stars.clearNotice()
-        }
         .accessibilityIdentifier("draw.history.detail")
-    }
-
-    // MARK: - Star
-
-    private var starTitle: LocalizedStringResource {
-        viewModel.isStarred ? .gamesStarButtonStarred : .gamesStarButton
-    }
-
-    private var starButton: some View {
-        let isStarred = viewModel.isStarred
-        return Button {
-            PaeoniaHaptics.selection()
-            Task { await viewModel.toggleStar() }
-        } label: {
-            Label {
-                Text(starTitle)
-            } icon: {
-                Image(systemName: isStarred ? "star.fill" : "star")
-            }
-        }
-        .accessibilityAddTraits(isStarred ? .isSelected : [])
-        .accessibilityIdentifier("draw.history.star")
     }
 
     // MARK: - Drawing

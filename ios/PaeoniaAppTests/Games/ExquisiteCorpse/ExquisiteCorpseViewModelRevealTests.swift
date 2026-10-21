@@ -84,7 +84,6 @@ struct ExquisiteCorpseViewModelRevealTests {
             createdAt: figure.createdAt,
             finishedAt: figure.finishedAt,
             myRevealSeenAt: Fixture.now,
-            starredByMe: false,
             parts: figure.parts
         )]
         let queued = await env.queued(.exquisiteCorpseRevealSeen)

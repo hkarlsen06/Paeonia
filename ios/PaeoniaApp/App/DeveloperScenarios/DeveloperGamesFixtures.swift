@@ -70,7 +70,6 @@
       hintsUsed: Int = 0,
       personalBest: Bool = false,
       reaction: DrawAndGuessReaction? = nil,
-      starredByMe: Bool = false,
       /// The people who already moved past the result, as the server records it.
       resultSeenBy: Set<UUID> = [],
       guesserHasSeenIt: Bool = false
@@ -97,7 +96,6 @@
         hintsUsed: hintsUsed,
         personalBest: personalBest,
         guesserReaction: reaction,
-        starredByMe: starredByMe,
         drawerResultSeenAt: resultSeenBy.contains(drawer) ? now.addingTimeInterval(-300) : nil,
         guesserResultSeenAt: resultSeenBy.contains(guesser) ? now.addingTimeInterval(-300) : nil,
         attempts: attempts.enumerated().map { index, attempt in

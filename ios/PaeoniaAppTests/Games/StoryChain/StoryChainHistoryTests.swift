@@ -19,23 +19,26 @@ struct StoryChainHistoryTests {
 
     /// Twelve finished stories. Every fourth one is starred.
     private var items: [RemoteStoryChainHistoryItem] {
-        (1...12).map { storyChainHistoryItem($0, starred: $0.isMultiple(of: 4)) }
+        (1...12).map { storyChainHistoryItem($0) }
     }
 
     private func makeHistory(
         pageSize: Int = 30,
         items: [RemoteStoryChainHistoryItem]? = nil
-    ) -> (history: ViewModel, stars: StoryChainStars) {
+    ) -> (history: ViewModel, favorites: FavoritesStore) {
+        let starredIDs = (1...12).filter { $0.isMultiple(of: 4) }.map(storyChainHistoryID)
         environment.gateway.setHistory(items ?? self.items)
-        let dependencies = environment.dependencies()
-        let stars = StoryChainStars(dependencies: dependencies) { Fixture.me }
+        environment.gateway.setStarredStories(Set(starredIDs))
+        let favorites = FavoritesStore.preloaded(
+            ownerUserID: Fixture.me,
+            favorites: starredIDs.map { FavoriteRef(target: .storyChainStory($0), createdAt: Fixture.now) }
+        )
         let history = ViewModel(
-            dependencies: dependencies,
-            stars: stars,
+            dependencies: environment.dependencies(favorites: favorites),
             participants: participants,
             pageSize: pageSize
         )
-        return (history, stars)
+        return (history, favorites)
     }
 
     // MARK: Reading
@@ -125,7 +128,7 @@ struct StoryChainHistoryTests {
         #expect(history.visibleItems.count == 10)
     }
 
-    // MARK: Stars
+    // MARK: Favorites
 
     @Test func theStarredFilterShowsOnlyMyStars() async {
         let (history, _) = makeHistory()
@@ -138,24 +141,24 @@ struct StoryChainHistoryTests {
     }
 
     @Test func aStoryLeavesTheStarredListTheMomentItIsUnstarred() async throws {
-        let (history, stars) = makeHistory()
+        let (history, favorites) = makeHistory()
         history.filter = .starred
         await history.refresh()
         let eight = try #require(history.visibleItems.first { $0.storyNumber == 8 })
 
-        await stars.setStarred(false, storyID: eight.id)
+        await favorites.setFavorite(false, target: .storyChainStory(eight.id))
 
         #expect(history.visibleItems.map(\.storyNumber) == [12, 4])
     }
 
     @Test func aStoryStarredFromAllJoinsTheStarredList() async throws {
-        let (history, stars) = makeHistory()
+        let (history, favorites) = makeHistory()
         await history.refresh()
         history.filter = .starred
         await history.refresh()
         let nine = try #require(history.item(withID: storyChainHistoryItem(9).id))
 
-        await stars.setStarred(true, storyID: nine.id)
+        await favorites.setFavorite(true, target: .storyChainStory(nine.id))
 
         #expect(history.visibleItems.map(\.storyNumber) == [12, 9, 8, 4])
     }
@@ -172,45 +175,32 @@ struct StoryChainHistoryTests {
         #expect(history.visibleItems.map(\.storyNumber) == [12, 8, 4])
     }
 
-    @Test func theServersStarsReachTheStarStore() async {
-        let (history, stars) = makeHistory()
-
-        await history.refresh()
-
-        #expect(stars.isStarred(storyChainHistoryItem(12).id))
-        #expect(!stars.isStarred(storyChainHistoryItem(11).id))
-    }
-
     // MARK: One story
 
     @Test func aFinishedStoryInTheCachedStateOpensWithoutTheServer() async throws {
-        let story = finishedStoryChainStory(starred: true)
+        let story = finishedStoryChainStory()
         let env = StoryChainDataEnvironment(
             state: Fixture.state(
                 Fixture.game(.choosingOpening, turn: Fixture.me, current: story.id),
                 current: story
             )
         )
-        let dependencies = env.dependencies()
-        let stars = StoryChainStars(dependencies: dependencies) { Fixture.me }
-        let history = ViewModel(dependencies: dependencies, stars: stars, participants: participants)
+        let history = ViewModel(dependencies: env.dependencies(), participants: participants)
 
         let loaded = try await history.loadStory(id: story.id)
 
         #expect(loaded == story)
         #expect(!env.gateway.calls.contains("loadStory"))
-        #expect(stars.isStarred(story.id))
     }
 
-    @Test func anOlderStoryComesFromTheServerWithItsStar() async throws {
-        let older = finishedStoryChainStory(id: UUID(), number: 2, starred: true)
+    @Test func anOlderStoryComesFromTheServer() async throws {
+        let older = finishedStoryChainStory(id: UUID(), number: 2)
         environment.gateway.setStoryToLoad(older)
-        let (history, stars) = makeHistory()
+        let (history, _) = makeHistory()
 
         let loaded = try await history.loadStory(id: older.id)
 
         #expect(loaded == older)
-        #expect(stars.isStarred(older.id))
     }
 
     @Test func aStoryThatIsStillBeingWrittenInTheCachedStateIsReadFromTheServer() async throws {
@@ -220,12 +210,7 @@ struct StoryChainHistoryTests {
         )
         let finished = finishedStoryChainStory()
         env.gateway.setStoryToLoad(finished)
-        let dependencies = env.dependencies()
-        let history = ViewModel(
-            dependencies: dependencies,
-            stars: StoryChainStars(dependencies: dependencies) { Fixture.me },
-            participants: participants
-        )
+        let history = ViewModel(dependencies: env.dependencies(), participants: participants)
 
         #expect(try await history.loadStory(id: finished.id) == finished)
     }

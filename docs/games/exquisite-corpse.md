@@ -17,7 +17,7 @@ Decided on 2026-10-13.
 - **Play style doesn't apply.** A figure is always made together, so there are no points in either style. The hub shows how many figures the couple has made.
 - **Each sent part counts toward the streak.**
 - **Push copy names the part.** "Robin drew the head. Your turn to draw the body."
-- **The history is "Our creatures".** Norwegian "Skapningene våre". Finished figures, newest first, with private stars, like "Our drawings".
+- **The history is "Our creatures".** Norwegian "Skapningene våre". Finished figures, newest first, with private stars, like "Our drawings". A star is a favorite (`FavoriteKind.corpseFigure`, `docs/implementation-map.md`, Favorites), so it also shows in Search.
 
 ## Why this game
 
@@ -122,7 +122,7 @@ Settled state, top to bottom.
 3. Credits: three short rows, "Head by Robin · a grandma", "Body by you", "Legs by Robin · frog legs". Avatars tinted `.paeoniaPartnerOne` for me and `.paeoniaPartnerTwo` for the partner.
 4. Pinned bottom: the primary button. "Draw the next head" when the next figure starts with me, otherwise "Continue". It queues the reveal seen mark and moves on at once.
 
-Star. The toolbar star of Draw & Guess (`star`, `star.fill`, `.paeoniaAccentPrimary`, `selection()`), next to an "Our creatures" button. The first star on a phone shows the banner "Only you can see your stars." once (`games.exquisiteCorpse.starHintShown`).
+Star. The shared favorite star (`FavoriteStarButton`, `star`, `star.fill`, `selection()`), next to an "Our creatures" button. The first favorite on a phone shows the banner "Only you can see your favorites." once (`FavoritesStore`).
 
 ## Our creatures
 
@@ -132,7 +132,7 @@ The history of finished figures. It follows "Our drawings" in look and behavior 
 - The header shows the count: "12 creatures" (`sectionTitle`).
 - The grid uses adaptive columns of at least 104 pt, which gives 3 columns on a phone. A cell is the whole figure as a 1:3 thumbnail on `.paeoniaBackgroundPrimary` (`radius12`), with "Creature 12 · Oct 12" under it in `caption`. A `star.fill` badge sits at the top trailing corner when I starred it.
 - A page is 30 figures, newest first, with All and Starred. Paging, caching, offline and empty states work as in "Our drawings".
-- The detail screen shows the figure with the credits and plays the reveal's unfold without the bloom, once. "Play again" starts it over. The toolbar star toggles my private star.
+- The detail screen shows the figure with the credits and plays the reveal's unfold without the bloom, once. "Play again" starts it over. The toolbar star toggles my private favorite.
 - Entry points: a `square.grid.2x2` toolbar button on the game screen ("Our creatures"), and a quiet link on the hub card once a figure is finished.
 
 VoiceOver. A cell is one element, "Creature 12, by you and Robin, starred". The detail figure reads like the reveal's figure.
@@ -166,15 +166,16 @@ The functions are in `backend/convex/exquisiteCorpse.ts`, the pure rules in `bac
 - `exquisite_corpse_games`: one row per couple, created by `ensure_exquisite_corpse_game` (the caller starts). It holds `turn_user_id`, `turn_started_at`, `turn_reminder_sent_at`, the current figure (`figure_id`, null between figures), `figure_number` (of the current or next figure), `part_index` (0, 1 or 2, the next part), `figures_finished`, and `version`, which goes up with every change.
 - `exquisite_corpse_figures`: one row per figure. `id`, `couple_id`, `game_id`, `number`, `starter_user_id`, `created_at`, `finished_at`, and the two reveal seen times, `starter_reveal_seen_at` and `partner_reveal_seen_at`. The row exists from the moment the head arrives. The client creates the figure id, so a head queued offline can name its figure.
 - `exquisite_corpse_parts`: one row per part. `id` (made by the client), `couple_id`, `game_id`, `figure_id`, `figure_number`, `part_index`, `drawer_user_id`, `drawing_media_asset_id`, `strip_media_asset_id` (head and body only), `idea_id` and `idea_text` (optional), `created_at`.
-- `exquisite_corpse_stars`: one row per partner and starred figure, with the figure number so one partner's stars page in order.
+- A star is a row in the shared `favorites` table (kind `corpse_figure`), with the figure number as `ordinal` so one partner's stars page in order. The game has no star table of its own.
 - Settings and invites are the shared `game_settings` and `game_invites`, and presence is the shared presence component room.
 - `get_exquisite_corpse` returns the caller's view: the game, the current figure, the latest 10 finished figures, and the idea deck when it is the caller's turn. A part's `drawing_media_asset_id` and its idea are null unless the caller drew it or the figure is finished. The strip id is always there. Queries read no clock.
 - `submit_exquisite_corpse_part` takes the figure id, the part id, the part index, both media ids and the optional idea id, with the client operation args. It checks couple access, that it is the caller's turn, that the index is the next part, and that the figure id is the current figure (or a new one, for a head). It checks both uploads the way Draw & Guess checks a drawing: owner, couple, parent kind `exquisite_corpse_part`, parent id, purpose, finalized. The strip is required for the head and body and refused for the legs. An unknown idea id is refused. The part is saved, the turn passes, the push goes out, and the streak activity is recorded. The legs finish the figure. The request hash covers all arguments, so a retry is safe and a changed retry is refused.
 - `mark_exquisite_corpse_reveal_seen` sets the caller's reveal seen time on a finished figure. The first write wins.
-- `set_exquisite_corpse_star` stars or unstars a finished figure for the caller. The server sets the value it is given, so a retry changes nothing.
-- `get_exquisite_corpse_history` pages finished figures by number, up to 50 a page, optionally starred only, with `starred_by_me`.
+- Stars use `favorites:set_favorite`, which saves only a finished figure and sets the value it is given, so a retry changes nothing.
+- `get_exquisite_corpse_history` pages finished figures by number, up to 50 a page, optionally starred only (the caller's favorites).
+- `get_exquisite_corpse_figure` returns one finished figure by id, or null. Search and the saved list use it to open a creature that is not in a loaded page.
 - Media. A part's two files are `pkdrawing` uploads with `reserved_parent_kind = "exquisite_corpse_part"` and the part id as parent, purposes `exquisite_corpse_drawing` and `exquisite_corpse_strip`. The reservation needs the couple's game. `get_media_signed_url` lets a couple member read a strip, and the full drawing only when they drew it or the figure is finished. The orphan sweep counts both ids on a part as live references.
-- Relationship cleanup deletes every row of the couple's game, including stars, and queues the drawings for deletion with the couple's other media. Account deletion ends the relationship, so it follows the same path.
+- Relationship cleanup deletes every row of the couple's game, and queues the drawings for deletion with the couple's other media. Account deletion ends the relationship, so it follows the same path.
 
 ## Screens
 
@@ -300,7 +301,7 @@ See "The reveal" for the beats.
 | `history.offline.message` | Connect to the internet to see your creatures. | Koble til internett for å se skapningene deres. |
 | `history.loadMore.failed` | We couldn't load older creatures. | Vi kunne ikke laste eldre skapninger. |
 
-The star strings are the shared keys `games.star.button`, `games.star.buttonStarred` and `games.star.privacy`. The filter strings reuse the Draw & Guess keys (`history.filter.*`) once they move to shared game keys.
+The star strings are the shared favorite keys (`favorites.star`, `favorites.starred`, `favorites.privacyHint`). The filter strings reuse the Draw & Guess keys (`history.filter.*`) once they move to shared game keys.
 
 ### Hub card
 
@@ -328,9 +329,9 @@ As Draw & Guess. Wide layouts put the strip and canvas on the left and everythin
 
 Code map in `docs/implementation-map.md`. Decisions the sections above leave open:
 
-- **Local first.** Sending a part, the reveal seen mark and a star go into the pending operations before anything is sent. The screen applies those queued moves on top of the server's state, so a sent part moves the turn on at once and shows "Saved on this phone" while it waits.
+- **Local first.** Sending a part, the reveal seen mark and a favorite go into the pending operations before anything is sent. The screen applies those queued moves on top of the server's state, so a sent part moves the turn on at once and shows "Saved on this phone" while it waits.
 - **Sending a part.** One pending operation holds the canonical drawing, the strip, the idea, and the client operations for both uploads and the submit, made up front so a retry replays the same requests. The handler uploads the drawing and the strip, then calls `submit_exquisite_corpse_part`. A refused part goes back on the canvas with a notice. An upload the server deleted after a week is renewed with a new upload, as Draw & Guess does. The refusal counting and the backoff after an accepted move follow Draw & Guess.
-- **Order.** A reveal seen mark waits for this person's part of that figure. A star waits for an earlier star of the same figure and for this person's queued part of it.
+- **Order.** A reveal seen mark waits for this person's part of that figure. A favorite waits for an earlier favorite write of the same figure and for this person's queued part of it (`ExquisiteCorpseFavoriteGate`).
 - **One drawing size.** Parts and strips are stored at the canonical 320 pt side. The strip file holds the clipped strokes in the part's own coordinates (y from 281.6 to 320).
 - **Hidden parts.** The phone never asks for a full part it may not read. The state says which ids it may read.
 - **Drafts.** The unsent drawing and the idea chip are saved per figure and part, so a relaunch shows the same canvas and idea.
@@ -339,15 +340,15 @@ Code map in `docs/implementation-map.md`. Decisions the sections above leave ope
 - **Ids.** A figure's id and each part's id are name-based UUIDs (`ExquisiteCorpseIDs`) made from the game, the figure number, the part and the drawer. Both phones work them out alone, so a draft, its queued send and the watcher's live messages name the same part, and a draft keeps its id across launches with nothing stored.
 - **The drawing surface.** On the body and legs, the strip and the canvas share one rounded surface (`ExquisiteCorpseDrawingSurface`), so the corner rounding never cuts ink where the strip meets the canvas. It repeats the few lines of `PencilKitCanvasView` wiring from `GameDrawingCanvas`, so change both together.
 - **The relay never sees the canvas.** The game uses `WidgetLiveDrawing` for presence and roles only. Its `currentDrawing` answers an empty drawing, and the canvas is never attached, so no relay stroke message can carry the hidden part. A drawer whose part waits in the queue keeps the `drawing` role, and a watcher who got `done` keeps the folded paper, until the server moves the turn.
-- **Refusals and other phones.** A part the server refuses with a bad argument (22023) is dropped at once and goes back on the canvas with a notice. A refused idea also clears the chip, so the restored canvas can be sent again. A duplicate (23505) means another send took the part, such as the same turn sent from this person's other phone, so it comes back the same way. A canvas the turn leaves without a send from this phone is kept as its draft. An empty canvas takes the oldest draft of this person's earlier parts in the latest 50 figures, found by their part ids, so no drawing is ever out of reach, also after a relaunch or a privacy purge that keeps drafts. A star waits for a queued part of the same figure, because the server takes a star only on a finished figure.
-- **Shared code.** The canvas, the replay, the square, the layout, the bloom, the avatars, the stars, the thumbnails and the upload are shared with Draw & Guess in `Features/Games/Shared/` (map in `docs/implementation-map.md`).
+- **Refusals and other phones.** A part the server refuses with a bad argument (22023) is dropped at once and goes back on the canvas with a notice. A refused idea also clears the chip, so the restored canvas can be sent again. A duplicate (23505) means another send took the part, such as the same turn sent from this person's other phone, so it comes back the same way. A canvas the turn leaves without a send from this phone is kept as its draft. An empty canvas takes the oldest draft of this person's earlier parts in the latest 50 figures, found by their part ids, so no drawing is ever out of reach, also after a relaunch or a privacy purge that keeps drafts. A favorite waits for a queued part of the same figure, because the server takes one only on a finished figure.
+- **Shared code.** The canvas, the replay, the square, the layout, the bloom, the avatars, the favorite star, the thumbnails and the upload are shared with Draw & Guess in `Features/Games/Shared/` (map in `docs/implementation-map.md`).
 
 ## Decisions made without the developer
 
 Made on 2026-10-14 while the developer was away. Each can change after review.
 
 - **Copy for states the doc didn't cover.** The hub says "Draw one part each without peeking. Then unfold your creature." with "Start playing" before the first figure, and the waiting screen's "Waiting for [Name] to start a new creature" while this person's legs wait to be sent. Watching the legs live, the paper covers the whole square (the legs leave no strip) and the hint says "You'll both see the whole creature when the legs are done."
-- **Generic strings moved to shared keys.** "Choose how you play in the Games tab first." and "We couldn't send your move yet" with its message are `games.needsSetup` and `games.waitingToSync.*`, used by both games with the same text. The clear alert, the star button and the drawing loading label moved the same way.
+- **Generic strings moved to shared keys.** "Choose how you play in the Games tab first." and "We couldn't send your move yet" with its message are `games.needsSetup` and `games.waitingToSync.*`, used by both games with the same text. The clear alert and the drawing loading label moved the same way.
 - **Push steps.** The turn push's `step` is the part that is now the partner's turn (`body` or `legs`).
 - **Ideas.** 50 hand-written ideas per part per language, dealt as a deck of 12 per part. Both lists still need the developer's read (see "Open questions").
 - **Reveal details.** The fold flaps swing away from the viewer. "Opening…" sits on the middle fold while the drawings load. A press counts as a hold after 0.2 seconds, and a hold carries over into the next part. The title and credits sit under the figure. There is no "hold to speed up" hint, unlike the Draw & Guess replay.

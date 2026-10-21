@@ -16,7 +16,6 @@ import {
   getGame,
   getMovesByCouple,
   getMovesByGame,
-  getRoundStar,
   isPersonalBest,
   listGuesses,
   MAX_GUESS_LENGTH,
@@ -32,6 +31,7 @@ import {
   type GameMove,
 } from "./lib/drawAndGuess";
 import { fail, uniqueViolation } from "./lib/errors";
+import { favoritesByOrdinalDesc } from "./lib/favoriteRows";
 import { DIFFICULTY_POINTS, normalizeCustomWord, normalizeWordText } from "./lib/gameWords";
 import { dataEpoch, enqueueGamePush, getGameSettings, requireGameSettings, requirePartnerId, settingsJson } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
@@ -145,7 +145,7 @@ export const get_draw_and_guess = query({
     // have to show. Older rounds are for stars and the drawing list, which need no attempts.
     const moves = game ? await getMovesByGame(ctx, game.id, 21) : [];
     const rounds = [];
-    for (const [index, move] of moves.entries()) rounds.push(await roundJson(ctx, move, userId, index < 2));
+    for (const [index, move] of moves.entries()) rounds.push(await roundJson(ctx, move, index < 2));
 
     return {
       user_id: userId,
@@ -184,7 +184,7 @@ export const get_draw_and_guess_round = query({
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const move = await getByUuid(ctx, "game_moves", uuidArg(args.p_round_id));
     if (!move || move.couple_id !== coupleId) return null;
-    return await roundJson(ctx, move, userId);
+    return await roundJson(ctx, move);
   },
 });
 
@@ -546,9 +546,9 @@ export const give_up_round = mutation({
   },
 });
 
-// --- After the round: result, reaction, stars -------------------------------
+// --- After the round: result, reaction -------------------------------
 
-/** A round that ended. Reactions, stars, and the result screen only apply to these. */
+/** A round that ended. Reactions and the result screen only apply to these. */
 function assertFinished(move: GameMove): void {
   if (move.state !== "solved" && move.state !== "missed") fail("23514", "the round is not finished yet");
 }
@@ -593,45 +593,18 @@ export const set_round_reaction = mutation({
   },
 });
 
-/**
- * Stars or unstars a finished round for the caller. Stars are private: the partner is not told.
- * Setting the current value again changes nothing. Result: `{ round_id, starred }`.
- */
-export const set_round_star = mutation({
-  args: { p_round_id: v.string(), p_starred: v.boolean() },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    await assertNoPendingAccountDeletion(ctx, userId);
-    const { move } = await requireRound(ctx, userId, uuidArg(args.p_round_id));
-    assertFinished(move);
-    const existing = await getRoundStar(ctx, move.id, userId);
-    if (args.p_starred && !existing) {
-      await ctx.db.insert("game_round_stars", {
-        couple_id: move.couple_id,
-        move_id: move.id,
-        user_id: userId,
-        round_number: move.round_number,
-        created_at: nowIso(),
-      });
-    } else if (!args.p_starred && existing) {
-      await ctx.db.delete(existing._id);
-    }
-    return { round_id: move.id, starred: args.p_starred };
-  },
-});
-
 // --- History and records ----------------------------------------------------
 
 /**
  * The couple's finished rounds that hold a drawing, newest first by round number and strictly
  * before `p_before_round_number`. `p_limit` is capped at 50. With `p_starred_only` it returns
- * only the rounds the caller starred. It does not read the clock.
+ * only the rounds the caller favorited (see favorites.ts). It does not read the clock.
  *
  * Result: `{ rounds, next_before_round_number }`. Pass `next_before_round_number` as the next
  * `p_before_round_number`; it is null when there are no more rounds. Each round has `id`,
  * `round_number`, `drawer_user_id`, `guesser_user_id`, `word`, `difficulty`, `points`, `state`,
  * `drawing_media_asset_id`, `solve_ms`, `speed_bonus`, `first_try_bonus`, `hints_used`,
- * `attempt_count`, `guesser_reaction`, `personal_best`, `starred_by_me`,
+ * `attempt_count`, `guesser_reaction`, `personal_best`,
  * `started_at`, and `ended_at`.
  */
 export const get_draw_and_guess_history = query({
@@ -661,14 +634,9 @@ export const get_draw_and_guess_history = query({
       return false;
     };
     if (args.p_starred_only) {
-      const stars = ctx.db
-        .query("game_round_stars")
-        .withIndex("by_couple_id_user_id_round_number", (q) =>
-          q.eq("couple_id", coupleId).eq("user_id", userId).lt("round_number", before),
-        )
-        .order("desc");
-      for await (const star of stars) {
-        if (take(await getByUuid(ctx, "game_moves", star.move_id))) break;
+      for await (const star of favoritesByOrdinalDesc(ctx, userId, "game_round", before)) {
+        if (star.couple_id !== coupleId) continue;
+        if (take(await getByUuid(ctx, "game_moves", star.target_id))) break;
       }
     } else {
       const game = await getGame(ctx, coupleId, "draw_and_guess");
@@ -686,27 +654,45 @@ export const get_draw_and_guess_history = query({
     }
 
     const rounds = [];
-    for (const move of found) {
-      rounds.push({
-        id: move.id,
-        round_number: move.round_number,
-        drawer_user_id: move.drawer_user_id,
-        guesser_user_id: move.guesser_user_id,
-        word: move.word,
-        difficulty: move.difficulty,
-        points: move.points,
-        state: move.state,
-        drawing_media_asset_id: move.drawing_media_asset_id!,
-        ...roundOutcomeJson(move),
-        attempt_count: (await listGuesses(ctx, move.id)).count,
-        starred_by_me: (await getRoundStar(ctx, move.id, userId)) !== null,
-        started_at: move.started_at,
-        ended_at: orNull(move.ended_at),
-      });
-    }
+    for (const move of found) rounds.push(await historyRoundJson(ctx, move));
     return { rounds, next_before_round_number: more ? found[found.length - 1].round_number : null };
   },
 });
+
+/**
+ * One finished round by id, in the shape of the rounds of `get_draw_and_guess_history`. The phone
+ * uses it to open a saved or searched drawing that is not in a loaded page. Null when the couple
+ * has no such finished round.
+ */
+export const get_draw_and_guess_history_round = query({
+  args: { p_round_id: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    const move = await getByUuid(ctx, "game_moves", uuidArg(args.p_round_id));
+    if (!move || move.couple_id !== coupleId) return null;
+    if ((move.state !== "solved" && move.state !== "missed") || move.drawing_media_asset_id === undefined) return null;
+    return await historyRoundJson(ctx, move);
+  },
+});
+
+async function historyRoundJson(ctx: ReaderCtx, move: GameMove) {
+  return {
+    id: move.id,
+    round_number: move.round_number,
+    drawer_user_id: move.drawer_user_id,
+    guesser_user_id: move.guesser_user_id,
+    word: move.word,
+    difficulty: move.difficulty,
+    points: move.points,
+    state: move.state,
+    drawing_media_asset_id: move.drawing_media_asset_id!,
+    ...roundOutcomeJson(move),
+    attempt_count: (await listGuesses(ctx, move.id)).count,
+    started_at: move.started_at,
+    ended_at: orNull(move.ended_at),
+  };
+}
 
 /**
  * Each partner's numbers, the caller first. It scans the couple's rounds, which is fine for one

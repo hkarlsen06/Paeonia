@@ -125,10 +125,6 @@ final class ScriptedStoryChainGateway: StoryChainGateway, @unchecked Sendable {
         throw Failure()
     }
 
-    func setStoryStar(storyID _: UUID, starred _: Bool) async throws -> RemoteStoryStarResult {
-        throw Failure()
-    }
-
     func loadStoryChainHistory(
         starredOnly _: Bool,
         beforeStoryNumber _: Int?,
@@ -218,6 +214,7 @@ struct StoryChainTestEnvironment {
             drawingTransfer: ScriptedDrawingTransfer(),
             makeLive: { _ in nil },
             now: { clock.now },
+            favorites: .inMemory(),
             storyChainGateway: storyGateway,
             storyChainCache: cache,
             makeStoryChainLive: { _ in room }

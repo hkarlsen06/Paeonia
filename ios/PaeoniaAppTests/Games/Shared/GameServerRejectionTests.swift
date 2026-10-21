@@ -8,8 +8,8 @@ import Testing
 struct GameServerRejectionTests {
     private func makeOperation() throws -> PendingSyncOperationSnapshot {
         try snapshot(
-            .setGameRoundStar,
-            GameStarPayload(roundID: UUID(), starred: true, createdAt: GameFixture.now)
+            .giveUpGameRound,
+            GameGiveUpPayload(roundID: UUID(), createdAt: GameFixture.now)
         )
     }
 

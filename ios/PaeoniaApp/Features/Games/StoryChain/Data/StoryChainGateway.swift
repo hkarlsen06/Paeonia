@@ -34,8 +34,6 @@ nonisolated protocol StoryChainGateway: GamesGateway {
     /// This person moved past the finished story. The server keeps the first
     /// time, so a retry is safe.
     func markStorySeen(storyID: UUID) async throws
-    /// Private and safe to retry. The partner is not told.
-    func setStoryStar(storyID: UUID, starred: Bool) async throws -> RemoteStoryStarResult
 
     /// A page of the couple's finished stories, newest first, before
     /// `beforeStoryNumber`. With `starredOnly`, only the stories this person starred.
@@ -93,13 +91,6 @@ nonisolated extension LiveGamesGateway: StoryChainGateway {
         try await client.mutation("storyChain:mark_story_seen", args: StoryRequest(storyID: storyID))
     }
 
-    func setStoryStar(storyID: UUID, starred: Bool) async throws -> RemoteStoryStarResult {
-        try await client.mutation(
-            "storyChain:set_story_star",
-            args: StarRequest(storyID: storyID, starred: starred)
-        )
-    }
-
     func loadStoryChainHistory(
         starredOnly: Bool,
         beforeStoryNumber: Int?,
@@ -119,16 +110,6 @@ nonisolated private struct StoryRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case storyID = "p_story_id"
-    }
-}
-
-nonisolated private struct StarRequest: Encodable {
-    let storyID: UUID
-    let starred: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case storyID = "p_story_id"
-        case starred = "p_starred"
     }
 }
 
@@ -287,10 +268,6 @@ nonisolated extension UnavailableGamesGateway: StoryChainGateway {
     }
 
     func markStorySeen(storyID _: UUID) async throws {
-        throw Unavailable()
-    }
-
-    func setStoryStar(storyID _: UUID, starred _: Bool) async throws -> RemoteStoryStarResult {
         throw Unavailable()
     }
 

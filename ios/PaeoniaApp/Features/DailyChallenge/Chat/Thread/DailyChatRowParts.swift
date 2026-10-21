@@ -32,6 +32,30 @@ enum DailyChatBubbleShape {
     }
 }
 
+/// The line above an answer: whose answer it is, and a small star when this person starred it.
+/// Only this person sees their stars, so the star never shows on the partner's phone.
+struct DailyChatAnswerHeader: View {
+    let answerID: UUID
+    let isCurrentUser: Bool
+    let partnerName: String
+
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space4) {
+            Label {
+                Text(isCurrentUser ? .dailyChallengeYourAnswerTitle : .dailyChatAnswerPartnerTitle(partnerName))
+            } icon: {
+                Image(systemName: "quote.opening")
+            }
+            if FavoritesStore.shared.isFavorite(.answer(answerID)) {
+                Image(systemName: "star.fill")
+                    .accessibilityLabel(Text(.favoritesStarred))
+            }
+        }
+        .font(PaeoniaTypography.caption.weight(.semibold))
+        .foregroundStyle(isCurrentUser ? Color.paeoniaTextPrimary.opacity(0.72) : Color.paeoniaAccentPrimary)
+    }
+}
+
 /// The message a reply answers, shown small above the reply. Tapping it jumps there.
 struct DailyChatQuotedMessage: View {
     let preview: DailyChatReplyPreview

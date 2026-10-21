@@ -3,7 +3,7 @@ import PencilKit
 import QuartzCore
 
 /// One drawing from "Our drawings": it plays back once at the pace it was drawn,
-/// with the word, who drew it, how the round went, and the person's own star.
+/// with the word, who drew it, and how the round went.
 @MainActor
 @Observable
 final class DrawAndGuessHistoryDetailViewModel {
@@ -14,9 +14,10 @@ final class DrawAndGuessHistoryDetailViewModel {
     }
 
     let round: RemoteDrawAndGuessHistoryRound
-    let stars: GameStars
     private(set) var drawingState: DrawingState = .loading
     private(set) var isFastForwarding = false
+    /// The drawing, once it has loaded. The share sheet draws from it.
+    private(set) var drawing: PKDrawing?
 
     @ObservationIgnored private let participants: GameParticipants
     @ObservationIgnored private let drawings: GameHistoryDrawings
@@ -27,13 +28,11 @@ final class DrawAndGuessHistoryDetailViewModel {
     init(
         round: RemoteDrawAndGuessHistoryRound,
         participants: GameParticipants,
-        stars: GameStars,
         drawings: GameHistoryDrawings,
         monotonicNow: @escaping @Sendable () -> TimeInterval = { CACurrentMediaTime() }
     ) {
         self.round = round
         self.participants = participants
-        self.stars = stars
         self.drawings = drawings
         self.monotonicNow = monotonicNow
     }
@@ -42,10 +41,6 @@ final class DrawAndGuessHistoryDetailViewModel {
 
     var word: String {
         DrawAndGuessAnswer.display(round.word)
-    }
-
-    var isStarred: Bool {
-        stars.isStarred(round.id)
     }
 
     /// The partner's name, or "you" in lowercase for use after "by".
@@ -95,10 +90,9 @@ final class DrawAndGuessHistoryDetailViewModel {
         DrawAndGuessHistoryFormat.duration(ms: ms, width: .wide)
     }
 
-    // MARK: - Star
-
-    func toggleStar() async {
-        await stars.toggle(id: round.id)
+    /// What the share sheet offers, once the drawing has loaded.
+    var shareable: PaeoniaShareable? {
+        drawing.map { DrawAndGuessShare.shareable(drawing: $0, word: word) }
     }
 
     // MARK: - Replay
@@ -116,6 +110,7 @@ final class DrawAndGuessHistoryDetailViewModel {
         }
         guard !Task.isCancelled else { return }
         timeline = GameReplayTimeline(drawing: drawing)
+        self.drawing = drawing
         drawingState = .ready
         startReplay(showsAtOnce: showsAtOnce)
     }

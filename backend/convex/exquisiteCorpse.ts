@@ -9,6 +9,7 @@ import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
 import { getByUuid, requireByUuid } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
+import { favoritesByOrdinalDesc } from "./lib/favoriteRows";
 import {
   assertCorpseAssetUsable,
   corpseGameJson,
@@ -17,7 +18,6 @@ import {
   figureJson,
   findIdea,
   getCorpseGame,
-  getFigureStar,
   hasStrip,
   isPartIndex,
   MAX_HISTORY_PAGE,
@@ -286,7 +286,7 @@ export const submit_exquisite_corpse_part = mutation({
   },
 });
 
-// --- After the figure: reveal, stars ----------------------------------------
+// --- After the figure: reveal ----------------------------------------
 
 /**
  * Records that the caller dismissed the finished figure's reveal. It sets the caller's own field once
@@ -309,38 +309,12 @@ export const mark_exquisite_corpse_reveal_seen = mutation({
   },
 });
 
-/**
- * Stars or unstars a finished figure for the caller. Stars are private: the partner is not told.
- * Setting the current value again changes nothing. Result: `{ figure_id, starred }`.
- */
-export const set_exquisite_corpse_star = mutation({
-  args: { p_figure_id: v.string(), p_starred: v.boolean() },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    await assertNoPendingAccountDeletion(ctx, userId);
-    const figure = await requireFinishedFigure(ctx, userId, uuidArg(args.p_figure_id));
-    const existing = await getFigureStar(ctx, figure.id, userId);
-    if (args.p_starred && !existing) {
-      await ctx.db.insert("exquisite_corpse_stars", {
-        couple_id: figure.couple_id,
-        user_id: userId,
-        figure_id: figure.id,
-        figure_number: figure.number,
-        created_at: nowIso(),
-      });
-    } else if (!args.p_starred && existing) {
-      await ctx.db.delete(existing._id);
-    }
-    return { figure_id: figure.id, starred: args.p_starred };
-  },
-});
-
 // --- History ----------------------------------------------------------------
 
 /**
  * The couple's finished figures, newest first by number and strictly before
  * `p_before_figure_number`. `p_limit` is capped at 50. With `p_starred_only` it returns only the
- * figures the caller starred. It does not read the clock.
+ * figures the caller favorited (see favorites.ts). It does not read the clock.
  *
  * Result: `{ figures, next_before_figure_number }`. Each figure has the shape of `get_exquisite_corpse`,
  * with every part visible. Pass `next_before_figure_number` as the next `p_before_figure_number`; it is
@@ -373,14 +347,9 @@ export const get_exquisite_corpse_history = query({
       return false;
     };
     if (args.p_starred_only) {
-      const stars = ctx.db
-        .query("exquisite_corpse_stars")
-        .withIndex("by_couple_id_user_id_figure_number", (q) =>
-          q.eq("couple_id", coupleId).eq("user_id", userId).lt("figure_number", before),
-        )
-        .order("desc");
-      for await (const star of stars) {
-        if (take(await getByUuid(ctx, "exquisite_corpse_figures", star.figure_id))) break;
+      for await (const star of favoritesByOrdinalDesc(ctx, userId, "corpse_figure", before)) {
+        if (star.couple_id !== coupleId) continue;
+        if (take(await getByUuid(ctx, "exquisite_corpse_figures", star.target_id))) break;
       }
     } else {
       const figures = ctx.db
@@ -395,5 +364,21 @@ export const get_exquisite_corpse_history = query({
     const result = [];
     for (const figure of found) result.push(await figureJson(ctx, figure, userId));
     return { figures: result, next_before_figure_number: more ? found[found.length - 1].number : null };
+  },
+});
+
+/**
+ * One finished figure by id, in the shape of the figures of `get_exquisite_corpse_history`. The
+ * phone uses it to open a saved or searched creature that is not in a loaded page. Null when the
+ * couple has no such finished figure.
+ */
+export const get_exquisite_corpse_figure = query({
+  args: { p_figure_id: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    const figure = await getByUuid(ctx, "exquisite_corpse_figures", uuidArg(args.p_figure_id));
+    if (!figure || figure.couple_id !== coupleId || figure.finished_at === undefined) return null;
+    return await figureJson(ctx, figure, userId);
   },
 });

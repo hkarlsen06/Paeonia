@@ -4,7 +4,7 @@ import Testing
 @testable import PaeoniaApp
 
 /// One creature from "Our creatures": loading its three drawings, the credits, the
-/// replay and the star.
+/// and the replay.
 @MainActor
 struct ExquisiteCorpseHistoryDetailTests {
     private typealias Fixture = ExquisiteCorpseFixture
@@ -14,14 +14,9 @@ struct ExquisiteCorpseHistoryDetailTests {
     private let figure = Fixture.figure(2, revealSeen: true)
 
     private func makeDetail() -> ExquisiteCorpseHistoryDetailViewModel {
-        let dependencies = environment.dependencies(withRoom: false)
-        let stars = GameStars(source: .exquisiteCorpse(cache: environment.cache), dependencies: dependencies) {
-            Fixture.me
-        }
-        return ExquisiteCorpseHistoryDetailViewModel(
+        ExquisiteCorpseHistoryDetailViewModel(
             figure: figure,
             participants: ExquisiteCorpseTestEnvironment.participants,
-            stars: stars,
             drawings: GameHistoryDrawings(store: environment.drawingStore, transfer: environment.transfer)
         )
     }
@@ -69,20 +64,5 @@ struct ExquisiteCorpseHistoryDetailTests {
         #expect(detail.drawingState == .ready)
         #expect(environment.transfer.downloads == [partnersBody])
         #expect(environment.drawingStore.downloadedDrawing(mediaAssetID: partnersBody) != nil)
-    }
-
-    // MARK: Star
-
-    @Test func theStarToggleIsMineAndShowsAtOnce() async {
-        let detail = makeDetail()
-        #expect(!detail.isStarred)
-
-        await detail.toggleStar()
-        #expect(detail.isStarred)
-        let queued = await environment.queued(.exquisiteCorpseStar)
-        #expect(queued.count == 1)
-
-        await detail.toggleStar()
-        #expect(!detail.isStarred)
     }
 }

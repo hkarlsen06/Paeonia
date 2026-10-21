@@ -5,6 +5,7 @@ import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import { checkViolation, fail, uniqueViolation } from "./errors";
 import { newUuid, uuidArg } from "./ids";
+import { deleteFavoritesOfTarget } from "./favoriteRows";
 import { jsonbByteLength, jsonbText } from "./json";
 import { enqueueDailyChallengeCompletedNotification, enqueuePartnerAnsweredNotification } from "./dailyPartnerPush";
 import { tombstoneReportTargets } from "./reports";
@@ -323,7 +324,7 @@ async function upsertAnswerText(ctx: WriterCtx, answer: Doc<"daily_question_answ
   if (existing) {
     await ctx.db.patch(existing._id, { body });
   } else {
-    await ctx.db.insert("daily_answer_text", { answer_id: answer.id, body });
+    await ctx.db.insert("daily_answer_text", { answer_id: answer.id, couple_id: instance.couple_id, body });
   }
 }
 
@@ -807,6 +808,7 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
             .withIndex("by_couple_id_question_id", (q) => q.eq("couple_id", coupleId).eq("question_id", questionId))
             .unique()
         : null;
+      if (questionId) await deleteFavoritesOfTarget(ctx, coupleId, "daily_question", questionId);
       if (!link) continue;
       const messages = await ctx.db
         .query("thread_messages")
@@ -875,6 +877,7 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
           .collect()) {
           await ctx.db.delete(row._id);
         }
+        await deleteFavoritesOfTarget(ctx, coupleId, "daily_answer", answer.id);
         await tombstoneReportTargets(ctx, "daily_answer", answer.id);
         await ctx.db.delete(answer._id);
       }

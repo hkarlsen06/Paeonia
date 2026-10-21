@@ -46,7 +46,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Paeonia uses your microphone so you can record voice answers and voice messages for your partner.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Paeonia saves a photo or drawing to your photo library when you tap Save to Photos.</string>
+	<string>Paeonia saves a picture to your photo library when you tap Save to Photos.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>INSendMessageIntent</string>

@@ -120,8 +120,6 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
     /// The guesser's fastest hint-free solve so far, and not their first one.
     let personalBest: Bool
     let guesserReaction: DrawAndGuessReaction?
-    /// This person's own private star. The partner's is never sent.
-    var starredByMe: Bool
     /// When each partner moved past the result of the finished round.
     let drawerResultSeenAt: Date?
     let guesserResultSeenAt: Date?
@@ -151,7 +149,6 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
         case hintsUsed = "hints_used"
         case personalBest = "personal_best"
         case guesserReaction = "guesser_reaction"
-        case starredByMe = "starred_by_me"
         case drawerResultSeenAt = "drawer_result_seen_at"
         case guesserResultSeenAt = "guesser_result_seen_at"
         case attempts

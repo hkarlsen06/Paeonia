@@ -326,3 +326,21 @@ export async function insertWidgetDrawingRevision(
   await ctx.db.patch(canvas._id, { active_revision_id: revision.id, updated_at: updatedAt });
   return { revision, updatedAt };
 }
+
+/** A revision whose drawing a person may see: not removed, not moderated, with a usable stored file. */
+export function payloadIsVisible(
+  revision: Doc<"widget_drawing_revisions"> | null,
+  asset: Doc<"media_assets"> | null,
+): boolean {
+  return (
+    revision !== null &&
+    revision.deleted_at === undefined &&
+    revision.moderation_status === "visible" &&
+    asset !== null &&
+    asset.upload_status === "finalized" &&
+    asset.storage_delete_status === "none" &&
+    asset.moderation_status === "visible" &&
+    asset.deleted_at === undefined
+  );
+}
+

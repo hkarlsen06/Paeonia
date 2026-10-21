@@ -25,7 +25,6 @@ final class DrawAndGuessHistoryViewModel {
     private(set) var me: GamePlayer
     private(set) var partner: GamePlayer
 
-    let stars: GameStars
     let drawings: GameHistoryDrawings
 
     nonisolated static let defaultPageSize = 30
@@ -40,12 +39,10 @@ final class DrawAndGuessHistoryViewModel {
 
     init(
         dependencies: GamesDependencies,
-        stars: GameStars,
         participants: GameParticipants = GameParticipants(),
         pageSize: Int = DrawAndGuessHistoryViewModel.defaultPageSize
     ) {
         self.dependencies = dependencies
-        self.stars = stars
         self.participants = participants
         self.pageSize = pageSize
         (me, partner) = participants.players
@@ -81,7 +78,7 @@ final class DrawAndGuessHistoryViewModel {
     }
 
     /// The drawings of the selected filter, newest first. "Starred" shows the
-    /// rounds this person starred, with unsent changes applied: a drawing that was
+    /// rounds this person favorited, with unsent changes applied: a drawing that was
     /// just unstarred leaves the list, and one that was just starred joins it.
     var visibleRounds: [RemoteDrawAndGuessHistoryRound] {
         switch filter {
@@ -93,9 +90,14 @@ final class DrawAndGuessHistoryViewModel {
                 byID[round.id] = round
             }
             return byID.values
-                .filter { stars.isStarred($0.id) }
+                .filter { isFavorite($0) }
                 .sorted { $0.roundNumber > $1.roundNumber }
         }
+    }
+
+    /// Whether this person starred the drawing, with their unsent changes applied.
+    func isFavorite(_ round: RemoteDrawAndGuessHistoryRound) -> Bool {
+        dependencies.favorites.isFavorite(.gameRound(round.id))
     }
 
     var phase: Phase {
@@ -103,7 +105,7 @@ final class DrawAndGuessHistoryViewModel {
         if current.hasLoaded {
             return .loaded
         }
-        // The starred read failed, but the cached "All" list still tells which are starred.
+        // The starred read failed, but the cached "All" list and the favorites still tell which are starred.
         if filter == .starred, current.failure != nil, listing(.all).hasLoaded {
             return .loaded
         }
@@ -150,14 +152,25 @@ final class DrawAndGuessHistoryViewModel {
     }
 
     func makeDetail(roundID: UUID) -> DrawAndGuessHistoryDetailViewModel? {
-        round(withID: roundID).map {
-            DrawAndGuessHistoryDetailViewModel(
-                round: $0,
-                participants: participants,
-                stars: stars,
-                drawings: drawings
-            )
-        }
+        round(withID: roundID).map(makeDetail(round:))
+    }
+
+    func makeDetail(round: RemoteDrawAndGuessHistoryRound) -> DrawAndGuessHistoryDetailViewModel {
+        DrawAndGuessHistoryDetailViewModel(round: round, participants: participants, drawings: drawings)
+    }
+
+    /// A finished round for the detail screen: from the loaded lists or the cache when they
+    /// hold it, otherwise from the server. A saved or searched drawing may not be in either,
+    /// for example right after a launch. Nil when the couple has no such round. Throws when
+    /// the round is not on the phone and the read failed.
+    func loadRound(id roundID: UUID) async throws -> RemoteDrawAndGuessHistoryRound? {
+        if let known = round(withID: roundID) { return known }
+        await readCache()
+        if let cached = round(withID: roundID) { return cached }
+        guard let userID = currentUserID else { return nil }
+        let fetched = try await dependencies.gateway.loadDrawAndGuessHistoryRound(roundID: roundID)
+        guard !Task.isCancelled, currentUserID == userID else { return nil }
+        return fetched
     }
 
     // MARK: - Reading
@@ -188,7 +201,6 @@ final class DrawAndGuessHistoryViewModel {
         if records == nil {
             records = document.drawings?.records
         }
-        await stars.reload()
     }
 
     private func fetchRecords() async {
@@ -202,7 +214,6 @@ final class DrawAndGuessHistoryViewModel {
 
     private func fetchFirstPage(_ filter: Filter) async {
         guard let userID = currentUserID else { return }
-        let mark = stars.changeMark
         do {
             let page = try await dependencies.gateway.loadDrawAndGuessHistory(
                 starredOnly: filter == .starred,
@@ -216,7 +227,6 @@ final class DrawAndGuessHistoryViewModel {
             if filter == .all {
                 await dependencies.cache.saveHistoryFirstPage(page, ownerUserID: userID)
             }
-            await stars.applyServerStars(page.starValues, readSince: mark)
         } catch {
             guard !error.isCancellation, currentUserID == userID else { return }
             // A failed read keeps the list that is on screen. Only a screen with
@@ -249,7 +259,6 @@ final class DrawAndGuessHistoryViewModel {
         current.isLoadingMore = true
         current.loadMoreFailed = false
         listings[filter] = current
-        let mark = stars.changeMark
         do {
             let page = try await dependencies.gateway.loadDrawAndGuessHistory(
                 starredOnly: filter == .starred,
@@ -259,7 +268,6 @@ final class DrawAndGuessHistoryViewModel {
             guard currentUserID == userID else { return }
             listings[filter, default: DrawAndGuessHistoryListing()].append(page)
             listings[filter]?.isLoadingMore = false
-            await stars.applyServerStars(page.starValues, readSince: mark)
         } catch {
             guard currentUserID == userID else { return }
             listings[filter]?.isLoadingMore = false

@@ -9,6 +9,7 @@ import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx } from "./lib/db";
 import { getByUuid } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
+import { favoritesByOrdinalDesc } from "./lib/favoriteRows";
 import { dataEpoch, enqueueGamePush, getGameSettings, requireGameSettings, requirePartnerId } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
 import {
@@ -16,7 +17,6 @@ import {
   findOpening,
   findWord,
   getStoryChainGame,
-  getStoryStar,
   lineUsesDare,
   markContentUsed,
   MAX_HISTORY_PAGE,
@@ -135,8 +135,8 @@ export const get_story_chain = query({
         turn_started_at: game.turn_started_at,
         version: game.version,
       },
-      current_story: current ? await storyJson(ctx, current, userId) : null,
-      previous_story: previous ? await storyJson(ctx, previous, userId) : null,
+      current_story: current ? storyJson(current, userId) : null,
+      previous_story: previous ? storyJson(previous, userId) : null,
       opening_choices: offersOpenings ? await openingChoices(ctx, game, settings.language) : null,
       word_choices: offersWords ? await wordChoices(ctx, game, settings.language) : null,
     };
@@ -150,7 +150,7 @@ export const get_story_chain_story = query({
     const userId = await requireUserId(ctx);
     const story = await getByUuid(ctx, "story_chain_stories", uuidArg(args.p_story_id));
     if (!story || !(await canAccessCoupleContent(ctx, userId, story.couple_id))) return null;
-    return await storyJson(ctx, story, userId);
+    return storyJson(story, userId);
   },
 });
 
@@ -385,37 +385,11 @@ export const mark_story_seen = mutation({
   },
 });
 
-/** Sets the caller's private star on a finished story. The server sets the given value, so a retry changes nothing. */
-export const set_story_star = mutation({
-  args: { p_story_id: v.string(), p_starred: v.boolean() },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    await assertNoPendingAccountDeletion(ctx, userId);
-    const { story, game } = await requireStory(ctx, userId, uuidArg(args.p_story_id));
-    if (story.state !== "finished") fail("23514", "only a finished story can be starred");
-    const existing = await getStoryStar(ctx, story.id, userId);
-    // A change moves the version, so a phone never takes a read from before the star over one after it.
-    if (args.p_starred !== (existing !== null)) await patchStoryChainGame(ctx, game, {});
-    if (args.p_starred && !existing) {
-      await ctx.db.insert("story_chain_stars", {
-        couple_id: story.couple_id,
-        story_id: story.id,
-        user_id: userId,
-        story_number: story.story_number,
-        created_at: nowIso(),
-      });
-    } else if (!args.p_starred && existing) {
-      await ctx.db.delete(existing._id);
-    }
-    return { story_id: story.id, starred: args.p_starred };
-  },
-});
-
 // --- Our stories -------------------------------------------------------------
 
 /**
  * The couple's finished stories, newest first, paged by story number. With `p_starred_only` only
- * the caller's starred stories. `next_before_story_number` is null on the last page.
+ * the caller's favorite stories (see favorites.ts). `next_before_story_number` is null on the last page.
  */
 export const get_story_chain_history = query({
   args: {
@@ -434,15 +408,9 @@ export const get_story_chain_history = query({
     const stories: Story[] = [];
     let hasMore = false;
     if (args.p_starred_only) {
-      const stars = ctx.db
-        .query("story_chain_stars")
-        .withIndex("by_couple_id_user_id_story_number", (q) => {
-          const base = q.eq("couple_id", coupleId).eq("user_id", userId);
-          return before === null ? base : base.lt("story_number", before);
-        })
-        .order("desc");
-      for await (const star of stars) {
-        const story = await getByUuid(ctx, "story_chain_stories", star.story_id);
+      for await (const star of favoritesByOrdinalDesc(ctx, userId, "story_chain_story", before ?? Number.MAX_SAFE_INTEGER)) {
+        if (star.couple_id !== coupleId) continue;
+        const story = await getByUuid(ctx, "story_chain_stories", star.target_id);
         if (story?.state !== "finished") continue;
         if (stories.length === limit) {
           hasMore = true;
@@ -477,7 +445,6 @@ export const get_story_chain_history = query({
         first_line: story.opening_text ?? story.lines[0]?.text ?? "",
         line_count: story.lines.length,
         finished_at: story.finished_at ?? story.updated_at,
-        starred_by_me: (await getStoryStar(ctx, story.id, userId)) !== null,
       });
     }
     return { stories: items, next_before_story_number: hasMore ? (stories.at(-1)?.story_number ?? null) : null };

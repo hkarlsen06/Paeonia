@@ -16,9 +16,6 @@ nonisolated struct ExquisiteCorpseLocalDocument: GamesPersistedDocument {
     var state: RemoteExquisiteCorpseState?
     /// The first page of "Our creatures".
     var history: RemoteExquisiteCorpseHistoryPage?
-    /// What the server last said about this person's star, by figure id. It also
-    /// covers figures that are not in `state`.
-    var stars: [UUID: Bool] = [:]
     /// The idea id on the chip, by part id, so a draft restores it. The latest 20.
     var ideas: [UUID: String] = [:]
     /// The part ids in `ideas`, oldest first.
@@ -49,9 +46,6 @@ protocol ExquisiteCorpseCaching: Actor {
     func saveFetchedState(_ state: RemoteExquisiteCorpseState, ownerUserID: UUID, ticket: Int) -> Bool
     /// Keeps the first page of "Our creatures".
     func saveHistoryFirstPage(_ page: RemoteExquisiteCorpseHistoryPage, ownerUserID: UUID)
-    /// Keeps what the server said about this person's star on figures, and
-    /// patches the figures of the kept state and history page.
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID)
     /// Keeps the idea on the chip for a part. Nil removes it.
     func saveIdea(_ ideaID: String?, partID: UUID, ownerUserID: UUID)
     /// Counts one unexplained server refusal of a queued write and returns how
@@ -82,7 +76,6 @@ extension ExquisiteCorpseCaching {
 nonisolated extension ExquisiteCorpseLocalDocument {
     private static let maxIdeas = 20
     private static let maxRefusals = 100
-    private static let maxStars = 500
 
     /// Takes a state from the server unless it is older than the one kept.
     /// Returns whether it took it.
@@ -92,16 +85,6 @@ nonisolated extension ExquisiteCorpseLocalDocument {
         }
         state = newState
         return true
-    }
-
-    mutating func apply(stars answers: [UUID: Bool]) {
-        stars.merge(answers) { _, answer in answer }
-        if stars.count > Self.maxStars {
-            // A figure with no entry reads as not starred, so the old unstarred ones go first.
-            stars = stars.filter(\.value)
-        }
-        state?.apply(stars: answers)
-        history = history?.applying(stars: answers)
     }
 
     mutating func saveIdea(_ ideaID: String?, partID: UUID) {
@@ -173,10 +156,6 @@ actor FileExquisiteCorpseCache: ExquisiteCorpseCaching {
         store.update(ownerUserID: ownerUserID) { $0.history = page }
     }
 
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
-        store.update(ownerUserID: ownerUserID) { $0.apply(stars: stars) }
-    }
-
     func saveIdea(_ ideaID: String?, partID: UUID, ownerUserID: UUID) {
         store.update(ownerUserID: ownerUserID) { $0.saveIdea(ideaID, partID: partID) }
     }
@@ -243,10 +222,6 @@ actor InMemoryExquisiteCorpseCache: ExquisiteCorpseCaching {
         documents[ownerUserID, default: ExquisiteCorpseLocalDocument()].history = page
     }
 
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
-        documents[ownerUserID, default: ExquisiteCorpseLocalDocument()].apply(stars: stars)
-    }
-
     func saveIdea(_ ideaID: String?, partID: UUID, ownerUserID: UUID) {
         documents[ownerUserID, default: ExquisiteCorpseLocalDocument()].saveIdea(ideaID, partID: partID)
     }
@@ -279,8 +254,7 @@ nonisolated extension RemoteExquisiteCorpseState {
     /// version, or with the same version and no reveal seen time on a figure
     /// where `other` has one, is an old answer that arrived late, such as a live
     /// feed update sent before a move this phone already read back. Keeping it
-    /// would put the move off the screen again. A star never decides, because a
-    /// person can change it on the server without the version moving.
+    /// would put the move off the screen again.
     func isOlder(than other: RemoteExquisiteCorpseState) -> Bool {
         guard userID == other.userID,
               dataEpoch == other.dataEpoch,
@@ -300,42 +274,8 @@ nonisolated extension RemoteExquisiteCorpseState {
         }
     }
 
-    /// Takes the server's answer for the person's star on the figures it carries.
-    mutating func apply(stars: [UUID: Bool]) {
-        currentFigure = currentFigure?.applying(stars: stars)
-        recentFigures = recentFigures.map { $0.applying(stars: stars) }
-    }
-
-    /// This person's star on the figure in progress and the recent finished ones.
-    var starValues: [UUID: Bool] {
-        Dictionary(figures.map { ($0.id, $0.starredByMe) }, uniquingKeysWith: { first, _ in first })
-    }
-
     /// The figure in progress and the recent finished ones.
     private var figures: [RemoteExquisiteCorpseFigure] {
         [currentFigure].compactMap(\.self) + recentFigures
-    }
-}
-
-nonisolated extension RemoteExquisiteCorpseFigure {
-    func applying(stars: [UUID: Bool]) -> RemoteExquisiteCorpseFigure {
-        guard let starred = stars[id] else { return self }
-        var figure = self
-        figure.starredByMe = starred
-        return figure
-    }
-}
-
-nonisolated extension RemoteExquisiteCorpseHistoryPage {
-    func applying(stars: [UUID: Bool]) -> RemoteExquisiteCorpseHistoryPage {
-        RemoteExquisiteCorpseHistoryPage(
-            figures: figures.map { $0.applying(stars: stars) },
-            nextBeforeFigureNumber: nextBeforeFigureNumber
-        )
-    }
-
-    /// The star state of every figure on the page.
-    var starValues: [UUID: Bool] {
-        Dictionary(figures.map { ($0.id, $0.starredByMe) }, uniquingKeysWith: { _, last in last })
     }
 }

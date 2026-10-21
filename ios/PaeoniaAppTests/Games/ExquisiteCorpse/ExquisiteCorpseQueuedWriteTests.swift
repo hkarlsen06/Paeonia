@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import PaeoniaApp
 
-/// The reveal seen mark and the star: the order they go in, what a refusal does, and how the
+/// The reveal seen mark: the order it goes in, what a refusal does, and how the
 /// screens read the queue back.
 @MainActor
 struct ExquisiteCorpseQueuedWriteTests {
@@ -12,10 +12,6 @@ struct ExquisiteCorpseQueuedWriteTests {
 
     private func revealSeen(figure: Int) -> ExquisiteCorpseRevealSeenPayload {
         ExquisiteCorpseRevealSeenPayload(figureID: Fixture.figureID(figure), createdAt: Fixture.now)
-    }
-
-    private func star(figure: Int, starred: Bool) -> ExquisiteCorpseStarPayload {
-        ExquisiteCorpseStarPayload(figureID: Fixture.figureID(figure), starred: starred, createdAt: Fixture.now)
     }
 
     /// Operations made one after the other, the way the factory numbers them.
@@ -125,100 +121,6 @@ struct ExquisiteCorpseQueuedWriteTests {
             #expect(thrown != nil)
         }
     }
-
-    // MARK: Star
-
-    @Test func aStarWaitsForAnEarlierStarOfTheSameFigureAndTheEarlierOneGoesFirst() async throws {
-        let first = makeOperation(1)
-        let second = makeOperation(2)
-        try await environment.enqueue(.exquisiteCorpseStar, star(figure: 1, starred: true), operation: first)
-        try await environment.enqueue(.exquisiteCorpseStar, star(figure: 1, starred: false), operation: second)
-        let handler = environment.starHandler()
-
-        let waiting = try await handler.send(
-            try corpseSnapshot(.exquisiteCorpseStar, star(figure: 1, starred: false), operation: second),
-            context: environment.context()
-        )
-        #expect(waiting == .retry(after: nil))
-        #expect(environment.gateway.stars.isEmpty)
-
-        let sent = try await handler.send(
-            try corpseSnapshot(.exquisiteCorpseStar, star(figure: 1, starred: true), operation: first),
-            context: environment.context()
-        )
-        #expect(sent == .succeeded)
-        let written = ScriptedExquisiteCorpseGateway.StarWrite(figureID: Fixture.figureID(1), starred: true)
-        #expect(environment.gateway.stars == [written])
-    }
-
-    @Test func aStarWaitsForThePartQueuedForTheSameFigure() async throws {
-        try await environment.enqueue(.exquisiteCorpseSubmitPart, Fixture.queuedPart(figure: 2, partIndex: 2))
-
-        let result = try await environment.starHandler().send(
-            try corpseSnapshot(.exquisiteCorpseStar, star(figure: 2, starred: true), operation: makeOperation(2)),
-            context: environment.context()
-        )
-
-        #expect(result == .retry(after: nil))
-        #expect(environment.gateway.stars.isEmpty)
-    }
-
-    @Test func theServersAnswerIsKeptBeforeTheStarLeavesTheQueue() async throws {
-        let figure = Fixture.figure(1, starred: false)
-        await environment.cache.saveState(Fixture.state(version: 5, recent: [figure]), ownerUserID: Fixture.me)
-
-        let result = try await environment.starHandler().send(
-            try corpseSnapshot(.exquisiteCorpseStar, star(figure: 1, starred: true)),
-            context: environment.context()
-        )
-
-        #expect(result == .succeeded)
-        let document = await environment.cache.document(ownerUserID: Fixture.me)
-        #expect(document.stars == [figure.id: true])
-        #expect(document.state?.recentFigures.map(\.starredByMe) == [true])
-        // A star changes nothing else, so there is no state to read back.
-        #expect(environment.gateway.calls == ["star"])
-    }
-
-    @Test func aStarARetryCannotFixIsDroppedWithoutANotice() async throws {
-        environment.gateway.setStarError(Fixture.refusal("23514", "the creature is not finished yet"))
-
-        let result = try await environment.starHandler().send(
-            try corpseSnapshot(.exquisiteCorpseStar, star(figure: 1, starred: true)),
-            context: environment.context()
-        )
-
-        expectCorpseTerminalFailure(result)
-        #expect(await environment.cache.takeNotices(ownerUserID: Fixture.me).isEmpty)
-        #expect(await environment.cache.document(ownerUserID: Fixture.me).stars.isEmpty)
-    }
-
-    @Test func noConnectionKeepsTheStarInTheQueueWithoutCounting() async throws {
-        environment.gateway.setStarError(URLError(.notConnectedToInternet))
-        let handler = environment.starHandler()
-        let snapshot = try corpseSnapshot(.exquisiteCorpseStar, star(figure: 1, starred: true))
-
-        for _ in 0..<5 {
-            let thrown = await corpseThrownError { try await handler.send(snapshot, context: environment.context()) }
-            #expect(thrown is URLError)
-        }
-
-        #expect(await environment.cache.document(ownerUserID: Fixture.me).unexplainedRefusals.isEmpty)
-    }
-
-    @Test func aStarTheServerRefusesForAnUnknownReasonIsDroppedOnTheThirdTry() async throws {
-        environment.gateway.setStarError(Fixture.refusal("XX000", "something we do not know"))
-        let handler = environment.starHandler()
-        let snapshot = try corpseSnapshot(.exquisiteCorpseStar, star(figure: 1, starred: true))
-
-        for _ in 0..<2 {
-            let thrown = await corpseThrownError { try await handler.send(snapshot, context: environment.context()) }
-            #expect(thrown is PaeoniaConvexError)
-        }
-        let third = try await handler.send(snapshot, context: environment.context())
-
-        expectCorpseTerminalFailure(third)
-    }
 }
 
 /// How the screens read the queue back.
@@ -230,10 +132,6 @@ extension ExquisiteCorpseQueuedWriteTests {
         try await environment.enqueue(.exquisiteCorpseSubmitPart, part, operation: makeOperation(1))
         let seen = revealSeen(figure: 1)
         try await environment.enqueue(.exquisiteCorpseRevealSeen, seen, operation: makeOperation(2))
-        let starred = star(figure: 1, starred: true)
-        try await environment.enqueue(.exquisiteCorpseStar, starred, operation: makeOperation(3))
-        let unstarred = star(figure: 1, starred: false)
-        try await environment.enqueue(.exquisiteCorpseStar, unstarred, operation: makeOperation(4))
 
         let work = try await loadWork()
 
@@ -241,13 +139,11 @@ extension ExquisiteCorpseQueuedWriteTests {
         #expect(work.hasMoveWaiting)
         #expect(work.hasRevealSeen(figureID: Fixture.figureID(1)))
         #expect(!work.hasRevealSeen(figureID: Fixture.figureID(2)))
-        // The last star made is the one that counts.
-        #expect(work.star(figureID: Fixture.figureID(1)) == false)
         #expect(!work.lastSendFailedWhileOnline && !work.hasFailedMoveAttempt)
     }
 
     @Test func onlyTheOwnersWritesAreRead() async throws {
-        try await environment.enqueue(.exquisiteCorpseStar, star(figure: 1, starred: true))
+        try await environment.enqueue(.exquisiteCorpseRevealSeen, revealSeen(figure: 1))
 
         let work = try await loadWork(Fixture.partner)
 
@@ -271,12 +167,12 @@ extension ExquisiteCorpseQueuedWriteTests {
 
     @Test func aPayloadThatCannotBeReadIsSkipped() async throws {
         try await environment.enqueue(.exquisiteCorpseSubmitPart, "not a part", operation: makeOperation(1))
-        try await environment.enqueue(.exquisiteCorpseStar, star(figure: 1, starred: true), operation: makeOperation(2))
+        try await environment.enqueue(.exquisiteCorpseRevealSeen, revealSeen(figure: 1), operation: makeOperation(2))
 
         let work = try await loadWork()
 
         #expect(work.parts.isEmpty)
-        #expect(work.star(figureID: Fixture.figureID(1)) == true)
+        #expect(work.hasRevealSeen(figureID: Fixture.figureID(1)))
     }
 
     @Test func aPartThatWaitedBehindSomethingIsNotAFailedAttempt() async throws {
@@ -297,9 +193,9 @@ extension ExquisiteCorpseQueuedWriteTests {
         #expect(work.lastSendFailedWhileOnline)
     }
 
-    @Test func aFailedStarIsNotAFailedMove() async throws {
+    @Test func aFailedRevealSeenIsNotAFailedMove() async throws {
         let operation = makeOperation(1)
-        try await environment.enqueue(.exquisiteCorpseStar, star(figure: 1, starred: true), operation: operation)
+        try await environment.enqueue(.exquisiteCorpseRevealSeen, revealSeen(figure: 1), operation: operation)
         try await environment.pending.markSending(clientOperationID: operation.id, at: Fixture.now)
         try await environment.pending.markRetryableFailure(
             clientOperationID: operation.id,

@@ -8,7 +8,7 @@ import { enqueueGamePush, requireGameSettings, TURN_REMINDER_AFTER_MS } from "./
 import { charLength } from "./text";
 import { addMs, nowIso } from "./time";
 
-// Draw & Guess: its tables (games, game_moves, game_guesses, game_round_stars, game_used_words),
+// Draw & Guess: its tables (games, game_moves, game_guesses, game_used_words),
 // scoring, json shapes, and the hooks the shared games code calls (`drawAndGuessBackend` at the end).
 // The registered functions are in convex/drawAndGuess.ts. Helpers every game shares are in games.ts.
 
@@ -228,10 +228,9 @@ export function roundOutcomeJson(move: GameMove) {
 }
 
 /**
- * One round with its attempts. `starred_by_me` is the caller's private star. With `withAttempts`
- * false, `attempts` is empty and `attempt_count` still holds the exact number.
+ * One round with its attempts. With `withAttempts` false, `attempts` is empty and `attempt_count` still holds the exact number.
  */
-export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string, withAttempts = true) {
+export async function roundJson(ctx: ReaderCtx, move: GameMove, withAttempts = true) {
   const { guesses, count } = await listGuesses(ctx, move.id);
   return {
     id: move.id,
@@ -248,7 +247,6 @@ export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string, 
     guesser_first_seen_at: orNull(move.guesser_first_seen_at),
     ended_at: orNull(move.ended_at),
     ...roundOutcomeJson(move),
-    starred_by_me: (await getRoundStar(ctx, move.id, userId)) !== null,
     /** When each partner dismissed the result. The app reads the field for its own role. */
     drawer_result_seen_at: orNull(move.drawer_result_seen_at),
     guesser_result_seen_at: orNull(move.guesser_result_seen_at),
@@ -262,14 +260,6 @@ export async function roundJson(ctx: ReaderCtx, move: GameMove, userId: string, 
       created_at: guess.created_at,
     })),
   };
-}
-
-/** The user's star on a round, if any. */
-export async function getRoundStar(ctx: ReaderCtx, moveId: string, userId: string): Promise<Doc<"game_round_stars"> | null> {
-  return await ctx.db
-    .query("game_round_stars")
-    .withIndex("by_move_id_user_id", (q) => q.eq("move_id", moveId).eq("user_id", userId))
-    .unique();
 }
 
 // --- Hooks for the shared games code ----------------------------------------
@@ -316,7 +306,6 @@ export const drawAndGuessBackend: GameBackend = {
     for (const row of await ctx.db.query("games").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
     for (const row of await ctx.db.query("game_moves").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
     for (const row of await ctx.db.query("game_guesses").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
-    for (const row of await ctx.db.query("game_round_stars").withIndex("by_couple_id_user_id_round_number", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
     for (const row of await ctx.db.query("game_used_words").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
     return deleted;
   },

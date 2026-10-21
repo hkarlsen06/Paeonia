@@ -178,14 +178,6 @@ export async function patchCorpseGame(
   await ctx.db.patch(game._id, { ...patch, version: game.version + 1, updated_at: nowIso() });
 }
 
-/** The user's star on a figure, if any. */
-export async function getFigureStar(ctx: ReaderCtx, figureId: string, userId: string): Promise<Doc<"exquisite_corpse_stars"> | null> {
-  return await ctx.db
-    .query("exquisite_corpse_stars")
-    .withIndex("by_user_id_figure_id", (q) => q.eq("user_id", userId).eq("figure_id", figureId))
-    .unique();
-}
-
 export function corpseGameJson(game: CorpseGame) {
   return {
     id: game.id,
@@ -201,7 +193,7 @@ export function corpseGameJson(game: CorpseGame) {
   };
 }
 
-/** One figure with its parts for `userId`, including the caller's own star. See `partJson` for what stays hidden. */
+/** One figure with its parts for `userId`, See `partJson` for what stays hidden. */
 export async function figureJson(ctx: ReaderCtx, figure: CorpseFigure, userId: string) {
   const parts = await ctx.db
     .query("exquisite_corpse_parts")
@@ -215,7 +207,6 @@ export async function figureJson(ctx: ReaderCtx, figure: CorpseFigure, userId: s
     created_at: figure.created_at,
     finished_at: orNull(figure.finished_at),
     my_reveal_seen_at: orNull(revealSeenAt(figure, userId)),
-    starred_by_me: (await getFigureStar(ctx, figure.id, userId)) !== null,
     parts: parts.map((part) => partJson(part, userId, finished)),
   };
 }
@@ -389,7 +380,6 @@ export const exquisiteCorpseBackend: GameBackend = {
     for (const row of await ctx.db.query("exquisite_corpse_games").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
     for (const row of await ctx.db.query("exquisite_corpse_figures").withIndex("by_couple_id_number", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
     for (const row of await ctx.db.query("exquisite_corpse_parts").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
-    for (const row of await ctx.db.query("exquisite_corpse_stars").withIndex("by_couple_id_user_id_figure_number", (q) => q.eq("couple_id", coupleId)).collect()) await remove(row);
     return deleted;
   },
 

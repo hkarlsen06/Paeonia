@@ -36,7 +36,7 @@ nonisolated struct GamesLocalDocument: GamesPersistedDocument {
     /// One entry per unexplained server refusal of a queued write, by operation
     /// id. Offline tries and waits behind an earlier move never land here.
     var unexplainedRefusals: [UUID] = []
-    /// "Our drawings": the first page, the records, and this person's stars.
+    /// "Our drawings": the first page and the records.
     var drawings: GamesHistoryCache?
 }
 
@@ -72,11 +72,9 @@ protocol GamesCaching: Actor {
     func recordUnexplainedRefusal(operationID: UUID, ownerUserID: UUID) -> Int
     /// Keeps the answer slots the hints of a round have shown.
     func saveHints(_ slotIndexes: [Int], roundID: UUID, ownerUserID: UUID)
-    /// Keeps the first page of "Our drawings" and the stars it carries.
+    /// Keeps the first page of "Our drawings".
     func saveHistoryFirstPage(_ page: RemoteDrawAndGuessHistoryPage, ownerUserID: UUID)
     func saveRecords(_ records: RemoteDrawAndGuessRecords, ownerUserID: UUID)
-    /// Keeps what the server said about this person's star on rounds.
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID)
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID)
     /// Returns the notices and forgets them.
     func takeNotices(ownerUserID: UUID) -> [GameStoredNotice]
@@ -246,10 +244,6 @@ actor FileGamesCache: GamesCaching {
         store.update(ownerUserID: ownerUserID) { $0.saveRecords(records) }
     }
 
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
-        store.update(ownerUserID: ownerUserID) { $0.saveStars(stars) }
-    }
-
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {
         store.update(ownerUserID: ownerUserID) { $0.record(notice) }
     }
@@ -342,10 +336,6 @@ actor InMemoryGamesCache: GamesCaching {
 
     func saveRecords(_ records: RemoteDrawAndGuessRecords, ownerUserID: UUID) {
         documents[ownerUserID, default: GamesLocalDocument()].saveRecords(records)
-    }
-
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
-        documents[ownerUserID, default: GamesLocalDocument()].saveStars(stars)
     }
 
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {

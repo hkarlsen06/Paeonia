@@ -30,6 +30,10 @@ Decided on 2026-10-18.
 - **Guess my spot's guessed rounds show on the Memories tab's "Our places" map,** marked as from the game and left out of its countries and cities. The game's own map is "Our guesses". (2026-10-19)
 - **Guess my spot keeps the picker open until sending.** A picked photo can be swapped for another as often as the sender likes until the round is sent. A photo with no location the sender can't place is just swapped out, so there is no skip.
 
+Decided on 2026-10-21.
+
+- **Finished drawings, creatures and stories can be shared outside the app.** Draw & Guess (history and result), Odd Creatures (history and reveal) and Story Chain (history and the finished story) open the shared share sheet from a toolbar button (`Shared/Sharing/`). A drawing or creature leaves as a framed card on the plum canvas with a small Paeonia wordmark. A Story Chain story leaves as a typeset card, and also as plain text. The button waits until the result is on screen, so the picture never gives away a reveal. Either partner can share, since the couple made it together.
+
 Decided on 2026-10-14.
 
 - **How to play cards.** Ultimate Tic-Tac-Toe, Dots and Boxes, Mind Meld, Consensio and Guess my spot have three swipeable cards, each with one illustration and one or two sentences. They open by themselves the first time this phone opens the game, and again from "How to play" in the game's toolbar or menu. The other games still teach by playing. The cards are `GameTutorial` and `GameTutorialSheet` in `Features/Games/Shared/Tutorial/`, and the pictures are in the `GameTutorial` asset folder.
@@ -100,11 +104,11 @@ Convex owns the state of every game. The relay carries only movement that never 
 ### Convex model
 
 - Shared tables, keyed by `kind` where it matters: `game_settings` (the couple's play style and language), `game_invites` (each partner's last invite per game, and when the partner answered it by opening the game), `game_plays` (when either partner last had each game open). Who has which game open lives in the `@convex-dev/presence` component, one room per couple and game (`backend/convex/lib/presence.ts`). `games:get_games_overview` returns all of them for the app.
-- Each game has its own tables, named with its kind as a prefix. Draw & Guess came first, so its tables are `games` (one row per couple, without a `status` column because the game never ends), `game_moves` (one row per round), `game_guesses`, `game_round_stars` and `game_used_words`. Follow the snake_case and uuid conventions in `backend/convex/schema.ts`.
+- Each game has its own tables, named with its kind as a prefix. Draw & Guess came first, so its tables are `games` (one row per couple, without a `status` column because the game never ends), `game_moves` (one row per round), `game_guesses` and `game_used_words`. Follow the snake_case and uuid conventions in `backend/convex/schema.ts`.
 - Draw & Guess has one mutation per action (`pick_draw_word`, `submit_drawing`, `submit_guess`, `give_up_round`), each checking access, turn ownership, and round state. Proposal for board games: one `make_move({ game_id, expected_version, move })` mutation. It checks couple access, whose turn it is, and the version, then runs a pure rules function for that `kind`. A stale version fails instead of overwriting.
 - A `view_for(state, user_id)` function per kind. Queries return only that projection, so hidden information (unrevealed answers, the drawing under the fold) never reaches the other phone.
 - Game data joins relationship end and account deletion cleanup. `deleteCoupleGameRows` in `lib/gameRegistry.ts` deletes the shared rows and calls each game's `deleteCoupleRows`.
-- A creative game keeps its own history in its own tables, such as the finished rounds and drawings of Draw & Guess. Stars are a per-game table with one row per partner and round. Nothing is copied into `memories`.
+- A creative game keeps its own history in its own tables, such as the finished rounds and drawings of Draw & Guess. Stars are favorites, one shared `favorites` table with one row per person and item. Nothing is copied into `memories`.
 
 ### Real-time fairness
 
@@ -205,7 +209,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 8. Live play: a message type that conforms to `GameLiveMessage`, sent through a `GameLiveChannel` on a `WidgetLiveConnection` made with `GameLiveTicket.provider(for: .<kind>)`.
 9. Queued writes: `SyncPendingOperationKind` cases in `Services/Sync/SyncTypes.swift`, and your handlers in `Features/Games/Data/GamesPendingOperationRegistry.swift`.
 10. Developer scenarios: a new file `App/DeveloperScenarios/DeveloperScenario+<Prefix>.swift`, like `DeveloperScenario+MindMeld.swift`. Each scenario is a `static let` with its id, title, detail, category `.games` and the screen it opens, and one `static let <camelKind>: [DeveloperScenario]` lists them in menu order. Add that list to `allCases` in `DeveloperScenario.swift`. Also add your dependency fields in `DeveloperGamesScenarioFactory.dependencies(for:)` so the hub scenarios show your card.
-11. Shared pieces: take the reload gate (`GameReloadGate`), stars (`GameStars`) and drawing pieces such as the canvas and stroke replay from `Features/Games/Shared/` instead of copying Draw & Guess code.
+11. Shared pieces: take the reload gate (`GameReloadGate`), stars (`FavoritesStore`, `FavoriteStarButton`) and drawing pieces such as the canvas and stroke replay from `Features/Games/Shared/` instead of copying Draw & Guess code.
 12. Sounds: play a `GameSound` (`Features/Games/Shared/Sound/`) next to each haptic, such as `GameSound.tap.play(volume: 0.7)`. Reuse the shared sounds where they fit. A new sound is a recipe in `ios/Scripts/game-sounds.swift` plus a case in `GameSound`, and running the script writes its files to `Resources/GameSounds`. The sounds are soft and close, wood, felt and paper, with no harsh highs. They mix with the person's music because the app's audio session stays `.ambient`, so a game must never change the session.
 
 ### Ownership

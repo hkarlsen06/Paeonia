@@ -9,7 +9,7 @@ import SwiftUI
 final class DrawAndGuessHubModel: GameHubModel {
     let kind = GameKind.drawAndGuess
     let game: DrawAndGuessViewModel
-    /// "Our drawings". It shares the star state of `game.stars`.
+    /// "Our drawings".
     let history: DrawAndGuessHistoryViewModel
     private(set) var summary: DrawAndGuessHubSummary?
 
@@ -20,7 +20,7 @@ final class DrawAndGuessHubModel: GameHubModel {
         self.dependencies = dependencies
         let game = game ?? DrawAndGuessViewModel(dependencies: dependencies)
         self.game = game
-        history = DrawAndGuessHistoryViewModel(dependencies: dependencies, stars: game.stars)
+        history = DrawAndGuessHistoryViewModel(dependencies: dependencies)
     }
 
     var isYourTurn: Bool {
@@ -38,7 +38,6 @@ final class DrawAndGuessHubModel: GameHubModel {
 
     func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
         game.setLocalChangeSyncHandler(handler)
-        game.stars.setLocalChangeSyncHandler(handler)
     }
 
     func reload() async {
@@ -49,8 +48,6 @@ final class DrawAndGuessHubModel: GameHubModel {
             ownerUserID: userID
         ) ?? .none
         guard self.userID == userID else { return }
-        // Stars follow the same writes as the rest of the Games cache.
-        await game.stars.reload()
         let newSummary = document.state.map { state in
             let resolution = DrawAndGuessResolver(userID: userID).resolve(
                 state: state,

@@ -94,24 +94,6 @@ struct ExquisiteCorpseGatewayTests {
         #expect(body["path"] as? String == "exquisiteCorpse:get_exquisite_corpse")
     }
 
-    @Test func aStarSendsTheValueItIsGiven() async throws {
-        let recorder = CorpseRequestRecorder()
-        CorpseStubURLProtocol.handler = { request in
-            recorder.record(request)
-            return Data(Self.starAnswer.utf8)
-        }
-        let figureID = try #require(UUID(uuidString: "55555555-5555-4555-8555-555555555555"))
-
-        let result = try await Self.makeGateway().setExquisiteCorpseStar(figureID: figureID, starred: false)
-
-        #expect(!result.starred)
-        let body = try Self.body(of: #require(recorder.last))
-        #expect(body["path"] as? String == "exquisiteCorpse:set_exquisite_corpse_star")
-        let args = try #require(body["args"] as? [String: Any])
-        #expect(args["p_figure_id"] as? String == figureID.uuidString)
-        #expect(args["p_starred"] as? Bool == false)
-    }
-
     @Test func aLaterPageSendsTheCursorAndTheStarredFilter() async throws {
         let recorder = CorpseRequestRecorder()
         CorpseStubURLProtocol.handler = { request in
@@ -156,10 +138,6 @@ struct ExquisiteCorpseGatewayTests {
     {"status":"success","value":{"user_id":"11111111-1111-4111-8111-111111111111","partner_user_id":null,\
     "couple_id":"33333333-3333-4333-8333-333333333333","data_epoch":"","game":null,"current_figure":null,\
     "recent_figures":[],"ideas":[]}}
-    """
-
-    private static let starAnswer = """
-    {"status":"success","value":{"figure_id":"55555555-5555-4555-8555-555555555555","starred":false}}
     """
 
     private static let refusalAnswer = """

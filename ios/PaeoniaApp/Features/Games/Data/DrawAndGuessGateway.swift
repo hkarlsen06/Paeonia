@@ -45,9 +45,10 @@ nonisolated protocol DrawAndGuessGateway: GamesGateway {
         beforeRoundNumber: Int?,
         limit: Int
     ) async throws -> RemoteDrawAndGuessHistoryPage
+    /// One finished round by id, also one that is not in a loaded page. Nil when the
+    /// couple has no such finished round.
+    func loadDrawAndGuessHistoryRound(roundID: UUID) async throws -> RemoteDrawAndGuessHistoryRound?
     func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords
-    /// Private and safe to retry. The partner is not told.
-    func setRoundStar(roundID: UUID, starred: Bool) async throws -> RemoteRoundStarResult
 }
 
 nonisolated extension LiveGamesGateway: DrawAndGuessGateway {
@@ -135,12 +136,12 @@ nonisolated extension LiveGamesGateway: DrawAndGuessGateway {
         )
     }
 
-    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
-        try await client.query("drawAndGuess:get_draw_and_guess_records")
+    func loadDrawAndGuessHistoryRound(roundID: UUID) async throws -> RemoteDrawAndGuessHistoryRound? {
+        try await client.query("drawAndGuess:get_draw_and_guess_history_round", args: RoundRequest(roundID: roundID))
     }
 
-    func setRoundStar(roundID: UUID, starred: Bool) async throws -> RemoteRoundStarResult {
-        try await client.mutation("drawAndGuess:set_round_star", args: StarRequest(roundID: roundID, starred: starred))
+    func loadDrawAndGuessRecords() async throws -> RemoteDrawAndGuessRecords {
+        try await client.query("drawAndGuess:get_draw_and_guess_records")
     }
 }
 
@@ -181,16 +182,6 @@ nonisolated private struct HistoryRequest: Encodable {
         case starredOnly = "p_starred_only"
         case beforeRoundNumber = "p_before_round_number"
         case limit = "p_limit"
-    }
-}
-
-nonisolated private struct StarRequest: Encodable {
-    let roundID: UUID
-    let starred: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case roundID = "p_round_id"
-        case starred = "p_starred"
     }
 }
 

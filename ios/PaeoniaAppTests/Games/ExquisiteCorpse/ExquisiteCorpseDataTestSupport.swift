@@ -116,19 +116,12 @@ final class ScriptedExquisiteCorpseGateway: ExquisiteCorpseGateway, @unchecked S
         var operationID: UUID
     }
 
-    struct StarWrite: Equatable {
-        var figureID: UUID
-        var starred: Bool
-    }
-
     private struct Record {
         var calls: [String] = []
         var submitted: [SubmittedPart] = []
         var revealSeen: [UUID] = []
-        var stars: [StarWrite] = []
         var submitError: (any Error)?
         var revealSeenError: (any Error)?
-        var starError: (any Error)?
         var stateToLoad: RemoteExquisiteCorpseState?
     }
 
@@ -146,7 +139,6 @@ final class ScriptedExquisiteCorpseGateway: ExquisiteCorpseGateway, @unchecked S
     var calls: [String] { read(\.calls) }
     var submitted: [SubmittedPart] { read(\.submitted) }
     var revealSeen: [UUID] { read(\.revealSeen) }
-    var stars: [StarWrite] { read(\.stars) }
 
     func setSubmitError(_ error: (any Error)?) {
         write { $0.submitError = error }
@@ -154,10 +146,6 @@ final class ScriptedExquisiteCorpseGateway: ExquisiteCorpseGateway, @unchecked S
 
     func setRevealSeenError(_ error: (any Error)?) {
         write { $0.revealSeenError = error }
-    }
-
-    func setStarError(_ error: (any Error)?) {
-        write { $0.starError = error }
     }
 
     /// What `loadExquisiteCorpse` returns. Without one, it fails like a lost connection.
@@ -217,19 +205,17 @@ final class ScriptedExquisiteCorpseGateway: ExquisiteCorpseGateway, @unchecked S
         return RemoteExquisiteCorpseRevealSeenResult(figureID: figureID, revealSeenAt: ExquisiteCorpseFixture.now)
     }
 
-    func setExquisiteCorpseStar(figureID: UUID, starred: Bool) async throws -> RemoteExquisiteCorpseStarResult {
-        begin("star")
-        if let error = read(\.starError) { throw error }
-        write { $0.stars.append(StarWrite(figureID: figureID, starred: starred)) }
-        return RemoteExquisiteCorpseStarResult(figureID: figureID, starred: starred)
-    }
-
     func loadExquisiteCorpseHistory(
         starredOnly _: Bool,
         beforeFigureNumber _: Int?,
         limit _: Int
     ) async throws -> RemoteExquisiteCorpseHistoryPage {
         begin("history")
+        throw Failure()
+    }
+
+    func loadExquisiteCorpseFigure(figureID _: UUID) async throws -> RemoteExquisiteCorpseFigure? {
+        begin("figure")
         throw Failure()
     }
 }
@@ -312,10 +298,6 @@ struct ExquisiteCorpseDataEnvironment {
 
     func revealSeenHandler() -> ExquisiteCorpseRevealSeenHandler {
         ExquisiteCorpseRevealSeenHandler(gateway: gateway, cache: cache)
-    }
-
-    func starHandler() -> ExquisiteCorpseStarHandler {
-        ExquisiteCorpseStarHandler(gateway: gateway, cache: cache)
     }
 
     func context() -> SyncContext {

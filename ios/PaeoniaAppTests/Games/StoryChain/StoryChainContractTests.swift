@@ -32,14 +32,14 @@ struct StoryChainContractTests {
           "text":"An anchor hung on the door of the last house.","dare_word":null,
           "created_at":"2026-10-13T09:30:00.500Z"}],
        "last_line_user_id":null,"title":null,"titled_by_user_id":null,"finished_at":null,
-       "seen_by_me":false,"starred_by_me":false,
+       "seen_by_me":false,
        "created_at":"2026-10-13T08:00:00.000Z","updated_at":"2026-10-13T09:30:00.500Z"},
      "previous_story":{"id":"bbbbbbbb-0000-4000-8000-000000000001","story_number":1,
        "starter_user_id":"11111111-1111-4111-8111-111111111111",
        "opening_id":null,"opening_text":null,"state":"finished","lines":[],
        "last_line_user_id":"22222222-2222-4222-8222-222222222222","title":"The night bus",
        "titled_by_user_id":"11111111-1111-4111-8111-111111111111",
-       "finished_at":"2026-10-12T20:00:00.000Z","seen_by_me":true,"starred_by_me":true,
+       "finished_at":"2026-10-12T20:00:00.000Z","seen_by_me":true,
        "created_at":"2026-10-10T08:00:00.000Z","updated_at":"2026-10-12T20:00:00.000Z"},
      "opening_choices":null,
      "word_choices":[{"word_id":"en-lighthouse","word":"lighthouse"},{"word_id":"en-ladder","word":"ladder"}]}
@@ -78,7 +78,6 @@ struct StoryChainContractTests {
         #expect(current.title == nil)
         #expect(current.finishedAt == nil)
         #expect(!current.seenByMe)
-        #expect(!current.starredByMe)
     }
 
     @Test func decodesTheFinishedPreviousStory() throws {
@@ -93,7 +92,6 @@ struct StoryChainContractTests {
         #expect(previous.openingID == nil)
         #expect(previous.openingText == nil)
         #expect(previous.seenByMe)
-        #expect(previous.starredByMe)
     }
 
     @Test func decodesAStateBeforeTheFirstStoryWithItsOpeningChoices() throws {
@@ -136,17 +134,16 @@ struct StoryChainContractTests {
         {"stories":[
           {"id":"bbbbbbbb-0000-4000-8000-000000000002","story_number":2,"title":"The night bus",
            "first_line":"A key that opened nothing in town.","line_count":14,
-           "finished_at":"2026-10-12T20:00:00.000Z","starred_by_me":true},
+           "finished_at":"2026-10-12T20:00:00.000Z"},
           {"id":"bbbbbbbb-0000-4000-8000-000000000001","story_number":1,"title":"Anchors",
            "first_line":"It began with a ladder.","line_count":9,
-           "finished_at":"2026-10-10T20:00:00.000Z","starred_by_me":false}],
+           "finished_at":"2026-10-10T20:00:00.000Z"}],
          "next_before_story_number":1}
         """
         let page = try decode(RemoteStoryChainHistoryPage.self, json)
 
         #expect(page.stories.map(\.title) == ["The night bus", "Anchors"])
         #expect(page.stories.map(\.lineCount) == [14, 9])
-        #expect(page.stories.map(\.starredByMe) == [true, false])
         #expect(page.stories.first?.firstLine == "A key that opened nothing in town.")
         #expect(page.nextBeforeStoryNumber == 1)
 
@@ -163,7 +160,6 @@ struct StoryChainContractTests {
             #"{"line_id":"cccccccc-0000-4000-8000-000000000002","number":8,"story_state":"titling"}"#
         )
         let name = try decode(RemoteNameStoryResult.self, #"{"story_id":"\#(story)","title":"The night bus"}"#)
-        let star = try decode(RemoteStoryStarResult.self, #"{"story_id":"\#(story)","starred":true}"#)
         let ensure = try decode(
             RemoteEnsureGameResult.self,
             #"{"game_id":"aaaaaaaa-0000-4000-8000-000000000001","created":true}"#
@@ -174,7 +170,6 @@ struct StoryChainContractTests {
         #expect(line.number == 8)
         #expect(line.storyState == .titling)
         #expect(name.title == "The night bus")
-        #expect(star.starred)
         #expect(ensure.gameID == Fixture.gameID)
         #expect(ensure.created)
     }

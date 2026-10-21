@@ -7,6 +7,7 @@ struct StoriesArchiveView: View {
     let people: StoryPeople
 
     @State private var viewer: StoryViewerContent?
+    @State private var shareable: PaeoniaShareable?
 
     private static let tileHeight: CGFloat = 180
     private let columns = [GridItem(.adaptive(minimum: 104), spacing: PaeoniaSpacing.space8)]
@@ -16,6 +17,7 @@ struct StoriesArchiveView: View {
             .paeoniaTabBackdrop()
             .navigationTitle(Text(.storiesArchiveTitle))
             .navigationBarTitleDisplayMode(.inline)
+            .paeoniaShareSheet(item: $shareable)
             .fullScreenCover(item: $viewer) { content in
                 StoryViewer(content: content, people: people, viewModel: viewModel)
                     .analyticsScreen("story_viewer")
@@ -46,11 +48,28 @@ struct StoriesArchiveView: View {
                             tile(story)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            shareButton(for: story)
+                        }
                     }
                 }
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.vertical, PaeoniaSpacing.space16)
                 .paeoniaReadableWidth()
+            }
+        }
+    }
+
+    /// Your own story can be shared. A story from your partner can only be saved.
+    private func shareButton(for story: Story) -> some View {
+        let canShare = people.isOwn(story)
+        return Button {
+            shareable = StoryShare.shareable(for: story, people: people)
+        } label: {
+            Label {
+                Text(canShare ? .commonShare : .shareSave)
+            } icon: {
+                Image(systemName: canShare ? "square.and.arrow.up" : "square.and.arrow.down")
             }
         }
     }
