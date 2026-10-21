@@ -182,7 +182,9 @@ async function storeChunk(
 ): Promise<void> {
   const bytes = encoder.encode(chunk.text);
   const deflated = await deflateRaw(bytes);
-  const recorded = await storeAndRecord(ctx.storage, new Blob([deflated as BlobPart]), (storageId) =>
+  // A blob without a type uploads with an empty Content-Type, which the self-hosted backend refuses.
+  const blob = new Blob([deflated as BlobPart], { type: "application/octet-stream" });
+  const recorded = await storeAndRecord(ctx.storage, blob, (storageId) =>
     ctx.runMutation(internal.dataExport.record_export_chunk, {
       export_id: exportId,
       source_table: table,
