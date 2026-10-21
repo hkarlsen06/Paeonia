@@ -60,6 +60,7 @@ export const notificationKind = literals(
   "game_invite",
   "game_turn_reminder",
   "question_time_reminder",
+  "date_reminder",
   "partner_joined",
   "topics_waiting",
   "badge_update",

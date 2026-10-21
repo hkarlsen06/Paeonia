@@ -13,14 +13,54 @@ struct PaeoniaWidgetEntryView: View {
         // System content margins (16 pt on iPhone, tighter on StandBy and the
         // Mac) frame the drawing like the widgets around it. The app name shows
         // under the widget, so there is no logo row and the drawing gets the room.
-        VStack(alignment: .leading, spacing: PaeoniaWidgetSpacing.space8) {
-            middleContent
+        Group {
+            if family == .systemMedium {
+                mediumLayout
+            } else {
+                VStack(alignment: .leading, spacing: PaeoniaWidgetSpacing.space8) {
+                    middleContent
 
-            footer
+                    footer
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .widgetURL(PaeoniaWidgetURL.drawing)
         .accessibilityElement(children: .contain)
+    }
+
+    /// The drawing fills the height on the left. The author, the time and the
+    /// refresh button go in the column beside it.
+    private var mediumLayout: some View {
+        HStack(alignment: .top, spacing: 16) {
+            middleContent
+                .aspectRatio(1, contentMode: .fit)
+
+            VStack(alignment: .leading, spacing: 4) {
+                footerLeadingContent
+
+                if let savedAt = drawingContent?.savedAt {
+                    Text(timestampText(savedAt))
+                        .font(PaeoniaWidgetTypography.metadata(family: family))
+                        .foregroundStyle(.paeoniaWidgetTextSecondary)
+                        .lineLimit(1)
+                        .invalidatableContent()
+                }
+
+                Spacer(minLength: 0)
+
+                HStack(alignment: .center, spacing: PaeoniaWidgetSpacing.space8) {
+                    Text(footerAction)
+                        .font(PaeoniaWidgetTypography.metadata(family: family))
+                        .foregroundStyle(.paeoniaWidgetAccentPrimary)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    refreshButton
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
     }
 
     /// The square PencilKit raster sits centered on the plum widget background,
@@ -122,7 +162,7 @@ struct PaeoniaWidgetEntryView: View {
             .font(PaeoniaWidgetTypography.title(family: family))
             .foregroundStyle(.paeoniaWidgetTextPrimary)
             // No shrinking: widget text stays at 11 pt or larger.
-            .lineLimit(family == .systemSmall ? 2 : 1)
+            .lineLimit(family == .systemLarge ? 1 : 2)
     }
 
     @ViewBuilder

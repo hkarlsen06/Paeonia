@@ -100,6 +100,11 @@ struct NotificationSettingsView: View {
                 subtitle: .settingsNotificationsStreakRemindersSubtitle
             )
             questionTimeRows
+            toggleRow(
+                .dateReminders,
+                title: .settingsNotificationsDateRemindersTitle,
+                subtitle: .settingsNotificationsDateRemindersSubtitle
+            )
         } header: {
             Text(.settingsNotificationsRemindersSectionTitle)
         }

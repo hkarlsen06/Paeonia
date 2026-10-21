@@ -314,10 +314,18 @@ extension MainTabView {
             await openGame(kind, for: deepLink)
         case .streak:
             await openStreak(for: deepLink)
-        case .stories, .home:
-            selection.wrappedValue = .home
-            self.deepLink.wrappedValue = nil
+        case .stories, .home, .dates:
+            openHome(for: deepLink)
         }
+    }
+
+    /// Home, with the dates timeline on top for a date reminder.
+    private func openHome(for deepLink: PaeoniaDeepLink) {
+        selection.wrappedValue = .home
+        if deepLink == .dates {
+            coupleDatesViewModel.requestTimeline()
+        }
+        self.deepLink.wrappedValue = nil
     }
 
     private func openMemories(for deepLink: PaeoniaDeepLink) async {

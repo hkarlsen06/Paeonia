@@ -30,7 +30,7 @@ enum LockScreenTestSupport {
             generatedAt: .distantPast,
             partner: nil,
             startedOn: nil,
-            upcomingCountdowns: [],
+            dates: .init(countdowns: [], birthdays: []),
             distance: nil,
             coupleDay: coupleDayEndsAt.map {
                 LockScreenSnapshot.CoupleDay(localDate: "", startsAt: $0.addingTimeInterval(-86_400), endsAt: $0)

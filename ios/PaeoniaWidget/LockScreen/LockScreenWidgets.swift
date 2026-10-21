@@ -3,8 +3,8 @@ import SwiftUI
 import WidgetKit
 
 // Seven widgets, one kind each, so the person picks only what they want on the
-// Lock Screen. They share one cached snapshot (`LockScreenStateService`). The
-// drawing widget stays on the Home Screen.
+// Lock Screen. They share one cached snapshot (`LockScreenStateService`) with the
+// Home Screen widgets in `HomeScreen/`. The drawing widget stays on the Home Screen.
 
 struct DaysTogetherLockScreenWidget: Widget {
     var body: some WidgetConfiguration {
@@ -14,6 +14,7 @@ struct DaysTogetherLockScreenWidget: Widget {
         ) { entry in
             DaysTogetherLockScreenView(entry: entry)
                 .containerBackground(.clear, for: .widget)
+                .widgetURL(LockScreenURL.dates)
         }
         .configurationDisplayName(String(localized: .widgetLockScreenDaysTogetherName))
         .description(String(localized: .widgetLockScreenDaysTogetherDescription))
@@ -30,6 +31,7 @@ struct NextCountdownLockScreenWidget: Widget {
         ) { entry in
             NextCountdownLockScreenView(entry: entry)
                 .containerBackground(.clear, for: .widget)
+                .widgetURL(LockScreenURL.dates)
         }
         .configurationDisplayName(String(localized: .widgetLockScreenNextCountdownName))
         .description(String(localized: .widgetLockScreenNextCountdownDescription))

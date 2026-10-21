@@ -25,11 +25,12 @@ const op = (clientId = CLIENT_ID) => ({
 
 type Member = TestCouple["first"];
 
-const save = (user: Member, id: string, title: string, date: string, operation = op()) =>
+const save = (user: Member, id: string, title: string, date: string, operation = op(), repeatsYearly = false) =>
   user.as.mutation(api.countdowns.save_countdown, {
     p_countdown_id: id,
     p_title: title,
     p_target_date: date,
+    p_repeats_yearly: repeatsYearly,
     ...operation,
   });
 const remove = (user: Member, id: string, operation = op()) =>
@@ -68,6 +69,22 @@ describe("save_countdown", () => {
       target_date: "2026-12-21",
       created_by_user_id: couple.first.userId,
     });
+  });
+
+  test("a countdown can repeat every year, and an edit can turn that off", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const id = newUuid();
+
+    expect(await save(couple.first, id, "The day we met", "2023-06-12", op(), true)).toMatchObject({
+      id,
+      target_date: "2023-06-12",
+      repeats_yearly: true,
+    });
+    expect((await read(couple.second)).countdowns[0]).toMatchObject({ repeats_yearly: true });
+
+    expect(await save(couple.second, id, "The day we met", "2023-06-12")).toMatchObject({ repeats_yearly: false });
+    expect((await read(couple.first)).countdowns[0]).toMatchObject({ repeats_yearly: false });
   });
 
   test("accepts an uppercase id from the phone and stores it lowercase", async () => {

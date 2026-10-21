@@ -809,6 +809,9 @@ export default defineSchema({
     couple_id: uuid,
     title: v.string(),
     target_date: date,
+    // True when the day comes back every year (the day they met). target_date stays the day it
+    // was made for, and the year count comes from it. Omitted when false.
+    repeats_yearly: v.optional(v.boolean()),
     created_by_user_id: uuid,
     last_edited_by_user_id: uuid,
     created_at: ts,
@@ -1049,12 +1052,15 @@ export default defineSchema({
     memories_enabled: v.boolean(),
     messages_enabled: v.boolean(),
     games_enabled: v.boolean(),
+    // Reminders for birthdays, the anniversary, milestones and countdowns. See dateReminders.ts.
+    date_reminders_enabled: v.boolean(),
     // Opt-in "question time" reminder. `question_time_minutes` counts minutes after local midnight (0 to 1439).
     question_time_enabled: v.boolean(),
     question_time_minutes: v.number(),
   })
     .index("by_user_id", ["user_id"])
-    .index("by_question_time_enabled", ["question_time_enabled"]),
+    .index("by_question_time_enabled", ["question_time_enabled"])
+    .index("by_date_reminders_enabled", ["date_reminders_enabled"]),
 
   // FK: couple_id -> couples cascade
   pairing_invites: defineTable({

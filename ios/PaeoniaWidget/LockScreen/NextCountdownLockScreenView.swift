@@ -7,7 +7,7 @@ struct NextCountdownLockScreenView: View {
 
     private var countdown: LockScreenCountdown? {
         entry.snapshot.flatMap {
-            LockScreenCountdown.next(in: $0.upcomingCountdowns, now: entry.date, calendar: .current)
+            LockScreenCountdown.next(in: $0.dates, now: entry.date, calendar: .current)
         }
     }
 
@@ -26,7 +26,7 @@ struct NextCountdownLockScreenView: View {
                 .lineLimit(1)
                 .widgetAccentable()
 
-                Text(remainingText(countdown.remaining))
+                Text(countdown.remaining.text)
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
@@ -40,14 +40,6 @@ struct NextCountdownLockScreenView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             LockScreenUnavailableView(symbol: "calendar", title: .widgetLockScreenNextCountdownName)
-        }
-    }
-
-    private func remainingText(_ remaining: LockScreenCountdown.Remaining) -> String {
-        switch remaining {
-        case .today: String(localized: .widgetLockScreenCountdownToday)
-        case .tomorrow: String(localized: .widgetLockScreenCountdownTomorrow)
-        case let .days(days): String(localized: .widgetLockScreenCountdownDays(days))
         }
     }
 }

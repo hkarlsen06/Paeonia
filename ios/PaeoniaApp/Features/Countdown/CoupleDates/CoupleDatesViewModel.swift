@@ -11,6 +11,8 @@ import Observation
 final class CoupleDatesViewModel {
     private(set) var dates = CoupleDates()
     private(set) var error: RelationshipMilestoneError?
+    /// A tapped date reminder asks Home to open the timeline. The Home tile reads this and clears it.
+    private(set) var isTimelineRequested = false
 
     @ObservationIgnored private let cache: any CoupleDatesCaching
     @ObservationIgnored private let pendingOperationStore: any PendingSyncOperationPersisting
@@ -74,7 +76,13 @@ final class CoupleDatesViewModel {
 
     /// Adds a countdown when `id` is nil, otherwise edits that one.
     @discardableResult
-    func saveCountdown(id: UUID?, title: String, on day: Date, calendar: Calendar = .current) async -> Bool {
+    func saveCountdown(
+        id: UUID?,
+        title: String,
+        on day: Date,
+        repeatsYearly: Bool = false,
+        calendar: Calendar = .current
+    ) async -> Bool {
         let title = String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(CustomCountdown.maxTitleLength))
         guard !title.isEmpty else { return false }
         // A write the server refuses for good would drop out of the list without a word.
@@ -85,7 +93,8 @@ final class CoupleDatesViewModel {
         let countdown = CustomCountdown(
             id: id ?? UUID(),
             title: title,
-            targetDate: PairingStartDate(date: day, calendar: calendar).rawValue
+            targetDate: PairingStartDate(date: day, calendar: calendar).rawValue,
+            repeatsYearly: repeatsYearly
         )
         return await enqueue(.save(countdown), kind: .saveCountdown, payload: countdown)
     }
@@ -103,6 +112,14 @@ final class CoupleDatesViewModel {
             birthday: day.map { PairingStartDate(date: $0, calendar: calendar).rawValue }
         )
         return await enqueue(.birthday(payload), kind: .setBirthday, payload: payload)
+    }
+
+    func requestTimeline() {
+        isTimelineRequested = true
+    }
+
+    func consumeTimelineRequest() {
+        isTimelineRequested = false
     }
 
     func clearError() {

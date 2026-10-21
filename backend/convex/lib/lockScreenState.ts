@@ -13,7 +13,6 @@ import { addDaysToDate } from "./time";
 // Everything the Lock Screen widgets show, in one read. It carries no question text, answer text,
 // message text, or coordinates, because a widget can sit on a locked phone.
 
-const MAX_COUNTDOWNS = 3;
 const EARTH_RADIUS_METERS = 6_371_000;
 
 type Coordinates = { latitude: number; longitude: number };
@@ -27,21 +26,35 @@ export function distanceMeters(a: Coordinates, b: Coordinates): number {
   return Math.round(2 * EARTH_RADIUS_METERS * Math.asin(Math.min(1, Math.sqrt(h))));
 }
 
-async function upcomingCountdowns(ctx: ReaderCtx, coupleId: string, userId: string, now: string) {
-  // The phone drops past countdowns by its own clock, so keep yesterday for phones that are behind.
+/**
+ * Every countdown still worth showing and both birthdays, as stored, for the Lock Screen and Home Screen
+ * countdown widgets. The person picks one of them in the Home Screen widget's settings.
+ * The server sends no "next" date. The phone works out the next occurrence of a birthday or a yearly
+ * countdown from its own calendar, so the widgets move on at midnight without a new fetch. A countdown
+ * carries `created_at`, because the Lock Screen progress bar of a one-off countdown, or of a yearly one in
+ * its first year, starts there.
+ */
+async function coupleDates(ctx: ReaderCtx, coupleId: string, userId: string, now: string) {
   const earliest = addDaysToDate(await userLocalDate(ctx, userId, now), -1);
   const rows = await ctx.db
     .query("countdowns")
     .withIndex("by_couple_id_deleted_at", (q) => q.eq("couple_id", coupleId).eq("deleted_at", undefined))
     .collect();
-  const sorted = rows
-    .filter((row) => row.target_date >= earliest)
-    .sort((a, b) => (a.target_date !== b.target_date ? (a.target_date < b.target_date ? -1 : 1) : a.id < b.id ? -1 : 1));
-  // Yesterday's rows get their own limit, so they never crowd out the upcoming ones.
-  const yesterday = sorted.filter((row) => row.target_date === earliest).slice(0, MAX_COUNTDOWNS);
-  const upcoming = sorted.filter((row) => row.target_date > earliest).slice(0, MAX_COUNTDOWNS);
-  return [...yesterday, ...upcoming]
-    .map((row) => ({ id: row.id, title: row.title, target_date: row.target_date, created_at: row.created_at }));
+  // A one-off countdown that is over has nothing left to show. A yearly one always has a next day.
+  const countdowns = rows
+    .filter((row) => row.repeats_yearly === true || row.target_date >= earliest)
+    .sort((a, b) => (a.target_date !== b.target_date ? (a.target_date < b.target_date ? -1 : 1) : a.id < b.id ? -1 : 1))
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      target_date: row.target_date,
+      repeats_yearly: row.repeats_yearly === true,
+      created_at: row.created_at,
+    }));
+  const birthdays = (await listActiveMembers(ctx, coupleId))
+    .filter((member) => member.birthday !== undefined)
+    .map((member) => ({ is_mine: member.user_id === userId, birthday: member.birthday! }));
+  return { countdowns, birthdays };
 }
 
 /** The distance between the partners, only while both share their location and both have a stored fix. */
@@ -170,7 +183,7 @@ export async function readLockScreenState(ctx: ReaderCtx, userId: string, now: s
         }
       : null,
     started_on: couple?.started_on ?? null,
-    upcoming_countdowns: await upcomingCountdowns(ctx, coupleId, userId, now),
+    dates: await coupleDates(ctx, coupleId, userId, now),
     distance: partnerId === null ? null : await distanceBetween(ctx, coupleId, userId, partnerId),
     couple_day: { local_date: window.local_date, starts_at: window.starts_at, ends_at: window.ends_at },
     streak: {

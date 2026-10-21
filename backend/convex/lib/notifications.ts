@@ -32,6 +32,7 @@ const NOTIFICATION_KINDS = [
   "game_invite",
   "game_turn_reminder",
   "question_time_reminder",
+  "date_reminder",
   "partner_joined",
   "topics_waiting",
   "badge_update",
@@ -161,6 +162,8 @@ export function preferenceAllows(
       return preference.streak_reminders_enabled;
     case "question_time_reminder":
       return preference.question_time_enabled;
+    case "date_reminder":
+      return preference.date_reminders_enabled;
     case "daily_challenge_completed":
       return preference.daily_challenge_enabled;
     case "partner_answered":

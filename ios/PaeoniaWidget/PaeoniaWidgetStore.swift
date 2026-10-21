@@ -94,7 +94,8 @@ private struct PaeoniaWidgetCurrentPayload: Decodable {
 
     func previewPath(for family: WidgetFamily) -> String? {
         switch family {
-        case .systemSmall:
+        case .systemSmall, .systemMedium:
+            // The medium widget draws the square at about the small widget's size.
             previews["systemSmall"]
         case .systemLarge:
             previews["systemLarge"]

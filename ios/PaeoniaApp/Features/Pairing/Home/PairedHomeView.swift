@@ -47,7 +47,9 @@ struct PairedHomeView: View {
     /// with a square map (`HomeWideLayout`).
     @State private var isWideLayout = false
 
-    private static let alertTypesSeenOnHome: Set<String> = ["widget_updated", "streak_reminder", "story_posted"]
+    private static let alertTypesSeenOnHome: Set<String> = [
+        "widget_updated", "streak_reminder", "story_posted", "date_reminder",
+    ]
 
     init(
         currentUserID: UUID? = nil,
@@ -159,8 +161,9 @@ struct PairedHomeView: View {
         .refreshable {
             await onRefresh()
         }
-        // Home shows the couple's current drawing, the streak and the story ring, so
-        // seeing it means the user has noticed a new drawing, a check-in reminder or a story.
+        // Home shows the couple's current drawing, the streak, the story ring and the next
+        // date, so seeing it means the user has noticed a new drawing, a check-in reminder,
+        // a story or a date reminder.
         .task {
             await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
         }

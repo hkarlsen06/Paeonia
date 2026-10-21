@@ -102,7 +102,7 @@ actor ConvexWidgetPushRegistrationService: WidgetPushRegistering {
 
         // The backend filters on `PaeoniaAppGroup.widgetKind`, but any installed
         // Paeonia widget makes the token worth registering.
-        return tokenStore.loadToken(forAnyOf: [PaeoniaAppGroup.widgetKind] + LockScreenWidgetKind.all)
+        return tokenStore.loadToken(forAnyOf: [PaeoniaAppGroup.widgetKind] + SnapshotWidgetKind.all)
     }
 }
 

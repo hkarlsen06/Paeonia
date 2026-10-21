@@ -661,7 +661,7 @@ describe("register_widget_push_device", () => {
 describe("get_lock_screen_state", () => {
   const stateOf = (user: TestUser) => user.as.query(api.widget.get_lock_screen_state, { p_now: new Date().toISOString() });
   const countdown = (user: TestUser, id: string, title: string, date: string) =>
-    user.as.mutation(api.countdowns.save_countdown, { p_countdown_id: id, p_title: title, p_target_date: date, ...op() });
+    user.as.mutation(api.countdowns.save_countdown, { p_countdown_id: id, p_title: title, p_target_date: date, p_repeats_yearly: false, ...op() });
 
   test("is null without a couple and without an entitled couple", async () => {
     const t = newTest();
@@ -678,7 +678,7 @@ describe("get_lock_screen_state", () => {
       generated_at: "2026-10-10T12:00:00.000Z",
       partner: { name: "Second Partner", uses_nickname: false, time_zone_id: "Europe/Oslo" },
       started_on: null,
-      upcoming_countdowns: [],
+      dates: { countdowns: [], birthdays: [] },
       distance: null,
       // The westmost partner sets the couple day: New York is still on 2026-10-10 until 04:00 UTC the next day.
       couple_day: { local_date: "2026-10-10", starts_at: "2026-10-10T04:00:00.000Z", ends_at: "2026-10-11T04:00:00.000Z" },
@@ -689,7 +689,7 @@ describe("get_lock_screen_state", () => {
     expect((await stateOf(couple.second))!.partner).toEqual({ name: "First Partner", uses_nickname: false, time_zone_id: "America/New_York" });
   });
 
-  test("returns the start date, yesterday's countdowns and the next three, soonest first", async () => {
+  test("returns the start date and the live countdowns, soonest first, with the day they were made", async () => {
     const t = newTest();
     const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
     const [past, yesterday, soon, later, last, gone] = [newUuid(), newUuid(), newUuid(), newUuid(), newUuid(), newUuid()];
@@ -705,24 +705,85 @@ describe("get_lock_screen_state", () => {
     const state = (await stateOf(couple.second))!;
     expect(state.started_on).toBe("2025-01-02");
     // Yesterday stays so a phone that is a day behind can still drop it by its own clock.
-    expect(state.upcoming_countdowns).toEqual([
-      { id: yesterday, title: "Yesterday", target_date: "2026-10-09", created_at: "2026-10-10T12:00:00.000Z" },
-      { id: soon, title: "Soon", target_date: "2026-10-10", created_at: "2026-10-10T12:00:00.000Z" },
-      { id: later, title: "Later", target_date: "2026-12-24", created_at: "2026-10-10T12:00:00.000Z" },
-      { id: last, title: "Last", target_date: "2027-01-01", created_at: "2026-10-10T12:00:00.000Z" },
-    ]);
+    expect(state.dates.countdowns).toEqual(
+      [
+        [yesterday, "Yesterday", "2026-10-09"],
+        [soon, "Soon", "2026-10-10"],
+        [later, "Later", "2026-12-24"],
+        [last, "Last", "2027-01-01"],
+      ].map(([id, title, target_date]) => ({
+        id,
+        title,
+        target_date,
+        repeats_yearly: false,
+        created_at: "2026-10-10T12:00:00.000Z",
+      })),
+    );
   });
 
-  test("yesterday's countdowns never crowd out an upcoming one", async () => {
+  test("a yearly countdown keeps its first date and is still listed the day after it", async () => {
     const t = newTest();
     const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
-    const [a, b, c, next] = [newUuid(), newUuid(), newUuid(), newUuid()];
-    for (const id of [a, b, c]) await countdown(couple.first, id, "Yesterday", "2026-10-09");
-    await countdown(couple.first, next, "Next", "2026-10-11");
+    const met = newUuid();
+    await couple.first.as.mutation(api.countdowns.save_countdown, {
+      p_countdown_id: met,
+      p_title: "We met",
+      p_target_date: "2023-10-09",
+      p_repeats_yearly: true,
+      ...op(),
+    });
 
-    const ids = (await stateOf(couple.second))!.upcoming_countdowns.map((row) => row.id);
-    expect(ids).toHaveLength(4);
-    expect(ids.at(-1)).toBe(next);
+    // The date was yesterday for this snapshot. The phone moves it to next year, so the server must not drop it.
+    expect((await stateOf(couple.second))!.dates.countdowns).toEqual([
+      { id: met, title: "We met", target_date: "2023-10-09", repeats_yearly: true, created_at: "2026-10-10T12:00:00.000Z" },
+    ]);
+    // Still listed long after its date, with the date it was made for.
+    const later = await couple.second.as.query(api.widget.get_lock_screen_state, { p_now: "2026-10-20T12:00:00.000Z" });
+    expect(later!.dates.countdowns.map((row) => row.id)).toEqual([met]);
+  });
+
+  test("lists every countdown still worth showing and both birthdays for the Home Screen widget", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
+    const [over, yearly, one, two, three, four, gone] = Array.from({ length: 7 }, () => newUuid());
+    const save = (user: TestUser, id: string, title: string, date: string, repeats: boolean) =>
+      user.as.mutation(api.countdowns.save_countdown, {
+        p_countdown_id: id,
+        p_title: title,
+        p_target_date: date,
+        p_repeats_yearly: repeats,
+        ...op(),
+      });
+    await save(couple.first, over, "Over", "2026-10-01", false);
+    // A yearly countdown keeps its first date, which is long past, and always has a next day.
+    await save(couple.first, yearly, "We met", "2023-06-12", true);
+    await save(couple.second, one, "One", "2026-10-11", false);
+    await save(couple.first, two, "Two", "2026-11-01", false);
+    await save(couple.first, three, "Three", "2026-12-01", false);
+    await save(couple.first, four, "Four", "2027-01-01", false);
+    await save(couple.first, gone, "Gone", "2026-12-24", false);
+    await couple.second.as.mutation(api.countdowns.delete_countdown, { p_countdown_id: gone, ...op() });
+    await couple.first.as.mutation(api.countdowns.set_birthday, { p_user_id: couple.first.userId, p_birthday: "2000-03-14", ...op() });
+    await couple.first.as.mutation(api.countdowns.set_birthday, { p_user_id: couple.second.userId, p_birthday: "2001-07-01", ...op() });
+
+    const dates = (await stateOf(couple.second))!.dates;
+    const now = "2026-10-10T12:00:00.000Z";
+    // Past one-off countdowns and deleted ones are left out. The list is not capped.
+    expect(dates.countdowns).toEqual([
+      { id: yearly, title: "We met", target_date: "2023-06-12", repeats_yearly: true, created_at: now },
+      { id: one, title: "One", target_date: "2026-10-11", repeats_yearly: false, created_at: now },
+      { id: two, title: "Two", target_date: "2026-11-01", repeats_yearly: false, created_at: now },
+      { id: three, title: "Three", target_date: "2026-12-01", repeats_yearly: false, created_at: now },
+      { id: four, title: "Four", target_date: "2027-01-01", repeats_yearly: false, created_at: now },
+    ]);
+    // "is_mine" is from the reader's side, and no user ids are sent.
+    expect(dates.birthdays).toHaveLength(2);
+    expect(dates.birthdays).toEqual(
+      expect.arrayContaining([
+        { is_mine: false, birthday: "2000-03-14" },
+        { is_mine: true, birthday: "2001-07-01" },
+      ]),
+    );
   });
 
   describe("distance", () => {
@@ -854,7 +915,7 @@ describe("Lock Screen pushes to the partner", () => {
   const lockScreenPushes = async (t: TestConvex) =>
     (await t.run((ctx) => ctx.db.query("widget_push_outbox").collect())).filter((row) => row.payload.type === "lock_screen_updated");
   const save = (user: TestUser, id: string, title = "Trip") =>
-    user.as.mutation(api.countdowns.save_countdown, { p_countdown_id: id, p_title: title, p_target_date: "2026-12-24", ...op() });
+    user.as.mutation(api.countdowns.save_countdown, { p_countdown_id: id, p_title: title, p_target_date: "2026-12-24", p_repeats_yearly: false, ...op() });
 
   test("leaving the relationship pushes the partner at once, so their widgets clear", async () => {
     const { t, first, second } = await pairWithWidgets();

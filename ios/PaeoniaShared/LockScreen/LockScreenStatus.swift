@@ -1,6 +1,6 @@
 import Foundation
 
-/// The "Streak" widget. The ring has a left half for this person and a right
+/// The streak widgets. The ring has a left half for this person and a right
 /// half for the partner. When both are active it is one closed circle.
 nonisolated struct LockScreenStreak: Equatable, Sendable {
     enum Ring: Equatable, Sendable {
@@ -51,7 +51,7 @@ nonisolated struct LockScreenStreak: Equatable, Sendable {
     }
 }
 
-/// The "Today's question" widget. It says who has answered, never what.
+/// The today's question widgets. They say who has answered, never what.
 nonisolated enum LockScreenQuestionState: Equatable, Sendable {
     case waiting
     case partnerAnswered
@@ -66,6 +66,9 @@ nonisolated enum LockScreenQuestionState: Equatable, Sendable {
         case (false, false): self = .waiting
         }
     }
+
+    var meAnswered: Bool { self == .waitingForPartner || self == .bothAnswered }
+    var partnerAnswered: Bool { self == .partnerAnswered || self == .bothAnswered }
 
     /// After the couple's day ends, the new question has no answers yet.
     init?(_ snapshot: LockScreenSnapshot, at date: Date) {

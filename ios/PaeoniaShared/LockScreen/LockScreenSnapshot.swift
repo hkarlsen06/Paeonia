@@ -84,14 +84,14 @@ nonisolated struct LockScreenCalendarDate: Codable, Hashable, Comparable, Sendab
     }
 }
 
-/// What the Lock Screen widgets show, as `widget:get_lock_screen_state` returns it.
+/// What the Lock Screen and Home Screen widgets show, as `widget:get_lock_screen_state` returns it.
 /// Dates named `*_on` are calendar days. Everything else is a moment in time.
 nonisolated struct LockScreenSnapshot: Codable, Equatable, Sendable {
     var generatedAt: Date
     var partner: Partner?
     var startedOn: LockScreenCalendarDate?
-    /// Soonest first, at most three. The list can include yesterday.
-    var upcomingCountdowns: [Countdown]
+    /// Every countdown and both birthdays, for the Lock Screen and Home Screen countdown widgets.
+    var dates: Dates
     var distance: Distance?
     var coupleDay: CoupleDay?
     var streak: Streak?
@@ -125,17 +125,41 @@ nonisolated struct LockScreenSnapshot: Codable, Equatable, Sendable {
         }
     }
 
-    struct Countdown: Codable, Equatable, Identifiable, Sendable {
+    /// The couple's dates as stored. The widget works out the next time each one
+    /// comes round from the phone's calendar (`LockScreenDates`).
+    struct Dates: Codable, Equatable, Sendable {
+        var countdowns: [DatedCountdown]
+        var birthdays: [Birthday]
+    }
+
+    struct DatedCountdown: Codable, Equatable, Identifiable, Sendable {
         var id: String
         var title: String
+        /// The day it counts down to. For a yearly countdown, the day it was first made for.
         var targetDate: LockScreenCalendarDate
+        var repeatsYearly: Bool
+        /// When it was made. The Lock Screen progress bar starts here for a one-off
+        /// countdown and for the first year of a yearly one.
         var createdAt: Date
 
         enum CodingKeys: String, CodingKey {
             case id
             case title
             case targetDate = "target_date"
+            case repeatsYearly = "repeats_yearly"
             case createdAt = "created_at"
+        }
+    }
+
+    struct Birthday: Codable, Equatable, Sendable {
+        /// True for the person who owns this phone.
+        var isMine: Bool
+        /// The day they were born. Only the month and day are used.
+        var birthday: LockScreenCalendarDate
+
+        enum CodingKeys: String, CodingKey {
+            case isMine = "is_mine"
+            case birthday
         }
     }
 
@@ -199,7 +223,7 @@ nonisolated struct LockScreenSnapshot: Codable, Equatable, Sendable {
         case generatedAt = "generated_at"
         case partner
         case startedOn = "started_on"
-        case upcomingCountdowns = "upcoming_countdowns"
+        case dates
         case distance
         case coupleDay = "couple_day"
         case streak
@@ -258,7 +282,7 @@ nonisolated struct LockScreenCache: Codable, Equatable, Sendable {
     }
 }
 
-/// The widget kinds that read the snapshot. The app reloads these by kind.
+/// The Lock Screen widget kinds that read the snapshot. The app reloads these by kind.
 nonisolated enum LockScreenWidgetKind {
     static let daysTogether = "PaeoniaDaysTogetherWidget"
     static let nextCountdown = "PaeoniaNextCountdownWidget"
@@ -269,4 +293,21 @@ nonisolated enum LockScreenWidgetKind {
     static let yourMove = "PaeoniaYourMoveWidget"
 
     static let all = [daysTogether, nextCountdown, theirTime, distance, streak, dailyQuestion, yourMove]
+}
+
+/// The Home Screen widget kinds that read the same snapshot. The drawing widget
+/// (`PaeoniaAppGroup.widgetKind`) has its own files.
+nonisolated enum HomeScreenWidgetKind {
+    static let daysTogether = "PaeoniaHomeDaysTogetherWidget"
+    static let countdown = "PaeoniaHomeCountdownWidget"
+    static let streak = "PaeoniaHomeStreakWidget"
+    static let dailyQuestion = "PaeoniaHomeDailyQuestionWidget"
+
+    static let all = [daysTogether, countdown, streak, dailyQuestion]
+}
+
+/// Every widget that reads the snapshot, on either screen. A reload, a push
+/// token lookup or a privacy purge covers all of them.
+nonisolated enum SnapshotWidgetKind {
+    static let all = LockScreenWidgetKind.all + HomeScreenWidgetKind.all
 }

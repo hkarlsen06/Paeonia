@@ -28,7 +28,8 @@ export function addDaysToDate(date: string, days: number): string {
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
 }
 
-function parseDate(date: string): [number, number, number] {
+/** The year, month (1 to 12) and day of a YYYY-MM-DD string. Fails with `22007` for anything else. */
+export function parseDate(date: string): [number, number, number] {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!match) {
     return fail("22007", `invalid input syntax for type date: "${date}"`);
@@ -140,6 +141,24 @@ export function zonedLocalToUtcMs(
     return Math.max(...valid);
   }
   return wall - before;
+}
+
+/**
+ * Whether `nowMs` is inside the window that starts at `minutes` after local midnight on the current
+ * local date in `timeZone` and lasts `windowMinutes`. Returns that local date, or null when it is not
+ * time yet or the window is over. A window never crosses local midnight, because it is anchored to
+ * the date `nowMs` falls on. The start follows `zonedLocalToUtcMs`, so on the day the clocks go
+ * forward a time in the skipped hour starts one hour later.
+ */
+export function localTimeWindow(
+  nowMs: number,
+  timeZone: string,
+  minutes: number,
+  windowMinutes: number,
+): { localDate: string } | null {
+  const localDate = localDateOf(nowMs, timeZone);
+  const startMs = zonedLocalToUtcMs(localDate, timeZone, Math.floor(minutes / 60), minutes % 60);
+  return startMs <= nowMs && nowMs < startMs + windowMinutes * 60_000 ? { localDate } : null;
 }
 
 /** UTC instant of local midnight at the start of `localDate` in the zone. */

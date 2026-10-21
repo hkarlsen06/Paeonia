@@ -22,8 +22,8 @@ nonisolated struct WidgetCenterReloader: WidgetTimelineReloading {
     func reloadWidget() async {
         await MainActor.run {
             WidgetCenter.shared.reloadTimelines(ofKind: PaeoniaAppGroup.widgetKind)
-            // A purge deleted the Lock Screen cache too. Rebuild so they show the neutral state.
-            for kind in LockScreenWidgetKind.all {
+            // A purge deleted the snapshot cache too. Rebuild so those widgets show the neutral state.
+            for kind in SnapshotWidgetKind.all {
                 WidgetCenter.shared.reloadTimelines(ofKind: kind)
             }
         }

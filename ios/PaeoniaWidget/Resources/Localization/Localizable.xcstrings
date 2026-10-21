@@ -73,6 +73,438 @@
         }
       }
     },
+    "widget.home.countdown.addDate" : {
+      "comment" : "Countdown widget when the couple has no countdowns or birthdays yet. Invites the person to add one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a date to count down to"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til en dato å telle ned til"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.addMore" : {
+      "comment" : "Medium countdown widget when only one date exists. Invites the person to add more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add more dates in Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til flere datoer i Paeonia"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.birthdayPartner" : {
+      "comment" : "Countdown widget title for the partner's birthday. %@ is the partner's first name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s birthday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bursdagen til %@"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.birthdayYours" : {
+      "comment" : "Countdown widget title for the signed-in person's own birthday.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your birthday"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bursdagen din"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.choice.next" : {
+      "comment" : "The choice in the countdown widget's settings that always shows the soonest date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next one"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den neste"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.choice.type" : {
+      "comment" : "Name for one countdown or birthday in the countdown widget's settings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dato"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.comingUp" : {
+      "comment" : "Heading of the list of later dates in the medium countdown widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coming up"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer snart"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.description" : {
+      "comment" : "Gallery description of the Home Screen countdown widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Count down to a date or birthday you share."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell ned til en dato eller bursdag dere deler."
+          }
+        }
+      }
+    },
+    "widget.home.countdown.intent.date" : {
+      "comment" : "Name of the setting where the person picks which countdown or birthday the widget shows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dato"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.intent.description" : {
+      "comment" : "Explains the settings of the Home Screen countdown widget: pick a countdown or a birthday.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a countdown or a birthday, or show whichever comes next."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en nedtelling eller en bursdag, eller vis den som kommer først."
+          }
+        }
+      }
+    },
+    "widget.home.countdown.intent.title" : {
+      "comment" : "Title of the settings of the Home Screen countdown widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a date"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en dato"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.name" : {
+      "comment" : "Gallery name of the Home Screen countdown widget and its heading when it has nothing to show.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Countdown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedtelling"
+          }
+        }
+      }
+    },
+    "widget.home.countdown.unit" : {
+      "comment" : "Small label under the big number in the countdown widget. The number is the days left, two or more.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "days to go"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "dager igjen"
+          }
+        }
+      }
+    },
+    "widget.home.daysTogether.nextMilestone" : {
+      "comment" : "Under the progress bar in the days together widget. %lld is the day count of the next milestone, such as 500.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next: day %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste: dag %lld"
+          }
+        }
+      }
+    },
+    "widget.home.daysTogether.setDate" : {
+      "comment" : "Home Screen days together widget when the couple has not set the day they got together. Tapping opens the dates screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add the day you got together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til dagen dere ble sammen"
+          }
+        }
+      }
+    },
+    "widget.home.daysTogether.since" : {
+      "comment" : "Small label above the date the couple got together, in the medium days together widget.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Together since"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sammen siden"
+          }
+        }
+      }
+    },
+    "widget.home.question.answer" : {
+      "comment" : "Button-shaped hint in the question widget when the viewer has not answered.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar nå"
+          }
+        }
+      }
+    },
+    "widget.home.question.seeAnswers" : {
+      "comment" : "Button-shaped hint in the question widget when both have answered.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se svarene"
+          }
+        }
+      }
+    },
+    "widget.home.question.you" : {
+      "comment" : "Row label in the medium question widget for the person who owns the phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
+          }
+        }
+      }
+    },
+    "widget.home.streak.both" : {
+      "comment" : "Caption under the streak ring when both partners took part today.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both took part today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har begge vært med i dag"
+          }
+        }
+      }
+    },
+    "widget.home.streak.neither" : {
+      "comment" : "Caption under the streak ring when nobody has taken part today and a streak is running.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer today's question to keep your streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på dagens spørsmål for å holde rekken i gang"
+          }
+        }
+      }
+    },
+    "widget.home.streak.start" : {
+      "comment" : "Caption under the streak ring when the couple has no streak yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer today's question to start a streak"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på dagens spørsmål for å starte en rekke"
+          }
+        }
+      }
+    },
+    "widget.home.streak.waitingForPartner" : {
+      "comment" : "Caption under the streak ring when the viewer took part today and the partner has not. %@ is the partner's first name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're in! Waiting for %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er med! Venter på %@."
+          }
+        }
+      }
+    },
+    "widget.home.streak.yourTurn" : {
+      "comment" : "Caption under the streak ring when the partner took part today and the viewer has not. %@ is the partner's first name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is in. Your turn!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er med. Nå er det din tur!"
+          }
+        }
+      }
+    },
     "widget.lockScreen.countdown.days" : {
       "comment" : "Big text in the countdown widget. %lld is the number of days left, two or more.",
       "extractionState" : "manual",

@@ -275,6 +275,19 @@ Record any skipped command with the reason.
 - [ ] The lock screen widget cache clears on sign-out, account deletion, and relationship access loss.
 - [ ] Widget names and copy are audited in English and Norwegian.
 
+## Home Screen Widgets
+
+- [ ] Days together (small, medium), Countdown (small, medium), Streak (small), Today's question (small, medium) and the drawing widget in its new medium size can each be added to the Home Screen.
+- [ ] Each shows a neutral state when signed out, unpaired, or before its first refresh, never sample numbers.
+- [ ] A couple with no start date, no countdowns, or no streak sees an invitation in the matching widget, and tapping it opens the right screen.
+- [ ] The Countdown widget's settings list "Next one", every countdown and both birthdays. A deleted countdown falls back to the next date.
+- [ ] A yearly countdown and a birthday that passed yesterday show next year's day in the Countdown widget without opening the app.
+- [ ] Today's question never shows question or answer text, and its status changes when the partner answers while Paeonia is closed.
+- [ ] Countdown titles stay hidden on a locked phone (StandBy).
+- [ ] Tapping each widget opens the matching screen: dates timeline, streak, today's question, drawing.
+- [ ] The widgets clear on sign-out, account deletion, and relationship access loss.
+- [ ] Widget names, settings and copy are audited in English and Norwegian.
+
 ## Countdown And Relationship Milestones
 
 - [x] Relationship start date flows from the milestone setup/server state to home.
@@ -285,7 +298,9 @@ Record any skipped command with the reason.
 - [x] Countdown date formatting localizes correctly.
 - [x] Countdown card has no hardcoded sample milestone in release.
 - [ ] Custom countdowns and birthdays sync between partners, work offline, and show on the Home tile when they come first.
-- [ ] Countdown reminders are either implemented or absent from notification settings/copy.
+- [x] Reminders for birthdays, the anniversary, milestones and countdowns are a notification switch ("Dates that matter") that is on by default, and the push copy names no countdown.
+- [ ] A countdown can repeat every year, and the Home tile, the timeline and the widgets show its next occurrence, 29 February included.
+- [ ] A date reminder arrives at 09:00 local, opens the dates timeline, and arrives once per device.
 
 ## Partner Location
 

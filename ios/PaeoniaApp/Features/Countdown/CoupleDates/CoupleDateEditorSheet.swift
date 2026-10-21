@@ -30,15 +30,15 @@ struct CoupleDateEditorSheet: View {
     var body: some View {
         switch editor {
         case .newCountdown:
-            CountdownEditorView(countdown: nil) { title, day in
-                await coupleDates.saveCountdown(id: nil, title: title, on: day)
+            CountdownEditorView(countdown: nil) { title, day, repeatsYearly in
+                await coupleDates.saveCountdown(id: nil, title: title, on: day, repeatsYearly: repeatsYearly)
             }
         case let .countdown(id):
             let countdown = coupleDates.dates.countdowns.first { $0.id == id }
             CountdownEditorView(
                 countdown: countdown,
-                onSave: { title, day in
-                    await coupleDates.saveCountdown(id: id, title: title, on: day)
+                onSave: { title, day, repeatsYearly in
+                    await coupleDates.saveCountdown(id: id, title: title, on: day, repeatsYearly: repeatsYearly)
                 },
                 onDelete: {
                     await coupleDates.deleteCountdown(id: id)
