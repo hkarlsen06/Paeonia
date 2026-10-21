@@ -5,9 +5,9 @@ import Foundation
 nonisolated struct StoriesLiveFeed: LiveFeed {
     let name = "stories"
 
-    /// Home shows the stories strip and the Memories tab shows the stories.
+    /// The Home tab badge counts unseen stories on every tab.
     var activation: LiveFeedActivation {
-        .whileNeeded([.homeTab, .memoriesTab])
+        .always
     }
 
     private let cache: any StoriesCaching

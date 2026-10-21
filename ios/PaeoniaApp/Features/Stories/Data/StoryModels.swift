@@ -111,6 +111,20 @@ nonisolated enum StoryTimeline {
         return shown.contains { $0.seenAt == nil } ? .unseen : .seen
     }
 
+    /// How many of the partner's stories on Home this person has not opened, for the
+    /// Home tab badge. Matches the stories part of `badges:get_badge_count`.
+    static func unseenCount(_ stories: [Story], partner: UUID?, at now: Date) -> Int {
+        onHome(stories, author: partner, at: now).count(where: { $0.seenAt == nil })
+    }
+
+    /// When the next unseen partner story leaves Home, so the badge can drop it then.
+    static func nextUnseenExpiry(_ stories: [Story], partner: UUID?, at now: Date) -> Date? {
+        onHome(stories, author: partner, at: now)
+            .filter { $0.seenAt == nil }
+            .map(\.expiresAt)
+            .min()
+    }
+
     /// Where the partner's stories start playing: the oldest one not opened yet,
     /// or the first one when all were opened.
     static func startIndex(in stories: [Story]) -> Int {
