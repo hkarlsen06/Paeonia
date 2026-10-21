@@ -199,7 +199,9 @@ extension MainTabView {
                     topics: topicsViewModel.cardTopics,
                     hook: topicsHook,
                     isShown: topicsViewModel.hasLoadedOverview && !topicsViewModel.overview.isEmpty,
-                    onOpen: openTopics
+                    onOpen: openTopics,
+                    waitingQuestions: topicsViewModel.waitingQuestions,
+                    topicTitles: topicsViewModel.titlesByKey
                 )
             )
             .searchToolbarButton(action: openSearch)

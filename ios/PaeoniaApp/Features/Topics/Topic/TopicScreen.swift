@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// One topic: its picture and progress, then its questions grouped by where they
-/// stand. Questions the partner answered first come on top, then the ones nobody has
+/// stand. What waits for this person comes on top: partner answers they haven't
+/// opened, then questions the partner answered first. Then the ones nobody has
 /// started, the ones waiting for the partner, the ones answered together, and a
 /// collapsed list of skipped ones. "Answer the next one" opens the next question.
 struct TopicScreen: View {
@@ -82,7 +83,7 @@ struct TopicScreen: View {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
                 header
 
-                section(.topicsSectionForYou, sections.forYou, opensFlow: true)
+                forYouSection(sections)
                 section(.topicsSectionUpNext, sections.upNext, opensFlow: true)
                 section(.topicsSectionWaiting(participants.partnerName), sections.waitingForPartner, opensFlow: false)
                 section(.topicsSectionTogether, sections.together, opensFlow: false)
@@ -122,6 +123,23 @@ struct TopicScreen: View {
             LinearGradient(colors: [tint.opacity(0.35), .clear], startPoint: .top, endPoint: .bottom)
                 .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
                 .accessibilityHidden(true)
+        }
+    }
+
+    /// Partner answers to open, which open the question's page, then questions to
+    /// answer, which open the answer flow.
+    @ViewBuilder
+    private func forYouSection(_ sections: TopicSections) -> some View {
+        if !sections.waiting.isEmpty {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                sectionTitle(Text(.topicsSectionForYou))
+                ForEach(sections.newAnswers) { item in
+                    row(item, opensFlow: false)
+                }
+                ForEach(sections.forYou) { item in
+                    row(item, opensFlow: true)
+                }
+            }
         }
     }
 
@@ -231,7 +249,14 @@ struct TopicScreen: View {
     }
 
     private func sectionIDs(_ sections: TopicSections) -> [[UUID]] {
-        [sections.forYou, sections.upNext, sections.waitingForPartner, sections.together, sections.skipped]
+        [
+            sections.newAnswers,
+            sections.forYou,
+            sections.upNext,
+            sections.waitingForPartner,
+            sections.together,
+            sections.skipped,
+        ]
             .map { $0.map(\.id) }
     }
 }

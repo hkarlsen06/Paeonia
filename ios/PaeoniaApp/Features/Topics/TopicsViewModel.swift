@@ -123,6 +123,11 @@ extension TopicsViewModel {
         overview.first { $0.id == key }
     }
 
+    /// Every topic's name, by key.
+    var titlesByKey: [String: String] {
+        Dictionary(overview.map { ($0.id, $0.title) }, uniquingKeysWith: { first, _ in first })
+    }
+
     /// The Topics card's line about what's waiting, or nil when nothing is.
     func hook(partnerName: String, unreadTopicChats: [ThreadChatSummary]) -> TopicsHook? {
         TopicsHook.make(overview: overview, unreadTopicChats: unreadTopicChats, partnerName: partnerName)
@@ -189,7 +194,32 @@ extension TopicsViewModel {
 
     func sections(for key: String) -> TopicSections {
         let isSending = { [dailyChallenge] (id: UUID) in dailyChallenge?.isSending(id) ?? false }
-        return TopicSections(items: displayedItems(for: key), isSending: isSending)
+        let hasNewPartnerAnswer = { [dailyChallenge] (question: DailyChallengeQuestion) in
+            dailyChallenge?.hasNewPartnerAnswer(question) ?? false
+        }
+        return TopicSections(
+            items: displayedItems(for: key),
+            isSending: isSending,
+            hasNewPartnerAnswer: hasNewPartnerAnswer
+        )
+    }
+
+    /// The questions waiting for this person in every topic but a private one, for the
+    /// Questions tab's list. A question leaves it once answered and its partner answer
+    /// opened, and then shows only in its topic. Private topics stay inside their topic,
+    /// because the Questions tab is often open where others see it.
+    var waitingQuestions: [DailyChallengeQuestion] {
+        overview.filter { !$0.isPrivate }.flatMap { topic in
+            sections(for: topic.id).waiting.map(\.question)
+        }
+    }
+
+    /// Follows every topic with something waiting, so `waitingQuestions` has its
+    /// questions before the topic is opened. Private ones are left until opened.
+    private func followWaitingTopics() {
+        for topic in overview where !topic.isPrivate && topic.forYouCount > 0 {
+            open(topic.id)
+        }
     }
 
     /// The topic's questions with skips this phone sent but the server hasn't confirmed.
@@ -300,6 +330,7 @@ extension TopicsViewModel {
         for key in closed {
             close(key)
         }
+        followWaitingTopics()
     }
 
     private var shelfTopicKeys: Set<String> {

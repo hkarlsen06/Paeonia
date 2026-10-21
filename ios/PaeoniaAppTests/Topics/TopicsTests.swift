@@ -111,6 +111,22 @@ struct TopicModelTests {
         let skipped = TopicQuestionItem(question: fresh.question, sortOrder: 2, isSkipped: true)
         #expect(skipped.state(isSending: false) == .skipped)
     }
+
+    @Test func aPartnerAnswerNotOpenedYetWaitsOnTopButIsNotAnsweredAgain() throws {
+        let built = try items()
+        let started = try #require(built.first { $0.question.questionID == TopicIDs.startedQuestion })
+        let fresh = try #require(built.first { $0.question.questionID == TopicIDs.freshQuestion })
+        // Sending counts as answered, so both have answered the started question.
+        let sections = TopicSections(
+            items: built,
+            isSending: { $0 == started.id },
+            hasNewPartnerAnswer: { $0.id == started.id }
+        )
+        #expect(sections.newAnswers.map(\.id) == [started.id])
+        #expect(sections.together.isEmpty)
+        #expect(sections.waiting.map(\.id) == [started.id])
+        #expect(sections.nextToAnswer?.id == fresh.id)
+    }
 }
 
 struct TopicsHookTests {

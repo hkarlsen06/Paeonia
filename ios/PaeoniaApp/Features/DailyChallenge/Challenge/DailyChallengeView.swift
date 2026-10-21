@@ -8,8 +8,9 @@ import SwiftUI
 /// buried, then everything else follows by most recent answer. The rows hold no
 /// answers. A row the user has answered opens the question's page, where the answers
 /// start the chat. A partner question the user can still answer zooms into its
-/// single-question flow, where the reply is revealed on send. Earlier days follow
-/// under today's list, with a date divider per day.
+/// single-question flow, where the reply is revealed on send. Topic questions waiting
+/// for the user join the list until they are answered and seen, and then show only
+/// in their topic. Earlier days follow under today's list, with a date divider per day.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     /// Namespace for the Daily Challenge zoom transition. The hero card and each
@@ -147,14 +148,17 @@ struct DailyChallengeScreen: View {
                         question: question,
                         participants: viewModel.participants,
                         sending: viewModel.sendingPreview(for: question),
-                        isOwnChallengeComplete: viewModel.hasCompletedRequiredDailyQuestions,
+                        // Topic questions never wait for the daily questions.
+                        isOwnChallengeComplete: question.isTopicQuestion
+                            || viewModel.hasCompletedRequiredDailyQuestions,
                         zoomNamespace: zoomNamespace,
                         isHighlighted: highlightedQuestionIDs.contains(question.id),
                         onAnswer: { onAnswerPartnerQuestion(question) },
                         lastMessagePreview: viewModel.threadPreview(for: question.questionID),
                         hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
                         hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
-                        onOpen: { openChat(question) }
+                        onOpen: { openChat(question) },
+                        topicTitle: topicsCard?.title(of: question)
                     )
                     .id(question.id)
                 }
@@ -164,16 +168,6 @@ struct DailyChallengeScreen: View {
             // an answered partner question settling down into the
             // timeline, or a new card arriving mid-session.
             .animation(PaeoniaMotion.stateChange, value: readQuestions.map(\.id))
-        }
-    }
-
-    /// Every read card in one list — the partner's started questions plus the user's
-    /// own answered (or still-sending) questions. The ordering (to-dos, then anything
-    /// new from the partner, then by most recent answer) lives in
-    /// `DailyChallengeSnapshot.readOverviewQuestions`.
-    private var readQuestions: [DailyChallengeQuestion] {
-        viewModel.snapshot.readOverviewQuestions(isNew: viewModel.hasNewFromPartner).filter { question in
-            question.origin == .partner || question.hasOwnAnswer || viewModel.isSending(question.id)
         }
     }
 
@@ -336,6 +330,21 @@ struct DailyChallengeScreen: View {
 }
 
 extension DailyChallengeScreen {
+    /// Every read card in one list — the partner's started questions plus the user's
+    /// own answered (or still-sending) questions, and the topic questions waiting for
+    /// the user. The ordering (to-dos, then anything new from the partner, then by most
+    /// recent answer) is `DailyChallengeSnapshot.questionsTabOrder`.
+    private var readQuestions: [DailyChallengeQuestion] {
+        let daily = viewModel.snapshot.readOverviewQuestions(isNew: viewModel.hasNewFromPartner).filter { question in
+            question.origin == .partner || question.hasOwnAnswer || viewModel.isSending(question.id)
+        }
+        let topics = topicsCard?.waitingQuestions ?? []
+        guard !topics.isEmpty else { return daily }
+        return (daily + topics).sorted {
+            DailyChallengeSnapshot.questionsTabOrder($0, $1, isNew: viewModel.hasNewFromPartner)
+        }
+    }
+
     /// The Topics card. Always under the daily card, so the daily question comes first.
     @ViewBuilder
     var topicsEntry: some View {

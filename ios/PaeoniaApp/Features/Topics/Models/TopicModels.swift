@@ -83,12 +83,21 @@ nonisolated struct TopicQuestionItem: Identifiable, Equatable, Sendable {
 /// topic's own order.
 nonisolated struct TopicSections: Equatable, Sendable {
     var forYou: [TopicQuestionItem] = []
+    /// Both answered, and this person hasn't opened the partner's answer yet. The
+    /// server counts these as "for you" too, so the screen lists them on top.
+    var newAnswers: [TopicQuestionItem] = []
     var upNext: [TopicQuestionItem] = []
     var waitingForPartner: [TopicQuestionItem] = []
     var together: [TopicQuestionItem] = []
     var skipped: [TopicQuestionItem] = []
 
-    init(items: [TopicQuestionItem], isSending: (UUID) -> Bool) {
+    /// `hasNewPartnerAnswer` says whether this person still has to open the partner's
+    /// answer to a question both answered.
+    init(
+        items: [TopicQuestionItem],
+        isSending: (UUID) -> Bool,
+        hasNewPartnerAnswer: (DailyChallengeQuestion) -> Bool = { _ in false }
+    ) {
         let ordered = items.sorted {
             ($0.sortOrder, $0.question.questionKey) < ($1.sortOrder, $1.question.questionKey)
         }
@@ -97,10 +106,17 @@ nonisolated struct TopicSections: Equatable, Sendable {
             case .forYou: forYou.append(item)
             case .upNext: upNext.append(item)
             case .waitingForPartner: waitingForPartner.append(item)
+            case .together where hasNewPartnerAnswer(item.question): newAnswers.append(item)
             case .together: together.append(item)
             case .skipped: skipped.append(item)
             }
         }
+    }
+
+    /// What waits for this person: partner answers to open, then questions to answer.
+    /// The Questions tab lists these with the daily questions.
+    var waiting: [TopicQuestionItem] {
+        newAnswers + forYou
     }
 
     /// What "Answer the next one" opens: a question the partner already answered

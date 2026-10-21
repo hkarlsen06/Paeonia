@@ -33,6 +33,8 @@ struct DailyChallengeReadCard: View {
     var hasNewPartnerAnswer = false
     /// Opens the question's page. Only a question the user has answered has one.
     var onOpen: (() -> Void)?
+    /// The topic's name, for a topic question listed with the daily ones.
+    var topicTitle: String?
 
     /// A partner question the user can still answer to reveal the reply. When sending,
     /// the row shows the "saved, sending" preview instead, so this stays false.
@@ -86,6 +88,11 @@ struct DailyChallengeReadCard: View {
     private var card: some View {
         PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+                if let topicTitle {
+                    Text(verbatim: topicTitle)
+                        .font(PaeoniaTypography.caption.weight(.semibold))
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
                 Text(question.prompt)
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)

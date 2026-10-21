@@ -110,11 +110,19 @@ struct TopicsCard: View {
     }
 }
 
-/// What the Questions tab needs to show the Topics card. Nil or `isShown == false`
-/// leaves the card out, such as before the topics have loaded once.
+/// What the Questions tab needs from the topics: the Topics card, and the topic
+/// questions waiting for this person, which its list shows with the daily ones.
+/// `isShown == false` leaves the card out, such as before the topics have loaded once.
 struct TopicsCardContent {
     let topics: [TopicSummary]
     let hook: TopicsHook?
     let isShown: Bool
     let onOpen: () -> Void
+    var waitingQuestions: [DailyChallengeQuestion] = []
+    /// Every topic's name by key, for the waiting questions' rows.
+    var topicTitles: [String: String] = [:]
+
+    func title(of question: DailyChallengeQuestion) -> String? {
+        question.topicKey.flatMap { topicTitles[$0] }
+    }
 }
