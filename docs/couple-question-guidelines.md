@@ -192,6 +192,7 @@ System questions use these tables:
 - `question_versions`: versioned copy and answer contract for a question.
 - `question_version_localizations`: localized full and short prompts.
 - `question_answer_kinds`: allowed answer kinds for a version.
+- `topic_catalog`: a copy of each active topic's names and ready questions, rebuilt by `catalog:sync_catalog` for the topic reads. Never write it by hand. Run the sync after any change to a topic's catalog rows.
 
 Daily runtime rows then reference question versions:
 

@@ -7,6 +7,7 @@ import { getByUuid, omitNulls, withUpdatedAt } from "./lib/db";
 import { checkViolation, fail } from "./lib/errors";
 import { newUuid, timestampArg } from "./lib/ids";
 import { nowIso } from "./lib/time";
+import { rebuildTopicCatalogs, topicCatalogIsCurrent } from "./lib/topicCatalog";
 import { literals } from "./lib/validators";
 
 /**
@@ -251,6 +252,11 @@ async function compareCatalog(
       if (!row || row.title !== local.title || row.subtitle !== local.subtitle) {
         changes.push(`topic ${locale} name update for ${topic.key}`);
       }
+    }
+    // The topic reads load a copy of the topic. Report a missing or outdated one, so a sync with
+    // nothing else to change still rebuilds it.
+    if (!(await topicCatalogIsCurrent(ctx, remote.id))) {
+      changes.push(`topic catalog rebuild for ${topic.key}`);
     }
   }
   for (const question of questions) {
@@ -571,6 +577,8 @@ export const sync_catalog = internalMutation({
     for (const collectionId of collectionIds) {
       await assertCollectionReady(ctx, collectionId);
     }
+    // The topic reads load the rows built here, so every topic this call touched is rebuilt after its last write.
+    await rebuildTopicCatalogs(ctx, collectionIds);
     return { changes, errors, applied: true };
   },
 });

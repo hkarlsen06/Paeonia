@@ -259,6 +259,29 @@ describe("sync_catalog topics", () => {
     expect(again.changes).toEqual([]);
   });
 
+  test("keeps the topic catalog row the topic reads use in line with the topic", async () => {
+    const t = newTest();
+    const questions = [topicQuestion("travel_best_walk", 14), topicQuestion("travel_best_view", 1)];
+    await t.mutation(internal.catalog.sync_catalog, { questions, topics: [topic], apply: true });
+    const rows = await t.run((ctx) => ctx.db.query("topic_catalog").collect());
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ key: "travel_and_places", sort_order: 4, title_nb: "Reiser og steder" });
+    expect(rows[0].questions.map((item) => [item.question_key, item.sort_order, item.prompt_nb])).toEqual([
+      ["travel_best_view", 1, "A memory that stayed (nb)"],
+      ["travel_best_walk", 14, "A memory that stayed (nb)"],
+    ]);
+
+    // A deployment that has the topic but no row yet (a fresh deploy) is rebuilt by the next sync, even with nothing else to change.
+    await t.run(async (ctx) => await ctx.db.delete(rows[0]._id));
+    const dry = await t.mutation(internal.catalog.sync_catalog, { questions, topics: [topic], apply: false });
+    expect(dry.changes).toEqual(["topic catalog rebuild for travel_and_places"]);
+    await t.mutation(internal.catalog.sync_catalog, { questions, topics: [topic], apply: true });
+    expect(await t.run((ctx) => ctx.db.query("topic_catalog").collect())).toHaveLength(1);
+
+    await t.mutation(internal.catalog.sync_catalog, { questions, topics: [{ ...topic, status: "retired" }], apply: true });
+    expect(await t.run((ctx) => ctx.db.query("topic_catalog").collect())).toEqual([]);
+  });
+
   test("a topic question without its topic in the payload is an error", async () => {
     const t = newTest();
     const result = await t.mutation(internal.catalog.sync_catalog, {

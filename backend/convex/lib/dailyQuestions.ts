@@ -87,6 +87,15 @@ export type QuestionContent = {
   answer_kinds: string[];
 };
 
+/** The part of a question's content that `questionRow` shows. `QuestionContent` has all of it. */
+export type QuestionRowContent = {
+  question: Pick<Doc<"questions">, "id" | "key">;
+  version: Pick<Doc<"question_versions">, "id">;
+  en: Pick<Doc<"question_version_localizations">, "prompt" | "short_prompt" | "option_a" | "option_b">;
+  nb: Pick<Doc<"question_version_localizations">, "prompt" | "short_prompt" | "option_a" | "option_b">;
+  answer_kinds: string[];
+};
+
 /** Looks question versions up once per call. Returns null when a locale is missing, like the SQL inner joins. */
 export class QuestionContentReader {
   private cache = new Map<string, QuestionContent | null>();
@@ -121,7 +130,7 @@ export class QuestionContentReader {
 }
 
 /** A version's "pick one of two" labels, or nulls when its kinds don't include `either_or`. */
-export function optionLabels(content: QuestionContent) {
+export function optionLabels(content: QuestionRowContent) {
   const either = content.answer_kinds.includes("either_or");
   return {
     option_a_en: either ? (content.en.option_a ?? null) : null,
@@ -134,7 +143,7 @@ export function optionLabels(content: QuestionContent) {
 export function questionRow(
   day: Doc<"couple_days">,
   instance: Doc<"daily_question_instances">,
-  content: QuestionContent,
+  content: QuestionRowContent,
   ownAnswer: Doc<"daily_question_answers"> | null,
   partnerAnswer: Doc<"daily_question_answers"> | null,
   canViewPartnerAnswer: boolean,

@@ -97,6 +97,7 @@ import type * as lib_syncEvents from "../lib/syncEvents.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_time from "../lib/time.js";
 import type * as lib_topics from "../lib/topics.js";
+import type * as lib_topicCatalog from "../lib/topicCatalog.js";
 import type * as lib_ultimateTicTacToe from "../lib/ultimateTicTacToe.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as lib_widgetDrawings from "../lib/widgetDrawings.js";
@@ -220,6 +221,7 @@ declare const fullApi: ApiFromModules<{
   "lib/time": typeof lib_time;
   "lib/topics": typeof lib_topics;
   "lib/ultimateTicTacToe": typeof lib_ultimateTicTacToe;
+  "lib/topicCatalog": typeof lib_topicCatalog;
   "lib/validators": typeof lib_validators;
   "lib/widgetDrawings": typeof lib_widgetDrawings;
   location: typeof location;

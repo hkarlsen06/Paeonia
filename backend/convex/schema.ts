@@ -1160,6 +1160,41 @@ export default defineSchema({
     updated_at: ts,
   }).index("by_collection_id_locale", ["collection_id", "locale"]),
 
+  // One row per active topic: its names and its ready questions with their current wording, in order.
+  // Derived from question_collections, question_collection_localizations, questions, question_versions,
+  // question_version_localizations and question_answer_kinds, so the topic reads load one row instead of
+  // about eight per question. Only `rebuildTopicCatalogs` (lib/topicCatalog.ts) writes it, at the end of
+  // `catalog:sync_catalog`. FK: collection_id -> question_collections. collection_id and key are unique.
+  topic_catalog: defineTable({
+    collection_id: uuid,
+    key: v.string(),
+    sort_order: v.number(),
+    private: v.boolean(),
+    title_en: v.string(),
+    subtitle_en: v.string(),
+    title_nb: v.string(),
+    subtitle_nb: v.string(),
+    questions: v.array(
+      v.object({
+        question_id: uuid,
+        question_key: v.string(),
+        question_version_id: uuid,
+        sort_order: v.number(),
+        prompt_en: v.string(),
+        short_prompt_en: v.string(),
+        prompt_nb: v.string(),
+        short_prompt_nb: v.string(),
+        answer_kinds: v.array(v.string()),
+        option_a_en: optString,
+        option_b_en: optString,
+        option_a_nb: optString,
+        option_b_nb: optString,
+      }),
+    ),
+  })
+    .index("by_collection_id", ["collection_id"])
+    .index("by_key", ["key"]),
+
   // FK: question_version_id -> question_versions cascade. (question_version_id, locale) is unique.
   question_version_localizations: defineTable({
     question_version_id: uuid,

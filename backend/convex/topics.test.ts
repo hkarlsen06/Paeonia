@@ -2,10 +2,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { nowIso } from "./lib/time";
+import { rebuildTopicCatalogs } from "./lib/topicCatalog";
 import { failure, op, setMediaEnv } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
 import { purgeCoupleContent } from "./lib/relationshipCleanup";
-import { addDevice, createCouple, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
 
 beforeEach(() => {
   setMediaEnv();
@@ -95,6 +96,7 @@ async function seedTopic(
       }
       questionIds.push(id);
     }
+    await rebuildTopicCatalogs(ctx, [collectionId]);
     return { key, collectionId, questionIds };
   });
 }
@@ -153,6 +155,16 @@ describe("overview", () => {
 
     await skip(b, topic.questionIds[1], false);
     expect((await overview(a)).topics[0].total_count).toBe(3);
+  });
+});
+
+describe("access", () => {
+  test("someone without a couple is refused the shelf and a topic", async () => {
+    const { t } = await setup();
+    await seedTopic(t, "travel");
+    const outsider = await createSignedInUser(t);
+    expect(await failure(overview(outsider))).toMatchObject({ code: "42501" });
+    expect(await failure(topicOf(outsider, "travel"))).toMatchObject({ code: "42501" });
   });
 });
 

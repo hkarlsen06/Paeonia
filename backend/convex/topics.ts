@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { requireUserId } from "./lib/auth";
@@ -14,7 +15,6 @@ import {
 import {
   addSeenStates,
   instanceDay,
-  optionLabels,
   QuestionContentReader,
   questionRow,
   type DailyQuestionRow,
@@ -25,15 +25,14 @@ import { timestampArg, uuidArg } from "./lib/ids";
 import { applyCoupleActivity } from "./lib/streaks";
 import {
   activeTopics,
-  answerState,
   queueTopicPush,
   requireActiveTopic,
   skippedQuestionIds,
   skipRow,
   topicInstanceFor,
-  topicInstances,
   topicOfQuestion,
-  topicQuestions,
+  topicQuestionContent,
+  topicStates,
   topicSummary,
   type TopicSummary,
 } from "./lib/topics";
@@ -69,10 +68,9 @@ export const get_topics_overview = query({
     const userId = await requireUserId(ctx);
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const skipped = await skippedQuestionIds(ctx, coupleId);
-    const reader = new QuestionContentReader(ctx);
     const topics: TopicSummary[] = [];
     for (const topic of await activeTopics(ctx)) {
-      topics.push(await topicSummary(ctx, reader, topic, coupleId, userId, skipped));
+      topics.push(topicSummary(topic, skipped, await topicStates(ctx, topic, coupleId, userId, skipped)));
     }
     return { topics };
   },
@@ -86,47 +84,59 @@ export const get_topic = query({
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     const topic = await requireActiveTopic(ctx, args.p_topic_key);
     const skipped = await skippedQuestionIds(ctx, coupleId);
+    const states = await topicStates(ctx, topic, coupleId, userId);
+    // A started question keeps the version it was answered under, which is the catalog's unless a sync is mid-way.
     const reader = new QuestionContentReader(ctx);
-    const instances = await topicInstances(ctx, coupleId, topic.collection.id);
+    const days = new Map<string, Doc<"couple_days"> | null>();
     const questions: TopicQuestionRow[] = [];
     const startedRows: DailyQuestionRow[] = [];
     const answerDetails: DailyAnswerDetailRow[] = [];
-    for (const { question, content } of await topicQuestions(ctx, reader, topic.collection.id)) {
+    for (const question of topic.questions) {
       let row: DailyQuestionRow | null = null;
-      const instance = instances.get(question.id);
-      const day = instance ? await instanceDay(ctx, instance) : null;
-      const instanceContent = instance ? await reader.get(instance.question_version_id) : null;
-      if (instance && day && instanceContent) {
-        const { answers, own, partner } = await answerState(ctx, instance, userId);
-        row = questionRow(day, instance, instanceContent, own, partner, own !== null && partner !== null, false);
-        row.topic_key = topic.collection.key!;
-        // A couple answers a topic question once, so its one round is the whole chat.
-        row.earlier_round_count = 0;
-        row.latest_earlier_round_local_date = null;
-        row.chat_available = own !== null && partner !== null;
-        startedRows.push(row);
-        for (const answer of answers) {
-          answerDetails.push(await detailRow(ctx, userId, day, instance, answer, answer.user_id === userId || own !== null));
+      const state = states.get(question.question_id);
+      if (state) {
+        const { instance, answers, own, partner } = state;
+        const dayId = instance.couple_day_id ?? instance.started_couple_day_id;
+        if (dayId !== undefined && !days.has(dayId)) days.set(dayId, await instanceDay(ctx, instance));
+        const day = dayId === undefined ? null : (days.get(dayId) ?? null);
+        const instanceContent =
+          instance.question_version_id === question.question_version_id
+            ? topicQuestionContent(question)
+            : await reader.get(instance.question_version_id);
+        if (day && instanceContent) {
+          row = questionRow(day, instance, instanceContent, own, partner, own !== null && partner !== null, false);
+          row.topic_key = topic.key;
+          // A couple answers a topic question once, so its one round is the whole chat.
+          row.earlier_round_count = 0;
+          row.latest_earlier_round_local_date = null;
+          row.chat_available = own !== null && partner !== null;
+          startedRows.push(row);
+          for (const answer of answers) {
+            answerDetails.push(await detailRow(ctx, userId, day, instance, answer, answer.user_id === userId || own !== null));
+          }
         }
       }
       questions.push({
-        question_id: question.id,
-        question_key: question.key,
-        question_version_id: content.version.id,
-        sort_order: question.sort_order ?? 0,
-        prompt_en: content.en.prompt,
-        short_prompt_en: content.en.short_prompt,
-        prompt_nb: content.nb.prompt,
-        short_prompt_nb: content.nb.short_prompt,
-        answer_kinds: content.answer_kinds,
-        ...optionLabels(content),
-        is_skipped: skipped.has(question.id),
+        question_id: question.question_id,
+        question_key: question.question_key,
+        question_version_id: question.question_version_id,
+        sort_order: question.sort_order,
+        prompt_en: question.prompt_en,
+        short_prompt_en: question.short_prompt_en,
+        prompt_nb: question.prompt_nb,
+        short_prompt_nb: question.short_prompt_nb,
+        answer_kinds: question.answer_kinds,
+        option_a_en: question.option_a_en ?? null,
+        option_b_en: question.option_b_en ?? null,
+        option_a_nb: question.option_a_nb ?? null,
+        option_b_nb: question.option_b_nb ?? null,
+        is_skipped: skipped.has(question.question_id),
         row,
       });
     }
     await addSeenStates(ctx, userId, startedRows);
     return {
-      topic: await topicSummary(ctx, reader, topic, coupleId, userId, skipped),
+      topic: topicSummary(topic, skipped, states),
       questions,
       answer_details: answerDetails,
     };

@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid } from "./db";
-import { isLive, QuestionContentReader, type QuestionContent, visibleAnswersOf } from "./dailyQuestions";
+import { isLive, type QuestionRowContent, visibleAnswersOf } from "./dailyQuestions";
 import { fail } from "./errors";
 import { enqueueNotificationForUser } from "./notifications";
 import { addMs, nowIso } from "./time";
@@ -13,7 +13,8 @@ import { addMs, nowIso } from "./time";
  * never see it, while answers, the reveal rule, seen marks, reports and the question's chat work as for
  * daily questions. Whoever answers first starts it (`seeded_for_user_id`), and the partner answers the
  * same instance. A topic marked `private` (Flirt) is kept off the lock screen: its chat pushes name only
- * the sender.
+ * the sender. The topic reads take a topic's names and questions from its `topic_catalog` row
+ * (`lib/topicCatalog.ts`), which the catalog sync rebuilds.
  */
 
 /** At most one "new answers" topic push per person in this window. */
@@ -34,76 +35,39 @@ export type TopicSummary = {
   waiting_for_partner_count: number;
 };
 
-export type Topic = {
-  collection: Doc<"question_collections">;
-  en: Doc<"question_collection_localizations">;
-  nb: Doc<"question_collection_localizations">;
-};
+/** An active topic's catalog row. `lib/topicCatalog.ts` builds it from the question catalog tables. */
+export type Topic = Doc<"topic_catalog">;
 
-export type TopicQuestion = { question: Doc<"questions">; content: QuestionContent };
+export type TopicQuestion = Topic["questions"][number];
 
 function compareStrings(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-async function topicFromCollection(ctx: ReaderCtx, collection: Doc<"question_collections">): Promise<Topic | null> {
-  const rows = await ctx.db
-    .query("question_collection_localizations")
-    .withIndex("by_collection_id_locale", (q) => q.eq("collection_id", collection.id))
-    .collect();
-  const en = rows.find((row) => row.locale === "en");
-  const nb = rows.find((row) => row.locale === "nb");
-  return en && nb && collection.key ? { collection, en, nb } : null;
-}
-
 /** Active topics with both names, in shelf order. */
 export async function activeTopics(ctx: ReaderCtx): Promise<Topic[]> {
-  const collections = await ctx.db
-    .query("question_collections")
-    .withIndex("by_kind_status", (q) => q.eq("kind", "topic").eq("status", "active"))
-    .collect();
-  const topics: Topic[] = [];
-  for (const collection of collections) {
-    const topic = await topicFromCollection(ctx, collection);
-    if (topic) topics.push(topic);
-  }
-  return topics.sort(
-    (a, b) =>
-      (a.collection.sort_order ?? 0) - (b.collection.sort_order ?? 0) ||
-      compareStrings(a.collection.key!, b.collection.key!),
-  );
+  const topics = await ctx.db.query("topic_catalog").collect();
+  return topics.sort((a, b) => a.sort_order - b.sort_order || compareStrings(a.key, b.key));
 }
 
 /** An active topic by key, or fails with 22023 like an unknown one. */
 export async function requireActiveTopic(ctx: ReaderCtx, key: string): Promise<Topic> {
-  const collection = await ctx.db
-    .query("question_collections")
-    .withIndex("by_kind_key", (q) => q.eq("kind", "topic").eq("key", key))
-    .unique();
-  const topic = collection && collection.status === "active" ? await topicFromCollection(ctx, collection) : null;
+  const topic = await ctx.db
+    .query("topic_catalog")
+    .withIndex("by_key", (q) => q.eq("key", key))
+    .first();
   return topic ?? fail("22023", "topic was not found");
 }
 
-/** The topic's active questions that have a usable active version, in order. */
-export async function topicQuestions(ctx: ReaderCtx, reader: QuestionContentReader, collectionId: string): Promise<TopicQuestion[]> {
-  const questions = await ctx.db
-    .query("questions")
-    .withIndex("by_collection_id_status", (q) => q.eq("collection_id", collectionId).eq("status", "active"))
-    .collect();
-  const result: TopicQuestion[] = [];
-  for (const question of questions) {
-    const version = await ctx.db
-      .query("question_versions")
-      .withIndex("by_question_id_status", (q) => q.eq("question_id", question.id).eq("status", "active"))
-      .first();
-    const content = version ? await reader.get(version.id) : null;
-    if (content && content.answer_kinds.length >= 1 && content.answer_kinds.length <= 2) {
-      result.push({ question, content });
-    }
-  }
-  return result.sort(
-    (a, b) => (a.question.sort_order ?? 0) - (b.question.sort_order ?? 0) || compareStrings(a.question.key, b.question.key),
-  );
+/** A catalog question as the content `questionRow` shows. */
+export function topicQuestionContent(question: TopicQuestion): QuestionRowContent {
+  return {
+    question: { id: question.question_id, key: question.question_key },
+    version: { id: question.question_version_id },
+    en: { prompt: question.prompt_en, short_prompt: question.short_prompt_en, option_a: question.option_a_en, option_b: question.option_b_en },
+    nb: { prompt: question.prompt_nb, short_prompt: question.short_prompt_nb, option_a: question.option_a_nb, option_b: question.option_b_nb },
+    answer_kinds: question.answer_kinds,
+  };
 }
 
 /** The couple's live instances of one topic, by question id. */
@@ -156,39 +120,50 @@ export async function answerState(ctx: ReaderCtx, instance: Doc<"daily_question_
   return { answers, own, partner };
 }
 
-/** A topic's card: its names and the counts over questions the couple has not put aside. */
-export async function topicSummary(
+/** The started questions of a topic that are in its catalog, by question id, with who answered. */
+export type TopicStates = Map<string, Awaited<ReturnType<typeof answerState>> & { instance: Doc<"daily_question_instances"> }>;
+
+/**
+ * The couple's started questions of `topic`, read once for both the topic screen and its card.
+ * Questions in `leaveOut` are not read, so the shelf does not load answers it never counts.
+ */
+export async function topicStates(
   ctx: ReaderCtx,
-  reader: QuestionContentReader,
   topic: Topic,
   coupleId: string,
   viewerId: string,
-  skipped: Set<string>,
-): Promise<TopicSummary> {
-  const { collection } = topic;
-  const questions = (await topicQuestions(ctx, reader, collection.id)).filter((item) => !skipped.has(item.question.id));
-  const instances = await topicInstances(ctx, coupleId, collection.id);
+  leaveOut: Set<string> = new Set(),
+): Promise<TopicStates> {
+  const inTopic = new Set(topic.questions.map((question) => question.question_id));
+  const states: TopicStates = new Map();
+  for (const [questionId, instance] of await topicInstances(ctx, coupleId, topic.collection_id)) {
+    if (!inTopic.has(questionId) || leaveOut.has(questionId)) continue;
+    states.set(questionId, { instance, ...(await answerState(ctx, instance, viewerId)) });
+  }
+  return states;
+}
+
+/** A topic's card: its names and the counts over questions the couple has not put aside. */
+export function topicSummary(topic: Topic, skipped: Set<string>, states: TopicStates): TopicSummary {
   let together = 0;
   let forYou = 0;
   let waitingForPartner = 0;
-  for (const { question } of questions) {
-    const instance = instances.get(question.id);
-    if (!instance) continue;
-    const { own, partner } = await answerState(ctx, instance, viewerId);
+  for (const [questionId, { own, partner }] of states) {
+    if (skipped.has(questionId)) continue;
     if (own && partner) together += 1;
     else if (partner) forYou += 1;
     else if (own) waitingForPartner += 1;
   }
   return {
-    topic_key: collection.key!,
-    collection_id: collection.id,
-    sort_order: collection.sort_order ?? 0,
-    private: collection.private ?? false,
-    title_en: topic.en.title,
-    subtitle_en: topic.en.subtitle,
-    title_nb: topic.nb.title,
-    subtitle_nb: topic.nb.subtitle,
-    total_count: questions.length,
+    topic_key: topic.key,
+    collection_id: topic.collection_id,
+    sort_order: topic.sort_order,
+    private: topic.private,
+    title_en: topic.title_en,
+    subtitle_en: topic.subtitle_en,
+    title_nb: topic.title_nb,
+    subtitle_nb: topic.subtitle_nb,
+    total_count: topic.questions.filter((question) => !skipped.has(question.question_id)).length,
     together_count: together,
     for_you_count: forYou,
     waiting_for_partner_count: waitingForPartner,
@@ -209,8 +184,8 @@ export async function topicOfQuestion(ctx: ReaderCtx, questionId: string): Promi
  */
 export async function hasTopicWaiting(ctx: ReaderCtx, coupleId: string, userId: string): Promise<boolean> {
   const skipped = await skippedQuestionIds(ctx, coupleId);
-  for (const { collection } of await activeTopics(ctx)) {
-    for (const instance of (await topicInstances(ctx, coupleId, collection.id)).values()) {
+  for (const topic of await activeTopics(ctx)) {
+    for (const instance of (await topicInstances(ctx, coupleId, topic.collection_id)).values()) {
       const { own, partner } = await answerState(ctx, instance, userId);
       if (!partner) continue;
       if (!own) {
@@ -231,8 +206,8 @@ export async function hasTopicWaiting(ctx: ReaderCtx, coupleId: string, userId: 
 export async function topicsWaitingCount(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
   const skipped = await skippedQuestionIds(ctx, coupleId);
   let count = 0;
-  for (const { collection } of await activeTopics(ctx)) {
-    for (const instance of (await topicInstances(ctx, coupleId, collection.id)).values()) {
+  for (const topic of await activeTopics(ctx)) {
+    for (const instance of (await topicInstances(ctx, coupleId, topic.collection_id)).values()) {
       const { own, partner } = await answerState(ctx, instance, userId);
       if (!partner) continue;
       if (!own) {
