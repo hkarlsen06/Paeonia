@@ -13,6 +13,9 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case stories
     /// `paeonia://home`: opens Home, for example after the partner joined.
     case home
+    /// `paeonia://dates`: a reminder about a birthday, the anniversary or a countdown.
+    /// Opens Home with the dates timeline on top.
+    case dates
     /// `paeonia://games/<path>`, for every `GameKind`.
     case game(GameKind)
     case streak
@@ -159,6 +162,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         "memories": .memories,
         "stories": .stories,
         "home": .home,
+        "dates": .dates,
         "streak": .streak,
     ]
 

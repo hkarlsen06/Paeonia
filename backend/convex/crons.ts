@@ -32,6 +32,11 @@ crons.interval("enqueue-evening-streak-reminders", { minutes: 5 }, internal.stre
 // so five-minute runs cover a late run. Deduped per user and local date. See questionTime.ts.
 crons.interval("enqueue-question-time-reminders", { minutes: 5 }, internal.questionTime.enqueue_question_time_reminders, {});
 
+// New in Convex: reminders for birthdays, the anniversary, milestones and countdowns. Each goes out at
+// 09:00 on the recipient's clock. The window after that is 30 minutes, so 15-minute runs cover a late
+// run. Deduped per user, device and occurrence. See dateReminders.ts.
+crons.interval("enqueue-date-reminders", { minutes: 15 }, internal.dateReminders.enqueue_date_reminders, {});
+
 // pg_cron 'queue-subscription-trial-reminders' (internal.queue_subscription_trial_reminders), minute 15 of every hour.
 crons.cron("queue-subscription-trial-reminders", "15 * * * *", internal.storekit.queue_subscription_trial_reminders, {});
 

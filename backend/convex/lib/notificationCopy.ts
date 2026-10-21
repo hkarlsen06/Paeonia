@@ -259,6 +259,25 @@ function dailyVariant(seed: unknown, count: number): number {
   return Number.isNaN(ms) ? 0 : Math.floor(ms / 86_400_000) % count;
 }
 
+/** A whole number in the reader's language, with its thousands separator (1,000 or 1 000). */
+const formatCount = (value: number, nb: boolean) => value.toLocaleString(nb ? "nb-NO" : "en-US");
+
+/** The `reminder` a date push names (`dateReminders.ts`), or null for a value this file has no copy for. */
+function dateReminderKind(payload: Record<string, unknown>) {
+  const reminder = payload.reminder;
+  return reminder === "partner_birthday_soon" ||
+    reminder === "partner_birthday_today" ||
+    reminder === "own_birthday" ||
+    reminder === "anniversary_soon" ||
+    reminder === "milestone" ||
+    reminder === "countdown"
+    ? reminder
+    : null;
+}
+
+/** A positive whole number from the payload, or 1 when it is missing. */
+const payloadCount = (value: unknown) => (typeof value === "number" && Number.isInteger(value) && value > 0 ? value : 1);
+
 const QUESTION_TIME_VARIANTS = 3;
 const STREAK_VARIANTS = 3;
 
@@ -314,6 +333,29 @@ export function notificationAlertBody(
       return gameReminderBody(nb);
     case "partner_joined":
       return nb ? "Se deres første dag sammen." : "See your first day together.";
+    case "date_reminder":
+      switch (dateReminderKind(payload)) {
+        case "partner_birthday_soon":
+          return nb ? "Nå er det tid til å planlegge noe fint." : "Time to plan something nice.";
+        case "partner_birthday_today":
+          return nb ? "Send en hilsen, så starter dagen fint." : "Send a message to start their day well.";
+        case "own_birthday":
+          return nb ? "Håper du får en fin dag." : "Hope you have a lovely day.";
+        case "anniversary_soon":
+          return nb ? "Tid til å planlegge noe sammen." : "Time to plan something together.";
+        case "milestone":
+          return nb ? "Ta en stund til å feire." : "Take a moment to celebrate.";
+        case "countdown":
+          return payloadCount(payload.count) > 1
+            ? nb
+              ? `${formatCount(payloadCount(payload.count), nb)} datoer dere har talt ned til er her.`
+              : `${formatCount(payloadCount(payload.count), nb)} dates you've been counting down to are here.`
+            : nb
+              ? "En dato dere har talt ned til er her."
+              : "A date you've been counting down to is here.";
+        default:
+          return null;
+      }
     case "question_time_reminder":
       switch (dailyVariant(payload.expires_at, QUESTION_TIME_VARIANTS)) {
         case 1:
@@ -395,6 +437,8 @@ export async function notificationAlertTitle(
     }
     case "partner_joined":
       return nb ? `${name} ble med deg` : `${name} joined you`;
+    case "date_reminder":
+      return dateReminderTitle(payload, nb, name);
     case "question_time_reminder":
       // Paeonia's own voice: the payload names nobody, so no wording sounds like the partner sent it.
       switch (dailyVariant(payload.expires_at, QUESTION_TIME_VARIANTS)) {
@@ -422,6 +466,45 @@ export async function notificationAlertTitle(
       return nb ? "Prøveperioden avsluttes snart" : "Your free trial ends soon";
     default:
       return fallback;
+  }
+}
+
+/**
+ * The title of a date push. These never name a countdown, because the words on a lock screen
+ * belong to the couple. `name` is the partner the push is about, taken from `actor_user_id`.
+ */
+function dateReminderTitle(payload: Record<string, unknown>, nb: boolean, name: string): string {
+  switch (dateReminderKind(payload)) {
+    case "partner_birthday_soon":
+      return nb ? `${name} har bursdag om en uke` : `${name} has a birthday in a week`;
+    case "partner_birthday_today":
+      return nb ? `${name} har bursdag i dag` : `${name} has a birthday today`;
+    case "own_birthday":
+      return nb ? "Gratulerer med dagen!" : "Happy birthday!";
+    case "anniversary_soon":
+      return nb ? "Dere har jubileum om en uke" : "Your anniversary is in a week";
+    case "milestone":
+      return milestoneTitle(payload, nb);
+    case "countdown":
+      return nb ? "I dag er dagen" : "Today's the day";
+    default:
+      return nb ? "Noe å glede seg til" : "Something to look forward to";
+  }
+}
+
+function milestoneTitle(payload: Record<string, unknown>, nb: boolean): string {
+  const years = payloadCount(payload.years);
+  const days = payloadCount(payload.days);
+  switch (payload.milestone) {
+    case "first_month":
+      return nb ? "Én måned sammen i dag" : "One month together today";
+    case "half_year":
+      return nb ? "Et halvt år sammen i dag" : "Half a year together today";
+    case "years":
+      if (years === 1) return nb ? "Ett år sammen i dag" : "One year together today";
+      return nb ? `${formatCount(years, nb)} år sammen i dag` : `${formatCount(years, nb)} years together today`;
+    default:
+      return nb ? `${formatCount(days, nb)} dager sammen i dag` : `${formatCount(days, nb)} days together today`;
   }
 }
 

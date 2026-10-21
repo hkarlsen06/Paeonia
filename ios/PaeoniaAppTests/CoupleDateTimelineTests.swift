@@ -26,8 +26,8 @@ struct CoupleDateTimelineTests {
         return try #require(calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])))
     }
 
-    private func countdown(_ title: String, _ date: String) -> CustomCountdown {
-        CustomCountdown(id: UUID(), title: title, targetDate: date)
+    private func countdown(_ title: String, _ date: String, repeatsYearly: Bool = false) -> CustomCountdown {
+        CustomCountdown(id: UUID(), title: title, targetDate: date, repeatsYearly: repeatsYearly)
     }
 
     @Test func aCountdownBeforeTheNextMilestoneTakesTheHomeTile() throws {
@@ -87,6 +87,37 @@ struct CoupleDateTimelineTests {
         #expect(inCommonYear?.date == (try day("2026-02-28")))
 
         let inLeapYear = timeline().nextBirthday(userID: me, birthday: "2000-02-29", today: try day("2028-01-01"))
+        #expect(inLeapYear?.date == (try day("2028-02-29")))
+    }
+
+    @Test func aYearlyCountdownShowsItsNextOccurrenceAndIsNeverPast() throws {
+        let met = countdown("The day we met", "2023-06-12", repeatsYearly: true)
+        let dates = CoupleDates(countdowns: [met])
+
+        let now = try day("2026-10-21")
+        let upcoming = timeline().upcoming(startedOn: nil, dates: dates, now: now, milestoneLimit: 0)
+        #expect(upcoming.map(\.kind) == [.countdown(met)])
+        #expect(upcoming.first?.date == (try day("2027-06-12")))
+        #expect(timeline().past(startedOn: nil, dates: dates, now: now, limit: 4).isEmpty)
+
+        let theDay = try day("2026-06-12")
+        let onTheDay = timeline().upcoming(startedOn: nil, dates: dates, now: theDay, milestoneLimit: 0)
+        #expect(onTheDay.first?.daysRemaining == 0)
+    }
+
+    @Test func aYearlyCountdownStillAheadIsItsOwnFirstOccurrence() throws {
+        let anniversary = countdown("Anniversary", "2026-12-24", repeatsYearly: true)
+        let dates = CoupleDates(countdowns: [anniversary])
+        let next = timeline().next(startedOn: nil, dates: dates, now: try day("2026-10-21"))
+        #expect(next?.date == (try day("2026-12-24")))
+    }
+
+    @Test func aYearlyCountdownOnALeapDayFallsOnTheTwentyEighthInOtherYears() throws {
+        let leap = countdown("Leap", "2024-02-29", repeatsYearly: true)
+        let dates = CoupleDates(countdowns: [leap])
+        let inCommonYear = timeline().next(startedOn: nil, dates: dates, now: try day("2026-01-01"))
+        #expect(inCommonYear?.date == (try day("2026-02-28")))
+        let inLeapYear = timeline().next(startedOn: nil, dates: dates, now: try day("2027-03-01"))
         #expect(inLeapYear?.date == (try day("2028-02-29")))
     }
 

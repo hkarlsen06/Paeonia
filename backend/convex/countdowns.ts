@@ -32,6 +32,7 @@ function countdownRow(row: Doc<"countdowns">) {
     id: row.id,
     title: row.title,
     target_date: row.target_date,
+    repeats_yearly: row.repeats_yearly === true,
     created_by_user_id: row.created_by_user_id,
     updated_at: row.updated_at,
   };
@@ -45,8 +46,10 @@ async function liveCountdowns(ctx: ReaderCtx, coupleId: string) {
 }
 
 /**
- * The caller's couple's countdowns, soonest first, and the birthdays set for its active
- * members. The app subscribes to this. Fails with `42501` without an entitled couple.
+ * The caller's couple's countdowns, soonest first by their stored date, and the birthdays set
+ * for its active members. A countdown that repeats every year keeps the date it was made for.
+ * The phone works out its next occurrence. The app subscribes to this. Fails with `42501`
+ * without an entitled couple.
  */
 export const get_countdowns = query({
   args: {},
@@ -77,7 +80,14 @@ async function currentCountdown(ctx: ReaderCtx, countdownId: string, coupleId: s
  * stored now, also on a replay, or null when it was deleted.
  */
 export const save_countdown = mutation({
-  args: { p_countdown_id: v.string(), p_title: v.string(), p_target_date: v.string(), ...clientOperationArgs },
+  args: {
+    p_countdown_id: v.string(),
+    p_title: v.string(),
+    p_target_date: v.string(),
+    /** True for a day that comes back every year, such as the day they met. */
+    p_repeats_yearly: v.boolean(),
+    ...clientOperationArgs,
+  },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const countdownId = uuidArg(args.p_countdown_id);
@@ -91,7 +101,14 @@ export const save_countdown = mutation({
     const input = toClientOperation(args, {
       kind: "save_countdown",
       scope: `countdown:${countdownId}`,
-      request: { kind: "save_countdown", couple_id: coupleId, id: countdownId, title, target_date: targetDate },
+      request: {
+        kind: "save_countdown",
+        couple_id: coupleId,
+        id: countdownId,
+        title,
+        target_date: targetDate,
+        repeats_yearly: args.p_repeats_yearly,
+      },
     });
     await runClientOperation(ctx, userId, input, async () => {
       const existing = await getByUuid(ctx, "countdowns", countdownId);
@@ -103,7 +120,15 @@ export const save_countdown = mutation({
       }
 
       if (existing) {
-        await ctx.db.patch(existing._id, withUpdatedAt({ title, target_date: targetDate, last_edited_by_user_id: userId }));
+        await ctx.db.patch(
+          existing._id,
+          withUpdatedAt({
+            title,
+            target_date: targetDate,
+            repeats_yearly: args.p_repeats_yearly ? true : undefined,
+            last_edited_by_user_id: userId,
+          }),
+        );
         await refreshPartnerLockScreen(ctx, coupleId, userId);
         return null;
       }
@@ -116,6 +141,7 @@ export const save_countdown = mutation({
         couple_id: coupleId,
         title,
         target_date: targetDate,
+        repeats_yearly: args.p_repeats_yearly ? true : undefined,
         created_by_user_id: userId,
         last_edited_by_user_id: userId,
         created_at: now,

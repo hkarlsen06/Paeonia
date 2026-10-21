@@ -1,4 +1,4 @@
-import { endOfLocalDay, localDateOf, zonedLocalToUtcMs } from "./time";
+import { endOfLocalDay, localTimeWindow } from "./time";
 
 /** Question time starts at 20:00 until the user picks another time. */
 export const DEFAULT_QUESTION_TIME_MINUTES = 20 * 60;
@@ -10,7 +10,6 @@ export const DEFAULT_QUESTION_TIME_MINUTES = 20 * 60;
 export const QUESTION_TIME_WINDOW_MINUTES = 15;
 
 const MINUTES_PER_DAY = 24 * 60;
-const MINUTE_MS = 60_000;
 
 /** True for a whole number of minutes after local midnight, 0 to 1439. */
 export function isValidQuestionTimeMinutes(minutes: number): boolean {
@@ -32,10 +31,6 @@ export function questionTimeDue(
   timeZone: string,
   minutes: number,
 ): { localDate: string; expiresAt: string } | null {
-  const localDate = localDateOf(nowMs, timeZone);
-  const dueMs = zonedLocalToUtcMs(localDate, timeZone, Math.floor(minutes / 60), minutes % 60);
-  if (dueMs <= nowMs && nowMs < dueMs + QUESTION_TIME_WINDOW_MINUTES * MINUTE_MS) {
-    return { localDate, expiresAt: endOfLocalDay(localDate, timeZone) };
-  }
-  return null;
+  const due = localTimeWindow(nowMs, timeZone, minutes, QUESTION_TIME_WINDOW_MINUTES);
+  return due === null ? null : { localDate: due.localDate, expiresAt: endOfLocalDay(due.localDate, timeZone) };
 }

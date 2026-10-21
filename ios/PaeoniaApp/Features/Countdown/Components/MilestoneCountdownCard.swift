@@ -74,6 +74,13 @@ struct MilestoneCountdownCard: View {
             }
         }
         .onCalendarDayChange { now = Date() }
+        // A tapped date reminder opens the timeline. `initial` covers a cold launch, where the
+        // request is set before this card exists.
+        .onChange(of: coupleDates?.isTimelineRequested ?? false, initial: true) { _, isRequested in
+            guard isRequested else { return }
+            coupleDates?.consumeTimelineRequest()
+            isTimelinePresented = true
+        }
         .sheet(isPresented: $isEditorPresented) {
             RelationshipDateEditorView(
                 selectedDate: $selectedDate,

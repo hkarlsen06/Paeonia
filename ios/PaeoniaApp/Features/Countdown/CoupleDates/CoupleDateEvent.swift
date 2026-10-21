@@ -80,7 +80,8 @@ nonisolated struct CoupleDateTimeline {
     }
 
     /// The last `limit` events before today, oldest first: past milestones and countdowns
-    /// whose day has gone. Birthdays come back every year, so only the next one shows.
+    /// whose day has gone. Birthdays and yearly countdowns come back every year, so only
+    /// the next one shows.
     func past(startedOn: String?, dates: CoupleDates, now: Date = Date(), limit: Int) -> [CoupleDateEvent] {
         let today = calendar.startOfDay(for: now)
         let milestoneEvents = startedOn
@@ -96,28 +97,29 @@ nonisolated struct CoupleDateTimeline {
     /// The next time `birthday` (`yyyy-MM-dd`) comes around, today included. A 29 February
     /// birthday falls on 28 February in other years.
     func nextBirthday(userID: UUID, birthday: String, today: Date) -> CoupleDateEvent? {
-        guard let born = milestones.startOfDay(fromISODate: birthday) else { return nil }
-        let parts = calendar.dateComponents([.month, .day], from: born)
-        let thisYear = calendar.component(.year, from: today)
-        for year in thisYear...(thisYear + 1) {
-            guard let month = parts.month, let day = parts.day,
-                  let firstOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1)),
-                  let daysInMonth = calendar.range(of: .day, in: .month, for: firstOfMonth)?.count,
-                  let date = calendar.date(from: DateComponents(year: year, month: month, day: min(day, daysInMonth)))
-            else { return nil }
-            if date >= today {
-                return CoupleDateEvent(
-                    kind: .birthday(userID: userID),
-                    date: date,
-                    daysRemaining: milestones.days(from: today, to: date)
-                )
-            }
-        }
-        return nil
+        yearlyEvent(.birthday(userID: userID), isoDate: birthday, today: today)
     }
 
+    /// An event for the next time a date that repeats every year comes around, today
+    /// included. A date still ahead is its own first occurrence. The rule is
+    /// `LockScreenCalendarDate.nextYearlyOccurrence`, shared with the widgets and mirrored
+    /// by `backend/convex/lib/coupleDates.ts`, so birthdays and yearly countdowns agree
+    /// everywhere, 29 February included.
+    private func yearlyEvent(_ kind: CoupleDateEvent.Kind, isoDate: String, today: Date) -> CoupleDateEvent? {
+        guard let original = LockScreenCalendarDate(isoDate),
+              let date = original
+                  .nextYearlyOccurrence(onOrAfter: LockScreenCalendarDate(containing: today, in: calendar))
+                  .startOfDay(in: calendar)
+        else { return nil }
+        return CoupleDateEvent(kind: kind, date: date, daysRemaining: milestones.days(from: today, to: date))
+    }
+
+    /// A countdown that repeats every year is never past: it shows its next occurrence.
     private func countdownEvents(_ dates: CoupleDates, today: Date) -> [CoupleDateEvent] {
         dates.countdowns.compactMap { countdown in
+            if countdown.repeatsYearly {
+                return yearlyEvent(.countdown(countdown), isoDate: countdown.targetDate, today: today)
+            }
             guard let date = milestones.startOfDay(fromISODate: countdown.targetDate) else { return nil }
             return CoupleDateEvent(
                 kind: .countdown(countdown),

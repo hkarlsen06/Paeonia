@@ -140,6 +140,7 @@ const NOTIFICATION_CATEGORY: Record<Exclude<NotificationKind, "location_updated"
   story_posted: "partner",
   partner_joined: "partner",
   question_time_reminder: "reminder",
+  date_reminder: "reminder",
   streak_reminder: "reminder",
   subscription_trial_reminder: "reminder",
 };
@@ -164,6 +165,8 @@ export function notificationThreadId(payload: Record<string, unknown>): string |
     case "daily_challenge_completed":
     case "question_time_reminder":
       return "daily";
+    case "date_reminder":
+      return "dates";
     case "topics_waiting":
       return "topics";
     case "memory_created":
@@ -195,7 +198,7 @@ function notificationGrouping(payload: Record<string, unknown>): Record<string, 
 
 /**
  * When a reminder stops being true: a streak reminder at its deadline, a trial
- * reminder when the trial ends, a question time reminder at the end of the user's local day.
+ * reminder when the trial ends, a question time or date reminder at the end of the user's local day.
  * `prepare_notification` drops a row past this time, and APNs drops it on a phone that stays
  * offline past it. Null for everything else.
  */
@@ -205,7 +208,7 @@ export function notificationStaleAt(payload: Record<string, unknown>): string | 
       ? payload.next_activity_deadline_at
       : payload.type === "subscription_trial_reminder"
         ? payload.trial_ends_at
-        : payload.type === "question_time_reminder"
+        : payload.type === "question_time_reminder" || payload.type === "date_reminder"
           ? payload.expires_at
           : null;
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null;

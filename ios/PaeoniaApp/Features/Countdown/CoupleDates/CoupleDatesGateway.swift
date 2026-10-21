@@ -45,6 +45,7 @@ nonisolated private struct SaveCountdownRequest: Encodable {
         case id = "p_countdown_id"
         case title = "p_title"
         case targetDate = "p_target_date"
+        case repeatsYearly = "p_repeats_yearly"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -52,6 +53,7 @@ nonisolated private struct SaveCountdownRequest: Encodable {
         try container.encode(countdown.id, forKey: .id)
         try container.encode(countdown.title, forKey: .title)
         try container.encode(countdown.targetDate, forKey: .targetDate)
+        try container.encode(countdown.repeatsYearly, forKey: .repeatsYearly)
         try operation.encode(to: encoder)
     }
 }

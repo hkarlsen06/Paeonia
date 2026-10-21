@@ -18459,6 +18459,42 @@
         }
       }
     },
+    "home.milestone.countdown.repeatsYearly" : {
+      "comment" : "Switch in the countdown editor that makes the countdown come back every year",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repeat every year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjenta hvert år"
+          }
+        }
+      }
+    },
+    "home.milestone.countdown.repeatsYearlyHint" : {
+      "comment" : "Hint under the repeat every year switch in the countdown editor",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good for the day you met or an anniversary."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passer for dagen dere møttes eller et jubileum."
+          }
+        }
+      }
+    },
     "home.milestone.countdown.titlePlaceholder" : {
       "comment" : "Placeholder in the countdown title field",
       "extractionState" : "manual",
@@ -28435,6 +28471,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dagens spørsmål"
+          }
+        }
+      }
+    },
+    "settings.notifications.dateReminders.subtitle" : {
+      "comment" : "Switch subtitle under the dates reminder switch in notification settings",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A note in the morning on birthdays, anniversaries and countdown days. Your partner's birthday also gets a heads-up a week before."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En hilsen om morgenen på bursdager, jubileer og nedtellingsdager. Partnerens bursdag får også en påminnelse en uke før."
+          }
+        }
+      }
+    },
+    "settings.notifications.dateReminders.title" : {
+      "comment" : "Switch title in notification settings for reminders about birthdays, the anniversary, milestones and countdowns",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dates that matter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datoer som betyr noe"
           }
         }
       }

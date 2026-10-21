@@ -62,6 +62,8 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
       return preference?.streak_reminders_enabled ?? false;
     case "question_time_reminder":
       return preference?.question_time_enabled ?? false;
+    case "date_reminder":
+      return preference?.date_reminders_enabled ?? false;
     case "daily_challenge_completed":
       return preference?.daily_challenge_enabled ?? false;
     case "partner_answered":

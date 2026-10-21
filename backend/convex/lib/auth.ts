@@ -170,6 +170,7 @@ export async function ensureCurrentUser(ctx: MutationCtx): Promise<string> {
     memories_enabled: true,
     messages_enabled: true,
     games_enabled: true,
+    date_reminders_enabled: true,
     question_time_enabled: false,
     question_time_minutes: DEFAULT_QUESTION_TIME_MINUTES,
   });

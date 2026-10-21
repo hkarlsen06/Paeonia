@@ -6,7 +6,12 @@ nonisolated struct CustomCountdown: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
     var title: String
     /// The calendar day it counts down to, `yyyy-MM-dd`. Each phone counts in its own time zone.
+    /// A countdown that repeats every year keeps the day it was made for, and its next
+    /// occurrence is worked out from it (`CoupleDateTimeline`).
     var targetDate: String
+    /// True for a day that comes back every year, such as the day they met. A 29 February
+    /// falls on 28 February in other years.
+    var repeatsYearly: Bool = false
 
     /// The editor caps titles at this many characters.
     static let maxTitleLength = 40
@@ -17,6 +22,7 @@ nonisolated struct CustomCountdown: Codable, Equatable, Identifiable, Sendable {
         case id
         case title
         case targetDate = "target_date"
+        case repeatsYearly = "repeats_yearly"
     }
 }
 

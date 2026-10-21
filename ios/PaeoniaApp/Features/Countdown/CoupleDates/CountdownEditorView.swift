@@ -1,17 +1,19 @@
 import SwiftUI
 
-/// Sheet for adding or editing a countdown: a title and the day it counts down to.
+/// Sheet for adding or editing a countdown: a title, the day it counts down to, and whether
+/// the day comes back every year.
 /// Owns its whole presentation like `RelationshipDateEditorView`, so callers only need
 /// `.sheet { CountdownEditorView(...) }`.
 struct CountdownEditorView: View {
     /// Nil while adding a new countdown.
     let countdown: CustomCountdown?
-    let onSave: (String, Date) async -> Bool
+    let onSave: (String, Date, Bool) async -> Bool
     let onDelete: () async -> Bool
 
     @Environment(\.dismiss) private var dismiss
     @State private var title: String
     @State private var day: Date
+    @State private var repeatsYearly: Bool
     @State private var isConfirmingDelete = false
     @State private var isWorking = false
     @FocusState private var focusedField: Field?
@@ -22,13 +24,14 @@ struct CountdownEditorView: View {
 
     init(
         countdown: CustomCountdown?,
-        onSave: @escaping (String, Date) async -> Bool,
+        onSave: @escaping (String, Date, Bool) async -> Bool,
         onDelete: @escaping () async -> Bool = { false }
     ) {
         self.countdown = countdown
         self.onSave = onSave
         self.onDelete = onDelete
         _title = State(initialValue: countdown?.title ?? "")
+        _repeatsYearly = State(initialValue: countdown?.repeatsYearly ?? false)
         let existingDay = countdown.flatMap { try? PairingStartDate(rawValue: $0.targetDate) }?.date()
         _day = State(initialValue: existingDay ?? Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date())
     }
@@ -80,11 +83,13 @@ struct CountdownEditorView: View {
                 characterLimit: CustomCountdown.maxTitleLength
             )
 
-            DatePicker(selection: $day, in: earliestDay..., displayedComponents: .date) {
+            DatePicker(selection: $day, in: earliestPickableDay..., displayedComponents: .date) {
                 Text(.homeMilestoneCountdownDateLabel)
             }
             .datePickerStyle(.graphical)
             .tint(.paeoniaAccentPrimary)
+
+            repeatsYearlyToggle
 
             if countdown != nil {
                 Button(role: .destructive) {
@@ -100,6 +105,26 @@ struct CountdownEditorView: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space16)
         .padding(.bottom, PaeoniaSpacing.space40)
+    }
+
+    private var repeatsYearlyToggle: some View {
+        Toggle(isOn: $repeatsYearly) {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+                Text(.homeMilestoneCountdownRepeatsYearly)
+                    .font(PaeoniaTypography.body)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                Text(.homeMilestoneCountdownRepeatsYearlyHint)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+        }
+        .tint(.paeoniaAccentPrimary)
+        .disabled(isWorking)
+    }
+
+    /// A countdown that repeats can start on a day in the past, such as the day they met.
+    private var earliestPickableDay: Date {
+        repeatsYearly ? .distantPast : earliestDay
     }
 
     /// Today for a new countdown. A countdown whose day has passed keeps its own day
@@ -136,7 +161,7 @@ struct CountdownEditorView: View {
     private func save() {
         isWorking = true
         Task {
-            if await onSave(title, day) {
+            if await onSave(title, day, repeatsYearly) {
                 dismiss()
             }
             isWorking = false

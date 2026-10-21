@@ -38,6 +38,7 @@ nonisolated struct NotificationPreferences: Equatable, Sendable {
     var widgetUpdatesEnabled = true
     var memoriesEnabled = true
     var gamesEnabled = true
+    var dateRemindersEnabled = true
     var questionTime = QuestionTimeReminder()
 }
 
@@ -52,6 +53,7 @@ nonisolated extension NotificationPreferences {
             case .widgetUpdates: widgetUpdatesEnabled
             case .memories: memoriesEnabled
             case .games: gamesEnabled
+            case .dateReminders: dateRemindersEnabled
             }
         }
         set {
@@ -63,6 +65,7 @@ nonisolated extension NotificationPreferences {
             case .widgetUpdates: widgetUpdatesEnabled = newValue
             case .memories: memoriesEnabled = newValue
             case .games: gamesEnabled = newValue
+            case .dateReminders: dateRemindersEnabled = newValue
             }
         }
     }
@@ -76,6 +79,8 @@ nonisolated enum NotificationPreferenceKind: CaseIterable, Hashable, Sendable {
     case widgetUpdates
     case memories
     case games
+    /// Birthdays, the anniversary, milestones and countdowns.
+    case dateReminders
 
     var columnName: String {
         switch self {
@@ -93,6 +98,8 @@ nonisolated enum NotificationPreferenceKind: CaseIterable, Hashable, Sendable {
             "memories_enabled"
         case .games:
             "games_enabled"
+        case .dateReminders:
+            "date_reminders_enabled"
         }
     }
 }
@@ -196,6 +203,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
     let widgetUpdatesEnabled: Bool
     let memoriesEnabled: Bool
     let gamesEnabled: Bool
+    let dateRemindersEnabled: Bool
     let questionTimeEnabled: Bool
     let questionTimeMinutes: Int
 
@@ -208,6 +216,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
             widgetUpdatesEnabled: widgetUpdatesEnabled,
             memoriesEnabled: memoriesEnabled,
             gamesEnabled: gamesEnabled,
+            dateRemindersEnabled: dateRemindersEnabled,
             questionTime: QuestionTimeReminder(isEnabled: questionTimeEnabled, minutes: questionTimeMinutes)
         )
     }
@@ -220,6 +229,7 @@ nonisolated private struct NotificationPreferencesRow: Decodable {
         case widgetUpdatesEnabled = "widget_updates_enabled"
         case memoriesEnabled = "memories_enabled"
         case gamesEnabled = "games_enabled"
+        case dateRemindersEnabled = "date_reminders_enabled"
         case questionTimeEnabled = "question_time_enabled"
         case questionTimeMinutes = "question_time_minutes"
     }
