@@ -17,7 +17,7 @@ Agents do not build just to check that a change compiles. The developer runs sev
 
 To fix a compiler warning or error that reading the code can't settle, reproduce it in a small standalone file and run `scripts/swift-typecheck <file>`. It uses the app target's Swift settings and finishes in seconds. Try candidate fixes in the same file.
 
-Building and running the app on a device is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Use a connected device, or the shared simulator when none is connected, as [Devices And Simulators](../../AGENTS.md#devices-and-simulators) describes.
+Building and running the app on the shared simulator is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Never use a connected iPhone or iPad. [Devices And Simulators](../../AGENTS.md#devices-and-simulators) names the simulators to use.
 
 Do not run tests without asking. If you think a test run is needed, ask the developer. They run tests once all agents have finished. In the handoff, list what you did not verify and what to check on the device.
 
@@ -32,7 +32,7 @@ The developer uses these wrappers from the repository root:
 
 `XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh` also compiles the test targets. The pre-push hook runs it when Swift files change. CI runs it with `XCODE_BUILD_AGENT_FAIL_ON_WARNINGS=1`, so any compiler warning fails the iOS job.
 
-Agents in other worktrees share the connected device and the `Shared iPhone` simulator. `xcode-test-agent.sh` holds the `simulator` lock while it runs. It waits while any other run holds it, including one from the same worktree, since several agents can share a worktree. For a simulator session of several commands, such as `sim-sign-in` and end-to-end play, take the lock with `scripts/lock acquire simulator`, release it with `scripts/lock release simulator`, and see who holds what with `scripts/lock status`.
+Agents in other worktrees share the `Shared iPhone` simulator. `xcode-test-agent.sh` holds the `simulator` lock while it runs. It waits while any other run holds it, including one from the same worktree, since several agents can share a worktree. For a simulator session of several commands, such as `sim-sign-in` and end-to-end play, take the lock with `scripts/lock acquire simulator`, release it with `scripts/lock release simulator`, and see who holds what with `scripts/lock status`.
 
 ### Signing a simulator in
 

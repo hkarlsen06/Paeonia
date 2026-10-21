@@ -153,7 +153,7 @@ The developer may run multiple agents in parallel in the same worktree.
 
 - Run commands from the repository root unless explicitly stated otherwise.
 - Do not build just to check that your change compiles. The developer runs several agents at once and builds on their own device, which catches compile errors and warnings. A 10-minute agent build after a 10-minute change doubles the wait, and parallel builds fight over the simulator and DerivedData. Do not work around this with scratch copies of the repo or loops that wait for another agent's build. To settle a compiler warning or error, reproduce it in a small file with `scripts/swift-typecheck`.
-- Building and running the app on a device is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Keep those runs to what the investigation needs, and use the device or simulator that [Devices And Simulators](#devices-and-simulators) allows.
+- Building and running the app on the shared simulator is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Keep those runs to what the investigation needs, and use the simulator that [Devices And Simulators](#devices-and-simulators) allows.
 - Do not run tests without asking. If you think a test run is needed, ask the developer. They run tests themselves once all agents have finished. [Testing](#testing) says when a change needs a new test.
 - `swiftlint --quiet` on the files you touched is fine. In the handoff, list what you did not verify and what the developer should check on the device.
 - See [iOS verification](docs/agent-guides/ios-verification.md) for where each kind of iOS test lives and the wrapper commands the developer uses.
@@ -191,8 +191,8 @@ Most of the test weight sits on integration and end-to-end tests. Unit tests are
 
 Agents in several repos share this Mac, and simulators created by agents once filled its disk. Whenever the app or tests run:
 
-- Use a connected device first. `xcrun xctrace list devices` lists them. Pick an iPhone or iPad under `== Devices ==`, not the Mac and not one under `== Devices Offline ==`, and pass it as `platform=iOS,id=<UDID>`, for example `XCODE_TEST_AGENT_DESTINATION="platform=iOS,id=<UDID>" ./scripts/xcode-test-agent.sh`. If the device is locked, ask the developer to unlock it.
-- If no device is connected, use the one shared simulator, `Shared iPhone`, as `platform=iOS Simulator,name=Shared iPhone`. Agents in every worktree and every repo on this Mac use that same simulator.
+- Never run the app or tests on a connected iPhone or iPad. Those are the developer's own phones, even when `xcrun xctrace list devices` lists them.
+- Use the one shared simulator, `Shared iPhone`, as `platform=iOS Simulator,name=Shared iPhone`, for example `XCODE_TEST_AGENT_DESTINATION="platform=iOS Simulator,name=Shared iPhone" ./scripts/xcode-test-agent.sh`. Agents in every worktree and every repo on this Mac use that same simulator.
 - The only other simulator allowed is `Shared iPhone SE`, for checking layouts on a small screen. Use it only for that, and shut it down when you're done.
 - Always set `XCODE_TEST_AGENT_DESTINATION`. Without it, the test wrapper picks whatever simulator it finds first.
 - Do not create, clone or erase simulators, and do not boot any simulator other than these two. To clear the app's data, uninstall it (`xcrun simctl uninstall "Shared iPhone" no.paeonia.app`) instead of erasing the simulator.
