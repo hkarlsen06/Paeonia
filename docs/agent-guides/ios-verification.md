@@ -42,7 +42,7 @@ The app offers only Apple and Google sign-in. To sign the Debug build on a simul
 scripts/sim-sign-in "<simulator name or UDID>" <first|second>
 ```
 
-`first` is Hjalmar and `second` is Elena, the test couple. The session stays in the simulator's keychain, so this is needed once per simulator. Add `--reset` to switch a simulator to the other account.
+`first` is Shared and `second` is Panci, the test couple. The session stays in the simulator's keychain, so this is needed once per simulator. Add `--reset` to switch a simulator to the other account.
 
 ### Testing a branch's backend changes
 

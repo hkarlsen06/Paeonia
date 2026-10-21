@@ -4,7 +4,7 @@
 #
 #   scripts/sim-sign-in "<simulator name or UDID>" <first|second> [--reset]
 #
-# first is Hjalmar and second is Elena, the test couple. The app must already be
+# first is Shared and second is Panci, the test couple. The app must already be
 # installed on the simulator. The script mints a Clerk sign-in token that lasts
 # five minutes and launches the app with it. The Debug build signs in with it
 # when the app is signed out (DebugSignInTicket.swift), and the session then stays
@@ -28,8 +28,8 @@ usage() {
 [[ $# -ge 2 ]] || usage
 simulator=$1
 case $2 in
-  first) subject=user_3KotMzS9muNMHFj5RwslQR71BN6 ;;
-  second) subject=user_3Kp1v73mYRtkjX4GuoRzlUxW1ym ;;
+  first) subject=user_3L0rKRldjZR4q6hAlE6c14XRRqb ;;
+  second) subject=user_3L0pI98OZ6QWy1mJ5CoOcsFoYf5 ;;
   *) usage ;;
 esac
 reset=${3:-}
