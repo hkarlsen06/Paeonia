@@ -27,6 +27,7 @@ struct AppLockModelTests {
         var instant = ContinuousClock.now
     }
 
+    @MainActor
     private struct Fixture {
         let store = FakeStore()
         let authenticator = FakeAuthenticator()

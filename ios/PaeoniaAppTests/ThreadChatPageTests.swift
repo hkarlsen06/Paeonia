@@ -62,7 +62,7 @@ struct ThreadChatPageTests {
             ],
             user: fixture.ownerUserID,
             coupleID: fixture.question.coupleID,
-            subjectID: fixture.question.questionID
+            questionID: fixture.question.questionID
         ))
 
         #expect(viewModel.rounds.map(\.id) == [fixture.question.id])

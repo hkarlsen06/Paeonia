@@ -23,10 +23,12 @@ struct PaeoniaApp: App {
         if !Self.isHostingUnitTests {
             PaeoniaAnalytics.configure()
         }
+        let sessionIsActive: (@MainActor () -> Bool?)? = usesClerk ? Self.clerkSessionIsActive : nil
+        let appleIsLinked: (@MainActor () async -> Bool)? = usesClerk ? ClerkSignInMethodLinker.appleIsLinked : nil
         _rootViewModel = State(
             initialValue: RootViewModel(
-                authProviderSessionIsActive: usesClerk ? Self.clerkSessionIsActive : nil,
-                appleIsLinked: usesClerk ? { await ClerkSignInMethodLinker.appleIsLinked() } : nil
+                authProviderSessionIsActive: sessionIsActive,
+                appleIsLinked: appleIsLinked
             )
         )
         _locationViewModel = State(initialValue: LocationMapViewModel())

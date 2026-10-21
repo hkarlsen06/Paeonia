@@ -92,7 +92,7 @@ nonisolated enum NotificationQuickActionHandler {
         guard !body.isEmpty else { return }
         guard push.type == "thread_message_sent",
               let coupleID = push.coupleID,
-              let threadID = push.threadID,
+              push.threadID != nil,
               let ownerUserID = await signedInUserID()
         else {
             await FailureNotice.post(.replyNotSent, replyText: body)

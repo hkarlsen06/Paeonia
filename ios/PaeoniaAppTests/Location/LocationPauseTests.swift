@@ -190,7 +190,7 @@ struct LocationPauseSharingChoiceTests {
         #expect(stored.viewerPausedUntil == newer)
     }
 
-    @Test func mapShowsThePauseUntilItsTimeAndThenStopsShowingIt() {
+    @MainActor @Test func mapShowsThePauseUntilItsTimeAndThenStopsShowingIt() {
         let end = now.addingTimeInterval(3_600)
         let snapshot = serverSnapshot(pausedUntil: end)
 

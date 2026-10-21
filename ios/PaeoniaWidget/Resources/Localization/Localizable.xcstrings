@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@" : {
+
+    },
     "widget.description" : {
       "comment" : "Widget gallery description for the Paeonia widget.",
       "extractionState" : "manual",
