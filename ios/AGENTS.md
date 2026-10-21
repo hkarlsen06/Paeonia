@@ -10,6 +10,15 @@ Use SwiftUI, feature-first organization, and the existing MVVM/storage boundarie
 
 Paths and commands in the linked guides are relative to the repository root. Read relevant details rather than all guides for every edit.
 
+## Partner names
+
+A person can give their partner a nickname, and the server keeps it private to them. Every screen, widget and VoiceOver label shows the nickname where it would show the partner's name.
+
+- `PartnerName` (`PaeoniaApp/Services/Access/PartnerName.swift`) is the one place that decides the name. `AccessRouteResolution.partnerName` builds it from the access snapshot. Views and view models take the resolved name (`display`, `displayOrFallback`, or the `partnerDisplayName` strings that already hold it) and pass it down. A new feature that needs the partner's name takes it from the same place, never from a new server field.
+- The partner's own name is `PartnerName.accountName` and `RemoteRelationshipState.partnerAccountName`. Only `PartnerName.swift` and `Features/Settings/PartnerNickname/` read it. The SwiftLint rule `partner_account_name_read` (`.swiftlint.yml`) flags a read anywhere else, and `no_raw_display_name_key` flags a new response model that decodes a server `display_name`.
+- A widget gets the name through App Group data that the app writes from the resolved name (`WidgetSyncIdentityStore`) or from a server field that already applied the nickname (`LockScreenSnapshot.Partner.name`). Push titles and `sender_name` come from the server, which applies the nickname for the recipient.
+- The server cannot show a nickname in a name it did not resolve, so a new backend field that carries a partner's name must go through `nameForViewer` (see `backend/AGENTS.md`).
+
 ## Live data
 
 - Convex subscriptions hydrate the local store. They never feed views directly. View models re-read the store when `LocalStoreChanges.changes(in:)` reports a write, and they keep reading local data first.

@@ -37,8 +37,7 @@ struct DailyQuestionLockScreenView: View {
     }
 
     private var partnerName: String {
-        let name = entry.snapshot?.partner?.displayName?.split(separator: " ").first.map(String.init)
-        return name ?? String(localized: .widgetLockScreenPartnerFallback)
+        entry.snapshot?.partner?.shortName ?? String(localized: .widgetLockScreenPartnerFallback)
     }
 }
 #endif

@@ -70,8 +70,14 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
         self.snapshot = snapshot
     }
 
+    /// What this person calls their partner. Nil without a relationship.
+    var partnerName: PartnerName? {
+        snapshot.relationshipState?.partnerName
+    }
+
+    /// The partner's name as this person sees it: their nickname, otherwise the partner's own name.
     var partnerDisplayName: String? {
-        snapshot.relationshipState?.partnerDisplayName?.trimmedNonEmpty
+        partnerName?.display
     }
 
     var partnerUserID: UUID? {

@@ -41,14 +41,16 @@ extension PaeoniaWidgetRefreshService {
 
     struct CanvasState: Decodable {
         let activeRevisionID: UUID?
-        let activeRevisionAuthorUserID: UUID?
+        /// What this person calls the author, decided by the server (their nickname for the
+        /// partner when they set one).
+        let activeRevisionAuthorName: String?
         let payloadMediaAssetID: UUID?
         let bounds: DrawingBounds?
         let revisionCreatedAt: Date?
 
         enum CodingKeys: String, CodingKey {
             case activeRevisionID = "active_revision_id"
-            case activeRevisionAuthorUserID = "active_revision_author_user_id"
+            case activeRevisionAuthorName = "active_revision_author_name"
             case payloadMediaAssetID = "payload_media_asset_id"
             case bounds
             case revisionCreatedAt = "revision_created_at"
@@ -112,7 +114,7 @@ extension PaeoniaWidgetRefreshService {
         let contentHash: String
         let canvasSide: Double
         let revisionID: UUID
-        let authorUserID: UUID?
+        let authorName: String?
         let createdAt: Date
     }
 
@@ -158,26 +160,16 @@ extension PaeoniaWidgetRefreshService {
         }
     }
 
+    /// The person's own name, saved by the app. A first-day drawing has no partner, so the server
+    /// has no author name to give.
     struct WidgetIdentity {
-        let currentUserID: UUID?
         let currentDisplayName: String?
-        let partnerDisplayName: String?
 
         static func load() -> WidgetIdentity {
-            let defaults = UserDefaults(suiteName: appGroupIdentifier)
-            return WidgetIdentity(
-                currentUserID: defaults?
-                    .string(forKey: "paeonia.widgetSync.currentUserID")
-                    .flatMap(UUID.init(uuidString:)),
-                currentDisplayName: defaults?
-                    .string(forKey: "paeonia.widgetSync.currentDisplayName"),
-                partnerDisplayName: defaults?
-                    .string(forKey: "paeonia.widgetSync.partnerDisplayName")
+            WidgetIdentity(
+                currentDisplayName: UserDefaults(suiteName: appGroupIdentifier)?
+                    .string(forKey: "paeonia.widgetSync.currentDisplayName")
             )
-        }
-
-        func authorName(for authorUserID: UUID?) -> String? {
-            authorUserID == currentUserID ? currentDisplayName : partnerDisplayName
         }
     }
 }

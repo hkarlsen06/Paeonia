@@ -28925,6 +28925,276 @@
         }
       }
     },
+    "settings.partnerNickname.field.label" : {
+      "comment" : "Accessibility label of the nickname text field.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nickname"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kallenavn"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.footer" : {
+      "comment" : "Explains the nickname screen. %@ is the partner's own name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only you see this. %@ won't be told. You'll see it in the app, on your widgets and in notifications."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare du ser dette. %@ får ikke vite det. Du ser det i appen, på widgetene dine og i varsler."
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.remove" : {
+      "comment" : "Row that removes the nickname so the partner's own name shows again.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use their own name again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk det vanlige navnet igjen"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.removed.message" : {
+      "comment" : "Banner message after the nickname is removed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll see their own name again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du ser det vanlige navnet deres igjen."
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.removed.title" : {
+      "comment" : "Banner title after the nickname is removed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nickname removed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kallenavn fjernet"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.row.empty" : {
+      "comment" : "Value on the Us tab nickname row while no nickname is set.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.row.title" : {
+      "comment" : "Us tab row that opens the nickname screen. %@ is the partner's own name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What you call %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hva du kaller %@"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.save" : {
+      "comment" : "Button that saves the nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save nickname"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre kallenavn"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.saved.message" : {
+      "comment" : "Banner message after the nickname is saved. %@ is the nickname.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll see %@ now. Only you can see this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nå ser du %@. Bare du kan se dette."
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.saved.title" : {
+      "comment" : "Banner title after the nickname is saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nickname saved"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kallenavn lagret"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.saveFailed.offline" : {
+      "comment" : "Banner message when the nickname could not be saved because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again. Your nickname is still here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk tilkoblingen og prøv igjen. Kallenavnet ditt står der fortsatt."
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.saveFailed.other" : {
+      "comment" : "Banner message when the nickname could not be saved for another reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. Your nickname is still here, so you can try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt. Kallenavnet ditt står der fortsatt, så du kan prøve igjen om litt."
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.saveFailed.title" : {
+      "comment" : "Banner title when the nickname could not be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save the nickname"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre kallenavnet"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.title" : {
+      "comment" : "Title of the screen where someone sets a nickname for their partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nickname"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kallenavn"
+          }
+        }
+      }
+    },
+    "settings.partnerNickname.tooLong" : {
+      "comment" : "Shown under the nickname field when it is too long. %lld is the most characters allowed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use %lld characters or fewer."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk høyst %lld tegn."
+          }
+        }
+      }
+    },
     "settings.profile.fallbackName" : {
       "extractionState" : "manual",
       "localizations" : {

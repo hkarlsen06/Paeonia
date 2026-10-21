@@ -92,7 +92,7 @@ struct SubscriptionDetailsTests {
                 memberStatus: .active,
                 acceptedInvite: false,
                 partnerUserID: partner,
-                partnerDisplayName: partnerName,
+                partnerAccountName: partnerName,
                 partnerProfilePhotoAssetID: nil,
                 startedOn: nil,
                 endedAt: nil,

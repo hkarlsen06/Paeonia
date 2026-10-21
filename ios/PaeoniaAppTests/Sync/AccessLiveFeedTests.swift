@@ -40,10 +40,26 @@ struct AccessLiveFeedTests {
         #expect(await waitUntil { (try? await env.store.load(ownerUserID: ownerUserID)) != nil })
         let stored = try await env.store.load(ownerUserID: ownerUserID)
         #expect(stored?.relationshipState?.coupleID == coupleID)
-        #expect(stored?.relationshipState?.partnerDisplayName == "Alex")
+        #expect(stored?.relationshipState?.partnerName.display == "Alex")
         #expect(stored?.coupleEntitlement?.isEntitled == true)
         #expect(stored?.userEntitlement?.userID == ownerUserID)
         #expect(env.transport.paths.value == ["access:get_access_snapshot"])
+        await env.stop()
+    }
+
+    @Test func aNewNicknameReplacesTheStoredSnapshot() async throws {
+        let env = AccessFeedEnv(ownerUserID: ownerUserID)
+        await env.start()
+        try env.transport.send([RemoteAccessSnapshot.paired(ownerUserID: ownerUserID, coupleID: coupleID)])
+        #expect(await waitUntil { (try? await env.store.load(ownerUserID: ownerUserID)) != nil })
+
+        try env.transport.send([
+            RemoteAccessSnapshot.paired(ownerUserID: ownerUserID, coupleID: coupleID, partnerNickname: "Babe")
+        ])
+
+        #expect(await waitUntil {
+            (try? await env.store.load(ownerUserID: ownerUserID))?.relationshipState?.partnerName.display == "Babe"
+        })
         await env.stop()
     }
 
@@ -66,7 +82,7 @@ struct AccessLiveFeedTests {
             (try? await env.store.load(ownerUserID: ownerUserID))?.relationshipState?.startedOn == "2025-01-02"
         })
         let stored = try await env.store.load(ownerUserID: ownerUserID)
-        #expect(stored?.relationshipState?.partnerDisplayName == "Alexandra")
+        #expect(stored?.relationshipState?.partnerName.display == "Alexandra")
         await env.stop()
     }
 
@@ -173,6 +189,7 @@ extension RemoteAccessSnapshot {
         ownerUserID: UUID,
         coupleID: UUID,
         partnerDisplayName: String = "Alex",
+        partnerNickname: String? = nil,
         startedOn: String = "2024-06-24",
         status: RemoteRelationshipStatus = .active,
         memberStatus: RemoteRelationshipMemberStatus = .active,
@@ -207,7 +224,8 @@ extension RemoteAccessSnapshot {
                 memberStatus: memberStatus,
                 acceptedInvite: false,
                 partnerUserID: partnerUserID,
-                partnerDisplayName: partnerDisplayName,
+                partnerAccountName: partnerDisplayName,
+                partnerNickname: partnerNickname,
                 partnerProfilePhotoAssetID: nil,
                 startedOn: startedOn,
                 endedAt: nil,

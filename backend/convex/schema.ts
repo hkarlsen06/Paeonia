@@ -610,6 +610,9 @@ export default defineSchema({
     status: memberStatus,
     // Either partner can set either member's birthday. It belongs to this relationship only.
     birthday: v.optional(date),
+    // What this member calls their partner. Only this member reads it, and it belongs to this
+    // relationship only: `endRelationshipForPair` clears it. Read it through `lib/partnerNames.ts`.
+    partner_nickname: v.optional(v.string()),
     joined_at: ts,
     left_at: optTs,
     ended_notice_seen_at: optTs,

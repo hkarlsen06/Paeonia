@@ -25,7 +25,7 @@ struct TheirTimeLockScreenView: View {
 
     private func rectangular(_ clock: LockScreenPartnerClock, partner: LockScreenSnapshot.Partner) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Label { Text(firstName(partner.displayName)) } icon: { Image(systemName: "clock") }
+            Label { Text(partnerName(partner)) } icon: { Image(systemName: "clock") }
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
                 .widgetAccentable()
@@ -41,9 +41,8 @@ struct TheirTimeLockScreenView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func firstName(_ displayName: String?) -> String {
-        let name = displayName?.split(separator: " ").first.map(String.init)
-        return name ?? String(localized: .widgetLockScreenPartnerFallback)
+    private func partnerName(_ partner: LockScreenSnapshot.Partner) -> String {
+        partner.shortName ?? String(localized: .widgetLockScreenPartnerFallback)
     }
 
     private func offsetText(_ offset: LockScreenPartnerClock.Offset) -> String {

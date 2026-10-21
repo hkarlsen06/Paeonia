@@ -320,7 +320,7 @@ export async function resolveDailyPartnerPush(
     push: {
       kind,
       payload,
-      title: await notificationAlertTitle(ctx, kind, payload, locale),
+      title: await notificationAlertTitle(ctx, recipientId, kind, payload, locale),
       body: notificationAlertBody(kind, payload, locale) ?? undefined,
     },
   };

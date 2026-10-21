@@ -38,7 +38,7 @@ nonisolated struct SubscriptionDetails: Equatable, Sendable {
             periodEnd = status == .lifetime ? nil : couple.currentPeriodEnd
             payer = couple.coveringUserID == snapshot.userEntitlement?.userID
                 ? .you
-                : .partner(name: snapshot.relationshipState?.partnerDisplayName)
+                : .partner(name: snapshot.relationshipState?.partnerName.display)
             return
         }
 

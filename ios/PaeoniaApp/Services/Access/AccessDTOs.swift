@@ -80,7 +80,11 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
     /// This person joined with the partner's invite code.
     let acceptedInvite: Bool
     let partnerUserID: UUID?
-    let partnerDisplayName: String?
+    /// The partner's own name. Read the name to show through `partnerName`, which applies this
+    /// person's nickname for the partner.
+    let partnerAccountName: String?
+    /// What this person calls their partner. The server sends it only to them.
+    var partnerNickname: String?
     let partnerProfilePhotoAssetID: UUID?
     let startedOn: String?
     let endedAt: Date?
@@ -94,12 +98,18 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
         case memberStatus = "member_status"
         case acceptedInvite = "accepted_invite"
         case partnerUserID = "partner_user_id"
-        case partnerDisplayName = "partner_display_name"
+        case partnerAccountName = "partner_account_name"
+        case partnerNickname = "partner_nickname"
         case partnerProfilePhotoAssetID = "partner_profile_photo_asset_id"
         case startedOn = "started_on"
         case endedAt = "ended_at"
         case deleteAfter = "delete_after"
         case endedNoticeSeenAt = "ended_notice_seen_at"
+    }
+
+    /// What this person calls their partner. The one way to get a partner's name for display.
+    var partnerName: PartnerName {
+        PartnerName(accountName: partnerAccountName, nickname: partnerNickname)
     }
 
     var isActiveRelationship: Bool {
@@ -118,7 +128,8 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
             memberStatus: memberStatus,
             acceptedInvite: acceptedInvite,
             partnerUserID: partnerUserID,
-            partnerDisplayName: partnerDisplayName,
+            partnerAccountName: partnerAccountName,
+            partnerNickname: partnerNickname,
             partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
             startedOn: startedOn,
             endedAt: endedAt,

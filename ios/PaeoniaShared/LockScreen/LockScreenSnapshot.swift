@@ -99,12 +99,29 @@ nonisolated struct LockScreenSnapshot: Codable, Equatable, Sendable {
     var games: Games
 
     struct Partner: Codable, Equatable, Sendable {
-        var displayName: String?
+        /// What this person calls their partner, decided by the server: their nickname for the
+        /// partner when they set one, otherwise the partner's own name.
+        var name: String?
+        /// True when `name` is the nickname.
+        var usesNickname: Bool
         var timeZoneID: String?
 
         enum CodingKeys: String, CodingKey {
-            case displayName = "display_name"
+            case name
+            case usesNickname = "uses_nickname"
             case timeZoneID = "time_zone_id"
+        }
+
+        /// The name for a small widget. A nickname shows whole. The partner's own name shows as its
+        /// first word.
+        var shortName: String? {
+            guard let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
+                return nil
+            }
+            if usesNickname {
+                return name
+            }
+            return name.split(separator: " ").first.map(String.init)
         }
     }
 

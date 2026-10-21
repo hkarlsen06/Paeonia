@@ -85,7 +85,8 @@ describe("prepare_notification", () => {
       apns_environment: "sandbox",
       apns_push_type: "alert",
       apns_collapse_id: null,
-      title: "Alex",
+      // The title is written again for the recipient when the send is prepared.
+      title: "Your partner added a memory",
       body: "Open Paeonia to see it.",
       payload: { type: "memory_created", route: "memories" },
       deliver_quietly: false,

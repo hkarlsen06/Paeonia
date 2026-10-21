@@ -22,6 +22,19 @@ export async function deleteLatestLocationsForCouple(ctx: WriterCtx, coupleId: s
   }
 }
 
+/** Clears both members' nicknames for each other. Returns the rows changed. */
+export async function clearPartnerNicknames(ctx: WriterCtx, coupleId: string): Promise<number> {
+  const members = await ctx.db
+    .query("couple_members")
+    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId))
+    .collect();
+  const withNickname = members.filter((member) => member.partner_nickname !== undefined);
+  for (const member of withNickname) {
+    await ctx.db.patch(member._id, withUpdatedAt({ partner_nickname: undefined }));
+  }
+  return withNickname.length;
+}
+
 /**
  * Port of `internal.end_relationship_for_pair`. Ends the pair's active couple,
  * marks the initiator as left and the partner as ended_notice_pending, writes a
@@ -59,6 +72,8 @@ export async function endRelationshipForPair(
   await ctx.db.patch(couple._id, withUpdatedAt({ status: "ended" as const, ended_at: now, delete_after: cleanupDeadline }));
   await deleteLatestLocationsForCouple(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
+  // A nickname is a private note about one person, so it ends with the relationship.
+  await clearPartnerNicknames(ctx, couple.id);
   // Open game screens and typing dots of both partners go at once.
   await removePresenceRooms(ctx, members.map((member) => member.user_id), `${couple.id}:`);
   await ctx.db.patch(initiator._id, withUpdatedAt({ status: "left" as const, left_at: now }));

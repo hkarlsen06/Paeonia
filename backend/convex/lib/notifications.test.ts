@@ -68,8 +68,8 @@ describe("notification copy", () => {
       for (const gameKind of [uncopied, "constructor", undefined]) {
         const payload = { game_kind: gameKind, actor_user_id: couple.first.userId };
         for (const kind of pushKinds) {
-          expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "en"))).toBe("Something new from First Partner");
-          expect(await t.run((ctx) => notificationAlertTitle(ctx, kind, payload, "nb"))).toBe("Noe nytt fra First Partner");
+          expect(await t.run((ctx) => notificationAlertTitle(ctx, couple.second.userId, kind, payload, "en"))).toBe("Something new from First Partner");
+          expect(await t.run((ctx) => notificationAlertTitle(ctx, couple.second.userId, kind, payload, "nb"))).toBe("Noe nytt fra First Partner");
         }
         expect(notificationAlertBody("game_turn_ready", payload, "en")).toBe("Pick up where you left off.");
         expect(notificationAlertBody("game_result", payload, "nb")).toBe("Fortsett der dere slapp.");
@@ -128,8 +128,8 @@ describe("notification copy", () => {
     test("without a partner name the result title says 'Your partner'", async () => {
       const t = newTest();
       const payload = { game_kind: "draw_and_guess", actor_user_id: newUuid() };
-      expect(await t.run((ctx) => notificationAlertTitle(ctx, "game_result", payload, "en"))).toBe("Your partner guessed your drawing");
-      expect(await t.run((ctx) => notificationAlertTitle(ctx, "game_invite", payload, "nb"))).toBe("Partneren din vil spille Tegn og gjett med deg");
+      expect(await t.run((ctx) => notificationAlertTitle(ctx, newUuid(), "game_result", payload, "en"))).toBe("Your partner guessed your drawing");
+      expect(await t.run((ctx) => notificationAlertTitle(ctx, newUuid(), "game_invite", payload, "nb"))).toBe("Partneren din vil spille Tegn og gjett med deg");
     });
   });
 
@@ -225,7 +225,7 @@ describe("enqueueNotificationForUser", () => {
     const couple = await createCouple(t);
     await addDevice(t, couple.second.userId, { locale: "en" });
     expect(
-      await t.run((ctx) => notificationAlertTitle(ctx, "thread_message_sent", { sender_user_id: newUuid() }, "en")),
+      await t.run((ctx) => notificationAlertTitle(ctx, couple.second.userId, "thread_message_sent", { sender_user_id: newUuid() }, "en")),
     ).toBe("Your partner");
     await t.run((ctx) =>
       enqueueNotificationForUser(ctx, {

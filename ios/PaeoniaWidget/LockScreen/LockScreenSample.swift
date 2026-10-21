@@ -9,7 +9,7 @@ extension LockScreenSnapshot {
         let startOfToday = calendar.startOfDay(for: now)
         return LockScreenSnapshot(
             generatedAt: now,
-            partner: Partner(displayName: "Alex", timeZoneID: "Asia/Tokyo"),
+            partner: Partner(name: "Alex", usesNickname: false, timeZoneID: "Asia/Tokyo"),
             startedOn: LockScreenCalendarDate(containing: now.addingTimeInterval(-412 * dayLength), in: calendar),
             upcomingCountdowns: [
                 Countdown(

@@ -17,6 +17,7 @@ import { checkViolation, fail } from "./lib/errors";
 import { newUuid, optionalTimestampArg, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { signLiveTicket } from "./lib/liveTicket";
 import { readLockScreenState } from "./lib/lockScreenState";
+import { nameForViewer } from "./lib/partnerNames";
 import { btrim, btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
 import {
@@ -196,6 +197,9 @@ export const get_widget_canvas = query({
         active_revision_moderation_status: orNull(revision?.moderation_status),
         active_revision_deleted_at: orNull(revision?.deleted_at),
         active_revision_author_user_id: visible ? revision!.author_user_id : null,
+        // What the caller calls the author (their nickname for the partner, or the author's own
+        // name). The Home Screen widget labels the drawing with it.
+        active_revision_author_name: visible ? await nameForViewer(ctx, userId, revision!.author_user_id) : null,
         payload_media_asset_id,
         ...rest,
         revision_created_at: visible ? revision!.created_at : null,

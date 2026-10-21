@@ -223,7 +223,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
             return false
         }
         if revisionID.uuidString == defaults.string(forKey: Self.lastSyncedKey) {
-            return true
+            return !(await needsRelabel(of: state, identity: identity))
         }
         // Our own latest revision is already on this device; just mark it seen
         // so we never pull it back over newer local work.
@@ -233,6 +233,20 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
             return true
         }
         return false
+    }
+
+    /// True when the partner's drawing on this device carries another name than the one this
+    /// person now sees for the partner, for example after setting a nickname. The drawing is
+    /// published again with the new name. A drawing saved without a name stays as it is.
+    private func needsRelabel(of state: WidgetCanvasState, identity: WidgetSyncIdentity) async -> Bool {
+        guard let authorID = state.activeRevisionAuthorUserID,
+              authorID != identity.currentUserID,
+              let shownName = await localStore.loadSavedSnapshot()?.authorName,
+              let currentName = Self.authorName(for: authorID, identity: identity)
+        else {
+            return false
+        }
+        return shownName != currentName
     }
 
     /// Downloads the partner's revision, persists it (which re-renders previews

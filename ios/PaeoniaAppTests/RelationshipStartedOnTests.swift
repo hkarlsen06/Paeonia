@@ -134,7 +134,7 @@ struct RelationshipStartedOnDataServiceTests {
             memberStatus: .active,
             acceptedInvite: false,
             partnerUserID: UUID(uuidString: "66666666-6666-6666-6666-666666666666"),
-            partnerDisplayName: "Alex",
+            partnerAccountName: "Alex",
             partnerProfilePhotoAssetID: nil,
             startedOn: startedOn,
             endedAt: nil,

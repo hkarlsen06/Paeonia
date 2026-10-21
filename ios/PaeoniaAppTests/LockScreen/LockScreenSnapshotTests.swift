@@ -6,7 +6,7 @@ struct LockScreenSnapshotTests {
     static let sampleJSON = """
     {
       "generated_at": "2026-10-17T09:15:30.123Z",
-      "partner": { "display_name": "Elena Hansen", "time_zone_id": "Asia/Kolkata" },
+      "partner": { "name": "Elena Hansen", "uses_nickname": false, "time_zone_id": "Asia/Kolkata" },
       "started_on": "2025-08-31",
       "upcoming_countdowns": [
         { "id": "c1", "title": "Trip to Bergen", "target_date": "2026-10-29", "created_at": "2026-09-01T10:00:00Z" },
@@ -27,7 +27,8 @@ struct LockScreenSnapshotTests {
     @Test func decodesContractWithFractionalAndWholeSecondTimestamps() throws {
         let snapshot = try LockScreenSnapshot.decode(Data(Self.sampleJSON.utf8))
 
-        #expect(snapshot.partner?.displayName == "Elena Hansen")
+        #expect(snapshot.partner?.name == "Elena Hansen")
+        #expect(snapshot.partner?.shortName == "Elena")
         #expect(snapshot.partner?.timeZoneID == "Asia/Kolkata")
         #expect(snapshot.startedOn == LockScreenCalendarDate(year: 2_025, month: 8, day: 31))
         #expect(snapshot.upcomingCountdowns.count == 2)
@@ -40,6 +41,16 @@ struct LockScreenSnapshotTests {
         #expect(snapshot.dailyQuestion == .init(meAnswered: false, partnerAnswered: true))
         #expect(snapshot.games == .init(myTurnCount: 2, firstMyTurnKind: "draw_and_guess"))
         #expect(abs(snapshot.generatedAt.timeIntervalSince1970 - 1_792_228_530.123) < 0.001)
+    }
+
+    @Test func shortNameKeepsANicknameWholeAndCutsAnAccountNameToItsFirstWord() {
+        let nickname = LockScreenSnapshot.Partner(name: "My love", usesNickname: true, timeZoneID: nil)
+        let accountName = LockScreenSnapshot.Partner(name: "Elena Hansen", usesNickname: false, timeZoneID: nil)
+        let unknown = LockScreenSnapshot.Partner(name: nil, usesNickname: false, timeZoneID: nil)
+
+        #expect(nickname.shortName == "My love")
+        #expect(accountName.shortName == "Elena")
+        #expect(unknown.shortName == nil)
     }
 
     @Test func decodesNullsAndEmptyLists() throws {

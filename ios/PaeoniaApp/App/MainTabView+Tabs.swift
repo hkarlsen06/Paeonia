@@ -191,6 +191,7 @@ extension MainTabView {
             currentProviderProfilePhotoAssetID: identity.currentProviderProfilePhotoAssetID,
             currentAuthProvider: identity.currentAuthProvider,
             partnerUserID: identity.partnerUserID,
+            partner: identity.partnerName,
             partnerProfilePhotoAssetID: identity.partnerProfilePhotoAssetID,
             relationshipStartedOn: milestoneViewModel.startedOn,
             milestoneIsSaving: milestoneViewModel.isSaving,
