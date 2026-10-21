@@ -25,7 +25,7 @@ final class AccountJourneyUITests: XCTestCase {
         confirm(app, row: "settings.account.leave", button: "settings.account.leave.confirm")
 
         XCTAssertTrue(app.buttons["pairing.share"].waitForExistence(timeout: 10))
-        XCTAssertFalse(app.buttons["mainTab.us"].exists)
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
     }
 
     @MainActor
@@ -43,8 +43,12 @@ final class AccountJourneyUITests: XCTestCase {
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-paired"
         app.launch()
 
-        let usTab = app.buttons["mainTab.us"]
-        XCTAssertTrue(usTab.waitForExistence(timeout: 10))
+        // With five tabs the system tab bar drops the tabs' accessibility identifiers, so
+        // the Us tab is found by its place: the last of home, questions, games, memories, us.
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 10))
+        let usTab = tabBar.buttons.element(boundBy: 4)
+        XCTAssertTrue(usTab.waitForExistence(timeout: 5))
         usTab.tap()
 
         let profileRow = app.buttons["settings.profile"]
@@ -63,7 +67,8 @@ final class AccountJourneyUITests: XCTestCase {
         XCTAssertTrue(rowButton.waitForExistence(timeout: 5))
         rowButton.tap()
 
-        let confirmButton = app.alerts.buttons[button]
+        // An alert action shows as a button inside a button with the same identifier.
+        let confirmButton = app.alerts.buttons.matching(identifier: button).firstMatch
         XCTAssertTrue(confirmButton.waitForExistence(timeout: 5))
         confirmButton.tap()
     }
