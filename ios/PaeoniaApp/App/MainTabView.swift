@@ -9,7 +9,8 @@ struct MainTabIdentity: Equatable {
     var currentProviderProfilePhotoAssetID: UUID?
     var currentAuthProvider: AuthProvider?
     var partnerUserID: UUID?
-    var partnerDisplayName: String?
+    /// What this person calls their partner. Show `partnerDisplayName`, never the partner's own name.
+    var partnerName: PartnerName?
     var partnerProfilePhotoAssetID: UUID?
     /// The active couple, needed to create new memories. Cosmetic for the rest of the
     /// tabs, so it must not be part of any load-bearing `.task(id:)` key.
@@ -17,6 +18,11 @@ struct MainTabIdentity: Equatable {
     /// The day the relationship started (`yyyy-MM-dd`), used by the Home tab milestone
     /// countdown. Display-only, so it never keys a load.
     var relationshipStartedOn: String?
+
+    /// The partner's name as this person sees it: their nickname, otherwise the partner's own name.
+    var partnerDisplayName: String? {
+        partnerName?.display
+    }
 }
 
 /// Root-owned work the tabs ask for.
@@ -315,7 +321,7 @@ struct MainTabView: View {
             currentUserID: UUID(uuidString: "11111111-1111-1111-1111-111111111111"),
             currentDisplayName: "Hjalmar",
             partnerUserID: UUID(uuidString: "22222222-2222-2222-2222-222222222222"),
-            partnerDisplayName: "Oda",
+            partnerName: PartnerName(accountName: "Oda", nickname: nil),
             coupleID: UUID(uuidString: "33333333-3333-3333-3333-333333333333"),
             relationshipStartedOn: "2026-01-08"
         ),

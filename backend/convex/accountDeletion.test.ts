@@ -133,6 +133,8 @@ describe("request_account_deletion", () => {
     const t = newTest();
     const couple = await appleCoupleWithData(t);
     const { first, second } = couple;
+    await first.as.mutation(api.partnerNickname.set_partner_nickname, { p_nickname: "Babe" });
+    await second.as.mutation(api.partnerNickname.set_partner_nickname, { p_nickname: "Honey" });
 
     const [start] = await first.as.mutation(api.identity.request_account_deletion, {});
     expect(start).toMatchObject({
@@ -172,6 +174,8 @@ describe("request_account_deletion", () => {
     expect(state.couple!.delete_after! > state.couple!.ended_at!).toBe(true);
     const memberStatus = Object.fromEntries(state.members.map((member) => [member.user_id, member.status]));
     expect(memberStatus).toEqual({ [first.userId]: "left", [second.userId]: "ended_notice_pending" });
+    // Nicknames are private notes about the other person, so neither member keeps one.
+    expect(state.members.map((member) => member.partner_nickname)).toEqual([undefined, undefined]);
     expect(state.events.some((event) => event.user_id === second.userId && event.reason === "account_deletion")).toBe(true);
     expect(state.profile).toMatchObject({ moderation_status: "hidden", deleted_at: NOW });
     expect(state.profile!.display_name).toBeUndefined();

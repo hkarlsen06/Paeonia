@@ -1693,7 +1693,7 @@ describe("push copy", () => {
     const payload = { game_kind: kind, actor_user_id: couple.first.userId };
     for (const language of ["en", "nb"] as const) {
       for (const push of ["game_turn_ready", "game_turn_reminder", "game_result", "game_invite"] as const) {
-        const title = await t.run((ctx) => notificationAlertTitle(ctx, push, payload, language));
+        const title = await t.run((ctx) => notificationAlertTitle(ctx, couple.second.userId, push, payload, language));
         expect([title, notificationAlertBody(push, payload, language)]).toEqual(WORDING[language][push](NAMES[kind][language]));
       }
     }

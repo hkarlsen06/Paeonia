@@ -129,7 +129,7 @@
             currentDisplayName: "Alex",
             currentAuthProvider: .development,
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
-            partnerDisplayName: "Robin",
+            partnerName: PartnerName(accountName: "Robin", nickname: nil),
             coupleID: DeveloperScenarioFixture.coupleID,
             relationshipStartedOn: "2025-09-14"
           ),

@@ -6,6 +6,7 @@ import type { WriterCtx } from "./db";
 import { checkViolation, fail } from "./errors";
 import { isJsonObject, jsonbByteLength } from "./json";
 import { newUuid } from "./ids";
+import { nameForViewer } from "./partnerNames";
 import {
   notificationAlertBody,
   notificationAlertTitle,
@@ -255,7 +256,7 @@ export async function enqueueNotificationForUser(
       dedupe_key: dedupeBase === "" ? null : `${dedupeBase}:${device.id}`,
       apns_push_type: pushType,
       apns_collapse_id: collapseId === "" ? null : collapseId,
-      title: pushType === "alert" ? await notificationAlertTitle(ctx, kind, args.payload, device.locale) : null,
+      title: pushType === "alert" ? await notificationAlertTitle(ctx, device.user_id, kind, args.payload, device.locale) : null,
       body: pushType === "alert" ? notificationAlertBody(kind, args.payload, device.locale) : null,
       scheduled_for: args.scheduled_for ?? null,
     });
@@ -520,11 +521,7 @@ export async function enqueueWidgetUpdateAlert(
   );
   if (!recipient) return 0;
 
-  const profile = await ctx.db
-    .query("profiles")
-    .withIndex("by_user_id", (q) => q.eq("user_id", args.author_user_id))
-    .unique();
-  const authorName = profile?.display_name?.trim() || null;
+  const authorName = await nameForViewer(ctx, recipient.user_id, args.author_user_id);
 
   const preference = await ctx.db
     .query("notification_preferences")

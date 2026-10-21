@@ -179,3 +179,31 @@ custom_rules:
     regex: '(?<![A-Za-z0-9_])print\s*\('
     message: Use the project logging or diagnostics infrastructure instead of print().
     severity: error
+
+  # The partner's own name shows through a nickname the person gave them. Views and view models take
+  # the resolved name from PartnerName (ios/PaeoniaApp/Services/Access/PartnerName.swift) and never
+  # read the partner's own name. Only the type and the nickname editor, which shows both, may.
+  partner_account_name_read:
+    name: Partner's own name read directly
+    regex: '(?<=\.)(partnerAccountName|accountName)\b'
+    match_kinds: identifier
+    excluded: 'Services/Access/PartnerName\.swift|Features/Settings/PartnerNickname/'
+    message: >-
+      This reads the partner's own name, which ignores the nickname the person gave them. Use
+      PartnerName.display or PartnerName.displayOrFallback (from AccessRouteResolution.partnerName, or the
+      partnerDisplayName that already holds the resolved name).
+    severity: error
+
+  # A server field called display_name holds a person's own name. The server sends the partner's name
+  # as partner_account_name next to partner_nickname, and PartnerName joins them. This catches a new
+  # response model that decodes a display_name for a partner and shows it as is. Own-profile, admin and
+  # invite-preview models are the only allowed places.
+  no_raw_display_name_key:
+    name: Raw display_name key
+    regex: '"[a-z_]*display_name"'
+    excluded: 'Features/Admin/|Services/Auth/|Services/Pairing/PairingModels\.swift|PaeoniaAppTests/'
+    message: >-
+      A display_name from the server is a person's own name. If it names the partner, ask the backend for
+      a name resolved with nameForViewer instead, or build a PartnerName. Add the file to this rule's
+      excluded list only for the signed-in person's own profile, admin tools or the invite preview.
+    severity: error

@@ -59,7 +59,7 @@ enum PaeoniaWidgetRefreshService {
         let client = try PaeoniaConvexClientProvider.shared.client()
         let remoteDrawing: RemoteDrawing?
         do {
-            remoteDrawing = try await loadRemoteDrawing(client: client)
+            remoteDrawing = try await loadRemoteDrawing(client: client, epoch: epoch)
         } catch let error as PaeoniaConvexError {
             guard case let .server(code, _) = error, code == PaeoniaConvexError.accessDeniedCode else {
                 throw error
@@ -76,13 +76,18 @@ enum PaeoniaWidgetRefreshService {
     }
 
     @MainActor
-    private static func loadRemoteDrawing(client: PaeoniaConvexClient) async throws -> RemoteDrawing? {
+    private static func loadRemoteDrawing(client: PaeoniaConvexClient, epoch: Int) async throws -> RemoteDrawing? {
         let states: FirstRow<CanvasState> = try await client.query("widget:get_widget_canvas")
         guard let state = states.row,
               let revisionID = state.activeRevisionID,
-              let mediaAssetID = state.payloadMediaAssetID,
-              !isPublished(revisionID: revisionID)
+              let mediaAssetID = state.payloadMediaAssetID
         else {
+            return nil
+        }
+        guard !isPublished(revisionID: revisionID) else {
+            // The drawing is on screen already. The server may name its author differently now,
+            // for example after the person set a nickname for their partner on another device.
+            try relabelPublishedPayload(authorName: state.activeRevisionAuthorName, epoch: epoch)
             return nil
         }
 
@@ -95,7 +100,7 @@ enum PaeoniaWidgetRefreshService {
             contentHash: downloaded.contentHash,
             canvasSide: state.bounds?.canvasSide ?? fallbackCanvasSide,
             revisionID: revisionID,
-            authorUserID: state.activeRevisionAuthorUserID,
+            authorName: state.activeRevisionAuthorName,
             createdAt: state.revisionCreatedAt ?? .now
         )
     }
@@ -237,10 +242,9 @@ enum PaeoniaWidgetRefreshService {
         epoch: Int,
         in containerURL: URL
     ) throws {
-        let authorName = WidgetIdentity.load().authorName(for: remoteDrawing.authorUserID)
         let payload = CurrentPayload(
             revisionID: remoteDrawing.revisionID.uuidString.lowercased(),
-            authorName: authorName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            authorName: remoteDrawing.authorName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             createdAt: remoteDrawing.createdAt,
             renderedAt: .now,
             contentHash: remoteDrawing.contentHash,
@@ -313,14 +317,49 @@ extension PaeoniaWidgetRefreshService {
             contentHash: downloaded.contentHash,
             canvasSide: drawing.bounds?.canvasSide ?? fallbackCanvasSide,
             revisionID: drawing.revisionID,
-            // The app saves the person's own name for this user ID.
-            authorUserID: WidgetIdentity.load().currentUserID,
+            // The app saves the person's own name.
+            authorName: WidgetIdentity.load().currentDisplayName,
             createdAt: drawing.savedAt
         )
         guard shouldPublish(remoteContentHash: remoteDrawing.contentHash) else {
             return
         }
         try publish(remoteDrawing, epoch: epoch)
+    }
+}
+
+// The author label of a drawing that is already on screen.
+extension PaeoniaWidgetRefreshService {
+    /// Writes the author name the server gives into `Widget/current.json` when it differs from the
+    /// stored one. The drawing and its previews stay as they are. Only the label changes, so a
+    /// name change reaches this device without a new revision.
+    @MainActor
+    private static func relabelPublishedPayload(authorName: String?, epoch: Int) throws {
+        guard let containerURL else {
+            return
+        }
+        let payloadURL = containerURL.appendingPathComponent(payloadPath)
+        guard let data = try? Data(contentsOf: payloadURL),
+              let stored = try? CurrentPayload.decoder.decode(CurrentPayload.self, from: data)
+        else {
+            return
+        }
+        let name = authorName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+        guard stored.authorName != name else {
+            return
+        }
+        let relabeled = CurrentPayload(
+            revisionID: stored.revisionID,
+            authorName: name,
+            createdAt: stored.createdAt,
+            renderedAt: stored.renderedAt,
+            contentHash: stored.contentHash,
+            previews: stored.previews,
+            canvasSide: stored.canvasSide
+        )
+        let payloadData = try CurrentPayload.encoder.encode(relabeled)
+        try requireUnchangedPrivacy(since: epoch)
+        try payloadData.write(to: payloadURL, options: .atomic)
     }
 }
 

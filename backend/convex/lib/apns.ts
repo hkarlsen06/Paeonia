@@ -89,7 +89,8 @@ export function errorMessage(error: unknown): string {
 
 /**
  * Background rows wake the app to sync. Alert rows show a localized lock-screen
- * banner whose title and body were written when the row was queued.
+ * banner. The title is written for the recipient when the send is prepared (`freshTitle` in pushQueue.ts),
+ * the body when the row was queued.
  * The payload privacy rules were applied at queue time, so this adds only `aps`.
  */
 export function buildAppApsPayload(notification: PreparedNotification): Record<string, unknown> {

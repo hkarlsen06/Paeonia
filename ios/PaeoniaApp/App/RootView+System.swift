@@ -87,6 +87,17 @@ extension RootView {
         }
     }
 
+    /// The name this person sees for their partner changed, either because they set or cleared a
+    /// nickname or because the partner renamed themselves. Saves the new name for the widgets,
+    /// relabels the drawing the Home Screen widget shows, and rebuilds the Lock Screen widgets.
+    func partnerNameChanged() {
+        guard allowsSystemIntegrations, viewModel.state == .paired else {
+            return
+        }
+        syncWidgetIfPaired(viewModel.state)
+        LockScreenWidgetReloader.reload()
+    }
+
     /// Pulls the partner's latest drawing (and our own latest) into the widget
     /// and in-app canvas whenever we're paired and the app comes forward.
     func syncWidgetIfPaired(_ state: AppState) {

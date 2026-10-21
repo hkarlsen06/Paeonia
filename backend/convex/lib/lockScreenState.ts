@@ -5,6 +5,7 @@ import { instancesOfDay, isLive, visibleAnswersOf } from "./dailyQuestions";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
 import { newestGame as newestMindMeldGame } from "./mindMeld";
+import { nameAndSourceForViewer } from "./partnerNames";
 import { findProfile } from "./profiles";
 import { getCoupleStreakParticipationForDay, readCoupleStreak } from "./streaks";
 import { addDaysToDate } from "./time";
@@ -143,6 +144,7 @@ export async function readLockScreenState(ctx: ReaderCtx, userId: string, now: s
   const couple = await getByUuid(ctx, "couples", coupleId);
   const partnerId = (await listActiveMembers(ctx, coupleId)).find((member) => member.user_id !== userId)?.user_id ?? null;
   const partnerProfile = partnerId === null ? null : await findProfile(ctx, partnerId);
+  const partnerName = partnerId === null ? null : await nameAndSourceForViewer(ctx, userId, partnerId);
 
   // The day row appears with the first activity of the day. Before that, the anchor gives the same window.
   const existingDay = await findCoupleDayAt(ctx, coupleId, now);
@@ -159,7 +161,13 @@ export async function readLockScreenState(ctx: ReaderCtx, userId: string, now: s
   return {
     generated_at: now,
     partner: partnerProfile
-      ? { display_name: partnerProfile.display_name ?? null, time_zone_id: partnerProfile.time_zone_id ?? null }
+      ? {
+          // The viewer's nickname for the partner when set. The widget shows a nickname whole and cuts a
+          // profile name to its first word.
+          name: partnerName?.name ?? null,
+          uses_nickname: partnerName?.usesNickname ?? false,
+          time_zone_id: partnerProfile.time_zone_id ?? null,
+        }
       : null,
     started_on: couple?.started_on ?? null,
     upcoming_countdowns: await upcomingCountdowns(ctx, coupleId, userId, now),

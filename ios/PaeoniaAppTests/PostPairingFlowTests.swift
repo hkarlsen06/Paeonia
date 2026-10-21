@@ -315,7 +315,7 @@ private extension AccessRouteResolution {
                     memberStatus: .active,
                     acceptedInvite: false,
                     partnerUserID: UUID(),
-                    partnerDisplayName: "Robin",
+                    partnerAccountName: "Robin",
                     partnerProfilePhotoAssetID: nil,
                     startedOn: "2024-03-03",
                     endedAt: nil,

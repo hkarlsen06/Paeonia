@@ -8,6 +8,7 @@ import { isActiveCoupleMember } from "./lib/access";
 import { badgeCountForUser } from "./lib/badges";
 import { getByUuid, withTouch } from "./lib/db";
 import { isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPartnerPush";
+import { notificationAlertTitle } from "./lib/notificationCopy";
 import { gamePushStillWanted } from "./lib/gameRegistry";
 import type { GamePushKind } from "./lib/games";
 import { uuidArg } from "./lib/ids";
@@ -161,6 +162,22 @@ async function deliverQuietly(
 }
 
 /**
+ * The title an alert goes out with. The stored title was written when the row was queued, and it
+ * may hold a name. A retry can run long after that, and the recipient may have changed or removed
+ * their nickname for the partner since. So every alert with a title gets it written again for
+ * the recipient now, whatever its kind. `sender_name` (lib/apns.ts) copies this title, so it stays
+ * current too. A row without a title (a badge-only push) stays without one.
+ */
+async function freshTitle(
+  ctx: WriterCtx,
+  row: Doc<"notification_outbox">,
+  device: Doc<"user_devices">,
+): Promise<string | null> {
+  if (row.apns_push_type !== "alert" || row.title === undefined) return null;
+  return await notificationAlertTitle(ctx, device.user_id, row.kind, row.payload, device.locale);
+}
+
+/**
  * Runs right before each send, so a row queued for later is checked when it is due. Fails the row
  * when its device is gone or disabled, the user turned its kind off, its couple or game turn no
  * longer needs it, or its reminder passed. A partner's daily answer push decides here what it says.
@@ -202,7 +219,7 @@ export const prepare_notification = internalMutation({
       apns_environment: row.apns_environment,
       apns_push_type: row.apns_push_type,
       apns_collapse_id: row.apns_collapse_id ?? null,
-      title: sendable.title ?? null,
+      title: await freshTitle(ctx, sendable, device),
       body: sendable.body ?? null,
       payload: sendable.payload,
       deliver_quietly: await deliverQuietly(ctx, sendable, device),

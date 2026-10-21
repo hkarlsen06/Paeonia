@@ -34,6 +34,24 @@ struct WidgetCanvasSyncServiceTests {
         #expect(env.localStore.savedCalls.count == 1)
     }
 
+    /// A nickname (or a rename) must reach the label on the widget without waiting for a new drawing.
+    @Test func syncPublishesAPartnerDrawingAgainWhenTheNameForThePartnerChanges() async {
+        let env = SyncEnvironment()
+        let partnerID = UUID()
+        let myID = UUID()
+        env.gateway.state = Self.state(authorUserID: partnerID, canvasSide: 280)
+        env.gateway.signedURL = URL(string: "https://example.com/payload")
+        func identity(partnerName: String) -> WidgetSyncIdentity {
+            WidgetSyncIdentity(currentUserID: myID, currentDisplayName: "Me", partnerDisplayName: partnerName)
+        }
+
+        await env.service.sync(identity: identity(partnerName: "Partner"))
+        await env.service.sync(identity: identity(partnerName: "Babe"))
+        await env.service.sync(identity: identity(partnerName: "Babe"))
+
+        #expect(env.localStore.savedCalls.map(\.authorName) == ["Partner", "Babe"])
+    }
+
     @Test func syncMarksOwnRevisionSeenWhileTheWidgetShowsIt() async throws {
         let env = SyncEnvironment()
         let identity = Self.identity(partnerID: UUID())
@@ -387,6 +405,11 @@ private nonisolated final class SyncLocalStoreSpy: WidgetCanvasManaging, @unchec
     var isShowingDrawing = true
 
     func loadSavedDrawing() -> Data? { savedDrawingData }
+    func loadSavedSnapshot() -> WidgetCanvasSnapshot? {
+        savedCalls.last.map {
+            WidgetCanvasSnapshot(drawingData: $0.data, authorName: $0.authorName, createdAt: $0.createdAt)
+        }
+    }
     func isShowingSavedDrawing() -> Bool { isShowingDrawing }
     func saveDrawing(_ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date) {
         savedCalls.append(

@@ -150,7 +150,7 @@
         memberStatus: .active,
         acceptedInvite: acceptedInvite,
         partnerUserID: DeveloperScenarioFixture.partnerUserID,
-        partnerDisplayName: "Robin",
+        partnerAccountName: "Robin",
         partnerProfilePhotoAssetID: nil,
         startedOn: "2025-09-14",
         endedAt: nil,

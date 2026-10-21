@@ -181,7 +181,8 @@ describe("relationship_state in get_access_snapshot", () => {
       member_status: "active",
       accepted_invite: false,
       partner_user_id: couple.second.userId,
-      partner_display_name: "Second Partner",
+      partner_account_name: "Second Partner",
+      partner_nickname: null,
       partner_profile_photo_asset_id: null,
       started_on: "2024-05-01",
       ended_at: null,
@@ -210,7 +211,7 @@ describe("relationship_state in get_access_snapshot", () => {
       await ctx.db.patch(profile!._id, { moderation_status: "hidden" });
     });
     const state = await relationshipStateOf(couple.first);
-    expect(state).toMatchObject({ partner_user_id: couple.second.userId, partner_display_name: null });
+    expect(state).toMatchObject({ partner_user_id: couple.second.userId, partner_account_name: null });
   });
 });
 

@@ -14,8 +14,13 @@ extension RootViewModel {
         route.session
     }
 
+    var currentPartnerName: PartnerName? {
+        route.accessResolution?.partnerName
+    }
+
+    /// The partner's name as this person sees it. See `PartnerName`.
     var currentPartnerDisplayName: String? {
-        route.accessResolution?.partnerDisplayName
+        currentPartnerName?.display
     }
 
     var currentPartnerUserID: UUID? {

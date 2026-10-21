@@ -13,6 +13,8 @@ struct SettingsView: View {
     let currentProviderProfilePhotoAssetID: UUID?
     let currentAuthProvider: AuthProvider?
     let partnerUserID: UUID?
+    /// What this person calls their partner, for the nickname row. Copy takes `partnerName`.
+    let partner: PartnerName?
     let partnerProfilePhotoAssetID: UUID?
     let relationshipStartedOn: String?
     let milestoneIsSaving: Bool
@@ -50,6 +52,8 @@ struct SettingsView: View {
     /// Lives here rather than on the profile screen, so a save keeps its state
     /// and still reports back after the user leaves that screen.
     @State private var profileEditor = ProfileEditorViewModel()
+    /// Owned here for the same reason: a nickname save still reports after the screen closes.
+    @State private var nicknameEditor: PartnerNicknameEditorModel
     /// Decides whether the Admin row shows. The server checks again on every admin call.
     @State private var adminAccess: AdminAccessModel
 
@@ -62,6 +66,7 @@ struct SettingsView: View {
         currentProviderProfilePhotoAssetID: UUID? = nil,
         currentAuthProvider: AuthProvider? = nil,
         partnerUserID: UUID? = nil,
+        partner: PartnerName? = nil,
         partnerProfilePhotoAssetID: UUID? = nil,
         relationshipStartedOn: String? = nil,
         milestoneIsSaving: Bool = false,
@@ -77,6 +82,7 @@ struct SettingsView: View {
             { _, _ in false },
         onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
         loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)? = nil,
+        partnerNicknameGateway: (any PartnerNicknameGateway)? = PartnerNicknameGatewayFactory.makeDefault(),
         privacySafetyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         privacyOperationProvider: (any SyncClientOperationProviding)? = nil,
         adminGateway: (any AdminGateway)? = AdminGatewayFactory.makeDefault()
@@ -87,6 +93,7 @@ struct SettingsView: View {
         self.currentProviderProfilePhotoAssetID = currentProviderProfilePhotoAssetID
         self.currentAuthProvider = currentAuthProvider
         self.partnerUserID = partnerUserID
+        self.partner = partner
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.relationshipStartedOn = relationshipStartedOn
         self.milestoneIsSaving = milestoneIsSaving
@@ -105,6 +112,7 @@ struct SettingsView: View {
         self.privacyOperationProvider = privacyOperationProvider
         self.adminGateway = adminGateway
         _adminAccess = State(initialValue: AdminAccessModel(gateway: adminGateway))
+        _nicknameEditor = State(initialValue: PartnerNicknameEditorModel(gateway: partnerNicknameGateway))
         _viewModel = State(
             initialValue: viewModel ?? SettingsViewModel(userID: currentUserID?.uuidString)
         )
@@ -118,6 +126,9 @@ struct SettingsView: View {
             Group {
                 Section {
                     profileRow
+                    if partner != nil {
+                        PartnerNicknameSettingsRow(editor: nicknameEditor, partner: partner)
+                    }
                 }
                 SettingsRelationshipSection(
                     relationshipDateRow: RelationshipDateSettingsRow(
@@ -160,7 +171,15 @@ struct SettingsView: View {
             showBanner(for: event)
             profileEditor.consumeEvent()
         }
+        .onChange(of: nicknameEditor.event) { _, event in
+            guard let event else {
+                return
+            }
+            bannerCenter.show(event.banner)
+            nicknameEditor.consumeEvent()
+        }
         .sensoryFeedback(.success, trigger: profileEditor.completedSaveCount)
+        .sensoryFeedback(.success, trigger: nicknameEditor.completedSaveCount)
     }
 }
 

@@ -390,6 +390,7 @@ describe("reads", () => {
       active_revision_moderation_status: "visible",
       active_revision_deleted_at: null,
       active_revision_author_user_id: couple.first.userId,
+      active_revision_author_name: "First Partner",
       payload_media_asset_id: assetId,
       payload_bucket: "widget-drawings",
       payload_storage_path: asset?.storage_path,
@@ -425,6 +426,24 @@ describe("reads", () => {
       payload_storage_path: null,
       bounds: null,
     });
+  });
+
+  test("get_widget_canvas names the author the way the caller does, so a widget can relabel a drawing", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const canvas = await canvasOf(couple.first);
+    tick();
+    await submitDrawing(t, couple.first, couple, canvas.canvas_id, null);
+    const authorNameFor = async (user: TestUser) =>
+      (await user.as.query(api.widget.get_widget_canvas, {}))[0].active_revision_author_name;
+
+    await couple.second.as.mutation(api.partnerNickname.set_partner_nickname, { p_nickname: "Babe" });
+    expect(await authorNameFor(couple.second)).toBe("Babe");
+    // The author sees their own name, and the nickname stays private.
+    expect(await authorNameFor(couple.first)).toBe("First Partner");
+
+    await couple.second.as.mutation(api.partnerNickname.set_partner_nickname, { p_nickname: null });
+    expect(await authorNameFor(couple.second)).toBe("First Partner");
   });
 
   test("get_widget_drawing_revisions pages the history newest first and syncs by update time", async () => {
@@ -657,7 +676,7 @@ describe("get_lock_screen_state", () => {
     const couple = await createCouple(t, { timeZones: ["America/New_York", "Europe/Oslo"] });
     expect(await stateOf(couple.first)).toEqual({
       generated_at: "2026-10-10T12:00:00.000Z",
-      partner: { display_name: "Second Partner", time_zone_id: "Europe/Oslo" },
+      partner: { name: "Second Partner", uses_nickname: false, time_zone_id: "Europe/Oslo" },
       started_on: null,
       upcoming_countdowns: [],
       distance: null,
@@ -667,7 +686,7 @@ describe("get_lock_screen_state", () => {
       daily_question: null,
       games: { my_turn_count: 0, first_my_turn_kind: null },
     });
-    expect((await stateOf(couple.second))!.partner).toEqual({ display_name: "First Partner", time_zone_id: "America/New_York" });
+    expect((await stateOf(couple.second))!.partner).toEqual({ name: "First Partner", uses_nickname: false, time_zone_id: "America/New_York" });
   });
 
   test("returns the start date, yesterday's countdowns and the next three, soonest first", async () => {

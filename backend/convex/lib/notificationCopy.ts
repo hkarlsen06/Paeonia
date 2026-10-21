@@ -1,6 +1,7 @@
 import type { ReaderCtx } from "./db";
 import type { GameKind } from "./games";
 import { isJsonObject, jsonbByteLength, jsonbText } from "./json";
+import { nameForViewer } from "./partnerNames";
 
 /** Port of `internal.notification_locale_language`: Norwegian locales map to 'nb', everything else to 'en'. */
 export function notificationLocaleLanguage(locale: string | null | undefined): "nb" | "en" {
@@ -224,9 +225,14 @@ export function notificationPayloadIsSafe(payload: unknown): boolean {
   );
 }
 
-/** Port of `internal.notification_actor_display_name`. Returns null when there is no usable actor name. */
+/**
+ * Port of `internal.notification_actor_display_name`. What `viewerUserId`, who receives the push,
+ * calls the person who caused it: their nickname for the partner when they set one, otherwise the
+ * partner's own name. Returns null when the payload names nobody or the name is unusable.
+ */
 export async function notificationActorDisplayName(
   ctx: ReaderCtx,
+  viewerUserId: string,
   payload: Record<string, unknown>,
 ): Promise<string | null> {
   const candidates = [payload.actor_user_id, payload.sender_user_id].map((value) =>
@@ -239,12 +245,7 @@ export async function notificationActorDisplayName(
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(actorIdText)) {
     return null;
   }
-  const profile = await ctx.db
-    .query("profiles")
-    .withIndex("by_user_id", (q) => q.eq("user_id", actorIdText.toLowerCase()))
-    .unique();
-  const name = profile?.display_name?.trim();
-  return name ? name : null;
+  return await nameForViewer(ctx, viewerUserId, actorIdText.toLowerCase());
 }
 
 const gameReminderBody = (nb: boolean) => (nb ? "Fortsett der dere slapp." : "Pick up where you left off.");
@@ -349,15 +350,19 @@ export function notificationAlertBody(
   }
 }
 
-/** Port of `internal.notification_alert_title`. */
+/**
+ * Port of `internal.notification_alert_title`. `recipientUserId` is who receives the push, so a name
+ * in the title is what that person calls the partner (see `nameForViewer`).
+ */
 export async function notificationAlertTitle(
   ctx: ReaderCtx,
+  recipientUserId: string,
   kind: string,
   payload: Record<string, unknown>,
   locale: string | null | undefined,
 ): Promise<string> {
   const nb = notificationLocaleLanguage(locale) === "nb";
-  const actorName = await notificationActorDisplayName(ctx, payload);
+  const actorName = await notificationActorDisplayName(ctx, recipientUserId, payload);
   // `name` starts a title. `inSentence` goes later in one, so a missing name reads "your partner".
   const name = actorName ?? (nb ? "Partneren din" : "Your partner");
   const inSentence = actorName ?? (nb ? "partneren din" : "your partner");

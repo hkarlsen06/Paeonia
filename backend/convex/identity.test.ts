@@ -231,7 +231,7 @@ describe("profile", () => {
     await first.as.mutation(api.identity.update_own_profile, { p_display_name: "First", p_profile_photo_asset_id: null });
     const after = await relationshipStateOf(second);
     expect(after!.partner_profile_photo_asset_id).toBe(provider);
-    expect(after!.partner_display_name).toBe("First");
+    expect(after!.partner_account_name).toBe("First");
   });
 
   test("a paired user can change their time zone during onboarding", async () => {

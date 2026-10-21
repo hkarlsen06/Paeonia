@@ -98,6 +98,7 @@ Import these instead of re-porting the SQL.
 | `topicCatalog.ts` | `rebuildTopicCatalogs`: rebuilds the `topic_catalog` rows (one per active topic, with its names and ready questions) that the topic reads load. `catalog:sync_catalog` calls it after its last write, and any other write to a topic's catalog tables must too |
 | `dailyQuestionRounds.ts` | a couple has one chat per question and each day the question came back is a round: `loadQuestionRounds`, `isSharedRound`, `dailyQuestionThreadLink`, and `addRoundInfo` (the round fields on question rows) |
 | `streaks.ts`, `streakDeadlines.ts` | streak core, restore, and the zone-change refreshes |
+| `partnerNames.ts` | `nameForViewer`, `nameAndSourceForViewer`, `nicknameForViewer`, `normalizePartnerNickname`, `accountNameOf`. The one place that decides what someone is called on a partner's screen or push. See "Partner names" below |
 | `notifications.ts`, `notificationCopy.ts` | outbox inserts, enqueue helpers, notification copy |
 | `dailyPartnerPush.ts` | the partner's daily answer pushes (`partner_answered`, `daily_challenge_completed`): `enqueuePartnerAnsweredNotification`, `enqueueDailyChallengeCompletedNotification`, and `resolveDailyPartnerPush`. Each recipient has one lane. The first answer queues a push `DAILY_PARTNER_PUSH_DELAY_SECONDS` out, later answers before it is due join it, and `prepare_notification` picks the kind and copy from what still waits for the recipient |
 | `reports.ts` | `tombstoneReportTargets` |
@@ -150,6 +151,15 @@ Local-first writes from iOS carry `p_client_operation_id`, `p_client_id`, `p_cli
 - Convex storage URLs never expire, so do not hand them out. `get_media_signed_url` returns the SQL function's rows, each with an added `signed_url` string. The SQL version returned only the authorized bucket and path, and the app then asked Supabase Storage to sign it. `signed_url` points to the `GET /media` HTTP action with `asset`, `exp`, and an HMAC-SHA256 `sig` signed with the `PAEONIA_MEDIA_URL_SECRET` environment variable. The action verifies the signature and expiry, then streams the blob. Use the expiry the app asked for (`p_expires_in_seconds` or the SQL equivalent), capped at the old limit.
 - Hosted origins: client API `https://api.paeonia.no` (`CONVEX_CLOUD_URL`), HTTP actions `https://actions.paeonia.no` (`CONVEX_SITE_URL`). Build signed URLs from `process.env.CONVEX_SITE_URL`.
 
+## Partner names
+
+A member can give their partner a nickname (`couple_members.partner_nickname`). It is private: only the member who set it reads it, and the partner is never told. A new field or function that names the partner must respect it.
+
+- Any push title, push body, widget payload or API field that puts a partner's name in front of a viewer gets the name from `nameForViewer(ctx, viewerUserId, subjectUserId)` in `lib/partnerNames.ts`. It returns the viewer's nickname for the subject, otherwise the subject's own name, otherwise null. Use `nameAndSourceForViewer` when the client must know which one it got. `notificationAlertTitle` takes the recipient for this reason.
+- Do not read `profiles.display_name` for this. `partnerNames.test.ts` reads the source of every file under `convex/` and fails when a file outside its `MAY_READ_DISPLAY_NAME` list mentions `display_name`. That list holds a reason for each file (the user's own profile, operator tools, the invite preview before a couple exists). Add a file there only when it never shows a partner's name to a partner.
+- A name in an API result is a viewer-specific field, so name it for what it holds and keep the raw account name under another key (`partner_account_name`). Do not add a `display_name` key to a result for a partner.
+- The nickname ends with the relationship. `endRelationshipForPair` clears it for both members, which covers leaving, blocking, reporting, bans and account deletion. The couple cleanup and purge clear it again.
+
 ## Scheduling and push
 
 - pg_cron jobs live in `convex/crons.ts`.
@@ -173,6 +183,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `identity` | `ensure_current_user`, `complete_profile_onboarding`, `update_own_profile`, `set_own_provider_profile_photo`, `register_user_device`, `disable_user_device`, `get_notification_preferences`, `set_notification_preference`, `get_privacy_requests`, `create_privacy_request`, `request_account_deletion`, `delete_account` (action) |
 | `pairing` | `create_pairing_invite`, `preview_pairing_invite`, `validate_my_pairing_invite`, `accept_pairing_invite`, `revoke_pairing_invite`, `rotate_pairing_invite` |
 | `firstDay` | `start_first_day_draft`, `get_first_day_draft`, `set_first_day_started_on`, `save_first_day_answer`, `save_first_day_drawing` (what the inviter makes before their partner joins: the start date, the first two daily questions with written answers, and the first widget drawing, kept in `first_day_drafts`. The drawing is a `widget_drawing_payload` upload with `p_path_context: { first_day_draft: true }` and no couple. `accept_pairing_invite` turns the drafts into couple content with `materializeFirstDayDrafts` in `lib/firstDay.ts`, sends the joining partner no visible pushes for it, and sends the inviter a `partner_joined` push) |
+| `partnerNickname` | `set_partner_nickname` (`p_nickname`, null clears it): what the caller calls their partner, stored on the caller's `couple_members` row. Private to the caller. `get_access_snapshot` returns it as `partner_nickname` next to `partner_account_name` |
 | `relationship` | `get_relationship_sync_events`, `leave_relationship`, `mark_relationship_ended_notice_seen`, `set_couple_started_on` |
 | `relationshipJobs` | internal only: `end_relationship_for_pair` (run by `relationship:leave_relationship`), and the two hourly crons `cleanup_expired_relationship_content` and `purge_deleted_relationship_content`. They need `lib/relationshipEnd.ts` and `lib/relationshipCleanup.ts`, so they stay out of `relationship.ts`, which holds the always-subscribed `get_relationship_sync_events` |
 | `access` | `get_access_snapshot`, `get_or_create_app_account_token`, `verify_purchase` (action), `redeem_streak_restore` (action) |

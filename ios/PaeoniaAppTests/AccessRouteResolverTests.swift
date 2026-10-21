@@ -276,7 +276,7 @@ private extension RemoteRelationshipState {
             memberStatus: memberStatus,
             acceptedInvite: false,
             partnerUserID: UUID(),
-            partnerDisplayName: "Riley",
+            partnerAccountName: "Riley",
             partnerProfilePhotoAssetID: nil,
             startedOn: "2026-06-23",
             endedAt: relationshipStatus == .ended

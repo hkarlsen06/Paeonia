@@ -1,5 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 import { getByUuid, orNull, type ReaderCtx } from "./db";
+import { accountNameOf } from "./partnerNames";
 
 /** Port of `internal.get_current_relationship_state`. Returns the one row it returned, or null. */
 export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string) {
@@ -45,7 +46,10 @@ export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string
     // This person joined with the partner's invite code.
     accepted_invite: best.member.role === "partner",
     partner_user_id: partner?.user_id ?? null,
-    partner_display_name: visible ? orNull(profile?.display_name) : null,
+    // The partner's own name and the viewer's nickname for them travel separately. The app joins them
+    // in `PartnerName`, so the settings screen can show both. Push copy uses `nameForViewer`.
+    partner_account_name: visible ? accountNameOf(profile) : null,
+    partner_nickname: visible && best.current ? (best.member.partner_nickname ?? null) : null,
     partner_profile_photo_asset_id: visible
       ? orNull(profile?.profile_photo_asset_id ?? profile?.provider_profile_photo_asset_id)
       : null,

@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { deleteCoupleGameRows } from "./gameRegistry";
 import { deleteHeartsForCouple } from "./hearts";
-import { deleteLatestLocationsForCouple } from "./relationshipEnd";
+import { clearPartnerNicknames, deleteLatestLocationsForCouple } from "./relationshipEnd";
 import { withTouch, withUpdatedAt, type WriterCtx } from "./db";
 import { tombstoneReportTargets } from "./reports";
 import { createRelationshipSyncEvent } from "./syncEvents";
@@ -260,6 +260,7 @@ export async function cleanupCoupleContent(
   await deleteLatestLocationsForCouple(ctx, couple.id);
   await deleteHeartsForCouple(ctx, couple.id);
   await deleteCoupleDates(ctx, couple.id);
+  await clearPartnerNicknames(ctx, couple.id);
   await deleteCoupleNotes(ctx, couple.id);
   const current = (await ctx.db.get(couple._id))!;
   if (current.status === "ended") {
@@ -465,6 +466,7 @@ export async function purgeCoupleContent(
   for (const deleted of [
     await deleteHeartsForCouple(ctx, couple.id),
     await deleteCoupleDates(ctx, couple.id),
+    await clearPartnerNicknames(ctx, couple.id),
     await deleteCoupleNotes(ctx, couple.id),
   ]) {
     contentDeleted += deleted;

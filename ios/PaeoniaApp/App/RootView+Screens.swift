@@ -221,6 +221,10 @@ extension RootView {
                 postPairingFlow.prepare(context)
             }
         }
+        // A nickname set or cleared, or the partner renaming themselves: relabel the widgets.
+        .onChange(of: viewModel.currentPartnerDisplayName) { _, _ in
+            partnerNameChanged()
+        }
         // Signed out or unpaired. Signing back in to the same pair starts over.
         .onDisappear {
             postPairingFlow.reset()
@@ -279,7 +283,7 @@ extension RootView {
             currentProviderProfilePhotoAssetID: viewModel.currentProviderProfilePhotoAssetID,
             currentAuthProvider: viewModel.currentSession?.provider,
             partnerUserID: viewModel.currentPartnerUserID,
-            partnerDisplayName: viewModel.currentPartnerDisplayName,
+            partnerName: viewModel.currentPartnerName,
             partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
             coupleID: viewModel.currentActiveCoupleID,
             relationshipStartedOn: viewModel.currentRelationshipStartedOn

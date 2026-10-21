@@ -78,7 +78,7 @@ describe("redeem_review_access", () => {
     ]);
 
     const [snapshot] = await reviewer.as.query(api.access.get_access_snapshot, {});
-    expect(snapshot.relationship_state).toMatchObject({ couple_id: coupleId, partner_user_id: partner.userId, partner_display_name: "Alex" });
+    expect(snapshot.relationship_state).toMatchObject({ couple_id: coupleId, partner_user_id: partner.userId, partner_account_name: "Alex" });
     expect(snapshot.couple_entitlement).toMatchObject({ couple_id: coupleId, is_entitled: false });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
