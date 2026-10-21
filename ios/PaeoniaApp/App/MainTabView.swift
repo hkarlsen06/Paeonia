@@ -250,6 +250,11 @@ struct MainTabView: View {
         .onChange(of: identity.coupleID) { _, coupleID in
             Task { await topicsViewModel.configure(currentUserID: identity.currentUserID, coupleID: coupleID) }
         }
+        // A partner message in a topic question's chat brings the question back to
+        // the Questions tab's list, so its topic is followed.
+        .onChange(of: dailyChallengeViewModel.unreadChats.compactMap(\.topicKey)) {
+            topicsViewModel.followWaitingTopics()
+        }
         // The Games tab's badge needs the game state before the tab is opened, so
         // the tab bar loads and follows it.
         .task(id: identity.currentUserID) {

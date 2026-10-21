@@ -194,19 +194,20 @@ extension TopicsViewModel {
 
     func sections(for key: String) -> TopicSections {
         let isSending = { [dailyChallenge] (id: UUID) in dailyChallenge?.isSending(id) ?? false }
-        let hasNewPartnerAnswer = { [dailyChallenge] (question: DailyChallengeQuestion) in
-            dailyChallenge?.hasNewPartnerAnswer(question) ?? false
+        let hasNewFromPartner = { [dailyChallenge] (question: DailyChallengeQuestion) in
+            dailyChallenge?.hasNewFromPartner(question) ?? false
         }
         return TopicSections(
             items: displayedItems(for: key),
             isSending: isSending,
-            hasNewPartnerAnswer: hasNewPartnerAnswer
+            hasNewFromPartner: hasNewFromPartner
         )
     }
 
     /// The questions waiting for this person in every topic but a private one, for the
-    /// Questions tab's list. A question leaves it once answered and its partner answer
-    /// opened, and then shows only in its topic. Private topics stay inside their topic,
+    /// Questions tab's list. A question leaves it once it is answered and the partner's
+    /// answer and messages are opened, and then shows only in its topic. A new partner
+    /// message brings it back. Private topics stay inside their topic,
     /// because the Questions tab is often open where others see it.
     var waitingQuestions: [DailyChallengeQuestion] {
         overview.filter { !$0.isPrivate }.flatMap { topic in
@@ -214,10 +215,13 @@ extension TopicsViewModel {
         }
     }
 
-    /// Follows every topic with something waiting, so `waitingQuestions` has its
-    /// questions before the topic is opened. Private ones are left until opened.
-    private func followWaitingTopics() {
-        for topic in overview where !topic.isPrivate && topic.forYouCount > 0 {
+    /// Follows every topic with something waiting, an answer or an unread message, so
+    /// `waitingQuestions` has its questions before the topic is opened. Private ones
+    /// are left until opened.
+    func followWaitingTopics() {
+        let unreadChatTopics = Set(dailyChallenge?.unreadChats.compactMap(\.topicKey) ?? [])
+        for topic in overview where !topic.isPrivate
+            && (topic.forYouCount > 0 || unreadChatTopics.contains(topic.id)) {
             open(topic.id)
         }
     }

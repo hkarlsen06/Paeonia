@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// One topic: its picture and progress, then its questions grouped by where they
-/// stand. What waits for this person comes on top: partner answers they haven't
-/// opened, then questions the partner answered first. Then the ones nobody has
+/// stand. What waits for this person comes on top: partner answers and messages they
+/// haven't opened, then questions the partner answered first. Then the ones nobody has
 /// started, the ones waiting for the partner, the ones answered together, and a
 /// collapsed list of skipped ones. "Answer the next one" opens the next question.
 struct TopicScreen: View {
@@ -126,14 +126,14 @@ struct TopicScreen: View {
         }
     }
 
-    /// Partner answers to open, which open the question's page, then questions to
-    /// answer, which open the answer flow.
+    /// Partner answers and messages to open, which open the question's page, then
+    /// questions to answer, which open the answer flow.
     @ViewBuilder
     private func forYouSection(_ sections: TopicSections) -> some View {
         if !sections.waiting.isEmpty {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                 sectionTitle(Text(.topicsSectionForYou))
-                ForEach(sections.newAnswers) { item in
+                ForEach(sections.newFromPartner) { item in
                     row(item, opensFlow: false)
                 }
                 ForEach(sections.forYou) { item in
@@ -250,7 +250,7 @@ struct TopicScreen: View {
 
     private func sectionIDs(_ sections: TopicSections) -> [[UUID]] {
         [
-            sections.newAnswers,
+            sections.newFromPartner,
             sections.forYou,
             sections.upNext,
             sections.waitingForPartner,

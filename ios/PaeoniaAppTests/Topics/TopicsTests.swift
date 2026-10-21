@@ -120,9 +120,9 @@ struct TopicModelTests {
         let sections = TopicSections(
             items: built,
             isSending: { $0 == started.id },
-            hasNewPartnerAnswer: { $0.id == started.id }
+            hasNewFromPartner: { $0.id == started.id }
         )
-        #expect(sections.newAnswers.map(\.id) == [started.id])
+        #expect(sections.newFromPartner.map(\.id) == [started.id])
         #expect(sections.together.isEmpty)
         #expect(sections.waiting.map(\.id) == [started.id])
         #expect(sections.nextToAnswer?.id == fresh.id)
