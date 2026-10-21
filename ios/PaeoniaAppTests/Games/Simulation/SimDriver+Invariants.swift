@@ -49,7 +49,6 @@ extension SimDriver {
     func checkSettled() async throws {
         try checkAlways()
         try checkServerTotals()
-        try await checkReactions()
         for phone in phones {
             try await checkLedger(phone)
         }
@@ -97,33 +96,6 @@ extension SimDriver {
             throw fail(
                 "round \(tag(round.id)) has first try bonus \(round.firstTryBonus), expected \(expectedFirstTry)"
             )
-        }
-    }
-
-    /// Once the queues drained, the server holds a reaction the guesser's screen showed, unless a
-    /// reaction of that round was dropped for good or a phone could not send yet.
-    private func checkReactions() async throws {
-        var skipped = Set<UUID>()
-        for phone in phones {
-            let sends = phone.isAlive && phone.isForeground
-            for entry in await phone.pending.ledger where entry.kind == .setGameRoundReaction {
-                guard let payload = entry.requestData.flatMap({
-                    try? JSONDecoder().decode(GameReactionPayload.self, from: $0)
-                }) else { continue }
-                if case .terminal = entry.outcome {
-                    skipped.insert(payload.roundID)
-                } else if entry.outcome == .inFlight, !sends {
-                    skipped.insert(payload.roundID)
-                }
-            }
-        }
-        for (roundID, shown) in shownReactions where !skipped.contains(roundID) {
-            let stored = server.round(roundID)?.reaction?.rawValue ?? "none"
-            if !shown.contains(stored) {
-                throw fail(
-                    "round \(tag(roundID)) has reaction \(stored), the guesser's screen showed \(shown)"
-                )
-            }
         }
     }
 

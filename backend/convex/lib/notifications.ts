@@ -4,6 +4,7 @@ import type { Doc } from "../_generated/dataModel";
 import { listActiveMembers } from "./access";
 import type { WriterCtx } from "./db";
 import { checkViolation, fail } from "./errors";
+import { memoryDeepLink, storyDeepLink } from "./deepLinks";
 import { isJsonObject, jsonbByteLength } from "./json";
 import { newUuid } from "./ids";
 import {
@@ -26,6 +27,7 @@ const NOTIFICATION_KINDS = [
   "memory_created",
   "story_posted",
   "thread_message_sent",
+  "thread_message_deleted",
   "game_turn_ready",
   "game_result",
   "game_invite",
@@ -33,6 +35,7 @@ const NOTIFICATION_KINDS = [
   "question_time_reminder",
   "partner_joined",
   "topics_waiting",
+  "reaction_added",
   "badge_update",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -154,6 +157,7 @@ export function preferenceAllows(
   kind: NotificationKind,
   pushType: string,
   preference: Doc<"notification_preferences">,
+  payload?: Record<string, unknown>,
 ): boolean {
   switch (kind) {
     case "streak_reminder":
@@ -173,14 +177,37 @@ export function preferenceAllows(
     case "story_posted":
       return preference.memories_enabled;
     case "thread_message_sent":
+    case "thread_message_deleted":
       return preference.messages_enabled;
     case "game_turn_ready":
     case "game_result":
     case "game_invite":
     case "game_turn_reminder":
       return preference.games_enabled;
+    case "reaction_added":
+      return reactionPreferenceAllows(payload?.target_kind, preference);
     default:
       return true;
+  }
+}
+
+/**
+ * A reaction follows the setting of the feature it was on: Memories for stories and memories,
+ * Drawings for widget drawings, Games for game creations. Anything else stays off.
+ */
+export function reactionPreferenceAllows(targetKind: unknown, preference: Doc<"notification_preferences">): boolean {
+  switch (targetKind) {
+    case "story":
+    case "memory":
+      return preference.memories_enabled;
+    case "widget_drawing":
+      return preference.widget_updates_enabled;
+    case "draw_and_guess_round":
+    case "exquisite_corpse_figure":
+    case "story_chain_story":
+      return preference.games_enabled;
+    default:
+      return false;
   }
 }
 
@@ -241,7 +268,7 @@ export async function enqueueNotificationForUser(
 
   let queued = 0;
   for (const device of await listActiveUserDevices(ctx, args.recipient_user_id)) {
-    if (!preferenceAllows(kind, pushType, preference)) {
+    if (!preferenceAllows(kind, pushType, preference, args.payload)) {
       continue;
     }
     const inserted = await insertNotificationOutbox(ctx, {
@@ -475,7 +502,7 @@ export async function enqueueMemoryCreatedNotification(
       memory_id: memory.id,
       actor_user_id: memory.created_by_user_id,
       route: "memories",
-      deeplink: "paeonia://memories",
+      deeplink: memoryDeepLink(memory.id),
     },
     dedupe_key: `memory_created:${memory.id}`,
     redaction_level: "private",
@@ -497,7 +524,7 @@ export async function enqueueStoryPostedNotification(ctx: WriterCtx, story: Doc<
       story_id: story.id,
       actor_user_id: story.author_user_id,
       route: "home",
-      deeplink: "paeonia://stories",
+      deeplink: storyDeepLink(story.id),
     },
     dedupe_key: `story_posted:${story.id}`,
     redaction_level: "private",

@@ -3681,6 +3681,60 @@
         }
       }
     },
+    "chat.header.memory" : {
+      "comment" : "Small label on the card at the top of the comments on a memory",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minne"
+          }
+        }
+      }
+    },
+    "chat.header.story" : {
+      "comment" : "Small label on the card at the top of the replies to a story. %@ is the name of the person who shared it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storyen til %@"
+          }
+        }
+      }
+    },
+    "chat.header.yourStory" : {
+      "comment" : "Small label on the card at the top of the replies to the user's own story",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storyen din"
+          }
+        }
+      }
+    },
     "common.actionFailed.message" : {
       "comment" : "Message of a banner when an action, such as starting a game or sending an invite, failed. Shown when the phone is online but the server failed, so it must not blame the connection.",
       "extractionState" : "manual",
@@ -7965,6 +8019,24 @@
         }
       }
     },
+    "dailyChat.action.delete" : {
+      "comment" : "Menu action that deletes a chat message you sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett"
+          }
+        }
+      }
+    },
     "dailyChat.action.edit" : {
       "comment" : "Menu action that starts changing the text of a message you sent.",
       "extractionState" : "manual",
@@ -8433,6 +8505,186 @@
         }
       }
     },
+    "dailyChat.delete.action" : {
+      "comment" : "Button that confirms deleting a chat message the user sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slett melding"
+          }
+        }
+      }
+    },
+    "dailyChat.delete.message" : {
+      "comment" : "Text under the delete question for a message the partner can see. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It disappears for you and %@. You can't undo this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den forsvinner for deg og %@. Du kan ikke angre dette."
+          }
+        }
+      }
+    },
+    "dailyChat.delete.title" : {
+      "comment" : "Title of the question asking whether to delete a chat message the user sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this message?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slette denne meldingen?"
+          }
+        }
+      }
+    },
+    "dailyChat.delete.unsentMessage" : {
+      "comment" : "Text under the delete question for a message that has not been sent yet. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It hasn't been sent yet, so %@ won't see it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den er ikke sendt ennå, så %@ får ikke se den."
+          }
+        }
+      }
+    },
+    "dailyChat.deleted.partner" : {
+      "comment" : "Quiet note in the chat where the partner took back a message. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ deleted this message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ slettet denne meldingen"
+          }
+        }
+      }
+    },
+    "dailyChat.deleted.you" : {
+      "comment" : "Quiet note in the chat where the user took back one of their own messages.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You deleted this message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du slettet denne meldingen"
+          }
+        }
+      }
+    },
+    "dailyChat.error.delete.message" : {
+      "comment" : "Banner message when deleting a chat message could not be saved on the phone. The message is still there.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The message is still there. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldingen ligger fortsatt der. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "dailyChat.error.delete.title" : {
+      "comment" : "Banner title when deleting a chat message could not be saved on the phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't delete the message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke slette meldingen"
+          }
+        }
+      }
+    },
+    "dailyChat.error.deleteWaiting.message" : {
+      "comment" : "Banner message when the user tries to delete a chat message that is still being sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This message is on its way. Try deleting it again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldingen er på vei. Prøv å slette den igjen om et øyeblikk."
+          }
+        }
+      }
+    },
+    "dailyChat.error.deleteWaiting.title" : {
+      "comment" : "Banner title when the user tries to delete a chat message that is still being sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Still sending"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sendes fortsatt"
+          }
+        }
+      }
+    },
     "dailyChat.error.delivery.message" : {
       "comment" : "Message of the banner when a chat message could not be sent. The red icon next to the failed message is the retry button.",
       "extractionState" : "manual",
@@ -8631,60 +8883,6 @@
         }
       }
     },
-    "dailyChat.error.reaction.failedMessage" : {
-      "comment" : "Banner message when a reaction could not be saved while the phone is online, so it must not blame the connection.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Something went wrong. Try again in a little while."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noe gikk galt. Prøv igjen om litt."
-          }
-        }
-      }
-    },
-    "dailyChat.error.reaction.message" : {
-      "comment" : "Banner message when a reaction could not be saved because the phone has no connection.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check your connection and try again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sjekk nettet og prøv igjen."
-          }
-        }
-      }
-    },
-    "dailyChat.error.reaction.title" : {
-      "comment" : "Banner title when a reaction to a message or answer could not be saved.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Couldn't save your reaction"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kunne ikke lagre reaksjonen"
-          }
-        }
-      }
-    },
     "dailyChat.error.send.message" : {
       "comment" : "Message when a chat message could not be saved on this phone. The text stays in the message field.",
       "extractionState" : "manual",
@@ -8848,19 +9046,19 @@
       }
     },
     "dailyChat.notifications.subtitle" : {
-      "comment" : "Explains the messages switch. It covers chats about questions and chats on memories. %@ is the partner's name.",
+      "comment" : "Explains the Messages switch in the notification settings. %@ is the partner's name",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when %@ writes in a chat about a question or a memory."
+            "value" : "Get a notification when %@ writes in a chat about a question, a memory or a story."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når %@ skriver i en chat om et spørsmål eller et minne."
+            "value" : "Få et varsel når %@ skriver i en chat om et spørsmål, et minne eller en story."
           }
         }
       }
@@ -8897,78 +9095,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bilde"
-          }
-        }
-      }
-    },
-    "dailyChat.reaction.add" : {
-      "comment" : "VoiceOver action on a message or answer in a question chat that adds an emoji reaction. %@ is the emoji.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "React with %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reager med %@"
-          }
-        }
-      }
-    },
-    "dailyChat.reaction.partner" : {
-      "comment" : "VoiceOver label for the partner's emoji reaction on a message or answer in a question chat. 1: partner name, 2: the emoji.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ reacted %2$@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ reagerte med %2$@"
-          }
-        }
-      }
-    },
-    "dailyChat.reaction.remove" : {
-      "comment" : "VoiceOver action on a message or answer in a question chat that takes back the user's emoji reaction.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove your reaction"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fjern reaksjonen din"
-          }
-        }
-      }
-    },
-    "dailyChat.reaction.you" : {
-      "comment" : "VoiceOver label for the user's own emoji reaction on a message or answer in a question chat. %@ is the emoji.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You reacted %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du reagerte med %@"
           }
         }
       }
@@ -9023,6 +9149,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Avbryt svar"
+          }
+        }
+      }
+    },
+    "dailyChat.reply.deleted" : {
+      "comment" : "Shown in a quote when the message it answers was deleted by its sender.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This message was deleted."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne meldingen er slettet."
           }
         }
       }
@@ -12723,44 +12867,8 @@
         }
       }
     },
-    "games.drawAndGuess.reaction.laugh" : {
-      "comment" : "Reaction button with a smiling face.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Haha"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Haha"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reaction.love" : {
-      "comment" : "Reaction button with a heart.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Love"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elsker"
-          }
-        }
-      }
-    },
     "games.drawAndGuess.reaction.prompt" : {
-      "comment" : "Caption above the three reaction buttons on the guesser's result. %@ is the partner's name.",
+      "comment" : "Caption above the emoji row on the result of a finished round, for the guesser and the drawer. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -12773,24 +12881,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Si til %@ hva du synes"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.reaction.wow" : {
-      "comment" : "Reaction button with clapping hands.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wow"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wow"
           }
         }
       }
@@ -12935,60 +13025,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ sin raskeste løsning så langt"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.result.reaction.laugh" : {
-      "comment" : "Drawer's result: the partner reacted with a laugh. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ laughed"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ lo"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.result.reaction.love" : {
-      "comment" : "Drawer's result: the partner reacted with a heart. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ loved it"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ elsket den"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.result.reaction.wow" : {
-      "comment" : "Drawer's result: the partner reacted with wow. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ said wow"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ sa wow"
           }
         }
       }
@@ -13737,56 +13773,20 @@
         }
       }
     },
-    "games.drawAndGuess.wait.reaction.laugh" : {
-      "comment" : "Drawer's waiting screen, after they left the result: the partner reacted with a laugh. %1$@ is the partner's name, %2$@ the word in capitals.",
+    "games.drawAndGuess.wait.reaction" : {
+      "comment" : "Line on the drawer's waiting screen when the partner reacted to the round just drawn. The drawing is not on screen, so it names the word. 1: partner name, 2: the emoji, 3: the word in capitals. The word sits before 'drawing' with a hyphen in Norwegian.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ thought the %2$@ drawing was funny"
+            "value" : "%1$@ reacted %2$@ to the %3$@ drawing"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ syntes %2$@-tegningen var morsom"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.wait.reaction.love" : {
-      "comment" : "Drawer's waiting screen, after they left the result: the partner reacted with a heart. %1$@ is the partner's name, %2$@ the word in capitals.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ loved the %2$@ drawing"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ elsket %2$@-tegningen"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.wait.reaction.wow" : {
-      "comment" : "Drawer's waiting screen, after they left the result: the partner reacted with wow. %1$@ is the partner's name, %2$@ the word in capitals.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ said wow to the %2$@ drawing"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ sa wow til %2$@-tegningen"
+            "value" : "%1$@ reagerte med %2$@ på %3$@-tegningen"
           }
         }
       }
@@ -20283,6 +20283,78 @@
         }
       }
     },
+    "memories.comments.row.empty" : {
+      "comment" : "Row on a memory that opens its comments when nobody has written one yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write the first comment"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv den første kommentaren"
+          }
+        }
+      }
+    },
+    "memories.comments.row.preview" : {
+      "comment" : "Row on a memory that opens its comments. %1$@ is who wrote the newest comment, %2$@ is the comment",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "memories.comments.row.you" : {
+      "comment" : "Name used for the user's own comment in the preview on a memory",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du"
+          }
+        }
+      }
+    },
+    "memories.comments.title" : {
+      "comment" : "Title of the screen with the comments on one memory, and the row that opens it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comments"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommentarer"
+          }
+        }
+      }
+    },
     "memories.delete.action" : {
       "comment" : "Destructive confirm button that deletes a memory.",
       "extractionState" : "manual",
@@ -23493,6 +23565,78 @@
         }
       }
     },
+    "notifications.action.heart" : {
+      "comment" : "Button under a message or drawing notification that sends a heart to it without opening the app",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heart"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjerte"
+          }
+        }
+      }
+    },
+    "notifications.action.reply" : {
+      "comment" : "Button under a chat notification that lets the person type a reply without opening the app",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reply"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar"
+          }
+        }
+      }
+    },
+    "notifications.action.reply.placeholder" : {
+      "comment" : "Placeholder in the reply field that opens from a chat notification",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write a reply"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv et svar"
+          }
+        }
+      }
+    },
+    "notifications.action.reply.send" : {
+      "comment" : "Send button of the reply field that opens from a chat notification",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send"
+          }
+        }
+      }
+    },
     "notifications.hiddenPreview.answer" : {
       "comment" : "Lock screen text for a notification when the person has turned off notification previews in iOS Settings. Says only what kind of notification it is. For the partner answering a question.",
       "extractionState" : "manual",
@@ -23705,6 +23849,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vil du vite når %@ svarer?"
+          }
+        }
+      }
+    },
+    "notifications.quickAction.heartFailed.message" : {
+      "comment" : "Body of a notification that says a heart sent from a notification did not go through",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Paeonia and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Paeonia og prøv igjen."
+          }
+        }
+      }
+    },
+    "notifications.quickAction.heartFailed.title" : {
+      "comment" : "Title of a notification that says a heart sent from a notification did not go through",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your heart wasn't sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjertet ble ikke sendt"
+          }
+        }
+      }
+    },
+    "notifications.quickAction.replyFailed.message" : {
+      "comment" : "Body of a notification that says a reply typed from a notification could not be sent or saved. The person's own text follows on the next line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Paeonia and write it again. Your text is below."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne Paeonia og skriv det på nytt. Teksten din står under."
+          }
+        }
+      }
+    },
+    "notifications.quickAction.replyFailed.title" : {
+      "comment" : "Title of a notification that says a reply typed from a notification could not be sent or saved",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your reply wasn't sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svaret ble ikke sendt"
           }
         }
       }
@@ -27431,6 +27647,150 @@
         }
       }
     },
+    "reactions.add" : {
+      "comment" : "VoiceOver label of one emoji in the row for reacting to something. %@ is the emoji.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "React with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reager med %@"
+          }
+        }
+      }
+    },
+    "reactions.button" : {
+      "comment" : "VoiceOver label of the small button that opens the emoji row for reacting to a drawing, a memory or a game creation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "React"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reager"
+          }
+        }
+      }
+    },
+    "reactions.error.failed" : {
+      "comment" : "Banner message when a reaction could not be saved while the phone is online, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "reactions.error.offline" : {
+      "comment" : "Banner message when a reaction could not be saved because the phone has no connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettet og prøv igjen."
+          }
+        }
+      }
+    },
+    "reactions.error.title" : {
+      "comment" : "Banner title when a reaction could not be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your reaction"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre reaksjonen"
+          }
+        }
+      }
+    },
+    "reactions.partner" : {
+      "comment" : "Text and VoiceOver label for the partner's emoji reaction. 1: partner name, 2: the emoji.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reacted %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reagerte med %2$@"
+          }
+        }
+      }
+    },
+    "reactions.remove" : {
+      "comment" : "VoiceOver action that takes back the user's emoji reaction.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove your reaction"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern reaksjonen din"
+          }
+        }
+      }
+    },
+    "reactions.you" : {
+      "comment" : "Text and VoiceOver label for the user's own emoji reaction. %@ is the emoji.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You reacted %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du reagerte med %@"
+          }
+        }
+      }
+    },
     "reportAndLeave.block.description" : {
       "comment" : "Description of the optional block toggle. The placeholder is the partner name.",
       "extractionState" : "manual",
@@ -28525,6 +28885,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kunne ikke hente varselinnstillingene dine"
+          }
+        }
+      }
+    },
+    "settings.notifications.lockScreenDetails.subtitle" : {
+      "comment" : "Explains the lock screen switch. Applies when the person has hidden previews in iOS Settings. %@ is the partner's name, used in an example of a locked notification. The example line is the partner's name, a colon, and the short line iOS shows for a new message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If your phone hides previews, a locked notification only says something like \"New message\". Turn this on to also see who it's from, like \"%@: New message\". What they wrote stays hidden."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvis telefonen skjuler forhåndsvisning, står det bare noe som «Ny melding» på en låst skjerm. Slå på dette for også å se hvem det er fra, for eksempel «%@: Ny melding». Det de skrev, forblir skjult."
+          }
+        }
+      }
+    },
+    "settings.notifications.lockScreenDetails.title" : {
+      "comment" : "Title of the switch that lets a locked phone show who a notification is from, even when iOS hides previews",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show who it's from when locked"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis avsender når skjermen er låst"
+          }
+        }
+      }
+    },
+    "settings.notifications.lockScreenSection.title" : {
+      "comment" : "Heading above the notification switch about what the lock screen shows while iOS hides previews",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Låseskjerm"
           }
         }
       }
@@ -29936,6 +30350,24 @@
         }
       }
     },
+    "stories.archive.tile.replies" : {
+      "comment" : "VoiceOver note on a story in the archive that has replies",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Has replies"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Har svar"
+          }
+        }
+      }
+    },
     "stories.archive.tileAccessibility" : {
       "comment" : "VoiceOver label for a story in the Stories section. %1$@ is who shared it, %2$@ is the date.",
       "extractionState" : "manual",
@@ -30530,6 +30962,24 @@
         }
       }
     },
+    "stories.replies.title" : {
+      "comment" : "Title of the screen with the replies to one story",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replies"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar"
+          }
+        }
+      }
+    },
     "stories.viewer.delete.action" : {
       "comment" : "Destructive button that deletes your own story.",
       "extractionState" : "manual",
@@ -30688,6 +31138,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Forrige story"
+          }
+        }
+      }
+    },
+    "stories.viewer.replies.open" : {
+      "comment" : "Button on a story that opens the replies to it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replies"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar"
+          }
+        }
+      }
+    },
+    "stories.viewer.replies.openAccessibility" : {
+      "comment" : "VoiceOver label of the button on a story that opens its replies",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See replies"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se svar"
+          }
+        }
+      }
+    },
+    "stories.viewer.replies.unread" : {
+      "comment" : "VoiceOver note that a story has a reply the user has not read",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New reply"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt svar"
+          }
+        }
+      }
+    },
+    "stories.viewer.reply.placeholder" : {
+      "comment" : "Hint in the message field under a story. %@ is the name of the person who shared it",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send %@ a message"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send %@ en melding"
+          }
+        }
+      }
+    },
+    "stories.viewer.reply.send" : {
+      "comment" : "VoiceOver label of the send button under a story",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send reply"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send svar"
+          }
+        }
+      }
+    },
+    "stories.viewer.reply.sent" : {
+      "comment" : "Short note that replaces the message field under a story after the user sent a reply",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reply sent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar sendt"
           }
         }
       }

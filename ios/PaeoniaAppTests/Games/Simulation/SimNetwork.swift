@@ -260,10 +260,6 @@ final class SimGateway: DrawAndGuessGateway, @unchecked Sendable {
         try await call("giveUp") { try $0.giveUp(user: $1, roundID: roundID, operation: operation) }
     }
 
-    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
-        try await call("reaction") { try $0.setReaction(user: $1, roundID: roundID, reaction: reaction) }
-    }
-
     func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {
         try await call("resultSeen") { try $0.markResultSeen(user: $1, roundID: roundID) }
     }

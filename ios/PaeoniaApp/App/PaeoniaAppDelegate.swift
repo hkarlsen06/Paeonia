@@ -59,11 +59,21 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     /// into the widget, and report whether new data arrived.
     ///
     /// `nonisolated` because the protocol requirement is nonisolated and
-    /// `userInfo` is not `Sendable`; we never read it, only kick off the sync.
+    /// `userInfo` is not `Sendable`. Only the id of a taken-back message is read from it.
     nonisolated func application(
         _ application: UIApplication,
         didReceiveRemoteNotification userInfo: [AnyHashable: Any]
     ) async -> UIBackgroundFetchResult {
+        // The sender took a message back. Its alert goes, and so do its text and files in the
+        // chat history on this phone, which would otherwise show it until the chat is opened.
+        if let deletedMessageID = DeliveredNotifications.deletedMessageID(in: userInfo) {
+            await DeliveredNotifications.clearMessage(deletedMessageID)
+            if let ownerUserID = identityStore.load().currentUserID {
+                await ThreadChatServiceFactory.makeDefault()
+                    .applyRemoteDeletion(ownerUserID: ownerUserID, messageID: deletedMessageID)
+            }
+            return .newData
+        }
         // The canvas service reloads the widget when it writes new files. An
         // extra reload here would spend the widget's daily budget on every push.
         await widgetSync.sync(identity: identityStore.load())
@@ -164,6 +174,21 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     ) {
         let content = response.notification.request.content
         let userInfo = content.userInfo
+
+        // A button under the notification (reply, heart) runs without opening the app. iOS keeps
+        // the app awake until the completion handler runs, and that call must stay on the main thread.
+        if PaeoniaNotificationActionID.isQuickAction(response.actionIdentifier) {
+            let actionID = response.actionIdentifier
+            let replyText = (response as? UNTextInputNotificationResponse)?.userText
+            let push = NotificationQuickActionPush(userInfo: userInfo)
+            nonisolated(unsafe) let finish = completionHandler
+            Task { @MainActor in
+                await NotificationQuickActionHandler.handle(actionID: actionID, replyText: replyText, push: push)
+                finish()
+            }
+            return
+        }
+
         if let deepLink = PaeoniaDeepLink(notificationUserInfo: userInfo) {
             Task { @MainActor in
                 PaeoniaNotificationRouter.shared.route(deepLink)

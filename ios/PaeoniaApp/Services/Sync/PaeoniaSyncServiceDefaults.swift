@@ -83,7 +83,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
     }
 
     private static func dailyHandlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
-        let dailyQuestionChatGateway = LiveDailyQuestionChatGateway(client: client)
+        let threadChatGateway = LiveThreadChatGateway(client: client)
         let chatMediaUploader = LiveDailyAnswerMediaUploadService(
             client: client,
             reservedParentKind: "thread_message_media"
@@ -94,17 +94,22 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 gateway: LiveDailyChallengeGateway(client: client),
                 mediaDraftStore: FileDailyAnswerMediaDraftStore.live()
             ),
-            CreateDailyChatThreadOperationHandler(
-                gateway: dailyQuestionChatGateway,
-                cache: FileDailyQuestionChatCache.shared,
+            CreateChatThreadOperationHandler(
+                gateway: threadChatGateway,
+                cache: FileThreadChatCache.shared,
                 mediaUploadService: chatMediaUploader,
                 imageCache: DailyAnswerMediaImageService.shared
             ),
-            SendDailyChatMessageOperationHandler(
-                gateway: dailyQuestionChatGateway,
-                cache: FileDailyQuestionChatCache.shared,
+            SendChatMessageOperationHandler(
+                gateway: threadChatGateway,
+                cache: FileThreadChatCache.shared,
                 mediaUploadService: chatMediaUploader,
                 imageCache: DailyAnswerMediaImageService.shared
+            ),
+            DeleteChatMessageOperationHandler(
+                gateway: threadChatGateway,
+                cache: FileThreadChatCache.shared,
+                mediaCache: DailyAnswerMediaImageService.shared
             ),
         ]
     }
@@ -145,10 +150,6 @@ nonisolated enum PaeoniaSyncServiceDefaults {
                 memoryStore: memoryStore
             ),
             RemoveMemoryMediaPendingOperationHandler(
-                gateway: memoryGateway,
-                memoryStore: memoryStore
-            ),
-            CreateMemoryThreadMessagePendingOperationHandler(
                 gateway: memoryGateway,
                 memoryStore: memoryStore
             ),

@@ -12,6 +12,14 @@ import OSLog
 /// connection: the photo goes up first, and a failed post keeps the composer open so
 /// nothing is lost. Opening the partner's story marks it seen on this phone at once and
 /// tells the server in the background.
+/// A push asked to open one story. Each request is its own value, so asking for the same story twice
+/// opens it twice.
+struct StoryOpenRequest: Equatable {
+    let id = UUID()
+    let storyID: UUID
+    let showsReplies: Bool
+}
+
 @MainActor
 @Observable
 final class StoriesViewModel {
@@ -20,6 +28,9 @@ final class StoriesViewModel {
     private(set) var isSavingNote = false
     private(set) var isPosting = false
     private(set) var error: StoriesError?
+    /// A story push asks Home to open this story. The Home strip clears it once it has opened the
+    /// story or found that it is gone.
+    private(set) var openRequest: StoryOpenRequest?
 
     @ObservationIgnored private let cache: any StoriesCaching
     /// Nil when the server client can't be set up (previews), so posting reports a failure.
@@ -52,6 +63,15 @@ final class StoriesViewModel {
         self.gateway = gateway ?? (try? LiveStoriesGateway.live())
         self.operationProvider = operationProvider ?? SyncClientOperationFactory.shared
         self.defaults = defaults
+    }
+
+    /// Asks the Home strip to open `storyID` in the viewer, with its replies when `showsReplies`.
+    func requestOpen(storyID: UUID, showsReplies: Bool) {
+        openRequest = StoryOpenRequest(storyID: storyID, showsReplies: showsReplies)
+    }
+
+    func consumeOpenRequest() {
+        openRequest = nil
     }
 
     /// False until this person has shared a story, so the composer explains how stories work once.

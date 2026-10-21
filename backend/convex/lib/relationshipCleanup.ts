@@ -320,14 +320,11 @@ export async function purgeCoupleContent(
         "daily_answer_partner_choice",
         "daily_answer_option_choice",
         "daily_answer_text",
-        "daily_answer_reactions",
       ] as const) {
         const rows =
           table === "daily_answer_media"
             ? await ctx.db.query(table).withIndex("by_answer_id_sort_order", (q) => q.eq("answer_id", answer.id)).collect()
-            : table === "daily_answer_reactions"
-              ? await ctx.db.query(table).withIndex("by_answer_id_user_id", (q) => q.eq("answer_id", answer.id)).collect()
-              : await ctx.db.query(table).withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id)).collect();
+            : await ctx.db.query(table).withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id)).collect();
         for (const row of rows) await remove(row);
       }
       await remove(answer);
@@ -393,12 +390,6 @@ export async function purgeCoupleContent(
         });
         await remove(item);
       }
-      for (const reaction of await ctx.db
-        .query("thread_message_reactions")
-        .withIndex("by_message_id_user_id", (q) => q.eq("message_id", message.id))
-        .collect()) {
-        await remove(reaction);
-      }
       await tombstoneReportTargets(ctx, "thread_message", message.id);
       await remove(message);
     }
@@ -437,6 +428,13 @@ export async function purgeCoupleContent(
     .query("stories")
     .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", couple.id))
     .take(Math.max(budget.left, 1))) {
+    for (const link of await ctx.db
+      .query("story_threads")
+      .withIndex("by_story_id", (q) => q.eq("story_id", story.id))
+      .collect()) {
+      if (budget.left <= 0) return unfinished();
+      await remove(link);
+    }
     if (budget.left <= 0) return unfinished();
     await remove(story);
   }
@@ -456,6 +454,16 @@ export async function purgeCoupleContent(
     if (budget.left <= 0) return unfinished();
     await remove(canvas);
   }
+
+  // Every reaction of the couple, whatever it was on (lib/reactions.ts).
+  for (const reaction of await ctx.db
+    .query("reactions")
+    .withIndex("by_couple_id_target_kind", (q) => q.eq("couple_id", couple.id))
+    .take(Math.max(budget.left, 1))) {
+    if (budget.left <= 0) return unfinished();
+    await remove(reaction);
+  }
+  if (budget.left <= 0) return unfinished();
 
   // Normally gone since cleanup. This covers a purge that runs without it.
   // The registry deletes game rows in one go, so a couple with a long game history can still be large.

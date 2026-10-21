@@ -40,8 +40,6 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
     var firstTryBonus: Int
     var hintsUsed: Int
     let personalBest: Bool
-    /// The guesser's reaction, with a reaction waiting on this phone applied.
-    var guesserReaction: DrawAndGuessReaction?
     let drawerResultSeenAt: Date?
     let guesserResultSeenAt: Date?
     var attempts: [DrawAndGuessAttemptView]
@@ -68,7 +66,6 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
         firstTryBonus = round.firstTryBonus
         hintsUsed = round.hintsUsed
         personalBest = round.personalBest
-        guesserReaction = round.guesserReaction
         drawerResultSeenAt = round.drawerResultSeenAt
         guesserResultSeenAt = round.guesserResultSeenAt
         attempts = round.attempts.map {
@@ -105,7 +102,6 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
         firstTryBonus = 0
         hintsUsed = 0
         personalBest = false
-        guesserReaction = nil
         drawerResultSeenAt = nil
         guesserResultSeenAt = nil
         attempts = []

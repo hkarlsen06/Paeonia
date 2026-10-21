@@ -120,7 +120,7 @@
           .solved,
           drawer: Fixture.me,
           attempts: [("cat", false), ("hat", false), ("umbrella", true)],
-          bonuses: .init(hints: 2, reaction: .laugh)
+          bonuses: .init(hints: 2)
         )
       case .drawRevealPartnerDrawing:
         // Robin solved the last drawing and has already started the next one.
@@ -151,7 +151,6 @@
       var firstTry = 0
       var hints = 0
       var personalBest = false
-      var reaction: DrawAndGuessReaction?
     }
 
     private static func revealState(
@@ -174,8 +173,7 @@
           speedBonus: state == .solved && bonuses.hints == 0 ? bonuses.speed : 0,
           firstTryBonus: state == .solved ? bonuses.firstTry : 0,
           hintsUsed: state == .solved ? bonuses.hints : 0,
-          personalBest: state == .solved && bonuses.personalBest,
-          reaction: bonuses.reaction
+          personalBest: state == .solved && bonuses.personalBest
         ),
         choices: nextDrawer == Fixture.me ? Fixture.choices : nil
       )
@@ -349,10 +347,6 @@
 
     func giveUp(roundID: UUID, operation _: SyncClientOperation) throws -> RemoteGiveUpResult {
       RemoteGiveUpResult(roundID: roundID, roundState: .missed)
-    }
-
-    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) throws -> RemoteReactionResult {
-      RemoteReactionResult(roundID: roundID, guesserReaction: reaction)
     }
 
     func markRoundResultSeen(roundID: UUID) throws -> RemoteResultSeenResult {

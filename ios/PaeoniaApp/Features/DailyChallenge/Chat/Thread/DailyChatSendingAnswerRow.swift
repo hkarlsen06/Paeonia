@@ -26,7 +26,7 @@ struct DailyChatSendingAnswerRow: View {
         }
         .padding(.horizontal, PaeoniaSpacing.space12 + 2)
         .padding(.vertical, PaeoniaSpacing.space8 + 2)
-        .background(.paeoniaAccentSecondary, in: DailyChatBubbleShape.shape(for: .standalone(isCurrentUser: true)))
+        .background(.paeoniaAccentSecondary, in: ThreadChatBubbleShape.shape(for: .standalone(isCurrentUser: true)))
         .frame(maxWidth: 360, alignment: .trailing)
         .padding(.horizontal, PaeoniaSpacing.space12)
         .padding(.vertical, PaeoniaSpacing.space4)

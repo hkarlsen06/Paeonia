@@ -47,6 +47,9 @@ final class MemoriesViewModel {
     /// create the same memory twice.
     private(set) var isSaving = false
     var notice: MemoriesNotice?
+    /// Set by a comment push (`PaeoniaDeepLink.memory` with `showsComments`) to the memory whose
+    /// comments should open. The memory's detail screen clears it once it shows them.
+    var commentsRequestedMemoryID: UUID?
 
     /// The in-progress new-memory form. It lives here, not in the sheet or the screen,
     /// so a swipe-down or the tab being torn down keeps the work. Changes are saved per

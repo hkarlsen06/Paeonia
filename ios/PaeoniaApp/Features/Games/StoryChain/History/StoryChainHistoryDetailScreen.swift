@@ -141,6 +141,7 @@ struct StoryChainHistoryDetailScreen: View {
         VStack(spacing: PaeoniaSpacing.space12) {
             StoryChainOrnament(isShown: true)
             StoryChainStatsLine(lineCount: story.lines.count, dareCount: story.usedDareCount)
+            ReactionSection(target: .storyChainStory(story.id), alignment: .center)
             Text(.storyChainStarPrivacy)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextTertiary)

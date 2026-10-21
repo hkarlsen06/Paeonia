@@ -92,7 +92,6 @@ struct GamesQueueHardeningTests {
                 drawingStore: environment.drawingStore
             ),
             SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
-            GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
             GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
         ], retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0))
     }
@@ -142,9 +141,9 @@ struct GamesQueueHardeningTests {
         #expect(await environment.queued(.submitGameDrawing).count == 1)
     }
 
-    // MARK: Reaction and result seen
+    // MARK: Result seen
 
-    @Test func aReactionAndTheSeenMarkGoOutInOrderAfterTheGuessThatEndedTheRound() async throws {
+    @Test func theSeenMarkGoesOutAfterTheGuessThatEndedTheRound() async throws {
         let guess = GameGuessPayload(
             id: UUID(),
             roundID: GameFixture.roundID,
@@ -153,52 +152,17 @@ struct GamesQueueHardeningTests {
             createdAt: GameFixture.now
         )
         try await enqueue(.submitGameGuess, guess, sequence: 1)
-        try await enqueue(
-            .setGameRoundReaction,
-            GameReactionPayload(roundID: GameFixture.roundID, reaction: .love, createdAt: GameFixture.now),
-            sequence: 2
-        )
-        try await enqueue(
-            .setGameRoundReaction,
-            GameReactionPayload(roundID: GameFixture.roundID, reaction: .wow, createdAt: GameFixture.now),
-            sequence: 3
-        )
         try await enqueue(
             .markGameRoundResultSeen,
             GameResultSeenPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now),
-            sequence: 4
-        )
-
-        await runDrain()
-
-        #expect(environment.gateway.calls.filter { ["guess", "reaction", "resultSeen"].contains($0) }
-            == ["guess", "reaction", "reaction", "resultSeen"])
-        #expect(environment.gateway.reactions.map(\.reaction) == [.love, .wow])
-        #expect(environment.gateway.resultSeenRounds == [GameFixture.roundID])
-        #expect(await environment.queued(.setGameRoundReaction).isEmpty)
-        #expect(await environment.queued(.markGameRoundResultSeen).isEmpty)
-    }
-
-    @Test func aReactionWaitsWhileTheGuessBeforeItCannotBeSent() async throws {
-        let guess = GameGuessPayload(
-            id: UUID(),
-            roundID: GameFixture.roundID,
-            guess: "umbrella",
-            isCorrect: true,
-            createdAt: GameFixture.now
-        )
-        try await enqueue(.submitGameGuess, guess, sequence: 1)
-        try await enqueue(
-            .setGameRoundReaction,
-            GameReactionPayload(roundID: GameFixture.roundID, reaction: .laugh, createdAt: GameFixture.now),
             sequence: 2
         )
-        environment.gateway.fail("guess")
 
         await runDrain()
 
-        #expect(!environment.gateway.calls.contains("reaction"))
-        #expect(await environment.queued(.setGameRoundReaction).count == 1)
+        #expect(environment.gateway.calls.filter { ["guess", "resultSeen"].contains($0) } == ["guess", "resultSeen"])
+        #expect(environment.gateway.resultSeenRounds == [GameFixture.roundID])
+        #expect(await environment.queued(.markGameRoundResultSeen).isEmpty)
     }
 
     // MARK: Refusals

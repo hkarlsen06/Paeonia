@@ -22,7 +22,6 @@ extension SimServer {
         var firstTryBonus = 0
         var hintsUsed = 0
         var personalBest = false
-        var reaction: DrawAndGuessReaction?
         var drawerSeenAt: Date?
         var guesserSeenAt: Date?
         var attempts: [RemoteDrawAndGuessAttempt] = []

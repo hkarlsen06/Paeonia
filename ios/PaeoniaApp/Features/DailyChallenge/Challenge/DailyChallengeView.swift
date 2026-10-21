@@ -113,7 +113,7 @@ struct DailyChallengeScreen: View {
             }
         }
         .navigationDestination(item: chatQuestion) { question in
-            DailyQuestionChatView(
+            ThreadChatView(
                 viewModel: viewModel.makeChatViewModel(question: question),
                 question: viewModel.latestQuestion(question),
                 participants: viewModel.participants,

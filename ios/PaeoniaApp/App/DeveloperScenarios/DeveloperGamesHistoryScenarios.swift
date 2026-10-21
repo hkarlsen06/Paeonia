@@ -35,7 +35,6 @@
         let drawer = entry.drawerIsMe ? me : partner
         let guesser = entry.drawerIsMe ? partner : me
         let solved = entry.solveMs != nil
-        let reactions: [DrawAndGuessReaction?] = [.love, nil, .laugh, nil, .wow, nil]
         return RemoteDrawAndGuessHistoryRound(
           id: UUID(uuidString: String(format: "eeeeeeee-0000-4000-8000-%012d", number)) ?? UUID(),
           roundNumber: number,
@@ -51,7 +50,6 @@
           firstTryBonus: solved && entry.tries == 1 ? 1 : 0,
           hintsUsed: 0,
           attemptCount: entry.tries,
-          guesserReaction: reactions[index % reactions.count],
           personalBest: false,
           starredByMe: [1, 4, 7].contains(index),
           startedAt: now.addingTimeInterval(-Double(index + 1) * 86_400 - 600),

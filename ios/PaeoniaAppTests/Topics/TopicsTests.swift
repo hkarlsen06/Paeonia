@@ -119,9 +119,10 @@ struct TopicsHookTests {
         return TopicSummary(try decode(RemoteTopicSummary.self, json))
     }
 
-    private func chat(topicKey: String?, isPrivate: Bool) -> DailyQuestionThreadSummary {
-        DailyQuestionThreadSummary(
-            threadID: UUID(), coupleID: TopicIDs.couple, questionID: UUID(), createdAt: Date(), updatedAt: Date(),
+    private func chat(topicKey: String?, isPrivate: Bool) -> ThreadChatSummary {
+        ThreadChatSummary(
+            threadID: UUID(), coupleID: TopicIDs.couple, subject: .question(UUID()),
+            createdAt: Date(), updatedAt: Date(),
             lastMessageID: UUID(), lastMessageAt: Date(), lastMessageSenderUserID: TopicIDs.partner,
             lastMessageBody: "hi", topicKey: topicKey, isPrivateTopic: isPrivate
         )

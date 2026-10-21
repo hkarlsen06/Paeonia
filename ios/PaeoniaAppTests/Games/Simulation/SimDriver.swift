@@ -41,9 +41,6 @@ final class SimDriver {
     var promisedHints: [UUID: Int] = [:]
     /// The slots a hint filled, by phone and round, as the person saw them.
     var hinted: [String: [Int]] = [:]
-    /// Every reaction each guesser's screen showed for a finished round ("none" for a cleared one).
-    /// A request held on the network may land after a newer one, so the server may hold any of them.
-    var shownReactions: [UUID: Set<String>] = [:]
     /// Rounds whose drawing a person sent from their own phone.
     var drawnHere: Set<UUID> = []
     /// Actions run back to back without waiting for the phones.
@@ -168,7 +165,6 @@ extension SimDriver {
         var parts = [
             "seed \(seed)", "rounds \(server.rounds.count)", "solved \(solved)", "missed \(missed)",
             "hints \(server.rounds.reduce(0) { $0 + $1.hintsUsed })",
-            "reactions \(server.rounds.filter { $0.reaction != nil }.count)",
             "attempts \(server.rounds.reduce(0) { $0 + $1.attempts.count })",
             "settles \(settleCount)",
         ]

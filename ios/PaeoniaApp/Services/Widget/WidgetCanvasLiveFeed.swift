@@ -15,17 +15,24 @@ nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
     private let lastSyncedRevisionID: @Sendable () -> String?
     private let storedIdentity: @Sendable () -> WidgetSyncIdentity
     private let hasPendingUpload: @Sendable () -> Bool
+    private let recordLatestDrawing: @Sendable (UUID?, UUID?) async -> Void
 
     init(
         syncer: any WidgetCanvasSyncing,
         lastSyncedRevisionID: @escaping @Sendable () -> String? = { WidgetCanvasSyncService.lastSyncedRevisionID() },
         storedIdentity: @escaping @Sendable () -> WidgetSyncIdentity = { WidgetSyncIdentityStore.shared.load() },
-        hasPendingUpload: @escaping @Sendable () -> Bool = { WidgetPendingUploadStore.shared.hasPending }
+        hasPendingUpload: @escaping @Sendable () -> Bool = { WidgetPendingUploadStore.shared.hasPending },
+        recordLatestDrawing: @escaping @Sendable (UUID?, UUID?) async -> Void = { revisionID, authorUserID in
+            await MainActor.run {
+                LatestWidgetDrawing.shared.record(revisionID: revisionID, authorUserID: authorUserID)
+            }
+        }
     ) {
         self.syncer = syncer
         self.lastSyncedRevisionID = lastSyncedRevisionID
         self.storedIdentity = storedIdentity
         self.hasPendingUpload = hasPendingUpload
+        self.recordLatestDrawing = recordLatestDrawing
     }
 
     func run(session: SyncSession, live: LiveQueryService) async {
@@ -49,6 +56,8 @@ nonisolated struct WidgetCanvasLiveFeed: LiveFeed {
             // the moment to retry a drawing that is still waiting to be sent,
             // even when the canvas itself did not change.
             let revisionID = rows.first?.activeRevisionID
+            // Reactions on the drawing need the server's revision and its author.
+            await recordLatestDrawing(revisionID, rows.first?.activeRevisionAuthorUserID)
             let isNewRevision = revisionID.map { $0.uuidString != lastSyncedRevisionID() } ?? false
             guard isNewRevision || hasPendingUpload() else {
                 continue

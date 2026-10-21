@@ -8,6 +8,7 @@ struct DrawAndGuessWaitingView: View {
     /// and must not change its words on the way.
     private let isDrawing: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
     @State private var isBreathing = false
 
     init(viewModel: DrawAndGuessViewModel) {
@@ -54,14 +55,14 @@ struct DrawAndGuessWaitingView: View {
         // The partner's phone changes the title, hint and ring while this screen
         // is open. Everything moves to its new place together.
         .animation(PaeoniaMotion.stateChange, value: viewModel.partnerPresence)
-        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.reactionToMyLastDrawing)
-        .onChange(of: viewModel.reactionToMyLastDrawing) { old, new in
-            // The guesser reacted after this person left the result.
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: reactionToMyLastDrawing)
+        .onChange(of: reactionToMyLastDrawing) { old, new in
+            // The partner reacted after this person left the result.
             guard let new, new != old, !isDrawing else { return }
             PaeoniaHaptics.partnerDrawingReceived()
             GameSound.nudge.play()
             AccessibilityNotification.Announcement(
-                String(localized: new.drawerLine(partnerName: viewModel.partnerName, word: viewModel.round?.word))
+                String(localized: .reactionsPartner(viewModel.partnerName, new))
             ).post()
         }
         .drawAndGuessScoreToolbar(viewModel)
@@ -89,13 +90,19 @@ struct DrawAndGuessWaitingView: View {
         return viewModel.partnerPresence.isInRoom ? nil : .gamesDrawAndGuessWaitHintLater
     }
 
+    /// The partner's reaction to the round this person just drew.
+    private var reactionToMyLastDrawing: String? {
+        guard let roundID = viewModel.myLastDrawnRoundID else { return nil }
+        return reactionStore?.partnerReaction(on: .drawAndGuessRound(roundID))
+    }
+
     /// The partner's reaction to the round this person just drew. The line names
     /// the word, because the drawing is not on this screen.
     @ViewBuilder
     private var reactionCapsule: some View {
-        if !isDrawing, let reaction = viewModel.reactionToMyLastDrawing {
+        if !isDrawing, let emoji = reactionToMyLastDrawing {
             DrawAndGuessReactionCapsule(
-                reaction: reaction,
+                emoji: emoji,
                 partnerName: viewModel.partnerName,
                 word: viewModel.round?.word
             )

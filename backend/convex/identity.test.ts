@@ -352,6 +352,28 @@ describe("notification preferences", () => {
   });
 });
 
+describe("lock screen detail level", () => {
+  test("set_lock_screen_detail_level changes only the caller's row, and the default stays private", async () => {
+    const t = newTest();
+    const user = await createSignedInUser(t, {});
+    const other = await createSignedInUser(t, {});
+    expect(await user.as.query(api.identity.get_notification_preferences, {})).toMatchObject({
+      lock_screen_detail_level: "private",
+    });
+    const row = await user.as.mutation(api.identity.set_lock_screen_detail_level, { p_level: "descriptive" });
+    expect(row).toMatchObject({ lock_screen_detail_level: "descriptive", revision: 2 });
+    expect(await other.as.query(api.identity.get_notification_preferences, {})).toMatchObject({
+      lock_screen_detail_level: "private",
+    });
+  });
+
+  test("a caller who is not signed in is refused", async () => {
+    const t = newTest();
+    await createSignedInUser(t, {});
+    await expect(t.mutation(api.identity.set_lock_screen_detail_level, { p_level: "descriptive" })).rejects.toThrow();
+  });
+});
+
 describe("privacy requests", () => {
   test("creates a request and lists the caller's newest first", async () => {
     const t = newTest();

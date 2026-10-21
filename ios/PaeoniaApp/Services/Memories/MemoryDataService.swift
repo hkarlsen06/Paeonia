@@ -61,13 +61,6 @@ nonisolated protocol MemoryDataServicing: Actor {
         memoryMediaID: UUID,
         operation: SyncClientOperation
     ) async throws -> MemoryRecord
-    func createMemoryThreadMessage(
-        ownerUserID: UUID,
-        memoryID: UUID,
-        body: String,
-        mediaAssetIDs: [UUID],
-        operation: SyncClientOperation
-    ) async throws
 }
 // swiftlint:enable function_parameter_count
 
@@ -82,7 +75,6 @@ nonisolated enum MemoryDataServiceError: Error, Equatable, Sendable {
     /// Longer than the server accepts. See `MemoryDataService.titleCharacterLimit`.
     case titleTooLong
     case noteTooLong
-    case emptyThreadMessage
     case emptyMediaAttachment
     /// A place with no name or with coordinates off the globe. Map search never gives one.
     case invalidPlace

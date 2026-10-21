@@ -13,6 +13,8 @@ struct StoryViewerContent: Identifiable {
     let stories: [Story]
     let startIndex: Int
     let mode: Mode
+    /// Opens the replies to the first story at once, for a push about a reply.
+    var showsReplies = false
 }
 
 /// Full-screen stories. A tap on the right goes forward, a tap on the left goes back,
@@ -36,9 +38,16 @@ struct StoryViewer: View {
     @State private var touchStart: Date?
     @State private var isConfirmingDelete = false
     @State private var isDeleting = false
+    /// The replies to the story on screen, and whether their chat is open over the story.
+    @State var replies = StoryReplies()
+    @State var isShowingReplies = false
+    /// A push about a reply opens the replies once, not each time the person comes back to the story.
+    @State var didOpenRequestedReplies = false
+    @FocusState var isReplyFocused: Bool
+    @Environment(\.threadChatContext) var chatContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(PaeoniaBannerCenter.self) var bannerCenter
 
     private static let storyDuration: Double = 6
     private static let tick: Double = 0.05
@@ -63,7 +72,7 @@ struct StoryViewer: View {
 
     /// A finger is on the story, the delete question is open, or the delete is on its way.
     private var isPaused: Bool {
-        touchStart != nil || isConfirmingDelete || isDeleting
+        touchStart != nil || isConfirmingDelete || isDeleting || isReplyFocused || isShowingReplies
     }
 
     /// A touch held at least this long is a hold, not a tap, so letting go doesn't move on.
@@ -98,8 +107,12 @@ struct StoryViewer: View {
         }
         .onChange(of: story?.id, initial: true) { _, _ in
             progress = 0
-            if let story { viewModel.markSeen(story) }
+            if let story {
+                viewModel.markSeen(story)
+                Task { await loadReplies(for: story) }
+            }
         }
+        .sheet(isPresented: $isShowingReplies) { repliesSheet }
         .alert(Text(.storiesViewerDeleteTitle), isPresented: $isConfirmingDelete) {
             Button(role: .cancel) {} label: { Text(.commonCancel) }
             Button(role: .destructive) {
@@ -149,8 +162,11 @@ struct StoryViewer: View {
                     .padding(.vertical, PaeoniaSpacing.space12)
                     .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
             }
+            StoryReactionBar(story: story, people: people)
             if people.isOwn(story) {
                 ownFooter(for: story)
+            } else if chatContext.isAvailable {
+                replyBar(for: story)
             }
         }
         .padding(.horizontal, PaeoniaSpacing.space16)
@@ -173,6 +189,9 @@ struct StoryViewer: View {
             .font(PaeoniaTypography.caption)
             .foregroundStyle(.white.opacity(0.85))
             Spacer(minLength: 0)
+            if hasConversation(for: story) {
+                StoryRepliesButton(isUnread: hasUnreadReply(for: story), action: openReplies)
+            }
             if let onAddStory, content.mode == .home {
                 footerButton(systemImage: "plus", label: .storiesHomeAddAccessibility, action: onAddStory)
             }
@@ -215,6 +234,11 @@ struct StoryViewer: View {
                     return
                 }
                 withAnimation(PaeoniaMotion.stateChange) { dragOffset = 0 }
+                // A tap while the keyboard is up puts it away instead of moving on.
+                if isReplyFocused {
+                    isReplyFocused = false
+                    return
+                }
                 let moved = hypot(value.translation.width, value.translation.height)
                 guard moved < Self.touchSlop, heldFor < Self.holdDuration else { return }
                 if value.startLocation.x < width / 3 {

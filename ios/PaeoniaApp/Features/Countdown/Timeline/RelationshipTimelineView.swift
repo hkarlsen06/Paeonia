@@ -57,7 +57,7 @@ struct RelationshipTimelineView: View {
                 // Simultaneous so vertical scrolling keeps working.
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 30).onEnded { value in
-                        if DailyChatPanGestureResolver.shouldTriggerNavigationBack(
+                        if ThreadChatPanGestureResolver.shouldTriggerNavigationBack(
                             translation: value.translation,
                             velocity: value.velocity
                         ) {

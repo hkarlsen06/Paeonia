@@ -1,24 +1,14 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { canAccessCoupleContent } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { detailRow, type DailyAnswerDetailRow } from "./lib/dailyAnswers";
 import { dailyQuestionThreadLink, isSharedRound, loadQuestionRounds } from "./lib/dailyQuestionRounds";
-import {
-  addSeenStates,
-  isLive,
-  isVisibleAnswer,
-  QuestionContentReader,
-  questionRow,
-  visibleAnswersOf,
-  type DailyQuestionRow,
-} from "./lib/dailyQuestions";
-import { getByUuid, withUpdatedAt } from "./lib/db";
+import { addSeenStates, QuestionContentReader, questionRow, type DailyQuestionRow } from "./lib/dailyQuestions";
+import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
-import { consumeRateLimit } from "./lib/rateLimits";
-import { reactionArg } from "./lib/reactions";
-import { nowIso } from "./lib/time";
+import { reactionsOf } from "./lib/reactions";
 import { topicOfQuestion } from "./lib/topics";
 
 type AnswerReactionRow = { answer_id: string; user_id: string; emoji: string };
@@ -62,11 +52,8 @@ export const get_daily_question_chat = query({
         const canView = answer.user_id === userId || own !== null;
         answerDetails.push(await detailRow(ctx, userId, day, instance, answer, canView));
         if (!canView) continue;
-        for (const reaction of await ctx.db
-          .query("daily_answer_reactions")
-          .withIndex("by_answer_id_user_id", (q) => q.eq("answer_id", answer.id))
-          .collect()) {
-          reactions.push({ answer_id: answer.id, user_id: reaction.user_id, emoji: reaction.emoji });
+        for (const reaction of await reactionsOf(ctx, "daily_answer", answer.id)) {
+          reactions.push({ answer_id: answer.id, ...reaction });
         }
       }
     }
@@ -84,54 +71,5 @@ export const get_daily_question_chat = query({
       answer_details: answerDetails,
       reactions,
     };
-  },
-});
-
-/**
- * Sets the caller's emoji reaction to an answer, or clears it with a null `p_emoji`.
- * Only an answer the caller can read in the question chat can get a reaction: their own,
- * or the partner's on a day the caller answered too. A plain write without a client
- * operation, so the same call twice changes nothing. The live chat query brings the
- * reaction to both phones, so there is no push.
- */
-export const set_daily_answer_reaction = mutation({
-  args: { p_answer_id: v.string(), p_emoji: v.union(v.null(), v.string()) },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    const answer = await getByUuid(ctx, "daily_question_answers", uuidArg(args.p_answer_id));
-    const instance = answer ? await getByUuid(ctx, "daily_question_instances", answer.instance_id) : null;
-    if (!answer || !instance || !(await canAccessCoupleContent(ctx, userId, instance.couple_id))) {
-      return fail("42501", "active entitled couple access is required");
-    }
-    if (!isVisibleAnswer(answer) || !isLive(instance)) fail("23514", "reaction target is not available");
-    if (!(await visibleAnswersOf(ctx, instance.id)).some((own) => own.user_id === userId)) {
-      fail("42501", "you must answer this daily question before reacting");
-    }
-    const emoji = reactionArg(args.p_emoji);
-
-    const existing = await ctx.db
-      .query("daily_answer_reactions")
-      .withIndex("by_answer_id_user_id", (q) => q.eq("answer_id", answer.id).eq("user_id", userId))
-      .unique();
-    if (emoji === null) {
-      if (existing) await ctx.db.delete(existing._id);
-      return null;
-    }
-    if (existing?.emoji === emoji) return null;
-    await consumeRateLimit(ctx, "threadMessage", userId);
-    if (existing) {
-      await ctx.db.patch(existing._id, withUpdatedAt({ emoji }));
-    } else {
-      const now = nowIso();
-      await ctx.db.insert("daily_answer_reactions", {
-        answer_id: answer.id,
-        couple_id: instance.couple_id,
-        user_id: userId,
-        emoji,
-        created_at: now,
-        updated_at: now,
-      });
-    }
-    return null;
   },
 });

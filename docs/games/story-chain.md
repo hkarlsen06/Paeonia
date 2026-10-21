@@ -23,6 +23,7 @@ Decided on 2026-10-13.
 - **Reading.** The story reads as one flowing page in the system serif. Each partner's sentences have their own ink, Paeonia's opening is muted italic, and a dared word has a gold underline. Tapping a sentence shows who wrote it and when.
 - **Pushes.** Five kinds, none showing story text: your turn, the last line was written, the story was named, an invite, and one reminder after 72 hours.
 - **History.** Finished stories are kept in "Our stories" with private stars, like "Our drawings".
+- **Reactions.** Either partner can put one emoji on a finished story, under the stats line of the reveal and on the story in "Our stories" (decided on 2026-10-21). The emoji of both partners shows on the story's row. They work like every reaction (`docs/implementation-map.md`, "Reactions"): kind `story_chain_story`, one gentle push for a first reaction, no queue. The row waits until the server has the title, so it never meets a refusal.
 
 ## Why this game
 

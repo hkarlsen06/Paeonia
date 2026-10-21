@@ -13,6 +13,8 @@ import { uuidArg } from "./lib/ids";
 import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { enqueueStoryPostedNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
+import { deleteReactionsOf } from "./lib/reactions";
+import { deleteThreadOfSubject } from "./lib/threadSubjects";
 import { charLength } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
 
@@ -159,7 +161,10 @@ export const post_story = mutation({
   },
 });
 
-/** Deletes the story `p_story_id`. Only its author may. A missing or already deleted one is fine. */
+/**
+ * Deletes the story `p_story_id` and the replies to it. Only its author may. A missing or already
+ * deleted one is fine.
+ */
 export const delete_story = mutation({
   args: { p_story_id: v.string(), ...clientOperationArgs },
   handler: async (ctx, args) => {
@@ -179,6 +184,8 @@ export const delete_story = mutation({
         return fail("42501", "only the author can delete a story");
       }
       await ctx.db.patch(existing._id, { deleted_at: nowIso() });
+      await deleteReactionsOf(ctx, "story", existing.id);
+      await deleteThreadOfSubject(ctx, existing.couple_id, { kind: "story", id: existing.id });
       await queueOrphanedMediaAssetForDelete(ctx, existing.media_asset_id);
       return null;
     });

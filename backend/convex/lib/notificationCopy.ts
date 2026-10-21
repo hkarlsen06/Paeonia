@@ -247,6 +247,16 @@ export async function notificationActorDisplayName(
   return name ? name : null;
 }
 
+/** What a reaction was on, as the second line of its push: "to your story". Names no content. */
+const REACTION_PUSH_TARGET: Record<string, Record<"en" | "nb", string>> = {
+  story: { en: "to your story", nb: "på storyen din" },
+  memory: { en: "to your memory", nb: "på minnet ditt" },
+  widget_drawing: { en: "to your drawing", nb: "på tegningen din" },
+  draw_and_guess_round: { en: "to your round of Draw & Guess", nb: "på runden deres i Tegn og gjett" },
+  exquisite_corpse_figure: { en: "to your creature", nb: "på skapningen deres" },
+  story_chain_story: { en: "to your story in Story Chain", nb: "på historien deres i Skrivestafett" },
+};
+
 const gameReminderBody = (nb: boolean) => (nb ? "Fortsett der dere slapp." : "Pick up where you left off.");
 
 /**
@@ -304,6 +314,10 @@ export function notificationAlertBody(
       return nb ? "Sendte deg en melding" : "Sent you a message";
     case "topics_waiting":
       return nb ? "Se hva som venter i Temaer." : "See what's waiting in Topics.";
+    case "reaction_added": {
+      const target = typeof payload.target_kind === "string" ? REACTION_PUSH_TARGET[payload.target_kind] : undefined;
+      return target?.[language] ?? (nb ? "Se hva det gjelder." : "See what it was on.");
+    }
     case "game_turn_ready":
       return gamePushCopy(payload, language)?.turnReadyBody ?? gameReminderBody(nb);
     case "game_result":
@@ -380,6 +394,10 @@ export async function notificationAlertTitle(
       return name;
     case "topics_waiting":
       return nb ? `Nye svar fra ${name}` : `New answers from ${name}`;
+    case "reaction_added": {
+      const emoji = typeof payload.emoji === "string" ? ` ${payload.emoji}` : "";
+      return nb ? `${name} reagerte${emoji}` : `${name} reacted${emoji}`;
+    }
     case "game_turn_ready":
     case "game_turn_reminder": {
       const game = gamePushCopy(payload, nb ? "nb" : "en");

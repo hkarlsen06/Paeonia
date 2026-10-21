@@ -381,14 +381,6 @@
         ownerUserID: ownerUserID, memoryID: memoryID, memoryMediaID: memoryMediaID,
         operation: operation)
     }
-    func createMemoryThreadMessage(
-      ownerUserID: UUID, memoryID: UUID, body: String, mediaAssetIDs: [UUID],
-      operation: SyncClientOperation
-    ) async throws {
-      try await service.createMemoryThreadMessage(
-        ownerUserID: ownerUserID, memoryID: memoryID, body: body, mediaAssetIDs: mediaAssetIDs,
-        operation: operation)
-    }
   }
 
   struct DeveloperScenarioPushAuthorization: PushAuthorizationProviding {

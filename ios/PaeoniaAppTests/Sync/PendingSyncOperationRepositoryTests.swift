@@ -96,6 +96,42 @@ struct PendingSyncOperationRepositoryTests {
         #expect(Set(remaining.map(\.clientOperationID)) == [recentFailure.id, waiting.id])
     }
 
+    @Test func discardUnsentRemovesAWaitingWriteAndKeepsOneThatIsSending() async throws {
+        let store = try PaeoniaLocalStore(inMemory: true)
+        let repository = SwiftDataPendingSyncOperationRepository(container: store.container)
+        let waiting = try await enqueue(1, in: repository)
+        let sending = try await enqueue(2, in: repository)
+        try await repository.markSending(clientOperationID: sending.id, at: Date())
+
+        #expect(try await repository.discardUnsent(clientOperationID: waiting.id))
+        #expect(try await !repository.discardUnsent(clientOperationID: sending.id))
+
+        let inFlight = try await repository.inFlightOperations(ownerUserID: owner, kind: .submitDailyAnswer)
+        #expect(inFlight.map(\.operation.id) == [sending.id])
+        // The drain refuses to start a write that was removed after it read the batch.
+        await #expect(throws: PendingSyncOperationClaimError.self) {
+            try await repository.markSending(clientOperationID: waiting.id, at: Date())
+        }
+    }
+
+    @Test func discardUnsentKeepsAWriteThatWasTriedBeforeBecauseTheServerMayHaveIt() async throws {
+        let store = try PaeoniaLocalStore(inMemory: true)
+        let repository = SwiftDataPendingSyncOperationRepository(container: store.container)
+        let tried = try await enqueue(1, in: repository)
+        try await repository.markSending(clientOperationID: tried.id, at: Date())
+        try await repository.markRetryableFailure(
+            clientOperationID: tried.id,
+            errorDescription: "The connection was lost",
+            nextRetryAt: nil,
+            at: Date()
+        )
+
+        #expect(try await !repository.discardUnsent(clientOperationID: tried.id))
+
+        let inFlight = try await repository.inFlightOperations(ownerUserID: owner, kind: .submitDailyAnswer)
+        #expect(inFlight.map(\.operation.id) == [tried.id])
+    }
+
     @Test func resetInFlightPutsInterruptedWritesBackInTheQueue() async throws {
         let store = try PaeoniaLocalStore(inMemory: true)
         let repository = SwiftDataPendingSyncOperationRepository(container: store.container)

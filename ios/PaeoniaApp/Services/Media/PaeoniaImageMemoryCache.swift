@@ -32,6 +32,12 @@ nonisolated enum PaeoniaImageMemoryCache {
         cache.setObject(image, forKey: key as NSString, cost: cost)
     }
 
+    /// Drops every size kept for a media asset, such as the full image and the chat copy.
+    static func remove(mediaAssetID: UUID) {
+        cache.removeObject(forKey: mediaAssetID.uuidString as NSString)
+        cache.removeObject(forKey: "chat-\(mediaAssetID.uuidString)" as NSString)
+    }
+
     /// Called by the privacy cleanup together with the on-disk caches.
     static func removeAll() {
         cache.removeAllObjects()

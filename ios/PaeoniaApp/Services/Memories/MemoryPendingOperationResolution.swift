@@ -105,7 +105,7 @@ enum MemoryPendingOperationRefresh {
     /// Every kind of queued memory write. Each payload names its memory as `memoryID`.
     nonisolated static let memoryWriteKinds: [SyncPendingOperationKind] = [
         .createMemory, .updateMemory, .setMemoryPlace, .hideMemory, .upsertMemoryNote,
-        .attachMemoryMedia, .removeMemoryMedia, .createMemoryThreadWithMessage,
+        .attachMemoryMedia, .removeMemoryMedia,
     ]
 
     private nonisolated struct QueuedMemoryID: Decodable {

@@ -150,9 +150,9 @@ describe("round info on question rows", () => {
   });
 });
 
-describe("set_daily_answer_reaction", () => {
+describe("reactions on answers", () => {
   const react = (user: TestUser, answerId: string, emoji: string | null) =>
-    user.as.mutation(api.dailyQuestionChat.set_daily_answer_reaction, { p_answer_id: answerId, p_emoji: emoji });
+    user.as.mutation(api.reactions.set_reaction, { p_kind: "daily_answer", p_target_id: answerId, p_emoji: emoji });
   const reactionsSeenBy = async (user: TestUser, couple: TestCouple, questionId: string) =>
     (await user.as.query(api.dailyQuestionChat.get_daily_question_chat, { p_couple_id: couple.coupleId, p_question_id: questionId }))
       .reactions;
@@ -171,7 +171,7 @@ describe("set_daily_answer_reaction", () => {
 
     await react(couple.second, answerId, " 👍🏽 ");
     expect(await reactionsSeenBy(couple.first, couple, question.id)).toEqual([{ ...reaction, emoji: "👍🏽" }]);
-    expect(await t.run((ctx) => ctx.db.query("daily_answer_reactions").collect())).toHaveLength(1);
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toHaveLength(1);
 
     await react(couple.second, answerId, null);
     await react(couple.second, answerId, null);
@@ -251,6 +251,6 @@ describe("set_daily_answer_reaction", () => {
     expect(await failure(react(couple.second, newUuid(), "❤️"))).toEqual(denied);
     await endCouple(t, couple.coupleId, couple.first.userId);
     expect(await failure(react(couple.second, answerId, "❤️"))).toEqual(denied);
-    expect(await t.run((ctx) => ctx.db.query("daily_answer_reactions").collect())).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toEqual([]);
   });
 });

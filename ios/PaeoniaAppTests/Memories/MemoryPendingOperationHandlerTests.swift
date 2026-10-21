@@ -441,11 +441,4 @@ actor ScriptedMemoryGateway: MemoryGateway {
         if !removeFailures.isEmpty { throw removeFailures.removeFirst() }
         return payload.memoryMediaID
     }
-
-    func createMemoryThreadWithMessage(
-        _ payload: CreateMemoryThreadMessageOperationPayload,
-        operation: SyncClientOperation
-    ) throws -> MemoryThreadMessageResponse? {
-        nil
-    }
 }

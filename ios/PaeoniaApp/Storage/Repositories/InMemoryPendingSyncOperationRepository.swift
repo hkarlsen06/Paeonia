@@ -168,6 +168,15 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
         }
     }
 
+    func discardUnsent(clientOperationID: UUID) throws -> Bool {
+        guard let operation = operations[clientOperationID] else { return true }
+        guard operation.status != .sending, operation.status != .succeeded, operation.attemptCount == 0
+        else { return false }
+        operations[clientOperationID] = nil
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: operation.ownerUserID)
+        return true
+    }
+
     func deleteCompleted(ownerUserID: UUID) throws {
         let cutoff = Date().addingTimeInterval(-PendingSyncOperationRetention.terminal)
         operations = operations.filter { _, operation in

@@ -27,7 +27,7 @@ struct DailyPartnerAnswerFlow: View {
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     /// The question's chat, made when the answer is sent.
-    @State private var chat: DailyQuestionChatViewModel?
+    @State private var chat: ThreadChatViewModel?
     @State private var reportTarget: PrivacyReportTarget?
     /// The single source of truth for what's on screen. The flow moves strictly forward
     /// through these phases and the view switches on this value *alone* — never on the
@@ -132,9 +132,9 @@ struct DailyPartnerAnswerFlow: View {
     /// the reply unlocks, the chat's waiting page shows the user's answer. After the
     /// couple's day ends, today's snapshot can drop the exchange, so the chat keeps
     /// its own copy of the question instead of going back to the unanswered one.
-    private func revealed(_ chat: DailyQuestionChatViewModel) -> some View {
+    private func revealed(_ chat: ThreadChatViewModel) -> some View {
         NavigationStack {
-            DailyQuestionChatView(
+            ThreadChatView(
                 viewModel: chat,
                 question: revealedQuestion ?? chat.question,
                 participants: viewModel.participants,

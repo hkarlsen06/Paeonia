@@ -138,6 +138,8 @@ actor SettingsFakeNotificationPreferences {
             preferences.memoriesEnabled = value
         case .games:
             preferences.gamesEnabled = value
+        case .lockScreenDetails:
+            preferences.lockScreenDetailsEnabled = value
         }
     }
 }

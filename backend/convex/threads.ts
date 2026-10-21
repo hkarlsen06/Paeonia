@@ -5,6 +5,7 @@ import {
   canAccessCoupleContent,
   getCurrentEntitledCoupleId,
   isActiveCoupleMember,
+  listActiveMembers,
 } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
@@ -14,13 +15,22 @@ import { dailyQuestionThreadLink, isSharedRound, loadQuestionRounds } from "./li
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
+import { memoryDeepLink, storyDeepLink } from "./lib/deepLinks";
 import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
-import { enqueuePartnerNotification } from "./lib/notifications";
+import { queueThreadMessageMediaAssetsIfOrphaned } from "./lib/mediaOrphans";
+import { enqueueNotificationForUser, enqueuePartnerNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
-import { reactionArg } from "./lib/reactions";
+import { deleteReactionsOf, reactionsOf } from "./lib/reactions";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
+import {
+  isChatSubjectAvailable,
+  subjectOfThread,
+  threadIdOfSubject,
+  type ThreadSubject,
+  type ThreadSubjectKind,
+} from "./lib/threadSubjects";
 import { topicOfQuestion } from "./lib/topics";
 
 const nullableMediaIds = v.optional(v.union(v.null(), v.array(v.string())));
@@ -40,11 +50,11 @@ async function assertDailyQuestionThreadAllowed(ctx: ReaderCtx, coupleId: string
   if (coupleId !== thread.couple_id) fail("23514", "daily question thread couple mismatch");
 }
 
-/** Port of `assert_memory_thread_allowed`. */
-async function assertMemoryThreadAllowed(ctx: ReaderCtx, threadId: string): Promise<void> {
+/** Port of `assert_memory_thread_allowed`, for the memory and story kinds. */
+async function assertSubjectThreadAllowed(ctx: ReaderCtx, threadId: string, kind: "memory" | "story"): Promise<void> {
   const thread = await getByUuid(ctx, "conversation_threads", threadId);
   if (!thread) fail("23503", "thread was not found");
-  if (thread.kind !== "memory") fail("23514", "memory thread must use memory kind");
+  if (thread.kind !== kind) fail("23514", `${kind} thread must use ${kind} kind`);
 }
 
 /** Port of `assert_thread_message_allowed`. */
@@ -87,7 +97,7 @@ async function assertThreadMessageMediaAllowed(ctx: ReaderCtx, messageId: string
 /** Inserts a conversation_threads row after `assert_conversation_thread_allowed`. */
 async function insertConversationThread(
   ctx: WriterCtx,
-  row: { couple_id: string; kind: "daily_question" | "memory"; created_by_user_id: string },
+  row: { couple_id: string; kind: ThreadSubjectKind; created_by_user_id: string },
 ): Promise<string> {
   await assertConversationThreadAllowed(ctx, row.couple_id, row.created_by_user_id);
   const id = newUuid();
@@ -110,15 +120,8 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
   if (message.deleted_at !== undefined || message.moderation_status !== "visible") return;
   const thread = await getByUuid(ctx, "conversation_threads", message.thread_id);
   if (!thread || thread.deleted_at !== undefined || thread.moderation_status !== "visible") return;
-  const dailyLink = await ctx.db
-    .query("daily_question_threads")
-    .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
-    .unique();
-  const memoryLink = await ctx.db
-    .query("memory_threads")
-    .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
-    .unique();
-  if (!dailyLink && !memoryLink) return;
+  const subject = await subjectOfThread(ctx, thread);
+  if (!subject) return;
 
   await applyCoupleActivity(ctx, {
     couple_id: thread.couple_id,
@@ -137,15 +140,7 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
     message_id: message.id,
     actor_user_id: message.sender_user_id,
   };
-  if (dailyLink) {
-    Object.assign(payload, {
-      route: "daily",
-      deeplink: `paeonia://daily/chat?questionId=${dailyLink.question_id}`,
-      question_id: dailyLink.question_id,
-    });
-  } else {
-    Object.assign(payload, { route: "memories", deeplink: "paeonia://memories", memory_id: memoryLink!.memory_id });
-  }
+  Object.assign(payload, threadPushRoute(subject));
   try {
     await enqueuePartnerNotification(ctx, {
       couple_id: thread.couple_id,
@@ -160,6 +155,25 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
     });
   } catch {
     // Push delivery must never make sending a message fail.
+  }
+}
+
+/**
+ * Where a chat push opens. The payload carries the subject's id, so the app finds the chat
+ * without a lookup: the question's chat, the memory's comments or the story's replies.
+ */
+function threadPushRoute(subject: ThreadSubject): Record<string, string> {
+  switch (subject.kind) {
+    case "daily_question":
+      return {
+        route: "daily",
+        deeplink: `paeonia://daily/chat?questionId=${subject.id}`,
+        question_id: subject.id,
+      };
+    case "memory":
+      return { route: "memories", deeplink: memoryDeepLink(subject.id, { comments: true }), memory_id: subject.id };
+    case "story":
+      return { route: "stories", deeplink: storyDeepLink(subject.id, { replies: true }), story_id: subject.id };
   }
 }
 
@@ -374,56 +388,84 @@ export const edit_thread_message = mutation({
 });
 
 /**
- * Sets the caller's emoji reaction to a shown message, their own or the partner's, or
- * clears it with a null `p_emoji`. A plain write without a client operation, so the same
- * call twice changes nothing. The live message query brings the reaction to both phones,
- * so there is no push.
+ * Takes back the caller's own message, whatever it holds: text, photos or a voice message.
+ * There is no time limit. The row stays as a tombstone (`deleted_at`) so the chat shows
+ * "Message deleted" where it was and a reply that quoted it still has something to point at.
+ * The text, the reactions and the media files go. A partner who has not read the message yet
+ * gets a silent push that removes its alert from their phone, and a chat alert still waiting
+ * to be sent is dropped at send time (`rowStillWanted`). The streak credit for sending stays.
+ * Deleting a missing or already deleted message changes nothing, so a retry from the offline
+ * queue is safe. Only the sender can delete.
  */
-export const set_thread_message_reaction = mutation({
-  args: { p_message_id: v.string(), p_emoji: v.union(v.null(), v.string()) },
+export const delete_thread_message = mutation({
+  args: { p_message_id: v.string(), ...clientOperationArgs },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    const message = await getByUuid(ctx, "thread_messages", uuidArg(args.p_message_id));
-    const thread = message ? await getByUuid(ctx, "conversation_threads", message.thread_id) : null;
-    if (!message || !thread || !(await canAccessCoupleContent(ctx, userId, thread.couple_id))) {
-      return fail("42501", "active entitled thread access is required");
-    }
-    if (
-      thread.deleted_at !== undefined ||
-      thread.moderation_status !== "visible" ||
-      message.deleted_at !== undefined ||
-      message.moderation_status !== "visible"
-    ) {
-      fail("23514", "reaction target is not available");
-    }
-    const emoji = reactionArg(args.p_emoji);
-
-    const existing = await ctx.db
-      .query("thread_message_reactions")
-      .withIndex("by_message_id_user_id", (q) => q.eq("message_id", message.id).eq("user_id", userId))
-      .unique();
-    if (emoji === null) {
-      if (existing) await ctx.db.delete(existing._id);
-      return null;
-    }
-    if (existing?.emoji === emoji) return null;
-    await consumeRateLimit(ctx, "threadMessage", userId);
-    if (existing) {
-      await ctx.db.patch(existing._id, withUpdatedAt({ emoji }));
-    } else {
-      const now = nowIso();
-      await ctx.db.insert("thread_message_reactions", {
-        message_id: message.id,
-        thread_id: thread.id,
-        user_id: userId,
-        emoji,
-        created_at: now,
-        updated_at: now,
-      });
-    }
+    const messageId = uuidArg(args.p_message_id);
+    await runClientOperation(
+      ctx,
+      userId,
+      toClientOperation(args, {
+        kind: "delete_thread_message",
+        scope: `thread_message:${messageId}`,
+        request: ["delete_thread_message", messageId],
+      }),
+      async () => {
+        const message = await getByUuid(ctx, "thread_messages", messageId);
+        if (!message) return null;
+        if (message.sender_user_id !== userId) fail("42501", "only the sender can delete a message");
+        const thread = await getByUuid(ctx, "conversation_threads", message.thread_id);
+        if (!thread || !(await canAccessCoupleContent(ctx, userId, thread.couple_id))) {
+          return fail("42501", "active entitled thread access is required");
+        }
+        if (message.deleted_at !== undefined) return null;
+        await ctx.db.patch(
+          message._id,
+          withUpdatedAt({ deleted_at: nowIso(), body: undefined, edited_at: undefined }),
+        );
+        await deleteReactionsOf(ctx, "thread_message", message.id);
+        // After the patch above, so the media no longer counts as shown by a live message.
+        await queueThreadMessageMediaAssetsIfOrphaned(ctx, message.id);
+        await withdrawMessageAlert(ctx, thread, message);
+        return null;
+      },
+    );
     return null;
   },
 });
+
+/**
+ * Tells the partner's phones to remove the alert of a message that was taken back. Skipped
+ * when the partner has already read the message, since opening the chat clears its alert.
+ * A push problem never fails the delete.
+ */
+async function withdrawMessageAlert(ctx: WriterCtx, thread: Doc<"conversation_threads">, message: Doc<"thread_messages">) {
+  try {
+    for (const member of await listActiveMembers(ctx, thread.couple_id)) {
+      if (member.user_id === message.sender_user_id) continue;
+      const read = await ctx.db
+        .query("thread_read_states")
+        .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", thread.id).eq("user_id", member.user_id))
+        .unique();
+      if (read && read.last_read_message_created_at >= message.created_at) continue;
+      await enqueueNotificationForUser(ctx, {
+        recipient_user_id: member.user_id,
+        kind: "thread_message_deleted",
+        payload: {
+          type: "thread_message_deleted",
+          couple_id: thread.couple_id,
+          thread_id: thread.id,
+          message_id: message.id,
+          actor_user_id: message.sender_user_id,
+        },
+        dedupe_key: `thread_message_deleted:${message.id}`,
+        apns_push_type: "background",
+      });
+    }
+  } catch {
+    // Push delivery must never make deleting a message fail.
+  }
+}
 
 /**
  * Starts the chat about a question with its first message, or adds to the chat that
@@ -502,6 +544,49 @@ export const create_daily_question_thread_with_message = mutation({
   },
 });
 
+/**
+ * Starts the chat about a memory or a story with its first message, or adds to the chat that
+ * already exists. Either partner can write: the comments on a memory are for both, and the
+ * replies to a story start with the partner who watched it and go on between both. A subject
+ * that is gone, deleted or another couple's is refused like a missing one.
+ */
+async function startSubjectThreadWithMessage(
+  ctx: WriterCtx,
+  userId: string,
+  subject: ThreadSubject & { kind: "memory" | "story" },
+  body: string | null | undefined,
+  mediaAssetIds: string[] | null | undefined,
+) {
+  const row =
+    subject.kind === "memory"
+      ? await getByUuid(ctx, "memories", subject.id)
+      : await getByUuid(ctx, "stories", subject.id);
+  if (
+    !row ||
+    !(await isChatSubjectAvailable(ctx, row.couple_id, subject)) ||
+    !(await canAccessCoupleContent(ctx, userId, row.couple_id))
+  ) {
+    return fail("42501", `active entitled ${subject.kind} access is required`);
+  }
+  let threadId = await threadIdOfSubject(ctx, row.couple_id, subject);
+  if (!threadId) {
+    threadId = await insertConversationThread(ctx, {
+      couple_id: row.couple_id,
+      kind: subject.kind,
+      created_by_user_id: userId,
+    });
+    await assertSubjectThreadAllowed(ctx, threadId, subject.kind);
+    const link = { thread_id: threadId, created_at: nowIso() };
+    if (subject.kind === "memory") {
+      await ctx.db.insert("memory_threads", { memory_id: subject.id, ...link });
+    } else {
+      await ctx.db.insert("story_threads", { story_id: subject.id, ...link });
+    }
+  }
+  const messageId = await insertThreadMessage(ctx, userId, threadId, body, mediaAssetIds);
+  return { thread_id: threadId, message_id: messageId };
+}
+
 export const create_memory_thread_with_message = mutation({
   args: {
     p_memory_id: v.string(),
@@ -526,31 +611,50 @@ export const create_memory_thread_with_message = mutation({
       }),
       async () => {
         await consumeRateLimit(ctx, "threadMessage", userId);
-        const memory = await getByUuid(ctx, "memories", memoryId);
-        if (
-          !memory ||
-          memory.deleted_at !== undefined ||
-          memory.moderation_status !== "visible" ||
-          !(await canAccessCoupleContent(ctx, userId, memory.couple_id))
-        ) {
-          return fail("42501", "active entitled memory access is required");
-        }
-        const existing = await ctx.db
-          .query("memory_threads")
-          .withIndex("by_memory_id", (q) => q.eq("memory_id", memory.id))
-          .unique();
-        let threadId = existing?.thread_id;
-        if (!threadId) {
-          threadId = await insertConversationThread(ctx, {
-            couple_id: memory.couple_id,
-            kind: "memory",
-            created_by_user_id: userId,
-          });
-          await assertMemoryThreadAllowed(ctx, threadId);
-          await ctx.db.insert("memory_threads", { memory_id: memory.id, thread_id: threadId, created_at: nowIso() });
-        }
-        const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids);
-        return { thread_id: threadId, message_id: messageId };
+        return await startSubjectThreadWithMessage(
+          ctx,
+          userId,
+          { kind: "memory", id: memoryId },
+          args.p_body,
+          args.p_media_asset_ids,
+        );
+      },
+    );
+    return [stored];
+  },
+});
+
+export const create_story_thread_with_message = mutation({
+  args: {
+    p_story_id: v.string(),
+    p_body: v.optional(v.union(v.null(), v.string())),
+    p_media_asset_ids: nullableMediaIds,
+    ...clientOperationArgs,
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const storyId = uuidArg(args.p_story_id);
+    const stored = await runClientOperation(
+      ctx,
+      userId,
+      toClientOperation(args, {
+        kind: "create_story_thread_with_message",
+        scope: "conversation_threads",
+        request: [
+          "create_story_thread_with_message",
+          storyId,
+          ...mediaFingerprint(args.p_body, args.p_media_asset_ids),
+        ],
+      }),
+      async () => {
+        await consumeRateLimit(ctx, "threadMessage", userId);
+        return await startSubjectThreadWithMessage(
+          ctx,
+          userId,
+          { kind: "story", id: storyId },
+          args.p_body,
+          args.p_media_asset_ids,
+        );
       },
     );
     return [stored];
@@ -585,6 +689,10 @@ export const get_conversation_threads = query({
         .query("memory_threads")
         .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
         .unique();
+      const story = await ctx.db
+        .query("story_threads")
+        .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
+        .unique();
       const last = await ctx.db
         .query("thread_messages")
         .withIndex("by_thread_id_created_at_id", (q) => q.eq("thread_id", thread.id))
@@ -616,6 +724,7 @@ export const get_conversation_threads = query({
         kind: thread.kind,
         daily_question_id: orNull(daily?.question_id),
         memory_id: orNull(memory?.memory_id),
+        story_id: orNull(story?.story_id),
         created_by_user_id: thread.created_by_user_id,
         created_at: thread.created_at,
         updated_at: thread.updated_at,
@@ -690,6 +799,26 @@ export const get_thread_messages = query({
     messages.reverse();
     const rows = [];
     for (const message of messages) {
+      // A message its sender took back stays as a bare marker: no text, media or reactions.
+      if (threadVisible && message.deleted_at !== undefined && message.moderation_status === "visible") {
+        rows.push({
+          thread_id: thread.id,
+          message_id: message.id,
+          sender_user_id: message.sender_user_id,
+          body: null,
+          reply_to_message_id: null,
+          reply_to_answer_id: null,
+          created_at: message.created_at,
+          edited_at: null,
+          deleted_at: message.deleted_at,
+          moderation_status: message.moderation_status,
+          media_asset_ids: [],
+          media: [],
+          media_states: [],
+          reactions: [],
+        });
+        continue;
+      }
       const messageVisible = threadVisible && message.deleted_at === undefined && message.moderation_status === "visible";
       const links = (
         await ctx.db
@@ -732,14 +861,7 @@ export const get_thread_messages = query({
         });
       }
       // Who reacted with what. A removed message shows none.
-      const reactions = messageVisible
-        ? (
-            await ctx.db
-              .query("thread_message_reactions")
-              .withIndex("by_message_id_user_id", (q) => q.eq("message_id", message.id))
-              .collect()
-          ).map((reaction) => ({ user_id: reaction.user_id, emoji: reaction.emoji }))
-        : [];
+      const reactions = messageVisible ? await reactionsOf(ctx, "thread_message", message.id) : [];
       rows.push({
         thread_id: thread.id,
         message_id: message.id,

@@ -315,7 +315,7 @@ describe("trigger helpers", () => {
       memory_id: memoryId,
       actor_user_id: couple.first.userId,
       route: "memories",
-      deeplink: "paeonia://memories",
+      deeplink: `paeonia://memories/memory?memoryId=${memoryId}`,
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });

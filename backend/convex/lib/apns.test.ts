@@ -30,6 +30,7 @@ const alert: PreparedNotification = {
   payload: { type: "memory_created", route: "memories", deeplink: "paeonia://memories" },
   deliver_quietly: false,
   badge: null,
+  lock_screen_detail_level: "private",
 };
 
 describe("quiet night", () => {
@@ -96,6 +97,16 @@ describe("payload builders", () => {
       "thread-id": "memories",
       category: "partner",
     });
+  });
+
+  test("a recipient who chose descriptive gets the detail twin of the category, with the same copy", () => {
+    const descriptive = buildAppApsPayload({ ...alert, lock_screen_detail_level: "descriptive" });
+    expect(descriptive.aps).toMatchObject({
+      alert: { body: "Open Paeonia to see it.", title: "Alex" },
+      category: "partner.detail",
+      "thread-id": "memories",
+    });
+    expect(buildAppApsPayload(alert).aps).toMatchObject({ category: "partner" });
   });
 
   test("an alert carries the badge number it was given, and leaves the icon alone without one", () => {

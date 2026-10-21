@@ -81,14 +81,8 @@ struct DrawAndGuessHistoryCell: View {
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                if let reaction = round.guesserReaction {
-                    badge {
-                        Image(systemName: reaction.symbol)
-                            .font(.caption)
-                            .foregroundStyle(.paeoniaAccentPrimary)
-                            .accessibilityHidden(true)
-                    }
-                }
+                StoredReactionBadge(target: .drawAndGuessRound(round.id))
+                    .padding(PaeoniaSpacing.space8)
             }
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
             .animation(PaeoniaMotion.stateChange, value: isStarred)

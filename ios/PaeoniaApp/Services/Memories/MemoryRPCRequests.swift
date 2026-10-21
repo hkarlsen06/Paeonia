@@ -254,33 +254,3 @@ nonisolated struct RemoveMemoryMediaRequest: Encodable {
         case localCreatedAt = "p_local_created_at"
     }
 }
-
-nonisolated struct CreateMemoryThreadMessageRequest: Encodable {
-    let memoryID: UUID
-    let body: String
-    let mediaAssetIDs: [UUID]
-    let clientOperationID: UUID
-    let clientID: UUID
-    let clientSequence: Int64
-    let localCreatedAt: Date
-
-    init(payload: CreateMemoryThreadMessageOperationPayload, operation: SyncClientOperation) {
-        memoryID = payload.memoryID
-        body = payload.body
-        mediaAssetIDs = payload.mediaAssetIDs
-        clientOperationID = operation.id
-        clientID = operation.clientID
-        clientSequence = operation.clientSequence
-        localCreatedAt = operation.localCreatedAt
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case memoryID = "p_memory_id"
-        case body = "p_body"
-        case mediaAssetIDs = "p_media_asset_ids"
-        case clientOperationID = "p_client_operation_id"
-        case clientID = "p_client_id"
-        case clientSequence = "p_client_sequence"
-        case localCreatedAt = "p_local_created_at"
-    }
-}

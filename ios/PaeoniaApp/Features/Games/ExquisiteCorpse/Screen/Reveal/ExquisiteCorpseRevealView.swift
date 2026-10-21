@@ -167,6 +167,7 @@ struct ExquisiteCorpseRevealView: View {
         VStack(spacing: PaeoniaSpacing.space16) {
             ExquisiteCorpseRevealTitle(number: content.number)
             ExquisiteCorpseRevealCredits(parts: content.parts)
+            ReactionSection(target: .exquisiteCorpseFigure(content.figureID), alignment: .center)
         }
         .frame(maxWidth: .infinity)
         .accessibilityHidden(!timeline.showsTitle)

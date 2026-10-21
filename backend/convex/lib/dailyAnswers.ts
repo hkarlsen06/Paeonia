@@ -7,6 +7,7 @@ import { checkViolation, fail, uniqueViolation } from "./errors";
 import { newUuid, uuidArg } from "./ids";
 import { jsonbByteLength, jsonbText } from "./json";
 import { enqueueDailyChallengeCompletedNotification, enqueuePartnerAnsweredNotification } from "./dailyPartnerPush";
+import { deleteReactionsOf } from "./reactions";
 import { tombstoneReportTargets } from "./reports";
 import { applyCoupleActivity } from "./streaks";
 import { nowIso } from "./time";
@@ -824,12 +825,7 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
           });
           await ctx.db.delete(item._id);
         }
-        for (const reaction of await ctx.db
-          .query("thread_message_reactions")
-          .withIndex("by_message_id_user_id", (q) => q.eq("message_id", message.id))
-          .collect()) {
-          await ctx.db.delete(reaction._id);
-        }
+        await deleteReactionsOf(ctx, "thread_message", message.id);
         await tombstoneReportTargets(ctx, "thread_message", message.id);
         await ctx.db.delete(message._id);
       }
@@ -869,12 +865,7 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
           .collect()) {
           await ctx.db.delete(row._id);
         }
-        for (const row of await ctx.db
-          .query("daily_answer_reactions")
-          .withIndex("by_answer_id_user_id", (q) => q.eq("answer_id", answer.id))
-          .collect()) {
-          await ctx.db.delete(row._id);
-        }
+        await deleteReactionsOf(ctx, "daily_answer", answer.id);
         await tombstoneReportTargets(ctx, "daily_answer", answer.id);
         await ctx.db.delete(answer._id);
       }

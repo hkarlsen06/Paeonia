@@ -34,10 +34,6 @@ protocol MemoryGateway: Actor {
         _ payload: RemoveMemoryMediaOperationPayload,
         operation: SyncClientOperation
     ) async throws -> UUID
-    func createMemoryThreadWithMessage(
-        _ payload: CreateMemoryThreadMessageOperationPayload,
-        operation: SyncClientOperation
-    ) async throws -> MemoryThreadMessageResponse?
 }
 
 actor LiveMemoryGateway: MemoryGateway {
@@ -150,18 +146,5 @@ actor LiveMemoryGateway: MemoryGateway {
             "memories:remove_memory_media",
             args: RemoveMemoryMediaRequest(payload: payload, operation: operation)
         )
-    }
-
-    func createMemoryThreadWithMessage(
-        _ payload: CreateMemoryThreadMessageOperationPayload,
-        operation: SyncClientOperation
-    ) async throws -> MemoryThreadMessageResponse? {
-        try await PaeoniaSignedIn.require(isSignedIn)
-
-        let rows: [MemoryThreadMessageResponse] = try await client.mutation(
-            "threads:create_memory_thread_with_message",
-            args: CreateMemoryThreadMessageRequest(payload: payload, operation: operation)
-        )
-        return rows.first
     }
 }

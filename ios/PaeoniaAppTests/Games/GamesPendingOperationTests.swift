@@ -238,35 +238,20 @@ struct GamesPendingOperationTests {
         #expect(work.guesses(roundID: GameFixture.roundID).map(\.guess) == ["cat"])
         #expect(work.hasGiveUp(roundID: GameFixture.roundID))
         #expect(work.hasMoveWaiting)
-        #expect(work.reaction(roundID: GameFixture.roundID) == nil)
         #expect(!work.hasResultSeen(roundID: GameFixture.roundID))
     }
 
-    @Test func reactionsAndSeenMarksAreReadBackButAreNotMoves() async throws {
-        try await enqueue(
-            .setGameRoundReaction,
-            GameReactionPayload(roundID: GameFixture.roundID, reaction: .love, createdAt: GameFixture.now),
-            sequence: 1
-        )
-        try await enqueue(
-            .setGameRoundReaction,
-            GameReactionPayload(roundID: GameFixture.roundID, reaction: nil, createdAt: GameFixture.now),
-            sequence: 2
-        )
+    @Test func seenMarksAreReadBackButAreNotMoves() async throws {
         try await enqueue(
             .markGameRoundResultSeen,
             GameResultSeenPayload(roundID: GameFixture.roundID, createdAt: GameFixture.now),
-            sequence: 3
+            sequence: 1
         )
 
         let work = try #require(
             await DrawAndGuessPendingWork.load(from: environment.pending, ownerUserID: GameFixture.me)
         )
 
-        // The last reaction made wins, and a cleared one is a reaction too.
-        let reaction = try #require(work.reaction(roundID: GameFixture.roundID))
-        #expect(reaction == nil)
-        #expect(work.reaction(roundID: UUID()) == nil)
         #expect(work.hasResultSeen(roundID: GameFixture.roundID))
         #expect(!work.hasMoveWaiting)
         #expect(!work.isEmpty)

@@ -156,22 +156,6 @@ actor GatedMemoryDataService {
             operation: operation
         )
     }
-
-    func createMemoryThreadMessage(
-        ownerUserID: UUID,
-        memoryID: UUID,
-        body: String,
-        mediaAssetIDs: [UUID],
-        operation: SyncClientOperation
-    ) async throws {
-        try await base.createMemoryThreadMessage(
-            ownerUserID: ownerUserID,
-            memoryID: memoryID,
-            body: body,
-            mediaAssetIDs: mediaAssetIDs,
-            operation: operation
-        )
-    }
 }
 
 extension GatedMemoryDataService: MemoryDataServicing {}

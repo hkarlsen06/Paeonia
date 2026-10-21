@@ -85,11 +85,6 @@ final class DrawAndGuessHistoryDetailViewModel {
         }
     }
 
-    /// The guesser's reaction, if they left one.
-    var reaction: (symbol: String, text: LocalizedStringResource)? {
-        round.guesserReaction.map { ($0.symbol, $0.drawerLine(partnerName: guesserName)) }
-    }
-
     /// "24 seconds" or "1 minute, 5 seconds".
     static func spoken(_ ms: Int) -> String {
         DrawAndGuessHistoryFormat.duration(ms: ms, width: .wide)

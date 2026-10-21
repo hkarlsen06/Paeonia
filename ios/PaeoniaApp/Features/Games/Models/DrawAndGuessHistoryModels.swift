@@ -24,7 +24,6 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
     let firstTryBonus: Int
     let hintsUsed: Int
     let attemptCount: Int
-    let guesserReaction: DrawAndGuessReaction?
     let personalBest: Bool
     /// The server's value. `GameStars` adds this phone's unsent changes.
     let starredByMe: Bool
@@ -46,7 +45,6 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
         case firstTryBonus = "first_try_bonus"
         case hintsUsed = "hints_used"
         case attemptCount = "attempt_count"
-        case guesserReaction = "guesser_reaction"
         case personalBest = "personal_best"
         case starredByMe = "starred_by_me"
         case startedAt = "started_at"

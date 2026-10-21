@@ -138,7 +138,6 @@ describe("access", () => {
     expect((await failure(other.first.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id }))).code).toBe("42501");
     expect((await failure(other.first.as.mutation(api.drawAndGuess.mark_round_result_seen, { p_round_id: picked.round_id }))).code).toBe("42501");
     expect((await failure(other.first.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: picked.round_id, p_starred: true }))).code).toBe("42501");
-    expect((await failure(other.first.as.mutation(api.drawAndGuess.set_round_reaction, { p_round_id: picked.round_id, p_reaction: "love" }))).code).toBe("42501");
     expect(await view(other.first)).toMatchObject({ game: null, current_round: null });
   });
 
@@ -1065,41 +1064,6 @@ describe("personal best", () => {
   });
 });
 
-describe("reactions", () => {
-  const react = (user: TestUser, roundId: string, reaction: "love" | "laugh" | "wow" | null) =>
-    user.as.mutation(api.drawAndGuess.set_round_reaction, { p_round_id: roundId, p_reaction: reaction });
-
-  test("the guesser sets, changes, and clears a reaction on a finished round without a push", async () => {
-    const s = await startGame();
-    const { picked } = await finishedRound(s, s.a, s.b);
-    const queued = (await outbox(s.t)).length;
-    expect(await react(s.b, picked.round_id, "love")).toEqual({ round_id: picked.round_id, guesser_reaction: "love" });
-    expect(await react(s.b, picked.round_id, "love")).toEqual({ round_id: picked.round_id, guesser_reaction: "love" });
-    expect((await view(s.a)).current_round?.guesser_reaction).toBe("love");
-    expect(await react(s.b, picked.round_id, "wow")).toMatchObject({ guesser_reaction: "wow" });
-    expect(await react(s.b, picked.round_id, "laugh")).toMatchObject({ guesser_reaction: "laugh" });
-    expect(await react(s.b, picked.round_id, null)).toEqual({ round_id: picked.round_id, guesser_reaction: null });
-    expect((await view(s.b)).current_round?.guesser_reaction).toBeNull();
-    expect(await react(s.b, picked.round_id, null)).toMatchObject({ guesser_reaction: null });
-    expect((await outbox(s.t)).length).toBe(queued);
-    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-
-  test("only the guesser reacts, only after the round ended, and a missed round counts", async () => {
-    const s = await startGame();
-    const { picked } = await finishedRound(s, s.a, s.b);
-    expect((await failure(react(s.a, picked.round_id, "love"))).code).toBe("42501");
-
-    // b draws round 2, which is open for a.
-    const open = await pick(s.b, s.gameId, "easy");
-    expect((await failure(react(s.a, open.round_id, "love"))).message).toMatch(/not finished/);
-    await sendDrawing(s, s.b, open.round_id);
-    await s.a.as.mutation(api.drawAndGuess.give_up_round, { ...op(), p_round_id: open.round_id });
-    expect(await react(s.a, open.round_id, "wow")).toMatchObject({ guesser_reaction: "wow" });
-    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-});
-
 describe("result seen", () => {
   const seen = (user: TestUser, roundId: string) => user.as.mutation(api.drawAndGuess.mark_round_result_seen, { p_round_id: roundId });
 
@@ -1219,7 +1183,7 @@ describe("history", () => {
     expect(Object.keys(item).sort()).toEqual(
       [
         "id", "round_number", "drawer_user_id", "guesser_user_id", "word", "difficulty", "points", "state", "drawing_media_asset_id",
-        "solve_ms", "speed_bonus", "first_try_bonus", "hints_used", "attempt_count", "guesser_reaction", "personal_best",
+        "solve_ms", "speed_bonus", "first_try_bonus", "hints_used", "attempt_count", "personal_best",
         "starred_by_me", "started_at", "ended_at",
       ].sort(),
     );
@@ -1233,7 +1197,6 @@ describe("history", () => {
       first_try_bonus: 1,
       hints_used: 0,
       attempt_count: 1,
-      guesser_reaction: null,
       personal_best: false,
       starred_by_me: false,
     });
@@ -1296,14 +1259,13 @@ describe("history", () => {
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("shows the reaction, hints, and personal best stored on the round", async () => {
+  test("shows the hints and personal best stored on the round", async () => {
     const s = await startGame();
     const picked = await pick(s.a, s.gameId, "custom", "hot dog");
     await sendDrawing(s, s.a, picked.round_id);
     await guessWith(s.b, picked.round_id, "hot dog", { p_hints_used: 3, p_solve_ms: 40_000 });
-    await s.b.as.mutation(api.drawAndGuess.set_round_reaction, { p_round_id: picked.round_id, p_reaction: "laugh" });
     const [item] = (await history(s.a)).rounds;
-    expect(item).toMatchObject({ hints_used: 3, solve_ms: 40_000, speed_bonus: 0, first_try_bonus: 0, guesser_reaction: "laugh", personal_best: false });
+    expect(item).toMatchObject({ hints_used: 3, solve_ms: 40_000, speed_bonus: 0, first_try_bonus: 0, personal_best: false });
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

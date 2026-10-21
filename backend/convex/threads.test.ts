@@ -4,6 +4,7 @@ import { answeredRound, answerIdOf, seedQuestion } from "./dailyChat.setup";
 import type { SeededQuestion } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
+import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 beforeEach(() => {
@@ -117,7 +118,7 @@ describe("memory threads", () => {
       message_id: result.message_id,
       actor_user_id: couple.first.userId,
       route: "memories",
-      deeplink: "paeonia://memories",
+      deeplink: `paeonia://memories/memory?memoryId=${memoryId}&comments=1`,
       memory_id: memoryId,
     });
     expect(row.dedupe_key).toBe(`thread_message_sent:${result.message_id}:${device.id}`);
@@ -398,9 +399,9 @@ describe("replies to answers", () => {
   });
 });
 
-describe("set_thread_message_reaction", () => {
+describe("reactions on messages", () => {
   const react = (user: TestUser, messageId: string, emoji: string | null) =>
-    user.as.mutation(api.threads.set_thread_message_reaction, { p_message_id: messageId, p_emoji: emoji });
+    user.as.mutation(api.reactions.set_reaction, { p_kind: "thread_message", p_target_id: messageId, p_emoji: emoji });
   const reactionsOn = async (user: TestUser, threadId: string, messageId: string) =>
     (await messagesOf(user, threadId)).find((row: { message_id: string }) => row.message_id === messageId)!.reactions;
 
@@ -425,7 +426,7 @@ describe("set_thread_message_reaction", () => {
     await react(couple.second, messageId, " 🔥 ");
     await react(couple.first, messageId, null);
     expect(await reactionsOn(couple.second, threadId, messageId)).toEqual([{ user_id: couple.second.userId, emoji: "🔥" }]);
-    expect(await t.run((ctx) => ctx.db.query("thread_message_reactions").collect())).toHaveLength(1);
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toHaveLength(1);
   });
 
   test("a removed message hides its reactions and takes no new ones", async () => {
@@ -454,13 +455,13 @@ describe("set_thread_message_reaction", () => {
   test("strangers, former partners, and unknown messages are refused", async () => {
     const t = newTest();
     const { couple, messageId } = await sentMessage(t);
-    const denied = { code: "42501", message: "active entitled thread access is required" };
+    const denied = { code: "42501", message: "active entitled couple access is required" };
     const stranger = await createSignedInUser(t);
     expect(await failure(react(stranger, messageId, "❤️"))).toEqual(denied);
     expect(await failure(react(couple.first, newUuid(), "❤️"))).toEqual(denied);
     await endCouple(t, couple.coupleId, couple.first.userId);
     expect(await failure(react(couple.second, messageId, "❤️"))).toEqual(denied);
-    expect(await t.run((ctx) => ctx.db.query("thread_message_reactions").collect())).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toEqual([]);
   });
 });
 
@@ -734,6 +735,149 @@ describe("edit_thread_message", () => {
   });
 });
 
+describe("delete_thread_message", () => {
+  async function sent(t: TestConvex) {
+    const couple = await createCouple(t);
+    const memoryId = await createMemory(couple.first);
+    const [{ thread_id, message_id }] = await memoryThread(couple.first, memoryId, "regret this");
+    return { couple, threadId: thread_id, messageId: message_id };
+  }
+  const del = (user: TestUser, messageId: string, operationId?: string) =>
+    user.as.mutation(api.threads.delete_thread_message, { ...op(operationId), p_message_id: messageId });
+  const row = (t: TestConvex, messageId: string) =>
+    t.run((ctx) => ctx.db.query("thread_messages").withIndex("by_uuid", (q) => q.eq("id", messageId)).unique());
+
+  test("the sender's message stays as a bare marker without its text or reactions", async () => {
+    const t = newTest();
+    const { couple, threadId, messageId } = await sent(t);
+    await couple.second.as.mutation(api.reactions.set_reaction, { p_kind: "thread_message", p_target_id: messageId, p_emoji: "❤️" });
+    tick();
+    await del(couple.first, messageId.toUpperCase());
+    expect(await row(t, messageId)).toMatchObject({ deleted_at: new Date().toISOString() });
+    expect((await row(t, messageId))!.body).toBeUndefined();
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toEqual([]);
+    for (const user of [couple.first, couple.second]) {
+      expect((await messagesOf(user, threadId)).find((item: { message_id: string }) => item.message_id === messageId)).toMatchObject({
+        body: null,
+        deleted_at: new Date().toISOString(),
+        sender_user_id: couple.first.userId,
+        media: [],
+        reactions: [],
+      });
+    }
+  });
+
+  test("a photo message loses its file", async () => {
+    const t = newTest();
+    const { couple, threadId } = await sent(t);
+    const a = await uploadAsset(t, couple.first, photo(couple.coupleId, "thread_message_media", "thread_media"));
+    await send(couple.first, threadId, { p_body: "look", p_media_asset_ids: [a.assetId] });
+    await del(couple.first, a.parentId);
+    const asset = await t.run((ctx) => ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", a.assetId)).unique());
+    expect(asset).toMatchObject({ storage_delete_status: "pending", deleted_at: expect.any(String) });
+    expect(await failure(couple.second.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: a.assetId }))).toEqual({
+      code: "42501",
+      message: "media asset is not available",
+    });
+    const shown = (await messagesOf(couple.second, threadId)).find((item: { message_id: string }) => item.message_id === a.parentId);
+    expect(shown).toMatchObject({ body: null, media_asset_ids: [], media: [], media_states: [] });
+  });
+
+  test("a replay, a second delete and an unknown message change nothing", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sent(t);
+    const operationId = newUuid();
+    await del(couple.first, messageId, operationId);
+    const first = (await row(t, messageId))!.deleted_at;
+    tick();
+    await del(couple.first, messageId, operationId);
+    await del(couple.first, messageId);
+    await del(couple.first, newUuid());
+    expect((await row(t, messageId))!.deleted_at).toBe(first);
+  });
+
+  test("only the sender can delete, and only while in the couple", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sent(t);
+    expect(await failure(del(couple.second, messageId))).toEqual({ code: "42501", message: "only the sender can delete a message" });
+    const stranger = await createSignedInUser(t);
+    expect(await failure(del(stranger, messageId))).toEqual({ code: "42501", message: "only the sender can delete a message" });
+    await endCouple(t, couple.coupleId, couple.first.userId);
+    expect(await failure(del(couple.first, messageId))).toEqual({
+      code: "42501",
+      message: "active entitled thread access is required",
+    });
+    expect((await row(t, messageId))!.deleted_at).toBeUndefined();
+    expect((await row(t, messageId))!.body).toBe("regret this");
+  });
+
+  test("a deleted message takes no reply, edit or reaction, and a reply sent earlier keeps its place", async () => {
+    const t = newTest();
+    const { couple, threadId, messageId } = await sent(t);
+    const [early] = await send(couple.second, threadId, { p_reply_to_message_id: messageId });
+    await del(couple.first, messageId);
+    expect(await failure(send(couple.second, threadId, { p_reply_to_message_id: messageId }))).toEqual({
+      code: "23514",
+      message: "reply target is not available",
+    });
+    expect(
+      await failure(couple.first.as.mutation(api.threads.edit_thread_message, { p_message_id: messageId, p_body: "new" })),
+    ).toEqual({ code: "23514", message: "message is not available" });
+    expect(
+      await failure(
+        couple.second.as.mutation(api.reactions.set_reaction, { p_kind: "thread_message", p_target_id: messageId, p_emoji: "😂" }),
+      ),
+    ).toEqual({ code: "23514", message: "reaction target is not available" });
+    const quoting = (await messagesOf(couple.first, threadId)).find((item: { message_id: string }) => item.message_id === early.message_id);
+    expect(quoting).toMatchObject({ reply_to_message_id: messageId });
+  });
+
+  test("a partner who has not read it gets a silent push that withdraws the alert", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await addDevice(t, couple.second.userId, { locale: "en", token: "b" });
+    const memoryId = await createMemory(couple.first);
+    const [{ message_id: messageId }] = await memoryThread(couple.first, memoryId, "regret this");
+    await del(couple.first, messageId);
+    const pushes = (await outbox(t)).filter((row) => row.kind === "thread_message_deleted");
+    expect(pushes).toMatchObject([
+      {
+        recipient_user_id: couple.second.userId,
+        apns_push_type: "background",
+        payload: { type: "thread_message_deleted", message_id: messageId },
+      },
+    ]);
+    expect(JSON.stringify(pushes)).not.toContain("regret this");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a message the partner already read sends no push", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await addDevice(t, couple.second.userId, { locale: "en", token: "b" });
+    const memoryId = await createMemory(couple.first);
+    const [{ thread_id: threadId, message_id: messageId }] = await memoryThread(couple.first, memoryId, "regret this");
+    await couple.second.as.mutation(api.chatPresence.mark_thread_read, { p_thread_id: threadId, p_message_id: messageId });
+    await del(couple.first, messageId);
+    expect((await outbox(t)).filter((row) => row.kind === "thread_message_deleted")).toEqual([]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("an alert still waiting to be sent is dropped", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await addDevice(t, couple.second.userId, { locale: "en", token: "b" });
+    const memoryId = await createMemory(couple.first);
+    const [{ message_id: messageId }] = await memoryThread(couple.first, memoryId, "regret this");
+    await del(couple.first, messageId);
+    const delivered = await deliverDuePushes(t);
+    expect(delivered.map((push) => push.payload.type)).not.toContain("thread_message_sent");
+    expect(delivered.map((push) => push.payload.type)).toContain("thread_message_deleted");
+    expect((await outbox(t)).find((row) => row.kind === "thread_message_sent")).toMatchObject({ last_error: expect.any(String) });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
 describe("reads", () => {
   test("get_conversation_threads lists threads with their last message, empty threads first", async () => {
     const t = newTest();
@@ -771,6 +915,7 @@ describe("reads", () => {
       kind: "memory",
       daily_question_id: null,
       memory_id: memoryId,
+      story_id: null,
       created_by_user_id: couple.first.userId,
       created_at: expect.any(String),
       updated_at: expect.any(String),

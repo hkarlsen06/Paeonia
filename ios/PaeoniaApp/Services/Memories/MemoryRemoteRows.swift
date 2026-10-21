@@ -191,13 +191,3 @@ nonisolated struct MemoryNoteRevisionResponse: Decodable, Equatable, Sendable {
         case updatedAt = "updated_at"
     }
 }
-
-nonisolated struct MemoryThreadMessageResponse: Decodable, Equatable, Sendable {
-    let threadID: UUID
-    let messageID: UUID
-
-    enum CodingKeys: String, CodingKey {
-        case threadID = "thread_id"
-        case messageID = "message_id"
-    }
-}

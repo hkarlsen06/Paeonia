@@ -131,9 +131,9 @@ struct DailyChatRoundsTests {
 
     // MARK: - Opening scroll
 
-    func message(at seconds: TimeInterval) -> DailyQuestionChatMessage {
-        DailyQuestionChatMessage(
-            id: UUID(), threadID: UUID(), questionID: questionID, senderUserID: me, body: "Hey",
+    func message(at seconds: TimeInterval) -> ThreadChatMessage {
+        ThreadChatMessage(
+            id: UUID(), threadID: UUID(), subjectID: questionID, senderUserID: me, body: "Hey",
             createdAt: Date(timeIntervalSince1970: seconds), clientOperationID: nil, isSending: false
         )
     }
@@ -218,7 +218,7 @@ struct DailyChatRoundsDecodingTests {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("ChatRounds-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let cache = FileDailyQuestionChatCache(directoryURL: directory)
+        let cache = FileThreadChatCache(directoryURL: directory)
         let user = UUID()
         let questionID = UUID()
         let row = try decodedChatRounds(
@@ -228,16 +228,16 @@ struct DailyChatRoundsDecodingTests {
         )
 
         let generation = await cache.purgeGeneration()
-        #expect(await cache.saveRounds(row, ownerUserID: user, questionID: questionID, unlessPurgedSince: generation))
-        let reopened = FileDailyQuestionChatCache(directoryURL: directory)
-        #expect(await reopened.rounds(ownerUserID: user, questionID: questionID) == row)
-        #expect(await reopened.rounds(ownerUserID: UUID(), questionID: questionID) == nil)
+        #expect(await cache.saveRounds(row, ownerUserID: user, subjectID: questionID, unlessPurgedSince: generation))
+        let reopened = FileThreadChatCache(directoryURL: directory)
+        #expect(await reopened.rounds(ownerUserID: user, subjectID: questionID) == row)
+        #expect(await reopened.rounds(ownerUserID: UUID(), subjectID: questionID) == nil)
 
         // A purge that ran after the read stops the save, and clears what was kept.
         await cache.clearAll()
-        #expect(await cache.rounds(ownerUserID: user, questionID: questionID) == nil)
+        #expect(await cache.rounds(ownerUserID: user, subjectID: questionID) == nil)
         let saved = await cache.saveRounds(
-            row, ownerUserID: user, questionID: questionID, unlessPurgedSince: generation
+            row, ownerUserID: user, subjectID: questionID, unlessPurgedSince: generation
         )
         #expect(!saved)
     }

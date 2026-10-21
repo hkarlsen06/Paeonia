@@ -11,6 +11,7 @@ import { isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPart
 import { gamePushStillWanted } from "./lib/gameRegistry";
 import type { GamePushKind } from "./lib/games";
 import { uuidArg } from "./lib/ids";
+import { reactionPreferenceAllows } from "./lib/notifications";
 import { hasStartedToday } from "./lib/questionTimeStatus";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { isValidTimeZone, nowIso } from "./lib/time";
@@ -75,12 +76,15 @@ function kindAllowed(row: Doc<"notification_outbox">, preference: Doc<"notificat
     case "story_posted":
       return preference?.memories_enabled ?? false;
     case "thread_message_sent":
+    case "thread_message_deleted":
       return preference?.messages_enabled ?? false;
     case "game_turn_ready":
     case "game_result":
     case "game_invite":
     case "game_turn_reminder":
       return preference?.games_enabled ?? false;
+    case "reaction_added":
+      return preference !== null && reactionPreferenceAllows(row.payload?.target_kind, preference);
     default:
       return true;
   }
@@ -104,6 +108,29 @@ async function rowStillWanted(
   }
   if (typeof payload.couple_id === "string" && !(await isActiveCoupleMember(ctx, recipientUserId, payload.couple_id))) {
     return { wanted: false, reason: "ineligible" };
+  }
+  // A message its sender took back before the alert went out needs no alert.
+  if (row.kind === "thread_message_sent" && typeof payload.message_id === "string") {
+    const message = await getByUuid(ctx, "thread_messages", payload.message_id);
+    if (!message || message.deleted_at !== undefined) return { wanted: false, reason: "out_of_date" };
+  }
+  // A reaction its sender took back before the alert went out needs no alert.
+  if (
+    row.kind === "reaction_added" &&
+    typeof payload.target_kind === "string" &&
+    typeof payload.target_id === "string" &&
+    typeof payload.actor_user_id === "string"
+  ) {
+    const reaction = await ctx.db
+      .query("reactions")
+      .withIndex("by_target_kind_target_id_user_id", (q) =>
+        q
+          .eq("target_kind", payload.target_kind as Doc<"reactions">["target_kind"])
+          .eq("target_id", payload.target_id as string)
+          .eq("user_id", payload.actor_user_id as string),
+      )
+      .unique();
+    if (!reaction) return { wanted: false, reason: "out_of_date" };
   }
   // The topic push can wait up to 3 hours, so it goes out only if something still waits by then,
   // and never sooner than 3 hours after the previous topic push really went out.
@@ -207,6 +234,7 @@ export const prepare_notification = internalMutation({
       payload: sendable.payload,
       deliver_quietly: await deliverQuietly(ctx, sendable, device),
       badge: await sendBadge(ctx, sendable, device.user_id),
+      lock_screen_detail_level: preference?.lock_screen_detail_level ?? "private",
     };
   },
 });

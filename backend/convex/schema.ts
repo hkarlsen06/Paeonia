@@ -13,9 +13,11 @@ import {
   memberStatus,
   moderationStatus,
   notificationKind,
+  reactionTargetKind,
   relationshipStatus,
   reviewScenario,
   storekitEnvironment,
+  threadKind,
   locationPermission,
   locationSource,
   wordDifficulty,
@@ -556,7 +558,7 @@ export default defineSchema({
   conversation_threads: defineTable({
     id: uuid,
     couple_id: uuid,
-    kind: literals("daily_question", "memory"),
+    kind: threadKind,
     created_by_user_id: uuid,
     created_at: ts,
     updated_at: ts,
@@ -1031,6 +1033,17 @@ export default defineSchema({
     .index("by_memory_id", ["memory_id"])
     .index("by_thread_id", ["thread_id"]),
 
+  // The replies to one story. The partner's first reply starts the thread, and the thread outlives
+  // the story's 24 hours on Home. Deleting the story deletes the thread (`delete_story`).
+  // FK: story_id -> stories cascade; thread_id -> conversation_threads cascade. Both unique.
+  story_threads: defineTable({
+    story_id: uuid,
+    thread_id: uuid,
+    created_at: ts,
+  })
+    .index("by_story_id", ["story_id"])
+    .index("by_thread_id", ["thread_id"]),
+
   // FK: user_id -> users cascade
   notification_preferences: defineTable({
     user_id: uuid,
@@ -1379,33 +1392,22 @@ export default defineSchema({
     .index("by_couple_id", ["couple_id"])
     .index("by_user_id", ["user_id"]),
 
-  // One person's emoji reaction to a daily answer, from the question chat.
-  // One row per (answer_id, user_id). Choosing another emoji replaces it, and clearing deletes it.
-  // FK: answer_id -> daily_question_answers cascade; couple_id -> couples cascade; user_id -> users cascade.
-  daily_answer_reactions: defineTable({
-    answer_id: uuid,
+  // One person's emoji reaction to one thing the couple shares (lib/reactions.ts). `target_kind` names
+  // the table of `target_id`. One row per (target_kind, target_id, user_id). Choosing another emoji
+  // replaces it, and clearing deletes it. No foreign key: the content's own delete path, the day reset,
+  // the relationship purge and account deletion remove the rows (`deleteReactionsOf` and friends).
+  // couple_id -> couples cascade; user_id -> users cascade.
+  reactions: defineTable({
+    target_kind: reactionTargetKind,
+    target_id: uuid,
     couple_id: uuid,
     user_id: uuid,
     emoji: v.string(),
     created_at: ts,
     updated_at: ts,
   })
-    .index("by_answer_id_user_id", ["answer_id", "user_id"])
-    .index("by_couple_id", ["couple_id"])
-    .index("by_user_id", ["user_id"]),
-
-  // One person's emoji reaction to a chat message. One row per (message_id, user_id).
-  // Choosing another emoji replaces it, and clearing deletes it.
-  // FK: message_id -> thread_messages cascade; thread_id -> conversation_threads cascade; user_id -> users cascade.
-  thread_message_reactions: defineTable({
-    message_id: uuid,
-    thread_id: uuid,
-    user_id: uuid,
-    emoji: v.string(),
-    created_at: ts,
-    updated_at: ts,
-  })
-    .index("by_message_id_user_id", ["message_id", "user_id"])
+    .index("by_target_kind_target_id_user_id", ["target_kind", "target_id", "user_id"])
+    .index("by_couple_id_target_kind", ["couple_id", "target_kind"])
     .index("by_user_id", ["user_id"]),
 
   // FK: message_id -> thread_messages cascade; media_asset_id -> media_assets cascade.
@@ -1631,8 +1633,6 @@ export default defineSchema({
     hints_used: v.optional(v.number()),
     // True when this hint-free solve beat every earlier hint-free solve by the same guesser. Fixed at solve time.
     personal_best: v.optional(v.boolean()),
-    // The guesser's reaction to the finished round. Cleared by patching to undefined.
-    guesser_reaction: v.optional(literals("love", "laugh", "wow")),
     // When each partner first dismissed the finished round's result. The first time wins.
     drawer_result_seen_at: optTs,
     guesser_result_seen_at: optTs,

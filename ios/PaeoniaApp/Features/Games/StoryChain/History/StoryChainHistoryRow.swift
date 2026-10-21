@@ -28,6 +28,7 @@ struct StoryChainHistoryRow: View {
                     .foregroundStyle(.paeoniaTextTertiary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            StoredReactionBadge(target: .storyChainStory(item.id))
             if isStarred {
                 Image(systemName: "star.fill")
                     .foregroundStyle(.paeoniaAccentPrimary)

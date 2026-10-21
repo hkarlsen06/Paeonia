@@ -188,7 +188,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let profilePhotoCache: (any ProfilePhotoImageCacheClearing)?
     private let dailyAnswerMediaDraftStore: any DailyAnswerMediaDraftStoring
     private let dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching
-    private let dailyQuestionChatCache: any DailyQuestionChatCaching
+    private let threadChatCache: any ThreadChatCaching
     private let gamesCache: any GamesCaching
     private let storyChainCache: any StoryChainCaching
     private let exquisiteCorpseCache: any ExquisiteCorpseCaching
@@ -202,6 +202,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let heartsCache: any HeartsCaching
     private let coupleDatesCache: any CoupleDatesCaching
     private let storiesCache: any StoriesCaching
+    private let reactionsCache: any ReactionsCaching
     private let topicsCache: any TopicsCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
     private let temporaryDirectory: URL
@@ -215,7 +216,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         profilePhotoCache: (any ProfilePhotoImageCacheClearing)? = ProfilePhotoImageService.shared,
         dailyAnswerMediaDraftStore: any DailyAnswerMediaDraftStoring = FileDailyAnswerMediaDraftStore.live(),
         dailyChallengeSnapshotCache: any DailyChallengeSnapshotCaching = FileDailyChallengeSnapshotCache.live(),
-        dailyQuestionChatCache: any DailyQuestionChatCaching = FileDailyQuestionChatCache.shared,
+        threadChatCache: any ThreadChatCaching = FileThreadChatCache.shared,
         gamesCache: any GamesCaching = FileGamesCache.shared,
         storyChainCache: any StoryChainCaching = FileStoryChainCache.shared,
         exquisiteCorpseCache: any ExquisiteCorpseCaching = FileExquisiteCorpseCache.shared,
@@ -229,6 +230,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         heartsCache: any HeartsCaching = FileHeartsCache.shared,
         coupleDatesCache: any CoupleDatesCaching = FileCoupleDatesCache.shared,
         storiesCache: any StoriesCaching = FileStoriesCache.shared,
+        reactionsCache: any ReactionsCaching = FileReactionsCache.shared,
         topicsCache: any TopicsCaching = FileTopicsCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
         temporaryDirectory: URL = FileManager.default.temporaryDirectory
@@ -241,7 +243,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.profilePhotoCache = profilePhotoCache
         self.dailyAnswerMediaDraftStore = dailyAnswerMediaDraftStore
         self.dailyChallengeSnapshotCache = dailyChallengeSnapshotCache
-        self.dailyQuestionChatCache = dailyQuestionChatCache
+        self.threadChatCache = threadChatCache
         self.gamesCache = gamesCache
         self.storyChainCache = storyChainCache
         self.exquisiteCorpseCache = exquisiteCorpseCache
@@ -255,6 +257,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.heartsCache = heartsCache
         self.coupleDatesCache = coupleDatesCache
         self.storiesCache = storiesCache
+        self.reactionsCache = reactionsCache
         self.topicsCache = topicsCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
         self.temporaryDirectory = temporaryDirectory
@@ -287,6 +290,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await MainActor.run {
             // Location updates while closed belong to this account and couple.
             LocationUpdateController.shared.resetUpdatesWhileClosed()
+            LatestWidgetDrawing.shared.clear()
             if shouldPurgeOwnedContent {
                 UserDefaultsDailyChallengeDraftStore.shared.clearDrafts(for: ownerUserID)
                 LocalMemoryDraftStore.shared.clearDraft(for: ownerUserID)
@@ -299,7 +303,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
                 )
                 UserDefaultsPairingJoinInviteStore.shared.clearInviteCode()
                 PushRegistrationFingerprintStore.resetAll()
-                DailyChatReactionPalette.shared.clearAll()
+                ReactionPalette.shared.clearAll()
                 // First day text belongs to no couple, so only sign-out clears it.
                 UserDefaultsFirstDayAnswerDraftStore.shared.clearAll(for: ownerUserID)
             }
@@ -342,7 +346,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
 
     private func purgeContentCaches(scope: LocalPrivacyPurgeScope) async {
         dailyChallengeSnapshotCache.clearAll()
-        await dailyQuestionChatCache.clearAll()
+        await threadChatCache.clearAll()
         await gamesCache.clearAll()
         await storyChainCache.clearAll()
         await mindMeldCache.clearAll()
@@ -352,6 +356,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await heartsCache.clearAll()
         await coupleDatesCache.clearAll()
         await storiesCache.clearAll()
+        await reactionsCache.clearAll()
         await topicsCache.clearAll()
         await exquisiteCorpseCache.clearAll()
         await boardGamesCache.clearAll()

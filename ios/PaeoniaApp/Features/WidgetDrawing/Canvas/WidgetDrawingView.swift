@@ -16,6 +16,7 @@ struct WidgetDrawingView: View {
     @State private var isClearConfirmationPresented = false
     @State private var isHistoryPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -287,6 +288,20 @@ struct WidgetDrawingView: View {
 }
 
 private extension WidgetDrawingView {
+    /// The reaction target of the partner's drawing, when it is the one on screen.
+    var partnersDrawingReaction: WidgetDrawingReactionTarget? {
+        guard viewModel.isShowingSavedAttribution,
+              let reaction = LatestWidgetDrawing.shared.reactionTarget(
+                  showing: WidgetCanvasSyncService.lastSyncedRevisionID(),
+                  currentUserID: reactionStore?.participants.currentUserID
+              ),
+              reaction.isFromPartner
+        else {
+            return nil
+        }
+        return reaction
+    }
+
     var canvasView: PencilKitCanvasView {
         PencilKitCanvasView(
             drawing: viewModel.drawing,
@@ -305,6 +320,12 @@ private extension WidgetDrawingView {
 
     @ToolbarContentBuilder
     var toolbarButtons: some ToolbarContent {
+        // Only the partner's drawing takes a reaction. A button without one would show as an empty pill.
+        if reactionStore != nil, let reaction = partnersDrawingReaction {
+            ToolbarItem(placement: .topBarTrailing) {
+                ReactionPickerButton(target: reaction.target, style: .toolbar)
+            }
+        }
         ToolbarItem(placement: .topBarTrailing) {
             Button {
                 viewModel.revertToSavedDrawing()

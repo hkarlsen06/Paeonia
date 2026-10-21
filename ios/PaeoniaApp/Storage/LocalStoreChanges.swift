@@ -10,11 +10,12 @@ nonisolated enum LocalStoreDomain: String, CaseIterable, Sendable {
     case memories
     case pendingOperations
     case dailyChallenge
-    case dailyChat
+    case threadChat
     case games
     case hearts
     case coupleDates
     case stories
+    case reactions
     case topics
 }
 

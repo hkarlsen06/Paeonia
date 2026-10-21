@@ -171,6 +171,7 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
             ExquisiteCorpseRevealCredits(parts: viewModel.content.parts)
+            ReactionSection(target: .exquisiteCorpseFigure(viewModel.figure.id), alignment: .center)
         }
     }
 }

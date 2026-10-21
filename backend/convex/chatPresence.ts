@@ -4,18 +4,19 @@ import { canAccessCoupleContent } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import type { ReaderCtx } from "./lib/db";
 import { getByUuid, orNull } from "./lib/db";
-import { dailyQuestionThreadLink } from "./lib/dailyQuestionRounds";
 import { visibleAnswersOf } from "./lib/dailyQuestions";
 import { fail } from "./lib/errors";
 import { uuidArg } from "./lib/ids";
 import { chatTypingRoom, onlineUserIds, setPresent } from "./lib/presence";
+import { isChatSubjectAvailable, threadIdOfSubject, threadSubjectArgs, threadSubjectOf } from "./lib/threadSubjects";
 import { nowIso } from "./lib/time";
 
-// Typing dots and read receipts for daily question chats, and the "seen" mark on a
-// partner's answer. New in Convex; there was no SQL version. Typing is kept by the presence
-// component (lib/presence.ts), and chat reads are small rows. The app writes both while a chat
-// is open and reads them through one live query, `get_daily_chat_presence`. Seen answers show
-// up in the daily question rows.
+// Typing dots and read receipts for chats, and the "seen" mark on a partner's answer. New in
+// Convex; there was no SQL version. A chat is named by its subject (`lib/threadSubjects.ts`): a
+// daily question, a memory or a story. Typing is kept by the presence component
+// (lib/presence.ts), and chat reads are small rows. The app writes both while a chat is open and
+// reads them through one live query, `get_chat_presence`. Seen answers show up in the daily
+// question rows.
 
 /**
  * Typing ends this long after the last heartbeat, such as when the app was killed mid-typing.
@@ -31,24 +32,24 @@ async function instanceCoupleId(ctx: ReaderCtx, instanceId: string): Promise<str
 }
 
 /**
- * Marks the caller as typing in a question's chat, or not. The app sends `true` while
- * the person types (at most every 2.5 seconds) and `false` when they stop or send.
- * The caller names the couple and must be an active, entitled member of it. One question's
- * chat is one room per couple.
+ * Marks the caller as typing in a chat, or not. The app sends `true` while the person types
+ * (at most every 2.5 seconds) and `false` when they stop or send. The caller names the couple
+ * and must be an active, entitled member of it. A chat is one room per couple and subject, and
+ * it works before the chat's thread exists.
  */
-export const set_daily_chat_typing = mutation({
-  args: { p_couple_id: v.string(), p_question_id: v.string(), p_is_typing: v.boolean() },
+export const set_chat_typing = mutation({
+  args: { p_couple_id: v.string(), ...threadSubjectArgs, p_is_typing: v.boolean() },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleId = uuidArg(args.p_couple_id);
-    const questionId = uuidArg(args.p_question_id);
+    const subject = threadSubjectOf(args);
     if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
       return fail("42501", "active entitled couple access is required");
     }
-    if (!(await getByUuid(ctx, "questions", questionId))) {
-      return fail("22023", "daily question was not found");
+    if (!(await isChatSubjectAvailable(ctx, coupleId, subject))) {
+      return fail("22023", "chat subject was not found");
     }
-    await setPresent(ctx, chatTypingRoom(coupleId, questionId), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
+    await setPresent(ctx, chatTypingRoom(coupleId, subject.id), userId, args.p_is_typing, TYPING_TIMEOUT_MS);
     return null;
   },
 });
@@ -129,26 +130,26 @@ export const mark_daily_answer_seen = mutation({
 });
 
 /**
- * The partner's typing and read state in a question's chat. It reads no clock: the presence
- * component ends typing `TYPING_TIMEOUT_MS` after the last heartbeat, which updates this query.
+ * The partner's typing and read state in a chat. It reads no clock: the presence component ends
+ * typing `TYPING_TIMEOUT_MS` after the last heartbeat, which updates this query.
  */
-export const get_daily_chat_presence = query({
-  args: { p_couple_id: v.string(), p_question_id: v.string() },
+export const get_chat_presence = query({
+  args: { p_couple_id: v.string(), ...threadSubjectArgs },
   handler: async (ctx, args) => {
     const empty = { partner_typing: false, partner_last_read_message_id: null, partner_read_at: null };
     const userId = await requireUserId(ctx);
     const coupleId = uuidArg(args.p_couple_id);
-    const questionId = uuidArg(args.p_question_id);
+    const subject = threadSubjectOf(args);
     if (!(await canAccessCoupleContent(ctx, userId, coupleId))) return empty;
 
-    const typing = (await onlineUserIds(ctx, chatTypingRoom(coupleId, questionId))).some((id) => id !== userId);
+    const typing = (await onlineUserIds(ctx, chatTypingRoom(coupleId, subject.id))).some((id) => id !== userId);
 
-    const link = await dailyQuestionThreadLink(ctx, coupleId, questionId);
-    const read = link
+    const threadId = await threadIdOfSubject(ctx, coupleId, subject);
+    const read = threadId
       ? (
           await ctx.db
             .query("thread_read_states")
-            .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", link.thread_id))
+            .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", threadId))
             .collect()
         ).find((row) => row.user_id !== userId)
       : undefined;

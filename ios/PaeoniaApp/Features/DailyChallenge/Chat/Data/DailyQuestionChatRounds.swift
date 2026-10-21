@@ -34,3 +34,13 @@ nonisolated struct DailyQuestionChatRoundsRow: Codable, Equatable, Sendable {
         )
     }
 }
+
+/// The arguments of the question page's query.
+nonisolated struct QuestionChatRequest: Encodable {
+    let coupleID: UUID
+    let questionID: UUID
+    enum CodingKeys: String, CodingKey {
+        case coupleID = "p_couple_id"
+        case questionID = "p_question_id"
+    }
+}

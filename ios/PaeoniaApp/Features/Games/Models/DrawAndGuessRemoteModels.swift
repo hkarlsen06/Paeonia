@@ -24,13 +24,6 @@ nonisolated enum DrawAndGuessRoundState: String, Codable, Sendable {
     }
 }
 
-/// How the guesser reacted to a finished round.
-nonisolated enum DrawAndGuessReaction: String, Codable, CaseIterable, Sendable {
-    case love
-    case laugh
-    case wow
-}
-
 /// One of the three words offered to the drawer, or the drawer's own pick.
 /// Only the drawer whose turn it is receives these.
 nonisolated struct RemoteDrawAndGuessChoice: Codable, Equatable, Sendable {
@@ -119,7 +112,6 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
     let hintsUsed: Int
     /// The guesser's fastest hint-free solve so far, and not their first one.
     let personalBest: Bool
-    let guesserReaction: DrawAndGuessReaction?
     /// This person's own private star. The partner's is never sent.
     var starredByMe: Bool
     /// When each partner moved past the result of the finished round.
@@ -150,7 +142,6 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
         case firstTryBonus = "first_try_bonus"
         case hintsUsed = "hints_used"
         case personalBest = "personal_best"
-        case guesserReaction = "guesser_reaction"
         case starredByMe = "starred_by_me"
         case drawerResultSeenAt = "drawer_result_seen_at"
         case guesserResultSeenAt = "guesser_result_seen_at"
@@ -275,16 +266,6 @@ nonisolated struct RemoteGiveUpResult: Decodable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case roundID = "round_id"
         case roundState = "round_state"
-    }
-}
-
-nonisolated struct RemoteReactionResult: Decodable, Equatable, Sendable {
-    let roundID: UUID
-    let guesserReaction: DrawAndGuessReaction?
-
-    enum CodingKeys: String, CodingKey {
-        case roundID = "round_id"
-        case guesserReaction = "guesser_reaction"
     }
 }
 

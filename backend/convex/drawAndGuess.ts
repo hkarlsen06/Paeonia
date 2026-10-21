@@ -546,9 +546,9 @@ export const give_up_round = mutation({
   },
 });
 
-// --- After the round: result, reaction, stars -------------------------------
+// --- After the round: result, stars -------------------------------
 
-/** A round that ended. Reactions, stars, and the result screen only apply to these. */
+/** A round that ended. Stars and the result screen only apply to these. */
 function assertFinished(move: GameMove): void {
   if (move.state !== "solved" && move.state !== "missed") fail("23514", "the round is not finished yet");
 }
@@ -571,25 +571,6 @@ export const mark_round_result_seen = mutation({
     const seenAt = move[field] ?? nowIso();
     if (move[field] === undefined) await patchMove(ctx, move, { [field]: seenAt });
     return { round_id: move.id, result_seen_at: seenAt };
-  },
-});
-
-/**
- * The guesser's reaction to a finished round: `love`, `laugh`, `wow`, or null to clear it. The
- * last write wins, setting the same value again changes nothing, and nobody gets a push.
- * Result: `{ round_id, guesser_reaction }`.
- */
-export const set_round_reaction = mutation({
-  args: { p_round_id: v.string(), p_reaction: v.optional(v.union(v.null(), literals("love", "laugh", "wow"))) },
-  handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    await assertNoPendingAccountDeletion(ctx, userId);
-    const { move } = await requireRound(ctx, userId, uuidArg(args.p_round_id));
-    if (move.guesser_user_id !== userId) fail("42501", "only the guesser can react");
-    assertFinished(move);
-    const reaction = args.p_reaction ?? undefined;
-    if (move.guesser_reaction !== reaction) await patchMove(ctx, move, { guesser_reaction: reaction });
-    return { round_id: move.id, guesser_reaction: orNull(reaction) };
   },
 });
 
@@ -631,7 +612,7 @@ export const set_round_star = mutation({
  * `p_before_round_number`; it is null when there are no more rounds. Each round has `id`,
  * `round_number`, `drawer_user_id`, `guesser_user_id`, `word`, `difficulty`, `points`, `state`,
  * `drawing_media_asset_id`, `solve_ms`, `speed_bonus`, `first_try_bonus`, `hints_used`,
- * `attempt_count`, `guesser_reaction`, `personal_best`, `starred_by_me`,
+ * `attempt_count`, `personal_best`, `starred_by_me`,
  * `started_at`, and `ended_at`.
  */
 export const get_draw_and_guess_history = query({

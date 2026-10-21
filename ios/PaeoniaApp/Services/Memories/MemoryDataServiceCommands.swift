@@ -344,42 +344,5 @@ extension MemoryDataService {
         try await memoryStore.saveLocal(next)
         return next
     }
-
-    func createMemoryThreadMessage(
-        ownerUserID: UUID,
-        memoryID: UUID,
-        body: String,
-        mediaAssetIDs: [UUID] = [],
-        operation: SyncClientOperation
-    ) async throws {
-        let normalizedBody = Self.normalizedOptional(body)
-        guard normalizedBody != nil || !mediaAssetIDs.isEmpty else {
-            throw MemoryDataServiceError.emptyThreadMessage
-        }
-
-        let payload = CreateMemoryThreadMessageOperationPayload(
-            memoryID: memoryID,
-            body: normalizedBody ?? "",
-            mediaAssetIDs: mediaAssetIDs
-        )
-
-        if let existing = try await memoryStore.load(ownerUserID: ownerUserID, memoryID: memoryID) {
-            try await memoryStore.saveLocal(
-                record(
-                    from: existing,
-                    operation: operation,
-                    syncStatus: .dirty
-                )
-            )
-        }
-
-        try await enqueue(
-            ownerUserID: ownerUserID,
-            operation: operation,
-            kind: .createMemoryThreadWithMessage,
-            scope: "memory-thread:\(memoryID.uuidString.lowercased())",
-            payload: payload
-        )
-    }
 }
 // swiftlint:enable function_parameter_count
