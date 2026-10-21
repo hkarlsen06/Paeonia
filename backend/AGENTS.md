@@ -17,7 +17,7 @@ Paeonia's backend is a self-hosted Convex deployment. This folder replaced the S
 
 ## iOS contract
 
-The iOS app subscribes to reads over the ConvexMobile WebSocket client and writes the results into its local store, so partner changes show up live. Writes and one-shot reads go over the HTTP API (`POST /api/mutation`, `/api/query`, `/api/action` with `{"path","args","format":"json"}`) through the app's offline outbox. Both use the Clerk session token. The widget extension uses HTTP only.
+The iOS app subscribes to reads over the ConvexMobile WebSocket client and writes the results into its local store, so partner changes show up live. Writes and one-shot reads go over the HTTP API (`POST /api/mutation`, `/api/query`, `/api/action` with `{"path","args","format":"json"}`) through the app's offline outbox, and the widget extension uses HTTP only. The HTTP calls use the Clerk session token. The socket uses a token from the Clerk JWT template `convex` (claims `{"aud": "convex"}`, lifetime 15 minutes), because every new token on a socket makes Convex re-run all of that phone's subscribed queries. With the 60-second session token, that happened about every 50 seconds per open app. `PaeoniaConvexAuthProvider` fetches the template token a minute before the old one expires. `scripts/deploy-backend` runs `scripts/ensure-clerk-jwt-template` with the deployment's `CLERK_SECRET_KEY` on every deploy, which creates the template or corrects its claims and lifetime, so a new Clerk instance needs no dashboard setup.
 
 Functions ported from Supabase kept their RPC shapes, which gives the conventions below. Follow them for new functions so the code stays consistent. They are not a compatibility promise. No shipped app depends on them, so rename a function, change its arguments, or reshape its result when that helps, and update the iOS caller in the same change.
 
@@ -50,7 +50,7 @@ Functions ported from Supabase kept their RPC shapes, which gives the convention
 
 ## Auth and authorization
 
-- Clerk issues the JWT. `convex/auth.config.ts` trusts the Clerk issuer with `applicationID: "convex"`.
+- Clerk issues the JWT. `convex/auth.config.ts` trusts the Clerk issuer with `applicationID: "convex"`. Both the session token (Convex integration) and the `convex` JWT template carry `aud: convex`. A ban or deleted account takes effect on the next call whatever the token's lifetime, because every call looks the user up.
 - `users` maps the Clerk `subject` to the Paeonia uuid that every other table references. `lib/auth.ts` exports `getCurrentUserId(ctx)` (returns null when signed out or not yet provisioned), `requireUserId(ctx)` (fails with `42501 authenticated user required`), and `ensureCurrentUser(ctx)` (mutations only). `ensureCurrentUser` replaces the `auth.users` triggers: it creates the `users` row and the profile from the Clerk identity claims on the first authenticated call.
 - Supabase used row level security plus `auth.uid()` checks inside `internal.*` functions. Convex has neither, so every public function must perform the same membership, entitlement, block, and ownership checks explicitly, using the helpers in `lib/access.ts`. When porting, read the RLS policies on every table the function touches and preserve their effect.
 - Never trust a user id, couple id, or role from arguments for authorization. Derive them from the session.

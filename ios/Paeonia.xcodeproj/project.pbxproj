@@ -17,7 +17,6 @@
 		2A2D06012FE2000000A7BE1A /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D06042FE2000000A7BE1A /* ClerkKit */; };
 		2A2D06022FE2000000A7BE1A /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D06042FE2000000A7BE1A /* ClerkKit */; };
 		2A2D07012FE3000000A7BE1A /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D07042FE3000000A7BE1A /* ConvexMobile */; };
-		2A2D07022FE3000000A7BE1A /* ClerkConvex in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D07062FE3000000A7BE1A /* ClerkConvex */; };
 		2A2D08012FE4000000A7BE1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 2A2D08032FE4000000A7BE1A /* PostHog */; };
 /* End PBXBuildFile section */
 
@@ -171,7 +170,6 @@
 				2A2D04212FE1000000A7BE1A /* ExyteChat in Frameworks */,
 				2A2D06012FE2000000A7BE1A /* ClerkKit in Frameworks */,
 				2A2D07012FE3000000A7BE1A /* ConvexMobile in Frameworks */,
-				2A2D07022FE3000000A7BE1A /* ClerkConvex in Frameworks */,
 				2A2D08012FE4000000A7BE1A /* PostHog in Frameworks */,
 				2A2D04112FE0000000A7BE1A /* CropViewController in Frameworks */,
 				2A2D04142FE0000000A7BE1A /* TOCropViewController in Frameworks */,
@@ -271,7 +269,6 @@
 				2A2D04232FE1000000A7BE1A /* ExyteChat */,
 				2A2D06042FE2000000A7BE1A /* ClerkKit */,
 				2A2D07042FE3000000A7BE1A /* ConvexMobile */,
-				2A2D07062FE3000000A7BE1A /* ClerkConvex */,
 				2A2D08032FE4000000A7BE1A /* PostHog */,
 				2A2D04132FE0000000A7BE1A /* CropViewController */,
 				2A2D04152FE0000000A7BE1A /* TOCropViewController */,
@@ -405,7 +402,6 @@
 				2A2D04222FE1000000A7BE1A /* XCRemoteSwiftPackageReference "Chat" */,
 				2A2D06032FE2000000A7BE1A /* XCRemoteSwiftPackageReference "clerk-ios" */,
 				2A2D07032FE3000000A7BE1A /* XCRemoteSwiftPackageReference "convex-swift" */,
-				2A2D07052FE3000000A7BE1A /* XCRemoteSwiftPackageReference "clerk-convex-swift" */,
 				2A2D08022FE4000000A7BE1A /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				2A2D04122FE0000000A7BE1A /* XCRemoteSwiftPackageReference "TOCropViewController" */,
 			);
@@ -1024,14 +1020,6 @@
 				minimumVersion = 0.8.1;
 			};
 		};
-		2A2D07052FE3000000A7BE1A /* XCRemoteSwiftPackageReference "clerk-convex-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/clerk/clerk-convex-swift";
-			requirement = {
-				kind = upToNextMinorVersion;
-				minimumVersion = 0.1.0;
-			};
-		};
 		2A2D08022FE4000000A7BE1A /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/PostHog/posthog-ios";
@@ -1067,11 +1055,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2A2D07032FE3000000A7BE1A /* XCRemoteSwiftPackageReference "convex-swift" */;
 			productName = ConvexMobile;
-		};
-		2A2D07062FE3000000A7BE1A /* ClerkConvex */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2A2D07052FE3000000A7BE1A /* XCRemoteSwiftPackageReference "clerk-convex-swift" */;
-			productName = ClerkConvex;
 		};
 		2A2D08032FE4000000A7BE1A /* PostHog */ = {
 			isa = XCSwiftPackageProductDependency;

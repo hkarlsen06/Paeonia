@@ -18,5 +18,5 @@ Paths and commands in the linked guides are relative to the repository root. Rea
 - A live feed is a `LiveFeed` that runs subscriptions for a `SyncSession` and writes results into a repository or cache. Register it with one line in `LiveFeedRegistry.makeFeeds`. `LiveSyncCoordinator` restarts feeds when the session changes, and stops them on sign-out and around a privacy purge. A feed must stop writing once its task is cancelled.
 - Repositories call `LocalStoreChanges.post` after each committed write. Add the call to any new shared repository.
 - Never call `logout()` on the live Convex client. It signs out of Clerk. Sign out through Clerk and the client follows.
-- The widget extension and notification extension stay HTTP-only. Do not link ConvexMobile or ClerkConvex into them.
+- The widget extension and notification extension stay HTTP-only. Do not link ConvexMobile into them.
 - The ConvexMobile static library has no x86_64 simulator slice, so the project excludes x86_64 for simulator builds.

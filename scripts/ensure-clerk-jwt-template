@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Makes sure the Clerk instance behind CLERK_SECRET_KEY has the `convex` JWT template.
+
+The app's live socket signs in with this template's token (PaeoniaConvexAuthProvider). Its
+15-minute lifetime matters: every new token makes Convex re-run all of a phone's subscribed
+queries, which Clerk's 60-second session token did about every 50 seconds per open app.
+Without the template, no live data loads.
+
+Creates the template when it is missing and corrects it when its claims or lifetime differ.
+scripts/deploy-backend runs it with the deployment's own CLERK_SECRET_KEY, so a new Clerk
+instance, such as the production one, gets the template on its first deploy.
+
+    CLERK_SECRET_KEY=sk_... scripts/ensure-clerk-jwt-template
+"""
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+TEMPLATE = {
+    "name": "convex",
+    "claims": {"aud": "convex"},
+    "lifetime": 900,
+    "allowed_clock_skew": 5,
+}
+API = "https://api.clerk.com/v1/jwt_templates"
+
+
+def request(method, url, key, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, method=method)
+    req.add_header("Authorization", f"Bearer {key}")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("User-Agent", "paeonia-ensure-clerk-jwt-template")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        sys.exit(f"[clerk] {method} {url} failed with {error.code}: {error.read().decode()[:300]}")
+    except urllib.error.URLError as error:
+        sys.exit(f"[clerk] could not reach Clerk: {error.reason}")
+
+
+def main():
+    key = os.environ.get("CLERK_SECRET_KEY", "").strip()
+    if not key.startswith("sk_"):
+        sys.exit("[clerk] CLERK_SECRET_KEY is missing or is not a Clerk secret key.")
+    instance = "production" if key.startswith("sk_live_") else "development"
+
+    templates = request("GET", API, key)
+    existing = next((t for t in templates if t.get("name") == TEMPLATE["name"]), None)
+    if existing is None:
+        request("POST", API, key, TEMPLATE)
+        print(f"[clerk] created the convex JWT template on the {instance} instance")
+        return
+
+    differs = any(existing.get(field) != TEMPLATE[field] for field in ("claims", "lifetime", "allowed_clock_skew"))
+    if differs:
+        request("PATCH", f"{API}/{existing['id']}", key, TEMPLATE)
+        print(f"[clerk] corrected the convex JWT template on the {instance} instance")
+    else:
+        print(f"[clerk] the convex JWT template on the {instance} instance is up to date")
+
+
+if __name__ == "__main__":
+    main()

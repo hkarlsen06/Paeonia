@@ -1,6 +1,5 @@
 import Combine
 @preconcurrency import ConvexMobile
-import ClerkConvex
 import ClerkKit
 import Foundation
 import Observation
@@ -30,7 +29,7 @@ nonisolated struct LiveLoginBackoff: Sendable {
 /// Owns the one `ConvexClientWithAuth` used for live subscriptions.
 ///
 /// The client is created on first use, after `PaeoniaClerk.configureIfPossible()`
-/// ran, and follows the Clerk session through `ClerkConvexAuthProvider`.
+/// ran, and follows the Clerk session through `PaeoniaConvexAuthProvider`.
 /// Never call `logout()` on it. The provider's `logout()` signs out of Clerk.
 /// Sign out through Clerk and the client follows.
 /// Writes and one-shot reads keep using `PaeoniaConvexClient`.
@@ -134,10 +133,12 @@ final class LiveConvexConnection {
             return nil
         }
 
+        let authProvider = PaeoniaConvexAuthProvider()
         let client = ConvexClientWithAuth(
             deploymentUrl: url.absoluteString,
-            authProvider: ClerkConvexAuthProvider()
+            authProvider: authProvider as any ConvexMobile.AuthProvider<String>
         )
+        authProvider.bind(client: client)
         self.client = client
         connectionState = .connecting
         observers = [
