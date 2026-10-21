@@ -429,7 +429,7 @@ describe("registry", () => {
     GAME_BACKENDS.mind_meld = { ...nullBackend, sendDueTurnReminders };
     GAME_BACKENDS.story_chain = { ...nullBackend, sendDueTurnReminders };
     try {
-      expect(await s.t.mutation(internal.games.send_due_game_turn_reminders, {})).toBe(4);
+      expect(await s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(4);
       expect(sendDueTurnReminders).toHaveBeenCalledWith(expect.anything(), new Date().toISOString());
     } finally {
       GAME_BACKENDS.mind_meld = saved.mind_meld;

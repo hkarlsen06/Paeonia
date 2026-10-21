@@ -1,11 +1,11 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { mutation, query } from "./_generated/server";
 import { getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
 import { orNull, type WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
-import { gameLanguageChanged, sendDueGameTurnReminders } from "./lib/gameRegistry";
 import {
   answerGameInvite,
   enqueueGamePush,
@@ -25,7 +25,8 @@ import { GAME_KINDS, gameKind, gameLanguage, gamePlayStyle } from "./lib/validat
 
 // Functions every game shares: settings, the overview, invites, presence, the relay ticket, and
 // the crons. Each game's own functions are in its module (drawAndGuess.ts). What a game plugs
-// into this file is in lib/gameRegistry.ts.
+// into this file is in lib/gameRegistry.ts. This file must not import the registry, because that loads every
+// game on each call. The jobs that need it are in gameHooks.ts.
 
 // --- Settings ---------------------------------------------------------------
 
@@ -46,7 +47,9 @@ export const set_game_settings = mutation({
         seen_by_user_ids: withSeen(existing.seen_by_user_ids, userId),
         updated_at: now,
       });
-      if (existing.language !== args.p_language) await gameLanguageChanged(ctx, coupleId, args.p_language);
+      if (existing.language !== args.p_language) {
+        await ctx.runMutation(internal.gameHooks.language_changed, { couple_id: coupleId, language: args.p_language });
+      }
     } else {
       await ctx.db.insert("game_settings", {
         couple_id: coupleId,
@@ -225,12 +228,4 @@ export const create_game_live_ticket = mutation({
     const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
     return await signLiveTicket({ coupleId, userId, channel: args.p_kind });
   },
-});
-
-// --- Cron jobs --------------------------------------------------------------
-
-/** The single reminder for each turn that waited 72 hours, for every game with turns. Returns the pushes queued. */
-export const send_due_game_turn_reminders = internalMutation({
-  args: {},
-  handler: async (ctx) => await sendDueGameTurnReminders(ctx, nowIso()),
 });

@@ -1429,7 +1429,7 @@ describe("push drain", () => {
 });
 
 describe("turn reminder", () => {
-  const run = (s: Setup) => s.t.mutation(internal.games.send_due_game_turn_reminders, {});
+  const run = (s: Setup) => s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {});
   const reminders = (s: Setup) => pushesOf(s.t, "game_turn_reminder");
 
   test("goes out once after 72 hours to the partner on turn, and again only for a new turn", async () => {
@@ -1504,7 +1504,7 @@ describe("turn reminder", () => {
     const other = await startGame();
     await endCouple(other.t, other.coupleId, other.a.userId);
     tick(80 * HOUR);
-    expect(await other.t.mutation(internal.games.send_due_game_turn_reminders, {})).toBe(0);
+    expect(await other.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(0);
   });
 
   test("the drain still sends a reminder while the turn waits and drops it once the turn moved on", async () => {

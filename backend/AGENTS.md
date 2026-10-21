@@ -9,6 +9,7 @@ Paeonia's backend is a self-hosted Convex deployment. This folder replaced the S
 - `convex/<module>.ts`: registered functions for one feature area. See the module map below.
 - `convex/http.ts`: the single HTTP router. Feature modules export `httpAction`s and `http.ts` mounts them.
 - `convex/crons.ts`: every scheduled job.
+- Keep the import graph of a query module small. Convex loads and evaluates every module a function imports on every call, and `import()` is not allowed in queries and mutations. On a local backend a function that imports about 400 KB of bundled code costs about 1 ms more per call than one that imports 100 KB, and the hosted server is about four times slower. A module with queries must not import `lib/gameRegistry.ts`, which pulls in every game. Put the code that needs it in its own module and call it with `ctx.runMutation`, as `games.ts` does with `gameHooks.ts`.
 - `convex/*.test.ts`: `convex-test` + `vitest` tests next to the module they cover.
 - `questions/`: source-controlled question catalog markdown, uploaded with `scripts/sync-question-catalog` (see `questions/README.md`).
 - `games/words/en.json` and `nb.json`: the Draw & Guess word lists. `convex/lib/gameWords.ts` imports them into the bundle, so a list change needs a deploy. `lib/gameWords.test.ts` checks both files against the rules in `docs/games/draw-and-guess.md`.
@@ -181,6 +182,7 @@ Set these with `npx convex env set`: `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_SECRET_KE
 | `memories` | `create_memory`, `update_memory`, `hide_memory`, `get_memories`, `upsert_memory_note`, `attach_memory_media`, `remove_memory_media` (`get_memories` pages by the memory's `updated_at` and id, and a note or photo change moves the memory's `updated_at` without a revision bump, see `touchMemoryForSync`) |
 | `media` | `create_pending_media_upload`, `finalize_media_upload`, `get_media_signed_url`, `mark_media_for_deletion` |
 | `games` | `set_game_settings`, `get_games_overview`, `send_game_invite`, `set_game_presence`, `create_game_live_ticket` (shared by all games, each takes a `p_kind` from `GAME_KINDS`) |
+| `gameHooks` | internal only: `language_changed` (run by `games:set_game_settings`) and `send_due_game_turn_reminders` (the 15-minute cron). They need every game's backend through `lib/gameRegistry.ts`, so they stay out of `games.ts` |
 | `storyChain` | `ensure_story_chain_game`, `get_story_chain`, `get_story_chain_story`, `start_story`, `add_story_line`, `name_story`, `mark_story_seen`, `set_story_star`, `get_story_chain_history` |
 | `drawAndGuess` | `ensure_draw_and_guess_game`, `get_draw_and_guess`, `get_draw_and_guess_round`, `pick_draw_word`, `submit_drawing`, `mark_round_seen`, `submit_guess`, `give_up_round`, `mark_round_result_seen`, `set_round_reaction`, `set_round_star`, `get_draw_and_guess_history`, `get_draw_and_guess_records` |
 | `mindMeld` | `get_mind_meld`, `start_mind_meld_game`, `lock_mind_meld_word`, `count_mind_meld_round`, `mark_mind_meld_reveal_seen`, `mark_mind_meld_end_seen`, `restart_mind_meld`, `get_mind_meld_history` |

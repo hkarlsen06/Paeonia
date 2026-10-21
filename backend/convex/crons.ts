@@ -8,8 +8,8 @@ const crons = cronJobs();
 // Game presence and chat typing have no cleanup cron: the presence component marks a user
 // offline when heartbeats stop. See lib/presence.ts.
 
-// New in Convex: the single reminder for a game turn that waited 72 hours. See games.ts.
-crons.interval("send-due-game-turn-reminders", { minutes: 15 }, internal.games.send_due_game_turn_reminders, {});
+// New in Convex: the single reminder for a game turn that waited 72 hours. See gameHooks.ts.
+crons.interval("send-due-game-turn-reminders", { minutes: 15 }, internal.gameHooks.send_due_game_turn_reminders, {});
 
 // pg_cron 'paeonia-push-notification-drain' has no entry: each outbox row is a pushWorkpool
 // work item that runs at its scheduled_for and retries itself. See lib/notifications.ts.

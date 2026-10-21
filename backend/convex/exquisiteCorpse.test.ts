@@ -935,7 +935,7 @@ describe("pushes", () => {
 });
 
 describe("turn reminder", () => {
-  const run = (s: Setup) => s.t.mutation(internal.games.send_due_game_turn_reminders, {});
+  const run = (s: Setup) => s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {});
   const reminders = async (s: Setup) => (await outbox(s.t)).filter((row) => row.kind === "game_turn_reminder");
 
   test("goes out once after 72 hours to the partner whose turn it is, and again only for a new turn", async () => {

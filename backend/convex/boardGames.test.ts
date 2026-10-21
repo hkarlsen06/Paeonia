@@ -1180,7 +1180,7 @@ async function startPushCouple(locale?: string): Promise<Setup> {
 const outbox = (t: TestConvex) => t.run((ctx) => ctx.db.query("notification_outbox").collect());
 const pushesOf = async (t: TestConvex, kind: string) => (await outbox(t)).filter((row) => row.kind === kind);
 const claim = (s: Setup) => deliverDuePushes(s.t);
-const runReminders = (s: Setup) => s.t.mutation(internal.games.send_due_game_turn_reminders, {});
+const runReminders = (s: Setup) => s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {});
 const hours = (count: number) => tick(count * 3600);
 /** Who a push goes to and which turn it names, for a push kind. */
 const turnsOf = async (s: Setup, kind: string) =>

@@ -847,7 +847,7 @@ describe("push drain", () => {
 
     // The reminder is out of date once a guesses, and the guessed push still goes to b.
     tick(73 * 3600);
-    expect(await s.t.mutation(internal.games.send_due_game_turn_reminders, {})).toBe(1);
+    expect(await s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(1);
     await guess(s.a, second.round_id, second.word);
     expect(kinds(await claim(s))).toEqual(["game_result"]);
     expect(await errorsOf(s, "game_turn_reminder")).toEqual(["notification is out of date"]);
@@ -920,7 +920,7 @@ describe("presence", () => {
 describe("turn reminder", () => {
   test("goes out once after 72 hours to the partner whose turn it is, and again only for a new move", async () => {
     const s = await startGame();
-    const run = () => s.t.mutation(internal.games.send_due_game_turn_reminders, {});
+    const run = () => s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {});
     const reminders = async () => (await outbox(s.t)).filter((row) => row.kind === "game_turn_reminder");
 
     tick(71 * 3600);
@@ -953,12 +953,12 @@ describe("turn reminder", () => {
     const s = await startGame();
     await s.a.as.mutation(api.identity.set_notification_preference, { p_column: "games_enabled", p_enabled: false });
     tick(80 * 3600);
-    expect(await s.t.mutation(internal.games.send_due_game_turn_reminders, {})).toBe(0);
+    expect(await s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(0);
     expect(await outbox(s.t)).toHaveLength(0);
 
     const other = await startGame();
     await endCouple(other.t, other.couple.coupleId, other.a.userId);
-    expect(await other.t.mutation(internal.games.send_due_game_turn_reminders, {})).toBe(0);
+    expect(await other.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(0);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });

@@ -650,7 +650,7 @@ describe("turn reminder", () => {
     const s = await startGame();
     await lock(s.a, (await openRound(s.a)).id, "ocean");
     tick(73 * 3600);
-    expect(await s.t.mutation(internal.games.send_due_game_turn_reminders, {})).toBe(1);
+    expect(await s.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {})).toBe(1);
     expect(await reminders(s)).toHaveLength(1);
     expect(await run(s)).toBe(0);
   });

@@ -886,7 +886,7 @@ class Fuzz {
     const m = this.m;
     const now = Date.now();
     const due = !m.reminded && m.turnStartedAt <= now - REMINDER_AFTER_MS;
-    const outcome = await attempt(this.t.mutation(internal.games.send_due_game_turn_reminders, {}));
+    const outcome = await attempt(this.t.mutation(internal.gameHooks.send_due_game_turn_reminders, {}));
     const sent = this.check("cron send_due_game_turn_reminders", outcome, "ok");
     this.same("reminders sent", sent, due ? 1 : 0);
     if (due) {
