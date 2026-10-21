@@ -123,24 +123,7 @@ actor SettingsFakeNotificationPreferences {
     }
 
     private func store(_ value: Bool, for kind: NotificationPreferenceKind) {
-        switch kind {
-        case .streakReminders:
-            preferences.streakRemindersEnabled = value
-        case .dailyChallenge:
-            preferences.dailyChallengeEnabled = value
-        case .partnerAnswered:
-            preferences.partnerAnsweredEnabled = value
-        case .messages:
-            preferences.messagesEnabled = value
-        case .widgetUpdates:
-            preferences.widgetUpdatesEnabled = value
-        case .memories:
-            preferences.memoriesEnabled = value
-        case .games:
-            preferences.gamesEnabled = value
-        case .dateReminders:
-            preferences.dateRemindersEnabled = value
-        }
+        preferences[kind] = value
     }
 }
 

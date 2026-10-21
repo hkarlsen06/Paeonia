@@ -11,6 +11,11 @@ nonisolated protocol DailyAnswerMediaImageCacheWriting: Sendable {
     func cacheImageData(_ data: Data, for mediaAssetID: UUID) async
 }
 
+nonisolated protocol DailyAnswerMediaCacheEvicting: Sendable {
+    /// Removes the cached files of media the sender took back, photos and voice messages.
+    func evict(mediaAssetIDs: [UUID]) async
+}
+
 nonisolated protocol DailyAnswerMediaCacheClearing: Sendable {
     /// Removes every cached reveal file. Used by the privacy cleanup when the user
     /// signs out, deletes their account, or loses access to the relationship.
@@ -21,7 +26,7 @@ nonisolated protocol DailyAnswerMediaCacheClearing: Sendable {
 /// service: check the on-disk cache first, otherwise resolve a signed URL through
 /// `get_media_signed_url`, download, and cache by media asset id.
 actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerMediaCacheClearing,
-    DailyAnswerMediaImageCacheWriting {
+    DailyAnswerMediaCacheEvicting, DailyAnswerMediaImageCacheWriting {
     nonisolated static let shared: DailyAnswerMediaImageService? = try? live()
 
     private let client: PaeoniaConvexClient
@@ -76,6 +81,14 @@ actor DailyAnswerMediaImageService: DailyAnswerMediaImageProviding, DailyAnswerM
 
     func cacheImageData(_ data: Data, for mediaAssetID: UUID) {
         store(data, for: mediaAssetID)
+    }
+
+    func evict(mediaAssetIDs: [UUID]) {
+        for mediaAssetID in mediaAssetIDs {
+            PaeoniaImageMemoryCache.remove(mediaAssetID: mediaAssetID)
+            inFlightDownloads.removeValue(forKey: mediaAssetID)?.cancel()
+            try? FileManager.default.removeItem(at: fileURL(for: mediaAssetID))
+        }
     }
 
     func clearAll() {

@@ -50,13 +50,13 @@ extension DailyChallengeViewModel {
     /// The task ends when the signed-in user changes.
     func observeLiveUpdates(for userID: UUID) {
         liveUpdatesTask = Task { @MainActor [weak self] in
-            for await change in LocalStoreChanges.changes(in: .dailyChallenge, .dailyChat, .pendingOperations) {
+            for await change in LocalStoreChanges.changes(in: .dailyChallenge, .threadChat, .pendingOperations) {
                 guard change.ownerUserID == userID else { continue }
                 guard let self, self.currentUserID == userID else { return }
                 switch change.domain {
                 case .dailyChallenge:
                     await self.applyCachedSnapshot(for: userID)
-                case .dailyChat:
+                case .threadChat:
                     let summaries = await self.chatService.cachedThreadSummaries(ownerUserID: userID)
                     let readMarks = await self.chatService.chatReadMarks(ownerUserID: userID)
                     let seenAnswers = await self.chatService.seenPartnerAnswers(ownerUserID: userID)
@@ -89,9 +89,10 @@ extension DailyChallengeViewModel {
         await refreshSendingState()
     }
 
-    func applyThreadSummaries(_ summaries: [DailyQuestionThreadSummary]) {
+    func applyThreadSummaries(_ summaries: [ThreadChatSummary]) {
+        // Only question chats. A memory's comments and a story's replies have their own screens.
         threadSummariesByQuestionID = Dictionary(
-            summaries.map { ($0.questionID, $0) },
+            summaries.compactMap { summary in summary.questionID.map { ($0, summary) } },
             uniquingKeysWith: { _, latest in latest }
         )
     }

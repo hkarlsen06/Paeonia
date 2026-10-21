@@ -271,6 +271,37 @@ describe("cleanup", () => {
     expect(await rows(t)).toEqual([]);
   });
 
+  test("the day reset deletes the reactions on an answer together with its favorites", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const [question] = await seedCatalog(t, textQuestions(12));
+    const round = await answeredRound(t, couple, question);
+    const answerId = await answerIdOf(t, round, couple.first);
+    await favorite(couple.second, "daily_answer", answerId);
+    await couple.second.as.mutation(api.reactions.set_reaction, { p_kind: "daily_answer", p_target_id: answerId, p_emoji: "❤️" });
+    expect(await rows(t)).toHaveLength(1);
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toHaveLength(1);
+
+    await t.mutation(internal.daily.reset_daily_challenge_for_testing, { p_couple_id: couple.coupleId });
+    expect(await rows(t)).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toEqual([]);
+  });
+
+  test("the couple cleanup deletes reactions and favorites in the same pass", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const question = await seedQuestion(t);
+    const round = await answeredRound(t, couple, question);
+    const answerId = await answerIdOf(t, round, couple.first);
+    await favorite(couple.first, "daily_question", question.id);
+    await couple.second.as.mutation(api.reactions.set_reaction, { p_kind: "daily_answer", p_target_id: answerId, p_emoji: "😂" });
+
+    await couple.first.as.mutation(api.relationship.leave_relationship, op());
+    await t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
+    expect(await rows(t)).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("reactions").collect())).toEqual([]);
+  });
+
   test("ending the relationship deletes the couple's favorites and keeps another couple's", async () => {
     const t = newTest();
     const couple = await createCouple(t);

@@ -31,6 +31,7 @@ struct NotificationSettingsView: View {
 
                 partnerSection
                 remindersSection
+                lockScreenSection
             }
             .listRowBackground(Color.paeoniaSurfacePrimary)
         }
@@ -107,6 +108,19 @@ struct NotificationSettingsView: View {
             )
         } header: {
             Text(.settingsNotificationsRemindersSectionTitle)
+        }
+    }
+
+    /// Applies only when iOS hides previews on the lock screen. The default keeps everything hidden.
+    private var lockScreenSection: some View {
+        Section {
+            toggleRow(
+                .lockScreenDetails,
+                title: .settingsNotificationsLockScreenDetailsTitle,
+                subtitle: .settingsNotificationsLockScreenDetailsSubtitle(partnerName)
+            )
+        } header: {
+            Text(.settingsNotificationsLockScreenSectionTitle)
         }
     }
 

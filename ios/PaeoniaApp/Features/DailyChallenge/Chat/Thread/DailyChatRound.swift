@@ -117,7 +117,7 @@ nonisolated enum DailyChatRounds {
     static func openingScroll(
         rounds: [DailyChallengeQuestion],
         focusing instanceID: UUID?,
-        messages: [DailyQuestionChatMessage]
+        messages: [ThreadChatMessage]
     ) -> OpeningScroll {
         guard let target = rounds.first(where: { $0.id == instanceID }) ?? rounds.last else { return .newestMessage }
         if target.id == rounds.last?.id {

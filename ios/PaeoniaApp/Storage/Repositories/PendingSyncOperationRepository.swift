@@ -33,6 +33,25 @@ protocol PendingSyncOperationPersisting: Actor {
     ) async throws
     func deleteCompleted(ownerUserID: UUID) async throws
     func resetInFlight(ownerUserID: UUID) async throws
+
+    /// Removes a write the user took back before it was ever tried, with everything it
+    /// carries (a message's photos and recording). Returns false and keeps the write when
+    /// it is sending now, finished, or was tried before, since the server may already have it
+    /// when the answer got lost.
+    func discardUnsent(clientOperationID: UUID) async throws -> Bool
+}
+
+extension PendingSyncOperationPersisting {
+    /// Stores that keep no payload of their own only mark the write as given up. The drain
+    /// refuses to start a write that gave up.
+    func discardUnsent(clientOperationID: UUID) async throws -> Bool {
+        try await markTerminalFailure(
+            clientOperationID: clientOperationID,
+            errorDescription: "The user took the write back before it was sent",
+            at: Date()
+        )
+        return true
+    }
 }
 
 nonisolated enum PendingSyncOperationRetention {
@@ -215,6 +234,18 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         }
         deletable.forEach(context.delete)
         try context.save()
+    }
+
+    func discardUnsent(clientOperationID: UUID) throws -> Bool {
+        let context = ModelContext(container)
+        guard let operation = try fetchOperation(id: clientOperationID, in: context) else { return true }
+        guard operation.status != .sending, operation.status != .succeeded, operation.attemptCount == 0
+        else { return false }
+        let ownerUserID = operation.ownerUserID
+        context.delete(operation)
+        try context.save()
+        LocalStoreChanges.post(.pendingOperations, ownerUserID: ownerUserID)
+        return true
     }
 
     /// A write that was sending when the app stopped goes back to waiting. Its

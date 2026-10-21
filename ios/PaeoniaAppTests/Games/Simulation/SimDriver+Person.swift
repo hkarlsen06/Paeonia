@@ -256,21 +256,13 @@ extension SimDriver {
     }
 
     private func reveal(_ phone: SimPhone, _ viewModel: DrawAndGuessViewModel) async {
-        if let round = viewModel.round, round.guesserUserID == phone.userID, random.chance(0.35) {
-            let reaction = random.pick(DrawAndGuessReaction.allCases)
-            log.add("\(phone.name) react \(reaction.rawValue)")
-            await expectMove(phone, kind: .setGameRoundReaction, "react") { await viewModel.react(reaction) }
-            shownReactions[round.id, default: []].insert(viewModel.reveal?.reaction?.rawValue ?? "none")
-            return
-        } else {
-            log.add("\(phone.name) continue")
-            let roundID = viewModel.round?.id
-            Task { await viewModel.continueFromReveal() }
-            guard !isBurst else { return }
-            await pump()
-            if phone.activeViewModel === viewModel, viewModel.phase == .reveal, viewModel.round?.id == roundID {
-                failNow("\(phone.name) continue did not leave the reveal")
-            }
+        log.add("\(phone.name) continue")
+        let roundID = viewModel.round?.id
+        Task { await viewModel.continueFromReveal() }
+        guard !isBurst else { return }
+        await pump()
+        if phone.activeViewModel === viewModel, viewModel.phase == .reveal, viewModel.round?.id == roundID {
+            failNow("\(phone.name) continue did not leave the reveal")
         }
     }
 }

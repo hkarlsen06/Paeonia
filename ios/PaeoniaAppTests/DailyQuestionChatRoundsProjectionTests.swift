@@ -9,7 +9,7 @@ extension DailyChatRoundsTests {
     /// The row id of a person's answer on one day, which exists when the person answered.
     private func answerRowID(_ question: DailyChallengeQuestion, own: Bool) throws -> String {
         let detail = try #require(own ? question.ownAnswerDetail : question.partnerAnswerDetail)
-        return DailyChatProjection.answerRowPrefix + detail.answerID.uuidString
+        return ThreadChatProjection.answerRowPrefix + detail.answerID.uuidString
     }
 
     private func round(
@@ -27,9 +27,9 @@ extension DailyChatRoundsTests {
 
     private func input(
         rounds: [DailyChatRound],
-        messages: [DailyQuestionChatMessage] = []
-    ) -> DailyChatProjection.Input {
-        DailyChatProjection.Input(
+        messages: [ThreadChatMessage] = []
+    ) -> ThreadChatProjection.Input {
+        ThreadChatProjection.Input(
             rounds: rounds, messages: messages, currentUserID: me, partnerName: "Oda", youName: "You"
         )
     }
@@ -40,21 +40,21 @@ extension DailyChatRoundsTests {
         let between = message(at: 500)
         let after = message(at: 1_000)
 
-        let projection = DailyChatProjection.make(input: input(
+        let projection = ThreadChatProjection.make(input: input(
             rounds: [round(march), round(october)],
             messages: [after, between]
         ))
 
         let ids = projection.exyteMessages.map(\.id)
         #expect(ids == [
-            DailyChatProjection.questionRowID(for: march.id),
+            ThreadChatProjection.questionRowID(for: march.id),
             try answerRowID(march, own: true),
             try answerRowID(march, own: false),
-            DailyChatProjection.rowID(for: between),
-            DailyChatProjection.questionRowID(for: october.id),
+            ThreadChatProjection.rowID(for: between),
+            ThreadChatProjection.questionRowID(for: october.id),
             try answerRowID(october, own: true),
             try answerRowID(october, own: false),
-            DailyChatProjection.rowID(for: after),
+            ThreadChatProjection.rowID(for: after),
         ])
     }
 
@@ -62,14 +62,14 @@ extension DailyChatRoundsTests {
         let march = day(startsAt: 100, ownAt: 110, partnerAt: 1_000, sharedRound: true)
         let october = day(startsAt: 900, ownAt: 910, partnerAt: 920, sharedRound: true)
 
-        let projection = DailyChatProjection.make(input: input(rounds: [round(march), round(october)]))
+        let projection = ThreadChatProjection.make(input: input(rounds: [round(march), round(october)]))
 
         let lateAnswer = try answerRowID(march, own: false)
         #expect(projection.exyteMessages.map(\.id) == [
-            DailyChatProjection.questionRowID(for: march.id),
+            ThreadChatProjection.questionRowID(for: march.id),
             try answerRowID(march, own: true),
             lateAnswer,
-            DailyChatProjection.questionRowID(for: october.id),
+            ThreadChatProjection.questionRowID(for: october.id),
             try answerRowID(october, own: true),
             try answerRowID(october, own: false),
         ])

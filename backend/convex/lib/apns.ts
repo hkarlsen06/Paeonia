@@ -20,7 +20,16 @@ export type PreparedNotification = {
   deliver_quietly: boolean;
   /** The app icon number at send time (lib/badges.ts), or null to leave the icon as it is. */
   badge: number | null;
+  /** The recipient's choice at send time. "descriptive" lets the lock screen keep the title when iOS hides previews. */
+  lock_screen_detail_level: LockScreenDetailLevel;
 };
+
+/**
+ * What the lock screen shows when iOS hides previews. "private" shows only the category line, such as
+ * "New message". "descriptive" also keeps the title, which names the partner and what they did and
+ * never holds anything they wrote.
+ */
+export type LockScreenDetailLevel = "private" | "descriptive";
 
 /** A badge-only push (`queueBadgeUpdate` in lib/badges.ts): it changes the app icon number and shows nothing. */
 export function isBadgeUpdate(notification: PreparedNotification): boolean {
@@ -114,7 +123,7 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
       ...interruption,
       "mutable-content": 1,
       "content-available": 1,
-      ...notificationGrouping(notification.payload),
+      ...notificationGrouping(notification.payload, notification.lock_screen_detail_level),
       ...(notification.badge === null ? {} : { badge: notification.badge }),
     },
     ...notification.payload,
@@ -125,10 +134,11 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
 /**
  * The category of each alert kind. The app registers one `UNNotificationCategory` per value
  * (`PaeoniaNotificationCategory`), which gives the lock screen a short line such as "New message"
- * when Show Previews is off. Keep the two lists the same.
+ * when Show Previews is off, plus a `.detail` twin for recipients who chose "descriptive". Keep the two
+ * lists the same.
  */
 const NOTIFICATION_CATEGORY: Record<
-  Exclude<NotificationKind, "location_updated" | "location_pause_ended" | "badge_update" | "data_export_ready">,
+  Exclude<NotificationKind, "location_updated" | "location_pause_ended" | "badge_update" | "thread_message_deleted">,
   string
 > = {
   thread_message_sent: "message",
@@ -142,7 +152,9 @@ const NOTIFICATION_CATEGORY: Record<
   game_result: "game",
   memory_created: "partner",
   story_posted: "partner",
+  reaction_added: "partner",
   partner_joined: "partner",
+  data_export_ready: "account",
   question_time_reminder: "reminder",
   date_reminder: "reminder",
   streak_reminder: "reminder",
@@ -177,6 +189,8 @@ export function notificationThreadId(payload: Record<string, unknown>): string |
       return "memories";
     case "story_posted":
       return "stories";
+    case "reaction_added":
+      return "reactions";
     case "partner_joined":
       return "pairing";
     case "streak_reminder":
@@ -188,14 +202,25 @@ export function notificationThreadId(payload: Record<string, unknown>): string |
   }
 }
 
+/**
+ * The category of an alert for a recipient who chose "descriptive". The app registers each one next to
+ * its plain category (`PaeoniaNotificationCategory.detailSuffix`) with the options that keep the title
+ * on a locked screen with previews hidden.
+ */
+export const DESCRIPTIVE_CATEGORY_SUFFIX = ".detail";
+
 /** The `thread-id` and `category` keys of an alert's `aps`, leaving out any it has no value for. */
-function notificationGrouping(payload: Record<string, unknown>): Record<string, string> {
+function notificationGrouping(
+  payload: Record<string, unknown>,
+  level: LockScreenDetailLevel,
+): Record<string, string> {
   const grouping: Record<string, string> = {};
   const threadId = notificationThreadId(payload);
   if (threadId) grouping["thread-id"] = threadId;
   const kind = payload.type;
   if (typeof kind === "string" && Object.hasOwn(NOTIFICATION_CATEGORY, kind)) {
-    grouping.category = NOTIFICATION_CATEGORY[kind as keyof typeof NOTIFICATION_CATEGORY];
+    const category = NOTIFICATION_CATEGORY[kind as keyof typeof NOTIFICATION_CATEGORY];
+    grouping.category = level === "descriptive" ? `${category}${DESCRIPTIVE_CATEGORY_SUFFIX}` : category;
   }
   return grouping;
 }

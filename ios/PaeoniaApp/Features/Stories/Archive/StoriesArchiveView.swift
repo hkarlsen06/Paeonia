@@ -8,6 +8,7 @@ struct StoriesArchiveView: View {
 
     @State private var viewer: StoryViewerContent?
     @State private var shareable: PaeoniaShareable?
+    @Environment(\.threadChatContext) private var chatContext
 
     private static let tileHeight: CGFloat = 180
     private let columns = [GridItem(.adaptive(minimum: 104), spacing: PaeoniaSpacing.space8)]
@@ -96,6 +97,11 @@ struct StoriesArchiveView: View {
             }
             .padding(PaeoniaSpacing.space8)
         }
+        .overlay(alignment: .bottomTrailing) {
+            StoredReactionBadge(target: .story(story.id))
+                .padding(PaeoniaSpacing.space4)
+        }
+        .overlay(alignment: .topTrailing) { repliesMark(for: story) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
             Text(.storiesArchiveTileAccessibility(
@@ -103,7 +109,39 @@ struct StoriesArchiveView: View {
                 story.createdAt.formatted(date: .abbreviated, time: .omitted)
             ))
         )
+        .accessibilityValue(
+            chatContext.summaries?.summary(for: .story(story.id)) != nil
+                ? Text(.storiesArchiveTileReplies)
+                : Text(verbatim: "")
+        )
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+extension StoriesArchiveView {
+    /// A story with replies says so, with a dot when the partner wrote one not read yet.
+    @ViewBuilder
+    fileprivate func repliesMark(for story: Story) -> some View {
+        if chatContext.summaries?.summary(for: .story(story.id)) != nil {
+            repliesBubble(isUnread: chatContext.summaries?.isUnread(.story(story.id)) ?? false)
+        }
+    }
+
+    private func repliesBubble(isUnread: Bool) -> some View {
+        Image(systemName: "bubble.left.fill")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.white)
+            .padding(PaeoniaSpacing.space8)
+            .background(.black.opacity(0.45), in: Circle())
+            .overlay(alignment: .topTrailing) {
+                if isUnread {
+                    Circle()
+                        .fill(.paeoniaAccentPrimary)
+                        .frame(width: 10, height: 10)
+                }
+            }
+            .padding(PaeoniaSpacing.space4)
+            .accessibilityHidden(true)
     }
 }
 

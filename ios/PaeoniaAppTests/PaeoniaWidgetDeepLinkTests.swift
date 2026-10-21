@@ -84,6 +84,25 @@ struct PaeoniaDeepLinkTests {
         )
     }
 
+    @Test func memoryAndStoryLinksCarryTheirIDAndTheConversationFlag() throws {
+        let id = try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444"))
+
+        #expect(PaeoniaDeepLink(PaeoniaDeepLink.memoryURL(memoryID: id)) == .memory(memoryID: id, showsComments: false))
+        #expect(
+            PaeoniaDeepLink(PaeoniaDeepLink.memoryURL(memoryID: id, showsComments: true))
+                == .memory(memoryID: id, showsComments: true)
+        )
+        #expect(PaeoniaDeepLink(PaeoniaDeepLink.storyURL(storyID: id)) == .story(storyID: id, showsReplies: false))
+        #expect(
+            PaeoniaDeepLink(notificationUserInfo: ["deeplink": "paeonia://stories/story?storyId=\(id.uuidString)&replies=1"])
+                == .story(storyID: id, showsReplies: true)
+        )
+        // A link without an id is not a link to a memory, and the host alone still opens the tab.
+        #expect(PaeoniaDeepLink(URL(string: "paeonia://memories/memory")!) == nil)
+        #expect(PaeoniaDeepLink(URL(string: "paeonia://stories/story?storyId=nope")!) == nil)
+        #expect(PaeoniaDeepLink(URL(string: "paeonia://memories")!) == .memories)
+    }
+
     @Test func notificationPayloadWithoutUsableDeeplinkIsIgnored() {
         #expect(PaeoniaDeepLink(notificationUserInfo: ["type": "streak_reminder"]) == nil)
         #expect(PaeoniaDeepLink(notificationUserInfo: ["route": "memories"]) == nil)

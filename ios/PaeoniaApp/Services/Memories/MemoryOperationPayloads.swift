@@ -50,10 +50,3 @@ nonisolated struct RemoveMemoryMediaOperationPayload: Codable, Equatable, Sendab
     let memoryID: UUID
     let memoryMediaID: UUID
 }
-
-// swiftlint:disable:next type_name
-nonisolated struct CreateMemoryThreadMessageOperationPayload: Codable, Equatable, Sendable {
-    let memoryID: UUID
-    let body: String
-    let mediaAssetIDs: [UUID]
-}

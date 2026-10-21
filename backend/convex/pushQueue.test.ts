@@ -91,10 +91,21 @@ describe("prepare_notification", () => {
       payload: { type: "memory_created", route: "memories" },
       deliver_quietly: false,
       badge: null,
+      lock_screen_detail_level: "private",
     });
     // A sent row is not sent again.
     await t.mutation(internal.pushQueue.mark_push_result, { kind: "app", outbox_id: (await rowByDedupe(t, "a")).id });
     expect(await prepare(t, "a")).toBeNull();
+  });
+
+  test("hands the recipient's lock screen choice to the send", async () => {
+    const { t, user, device } = await setup();
+    await queue(t, user, device, { dedupe: "detail" });
+    await t.run(async (ctx) => {
+      const preference = await ctx.db.query("notification_preferences").first();
+      await ctx.db.patch(preference!._id, { lock_screen_detail_level: "descriptive" });
+    });
+    expect(await prepare(t, "detail")).toMatchObject({ lock_screen_detail_level: "descriptive" });
   });
 
   test("fails rows whose device is disabled or whose kind the user turned off", async () => {

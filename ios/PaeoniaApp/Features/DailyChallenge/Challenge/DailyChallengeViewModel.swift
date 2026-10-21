@@ -28,7 +28,7 @@ final class DailyChallengeViewModel {
     let mediaDraftStore: any DailyAnswerMediaDraftStoring
     let pendingOperationStore: any PendingSyncOperationPersisting
     let snapshotCache: any DailyChallengeSnapshotCaching
-    let chatService: any DailyQuestionChatServicing
+    let chatService: any ThreadChatServicing
     let now: @Sendable () -> Date
     let encoder = JSONEncoder()
     #if DEBUG
@@ -85,7 +85,7 @@ final class DailyChallengeViewModel {
     /// The couple's shared streak, shown on the completion celebration. Loaded on
     /// demand and kept across failures so a transient error never blanks it.
     var streak = CoupleStreak.none
-    var threadSummariesByQuestionID: [UUID: DailyQuestionThreadSummary] = [:]
+    var threadSummariesByQuestionID: [UUID: ThreadChatSummary] = [:]
     /// When the user last saw each chat on this phone, keyed by thread id.
     var chatReadMarks: [UUID: Date] = [:]
     /// Questions whose page the user has opened since the partner's answer showed up.
@@ -100,7 +100,7 @@ final class DailyChallengeViewModel {
     /// question, not a topic one, that the partner had not answered yet.
     @ObservationIgnored var hasAnswerAwaitingPartner = false
     /// The chat screen to open next, already read from this phone by `prepareChat(for:)`.
-    @ObservationIgnored var preparedChat: DailyQuestionChatViewModel?
+    @ObservationIgnored var preparedChat: ThreadChatViewModel?
 
     init(
         service: (any DailyChallengeServicing)? = nil,
@@ -110,7 +110,7 @@ final class DailyChallengeViewModel {
         mediaDraftStore: (any DailyAnswerMediaDraftStoring)? = nil,
         pendingOperationStore: (any PendingSyncOperationPersisting)? = nil,
         snapshotCache: (any DailyChallengeSnapshotCaching)? = nil,
-        chatService: (any DailyQuestionChatServicing)? = nil,
+        chatService: (any ThreadChatServicing)? = nil,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.now = now
@@ -124,9 +124,9 @@ final class DailyChallengeViewModel {
         if let chatService {
             self.chatService = chatService
         } else if service == nil {
-            self.chatService = DailyQuestionChatServiceFactory.makeDefault()
+            self.chatService = ThreadChatServiceFactory.makeDefault()
         } else {
-            self.chatService = EmptyDailyQuestionChatService()
+            self.chatService = EmptyThreadChatService()
         }
     }
 

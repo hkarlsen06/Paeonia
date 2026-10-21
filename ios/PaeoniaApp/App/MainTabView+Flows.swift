@@ -309,30 +309,49 @@ extension MainTabView {
             break
         case .dailyReveal, .dailyChat, .dailyToday, .topics:
             await handleQuestionsDeepLink(deepLink)
-        case .memories:
+        case .memories, .memory:
             await openMemories(for: deepLink)
         case let .game(kind):
             await openGame(kind, for: deepLink)
         case .streak:
             await openStreak(for: deepLink)
-        case .stories, .home, .dates:
-            openHome(for: deepLink)
+        case .stories, .home, .dates, .story:
+            await openHome(for: deepLink)
         }
     }
 
-    /// Home, with the dates timeline on top for a date reminder.
-    private func openHome(for deepLink: PaeoniaDeepLink) {
+    /// Opens Home. A link to one story also opens it in the viewer, once the stories are read.
+    /// The dates timeline opens on top for a date reminder.
+    private func openHome(for deepLink: PaeoniaDeepLink) async {
         selection.wrappedValue = .home
         if deepLink == .dates {
             coupleDatesViewModel.requestTimeline()
         }
+        if case let .story(storyID, showsReplies) = deepLink {
+            await storiesViewModel.reload()
+            guard isCurrent(deepLink) else { return }
+            storiesViewModel.requestOpen(storyID: storyID, showsReplies: showsReplies)
+        }
         self.deepLink.wrappedValue = nil
     }
 
+    /// Opens the Memories tab. A link to one memory also opens it, after reading the memories
+    /// when it is not on this phone yet. A memory that is gone leaves the person on the timeline.
     private func openMemories(for deepLink: PaeoniaDeepLink) async {
         selection.wrappedValue = .memories
-        await memoriesViewModel.refresh()
-        guard isCurrent(deepLink) else { return }
+        if case let .memory(memoryID, showsComments) = deepLink {
+            if memoriesViewModel.record(for: memoryID) == nil {
+                await memoriesViewModel.refresh()
+                guard isCurrent(deepLink) else { return }
+            }
+            if memoriesViewModel.record(for: memoryID) != nil {
+                memoriesPath = [memoryID]
+                if showsComments { memoriesViewModel.commentsRequestedMemoryID = memoryID }
+            }
+        } else {
+            await memoriesViewModel.refresh()
+            guard isCurrent(deepLink) else { return }
+        }
         self.deepLink.wrappedValue = nil
     }
 

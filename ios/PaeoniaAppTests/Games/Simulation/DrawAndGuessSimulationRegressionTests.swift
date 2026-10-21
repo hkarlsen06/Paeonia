@@ -245,27 +245,6 @@ struct DrawAndGuessSimulationRegressionTests {
             #expect(reopened.reveal == nil)
         }
     }
-
-    /// The guesser reacts offline. The reaction shows at once, waits behind the
-    /// guess that ended the round, and the drawer sees it once the phone is online.
-    @Test func aReactionMadeOfflineReachesTheDrawerLater() async {
-        await scenario { driver in
-            let (drawer, guesser) = try await driver.scriptRoundToReveal()
-            let viewModel = try driver.require(guesser, in: .reveal)
-            let roundID = try #require(viewModel.round?.id)
-
-            guesser.setOnline(false)
-            await viewModel.react(.laugh)
-            await driver.pump()
-            #expect(viewModel.reveal?.reaction == .laugh)
-            #expect(driver.server.round(roundID)?.reaction == nil)
-
-            await driver.settle()
-
-            #expect(driver.server.round(roundID)?.reaction == .laugh)
-            #expect(drawer.viewModel?.round?.guesserReaction == .laugh)
-        }
-    }
 }
 
 /// A live connection that keeps what the room sends instead of opening a socket.

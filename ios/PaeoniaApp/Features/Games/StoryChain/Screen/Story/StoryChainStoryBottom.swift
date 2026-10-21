@@ -77,7 +77,11 @@ struct StoryChainStoryBottom: View {
     @ViewBuilder
     private var finishedEnd: some View {
         if isFinished, let finished = viewModel.finished {
-            StoryChainFinishedBottom(finished: finished, reveal: reveal)
+            StoryChainFinishedBottom(
+                finished: finished,
+                reveal: reveal,
+                canReact: viewModel.story?.hasUnsentName == false
+            )
         }
     }
 }

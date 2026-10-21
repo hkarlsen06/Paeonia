@@ -31,9 +31,6 @@ nonisolated protocol DrawAndGuessGateway: GamesGateway {
     ) async throws -> RemoteGuessResult
     func giveUp(roundID: UUID, operation: SyncClientOperation) async throws -> RemoteGiveUpResult
 
-    /// The guesser's reaction to a finished round, or nil to clear it. The last
-    /// write wins, so a retry is safe.
-    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult
     /// This person moved past the finished round's result. The server keeps the
     /// first time, so a retry is safe.
     func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult
@@ -114,13 +111,6 @@ nonisolated extension LiveGamesGateway: DrawAndGuessGateway {
         )
     }
 
-    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
-        try await client.mutation(
-            "drawAndGuess:set_round_reaction",
-            args: SetRoundReactionRequest(roundID: roundID, reaction: reaction)
-        )
-    }
-
     func markRoundResultSeen(roundID: UUID) async throws -> RemoteResultSeenResult {
         try await client.mutation("drawAndGuess:mark_round_result_seen", args: RoundRequest(roundID: roundID))
     }
@@ -152,23 +142,6 @@ nonisolated private struct RoundRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case roundID = "p_round_id"
-    }
-}
-
-nonisolated private struct SetRoundReactionRequest: Encodable {
-    let roundID: UUID
-    /// Nil clears the reaction, so the key is sent as null.
-    let reaction: DrawAndGuessReaction?
-
-    enum CodingKeys: String, CodingKey {
-        case roundID = "p_round_id"
-        case reaction = "p_reaction"
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(roundID, forKey: .roundID)
-        try container.encode(reaction, forKey: .reaction)
     }
 }
 

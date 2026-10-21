@@ -12,6 +12,7 @@ import { dateArg, newUuid, optionalTimestampArg, optionalUuidArg, uuidArg } from
 import { queueMemoryMediaAssetsIfOrphaned, queueThreadMediaAssetsIfOrphaned } from "./lib/mediaOrphans";
 import { enqueueMemoryCreatedNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
+import { deleteReactionsOf, deleteReactionsOfThread } from "./lib/reactions";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
 
@@ -485,6 +486,7 @@ export const hide_memory = mutation({
         if (memory.revision !== args.p_expected_revision) fail("40001", "memory revision conflict");
         const now = nowIso();
         const hidden = await patchMemory(ctx, memory, { deleted_at: now, last_edited_by_user_id: userId });
+        await deleteReactionsOf(ctx, "memory", memory.id);
 
         const threadLinks = await ctx.db
           .query("memory_threads")
@@ -495,6 +497,7 @@ export const hide_memory = mutation({
           if (thread && thread.deleted_at === undefined) {
             await ctx.db.patch(thread._id, withUpdatedAt({ deleted_at: now }));
           }
+          await deleteReactionsOfThread(ctx, link.thread_id);
         }
 
         // Postgres ran these as deferred triggers, after every write above.

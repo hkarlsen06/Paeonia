@@ -146,26 +146,4 @@ struct GamesPhaseTests {
         #expect(phase(afterResult(seenBy: [GameFixture.me])) == .waitingForDrawing)
         #expect(phase(afterResult(seenBy: []), pending: markingSeen()) == .waitingForDrawing)
     }
-
-    @Test func aQueuedReactionShowsOnTheFinishedRoundBeforeTheServerHasIt() {
-        let solved = state(
-            game: GameFixture.game(state: .choosingWord, turn: GameFixture.me),
-            round: GameFixture.round(state: .solved, drawer: GameFixture.partner, hasDrawing: true)
-        )
-        var pending = DrawAndGuessPendingWork.none
-        pending.reactions = [
-            GameReactionPayload(roundID: GameFixture.roundID, reaction: .love, createdAt: GameFixture.now),
-            GameReactionPayload(roundID: GameFixture.roundID, reaction: .wow, createdAt: GameFixture.now),
-        ]
-
-        let withReaction = resolver.resolve(state: solved, pending: pending, isPartnerDrawingLive: false)
-        pending.reactions.append(
-            GameReactionPayload(roundID: GameFixture.roundID, reaction: nil, createdAt: GameFixture.now)
-        )
-        let cleared = resolver.resolve(state: solved, pending: pending, isPartnerDrawingLive: false)
-
-        #expect(solved.currentRound?.guesserReaction == nil)
-        #expect(withReaction.round?.guesserReaction == .wow)
-        #expect(cleared.round?.guesserReaction == nil)
-    }
 }

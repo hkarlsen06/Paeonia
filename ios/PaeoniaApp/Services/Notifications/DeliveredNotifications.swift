@@ -40,6 +40,29 @@ nonisolated enum DeliveredNotifications {
         }
     }
 
+    /// The person opened a memory's comments or a story's replies and saw these messages.
+    static func clearMessages(_ messageIDs: Set<UUID>) async {
+        guard !messageIDs.isEmpty else { return }
+        await remove { userInfo in
+            (userInfo["type"] as? String) == "thread_message_sent"
+                && (uuid(userInfo["message_id"]).map(messageIDs.contains) ?? false)
+        }
+    }
+
+    /// The id in the silent push that says a sender took a message back, nil for any other push.
+    static func deletedMessageID(in userInfo: [AnyHashable: Any]) -> UUID? {
+        guard (userInfo["type"] as? String) == "thread_message_deleted" else { return nil }
+        return uuid(userInfo["message_id"])
+    }
+
+    /// The sender took this message back, so its alert must not stay on the lock screen.
+    static func clearMessage(_ messageID: UUID) async {
+        await remove { userInfo in
+            (userInfo["type"] as? String) == "thread_message_sent"
+                && (uuid(userInfo["message_id"]) == messageID)
+        }
+    }
+
     /// The Memories timeline shows these memories.
     static func clearMemories(shownMemoryIDs: Set<UUID>) async {
         guard !shownMemoryIDs.isEmpty else { return }

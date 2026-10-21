@@ -27,7 +27,6 @@ const MAX_STEPS = 120;
 const bonusFor = (solveMs: number) => (solveMs <= 15_000 ? 2 : solveMs <= 30_000 ? 1 : 0);
 const AVERAGE_MAX_MS = 10 * 60_000;
 const HISTORY_MAX = 50;
-const REACTIONS = ["love", "laugh", "wow"] as const;
 /** The presence component closes a game screen this long after its last heartbeat. */
 const PRESENCE_TIMEOUT_MS = 60_000;
 const INVITE_GAP_MS = 15 * 60_000;
@@ -61,7 +60,6 @@ type Round = {
   firstTryBonus: number;
   hintsUsed: number;
   personalBest: boolean;
-  reaction?: (typeof REACTIONS)[number];
   drawerSeenAt?: number;
   guesserSeenAt?: number;
   stars: Set<Uid>;
@@ -324,7 +322,6 @@ class Fuzz {
       [open ? 14 : 2, () => this.guess()],
       [open ? 3 : 1, () => this.giveUp()],
       [m.ops.length > 0 ? 6 : 0, () => this.replay()],
-      [anyFinished ? 3 : 1, () => this.react()],
       [anyFinished ? 3 : 1, () => this.star()],
       [anyFinished ? 3 : 1, () => this.resultSeen()],
       [2, () => this.invite()],
@@ -799,28 +796,13 @@ class Fuzz {
     return canonical({ views, tables });
   }
 
-  // --- Reactions, stars, result seen, invites, presence, time ---------------------
+  // --- Stars, result seen, invites, presence, time ---------------------
 
   /** A finished round most of the time, otherwise any round id, so the "not finished" and unknown cases run too. */
   private afterRound(): { roundId: string; round: Round | undefined } {
     const done = this.m.rounds.filter(finished);
     const roundId = done.length > 0 && this.chance(0.7) ? this.pick(done).id : this.targetRound();
     return { roundId, round: this.round(roundId) };
-  }
-
-  private async react() {
-    const { roundId, round } = this.afterRound();
-    const user = round ? this.actor(round.guesser) : this.pick([this.a.userId, this.b.userId]);
-    const reaction = this.pick([...REACTIONS, null]);
-    let expected: Expect = "ok";
-    if (!round) expected = { code: "42501" };
-    else if (round.guesser !== user) expected = { code: "42501", message: /only the guesser/ };
-    else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.set_round_reaction, { p_round_id: roundId, p_reaction: reaction }));
-    const result = this.check(`${this.name(user)} react ${reaction} round=${roundId.slice(0, 8)}`, outcome, expected);
-    if (expected !== "ok") return;
-    round!.reaction = reaction ?? undefined;
-    this.same("reaction result", result, { round_id: roundId, guesser_reaction: reaction });
   }
 
   private async star() {
@@ -923,7 +905,6 @@ class Fuzz {
       first_try_bonus: round.firstTryBonus,
       hints_used: round.hintsUsed,
       personal_best: round.personalBest,
-      guesser_reaction: orNull(round.reaction),
       drawer_result_seen_at: round.drawerSeenAt === undefined ? null : iso(round.drawerSeenAt),
       guesser_result_seen_at: round.guesserSeenAt === undefined ? null : iso(round.guesserSeenAt),
       attempt_count: round.attempts.length,
@@ -1038,7 +1019,6 @@ class Fuzz {
       this.assert("first-try bonus is 0 or 1, and only on a solve", (move.first_try_bonus ?? 0) === 0 || (move.first_try_bonus === 1 && move.state === "solved"), move);
       this.assert("a hint zeroes both bonuses", (move.hints_used ?? 0) === 0 || (move.speed_bonus === 0 && (move.first_try_bonus ?? 0) === 0), move);
       this.assert("only a solve is a personal best", move.state === "solved" || !move.personal_best, move);
-      this.assert("only a finished round has a reaction", move.guesser_reaction === undefined || move.state === "solved" || move.state === "missed", move);
       this.same("points follow the difficulty", move.points, POINTS[move.difficulty]);
     }
 
@@ -1104,7 +1084,6 @@ class Fuzz {
       first_try_bonus: round.firstTryBonus,
       hints_used: round.hintsUsed,
       attempt_count: round.attempts.length,
-      guesser_reaction: orNull(round.reaction),
       personal_best: round.personalBest,
       ended_at: round.endedAt === undefined ? null : iso(round.endedAt),
     });

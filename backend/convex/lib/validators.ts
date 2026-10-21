@@ -15,6 +15,9 @@ export const moderationStatus = literals(
   "rejected",
 );
 
+/** What a chat thread is about: a daily question, a memory (comments) or a story (replies). */
+export const threadKind = literals("daily_question", "memory", "story");
+
 export const authProvider = literals("apple", "google", "unknown");
 export const apnsEnvironment = literals("sandbox", "production");
 export const storekitEnvironment = literals("xcode", "sandbox", "production");
@@ -45,6 +48,21 @@ export const activityKind = literals(
   "game_turn_completed",
   "topic_answer_submitted",
 );
+/**
+ * What a reaction can be put on. Each kind has one access check in `lib/reactions.ts`. A new kind
+ * adds its name here and its entry in `REACTION_TARGETS`.
+ */
+export const REACTION_TARGET_KINDS = [
+  "daily_answer",
+  "thread_message",
+  "story",
+  "memory",
+  "widget_drawing",
+  "draw_and_guess_round",
+  "exquisite_corpse_figure",
+  "story_chain_story",
+] as const;
+export const reactionTargetKind = literals(...REACTION_TARGET_KINDS);
 export const notificationKind = literals(
   "streak_reminder",
   "daily_challenge_completed",
@@ -56,6 +74,7 @@ export const notificationKind = literals(
   "memory_created",
   "story_posted",
   "thread_message_sent",
+  "thread_message_deleted",
   "game_turn_ready",
   "game_result",
   "game_invite",
@@ -64,6 +83,7 @@ export const notificationKind = literals(
   "date_reminder",
   "partner_joined",
   "topics_waiting",
+  "reaction_added",
   "badge_update",
   "data_export_ready",
 );

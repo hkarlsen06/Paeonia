@@ -34,9 +34,13 @@ nonisolated enum SearchResultKind: Int, CaseIterable, Identifiable, Sendable {
 /// Where a tap on a result goes. `MainTabView+Search` opens each one.
 nonisolated enum SearchDestination: Hashable, Sendable {
     case memory(UUID)
+    /// A memory with its comments open. A chat message on a memory opens this.
+    case memoryComments(UUID)
     /// A question's page with its answers and chat.
     case question(UUID)
     case story(UUID)
+    /// A story with its replies open. A chat message on a story opens this.
+    case storyReplies(UUID)
     case storyChain(UUID)
     // The destinations below come from the starred list only.
     /// A drawing from the widget. The Search sheet shows it large.

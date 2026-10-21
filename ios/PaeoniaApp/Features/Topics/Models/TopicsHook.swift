@@ -12,7 +12,7 @@ nonisolated enum TopicsHook: Equatable, Sendable {
 
     static func make(
         overview: [TopicSummary],
-        unreadTopicChats: [DailyQuestionThreadSummary],
+        unreadTopicChats: [ThreadChatSummary],
         partnerName: String
     ) -> TopicsHook? {
         let waiting = overview.filter { $0.forYouCount > 0 }

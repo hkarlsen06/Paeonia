@@ -207,7 +207,8 @@ struct DrawAndGuessGuessView: View {
                     )
                     .transition(transition)
                 }
-                if timeline.actionsShown {
+                // The server has to know the round is over before it takes a reaction to it.
+                if timeline.actionsShown, reveal.isConfirmed {
                     DrawAndGuessReactionRow(viewModel: viewModel)
                         .transition(transition)
                 }

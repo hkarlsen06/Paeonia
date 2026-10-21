@@ -25,7 +25,7 @@ async function answeredQuestion(t: TestConvex, couple: TestCouple) {
 }
 
 const presence = (user: TestCouple["first"], coupleId: string, questionId: string) =>
-  user.as.query(api.chatPresence.get_daily_chat_presence, { p_couple_id: coupleId, p_question_id: questionId });
+  user.as.query(api.chatPresence.get_chat_presence, { p_couple_id: coupleId, p_subject_kind: "daily_question", p_subject_id: questionId });
 
 describe("typing", () => {
   test("the partner sees typing until it stops, and never their own", async () => {
@@ -33,18 +33,18 @@ describe("typing", () => {
     const couple = await createCouple(t);
     const questionId = await answeredQuestion(t, couple);
 
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
+    await couple.first.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true });
     expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(true);
     expect((await presence(couple.first, couple.coupleId, questionId)).partner_typing).toBe(false);
 
     tick(3);
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
+    await couple.first.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true });
     expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(true);
 
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: false });
+    await couple.first.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: false });
     expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(false);
     // A second stop, such as on send after the idle stop, changes nothing.
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: false });
+    await couple.first.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: false });
     expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(false);
   });
 
@@ -55,7 +55,7 @@ describe("typing", () => {
     const stranger = await createSignedInUser(t);
 
     expect(
-      await failure(stranger.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true })),
+      await failure(stranger.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true })),
     ).toEqual({ code: "42501", message: "active entitled couple access is required" });
     expect(await presence(stranger, couple.coupleId, questionId)).toEqual({
       partner_typing: false,
@@ -70,7 +70,7 @@ describe("typing", () => {
     const t = newTest();
     const couple = await createCouple(t);
     const questionId = await answeredQuestion(t, couple);
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
+    await couple.first.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true });
     expect((await presence(couple.second, couple.coupleId, questionId)).partner_typing).toBe(true);
 
     const lastHeartbeat = Date.now();
@@ -85,13 +85,13 @@ describe("typing", () => {
     const questionId = await answeredQuestion(t, couple);
     const room = chatTypingRoom(couple.coupleId, questionId);
     const typists = () => t.run((ctx) => ctx.runQuery(components.presence.public.listRoom, { roomId: room }));
-    await couple.first.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
-    await couple.second.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true });
+    await couple.first.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true });
+    await couple.second.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true });
     expect(await typists()).toHaveLength(2);
 
     await t.run((ctx) => endRelationshipForPair(ctx, couple.pairId, couple.first.userId, "user_left"));
     expect(await typists()).toEqual([]);
-    expect((await failure(couple.second.as.mutation(api.chatPresence.set_daily_chat_typing, { p_couple_id: couple.coupleId, p_question_id: questionId, p_is_typing: true }))).code).toBe("42501");
+    expect((await failure(couple.second.as.mutation(api.chatPresence.set_chat_typing, { p_couple_id: couple.coupleId, p_subject_kind: "daily_question", p_subject_id: questionId, p_is_typing: true }))).code).toBe("42501");
 
     // Account deletion also clears whatever a user still has, in any room.
     const leftover = chatTypingRoom(newUuid(), newUuid());

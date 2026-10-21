@@ -151,7 +151,6 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         if pending.hasDrawing(roundID: round.id) {
             round.isDrawingSent = true
         }
-        applyUnsentReaction(to: &round, pending: pending)
         return round
     }
 
@@ -195,15 +194,7 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         if !round.isFinished {
             applyUnsentGuesses(to: &round, pending: pending)
         }
-        applyUnsentReaction(to: &round, pending: pending)
         return round
-    }
-
-    /// A reaction made on this phone shows at once, before the server has it.
-    private func applyUnsentReaction(to round: inout DrawAndGuessRoundView, pending: DrawAndGuessPendingWork) {
-        if round.isFinished, let reaction = pending.reaction(roundID: round.id) {
-            round.guesserReaction = reaction
-        }
     }
 
     /// The round the server has, or the one a queued word pick starts.

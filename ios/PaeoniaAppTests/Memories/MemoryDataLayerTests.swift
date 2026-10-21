@@ -244,11 +244,4 @@ private actor RecordingMemoryGateway: MemoryGateway {
     ) throws -> UUID {
         payload.memoryMediaID
     }
-
-    func createMemoryThreadWithMessage(
-        _ payload: CreateMemoryThreadMessageOperationPayload,
-        operation: SyncClientOperation
-    ) throws -> MemoryThreadMessageResponse? {
-        nil
-    }
 }

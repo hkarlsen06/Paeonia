@@ -124,7 +124,7 @@ extension TopicsViewModel {
     }
 
     /// The Topics card's line about what's waiting, or nil when nothing is.
-    func hook(partnerName: String, unreadTopicChats: [DailyQuestionThreadSummary]) -> TopicsHook? {
+    func hook(partnerName: String, unreadTopicChats: [ThreadChatSummary]) -> TopicsHook? {
         TopicsHook.make(overview: overview, unreadTopicChats: unreadTopicChats, partnerName: partnerName)
     }
 

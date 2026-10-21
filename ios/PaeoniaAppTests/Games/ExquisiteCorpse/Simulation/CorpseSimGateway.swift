@@ -133,10 +133,6 @@ final class CorpseSimGateway: DrawAndGuessGateway, ExquisiteCorpseGateway, @unch
         throw Unused()
     }
 
-    func setRoundReaction(roundID _: UUID, reaction _: DrawAndGuessReaction?) async throws -> RemoteReactionResult {
-        throw Unused()
-    }
-
     func markRoundResultSeen(roundID _: UUID) async throws -> RemoteResultSeenResult { throw Unused() }
 
     func loadDrawAndGuessHistory(

@@ -42,6 +42,10 @@ struct MemoryCardView: View {
             // In the iPad grid, cards in one row grow to the tallest card's height.
             .frame(maxHeight: .infinity, alignment: .top)
         }
+        .overlay(alignment: .topTrailing) {
+            StoredReactionBadge(target: .memory(record.snapshot.memoryID))
+                .padding(PaeoniaSpacing.space12)
+        }
         .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
         .accessibilityElement(children: .combine)
     }

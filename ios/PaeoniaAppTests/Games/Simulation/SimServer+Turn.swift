@@ -329,16 +329,4 @@ extension SimServer {
         }
         return RemoteResultSeenResult(roundID: roundID, resultSeenAt: seenAt)
     }
-
-    /// `set_round_reaction`: the guesser's reaction to a finished round. The last write wins.
-    func setReaction(user: UUID, roundID: UUID, reaction: DrawAndGuessReaction?) throws -> RemoteReactionResult {
-        let index = try requireRound(roundID)
-        guard rounds[index].guesser == user else { throw Self.fail("42501", "only the guesser can react") }
-        guard rounds[index].state.isFinished else { throw Self.fail("23514", "the round is not finished yet") }
-        if rounds[index].reaction != reaction {
-            rounds[index].reaction = reaction
-            changed()
-        }
-        return RemoteReactionResult(roundID: roundID, guesserReaction: reaction)
-    }
 }

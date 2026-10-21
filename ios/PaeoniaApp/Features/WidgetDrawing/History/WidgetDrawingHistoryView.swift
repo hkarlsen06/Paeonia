@@ -202,9 +202,13 @@ private struct WidgetDrawingHistoryRow: View {
             )
             .containerRelativeFrame(.horizontal) { width, _ in width * Self.widthFraction }
 
-            Text(item.createdAt, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
+            HStack(spacing: PaeoniaSpacing.space8) {
+                Text(item.createdAt, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                // The partner's drawings take the user's reaction. Their own show what the partner chose.
+                ReactionControl(target: .widgetDrawing(item.id), canReact: !item.isMine)
+            }
         }
         .frame(maxWidth: .infinity, alignment: item.isMine ? .trailing : .leading)
     }

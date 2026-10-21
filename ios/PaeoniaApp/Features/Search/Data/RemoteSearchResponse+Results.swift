@@ -28,11 +28,13 @@ extension RemoteSearchResponse {
         }
         let messageResults = self.messages.compactMap { message -> SearchResult? in
             let destination: SearchDestination
-            switch (message.threadKind, message.questionID, message.memoryID) {
-            case let ("daily_question", questionID?, _):
+            switch (message.threadKind, message.questionID, message.memoryID, message.storyID) {
+            case let ("daily_question", questionID?, _, _):
                 destination = .question(questionID)
-            case let ("memory", _, memoryID?):
-                destination = .memory(memoryID)
+            case let ("memory", _, memoryID?, _):
+                destination = .memoryComments(memoryID)
+            case let ("story", _, _, storyID?):
+                destination = .storyReplies(storyID)
             default:
                 return nil
             }

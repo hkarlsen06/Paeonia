@@ -340,7 +340,7 @@ describe("story_posted push", () => {
       story_id: story.storyId,
       actor_user_id: couple.first.userId,
       route: "home",
-      deeplink: "paeonia://stories",
+      deeplink: `paeonia://stories/story?storyId=${story.storyId}`,
     });
     expect(JSON.stringify(rows)).not.toContain("Secret caption");
     expect(rows[0].apns_collapse_id).toBe(`story:${couple.coupleId}`);

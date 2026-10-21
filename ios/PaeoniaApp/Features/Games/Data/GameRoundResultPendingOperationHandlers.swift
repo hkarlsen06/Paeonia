@@ -1,47 +1,6 @@
 import Foundation
 
-// What the people do after a round ends: the guesser reacts, and each person moves past the result.
-
-/// Sends the guesser's reaction to a finished round. It waits for the guess or
-/// give up that ended the round, and for an earlier reaction of the same round,
-/// so the last one made is the last one sent. The server keeps the last write,
-/// so a retry is safe. Only a refusal a retry can never fix drops it, without a
-/// notice, because the round on the server is the one the screens show. Any
-/// other error keeps it in the queue.
-struct GameReactionPendingOperationHandler: PendingSyncOperationHandling {
-    nonisolated let operationKind: SyncPendingOperationKind = .setGameRoundReaction
-
-    private let gateway: any DrawAndGuessGateway
-    private let cache: any GamesCaching
-
-    init(gateway: any DrawAndGuessGateway, cache: any GamesCaching) {
-        self.gateway = gateway
-        self.cache = cache
-    }
-
-    func send(
-        _ operation: PendingSyncOperationSnapshot,
-        context: SyncContext
-    ) async throws -> PendingSyncOperationSendResult {
-        guard let data = operation.requestData,
-              let payload = try? JSONDecoder().decode(GameReactionPayload.self, from: data)
-        else {
-            return .terminalFailure("Missing reaction payload")
-        }
-        let earlierKinds: [SyncPendingOperationKind] = [.submitGameGuess, .giveUpGameRound, .setGameRoundReaction]
-        if try await hasEarlierGameMove(in: payload.roundID, before: operation, context: context, kinds: earlierKinds) {
-            return .retry(after: nil)
-        }
-        do {
-            _ = try await gateway.setRoundReaction(roundID: payload.roundID, reaction: payload.reaction)
-            return await readStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
-        } catch let error as PaeoniaConvexError {
-            guard GameServerRejection.isPermanent(error) else { throw error }
-            LocalStoreChanges.post(.games, ownerUserID: operation.ownerUserID)
-            return .terminalFailure(error.description)
-        }
-    }
-}
+// What the people do after a round ends: each person moves past the result.
 
 /// Tells the server this person moved past a finished round's result. It waits
 /// for the guess or give up that ended the round. The server keeps the first

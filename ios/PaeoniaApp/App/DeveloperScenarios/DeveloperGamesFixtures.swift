@@ -69,7 +69,6 @@
       firstTryBonus: Int = 0,
       hintsUsed: Int = 0,
       personalBest: Bool = false,
-      reaction: DrawAndGuessReaction? = nil,
       /// The people who already moved past the result, as the server records it.
       resultSeenBy: Set<UUID> = [],
       guesserHasSeenIt: Bool = false
@@ -95,7 +94,6 @@
         firstTryBonus: firstTryBonus,
         hintsUsed: hintsUsed,
         personalBest: personalBest,
-        guesserReaction: reaction,
         drawerResultSeenAt: resultSeenBy.contains(drawer) ? now.addingTimeInterval(-300) : nil,
         guesserResultSeenAt: resultSeenBy.contains(guesser) ? now.addingTimeInterval(-300) : nil,
         attempts: attempts.enumerated().map { index, attempt in

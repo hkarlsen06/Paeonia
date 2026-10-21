@@ -60,6 +60,10 @@ struct ExquisiteCorpseHistoryCell: View {
                     .accessibilityHidden(true)
             }
         }
+        .overlay(alignment: .bottomTrailing) {
+            StoredReactionBadge(target: .exquisiteCorpseFigure(figure.id))
+                .padding(PaeoniaSpacing.space8)
+        }
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
         .animation(PaeoniaMotion.stateChange, value: isStarred)
     }

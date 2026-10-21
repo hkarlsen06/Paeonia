@@ -14,6 +14,8 @@ nonisolated struct HomeWidgetPreviewLoader {
         var authorName: String?
         var savedAt: Date?
         var isRedacted = false
+        /// The revision the shown drawing came from, for putting a reaction on it.
+        var revisionID: String?
     }
 
     let containerURL: URL?
@@ -61,7 +63,8 @@ nonisolated struct HomeWidgetPreviewLoader {
         return Content(
             image: image,
             authorName: payload.authorName?.trimmedNonEmpty,
-            savedAt: payload.createdAt
+            savedAt: payload.createdAt,
+            revisionID: payload.revisionID
         )
     }
 
@@ -134,6 +137,11 @@ struct HomeWidgetCard: View {
         .accessibilityLabel(Text(.homeWidgetCardLabel))
         .accessibilityHint(Text(.homeWidgetCardHint))
         .accessibilityAddTraits(.isButton)
+        // Beside the card's button, not inside it, so a tap on the reaction does not open the drawing.
+        .overlay(alignment: .topTrailing) {
+            WidgetDrawingReactionControl(shownRevisionID: model.content.revisionID)
+                .padding(PaeoniaSpacing.space4)
+        }
         .task {
             model.reload()
             if live == nil, let coupleID {

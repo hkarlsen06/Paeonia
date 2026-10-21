@@ -44,9 +44,18 @@ struct WidgetDrawingCanvasHeader: View {
             .font(PaeoniaTypography.caption.weight(.semibold))
             .foregroundStyle(.paeoniaAccentPrimary)
         } else {
-            Text(verbatim: viewModel.isShowingSavedAttribution ? (viewModel.savedDrawingAuthorName ?? " ") : " ")
-                .font(PaeoniaTypography.widgetPrimary)
-                .foregroundStyle(.paeoniaTextPrimary)
+            HStack(spacing: PaeoniaSpacing.space8) {
+                Text(verbatim: viewModel.isShowingSavedAttribution ? (viewModel.savedDrawingAuthorName ?? " ") : " ")
+                    .font(PaeoniaTypography.widgetPrimary)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                if viewModel.isShowingSavedAttribution {
+                    // What the partner reacted with, or what the user did to the partner's drawing.
+                    WidgetDrawingReactionControl(
+                        shownRevisionID: WidgetCanvasSyncService.lastSyncedRevisionID(),
+                        part: .badge
+                    )
+                }
+            }
         }
     }
 

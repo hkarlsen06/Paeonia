@@ -159,7 +159,6 @@ final class SimPhone {
             ),
             SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
             GiveUpGameRoundPendingOperationHandler(gateway: gateway, cache: cache),
-            GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
             GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
         ], retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0))
     }
@@ -427,7 +426,6 @@ extension SimPhone {
                 "\(viewModel.isLoadingDrawing)",
                 "\(viewModel.loadedDrawingVersion)",
                 "\(viewModel.partnerPresence)",
-                "\(viewModel.reveal?.reaction.map(\.rawValue) ?? "-")",
                 "\(viewModel.isShowingWrongGuess)",
                 "\(viewModel.live?.partnerActivity ?? .away)",
                 "\(viewModel.live?.roomVersion ?? -1)",

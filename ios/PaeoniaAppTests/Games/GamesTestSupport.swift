@@ -18,12 +18,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         var hintsUsed: Int?
     }
 
-    /// A reaction the phone sent. The reaction is nil when it cleared one.
-    struct SentReaction: Equatable {
-        var roundID: UUID
-        var reaction: DrawAndGuessReaction?
-    }
-
     private struct Record {
         var calls: [String] = []
         var presence: [Bool] = []
@@ -33,7 +27,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         var guesses: [String] = []
         var guessClaims: [GuessClaim] = []
         var seenRounds: [UUID] = []
-        var reactions: [SentReaction] = []
         var resultSeenRounds: [UUID] = []
         var inviteCount = 0
         var inviteKinds: [GameKind] = []
@@ -43,7 +36,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         var guessError: PaeoniaConvexError?
         var guessErrorOnlyWithClaim = false
         var giveUpError: PaeoniaConvexError?
-        var reactionError: PaeoniaConvexError?
         var inviteError: (any Error)?
         var stateToLoad: RemoteDrawAndGuessState?
         var settingsSeen = false
@@ -74,7 +66,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
     var guesses: [String] { read(\.guesses) }
     var guessClaims: [GuessClaim] { read(\.guessClaims) }
     var seenRounds: [UUID] { read(\.seenRounds) }
-    var reactions: [SentReaction] { read(\.reactions) }
     var resultSeenRounds: [UUID] { read(\.resultSeenRounds) }
     var inviteCount: Int { read(\.inviteCount) }
     /// The game each invite named.
@@ -107,10 +98,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
 
     func setGiveUpError(_ error: PaeoniaConvexError?) {
         write { $0.giveUpError = error }
-    }
-
-    func setReactionError(_ error: PaeoniaConvexError?) {
-        write { $0.reactionError = error }
     }
 
     func setInviteError(_ error: (any Error)?) {
@@ -237,13 +224,6 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         try begin("giveUp")
         if let error = read(\.giveUpError) { throw error }
         return RemoteGiveUpResult(roundID: roundID, roundState: .missed)
-    }
-
-    func setRoundReaction(roundID: UUID, reaction: DrawAndGuessReaction?) throws -> RemoteReactionResult {
-        try begin("reaction")
-        if let error = read(\.reactionError) { throw error }
-        write { $0.reactions.append(SentReaction(roundID: roundID, reaction: reaction)) }
-        return RemoteReactionResult(roundID: roundID, guesserReaction: reaction)
     }
 
     func markRoundResultSeen(roundID: UUID) throws -> RemoteResultSeenResult {

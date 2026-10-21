@@ -14,6 +14,7 @@ struct DrawAndGuessDrawerResultView: View {
     @State private var partnerPulse: CGFloat = 1
     @AccessibilityFocusState private var isTitleFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
 
     init(viewModel: DrawAndGuessViewModel) {
         self.viewModel = viewModel
@@ -116,7 +117,7 @@ struct DrawAndGuessDrawerResultView: View {
                 if !viewModel.board.isStrokeInProgress { PaeoniaHaptics.partnerDrawingReceived() }
             }
         }
-        .onChange(of: viewModel.round?.guesserReaction) { old, new in
+        .onChange(of: partnersReaction) { old, new in
             // A reaction that shows up while the result is on screen. One that was
             // there when the screen opened comes in with the result instead.
             guard new != nil, new != old, timeline.actionsShown else { return }
@@ -248,12 +249,18 @@ struct DrawAndGuessDrawerResultView: View {
                 )
                 .transition(transition)
             }
-            if timeline.actionsShown, let reaction = reveal.reaction {
-                DrawAndGuessReactionCapsule(reaction: reaction, partnerName: viewModel.partnerName)
+            if timeline.actionsShown {
+                DrawAndGuessReactionRow(viewModel: viewModel)
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.9)))
             }
         }
-        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: reveal.reaction)
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: partnersReaction)
+    }
+
+    /// What the partner reacted to the round with.
+    private var partnersReaction: String? {
+        guard let roundID = viewModel.round?.id else { return nil }
+        return reactionStore?.partnerReaction(on: .drawAndGuessRound(roundID))
     }
 
     private func lines(for reveal: DrawAndGuessReveal) -> [DrawAndGuessRevealTitle.Line] {

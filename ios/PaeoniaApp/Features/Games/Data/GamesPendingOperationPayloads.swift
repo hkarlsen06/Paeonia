@@ -56,14 +56,6 @@ nonisolated struct GameGiveUpPayload: Codable, Equatable, Sendable {
     let createdAt: Date
 }
 
-/// The guesser's reaction to a finished round. Nil clears it. The last one made
-/// is the one the screen shows.
-nonisolated struct GameReactionPayload: Codable, Equatable, Sendable {
-    let roundID: UUID
-    let reaction: DrawAndGuessReaction?
-    let createdAt: Date
-}
-
 /// This person moved past the result of a finished round.
 nonisolated struct GameResultSeenPayload: Codable, Equatable, Sendable {
     let roundID: UUID
@@ -80,8 +72,6 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
     /// Oldest first.
     var guesses: [GameGuessPayload] = []
     var giveUps: [GameGiveUpPayload] = []
-    /// Oldest first.
-    var reactions: [GameReactionPayload] = []
     var resultsSeen: [GameResultSeenPayload] = []
     /// A waiting move was tried again and the attempt failed for a reason other
     /// than having no connection, such as the server refusing it. The waiting
@@ -95,8 +85,7 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
     static let none = DrawAndGuessPendingWork()
 
     var isEmpty: Bool {
-        pick == nil && drawings.isEmpty && guesses.isEmpty && giveUps.isEmpty && reactions.isEmpty
-            && resultsSeen.isEmpty
+        pick == nil && drawings.isEmpty && guesses.isEmpty && giveUps.isEmpty && resultsSeen.isEmpty
     }
 
     func hasDrawing(roundID: UUID) -> Bool {
@@ -111,17 +100,11 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
         giveUps.contains { $0.roundID == roundID }
     }
 
-    /// The reaction this person made last for the round and has not sent yet.
-    /// The outer nil means none is waiting. The inner nil is a cleared reaction.
-    func reaction(roundID: UUID) -> DrawAndGuessReaction?? {
-        reactions.last { $0.roundID == roundID }.map(\.reaction)
-    }
-
     func hasResultSeen(roundID: UUID) -> Bool {
         resultsSeen.contains { $0.roundID == roundID }
     }
 
-    /// A move of the turn (not a reaction or a seen mark) waits to be sent.
+    /// A move of the turn (not a seen mark) waits to be sent.
     var hasMoveWaiting: Bool {
         pick != nil || !drawings.isEmpty || !guesses.isEmpty || !giveUps.isEmpty
     }
@@ -154,7 +137,6 @@ nonisolated struct DrawAndGuessPendingWork: Equatable, Sendable {
             work.drawings = try await read(.submitGameDrawing)
             work.guesses = try await read(.submitGameGuess)
             work.giveUps = try await read(.giveUpGameRound)
-            work.reactions = try await read(.setGameRoundReaction, isMove: false)
             work.resultsSeen = try await read(.markGameRoundResultSeen, isMove: false)
         } catch {
             // A failed read keeps the screen as it is. Treating it as an empty

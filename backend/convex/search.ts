@@ -161,6 +161,7 @@ class CoupleSearch {
         return {
           question_id: link.question_id,
           memory_id: null,
+          story_id: null,
           context_title: await this.prompt(info),
           topic_title: info.topic_title,
         };
@@ -179,7 +180,17 @@ class CoupleSearch {
         ) {
           return null;
         }
-        return { question_id: null, memory_id: memory.id, context_title: memory.title, topic_title: null };
+        return { question_id: null, memory_id: memory.id, story_id: null, context_title: memory.title, topic_title: null };
+      }
+      case "story": {
+        // The replies outlive the story's 24 hours on Home, but not the story itself.
+        const link = await this.ctx.db
+          .query("story_threads")
+          .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
+          .unique();
+        const story = link ? await getByUuid(this.ctx, "stories", link.story_id) : null;
+        if (!story || story.couple_id !== this.coupleId || story.deleted_at !== undefined) return null;
+        return { question_id: null, memory_id: null, story_id: story.id, context_title: story.caption ?? null, topic_title: null };
       }
       default:
         return null;
@@ -258,12 +269,14 @@ function newestFirst<T>(rows: T[], timestamp: (row: T) => string): T[] {
  * Search over what the signed-in couple wrote and shared, for the Search screen. The caller
  * must be an active member of an entitled couple, and the couple comes from the session.
  *
- * Memories and stories are not here. The phone keeps them and searches them itself.
+ * Memories and stories are not here. The phone keeps them and searches them itself. Their chats are
+ * here: comments on a memory and replies to a story open that memory's or story's chat.
  * Everything here follows what the question page and the chats show:
  * - A partner's answer appears only in a round the caller answered too.
  * - A question, answer or message appears only when the question's page can open, which
  *   needs a round where both partners answered.
- * - Removed and hidden answers, messages, threads and memories never appear.
+ * - Removed and hidden answers, messages, threads, memories and stories never appear, and neither does a
+ *   message its sender took back (the text is gone from the row, so the index cannot find it).
  *
  * The search indexes match the start of words, so "sun" finds "sunset" but "set" does not.
  * `p_locale` picks the wording of questions. A query shorter than two letters finds nothing.

@@ -42,6 +42,10 @@ struct HomeStoriesStrip: View {
             )
             .analyticsScreen("story_viewer")
         }
+        // A story push opens its story. The deep link reads the stories before it asks.
+        .onChange(of: viewModel.openRequest, initial: true) { _, request in
+            openRequestedStory(request)
+        }
         .sheet(isPresented: $isComposing) {
             StoryComposerView(viewModel: viewModel, partnerName: people.partnerName)
                 .analyticsScreen("story_composer")
@@ -59,6 +63,24 @@ struct HomeStoriesStrip: View {
             }
             .analyticsScreen("story_note")
             .presentationBackground(.clear)
+        }
+    }
+
+    /// Opens the story a push named. A story that left Home opens alone in the archive style.
+    /// A story that is gone ends the request without opening anything.
+    private func openRequestedStory(_ request: StoryOpenRequest?) {
+        guard let request else { return }
+        defer { viewModel.consumeOpenRequest() }
+        guard let story = viewModel.stories.first(where: { $0.id == request.storyID }) else { return }
+        let onHome = StoryTimeline.onHome(viewModel.stories, author: story.authorUserID, at: Date())
+        if let index = onHome.firstIndex(where: { $0.id == story.id }) {
+            viewer = StoryViewerContent(
+                stories: onHome, startIndex: index, mode: .home, showsReplies: request.showsReplies
+            )
+        } else {
+            viewer = StoryViewerContent(
+                stories: [story], startIndex: 0, mode: .archive, showsReplies: request.showsReplies
+            )
         }
     }
 

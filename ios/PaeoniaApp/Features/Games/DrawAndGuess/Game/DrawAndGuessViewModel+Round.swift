@@ -209,7 +209,6 @@ extension DrawAndGuessViewModel {
             firstTryBonus: isSolved ? round.firstTryBonus : 0,
             hintsUsed: isSolved ? round.hintsUsed : 0,
             personalBest: isSolved && isConfirmed && round.personalBest,
-            reaction: round.guesserReaction,
             solveDuration: isSolved ? solveDuration(for: round) : nil,
             pointsForMe: isSolved ? round.points + bonuses : 0,
             pointsForCouple: isSolved ? round.points : 0,

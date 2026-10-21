@@ -65,49 +65,7 @@ struct GamesHandlerFixTests {
         GameGuessPayload(id: UUID(), roundID: roundID, guess: text, isCorrect: correct, createdAt: GameFixture.now)
     }
 
-    // MARK: Reaction and result seen
-
-    @Test func aQueuedReactionWaitsForTheGuessThatEndedTheRound() async throws {
-        let correct = guess("umbrella", correct: true)
-        let guessOperation = operation(1)
-        try await enqueue(.submitGameGuess, correct, guessOperation)
-        let reaction = GameReactionPayload(roundID: GameFixture.roundID, reaction: .love, createdAt: GameFixture.now)
-        let handler = GameReactionPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
-
-        let waiting = try await handler.send(
-            try snapshot(.setGameRoundReaction, reaction, operation: operation(2)),
-            context: syncContext(environment.pending)
-        )
-        #expect(waiting == .retry(after: nil))
-        #expect(environment.gateway.reactions.isEmpty)
-
-        try await environment.pending.markSucceeded(clientOperationID: guessOperation.id, at: GameFixture.now)
-        let sent = try await handler.send(
-            try snapshot(.setGameRoundReaction, reaction, operation: operation(2)),
-            context: syncContext(environment.pending)
-        )
-        #expect(sent == .succeeded)
-        #expect(environment.gateway.reactions == [
-            ScriptedGamesGateway.SentReaction(roundID: GameFixture.roundID, reaction: .love)
-        ])
-    }
-
-    @Test func aReactionTheServerRefusesForGoodIsDroppedWithoutANotice() async throws {
-        environment.gateway.setReactionError(.server(code: "23514", message: "the round is not finished yet"))
-        let reaction = GameReactionPayload(roundID: GameFixture.roundID, reaction: .wow, createdAt: GameFixture.now)
-        let handler = GameReactionPendingOperationHandler(gateway: environment.gateway, cache: environment.cache)
-
-        let result = try await handler.send(
-            try snapshot(.setGameRoundReaction, reaction),
-            context: syncContext(environment.pending)
-        )
-
-        guard case .terminalFailure = result else {
-            Issue.record("Expected a terminal failure, got \(result)")
-            return
-        }
-        #expect(await environment.cache.takeNotices(ownerUserID: GameFixture.me).isEmpty)
-    }
+    // MARK: Result seen
 
     @Test func theResultSeenMarkWaitsForTheGiveUpAndThenGoesToTheServer() async throws {
         let giveUpOperation = operation(1)

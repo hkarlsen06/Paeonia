@@ -22,7 +22,8 @@ extension MainTabView {
         switch tab {
         case .questions: dailyChallengeViewModel.unreadChats.count
         case .games: gamesViewModel.isYourTurn ? 1 : 0
-        case .home, .us, .memories: 0
+        case .memories: chatSummaries.unreadCount(of: .memory)
+        case .home, .us: 0
         }
     }
 
@@ -129,8 +130,8 @@ extension MainTabView {
             // Topic chats stay off Home. The Topics card says when one has a new message.
             unreadChats: dailyChallengeViewModel.unreadDailyChats.map { summary in
                 UnreadChatRow(
-                    id: summary.questionID,
-                    prompt: dailyChallengeViewModel.questionPrompt(for: summary.questionID),
+                    id: summary.subject.id,
+                    prompt: dailyChallengeViewModel.questionPrompt(for: summary.subject.id),
                     preview: summary.lastMessagePreview
                 )
             },

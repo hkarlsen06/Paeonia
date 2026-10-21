@@ -3,7 +3,7 @@ import { components } from "../_generated/api";
 import type { ReaderCtx, WriterCtx } from "./db";
 import type { GameKind } from "./games";
 
-// Who has a game screen open and who is typing in a question's chat, kept by the
+// Who has a game screen open and who is typing in a chat, kept by the
 // @convex-dev/presence component. The component marks a user offline on its own once
 // heartbeats stop, so no cron and no clock read in a query decides it.
 //
@@ -20,9 +20,9 @@ export function gameRoom(coupleId: string, kind: GameKind): string {
 
 const gameRoomPrefix = (coupleId: string) => `${coupleId}:game:`;
 
-/** Typing in one question's chat. */
-export function chatTypingRoom(coupleId: string, instanceId: string): string {
-  return `${coupleId}:typing:${instanceId}`;
+/** Typing in one chat, named by its subject's id (a question, a memory or a story). */
+export function chatTypingRoom(coupleId: string, subjectId: string): string {
+  return `${coupleId}:typing:${subjectId}`;
 }
 
 /**

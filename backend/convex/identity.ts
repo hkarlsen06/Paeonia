@@ -11,6 +11,7 @@ import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, uuidArg } from "./lib/ids";
 import { sha256Hex } from "./lib/crypto";
 import { isValidQuestionTimeMinutes } from "./lib/questionTime";
+import { literals } from "./lib/validators";
 import { findProfile, profileRow, profileSummaryRow, updateProfile } from "./lib/profiles";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { nowIso } from "./lib/time";
@@ -302,6 +303,23 @@ export const set_notification_preference = mutation({
     const row = await findNotificationPreferences(ctx, userId);
     if (!row) return fail("P0002", "notification preferences were not found");
     await ctx.db.patch(row._id, withTouch(row, { [column]: args.p_enabled }));
+    return notificationPreferencesRow((await findNotificationPreferences(ctx, userId))!);
+  },
+});
+
+/**
+ * Chooses what the lock screen shows when iOS hides previews. "private" shows only a line such as
+ * "New message". "descriptive" also shows who it is from and what they did, never what they wrote.
+ * The choice applies to the user's next alert (`prepare_notification` reads it at send time).
+ */
+export const set_lock_screen_detail_level = mutation({
+  args: { p_level: literals("private", "descriptive") },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    await assertNoPendingAccountDeletion(ctx, userId);
+    const row = await findNotificationPreferences(ctx, userId);
+    if (!row) return fail("P0002", "notification preferences were not found");
+    await ctx.db.patch(row._id, withTouch(row, { lock_screen_detail_level: args.p_level }));
     return notificationPreferencesRow((await findNotificationPreferences(ctx, userId))!);
   },
 });

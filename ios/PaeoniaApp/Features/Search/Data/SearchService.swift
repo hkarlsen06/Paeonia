@@ -40,14 +40,15 @@ nonisolated struct RemoteSearchResponse: Decodable, Equatable, Sendable {
 
     struct Message: Decodable, Equatable, Sendable {
         let messageID: UUID
-        /// The thread's kind. The app opens `daily_question` and `memory` chats and skips others.
+        /// The thread's kind. The app opens `daily_question`, `memory` and `story` chats and skips others.
         let threadKind: String
         let senderUserID: UUID
         let snippet: String
         let createdAt: Date
         let questionID: UUID?
         let memoryID: UUID?
-        /// The question's wording or the memory's title.
+        let storyID: UUID?
+        /// The question's wording, the memory's title or the story's caption.
         let contextTitle: String?
         let topicTitle: String?
 
@@ -59,6 +60,7 @@ nonisolated struct RemoteSearchResponse: Decodable, Equatable, Sendable {
             case createdAt = "created_at"
             case questionID = "question_id"
             case memoryID = "memory_id"
+            case storyID = "story_id"
             case contextTitle = "context_title"
             case topicTitle = "topic_title"
         }

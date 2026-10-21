@@ -22,7 +22,6 @@ struct DrawAndGuessRevealScoreTests {
             firstTryBonus: firstTry,
             hintsUsed: 0,
             personalBest: false,
-            reaction: nil,
             solveDuration: duration,
             pointsForMe: solved ? 2 + (outcome == .iSolvedIt ? bonus + firstTry : 0) : 0,
             pointsForCouple: solved ? 2 : 0,

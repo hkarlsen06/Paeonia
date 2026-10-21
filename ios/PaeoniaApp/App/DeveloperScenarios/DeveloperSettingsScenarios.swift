@@ -81,16 +81,7 @@
     func loadNotificationPreferences() throws -> NotificationPreferences { preferences }
 
     func setNotificationPreference(_ kind: NotificationPreferenceKind, enabled: Bool) throws {
-      switch kind {
-      case .streakReminders: preferences.streakRemindersEnabled = enabled
-      case .dailyChallenge: preferences.dailyChallengeEnabled = enabled
-      case .partnerAnswered: preferences.partnerAnsweredEnabled = enabled
-      case .messages: preferences.messagesEnabled = enabled
-      case .widgetUpdates: preferences.widgetUpdatesEnabled = enabled
-      case .memories: preferences.memoriesEnabled = enabled
-      case .games: preferences.gamesEnabled = enabled
-      case .dateReminders: preferences.dateRemindersEnabled = enabled
-      }
+      preferences[kind] = enabled
     }
 
     func setQuestionTimeReminder(_ reminder: QuestionTimeReminder) throws {

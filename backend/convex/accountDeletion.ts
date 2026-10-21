@@ -21,6 +21,7 @@ import {
 } from "./lib/accountDeletionProviders";
 import { removePresenceRooms } from "./lib/presence";
 import { findProfile, updateProfile } from "./lib/profiles";
+import { reactionsByUser } from "./lib/reactions";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { listUserFavoriteRows } from "./lib/favoriteRows";
 import { tombstoneReportTargets } from "./lib/reports";
@@ -433,14 +434,7 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
       .query("daily_answer_seen_states")
       .withIndex("by_user_id", (q) => q.eq("user_id", userId))
       .collect()),
-    ...(await ctx.db
-      .query("daily_answer_reactions")
-      .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-      .collect()),
-    ...(await ctx.db
-      .query("thread_message_reactions")
-      .withIndex("by_user_id", (q) => q.eq("user_id", userId))
-      .collect()),
+    ...(await reactionsByUser(ctx, userId)),
     ...(await listUserFavoriteRows(ctx, userId)),
   ];
   for (const row of rows) await ctx.db.delete(row._id);

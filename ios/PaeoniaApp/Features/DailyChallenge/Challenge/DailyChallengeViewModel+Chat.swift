@@ -19,15 +19,15 @@ extension DailyChallengeViewModel {
     }
 
     /// The chat prepared for `question`, with the focus it was prepared with.
-    func makeChatViewModel(question: DailyChallengeQuestion) -> DailyQuestionChatViewModel {
-        if let preparedChat, preparedChat.question.id == question.id {
+    func makeChatViewModel(question: DailyChallengeQuestion) -> ThreadChatViewModel {
+        if let preparedChat, preparedChat.question?.id == question.id {
             return preparedChat
         }
         return newChatViewModel(question: question, focusesNewest: false)
     }
 
-    private func newChatViewModel(question: DailyChallengeQuestion, focusesNewest: Bool) -> DailyQuestionChatViewModel {
-        DailyQuestionChatViewModel(
+    private func newChatViewModel(question: DailyChallengeQuestion, focusesNewest: Bool) -> ThreadChatViewModel {
+        ThreadChatViewModel(
             question: question,
             participants: participants,
             focusesNewest: focusesNewest,
@@ -89,7 +89,7 @@ extension DailyChallengeViewModel {
     }
 
     /// Chats with a partner message the user has not opened yet, newest first.
-    var unreadChats: [DailyQuestionThreadSummary] {
+    var unreadChats: [ThreadChatSummary] {
         guard let currentUserID else { return [] }
         return threadSummariesByQuestionID.values
             .filter { $0.isUnread(by: currentUserID, readThrough: chatReadMarks[$0.threadID]) }
@@ -103,7 +103,7 @@ extension DailyChallengeViewModel {
 
     /// Chats with a partner message the user has not opened yet, from daily questions
     /// only. Home and other shared screens list these. Topic chats show on the Topics card.
-    var unreadDailyChats: [DailyQuestionThreadSummary] {
+    var unreadDailyChats: [ThreadChatSummary] {
         unreadChats.filter { $0.topicKey == nil }
     }
 

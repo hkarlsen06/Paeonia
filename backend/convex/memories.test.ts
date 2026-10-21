@@ -145,7 +145,7 @@ describe("memory created notifications", () => {
       memory_id: memoryId,
       actor_user_id: couple.first.userId,
       route: "memories",
-      deeplink: "paeonia://memories",
+      deeplink: `paeonia://memories/memory?memoryId=${memoryId}`,
     });
     expect(rows[0].apns_collapse_id).toBe(`memory:${memoryId}`);
     expect(rows.every((row) => row.dedupe_key?.startsWith(`memory_created:${memoryId}:`))).toBe(true);

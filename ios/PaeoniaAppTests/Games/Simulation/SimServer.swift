@@ -334,7 +334,6 @@ extension SimServer {
             firstTryBonus: round.firstTryBonus,
             hintsUsed: round.hintsUsed,
             personalBest: round.personalBest,
-            guesserReaction: round.reaction,
             drawerResultSeenAt: round.drawerSeenAt,
             guesserResultSeenAt: round.guesserSeenAt,
             attempts: Array(round.attempts.suffix(200)),

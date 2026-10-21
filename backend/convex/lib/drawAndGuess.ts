@@ -223,7 +223,6 @@ export function roundOutcomeJson(move: GameMove) {
     first_try_bonus: move.first_try_bonus ?? 0,
     hints_used: move.hints_used ?? 0,
     personal_best: move.personal_best ?? false,
-    guesser_reaction: orNull(move.guesser_reaction),
   };
 }
 

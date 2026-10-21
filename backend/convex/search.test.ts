@@ -2,10 +2,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { answeredRound, seedQuestion } from "./dailyChat.setup";
 import { newUuid } from "./lib/ids";
-import { failure, op } from "./media.testing";
+import { failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
 import { createCouple, createSignedInUser, newTest, type TestConvex, type TestCouple, type TestUser } from "./test.setup";
 
 beforeEach(() => {
+  setMediaEnv();
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
 });
@@ -54,6 +55,24 @@ async function startMemoryChat(user: TestUser, body: string) {
     p_body: body,
   });
   return { memoryId, threadId: row.thread_id, messageId: row.message_id };
+}
+
+/** `author` posts a story and `replier` starts its reply thread. */
+async function startStoryReply(t: TestConvex, couple: TestCouple, author: TestUser, replier: TestUser, body: string) {
+  const storyId = newUuid();
+  const up = await uploadAsset(t, author, { ...photo(couple.coupleId, "story", "story_photo"), parentId: storyId });
+  await author.as.mutation(api.stories.post_story, {
+    p_story_id: storyId,
+    p_media_asset_id: up.assetId,
+    p_caption: "Sunset at the harbour",
+    ...op(),
+  });
+  const [row] = await replier.as.mutation(api.threads.create_story_thread_with_message, {
+    ...op(),
+    p_story_id: storyId,
+    p_body: body,
+  });
+  return { storyId, threadId: row.thread_id, messageId: row.message_id };
 }
 
 describe("search_couple_content access", () => {
@@ -280,6 +299,49 @@ describe("chat messages", () => {
       await ctx.db.patch(memory!._id, { deleted_at: OCTOBER });
     });
     expect((await search(couple.first, "dock")).messages).toEqual([]);
+  });
+
+  test("finds replies to a story and says which story they belong to", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const reply = await startStoryReply(t, couple, couple.first, couple.second, "That harbour light is unreal");
+
+    const result = await search(couple.first, "harbour");
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0]).toMatchObject({
+      message_id: reply.messageId,
+      thread_id: reply.threadId,
+      thread_kind: "story",
+      story_id: reply.storyId,
+      question_id: null,
+      memory_id: null,
+      sender_user_id: couple.second.userId,
+      context_title: "Sunset at the harbour",
+    });
+    // The story is the author's own to delete, and its replies go with it.
+    await couple.first.as.mutation(api.stories.delete_story, { ...op(), p_story_id: reply.storyId });
+    expect((await search(couple.first, "harbour")).messages).toEqual([]);
+  });
+
+  test("never finds a message its sender took back, or another couple's replies", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { question } = await sharedRound(t, couple, "unsendq", "a", "b");
+    const questionChat = await startQuestionChat(couple.first, couple, question.id, "secret lighthouse plan");
+    const memoryChat = await startMemoryChat(couple.second, "lighthouse photos");
+    const storyReply = await startStoryReply(t, couple, couple.first, couple.second, "lighthouse at night");
+    expect((await search(couple.first, "lighthouse")).messages).toHaveLength(3);
+
+    await couple.first.as.mutation(api.threads.delete_thread_message, { ...op(), p_message_id: questionChat.message_id });
+    await couple.second.as.mutation(api.threads.delete_thread_message, { ...op(), p_message_id: memoryChat.messageId });
+    await couple.second.as.mutation(api.threads.delete_thread_message, { ...op(), p_message_id: storyReply.messageId });
+    for (const user of [couple.first, couple.second]) {
+      expect((await search(user, "lighthouse")).messages).toEqual([]);
+      expect((await search(user, "secret")).messages).toEqual([]);
+    }
+
+    const other = await createCouple(t);
+    expect((await search(other.first, "lighthouse")).messages).toEqual([]);
   });
 
   test("finds an edited message by its new text only", async () => {

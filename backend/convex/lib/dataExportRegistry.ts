@@ -437,10 +437,6 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       nb: "Når du første gang så partnerens svar.",
     },
   }),
-  daily_answer_reactions: own("user_id", "by_user_id", {
-    group: "daily",
-    about: { en: "Emoji you put on answers.", nb: "Emojier du la på svar." },
-  }),
   topic_question_skips: shared("by_couple_id_question_id", {
     group: "daily",
     about: {
@@ -470,10 +466,6 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       en: "Which photos and voice messages belong to your chat messages. The files are in the files folder.",
       nb: "Hvilke bilder og talemeldinger som hører til meldingene dine. Filene ligger i mappen files.",
     },
-  }),
-  thread_message_reactions: own("user_id", "by_user_id", {
-    group: "chat",
-    about: { en: "Emoji you put on messages.", nb: "Emojier du la på meldinger." },
   }),
   thread_read_states: own("user_id", "by_user_id", {
     group: "chat",
@@ -510,6 +502,13 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     about: {
       en: "The stories you posted: caption and time. The photos are in the files folder.",
       nb: "Storyene du la ut: bildetekst og tidspunkt. Bildene ligger i mappen files.",
+    },
+  }),
+  story_threads: child("stories", "id", "story_id", "by_story_id", {
+    group: "stories",
+    about: {
+      en: "Which chat belongs to which of your stories. Your replies to your partner's stories are in the chat files.",
+      nb: "Hvilken samtale som hører til hvilken av storyene dine. Svarene dine på partnerens stories ligger i samtalefilene.",
     },
   }),
   couple_notes: yours("by_couple_id_user_id", "user_id", {
@@ -558,6 +557,13 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     about: {
       en: "What you did in Paeonia that counts for your streak, such as answering or drawing.",
       nb: "Det du har gjort i Paeonia som teller for rekken, som å svare eller tegne.",
+    },
+  }),
+  reactions: own("user_id", "by_user_id", {
+    group: "activity",
+    about: {
+      en: "The emoji you put on messages, answers, stories, memories, drawings and game creations. The emoji your partner put on your things are not included.",
+      nb: "Emojiene du la på meldinger, svar, stories, minner, tegninger og spillskapninger. Emojiene partneren din la på tingene dine er ikke med.",
     },
   }),
   favorites: own("user_id", "by_user_id_created_at", {

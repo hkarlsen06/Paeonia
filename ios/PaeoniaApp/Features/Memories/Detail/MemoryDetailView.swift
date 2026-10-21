@@ -79,6 +79,10 @@ struct MemoryDetailView: View {
                     photoGallery(for: record)
                 }
 
+                ReactionSection(target: .memory(memoryID))
+
+                MemoryCommentsSection(record: record, viewModel: viewModel)
+
                 yourNoteSection(for: record)
 
                 if let body = visibleBody(of: record.snapshot.partnerNote) {

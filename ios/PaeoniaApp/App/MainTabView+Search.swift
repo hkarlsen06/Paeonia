@@ -47,6 +47,11 @@ extension MainTabView {
         case let .memory(id):
             selection.wrappedValue = .memories
             memoriesPath = [id]
+        case let .memoryComments(id):
+            // The memory's comments and the story's replies open the way a push about them does.
+            deepLink.wrappedValue = .memory(memoryID: id, showsComments: true)
+        case let .storyReplies(id):
+            deepLink.wrappedValue = .story(storyID: id, showsReplies: true)
         case let .question(id):
             startOpeningDailyChat(questionID: id)
         case let .storyChain(id):

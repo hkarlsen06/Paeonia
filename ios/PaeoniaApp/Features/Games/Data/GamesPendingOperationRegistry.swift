@@ -46,7 +46,6 @@ nonisolated enum GamesPendingOperationRegistry {
             ),
             SubmitGameGuessPendingOperationHandler(gateway: gateway, cache: cache),
             GiveUpGameRoundPendingOperationHandler(gateway: gateway, cache: cache),
-            GameReactionPendingOperationHandler(gateway: gateway, cache: cache),
             GameResultSeenPendingOperationHandler(gateway: gateway, cache: cache),
         ]
     }

@@ -491,6 +491,30 @@ describe("delete_account action", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  test("deletes the reactions the person made and keeps the partner's", async () => {
+    const t = newTest();
+    await configureApple();
+    stubNetwork();
+    const couple = await appleCoupleWithData(t);
+    await t.run(async (ctx) => {
+      for (const user of [couple.first, couple.second]) {
+        await ctx.db.insert("reactions", {
+          target_kind: "story",
+          target_id: newUuid(),
+          couple_id: couple.coupleId,
+          user_id: user.userId,
+          emoji: "❤️",
+          created_at: NOW,
+          updated_at: NOW,
+        });
+      }
+    });
+    await couple.first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
+    const left = await t.run((ctx) => ctx.db.query("reactions").collect());
+    expect(left.map((row) => row.user_id)).toEqual([couple.second.userId]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("falls back to manual Apple revocation but still deletes the account", async () => {
     const t = newTest();
     const calls = stubNetwork();

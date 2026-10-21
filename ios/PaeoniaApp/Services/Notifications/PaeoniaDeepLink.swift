@@ -9,8 +9,14 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     /// `paeonia://topics`: the partner answered topic questions. Opens the Topics shelf.
     case topics
     case memories
-    /// `paeonia://stories`: the partner shared a story. Opens Home, where the ring shows it.
+    /// `paeonia://memories/memory?memoryId=...`: opens one memory. `showsComments` (`&comments=1`)
+    /// is for a comment push, so the memory opens on its comments.
+    case memory(memoryID: UUID, showsComments: Bool)
+    /// `paeonia://stories`: opens Home, where the ring shows the stories.
     case stories
+    /// `paeonia://stories/story?storyId=...`: opens one story in the viewer. `showsReplies`
+    /// (`&replies=1`) is for a reply push, so the story opens with its replies.
+    case story(storyID: UUID, showsReplies: Bool)
     /// `paeonia://home`: opens Home, for example after the partner joined.
     case home
     /// `paeonia://dates`: a reminder about a birthday, the anniversary or a countdown.
@@ -101,6 +107,36 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
         return url
     }
 
+    /// Mirrors `memoryDeepLink` in `backend/convex/lib/deepLinks.ts`.
+    static func memoryURL(memoryID: UUID, showsComments: Bool = false) -> URL {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = "memories"
+        components.path = "/memory"
+        components.queryItems = [URLQueryItem(name: "memoryId", value: memoryID.uuidString)]
+            + (showsComments ? [URLQueryItem(name: "comments", value: "1")] : [])
+
+        guard let url = components.url else {
+            preconditionFailure("Invalid Paeonia memory URL")
+        }
+        return url
+    }
+
+    /// Mirrors `storyDeepLink` in `backend/convex/lib/deepLinks.ts`.
+    static func storyURL(storyID: UUID, showsReplies: Bool = false) -> URL {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = "stories"
+        components.path = "/story"
+        components.queryItems = [URLQueryItem(name: "storyId", value: storyID.uuidString)]
+            + (showsReplies ? [URLQueryItem(name: "replies", value: "1")] : [])
+
+        guard let url = components.url else {
+            preconditionFailure("Invalid Paeonia story URL")
+        }
+        return url
+    }
+
     static func gameURL(_ kind: GameKind) -> URL {
         var components = URLComponents()
         components.scheme = scheme
@@ -174,6 +210,14 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             dailyLink(pathComponents: pathComponents, query: query)
         case ("games", _) where pathComponents.count == 1:
             GameKind(path: pathComponents[0]).map(Self.game)
+        case ("memories", ["memory"]):
+            query.uuidValue(named: "memoryId").map {
+                .memory(memoryID: $0, showsComments: query.flag(named: "comments"))
+            }
+        case ("stories", ["story"]):
+            query.uuidValue(named: "storyId").map {
+                .story(storyID: $0, showsReplies: query.flag(named: "replies"))
+            }
         case ("settings", ["subscription"]):
             .subscription
         case ("settings", ["data-export"]):
@@ -229,5 +273,10 @@ private extension Array where Element == URLQueryItem {
             return nil
         }
         return UUID(uuidString: value)
+    }
+
+    /// True for `name=1`.
+    nonisolated func flag(named name: String) -> Bool {
+        first(where: { $0.name == name })?.value == "1"
     }
 }

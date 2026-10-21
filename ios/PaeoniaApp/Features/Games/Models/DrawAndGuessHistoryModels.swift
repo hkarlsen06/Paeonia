@@ -22,7 +22,6 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
     let firstTryBonus: Int
     let hintsUsed: Int
     let attemptCount: Int
-    let guesserReaction: DrawAndGuessReaction?
     let personalBest: Bool
     let startedAt: Date
     let endedAt: Date?
@@ -42,7 +41,6 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
         case firstTryBonus = "first_try_bonus"
         case hintsUsed = "hints_used"
         case attemptCount = "attempt_count"
-        case guesserReaction = "guesser_reaction"
         case personalBest = "personal_best"
         case startedAt = "started_at"
         case endedAt = "ended_at"

@@ -225,16 +225,7 @@ struct DrawAndGuessHistoryDetailScreen: View {
             Text(viewModel.resultLine)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextPrimary)
-            if let reaction = viewModel.reaction {
-                HStack(spacing: PaeoniaSpacing.space8) {
-                    Image(systemName: reaction.symbol)
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                        .accessibilityHidden(true)
-                    Text(reaction.text)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                }
-            }
+            ReactionSection(target: .drawAndGuessRound(viewModel.round.id))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

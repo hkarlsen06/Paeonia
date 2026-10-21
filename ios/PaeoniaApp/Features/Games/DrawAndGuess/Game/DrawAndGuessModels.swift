@@ -157,8 +157,6 @@ nonisolated struct DrawAndGuessReveal: Equatable, Sendable {
     let hintsUsed: Int
     /// The guesser's fastest hint-free solve yet. Only the server says so.
     let personalBest: Bool
-    /// The guesser's reaction, with one waiting on this phone applied.
-    let reaction: DrawAndGuessReaction?
     /// How long the guess took, counted from the first look at the drawing.
     let solveDuration: TimeInterval?
     /// What this person earned. The drawer gets the word's points. The guesser also

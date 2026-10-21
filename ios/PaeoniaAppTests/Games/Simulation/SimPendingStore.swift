@@ -132,7 +132,7 @@ actor SimPendingStore: PendingSyncOperationPersisting {
 
     /// The Draw & Guess kinds, which a store uses unless it is given others.
     static let gameKinds: [SyncPendingOperationKind] = [
-        .pickDrawWord, .submitGameDrawing, .submitGameGuess, .giveUpGameRound, .setGameRoundReaction,
+        .pickDrawWord, .submitGameDrawing, .submitGameGuess, .giveUpGameRound,
         .markGameRoundResultSeen,
     ]
 }

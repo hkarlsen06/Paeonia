@@ -30,6 +30,7 @@ const alert: PreparedNotification = {
   payload: { type: "memory_created", route: "memories", deeplink: "paeonia://memories" },
   deliver_quietly: false,
   badge: null,
+  lock_screen_detail_level: "private",
 };
 
 describe("quiet night", () => {
@@ -98,6 +99,16 @@ describe("payload builders", () => {
     });
   });
 
+  test("a recipient who chose descriptive gets the detail twin of the category, with the same copy", () => {
+    const descriptive = buildAppApsPayload({ ...alert, lock_screen_detail_level: "descriptive" });
+    expect(descriptive.aps).toMatchObject({
+      alert: { body: "Open Paeonia to see it.", title: "Alex" },
+      category: "partner.detail",
+      "thread-id": "memories",
+    });
+    expect(buildAppApsPayload(alert).aps).toMatchObject({ category: "partner" });
+  });
+
   test("an alert carries the badge number it was given, and leaves the icon alone without one", () => {
     expect(buildAppApsPayload({ ...alert, badge: 3 }).aps).toMatchObject({ badge: 3 });
     expect(buildAppApsPayload(alert).aps).not.toHaveProperty("badge");
@@ -138,6 +149,20 @@ describe("payload builders", () => {
       "thread-id": "subscription",
       category: "reminder",
     });
+    expect(aps({ type: "reaction_added" })).toMatchObject({ "thread-id": "reactions", category: "partner" });
+    expect(aps({ type: "date_reminder" })).toMatchObject({ "thread-id": "dates", category: "reminder" });
+    expect(aps({ type: "data_export_ready" })).toMatchObject({ category: "account" });
+  });
+
+  test("every alert kind that has a category also has a detail twin for a descriptive recipient", () => {
+    const descriptive = (type: string) =>
+      buildAppApsPayload({ ...alert, lock_screen_detail_level: "descriptive", payload: { type } }).aps as Record<
+        string,
+        unknown
+      >;
+    expect(descriptive("reaction_added").category).toBe("partner.detail");
+    expect(descriptive("date_reminder").category).toBe("reminder.detail");
+    expect(descriptive("data_export_ready").category).toBe("account.detail");
   });
 
   test("an unknown kind gets no stack and no category, and a background push gets neither", () => {

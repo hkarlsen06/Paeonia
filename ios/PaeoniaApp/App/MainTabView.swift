@@ -76,6 +76,9 @@ final class MainTabModels {
     lazy var coupleDates = CoupleDatesViewModel()
     lazy var stories = StoriesViewModel()
     lazy var search = SearchViewModel.live()
+    /// The memories' comments and the stories' replies the partner wrote in and the user has not read.
+    lazy var chatSummaries = ThreadChatSummaries(service: dailyChallenge.chatService)
+    lazy var reactions = ReactionStore()
     lazy var topics = TopicsViewModel()
     lazy var lookBack = LookBackViewModel.live(
         thumbnailLoader: dependencies.widgetHistoryThumbnailLoader
@@ -193,10 +196,20 @@ struct MainTabView: View {
     /// The stars on questions, answers, drawings and finished games. One store for the whole app.
     var favoritesStore: FavoritesStore { .shared }
     var storiesViewModel: StoriesViewModel { models.stories }
+    var chatSummaries: ThreadChatSummaries { models.chatSummaries }
+    var reactionStore: ReactionStore { models.reactions }
     var topicsViewModel: TopicsViewModel { models.topics }
 
     var body: some View {
         presentingSearch(on: presentingDailyFlows(on: tabContent))
+            // Outside the covers and sheets, so the Home drawing, the story viewer and every game
+            // screen can show and take reactions.
+            .environment(reactionStore)
+            // Memory comments and story replies open as chats from their own screens.
+            .environment(\.threadChatContext, threadChatContext)
+            .task(id: identity.currentUserID) {
+                await chatSummaries.observe(ownerUserID: identity.currentUserID)
+            }
             .liveFeedDemand(visibleTab: selection.wrappedValue, partnerGames: gamesViewModel.partnerGameKinds)
     }
 
@@ -290,6 +303,13 @@ struct MainTabView: View {
         .onChange(of: identity.coupleID) { _, coupleID in
             storiesViewModel.updateCoupleID(coupleID)
         }
+        .task(id: identity.currentUserID) {
+            await reactionStore.configure(ownerUserID: identity.currentUserID, partnerName: reactionPartnerName)
+            await reactionStore.observeStoreChanges()
+        }
+        .onChange(of: reactionPartnerName) { _, name in
+            reactionStore.updatePartnerName(name)
+        }
         .onChange(of: storiesViewModel.error) { _, error in
             guard let error else { return }
             bannerCenter.show(.error(message: error.message))
@@ -311,6 +331,28 @@ struct MainTabView: View {
         .task(id: deepLink.wrappedValue) {
             await handleDeepLink(deepLink.wrappedValue)
         }
+    }
+
+    /// The partner's name in the words that say who reacted.
+    var reactionPartnerName: String {
+        identity.partnerDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationPartnerName)
+    }
+
+    /// What a memory's comments and a story's replies need to open as a chat.
+    var threadChatContext: ThreadChatContext {
+        ThreadChatContext(
+            coupleID: identity.coupleID,
+            participants: dailyChallengeParticipants,
+            summaries: chatSummaries,
+            service: dailyChallengeViewModel.chatService,
+            operationProvider: dailyChallengeViewModel.operationProvider,
+            syncAfterLocalChange: actions.syncAfterLocalChange,
+            reporting: ChatReporting(
+                service: dependencies.settingsPrivacyService,
+                operationProvider: dependencies.settingsPrivacyOperationProvider,
+                onReportedAndLeft: actions.leftRelationship
+            )
+        )
     }
 
     /// Both partners' identity, used by the daily challenge to label partner-choice
