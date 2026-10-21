@@ -209,7 +209,7 @@ export const get_widget_canvas = query({
 
 /**
  * Everything the Lock Screen widgets show, in one read: the partner's name and zone, the start date,
- * the next countdowns, the distance, the streak, the daily question, and the games waiting for the
+ * the countdowns and birthdays, the distance, the streak, the daily question, and the games waiting for the
  * caller. Returns null without an active entitled couple. It never returns coordinates or text.
  *
  * A query must not read the clock, so the widget passes its time in `p_now`, rounded down to the

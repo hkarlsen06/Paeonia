@@ -15,16 +15,13 @@ struct StreakLockScreenView: View {
                 AccessoryWidgetBackground()
                 // Dim track under the lit halves. The two halves are one closed
                 // circle when both partners are active.
-                Circle()
-                    .stroke(.primary.opacity(0.2), lineWidth: Self.ringWidth)
-                    .padding(Self.ringInset)
-                ForEach(Array(streak.ring.arcs.enumerated()), id: \.offset) { _, arc in
-                    Circle()
-                        .trim(from: arc.start, to: arc.end)
-                        .stroke(.primary, style: StrokeStyle(lineWidth: Self.ringWidth, lineCap: .butt))
-                        .rotationEffect(.degrees(-90))
-                        .padding(Self.ringInset)
-                }
+                StreakRingView(
+                    ring: streak.ring,
+                    lineWidth: Self.ringWidth,
+                    track: AnyShapeStyle(HierarchicalShapeStyle.primary.opacity(0.2)),
+                    lit: AnyShapeStyle(HierarchicalShapeStyle.primary)
+                )
+                .padding(Self.ringInset)
                 VStack(spacing: -1) {
                     Image(systemName: "flame.fill").font(.system(size: 11))
                     Text(streak.count.formatted())

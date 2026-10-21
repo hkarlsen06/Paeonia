@@ -8,10 +8,19 @@ struct LockScreenSnapshotTests {
       "generated_at": "2026-10-17T09:15:30.123Z",
       "partner": { "display_name": "Elena Hansen", "time_zone_id": "Asia/Kolkata" },
       "started_on": "2025-08-31",
-      "upcoming_countdowns": [
-        { "id": "c1", "title": "Trip to Bergen", "target_date": "2026-10-29", "created_at": "2026-09-01T10:00:00Z" },
-        { "id": "c2", "title": "Birthday", "target_date": "2026-12-01", "created_at": "2026-09-02T10:00:00.500Z" }
-      ],
+      "dates": {
+        "countdowns": [
+          {
+            "id": "c1", "title": "Trip to Bergen", "target_date": "2026-10-29", "repeats_yearly": false,
+            "created_at": "2026-09-01T10:00:00Z"
+          },
+          {
+            "id": "c3", "title": "We met", "target_date": "2023-06-12", "repeats_yearly": true,
+            "created_at": "2026-09-02T10:00:00.500Z"
+          }
+        ],
+        "birthdays": [ { "is_mine": false, "birthday": "2001-07-01" } ]
+      },
       "distance": { "meters": 7750000.5, "as_of": "2026-10-17T09:10:00.000Z" },
       "couple_day": {
         "local_date": "2026-10-17",
@@ -30,10 +39,13 @@ struct LockScreenSnapshotTests {
         #expect(snapshot.partner?.displayName == "Elena Hansen")
         #expect(snapshot.partner?.timeZoneID == "Asia/Kolkata")
         #expect(snapshot.startedOn == LockScreenCalendarDate(year: 2_025, month: 8, day: 31))
-        #expect(snapshot.upcomingCountdowns.count == 2)
-        #expect(snapshot.upcomingCountdowns[0].targetDate == LockScreenCalendarDate(year: 2_026, month: 10, day: 29))
-        #expect(snapshot.upcomingCountdowns[0].createdAt == Date(timeIntervalSince1970: 1_788_256_800))
-        #expect(snapshot.upcomingCountdowns[1].createdAt.timeIntervalSince1970 == 1_788_343_200.5)
+        #expect(snapshot.dates.countdowns.count == 2)
+        #expect(snapshot.dates.countdowns[0].targetDate == LockScreenCalendarDate(year: 2_026, month: 10, day: 29))
+        #expect(snapshot.dates.countdowns[0].createdAt == Date(timeIntervalSince1970: 1_788_256_800))
+        #expect(snapshot.dates.countdowns[1].createdAt.timeIntervalSince1970 == 1_788_343_200.5)
+        #expect(snapshot.dates.countdowns[1].repeatsYearly)
+        let birthday = LockScreenCalendarDate(year: 2_001, month: 7, day: 1)
+        #expect(snapshot.dates.birthdays == [.init(isMine: false, birthday: birthday)])
         #expect(snapshot.distance?.meters == 7_750_000.5)
         #expect(snapshot.coupleDay?.endsAt.timeIntervalSince1970 == 1_792_274_400)
         #expect(snapshot.streak == .init(currentCount: 12, meActiveToday: true, partnerActiveToday: false))
@@ -48,7 +60,7 @@ struct LockScreenSnapshotTests {
           "generated_at": "2026-10-17T09:15:30Z",
           "partner": null,
           "started_on": null,
-          "upcoming_countdowns": [],
+          "dates": { "countdowns": [], "birthdays": [] },
           "distance": null,
           "couple_day": null,
           "streak": null,
@@ -60,7 +72,7 @@ struct LockScreenSnapshotTests {
 
         #expect(snapshot.partner == nil)
         #expect(snapshot.startedOn == nil)
-        #expect(snapshot.upcomingCountdowns.isEmpty)
+        #expect(snapshot.dates.countdowns.isEmpty && snapshot.dates.birthdays.isEmpty)
         #expect(snapshot.distance == nil)
         #expect(snapshot.streak == nil)
         #expect(snapshot.dailyQuestion == nil)

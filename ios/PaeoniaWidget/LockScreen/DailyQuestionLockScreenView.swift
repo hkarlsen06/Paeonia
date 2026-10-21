@@ -15,7 +15,7 @@ struct DailyQuestionLockScreenView: View {
                 Label { Text(.widgetLockScreenQuestionName) } icon: { Image(systemName: "bubble.left.fill") }
                     .font(.caption.weight(.semibold))
                     .widgetAccentable()
-                Text(stateText(state))
+                Text(state.text(partnerName: entry.snapshot?.partnerFirstName ?? ""))
                     .font(.headline)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
@@ -24,21 +24,6 @@ struct DailyQuestionLockScreenView: View {
         } else {
             LockScreenUnavailableView(symbol: "bubble.left", title: .widgetLockScreenQuestionName)
         }
-    }
-
-    private func stateText(_ state: LockScreenQuestionState) -> String {
-        let name = partnerName
-        return switch state {
-        case .waiting: String(localized: .widgetLockScreenQuestionWaiting)
-        case .partnerAnswered: String(localized: .widgetLockScreenQuestionPartnerAnswered(name))
-        case .waitingForPartner: String(localized: .widgetLockScreenQuestionWaitingForPartner(name))
-        case .bothAnswered: String(localized: .widgetLockScreenQuestionBothAnswered)
-        }
-    }
-
-    private var partnerName: String {
-        let name = entry.snapshot?.partner?.displayName?.split(separator: " ").first.map(String.init)
-        return name ?? String(localized: .widgetLockScreenPartnerFallback)
     }
 }
 #endif

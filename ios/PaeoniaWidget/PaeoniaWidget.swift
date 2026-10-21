@@ -14,8 +14,9 @@ struct PaeoniaWidget: Widget {
         .description(String(localized: .widgetDescription))
         .pushHandler(PaeoniaWidgetPushHandler.self)
         // The drawing stays on the Home Screen. The Lock Screen widgets live in
-        // `LockScreen/` and show numbers and short status lines only.
-        .supportedFamilies([.systemSmall, .systemLarge])
+        // `LockScreen/` and show numbers and short status lines only. The other
+        // Home Screen widgets are in `HomeScreen/`.
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -38,6 +39,13 @@ private extension PaeoniaWidgetEntry {
 }
 
 #Preview(as: .systemSmall) {
+    PaeoniaWidget()
+} timeline: {
+    PaeoniaWidgetEntry(date: .now, content: .placeholder)
+    PaeoniaWidgetEntry.previewDrawing
+}
+
+#Preview(as: .systemMedium) {
     PaeoniaWidget()
 } timeline: {
     PaeoniaWidgetEntry(date: .now, content: .placeholder)

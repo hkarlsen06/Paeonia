@@ -1,15 +1,15 @@
 #if WIDGET_EXTENSION
 import WidgetKit
 
-/// What one Lock Screen widget renders at one moment. A nil snapshot means
+/// What one widget that reads the snapshot renders at one moment. A nil snapshot means
 /// signed out, not paired, or nothing saved yet, and shows the neutral state.
 struct LockScreenEntry: TimelineEntry, Sendable {
     let date: Date
     let snapshot: LockScreenSnapshot?
 }
 
-/// Feeds every Lock Screen widget. They differ only in how often the picture
-/// changes by itself.
+/// Feeds every Lock Screen widget and the Home Screen ones that read the snapshot.
+/// They differ only in how often the picture changes by itself.
 struct LockScreenTimelineProvider: TimelineProvider {
     enum Schedule {
         /// Values change at midnight and when the couple's day ends.
