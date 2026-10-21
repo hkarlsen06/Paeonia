@@ -43,13 +43,13 @@ crons.cron("queue-subscription-trial-reminders", "15 * * * *", internal.storekit
 crons.interval(
   "paeonia-cleanup-expired-relationship-content",
   { hours: 1 },
-  internal.relationship.cleanup_expired_relationship_content,
+  internal.relationshipJobs.cleanup_expired_relationship_content,
   {},
 );
 crons.interval(
   "paeonia-purge-deleted-relationship-content",
   { hours: 1 },
-  internal.relationship.purge_deleted_relationship_content,
+  internal.relationshipJobs.purge_deleted_relationship_content,
   {},
 );
 crons.interval("paeonia-expire-stale-pairing-invites", { hours: 1 }, internal.pairing.expire_stale_pairing_invites, {});

@@ -1572,7 +1572,7 @@ describe("relationship end", () => {
     await s.a.as.mutation(api.relationship.leave_relationship, op());
     // The rows stay through the retention window.
     expect(await count(s.t, s.coupleId)).toEqual(mine);
-    await s.t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
+    await s.t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
     expect(await count(s.t, s.coupleId)).toEqual({ story_chain_games: 0, story_chain_stories: 0, story_chain_stars: 0, story_chain_used: 0 });
     expect(await count(s.t, other.coupleId)).toEqual(otherBefore);
   });

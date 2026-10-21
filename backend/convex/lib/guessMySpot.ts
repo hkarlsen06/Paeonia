@@ -4,6 +4,7 @@ import type { Doc } from "../_generated/dataModel";
 import { canAccessCoupleContent, listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
+import { roundWithPhoto } from "./gameMediaReferences";
 import type { GameBackend } from "./gameRegistry";
 import { enqueueGamePush, isGamePresent, TURN_REMINDER_AFTER_MS, type GamePushKind } from "./games";
 import { charLength } from "./text";
@@ -165,15 +166,6 @@ export async function newestRounds(ctx: ReaderCtx, gameId: string, count: number
 /** Patches a game and bumps its version. */
 export async function patchGame(ctx: WriterCtx, game: GuessMySpotGame, patch: Partial<GuessMySpotGame> = {}): Promise<void> {
   await ctx.db.patch(game._id, withUpdatedAt({ ...patch, version: game.version + 1 }));
-}
-
-/** The round that shows `assetId`, if one does. A deleted round shows no photo. */
-export async function roundWithPhoto(ctx: ReaderCtx, assetId: string): Promise<GuessMySpotRound | null> {
-  const round = await ctx.db
-    .query("guess_my_spot_rounds")
-    .withIndex("by_photo_media_asset_id", (q) => q.eq("photo_media_asset_id", assetId))
-    .first();
-  return round && round.deleted_at === undefined ? round : null;
 }
 
 /** A partner reads a round's photo while they can reach the couple's content. */

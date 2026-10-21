@@ -1040,7 +1040,7 @@ describe("relationship end", () => {
     });
 
     await s.a.as.mutation(api.relationship.leave_relationship, op());
-    await s.t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
+    await s.t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
     expect(Object.values(await count(s.t, s.couple.coupleId)).every((rows) => rows === 0)).toBe(true);
     expect(await count(keep.t, keep.couple.coupleId)).toMatchObject({
       exquisite_corpse_games: 1,

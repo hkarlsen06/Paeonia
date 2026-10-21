@@ -316,20 +316,6 @@ export async function canReadCorpseAsset(ctx: ReaderCtx, userId: string, asset: 
   return figure !== null && canSeePartContent(part, userId, figure.finished_at !== undefined);
 }
 
-/** Whether a sent part holds the asset as its drawing or its strip. The orphan sweep leaves such assets alone. */
-export async function isCorpseAssetReferenced(ctx: ReaderCtx, assetId: string): Promise<boolean> {
-  const byDrawing = await ctx.db
-    .query("exquisite_corpse_parts")
-    .withIndex("by_drawing_media_asset_id", (q) => q.eq("drawing_media_asset_id", assetId))
-    .first();
-  if (byDrawing) return true;
-  const byStrip = await ctx.db
-    .query("exquisite_corpse_parts")
-    .withIndex("by_strip_media_asset_id", (q) => q.eq("strip_media_asset_id", assetId))
-    .first();
-  return byStrip !== null;
-}
-
 /**
  * The step token of a reminder: the turn it is for, as the figure number and the part. It has no
  * copy of its own, so the push shows the usual reminder, and it tells an old reminder from the

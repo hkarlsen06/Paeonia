@@ -1628,7 +1628,7 @@ describe("relationship end", () => {
     await s.a.as.mutation(api.relationship.leave_relationship, op());
     // The rows stay until the content is cleaned up.
     expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 4, board_game_marks: 2, board_game_history: 1 });
-    await s.t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
+    await s.t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
     expect(await count(s.t, s.couple.coupleId)).toEqual({ board_games: 0, board_game_marks: 0, board_game_history: 0 });
   });
 
@@ -1638,7 +1638,7 @@ describe("relationship end", () => {
     await other.first.as.mutation(api.games.set_game_settings, { p_play_style: "together", p_language: "en" });
     await ensure(other.first, "connect_four");
     await s.a.as.mutation(api.relationship.leave_relationship, op());
-    await s.t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
+    await s.t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
     expect(await count(s.t, other.coupleId)).toEqual({ board_games: 1, board_game_marks: 0, board_game_history: 0 });
   });
 

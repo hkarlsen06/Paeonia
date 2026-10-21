@@ -22,12 +22,12 @@ import {
   placeNameArg,
   pointsFor,
   RESULT_PUSH_DELAY_MS,
-  roundWithPhoto,
   sendDueGuessMySpotReminders,
   type Coordinate,
   type GuessMySpotGame,
   type GuessMySpotRound,
 } from "./lib/guessMySpot";
+import { roundWithPhoto } from "./lib/gameMediaReferences";
 import { newUuid, uuidArg } from "./lib/ids";
 import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { applyCoupleActivity } from "./lib/streaks";

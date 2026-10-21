@@ -392,7 +392,7 @@ describe("relationship content cleanup", () => {
   test("hides content, queues media, marks the couple deleted, and tells both members", async () => {
     const t = newTest();
     const couple = await endedCoupleWithContent(t);
-    const result = await t.mutation(internal.relationship.cleanup_expired_relationship_content, {});
+    const result = await t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, {});
     expect(result).toEqual([{ couple_id: couple.coupleId, queued_media_count: 1, sync_event_count: 2 }]);
 
     const state = await t.run(async (ctx) => ({
@@ -414,16 +414,16 @@ describe("relationship content cleanup", () => {
     expect(purged[0]).toMatchObject({ reason: "relationship_cleanup", relationship_status: "deleted" });
 
     // The couple is not ended anymore, so a second run finds nothing.
-    expect(await t.mutation(internal.relationship.cleanup_expired_relationship_content, {})).toEqual([]);
+    expect(await t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, {})).toEqual([]);
   });
 
   test("leaves couples inside their retention window alone", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     await couple.first.as.mutation(api.relationship.leave_relationship, operation());
-    expect(await t.mutation(internal.relationship.cleanup_expired_relationship_content, {})).toEqual([]);
+    expect(await t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, {})).toEqual([]);
     expect(
-      await t.mutation(internal.relationship.cleanup_expired_relationship_content, { p_now: "2026-12-01T00:00:00.000Z" }),
+      await t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, { p_now: "2026-12-01T00:00:00.000Z" }),
     ).toHaveLength(1);
   });
 
@@ -459,16 +459,16 @@ describe("relationship content purge", () => {
   test("waits for the stored files to be deleted, then removes the rows and keeps report snapshots", async () => {
     const t = newTest();
     const couple = await endedCoupleWithContent(t);
-    await t.mutation(internal.relationship.cleanup_expired_relationship_content, {});
+    await t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, {});
 
     // The media asset is still pending storage deletion.
-    expect(await t.mutation(internal.relationship.purge_deleted_relationship_content, {})).toEqual([]);
+    expect(await t.mutation(internal.relationshipJobs.purge_deleted_relationship_content, {})).toEqual([]);
     await t.run(async (ctx) => {
       const asset = (await ctx.db.query("media_assets").first())!;
       await ctx.db.patch(asset._id, { storage_delete_status: "deleted", storage_deleted_at: NOW });
     });
 
-    const result = await t.mutation(internal.relationship.purge_deleted_relationship_content, {});
+    const result = await t.mutation(internal.relationshipJobs.purge_deleted_relationship_content, {});
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ couple_id: couple.coupleId, media_rows_deleted: 1, sync_event_count: 2 });
     expect(result[0].content_rows_deleted).toBeGreaterThanOrEqual(8);
@@ -510,13 +510,13 @@ describe("relationship content purge", () => {
 
     // A purged couple is out of the purge range, so it is not purged twice.
     expect(remaining.couple?.purged_at).toBeDefined();
-    expect(await t.mutation(internal.relationship.purge_deleted_relationship_content, {})).toEqual([]);
+    expect(await t.mutation(internal.relationshipJobs.purge_deleted_relationship_content, {})).toEqual([]);
   });
 
   test("a couple bigger than one chunk is purged over several", async () => {
     const t = newTest();
     const couple = await endedCoupleWithContent(t);
-    await t.mutation(internal.relationship.cleanup_expired_relationship_content, {});
+    await t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, {});
     await t.run(async (ctx) => {
       const asset = (await ctx.db.query("media_assets").first())!;
       await ctx.db.patch(asset._id, { storage_delete_status: "deleted", storage_deleted_at: NOW });
@@ -573,11 +573,11 @@ describe("relationship content purge", () => {
         updated_at: NOW,
       });
     });
-    await t.mutation(internal.relationship.cleanup_expired_relationship_content, {});
+    await t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, {});
     // The snapshot never counts against the purge and is never queued for deletion.
     const asset = await t.run((ctx) => ctx.db.query("media_assets").first());
     expect(asset?.storage_delete_status).toBe("none");
-    const result = await t.mutation(internal.relationship.purge_deleted_relationship_content, {});
+    const result = await t.mutation(internal.relationshipJobs.purge_deleted_relationship_content, {});
     expect(result[0]).toMatchObject({ media_rows_deleted: 0 });
     expect(await t.run((ctx) => ctx.db.query("media_assets").collect())).toHaveLength(1);
   });
