@@ -22,7 +22,9 @@ extension MainTabView {
         switch tab {
         case .questions: dailyChallengeViewModel.unreadChats.count
         case .games: gamesViewModel.isYourTurn ? 1 : 0
-        case .home, .us, .memories: 0
+        case .home:
+            StoryTimeline.unseenCount(storiesViewModel.stories, partner: identity.partnerUserID, at: storyBadgeDate)
+        case .us, .memories: 0
         }
     }
 
@@ -50,6 +52,25 @@ extension MainTabView {
             partnerName: dailyChallengeParticipants.partnerName,
             partnerPhotoAssetID: identity.partnerProfilePhotoAssetID
         )
+    }
+
+    /// Counts the Home tab badge again now, then again each time an unseen story
+    /// leaves Home, until the stories or the partner change and the task restarts.
+    func refreshStoryBadge() async {
+        while !Task.isCancelled {
+            let now = Date()
+            storyBadgeDate = now
+            guard let expiry = StoryTimeline.nextUnseenExpiry(
+                storiesViewModel.stories,
+                partner: identity.partnerUserID,
+                at: now
+            ) else { return }
+            do {
+                try await Task.sleep(for: .seconds(expiry.timeIntervalSince(now)))
+            } catch {
+                return
+            }
+        }
     }
 
     private var memoriesTab: some View {
@@ -215,4 +236,10 @@ extension MainTabView {
             privacyOperationProvider: dependencies.settingsPrivacyOperationProvider
         )
     }
+}
+
+/// What the Home tab badge counts from. A change restarts `refreshStoryBadge()`.
+struct StoryBadgeKey: Equatable {
+    let stories: [Story]
+    let partner: UUID?
 }

@@ -142,6 +142,9 @@ struct MainTabView: View {
     @State var isLookBackDrawingHistoryPresented = false
     /// What the Games tab has open. A notification about a game sets it.
     @State var gamesPath: [GamesDestination] = []
+    /// The time the Home tab badge counts unseen stories at. It moves forward when the
+    /// stories change and when an unseen story leaves Home.
+    @State var storyBadgeDate = Date()
     /// The signed-in user's photo, cropped to a circle for the You tab icon.
     @Namespace var zoomNamespace
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
@@ -269,6 +272,9 @@ struct MainTabView: View {
         }
         .onChange(of: identity.coupleID) { _, coupleID in
             storiesViewModel.updateCoupleID(coupleID)
+        }
+        .task(id: StoryBadgeKey(stories: storiesViewModel.stories, partner: identity.partnerUserID)) {
+            await refreshStoryBadge()
         }
         .onChange(of: storiesViewModel.error) { _, error in
             guard let error else { return }
