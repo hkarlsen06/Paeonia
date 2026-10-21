@@ -12,6 +12,11 @@ import Foundation
 nonisolated struct MemoryLiveFeed: LiveFeed {
     let name = "memories"
 
+    /// Only the Memories tab reads the store. The feed starts at the stored cursor, so a visit catches up.
+    var activation: LiveFeedActivation {
+        .whileNeeded([.memoriesTab])
+    }
+
     private let memoryStore: any MemoryRecordPersisting
     private let stateStore: any SyncStatePersisting
     private let retryDelay: Duration

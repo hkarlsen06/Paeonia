@@ -1,6 +1,7 @@
 import Foundation
 
-/// The single list of live feeds. A feature adds one line to `makeFeeds`.
+/// The single list of live feeds. A feature adds one line to `makeFeeds`. Each
+/// feed's `activation` says whether it runs always or only while a screen needs it.
 ///
 /// ```swift
 /// static func makeFeeds(stores: PaeoniaSyncServiceDefaults.Stores) -> [any LiveFeed] {

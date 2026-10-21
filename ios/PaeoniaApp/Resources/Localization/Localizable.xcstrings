@@ -25290,19 +25290,19 @@
       }
     },
     "pairing.join.covered" : {
-      "comment" : "Join screen line for someone without their own subscription. The partner's subscription covers both people.",
+      "comment" : "Join screen line for someone without their own subscription. The partner's subscription covers them, so joining is free. Keep it short enough for one line.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Their subscription covers you both, so joining is free."
+            "value" : "Their subscription covers you too."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abonnementet dekker dere begge, så det er gratis å bli med."
+            "value" : "Abonnementet dekker deg også."
           }
         }
       }
@@ -25440,7 +25440,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ started Paeonia for the two of you."
+            "value" : "%@ started Paeonia for you both."
           }
         },
         "nb" : {
@@ -25458,7 +25458,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your partner started Paeonia for the two of you."
+            "value" : "Your partner started Paeonia for you both."
           }
         },
         "nb" : {
@@ -25512,13 +25512,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Only continue if this is the person you expect."
+            "value" : "Only join if this is your partner."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fortsett bare hvis dette er personen du forventer."
+            "value" : "Bli bare med hvis dette er partneren din."
           }
         }
       }

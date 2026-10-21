@@ -6,6 +6,11 @@ import Foundation
 nonisolated struct HeartsLiveFeed: LiveFeed {
     let name = "hearts"
 
+    /// Hearts play only while Home is on screen.
+    var activation: LiveFeedActivation {
+        .whileNeeded([.homeTab])
+    }
+
     private let cache: any HeartsCaching
 
     init(cache: any HeartsCaching) {

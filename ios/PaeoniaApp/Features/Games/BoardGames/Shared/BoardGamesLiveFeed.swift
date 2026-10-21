@@ -7,6 +7,12 @@ import Foundation
 nonisolated struct BoardGamesLiveFeed: LiveFeed {
     let name = "board_games"
 
+    /// Read by the Games tab, and while the partner plays one of the board games
+    /// by the Home card and the tab badge.
+    var activation: LiveFeedActivation {
+        .gameState(.ludo, .connectFour, .dotsAndBoxes, .ultimateTicTacToe)
+    }
+
     private let cache: any BoardGamesCaching
 
     init(cache: any BoardGamesCaching) {
@@ -24,6 +30,11 @@ nonisolated struct BoardGamesLiveFeed: LiveFeed {
 /// never resends the drawings.
 nonisolated struct BoardGameMarksLiveFeed: LiveFeed {
     let name = "board_game_marks"
+
+    /// Only the board game screens paint the marks.
+    var activation: LiveFeedActivation {
+        .whileNeeded([.gamesTab])
+    }
 
     private let cache: any BoardGamesCaching
 

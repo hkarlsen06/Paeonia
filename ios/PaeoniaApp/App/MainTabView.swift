@@ -187,6 +187,7 @@ struct MainTabView: View {
 
     var body: some View {
         presentingDailyFlows(on: tabContent)
+            .liveFeedDemand(visibleTab: selection.wrappedValue, partnerGames: gamesViewModel.partnerGameKinds)
     }
 
     private var tabContent: some View {

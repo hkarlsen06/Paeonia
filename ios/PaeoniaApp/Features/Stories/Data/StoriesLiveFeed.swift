@@ -5,6 +5,11 @@ import Foundation
 nonisolated struct StoriesLiveFeed: LiveFeed {
     let name = "stories"
 
+    /// Home shows the stories strip and the Memories tab shows the stories.
+    var activation: LiveFeedActivation {
+        .whileNeeded([.homeTab, .memoriesTab])
+    }
+
     private let cache: any StoriesCaching
 
     init(cache: any StoriesCaching) {

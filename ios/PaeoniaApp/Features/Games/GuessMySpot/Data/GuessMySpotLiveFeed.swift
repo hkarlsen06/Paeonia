@@ -6,6 +6,13 @@ import Foundation
 nonisolated struct GuessMySpotLiveFeed: LiveFeed {
     let name = "guess_my_spot"
 
+    /// Read by the Games tab, and while the partner plays this game by the Home card
+    /// and the tab badge.
+    /// The Memories tab draws the rounds on its map.
+    var activation: LiveFeedActivation {
+        .gameState(.guessMySpot, also: [.memoriesTab])
+    }
+
     private let cache: any GuessMySpotCaching
 
     init(cache: any GuessMySpotCaching) {

@@ -8,6 +8,12 @@ import Foundation
 nonisolated struct StoryChainLiveFeed: LiveFeed {
     let name = "story_chain"
 
+    /// Read by the Games tab, and while the partner plays this game by the Home card
+    /// and the tab badge.
+    var activation: LiveFeedActivation {
+        .gameState(.storyChain)
+    }
+
     private let cache: any StoryChainCaching
 
     init(cache: any StoryChainCaching) {

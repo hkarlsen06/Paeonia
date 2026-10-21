@@ -8,6 +8,12 @@ import Foundation
 nonisolated struct DrawAndGuessLiveFeed: LiveFeed {
     let name = "draw_and_guess"
 
+    /// Read by the Games tab, and while the partner plays this game by the Home card
+    /// and the tab badge.
+    var activation: LiveFeedActivation {
+        .gameState(.drawAndGuess)
+    }
+
     private let cache: any GamesCaching
 
     init(cache: any GamesCaching) {

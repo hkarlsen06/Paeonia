@@ -7,6 +7,12 @@ import Foundation
 nonisolated struct ExquisiteCorpseLiveFeed: LiveFeed {
     let name = "exquisite_corpse"
 
+    /// Read by the Games tab, and while the partner plays this game by the Home card
+    /// and the tab badge.
+    var activation: LiveFeedActivation {
+        .gameState(.exquisiteCorpse)
+    }
+
     private let cache: any ExquisiteCorpseCaching
 
     init(cache: any ExquisiteCorpseCaching = FileExquisiteCorpseCache.shared) {

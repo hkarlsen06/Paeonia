@@ -6,6 +6,12 @@ import Foundation
 nonisolated struct MindMeldLiveFeed: LiveFeed {
     let name = "mind_meld"
 
+    /// Read by the Games tab, and while the partner plays this game by the Home card
+    /// and the tab badge.
+    var activation: LiveFeedActivation {
+        .gameState(.mindMeld)
+    }
+
     private let cache: any MindMeldCaching
 
     init(cache: any MindMeldCaching) {

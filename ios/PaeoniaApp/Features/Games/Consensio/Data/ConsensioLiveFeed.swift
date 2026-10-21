@@ -6,6 +6,12 @@ import Foundation
 nonisolated struct ConsensioLiveFeed: LiveFeed {
     let name = "consensio"
 
+    /// Read by the Games tab, and while the partner plays this game by the Home card
+    /// and the tab badge.
+    var activation: LiveFeedActivation {
+        .gameState(.consensio)
+    }
+
     private let cache: any ConsensioCaching
 
     init(cache: any ConsensioCaching) {

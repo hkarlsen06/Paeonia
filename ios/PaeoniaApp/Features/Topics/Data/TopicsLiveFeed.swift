@@ -6,6 +6,11 @@ import Foundation
 nonisolated struct TopicsLiveFeed: LiveFeed {
     let name = "topics"
 
+    /// Only the Topics card and shelf on the Questions tab read the overview.
+    var activation: LiveFeedActivation {
+        .whileNeeded([.questionsTab])
+    }
+
     private let cache: any TopicsCaching
 
     init(cache: any TopicsCaching) {
