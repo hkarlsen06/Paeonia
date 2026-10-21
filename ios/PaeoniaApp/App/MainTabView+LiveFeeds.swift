@@ -35,9 +35,8 @@ private struct LiveFeedDemandModifier: ViewModifier {
             .onAppear(perform: publish)
             .onChange(of: visibleTab) { publish() }
             .onChange(of: partnerGames) { publish() }
-            // The Games tab badge and the Home game card read cached turns. A
-            // launch or a return to the front refreshes them without keeping
-            // nine subscriptions open.
+            // The Home game card reads cached turns. A launch or a return to
+            // the front refreshes them without keeping nine subscriptions open.
             .onChange(of: scenePhase, initial: true) { _, phase in
                 if phase == .active {
                     LiveFeedDemand.shared.touch([.gameTurns])

@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// One built game as the Games tab, its badge, and the Home tab see it. A game's
+/// One built game as the Games tab and the Home tab see it. A game's
 /// hub model conforms, and `GamesViewModel.games` lists it. A kind that is not
 /// listed shows nowhere: no hub card, no Home card, and a deep link to it opens
 /// the hub.
 @MainActor
 protocol GameHubModel: AnyObject {
     var kind: GameKind { get }
-    /// The game waits for this person to move. The Games tab shows a badge.
+    /// The game waits for this person to move. The hub card shows it.
     var isYourTurn: Bool { get }
     func configure(participants: GameParticipants)
     /// Called after a move is saved on this phone, so it is sent soon.

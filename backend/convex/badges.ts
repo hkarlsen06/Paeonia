@@ -1,17 +1,17 @@
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./lib/auth";
-import { badgeCountForUser, queueBadgeUpdate } from "./lib/badges";
+import { badgeCountsForUser, queueBadgeUpdate } from "./lib/badges";
 
-// The app icon badge (lib/badges.ts). The app subscribes to `get_badge_count` while it runs and
-// sets its own icon. When the number changes it calls `sync_badge`, so the person's other phones
-// get the new number in a badge-only push.
+// The app icon badge (lib/badges.ts). The app subscribes to `get_badges` while it runs, sets its
+// own icon, and shows the same counts on its tabs. When the icon number changes it calls
+// `sync_badge`, so the person's other phones get the new number in a badge-only push.
 
-/** How many things wait for the caller. Zero without an entitled couple. */
-export const get_badge_count = query({
+/** What waits for the caller, by tab, and the icon number. All zero without an entitled couple. */
+export const get_badges = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
-    return await badgeCountForUser(ctx, userId);
+    return await badgeCountsForUser(ctx, userId);
   },
 });
 

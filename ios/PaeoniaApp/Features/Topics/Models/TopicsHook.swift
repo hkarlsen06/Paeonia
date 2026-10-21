@@ -3,7 +3,7 @@ import Foundation
 /// The Topics card's line about what's waiting for this person. It never names a
 /// private topic (Flirt), because the Questions tab is often open where others see it.
 nonisolated enum TopicsHook: Equatable, Sendable {
-    /// The partner answered questions in one topic this person hasn't answered.
+    /// The partner answered questions in one topic that wait for this person.
     case answeredIn(partner: String, count: Int, topic: String)
     /// The partner answered questions across topics, or in one that isn't named.
     case answeredForYou(partner: String, count: Int)

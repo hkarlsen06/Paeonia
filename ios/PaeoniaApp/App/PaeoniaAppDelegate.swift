@@ -126,8 +126,8 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         logger.debug("willPresent \(detail, privacy: .public)")
         #endif
 
-        // A game push means the Games tab badge and the Home game card are out of
-        // date. The game feeds run for a short while and bring in the new turn.
+        // A game push means the Home game card is out of date. The game feeds run
+        // for a short while and bring in the new turn.
         if type.hasPrefix("game_") {
             Task { @MainActor in
                 LiveFeedDemand.shared.touch([.gameTurns])

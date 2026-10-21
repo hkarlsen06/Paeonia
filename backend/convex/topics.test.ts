@@ -125,22 +125,27 @@ describe("overview", () => {
     const { t, a, b } = await setup();
     const later = await seedTopic(t, "later", { sortOrder: 2, count: 2 });
     const first = await seedTopic(t, "first", { sortOrder: 1, count: 4 });
-    await answer(a, first.questionIds[0]);
-    await answer(b, first.questionIds[0]);
+    const together = newUuid();
+    await answer(a, first.questionIds[0], "an answer", together);
+    await answer(b, first.questionIds[0], "an answer", together);
     await answer(b, first.questionIds[1]);
     await answer(a, first.questionIds[2]);
 
     const result = await overview(a);
     expect(result.topics.map((topic) => topic.topic_key)).toEqual(["first", "later"]);
+    // The question both answered is for `a` too, until `a` opens `b`'s answer.
     expect(result.topics[0]).toMatchObject({
       title_en: "first en",
       title_nb: "first nb",
       total_count: 4,
       together_count: 1,
-      for_you_count: 1,
+      for_you_count: 2,
       waiting_for_partner_count: 1,
     });
     expect(result.topics[1]).toMatchObject({ topic_key: later.key, total_count: 2, together_count: 0 });
+
+    await a.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: together });
+    expect((await overview(a)).topics[0]).toMatchObject({ together_count: 1, for_you_count: 1 });
   });
 
   test("a skipped question leaves the total and shows as skipped, for both partners", async () => {

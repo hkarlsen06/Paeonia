@@ -15,6 +15,10 @@ import { topicsWaitingCount } from "./topics";
 // trial notice never count. A kind the person switched off in Notifications does not count either.
 // The server sends the number as `aps.badge`: in every alert, and in a badge-only push
 // (`queueBadgeUpdate`) when something was read on another phone.
+//
+// The app's tab badges show the same counts split by tab, so the icon never shows a number that no
+// tab explains. The tabs ignore the Notifications switches, since those turn off pushes and not
+// what the app shows.
 
 /** How long a story stays on Home, so how long an unseen one counts. */
 const STORY_BADGE_MS = 24 * 60 * 60 * 1000;
@@ -23,37 +27,70 @@ const BADGE_UPDATE_DELAY_MS = 30 * 1000;
 /** How far back a pending badge-only push can be. More than its delay plus send retries. */
 const BADGE_UPDATE_LOOKBACK_MS = 10 * 60 * 1000;
 
-/** The number on the app icon for `userId`. Zero without an entitled couple. */
-export async function badgeCountForUser(ctx: ReaderCtx, userId: string, now: string = nowIso()): Promise<number> {
+/** What waits for one person, by the tab that shows it, and the number on the app icon. */
+export type BadgeCounts = {
+  /** Unread question chats, today's answers to open, and Topics questions that wait. */
+  questions: number;
+  /** Games that wait on this person, and open invites. */
+  games: number;
+  /** The partner's stories still on Home that this person has not opened, and unread story replies. */
+  home: number;
+  /** Memories whose comments the partner wrote in and this person has not read. */
+  memories: number;
+  /** The tabs' items of the kinds whose alerts are on in Notifications. */
+  icon: number;
+};
+
+const NO_BADGES: BadgeCounts = { questions: 0, games: 0, home: 0, memories: 0, icon: 0 };
+
+/** What waits for `userId`. All zero without an entitled couple. */
+export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: string = nowIso()): Promise<BadgeCounts> {
   const coupleId = await getEntitledCoupleIdForUser(ctx, userId);
-  if (coupleId === null) return 0;
+  if (coupleId === null) return NO_BADGES;
+  const chats = await unreadChats(ctx, coupleId, userId);
+  const answers = (await answersWaiting(ctx, coupleId, userId, now)) + (await topicsWaitingCount(ctx, coupleId, userId));
+  const stories = await unseenStories(ctx, coupleId, userId, now);
+  const games = await gamesWaitingFor(ctx, coupleId, userId);
   const preference = await ctx.db
     .query("notification_preferences")
     .withIndex("by_user_id", (q) => q.eq("user_id", userId))
     .unique();
   // Every counted kind has a switch, and a missing preference row blocks those kinds.
-  if (!preference) return 0;
-  const allows = (kind: Parameters<typeof preferenceAllows>[0]) => preferenceAllows(kind, "alert", preference);
-  let count = 0;
-  if (allows("thread_message_sent")) count += await unreadChats(ctx, coupleId, userId);
-  if (allows("partner_answered")) {
-    count += (await answersWaiting(ctx, coupleId, userId, now)) + (await topicsWaitingCount(ctx, coupleId, userId));
-  }
-  if (allows("story_posted")) count += await unseenStories(ctx, coupleId, userId, now);
-  if (allows("game_turn_ready")) count += await gamesWaitingFor(ctx, coupleId, userId);
-  return count;
+  const allows = (kind: Parameters<typeof preferenceAllows>[0]) =>
+    preference !== null && preferenceAllows(kind, "alert", preference);
+  const icon =
+    // Every chat push, whatever the chat is about, follows the Messages switch.
+    (allows("thread_message_sent") ? chats.questions + chats.memories + chats.stories : 0) +
+    (allows("partner_answered") ? answers : 0) +
+    (allows("story_posted") ? stories : 0) +
+    (allows("game_turn_ready") ? games : 0);
+  return {
+    questions: chats.questions + answers,
+    games,
+    home: stories + chats.stories,
+    memories: chats.memories,
+    icon,
+  };
 }
+
+/** The number on the app icon for `userId`. Zero without an entitled couple. */
+export async function badgeCountForUser(ctx: ReaderCtx, userId: string, now: string = nowIso()): Promise<number> {
+  return (await badgeCountsForUser(ctx, userId, now)).icon;
+}
+
+/** Unread chats by what they are about: a question, a memory (its comments) or a story (its replies). */
+type UnreadChats = { questions: number; memories: number; stories: number };
 
 /**
  * Chats whose newest message is from the partner and newer than what this person read on any
  * phone. A question chat counts only while it can be opened, like `get_conversation_threads`.
  */
-async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Promise<UnreadChats> {
   const threads = await ctx.db
     .query("conversation_threads")
     .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", coupleId))
     .collect();
-  let count = 0;
+  const count: UnreadChats = { questions: 0, memories: 0, stories: 0 };
   for (const thread of threads) {
     if (thread.deleted_at !== undefined || thread.moderation_status !== "visible") continue;
     const last = await ctx.db
@@ -69,12 +106,18 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
       .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", thread.id).eq("user_id", userId))
       .unique();
     if (read && read.last_read_message_created_at >= last.created_at) continue;
-    const daily = await ctx.db
-      .query("daily_question_threads")
-      .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
-      .unique();
-    if (daily && !(await loadQuestionRounds(ctx, coupleId, daily.question_id)).some(isSharedRound)) continue;
-    count += 1;
+    if (thread.kind === "daily_question") {
+      const daily = await ctx.db
+        .query("daily_question_threads")
+        .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
+        .unique();
+      if (daily && !(await loadQuestionRounds(ctx, coupleId, daily.question_id)).some(isSharedRound)) continue;
+      count.questions += 1;
+    } else if (thread.kind === "memory") {
+      count.memories += 1;
+    } else {
+      count.stories += 1;
+    }
   }
   return count;
 }

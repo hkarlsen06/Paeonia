@@ -121,11 +121,6 @@ final class GamesViewModel {
         ludo = LudoGame.hubModel(dependencies: dependencies)
     }
 
-    /// A game waits for this person to move. The Games tab shows a badge.
-    var isYourTurn: Bool {
-        games.contains { $0.isYourTurn }
-    }
-
     /// The hub's full cards: the games the partner is in, then the games waiting for
     /// this person, played most recently first.
     var hubFeaturedGames: [any GameHubModel] {

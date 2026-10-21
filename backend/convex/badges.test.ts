@@ -25,29 +25,98 @@ async function postStory(t: TestConvex, couple: TestCouple): Promise<string> {
   return storyId;
 }
 
-describe("get_badge_count", () => {
+/** The first partner makes a memory and the second partner comments on it. */
+async function commentOnMemory(couple: TestCouple): Promise<{ threadId: string; messageId: string }> {
+  const memoryId = newUuid();
+  await couple.first.as.mutation(api.memories.create_memory, {
+    ...op(),
+    p_memory_id: memoryId,
+    p_title: "Cabin weekend",
+    p_memory_date: "2026-10-01",
+    p_note_body: "note",
+  });
+  const [row] = await couple.second.as.mutation(api.threads.create_memory_thread_with_message, {
+    ...op(),
+    p_memory_id: memoryId,
+    p_body: "Best weekend",
+  });
+  return { threadId: row.thread_id, messageId: row.message_id };
+}
+
+describe("get_badges", () => {
   test("refuses a caller who is not signed in", async () => {
     const t = newTest();
-    await expect(t.query(api.badges.get_badge_count, {})).rejects.toThrow();
+    await expect(t.query(api.badges.get_badges, {})).rejects.toThrow();
   });
 
   test("is zero for someone without a couple", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
-    expect(await user.as.query(api.badges.get_badge_count, {})).toBe(0);
+    expect(await user.as.query(api.badges.get_badges, {})).toEqual({ questions: 0, games: 0, home: 0, memories: 0, icon: 0 });
   });
 
   test("counts the partner's unseen story for the partner only, until it is opened", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     const storyId = await postStory(t, couple);
-    expect(await couple.second.as.query(api.badges.get_badge_count, {})).toBe(1);
-    expect(await couple.first.as.query(api.badges.get_badge_count, {})).toBe(0);
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ home: 1, icon: 1 });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ home: 0, icon: 0 });
     await couple.second.as.mutation(api.stories.mark_story_seen, { p_story_id: storyId });
-    expect(await couple.second.as.query(api.badges.get_badge_count, {})).toBe(0);
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ home: 0, icon: 0 });
   });
 
-  test("leaves out a kind the person switched off", async () => {
+  test("counts a memory comment on the Memories tab, not on Questions, until it is read", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { threadId, messageId } = await commentOnMemory(couple);
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toEqual({
+      questions: 0,
+      games: 0,
+      home: 0,
+      memories: 1,
+      icon: 1,
+    });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ memories: 0, icon: 0 });
+    await couple.first.as.mutation(api.chatPresence.mark_thread_read, { p_thread_id: threadId, p_message_id: messageId });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ memories: 0, icon: 0 });
+  });
+
+  test("counts a story reply on Home for the story's author, not on Questions, until it is read", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const storyId = await postStory(t, couple);
+    const [row] = await couple.second.as.mutation(api.threads.create_story_thread_with_message, {
+      ...op(),
+      p_story_id: storyId,
+      p_body: "Lovely",
+    });
+    // The author has no unseen story of their own, so the reply is the whole Home count.
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toEqual({
+      questions: 0,
+      games: 0,
+      home: 1,
+      memories: 0,
+      icon: 1,
+    });
+    await couple.first.as.mutation(api.chatPresence.mark_thread_read, {
+      p_thread_id: row.thread_id,
+      p_message_id: row.message_id,
+    });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ home: 0, icon: 0 });
+  });
+
+  test("follows the Messages switch for memory comments and story replies on the icon only", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await commentOnMemory(couple);
+    await couple.first.as.mutation(api.identity.set_notification_preference, {
+      p_column: "messages_enabled",
+      p_enabled: false,
+    });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ memories: 1, icon: 0 });
+  });
+
+  test("leaves a kind the person switched off out of the icon, but not out of its tab", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     await postStory(t, couple);
@@ -55,7 +124,7 @@ describe("get_badge_count", () => {
       p_column: "memories_enabled",
       p_enabled: false,
     });
-    expect(await couple.second.as.query(api.badges.get_badge_count, {})).toBe(0);
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ home: 1, icon: 0 });
   });
 });
 
