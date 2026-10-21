@@ -24,6 +24,8 @@ struct DailyChatMessageRow: View {
     var onReact: ((String) -> Void)?
     /// The user's own reaction on this row, for the VoiceOver actions.
     var ownReaction: String?
+    /// The emoji the reaction row offers, recent picks first, for the VoiceOver actions.
+    var reactionChoices: [String] = []
     let onRetry: () -> Void
     let onTapQuoted: (DailyChatItemID) -> Void
     var onOpenPhoto: (DailyQuestionChatPhoto) -> Void = { _ in }
@@ -315,7 +317,7 @@ extension DailyChatMessageRow {
             Button(action: onReply) { Text(.dailyChatActionReply) }
         }
         if let onReact {
-            ForEach(DailyQuestionChatViewModel.quickReactions.filter { $0 != ownReaction }, id: \.self) { emoji in
+            ForEach(reactionChoices.filter { $0 != ownReaction }, id: \.self) { emoji in
                 Button { onReact(emoji) } label: { Text(.dailyChatReactionAdd(emoji)) }
             }
             if let ownReaction {

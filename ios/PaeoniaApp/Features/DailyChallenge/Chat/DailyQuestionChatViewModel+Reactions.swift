@@ -11,9 +11,6 @@ struct PendingReaction: Equatable {
 }
 
 extension DailyQuestionChatViewModel {
-    /// The emoji the long-press menu offers first. The menu's search finds any other.
-    nonisolated static let quickReactions = ["❤️", "😂", "🥰", "😮", "😢", "👍"]
-
     /// Like Tidex, any message the server has can get a reaction, the user's own too.
     func canReact(to message: DailyQuestionChatMessage) -> Bool {
         canReply(to: message)

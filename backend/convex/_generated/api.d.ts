@@ -84,6 +84,7 @@ import type * as lib_profiles from "../lib/profiles.js";
 import type * as lib_questionTime from "../lib/questionTime.js";
 import type * as lib_questionTimeStatus from "../lib/questionTimeStatus.js";
 import type * as lib_rateLimits from "../lib/rateLimits.js";
+import type * as lib_reactions from "../lib/reactions.js";
 import type * as lib_relationshipBlock from "../lib/relationshipBlock.js";
 import type * as lib_relationshipCleanup from "../lib/relationshipCleanup.js";
 import type * as lib_relationshipEnd from "../lib/relationshipEnd.js";
@@ -210,6 +211,7 @@ declare const fullApi: ApiFromModules<{
   "lib/questionTime": typeof lib_questionTime;
   "lib/questionTimeStatus": typeof lib_questionTimeStatus;
   "lib/rateLimits": typeof lib_rateLimits;
+  "lib/reactions": typeof lib_reactions;
   "lib/relationshipBlock": typeof lib_relationshipBlock;
   "lib/relationshipCleanup": typeof lib_relationshipCleanup;
   "lib/relationshipEnd": typeof lib_relationshipEnd;

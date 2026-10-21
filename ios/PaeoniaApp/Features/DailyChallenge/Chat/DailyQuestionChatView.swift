@@ -164,7 +164,7 @@ struct DailyQuestionChatView: View {
                 react(emoji, to: item)
             },
             canReactTo: { reactableItem(projection.rowsByID[$0.id]) != nil },
-            availableReactionsFor: { _ in DailyQuestionChatViewModel.quickReactions.map(ReactionType.emoji) },
+            availableReactionsFor: { _ in DailyChatReactionPalette.shared.emojis.map(ReactionType.emoji) },
             allowEmojiSearchFor: { reactableItem(projection.rowsByID[$0.id]) != nil },
             shouldShowOverviewFor: { _ in false }
         )
@@ -209,6 +209,7 @@ struct DailyQuestionChatView: View {
             onReply: replyAction(for: row),
             onReact: reactable.map { item in { (emoji: String) in react(emoji, to: item) } },
             ownReaction: reactable.flatMap { viewModel.ownReaction(to: $0) },
+            reactionChoices: DailyChatReactionPalette.shared.emojis,
             onRetry: { retry(row.message) },
             onTapQuoted: jumpToMessage,
             onOpenPhoto: openPhoto,

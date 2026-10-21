@@ -25,7 +25,9 @@ extension DailyQuestionChatView {
         return nil
     }
 
+    /// Like Tidex, every pick moves the emoji to the front of the reaction row.
     func react(_ emoji: String, to item: DailyChatItemID) {
+        DailyChatReactionPalette.shared.recordSelection(emoji)
         Task { await viewModel.toggleReaction(emoji, on: item) }
     }
 
