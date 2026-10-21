@@ -16,6 +16,7 @@ import {
   relationshipStatus,
   reviewScenario,
   storekitEnvironment,
+  locationPermission,
   locationSource,
   wordDifficulty,
 } from "./lib/validators";
@@ -855,6 +856,12 @@ export default defineSchema({
     disabled_at: optTs,
     consent_version: optString,
     source: locationSource,
+    // Sending moves while Paeonia is closed. Only true while sharing is on.
+    // The phone restores it after a new sign-in.
+    updates_while_closed: v.boolean(),
+    // What the phone last reported, and the phone's time of that report. Never shown to the partner.
+    location_permission: v.optional(locationPermission),
+    device_state_reported_at: optTs,
     created_at: ts,
     updated_at: ts,
   })

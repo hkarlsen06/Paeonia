@@ -75,11 +75,15 @@ final class LocationUpdateController: NSObject {
         /// signed in, so an expired session followed by a different sign-in never
         /// sends under the wrong person.
         static let accountID = "paeonia.location.updatesWhileClosed.accountID"
+        /// Set after a new sign-in or relationship, until the choice the server
+        /// kept arrives or the person sets the switch.
+        static let needsServerChoice = "paeonia.location.updatesWhileClosed.needsServerChoice"
     }
 
     @ObservationIgnored private let manager = CLLocationManager()
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var uploader: BackgroundLocationUploader?
+    @ObservationIgnored private let deviceStateReporter = LocationDeviceStateReporter()
     @ObservationIgnored private var deliveryTask: Task<Void, Never>?
     /// Set by the root view. Positions found while the app is open go here.
     @ObservationIgnored var onLocationWhileOpen: ((LocationPoint) async -> Void)?
@@ -104,6 +108,10 @@ final class LocationUpdateController: NSObject {
         // People share while walking, driving and riding transit, so no single
         // activity type fits better than the default.
         manager.activityType = .other
+        deviceStateReporter.currentState = { [unowned self] in currentDeviceState }
+        deviceStateReporter.handleAnswer = { [unowned self] state, kept in
+            takeServerAnswer(to: state, kept: kept)
+        }
     }
 
     /// Whether updates while closed are actually running: chosen and allowed.
@@ -128,11 +136,16 @@ final class LocationUpdateController: NSObject {
             let stored = storedIdentity
             let accountID = PaeoniaClerk.currentAccountID()
             let storedAccountID = defaults.string(forKey: Key.accountID)
-            if stored != nil, stored?.userID != userID || stored?.coupleID != coupleID {
+            let changedIdentity = stored.map { $0.userID != userID || $0.coupleID != coupleID } ?? false
+            let changedAccount = accountID != nil && storedAccountID != nil && accountID != storedAccountID
+            if changedIdentity || changedAccount {
                 // Another account or relationship never inherits this choice.
                 setPrefersUpdatesWhileClosed(false)
-            } else if let accountID, let storedAccountID, accountID != storedAccountID {
-                setPrefersUpdatesWhileClosed(false)
+            }
+            if stored == nil || changedIdentity || changedAccount {
+                // A new sign-in takes the choice the server kept for this
+                // account and relationship. See `currentDeviceState`.
+                defaults.set(true, forKey: Key.needsServerChoice)
             }
             defaults.set(userID.uuidString, forKey: Key.userID)
             defaults.set(coupleID.uuidString, forKey: Key.coupleID)
@@ -142,10 +155,13 @@ final class LocationUpdateController: NSObject {
         }
         if sharingEnabled == false {
             // Turning sharing off also ends updates while closed. Turning it
-            // back on later does not quietly restart them.
+            // back on later does not quietly restart them. The server clears
+            // its copy of the choice at the same time.
             setPrefersUpdatesWhileClosed(false)
+            defaults.set(false, forKey: Key.needsServerChoice)
         }
         apply()
+        deviceStateReporter.report()
     }
 
     /// The switch in Location settings. Turning it on asks iOS for Always
@@ -153,10 +169,12 @@ final class LocationUpdateController: NSObject {
     /// after that the settings screen points to the Settings app.
     func setUpdatesWhileClosed(_ enabled: Bool) {
         setPrefersUpdatesWhileClosed(enabled)
+        defaults.set(false, forKey: Key.needsServerChoice)
         if enabled, authorization == .authorizedWhenInUse || authorization == .notDetermined {
             manager.requestAlwaysAuthorization()
         }
         apply()
+        deviceStateReporter.report()
     }
 
     /// Called right after someone turns sharing on from the map card or the
@@ -175,6 +193,8 @@ final class LocationUpdateController: NSObject {
         defaults.removeObject(forKey: Key.userID)
         defaults.removeObject(forKey: Key.coupleID)
         defaults.removeObject(forKey: Key.accountID)
+        defaults.removeObject(forKey: Key.needsServerChoice)
+        deviceStateReporter.forget()
         apply()
     }
 
@@ -281,6 +301,7 @@ final class LocationUpdateController: NSObject {
         let outcome = await uploader.upload(location, ownerUserID: identity.userID, coupleID: identity.coupleID)
         if outcome == .sharingOff {
             setPrefersUpdatesWhileClosed(false)
+            defaults.set(false, forKey: Key.needsServerChoice)
             apply()
         }
     }
@@ -304,12 +325,63 @@ final class LocationUpdateController: NSObject {
     }
 }
 
+extension LocationUpdateController {
+    /// Tells the server this phone's choice and iOS access while the app is
+    /// open: once per launch and after either changes. After a new sign-in it
+    /// sends no choice, and takes the one the server kept. If iOS has never
+    /// asked about Always on this phone, it asks then, as it does after the
+    /// switch is turned on. Otherwise Location settings says how to allow it.
+    private var currentDeviceState: LocationDeviceState? {
+        guard isAppActive,
+              let identity = storedIdentity,
+              let permission = LocationPermission(authorization)
+        else {
+            return nil
+        }
+        return LocationDeviceState(
+            userID: identity.userID,
+            coupleID: identity.coupleID,
+            updatesWhileClosed: defaults.bool(forKey: Key.needsServerChoice) ? nil : prefersUpdatesWhileClosed,
+            permission: permission
+        )
+    }
+
+    /// Returns the state the server now holds, or `nil` to report again.
+    private func takeServerAnswer(to state: LocationDeviceState, kept: Bool) -> LocationDeviceState? {
+        guard let identity = storedIdentity,
+              identity.userID == state.userID,
+              identity.coupleID == state.coupleID
+        else {
+            return nil
+        }
+        guard state.updatesWhileClosed == nil else {
+            // The server turns the choice off while it does not know sharing
+            // is on yet. Report again at the next change, once it does.
+            return kept == state.updatesWhileClosed ? state : nil
+        }
+        // A switch set while the report ran wins over the kept choice.
+        guard defaults.bool(forKey: Key.needsServerChoice) else {
+            return nil
+        }
+        defaults.set(false, forKey: Key.needsServerChoice)
+        setPrefersUpdatesWhileClosed(kept)
+        apply()
+        return LocationDeviceState(
+            userID: state.userID,
+            coupleID: state.coupleID,
+            updatesWhileClosed: kept,
+            permission: state.permission
+        )
+    }
+}
+
 extension LocationUpdateController: CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus
         Task { @MainActor in
             authorization = status
             apply()
+            deviceStateReporter.report()
         }
     }
 

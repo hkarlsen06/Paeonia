@@ -7,7 +7,7 @@ import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
 import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
-import { optionalTimestampArg, uuidArg } from "./lib/ids";
+import { optionalTimestampArg, timestampArg, uuidArg } from "./lib/ids";
 import {
   enqueueLockScreenRefreshForPartner,
   enqueuePartnerNotification,
@@ -15,6 +15,7 @@ import {
   LOCK_SCREEN_REFRESH_DELAY_SECONDS,
 } from "./lib/notifications";
 import { addMs, nowIso } from "./lib/time";
+import { locationPermission } from "./lib/validators";
 import type { WriterCtx } from "./lib/db";
 
 const nullable = <T extends ReturnType<typeof v.string> | ReturnType<typeof v.number> | ReturnType<typeof v.boolean>>(
@@ -292,6 +293,8 @@ export const update_location_sharing_preference = mutation({
               disabled_at: isEnabled ? undefined : now,
               consent_version: isEnabled ? consentVersion : existing.consent_version,
               source,
+              // Turning sharing back on later does not bring it back by itself.
+              updates_while_closed: isEnabled ? existing.updates_while_closed : false,
             }),
           );
           row = (await ctx.db.get(existing._id))!;
@@ -304,6 +307,7 @@ export const update_location_sharing_preference = mutation({
             disabled_at: isEnabled ? undefined : now,
             consent_version: isEnabled ? consentVersion : undefined,
             source,
+            updates_while_closed: false,
             created_at: now,
             updated_at: now,
           });
@@ -331,6 +335,58 @@ export const update_location_sharing_preference = mutation({
       },
     );
     return [stored];
+  },
+});
+
+/**
+ * The phone reports whether it sends moves while Paeonia is closed and which
+ * iOS location access it has. It reports when either changes and when the app
+ * opens. `p_updates_while_closed: null` asks for the stored choice without
+ * changing it, which a phone does after a new sign-in to restore the choice.
+ * The choice is only kept while sharing is on. A report older than the stored
+ * one changes nothing. Returns the stored choice.
+ */
+export const report_location_device_state = mutation({
+  args: {
+    p_couple_id: v.string(),
+    p_updates_while_closed: v.union(v.null(), v.boolean()),
+    p_permission: locationPermission,
+    p_reported_at: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = uuidArg(args.p_couple_id);
+    const reportedAt = timestampArg(args.p_reported_at);
+    if (reportedAt > addMs(nowIso(), 5 * 60_000)) {
+      fail("23514", "location device report time is out of range");
+    }
+    if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
+      fail("42501", "active entitled couple access is required");
+    }
+    await assertNoPendingAccountDeletion(ctx, userId);
+
+    const existing = await ctx.db
+      .query("location_sharing_preferences")
+      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
+      .unique();
+    // Without a row, sharing was never turned on, so there is nothing to keep.
+    if (!existing) {
+      return { updates_while_closed: false };
+    }
+    if (existing.device_state_reported_at !== undefined && existing.device_state_reported_at >= reportedAt) {
+      return { updates_while_closed: existing.updates_while_closed };
+    }
+    const updatesWhileClosed =
+      args.p_updates_while_closed === null
+        ? existing.updates_while_closed
+        : args.p_updates_while_closed && existing.is_enabled;
+    // `updated_at` stays, because it times sharing changes the partner can see.
+    await ctx.db.patch(existing._id, {
+      updates_while_closed: updatesWhileClosed,
+      location_permission: args.p_permission,
+      device_state_reported_at: reportedAt,
+    });
+    return { updates_while_closed: updatesWhileClosed };
   },
 });
 

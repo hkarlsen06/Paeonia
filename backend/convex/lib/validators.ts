@@ -34,6 +34,8 @@ export const memberStatus = literals(
 );
 export const relationshipStatus = literals("active", "ended", "deleted");
 export const locationSource = literals("foreground_open", "manual_refresh", "settings_toggle", "background");
+/** The iOS location access the phone last reported for Paeonia. */
+export const locationPermission = literals("always", "when_in_use", "denied", "restricted", "not_determined");
 export const activityKind = literals(
   "daily_challenge_completed",
   "widget_drawing_saved",

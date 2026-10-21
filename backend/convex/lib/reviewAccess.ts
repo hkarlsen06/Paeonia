@@ -199,6 +199,7 @@ export async function redeemReviewAccess(
     enabled_at: now,
     consent_version: "1",
     source: "settings_toggle",
+    updates_while_closed: false,
     created_at: now,
     updated_at: now,
   });

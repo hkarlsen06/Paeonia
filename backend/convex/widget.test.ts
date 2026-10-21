@@ -715,6 +715,7 @@ describe("get_lock_screen_state", () => {
           user_id: user.userId,
           is_enabled: enabled,
           source: "settings_toggle",
+          updates_while_closed: false,
           created_at: now,
           updated_at: now,
         });

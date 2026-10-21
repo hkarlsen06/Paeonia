@@ -100,6 +100,7 @@ async function appleCoupleWithData(t: TestConvex): Promise<TestCouple & { photoI
       enabled_at: NOW,
       consent_version: "test-v1",
       source: "settings_toggle",
+      updates_while_closed: false,
       created_at: NOW,
       updated_at: NOW,
     });

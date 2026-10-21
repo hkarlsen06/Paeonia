@@ -286,6 +286,100 @@ describe("update_location_sharing_preference", () => {
   });
 });
 
+describe("report_location_device_state", () => {
+  const report = (user: TestCouple["first"], coupleId: string, overrides: Record<string, unknown> = {}) =>
+    user.as.mutation(api.location.report_location_device_state, {
+      p_couple_id: coupleId,
+      p_updates_while_closed: true,
+      p_permission: "always",
+      p_reported_at: "2026-06-28T12:29:00.000Z",
+      ...overrides,
+    });
+  const storedPreference = (t: TestConvex, couple: TestCouple) =>
+    t.run((ctx) =>
+      ctx.db
+        .query("location_sharing_preferences")
+        .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", couple.coupleId).eq("user_id", couple.first.userId))
+        .unique(),
+    );
+
+  test("keeps the choice for a new sign-in, ignores older reports, and ends with sharing", async () => {
+    const { t, couple } = await setup();
+
+    expect(await report(couple.first, couple.coupleId)).toEqual({ updates_while_closed: true });
+    expect(await storedPreference(t, couple)).toMatchObject({
+      updates_while_closed: true,
+      location_permission: "always",
+      device_state_reported_at: "2026-06-28T12:29:00.000Z",
+    });
+
+    // An older report arriving late changes nothing.
+    expect(
+      await report(couple.first, couple.coupleId, {
+        p_updates_while_closed: false,
+        p_permission: "when_in_use",
+        p_reported_at: "2026-06-28T12:28:00.000Z",
+      }),
+    ).toEqual({ updates_while_closed: true });
+
+    // A phone after a new sign-in asks for the stored choice.
+    expect(
+      await report(couple.first, couple.coupleId, {
+        p_updates_while_closed: null,
+        p_permission: "when_in_use",
+        p_reported_at: "2026-06-28T12:29:30.000Z",
+      }),
+    ).toEqual({ updates_while_closed: true });
+    expect((await storedPreference(t, couple))?.location_permission).toBe("when_in_use");
+
+    await couple.first.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId,
+      p_is_enabled: false,
+      p_consent_version: null,
+      p_source: "settings_toggle",
+      ...operation(2),
+    });
+    expect((await storedPreference(t, couple))?.updates_while_closed).toBe(false);
+
+    // Turning sharing back on does not bring it back, and it cannot be on while sharing is off.
+    await enableSharing(couple.first, couple.coupleId, 3);
+    expect((await storedPreference(t, couple))?.updates_while_closed).toBe(false);
+    await couple.first.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: couple.coupleId,
+      p_is_enabled: false,
+      p_consent_version: null,
+      p_source: "settings_toggle",
+      ...operation(4),
+    });
+    expect(await report(couple.first, couple.coupleId, { p_reported_at: "2026-06-28T12:30:00.000Z" })).toEqual({
+      updates_while_closed: false,
+    });
+  });
+
+  test("refuses people outside the couple and bad requests", async () => {
+    const { t, couple } = await setup();
+    const outsider = (await createCouple(t)).first;
+    await expect(report(outsider, couple.coupleId)).rejects.toThrow(/42501.*active entitled couple access is required/);
+    await expect(t.mutation(api.location.report_location_device_state, {
+      p_couple_id: couple.coupleId,
+      p_updates_while_closed: true,
+      p_permission: "always",
+      p_reported_at: "2026-06-28T12:29:00.000Z",
+    })).rejects.toThrow(/42501.*authenticated user required/);
+    await expect(report(couple.first, couple.coupleId, { p_reported_at: "2026-06-28T12:40:00.000Z" })).rejects.toThrow(
+      /23514.*location device report time is out of range/,
+    );
+    await expect(report(couple.first, couple.coupleId, { p_permission: "sometimes" })).rejects.toThrow();
+    expect((await storedPreference(t, couple))?.location_permission).toBeUndefined();
+  });
+
+  test("refuses a couple without access", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { entitled: false });
+    await expect(report(couple.first, couple.coupleId)).rejects.toThrow(/42501.*active entitled couple access is required/);
+  });
+});
+
 describe("get_partner_location_visibility", () => {
   test("reports each state from disabled to visible and flags old locations as stale", async () => {
     const t = newTest();

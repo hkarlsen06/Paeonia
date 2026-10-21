@@ -47,6 +47,19 @@ actor LiveLocationGateway: LocationGateway {
 
         return rows.first
     }
+
+    /// Sends the state and returns the choice the server keeps. The server
+    /// only keeps the choice on while sharing is on. Called directly, not
+    /// through the outbox, since the newest state replaces any older one.
+    func reportDeviceState(_ state: LocationDeviceState, reportedAt: Date) async throws -> Bool {
+        try await PaeoniaSignedIn.require(isSignedIn)
+
+        let response: ReportLocationDeviceStateResponse = try await client.mutation(
+            "location:report_location_device_state",
+            args: ReportLocationDeviceStateRequest(state: state, reportedAt: reportedAt)
+        )
+        return response.updatesWhileClosed
+    }
 }
 
 nonisolated struct LocationSharingOperationPayload: Codable, Equatable, Sendable {
