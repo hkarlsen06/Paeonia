@@ -80,10 +80,21 @@ struct PaeoniaProfilePhotoAvatar: View {
             loadedAssetID = nil
         }
 
-        guard let data = await profilePhotoProvider.profilePhotoData(for: mediaAssetID),
-              let image = await Self.decode(data),
-              !Task.isCancelled
-        else {
+        let load = { () async -> UIImage? in
+            guard let data = await profilePhotoProvider.profilePhotoData(for: mediaAssetID) else {
+                return nil
+            }
+            return await Self.decode(data)
+        }
+        // Initials show while a failed download is tried again. Without an asset id
+        // only a custom provider has a photo, such as an invite preview's link, and
+        // it gets one try.
+        let image = if mediaAssetID == nil {
+            await load()
+        } else {
+            await ProfilePhotoRetry.load(load)
+        }
+        guard let image, !Task.isCancelled else {
             return
         }
 

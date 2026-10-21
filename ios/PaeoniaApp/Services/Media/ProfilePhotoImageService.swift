@@ -120,6 +120,9 @@ actor ProfilePhotoImageService:
     private let downloader: any ProfilePhotoDataDownloading
     private var inFlightDownloads: [UUID: Task<Data?, Never>] = [:]
     private var invalidatedMediaAssetIDs = Set<UUID>()
+    /// Avatars try a failed photo again (`ProfilePhotoRetry`), so a failure that
+    /// retrying will not fix is remembered and costs no request for a while.
+    private var misses = MediaMissLog()
     private var privacyGeneration: UInt64 = 0
 
     init(
@@ -150,6 +153,10 @@ actor ProfilePhotoImageService:
             try? await cache.removeProfilePhotoData(for: mediaAssetID)
         }
 
+        if misses.isRecentMiss(mediaAssetID) {
+            return nil
+        }
+
         if let inFlightDownload = inFlightDownloads[mediaAssetID] {
             return await inFlightDownload.value
         }
@@ -170,6 +177,7 @@ actor ProfilePhotoImageService:
     func clearAll() async {
         PaeoniaImageMemoryCache.removeAll()
         privacyGeneration &+= 1
+        misses.removeAll()
         let downloads = Array(inFlightDownloads.values)
         downloads.forEach { $0.cancel() }
         for download in downloads {
@@ -201,7 +209,7 @@ actor ProfilePhotoImageService:
         mediaAssetID: UUID,
         privacyGeneration requestedPrivacyGeneration: UInt64
     ) async -> Data? {
-        guard let signedURL = try? await urlProvider.signedProfilePhotoURL(for: mediaAssetID) else {
+        guard let signedURL = await requestSignedURL(for: mediaAssetID) else {
             return nil
         }
 
@@ -216,10 +224,12 @@ actor ProfilePhotoImageService:
 
             if let statusCode = download.statusCode,
                !(200..<300).contains(statusCode) {
+                if MediaMissLog.isLasting(statusCode: statusCode) { misses.record(mediaAssetID) }
                 return nil
             }
 
             guard Self.isDecodableImage(download.data) else {
+                misses.record(mediaAssetID)
                 return nil
             }
 
@@ -233,6 +243,17 @@ actor ProfilePhotoImageService:
             }
             return download.data
         } catch {
+            return nil
+        }
+    }
+
+    /// Remembers a refusal that retrying will not fix. No URL usually means the photo
+    /// is not visible to this phone yet, which may be a moment away, so it is not remembered.
+    private func requestSignedURL(for mediaAssetID: UUID) async -> URL? {
+        do {
+            return try await urlProvider.signedProfilePhotoURL(for: mediaAssetID)
+        } catch {
+            if MediaMissLog.isLasting(error) { misses.record(mediaAssetID) }
             return nil
         }
     }

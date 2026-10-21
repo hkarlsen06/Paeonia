@@ -13,7 +13,7 @@ import UIKit
 final class PairingProfilePhoto {
     private(set) var image: UIImage?
     /// True from the moment a photo is requested until it is shown or the
-    /// request ends without one.
+    /// first try fails. A failed photo is tried again while the view is shown.
     private(set) var isLoading = false
 
     /// Changes when a different image replaces the shown one. Views use it to
@@ -33,13 +33,17 @@ final class PairingProfilePhoto {
             return
         }
 
-        guard assetID != shownAssetID || image == nil else {
+        guard let provider, assetID != shownAssetID || image == nil else {
             isLoading = false
             return
         }
 
         isLoading = true
-        let decoded = await Self.decodedImage(for: assetID, provider: provider)
+        // The celebration stops waiting after the first failure, and the photo
+        // replaces the initials when a later try gets it.
+        let decoded = await ProfilePhotoRetry.load(onFailure: { isLoading = false }) {
+            await Self.decodedImage(for: assetID, provider: provider)
+        }
         guard !Task.isCancelled else {
             return
         }
@@ -55,9 +59,9 @@ final class PairingProfilePhoto {
     /// shows the photo does not stall on image decoding.
     private static func decodedImage(
         for assetID: UUID,
-        provider: (any ProfilePhotoImageProviding)?
+        provider: any ProfilePhotoImageProviding
     ) async -> UIImage? {
-        guard let data = await provider?.profilePhotoData(for: assetID),
+        guard let data = await provider.profilePhotoData(for: assetID),
               let image = UIImage(data: data) else {
             return nil
         }

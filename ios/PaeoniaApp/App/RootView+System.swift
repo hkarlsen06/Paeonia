@@ -126,6 +126,34 @@ extension RootView {
         await partnerAvatarSharing?.cachePartnerAvatar(assetID: viewModel.currentPartnerProfilePhotoAssetID)
     }
 
+    /// The partner photo that alerts and in-app banners show. A new photo, or the
+    /// partner removing theirs, changes it while the app is open.
+    var partnerAvatarIdentity: PartnerAvatarIdentity? {
+        guard allowsSystemIntegrations, viewModel.state == .paired,
+              let coupleID = viewModel.currentActiveCoupleID
+        else {
+            return nil
+        }
+
+        return PartnerAvatarIdentity(coupleID: coupleID, assetID: viewModel.currentPartnerProfilePhotoAssetID)
+    }
+
+    /// Stages the partner's photo for alerts and banners, and tries again after a
+    /// failed download until it is staged or the photo changes.
+    func stagePartnerAvatar(_ identity: PartnerAvatarIdentity?) async {
+        guard let identity, let partnerAvatarSharing else {
+            return
+        }
+
+        _ = await ProfilePhotoRetry.load { () async -> Bool? in
+            // Nothing about the partner is written while a privacy purge runs.
+            guard viewModel.inFlightAccessPrivacyPurge == nil else {
+                return true
+            }
+            return await partnerAvatarSharing.cachePartnerAvatar(assetID: identity.assetID) ? true : nil
+        }
+    }
+
     func registerForRemoteNotificationsIfSignedIn(_ sessionID: String?) {
         guard allowsSystemIntegrations, sessionID != nil else {
             return
@@ -228,4 +256,9 @@ extension RootView {
             isAppActive: inputs.isAppActive
         )
     }
+}
+
+struct PartnerAvatarIdentity: Equatable {
+    let coupleID: UUID
+    let assetID: UUID?
 }

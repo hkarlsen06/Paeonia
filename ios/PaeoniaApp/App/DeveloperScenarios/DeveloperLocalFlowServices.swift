@@ -343,7 +343,7 @@
   }
 
   actor DeveloperLocalFlowPartnerAvatarSharing: PartnerAvatarSharing {
-    func cachePartnerAvatar(assetID _: UUID?) async {}
+    func cachePartnerAvatar(assetID _: UUID?) async -> Bool { true }
     func clear() async {}
   }
 

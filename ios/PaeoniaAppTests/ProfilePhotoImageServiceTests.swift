@@ -133,6 +133,29 @@ struct ProfilePhotoImageServiceTests {
         #expect(await cache.storedData(for: mediaAssetID) == nil)
     }
 
+    @Test func missingPhotoIsNotDownloadedAgainOnTheNextLoad() async throws {
+        let mediaAssetID = UUID()
+        let downloader = StubProfilePhotoDownloader(data: TestImage.png, statusCode: 404)
+        let service = try makeService(cache: FakeProfilePhotoCache(), downloader: downloader)
+
+        _ = await service.profilePhotoData(for: mediaAssetID)
+        let retried = await service.profilePhotoData(for: mediaAssetID)
+
+        #expect(retried == nil)
+        #expect(await downloader.downloadCount == 1)
+    }
+
+    @Test func lostConnectionIsDownloadedAgainOnTheNextLoad() async throws {
+        let mediaAssetID = UUID()
+        let downloader = StubProfilePhotoDownloader(error: URLError(.notConnectedToInternet))
+        let service = try makeService(cache: FakeProfilePhotoCache(), downloader: downloader)
+
+        _ = await service.profilePhotoData(for: mediaAssetID)
+        _ = await service.profilePhotoData(for: mediaAssetID)
+
+        #expect(await downloader.downloadCount == 2)
+    }
+
     @Test func undecodableCachedFileIsTreatedAsAMissAndRefetched() async throws {
         let mediaAssetID = UUID()
         let cache = FakeProfilePhotoCache(seed: [mediaAssetID: TestImage.captivePortalPage])
@@ -185,16 +208,20 @@ private enum TestImage {
 // Actors supply the async-ness, so the sync fake bodies need no await.
 // swiftlint:disable async_without_await
 private actor StubProfilePhotoDownloader: ProfilePhotoDataDownloading {
-    private let result: ProfilePhotoDownload
+    private let result: Result<ProfilePhotoDownload, URLError>
     private(set) var downloadCount = 0
 
     init(data: Data, statusCode: Int? = 200) {
-        result = ProfilePhotoDownload(data: data, statusCode: statusCode)
+        result = .success(ProfilePhotoDownload(data: data, statusCode: statusCode))
+    }
+
+    init(error: URLError) {
+        result = .failure(error)
     }
 
     func download(from _: URL) async throws -> ProfilePhotoDownload {
         downloadCount += 1
-        return result
+        return try result.get()
     }
 }
 

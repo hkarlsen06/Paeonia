@@ -154,6 +154,9 @@ struct RootView: View {
             .onChange(of: viewModel.currentSession?.id, initial: true) { previousUserID, userID in
                 sessionChanged(from: previousUserID, to: userID)
             }
+            .task(id: partnerAvatarIdentity) {
+                await stagePartnerAvatar(partnerAvatarIdentity)
+            }
             .task(id: usageSharingUserID) {
                 guard allowsSystemIntegrations else {
                     return

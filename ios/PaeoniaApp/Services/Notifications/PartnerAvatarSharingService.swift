@@ -5,14 +5,21 @@ import Foundation
 /// notification). The extension cannot reach the network in time, so the image
 /// is pre-staged here while the app is paired and cleared when access ends.
 nonisolated protocol PartnerAvatarSharing: Sendable {
-    func cachePartnerAvatar(assetID: UUID?) async
+    /// Stages the partner's photo, or removes the staged one when `assetID` is nil
+    /// because the partner has no photo. Returns false when the photo could not be
+    /// downloaded, so the caller can try again.
+    @discardableResult
+    func cachePartnerAvatar(assetID: UUID?) async -> Bool
     func clear() async
 }
 
 actor PartnerAvatarSharingService: PartnerAvatarSharing {
     private let imageProvider: any ProfilePhotoImageProviding
     private let appGroupContainerURL: URL?
-    private var privacyGeneration: UInt64 = 0
+    /// Changes with every request and with `clear()`. Only the newest request
+    /// writes, so a download that finishes late never brings back a photo that
+    /// was removed, replaced, or cleared by a privacy purge.
+    private var generation: UInt64 = 0
 
     init(
         imageProvider: any ProfilePhotoImageProviding,
@@ -22,17 +29,25 @@ actor PartnerAvatarSharingService: PartnerAvatarSharing {
         self.appGroupContainerURL = appGroupContainerURL
     }
 
-    func cachePartnerAvatar(assetID: UUID?) async {
-        guard let assetID, let fileURL = avatarFileURL else {
-            return
+    @discardableResult
+    func cachePartnerAvatar(assetID: UUID?) async -> Bool {
+        guard let fileURL = avatarFileURL else {
+            return true
+        }
+        generation &+= 1
+        let requestedGeneration = generation
+        // A removed photo must not keep showing on alerts and banners.
+        guard let assetID else {
+            try? FileManager.default.removeItem(at: fileURL)
+            return true
         }
 
-        let requestedGeneration = privacyGeneration
         guard let data = await imageProvider.profilePhotoData(for: assetID) else {
-            return
+            return false
         }
-        guard requestedGeneration == privacyGeneration else {
-            return
+        // A newer request or a purge took over while this one downloaded.
+        guard requestedGeneration == generation, !Task.isCancelled else {
+            return true
         }
 
         try? FileManager.default.createDirectory(
@@ -40,12 +55,13 @@ actor PartnerAvatarSharingService: PartnerAvatarSharing {
             withIntermediateDirectories: true
         )
         try? data.write(to: fileURL, options: .atomic)
+        return true
     }
 
     // Actor isolation satisfies the protocol's `async` requirement without the
     // keyword; the body has nothing to await.
     func clear() {
-        privacyGeneration &+= 1
+        generation &+= 1
         guard let fileURL = avatarFileURL,
               FileManager.default.fileExists(atPath: fileURL.path) else {
             return
