@@ -126,12 +126,12 @@ struct LockScreenCountdownTests {
 
         // First year: from the day it was made (20 days) to the day itself.
         #expect(progress(Support.date(2_023, 10, 11, 0, 0, in: calendar)) == 0.5)
-        // Later years: from the 21 October before (365 days) to the one ahead.
-        #expect(progress(Support.date(2_025, 10, 21, 0, 0, in: calendar)) == 0)
+        // Later years run from the 21 October before (365 days), so the bar is full on the day.
+        #expect(progress(Support.date(2_025, 10, 21, 0, 0, in: calendar)) == 1)
         let halfway = Support.date(2_026, 4, 21, 12, 0, in: calendar)
         #expect(abs((progress(halfway) ?? 0) - 182.5 / 365) < 0.001)
         // The day after, the bar starts over towards next year.
-        #expect(progress(Support.date(2_026, 10, 22, 0, 0, in: calendar)) == 1 / 365)
+        #expect(progress(Support.date(2_026, 10, 22, 0, 0, in: calendar)) == 1.0 / 365)
     }
 
     @Test func aYearlyCountdownAheadOfItsFirstDayRunsFromWhenItWasMade() {

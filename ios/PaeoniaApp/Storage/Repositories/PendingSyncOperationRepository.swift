@@ -236,7 +236,9 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
         try context.save()
     }
 
-    func discardUnsent(clientOperationID: UUID) throws -> Bool {
+    // Async so this wins over the protocol extension default from an async caller.
+    // swiftlint:disable:next async_without_await
+    func discardUnsent(clientOperationID: UUID) async throws -> Bool {
         let context = ModelContext(container)
         guard let operation = try fetchOperation(id: clientOperationID, in: context) else { return true }
         guard operation.status != .sending, operation.status != .succeeded, operation.attemptCount == 0
