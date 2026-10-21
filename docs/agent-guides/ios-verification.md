@@ -19,7 +19,7 @@ To fix a compiler warning or error that reading the code can't settle, reproduce
 
 Building and running the app on the shared simulator is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Never use a connected iPhone or iPad. [Devices And Simulators](../../AGENTS.md#devices-and-simulators) names the simulators to use.
 
-Do not run tests without asking. If you think a test run is needed, ask the developer. They run tests once all agents have finished. In the handoff, list what you did not verify and what to check on the device.
+Do not run iOS tests without asking. Backend tests are fine to run any time. If you think a test run is needed, ask the developer. They run tests once all agents have finished. In the handoff, list what you did not verify and what to check on the device.
 
 The developer uses these wrappers from the repository root:
 
