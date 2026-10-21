@@ -79,6 +79,9 @@ struct PaeoniaDeepLinkTests {
         #expect(
             PaeoniaDeepLink(notificationUserInfo: ["deeplink": "paeonia://settings/subscription"]) == .subscription
         )
+        #expect(
+            PaeoniaDeepLink(notificationUserInfo: ["deeplink": "paeonia://settings/data-export"]) == .dataExport
+        )
     }
 
     @Test func notificationPayloadWithoutUsableDeeplinkIsIgnored() {

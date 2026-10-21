@@ -74,14 +74,18 @@ struct BackgroundLocationUploaderTests {
         gateway: BackgroundTestLocationGateway,
         sharing: Bool,
         lastSent: LocationPoint? = nil,
-        visibilityStore: InMemoryLocationVisibilityRepository = InMemoryLocationVisibilityRepository()
+        visibilityStore: InMemoryLocationVisibilityRepository = InMemoryLocationVisibilityRepository(),
+        now uploaderNow: Date? = nil
     ) async throws -> (BackgroundLocationUploader, InMemoryOwnLocationSnapshotRepository) {
-        try await visibilityStore.setViewerSharingEnabled(
-            ownerUserID: ownerUserID,
-            coupleID: coupleID,
-            isEnabled: sharing,
-            updatedAt: now
-        )
+        let clock = uploaderNow ?? now
+        if uploaderNow == nil {
+            try await visibilityStore.setViewerSharingEnabled(
+                ownerUserID: ownerUserID,
+                coupleID: coupleID,
+                isEnabled: sharing,
+                updatedAt: now
+            )
+        }
         let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
         if let lastSent {
             try await ownLocationStore.save(OwnLocationSnapshot(
@@ -99,7 +103,7 @@ struct BackgroundLocationUploaderTests {
             visibilityStore: visibilityStore,
             ownLocationStore: ownLocationStore,
             operationProvider: SyncClientOperationFactory(defaults: defaults),
-            now: { [now] in now }
+            now: { clock }
         )
         return (uploader, ownLocationStore)
     }
@@ -126,6 +130,42 @@ struct BackgroundLocationUploaderTests {
 
         #expect(outcome == .sharingOff)
         #expect(await gateway.payloads.isEmpty)
+    }
+
+    @Test func sendsNothingWhileSharingIsPausedAndResumesAfterThePause() async throws {
+        let gateway = BackgroundTestLocationGateway()
+        let visibilityStore = InMemoryLocationVisibilityRepository()
+        let (uploader, _) = try await makeUploader(gateway: gateway, sharing: true, visibilityStore: visibilityStore)
+        try await visibilityStore.setViewerSharingEnabled(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            isEnabled: true,
+            pausedUntil: now.addingTimeInterval(60),
+            updatedAt: now
+        )
+
+        #expect(await uploader.upload(location(), ownerUserID: ownerUserID, coupleID: coupleID) == .paused)
+        #expect(await gateway.payloads.isEmpty)
+
+        // The pause's time has passed on this phone's clock, even if the server has not cleared it yet.
+        let (laterUploader, _) = try await makeUploader(
+            gateway: gateway,
+            sharing: true,
+            visibilityStore: visibilityStore,
+            now: now.addingTimeInterval(61)
+        )
+        let later = location(capturedAt: now.addingTimeInterval(61))
+        #expect(await laterUploader.upload(later, ownerUserID: ownerUserID, coupleID: coupleID) == .sent)
+    }
+
+    @Test func serverRefusalForAPauseKeepsUpdatesOn() async throws {
+        let gateway = BackgroundTestLocationGateway(error: PaeoniaConvexError.server(
+            code: "42501",
+            message: "location sharing is paused"
+        ))
+        let (uploader, _) = try await makeUploader(gateway: gateway, sharing: true)
+
+        #expect(await uploader.upload(location(), ownerUserID: ownerUserID, coupleID: coupleID) == .paused)
     }
 
     @Test func skipsARecentLocationNearby() async throws {
@@ -252,10 +292,10 @@ private actor UnreadableVisibilityStore: LocationVisibilitySnapshotPersisting {
 
     func saveRemote(_: LocationVisibilitySnapshot, preservingLocalSharingChoiceIf _: Bool) throws {}
 
-    func setViewerSharingEnabled(
+    func setViewerSharing(
         ownerUserID _: UUID,
         coupleID _: UUID,
-        isEnabled _: Bool,
+        choice _: ViewerSharingChoice,
         updatedAt _: Date,
         isPendingConfirmation _: Bool
     ) throws {}
@@ -263,7 +303,7 @@ private actor UnreadableVisibilityStore: LocationVisibilitySnapshotPersisting {
     func confirmViewerSharing(
         ownerUserID _: UUID,
         coupleID _: UUID,
-        isEnabled _: Bool,
+        confirmation _: ViewerSharingConfirmation,
         updatedAt _: Date,
         otherChoicesPending _: Bool
     ) throws {}

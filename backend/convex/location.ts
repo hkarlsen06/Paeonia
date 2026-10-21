@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
@@ -8,8 +8,10 @@ import { runClientOperation } from "./lib/clientOperations";
 import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { optionalTimestampArg, timestampArg, uuidArg } from "./lib/ids";
+import { isSharingNow, MAX_LOCATION_PAUSE_MS } from "./lib/locationPause";
 import {
   enqueueLockScreenRefreshForPartner,
+  enqueueNotificationForUser,
   enqueuePartnerNotification,
   LOCK_SCREEN_LOCATION_DELAY_SECONDS,
   LOCK_SCREEN_REFRESH_DELAY_SECONDS,
@@ -65,6 +67,19 @@ async function deleteLatestLocationForUser(ctx: WriterCtx, coupleId: string, use
 }
 
 /**
+ * Ends a pause: clears `paused_until` and refreshes the partner's Lock Screen, because the distance
+ * comes back. The cron and the first location update after the pause's time both call it.
+ */
+async function endLocationPause(ctx: WriterCtx, preference: Doc<"location_sharing_preferences">): Promise<void> {
+  await ctx.db.patch(preference._id, withUpdatedAt({ paused_until: undefined }));
+  await enqueueLockScreenRefreshForPartner(ctx, {
+    couple_id: preference.couple_id,
+    actor_user_id: preference.user_id,
+    delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+  });
+}
+
+/**
  * Port of both `update_latest_partner_location` overloads. The overload without
  * `p_accuracy_m` is the same function with the argument omitted.
  */
@@ -114,6 +129,14 @@ export const update_latest_partner_location = mutation({
       .unique();
     if (!preference?.is_enabled) {
       fail("42501", "location sharing must be enabled before updating location");
+    }
+    if (preference.paused_until !== undefined) {
+      // A phone sends nothing during a pause. This refuses a late or stray update. Once the time has
+      // passed, the first update ends the pause itself, so it never waits for the cron.
+      if (preference.paused_until > nowIso()) {
+        fail("42501", "location sharing is paused");
+      }
+      await endLocationPause(ctx, preference);
     }
 
     const operationId = uuidArg(args.p_client_operation_id);
@@ -191,7 +214,7 @@ export const update_latest_partner_location = mutation({
             .query("location_sharing_preferences")
             .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", member.user_id))
             .unique();
-          if (partnerPreference?.is_enabled) partnerShares = true;
+          if (isSharingNow(partnerPreference)) partnerShares = true;
         }
         if (partnerShares) {
           // The distance on the partner's Lock Screen changes with every fix. Updates come often, so this lane sends at most one push per half hour.
@@ -236,6 +259,8 @@ export const update_location_sharing_preference = mutation({
     p_is_enabled: nullable(v.boolean()),
     p_consent_version: nullable(v.string()),
     p_source: nullable(v.string()),
+    // Pauses sharing until this time. Only valid with `p_is_enabled: true`. Omitted or null ends a pause.
+    p_paused_until: nullable(v.string()),
     p_client_operation_id: v.string(),
     p_client_id: v.string(),
     p_client_sequence: v.number(),
@@ -251,6 +276,13 @@ export const update_location_sharing_preference = mutation({
     const consentVersion = (args.p_consent_version ?? "").trim() || undefined;
     if (isEnabled && (consentVersion === undefined || Array.from(consentVersion).length > 80)) {
       fail("23514", "location sharing consent version is required");
+    }
+    const pausedUntilInput = optionalTimestampArg(args.p_paused_until);
+    if (pausedUntilInput !== undefined && !isEnabled) {
+      fail("23514", "location sharing can only be paused while it is on");
+    }
+    if (pausedUntilInput !== undefined && pausedUntilInput > addMs(nowIso(), MAX_LOCATION_PAUSE_MS)) {
+      fail("23514", "location sharing pause is too long");
     }
     const coupleId = uuidArg(args.p_couple_id);
     if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
@@ -273,12 +305,15 @@ export const update_location_sharing_preference = mutation({
           user_id: userId,
           is_enabled: isEnabled,
           consent_version: consentVersion ?? "",
+          paused_until: pausedUntilInput ?? null,
           source,
         },
       },
       async () => {
         await assertNoPendingAccountDeletion(ctx, userId);
         const now = nowIso();
+        // A pause that is already over when it arrives, such as one queued offline, changes nothing.
+        const pausedUntil = pausedUntilInput !== undefined && pausedUntilInput > now ? pausedUntilInput : undefined;
         const existing = await ctx.db
           .query("location_sharing_preferences")
           .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
@@ -289,8 +324,10 @@ export const update_location_sharing_preference = mutation({
             existing._id,
             withUpdatedAt({
               is_enabled: isEnabled,
-              enabled_at: isEnabled ? now : existing.enabled_at,
+              // A pause or an end of a pause does not restart "enabled".
+              enabled_at: isEnabled ? (existing.is_enabled ? (existing.enabled_at ?? now) : now) : existing.enabled_at,
               disabled_at: isEnabled ? undefined : now,
+              paused_until: pausedUntil,
               consent_version: isEnabled ? consentVersion : existing.consent_version,
               source,
               // Turning sharing back on later does not bring it back by itself.
@@ -308,16 +345,18 @@ export const update_location_sharing_preference = mutation({
             consent_version: isEnabled ? consentVersion : undefined,
             source,
             updates_while_closed: false,
+            paused_until: pausedUntil,
             created_at: now,
             updated_at: now,
           });
           row = (await ctx.db.get(id))!;
         }
-        if (!isEnabled) {
+        // A pause hides the location like turning sharing off. The partner never sees an old position.
+        if (!isEnabled || pausedUntil !== undefined) {
           await deleteLatestLocationForUser(ctx, coupleId, userId);
         }
-        // Turning sharing on or off shows or hides the distance on the partner's Lock Screen.
-        if (existing?.is_enabled !== isEnabled) {
+        // Turning sharing on, off, or pausing it shows or hides the distance on the partner's Lock Screen.
+        if (isSharingNow(existing) !== isSharingNow(row)) {
           await enqueueLockScreenRefreshForPartner(ctx, {
             couple_id: coupleId,
             actor_user_id: userId,
@@ -330,11 +369,44 @@ export const update_location_sharing_preference = mutation({
           is_enabled: row.is_enabled,
           enabled_at: orNull(row.enabled_at),
           disabled_at: orNull(row.disabled_at),
+          paused_until: orNull(row.paused_until),
           updated_at: row.updated_at,
         };
       },
     );
     return [stored];
+  },
+});
+
+/**
+ * Cron: ends every pause whose time has passed and, for a phone that sends moves while Paeonia is
+ * closed, wakes it with a silent push so it sends where it is now. Without the push, the partner
+ * would see no position until the person next moved a long way. A pause is also ended by the first
+ * location update after its time, so a phone that is awake never waits for this run.
+ */
+export const resume_paused_location_sharing = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = nowIso();
+    const due = await ctx.db
+      .query("location_sharing_preferences")
+      .withIndex("by_paused_until", (q) => q.gt("paused_until", "").lte("paused_until", now))
+      .take(200);
+    for (const preference of due) {
+      const pausedUntil = preference.paused_until!;
+      await endLocationPause(ctx, preference);
+      if (preference.updates_while_closed && preference.is_enabled) {
+        await enqueueNotificationForUser(ctx, {
+          recipient_user_id: preference.user_id,
+          kind: "location_pause_ended",
+          payload: { type: "location_pause_ended", couple_id: preference.couple_id },
+          dedupe_key: `location_pause_ended:${preference.couple_id}:${preference.user_id}:${pausedUntil}`,
+          apns_push_type: "background",
+          apns_collapse_id: `location-resume:${preference.couple_id}`,
+        });
+      }
+    }
+    return due.length;
   },
 });
 
@@ -430,6 +502,7 @@ export const get_partner_location_visibility = query({
       partnerEnabled: boolean,
       updatedAt: string,
       location?: Doc<"latest_partner_locations">,
+      viewerPausedUntil?: string,
     ) => [
       {
         couple_id: coupleId,
@@ -438,6 +511,8 @@ export const get_partner_location_visibility = query({
         visibility_state: state,
         viewer_sharing_enabled: viewerEnabled,
         partner_sharing_enabled: partnerEnabled,
+        // Only the viewer's own pause end. The partner's pause time is never sent, only the state.
+        viewer_paused_until: viewerPausedUntil ?? null,
         partner_location_latitude: location?.latitude ?? null,
         partner_location_longitude: location?.longitude ?? null,
         partner_location_accuracy_m: orNull(location?.accuracy_m),
@@ -470,7 +545,13 @@ export const get_partner_location_visibility = query({
       "",
     );
     if (!viewerEnabled) return result("disabled", false, partnerEnabled, preferencesUpdatedAt);
+    // Sharing is mutual, so a person on pause does not see the partner's position either.
+    if (viewerPreference?.paused_until !== undefined) {
+      const pausedUntil = viewerPreference.paused_until;
+      return result("viewer_paused", true, partnerEnabled, preferencesUpdatedAt, undefined, pausedUntil);
+    }
     if (!partnerEnabled) return result("not_sharing", true, false, preferencesUpdatedAt);
+    if (partnerPreference?.paused_until !== undefined) return result("partner_paused", true, true, preferencesUpdatedAt);
 
     const location = await ctx.db
       .query("latest_partner_locations")

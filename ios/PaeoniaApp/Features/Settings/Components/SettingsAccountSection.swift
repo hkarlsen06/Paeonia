@@ -5,10 +5,8 @@ import SwiftUI
 ///
 /// They sit one step away from the Us tab, below the name and photo, and each one
 /// only opens a centered confirmation. Nothing happens until the user confirms.
-/// The footer names the sign-in provider.
 struct SettingsAccountSection: View {
     let viewModel: SettingsViewModel
-    let authProvider: AuthProvider?
     /// Names the partner in the leave confirmation instead of saying "your partner".
     let partnerName: String
     let onLeftRelationship: () -> Void
@@ -32,10 +30,6 @@ struct SettingsAccountSection: View {
             deleteRow
         } header: {
             Text(.settingsAccountSectionTitle)
-        } footer: {
-            if let authProviderName {
-                Text(.settingsProfileSignedInWith(authProviderName))
-            }
         }
     }
 
@@ -105,16 +99,6 @@ struct SettingsAccountSection: View {
             }
         } message: {
             Text(.authDeleteAccountConfirmMessage)
-        }
-    }
-
-    /// Brand names stay unlocalized; only the sentence around them is translated.
-    /// Development and unknown sessions show no line rather than leaking internals.
-    private var authProviderName: String? {
-        switch authProvider {
-        case .apple: "Apple"
-        case .google: "Google"
-        case .development, .unknown, nil: nil
         }
     }
 

@@ -48,13 +48,41 @@ extension RootView {
                 syncsCanvas: WidgetPendingUploadStore.shared.hasPending
             )
             await viewModel.refreshAfterForegroundActivation()
+            await SignInMethodsServerSync.retryIfPending()
             _ = await (locationRefresh, widgetSync)
         }
     }
 
+    /// A notification tap or link that arrives while the app is locked waits for
+    /// the unlock. Handling it again when the lock opens routes it then.
+    var isHeldByAppLock: Bool {
+        allowsSystemIntegrations && AppLockModel.shared.isLocked
+    }
+
+    /// The link the tabs see. Nothing while the lock is closed, so the tabs open
+    /// it only after the unlock.
+    var deepLinkForTabs: Binding<PaeoniaDeepLink?> {
+        Binding(
+            get: { isHeldByAppLock ? nil : deepLink },
+            set: { deepLink = $0 }
+        )
+    }
+
+    var deepLinkDelivery: DeepLinkDelivery {
+        DeepLinkDelivery(link: deepLink, isHeldByAppLock: isHeldByAppLock, isRouteKnown: viewModel.state != .launching)
+    }
+
+    /// Changes when a link arrives or the lock opens, which restarts the handling task.
+    struct DeepLinkDelivery: Equatable {
+        let link: PaeoniaDeepLink?
+        let isHeldByAppLock: Bool
+        /// The launch has finished, so links that need to know the sign-in state can be handled.
+        let isRouteKnown: Bool
+    }
+
     @MainActor
     func handleDeepLink(_ deepLink: PaeoniaDeepLink?) {
-        guard let deepLink else {
+        guard let deepLink, !isHeldByAppLock else {
             return
         }
 
@@ -73,7 +101,24 @@ extension RootView {
         case .subscription:
             openURL(PaeoniaDeepLink.appStoreSubscriptionsURL)
             self.deepLink = nil
+        case .dataExport:
+            openDataExport()
         }
+    }
+
+    /// Opens the data download screen over whatever is showing, since it works with or without a
+    /// subscription. A link that arrives during launch waits until the sign-in state is known.
+    @MainActor
+    private func openDataExport() {
+        switch viewModel.state {
+        case .launching:
+            return
+        case .unauthenticated, .accountClosed, .deletingAccount:
+            break
+        default:
+            viewModel.isShowingDataExport = true
+        }
+        deepLink = nil
     }
 
     /// Paired tab links are finished by `MainTabView`. A link that arrives
@@ -244,6 +289,8 @@ extension RootView {
         let identity: LocationIdentity
         /// `nil` until the sharing choice has loaded.
         let sharingEnabled: Bool?
+        /// Sharing is on but paused. The live feed stops until the pause ends.
+        let isSharingPaused: Bool
         let isAppActive: Bool
     }
 
@@ -251,6 +298,7 @@ extension RootView {
         LocationUpdateInputs(
             identity: locationIdentity,
             sharingEnabled: locationViewModel.hasResolvedSharingPreference ? locationViewModel.sharingEnabled : nil,
+            isSharingPaused: locationViewModel.isSharingPaused,
             isAppActive: scenePhase == .active
         )
     }
@@ -264,6 +312,7 @@ extension RootView {
         controller.update(
             identity: inputs.identity,
             sharingEnabled: inputs.sharingEnabled,
+            isSharingPaused: inputs.isSharingPaused,
             isAppActive: inputs.isAppActive
         )
     }

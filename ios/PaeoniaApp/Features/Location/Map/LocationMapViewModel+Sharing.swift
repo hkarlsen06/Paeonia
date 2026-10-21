@@ -21,6 +21,7 @@ extension LocationMapViewModel {
         let permissionWasUndecided = authorizationState == .notDetermined
 
         let previousValue = sharingEnabled
+        let previousPause = pausedUntil
         showSharingChoice(enabled)
 
         do {
@@ -40,6 +41,7 @@ extension LocationMapViewModel {
         } catch {
             await restoreSharingChange(
                 previousValue: previousValue,
+                previousPause: previousPause,
                 operationIdentity: operationIdentity,
                 permissionWasUndecided: permissionWasUndecided,
                 error: error
@@ -47,10 +49,11 @@ extension LocationMapViewModel {
         }
     }
 
-    private func enqueueLocationPreference(
+    func enqueueLocationPreference(
         ownerUserID: UUID,
         coupleID: UUID,
         isEnabled: Bool,
+        pausedUntil: Date? = nil,
         source: LocationSharingSource
     ) async throws {
         let operation = operationProvider.makeOperation()
@@ -58,7 +61,8 @@ extension LocationMapViewModel {
             coupleID: coupleID,
             isEnabled: isEnabled,
             consentVersion: isEnabled ? Self.consentVersion : nil,
-            source: source
+            source: source,
+            pausedUntil: pausedUntil
         )
         try await pendingOperationStore.enqueue(
             PendingSyncOperationRequest(
@@ -165,6 +169,7 @@ extension LocationMapViewModel {
 
     private func restoreSharingChange(
         previousValue: Bool,
+        previousPause: Date?,
         operationIdentity: LocationIdentity,
         permissionWasUndecided: Bool,
         error: any Error
@@ -176,10 +181,10 @@ extension LocationMapViewModel {
         refreshAuthorizationState()
         restoreSharingValue(previousValue)
         // Nothing was queued for this value, so it is not waiting on the server.
-        try? await visibilityStore.setViewerSharingEnabled(
+        try? await visibilityStore.setViewerSharing(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
-            isEnabled: previousValue,
+            choice: ViewerSharingChoice(isEnabled: previousValue, pausedUntil: previousPause),
             updatedAt: Date(),
             isPendingConfirmation: false
         )

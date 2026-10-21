@@ -51,6 +51,7 @@ export const notificationKind = literals(
   "partner_answered",
   "widget_updated",
   "location_updated",
+  "location_pause_ended",
   "subscription_trial_reminder",
   "memory_created",
   "story_posted",
@@ -64,6 +65,7 @@ export const notificationKind = literals(
   "partner_joined",
   "topics_waiting",
   "badge_update",
+  "data_export_ready",
 );
 /** Every game, in catalog order. A new game adds its kind here and an entry in `GAME_BACKENDS` (lib/gameRegistry.ts). */
 export const GAME_KINDS = [

@@ -360,13 +360,13 @@ describe("privacy requests", () => {
     const firstId = newUuid();
     const created = await user.as.mutation(api.identity.create_privacy_request, {
       p_id: firstId.toUpperCase(),
-      p_kind: "export",
+      p_kind: "correction",
       p_requester_note: "please",
     });
     expect(created).toMatchObject({
       id: firstId,
       user_id: user.userId,
-      request_kind: "export",
+      request_kind: "correction",
       status: "submitted",
       requester_note: "please",
       verified_at: null,
@@ -374,8 +374,8 @@ describe("privacy requests", () => {
     });
     vi.setSystemTime(new Date("2026-10-10T12:01:00.000Z"));
     const secondId = newUuid();
-    await user.as.mutation(api.identity.create_privacy_request, { p_id: secondId, p_kind: "access" });
-    await other.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "access" });
+    await user.as.mutation(api.identity.create_privacy_request, { p_id: secondId, p_kind: "deletion" });
+    await other.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "correction" });
     const listed = await user.as.query(api.identity.get_privacy_requests, {});
     expect(listed.map((row) => row.id)).toEqual([secondId, firstId]);
   });
@@ -383,16 +383,16 @@ describe("privacy requests", () => {
   test("a second open request of the same kind returns the open one", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
-    const first = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" });
+    const first = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "correction" });
     // Another device files the same request before it sees the first one.
-    expect(await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" })).toEqual(first);
-    const access = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "access" });
-    expect(access.id).not.toBe(first.id);
+    expect(await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "correction" })).toEqual(first);
+    const deletion = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "deletion" });
+    expect(deletion.id).not.toBe(first.id);
     await t.run(async (ctx) => {
       const row = await ctx.db.query("privacy_requests").withIndex("by_uuid", (q) => q.eq("id", first.id)).unique();
       await ctx.db.patch(row!._id, { status: "completed" });
     });
-    const next = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" });
+    const next = await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "correction" });
     expect(next.id).not.toBe(first.id);
     expect(await user.as.query(api.identity.get_privacy_requests, {})).toHaveLength(3);
   });
@@ -401,14 +401,17 @@ describe("privacy requests", () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
     await expectFail(user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "sell" }), "23514");
+    // Access and export are answered by "Download my data", not by a request.
+    await expectFail(user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" }), "23514");
+    await expectFail(user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "access" }), "23514");
     await expectFail(
-      user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "access", p_requester_note: "x".repeat(4001) }),
+      user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "correction", p_requester_note: "x".repeat(4001) }),
       "23514",
     );
-    await expectFail(user.as.mutation(api.identity.create_privacy_request, { p_id: "nope", p_kind: "access" }), "22P02");
+    await expectFail(user.as.mutation(api.identity.create_privacy_request, { p_id: "nope", p_kind: "correction" }), "22P02");
     const id = newUuid();
-    await user.as.mutation(api.identity.create_privacy_request, { p_id: id, p_kind: "access" });
-    await expectFail(user.as.mutation(api.identity.create_privacy_request, { p_id: id, p_kind: "access" }), "23505");
+    await user.as.mutation(api.identity.create_privacy_request, { p_id: id, p_kind: "correction" });
+    await expectFail(user.as.mutation(api.identity.create_privacy_request, { p_id: id, p_kind: "correction" }), "23505");
     await user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "deletion" });
     await expectFail(
       user.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "deletion" }),

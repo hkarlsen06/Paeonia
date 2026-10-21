@@ -303,6 +303,8 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
                 UserDefaultsPairingJoinInviteStore.shared.clearInviteCode()
                 PushRegistrationFingerprintStore.resetAll()
                 DailyChatReactionPalette.shared.clearAll()
+                // The next person on this phone starts without the lock.
+                AppLockModel.shared.reset()
                 // First day text belongs to no couple, so only sign-out clears it.
                 UserDefaultsFirstDayAnswerDraftStore.shared.clearAll(for: ownerUserID)
             }

@@ -19,9 +19,14 @@ nonisolated struct LocationUpdatePlan: Equatable, Sendable {
         case always
     }
 
+    /// A pause stops the live feed while the app is open. The significant-change
+    /// service keeps running, so iOS can still relaunch the app, but the uploader
+    /// sends nothing until the pause ends. Sharing stays on, so a pause never
+    /// clears the choice for updates while closed.
     static func resolve(
         isAppActive: Bool,
         sharingEnabled: Bool?,
+        isPaused: Bool = false,
         hasIdentity: Bool,
         authorization: CLAuthorizationStatus,
         prefersUpdatesWhileClosed: Bool
@@ -34,13 +39,13 @@ nonisolated struct LocationUpdatePlan: Equatable, Sendable {
         // also bring up iOS's question about it.
         let sessionGoal: SessionGoal? = if wantsClosedUpdates {
             .always
-        } else if isAppActive, sharingEnabled == true, hasIdentity {
+        } else if isAppActive, sharingEnabled == true, !isPaused, hasIdentity {
             .whenInUse
         } else {
             nil
         }
         return Self(
-            watchesWhileOpen: isAppActive && sharingEnabled == true && hasIdentity && isAuthorized,
+            watchesWhileOpen: isAppActive && sharingEnabled == true && !isPaused && hasIdentity && isAuthorized,
             watchesWhileClosed: wantsClosedUpdates && authorization == .authorizedAlways,
             sessionGoal: sessionGoal
         )
@@ -93,6 +98,9 @@ final class LocationUpdateController: NSObject {
     private(set) var prefersUpdatesWhileClosed: Bool
 
     @ObservationIgnored private var sharingEnabled: Bool?
+    @ObservationIgnored private var isSharingPaused = false
+    /// Set while a silent push waits for the one position it asked for.
+    @ObservationIgnored private var awaitingResumeFix = false
     @ObservationIgnored private var isAppActive = false
     @ObservationIgnored private var appliedPlan: LocationUpdatePlan?
     @ObservationIgnored private var serviceSession: CLServiceSession?
@@ -128,10 +136,17 @@ final class LocationUpdateController: NSObject {
 
     /// Called by the root view when the signed-in couple, the sharing choice,
     /// or the app's foreground state changes. `sharingEnabled` is `nil` until
-    /// the choice has loaded.
-    func update(identity: LocationIdentity, sharingEnabled: Bool?, isAppActive: Bool) {
+    /// the choice has loaded. `isSharingPaused` is true while sharing is on but
+    /// paused.
+    func update(
+        identity: LocationIdentity,
+        sharingEnabled: Bool?,
+        isSharingPaused: Bool = false,
+        isAppActive: Bool
+    ) {
         self.isAppActive = isAppActive
         self.sharingEnabled = sharingEnabled
+        self.isSharingPaused = isSharingPaused
         if let userID = identity.currentUserID, let coupleID = identity.coupleID {
             let stored = storedIdentity
             let accountID = PaeoniaClerk.currentAccountID()
@@ -221,6 +236,7 @@ final class LocationUpdateController: NSObject {
         let plan = LocationUpdatePlan.resolve(
             isAppActive: isAppActive,
             sharingEnabled: sharingEnabled,
+            isPaused: isSharingPaused,
             hasIdentity: storedIdentity != nil,
             authorization: authorization,
             prefersUpdatesWhileClosed: prefersUpdatesWhileClosed
@@ -258,7 +274,29 @@ final class LocationUpdateController: NSObject {
         previous?.invalidate()
     }
 
+    /// A silent push says a pause has just ended. Without it, the partner would
+    /// see no position until the person next moved a long way. This asks for one
+    /// position, sends it, and returns, because iOS ends a silent push's run after
+    /// about 30 seconds. It does nothing unless updates while closed are on and
+    /// allowed, since only then can the phone send in the background.
+    func shareAfterPauseEnded() async {
+        guard updatesWhileClosedActive else { return }
+        let backgroundTask = BackgroundTaskToken(name: "Resume location sharing")
+        defer {
+            awaitingResumeFix = false
+            backgroundTask.end()
+        }
+        awaitingResumeFix = true
+        manager.requestLocation()
+        var waitedHalfSeconds = 0
+        while awaitingResumeFix, waitedHalfSeconds < 50 {
+            try? await Task.sleep(for: .milliseconds(500))
+            waitedHalfSeconds += 1
+        }
+    }
+
     private func deliver(_ location: LocationPoint) async {
+        defer { awaitingResumeFix = false }
         if UIApplication.shared.applicationState == .active {
             await onLocationWhileOpen?(location)
             return
@@ -401,6 +439,9 @@ extension LocationUpdateController: CLLocationManagerDelegate {
 
     nonisolated func locationManager(_: CLLocationManager, didFailWithError _: any Error) {
         // A missed position is fine. The feeds keep running and report the next move.
+        Task { @MainActor in
+            awaitingResumeFix = false
+        }
     }
 }
 

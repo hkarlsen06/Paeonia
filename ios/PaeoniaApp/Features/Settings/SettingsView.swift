@@ -11,7 +11,6 @@ struct SettingsView: View {
     let currentDisplayName: String?
     let currentCustomProfilePhotoAssetID: UUID?
     let currentProviderProfilePhotoAssetID: UUID?
-    let currentAuthProvider: AuthProvider?
     let partnerUserID: UUID?
     /// What this person calls their partner, for the nickname row. Copy takes `partnerName`.
     let partner: PartnerName?
@@ -54,6 +53,10 @@ struct SettingsView: View {
     @State private var profileEditor = ProfileEditorViewModel()
     /// Owned here for the same reason: a nickname save still reports after the screen closes.
     @State private var nicknameEditor: PartnerNicknameEditorModel
+    /// Lives here, like the profile editor, so a link that is running keeps its state
+    /// while the profile screen redraws. Nil when there is no Apple or Google
+    /// account to manage, and the profile screen then hides the sign-in methods.
+    @State private var signInMethods: SignInMethodsViewModel?
     /// Decides whether the Admin row shows. The server checks again on every admin call.
     @State private var adminAccess: AdminAccessModel
 
@@ -64,7 +67,6 @@ struct SettingsView: View {
         currentDisplayName: String? = nil,
         currentCustomProfilePhotoAssetID: UUID? = nil,
         currentProviderProfilePhotoAssetID: UUID? = nil,
-        currentAuthProvider: AuthProvider? = nil,
         partnerUserID: UUID? = nil,
         partner: PartnerName? = nil,
         partnerProfilePhotoAssetID: UUID? = nil,
@@ -84,6 +86,7 @@ struct SettingsView: View {
         loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)? = nil,
         partnerNicknameGateway: (any PartnerNicknameGateway)? = PartnerNicknameGatewayFactory.makeDefault(),
         privacySafetyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
+        signInMethods: SignInMethodsViewModel? = SignInMethodsViewModelFactory.makeDefault(),
         privacyOperationProvider: (any SyncClientOperationProviding)? = nil,
         adminGateway: (any AdminGateway)? = AdminGatewayFactory.makeDefault()
     ) {
@@ -91,7 +94,6 @@ struct SettingsView: View {
         self.currentDisplayName = currentDisplayName
         self.currentCustomProfilePhotoAssetID = currentCustomProfilePhotoAssetID
         self.currentProviderProfilePhotoAssetID = currentProviderProfilePhotoAssetID
-        self.currentAuthProvider = currentAuthProvider
         self.partnerUserID = partnerUserID
         self.partner = partner
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
@@ -109,6 +111,7 @@ struct SettingsView: View {
         self.onPurchasesRestored = onPurchasesRestored
         self.loadMarkEditor = loadMarkEditor
         self.privacySafetyService = privacySafetyService
+        _signInMethods = State(initialValue: signInMethods)
         self.privacyOperationProvider = privacyOperationProvider
         self.adminGateway = adminGateway
         _adminAccess = State(initialValue: AdminAccessModel(gateway: adminGateway))
@@ -213,9 +216,9 @@ extension SettingsView {
                 onSave: { [onUpdateProfile] displayName, photoUpdate in
                     await onUpdateProfile(displayName, photoUpdate)
                 },
+                signInMethods: signInMethods,
                 accountSection: SettingsAccountSection(
                     viewModel: viewModel,
-                    authProvider: currentAuthProvider,
                     partnerName: partnerName,
                     onLeftRelationship: onLeftRelationship,
                     onLogout: onLogout,
@@ -286,6 +289,8 @@ extension SettingsView {
             if let loadMarkEditor {
                 SettingsMarkRow(loadEditor: { await loadMarkEditor() })
             }
+
+            AppLockSettingsRow()
 
             NavigationLink {
                 PurchaseSettingsView(

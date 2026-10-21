@@ -3,10 +3,6 @@ import Foundation
 extension PrivacyRequestKind {
     var title: LocalizedStringResource {
         switch self {
-        case .access:
-            .privacySafetyAccessTitle
-        case .export:
-            .privacySafetyExportTitle
         case .correction:
             .privacySafetyCorrectionTitle
         }
@@ -14,10 +10,6 @@ extension PrivacyRequestKind {
 
     var description: LocalizedStringResource {
         switch self {
-        case .access:
-            .privacySafetyAccessDescription
-        case .export:
-            .privacySafetyExportDescription
         case .correction:
             .privacySafetyCorrectionDescription
         }
@@ -25,10 +17,6 @@ extension PrivacyRequestKind {
 
     var actionTitle: LocalizedStringResource {
         switch self {
-        case .access:
-            .privacySafetyAccessAction
-        case .export:
-            .privacySafetyExportAction
         case .correction:
             .privacySafetyCorrectionAction
         }

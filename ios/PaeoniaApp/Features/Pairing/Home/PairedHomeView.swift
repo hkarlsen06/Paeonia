@@ -19,6 +19,7 @@ struct PairedHomeView: View {
     let zoomNamespace: Namespace.ID?
     let locationMapState: CoupleMapState
     let onPromptCurrentLocation: () -> Void
+    let onPauseLocationSharing: ((Date) -> Void)?
     var unreadChats: [UnreadChatRow] = []
     var onOpenChat: (UUID) -> Void = { _ in }
     /// Shows a game's card while the partner has the game open, so an invite is one tap away.
@@ -72,6 +73,7 @@ struct PairedHomeView: View {
         zoomNamespace: Namespace.ID? = nil,
         locationMapState: CoupleMapState,
         onPromptCurrentLocation: @escaping () -> Void = {},
+        onPauseLocationSharing: ((Date) -> Void)? = nil,
         unreadChats: [UnreadChatRow] = [],
         onOpenChat: @escaping (UUID) -> Void = { _ in },
         games: GamesViewModel? = nil,
@@ -103,6 +105,7 @@ struct PairedHomeView: View {
         self.zoomNamespace = zoomNamespace
         self.locationMapState = locationMapState
         self.onPromptCurrentLocation = onPromptCurrentLocation
+        self.onPauseLocationSharing = onPauseLocationSharing
         self.unreadChats = unreadChats
         self.onOpenChat = onOpenChat
         self.games = games
@@ -309,6 +312,7 @@ extension PairedHomeView {
             partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
             state: locationMapState,
             onPromptCurrentLocation: onPromptCurrentLocation,
+            onPauseSharing: onPauseLocationSharing,
             hearts: hearts,
             aspectRatio: isWideLayout ? 1 : 2
         )

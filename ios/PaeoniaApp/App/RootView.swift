@@ -129,7 +129,7 @@ struct RootView: View {
             // Handle deep links from an async task (fires on appear and whenever
             // the link changes) so navigation state is never mutated
             // synchronously during a view update.
-            .task(id: deepLink) {
+            .task(id: deepLinkDelivery) {
                 handleDeepLink(deepLink)
             }
             .task(id: locationIdentity) {

@@ -1,4 +1,5 @@
 import { httpRouter } from "convex/server";
+import { serve_data_export } from "./dataExport";
 import { serve_media } from "./media";
 import { apple_server_notifications } from "./storekit";
 
@@ -10,5 +11,8 @@ http.route({ path: "/apple/server-notifications", method: "POST", handler: apple
 
 // Signed media downloads (replaces Supabase Storage signed URLs). See media.ts.
 http.route({ path: "/media", method: "GET", handler: serve_media });
+
+// Signed zip downloads of "Download my data". See dataExport.ts.
+http.route({ path: "/data-export", method: "GET", handler: serve_data_export });
 
 export default http;

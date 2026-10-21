@@ -2,7 +2,7 @@ import Foundation
 
 actor InMemoryLocationVisibilityRepository: LocationVisibilitySnapshotPersisting {
     private var snapshots: [String: LocationVisibilitySnapshot] = [:]
-    private var pendingChoices: [String: Bool] = [:]
+    private var pendingChoices: [String: ViewerSharingChoice] = [:]
 
     func save(_ snapshot: LocationVisibilitySnapshot) throws {
         snapshots[key(ownerUserID: snapshot.ownerUserID, coupleID: snapshot.coupleID)] = snapshot
@@ -28,38 +28,38 @@ actor InMemoryLocationVisibilityRepository: LocationVisibilitySnapshotPersisting
         snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)]
     }
 
-    func setViewerSharingEnabled(
+    func setViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        choice: ViewerSharingChoice,
         updatedAt: Date,
         isPendingConfirmation: Bool
     ) throws {
         applyViewerSharing(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
-            isEnabled: isEnabled,
+            choice: choice,
             updatedAt: updatedAt
         )
-        pendingChoices[key(ownerUserID: ownerUserID, coupleID: coupleID)] = isPendingConfirmation ? isEnabled : nil
+        pendingChoices[key(ownerUserID: ownerUserID, coupleID: coupleID)] = isPendingConfirmation ? choice : nil
         LocalStoreChanges.post(.locationVisibility, ownerUserID: ownerUserID)
     }
 
     func confirmViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        confirmation: ViewerSharingConfirmation,
         updatedAt: Date,
         otherChoicesPending: Bool
     ) throws {
         let snapshotKey = key(ownerUserID: ownerUserID, coupleID: coupleID)
-        if otherChoicesPending || pendingChoices[snapshotKey].map({ $0 != isEnabled }) == true {
+        if otherChoicesPending || pendingChoices[snapshotKey].map({ $0 != confirmation.submitted }) == true {
             return
         }
         applyViewerSharing(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
-            isEnabled: isEnabled,
+            choice: confirmation.confirmed,
             updatedAt: updatedAt
         )
         pendingChoices[snapshotKey] = nil
@@ -69,14 +69,16 @@ actor InMemoryLocationVisibilityRepository: LocationVisibilitySnapshotPersisting
     private func applyViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        choice: ViewerSharingChoice,
         updatedAt: Date
     ) {
         let existing = snapshots[key(ownerUserID: ownerUserID, coupleID: coupleID)]
         let nextState: PartnerLocationVisibilityState
-        if !isEnabled {
+        if !choice.isEnabled {
             nextState = .disabled
-        } else if existing?.visibilityState == .disabled {
+        } else if choice.pausedUntil != nil {
+            nextState = .viewerPaused
+        } else if existing?.visibilityState == .disabled || existing?.visibilityState == .viewerPaused {
             nextState = .unknown("local")
         } else {
             nextState = existing?.visibilityState ?? .unknown("local")
@@ -87,12 +89,13 @@ actor InMemoryLocationVisibilityRepository: LocationVisibilitySnapshotPersisting
             viewerUserID: existing?.viewerUserID ?? ownerUserID,
             partnerUserID: existing?.partnerUserID,
             visibilityState: nextState,
-            viewerSharingEnabled: isEnabled,
+            viewerSharingEnabled: choice.isEnabled,
             partnerSharingEnabled: existing?.partnerSharingEnabled ?? false,
             partnerLocation: existing?.partnerLocation,
             partnerLocationIsStale: existing?.partnerLocationIsStale ?? false,
             updatedAt: updatedAt,
-            refreshedAt: updatedAt
+            refreshedAt: updatedAt,
+            viewerPausedUntil: choice.pausedUntil
         )
     }
 

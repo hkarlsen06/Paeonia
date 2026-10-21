@@ -20,6 +20,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case game(GameKind)
     case streak
     case subscription
+    /// `paeonia://settings/data-export`: the download of the person's data is ready. Opens its screen.
+    case dataExport
 
     static let scheme = "paeonia"
 
@@ -174,6 +176,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             GameKind(path: pathComponents[0]).map(Self.game)
         case ("settings", ["subscription"]):
             .subscription
+        case ("settings", ["data-export"]):
+            .dataExport
         case (_, []):
             hostOnlyLinks[host]
         default:

@@ -39,6 +39,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Paeonia uses your camera so you can take photos for your answers, messages, and memories.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Paeonia uses Face ID to unlock the app when you turn on the app lock.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>If you allow this, Paeonia sends your location to your partner each time you move a good distance, even when you're not using the app. You can turn it off anytime in Settings.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -83,4 +83,12 @@ crons.interval("prune-expired-rows", { hours: 1 }, internal.retention.prune_expi
 // deletes everyone it has not heard from in 12 months, early on the 1st of each month. See analytics.ts.
 crons.cron("delete-inactive-analytics-persons", "0 4 1 * *", internal.analytics.delete_inactive_analytics_persons, {});
 
+// New in Convex: deletes the files of "Download my data" copies three days after they are ready, and gives
+// up on builds that never finished. See dataExport.ts.
+crons.interval("expire-data-exports", { hours: 1 }, internal.dataExport.expire_data_exports, {});
+
 export default crons;
+
+// New in Convex: ends a location sharing pause when its time passes, so subscribed queries update, and
+// wakes a phone that sends moves while Paeonia is closed so it shares where it is now. See location.ts.
+crons.interval("resume-paused-location-sharing", { minutes: 1 }, internal.location.resume_paused_location_sharing, {});

@@ -19,6 +19,7 @@ final class LocalLocationVisibilitySnapshot {
     var partnerLocationIsStale: Bool
     var updatedAt: Date
     var refreshedAt: Date
+    var viewerPausedUntil: Date?
 
     init(snapshot: LocationVisibilitySnapshot) {
         storageKey = Self.storageKey(ownerUserID: snapshot.ownerUserID, coupleID: snapshot.coupleID)
@@ -37,6 +38,7 @@ final class LocalLocationVisibilitySnapshot {
         partnerLocationIsStale = snapshot.partnerLocationIsStale
         updatedAt = snapshot.updatedAt
         refreshedAt = snapshot.refreshedAt
+        viewerPausedUntil = snapshot.viewerPausedUntil
     }
 
     var snapshot: LocationVisibilitySnapshot {
@@ -51,7 +53,8 @@ final class LocalLocationVisibilitySnapshot {
             partnerLocation: partnerLocation,
             partnerLocationIsStale: partnerLocationIsStale,
             updatedAt: updatedAt,
-            refreshedAt: refreshedAt
+            refreshedAt: refreshedAt,
+            viewerPausedUntil: viewerPausedUntil
         )
     }
 
@@ -71,6 +74,7 @@ final class LocalLocationVisibilitySnapshot {
         partnerLocationIsStale = snapshot.partnerLocationIsStale
         updatedAt = snapshot.updatedAt
         refreshedAt = snapshot.refreshedAt
+        viewerPausedUntil = snapshot.viewerPausedUntil
     }
 
     static func storageKey(ownerUserID: UUID, coupleID: UUID) -> String {

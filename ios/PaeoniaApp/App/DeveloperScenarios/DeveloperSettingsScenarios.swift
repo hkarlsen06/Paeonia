@@ -20,6 +20,7 @@
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
             partnerName: "Robin",
             service: nil,
+            dataExportService: nil,
             operationProvider: DeveloperScenarioOperationProvider()
           )
         }
@@ -38,7 +39,6 @@
             viewModel: settingsViewModel,
             currentUserID: DeveloperScenarioFixture.currentUserID,
             currentDisplayName: "Alex",
-            currentAuthProvider: .development,
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
             relationshipStartedOn: "2025-09-14",
             locationViewModel: locationViewModel,

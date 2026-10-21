@@ -302,9 +302,10 @@ extension MainTabView {
         case .widgetDrawing:
             actions.openWidgetDrawing()
             self.deepLink.wrappedValue = nil
-        case .subscription:
-            // RootView owns this: it opens App Store subscription management and
-            // then consumes the link. Acting here as well would race the root task.
+        case .subscription, .dataExport:
+            // RootView owns these: it opens App Store subscription management or the
+            // data download screen, then consumes the link. Acting here as well would
+            // race the root task.
             break
         case .dailyReveal, .dailyChat, .dailyToday, .topics:
             await handleQuestionsDeepLink(deepLink)

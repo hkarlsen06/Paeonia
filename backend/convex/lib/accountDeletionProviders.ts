@@ -35,29 +35,55 @@ function clerkHeaders(): Record<string, string> {
   return { Authorization: `Bearer ${key}` };
 }
 
-/** The Apple subject ids linked to a Clerk user. Empty when the user has no Apple account. */
-export async function fetchAppleSubjects(clerkUserId: string): Promise<Set<string>> {
-  const subjects = new Set<string>();
+type ClerkExternalAccount = { provider?: unknown; provider_user_id?: unknown; verification?: { status?: unknown } | null };
+
+/** The external accounts Clerk lists for a user, or null when Clerk could not be asked. */
+async function fetchExternalAccounts(clerkUserId: string): Promise<ClerkExternalAccount[] | null> {
   try {
     const response = await fetch(`${CLERK_API}/users/${encodeURIComponent(clerkUserId)}`, {
       headers: clerkHeaders(),
       signal: AbortSignal.timeout(15_000),
     });
-    if (!response.ok) return subjects;
-    const body = (await response.json()) as {
-      external_accounts?: { provider?: unknown; provider_user_id?: unknown }[];
-    };
-    for (const account of body.external_accounts ?? []) {
-      if (typeof account.provider === "string" && account.provider.includes("apple")) {
-        if (typeof account.provider_user_id === "string" && account.provider_user_id) {
-          subjects.add(account.provider_user_id);
-        }
+    if (!response.ok) return null;
+    const body = (await response.json()) as { external_accounts?: ClerkExternalAccount[] };
+    return body.external_accounts ?? [];
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The Apple subject ids linked to a Clerk user. Empty when the user has no Apple account, and null
+ * when Clerk could not be asked. Null is not "no Apple": the caller must not decide on it.
+ */
+export async function fetchAppleSubjects(clerkUserId: string): Promise<Set<string> | null> {
+  const accounts = await fetchExternalAccounts(clerkUserId);
+  if (accounts === null) return null;
+  const subjects = new Set<string>();
+  for (const account of accounts) {
+    if (typeof account.provider === "string" && account.provider.includes("apple")) {
+      if (typeof account.provider_user_id === "string" && account.provider_user_id) {
+        subjects.add(account.provider_user_id);
       }
     }
-  } catch {
-    // No subjects means the caller falls back to manual revocation.
   }
   return subjects;
+}
+
+/**
+ * The sign-in methods a Clerk user has linked and verified, or null when Clerk
+ * could not be asked. A person can link both Apple and Google to one account.
+ */
+export async function fetchLinkedSignInProviders(clerkUserId: string): Promise<Set<"apple" | "google"> | null> {
+  const accounts = await fetchExternalAccounts(clerkUserId);
+  if (accounts === null) return null;
+  const providers = new Set<"apple" | "google">();
+  for (const account of accounts) {
+    if (typeof account.provider !== "string" || account.verification?.status !== "verified") continue;
+    if (account.provider.includes("apple")) providers.add("apple");
+    if (account.provider.includes("google")) providers.add("google");
+  }
+  return providers;
 }
 
 /** Deletes the Clerk user, which also ends every session. A missing user counts as deleted. */
@@ -177,10 +203,10 @@ function idTokenClaims(idToken: string): Record<string, unknown> {
  */
 export async function revokeAppleAuthorization(
   authorizationCode: string | null,
-  expectedSubjects: ReadonlySet<string>,
+  expectedSubjects: ReadonlySet<string> | null,
 ): Promise<AppleRevocationResult> {
   if (!authorizationCode) return { status: "manual_required", errorCode: "authorization_code_missing" };
-  if (expectedSubjects.size === 0) return { status: "manual_required", errorCode: "apple_identity_missing" };
+  if (expectedSubjects?.size === 0) return { status: "manual_required", errorCode: "apple_identity_missing" };
   try {
     const config = appleConfig();
     const clientSecret = await makeAppleClientSecret(config);
@@ -195,7 +221,9 @@ export async function revokeAppleAuthorization(
     if (claims.iss !== APPLE_ISSUER || claims.aud !== config.clientId || expired) {
       throw new ProviderError("identity_token_invalid");
     }
-    if (typeof claims.sub !== "string" || !expectedSubjects.has(claims.sub)) {
+    // Null means Clerk could not name the linked Apple accounts. The code is still valid proof of one
+    // Apple sign-in by the person who is deleting, and it can only revoke that sign-in.
+    if (typeof claims.sub !== "string" || (expectedSubjects !== null && !expectedSubjects.has(claims.sub))) {
       throw new ProviderError("apple_identity_mismatch");
     }
     await appleRequest("/auth/revoke", {

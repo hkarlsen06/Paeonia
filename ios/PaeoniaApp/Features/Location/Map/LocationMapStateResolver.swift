@@ -23,10 +23,26 @@ extension LocationMapViewModel {
         guard let visibility, visibility.viewerSharingEnabled else {
             return isLocating ? .locatingCurrent : visibility == nil ? .loading : .currentUnknown
         }
+        // A pause hides both positions and needs no location of your own. Its end
+        // is read on this phone's clock, so a pause that is over stops showing here
+        // before the server's next answer.
+        if let pausedUntil = visibility.pausedUntil(at: now) {
+            return .sharingPaused(until: pausedUntil)
+        }
         guard let current = ownLocation?.location else {
             return ownLocationMissingState(authorization: authorization, isLocating: isLocating)
         }
 
+        return partnerState(visibility: visibility, current: current, now: now)
+    }
+
+    /// What the card shows once you share and have a location of your own: the
+    /// partner's side of the map.
+    private static func partnerState(
+        visibility: LocationVisibilitySnapshot,
+        current: LocationPoint,
+        now: Date
+    ) -> CoupleMapState {
         switch visibility.visibilityState {
         case .visible:
             guard let partner = visibility.partnerLocation else {
@@ -44,9 +60,10 @@ extension LocationMapViewModel {
             )
         case .notSharing where visibility.partnerSharingEnabled:
             return .waitingForPartnerLocation
-        case .unknown("local"):
+        case .unknown("local"), .viewerPaused:
             // The repositories write "local" when you just turned sharing on
-            // and the server has not answered yet.
+            // and the server has not answered yet. `.viewerPaused` gets here
+            // when your pause has just ended on this phone's clock.
             // The partner's own switch is still known from the last answer.
             return visibility.partnerSharingEnabled
                 ? .waitingForPartnerLocation

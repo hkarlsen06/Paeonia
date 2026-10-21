@@ -870,6 +870,9 @@ export default defineSchema({
     // Sending moves while Paeonia is closed. Only true while sharing is on.
     // The phone restores it after a new sign-in.
     updates_while_closed: v.boolean(),
+    // Sharing is paused until this time. `is_enabled` stays true, and nothing is shared meanwhile.
+    // The `resume_paused_location_sharing` cron clears it when the time passes. Never shown to the partner.
+    paused_until: optTs,
     // What the phone last reported, and the phone's time of that report. Never shown to the partner.
     location_permission: v.optional(locationPermission),
     device_state_reported_at: optTs,
@@ -877,7 +880,8 @@ export default defineSchema({
     updated_at: ts,
   })
     .index("by_couple_id_user_id", ["couple_id", "user_id"])
-    .index("by_user_id", ["user_id"]),
+    .index("by_user_id", ["user_id"])
+    .index("by_paused_until", ["paused_until"]),
 
   // FK: couple_id -> couples cascade; moderated_by -> users set null; moderation_report_id -> content_reports set null.
   // (bucket, storage_path) is unique.
@@ -1088,7 +1092,7 @@ export default defineSchema({
   privacy_requests: defineTable({
     id: uuid,
     user_id: uuid,
-    request_kind: literals("access", "export", "deletion", "correction"),
+    request_kind: literals("deletion", "correction"),
     status: literals("submitted", "verifying", "processing", "completed", "rejected", "cancelled"),
     requested_at: ts,
     verified_at: optTs,
@@ -1945,6 +1949,73 @@ export default defineSchema({
     created_at: ts,
     updated_at: ts,
   }).index("by_couple_id_user_id", ["couple_id", "user_id"]),
+
+  // One "Download my data" job per request (dataExport.ts). The person asks, an action collects their rows
+  // and files into zip parts, and the parts expire three days after they are ready. `progress` runs from 0 to 1.
+  // FK: user_id -> users cascade.
+  data_exports: defineTable({
+    id: uuid,
+    user_id: uuid,
+    status: literals("preparing", "ready", "failed", "expired"),
+    // The language of the README and file descriptions, from the person's app language.
+    locale: gameLanguage,
+    include_files: v.boolean(),
+    progress: v.number(),
+    // Counts for the person's summary once the export is ready.
+    row_count: v.number(),
+    file_count: v.number(),
+    skipped_file_count: v.number(),
+    part_count: v.number(),
+    byte_size: v.number(),
+    error_code: optString,
+    ready_at: optTs,
+    expires_at: optTs,
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_user_id_created_at", ["user_id", "created_at"])
+    .index("by_status_expires_at", ["status", "expires_at"]),
+
+  // One zip file of an export. Part 1 holds the README, the JSON files and as many media files as fit.
+  // `asset_ids` lists the media files the part holds. FK: export_id -> data_exports cascade.
+  // (export_id, part_number) is unique. storage_id is missing until the part is built.
+  data_export_parts: defineTable({
+    id: uuid,
+    export_id: uuid,
+    part_number: v.number(),
+    file_name: v.string(),
+    asset_ids: v.array(uuid),
+    storage_id: v.optional(v.id("_storage")),
+    byte_size: v.optional(v.number()),
+    created_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_export_id_part_number", ["export_id", "part_number"])
+    .index("by_storage_id", ["storage_id"]),
+
+  // One JSON data file of an export, written while the build collects a table and deleted once the
+  // zip part that holds it is stored. The file is deflated already: `size` and `crc` are those of the
+  // JSON text, `byte_size` is what storage holds. `path` and `part_number` are set when the build plans
+  // the parts. FK: export_id -> data_exports cascade.
+  data_export_chunks: defineTable({
+    id: uuid,
+    export_id: uuid,
+    source_table: v.string(),
+    group: v.string(),
+    chunk_index: v.number(),
+    row_count: v.number(),
+    size: v.number(),
+    crc: v.number(),
+    byte_size: v.number(),
+    storage_id: v.id("_storage"),
+    path: optString,
+    part_number: v.optional(v.number()),
+    created_at: ts,
+  })
+    .index("by_uuid", ["id"])
+    .index("by_export_id_part_number", ["export_id", "part_number"])
+    .index("by_storage_id", ["storage_id"]),
 
   // FK: user_id -> users cascade. (widget_push_token_hash, apns_environment, widget_kind) is unique while disabled_at is null.
   widget_push_devices: defineTable({

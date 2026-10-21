@@ -9,6 +9,7 @@ import { backgroundWorkpool } from "./lib/backgroundWorkpool";
 import { getByUuid, withTouch, withUpdatedAt, type ReaderCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
+import { deleteUserDataExports } from "./lib/dataExportFiles";
 import { deleteFirstDayDraft } from "./lib/firstDay";
 import { queueOldMediaAssetIfOrphaned } from "./lib/mediaOrphans";
 import {
@@ -126,6 +127,17 @@ export async function requestAccountDeletion(
     if (!request) {
       return fail("P0001", "account deletion request tombstone is missing");
     }
+    // An earlier attempt may have stored the job before Apple was known to be
+    // linked, for example when Clerk could not be reached. Apple's revocation
+    // duty still applies, so the retry upgrades a job that is still open.
+    if (providerHint === "apple" && existingJob.auth_provider !== "apple" && existingJob.status !== "completed") {
+      await ctx.db.patch(existingJob._id, {
+        auth_provider: "apple",
+        provider_revocation_status: "manual_required",
+        updated_at: nowIso(),
+      });
+      return [startRow(request, (await getByUuid(ctx, "account_deletion_jobs", existingJob.id))!)];
+    }
     return [startRow(request, existingJob)];
   }
 
@@ -225,6 +237,8 @@ export async function requestAccountDeletion(
       await ctx.db.delete(row._id);
     }
   }
+  // Downloads of the person's data are copies of everything, so they go with the account.
+  await deleteUserDataExports(ctx, userId);
   for (const device of widgetDevices) await ctx.db.delete(device._id);
   for (const device of userDevices) await ctx.db.delete(device._id);
   for (const row of await ctx.db
@@ -583,13 +597,21 @@ export async function runDeleteAccount(
   }
 
   // Clerk session tokens carry no provider claim by default, so ask Clerk which
-  // accounts are linked. An Apple link means Apple's revocation duty applies.
+  // accounts are linked. An Apple link means Apple's revocation duty applies. When Clerk
+  // cannot be asked, the answer is unknown. The app only sends an Apple authorization code
+  // when Apple is linked, so a code is enough to treat the account as an Apple account.
   const appleSubjects = await fetchAppleSubjects(identity.subject);
+  const code =
+    typeof appleAuthorizationCode === "string" && appleAuthorizationCode.trim().length > 0 &&
+    appleAuthorizationCode.trim().length <= 4096
+      ? appleAuthorizationCode.trim()
+      : null;
+  const appleLinked = appleSubjects === null ? code !== null : appleSubjects.size > 0;
   let start: DeletionStartRow | undefined;
   try {
     [start] = await ctx.runMutation(internal.accountDeletion.begin_account_deletion, {
       clerk_user_id: identity.subject,
-      provider_hint: appleSubjects.size > 0 ? "apple" : authProviderFromIdentity(identity),
+      provider_hint: appleLinked ? "apple" : authProviderFromIdentity(identity),
     });
   } catch {
     return fail("account_deletion_failed", "Could not start account deletion");
@@ -611,11 +633,6 @@ export async function runDeleteAccount(
   let revocationStatus = start.provider_revocation_status;
   let revocationErrorCode: string | null = null;
   if (start.auth_provider === "apple") {
-    const code =
-      typeof appleAuthorizationCode === "string" && appleAuthorizationCode.trim().length > 0 &&
-      appleAuthorizationCode.trim().length <= 4096
-        ? appleAuthorizationCode.trim()
-        : null;
     const result = await revokeAppleAuthorization(code, appleSubjects);
     revocationStatus = result.status;
     revocationErrorCode = result.status === "manual_required" ? result.errorCode : null;

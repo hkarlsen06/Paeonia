@@ -127,7 +127,6 @@
           identity: MainTabIdentity(
             currentUserID: DeveloperScenarioFixture.currentUserID,
             currentDisplayName: "Alex",
-            currentAuthProvider: .development,
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
             partnerName: PartnerName(accountName: "Robin", nickname: nil),
             coupleID: DeveloperScenarioFixture.coupleID,

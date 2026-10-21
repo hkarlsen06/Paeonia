@@ -1486,6 +1486,438 @@
         }
       }
     },
+    "appLock.biometry.faceId" : {
+      "comment" : "Apple's name for face unlock. Keep as Face ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face ID"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face ID"
+          }
+        }
+      }
+    },
+    "appLock.biometry.opticId" : {
+      "comment" : "Apple's name for eye unlock on Apple Vision Pro. Keep as Optic ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optic ID"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optic ID"
+          }
+        }
+      }
+    },
+    "appLock.biometry.passcode" : {
+      "comment" : "Used in 'Lock with %@' when the phone has no Face ID or Touch ID. The code the person types to open their phone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "passcode"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tilgangskode"
+          }
+        }
+      }
+    },
+    "appLock.biometry.touchId" : {
+      "comment" : "Apple's name for fingerprint unlock. Keep as Touch ID.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touch ID"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touch ID"
+          }
+        }
+      }
+    },
+    "appLock.footer" : {
+      "comment" : "Footer under the app lock switch. Says the lock does not hide widgets or notifications, and that the phone's passcode always works.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If Face ID or Touch ID doesn't work, you can always use your phone's passcode. The lock doesn't hide widgets or notifications. To keep those private, turn them off in your phone's settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvis Face ID eller Touch ID ikke fungerer, kan du alltid bruke tilgangskoden til telefonen. Låsen skjuler ikke widgeter eller varsler. Slå dem av i innstillingene på telefonen hvis du vil holde dem private."
+          }
+        }
+      }
+    },
+    "appLock.lockWith" : {
+      "comment" : "Settings row and switch that turns on the app lock. %@ is Face ID, Touch ID, Optic ID or passcode.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås med %@"
+          }
+        }
+      }
+    },
+    "appLock.noPasscode.message" : {
+      "comment" : "Explains that the app lock needs a passcode on the phone",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia unlocks with Face ID, Touch ID or your phone's passcode. This phone has no passcode yet, so there is nothing to unlock with. Add one in your phone's settings, then come back here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia låses opp med Face ID, Touch ID eller tilgangskoden til telefonen. Denne telefonen har ingen tilgangskode ennå, så det er ingenting å låse opp med. Lag en i innstillingene på telefonen, og kom tilbake hit."
+          }
+        }
+      }
+    },
+    "appLock.noPasscode.title" : {
+      "comment" : "Title of the note shown when the phone has no passcode, so the app lock can't be turned on",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set a passcode first"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lag en tilgangskode først"
+          }
+        }
+      }
+    },
+    "appLock.screenTitle" : {
+      "comment" : "Title of the app lock screen in Settings",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås Paeonia"
+          }
+        }
+      }
+    },
+    "appLock.state.off" : {
+      "comment" : "Settings row value when the app lock is off",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Av"
+          }
+        }
+      }
+    },
+    "appLock.state.on" : {
+      "comment" : "Settings row value when the app lock is on",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På"
+          }
+        }
+      }
+    },
+    "appLock.timeout.fifteenMinutes" : {
+      "comment" : "Lock timeout option",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After 15 minutes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etter 15 minutter"
+          }
+        }
+      }
+    },
+    "appLock.timeout.immediately" : {
+      "comment" : "Lock timeout option. Locks every time the app is left.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right away"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Med en gang"
+          }
+        }
+      }
+    },
+    "appLock.timeout.label" : {
+      "comment" : "Label of the picker for how long Paeonia can stay closed before it locks again",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås igjen"
+          }
+        }
+      }
+    },
+    "appLock.timeout.oneMinute" : {
+      "comment" : "Lock timeout option",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After 1 minute"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etter 1 minutt"
+          }
+        }
+      }
+    },
+    "appLock.title" : {
+      "comment" : "Headline on the lock screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia is locked"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia er låst"
+          }
+        }
+      }
+    },
+    "appLock.toggle.subtitle" : {
+      "comment" : "Short explanation under the app lock switch",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia asks you to unlock it each time you open it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia ber deg låse opp hver gang du åpner den."
+          }
+        }
+      }
+    },
+    "appLock.turnedOff.message" : {
+      "comment" : "Banner message when the app lock turned itself off because the phone lost its passcode",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This phone has no passcode any more, so Paeonia can't lock itself. Add a passcode in your phone's settings, then turn the lock on again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne telefonen har ikke lenger tilgangskode, så Paeonia kan ikke låse seg selv. Lag en tilgangskode i innstillingene på telefonen, og slå låsen på igjen."
+          }
+        }
+      }
+    },
+    "appLock.turnedOff.title" : {
+      "comment" : "Banner title when the app lock turned itself off because the phone lost its passcode",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock turned off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Låsen er slått av"
+          }
+        }
+      }
+    },
+    "appLock.turnOffReason" : {
+      "comment" : "Reason line in the system prompt when turning the app lock off",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm it's you to turn off the lock."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bekreft at det er deg for å slå av låsen."
+          }
+        }
+      }
+    },
+    "appLock.turnOnReason" : {
+      "comment" : "Reason line in the system prompt when turning the app lock on",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm it's you to turn on the lock."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bekreft at det er deg for å slå på låsen."
+          }
+        }
+      }
+    },
+    "appLock.unlockButton" : {
+      "comment" : "Button on the lock screen. %@ is Face ID, Touch ID, Optic ID or passcode.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås opp med %@"
+          }
+        }
+      }
+    },
+    "appLock.unlockFailed" : {
+      "comment" : "Shown on the lock screen after an unlock try did not work",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That didn't work. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det gikk ikke. Prøv igjen."
+          }
+        }
+      }
+    },
+    "appLock.unlockReason" : {
+      "comment" : "Reason line in the system Face ID prompt when opening the locked app",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lås opp Paeonia"
+          }
+        }
+      }
+    },
     "auth.accountClosed.emailSupport" : {
       "comment" : "Main button on the closed-account screen. Opens an email to support@paeonia.no.",
       "extractionState" : "manual",
@@ -18135,6 +18567,42 @@
         }
       }
     },
+    "home.map.partnerPaused.message" : {
+      "comment" : "Map card message when the partner paused sharing. It does not say how long. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and %@ can't see each other on the map for now. It comes back by itself."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du og %@ ser ikke hverandre på kartet akkurat nå. Det kommer tilbake av seg selv."
+          }
+        }
+      }
+    },
+    "home.map.partnerPaused.title" : {
+      "comment" : "Map card title when the partner paused sharing. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ paused sharing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har satt delingen på pause"
+          }
+        }
+      }
+    },
     "home.map.partnerUnknown.message" : {
       "comment" : "Map empty-state message. %@ is the partner name.",
       "extractionState" : "manual",
@@ -18203,6 +18671,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ deler posisjonen sin"
+          }
+        }
+      }
+    },
+    "home.map.paused.button" : {
+      "comment" : "Map card button that ends the user's pause.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume sharing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett å dele"
+          }
+        }
+      }
+    },
+    "home.map.paused.message" : {
+      "comment" : "Map card message when the user paused sharing. %@ is the time the pause ends, such as 22:00 or Thursday 08:00.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can't see each other on the map until %@. Then sharing starts again by itself."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere ser ikke hverandre på kartet før %@. Da starter delingen igjen av seg selv."
+          }
+        }
+      }
+    },
+    "home.map.paused.title" : {
+      "comment" : "Map card title when the user paused sharing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sharing is paused"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deling er satt på pause"
           }
         }
       }
@@ -26855,60 +27377,6 @@
         }
       }
     },
-    "privacySafety.access.action" : {
-      "comment" : "Button that submits a personal data access request",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask to see it"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Be om å se det"
-          }
-        }
-      }
-    },
-    "privacySafety.access.description" : {
-      "comment" : "Description of a personal data access request",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask which details Paeonia stores about you and how they are used."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Be om å få vite hvilke opplysninger Paeonia lagrer om deg, og hvordan de brukes."
-          }
-        }
-      }
-    },
-    "privacySafety.access.title" : {
-      "comment" : "Title for requesting access to personal data",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See what we store about you"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se hva vi lagrer om deg"
-          }
-        }
-      }
-    },
     "privacySafety.correction.action" : {
       "comment" : "Button that opens the personal data correction form",
       "extractionState" : "manual",
@@ -27089,56 +27557,506 @@
         }
       }
     },
-    "privacySafety.export.action" : {
-      "comment" : "Button that submits a personal data export request",
+    "privacySafety.dataExport.delete" : {
+      "comment" : "Button that deletes the copy of your data from Paeonia's servers",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Request a copy"
+            "value" : "Delete this copy"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Be om en kopi"
+            "value" : "Slett denne kopien"
           }
         }
       }
     },
-    "privacySafety.export.description" : {
-      "comment" : "Description of a personal data export request",
+    "privacySafety.dataExport.deleteFailed.title" : {
+      "comment" : "Banner title when deleting the copy of your data failed",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask for a file with your account data. You can save it or move it to another app."
+            "value" : "Couldn't delete the copy"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Be om en fil med kontoopplysningene dine. Du kan lagre den eller flytte den til en annen app."
+            "value" : "Kunne ikke slette kopien"
           }
         }
       }
     },
-    "privacySafety.export.title" : {
-      "comment" : "Title for requesting a portable personal data export",
+    "privacySafety.dataExport.description" : {
+      "comment" : "Explains what Download my data gives you, under its title",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a copy of your data"
+            "value" : "Get a copy of what Paeonia keeps about you: your answers, messages, memories, photos and settings. You get files you can save or take to another app. What your partner wrote or uploaded is theirs, so it isn't included."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få en kopi av opplysningene dine"
+            "value" : "Få en kopi av det Paeonia har om deg: svar, meldinger, minner, bilder og innstillinger. Du får filer du kan lagre eller ta med til en annen app. Det partneren din har skrevet eller lastet opp, er partnerens eget, så det er ikke med."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.download" : {
+      "comment" : "Button that downloads the copy of your data to your phone",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last ned"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.downloadFailed.title" : {
+      "comment" : "Banner title when downloading the copy of your data failed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't download your data"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke laste ned dataene dine"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.downloading" : {
+      "comment" : "Shown while the copy of your data downloads to your phone",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading…"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster ned …"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.downloadingPart" : {
+      "comment" : "Shown while a copy that has several zip files downloads. First argument is the file being downloaded, second is how many files",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading file %1$d of %2$d"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster ned fil %1$d av %2$d"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.expired.message" : {
+      "comment" : "Explains why the copy is gone and what you can do",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We delete each copy after three days to keep your data safe. You can prepare a new one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi sletter hver kopi etter tre dager for å holde dataene dine trygge. Du kan gjøre en ny klar."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.expired.title" : {
+      "comment" : "Title when the copy of your data was deleted from the servers",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This copy has been deleted"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne kopien er slettet"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.failed.message" : {
+      "comment" : "Says what to do when the copy of your data failed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong on our side. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt hos oss. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.failed.title" : {
+      "comment" : "Title when Paeonia could not get a copy of your data ready",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't get your data ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å gjøre dataene dine klare"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.includeFiles.description" : {
+      "comment" : "Hint under the include files switch",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave them out for a much smaller download."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La dem være for en mye mindre nedlasting."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.includeFiles.title" : {
+      "comment" : "Switch label: whether the copy of your data holds your photos, voice messages and drawings",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Include photos, voice messages and drawings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta med bilder, talemeldinger og tegninger"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.limit.message" : {
+      "comment" : "Banner text when you asked for too many copies in one day",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can prepare up to three copies a day. Try again tomorrow."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan gjøre klar opptil tre kopier om dagen. Prøv igjen i morgen."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.limit.title" : {
+      "comment" : "Banner title when you asked for too many copies in one day",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's enough copies for today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det er nok kopier for i dag"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.loadFailed.title" : {
+      "comment" : "Banner title when the state of your data copy could not be loaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't check your copy"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke sjekke kopien din"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.offline.message" : {
+      "comment" : "Banner text when a data download step failed and the phone has no internet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline. Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er frakoblet. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.prepare" : {
+      "comment" : "Button that asks Paeonia to get a copy of your data ready",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prepare my data"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør dataene mine klare"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.prepareAgain" : {
+      "comment" : "Button that asks for a new copy of your data after the last one was deleted",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prepare a new copy"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør en ny kopi klar"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.preparing.message" : {
+      "comment" : "Shown while the copy of your data is being made. The notification is a push notification",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can leave this screen. We'll send you a notification when it's ready."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan forlate denne skjermen. Du får et varsel når de er klare."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.preparing.title" : {
+      "comment" : "Title while Paeonia is getting a copy of your data ready",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Getting your data ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør dataene dine klare"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.ready.expires" : {
+      "comment" : "Says until when the copy can be downloaded. The argument is a date and time",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can download it until %@. After that we delete it from our servers."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan laste den ned til %@. Etter det sletter vi den fra serverne våre."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.ready.parts" : {
+      "comment" : "Shown when the copy comes as several zip files. The argument is how many",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Because you have a lot of photos, it comes as %d zip files. Unzip them into the same folder."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fordi du har mange bilder, kommer den som %d zip-filer. Pakk dem ut i samme mappe."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.ready.size" : {
+      "comment" : "Size of the copy of your data. The argument is a file size such as 24 MB",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size: %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Størrelse: %@"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.ready.skipped" : {
+      "comment" : "Shown when some files could not be put in the copy. The argument is how many",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d of your files weren't available, so they're left out."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d av filene dine var ikke tilgjengelige, så de er ikke med."
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.ready.title" : {
+      "comment" : "Title when the copy of your data can be downloaded",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data is ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dataene dine er klare"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.requestFailed.title" : {
+      "comment" : "Banner title when asking for a copy of your data failed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't start your copy"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke starte kopien"
+          }
+        }
+      }
+    },
+    "privacySafety.dataExport.title" : {
+      "comment" : "Title of the card where you download a copy of your data, and the link on the paywall",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download my data"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last ned dataene mine"
           }
         }
       }
@@ -27162,37 +28080,37 @@
       }
     },
     "privacySafety.introduction" : {
-      "comment" : "Introductory copy on the privacy and safety screen",
+      "comment" : "Intro text at the top of Privacy and safety when the person has a partner",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask to see, copy, or correct your data, and find help if something in your relationship feels unsafe."
+            "value" : "Download a copy of your data, ask us to correct it, and find help if something in your relationship feels unsafe."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Be om å få se, kopiere eller rette opplysningene dine, og finn hjelp hvis noe i forholdet føles utrygt."
+            "value" : "Last ned en kopi av opplysningene dine, be oss rette dem, og finn hjelp hvis noe i forholdet ditt føles utrygt."
           }
         }
       }
     },
     "privacySafety.introductionDataOnly" : {
-      "comment" : "Intro on the privacy screen when the user has no partner, so there is no mention of reporting.",
+      "comment" : "Intro text at the top of Privacy and safety when the person has no partner",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask to see, copy, or correct the details we store about you."
+            "value" : "Download a copy of the details we store about you, or ask us to correct them."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Be om å se, kopiere eller rette opplysningene vi lagrer om deg."
+            "value" : "Last ned en kopi av opplysningene vi lagrer om deg, eller be oss rette dem."
           }
         }
       }
@@ -28709,6 +29627,150 @@
         }
       }
     },
+    "settings.location.pause.button" : {
+      "comment" : "Location settings row and map menu label that pauses location sharing for a while.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause sharing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett deling på pause"
+          }
+        }
+      }
+    },
+    "settings.location.pause.dialogTitle" : {
+      "comment" : "Title of the dialog that asks how long to pause location sharing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause sharing for how long?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hvor lenge skal delingen være på pause?"
+          }
+        }
+      }
+    },
+    "settings.location.pause.footer" : {
+      "comment" : "Footer under the pause row in location settings. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "While paused, you and %@ can't see each other on the map. Sharing starts again by itself."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mens delingen er på pause, ser du og %@ ikke hverandre på kartet. Delingen starter igjen av seg selv."
+          }
+        }
+      }
+    },
+    "settings.location.pause.fourHours" : {
+      "comment" : "Pause choice: four hours.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For 4 hours"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I 4 timer"
+          }
+        }
+      }
+    },
+    "settings.location.pause.oneHour" : {
+      "comment" : "Pause choice: one hour.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For 1 hour"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I 1 time"
+          }
+        }
+      }
+    },
+    "settings.location.pause.resume" : {
+      "comment" : "Location settings button that ends a pause now.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume sharing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett å dele"
+          }
+        }
+      }
+    },
+    "settings.location.pause.status" : {
+      "comment" : "Location settings row while sharing is paused. %@ is the time the pause ends, such as 22:00 or Thursday 08:00.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused until %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "På pause til %@"
+          }
+        }
+      }
+    },
+    "settings.location.pause.untilMorning" : {
+      "comment" : "Pause choice: until 08:00 the next morning in the phone's time zone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Until morning"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Til i morgen tidlig"
+          }
+        }
+      }
+    },
     "settings.location.permissionDenied.message" : {
       "comment" : "Shown when location permission is denied. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -30076,24 +31138,6 @@
         }
       }
     },
-    "settings.profile.signedInWith" : {
-      "comment" : "Read-only line at the bottom of the profile editor telling the user which sign-in provider their account uses. %@ is the provider brand name, e.g. Apple or Google",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Signed in with %@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pålogget med %@"
-          }
-        }
-      }
-    },
     "settings.purchases.details.accessUntil" : {
       "comment" : "Row label for the date the current paid period or free access ends.",
       "extractionState" : "manual",
@@ -30682,6 +31726,312 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.footerBoth" : {
+      "comment" : "Footer under the sign-in methods when Apple and Google are both linked",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can sign in with either one. Both open this same account. Tap one to unlink it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan logge inn med begge. De åpner samme konto. Trykk på en for å koble den fra."
+          }
+        }
+      }
+    },
+    "settings.signInMethods.footerOne" : {
+      "comment" : "Footer under the sign-in methods when only one is linked. %@ is the brand name of the one that is not linked yet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link %@ too, so either one opens this account. A method can only be unlinked while another one stays linked."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til %@ også, så åpner begge denne kontoen. En påloggingsmåte kan bare kobles fra mens en annen er koblet til."
+          }
+        }
+      }
+    },
+    "settings.signInMethods.freshSignInMessage" : {
+      "comment" : "Banner message when the sign-in service wants the person to sign in again before changing sign-in methods",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For your safety, log out and sign in again first. Then try this again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Av sikkerhetshensyn må du logge ut og inn igjen først. Prøv deretter på nytt."
+          }
+        }
+      }
+    },
+    "settings.signInMethods.link" : {
+      "comment" : "Button that links another sign-in method to the account. %@ is the brand name, Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til %@"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.linkedLabel" : {
+      "comment" : "Accessibility value on a sign-in method that is linked to the account",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linked"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilkoblet"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.linkedMessage" : {
+      "comment" : "Banner message after linking a sign-in method",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now you can sign in with either one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nå kan du logge inn med begge."
+          }
+        }
+      }
+    },
+    "settings.signInMethods.linkedTitle" : {
+      "comment" : "Banner title after linking a sign-in method. %@ is Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ linked"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er koblet til"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.linkFailedTitle" : {
+      "comment" : "Banner title when linking a sign-in method failed. %@ is Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't link %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke koble til %@"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.offlineMessage" : {
+      "comment" : "Banner message when linking or unlinking failed because the phone has no internet",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "settings.signInMethods.title" : {
+      "comment" : "Heading above the Apple and Google sign-in methods on the profile screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign-in methods"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Påloggingsmåter"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.unlinkConfirmAction" : {
+      "comment" : "Button that confirms unlinking a sign-in method",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlink"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble fra"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.unlinkConfirmMessage" : {
+      "comment" : "Message of the confirmation before unlinking a sign-in method. %@ is Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You won't be able to sign in to this account with %@ anymore. You can link it again later."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan ikke lenger logge inn på denne kontoen med %@. Du kan koble den til igjen senere."
+          }
+        }
+      }
+    },
+    "settings.signInMethods.unlinkConfirmTitle" : {
+      "comment" : "Title of the confirmation before unlinking a sign-in method. %@ is Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlink %@?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble fra %@?"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.unlinkedMessage" : {
+      "comment" : "Banner message after unlinking a sign-in method",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your account and everything in it is as before. You can still sign in with the other one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontoen og alt i den er som før. Du kan fortsatt logge inn med den andre."
+          }
+        }
+      }
+    },
+    "settings.signInMethods.unlinkedTitle" : {
+      "comment" : "Banner title after unlinking a sign-in method. %@ is Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ unlinked"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er koblet fra"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.unlinkFailedTitle" : {
+      "comment" : "Banner title when unlinking a sign-in method failed. %@ is Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't unlink %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke koble fra %@"
+          }
+        }
+      }
+    },
+    "settings.signInMethods.usedElsewhereMessage" : {
+      "comment" : "Banner message when the Apple or Google account being linked already belongs to another Paeonia account. %@ is Apple or Google",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That %@ account already belongs to another Paeonia account. Try a different one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den %@-kontoen hører allerede til en annen Paeonia-konto. Prøv en annen."
           }
         }
       }

@@ -25,7 +25,8 @@ struct PaeoniaApp: App {
         }
         _rootViewModel = State(
             initialValue: RootViewModel(
-                authProviderSessionIsActive: usesClerk ? Self.clerkSessionIsActive : nil
+                authProviderSessionIsActive: usesClerk ? Self.clerkSessionIsActive : nil,
+                appleIsLinked: usesClerk ? { await ClerkSignInMethodLinker.appleIsLinked() } : nil
             )
         )
         _locationViewModel = State(initialValue: LocationMapViewModel())

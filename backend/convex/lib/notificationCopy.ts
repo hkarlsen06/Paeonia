@@ -332,6 +332,8 @@ export function notificationAlertBody(
       return nb ? "Bli med når du er klar." : "Join in when you're ready.";
     case "game_turn_reminder":
       return gameReminderBody(nb);
+    case "data_export_ready":
+      return nb ? "Kopien din er klar til nedlasting." : "Your copy is ready to download.";
     case "partner_joined":
       return nb ? "Se deres første dag sammen." : "See your first day together.";
     case "date_reminder":
@@ -440,6 +442,9 @@ export async function notificationAlertTitle(
       if (!game) return fallback;
       return nb ? `${name} vil spille ${game.name} med deg` : `${name} wants to play ${game.name} with you`;
     }
+    case "data_export_ready":
+      // Paeonia's own voice: the payload names nobody.
+      return nb ? "Dataene dine er klare" : "Your data is ready";
     case "partner_joined":
       return nb ? `${name} ble med deg` : `${name} joined you`;
     case "date_reminder":

@@ -11,22 +11,15 @@ struct LocationSettingsView: View {
     var updates: LocationUpdateController = .shared
 
     @Environment(\.openURL) private var openURL
+    @State private var isChoosingPause = false
 
     var body: some View {
         Form {
             Group {
-                Section {
-                    Toggle(isOn: sharingBinding) {
-                        Text(.settingsLocationSharingTitle)
-                        Text(.settingsLocationSharingSubtitle(partnerName))
-                    }
-                    // A choice that is still saving cannot be flipped again, so a
-                    // second tap is never silently dropped.
-                    .disabled(!viewModel.isSharingLoaded || viewModel.isUpdatingSharing)
+                sharingSection
 
-                    if viewModel.sharingEnabled, viewModel.authorizationState != .denied {
-                        whileClosedRows
-                    }
+                if viewModel.sharingEnabled, viewModel.authorizationState != .denied {
+                    pauseSection
                 }
 
                 if viewModel.authorizationState == .denied {
@@ -41,6 +34,80 @@ struct LocationSettingsView: View {
         .paeoniaGroupedList()
         .navigationTitle(Text(.settingsLocationSectionTitle))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var sharingSection: some View {
+        Section {
+            Toggle(isOn: sharingBinding) {
+                Text(.settingsLocationSharingTitle)
+                Text(.settingsLocationSharingSubtitle(partnerName))
+            }
+            // A choice that is still saving cannot be flipped again, so a
+            // second tap is never silently dropped.
+            .disabled(!viewModel.isSharingLoaded || viewModel.isUpdatingSharing)
+
+            if viewModel.sharingEnabled, viewModel.authorizationState != .denied {
+                whileClosedRows
+            }
+        }
+    }
+
+    /// Pause sharing for a while, or end a pause. A pause is not an off switch: sharing
+    /// stays on and starts again by itself, so the footer says what the pause hides.
+    private var pauseSection: some View {
+        Section {
+            if let pausedUntil = viewModel.pausedUntil, viewModel.isSharingPaused {
+                pausedRows(until: pausedUntil)
+            } else {
+                pauseButton
+            }
+        } footer: {
+            Text(.settingsLocationPauseFooter(partnerName))
+        }
+    }
+
+    @ViewBuilder
+    private func pausedRows(until end: Date) -> some View {
+        Label {
+            Text(.settingsLocationPauseStatus(LocationPauseEndText.text(for: end)))
+                .foregroundStyle(.paeoniaTextPrimary)
+        } icon: {
+            Image(systemName: "pause.circle.fill")
+        }
+        Button {
+            Task { await viewModel.resumeSharing() }
+        } label: {
+            Label {
+                Text(.settingsLocationPauseResume)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            } icon: {
+                Image(systemName: "play.fill")
+            }
+        }
+        .disabled(viewModel.isUpdatingSharing)
+    }
+
+    private var pauseButton: some View {
+        Button {
+            isChoosingPause = true
+        } label: {
+            Label {
+                Text(.settingsLocationPauseButton)
+                    .foregroundStyle(.paeoniaTextPrimary)
+            } icon: {
+                Image(systemName: "pause.circle")
+            }
+        }
+        .disabled(viewModel.isUpdatingSharing)
+        .confirmationDialog(
+            Text(.settingsLocationPauseDialogTitle),
+            isPresented: $isChoosingPause,
+            titleVisibility: .visible
+        ) {
+            LocationPauseChoices { end in
+                Task { await viewModel.pauseSharing(until: end) }
+            }
+        }
     }
 
     /// Off by default, and only offered while sharing is on. It needs iOS

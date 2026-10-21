@@ -10,6 +10,9 @@ struct PaywallFooterActionsView: View {
     let onRestorePurchases: () -> Void
     let onSignOut: () -> Void
     let onRequestUnpair: () -> Void
+    /// Opens "Download my data". Everyone has the right to their data, so it sits
+    /// here for people who cannot reach the rest of the app without a subscription.
+    let onRequestDataExport: () -> Void
     let onRequestDeleteAccount: () -> Void
 
     var body: some View {
@@ -53,6 +56,8 @@ struct PaywallFooterActionsView: View {
                     unpairButton
                 }
                 separator
+                dataExportButton
+                separator
                 deleteButton
             }
 
@@ -61,6 +66,7 @@ struct PaywallFooterActionsView: View {
                 if showsUnpair {
                     unpairButton
                 }
+                dataExportButton
                 deleteButton
             }
         }
@@ -82,6 +88,13 @@ struct PaywallFooterActionsView: View {
         }
         .buttonStyle(.plain)
         .disabled(isLeavingRelationship)
+    }
+
+    private var dataExportButton: some View {
+        Button(action: onRequestDataExport) {
+            footerLabel(.privacySafetyDataExportTitle)
+        }
+        .buttonStyle(.plain)
     }
 
     private var deleteButton: some View {

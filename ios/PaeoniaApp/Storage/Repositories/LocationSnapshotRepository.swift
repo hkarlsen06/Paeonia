@@ -15,24 +15,24 @@ protocol LocationVisibilitySnapshotPersisting: Actor {
         preservingLocalSharingChoiceIf hasPendingSharingOperation: Bool
     ) async throws
 
-    /// Writes the viewer's sharing flag. With `isPendingConfirmation` the value
-    /// counts as an unconfirmed local choice until `confirmViewerSharing` or a
-    /// matching server value clears it. Pass `false` to put a value back after
+    /// Writes the viewer's sharing flag and pause. With `isPendingConfirmation`
+    /// the value counts as an unconfirmed local choice until `confirmViewerSharing`
+    /// or a matching server value clears it. Pass `false` to put a value back after
     /// a failed save.
-    func setViewerSharingEnabled(
+    func setViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        choice: ViewerSharingChoice,
         updatedAt: Date,
         isPendingConfirmation: Bool
     ) async throws
 
-    /// Records the server's answer to a sharing operation. It changes nothing
-    /// while a newer local choice is unconfirmed.
+    /// Records the server's answer to a sharing operation. It changes nothing while
+    /// a newer local choice than the one the operation sent is unconfirmed.
     func confirmViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        confirmation: ViewerSharingConfirmation,
         updatedAt: Date,
         otherChoicesPending: Bool
     ) async throws
@@ -46,14 +46,64 @@ extension LocationVisibilitySnapshotPersisting {
         ownerUserID: UUID,
         coupleID: UUID,
         isEnabled: Bool,
+        pausedUntil: Date? = nil,
         updatedAt: Date
     ) async throws {
-        try await setViewerSharingEnabled(
+        try await setViewerSharing(
             ownerUserID: ownerUserID,
             coupleID: coupleID,
-            isEnabled: isEnabled,
+            choice: ViewerSharingChoice(isEnabled: isEnabled, pausedUntil: pausedUntil),
             updatedAt: updatedAt,
             isPendingConfirmation: true
+        )
+    }
+
+    func setViewerSharingEnabled(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        isEnabled: Bool,
+        updatedAt: Date,
+        isPendingConfirmation: Bool
+    ) async throws {
+        try await setViewerSharing(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            choice: ViewerSharingChoice(isEnabled: isEnabled),
+            updatedAt: updatedAt,
+            isPendingConfirmation: isPendingConfirmation
+        )
+    }
+
+    /// A confirmation where the server kept the choice as it was sent.
+    func confirmViewerSharing(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        choice: ViewerSharingChoice,
+        updatedAt: Date,
+        otherChoicesPending: Bool
+    ) async throws {
+        try await confirmViewerSharing(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            confirmation: ViewerSharingConfirmation(choice),
+            updatedAt: updatedAt,
+            otherChoicesPending: otherChoicesPending
+        )
+    }
+
+    func confirmViewerSharing(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        isEnabled: Bool,
+        updatedAt: Date,
+        otherChoicesPending: Bool
+    ) async throws {
+        try await confirmViewerSharing(
+            ownerUserID: ownerUserID,
+            coupleID: coupleID,
+            choice: ViewerSharingChoice(isEnabled: isEnabled),
+            updatedAt: updatedAt,
+            otherChoicesPending: otherChoicesPending
         )
     }
 }
@@ -69,9 +119,9 @@ nonisolated final class PendingSharingChoiceLedger: @unchecked Sendable {
     static let shared = PendingSharingChoiceLedger()
 
     private let lock = NSLock()
-    private var choices: [String: Bool] = [:]
+    private var choices: [String: ViewerSharingChoice] = [:]
 
-    func withChoices<T>(_ body: (inout [String: Bool]) throws -> T) rethrows -> T {
+    func withChoices<T>(_ body: (inout [String: ViewerSharingChoice]) throws -> T) rethrows -> T {
         lock.lock()
         defer { lock.unlock() }
         return try body(&choices)
@@ -93,21 +143,27 @@ nonisolated extension LocationVisibilitySnapshot {
     /// Returns the snapshot to store and the choice that is still unconfirmed.
     func mergingRemote(
         local: LocationVisibilitySnapshot?,
-        pendingChoice: Bool?,
+        pendingChoice: ViewerSharingChoice?,
         hasPendingSharingOperation: Bool
-    ) -> (snapshot: LocationVisibilitySnapshot, pendingChoice: Bool?) {
-        let choice = pendingChoice ?? (hasPendingSharingOperation ? local?.viewerSharingEnabled : nil)
+    ) -> (snapshot: LocationVisibilitySnapshot, pendingChoice: ViewerSharingChoice?) {
+        let localChoice = local.map {
+            ViewerSharingChoice(isEnabled: $0.viewerSharingEnabled, pausedUntil: $0.viewerPausedUntil)
+        }
+        let choice = pendingChoice ?? (hasPendingSharingOperation ? localChoice : nil)
         guard let choice else {
             return (self, nil)
         }
-        if viewerSharingEnabled == choice {
+        let remoteChoice = ViewerSharingChoice(isEnabled: viewerSharingEnabled, pausedUntil: viewerPausedUntil)
+        if remoteChoice == choice {
             return (self, hasPendingSharingOperation ? choice : nil)
         }
 
         let state: PartnerLocationVisibilityState
-        if !choice {
+        if !choice.isEnabled {
             state = .disabled
-        } else if visibilityState == .disabled {
+        } else if choice.pausedUntil != nil {
+            state = .viewerPaused
+        } else if visibilityState == .disabled || visibilityState == .viewerPaused {
             state = .unknown("local")
         } else {
             state = visibilityState
@@ -118,12 +174,13 @@ nonisolated extension LocationVisibilitySnapshot {
             viewerUserID: viewerUserID,
             partnerUserID: partnerUserID,
             visibilityState: state,
-            viewerSharingEnabled: choice,
+            viewerSharingEnabled: choice.isEnabled,
             partnerSharingEnabled: partnerSharingEnabled,
             partnerLocation: partnerLocation,
             partnerLocationIsStale: partnerLocationIsStale,
             updatedAt: updatedAt,
-            refreshedAt: refreshedAt
+            refreshedAt: refreshedAt,
+            viewerPausedUntil: choice.pausedUntil
         )
         return (merged, choice)
     }
@@ -194,10 +251,10 @@ actor SwiftDataLocationVisibilityRepository: LocationVisibilitySnapshotPersistin
         return try fetch(ownerUserID: ownerUserID, coupleID: coupleID, in: context)?.snapshot
     }
 
-    func setViewerSharingEnabled(
+    func setViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        choice: ViewerSharingChoice,
         updatedAt: Date,
         isPendingConfirmation: Bool
     ) throws {
@@ -206,10 +263,10 @@ actor SwiftDataLocationVisibilityRepository: LocationVisibilitySnapshotPersistin
             try applyViewerSharing(
                 ownerUserID: ownerUserID,
                 coupleID: coupleID,
-                isEnabled: isEnabled,
+                choice: choice,
                 updatedAt: updatedAt
             )
-            choices[key] = isPendingConfirmation ? isEnabled : nil
+            choices[key] = isPendingConfirmation ? choice : nil
         }
         LocalStoreChanges.post(.locationVisibility, ownerUserID: ownerUserID)
     }
@@ -217,19 +274,21 @@ actor SwiftDataLocationVisibilityRepository: LocationVisibilitySnapshotPersistin
     func confirmViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        confirmation: ViewerSharingConfirmation,
         updatedAt: Date,
         otherChoicesPending: Bool
     ) throws {
         let key = LocalLocationVisibilitySnapshot.storageKey(ownerUserID: ownerUserID, coupleID: coupleID)
         let applied = try ledger.withChoices { choices -> Bool in
-            if otherChoicesPending || choices[key].map({ $0 != isEnabled }) == true {
+            // The ledger holds the newest choice. It matches the operation that was sent, not the
+            // answer: the server drops a pause whose end has passed while the phone was offline.
+            if otherChoicesPending || choices[key].map({ $0 != confirmation.submitted }) == true {
                 return false
             }
             try applyViewerSharing(
                 ownerUserID: ownerUserID,
                 coupleID: coupleID,
-                isEnabled: isEnabled,
+                choice: confirmation.confirmed,
                 updatedAt: updatedAt
             )
             choices[key] = nil
@@ -243,16 +302,20 @@ actor SwiftDataLocationVisibilityRepository: LocationVisibilitySnapshotPersistin
     private func applyViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        choice: ViewerSharingChoice,
         updatedAt: Date
     ) throws {
         let context = ModelContext(container)
         if let existing = try fetch(ownerUserID: ownerUserID, coupleID: coupleID, in: context) {
-            existing.viewerSharingEnabled = isEnabled
-            if isEnabled, existing.visibilityStateRawValue == PartnerLocationVisibilityState.disabled.rawValue {
-                existing.visibilityStateRawValue = PartnerLocationVisibilityState.unknown("local").rawValue
-            } else if !isEnabled {
+            existing.viewerSharingEnabled = choice.isEnabled
+            existing.viewerPausedUntil = choice.pausedUntil
+            let oldState = PartnerLocationVisibilityState(rawValue: existing.visibilityStateRawValue)
+            if !choice.isEnabled {
                 existing.visibilityStateRawValue = PartnerLocationVisibilityState.disabled.rawValue
+            } else if choice.pausedUntil != nil {
+                existing.visibilityStateRawValue = PartnerLocationVisibilityState.viewerPaused.rawValue
+            } else if oldState == .disabled || oldState == .viewerPaused {
+                existing.visibilityStateRawValue = PartnerLocationVisibilityState.unknown("local").rawValue
             }
             existing.updatedAt = updatedAt
             existing.refreshedAt = updatedAt
@@ -264,18 +327,30 @@ actor SwiftDataLocationVisibilityRepository: LocationVisibilitySnapshotPersistin
                         coupleID: coupleID,
                         viewerUserID: ownerUserID,
                         partnerUserID: nil,
-                        visibilityState: isEnabled ? .unknown("local") : .disabled,
-                        viewerSharingEnabled: isEnabled,
+                        visibilityState: Self.state(for: choice),
+                        viewerSharingEnabled: choice.isEnabled,
                         partnerSharingEnabled: false,
                         partnerLocation: nil,
                         partnerLocationIsStale: false,
                         updatedAt: updatedAt,
-                        refreshedAt: updatedAt
+                        refreshedAt: updatedAt,
+                        viewerPausedUntil: choice.pausedUntil
                     )
                 )
             )
         }
         try context.save()
+    }
+
+    /// The state of a snapshot that only has the viewer's own choice to go on.
+    fileprivate static func state(for choice: ViewerSharingChoice) -> PartnerLocationVisibilityState {
+        if !choice.isEnabled {
+            .disabled
+        } else if choice.pausedUntil != nil {
+            .viewerPaused
+        } else {
+            .unknown("local")
+        }
     }
 
     func delete(ownerUserID: UUID, coupleID: UUID) throws {

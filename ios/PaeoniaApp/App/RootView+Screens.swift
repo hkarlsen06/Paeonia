@@ -25,6 +25,10 @@ extension RootView {
         .animation(PaeoniaMotion.meaningfulMoment, value: viewModel.state)
         // Saving or forgetting a partner's code swaps screens without a state change.
         .animation(PaeoniaMotion.meaningfulMoment, value: framedScreen)
+        .modifier(AppLockRootModifier(isActive: allowsSystemIntegrations, bannerCenter: bannerCenter))
+        .sheet(isPresented: $viewModel.isShowingDataExport) {
+            DataExportScreen()
+        }
     }
 
     private var framedScreen: RootFramedScreen? {
@@ -268,7 +272,7 @@ extension RootView {
             locationViewModel: locationViewModel,
             selection: mainTabSelection,
             widgetDrawingPresented: widgetDrawingPresented,
-            deepLink: $deepLink,
+            deepLink: deepLinkForTabs,
             actions: mainTabActions,
             dependencies: featureDependencies
         )
@@ -281,7 +285,6 @@ extension RootView {
             currentProfilePhotoAssetID: viewModel.currentProfilePhotoAssetID,
             currentCustomProfilePhotoAssetID: viewModel.currentCustomProfilePhotoAssetID,
             currentProviderProfilePhotoAssetID: viewModel.currentProviderProfilePhotoAssetID,
-            currentAuthProvider: viewModel.currentSession?.provider,
             partnerUserID: viewModel.currentPartnerUserID,
             partnerName: viewModel.currentPartnerName,
             partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,

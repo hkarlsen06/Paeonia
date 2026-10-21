@@ -7,7 +7,6 @@ struct MainTabIdentity: Equatable {
     var currentProfilePhotoAssetID: UUID?
     var currentCustomProfilePhotoAssetID: UUID?
     var currentProviderProfilePhotoAssetID: UUID?
-    var currentAuthProvider: AuthProvider?
     var partnerUserID: UUID?
     /// What this person calls their partner. Show `partnerDisplayName`, never the partner's own name.
     var partnerName: PartnerName?

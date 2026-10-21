@@ -60,7 +60,7 @@ export const legalNo = {
       description: 'Slik samler Paeonia inn, bruker, deler og beskytter personopplysninger.',
     },
     title: 'Personvern',
-    updated: 'Sist oppdatert 18. oktober 2026',
+    updated: 'Sist oppdatert 21. oktober 2026',
     sections: [
       {
         heading: 'Hvem personvernteksten gjelder for',
@@ -115,6 +115,7 @@ export const legalNo = {
         paragraphs: [
           'Posisjonsdeling er valgfritt og virker bare når begge partnere slår den på. Paeonia oppdaterer den nyeste posisjonen når du åpner appen, hver gang du flytter deg omtrent 250 meter eller mer mens den er åpen, og når du ber om en oppdatering. Partneren ser posisjonen og når den ble registrert, også når den kan være gammel.',
           'Du kan også velge å dele mens Paeonia er lukket. Dette er en egen innstilling på hver telefon, den er av som standard, og den krever at posisjonstilgangen er satt til Alltid. Når den er på, vekker iOS Paeonia etter at du har flyttet deg et godt stykke, vanligvis 500 meter eller mer, og Paeonia sender den ene nyeste posisjonen. Den sporer ikke ruten din og lagrer ingen historikk. Den stopper hvis du slår av posisjonsdeling eller endrer posisjonstilgangen fra Alltid.',
+          'Du kan sette posisjonsdeling på pause i 1 time, 4 timer eller til i morgen tidlig. Mens den er på pause, sendes ingenting, den nyeste delte posisjonen din slettes, og du og partneren din ser ikke hverandre på kartet. Partneren din ser at delingen er på pause, men ikke når den slutter. Delingen starter igjen av seg selv når pausen er over.',
           'Når du slår av posisjonsdeling, slettes den nyeste delte posisjonen din. De nyeste posisjonene fjernes også når forholdet avsluttes eller kontosletting starter.',
         ],
       },
@@ -145,7 +146,7 @@ export const legalNo = {
         paragraphs: [
           'Vi beholder aktive konto- og forholdsopplysninger så lenge de trengs for å levere Paeonia. Når et forhold avsluttes, skjules delt innhold med en gang og planlegges vanligvis slettet etter omtrent 30 dager. Nyeste delte posisjoner slettes med en gang. Lokale private mellomlagre skjules eller tømmes når tilgangen opphører.',
           'Kopier av rapportert innhold beholdes mens en rapport er åpen og vanligvis i 180 dager etter at den er ferdigbehandlet. Selve rapporten, modereringshandlinger, blokkeringer, sikkerhetsvarsler, abonnementsopplysninger, revisjonsspor for personvernforespørsler og begrensede sikkerhets- eller lovopplysninger kan beholdes lenger når det trengs for sikkerhet, regnskap, tvister, svindelforebygging eller rettslige plikter.',
-          'Ventende opplastinger og driftsopplysninger beholdes bare så lenge de trengs for å fullføre, prøve på nytt, sikre eller rydde opp handlingen. Varslings- og forespørselsopplysninger slettes vanligvis etter omtrent 30 dager. Slettede opplysninger kan bli liggende i sikkerhetskopiene på serveren i opptil 14 dager før kopiene byttes ut.',
+          'Ventende opplastinger og driftsopplysninger beholdes bare så lenge de trengs for å fullføre, prøve på nytt, sikre eller rydde opp handlingen. Varslings- og forespørselsopplysninger slettes vanligvis etter omtrent 30 dager. En kopi av dataene dine som du lager med Last ned dataene mine, slettes fra serverne våre etter tre dager, eller tidligere hvis du sletter den selv. Slettede opplysninger kan bli liggende i sikkerhetskopiene på serveren i opptil 14 dager før kopiene byttes ut.',
           'Bruksstatistikk og krasjrapporter slettes når du ikke har brukt Paeonia på et år. De slettes tidligere hvis du slår av Del bruksstatistikk eller sletter kontoen.',
           'Oppbevaringstiden kan forlenges når loven krever det eller et rettskrav må bevares.',
         ],
@@ -178,7 +179,7 @@ export const legalNo = {
         heading: 'Valgene og rettighetene dine',
         paragraphs: [
           'Du kan redigere profilopplysninger, slå av posisjonsdeling og varsler, forlate et forhold, blokkere en partner og slette kontoen i appen der disse valgene er tilgjengelige. For å trekke tilbake samtykket til bruksstatistikk og krasjrapporter åpner du Oss-fanen og deretter Personvern og trygghet, og slår av Del bruksstatistikk. Telefonen slutter å sende dem med en gang, og vi ber PostHog slette det de allerede har, noe som tar omtrent en uke. Noe som blir sendt akkurat i det øyeblikket, kan likevel komme fram.',
-          'Du kan be om innsyn eller eksport, retting, sletting, begrensning eller en annen rettighet som gjelder der du bor. En eksport omfatter vanligvis kontoopplysninger og dine egne bidrag. Den utleverer ikke automatisk partnerens private svar, medier, rapporter eller andre personopplysninger. I appen åpner du Oss-fanen og deretter Personvern og trygghet, der du kan be om å se hva vi lagrer, be om en kopi eller be om retting. Vi svarer på e-post til adressen som er knyttet til kontoen, vanligvis innen en måned. Du kan også skrive til contact@paeonia.no.',
+          'Du kan be om innsyn i eller en kopi av dataene dine, retting, sletting, begrensning eller en annen rettighet som gjelder der du bor. For å få en kopi selv åpner du Oss-fanen, deretter Personvern og trygghet og så Last ned dataene mine. Det er gratis og krever ikke abonnement. Paeonia lager den i bakgrunnen, vanligvis i løpet av noen minutter, gir deg beskjed når den er klar og har den tilgjengelig i tre dager. Den inneholder kontoopplysningene dine og alt du har skrevet, lastet opp eller valgt, som JSON-filer andre tjenester kan lese, sammen med de originale bildene, talemeldingene og tegningene dine. En README forklarer hver fil og hvordan vi bruker dataene dine. Den inneholder også det du deler med partneren din som ett, som minner, nedtellinger, rekker og resultater i spill, så lenge dere er sammen. Den inneholder ikke det partneren din har skrevet eller lastet opp, posisjonen eller innstillingene deres, eller rapporter om deg, fordi dette er andres personopplysninger. For å be om retting åpner du Personvern og trygghet og trykker på Be om retting. Vi svarer på e-post til adressen som er knyttet til kontoen, vanligvis innen en måned. Bruksstatistikken PostHog har, er ikke med i kopien. Har du sagt ja til å dele den, kan du sende e-post til contact@paeonia.no, så henter vi den for deg. Du kan også skrive til contact@paeonia.no om alt annet.',
           'Du kan også klage til den lokale personvernmyndigheten. I Norge er dette Datatilsynet. Vi kan måtte bekrefte identiteten din før en forespørsel fullføres.',
         ],
       },

@@ -12,6 +12,9 @@ struct BackgroundLocationUploader {
         /// Sharing is off on this phone or on the server. Updates while
         /// closed should stop.
         case sharingOff
+        /// Sharing is paused, on this phone or on the server. Nothing was sent.
+        /// The choice for updates while closed stays, since the pause ends by itself.
+        case paused
         /// The choice was cleared while this ran, so nothing was sent or saved.
         case cancelled
         case failed
@@ -38,11 +41,13 @@ struct BackgroundLocationUploader {
     }
 
     func upload(_ location: LocationPoint, ownerUserID: UUID, coupleID: UUID) async -> Outcome {
-        switch await isSharing(ownerUserID: ownerUserID, coupleID: coupleID) {
-        case true?:
+        switch await sharingState(ownerUserID: ownerUserID, coupleID: coupleID) {
+        case .on?:
             break
-        case false?:
+        case .off?:
             return .sharingOff
+        case .paused?:
+            return .paused
         case nil:
             return .failed
         }
@@ -79,6 +84,8 @@ struct BackgroundLocationUploader {
             return .sent
         } catch where LatestLocationPendingOperationHandler.isSharingOffRejection(error) {
             return .sharingOff
+        } catch where LatestLocationPendingOperationHandler.isPausedRejection(error) {
+            return .paused
         } catch {
             return .failed
         }
@@ -103,7 +110,7 @@ struct BackgroundLocationUploader {
         } ?? location
         // Sharing may have been turned off, or local data cleared, while this
         // was sending. Both already removed the stored location.
-        guard await isSharing(ownerUserID: ownerUserID, coupleID: coupleID) == true else {
+        guard await sharingState(ownerUserID: ownerUserID, coupleID: coupleID) == .on else {
             return
         }
         // Read right before the save so a newer location from the open app is
@@ -125,17 +132,26 @@ struct BackgroundLocationUploader {
         )
         // Turning sharing off marks it off before it deletes the location. If
         // that delete ran just before this save, undo the save.
-        if await isSharing(ownerUserID: ownerUserID, coupleID: coupleID) != true {
+        if await sharingState(ownerUserID: ownerUserID, coupleID: coupleID) != .on {
             try? await ownLocationStore.delete(ownerUserID: ownerUserID, coupleID: coupleID)
         }
     }
 
+    private enum SharingState {
+        case on
+        case off
+        case paused
+    }
+
     /// `nil` when the local store could not be read, which is not the same
-    /// as sharing being off.
-    private func isSharing(ownerUserID: UUID, coupleID: UUID) async -> Bool? {
+    /// as sharing being off. A pause counts until its time on this phone's
+    /// clock, so a pause that ended while the app was closed lets the next
+    /// move through.
+    private func sharingState(ownerUserID: UUID, coupleID: UUID) async -> SharingState? {
         do {
             let visibility = try await visibilityStore.load(ownerUserID: ownerUserID, coupleID: coupleID)
-            return visibility?.viewerSharingEnabled == true
+            guard visibility?.viewerSharingEnabled == true else { return .off }
+            return visibility?.pausedUntil(at: now()) == nil ? .on : .paused
         } catch {
             return nil
         }

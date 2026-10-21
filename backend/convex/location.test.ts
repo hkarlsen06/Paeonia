@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { addDevice, createCouple, newTest, type TestConvex, type TestCouple } from "./test.setup";
 
@@ -468,5 +468,200 @@ describe("get_partner_location_visibility", () => {
   test("requires a signed-in user", async () => {
     const t = newTest();
     await expect(t.query(api.location.get_partner_location_visibility, {})).rejects.toThrow(/42501.*authenticated user required/);
+  });
+});
+
+describe("pausing location sharing", () => {
+  const PAUSE_END = "2026-06-28T13:30:00.000Z";
+
+  const setPause = (
+    user: TestCouple["first"],
+    coupleId: string,
+    pausedUntil: string | null,
+    sequence: number,
+    overrides: Record<string, unknown> = {},
+  ) =>
+    user.as.mutation(api.location.update_location_sharing_preference, {
+      p_couple_id: coupleId,
+      p_is_enabled: true,
+      p_consent_version: "test-v1",
+      p_source: "settings_toggle",
+      p_paused_until: pausedUntil,
+      ...operation(sequence),
+      ...overrides,
+    });
+  const readVisibility = (user: TestCouple["first"], coupleId: string) =>
+    user.as.query(api.location.get_partner_location_visibility, { p_couple_id: coupleId });
+  const storedPreference = (t: TestConvex, couple: TestCouple, user = couple.first) =>
+    t.run((ctx) =>
+      ctx.db
+        .query("location_sharing_preferences")
+        .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", couple.coupleId).eq("user_id", user.userId))
+        .unique(),
+    );
+  const sendLocation = (user: TestCouple["first"], coupleId: string, sequence: number, capturedAt: string) =>
+    user.as.mutation(api.location.update_latest_partner_location, {
+      p_couple_id: coupleId,
+      ...update({ p_captured_at: capturedAt }),
+      ...operation(sequence),
+    });
+
+  test("a pause keeps sharing on, removes the stored location, and refuses updates", async () => {
+    const { t, couple } = await setup();
+    await seedLocation(t, couple, "2026-06-28T12:00:00.000Z");
+
+    const [paused] = await setPause(couple.first, couple.coupleId, PAUSE_END, 2);
+    expect(paused).toMatchObject({ is_enabled: true, paused_until: PAUSE_END });
+    expect(await t.run((ctx) => ctx.db.query("latest_partner_locations").collect())).toHaveLength(0);
+    // Pausing is not turning sharing on again.
+    expect(paused.enabled_at).toBe("2026-06-28T12:30:00.000Z");
+
+    await expect(sendLocation(couple.first, couple.coupleId, 3, "2026-06-28T12:29:00.000Z")).rejects.toThrow(
+      /42501.*location sharing is paused/,
+    );
+    expect(await t.run((ctx) => ctx.db.query("latest_partner_locations").collect())).toHaveLength(0);
+  });
+
+  test("the partner sees that sharing is paused, with no position and no end time", async () => {
+    const { t, couple } = await setup();
+    await sendLocation(couple.second, couple.coupleId, 2, "2026-06-28T12:20:00.000Z");
+    await seedLocation(t, couple, "2026-06-28T12:00:00.000Z");
+    await setPause(couple.first, couple.coupleId, PAUSE_END, 2);
+
+    const [own] = await readVisibility(couple.first, couple.coupleId);
+    expect(own).toMatchObject({
+      visibility_state: "viewer_paused",
+      viewer_sharing_enabled: true,
+      viewer_paused_until: PAUSE_END,
+      partner_location_latitude: null,
+    });
+    const [seenByPartner] = await readVisibility(couple.second, couple.coupleId);
+    expect(seenByPartner).toMatchObject({
+      visibility_state: "partner_paused",
+      partner_sharing_enabled: true,
+      viewer_paused_until: null,
+      partner_location_latitude: null,
+      partner_location_longitude: null,
+    });
+    expect(JSON.stringify(seenByPartner)).not.toContain(PAUSE_END);
+  });
+
+  test("a pause needs sharing on and has a limit, and a pause that is already over does nothing", async () => {
+    const { couple } = await setup();
+    await expect(setPause(couple.first, couple.coupleId, PAUSE_END, 2, { p_is_enabled: false, p_consent_version: null })).rejects.toThrow(
+      /23514.*can only be paused while it is on/,
+    );
+    await expect(setPause(couple.first, couple.coupleId, "2026-07-01T12:31:00.000Z", 3)).rejects.toThrow(
+      /23514.*pause is too long/,
+    );
+    const [stale] = await setPause(couple.first, couple.coupleId, "2026-06-28T12:00:00.000Z", 4);
+    expect(stale.paused_until).toBeNull();
+  });
+
+  test("resuming early, turning sharing off, or turning it on again ends the pause", async () => {
+    const { t, couple } = await setup();
+    await setPause(couple.first, couple.coupleId, PAUSE_END, 2);
+    const [resumed] = await setPause(couple.first, couple.coupleId, null, 3);
+    expect(resumed).toMatchObject({ is_enabled: true, paused_until: null });
+    expect((await storedPreference(t, couple))?.paused_until).toBeUndefined();
+    await sendLocation(couple.first, couple.coupleId, 4, "2026-06-28T12:29:00.000Z");
+
+    await setPause(couple.first, couple.coupleId, PAUSE_END, 5);
+    const [off] = await setPause(couple.first, couple.coupleId, null, 6, { p_is_enabled: false, p_consent_version: null });
+    expect(off).toMatchObject({ is_enabled: false, paused_until: null });
+    const [row] = await readVisibility(couple.first, couple.coupleId);
+    expect(row.visibility_state).toBe("disabled");
+  });
+
+  test("the cron ends a pause that is over and wakes a phone that sends moves while closed", async () => {
+    const { t, couple } = await setup();
+    await addDevice(t, couple.first.userId);
+    const preference = await storedPreference(t, couple);
+    await t.run((ctx) => ctx.db.patch(preference!._id, { updates_while_closed: true }));
+    await setPause(couple.first, couple.coupleId, PAUSE_END, 2);
+
+    // Still paused one minute before the end.
+    vi.setSystemTime(new Date("2026-06-28T13:29:00.000Z"));
+    expect(await t.mutation(internal.location.resume_paused_location_sharing, {})).toBe(0);
+    expect((await storedPreference(t, couple))?.paused_until).toBe(PAUSE_END);
+
+    vi.setSystemTime(new Date("2026-06-28T13:30:30.000Z"));
+    expect(await t.mutation(internal.location.resume_paused_location_sharing, {})).toBe(1);
+    expect((await storedPreference(t, couple))?.paused_until).toBeUndefined();
+    const [row] = await readVisibility(couple.second, couple.coupleId);
+    expect(row.visibility_state).toBe("not_sharing");
+
+    const wake = (await t.run((ctx) => ctx.db.query("notification_outbox").collect())).filter(
+      (outbox) => outbox.kind === "location_pause_ended",
+    );
+    expect(wake).toHaveLength(1);
+    expect(wake[0]).toMatchObject({
+      recipient_user_id: couple.first.userId,
+      apns_push_type: "background",
+      payload: { type: "location_pause_ended", couple_id: couple.coupleId },
+    });
+    expect(JSON.stringify(wake[0].payload)).not.toMatch(/latitude|longitude/);
+
+    // A second run finds nothing, and no second push goes out.
+    expect(await t.mutation(internal.location.resume_paused_location_sharing, {})).toBe(0);
+    await sendLocation(couple.first, couple.coupleId, 3, "2026-06-28T13:30:00.000Z");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("the cron does not wake a phone that only sends while the app is open", async () => {
+    const { t, couple } = await setup();
+    await addDevice(t, couple.first.userId);
+    await setPause(couple.first, couple.coupleId, PAUSE_END, 2);
+    vi.setSystemTime(new Date("2026-06-28T13:31:00.000Z"));
+    await t.mutation(internal.location.resume_paused_location_sharing, {});
+    const wake = (await t.run((ctx) => ctx.db.query("notification_outbox").collect())).filter(
+      (outbox) => outbox.kind === "location_pause_ended",
+    );
+    expect(wake).toHaveLength(0);
+    expect((await storedPreference(t, couple))?.paused_until).toBeUndefined();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("the first update after the pause's time ends the pause without waiting for the cron", async () => {
+    const { t, couple } = await setup();
+    await setPause(couple.first, couple.coupleId, PAUSE_END, 2);
+    vi.setSystemTime(new Date("2026-06-28T13:30:05.000Z"));
+    const [stored] = await sendLocation(couple.first, couple.coupleId, 3, "2026-06-28T13:30:00.000Z");
+    expect(stored.user_id).toBe(couple.first.userId);
+    expect((await storedPreference(t, couple))?.paused_until).toBeUndefined();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a paused partner does not count as sharing, so no location push goes to them", async () => {
+    const { t, couple } = await setup();
+    await addDevice(t, couple.second.userId);
+    await setPause(couple.second, couple.coupleId, PAUSE_END, 2);
+    await sendLocation(couple.first, couple.coupleId, 2, "2026-06-28T12:29:00.000Z");
+    const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
+    expect(outbox.filter((row) => row.kind === "location_updated")).toHaveLength(0);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("people outside the couple and couples without access cannot pause or resume", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const outsider = (await createCouple(t)).first;
+    await expect(setPause(outsider, couple.coupleId, PAUSE_END, 2)).rejects.toThrow(
+      /42501.*active entitled couple access is required/,
+    );
+    await expect(setPause(outsider, couple.coupleId, null, 3)).rejects.toThrow(/42501/);
+    const unentitled = await createCouple(t, { entitled: false });
+    await expect(setPause(unentitled.first, unentitled.coupleId, PAUSE_END, 2)).rejects.toThrow(
+      /42501.*active entitled couple access is required/,
+    );
+    await expect(
+      t.mutation(api.location.update_location_sharing_preference, {
+        p_couple_id: couple.coupleId,
+        p_is_enabled: true,
+        p_consent_version: "v1",
+        p_paused_until: PAUSE_END,
+        ...operation(4),
+      }),
+    ).rejects.toThrow(/42501.*authenticated user required/);
   });
 });
