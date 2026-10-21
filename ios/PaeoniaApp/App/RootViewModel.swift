@@ -262,6 +262,7 @@ final class RootViewModel {
             }
             stopObservingAccessChanges()
             invalidateAccessResolution()
+            leaveRelationshipSurfaces()
             route = .signedOut
             notice = .sessionLoadFailed
         }
@@ -326,10 +327,12 @@ final class RootViewModel {
     }
 
     /// Clears everything that belongs to the paired surface: the celebration,
-    /// an open drawing screen, and a drawing deep link waiting for launch.
+    /// an open drawing screen, a drawing deep link waiting for launch, and the
+    /// app icon number.
     func leaveRelationshipSurfaces() {
         celebration.clear()
         clearPendingWidgetDrawingOpen()
+        systemSideEffects.clearAppBadge()
     }
 
     private func presentPendingWidgetDrawingIfNeeded(for accessRoute: AccessRoute) {
