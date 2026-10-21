@@ -13,6 +13,10 @@ nonisolated enum PartnerLocationVisibilityState: Codable, Equatable, Sendable {
     case notSharing
     case visible
     case relationshipEnded
+    /// You paused sharing. The partner's location is hidden from you meanwhile too.
+    case viewerPaused
+    /// The partner paused sharing. The server sends no position and no end time.
+    case partnerPaused
     case unknown(String)
 
     init(rawValue: String) {
@@ -25,6 +29,10 @@ nonisolated enum PartnerLocationVisibilityState: Codable, Equatable, Sendable {
             self = .visible
         case "relationship_ended":
             self = .relationshipEnded
+        case "viewer_paused":
+            self = .viewerPaused
+        case "partner_paused":
+            self = .partnerPaused
         default:
             self = .unknown(rawValue)
         }
@@ -40,6 +48,10 @@ nonisolated enum PartnerLocationVisibilityState: Codable, Equatable, Sendable {
             "visible"
         case .relationshipEnded:
             "relationship_ended"
+        case .viewerPaused:
+            "viewer_paused"
+        case .partnerPaused:
+            "partner_paused"
         case let .unknown(rawValue):
             rawValue
         }
@@ -111,6 +123,56 @@ nonisolated struct LocationVisibilitySnapshot: Codable, Equatable, Sendable {
     let partnerLocationIsStale: Bool
     let updatedAt: Date
     let refreshedAt: Date
+    /// When your own pause ends. The server never sends the partner's.
+    var viewerPausedUntil: Date?
+
+    /// Your pause end if it is still ahead of `now`. A pause the clock has passed is over,
+    /// even before the server clears it.
+    func pausedUntil(at now: Date) -> Date? {
+        viewerPausedUntil.flatMap { $0 > now ? $0 : nil }
+    }
+}
+
+/// What the person chose for their own sharing: on or off, and for how long it is paused.
+/// A bare `true` or `false` means a choice without a pause.
+nonisolated struct ViewerSharingChoice: Equatable, Sendable, ExpressibleByBooleanLiteral {
+    let isEnabled: Bool
+    let pausedUntil: Date?
+
+    init(isEnabled: Bool, pausedUntil: Date? = nil) {
+        self.isEnabled = isEnabled
+        self.pausedUntil = isEnabled ? pausedUntil : nil
+    }
+
+    init(booleanLiteral value: Bool) {
+        self.init(isEnabled: value)
+    }
+
+    /// Pause ends compare to the second, because the server keeps milliseconds
+    /// and the phone's clock has finer time.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.isEnabled == rhs.isEnabled
+            && lhs.pausedUntil.map { Int($0.timeIntervalSince1970.rounded()) }
+            == rhs.pausedUntil.map { Int($0.timeIntervalSince1970.rounded()) }
+    }
+}
+
+/// The server's answer to a sharing operation: the choice the operation sent, and the choice the
+/// server kept. They differ when the server dropped a pause whose end had passed while the phone was offline.
+nonisolated struct ViewerSharingConfirmation: Equatable, Sendable {
+    let submitted: ViewerSharingChoice
+    let confirmed: ViewerSharingChoice
+
+    /// The server kept the choice as it was sent.
+    init(_ choice: ViewerSharingChoice) {
+        submitted = choice
+        confirmed = choice
+    }
+
+    init(submitted: ViewerSharingChoice, confirmed: ViewerSharingChoice) {
+        self.submitted = submitted
+        self.confirmed = confirmed
+    }
 }
 
 nonisolated struct OwnLocationSnapshot: Codable, Equatable, Sendable {
@@ -130,6 +192,9 @@ nonisolated enum CoupleMapState: Equatable, Sendable {
     case locatingCurrent
     /// You share, but no location has been found yet. The card offers a retry.
     case currentLocationMissing
+    /// You paused sharing until this time. Nothing is sent and the partner's
+    /// location is hidden meanwhile.
+    case sharingPaused(until: Date)
     /// iOS location access for Paeonia is off, so nothing can be shared.
     case locationAccessOff
     /// Your partner does not share, the relationship ended, or the map cannot

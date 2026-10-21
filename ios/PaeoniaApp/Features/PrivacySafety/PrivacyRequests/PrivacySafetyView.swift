@@ -10,6 +10,7 @@ struct PrivacySafetyView: View {
     private let service: (any PrivacySafetyServicing)?
     private let operationProvider: (any SyncClientOperationProviding)?
     @State private var viewModel: PrivacySafetyViewModel
+    @State private var dataExport: DataExportViewModel
     @State private var isShowingCorrectionRequest = false
     /// Missing in previews and tests, which then hide the usage switch.
     @Environment(UsageSharingModel.self) private var usageSharing: UsageSharingModel?
@@ -20,6 +21,7 @@ struct PrivacySafetyView: View {
         partnerUserID: UUID?,
         partnerName: String,
         service: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
+        dataExportService: (any DataExportServicing)? = DataExportServiceFactory.makeDefault(),
         operationProvider: (any SyncClientOperationProviding)? = nil,
         onReportedAndLeft: @escaping () -> Void = {}
     ) {
@@ -29,6 +31,7 @@ struct PrivacySafetyView: View {
         self.operationProvider = operationProvider
         self.onReportedAndLeft = onReportedAndLeft
         _viewModel = State(initialValue: PrivacySafetyViewModel(service: service))
+        _dataExport = State(initialValue: DataExportViewModel(service: dataExportService))
     }
 
     var body: some View {
@@ -88,20 +91,18 @@ struct PrivacySafetyView: View {
 
             PaeoniaCard(padding: 0) {
                 VStack(spacing: 0) {
-                    ForEach(PrivacyRequestKind.allCases, id: \.self) { kind in
-                        if kind != PrivacyRequestKind.allCases.first {
-                            Divider()
-                                .overlay(.paeoniaSurfacePressed)
-                        }
+                    DataExportSection(viewModel: dataExport)
 
-                        PrivacyRequestRow(
-                            kind: kind,
-                            latestRequest: viewModel.latestRequest(for: kind),
-                            isLoading: !viewModel.hasLoaded,
-                            isSubmitting: viewModel.isSubmitting(kind)
-                        ) {
-                            request(kind)
-                        }
+                    Divider()
+                        .overlay(.paeoniaSurfacePressed)
+
+                    PrivacyRequestRow(
+                        kind: .correction,
+                        latestRequest: viewModel.latestRequest(for: .correction),
+                        isLoading: !viewModel.hasLoaded,
+                        isSubmitting: viewModel.isSubmitting(.correction)
+                    ) {
+                        isShowingCorrectionRequest = true
                     }
                 }
             }
@@ -146,16 +147,6 @@ struct PrivacySafetyView: View {
                     )
                 }
                 .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func request(_ kind: PrivacyRequestKind) {
-        if kind == .correction {
-            isShowingCorrectionRequest = true
-        } else {
-            Task {
-                await viewModel.submitRequest(kind: kind)
             }
         }
     }
@@ -213,7 +204,8 @@ struct PrivacySafetyView: View {
         PrivacySafetyView(
             partnerUserID: UUID(),
             partnerName: "Oda",
-            service: nil
+            service: nil,
+            dataExportService: nil
         )
     }
     .environment(PaeoniaBannerCenter())

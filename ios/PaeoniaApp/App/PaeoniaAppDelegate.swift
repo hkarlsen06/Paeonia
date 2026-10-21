@@ -64,6 +64,11 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         _ application: UIApplication,
         didReceiveRemoteNotification userInfo: [AnyHashable: Any]
     ) async -> UIBackgroundFetchResult {
+        // A pause on location sharing just ended. Send where the phone is now.
+        if (userInfo["type"] as? String) == "location_pause_ended" {
+            await LocationUpdateController.shared.shareAfterPauseEnded()
+            return .newData
+        }
         // The canvas service reloads the widget when it writes new files. An
         // extra reload here would spend the widget's daily budget on every push.
         await widgetSync.sync(identity: identityStore.load())

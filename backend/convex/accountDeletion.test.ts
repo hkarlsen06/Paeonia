@@ -232,7 +232,7 @@ describe("request_account_deletion", () => {
       "account deletion is in progress",
     );
     await expectFail(
-      first.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" }),
+      first.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "correction" }),
       "42501",
       "account deletion is in progress",
     );
@@ -348,7 +348,7 @@ describe("job state machine", () => {
     const [repeat] = await first.as.mutation(api.identity.request_account_deletion, {});
     expect(repeat).toMatchObject({ deletion_job_id: jobId, status: "completed", auth_delete_status: "completed" });
     await expectFail(
-      first.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "export" }),
+      first.as.mutation(api.identity.create_privacy_request, { p_id: newUuid(), p_kind: "correction" }),
       "42501",
       "authenticated user required",
     );
@@ -390,6 +390,9 @@ function stubNetwork(
     clerkDelete?: number;
     appleSub?: string;
     noAppleAccount?: boolean;
+    /** Clerk lists Apple and Google as verified links of the same user. */
+    appleAndGoogle?: boolean;
+    clerkUserStatus?: number;
     tokenStatus?: number;
     posthogStatus?: number;
     posthogDeletionErrors?: boolean;
@@ -405,7 +408,16 @@ function stubNetwork(
       if (url.startsWith("https://api.clerk.com/v1/users/")) {
         expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer sk_test_clerk");
         if (method === "DELETE") return new Response("{}", { status: options.clerkDelete ?? 200 });
-        if (options.noAppleAccount) return Response.json({ external_accounts: [{ provider: "oauth_google", provider_user_id: "g-1" }] });
+        if (options.clerkUserStatus) return new Response("{}", { status: options.clerkUserStatus });
+        if (options.appleAndGoogle) {
+          return Response.json({
+            external_accounts: [
+              { provider: "oauth_google", provider_user_id: "g-1", verification: { status: "verified" } },
+              { provider: "oauth_apple", provider_user_id: options.appleSub ?? APPLE_SUB, verification: { status: "verified" } },
+            ],
+          });
+        }
+        if (options.noAppleAccount) return Response.json({ external_accounts: [{ provider: "oauth_google", provider_user_id: "g-1", verification: { status: "verified" } }] });
         return Response.json({ external_accounts: [{ provider: "oauth_apple", provider_user_id: options.appleSub ?? APPLE_SUB }] });
       }
       if (url === "https://appleid.apple.com/auth/token") {
@@ -516,6 +528,102 @@ describe("delete_account action", () => {
     const again = await first.as.action(api.identity.delete_account, {});
     expect(again.requestId).toBe(firstResponse.requestId);
     expect(await t.run((ctx) => ctx.db.query("privacy_requests").collect())).toHaveLength(1);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("an account with Apple and Google linked", () => {
+  const storedProvider = (t: TestConvex, userId: string) =>
+    t.run(async (ctx) => (await ctx.db.query("users").withIndex("by_uuid", (q) => q.eq("id", userId)).unique())!.auth_provider);
+
+  test("sync_sign_in_methods refuses a caller who is signed out", async () => {
+    const t = newTest();
+    await expectFail(t.action(api.identity.sync_sign_in_methods, {}), "not_signed_in", "Invalid session");
+  });
+
+  test("sync_sign_in_methods stores Apple when it is linked next to Google", async () => {
+    const t = newTest();
+    stubNetwork({ appleAndGoogle: true });
+    const { first } = await createCouple(t);
+    await t.run(async (ctx) => {
+      const user = await ctx.db.query("users").withIndex("by_uuid", (q) => q.eq("id", first.userId)).unique();
+      await ctx.db.patch(user!._id, { auth_provider: "google" });
+    });
+
+    expect(await first.as.action(api.identity.sync_sign_in_methods, {})).toEqual({ auth_provider: "apple" });
+    expect(await storedProvider(t, first.userId)).toBe("apple");
+
+    // Unlinking Apple leaves Google.
+    stubNetwork({ noAppleAccount: true });
+    expect(await first.as.action(api.identity.sync_sign_in_methods, {})).toEqual({ auth_provider: "google" });
+    expect(await storedProvider(t, first.userId)).toBe("google");
+  });
+
+  test("sync_sign_in_methods keeps the stored provider when Clerk cannot be asked", async () => {
+    const t = newTest();
+    stubNetwork({ clerkUserStatus: 500 });
+    const { first } = await createCouple(t);
+    await expectFail(first.as.action(api.identity.sync_sign_in_methods, {}), "sign_in_methods_unavailable");
+  });
+
+  test("delete_account revokes Apple for a user whose stored provider is Google", async () => {
+    const t = newTest();
+    await configureApple();
+    const calls = stubNetwork({ appleAndGoogle: true });
+    const { first } = await createCouple(t);
+    await t.run(async (ctx) => {
+      const user = await ctx.db.query("users").withIndex("by_uuid", (q) => q.eq("id", first.userId)).unique();
+      await ctx.db.patch(user!._id, { auth_provider: "google" });
+    });
+
+    const response = await first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
+    expect(response).toMatchObject({ appleRevocation: "succeeded", requiresManualAppleRevocation: false });
+    expect(calls.some((call) => call.url === "https://appleid.apple.com/auth/revoke")).toBe(true);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("delete_account still revokes Apple when Clerk cannot list the linked accounts but the app sent an Apple code", async () => {
+    const t = newTest();
+    await configureApple();
+    // The earlier sync failed, so the stored provider is Google, and Clerk's lookup fails now too.
+    const calls = stubNetwork({ clerkUserStatus: 500 });
+    const { first } = await createCouple(t);
+    await t.run(async (ctx) => {
+      const user = await ctx.db.query("users").withIndex("by_uuid", (q) => q.eq("id", first.userId)).unique();
+      await ctx.db.patch(user!._id, { auth_provider: "google" });
+    });
+
+    const response = await first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
+    expect(response).toMatchObject({ appleRevocation: "succeeded", requiresManualAppleRevocation: false });
+    expect(calls.some((call) => call.url === "https://appleid.apple.com/auth/revoke")).toBe(true);
+    expect(await t.run((ctx) => ctx.db.query("account_deletion_jobs").first())).toMatchObject({ auth_provider: "apple" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a Clerk answer of no Apple account is trusted, even when a code is sent", async () => {
+    const t = newTest();
+    await configureApple();
+    const calls = stubNetwork({ noAppleAccount: true });
+    const { first } = await createCouple(t);
+    // Clerk answered: no Apple account is linked, so a code does not start a revocation.
+    const response = await first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
+    expect(response).toMatchObject({ appleRevocation: "not_required" });
+    expect(calls.some((call) => call.url.includes("appleid.apple.com"))).toBe(false);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a deletion stored without Apple is upgraded once Clerk shows Apple is linked", async () => {
+    const t = newTest();
+    await configureApple();
+    const { first } = await createCouple(t);
+    // The app's fallback request ran while Clerk could not be asked.
+    await first.as.mutation(api.identity.request_account_deletion, {});
+    expect(await t.run((ctx) => ctx.db.query("account_deletion_jobs").first())).toMatchObject({ auth_provider: "unknown" });
+
+    const calls = stubNetwork({ appleAndGoogle: true });
+    const response = await first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
+    expect(response.appleRevocation).toBe("succeeded");
+    expect(calls.some((call) => call.url === "https://appleid.apple.com/auth/revoke")).toBe(true);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });

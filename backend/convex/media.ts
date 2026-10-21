@@ -730,7 +730,19 @@ export async function sweepOrphanStorage(ctx: MutationCtx, limit: number): Promi
           .query("report_snapshot_assets")
           .withIndex("by_storage_id", (q) => q.eq("storage_id", blob._id))
           .first();
-    if (!asset && !snapshot) {
+    // A zip of "Download my data", or a data file that waits for one, lives in storage for a few days.
+    const exportFile =
+      asset || snapshot
+        ? null
+        : ((await ctx.db
+            .query("data_export_parts")
+            .withIndex("by_storage_id", (q) => q.eq("storage_id", blob._id))
+            .first()) ??
+          (await ctx.db
+            .query("data_export_chunks")
+            .withIndex("by_storage_id", (q) => q.eq("storage_id", blob._id))
+            .first()));
+    if (!asset && !snapshot && !exportFile) {
       await ctx.storage.delete(blob._id);
       removed += 1;
     }

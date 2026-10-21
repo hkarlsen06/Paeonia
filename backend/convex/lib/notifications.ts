@@ -22,6 +22,7 @@ const NOTIFICATION_KINDS = [
   "partner_answered",
   "widget_updated",
   "location_updated",
+  "location_pause_ended",
   "subscription_trial_reminder",
   "memory_created",
   "story_posted",
@@ -34,6 +35,7 @@ const NOTIFICATION_KINDS = [
   "partner_joined",
   "topics_waiting",
   "badge_update",
+  "data_export_ready",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

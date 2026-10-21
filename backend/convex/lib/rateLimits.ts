@@ -23,6 +23,8 @@ const LIMITS = {
   // One call per batch of Home heart taps, so a person tapping for a minute uses a few.
   heartsSend: { kind: "token bucket", rate: 120, period: HOUR, capacity: 60 },
   contentReport: { kind: "token bucket", rate: 10, period: HOUR, capacity: 10 },
+  // "Download my data" builds a copy of everything, so it is limited to a few a day.
+  dataExportRequest: { kind: "token bucket", rate: 3, period: 24 * HOUR, capacity: 3 },
 } as const;
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, LIMITS);

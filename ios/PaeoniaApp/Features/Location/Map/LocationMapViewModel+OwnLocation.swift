@@ -13,6 +13,7 @@ extension LocationMapViewModel {
         }
 
         guard sharingEnabled,
+              !isSharingPaused,
               let currentUserID = identity.currentUserID,
               let coupleID = identity.coupleID,
               let operationID = beginOperation(.refresh)
@@ -49,6 +50,7 @@ extension LocationMapViewModel {
     func submitObservedLocation(_ location: LocationPoint) async {
         refreshAuthorizationState()
         guard sharingEnabled,
+              !isSharingPaused,
               authorizationState == .authorized,
               let currentUserID = identity.currentUserID,
               let coupleID = identity.coupleID,

@@ -90,8 +90,8 @@ extension RootViewModel {
         await endSession(purgingLocalData: false)
     }
 
-    /// Deletes the account after the user confirmed it. Apple users sign in to
-    /// Apple once more so the server can revoke Sign in with Apple. Cancelling
+    /// Deletes the account after the user confirmed it. Accounts with Apple linked
+    /// sign in to Apple once more so the server can revoke Sign in with Apple. Cancelling
     /// that Apple sheet keeps the account; if Apple fails for another reason,
     /// deletion continues and the user gets the manual Apple step afterwards.
     func deleteAccount(reauthenticatingWith appleSignInProvider: any AppleSignInProviding) async {
@@ -99,10 +99,15 @@ extension RootViewModel {
             return
         }
 
+        // Block a second delete while the Apple sheet is up.
+        isWorking = true
+        var hasApple = currentSession?.provider == .apple
+        if !hasApple, let appleIsLinked {
+            hasApple = await appleIsLinked()
+        }
+
         var authorizationCode: String?
-        if currentSession?.provider == .apple {
-            // Block a second delete while the Apple sheet is up.
-            isWorking = true
+        if hasApple {
             do {
                 authorizationCode = try await appleSignInProvider.signIn().authorizationCode
             } catch where Self.isUserCancelledAuthError(error) {
@@ -111,8 +116,8 @@ extension RootViewModel {
             } catch {
                 authorizationCode = nil
             }
-            isWorking = false
         }
+        isWorking = false
 
         await deleteAccount(appleAuthorizationCode: authorizationCode)
     }

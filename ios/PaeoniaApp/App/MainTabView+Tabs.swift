@@ -120,6 +120,9 @@ extension MainTabView {
             onPromptCurrentLocation: {
                 Task { await actions.shareLocation() }
             },
+            onPauseLocationSharing: { end in
+                Task { await locationViewModel.pauseSharing(until: end) }
+            },
             // Topic chats stay off Home. The Topics card says when one has a new message.
             unreadChats: dailyChallengeViewModel.unreadDailyChats.map { summary in
                 UnreadChatRow(
@@ -189,7 +192,6 @@ extension MainTabView {
             currentDisplayName: identity.currentDisplayName,
             currentCustomProfilePhotoAssetID: identity.currentCustomProfilePhotoAssetID,
             currentProviderProfilePhotoAssetID: identity.currentProviderProfilePhotoAssetID,
-            currentAuthProvider: identity.currentAuthProvider,
             partnerUserID: identity.partnerUserID,
             partnerProfilePhotoAssetID: identity.partnerProfilePhotoAssetID,
             relationshipStartedOn: milestoneViewModel.startedOn,

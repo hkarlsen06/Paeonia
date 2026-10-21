@@ -66,10 +66,10 @@ actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersisting {
         }
     }
 
-    func setViewerSharingEnabled(
+    func setViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        choice: ViewerSharingChoice,
         updatedAt: Date,
         isPendingConfirmation: Bool
     ) throws {}
@@ -77,7 +77,7 @@ actor IdentitySwitchVisibilityStore: LocationVisibilitySnapshotPersisting {
     func confirmViewerSharing(
         ownerUserID: UUID,
         coupleID: UUID,
-        isEnabled: Bool,
+        confirmation: ViewerSharingConfirmation,
         updatedAt: Date,
         otherChoicesPending: Bool
     ) throws {}

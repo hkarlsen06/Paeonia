@@ -60,7 +60,7 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 18 October 2026',
+    updated: 'Last updated 21 October 2026',
     sections: [
       {
         heading: 'Who this policy is for',
@@ -115,6 +115,7 @@ export const legalEn = {
         paragraphs: [
           'Location sharing is optional and works only when both partners turn it on. Paeonia updates your latest location when you open the app, each time you move about 250 meters or more while it is open, and when you ask it to refresh. Your partner sees the location and when it was recorded, including when it may be old.',
           'You can also choose to share while Paeonia is closed. This is a separate setting on each phone, it is off by default, and it needs location access set to Always. When it is on, iOS wakes Paeonia after you move a good distance, usually 500 meters or more, and Paeonia sends that one latest location. It does not track your route or keep a history. Turning location sharing off, or changing location access away from Always, stops it.',
+          'You can pause location sharing for 1 hour, 4 hours, or until morning. While it is paused, nothing is sent, your latest shared location is deleted, and you and your partner cannot see each other on the map. Your partner sees that sharing is paused, but not when it ends. Sharing starts again by itself when the pause ends.',
           'Turning location sharing off deletes your latest shared location. The latest locations are also removed when the relationship ends or account deletion begins.',
         ],
       },
@@ -145,7 +146,7 @@ export const legalEn = {
         paragraphs: [
           'We keep active account and relationship data while it is needed to provide Paeonia. When a relationship ends, shared content is hidden immediately and is normally scheduled for deletion after about 30 days. Latest shared locations are deleted immediately. Local private caches are hidden or cleared when access ends.',
           'Reported-content snapshots are kept while a report is open and normally for 180 days after it is resolved. The report record, moderation actions, block state, safety warning, subscription records, privacy-request audit records, and limited security or legal records may be kept longer when needed for safety, accounting, dispute handling, fraud prevention, or legal obligations.',
-          'Pending uploads and operational records are kept only as long as needed to finish, retry, secure, or clean up the related action. Notification and request records are normally deleted after about 30 days. Deleted data can stay in our server backups for up to 14 days before the backups are replaced.',
+          'Pending uploads and operational records are kept only as long as needed to finish, retry, secure, or clean up the related action. Notification and request records are normally deleted after about 30 days. A copy of your data that you prepare with Download my data is deleted from our servers after three days, or sooner if you delete it. Deleted data can stay in our server backups for up to 14 days before the backups are replaced.',
           'Usage statistics and crash reports are deleted once you have not used Paeonia for a year. They are deleted sooner if you turn off Share usage statistics or delete your account.',
           'Retention periods may be extended where the law requires it or a legal claim must be preserved.',
         ],
@@ -178,7 +179,7 @@ export const legalEn = {
         heading: 'Your choices and rights',
         paragraphs: [
           'You can edit profile details, turn location sharing and notifications off, leave a relationship, block a partner, and delete your account from the app where those controls are available. To withdraw your consent to usage statistics and crash reports, open the Us tab, then Privacy and safety, and turn off Share usage statistics. Your phone stops sending them right away, and we ask PostHog to delete what it already has, which takes about a week. Something being sent at that exact moment can still arrive.',
-          'You may ask for access to or an export of your data, correction, deletion, restriction, or another right available where you live. An export normally covers your account data and your own contributions; it does not automatically disclose your partner\'s private answers, media, reports, or other personal data. In the app, open the Us tab, then Privacy and safety, to ask to see what we store, ask for a copy, or ask for a correction. We reply by email to the address on your account, normally within a month. You can also write to contact@paeonia.no.',
+          'You may ask for access to or a copy of your data, correction, deletion, restriction, or another right available where you live. To get a copy yourself, open the Us tab, then Privacy and safety, then Download my data. It is free and needs no subscription. Paeonia prepares it in the background, usually within minutes, tells you when it is ready, and keeps it for three days. It holds your account data and everything you wrote, uploaded, or chose, as JSON files that other services can read, with your original photos, voice messages, and drawings. A README explains each file and how we use your data. It also holds the things you share with your partner as one, such as memories, countdowns, streaks, and game results, while you are together. It does not include what your partner wrote or uploaded, their location or settings, or reports about you, because that is other people\'s personal data. To ask for a correction, open Privacy and safety and tap Ask for a correction. We reply by email to the address on your account, normally within a month. The usage statistics PostHog keeps are not in the copy. If you agreed to share them, email contact@paeonia.no and we will fetch them for you. You can also write to contact@paeonia.no for anything else.',
           'You may also complain to your local data protection authority. In Norway, this is Datatilsynet. We may need to verify your identity before completing a request.',
         ],
       },

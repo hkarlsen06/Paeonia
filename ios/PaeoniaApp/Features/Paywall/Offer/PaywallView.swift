@@ -22,6 +22,7 @@ struct PaywallView: View {
 
     @State private var isConfirmingDelete = false
     @State private var isConfirmingUnpair = false
+    @State private var isShowingDataExport = false
     @State private var isEnteringInviteCode = false
     /// A purchase or restore went through and the next screen is on its
     /// way. The buttons wait instead of offering to buy again. If the access check
@@ -129,6 +130,9 @@ struct PaywallView: View {
                 onSubmit: { await onSubmitInviteCode($0) }
             )
         }
+        .sheet(isPresented: $isShowingDataExport) {
+            DataExportScreen()
+        }
         .modifier(
             PaywallConfirmationAlerts(
                 isConfirmingDelete: $isConfirmingDelete,
@@ -213,6 +217,9 @@ private extension PaywallView {
             onSignOut: onSignOut,
             onRequestUnpair: {
                 isConfirmingUnpair = true
+            },
+            onRequestDataExport: {
+                isShowingDataExport = true
             },
             onRequestDeleteAccount: {
                 isConfirmingDelete = true

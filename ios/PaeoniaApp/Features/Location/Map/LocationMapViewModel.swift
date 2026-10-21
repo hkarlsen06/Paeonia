@@ -46,10 +46,14 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     private var loadedVisibility: LocationVisibilitySnapshot?
     private var loadedOwnLocation: OwnLocationSnapshot?
     private var hasLoadedSnapshots = false
+    @ObservationIgnored var pauseExpiryTask: Task<Void, Never>?
 
     private(set) var mapState: CoupleMapState = .loading
     private(set) var isPresentationReady = false
     private(set) var sharingEnabled = false
+    /// When your pause ends, while sharing is on but paused. The partner never gets this time.
+    /// Only `trackPause` (in `LocationMapViewModel+Pause.swift`) sets it.
+    var pausedUntil: Date?
     private(set) var isSharingLoaded = false
     private(set) var hasResolvedSharingPreference = false
     private(set) var notice: Notice?
@@ -61,6 +65,12 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     /// disabled so a second flip cannot be dropped halfway.
     var isUpdatingSharing: Bool {
         activeOperation?.kind == .sharingChange
+    }
+
+    /// Sharing is on and paused, and the pause has not reached its time on this
+    /// phone's clock. Nothing is sent meanwhile.
+    var isSharingPaused: Bool {
+        sharingEnabled && (pausedUntil ?? .distantPast) > Date()
     }
 
     init(
@@ -194,6 +204,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         mapState = .loading
         isPresentationReady = false
         sharingEnabled = false
+        trackPause(until: nil)
         isSharingLoaded = false
         hasResolvedSharingPreference = false
     }
@@ -203,6 +214,7 @@ final class LocationMapViewModel: PresentationReadinessProviding {
         // reload runs behind the system location sheet.
         if !isUpdatingSharing {
             sharingEnabled = visibility?.viewerSharingEnabled ?? false
+            trackPause(until: visibility?.pausedUntil(at: Date()))
         }
         isSharingLoaded = true
         hasResolvedSharingPreference = visibility != nil
@@ -216,7 +228,9 @@ final class LocationMapViewModel: PresentationReadinessProviding {
     func promptForCurrentLocation() async {
         guard activeOperation == nil else { return }
 
-        if sharingEnabled {
+        if isSharingPaused {
+            await resumeSharing()
+        } else if sharingEnabled {
             await refreshOwnLocationIfSharingEnabled(source: .manualRefresh)
         } else {
             await setSharingEnabled(true)

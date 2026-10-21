@@ -57,8 +57,9 @@ struct PrivacySafetyServiceTests {
             from: Data(json.utf8)
         )
 
-        #expect(list.rows.map(\.requestKind) == [.access, .correction])
-        #expect(list.rows.map(\.status) == [.submitted, .completed])
+        // Access and export requests no longer exist, so old rows of those kinds are skipped.
+        #expect(list.rows.map(\.requestKind) == [.correction])
+        #expect(list.rows.map(\.status) == [.completed])
         #expect(list.rows.last?.visibleStatusMessage == "Done")
     }
 
@@ -69,27 +70,27 @@ struct PrivacySafetyServiceTests {
     }
 
     @Test func activeRequestIsReusedInsteadOfCreatingDuplicate() async throws {
-        let activeRow = makePrivacyRemoteRequest(kind: .export, status: .processing)
+        let activeRow = makePrivacyRemoteRequest(kind: .correction, status: .processing)
         let gateway = PrivacyFakeGateway(rows: [activeRow])
         let service = PrivacySafetyService(gateway: gateway)
 
-        let outcome = try await service.submitPrivacyRequest(kind: .export, requesterNote: nil)
+        let outcome = try await service.submitPrivacyRequest(kind: .correction, requesterNote: nil)
 
         #expect(outcome == .alreadyActive(activeRow.request))
         #expect(await gateway.createCallCount == 0)
     }
 
     @Test func terminalRequestAllowsNewRequest() async throws {
-        let oldRow = makePrivacyRemoteRequest(kind: .access, status: .completed)
+        let oldRow = makePrivacyRemoteRequest(kind: .correction, status: .completed)
         let createdRow = makePrivacyRemoteRequest(
-            kind: .access,
+            kind: .correction,
             status: .submitted,
             requestedAt: Date(timeIntervalSince1970: 20)
         )
         let gateway = PrivacyFakeGateway(rows: [oldRow], createdRow: createdRow)
         let service = PrivacySafetyService(gateway: gateway)
 
-        let outcome = try await service.submitPrivacyRequest(kind: .access, requesterNote: nil)
+        let outcome = try await service.submitPrivacyRequest(kind: .correction, requesterNote: nil)
 
         #expect(outcome == .created(createdRow.request))
         #expect(await gateway.createCallCount == 1)

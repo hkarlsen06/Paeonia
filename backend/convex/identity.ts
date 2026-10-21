@@ -1,8 +1,10 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { action, mutation, query, type MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { action, internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { requestAccountDeletion, runDeleteAccount } from "./accountDeletion";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
+import { fetchLinkedSignInProviders } from "./lib/accountDeletionProviders";
 import { authProviderFromIdentity, ensureCurrentUser, requireUserId, requireUserIdIncludingDeleted } from "./lib/auth";
 import { orNull, type ReaderCtx, withTouch } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
@@ -355,7 +357,8 @@ export const get_privacy_requests = query({
   },
 });
 
-const REQUEST_KINDS = ["access", "export", "deletion", "correction"] as const;
+// Access and export are not requests: "Download my data" (dataExport.ts) answers both at once.
+const REQUEST_KINDS = ["deletion", "correction"] as const;
 
 export const create_privacy_request = mutation({
   args: { p_id: v.string(), p_kind: v.string(), p_requester_note: v.optional(v.union(v.null(), v.string())) },
@@ -434,4 +437,58 @@ export const request_account_deletion = mutation({
 export const delete_account = action({
   args: { appleAuthorizationCode: v.optional(v.union(v.null(), v.string())) },
   handler: async (ctx, args) => await runDeleteAccount(ctx, args.appleAuthorizationCode),
+});
+
+// ---- linked sign-in methods ----
+
+/**
+ * Records which provider the account deletion has to care about. A person can
+ * link both Apple and Google to one account. Apple wins when it is linked,
+ * because only Apple has a revocation duty. Without Apple, Google is recorded.
+ */
+export const record_sign_in_methods = internalMutation({
+  args: { clerk_user_id: v.string(), providers: v.array(v.union(v.literal("apple"), v.literal("google"))) },
+  handler: async (ctx, args): Promise<{ auth_provider: string }> => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerk_user_id", args.clerk_user_id))
+      .unique();
+    if (!user) {
+      return fail("42501", "authenticated user required");
+    }
+    const authProvider = args.providers.includes("apple")
+      ? "apple"
+      : args.providers.includes("google")
+        ? "google"
+        : user.auth_provider;
+    if (user.auth_provider !== authProvider) {
+      await ctx.db.patch(user._id, { auth_provider: authProvider });
+    }
+    return { auth_provider: authProvider };
+  },
+});
+
+/**
+ * Called by the app after the person links or unlinks Apple or Google. It asks
+ * Clerk, which is the source of truth, and stores the result in
+ * `users.auth_provider`, so account deletion still revokes Apple when the
+ * Clerk lookup fails at that moment. Fails with `sign_in_methods_unavailable`
+ * when Clerk cannot be reached.
+ */
+export const sync_sign_in_methods = action({
+  args: {},
+  handler: async (ctx): Promise<{ auth_provider: string }> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return fail("not_signed_in", "Invalid session");
+    }
+    const providers = await fetchLinkedSignInProviders(identity.subject);
+    if (providers === null) {
+      return fail("sign_in_methods_unavailable", "Could not read the linked sign-in methods");
+    }
+    return await ctx.runMutation(internal.identity.record_sign_in_methods, {
+      clerk_user_id: identity.subject,
+      providers: [...providers],
+    });
+  },
 });

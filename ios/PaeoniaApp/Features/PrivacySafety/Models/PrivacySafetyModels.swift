@@ -1,8 +1,8 @@
 import Foundation
 
+/// Asking to see or copy your data is not a request: "Download my data" answers
+/// it at once (`DataExportService`). What is left needs a person at Paeonia.
 nonisolated enum PrivacyRequestKind: String, CaseIterable, Codable, Hashable, Sendable {
-    case access
-    case export
     case correction
 }
 

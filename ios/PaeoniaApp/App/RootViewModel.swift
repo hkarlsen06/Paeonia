@@ -33,6 +33,11 @@ final class RootViewModel {
     /// without a network call. `nil` from the closure means it is still
     /// loading. Without a closure (tests, development sign-in) nothing is watched.
     let authProviderSessionIsActive: (@MainActor () -> Bool?)?
+    /// Whether Apple is linked to the account, also when the person signed in
+    /// with Google. Account deletion asks Apple for a fresh authorization code
+    /// then, which the server needs to revoke Sign in with Apple. Without a
+    /// closure only a session that signed in with Apple counts.
+    let appleIsLinked: (@MainActor () async -> Bool)?
     @ObservationIgnored private var authProviderWatch: Task<Void, Never>?
     /// How long a cold launch waits for the server before it shows the access
     /// state saved on this phone. The server result still replaces it later.
@@ -57,6 +62,8 @@ final class RootViewModel {
     /// Sign in with Apple authorization automatically.
     var requiresManualAppleRevocation = false
     private(set) var presentedDestination: RootPresentedDestination?
+    /// The "Download my data" screen, opened by the notification that says the download is ready.
+    var isShowingDataExport = false
     /// The selected paired tab. Owned here (rather than in the tab view) so that
     /// navigation intent can move the user to the right tab and present its
     /// destination as one atomic change. See [openWidgetDrawing].
@@ -111,9 +118,11 @@ final class RootViewModel {
         liveSync: (any LiveSyncCoordinating)? = nil,
         deviceOwnerStore: (any RootDeviceOwnerStoring)? = nil,
         authProviderSessionIsActive: (@MainActor () -> Bool?)? = nil,
+        appleIsLinked: (@MainActor () async -> Bool)? = nil,
         savedAccessGracePeriod: Duration = .seconds(1)
     ) {
         self.authProviderSessionIsActive = authProviderSessionIsActive
+        self.appleIsLinked = appleIsLinked
         let resolvedLiveSync = liveSync ?? (syncService == nil ? LiveSyncCoordinator.makeDefault() : nil)
         let resolvedSyncService = syncService ?? PaeoniaSyncService(liveSync: resolvedLiveSync)
         self.syncService = resolvedSyncService

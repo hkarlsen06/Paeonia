@@ -13,6 +13,8 @@ struct ProfileSettingsView: View {
     let customProfilePhotoAssetID: UUID?
     let providerProfilePhotoAssetID: UUID?
     let onSave: @MainActor @Sendable (String, AuthProfilePhotoUpdate) async -> Bool
+    /// Nil when the build has no sign-in service, so the section is hidden.
+    let signInMethods: SignInMethodsViewModel?
     let accountSection: SettingsAccountSection
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -23,6 +25,11 @@ struct ProfileSettingsView: View {
                 ProfileHeaderEditorView(editor: editor)
                     .padding(.vertical, PaeoniaSpacing.space8)
                     .listRowBackground(Color.clear)
+            }
+
+            if let signInMethods {
+                SettingsSignInMethodsSection(viewModel: signInMethods)
+                    .listRowBackground(Color.paeoniaSurfacePrimary)
             }
 
             accountSection
@@ -50,6 +57,9 @@ struct ProfileSettingsView: View {
                     }
                 }
             }
+        }
+        .task {
+            await signInMethods?.refresh()
         }
         // The name field lives on this screen, so the keyboard needs the standard
         // Done button and scroll-away dismissal here. Not tap-away: a tap gesture
@@ -124,9 +134,9 @@ private struct SavedProfile: Equatable {
             customProfilePhotoAssetID: nil,
             providerProfilePhotoAssetID: nil,
             onSave: { _, _ in true },
+            signInMethods: nil,
             accountSection: SettingsAccountSection(
                 viewModel: SettingsViewModel(),
-                authProvider: .apple,
                 partnerName: "Oda",
                 onLeftRelationship: {},
                 onLogout: {},

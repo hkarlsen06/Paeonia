@@ -67,6 +67,8 @@ nonisolated struct LocationSharingOperationPayload: Codable, Equatable, Sendable
     let isEnabled: Bool
     let consentVersion: String?
     let source: LocationSharingSource
+    /// Sharing is on but paused until this time. `nil` is not paused.
+    var pausedUntil: Date?
 }
 
 nonisolated struct LatestPartnerLocationOperationPayload: Codable, Equatable, Sendable {
@@ -97,6 +99,7 @@ nonisolated struct LocationSharingPreferenceUpdateResponse: Decodable, Equatable
     let isEnabled: Bool
     let enabledAt: Date?
     let disabledAt: Date?
+    var pausedUntil: Date?
     let updatedAt: Date
 
     enum CodingKeys: String, CodingKey {
@@ -105,6 +108,7 @@ nonisolated struct LocationSharingPreferenceUpdateResponse: Decodable, Equatable
         case isEnabled = "is_enabled"
         case enabledAt = "enabled_at"
         case disabledAt = "disabled_at"
+        case pausedUntil = "paused_until"
         case updatedAt = "updated_at"
     }
 }
@@ -136,6 +140,7 @@ nonisolated struct UpdateLocationSharingPreferenceRequest: Encodable {
     let isEnabled: Bool
     let consentVersion: String?
     let source: String
+    let pausedUntil: Date?
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
@@ -146,6 +151,7 @@ nonisolated struct UpdateLocationSharingPreferenceRequest: Encodable {
         isEnabled = payload.isEnabled
         consentVersion = payload.consentVersion
         source = payload.source.rawValue
+        pausedUntil = payload.pausedUntil
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -157,6 +163,7 @@ nonisolated struct UpdateLocationSharingPreferenceRequest: Encodable {
         case isEnabled = "p_is_enabled"
         case consentVersion = "p_consent_version"
         case source = "p_source"
+        case pausedUntil = "p_paused_until"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"
@@ -173,6 +180,11 @@ nonisolated struct UpdateLocationSharingPreferenceRequest: Encodable {
             try container.encodeNil(forKey: .consentVersion)
         }
         try container.encode(source, forKey: .source)
+        if let pausedUntil {
+            try container.encode(pausedUntil, forKey: .pausedUntil)
+        } else {
+            try container.encodeNil(forKey: .pausedUntil)
+        }
         try container.encode(clientOperationID, forKey: .clientOperationID)
         try container.encode(clientID, forKey: .clientID)
         try container.encode(clientSequence, forKey: .clientSequence)
@@ -249,6 +261,7 @@ nonisolated struct PartnerLocationVisibility: Decodable, Equatable, Sendable {
     let partnerLocationAccuracyMeters: Double?
     let partnerLocationCapturedAt: Date?
     let partnerLocationIsStale: Bool
+    var viewerPausedUntil: Date?
     let updatedAt: Date
 
     enum CodingKeys: String, CodingKey {
@@ -263,6 +276,7 @@ nonisolated struct PartnerLocationVisibility: Decodable, Equatable, Sendable {
         case partnerLocationAccuracyMeters = "partner_location_accuracy_m"
         case partnerLocationCapturedAt = "partner_location_captured_at"
         case partnerLocationIsStale = "partner_location_is_stale"
+        case viewerPausedUntil = "viewer_paused_until"
         case updatedAt = "updated_at"
     }
 
@@ -278,7 +292,8 @@ nonisolated struct PartnerLocationVisibility: Decodable, Equatable, Sendable {
             partnerLocation: partnerLocation,
             partnerLocationIsStale: partnerLocationIsStale,
             updatedAt: updatedAt,
-            refreshedAt: refreshedAt
+            refreshedAt: refreshedAt,
+            viewerPausedUntil: viewerPausedUntil
         )
     }
 

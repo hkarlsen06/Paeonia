@@ -126,7 +126,10 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
  * (`PaeoniaNotificationCategory`), which gives the lock screen a short line such as "New message"
  * when Show Previews is off. Keep the two lists the same.
  */
-const NOTIFICATION_CATEGORY: Record<Exclude<NotificationKind, "location_updated" | "badge_update">, string> = {
+const NOTIFICATION_CATEGORY: Record<
+  Exclude<NotificationKind, "location_updated" | "location_pause_ended" | "badge_update" | "data_export_ready">,
+  string
+> = {
   thread_message_sent: "message",
   widget_updated: "drawing",
   partner_answered: "answer",

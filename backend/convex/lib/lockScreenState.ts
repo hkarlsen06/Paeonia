@@ -5,6 +5,7 @@ import { instancesOfDay, isLive, visibleAnswersOf } from "./dailyQuestions";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
 import { newestGame as newestMindMeldGame } from "./mindMeld";
+import { isSharingNow } from "./locationPause";
 import { findProfile } from "./profiles";
 import { getCoupleStreakParticipationForDay, readCoupleStreak } from "./streaks";
 import { addDaysToDate } from "./time";
@@ -51,7 +52,7 @@ async function distanceBetween(ctx: ReaderCtx, coupleId: string, userId: string,
       .query("location_sharing_preferences")
       .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", id))
       .unique();
-    if (!preference?.is_enabled) return null;
+    if (!isSharingNow(preference)) return null;
     const location = await ctx.db
       .query("latest_partner_locations")
       .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", id))

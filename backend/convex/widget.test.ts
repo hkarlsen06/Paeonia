@@ -768,6 +768,23 @@ describe("get_lock_screen_state", () => {
       });
       expect((await stateOf(couple.first))!.distance).toBeNull();
     });
+
+    test("is null while either partner has paused sharing, and comes back after", async () => {
+      const t = newTest();
+      const couple = await createCouple(t);
+      await share(t, couple.coupleId, couple.first, true, 0, "2026-10-10T11:00:00.000Z");
+      await share(t, couple.coupleId, couple.second, true, 1, "2026-10-10T11:30:00.000Z");
+      const setPause = (pausedUntil: string | undefined) =>
+        t.run(async (ctx) => {
+          const preference = await ctx.db.query("location_sharing_preferences").filter((q) => q.eq(q.field("user_id"), couple.second.userId)).unique();
+          await ctx.db.patch(preference!._id, { paused_until: pausedUntil });
+        });
+      await setPause("2026-10-10T13:00:00.000Z");
+      expect((await stateOf(couple.first))!.distance).toBeNull();
+      expect((await stateOf(couple.second))!.distance).toBeNull();
+      await setPause(undefined);
+      expect((await stateOf(couple.first))!.distance).not.toBeNull();
+    });
   });
 
   test("tracks the daily questions and the streak halves for each partner", async () => {

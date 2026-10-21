@@ -36,7 +36,14 @@ struct LocationSharingPendingOperationHandler: PendingSyncOperationHandling {
         try await visibilityStore.confirmViewerSharing(
             ownerUserID: response?.userID ?? operation.ownerUserID,
             coupleID: response?.coupleID ?? payload.coupleID,
-            isEnabled: response?.isEnabled ?? payload.isEnabled,
+            // The server's answer wins. It clears a pause whose end passed while the phone was offline.
+            confirmation: ViewerSharingConfirmation(
+                submitted: ViewerSharingChoice(isEnabled: payload.isEnabled, pausedUntil: payload.pausedUntil),
+                confirmed: ViewerSharingChoice(
+                    isEnabled: response?.isEnabled ?? payload.isEnabled,
+                    pausedUntil: response.map { $0.pausedUntil } ?? payload.pausedUntil
+                )
+            ),
             updatedAt: response?.updatedAt ?? Date(),
             otherChoicesPending: otherChoicesPending
         )
@@ -141,7 +148,17 @@ struct LatestLocationPendingOperationHandler: PendingSyncOperationHandling {
         guard case let .server(code, _) = error as? PaeoniaConvexError else {
             return false
         }
-        return code == "23514" || isSharingOffRejection(error)
+        return code == "23514" || isSharingOffRejection(error) || isPausedRejection(error)
+    }
+
+    /// The server refused because this person paused sharing. A position
+    /// that waited through the pause is out of date, so it is dropped, not retried.
+    static func isPausedRejection(_ error: any Error) -> Bool {
+        guard case let .server(code, message) = error as? PaeoniaConvexError else {
+            return false
+        }
+        return code == PaeoniaConvexError.accessDeniedCode
+            && message.contains("location sharing is paused")
     }
 
     /// The server refused because sharing is off for this person.

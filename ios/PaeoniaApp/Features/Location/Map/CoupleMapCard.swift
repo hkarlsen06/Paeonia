@@ -20,6 +20,8 @@ struct CoupleMapCard: View {
     let partnerProfilePhotoAssetID: UUID?
     let state: CoupleMapState
     var onPromptCurrentLocation: () -> Void = {}
+    /// Pauses sharing until the given time. Nil leaves the pause menu off the map (previews).
+    var onPauseSharing: ((Date) -> Void)?
     /// Sends and receives hearts. Nil leaves the card without them (previews).
     var hearts: HeartsViewModel?
     /// Width over height of the map and loading tiles. The empty states ignore it.
@@ -73,6 +75,8 @@ struct CoupleMapCard: View {
                     action: onPromptCurrentLocation
                 )
             )
+        case let .sharingPaused(until):
+            emptyCard(pausedState(until: until))
         case .locationAccessOff:
             emptyCard(
                 MapEmptyState(
@@ -167,6 +171,8 @@ struct CoupleMapCard: View {
         .accessibilityAction(named: Text(.heartsSendAction)) {
             hearts?.tap()
         }
+        // After the accessibility modifiers, so VoiceOver reaches the menu as its own element.
+        .overlay(alignment: .topLeading) { pauseMenu }
     }
 
     /// "Robin sent you 14 hearts" over the map's top corner. The map's own text sits
@@ -179,6 +185,8 @@ struct CoupleMapCard: View {
                 .padding(.vertical, PaeoniaSpacing.space8)
                 .background(Color.paeoniaBackgroundSecondary.opacity(0.9), in: Capsule())
                 .padding(PaeoniaSpacing.space12)
+                // Leaves room for the pause menu.
+                .padding(.leading, onPauseSharing == nil ? 0 : LocationPauseMenu.size + PaeoniaSpacing.space8)
                 .transition(.opacity)
         }
     }
@@ -195,13 +203,19 @@ struct CoupleMapCard: View {
                 message: .homeMapRelationshipEndedMessage,
                 systemImage: "location.slash.fill"
             )
+        case .partnerPaused:
+            MapEmptyState(
+                title: .homeMapPartnerPausedTitle(partnerName),
+                message: .homeMapPartnerPausedMessage(partnerName),
+                systemImage: "pause.circle.fill"
+            )
         case .unknown:
             MapEmptyState(
                 title: .homeMapUnavailableTitle,
                 message: .homeMapUnavailableMessage,
                 systemImage: "map"
             )
-        case .disabled, .notSharing, .visible:
+        case .disabled, .notSharing, .visible, .viewerPaused:
             MapEmptyState(
                 title: .homeMapPartnerUnknownTitle(partnerName),
                 message: .homeMapPartnerUnknownMessage(partnerName),
@@ -277,6 +291,25 @@ struct CoupleMapCard: View {
 }
 
 extension CoupleMapCard {
+    @ViewBuilder
+    var pauseMenu: some View {
+        if let onPauseSharing {
+            LocationPauseMenu(onChoose: onPauseSharing)
+        }
+    }
+
+    /// Your own pause. The action ends it, through the same handler as "Share location".
+    private func pausedState(until end: Date) -> MapEmptyState {
+        MapEmptyState(
+            title: .homeMapPausedTitle,
+            message: .homeMapPausedMessage(LocationPauseEndText.text(for: end)),
+            systemImage: "pause.circle.fill",
+            actionTitle: .homeMapPausedButton,
+            actionSystemImage: "play.fill",
+            action: onPromptCurrentLocation
+        )
+    }
+
     private func snapshotView(
         current: LocationPoint,
         partner: LocationPoint,
@@ -352,6 +385,14 @@ private func previewCard(_ state: CoupleMapState, hearts: HeartsViewModel? = nil
 
 #Preview("Location access off") {
     previewCard(.locationAccessOff)
+}
+
+#Preview("Sharing paused") {
+    previewCard(.sharingPaused(until: .now.addingTimeInterval(10_800)))
+}
+
+#Preview("Partner paused") {
+    previewCard(.partnerUnknown(.partnerPaused))
 }
 
 #Preview("Waiting for partner") {

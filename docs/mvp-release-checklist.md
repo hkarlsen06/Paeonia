@@ -299,6 +299,8 @@ Record any skipped command with the reason.
 - [ ] Backend with the `background` location source is deployed before a build with updates while closed ships.
 - [ ] On a real device: allow Always, close the app, move about 1 km, and confirm the partner sees the new location.
 - [ ] On a real device: choose "Keep Only While Using" at the iOS question and confirm the "Choose Always in Settings" note appears.
+- [x] Pausing location sharing for 1 hour, 4 hours or until morning keeps sharing on, hides both positions, and ends by itself. The partner sees that sharing is paused, with no end time.
+- [ ] On a real device: pause for 1 hour with updates while closed on, close the app, wait for the pause to end, and confirm the partner sees the new location without opening the app.
 - [x] Foreground location update has a tested source path.
 - [x] Offline stale location retries cannot overwrite newer location.
 - [x] Latest partner location displays with last-updated relative time.
@@ -337,7 +339,8 @@ Record any skipped command with the reason.
 - [x] User can leave relationship.
 - [x] User can report and leave relationship.
 - [x] User can initiate account deletion.
-- [x] User can create a privacy/data request or contact support for data access/export.
+- [x] User can ask for a correction, or delete the account, from Privacy and safety.
+- [ ] User can download all their data in the app (GDPR Art. 15 and 20): JSON files, original photos, voice messages and drawings, a README with the Art. 15 information, a push when it is ready, links that expire. Built on the backend and in the app, see `docs/privacy-and-data-export.md`. Check on a device: a download with real photos, several zip files, and the share sheet.
 - [x] Delete account copy explains account, relationship, and content consequences.
 - [x] Destructive actions require confirmation.
 - [x] Support email is `support@paeonia.no`.

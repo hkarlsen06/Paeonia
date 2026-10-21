@@ -11,7 +11,6 @@ struct SettingsView: View {
     let currentDisplayName: String?
     let currentCustomProfilePhotoAssetID: UUID?
     let currentProviderProfilePhotoAssetID: UUID?
-    let currentAuthProvider: AuthProvider?
     let partnerUserID: UUID?
     let partnerProfilePhotoAssetID: UUID?
     let relationshipStartedOn: String?
@@ -50,6 +49,10 @@ struct SettingsView: View {
     /// Lives here rather than on the profile screen, so a save keeps its state
     /// and still reports back after the user leaves that screen.
     @State private var profileEditor = ProfileEditorViewModel()
+    /// Lives here, like the profile editor, so a link that is running keeps its state
+    /// while the profile screen redraws. Nil when there is no Apple or Google
+    /// account to manage, and the profile screen then hides the sign-in methods.
+    @State private var signInMethods: SignInMethodsViewModel?
     /// Decides whether the Admin row shows. The server checks again on every admin call.
     @State private var adminAccess: AdminAccessModel
 
@@ -60,7 +63,6 @@ struct SettingsView: View {
         currentDisplayName: String? = nil,
         currentCustomProfilePhotoAssetID: UUID? = nil,
         currentProviderProfilePhotoAssetID: UUID? = nil,
-        currentAuthProvider: AuthProvider? = nil,
         partnerUserID: UUID? = nil,
         partnerProfilePhotoAssetID: UUID? = nil,
         relationshipStartedOn: String? = nil,
@@ -78,6 +80,7 @@ struct SettingsView: View {
         onPurchasesRestored: @escaping @MainActor @Sendable () async -> Void = {},
         loadMarkEditor: (@MainActor () async -> BoardMarkEditorModel?)? = nil,
         privacySafetyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
+        signInMethods: SignInMethodsViewModel? = SignInMethodsViewModelFactory.makeDefault(),
         privacyOperationProvider: (any SyncClientOperationProviding)? = nil,
         adminGateway: (any AdminGateway)? = AdminGatewayFactory.makeDefault()
     ) {
@@ -85,7 +88,6 @@ struct SettingsView: View {
         self.currentDisplayName = currentDisplayName
         self.currentCustomProfilePhotoAssetID = currentCustomProfilePhotoAssetID
         self.currentProviderProfilePhotoAssetID = currentProviderProfilePhotoAssetID
-        self.currentAuthProvider = currentAuthProvider
         self.partnerUserID = partnerUserID
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.relationshipStartedOn = relationshipStartedOn
@@ -102,6 +104,7 @@ struct SettingsView: View {
         self.onPurchasesRestored = onPurchasesRestored
         self.loadMarkEditor = loadMarkEditor
         self.privacySafetyService = privacySafetyService
+        _signInMethods = State(initialValue: signInMethods)
         self.privacyOperationProvider = privacyOperationProvider
         self.adminGateway = adminGateway
         _adminAccess = State(initialValue: AdminAccessModel(gateway: adminGateway))
@@ -194,9 +197,9 @@ extension SettingsView {
                 onSave: { [onUpdateProfile] displayName, photoUpdate in
                     await onUpdateProfile(displayName, photoUpdate)
                 },
+                signInMethods: signInMethods,
                 accountSection: SettingsAccountSection(
                     viewModel: viewModel,
-                    authProvider: currentAuthProvider,
                     partnerName: partnerName,
                     onLeftRelationship: onLeftRelationship,
                     onLogout: onLogout,
@@ -267,6 +270,8 @@ extension SettingsView {
             if let loadMarkEditor {
                 SettingsMarkRow(loadEditor: { await loadMarkEditor() })
             }
+
+            AppLockSettingsRow()
 
             NavigationLink {
                 PurchaseSettingsView(

@@ -43,6 +43,24 @@
         }
       }
     },
+    "NSFaceIDUsageDescription" : {
+      "comment" : "Privacy - Face ID Usage Description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia uses Face ID to unlock the app when you turn on the app lock."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia bruker Face ID til å låse opp appen når du slår på applåsen."
+          }
+        }
+      }
+    },
     "NSLocationAlwaysAndWhenInUseUsageDescription" : {
       "comment" : "iOS prompt asking to change location access to Always. Shown right after the user turns on sharing, and when they turn on sharing while the app is closed.",
       "extractionState" : "manual",
