@@ -76,6 +76,7 @@ struct DailyQuestionChatView: View {
         .paeoniaScreenBackground()
         .navigationTitle(Text(.dailyChatNavigationTitle))
         .navigationBarTitleDisplayMode(.inline)
+        .favoriteToolbarItem(.question(viewModel.question.questionID), identifier: "dailyChat.star")
         .task(id: viewModel.isChatAvailable) {
             guard viewModel.isChatAvailable else { return }
             await viewModel.load()
@@ -295,6 +296,7 @@ extension DailyQuestionChatView {
         }
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func handleMenuAction(
         _ action: DailyChatMenuAction,
         _: (ExyteChat.Message, DefaultMessageMenuAction) -> Void,
@@ -314,6 +316,10 @@ extension DailyQuestionChatView {
             UIPasteboard.general.string = message.text
         case .report:
             report(row)
+        case .favorite, .unfavorite:
+            if let answer = row.answer {
+                Task { await FavoritesStore.shared.toggle(.answer(answer.answerID)) }
+            }
         }
     }
 

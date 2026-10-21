@@ -2,7 +2,7 @@ import Foundation
 
 /// The Exquisite corpse backend functions (`backend/convex/exquisiteCorpse.ts`).
 /// Writes that take a client operation are safe to retry: the server runs each
-/// operation id once. The reveal seen mark and the star set a value, so sending
+/// operation id once. The reveal seen mark sets a value, so sending
 /// them twice changes nothing.
 nonisolated protocol ExquisiteCorpseGateway: Sendable {
     func ensureExquisiteCorpseGame() async throws -> RemoteExquisiteCorpseEnsureResult
@@ -19,8 +19,6 @@ nonisolated protocol ExquisiteCorpseGateway: Sendable {
     /// This person moved past the finished figure's reveal. The server keeps the
     /// first time.
     func markExquisiteCorpseRevealSeen(figureID: UUID) async throws -> RemoteExquisiteCorpseRevealSeenResult
-    /// Private. The partner is not told.
-    func setExquisiteCorpseStar(figureID: UUID, starred: Bool) async throws -> RemoteExquisiteCorpseStarResult
     /// A page of the couple's finished figures, newest first, before
     /// `beforeFigureNumber`. With `starredOnly`, only the figures this person starred.
     func loadExquisiteCorpseHistory(
@@ -28,6 +26,9 @@ nonisolated protocol ExquisiteCorpseGateway: Sendable {
         beforeFigureNumber: Int?,
         limit: Int
     ) async throws -> RemoteExquisiteCorpseHistoryPage
+    /// One finished figure by id, also one that is not in a loaded page. Nil when the
+    /// couple has no such finished figure.
+    func loadExquisiteCorpseFigure(figureID: UUID) async throws -> RemoteExquisiteCorpseFigure?
 }
 
 nonisolated struct LiveExquisiteCorpseGateway: ExquisiteCorpseGateway {
@@ -69,13 +70,6 @@ nonisolated struct LiveExquisiteCorpseGateway: ExquisiteCorpseGateway {
         )
     }
 
-    func setExquisiteCorpseStar(figureID: UUID, starred: Bool) async throws -> RemoteExquisiteCorpseStarResult {
-        try await client.mutation(
-            "exquisiteCorpse:set_exquisite_corpse_star",
-            args: StarRequest(figureID: figureID, starred: starred)
-        )
-    }
-
     func loadExquisiteCorpseHistory(
         starredOnly: Bool,
         beforeFigureNumber: Int?,
@@ -85,6 +79,10 @@ nonisolated struct LiveExquisiteCorpseGateway: ExquisiteCorpseGateway {
             "exquisiteCorpse:get_exquisite_corpse_history",
             args: HistoryRequest(starredOnly: starredOnly, beforeFigureNumber: beforeFigureNumber, limit: limit)
         )
+    }
+
+    func loadExquisiteCorpseFigure(figureID: UUID) async throws -> RemoteExquisiteCorpseFigure? {
+        try await client.query("exquisiteCorpse:get_exquisite_corpse_figure", args: FigureRequest(figureID: figureID))
     }
 }
 
@@ -149,16 +147,6 @@ nonisolated private struct FigureRequest: Encodable {
     }
 }
 
-nonisolated private struct StarRequest: Encodable {
-    let figureID: UUID
-    let starred: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case figureID = "p_figure_id"
-        case starred = "p_starred"
-    }
-}
-
 nonisolated private struct HistoryRequest: Encodable {
     let starredOnly: Bool
     /// Nil for the first page, so the key is left out.
@@ -201,15 +189,15 @@ nonisolated struct UnavailableExquisiteCorpseGateway: ExquisiteCorpseGateway {
         throw Unavailable()
     }
 
-    func setExquisiteCorpseStar(figureID _: UUID, starred _: Bool) async throws -> RemoteExquisiteCorpseStarResult {
-        throw Unavailable()
-    }
-
     func loadExquisiteCorpseHistory(
         starredOnly _: Bool,
         beforeFigureNumber _: Int?,
         limit _: Int
     ) async throws -> RemoteExquisiteCorpseHistoryPage {
+        throw Unavailable()
+    }
+
+    func loadExquisiteCorpseFigure(figureID _: UUID) async throws -> RemoteExquisiteCorpseFigure? {
         throw Unavailable()
     }
 }

@@ -31,7 +31,7 @@ struct StoryChainHistoryRow: View {
             if isStarred {
                 Image(systemName: "star.fill")
                     .foregroundStyle(.paeoniaAccentPrimary)
-                    .accessibilityLabel(Text(.storyChainStarred))
+                    .accessibilityLabel(Text(.favoritesStarred))
                     .transition(.scale.combined(with: .opacity))
             }
         }

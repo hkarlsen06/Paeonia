@@ -121,21 +121,4 @@ struct ExquisiteCorpsePhaseTests {
         #expect(reveal.phase == .reveal)
         #expect(reveal.figure?.number == 2)
     }
-
-    @Test func aStarMadeOnThisPhoneShowsOnTheRevealAtOnce() {
-        let finished = Fixture.figure(1)
-        let state = Fixture.state(game: Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me), recent: [finished])
-
-        let starred = resolve(state, pending: Fixture.pending(stars: [(finished.id, true)]))
-        let unstarred = resolve(
-            Fixture.state(
-                game: Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me),
-                recent: [Fixture.figure(1, starred: true)]
-            ),
-            pending: Fixture.pending(stars: [(finished.id, true), (finished.id, false)])
-        )
-
-        #expect(starred.figure?.starredByMe == true)
-        #expect(unstarred.figure?.starredByMe == false)
-    }
 }

@@ -53,8 +53,6 @@ nonisolated struct RemoteExquisiteCorpseFigure: Codable, Equatable, Identifiable
     let finishedAt: Date?
     /// When this person moved past the reveal. The partner's is never sent.
     let myRevealSeenAt: Date?
-    /// This person's own private star.
-    var starredByMe: Bool
     /// By part index. Only the parts this person may see.
     var parts: [RemoteExquisiteCorpsePart]
 
@@ -65,7 +63,6 @@ nonisolated struct RemoteExquisiteCorpseFigure: Codable, Equatable, Identifiable
         case createdAt = "created_at"
         case finishedAt = "finished_at"
         case myRevealSeenAt = "my_reveal_seen_at"
-        case starredByMe = "starred_by_me"
         case parts
     }
 }
@@ -188,16 +185,5 @@ nonisolated struct RemoteExquisiteCorpseRevealSeenResult: Decodable, Equatable, 
     enum CodingKeys: String, CodingKey {
         case figureID = "figure_id"
         case revealSeenAt = "reveal_seen_at"
-    }
-}
-
-/// `exquisiteCorpse:set_exquisite_corpse_star`.
-nonisolated struct RemoteExquisiteCorpseStarResult: Decodable, Equatable, Sendable {
-    let figureID: UUID
-    let starred: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case figureID = "figure_id"
-        case starred
     }
 }

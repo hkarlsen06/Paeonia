@@ -86,7 +86,6 @@ enum StoryChainFixture {
             titledByUserID: state == .finished ? titledBy : nil,
             finishedAt: state == .finished ? now : nil,
             seenByMe: seenByMe,
-            starredByMe: false,
             createdAt: now,
             updatedAt: now
         )

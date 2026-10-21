@@ -174,15 +174,8 @@ export async function patchStory(
   await ctx.db.patch(story._id, { ...patch, updated_at: nowIso() });
 }
 
-export async function getStoryStar(ctx: ReaderCtx, storyId: string, userId: string): Promise<Doc<"story_chain_stars"> | null> {
-  return await ctx.db
-    .query("story_chain_stars")
-    .withIndex("by_story_id_user_id", (q) => q.eq("story_id", storyId).eq("user_id", userId))
-    .unique();
-}
-
-/** A story as the app reads it. Only the caller's own star and seen mark leave the server. */
-export async function storyJson(ctx: ReaderCtx, story: Story, userId: string) {
+/** A story as the app reads it. Only the caller's own seen mark leaves the server. */
+export function storyJson(story: Story, userId: string) {
   return {
     id: story.id,
     story_number: story.story_number,
@@ -203,7 +196,6 @@ export async function storyJson(ctx: ReaderCtx, story: Story, userId: string) {
     titled_by_user_id: orNull(story.titled_by_user_id),
     finished_at: orNull(story.finished_at),
     seen_by_me: story.seen_by.includes(userId),
-    starred_by_me: story.state === "finished" && (await getStoryStar(ctx, story.id, userId)) !== null,
     created_at: story.created_at,
     updated_at: story.updated_at,
   };
@@ -349,7 +341,6 @@ export const storyChainBackend: GameBackend = {
     const rows = [
       ...(await ctx.db.query("story_chain_games").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()),
       ...(await ctx.db.query("story_chain_stories").withIndex("by_couple_id_story_number", (q) => q.eq("couple_id", coupleId)).collect()),
-      ...(await ctx.db.query("story_chain_stars").withIndex("by_couple_id_user_id_story_number", (q) => q.eq("couple_id", coupleId)).collect()),
       ...(await ctx.db.query("story_chain_used").withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId)).collect()),
     ];
     for (const row of rows) await ctx.db.delete(row._id);

@@ -94,11 +94,6 @@ final class StoryChainViewModel {
     @ObservationIgnored let dependencies: GamesDependencies
     @ObservationIgnored var storyGateway: any StoryChainGateway { dependencies.storyChainGateway }
     @ObservationIgnored let moveQueue: StoryChainMoveQueue
-    /// This person's private stars on finished stories. The finished screen and
-    /// "Our stories" share it: `stars.isStarred(storyID)` and `stars.toggle(storyID:)`.
-    @ObservationIgnored lazy var stars = StoryChainStars(dependencies: dependencies) { [weak self] in
-        self?.currentUserID
-    }
     /// The loops that run while the screen is open: heartbeat, data changes and the clock.
     @ObservationIgnored let loops: GameScreenLoops
     @ObservationIgnored let tickInterval: Duration
@@ -217,7 +212,6 @@ final class StoryChainViewModel {
 
     func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?) {
         syncAfterLocalChange = handler
-        stars.setLocalChangeSyncHandler(handler)
     }
 
     func clearNotice() {

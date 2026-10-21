@@ -101,6 +101,9 @@ async function playRound(
   return { picked, result: await guess(guesser, picked.round_id, picked.word) };
 }
 
+const favoriteRound = (user: TestUser, roundId: string, favorited = true) =>
+  user.as.mutation(api.favorites.set_favorite, { p_kind: "game_round", p_target_id: roundId, p_favorited: favorited });
+
 describe("access", () => {
   test("a user without a couple cannot use the games", async () => {
     const t = newTest();
@@ -137,7 +140,7 @@ describe("access", () => {
     expect((await failure(guess(other.first, picked.round_id, "cat"))).code).toBe("42501");
     expect((await failure(other.first.as.mutation(api.drawAndGuess.mark_round_seen, { p_round_id: picked.round_id }))).code).toBe("42501");
     expect((await failure(other.first.as.mutation(api.drawAndGuess.mark_round_result_seen, { p_round_id: picked.round_id }))).code).toBe("42501");
-    expect((await failure(other.first.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: picked.round_id, p_starred: true }))).code).toBe("42501");
+    expect((await failure(favoriteRound(other.first, picked.round_id))).code).toBe("23514");
     expect((await failure(other.first.as.mutation(api.drawAndGuess.set_round_reaction, { p_round_id: picked.round_id, p_reaction: "love" }))).code).toBe("42501");
     expect(await view(other.first)).toMatchObject({ game: null, current_round: null });
   });
@@ -1131,36 +1134,6 @@ describe("result seen", () => {
   });
 });
 
-describe("stars", () => {
-  const star = (user: TestUser, roundId: string, starred: boolean) =>
-    user.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: roundId, p_starred: starred });
-  const stars = (t: TestConvex) => t.run((ctx) => ctx.db.query("game_round_stars").collect());
-
-  test("a star is private, idempotent, and removed by unstarring", async () => {
-    const s = await startGame();
-    const { picked } = await finishedRound(s, s.a, s.b);
-    const queued = (await outbox(s.t)).length;
-    expect(await star(s.a, picked.round_id, true)).toEqual({ round_id: picked.round_id, starred: true });
-    await star(s.a, picked.round_id, true);
-    expect(await stars(s.t)).toMatchObject([{ couple_id: s.couple.coupleId, move_id: picked.round_id, user_id: s.a.userId, round_number: 1 }]);
-    await star(s.b, picked.round_id, true);
-    expect(await stars(s.t)).toHaveLength(2);
-    expect((await outbox(s.t)).length).toBe(queued);
-
-    await star(s.a, picked.round_id, false);
-    await star(s.a, picked.round_id, false);
-    expect(await stars(s.t)).toMatchObject([{ user_id: s.b.userId }]);
-    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-
-  test("only a finished round can be starred", async () => {
-    const s = await startGame();
-    const open = await pick(s.a, s.gameId, "easy");
-    expect((await failure(star(s.a, open.round_id, true))).message).toMatch(/not finished/);
-    expect(await stars(s.t)).toHaveLength(0);
-  });
-});
-
 describe("history", () => {
   const history = (user: TestUser, args: { starredOnly?: boolean; before?: number | null; limit?: number } = {}) =>
     user.as.query(api.drawAndGuess.get_draw_and_guess_history, {
@@ -1220,7 +1193,7 @@ describe("history", () => {
       [
         "id", "round_number", "drawer_user_id", "guesser_user_id", "word", "difficulty", "points", "state", "drawing_media_asset_id",
         "solve_ms", "speed_bonus", "first_try_bonus", "hints_used", "attempt_count", "guesser_reaction", "personal_best",
-        "starred_by_me", "started_at", "ended_at",
+        "started_at", "ended_at",
       ].sort(),
     );
     expect(item).toMatchObject({
@@ -1235,7 +1208,6 @@ describe("history", () => {
       attempt_count: 1,
       guesser_reaction: null,
       personal_best: false,
-      starred_by_me: false,
     });
     expect(item.drawing_media_asset_id).toEqual(expect.any(String));
     // The same history for both partners.
@@ -1243,12 +1215,12 @@ describe("history", () => {
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("starred only returns the caller's stars, and the item shows only the caller's star", async () => {
+  test("starred only returns the caller's favorites", async () => {
     const s = await startGame();
     const ids = await playHistory(s);
-    for (const number of [1, 2, 4, 5]) await s.a.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: ids[number].id, p_starred: true });
-    await s.b.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: ids[4].id, p_starred: true });
-    await s.b.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: ids[3].id, p_starred: true });
+    for (const number of [1, 2, 4, 5]) await favoriteRound(s.a, ids[number].id);
+    await favoriteRound(s.b, ids[4].id);
+    await favoriteRound(s.b, ids[3].id);
 
     // Round 5 has no drawing, so its star stays out of the history.
     expect(numbers(await history(s.a, { starredOnly: true }))).toEqual([4, 2, 1]);
@@ -1260,39 +1232,8 @@ describe("history", () => {
     expect(rest.next_before_round_number).toBeNull();
     expect(numbers(await history(s.b, { starredOnly: true }))).toEqual([4, 3]);
 
-    const all = await history(s.a);
-    expect(all.rounds.map((round) => [round.round_number, round.starred_by_me])).toEqual([
-      [6, false],
-      [4, true],
-      [3, false],
-      [2, true],
-      [1, true],
-    ]);
-    // The partner's stars never reach the caller.
-    expect(all.rounds.every((round) => !("starred_by_partner" in round))).toBe(true);
-    await s.a.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: ids[4].id, p_starred: false });
+    await favoriteRound(s.a, ids[4].id, false);
     expect(numbers(await history(s.a, { starredOnly: true }))).toEqual([2, 1]);
-    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-
-  test("the game state and a round by id carry the caller's own star only", async () => {
-    const s = await startGame();
-    const picked = await pick(s.a, s.gameId, "easy");
-    await sendDrawing(s, s.a, picked.round_id);
-    await guess(s.b, picked.round_id, picked.word);
-    const state = async (user: TestUser) => (await view(user)).current_round?.starred_by_me;
-    expect([await state(s.a), await state(s.b)]).toEqual([false, false]);
-
-    await s.b.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: picked.round_id, p_starred: true });
-    expect([await state(s.a), await state(s.b)]).toEqual([false, true]);
-    const byId = (user: TestUser) => user.as.query(api.drawAndGuess.get_draw_and_guess_round, { p_round_id: picked.round_id });
-    expect([(await byId(s.a))?.starred_by_me, (await byId(s.b))?.starred_by_me]).toEqual([false, true]);
-
-    // Once a later round is current, the star is on the recent rounds.
-    await pick(s.b, s.gameId, "easy");
-    expect((await view(s.b)).recent_rounds.map((round) => round.starred_by_me)).toEqual([true]);
-    await s.b.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: picked.round_id, p_starred: false });
-    expect((await view(s.b)).recent_rounds.map((round) => round.starred_by_me)).toEqual([false]);
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
@@ -1359,6 +1300,24 @@ describe("history", () => {
     expect(await history(other.a, { starredOnly: true })).toEqual({ rounds: [], next_before_round_number: null });
     const loner = await createSignedInUser(s.t, { name: "Loner" });
     expect((await failure(history(loner))).code).toBe("42501");
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("one finished round can be read by id, and nobody outside the couple can read it", async () => {
+    const s = await startGame();
+    const ids = await playHistory(s);
+    const byId = (user: TestUser, id: string) => user.as.query(api.drawAndGuess.get_draw_and_guess_history_round, { p_round_id: id });
+    const listed = (await history(s.a)).rounds.find((round) => round.id === ids[1].id);
+    expect(await byId(s.a, ids[1].id)).toEqual(listed);
+    expect(await byId(s.b, ids[1].id)).toEqual(listed);
+    // A round that is open, never got its drawing, or does not exist is not a history round.
+    expect(await byId(s.a, ids[7].id)).toBeNull();
+    expect(await byId(s.a, ids[5].id)).toBeNull();
+    expect(await byId(s.a, newUuid())).toBeNull();
+    const other = await startGame();
+    expect(await byId(other.a, ids[1].id)).toBeNull();
+    const loner = await createSignedInUser(s.t, { name: "Loner" });
+    expect((await failure(byId(loner, ids[1].id))).code).toBe("42501");
     await s.t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
@@ -1496,7 +1455,7 @@ describe("relationship end", () => {
     const first = await pick(s.a, s.gameId, "easy");
     await sendDrawing(s, s.a, first.round_id);
     await guess(s.b, first.round_id, first.word);
-    await s.a.as.mutation(api.drawAndGuess.set_round_star, { p_round_id: first.round_id, p_starred: true });
+    await favoriteRound(s.a, first.round_id);
     await s.a.as.mutation(api.games.send_game_invite, { p_kind: "draw_and_guess" });
     await s.a.as.mutation(api.games.set_game_presence, { p_kind: "draw_and_guess", p_present: true });
     // A second couple's game must survive.
@@ -1508,7 +1467,7 @@ describe("relationship end", () => {
       "games",
       "game_moves",
       "game_guesses",
-      "game_round_stars",
+      "favorites",
       "game_used_words",
       "game_invites",
       "game_plays",

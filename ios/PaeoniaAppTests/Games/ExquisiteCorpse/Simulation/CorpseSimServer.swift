@@ -5,7 +5,7 @@ import Foundation
 /// `backend/convex/exquisiteCorpse.ts` and `lib/exquisiteCorpse.ts`: every check
 /// and error code of `submit_exquisite_corpse_part`, client operation replay, the
 /// hiding rule of `partJson`, the read rule of `canReadCorpseAsset`, the reveal
-/// seen mark (first write wins) and stars. The couple already chose its settings.
+/// seen mark (first write wins). The couple already chose its settings.
 @MainActor
 final class CorpseSimServer {
     struct Part {
@@ -27,7 +27,6 @@ final class CorpseSimServer {
         let createdAt: Date
         var finishedAt: Date?
         var seenAt: [UUID: Date] = [:]
-        var starredBy: Set<UUID> = []
     }
 
     struct Game {
@@ -281,14 +280,5 @@ final class CorpseSimServer {
         figures[at].seenAt[user] = now
         changed()
         return RemoteExquisiteCorpseRevealSeenResult(figureID: figureID, revealSeenAt: now)
-    }
-
-    func setStar(user: UUID, figureID: UUID, starred: Bool) throws -> RemoteExquisiteCorpseStarResult {
-        let at = try requireFinishedFigure(figureID)
-        if starred != figures[at].starredBy.contains(user) {
-            if starred { figures[at].starredBy.insert(user) } else { figures[at].starredBy.remove(user) }
-            changed()
-        }
-        return RemoteExquisiteCorpseStarResult(figureID: figureID, starred: starred)
     }
 }

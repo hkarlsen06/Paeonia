@@ -346,6 +346,7 @@ async function endedCoupleWithContent(t: TestConvex): Promise<TestCouple & { ass
     await ctx.db.insert("thread_messages", {
       id: newUuid(),
       thread_id: threadId,
+      couple_id: couple.coupleId,
       sender_user_id: couple.first.userId,
       body: "hi",
       ...moderation,
@@ -378,7 +379,7 @@ async function endedCoupleWithContent(t: TestConvex): Promise<TestCouple & { ass
       ...moderation,
       ...times,
     });
-    await ctx.db.insert("daily_answer_text", { answer_id: answerId, body: "answer" });
+    await ctx.db.insert("daily_answer_text", { answer_id: answerId, couple_id: couple.coupleId, body: "answer" });
     await ctx.db.insert("content_report_targets", {
       report_id: newUuid(),
       target_kind: "memory",

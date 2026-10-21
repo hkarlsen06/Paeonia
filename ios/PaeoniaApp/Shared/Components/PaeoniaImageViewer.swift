@@ -226,7 +226,7 @@ struct PaeoniaImageViewerOverlay: View {
             PaeoniaHaptics.validationError()
             return
         }
-        switch await PhotoLibrarySaver().savePNG(data) {
+        switch await PhotoLibrarySaver().saveImage(data) {
         case .saved:
             savedItemIDs.insert(item.id)
             PaeoniaHaptics.memorySaved()

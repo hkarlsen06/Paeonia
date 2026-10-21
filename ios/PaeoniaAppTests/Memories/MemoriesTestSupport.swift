@@ -122,7 +122,7 @@ nonisolated final class MemoryTestPhotoSaver: PhotoLibrarySaving, @unchecked Sen
         self.result = result
     }
 
-    func savePNG(_ data: Data) -> PhotoLibrarySaveResult {
+    func saveImage(_ data: Data) -> PhotoLibrarySaveResult {
         result
     }
 }

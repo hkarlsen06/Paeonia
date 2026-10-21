@@ -76,6 +76,7 @@ final class MainTabModels {
     lazy var hearts = HeartsViewModel()
     lazy var coupleDates = CoupleDatesViewModel()
     lazy var stories = StoriesViewModel()
+    lazy var search = SearchViewModel.live()
     lazy var topics = TopicsViewModel()
     lazy var lookBack = LookBackViewModel.live(
         thumbnailLoader: dependencies.widgetHistoryThumbnailLoader
@@ -127,6 +128,8 @@ struct MainTabView: View {
     /// Read-only streak detail sheet, opened by tapping the streak badge while the
     /// streak is healthy (nothing to restore).
     @State var showStreakDetail = false
+    /// The Search sheet, opened from the search button in a tab's navigation bar.
+    @State var isSearchPresented = false
     /// The streak milestone moment, shown once per milestone on this phone, or again
     /// from the streak badge for the rest of that streak day.
     @State var streakMilestone: StreakMilestoneMoment?
@@ -188,11 +191,13 @@ struct MainTabView: View {
     var lookBackViewModel: LookBackViewModel { models.lookBack }
     var heartsViewModel: HeartsViewModel { models.hearts }
     var coupleDatesViewModel: CoupleDatesViewModel { models.coupleDates }
+    /// The stars on questions, answers, drawings and finished games. One store for the whole app.
+    var favoritesStore: FavoritesStore { .shared }
     var storiesViewModel: StoriesViewModel { models.stories }
     var topicsViewModel: TopicsViewModel { models.topics }
 
     var body: some View {
-        presentingDailyFlows(on: tabContent)
+        presentingSearch(on: presentingDailyFlows(on: tabContent))
             .liveFeedDemand(visibleTab: selection.wrappedValue, partnerGames: gamesViewModel.partnerGameKinds)
     }
 
@@ -268,6 +273,16 @@ struct MainTabView: View {
             guard let error else { return }
             bannerCenter.show(.error(message: error.message))
             coupleDatesViewModel.clearError()
+        }
+        .task(id: identity.currentUserID) {
+            favoritesStore.setLocalChangeSyncHandler { await actions.syncAfterLocalChange() }
+            await favoritesStore.configure(ownerUserID: identity.currentUserID)
+            await favoritesStore.observeStoreChanges()
+        }
+        .onChange(of: favoritesStore.notice) { _, notice in
+            guard let notice else { return }
+            bannerCenter.show(notice.banner)
+            favoritesStore.clearNotice()
         }
         .task(id: identity.currentUserID) {
             await storiesViewModel.configure(ownerUserID: identity.currentUserID, coupleID: identity.coupleID)

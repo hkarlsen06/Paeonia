@@ -16,7 +16,6 @@ struct StoryChainPendingOrderTests {
     private func lineHandler() -> StoryChainLinePendingOperationHandler { environment.lineHandler() }
     private func startHandler() -> StoryChainStartPendingOperationHandler { environment.startHandler() }
     private func seenHandler() -> StoryChainSeenPendingOperationHandler { environment.seenHandler() }
-    private func starHandler() -> StoryChainStarPendingOperationHandler { environment.starHandler() }
 
     private func name(of storyID: UUID = Fixture.storyID) -> StoryChainQueuedName {
         StoryChainQueuedName(storyID: storyID, title: "The night bus")
@@ -26,8 +25,8 @@ struct StoryChainPendingOrderTests {
         StoryChainSeenPayload(storyID: storyID)
     }
 
-    private func star(_ starred: Bool, storyID: UUID = Fixture.storyID) -> StoryChainStarPayload {
-        StoryChainStarPayload(storyID: storyID, starred: starred, createdAt: Fixture.now)
+    private func favorite(_ favorited: Bool, storyID: UUID = Fixture.storyID) -> FavoriteWritePayload {
+        FavoriteWritePayload(target: .storyChainStory(storyID), favorited: favorited, createdAt: Fixture.now)
     }
 
     @Test func aLineWaitsForTheStartOfItsStory() async throws {
@@ -125,24 +124,25 @@ struct StoryChainPendingOrderTests {
         #expect(gateway.seenStories == [Fixture.nextStoryID])
     }
 
-    @Test func aStarWaitsForTheTitleOfItsStory() async throws {
+    @Test func aFavoriteWaitsForTheTitleOfItsStory() async throws {
+        let target = FavoriteTarget.storyChainStory(Fixture.storyID)
+        let queued = try environment.snapshot(.setFavorite, favorite(true), sequence: 2)
+        let gate = StoryChainFavoriteGate()
+        #expect(try await gate.mustWait(for: target, operation: queued, context: environment.context) == false)
+
         try await environment.enqueue(.storyChainNameStory, name(), sequence: 1)
-        let queued = try environment.snapshot(.storyChainSetStar, star(true), sequence: 2)
 
-        let result = try await starHandler().send(queued, context: environment.context)
-
-        #expect(result == .retry(after: nil))
-        #expect(gateway.starWrites.isEmpty)
+        #expect(try await gate.mustWait(for: target, operation: queued, context: environment.context))
     }
 
-    @Test func aStarWaitsForTheEarlierStarOfTheSameStorySoTheLastOneWins() async throws {
-        try await environment.enqueue(.storyChainSetStar, star(true), sequence: 1)
-        let unstar = try environment.snapshot(.storyChainSetStar, star(false), sequence: 2)
+    @Test func aFavoriteDoesNotWaitForTheTitleOfAnotherStory() async throws {
+        try await environment.enqueue(.storyChainNameStory, name(of: Fixture.nextStoryID), sequence: 1)
+        let queued = try environment.snapshot(.setFavorite, favorite(true), sequence: 2)
 
-        #expect(try await starHandler().send(unstar, context: environment.context) == .retry(after: nil))
+        let waits = try await StoryChainFavoriteGate()
+            .mustWait(for: .storyChainStory(Fixture.storyID), operation: queued, context: environment.context)
 
-        await environment.drain()
-        #expect(gateway.starWrites.map(\.starred) == [true])
+        #expect(!waits)
     }
 
     // MARK: A whole outbox

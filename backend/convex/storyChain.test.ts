@@ -85,8 +85,8 @@ function write(user: TestUser, storyId: string, text: string, options: LineOptio
 const name = (user: TestUser, storyId: string, title: string) =>
   user.as.mutation(api.storyChain.name_story, { ...op(), p_story_id: storyId, p_title: title });
 const seen = (user: TestUser, storyId: string) => user.as.mutation(api.storyChain.mark_story_seen, { p_story_id: storyId });
-const star = (user: TestUser, storyId: string, starred: boolean) =>
-  user.as.mutation(api.storyChain.set_story_star, { p_story_id: storyId, p_starred: starred });
+const star = (user: TestUser, storyId: string, favorited: boolean) =>
+  user.as.mutation(api.favorites.set_favorite, { p_kind: "story_chain_story", p_target_id: storyId, p_favorited: favorited });
 const history = (user: TestUser, options: { starred?: boolean; before?: number | null; limit?: number } = {}) =>
   user.as.query(api.storyChain.get_story_chain_history, {
     p_starred_only: options.starred ?? false,
@@ -154,7 +154,7 @@ describe("access", () => {
         }),
       () => s.t.mutation(api.storyChain.name_story, { ...op(), p_story_id: newUuid(), p_title: "Title" }),
       () => s.t.mutation(api.storyChain.mark_story_seen, { p_story_id: newUuid() }),
-      () => s.t.mutation(api.storyChain.set_story_star, { p_story_id: newUuid(), p_starred: true }),
+      () => s.t.mutation(api.favorites.set_favorite, { p_kind: "story_chain_story", p_target_id: newUuid(), p_favorited: true }),
     ];
     for (const call of calls) expect((await failure(call())).code).toBe("42501");
   });
@@ -215,9 +215,9 @@ describe("access", () => {
       () => write(outsider, story_id, "My line."),
       () => name(outsider, first.storyId, "Mine"),
       () => seen(outsider, first.storyId),
-      () => star(outsider, first.storyId, true),
     ];
     for (const call of calls) expect((await failure(call())).code).toBe("42501");
+    expect((await failure(star(outsider, first.storyId, true))).code).toBe("23514");
     expect((await storyRow(s.t, story_id)).lines).toHaveLength(1);
   });
 
@@ -949,7 +949,7 @@ describe("name_story", () => {
 
     const forNamer = await view(reached.namer);
     expect(forNamer.opening_choices).toHaveLength(3);
-    expect(forNamer.current_story).toMatchObject({ state: "finished", title: "The Moonlit Heist", seen_by_me: true, starred_by_me: false });
+    expect(forNamer.current_story).toMatchObject({ state: "finished", title: "The Moonlit Heist", seen_by_me: true });
     const forWriter = await view(reached.lastWriter);
     expect(forWriter.opening_choices).toBeNull();
     expect(forWriter.current_story).toMatchObject({ seen_by_me: false });
@@ -1037,68 +1037,6 @@ describe("mark_story_seen", () => {
   });
 });
 
-describe("set_story_star", () => {
-  test("a changed star moves the game version, and setting the same value does not", async () => {
-    const s = await startGame();
-    const played = await playStory(s, s.a, "Starred once");
-    const starIt = (starred: boolean) =>
-      s.a.as.mutation(api.storyChain.set_story_star, { p_story_id: played.storyId, p_starred: starred });
-    const before = (await gameRow(s.t, s.gameId)).version;
-    await starIt(true);
-    await starIt(true);
-    expect((await gameRow(s.t, s.gameId)).version).toBe(before + 1);
-    await starIt(false);
-    expect((await gameRow(s.t, s.gameId)).version).toBe(before + 2);
-  });
-
-  test("stars and unstars a finished story, and repeating a call changes nothing", async () => {
-    const s = await startGame();
-    const reached = await playStory(s, s.a, "One");
-    const rows = () => s.t.run((ctx) => ctx.db.query("story_chain_stars").collect());
-    expect(await star(s.a, reached.storyId, true)).toEqual({ story_id: reached.storyId, starred: true });
-    expect(await star(s.a, reached.storyId, true)).toEqual({ story_id: reached.storyId, starred: true });
-    expect(await rows()).toMatchObject([{ story_id: reached.storyId, user_id: s.a.userId, couple_id: s.coupleId, story_number: 1 }]);
-    expect((await view(s.a)).current_story!.starred_by_me).toBe(true);
-
-    expect(await star(s.a, reached.storyId, false)).toEqual({ story_id: reached.storyId, starred: false });
-    expect(await star(s.a, reached.storyId, false)).toEqual({ story_id: reached.storyId, starred: false });
-    expect(await rows()).toEqual([]);
-    expect((await view(s.a)).current_story!.starred_by_me).toBe(false);
-  });
-
-  test("is refused for a story that is not finished", async () => {
-    const s = await startGame();
-    const { story_id } = await begin(s.a, s.gameId);
-    const refusal = await failure(star(s.a, story_id, true));
-    expect(refusal).toMatchObject({ code: "23514" });
-    expect(refusal.message).toMatch(/only a finished story/);
-    // A story that waits for its title is not finished either.
-    const titling = await startGame();
-    const reached = await reachTitling(titling, titling.a);
-    expect((await failure(star(reached.namer, reached.storyId, true))).code).toBe("23514");
-    expect(await titling.t.run((ctx) => ctx.db.query("story_chain_stars").collect())).toEqual([]);
-  });
-
-  test("a star is private: the partner never sees it", async () => {
-    const s = await startGame();
-    const reached = await playStory(s, s.a, "One");
-    await star(s.a, reached.storyId, true);
-
-    expect((await view(s.a)).current_story!.starred_by_me).toBe(true);
-    expect((await view(s.b)).current_story!.starred_by_me).toBe(false);
-    expect((await s.a.as.query(api.storyChain.get_story_chain_story, { p_story_id: reached.storyId }))!.starred_by_me).toBe(true);
-    expect((await s.b.as.query(api.storyChain.get_story_chain_story, { p_story_id: reached.storyId }))!.starred_by_me).toBe(false);
-    expect((await history(s.a)).stories[0].starred_by_me).toBe(true);
-    expect((await history(s.b)).stories[0].starred_by_me).toBe(false);
-    expect((await history(s.b, { starred: true })).stories).toEqual([]);
-
-    // The partner's own star is separate, and unstarring it leaves the first alone.
-    await star(s.b, reached.storyId, true);
-    await star(s.b, reached.storyId, false);
-    expect((await history(s.a, { starred: true })).stories).toHaveLength(1);
-  });
-});
-
 describe("get_story_chain_story", () => {
   test("returns the story as the app reads it, and null for an id nobody has", async () => {
     const s = await startGame();
@@ -1120,7 +1058,6 @@ describe("get_story_chain_story", () => {
       titled_by_user_id: null,
       finished_at: null,
       seen_by_me: false,
-      starred_by_me: false,
       created_at: expect.any(String),
       updated_at: expect.any(String),
     });
@@ -1163,7 +1100,6 @@ describe("get_story_chain_history", () => {
       first_line: STORY_OPENINGS.en[0].text,
       line_count: 8,
       finished_at: expect.any(String),
-      starred_by_me: false,
     });
     expect(all.stories[2].first_line).toBe("Line 1 of Second.");
     expect(all.stories.map((item) => item.finished_at)).toEqual([...all.stories.map((item) => item.finished_at)].sort().reverse());
@@ -1193,13 +1129,11 @@ describe("get_story_chain_history", () => {
       expect((await failure(history(s.b, { limit }))).code).toBe("23514");
     }
 
-    // Stars are per partner, and the starred list pages the same way.
+    // Favorites are per partner, and the favorites list pages the same way.
     await star(s.a, stories[3].storyId, true);
     await star(s.a, stories[1].storyId, true);
     await star(s.b, stories[2].storyId, true);
     await star(s.b, stories[1].storyId, true);
-    expect((await history(s.a)).stories.map((item) => item.starred_by_me)).toEqual([true, false, true, false]);
-    expect((await history(s.b)).stories.map((item) => item.starred_by_me)).toEqual([false, true, true, false]);
     expect((await history(s.a, { starred: true })).stories.map((item) => item.story_number)).toEqual([4, 2]);
     expect((await history(s.b, { starred: true })).stories.map((item) => item.story_number)).toEqual([3, 2]);
 
@@ -1540,7 +1474,7 @@ describe("turn reminder", () => {
 });
 
 describe("relationship end", () => {
-  const tables = ["story_chain_games", "story_chain_stories", "story_chain_stars", "story_chain_used"] as const;
+  const tables = ["story_chain_games", "story_chain_stories", "story_chain_used"] as const;
   const count = (t: TestConvex, coupleId: string) =>
     t.run(async (ctx) => {
       const result: Record<string, number> = {};
@@ -1550,7 +1484,7 @@ describe("relationship end", () => {
       return result;
     });
 
-  /** Two finished-or-running stories with a star each and used openings and words. */
+  /** Two finished-or-running stories with a favorite each and used openings and words. */
   async function fill(s: Setup) {
     const first = await playStory(s, s.a, "One", { openingId: STORY_OPENINGS.en[2].id });
     await star(s.a, first.storyId, true);
@@ -1566,23 +1500,23 @@ describe("relationship end", () => {
     await fill(other);
     const otherBefore = await count(s.t, other.coupleId);
     const mine = await count(s.t, s.coupleId);
-    expect(mine).toEqual({ story_chain_games: 1, story_chain_stories: 2, story_chain_stars: 2, story_chain_used: 3 });
+    expect(mine).toEqual({ story_chain_games: 1, story_chain_stories: 2, story_chain_used: 3 });
     expect(otherBefore).toEqual(mine);
 
     await s.a.as.mutation(api.relationship.leave_relationship, op());
     // The rows stay through the retention window.
     expect(await count(s.t, s.coupleId)).toEqual(mine);
     await s.t.mutation(internal.relationshipJobs.cleanup_expired_relationship_content, { p_now: "2027-01-01T00:00:00.000Z" });
-    expect(await count(s.t, s.coupleId)).toEqual({ story_chain_games: 0, story_chain_stories: 0, story_chain_stars: 0, story_chain_used: 0 });
+    expect(await count(s.t, s.coupleId)).toEqual({ story_chain_games: 0, story_chain_stories: 0, story_chain_used: 0 });
     expect(await count(s.t, other.coupleId)).toEqual(otherBefore);
   });
 
   test("the delete counts every row it removes", async () => {
     const s = await startGame();
     await fill(s);
-    // 1 settings row, 1 game, 2 stories, 2 stars, and 2 openings and 1 word marked used.
-    expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.coupleId))).toBe(1 + 1 + 2 + 2 + 3);
-    expect(await count(s.t, s.coupleId)).toEqual({ story_chain_games: 0, story_chain_stories: 0, story_chain_stars: 0, story_chain_used: 0 });
+    // 1 settings row, 1 game, 2 stories, and 2 openings and 1 word marked used.
+    expect(await s.t.run((ctx) => deleteCoupleGameRows(ctx, s.coupleId))).toBe(1 + 1 + 2 + 3);
+    expect(await count(s.t, s.coupleId)).toEqual({ story_chain_games: 0, story_chain_stories: 0, story_chain_used: 0 });
   });
 
   test("a purge without an earlier cleanup still removes the rows", async () => {
@@ -1593,6 +1527,6 @@ describe("relationship end", () => {
       const couple = (await ctx.db.query("couples").first())!;
       await purgeCoupleContent(ctx, couple);
     });
-    expect(await count(s.t, s.coupleId)).toEqual({ story_chain_games: 0, story_chain_stories: 0, story_chain_stars: 0, story_chain_used: 0 });
+    expect(await count(s.t, s.coupleId)).toEqual({ story_chain_games: 0, story_chain_stories: 0, story_chain_used: 0 });
   });
 });

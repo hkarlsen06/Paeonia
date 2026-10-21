@@ -33,7 +33,6 @@ extension ExquisiteCorpseViewModel {
         }
         now = dependencies.now()
         recompute()
-        await stars.reload()
     }
 
     /// Reads the server's state and the shared overview once and caches them.

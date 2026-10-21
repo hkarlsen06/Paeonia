@@ -47,9 +47,13 @@ struct StoryChainPendingWorkTests {
         #expect(!work.isEmpty)
     }
 
-    @Test func aStarIsNotPartOfThePendingWork() async throws {
-        let star = StoryChainStarPayload(storyID: Fixture.storyID, starred: true, createdAt: Fixture.now)
-        try await environment.enqueue(.storyChainSetStar, star, sequence: 1)
+    @Test func aFavoriteIsNotPartOfThePendingWork() async throws {
+        let favorite = FavoriteWritePayload(
+            target: .storyChainStory(Fixture.storyID),
+            favorited: true,
+            createdAt: Fixture.now
+        )
+        try await environment.enqueue(.setFavorite, favorite, sequence: 1)
 
         #expect(await load()?.isEmpty == true)
     }

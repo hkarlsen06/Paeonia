@@ -5,8 +5,6 @@ import SwiftUI
 struct DrawAndGuessHistoryScreen: View {
     @Bindable var viewModel: DrawAndGuessHistoryViewModel
 
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-
     /// Two columns on a phone, more where there is room.
     private static let columnMinimum: CGFloat = 160
 
@@ -41,11 +39,6 @@ struct DrawAndGuessHistoryScreen: View {
         .preferredColorScheme(.dark)
         // Runs again when the filter changes, and when the screen comes back from a drawing.
         .task(id: viewModel.filter) { await viewModel.refresh() }
-        .onChange(of: viewModel.stars.notice) { _, notice in
-            guard let notice else { return }
-            bannerCenter.show(notice.banner)
-            viewModel.stars.clearNotice()
-        }
         .accessibilityIdentifier("draw.history")
     }
 
@@ -93,7 +86,7 @@ struct DrawAndGuessHistoryScreen: View {
                         DrawAndGuessHistoryCell(
                             round: round,
                             drawerName: viewModel.drawerName(of: round),
-                            isStarred: viewModel.stars.isStarred(round.id),
+                            isStarred: viewModel.isFavorite(round),
                             drawings: viewModel.drawings
                         )
                     }

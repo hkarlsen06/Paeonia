@@ -3,7 +3,7 @@ import Observation
 import PencilKit
 
 /// One creature from "Our creatures": the folded paper opens once at the pace the
-/// reveal uses, without the bloom, with the credits and this person's own star.
+/// reveal uses, without the bloom, with the credits.
 /// "Play again" starts it over.
 @MainActor
 @Observable
@@ -15,7 +15,6 @@ final class ExquisiteCorpseHistoryDetailViewModel {
     }
 
     let figure: RemoteExquisiteCorpseFigure
-    let stars: GameStars
     /// Opens the folds one by one. It makes no haptics here.
     let timeline: ExquisiteCorpseRevealTimeline
     /// Replays the strokes of each part.
@@ -33,7 +32,6 @@ final class ExquisiteCorpseHistoryDetailViewModel {
     init(
         figure: RemoteExquisiteCorpseFigure,
         participants: GameParticipants,
-        stars: GameStars,
         drawings: GameHistoryDrawings,
         timeline: ExquisiteCorpseRevealTimeline? = nil,
         player: ExquisiteCorpseFigurePlayer? = nil
@@ -43,7 +41,6 @@ final class ExquisiteCorpseHistoryDetailViewModel {
         let player = player ?? ExquisiteCorpseFigurePlayer(selection: {})
         self.figure = figure
         self.participants = participants
-        self.stars = stars
         self.drawings = drawings
         self.timeline = timeline
         self.player = player
@@ -55,17 +52,9 @@ final class ExquisiteCorpseHistoryDetailViewModel {
 
     // MARK: - What the screen shows
 
-    var isStarred: Bool {
-        stars.isStarred(figure.id)
-    }
-
     /// The date the creature was finished, as the screen says it: "Oct 12".
     var dateText: String {
         (figure.finishedAt ?? figure.createdAt).formatted(date: .abbreviated, time: .omitted)
-    }
-
-    func toggleStar() async {
-        await stars.toggle(id: figure.id)
     }
 
     // MARK: - Loading

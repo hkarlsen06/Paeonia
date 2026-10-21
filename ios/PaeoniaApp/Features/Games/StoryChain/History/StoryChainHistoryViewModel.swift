@@ -68,8 +68,6 @@ final class StoryChainHistoryViewModel {
 
     var filter: Filter = .all
 
-    let stars: StoryChainStars
-
     nonisolated static let defaultPageSize = 30
     /// A row this close to the end of the list loads the next page.
     nonisolated static let loadMoreDistance = 6
@@ -82,12 +80,10 @@ final class StoryChainHistoryViewModel {
 
     init(
         dependencies: GamesDependencies,
-        stars: StoryChainStars,
         participants: GameParticipants = GameParticipants(),
         pageSize: Int = StoryChainHistoryViewModel.defaultPageSize
     ) {
         self.dependencies = dependencies
-        self.stars = stars
         self.participants = participants
         self.pageSize = pageSize
     }
@@ -118,8 +114,13 @@ final class StoryChainHistoryViewModel {
         listings[filter] ?? StoryChainHistoryListing()
     }
 
+    /// Whether this person starred the story, with their unsent changes applied.
+    func isFavorite(_ item: RemoteStoryChainHistoryItem) -> Bool {
+        dependencies.favorites.isFavorite(.storyChainStory(item.id))
+    }
+
     /// The stories of `filter`, newest first. "Starred" shows the stories this
-    /// person starred, with unsent changes applied: a story that was just
+    /// person favorited, with unsent changes applied: a story that was just
     /// unstarred leaves the list, and one that was just starred joins it.
     func items(for filter: Filter) -> [RemoteStoryChainHistoryItem] {
         switch filter {
@@ -131,7 +132,7 @@ final class StoryChainHistoryViewModel {
                 byID[item.id] = item
             }
             return byID.values
-                .filter { stars.isStarred($0.id) }
+                .filter { isFavorite($0) }
                 .sorted { $0.storyNumber > $1.storyNumber }
         }
     }
@@ -202,12 +203,10 @@ final class StoryChainHistoryViewModel {
             cached.refresh(with: page, pageSize: pageSize)
             listings[.all] = cached
         }
-        await stars.reload()
     }
 
     private func fetchFirstPage(_ filter: Filter) async {
         guard let userID = currentUserID else { return }
-        let mark = stars.changeMark
         do {
             let page = try await dependencies.storyChainGateway.loadStoryChainHistory(
                 starredOnly: filter == .starred,
@@ -221,7 +220,6 @@ final class StoryChainHistoryViewModel {
             if filter == .all {
                 await dependencies.storyChainCache.saveHistoryFirstPage(page, ownerUserID: userID)
             }
-            await stars.applyServerStars(page.starValues, readSince: mark)
         } catch {
             guard !error.isCancellation, currentUserID == userID else { return }
             // A failed read keeps the list that is on screen. Only a screen with
@@ -254,7 +252,6 @@ final class StoryChainHistoryViewModel {
         current.isLoadingMore = true
         current.loadMoreFailed = false
         listings[filter] = current
-        let mark = stars.changeMark
         do {
             let page = try await dependencies.storyChainGateway.loadStoryChainHistory(
                 starredOnly: filter == .starred,
@@ -264,7 +261,6 @@ final class StoryChainHistoryViewModel {
             guard currentUserID == userID else { return }
             listings[filter, default: StoryChainHistoryListing()].append(page)
             listings[filter]?.isLoadingMore = false
-            await stars.applyServerStars(page.starValues, readSince: mark)
         } catch {
             guard currentUserID == userID else { return }
             listings[filter]?.isLoadingMore = false
@@ -286,16 +282,11 @@ final class StoryChainHistoryViewModel {
             .compactMap(\.self)
             .first { $0.id == id && $0.state == .finished }
         if let cached {
-            await stars.reload()
             return cached
         }
-        let mark = stars.changeMark
         guard let story = try await dependencies.storyChainGateway.loadStory(id: id),
               !Task.isCancelled, currentUserID == userID
         else { return nil }
-        if story.state == .finished {
-            await stars.applyServerStars([story.id: story.starredByMe], readSince: mark)
-        }
         return story
     }
 }

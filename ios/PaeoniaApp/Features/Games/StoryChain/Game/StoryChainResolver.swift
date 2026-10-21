@@ -131,7 +131,6 @@ nonisolated struct StoryChainResolver: Sendable {
                 titledByUserID: nil,
                 finishedAt: nil,
                 seenByMe: false,
-                starredByMe: false,
                 createdAt: start.createdAt,
                 updatedAt: start.createdAt
             )

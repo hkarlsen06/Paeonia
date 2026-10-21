@@ -321,7 +321,7 @@ final class MemoriesViewModel {
             notice = .photoSaveFailed
             return
         }
-        switch await photoSaver.savePNG(data) {
+        switch await photoSaver.saveImage(data) {
         case .saved:
             notice = .photoSaved
         case .permissionDenied:

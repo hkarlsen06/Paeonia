@@ -36,6 +36,7 @@ struct StoryViewer: View {
     @State private var touchStart: Date?
     @State private var isConfirmingDelete = false
     @State private var isDeleting = false
+    @State private var shareable: PaeoniaShareable?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -61,9 +62,10 @@ struct StoryViewer: View {
         stories.indices.contains(index) ? stories[index] : nil
     }
 
-    /// A finger is on the story, the delete question is open, or the delete is on its way.
+    /// A finger is on the story, the delete question or the share screen is open, or the
+    /// delete is on its way.
     private var isPaused: Bool {
-        touchStart != nil || isConfirmingDelete || isDeleting
+        touchStart != nil || isConfirmingDelete || isDeleting || shareable != nil
     }
 
     /// A touch held at least this long is a hold, not a tap, so letting go doesn't move on.
@@ -110,6 +112,7 @@ struct StoryViewer: View {
         } message: {
             Text(.storiesViewerDeleteMessage)
         }
+        .paeoniaShareSheet(item: $shareable)
         // The cover hides the app's top banner, so show it here too.
         .paeoniaTopBanner(bannerCenter)
     }
@@ -138,7 +141,13 @@ struct StoryViewer: View {
             if content.mode == .home {
                 StoryProgressBars(count: stories.count, index: index, progress: playsOnItsOwn ? progress : 1)
             }
-            StoryViewerHeader(story: story, people: people, mode: content.mode) { dismiss() }
+            StoryViewerHeader(
+                story: story,
+                people: people,
+                mode: content.mode,
+                onShare: { shareable = StoryShare.shareable(for: story, people: people) },
+                onClose: { dismiss() }
+            )
             Spacer(minLength: 0)
             if let caption = story.caption {
                 Text(caption)

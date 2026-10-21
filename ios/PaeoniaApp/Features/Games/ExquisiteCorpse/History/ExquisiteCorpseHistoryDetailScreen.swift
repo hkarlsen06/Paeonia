@@ -3,20 +3,78 @@ import SwiftUI
 /// Opens the detail of one creature. The view model is made once per visit, so
 /// the unfolding keeps its place when the stack redraws this screen.
 struct ExquisiteCorpseHistoryDetailHost: View {
-    @State private var viewModel: ExquisiteCorpseHistoryDetailViewModel?
+    private enum Load {
+        case loading
+        case loaded(ExquisiteCorpseHistoryDetailViewModel)
+        case failed(PaeoniaFailure)
+    }
 
+    let history: ExquisiteCorpseHistoryViewModel
+    let figureID: UUID
+    @State private var load: Load
+
+    /// A creature that is already on the phone opens at once. Any other, such as a saved
+    /// creature opened right after a launch, is read first.
     init(history: ExquisiteCorpseHistoryViewModel, figureID: UUID) {
-        _viewModel = State(initialValue: history.makeDetail(figureID: figureID))
+        self.history = history
+        self.figureID = figureID
+        _load = State(initialValue: history.makeDetail(figureID: figureID).map(Load.loaded) ?? .loading)
     }
 
     var body: some View {
-        if let viewModel {
+        switch load {
+        case let .loaded(viewModel):
             ExquisiteCorpseHistoryDetailScreen(viewModel: viewModel)
-        } else {
-            Color.paeoniaBackgroundSecondary
-                .ignoresSafeArea()
-                .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
-                .toolbarColorScheme(.dark, for: .navigationBar)
+        case .loading:
+            placeholder {
+                ProgressView()
+                    .tint(.paeoniaAccentPrimary)
+                    .controlSize(.large)
+            }
+            .task { await loadFigure() }
+        case let .failed(failure):
+            placeholder {
+                PaeoniaLoadFailureView(
+                    failure: failure,
+                    offlineTitle: .gamesDrawAndGuessChooseOfflineTitle,
+                    offlineMessage: .exquisiteCorpseHistoryOfflineMessage,
+                    failedMessage: .exquisiteCorpseHistoryFailedMessage
+                ) {
+                    Button {
+                        load = .loading
+                    } label: {
+                        Text(.commonTryAgain)
+                    }
+                    .buttonStyle(PaeoniaSecondaryButtonStyle())
+                }
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+            }
+        }
+    }
+
+    private func placeholder(@ViewBuilder content: () -> some View) -> some View {
+        content()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .preferredColorScheme(.dark)
+    }
+
+    private func loadFigure() async {
+        do {
+            if let figure = try await history.loadFigure(id: figureID) {
+                load = .loaded(history.makeDetail(figure: figure))
+            } else if !Task.isCancelled {
+                // The couple has no such creature, which no connection would fix.
+                load = .failed(.other)
+            }
+        } catch {
+            if !Task.isCancelled {
+                load = .failed(PaeoniaFailure(error))
+            }
         }
     }
 }
@@ -44,7 +102,7 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
                     replayRow
                     VStack(spacing: PaeoniaSpacing.space16) {
                         details
-                        Text(.gamesStarPrivacy)
+                        Text(.favoritesPrivacyHint)
                             .font(PaeoniaTypography.caption)
                             .foregroundStyle(.paeoniaTextTertiary)
                             .multilineTextAlignment(.center)
@@ -63,13 +121,8 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
-        .gameStarToolbar(
-            stars: viewModel.stars,
-            id: viewModel.figure.id,
-            isShown: true,
-            hintKey: "games.exquisiteCorpse.starHintShown",
-            identifier: "corpse.history.star"
-        )
+        .favoriteToolbarItem(.corpseFigure(viewModel.figure.id), identifier: "corpse.history.star")
+        .paeoniaShareToolbar(viewModel.content.shareable, identifier: "corpse.history.share")
         .task { await viewModel.load(showsAtOnce: reduceMotion) }
         .onChange(of: viewModel.timeline.stage) { _, stage in
             viewModel.timelineStageChanged(to: stage)

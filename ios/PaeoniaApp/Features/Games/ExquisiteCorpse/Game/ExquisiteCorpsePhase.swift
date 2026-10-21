@@ -178,7 +178,6 @@ nonisolated struct ExquisiteCorpseResolver: Sendable {
                 createdAt: queued.createdAt,
                 finishedAt: nil,
                 myRevealSeenAt: nil,
-                starredByMe: false,
                 parts: []
             )
         } else if let current = state.currentFigure, current.id == queued.figureID {
@@ -205,26 +204,22 @@ nonisolated struct ExquisiteCorpseResolver: Sendable {
             createdAt: base.createdAt,
             finishedAt: isLegs ? queued.createdAt : base.finishedAt,
             myRevealSeenAt: base.myRevealSeenAt,
-            starredByMe: base.starredByMe,
             parts: parts
         )
     }
 
     /// The latest finished figure, when this person has not moved past its reveal.
     /// Only the latest counts, so a person who missed several sees one and not
-    /// the whole history. A star made on this phone shows at once.
+    /// the whole history.
     private func unseenFigure(
         state: RemoteExquisiteCorpseState,
         pending: ExquisiteCorpsePendingWork
     ) -> RemoteExquisiteCorpseFigure? {
-        guard var latest = state.recentFigures.filter(\.isFinished).max(by: { $0.number < $1.number }),
+        guard let latest = state.recentFigures.filter(\.isFinished).max(by: { $0.number < $1.number }),
               latest.myRevealSeenAt == nil,
               !pending.hasRevealSeen(figureID: latest.id)
         else {
             return nil
-        }
-        if let starred = pending.star(figureID: latest.id) {
-            latest.starredByMe = starred
         }
         return latest
     }

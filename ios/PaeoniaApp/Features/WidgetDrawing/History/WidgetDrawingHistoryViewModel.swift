@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import UIKit
 
 /// One drawing in the history timeline.
 nonisolated struct WidgetDrawingHistoryItem: Identifiable, Sendable, Equatable {
@@ -26,20 +27,6 @@ final class WidgetDrawingHistoryViewModel {
         case failed(PaeoniaFailure)
     }
 
-    /// The state of one drawing's "save to your photos" button.
-    enum SaveButtonState: Equatable {
-        case idle
-        case saving
-        case saved
-    }
-
-    /// A blocking notice shown when a save can't go through on its own. Only the
-    /// permission case needs the person to act (in Settings); ordinary failures
-    /// just reset the button so they can try again.
-    enum SaveAlert: Equatable {
-        case permissionDenied
-    }
-
     private(set) var items: [WidgetDrawingHistoryItem] = []
     private(set) var phase: Phase = .loading
     private(set) var isLoadingMore = false
@@ -48,11 +35,6 @@ final class WidgetDrawingHistoryViewModel {
     /// a retry row instead of silently stopping.
     private(set) var loadMoreFailed = false
     private(set) var hasMore = true
-
-    /// Per-drawing save button state, keyed by revision id. Survives reloads so a
-    /// drawing already saved keeps its checkmark.
-    private(set) var saveStates: [UUID: SaveButtonState] = [:]
-    private(set) var saveAlert: SaveAlert?
 
     /// True once the first load finished and there is nothing to show.
     var isEmpty: Bool { phase == .loaded && items.isEmpty }
@@ -67,7 +49,6 @@ final class WidgetDrawingHistoryViewModel {
     private let identity: WidgetSyncIdentity
     private let pageSize: Int
     private let exporter: any WidgetRevisionThumbnailLoading
-    private let photoSaver: any PhotoLibrarySaving
 
     private var canvasID: UUID?
     private var cursor: Cursor?
@@ -87,14 +68,12 @@ final class WidgetDrawingHistoryViewModel {
         gateway: any WidgetCanvasGateway,
         identity: WidgetSyncIdentity,
         pageSize: Int = 30,
-        exporter: any WidgetRevisionThumbnailLoading = NoOpWidgetRevisionThumbnailLoader(),
-        photoSaver: any PhotoLibrarySaving = PhotoLibrarySaver()
+        exporter: any WidgetRevisionThumbnailLoading = NoOpWidgetRevisionThumbnailLoader()
     ) {
         self.gateway = gateway
         self.identity = identity
         self.pageSize = pageSize
         self.exporter = exporter
-        self.photoSaver = photoSaver
     }
 
     func loadInitialIfNeeded() async {
@@ -140,45 +119,23 @@ final class WidgetDrawingHistoryViewModel {
         items.insert(contentsOf: newItems(from: page), at: 0)
     }
 
-    /// The save button state for a drawing, defaulting to idle.
-    func saveState(for id: UUID) -> SaveButtonState {
-        saveStates[id] ?? .idle
-    }
-
-    func dismissSaveAlert() {
-        saveAlert = nil
-    }
-
-    /// Renders the drawing at full quality and adds it to the device's photo
-    /// library. On success the button latches to a checkmark; if the person has
-    /// blocked photo access we surface a notice pointing them to Settings, and any
-    /// other failure resets the button so they can try again.
-    func saveToDevice(_ item: WidgetDrawingHistoryItem) async {
-        guard saveState(for: item.id) == .idle else {
-            return
-        }
-        saveStates[item.id] = .saving
-
-        guard let png = await exporter.exportPNG(
-            revisionID: item.id,
-            mediaAssetID: item.mediaAssetID,
-            canvasSide: item.canvasSide
-        ) else {
-            saveStates[item.id] = .idle
-            PaeoniaHaptics.validationError()
-            return
-        }
-
-        switch await photoSaver.savePNG(png) {
-        case .saved:
-            saveStates[item.id] = .saved
-            PaeoniaHaptics.drawingSaved()
-        case .permissionDenied:
-            saveStates[item.id] = .idle
-            saveAlert = .permissionDenied
-        case .failed:
-            saveStates[item.id] = .idle
-            PaeoniaHaptics.validationError()
+    /// What the share sheet offers for a drawing: the drawing at full quality on
+    /// its plum canvas, with the date it was sent. Either partner's drawing can
+    /// be shared, since it is a picture the two of them made together.
+    func shareable(for item: WidgetDrawingHistoryItem) -> PaeoniaShareable {
+        let exporter = exporter
+        return PaeoniaShareable(title: String(localized: .shareTitleDrawing)) {
+            guard let png = await exporter.exportPNG(
+                revisionID: item.id,
+                mediaAssetID: item.mediaAssetID,
+                canvasSide: item.canvasSide
+            ), let ink = UIImage(data: png) else {
+                return nil
+            }
+            return PaeoniaShareCards.drawing(
+                ink: ink,
+                subtitle: item.createdAt.formatted(date: .long, time: .omitted)
+            )
         }
     }
 

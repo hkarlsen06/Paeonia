@@ -26,6 +26,7 @@ import {
   insertWidgetDrawingRevision,
   isUsableWidgetPayloadAsset,
   parseWidgetDrawingPayload,
+  payloadIsVisible,
   widgetDrawingPayloadArgs,
   widgetDrawingPayloadHashFields,
 } from "./lib/widgetDrawings";
@@ -132,19 +133,6 @@ export const create_widget_live_ticket = mutation({
     return await signLiveTicket({ coupleId, userId });
   },
 });
-
-function payloadIsVisible(revision: Revision | null, asset: Asset | null): boolean {
-  return (
-    revision !== null &&
-    revision.deleted_at === undefined &&
-    revision.moderation_status === "visible" &&
-    asset !== null &&
-    asset.upload_status === "finalized" &&
-    asset.storage_delete_status === "none" &&
-    asset.moderation_status === "visible" &&
-    asset.deleted_at === undefined
-  );
-}
 
 /** The payload columns shared by the canvas and revision reads. Null unless the payload is visible. */
 function payloadColumns(revision: Revision, asset: Asset | null, visible: boolean) {

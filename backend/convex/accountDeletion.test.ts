@@ -442,7 +442,17 @@ describe("delete_account action", () => {
     const t = newTest();
     await configureApple();
     const calls = stubNetwork();
-    const { first } = await appleCoupleWithData(t);
+    const { first, coupleId } = await appleCoupleWithData(t);
+    await t.run((ctx) =>
+      ctx.db.insert("favorites", {
+        couple_id: coupleId,
+        user_id: first.userId,
+        kind: "daily_question",
+        target_id: newUuid(),
+        ordinal: 0,
+        created_at: NOW,
+      }),
+    );
 
     const response = await first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
     expect(response).toMatchObject({
@@ -465,6 +475,7 @@ describe("delete_account action", () => {
 
     const job = await t.run((ctx) => ctx.db.query("account_deletion_jobs").first());
     expect(job).toMatchObject({ status: "completed", provider_revocation_status: "succeeded" });
+    expect(await t.run((ctx) => ctx.db.query("favorites").collect())).toEqual([]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

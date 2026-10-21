@@ -20,7 +20,6 @@ struct StoryChainPendingHandlerTests {
     private func startHandler() -> StoryChainStartPendingOperationHandler { environment.startHandler() }
     private func nameHandler() -> StoryChainNamePendingOperationHandler { environment.nameHandler() }
     private func seenHandler() -> StoryChainSeenPendingOperationHandler { environment.seenHandler() }
-    private func starHandler() -> StoryChainStarPendingOperationHandler { environment.starHandler() }
 
     private func name(of storyID: UUID = Fixture.storyID) -> StoryChainQueuedName {
         StoryChainQueuedName(storyID: storyID, title: "The night bus")
@@ -28,10 +27,6 @@ struct StoryChainPendingHandlerTests {
 
     private func seenMark(_ storyID: UUID = Fixture.storyID) -> StoryChainSeenPayload {
         StoryChainSeenPayload(storyID: storyID)
-    }
-
-    private func star(_ starred: Bool, storyID: UUID = Fixture.storyID) -> StoryChainStarPayload {
-        StoryChainStarPayload(storyID: storyID, starred: starred, createdAt: Fixture.now)
     }
 
     /// Whether sending the move fails with an error, which keeps it in the queue.
@@ -170,7 +165,6 @@ struct StoryChainPendingHandlerTests {
         try await environment.enqueue(.storyChainAddLine, Fixture.queuedLine(story: Fixture.nextStoryID), sequence: 2)
         try await environment.enqueue(.storyChainNameStory, name(of: Fixture.nextStoryID), sequence: 3)
         try await environment.enqueue(.storyChainMarkSeen, seenMark(Fixture.nextStoryID), sequence: 4)
-        try await environment.enqueue(.storyChainSetStar, star(true, storyID: Fixture.nextStoryID), sequence: 5)
         // Another story's moves go on.
         try await environment.enqueue(.storyChainAddLine, Fixture.queuedLine(story: Fixture.storyID), sequence: 6)
 
@@ -182,7 +176,6 @@ struct StoryChainPendingHandlerTests {
         }
         #expect(await environment.queued(.storyChainNameStory).isEmpty)
         #expect(await environment.queued(.storyChainMarkSeen).isEmpty)
-        #expect(await environment.queued(.storyChainSetStar).isEmpty)
         let lines = await environment.queued(.storyChainAddLine)
         #expect(lines.count == 1)
         #expect(await cachedNotices() == [.moveRejected])
@@ -222,43 +215,5 @@ struct StoryChainPendingHandlerTests {
         #expect(gateway.seenStories == [Fixture.storyID])
         #expect(await environment.queued(.storyChainMarkSeen).isEmpty)
         #expect(await environment.cache.document(ownerUserID: Fixture.me).state == storyChainStateAfterAMove())
-    }
-
-    // MARK: Stars
-
-    @Test func aStarTheServerTookIsKeptInTheCacheBeforeItLeavesTheQueue() async throws {
-        let queued = try environment.snapshot(.storyChainSetStar, star(true), sequence: 1)
-
-        let result = try await starHandler().send(queued, context: environment.context)
-
-        #expect(result == .succeeded)
-        #expect(gateway.starWrites == [.init(storyID: Fixture.storyID, starred: true)])
-        #expect(await environment.cache.document(ownerUserID: Fixture.me).stars[Fixture.storyID] == true)
-        // The star moved the game's version, so the state is read before the write leaves the queue.
-        #expect(gateway.calls.contains("load"))
-        #expect(await environment.cache.document(ownerUserID: Fixture.me).state == storyChainStateAfterAMove())
-    }
-
-    @Test func aStarTheServerRefusesForGoodIsDroppedWithoutANotice() async throws {
-        gateway.setError(.server(code: "23514", message: "only a finished story can be starred"), for: "star")
-        let queued = try environment.snapshot(.storyChainSetStar, star(true), sequence: 1)
-
-        let result = try await starHandler().send(queued, context: environment.context)
-
-        guard case .terminalFailure = result else {
-            Issue.record("expected the star to be dropped, got \(result)")
-            return
-        }
-        #expect(await cachedNotices().isEmpty)
-        #expect(await environment.cache.document(ownerUserID: Fixture.me).stars.isEmpty)
-    }
-
-    @Test func aStarThatFailsOfflineStaysQueued() async throws {
-        gateway.fail("star")
-        try await environment.enqueue(.storyChainSetStar, star(true), sequence: 1)
-
-        await environment.drain()
-
-        #expect(await environment.queued(.storyChainSetStar).count == 1)
     }
 }

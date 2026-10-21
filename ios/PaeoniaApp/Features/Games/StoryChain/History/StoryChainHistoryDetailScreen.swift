@@ -13,7 +13,6 @@ struct StoryChainHistoryDetailHost: View {
     }
 
     @State private var load = Load.loading
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     var body: some View {
         content
@@ -23,24 +22,18 @@ struct StoryChainHistoryDetailHost: View {
             .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
-            .toolbar {
-                if case .loaded = load {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        StoryChainStarButton(
-                            stars: history.stars,
-                            storyID: storyID,
-                            identifier: "storyChain.history.star"
-                        )
-                    }
-                }
-            }
+            .favoriteToolbarItem(
+                .storyChainStory(storyID),
+                isShown: isLoaded,
+                identifier: "storyChain.history.star"
+            )
             .task { await loadStory() }
-            .onChange(of: history.stars.notice) { _, notice in
-                guard let notice else { return }
-                bannerCenter.show(notice.banner)
-                history.stars.clearNotice()
-            }
             .accessibilityIdentifier("storyChain.history.detail")
+    }
+
+    private var isLoaded: Bool {
+        if case .loaded = load { return true }
+        return false
     }
 
     @ViewBuilder
@@ -101,11 +94,7 @@ struct StoryChainHistoryDetailScreen: View {
     var body: some View {
         ScrollView {
             StoryChainPageView(
-                content: story.pageContent(
-                    currentUserID: history.currentUserID,
-                    youName: String(localized: .storyChainPageYou),
-                    partnerName: history.partnerName
-                ),
+                content: content,
                 eyebrow: Text(.storyChainStoryNumber(story.storyNumber)),
                 title: story.title,
                 byline: byline,
@@ -118,6 +107,20 @@ struct StoryChainHistoryDetailScreen: View {
             .padding(.bottom, PaeoniaSpacing.space32)
         }
         .scrollBounceBehavior(.basedOnSize)
+        .paeoniaShareToolbar(shareable, identifier: "storyChain.history.share")
+    }
+
+    private var content: StoryChainPageContent {
+        story.pageContent(
+            currentUserID: history.currentUserID,
+            youName: String(localized: .storyChainPageYou),
+            partnerName: history.partnerName
+        )
+    }
+
+    private var shareable: PaeoniaShareable? {
+        guard let title = story.title else { return nil }
+        return StoryChainShare.shareable(title: title, number: story.storyNumber, content: content)
     }
 
     private var byline: Text? {
@@ -141,7 +144,7 @@ struct StoryChainHistoryDetailScreen: View {
         VStack(spacing: PaeoniaSpacing.space12) {
             StoryChainOrnament(isShown: true)
             StoryChainStatsLine(lineCount: story.lines.count, dareCount: story.usedDareCount)
-            Text(.storyChainStarPrivacy)
+            Text(.favoritesPrivacyHint)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextTertiary)
                 .multilineTextAlignment(.center)

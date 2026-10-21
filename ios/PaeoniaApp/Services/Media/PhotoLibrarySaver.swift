@@ -16,14 +16,15 @@ enum PhotoLibrarySaveResult: Equatable, Sendable {
 /// first time. Abstracted behind a protocol so the save flow can be unit-tested
 /// without touching the real photo library.
 nonisolated protocol PhotoLibrarySaving: Sendable {
-    func savePNG(_ data: Data) async -> PhotoLibrarySaveResult
+    /// `data` is encoded image data, such as PNG or JPEG.
+    func saveImage(_ data: Data) async -> PhotoLibrarySaveResult
 }
 
 /// Live implementation backed by the Photos framework. Uses add-only access,
 /// which is the least the feature needs: it never reads the user's existing
 /// photos, it only writes new ones.
 struct PhotoLibrarySaver: PhotoLibrarySaving {
-    func savePNG(_ data: Data) async -> PhotoLibrarySaveResult {
+    func saveImage(_ data: Data) async -> PhotoLibrarySaveResult {
         switch await ensureAddAuthorization() {
         case .authorized, .limited:
             break

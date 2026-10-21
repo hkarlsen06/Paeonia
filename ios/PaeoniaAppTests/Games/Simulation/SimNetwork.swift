@@ -295,11 +295,11 @@ final class SimGateway: DrawAndGuessGateway, @unchecked Sendable {
         throw URLError(.notConnectedToInternet)
     }
 
-    func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
+    func loadDrawAndGuessHistoryRound(roundID _: UUID) throws -> RemoteDrawAndGuessHistoryRound? {
         throw URLError(.notConnectedToInternet)
     }
 
-    func setRoundStar(roundID _: UUID, starred _: Bool) throws -> RemoteRoundStarResult {
+    func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
         throw URLError(.notConnectedToInternet)
     }
 }

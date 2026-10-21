@@ -110,14 +110,6 @@ struct ExquisiteCorpseCacheTests {
         #expect(await cache.document(ownerUserID: me).state == state(seen: true))
     }
 
-    @Test func aStarNeverDecidesWhichStateIsOlder() {
-        let starred = Fixture.state(version: 5, recent: [Fixture.figure(1, starred: true)])
-        let plain = Fixture.state(version: 5, recent: [Fixture.figure(1, starred: false)])
-
-        #expect(!starred.isOlder(than: plain))
-        #expect(!plain.isOlder(than: starred))
-    }
-
     @Test func aStateOfAnotherGameIsNotOlder() {
         let other = Fixture.state(
             game: RemoteExquisiteCorpseGame(
@@ -202,44 +194,10 @@ struct ExquisiteCorpseCacheTests {
     }
 }
 
-/// What the cache keeps besides the state: stars, ideas, notices and refusals, and the file on disk.
+/// What the cache keeps besides the state: ideas, notices and refusals, and the file on disk.
 struct ExquisiteCorpseCacheContentTests {
     private typealias Fixture = ExquisiteCorpseFixture
     private let me = Fixture.me
-
-    // MARK: Stars
-
-    @Test func starsPatchTheFiguresOfTheStateAndTheHistoryPage() async {
-        let cache = InMemoryExquisiteCorpseCache()
-        let state = Fixture.state(
-            version: 5,
-            current: Fixture.figure(3, parts: 2),
-            recent: [Fixture.figure(2, starred: false), Fixture.figure(1, starred: true)]
-        )
-        let page = RemoteExquisiteCorpseHistoryPage(
-            figures: [
-                Fixture.figure(2, starred: false),
-                Fixture.figure(1, starred: true),
-                Fixture.figure(0, starred: false),
-            ],
-            nextBeforeFigureNumber: nil
-        )
-        await cache.saveState(state, ownerUserID: me)
-        await cache.saveHistoryFirstPage(page, ownerUserID: me)
-        let outsideTheState = UUID()
-
-        await cache.saveStars(
-            [Fixture.figureID(2): true, Fixture.figureID(1): false, outsideTheState: true],
-            ownerUserID: me
-        )
-
-        let document = await cache.document(ownerUserID: me)
-        #expect(document.stars == [Fixture.figureID(2): true, Fixture.figureID(1): false, outsideTheState: true])
-        #expect(document.state?.recentFigures.map(\.starredByMe) == [true, false])
-        #expect(document.state?.currentFigure == state.currentFigure)
-        #expect(document.history?.figures.map(\.starredByMe) == [true, false, false])
-        #expect(document.history?.nextBeforeFigureNumber == nil)
-    }
 
     // MARK: Ideas
 
@@ -276,7 +234,6 @@ struct ExquisiteCorpseCacheContentTests {
     @Test func clearingForgetsEverything() async {
         let cache = InMemoryExquisiteCorpseCache()
         await cache.saveState(Fixture.state(version: 5), ownerUserID: me)
-        await cache.saveStars([Fixture.figureID(1): true], ownerUserID: me)
         await cache.saveIdea("head-robot", partID: UUID(), ownerUserID: me)
         await cache.recordNotice(.partRejected, ownerUserID: me)
 
@@ -297,7 +254,6 @@ struct ExquisiteCorpseCacheContentTests {
             RemoteExquisiteCorpseHistoryPage(figures: [Fixture.figure(1)], nextBeforeFigureNumber: nil),
             ownerUserID: me
         )
-        await cache.saveStars([Fixture.figureID(1): true], ownerUserID: me)
         await cache.saveIdea("head-robot", partID: part, ownerUserID: me)
         await cache.recordNotice(.partRejected, ownerUserID: me)
         _ = await cache.recordUnexplainedRefusal(operationID: part, ownerUserID: me)
@@ -307,9 +263,7 @@ struct ExquisiteCorpseCacheContentTests {
 
         #expect(document.state?.game?.version == 5)
         #expect(document.state?.recentFigures.map(\.id) == [Fixture.figureID(1)])
-        #expect(document.state?.recentFigures.map(\.starredByMe) == [true])
         #expect(document.history?.figures.map(\.id) == [Fixture.figureID(1)])
-        #expect(document.stars == [Fixture.figureID(1): true])
         #expect(document.ideas == [part: "head-robot"])
         #expect(document.notices == [.partRejected])
         #expect(document.unexplainedRefusals == [part])

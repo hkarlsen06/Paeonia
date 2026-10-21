@@ -6,7 +6,7 @@ import PencilKit
 /// invariants each time the network is up and the queues have drained.
 ///
 /// Each step one phone acts like a person (draws above and below the fold, clears,
-/// asks for an idea, taps Done, continues from the reveal, stars, invites, leaves
+/// asks for an idea, taps Done, continues from the reveal, invites, leaves
 /// the screen, tries sending again) or the world does something to it (offline,
 /// background, force quit, a dropped socket, a stalled live feed, time passing, a
 /// request held on the network).
@@ -34,8 +34,6 @@ final class CorpseSimDriver {
     var drawn: [String: CorpseSimDrawing] = [:]
     /// The figures each person moved past with Continue.
     var continued: [String: Set<UUID>] = [:]
-    /// The last star each person set on a figure.
-    var starIntent: [String: [UUID: Bool]] = [:]
     var settlesWithoutProgress = 0
     var lastProgressVersion = -1
     var settleCount = 0

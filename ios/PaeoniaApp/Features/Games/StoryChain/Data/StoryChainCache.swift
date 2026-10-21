@@ -7,9 +7,6 @@ nonisolated struct StoryChainLocalDocument: GamesPersistedDocument {
     var state: RemoteStoryChainState?
     /// "Our stories": the newest finished stories, the first page of "All".
     var historyFirstPage: RemoteStoryChainHistoryPage?
-    /// What the server last said about this person's star on a story. It covers
-    /// the stories that are not in `state`.
-    var stars: [UUID: Bool] = [:]
     var notices: [GameStoredNotice] = []
     /// What the composer held when it was last saved, so a relaunch loses
     /// nothing. It goes back into the next composer, whatever story that is.
@@ -38,8 +35,6 @@ protocol StoryChainCaching: Actor {
     func saveFetchedState(_ state: RemoteStoryChainState, ownerUserID: UUID, ticket: Int) -> Bool
     /// Keeps the first page of "Our stories".
     func saveHistoryFirstPage(_ page: RemoteStoryChainHistoryPage, ownerUserID: UUID)
-    /// Keeps what the server said about this person's star on stories.
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID)
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID)
     /// Keeps the composer's text, or forgets it with nil.
     func saveDraft(_ draft: String?, ownerUserID: UUID)
@@ -72,17 +67,13 @@ extension StoryChainCaching {
 // MARK: - Rules shared by the file and in-memory caches
 
 nonisolated extension StoryChainLocalDocument {
-    private static let maxStars = 500
-
     /// Takes a state from the server unless it is older than the one kept.
-    /// Returns whether it took it. The stars it carries become the server's
-    /// values, so a story that leaves the state keeps its star.
+    /// Returns whether it took it.
     mutating func accept(_ newState: RemoteStoryChainState) -> Bool {
         if let state, newState.isOlder(than: state) {
             return false
         }
         state = newState
-        mergeStars(newState.starValues)
         return true
     }
 
@@ -100,63 +91,6 @@ nonisolated extension StoryChainLocalDocument {
         if !notices.contains(notice) {
             notices.append(notice)
         }
-    }
-
-    private mutating func mergeStars(_ values: [UUID: Bool]) {
-        stars.merge(values) { _, new in new }
-        if stars.count > Self.maxStars {
-            // A story with no entry reads as not starred, so the unstarred ones go first.
-            stars = stars.filter(\.value)
-        }
-    }
-
-    /// Takes the server's answer for these stories everywhere this document
-    /// holds them, so the state, the first page and the list never disagree.
-    mutating func saveStars(_ values: [UUID: Bool]) {
-        mergeStars(values)
-        state?.apply(stars: values)
-        historyFirstPage = historyFirstPage?.applying(stars: values)
-    }
-}
-
-nonisolated extension RemoteStoryChainState {
-    /// The finished stories of the state and whether this person starred each.
-    /// A story that is not finished can't be starred, so it says nothing.
-    var starValues: [UUID: Bool] {
-        Dictionary(
-            [currentStory, previousStory].compactMap(\.self)
-                .filter { $0.state == .finished }
-                .map { ($0.id, $0.starredByMe) },
-            uniquingKeysWith: { first, _ in first }
-        )
-    }
-
-    /// Takes the server's answer for the person's star on the stories it carries.
-    mutating func apply(stars: [UUID: Bool]) {
-        if let value = currentStory.flatMap({ stars[$0.id] }) {
-            currentStory?.starredByMe = value
-        }
-        if let value = previousStory.flatMap({ stars[$0.id] }) {
-            previousStory?.starredByMe = value
-        }
-    }
-}
-
-nonisolated extension RemoteStoryChainHistoryPage {
-    /// The star state of every story on the page.
-    var starValues: [UUID: Bool] {
-        Dictionary(stories.map { ($0.id, $0.starredByMe) }, uniquingKeysWith: { _, last in last })
-    }
-
-    func applying(stars: [UUID: Bool]) -> RemoteStoryChainHistoryPage {
-        RemoteStoryChainHistoryPage(
-            stories: stories.map { story in
-                var changed = story
-                changed.starredByMe = stars[story.id] ?? story.starredByMe
-                return changed
-            },
-            nextBeforeStoryNumber: nextBeforeStoryNumber
-        )
     }
 }
 
@@ -202,10 +136,6 @@ actor FileStoryChainCache: StoryChainCaching {
 
     func saveHistoryFirstPage(_ page: RemoteStoryChainHistoryPage, ownerUserID: UUID) {
         store.update(ownerUserID: ownerUserID) { $0.historyFirstPage = page }
-    }
-
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
-        store.update(ownerUserID: ownerUserID) { $0.saveStars(stars) }
     }
 
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {
@@ -278,10 +208,6 @@ actor InMemoryStoryChainCache: StoryChainCaching {
 
     func saveHistoryFirstPage(_ page: RemoteStoryChainHistoryPage, ownerUserID: UUID) {
         documents[ownerUserID, default: StoryChainLocalDocument()].historyFirstPage = page
-    }
-
-    func saveStars(_ stars: [UUID: Bool], ownerUserID: UUID) {
-        documents[ownerUserID, default: StoryChainLocalDocument()].saveStars(stars)
     }
 
     func recordNotice(_ notice: GameStoredNotice, ownerUserID: UUID) {

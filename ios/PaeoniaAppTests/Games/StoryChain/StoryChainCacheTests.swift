@@ -195,7 +195,6 @@ struct StoryChainCacheTests {
     @Test func clearAllRemovesEverything() async {
         await eachCache { cache in
             await cache.saveState(state(version: 2), ownerUserID: me)
-            await cache.saveStars([UUID(): true], ownerUserID: me)
             await cache.recordNotice(.moveRejected, ownerUserID: me)
 
             await cache.clearAll()
@@ -216,86 +215,21 @@ struct StoryChainCacheTests {
         }
     }
 
-    // MARK: Stars
-
-    @Test func aStarAnswerReachesTheStateTheFirstPageAndTheList() async {
-        await eachCache { cache in
-            let story = finishedStoryChainStory()
-            let item = storyChainHistoryItem(1)
-            await cache.saveState(finishedStoryChainState(story), ownerUserID: me)
-            await cache.saveHistoryFirstPage(
-                RemoteStoryChainHistoryPage(stories: [item], nextBeforeStoryNumber: nil),
-                ownerUserID: me
-            )
-
-            await cache.saveStars([story.id: true, item.id: true], ownerUserID: me)
-
-            let document = await cache.document(ownerUserID: me)
-            #expect(document.state?.currentStory?.starredByMe == true)
-            #expect(document.historyFirstPage?.stories.first?.starredByMe == true)
-            #expect(document.stars == [story.id: true, item.id: true])
-        }
-    }
-
-    @Test func aStoryThatLeavesTheStateKeepsItsStar() async {
-        await eachCache { cache in
-            let starred = finishedStoryChainStory(starred: true)
-            await cache.saveState(finishedStoryChainState(starred, version: 1), ownerUserID: me)
-
-            // The next story started, so the starred one is no longer in the state.
-            let next = Fixture.story(.writing, id: Fixture.nextStoryID, number: 2)
-            let later = Fixture.state(
-                Fixture.game(.writing, turn: Fixture.me, current: next.id, stories: 2, version: 2),
-                current: next
-            )
-            await cache.saveState(later, ownerUserID: me)
-
-            #expect(await cache.document(ownerUserID: me).stars[starred.id] == true)
-        }
-    }
-
-    @Test func theStarsOfAStateBehindTheOneKeptAreNotTaken() async {
-        await eachCache { cache in
-            let starred = finishedStoryChainStory(starred: true)
-            let unstarred = finishedStoryChainStory(starred: false)
-            await cache.saveState(finishedStoryChainState(starred, version: 3), ownerUserID: me)
-
-            await cache.saveState(finishedStoryChainState(unstarred, version: 2), ownerUserID: me)
-
-            #expect(await cache.document(ownerUserID: me).stars[starred.id] == true)
-        }
-    }
-
-    @Test func theUnstarredAnswersGoFirstWhenTheKeptStarsGrowTooMany() async {
-        await eachCache { cache in
-            let kept = UUID()
-            await cache.saveStars([kept: true], ownerUserID: me)
-
-            let unstarred = Dictionary(uniqueKeysWithValues: (0..<600).map { _ in (UUID(), false) })
-            await cache.saveStars(unstarred, ownerUserID: me)
-
-            #expect(await cache.document(ownerUserID: me).stars == [kept: true])
-        }
-    }
-
     // MARK: On disk
 
     @Test func theFileCacheKeepsTheWholeDocumentBetweenLaunches() async {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let storyID = UUID()
         let page = storyChainHistoryPage([2], next: 2)
         let first = FileStoryChainCache(directoryURL: directory)
         await first.saveState(state(version: 3), ownerUserID: me)
         await first.saveHistoryFirstPage(page, ownerUserID: me)
-        await first.saveStars([storyID: true], ownerUserID: me)
         await first.recordNotice(.moveRejected, ownerUserID: me)
 
         let next = await FileStoryChainCache(directoryURL: directory).document(ownerUserID: me)
 
         #expect(next.state == state(version: 3))
         #expect(next.historyFirstPage == page)
-        #expect(next.stars[storyID] == true)
         #expect(next.notices == [.moveRejected])
     }
 

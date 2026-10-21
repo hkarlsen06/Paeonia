@@ -28,6 +28,23 @@
       HistoryEntry(word: "lighthouse", drawerIsMe: true, solveMs: 52_000, tries: 5),
     ]
 
+    /// The id of history round `number`.
+    static func historyRoundID(_ number: Int) -> UUID {
+      UUID(uuidString: String(format: "eeeeeeee-0000-4000-8000-%012d", number)) ?? UUID()
+    }
+
+    /// The rounds this person has starred: 11, 8 and 5.
+    static let historyStarredRoundIDs: Set<UUID> = Set([11, 8, 5].map(historyRoundID))
+
+    /// The favorites of the "Our drawings" scenarios: the starred rounds.
+    @MainActor
+    static func favoritesStore() -> FavoritesStore {
+      FavoritesStore.preloaded(
+        ownerUserID: me,
+        favorites: historyStarredRoundIDs.map { FavoriteRef(target: .gameRound($0), createdAt: now) }
+      )
+    }
+
     /// Newest first, round 12 down to round 1.
     static func historyRounds() -> [RemoteDrawAndGuessHistoryRound] {
       historyWords.enumerated().map { index, entry in
@@ -37,7 +54,7 @@
         let solved = entry.solveMs != nil
         let reactions: [DrawAndGuessReaction?] = [.love, nil, .laugh, nil, .wow, nil]
         return RemoteDrawAndGuessHistoryRound(
-          id: UUID(uuidString: String(format: "eeeeeeee-0000-4000-8000-%012d", number)) ?? UUID(),
+          id: historyRoundID(number),
           roundNumber: number,
           drawerUserID: drawer,
           guesserUserID: guesser,
@@ -53,7 +70,6 @@
           attemptCount: entry.tries,
           guesserReaction: reactions[index % reactions.count],
           personalBest: false,
-          starredByMe: [1, 4, 7].contains(index),
           startedAt: now.addingTimeInterval(-Double(index + 1) * 86_400 - 600),
           endedAt: now.addingTimeInterval(-Double(index + 1) * 86_400)
         )
@@ -63,18 +79,26 @@
     /// The server's answer for a page: rounds before the cursor, optionally only
     /// the starred ones.
     static func historyPage(starredOnly: Bool, before: Int?, limit: Int) -> RemoteDrawAndGuessHistoryPage {
-      historyPage(from: historyRounds(), starredOnly: starredOnly, before: before, limit: limit)
+      historyPage(
+        from: historyRounds(),
+        starred: historyStarredRoundIDs,
+        starredOnly: starredOnly,
+        before: before,
+        limit: limit
+      )
     }
 
-    /// The same paging for any list of rounds, newest first. The tests use it too.
+    /// The same paging for any list of rounds, newest first. `starred` holds the rounds this
+    /// person favorited. The tests use it too.
     static func historyPage(
       from rounds: [RemoteDrawAndGuessHistoryRound],
+      starred: Set<UUID> = [],
       starredOnly: Bool,
       before: Int?,
       limit: Int
     ) -> RemoteDrawAndGuessHistoryPage {
       let matching = rounds.filter { round in
-        (before.map { round.roundNumber < $0 } ?? true) && (!starredOnly || round.starredByMe)
+        (before.map { round.roundNumber < $0 } ?? true) && (!starredOnly || starred.contains(round.id))
       }
       let page = Array(matching.prefix(limit))
       return RemoteDrawAndGuessHistoryPage(

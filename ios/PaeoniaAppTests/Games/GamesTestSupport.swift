@@ -51,8 +51,7 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         var historyRounds: [RemoteDrawAndGuessHistoryRound] = []
         var historyRequests: [HistoryRequest] = []
         var recordsToLoad: RemoteDrawAndGuessRecords?
-        var starWrites: [StarWrite] = []
-        var starError: PaeoniaConvexError?
+        var starredRoundIDs: Set<UUID> = []
     }
 
     private let lock = NSLock()
@@ -256,15 +255,15 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
     // MARK: History and stars
 
     var historyRequests: [HistoryRequest] { read(\.historyRequests) }
-    var starWrites: [StarWrite] { read(\.starWrites) }
 
     /// The rounds the history holds, newest first. The gateway pages them the way the server does.
     func setHistory(_ rounds: [RemoteDrawAndGuessHistoryRound]) {
         write { $0.historyRounds = rounds }
     }
 
-    func setStarError(_ error: PaeoniaConvexError?) {
-        write { $0.starError = error }
+    /// The rounds this person favorited, which the "starred only" history lists.
+    func setStarredRounds(_ ids: Set<UUID>) {
+        write { $0.starredRoundIDs = ids }
     }
 
     func setRecords(_ records: RemoteDrawAndGuessRecords?) {
@@ -281,23 +280,22 @@ final class ScriptedGamesGateway: DrawAndGuessGateway, @unchecked Sendable {
         try begin("history")
         return DeveloperGamesFixture.historyPage(
             from: read(\.historyRounds),
+            starred: read(\.starredRoundIDs),
             starredOnly: starredOnly,
             before: beforeRoundNumber,
             limit: limit
         )
     }
 
+    func loadDrawAndGuessHistoryRound(roundID: UUID) throws -> RemoteDrawAndGuessHistoryRound? {
+        try begin("historyRound")
+        return read(\.historyRounds).first { $0.id == roundID }
+    }
+
     func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
         try begin("records")
         guard let records = read(\.recordsToLoad) else { throw Failure() }
         return records
-    }
-
-    func setRoundStar(roundID: UUID, starred: Bool) throws -> RemoteRoundStarResult {
-        try begin("star")
-        if let error = read(\.starError) { throw error }
-        write { $0.starWrites.append(StarWrite(roundID: roundID, starred: starred)) }
-        return RemoteRoundStarResult(roundID: roundID, starred: starred)
     }
 }
 
@@ -379,12 +377,15 @@ struct GamesTestEnvironment {
     let pending = InMemoryPendingSyncOperationRepository()
     let drawingStore = InMemoryGameDrawingStore()
     let operations = DeveloperScenarioOperationProvider()
-
     init(state: RemoteDrawAndGuessState?) {
         cache = InMemoryGamesCache(state: state, ownerUserID: GameFixture.me)
     }
 
-    func dependencies(live: WidgetLiveDrawing? = nil) -> GamesDependencies {
+    /// `favorites` holds this person's stars. A test that needs starred rounds passes a `FavoritesStore.preloaded`.
+    func dependencies(
+        live: WidgetLiveDrawing? = nil,
+        favorites: FavoritesStore = FavoritesStore.preloaded(ownerUserID: GameFixture.me, favorites: [])
+    ) -> GamesDependencies {
         GamesDependencies(
             gateway: gateway,
             cache: cache,
@@ -393,7 +394,8 @@ struct GamesTestEnvironment {
             drawingStore: drawingStore,
             drawingTransfer: transfer,
             makeLive: { _ in live },
-            now: { GameFixture.now }
+            now: { GameFixture.now },
+            favorites: favorites
         )
     }
 

@@ -56,14 +56,6 @@ nonisolated struct GameGiveUpPayload: Codable, Equatable, Sendable {
     let createdAt: Date
 }
 
-/// `drawAndGuess:set_round_star`. The last one queued for a round wins, and sending
-/// the same one twice changes nothing.
-nonisolated struct GameStarPayload: Codable, Equatable, Sendable {
-    let roundID: UUID
-    let starred: Bool
-    let createdAt: Date
-}
-
 /// The guesser's reaction to a finished round. Nil clears it. The last one made
 /// is the one the screen shows.
 nonisolated struct GameReactionPayload: Codable, Equatable, Sendable {

@@ -159,7 +159,7 @@ struct ExquisiteCorpseQueuedPartTests {
 
     @Test func onlyAPartWaitingMakesTheResolutionWaitToSend() {
         let state = Fixture.state(game: Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me))
-        let marks = Fixture.pending(revealsSeen: [Fixture.figureID(1)], stars: [(Fixture.figureID(1), true)])
+        let marks = Fixture.pending(revealsSeen: [Fixture.figureID(1)])
 
         #expect(!resolve(state, pending: marks).isWaitingToSend)
         let part = Fixture.pending(parts: [Fixture.queuedPart(figure: 2, partIndex: 0)])

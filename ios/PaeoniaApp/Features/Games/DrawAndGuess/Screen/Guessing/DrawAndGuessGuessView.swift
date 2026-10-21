@@ -69,13 +69,12 @@ struct DrawAndGuessGuessView: View {
             }
         }
         .onDisappear { timeline.stop() }
-        .gameStarToolbar(
-            stars: viewModel.stars,
-            id: viewModel.round?.id,
+        .favoriteToolbarItem(
+            viewModel.round.map { .gameRound($0.id) },
             isShown: isRevealed && timeline.actionsShown,
-            hintKey: "games.drawAndGuess.starHintShown",
             identifier: "draw.reveal.star"
         )
+        .paeoniaShareToolbar(timeline.actionsShown ? viewModel.shareable : nil, identifier: "draw.reveal.share")
     }
 
     // MARK: Square

@@ -4,6 +4,7 @@ import {
   activityKind,
   apnsEnvironment,
   authProvider,
+  favoriteKind,
   gameKind,
   gameLanguage,
   gamePlayStyle,
@@ -666,10 +667,14 @@ export default defineSchema({
   }).index("by_answer_id", ["answer_id"]),
 
   // FK: answer_id -> daily_question_answers cascade
+  // couple_id repeats the answer's couple so `search_body` can search one couple's answers.
   daily_answer_text: defineTable({
     answer_id: uuid,
+    couple_id: uuid,
     body: v.string(),
-  }).index("by_answer_id", ["answer_id"]),
+  })
+    .index("by_answer_id", ["answer_id"])
+    .searchIndex("search_body", { searchField: "body", filterFields: ["couple_id"] }),
 
   // FK: couple_day_id -> couple_days cascade. (couple_day_id, user_id) is unique.
   daily_challenges: defineTable({
@@ -1217,7 +1222,9 @@ export default defineSchema({
     updated_at: ts,
   })
     .index("by_question_version_id_locale", ["question_version_id", "locale"])
-    .index("by_locale", ["locale"]),
+    .index("by_locale", ["locale"])
+    // Content search over question wording (search.ts). The catalog is small, so one index serves every couple.
+    .searchIndex("search_prompt", { searchField: "prompt", filterFields: ["locale"] }),
 
   // FK: question_id -> questions cascade. (question_id, version_number) is unique; one active version per question.
   question_versions: defineTable({
@@ -1403,6 +1410,27 @@ export default defineSchema({
     .index("by_couple_id", ["couple_id"])
     .index("by_user_id", ["user_id"]),
 
+  // One person's private favorite: a saved question, answer, widget drawing, or finished game item.
+  // Nobody else is told. (user_id, kind, target_id) is unique. `target_id` is the id of the target's own row,
+  // except for `daily_question`, where it is the question id (a question's page spans every round it came back on).
+  // `ordinal` is the item's number inside its kind for the games (round, creature or story number), so one
+  // person's favorites of a kind page by number without reading the items. It is 0 for the other kinds.
+  // Targets are not foreign keys. Reads drop a favorite whose target is gone, and the couple purge, the
+  // account deletion and each game's own cleanup delete the rows.
+  favorites: defineTable({
+    couple_id: uuid,
+    user_id: uuid,
+    kind: favoriteKind,
+    target_id: uuid,
+    ordinal: v.number(),
+    created_at: ts,
+  })
+    .index("by_user_id_kind_target_id", ["user_id", "kind", "target_id"])
+    .index("by_user_id_kind_ordinal", ["user_id", "kind", "ordinal"])
+    .index("by_user_id_created_at", ["user_id", "created_at"])
+    .index("by_kind_target_id", ["kind", "target_id"])
+    .index("by_couple_id", ["couple_id"]),
+
   // One person's emoji reaction to a chat message. One row per (message_id, user_id).
   // Choosing another emoji replaces it, and clearing deletes it.
   // FK: message_id -> thread_messages cascade; thread_id -> conversation_threads cascade; user_id -> users cascade.
@@ -1435,6 +1463,8 @@ export default defineSchema({
   thread_messages: defineTable({
     id: uuid,
     thread_id: uuid,
+    // The thread's couple, repeated so `search_body` can search one couple's messages.
+    couple_id: uuid,
     sender_user_id: uuid,
     body: optString,
     reply_to_message_id: optUuid,
@@ -1455,7 +1485,8 @@ export default defineSchema({
       "moderation_status",
       "deleted_at",
       "created_at",
-    ]),
+    ])
+    .searchIndex("search_body", { searchField: "body", filterFields: ["couple_id"] }),
 
   // FK: user_id -> users cascade. (push_token_hash, apns_environment) is unique while disabled_at is null.
   user_devices: defineTable({
@@ -1566,7 +1597,7 @@ export default defineSchema({
   // ---- games (new in Convex, see games.ts and docs/games/draw-and-guess.md) ----
   // Every games table has a couple_id index. Relationship cleanup deletes the rows (lib/gameRegistry.ts).
   // game_settings, game_invites, and game_plays are shared by every game kind. The presence component keeps who
-  // has a game open (lib/presence.ts). games, game_moves, game_guesses, game_round_stars, and
+  // has a game open (lib/presence.ts). games, game_moves, game_guesses, and
   // game_used_words belong to Draw & Guess (lib/drawAndGuess.ts).
 
   // FK: couple_id -> couples cascade. couple_id is unique. Shared by all games.
@@ -1667,18 +1698,6 @@ export default defineSchema({
     .index("by_move_id_created_at", ["move_id", "created_at"])
     .index("by_couple_id", ["couple_id"]),
 
-  // FK: move_id -> game_moves cascade. (move_id, user_id) is unique. A partner's private star on a finished round. Nobody else is told.
-  // round_number repeats the round's number so one user's stars page by round without reading the rounds.
-  game_round_stars: defineTable({
-    couple_id: uuid,
-    move_id: uuid,
-    user_id: uuid,
-    round_number: v.number(),
-    created_at: ts,
-  })
-    .index("by_move_id_user_id", ["move_id", "user_id"])
-    .index("by_couple_id_user_id_round_number", ["couple_id", "user_id", "round_number"]),
-
   // FK: game_id -> games cascade. Words already shown to the couple.
   game_used_words: defineTable({
     game_id: uuid,
@@ -1769,17 +1788,6 @@ export default defineSchema({
     .index("by_game_id_story_number", ["game_id", "story_number"])
     .index("by_couple_id_story_number", ["couple_id", "story_number"]),
 
-  // FK: story_id -> story_chain_stories cascade. (story_id, user_id) is unique. Private to user_id.
-  story_chain_stars: defineTable({
-    couple_id: uuid,
-    story_id: uuid,
-    user_id: uuid,
-    story_number: v.number(),
-    created_at: ts,
-  })
-    .index("by_story_id_user_id", ["story_id", "user_id"])
-    .index("by_couple_id_user_id_story_number", ["couple_id", "user_id", "story_number"]),
-
   // The openings and dare words a couple has used, per language. A kind starts over when used up.
   story_chain_used: defineTable({
     game_id: uuid,
@@ -1855,17 +1863,6 @@ export default defineSchema({
     .index("by_drawing_media_asset_id", ["drawing_media_asset_id"])
     .index("by_strip_media_asset_id", ["strip_media_asset_id"])
     .index("by_couple_id", ["couple_id"]),
-
-  // FK: figure_id -> exquisite_corpse_figures cascade. (user_id, figure_id) is unique. A private star. figure_number lets stars page.
-  exquisite_corpse_stars: defineTable({
-    couple_id: uuid,
-    user_id: uuid,
-    figure_id: uuid,
-    figure_number: v.number(),
-    created_at: ts,
-  })
-    .index("by_couple_id_user_id_figure_number", ["couple_id", "user_id", "figure_number"])
-    .index("by_user_id_figure_id", ["user_id", "figure_id"]),
 
   // FK: couple_id -> couples cascade. (couple_id, kind) is unique. One row per couple and board game: the current
   // game, the couple's tallies, and the last finished game (see boardGames.ts and docs/games/board-games.md).

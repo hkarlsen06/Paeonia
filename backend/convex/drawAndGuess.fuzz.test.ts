@@ -828,14 +828,16 @@ class Fuzz {
     const user = this.pick([this.a.userId, this.b.userId]);
     const starred = this.chance(0.6);
     let expected: Expect = "ok";
-    if (!round) expected = { code: "42501" };
-    else if (!finished(round)) expected = { code: "23514", message: /not finished/ };
-    const outcome = await attempt(this.users[user].as.mutation(api.drawAndGuess.set_round_star, { p_round_id: roundId, p_starred: starred }));
+    // Taking a favorite back always works. Saving needs a finished round.
+    if (starred && (!round || !finished(round))) expected = { code: "23514" };
+    const outcome = await attempt(
+      this.users[user].as.mutation(api.favorites.set_favorite, { p_kind: "game_round", p_target_id: roundId, p_favorited: starred }),
+    );
     const result = this.check(`${this.name(user)} star ${starred} round=${roundId.slice(0, 8)}`, outcome, expected);
     if (expected !== "ok") return;
     if (starred) round!.stars.add(user);
-    else round!.stars.delete(user);
-    this.same("star result", result, { round_id: roundId, starred });
+    else round?.stars.delete(user);
+    this.same("star result", result, { kind: "game_round", target_id: roundId, favorited: starred });
   }
 
   private async resultSeen() {
@@ -922,7 +924,6 @@ class Fuzz {
       hints_used: round.hintsUsed,
       personal_best: round.personalBest,
       guesser_reaction: orNull(round.reaction),
-      starred_by_me: round.stars.has(viewer),
       drawer_result_seen_at: round.drawerSeenAt === undefined ? null : iso(round.drawerSeenAt),
       guesser_result_seen_at: round.guesserSeenAt === undefined ? null : iso(round.guesserSeenAt),
       attempt_count: round.attempts.length,
@@ -998,7 +999,7 @@ class Fuzz {
       game: (await ctx.db.query("games").first())!,
       moves: await ctx.db.query("game_moves").collect(),
       guesses: await ctx.db.query("game_guesses").collect(),
-      stars: await ctx.db.query("game_round_stars").collect(),
+      stars: (await ctx.db.query("favorites").collect()).filter((row) => row.kind === "game_round"),
       assets: await ctx.db.query("media_assets").collect(),
       outbox: await ctx.db.query("notification_outbox").collect(),
       activity: await ctx.db.query("couple_activity_events").collect(),
@@ -1054,9 +1055,9 @@ class Fuzz {
     }
 
     // Stars match the model, and a round has at most one star per partner.
-    const starKeys = db.stars.map((star) => `${star.move_id}:${star.user_id}`).sort();
+    const starKeys = db.stars.map((star) => `${star.target_id}:${star.user_id}`).sort();
     this.same("stars", starKeys, m.rounds.flatMap((round) => [...round.stars].map((uid) => `${round.id}:${uid}`)).sort());
-    for (const star of db.stars) this.same("star round number", star.round_number, m.rounds.find((round) => round.id === star.move_id)?.number);
+    for (const star of db.stars) this.same("star round number", star.ordinal, m.rounds.find((round) => round.id === star.target_id)?.number);
     await this.checkHistoryAndRecords();
 
     // Pushes: the expected count per kind, at most one reminder per move, never the word.
@@ -1105,7 +1106,6 @@ class Fuzz {
       attempt_count: round.attempts.length,
       guesser_reaction: orNull(round.reaction),
       personal_best: round.personalBest,
-      starred_by_me: round.stars.has(me),
       ended_at: round.endedAt === undefined ? null : iso(round.endedAt),
     });
     for (const me of [this.a.userId, this.b.userId]) {

@@ -13,7 +13,6 @@ import SwiftUI
 struct StoryChainStoryView: View {
     let viewModel: StoryChainViewModel
 
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @State private var reveal = StoryChainRevealTimeline()
@@ -59,7 +58,8 @@ struct StoryChainStoryView: View {
         .paeoniaBottomBar(spacing: 0) {
             StoryChainActionBar(viewModel: viewModel, reveal: reveal)
         }
-        .toolbar { starItem }
+        .favoriteToolbarItem(finishedStoryTarget, identifier: "storyChain.star")
+        .paeoniaShareToolbar(finishedShareable, identifier: "storyChain.share")
         .gameInviteToolbar(
             invite: isPartnersTurn ? viewModel.invite : .hidden,
             partnerName: viewModel.partnerName,
@@ -83,11 +83,6 @@ struct StoryChainStoryView: View {
         }
         .onChange(of: viewModel.page.lines.last?.id) { _, _ in
             announceNewPartnerLine()
-        }
-        .onChange(of: viewModel.stars.notice) { _, notice in
-            guard let notice else { return }
-            bannerCenter.show(notice.banner)
-            viewModel.stars.clearNotice()
         }
         .onDisappear { reveal.stop() }
     }
@@ -160,14 +155,24 @@ struct StoryChainStoryView: View {
 
     // MARK: Star
 
-    /// The star arrives with the button, at the end of the reveal.
-    @ToolbarContentBuilder
-    private var starItem: some ToolbarContent {
+    /// The story the star is for. It arrives with the button, at the end of the reveal.
+    private var finishedStoryTarget: FavoriteTarget? {
         if case let .finished(storyID) = viewModel.phase, reveal.actionsShown {
-            ToolbarItem(placement: .topBarTrailing) {
-                StoryChainStarButton(stars: viewModel.stars, storyID: storyID, showsPrivacyHint: true)
-            }
+            return .storyChainStory(storyID)
         }
+        return nil
+    }
+
+    /// The share button arrives with the star, once the reveal has shown the title.
+    private var finishedShareable: PaeoniaShareable? {
+        guard case .finished = viewModel.phase, reveal.actionsShown, let finished = viewModel.finished else {
+            return nil
+        }
+        return StoryChainShare.shareable(
+            title: finished.title,
+            number: finished.storyNumber,
+            content: viewModel.page
+        )
     }
 
     /// The invite shows while the partner writes a line or names the story.

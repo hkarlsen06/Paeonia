@@ -8,11 +8,6 @@ extension ScriptedGamesGateway {
         var beforeRoundNumber: Int?
         var limit: Int
     }
-
-    struct StarWrite: Equatable {
-        var roundID: UUID
-        var starred: Bool
-    }
 }
 
 /// "Our drawings": paging, the filters, and the cache.
@@ -30,13 +25,14 @@ struct DrawAndGuessHistoryTests {
     ) -> DrawAndGuessHistoryViewModel {
         environment.gateway.setHistory(rounds ?? self.rounds)
         environment.gateway.setRecords(DeveloperGamesFixture.records)
-        let dependencies = environment.dependencies()
-        let stars = GameStars(source: .drawAndGuess(cache: dependencies.cache), dependencies: dependencies) {
-            GameFixture.me
-        }
+        let starred = Set([11, 8, 5].map(DeveloperGamesFixture.historyRoundID))
+        environment.gateway.setStarredRounds(starred)
+        let favorites = FavoritesStore.preloaded(
+            ownerUserID: GameFixture.me,
+            favorites: starred.map { FavoriteRef(target: .gameRound($0), createdAt: GameFixture.now) }
+        )
         return DrawAndGuessHistoryViewModel(
-            dependencies: dependencies,
-            stars: stars,
+            dependencies: environment.dependencies(favorites: favorites),
             participants: GameFixture.participants,
             pageSize: pageSize
         )
@@ -131,7 +127,7 @@ struct DrawAndGuessHistoryTests {
 
         await history.refresh()
 
-        let expected = rounds.filter(\.starredByMe).map(\.roundNumber)
+        let expected = [11, 8, 5]
         #expect(history.visibleRounds.map(\.roundNumber) == expected)
         #expect(environment.gateway.historyRequests.first?.starredOnly == true)
         #expect(!history.isEmpty)

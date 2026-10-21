@@ -13,11 +13,6 @@ import Foundation
 final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendable {
     struct Failure: Error {}
 
-    struct StarWrite: Equatable {
-        var storyID: UUID
-        var starred: Bool
-    }
-
     struct HistoryRequest: Equatable {
         var starredOnly: Bool
         var beforeStoryNumber: Int?
@@ -30,7 +25,7 @@ final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendabl
         var lines: [StoryChainQueuedLine] = []
         var names: [StoryChainQueuedName] = []
         var seenStories: [UUID] = []
-        var starWrites: [StarWrite] = []
+        var starredStoryIDs: Set<UUID> = []
         var historyRequests: [HistoryRequest] = []
         var failing: Set<String> = []
         var errors: [String: PaeoniaConvexError] = [:]
@@ -55,7 +50,10 @@ final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendabl
     var lines: [StoryChainQueuedLine] { read(\.lines) }
     var names: [StoryChainQueuedName] { read(\.names) }
     var seenStories: [UUID] { read(\.seenStories) }
-    var starWrites: [StarWrite] { read(\.starWrites) }
+    /// The stories this person favorited, which the starred filter of the history returns.
+    func setStarredStories(_ ids: Set<UUID>) {
+        write { $0.starredStoryIDs = ids }
+    }
     var historyRequests: [HistoryRequest] { read(\.historyRequests) }
 
     /// Fails the call with a plain error, the way a lost connection does.
@@ -149,12 +147,6 @@ final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendabl
         write { $0.seenStories.append(storyID) }
     }
 
-    func setStoryStar(storyID: UUID, starred: Bool) async throws -> RemoteStoryStarResult {
-        try begin("star")
-        write { $0.starWrites.append(StarWrite(storyID: storyID, starred: starred)) }
-        return RemoteStoryStarResult(storyID: storyID, starred: starred)
-    }
-
     func loadStoryChainHistory(
         starredOnly: Bool,
         beforeStoryNumber: Int?,
@@ -164,7 +156,7 @@ final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendabl
         write { $0.historyRequests.append(request) }
         try begin("history")
         let matching = read(\.history)
-            .filter { !starredOnly || $0.starredByMe }
+            .filter { !starredOnly || read(\.starredStoryIDs).contains($0.id) }
             .filter { item in beforeStoryNumber.map { item.storyNumber < $0 } ?? true }
             .sorted { $0.storyNumber > $1.storyNumber }
         let page = Array(matching.prefix(limit))
@@ -255,16 +247,20 @@ actor UnreadableStoryChainPendingStore: PendingSyncOperationPersisting {
 // swiftlint:enable async_without_await
 
 /// A finished story as "Our stories" lists it. The id follows the number.
-func storyChainHistoryItem(_ number: Int, starred: Bool = false) -> RemoteStoryChainHistoryItem {
+func storyChainHistoryItem(_ number: Int) -> RemoteStoryChainHistoryItem {
     RemoteStoryChainHistoryItem(
-        id: UUID(uuidString: String(format: "dddddddd-0000-4000-8000-%012d", number)) ?? UUID(),
+        id: storyChainHistoryID(number),
         storyNumber: number,
         title: "Story \(number)",
         firstLine: "The first line of story \(number).",
         lineCount: 10,
-        finishedAt: StoryChainFixture.now.addingTimeInterval(Double(number) * 3_600),
-        starredByMe: starred
+        finishedAt: StoryChainFixture.now.addingTimeInterval(Double(number) * 3_600)
     )
+}
+
+/// The id of the history item with this number.
+func storyChainHistoryID(_ number: Int) -> UUID {
+    UUID(uuidString: String(format: "dddddddd-0000-4000-8000-%012d", number)) ?? UUID()
 }
 
 /// What the server answers when the phone reads the state after a move it took.
@@ -288,21 +284,18 @@ func finishedStoryChainState(_ story: RemoteStoryChainStory, version: Int = 1) -
     )
 }
 
-/// A finished story with this person's star, for a state.
+/// A finished story, for a state.
 func finishedStoryChainStory(
     id: UUID = StoryChainFixture.storyID,
-    number: Int = 1,
-    starred: Bool = false
+    number: Int = 1
 ) -> RemoteStoryChainStory {
-    var story = StoryChainFixture.story(
+    StoryChainFixture.story(
         .finished,
         id: id,
         number: number,
         lines: StoryChainFixture.lines(8, starter: StoryChainFixture.partner),
         seenByMe: true
     )
-    story.starredByMe = starred
-    return story
 }
 
 /// Everything a Story Chain data test needs, in memory.
@@ -325,7 +318,7 @@ struct StoryChainDataEnvironment {
         gateway.setStateToLoad(storyChainStateAfterAMove())
     }
 
-    func dependencies() -> GamesDependencies {
+    func dependencies(favorites: FavoritesStore = .inMemory()) -> GamesDependencies {
         GamesDependencies(
             gateway: UnavailableGamesGateway(),
             cache: gamesCache,
@@ -335,6 +328,7 @@ struct StoryChainDataEnvironment {
             drawingTransfer: UnavailableGameDrawingTransfer(),
             makeLive: { _ in nil },
             now: { StoryChainFixture.now },
+            favorites: favorites,
             storyChainGateway: gateway,
             storyChainCache: cache
         )
@@ -402,10 +396,6 @@ struct StoryChainDataEnvironment {
 
     func seenHandler() -> StoryChainSeenPendingOperationHandler {
         StoryChainSeenPendingOperationHandler(gateway: gateway, cache: cache)
-    }
-
-    func starHandler() -> StoryChainStarPendingOperationHandler {
-        StoryChainStarPendingOperationHandler(gateway: gateway, cache: cache, gamesCache: gamesCache)
     }
 
     /// The writes still waiting, by kind.

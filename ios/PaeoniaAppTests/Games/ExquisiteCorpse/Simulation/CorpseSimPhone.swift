@@ -5,13 +5,13 @@ import PencilKit
 /// One phone: its own Games overview cache, corpse cache, pending operations,
 /// drawings on disk and relay socket, and a real `ExquisiteCorpseViewModel` wired
 /// as `GamesDependencies.live()` and the sync service wire it. It runs the real
-/// drain with the three corpse handlers, and stands in for the live feed.
+/// drain with the two corpse handlers, and stands in for the live feed.
 ///
 /// The stores outlive a force quit. The view model, the tasks and the socket do not.
 @MainActor
 final class CorpseSimPhone {
     static let queuedKinds: [SyncPendingOperationKind] = [
-        .exquisiteCorpseSubmitPart, .exquisiteCorpseRevealSeen, .exquisiteCorpseStar,
+        .exquisiteCorpseSubmitPart, .exquisiteCorpseRevealSeen,
     ]
 
     let name: String
@@ -162,7 +162,6 @@ final class CorpseSimPhone {
                 drawingStore: drawingStore
             ),
             ExquisiteCorpseRevealSeenHandler(gateway: gateway, cache: corpseCache),
-            ExquisiteCorpseStarHandler(gateway: gateway, cache: corpseCache),
         ], retryPolicy: PendingSyncOperationRetryPolicy(baseDelaySeconds: 0))
     }
 

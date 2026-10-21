@@ -10,14 +10,6 @@ nonisolated struct StoryChainSeenPayload: Codable, Equatable, Sendable {
     let storyID: UUID
 }
 
-/// `storyChain:set_story_star`. The last one queued for a story wins, and
-/// sending the same one twice changes nothing.
-nonisolated struct StoryChainStarPayload: Codable, Equatable, Sendable {
-    let storyID: UUID
-    let starred: Bool
-    let createdAt: Date
-}
-
 // MARK: - Reading the queue
 
 nonisolated extension StoryChainPendingWork {

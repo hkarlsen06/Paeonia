@@ -1,12 +1,10 @@
 import Foundation
 
-// What "Our drawings" reads: the couple's finished rounds, the records of both
-// partners, and the private star on a round. Backend functions are
-// `drawAndGuess:get_draw_and_guess_history`, `drawAndGuess:get_draw_and_guess_records` and
-// `drawAndGuess:set_round_star`.
+// What "Our drawings" reads: the couple's finished rounds and the records of both
+// partners. Backend functions are `drawAndGuess:get_draw_and_guess_history` and
+// `drawAndGuess:get_draw_and_guess_records`. Stars are favorites (`FavoritesStore`).
 
-/// One finished round that holds a drawing. The partner's star is not read,
-/// because stars are private and the screens never show it.
+/// One finished round that holds a drawing.
 nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
     let roundNumber: Int
@@ -26,8 +24,6 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
     let attemptCount: Int
     let guesserReaction: DrawAndGuessReaction?
     let personalBest: Bool
-    /// The server's value. `GameStars` adds this phone's unsent changes.
-    let starredByMe: Bool
     let startedAt: Date
     let endedAt: Date?
 
@@ -48,7 +44,6 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
         case attemptCount = "attempt_count"
         case guesserReaction = "guesser_reaction"
         case personalBest = "personal_best"
-        case starredByMe = "starred_by_me"
         case startedAt = "started_at"
         case endedAt = "ended_at"
     }
@@ -132,41 +127,12 @@ nonisolated struct RemoteDrawAndGuessRecords: Codable, Equatable, Sendable {
     }
 }
 
-/// `drawAndGuess:set_round_star`.
-nonisolated struct RemoteRoundStarResult: Decodable, Equatable, Sendable {
-    let roundID: UUID
-    let starred: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case roundID = "round_id"
-        case starred
-    }
-}
-
 /// What the Games cache keeps for "Our drawings", so the screen opens offline
 /// with what was there.
 nonisolated struct GamesHistoryCache: Codable, Equatable, Sendable {
     /// The newest rounds, the first page of "All".
     var firstPage: RemoteDrawAndGuessHistoryPage?
     var records: RemoteDrawAndGuessRecords?
-    /// The rounds this person starred, as the server last said. Oldest first.
-    var starredRoundIDs: [UUID] = []
-
-    static let maxStarredRounds = 500
-
-    /// Takes the server's answer for these rounds. A round the server says is
-    /// not starred leaves the list.
-    mutating func apply(stars: [UUID: Bool]) {
-        for (roundID, isStarred) in stars {
-            starredRoundIDs.removeAll { $0 == roundID }
-            if isStarred {
-                starredRoundIDs.append(roundID)
-            }
-        }
-        if starredRoundIDs.count > Self.maxStarredRounds {
-            starredRoundIDs.removeFirst(starredRoundIDs.count - Self.maxStarredRounds)
-        }
-    }
 }
 
 nonisolated extension GamesLocalDocument {
@@ -181,44 +147,9 @@ nonisolated extension GamesLocalDocument {
         history.records = records
         drawings = history
     }
-
-    mutating func saveStars(_ stars: [UUID: Bool]) {
-        var history = drawings ?? GamesHistoryCache()
-        history.apply(stars: stars)
-        drawings = history
-        // The game state carries the same stars, so the two never disagree.
-        state?.apply(stars: stars)
-    }
-}
-
-nonisolated extension RemoteDrawAndGuessHistoryPage {
-    /// The star state of every round on the page.
-    var starValues: [UUID: Bool] {
-        Dictionary(rounds.map { ($0.id, $0.starredByMe) }, uniquingKeysWith: { _, last in last })
-    }
 }
 
 nonisolated extension RemoteDrawAndGuessState {
-    /// Takes the server's answer for the person's star on the rounds it carries.
-    mutating func apply(stars: [UUID: Bool]) {
-        if let value = currentRound.flatMap({ stars[$0.id] }) {
-            currentRound?.starredByMe = value
-        }
-        recentRounds = recentRounds.map { round in
-            var changed = round
-            changed.starredByMe = stars[round.id] ?? round.starredByMe
-            return changed
-        }
-    }
-
-    /// The rounds of the state this person starred, and the ones they did not.
-    var starValues: [UUID: Bool] {
-        Dictionary(
-            ([currentRound].compactMap(\.self) + recentRounds).map { ($0.id, $0.starredByMe) },
-            uniquingKeysWith: { first, _ in first }
-        )
-    }
-
     /// The couple has a finished round with a drawing among the rounds the
     /// state carries, so "Our drawings" has something to show.
     var hasFinishedDrawing: Bool {

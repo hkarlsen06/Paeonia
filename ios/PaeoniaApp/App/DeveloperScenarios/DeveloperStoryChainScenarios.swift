@@ -276,7 +276,8 @@
   @MainActor
   private enum DeveloperStoryChainHub {
     static func make(for scenario: DeveloperScenario) -> StoryChainHubModel {
-      let dependencies = DeveloperGamesScenarioFactory.dependencies(for: scenario)
+      var dependencies = DeveloperGamesScenarioFactory.dependencies(for: scenario)
+      dependencies.favorites = DeveloperStoryChainFixture.favoritesStore()
       let game = StoryChainViewModel(dependencies: dependencies, participants: DeveloperGamesFixture.participants)
       let hub = StoryChainHubModel(dependencies: dependencies, game: game)
       hub.configure(participants: DeveloperGamesFixture.participants)

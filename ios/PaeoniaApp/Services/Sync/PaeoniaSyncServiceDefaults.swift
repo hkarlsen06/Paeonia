@@ -53,6 +53,7 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         )
         defaultHandlers += heartsAndDatesHandlers(client: client)
         defaultHandlers += GamesPendingOperationRegistry.handlers(client: client)
+        defaultHandlers += favoritesHandlers(client: client)
 
         return [
             PendingSyncOperationDrainStream(
@@ -167,6 +168,16 @@ nonisolated enum PaeoniaSyncServiceDefaults {
             FirstDayStartedOnPendingOperationHandler(
                 gateway: LiveFirstDayGateway(client: client),
                 relationshipDates: RelationshipStartedOnDataServiceFactory.makeDefault()
+            ),
+        ]
+    }
+
+    private static func favoritesHandlers(client: PaeoniaConvexClient) -> [any PendingSyncOperationHandling] {
+        [
+            SetFavoritePendingOperationHandler(
+                gateway: LiveFavoritesGateway(client: client),
+                cache: FileFavoritesCache.shared,
+                gates: GamesPendingOperationRegistry.favoriteGates()
             ),
         ]
     }

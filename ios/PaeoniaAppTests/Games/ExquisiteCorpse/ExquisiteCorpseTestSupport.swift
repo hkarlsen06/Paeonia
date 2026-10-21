@@ -67,8 +67,7 @@ enum ExquisiteCorpseFixture {
     static func figure(
         _ number: Int,
         parts: Int = 3,
-        revealSeen: Bool = false,
-        starred: Bool = false
+        revealSeen: Bool = false
     ) -> RemoteExquisiteCorpseFigure {
         RemoteExquisiteCorpseFigure(
             id: figureID(number),
@@ -77,7 +76,6 @@ enum ExquisiteCorpseFixture {
             createdAt: now,
             finishedAt: parts == 3 ? now.addingTimeInterval(3) : nil,
             myRevealSeenAt: revealSeen ? now.addingTimeInterval(10) : nil,
-            starredByMe: starred,
             parts: (0..<parts).map { part(figure: number, index: $0) }
         )
     }
@@ -144,13 +142,11 @@ enum ExquisiteCorpseFixture {
 
     static func pending(
         parts: [ExquisiteCorpseSubmitPartPayload] = [],
-        revealsSeen: [UUID] = [],
-        stars: [(figure: UUID, starred: Bool)] = []
+        revealsSeen: [UUID] = []
     ) -> ExquisiteCorpsePendingWork {
         var work = ExquisiteCorpsePendingWork()
         work.parts = parts
         work.revealsSeen = revealsSeen.map { ExquisiteCorpseRevealSeenPayload(figureID: $0, createdAt: now) }
-        work.stars = stars.map { ExquisiteCorpseStarPayload(figureID: $0.figure, starred: $0.starred, createdAt: now) }
         return work
     }
 }

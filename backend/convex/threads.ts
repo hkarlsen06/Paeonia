@@ -248,6 +248,7 @@ export async function insertThreadMessage(
   const docId = await ctx.db.insert("thread_messages", {
     id: messageId,
     thread_id: thread.id,
+    couple_id: thread.couple_id,
     sender_user_id: userId,
     body: normalizedBody ?? undefined,
     reply_to_message_id: reply.messageId,

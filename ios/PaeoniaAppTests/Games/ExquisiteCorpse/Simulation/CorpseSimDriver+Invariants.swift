@@ -90,7 +90,6 @@ extension CorpseSimDriver {
         try checkStrips()
         for phone in phones {
             try await checkLedger(phone)
-            try await checkStars(phone)
         }
         for phone in phones {
             guard let viewModel = phone.activeViewModel else { continue }

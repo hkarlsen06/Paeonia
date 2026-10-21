@@ -73,14 +73,6 @@ nonisolated struct ExquisiteCorpseRevealSeenPayload: Codable, Equatable, Sendabl
     let createdAt: Date
 }
 
-/// `exquisiteCorpse:set_exquisite_corpse_star`. The last one queued for a figure
-/// wins, and sending the same one twice changes nothing.
-nonisolated struct ExquisiteCorpseStarPayload: Codable, Equatable, Sendable {
-    let figureID: UUID
-    let starred: Bool
-    let createdAt: Date
-}
-
 /// The queued Exquisite corpse writes of one person that have not reached the
 /// server, as the screens need them. A write refused for good is no longer in
 /// flight, so it drops out of this value and the screen falls back to the
@@ -89,8 +81,6 @@ nonisolated struct ExquisiteCorpsePendingWork: Equatable, Sendable {
     /// Parts waiting to be sent, oldest first.
     var parts: [ExquisiteCorpseSubmitPartPayload] = []
     var revealsSeen: [ExquisiteCorpseRevealSeenPayload] = []
-    /// Oldest first.
-    var stars: [ExquisiteCorpseStarPayload] = []
     /// A waiting part was tried again and the attempt failed for a reason other
     /// than having no connection, such as the server refusing it. The waiting
     /// screen then says so instead of "saved on this phone".
@@ -103,22 +93,16 @@ nonisolated struct ExquisiteCorpsePendingWork: Equatable, Sendable {
     static let none = ExquisiteCorpsePendingWork()
 
     var isEmpty: Bool {
-        parts.isEmpty && revealsSeen.isEmpty && stars.isEmpty
+        parts.isEmpty && revealsSeen.isEmpty
     }
 
-    /// A part (not a reveal seen mark or a star) waits to be sent.
+    /// A part (not a reveal seen mark) waits to be sent.
     var hasMoveWaiting: Bool {
         !parts.isEmpty
     }
 
     func hasRevealSeen(figureID: UUID) -> Bool {
         revealsSeen.contains { $0.figureID == figureID }
-    }
-
-    /// The star this person set last for the figure and has not sent yet. Nil
-    /// means none is waiting.
-    func star(figureID: UUID) -> Bool? {
-        stars.last { $0.figureID == figureID }?.starred
     }
 
     /// Reads the queue. Payloads that fail to decode are skipped.
@@ -147,7 +131,6 @@ nonisolated struct ExquisiteCorpsePendingWork: Equatable, Sendable {
         do {
             work.parts = try await read(.exquisiteCorpseSubmitPart)
             work.revealsSeen = try await read(.exquisiteCorpseRevealSeen, isMove: false)
-            work.stars = try await read(.exquisiteCorpseStar, isMove: false)
         } catch {
             // A failed read keeps the screen as it is. Treating it as an empty
             // queue would make a queued move look lost.

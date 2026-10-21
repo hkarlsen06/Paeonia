@@ -47,7 +47,7 @@ export async function answeredRound(
         updated_at: at,
       });
       const text = options.texts?.[user.userId];
-      if (text !== undefined) await ctx.db.insert("daily_answer_text", { answer_id: answerId, body: text });
+      if (text !== undefined) await ctx.db.insert("daily_answer_text", { answer_id: answerId, couple_id: couple.coupleId, body: text });
     }
   });
   return instanceId;

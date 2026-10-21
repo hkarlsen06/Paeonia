@@ -74,6 +74,7 @@ struct WidgetDrawingView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
         .toolbar { toolbarButtons }
+        .paeoniaShareToolbar(viewModel.shareable, identifier: "widgetDrawing.share")
         .sheet(isPresented: $isHistoryPresented) {
             if let historyViewModel, let historyThumbnailLoader {
                 WidgetDrawingHistoryView(

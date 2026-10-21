@@ -107,8 +107,6 @@ nonisolated struct RemoteStoryChainStory: Codable, Equatable, Identifiable, Send
     var finishedAt: Date?
     /// This person has moved past the finished story. Meaningless before it finishes.
     var seenByMe: Bool
-    /// This person's own private star. The partner's is never sent.
-    var starredByMe: Bool
     let createdAt: Date
     let updatedAt: Date
 
@@ -125,7 +123,6 @@ nonisolated struct RemoteStoryChainStory: Codable, Equatable, Identifiable, Send
         case titledByUserID = "titled_by_user_id"
         case finishedAt = "finished_at"
         case seenByMe = "seen_by_me"
-        case starredByMe = "starred_by_me"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -189,7 +186,6 @@ nonisolated struct RemoteStoryChainHistoryItem: Codable, Equatable, Identifiable
     let firstLine: String
     let lineCount: Int
     let finishedAt: Date
-    var starredByMe: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -198,7 +194,6 @@ nonisolated struct RemoteStoryChainHistoryItem: Codable, Equatable, Identifiable
         case firstLine = "first_line"
         case lineCount = "line_count"
         case finishedAt = "finished_at"
-        case starredByMe = "starred_by_me"
     }
 }
 
@@ -249,15 +244,5 @@ nonisolated struct RemoteNameStoryResult: Decodable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case storyID = "story_id"
         case title
-    }
-}
-
-nonisolated struct RemoteStoryStarResult: Decodable, Equatable, Sendable {
-    let storyID: UUID
-    let starred: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case storyID = "story_id"
-        case starred
     }
 }

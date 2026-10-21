@@ -17,8 +17,9 @@ nonisolated enum WidgetDrawingHistoryFactory {
 struct WidgetDrawingHistoryView: View {
     @State private var viewModel: WidgetDrawingHistoryViewModel
     private let thumbnailLoader: any WidgetRevisionThumbnailLoading
+    @State private var shareable: PaeoniaShareable?
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
+    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     init(viewModel: WidgetDrawingHistoryViewModel, thumbnailLoader: any WidgetRevisionThumbnailLoading) {
         _viewModel = State(initialValue: viewModel)
@@ -34,8 +35,7 @@ struct WidgetDrawingHistoryView: View {
             viewModel: WidgetDrawingHistoryViewModel(
                 gateway: gateway,
                 identity: WidgetSyncIdentityStore.shared.load(),
-                exporter: loader,
-                photoSaver: PhotoLibrarySaver()
+                exporter: loader
             ),
             thumbnailLoader: loader
         )
@@ -61,6 +61,8 @@ struct WidgetDrawingHistoryView: View {
                 }
         }
         .preferredColorScheme(.dark)
+        // A sheet draws its own banners, such as the one that says a star could not be saved.
+        .paeoniaTopBanner(bannerCenter)
         .task {
             await viewModel.loadInitialIfNeeded()
         }
@@ -68,38 +70,7 @@ struct WidgetDrawingHistoryView: View {
         .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
             Task { await viewModel.refreshNewest() }
         }
-        .alert(
-            Text(.widgetHistorySavePermissionTitle),
-            isPresented: saveAlertBinding
-        ) {
-            Button {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    openURL(url)
-                }
-            } label: {
-                Text(.commonOpenSettings)
-            }
-
-            Button(role: .cancel) {} label: {
-                Text(.commonCancel)
-            }
-        } message: {
-            Text(.widgetHistorySavePermissionMessage)
-        }
-    }
-
-    /// Drives the centered permission alert. Permission denial is the one save
-    /// outcome the person must act on, so it gets an explicit dialog; other
-    /// failures just reset the button (see the view model).
-    private var saveAlertBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.saveAlert != nil },
-            set: { isPresented in
-                if !isPresented {
-                    viewModel.dismissSaveAlert()
-                }
-            }
-        )
+        .paeoniaShareSheet(item: $shareable)
     }
 
     private var content: some View {
@@ -131,8 +102,7 @@ struct WidgetDrawingHistoryView: View {
                     WidgetDrawingHistoryRow(
                         item: item,
                         loader: thumbnailLoader,
-                        saveState: viewModel.saveState(for: item.id),
-                        onSave: { Task { await viewModel.saveToDevice(item) } }
+                        onShare: { shareable = viewModel.shareable(for: item) }
                     )
                     .task {
                         await viewModel.loadMoreIfNeeded(currentItem: item)
@@ -213,8 +183,7 @@ struct WidgetDrawingHistoryView: View {
 private struct WidgetDrawingHistoryRow: View {
     let item: WidgetDrawingHistoryItem
     let loader: any WidgetRevisionThumbnailLoading
-    let saveState: WidgetDrawingHistoryViewModel.SaveButtonState
-    let onSave: () -> Void
+    let onShare: () -> Void
 
     /// Roughly half the screen, leaving the opposite side open so the author is
     /// obvious at a glance.
@@ -229,8 +198,7 @@ private struct WidgetDrawingHistoryRow: View {
             WidgetDrawingHistoryThumbnail(
                 item: item,
                 loader: loader,
-                saveState: saveState,
-                onSave: onSave
+                onShare: onShare
             )
             .containerRelativeFrame(.horizontal) { width, _ in width * Self.widthFraction }
 
@@ -247,8 +215,7 @@ private struct WidgetDrawingHistoryRow: View {
 private struct WidgetDrawingHistoryThumbnail: View {
     let item: WidgetDrawingHistoryItem
     let loader: any WidgetRevisionThumbnailLoading
-    let saveState: WidgetDrawingHistoryViewModel.SaveButtonState
-    let onSave: () -> Void
+    let onShare: () -> Void
     @State private var loadState: LoadState = .loading
     /// Bumped by the retry button to restart the load task for the same drawing.
     @State private var attempt = 0
@@ -277,16 +244,23 @@ private struct WidgetDrawingHistoryThumbnail: View {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
                     .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
             }
-            // Offer the save button only once the drawing is on screen, so the
-            // person can see what they're saving and we don't export a blank box.
+            // Offer the share button only once the drawing is on screen, so the
+            // person can see what they're sharing and we don't export a blank box.
             // Sits in the top-trailing corner so it stays clear of centered ink.
             .overlay(alignment: .topTrailing) {
                 if case .loaded = loadState {
-                    WidgetDrawingSaveButton(state: saveState, action: onSave)
+                    WidgetDrawingShareButton(action: onShare)
                         .padding(PaeoniaSpacing.space4)
                 }
             }
-            // The finished drawing (and its save button) fades in over the spinner
+            // The star sits in the top-leading corner, for the same reason.
+            .overlay(alignment: .topLeading) {
+                if case .loaded = loadState {
+                    FavoriteStarOverlayButton(target: .widgetDrawing(item.id), identifier: "widget.history.star")
+                        .padding(PaeoniaSpacing.space4)
+                }
+            }
+            // The finished drawing (and its share button) fades in over the spinner
             // instead of snapping into the box the moment the download lands.
             .animation(PaeoniaMotion.stateChange, value: loadState)
             .task(id: LoadKey(revisionID: item.id, attempt: attempt)) {
@@ -342,52 +316,25 @@ private struct WidgetDrawingHistoryThumbnail: View {
     }
 }
 
-/// A small round button on a thumbnail's top edge: a download glyph that, once
-/// the drawing is saved to the device, latches to a checkmark.
-private struct WidgetDrawingSaveButton: View {
-    let state: WidgetDrawingHistoryViewModel.SaveButtonState
+/// A small round button on a thumbnail's top edge that opens the share sheet,
+/// where the drawing can be sent on or saved to Photos.
+private struct WidgetDrawingShareButton: View {
     let action: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let glyphSize: CGFloat = 32
     private static let hitTarget: CGFloat = 44
 
     var body: some View {
         Button(action: action) {
-            glyph
+            Image(systemName: "square.and.arrow.up")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.paeoniaTextPrimary)
                 .frame(width: Self.glyphSize, height: Self.glyphSize)
                 .glassEffect(.regular, in: Circle())
                 .frame(width: Self.hitTarget, height: Self.hitTarget)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        // Once saving starts the outcome is in motion; the saved state latches,
-        // so the button only accepts a tap while idle.
-        .disabled(state != .idle)
-        .animation(PaeoniaMotion.stateChange, value: state)
-        .accessibilityLabel(Text(
-            state == .saved ? .widgetHistorySavedAccessibility : .widgetHistorySaveAccessibility
-        ))
-    }
-
-    @ViewBuilder
-    private var glyph: some View {
-        switch state {
-        case .idle:
-            Image(systemName: "arrow.down")
-                .font(.footnote.weight(.bold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .accessibilityHidden(true)
-        case .saving:
-            ProgressView()
-                .controlSize(.small)
-                .tint(.paeoniaAccentPrimary)
-        case .saved:
-            Image(systemName: "checkmark")
-                .font(.footnote.weight(.bold))
-                .foregroundStyle(.paeoniaSuccess)
-                .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
-                .accessibilityHidden(true)
-        }
+        .accessibilityLabel(Text(.commonShare))
     }
 }

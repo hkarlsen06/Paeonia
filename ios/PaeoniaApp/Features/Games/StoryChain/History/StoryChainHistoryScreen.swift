@@ -5,7 +5,6 @@ import SwiftUI
 struct StoryChainHistoryScreen: View {
     @Bindable var viewModel: StoryChainHistoryViewModel
 
-    @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -29,11 +28,6 @@ struct StoryChainHistoryScreen: View {
         .preferredColorScheme(.dark)
         // Runs again when the filter changes, and when the screen comes back from a story.
         .task(id: viewModel.filter) { await viewModel.refresh() }
-        .onChange(of: viewModel.stars.notice) { _, notice in
-            guard let notice else { return }
-            bannerCenter.show(notice.banner)
-            viewModel.stars.clearNotice()
-        }
         .accessibilityIdentifier("storyChain.history")
     }
 
@@ -72,7 +66,7 @@ struct StoryChainHistoryScreen: View {
         LazyVStack(spacing: PaeoniaSpacing.space12) {
             ForEach(viewModel.visibleItems) { item in
                 NavigationLink(value: GamesDestination.storyChainHistoryDetail(item.id)) {
-                    StoryChainHistoryRow(item: item, isStarred: viewModel.stars.isStarred(item.id))
+                    StoryChainHistoryRow(item: item, isStarred: viewModel.isFavorite(item))
                 }
                 .buttonStyle(.plain)
                 .task { await viewModel.loadMoreIfNeeded(after: item) }

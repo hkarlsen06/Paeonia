@@ -335,8 +335,6 @@ extension SimServer {
             hintsUsed: round.hintsUsed,
             personalBest: round.personalBest,
             guesserReaction: round.reaction,
-            // The simulation does not model stars.
-            starredByMe: false,
             drawerResultSeenAt: round.drawerSeenAt,
             guesserResultSeenAt: round.guesserSeenAt,
             attempts: Array(round.attempts.suffix(200)),

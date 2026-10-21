@@ -3843,6 +3843,24 @@
         }
       }
     },
+    "common.share" : {
+      "comment" : "Button that opens the share sheet for something the person made",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del"
+          }
+        }
+      }
+    },
     "common.supportLink" : {
       "comment" : "Link under a failure that says to try again later. Opens the support page on paeonia.no.",
       "extractionState" : "manual",
@@ -10947,6 +10965,222 @@
         }
       }
     },
+    "favorites.load.failed" : {
+      "comment" : "Shown under the starred list in Search when it could not be loaded.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your starred items couldn't be loaded right now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke hente de stjernemerkede tingene akkurat nå."
+          }
+        }
+      }
+    },
+    "favorites.load.offline" : {
+      "comment" : "Shown under the starred list in Search when the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline, so your starred items aren't shown."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett, så de stjernemerkede tingene vises ikke."
+          }
+        }
+      }
+    },
+    "favorites.notice.couldNotSave" : {
+      "comment" : "Banner when a star could not be saved on the phone. The star goes back to how it was.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your star. Please try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke lagret stjernen. Prøv igjen."
+          }
+        }
+      }
+    },
+    "favorites.notice.refused" : {
+      "comment" : "Banner when the server would not star something, for example because it was deleted. The star goes back to how it was.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This can't be starred any more. It may have been deleted."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette kan ikke stjernemerkes lenger. Det kan være slettet."
+          }
+        }
+      }
+    },
+    "favorites.privacyHint" : {
+      "comment" : "Quiet banner the first time a person stars something, and a note on a finished drawing. Stars are private and the partner is never told.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only you can see your stars."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bare du ser stjernene dine."
+          }
+        }
+      }
+    },
+    "favorites.removeStar" : {
+      "comment" : "Menu item on an answer that is already starred. Removes the star.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove star"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern stjerne"
+          }
+        }
+      }
+    },
+    "favorites.row.creature" : {
+      "comment" : "Title of a starred creature from the Odd Creatures game in the starred list. %lld is the creature number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creature %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skapning %lld"
+          }
+        }
+      }
+    },
+    "favorites.row.drawing" : {
+      "comment" : "Title of a starred widget drawing in the starred list, and the title of its preview.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegning"
+          }
+        }
+      }
+    },
+    "favorites.row.story" : {
+      "comment" : "Title of a starred Story Chain story that has no title. %lld is the story number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrivestafett %lld"
+          }
+        }
+      }
+    },
+    "favorites.section.title" : {
+      "comment" : "Header above the starred items in Search, shown before anything is typed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starred"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerkede"
+          }
+        }
+      }
+    },
+    "favorites.star" : {
+      "comment" : "Button that stars a question, an answer, a drawing or a finished game. Only this person sees their stars.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Star"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerk"
+          }
+        }
+      }
+    },
+    "favorites.starred" : {
+      "comment" : "Button when the item is already starred. Tapping it removes the star.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starred"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjernemerket"
+          }
+        }
+      }
+    },
     "firstDay.drawing.hint" : {
       "comment" : "Drawing screen before the partner joins: hint on the empty canvas",
       "extractionState" : "manual",
@@ -15083,60 +15317,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gjør klar spillene"
-          }
-        }
-      }
-    },
-    "games.star.button" : {
-      "comment" : "Toolbar button on a finished drawing that stars it. Only this person sees their stars.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Star"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stjernemerk"
-          }
-        }
-      }
-    },
-    "games.star.buttonStarred" : {
-      "comment" : "Toolbar button on a finished drawing when this person already starred it. Tapping it removes the star.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starred"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stjernemerket"
-          }
-        }
-      }
-    },
-    "games.star.privacy" : {
-      "comment" : "Small note about stars. Stars are private, and the partner is never told about them.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Only you can see your stars."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bare du ser stjernene dine."
           }
         }
       }
@@ -28079,6 +28259,330 @@
         }
       }
     },
+    "search.empty.message" : {
+      "comment" : "Message shown when a search has no matches. %@ is what the person typed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing matches \"%@\". Try a shorter word, or check the spelling."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen treff på «%@». Prøv et kortere ord, eller sjekk stavemåten."
+          }
+        }
+      }
+    },
+    "search.empty.title" : {
+      "comment" : "Title shown when a search has no matches",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No matches"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen treff"
+          }
+        }
+      }
+    },
+    "search.idle.message" : {
+      "comment" : "Message shown on the Search screen before anything is typed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search for a place, a word, or something one of you wrote."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Søk etter et sted, et ord eller noe en av dere har skrevet."
+          }
+        }
+      }
+    },
+    "search.idle.title" : {
+      "comment" : "Title shown on the Search screen before anything is typed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find something you shared"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finn noe dere har delt"
+          }
+        }
+      }
+    },
+    "search.memory.untitled" : {
+      "comment" : "Title for a memory result that has no title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minne"
+          }
+        }
+      }
+    },
+    "search.offline.message" : {
+      "comment" : "Shown on the Search screen when the phone is offline and the phone itself found nothing",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answers and chats need a connection. Memories and stories on this phone are searched without one."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar og samtaler trenger nett. Minner og stories på telefonen blir søkt i uten nett."
+          }
+        }
+      }
+    },
+    "search.partial.failed" : {
+      "comment" : "Note under the search results when searching answers and chats failed for a reason other than being offline",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answers and chats couldn't be searched right now."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke søke i svar og samtaler akkurat nå."
+          }
+        }
+      }
+    },
+    "search.partial.offline" : {
+      "comment" : "Note under the search results when the phone is offline, so answers and chats were not searched",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline, so answers and chats aren't included."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du er ikke på nett, så svar og samtaler er ikke med."
+          }
+        }
+      }
+    },
+    "search.prompt" : {
+      "comment" : "Placeholder in the Search screen's search field",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search memories, answers and chats"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Søk i minner, svar og samtaler"
+          }
+        }
+      }
+    },
+    "search.section.answers" : {
+      "comment" : "Header of the matches in answers to questions in Search",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar"
+          }
+        }
+      }
+    },
+    "search.section.memories" : {
+      "comment" : "Header of the memories matches in Search",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minner"
+          }
+        }
+      }
+    },
+    "search.section.messages" : {
+      "comment" : "Header of the matches in chat messages in Search",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Messages"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldinger"
+          }
+        }
+      }
+    },
+    "search.section.questions" : {
+      "comment" : "Header of the matches in question wording in Search",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmål"
+          }
+        }
+      }
+    },
+    "search.section.showAll" : {
+      "comment" : "Button under a group of search results that shows all of them. %@ is how many there are",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show all %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis alle %@"
+          }
+        }
+      }
+    },
+    "search.section.showFewer" : {
+      "comment" : "Button under an expanded group of search results that shows fewer",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show fewer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis færre"
+          }
+        }
+      }
+    },
+    "search.section.stories" : {
+      "comment" : "Header of the matches in story captions in Search",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stories"
+          }
+        }
+      }
+    },
+    "search.section.storyChain" : {
+      "comment" : "Header of the matches in Story Chain stories in Search. Story Chain is the name of a game",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story Chain"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrivestafett"
+          }
+        }
+      }
+    },
+    "search.title" : {
+      "comment" : "Title of the Search screen and the accessibility label of the Home search button",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Søk"
+          }
+        }
+      }
+    },
     "settings.account.logoutButton" : {
       "comment" : "Us tab: sign out of the app on this device",
       "extractionState" : "manual",
@@ -30200,6 +30704,240 @@
         }
       }
     },
+    "share.asText" : {
+      "comment" : "Button that shares the words of a story as plain text instead of as a picture",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share as text"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del som tekst"
+          }
+        }
+      }
+    },
+    "share.failed.message" : {
+      "comment" : "Shown on the share screen when the picture could not be made",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't get this picture ready. Try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi fikk ikke gjort bildet klart. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "share.permission.message" : {
+      "comment" : "Alert message that points the person to Settings to turn on photo access",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To save pictures, turn on photo access for Paeonia in Settings."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For å lagre bilder, slå på bildetilgang for Paeonia i Innstillinger."
+          }
+        }
+      }
+    },
+    "share.permission.title" : {
+      "comment" : "Alert title when the person has turned off photo access and tries to save a picture",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let Paeonia save to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La Paeonia lagre i Bilder"
+          }
+        }
+      }
+    },
+    "share.preparing" : {
+      "comment" : "VoiceOver label for the spinner while the picture to share is being made",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Getting your picture ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør bildet klart"
+          }
+        }
+      }
+    },
+    "share.preview.accessibility" : {
+      "comment" : "VoiceOver label for the preview picture on the share screen. %@ is the name of the thing, such as the word of a drawing",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview of %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forhåndsvisning av %@"
+          }
+        }
+      }
+    },
+    "share.save" : {
+      "comment" : "Button that saves a picture of a drawing, creature, story or photo to the photo library. Also the title of the screen when saving is the only option. Matches the photo permission text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre i Bilder"
+          }
+        }
+      }
+    },
+    "share.saved" : {
+      "comment" : "The save button after the picture was added to the photo library",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved to Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagret i Bilder"
+          }
+        }
+      }
+    },
+    "share.saveFailed" : {
+      "comment" : "Small note under the buttons when saving to the photo library failed for a reason other than permission",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't save it. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi klarte ikke å lagre det. Prøv igjen."
+          }
+        }
+      }
+    },
+    "share.saveOnlyNote" : {
+      "comment" : "Note on the share screen when the person may save the picture but not send it on, for example a story their partner made for them",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This one was made for you. You can save it to your Photos, but sharing it is up to the person who made it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne er laget til deg. Du kan lagre den i Bilder, men det er opp til den som lagde den om den skal deles."
+          }
+        }
+      }
+    },
+    "share.storyChain.signature" : {
+      "comment" : "Last line of a Story Chain story when it is shared as plain text",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Written together in Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skrevet sammen i Paeonia"
+          }
+        }
+      }
+    },
+    "share.title.drawing" : {
+      "comment" : "Name of a shared drawing in the share sheet preview and as the file name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegning"
+          }
+        }
+      }
+    },
+    "share.title.story" : {
+      "comment" : "Name of a shared story photo in the share sheet preview and as the file name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story"
+          }
+        }
+      }
+    },
     "stories.archive.empty.message" : {
       "comment" : "Message when the couple has no stories yet. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -32026,60 +32764,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Deg"
-          }
-        }
-      }
-    },
-    "storyChain.star" : {
-      "comment" : "Star button on a finished story.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Star"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stjernemerk"
-          }
-        }
-      }
-    },
-    "storyChain.star.privacy" : {
-      "comment" : "Banner the first time a person stars a story.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Only you can see your stars."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bare du ser stjernene dine."
-          }
-        }
-      }
-    },
-    "storyChain.starred" : {
-      "comment" : "Star button on a starred story.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starred"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stjernemerket"
           }
         }
       }
@@ -34876,78 +35560,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prøv igjen"
-          }
-        }
-      }
-    },
-    "widget.history.save.accessibility" : {
-      "comment" : "Accessibility label for the button that saves a past drawing to the phone's photos.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save this drawing to your photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagre denne tegningen i bildene dine"
-          }
-        }
-      }
-    },
-    "widget.history.save.permission.message" : {
-      "comment" : "Message of the alert shown when the app can't save a drawing because photo access is turned off.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To save drawings, turn on photo access for Paeonia in Settings."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For å lagre tegninger, slå på bildetilgang for Paeonia i Innstillinger."
-          }
-        }
-      }
-    },
-    "widget.history.save.permission.title" : {
-      "comment" : "Title of the alert shown when the app can't save a drawing because photo access is turned off.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Let Paeonia save to Photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La Paeonia lagre i Bilder"
-          }
-        }
-      }
-    },
-    "widget.history.saved.accessibility" : {
-      "comment" : "Accessibility label shown after a past drawing has been saved to the phone's photos.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved to your photos"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret i bildene dine"
           }
         }
       }

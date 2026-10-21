@@ -74,18 +74,4 @@ extension CorpseSimDriver {
     private func sentPartID(_ entry: SimPendingStore.Entry) -> UUID? {
         entry.requestData.flatMap { try? JSONDecoder().decode(ExquisiteCorpseSubmitPartPayload.self, from: $0) }?.partID
     }
-
-    /// The last star a person set is the one the server keeps.
-    func checkStars(_ phone: CorpseSimPhone) async throws {
-        let ledger = await phone.pending.ledger.filter { $0.kind == .exquisiteCorpseStar }
-        let dropped = ledger.contains { if case .terminal = $0.outcome { true } else { false } }
-        guard phone.isAlive, phone.isForeground, !dropped else { return }
-        for (figureID, starred) in starIntent[phone.name] ?? [:] {
-            let onServer = server.figures.first { $0.id == figureID }?.starredBy.contains(phone.userID) == true
-            guard onServer == starred else {
-                let figure = figureID.uuidString.prefix(6)
-                throw fail("\(phone.name) starred figure \(figure) as \(starred), the server has \(onServer)")
-            }
-        }
-    }
 }

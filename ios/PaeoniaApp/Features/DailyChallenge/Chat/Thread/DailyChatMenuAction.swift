@@ -9,6 +9,9 @@ enum DailyChatMenuAction: MessageMenuAction, Sendable {
     case edit
     case copy
     case report
+    /// Stars an answer. The star is private to this person (see `FavoritesStore`).
+    case favorite
+    case unfavorite
 
     func title() -> String {
         switch self {
@@ -16,6 +19,8 @@ enum DailyChatMenuAction: MessageMenuAction, Sendable {
         case .edit: String(localized: .dailyChatActionEdit)
         case .copy: String(localized: .dailyChatActionCopy)
         case .report: String(localized: .dailyChatActionReport)
+        case .favorite: String(localized: .favoritesStar)
+        case .unfavorite: String(localized: .favoritesRemoveStar)
         }
     }
 
@@ -25,11 +30,18 @@ enum DailyChatMenuAction: MessageMenuAction, Sendable {
         case .edit: Image(systemName: "pencil")
         case .copy: Image(systemName: "doc.on.doc")
         case .report: Image(systemName: "flag")
+        case .favorite: Image(systemName: "star")
+        case .unfavorite: Image(systemName: "star.slash")
         }
     }
 
     func isDestructive() -> Bool {
         self == .report
+    }
+
+    /// The answer a row id stands for, `answer-<id>`.
+    private static func answerID(ofRow rowID: String) -> UUID? {
+        UUID(uuidString: String(rowID.dropFirst(DailyChatProjection.answerRowPrefix.count)))
     }
 
     static func menuItems(for message: ExyteChat.Message) -> [Self] {
@@ -54,6 +66,9 @@ enum DailyChatMenuAction: MessageMenuAction, Sendable {
         }
         if hasText {
             items.append(.copy)
+        }
+        if isAnswer, let answerID = answerID(ofRow: message.id) {
+            items.append(FavoritesStore.shared.isFavorite(.answer(answerID)) ? .unfavorite : .favorite)
         }
         if isPartner, isAnswer || isOnServer {
             items.append(.report)

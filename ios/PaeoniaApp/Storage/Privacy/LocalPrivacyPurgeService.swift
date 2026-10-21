@@ -201,6 +201,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
     private let lookBackCache: any LookBackCaching
     private let heartsCache: any HeartsCaching
     private let coupleDatesCache: any CoupleDatesCaching
+    private let favoritesCache: any FavoritesCaching
     private let storiesCache: any StoriesCaching
     private let topicsCache: any TopicsCaching
     private let profilePhotoDiskCache: any ProfilePhotoImageCaching
@@ -228,6 +229,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         lookBackCache: any LookBackCaching = FileLookBackCache.shared,
         heartsCache: any HeartsCaching = FileHeartsCache.shared,
         coupleDatesCache: any CoupleDatesCaching = FileCoupleDatesCache.shared,
+        favoritesCache: any FavoritesCaching = FileFavoritesCache.shared,
         storiesCache: any StoriesCaching = FileStoriesCache.shared,
         topicsCache: any TopicsCaching = FileTopicsCache.shared,
         profilePhotoDiskCache: any ProfilePhotoImageCaching = FileProfilePhotoImageCache.live(),
@@ -254,6 +256,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         self.lookBackCache = lookBackCache
         self.heartsCache = heartsCache
         self.coupleDatesCache = coupleDatesCache
+        self.favoritesCache = favoritesCache
         self.storiesCache = storiesCache
         self.topicsCache = topicsCache
         self.profilePhotoDiskCache = profilePhotoDiskCache
@@ -351,6 +354,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         guessMySpotPhotos.clearAll()
         await heartsCache.clearAll()
         await coupleDatesCache.clearAll()
+        await favoritesCache.clearAll()
         await storiesCache.clearAll()
         await topicsCache.clearAll()
         await exquisiteCorpseCache.clearAll()

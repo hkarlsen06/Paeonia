@@ -209,6 +209,7 @@
         drawingTransfer: DeveloperGameDrawingTransfer(stallsDownloads: isLoading),
         makeLive: { coupleID in makeLive(for: scenario, coupleID: coupleID) },
         now: { DeveloperGamesFixture.now },
+        favorites: DeveloperGamesFixture.favoritesStore(),
         storyChainGateway: DeveloperStoryChainGateway(scenario: scenario),
         storyChainCache: storyChainCache,
         makeStoryChainLive: { coupleID in
@@ -380,12 +381,12 @@
       return DeveloperGamesFixture.historyPage(starredOnly: starredOnly, before: beforeRoundNumber, limit: limit)
     }
 
-    func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
-      historyIsEmpty ? DeveloperGamesFixture.emptyRecords : DeveloperGamesFixture.records
+    func loadDrawAndGuessHistoryRound(roundID: UUID) throws -> RemoteDrawAndGuessHistoryRound? {
+      historyIsEmpty ? nil : DeveloperGamesFixture.historyRounds().first { $0.id == roundID }
     }
 
-    func setRoundStar(roundID: UUID, starred: Bool) throws -> RemoteRoundStarResult {
-      RemoteRoundStarResult(roundID: roundID, starred: starred)
+    func loadDrawAndGuessRecords() throws -> RemoteDrawAndGuessRecords {
+      historyIsEmpty ? DeveloperGamesFixture.emptyRecords : DeveloperGamesFixture.records
     }
   }
 
