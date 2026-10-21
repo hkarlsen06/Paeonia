@@ -61,6 +61,7 @@ struct GamesViewModelTests {
             game: nil
         )
         let env = GamesTestEnvironment(state: state)
+        env.gateway.setStateToLoad(state)
         let viewModel = viewModel(env)
 
         await viewModel.load()

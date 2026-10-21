@@ -155,6 +155,9 @@ struct CorpseSimulationRegressionTests {
             try await driver.scriptDraw(drawer, zones: [.crossing, .above])
             viewModel.askIdea()
             viewModel.shuffleIdea()
+            // The draft saves a moment after the last stroke. A slow runner can
+            // reach the force quit before that moment.
+            await viewModel.draftTask?.value
             await driver.pump()
             let idea = try #require(viewModel.idea?.id)
             let partID = try #require(viewModel.ownPartID)

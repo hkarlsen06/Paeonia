@@ -14,6 +14,7 @@ struct GamesRulesTests {
          "couple_id":"33333333-3333-3333-3333-333333333333","data_epoch":"",
          "settings":{"couple_id":"33333333-3333-3333-3333-333333333333","play_style":"together","language":"nb",
            "updated_by_user_id":"22222222-2222-2222-2222-222222222222",
+           "seen_by_user_ids":["22222222-2222-2222-2222-222222222222"],
            "created_at":"2026-10-12T10:00:00.000Z","updated_at":"2026-10-12T10:00:00.000Z"},
          "game":{"id":"aaaaaaaa-0000-4000-8000-000000000001","kind":"draw_and_guess","state":"choosing_word",
            "turn_user_id":"11111111-1111-1111-1111-111111111111","turn_number":2,"current_round_id":null,
