@@ -3,7 +3,7 @@ collection: topic
 topic: flirt
 key: flirt_make_you_blush
 status: active
-sort_order: 13
+sort_order: 15
 resurfaceable: false
 resurface_after_months: null
 ---

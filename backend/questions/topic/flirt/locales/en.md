@@ -3,5 +3,5 @@ locale: en
 title: >-
   Flirt
 subtitle: >-
-  Playful, a little daring. Just for the two of you.
+  Daring questions, just for the two of you.
 ---

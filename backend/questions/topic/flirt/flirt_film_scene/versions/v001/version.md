@@ -1,8 +1,8 @@
 ---
 version_number: 1
-status: active
+status: retired
 active_from: null
-retired_at: null
+retired_at: "2026-10-21 00:00:00+00"
 answer_kinds:
   - text
 ---
