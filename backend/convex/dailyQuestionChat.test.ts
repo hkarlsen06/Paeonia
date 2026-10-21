@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
-import { answeredRound, seedQuestion } from "./dailyChat.setup";
+import { answeredRound, answerIdOf, seedQuestion } from "./dailyChat.setup";
 import { newUuid } from "./lib/ids";
-import { failure, op } from "./media.testing";
-import { createCouple, createSignedInUser, newTest } from "./test.setup";
+import { endCouple, failure, op } from "./media.testing";
+import { createCouple, createSignedInUser, newTest, type TestCouple, type TestUser } from "./test.setup";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -88,6 +88,7 @@ describe("get_daily_question_chat", () => {
       thread_id: null,
       questions: [],
       answer_details: [],
+      reactions: [],
     });
     const stranger = await createSignedInUser(t);
     expect(
@@ -146,5 +147,110 @@ describe("round info on question rows", () => {
       latest_earlier_round_local_date: null,
       chat_available: false,
     });
+  });
+});
+
+describe("set_daily_answer_reaction", () => {
+  const react = (user: TestUser, answerId: string, emoji: string | null) =>
+    user.as.mutation(api.dailyQuestionChat.set_daily_answer_reaction, { p_answer_id: answerId, p_emoji: emoji });
+  const reactionsSeenBy = async (user: TestUser, couple: TestCouple, questionId: string) =>
+    (await user.as.query(api.dailyQuestionChat.get_daily_question_chat, { p_couple_id: couple.coupleId, p_question_id: questionId }))
+      .reactions;
+
+  test("a partner reacts to an answer, changes it, and takes it back, and both read it", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const question = await seedQuestion(t);
+    const instanceId = await answeredRound(t, couple, question);
+    const answerId = await answerIdOf(t, instanceId, couple.first);
+
+    await react(couple.second, answerId.toUpperCase(), "❤️");
+    const reaction = { answer_id: answerId, user_id: couple.second.userId, emoji: "❤️" };
+    expect(await reactionsSeenBy(couple.first, couple, question.id)).toEqual([reaction]);
+    expect(await reactionsSeenBy(couple.second, couple, question.id)).toEqual([reaction]);
+
+    await react(couple.second, answerId, " 👍🏽 ");
+    expect(await reactionsSeenBy(couple.first, couple, question.id)).toEqual([{ ...reaction, emoji: "👍🏽" }]);
+    expect(await t.run((ctx) => ctx.db.query("daily_answer_reactions").collect())).toHaveLength(1);
+
+    await react(couple.second, answerId, null);
+    await react(couple.second, answerId, null);
+    expect(await reactionsSeenBy(couple.first, couple, question.id)).toEqual([]);
+  });
+
+  test("a reaction on an answer the viewer can't read stays out of their chat", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const question = await seedQuestion(t);
+    const shared = await answeredRound(t, couple, question, { at: MARCH });
+    await react(couple.second, await answerIdOf(t, shared, couple.first), "😂");
+    // The question came back and only the first partner answered it.
+    await answeredRound(t, couple, question, { at: OCTOBER, answeredBy: [couple.first] });
+    expect((await reactionsSeenBy(couple.second, couple, question.id)).map((row) => row.emoji)).toEqual(["😂"]);
+  });
+
+  test("both partners can react to the same answer, their own included", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const question = await seedQuestion(t);
+    const instanceId = await answeredRound(t, couple, question);
+    const answerId = await answerIdOf(t, instanceId, couple.first);
+    await react(couple.first, answerId, "😂");
+    await react(couple.second, answerId, "❤️");
+    const seen = await reactionsSeenBy(couple.second, couple, question.id);
+    expect(seen.map((row) => [row.user_id, row.emoji]).sort()).toEqual(
+      [
+        [couple.first.userId, "😂"],
+        [couple.second.userId, "❤️"],
+      ].sort(),
+    );
+  });
+
+  test("a day you haven't answered and a hidden answer are refused", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const question = await seedQuestion(t);
+    const shared = await answeredRound(t, couple, question, { at: MARCH });
+    const onlyPartner = await answeredRound(t, couple, question, { at: OCTOBER, answeredBy: [couple.second] });
+    expect(await failure(react(couple.first, await answerIdOf(t, onlyPartner, couple.second), "❤️"))).toEqual({
+      code: "42501",
+      message: "you must answer this daily question before reacting",
+    });
+    const partnerAnswer = await answerIdOf(t, shared, couple.second);
+    await t.run(async (ctx) => {
+      const row = await ctx.db.query("daily_question_answers").withIndex("by_uuid", (q) => q.eq("id", partnerAnswer)).unique();
+      await ctx.db.patch(row!._id, { moderation_status: "hidden" });
+    });
+    expect(await failure(react(couple.first, partnerAnswer, "❤️"))).toEqual({
+      code: "23514",
+      message: "reaction target is not available",
+    });
+  });
+
+  test.each([["a word", "love"], ["a digit", "1"], ["two emoji", "❤️👍"], ["nothing", "  "]])(
+    "refuses %s as a reaction",
+    async (_name, emoji) => {
+      const t = newTest();
+      const couple = await createCouple(t);
+      const instanceId = await answeredRound(t, couple, await seedQuestion(t));
+      expect(await failure(react(couple.second, await answerIdOf(t, instanceId, couple.first), emoji))).toEqual({
+        code: "23514",
+        message: "reaction must be one emoji",
+      });
+    },
+  );
+
+  test("strangers, former partners, and unknown answers are refused", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const instanceId = await answeredRound(t, couple, await seedQuestion(t));
+    const answerId = await answerIdOf(t, instanceId, couple.first);
+    const denied = { code: "42501", message: "active entitled couple access is required" };
+    const stranger = await createSignedInUser(t);
+    expect(await failure(react(stranger, answerId, "❤️"))).toEqual(denied);
+    expect(await failure(react(couple.second, newUuid(), "❤️"))).toEqual(denied);
+    await endCouple(t, couple.coupleId, couple.first.userId);
+    expect(await failure(react(couple.second, answerId, "❤️"))).toEqual(denied);
+    expect(await t.run((ctx) => ctx.db.query("daily_answer_reactions").collect())).toEqual([]);
   });
 });

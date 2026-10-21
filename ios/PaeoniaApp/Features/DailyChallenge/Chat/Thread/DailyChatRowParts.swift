@@ -97,9 +97,61 @@ struct DailyChatReplyPreviewContent: View {
             }
         } else if let text = preview.snippet {
             Text(verbatim: text)
+        } else if preview.isAnswer {
+            Text(.dailyChatReplyAnswerUnavailable)
         } else {
             Text(.dailyChatReplyUnavailable)
         }
+    }
+}
+
+/// The emoji reactions on a message or an answer, in a small capsule on the bubble's
+/// top corner. The same emoji from both people shows once with a 2.
+struct DailyChatReactionBadge: View {
+    let reactions: [DailyChatReaction]
+    let participants: DailyChallengeParticipants
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(emojiCounts, id: \.emoji) { item in
+                Text(verbatim: item.emoji)
+                    .font(PaeoniaTypography.body)
+                    .lineLimit(1)
+                    .fixedSize()
+                if item.count > 1 {
+                    Text(item.count, format: .number)
+                        .font(PaeoniaTypography.caption.weight(.semibold))
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
+            }
+        }
+        .padding(.horizontal, PaeoniaSpacing.space8)
+        .padding(.vertical, 2)
+        .background(.paeoniaSurfaceSecondary, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.paeoniaBackgroundPrimary, lineWidth: 2))
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: label))
+    }
+
+    private var emojiCounts: [(emoji: String, count: Int)] {
+        var counts: [(emoji: String, count: Int)] = []
+        for reaction in reactions {
+            if let index = counts.firstIndex(where: { $0.emoji == reaction.emoji }) {
+                counts[index].count += 1
+            } else {
+                counts.append((reaction.emoji, 1))
+            }
+        }
+        return counts
+    }
+
+    private var label: String {
+        reactions.map { reaction in
+            reaction.userID == participants.currentUserID
+                ? String(localized: .dailyChatReactionYou(reaction.emoji))
+                : String(localized: .dailyChatReactionPartner(participants.partnerName, reaction.emoji))
+        }.joined(separator: ", ")
     }
 }
 

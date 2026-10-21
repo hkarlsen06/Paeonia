@@ -44,7 +44,7 @@ actor EmptyDailyQuestionChatService: DailyQuestionChatServicing {
         body _: String,
         photos _: DailyQuestionChatPhotosPayload?,
         createThread _: Bool,
-        replyToMessageID _: UUID?,
+        replyTo _: DailyChatItemID?,
         operation _: SyncClientOperation
     ) throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
 }
@@ -71,7 +71,7 @@ private actor UnavailableDailyQuestionChatGateway: DailyQuestionChatGateway {
         threadID _: UUID,
         body _: String,
         mediaAssetIDs _: [UUID],
-        replyToMessageID _: UUID?,
+        replyTo _: DailyChatItemID?,
         operation _: SyncClientOperation
     ) throws -> DailyQuestionThreadMessageResponse { throw DailyQuestionChatServiceError.unavailable }
 }

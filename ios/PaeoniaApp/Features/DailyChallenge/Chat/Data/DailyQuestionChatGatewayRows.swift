@@ -77,6 +77,8 @@ nonisolated struct ThreadMessageRow: Decodable {
     let mediaAssetIDs: [UUID]?
     let media: [MediaRow]?
     let replyToMessageID: UUID?
+    let replyToAnswerID: UUID?
+    let reactions: [DailyChatReaction]
 
     nonisolated struct MediaRow: Decodable {
         let mediaAssetID: UUID
@@ -118,8 +120,9 @@ nonisolated struct ThreadMessageRow: Decodable {
             isSending: false,
             voice: voice,
             photos: photos.isEmpty ? nil : photos,
-            replyToMessageID: replyToMessageID,
-            editedAt: editedAt
+            replyTo: DailyChatItemID(messageID: replyToMessageID, answerID: replyToAnswerID),
+            editedAt: editedAt,
+            reactions: reactions
         )
     }
 
@@ -135,6 +138,8 @@ nonisolated struct ThreadMessageRow: Decodable {
         case mediaAssetIDs = "media_asset_ids"
         case media
         case replyToMessageID = "reply_to_message_id"
+        case replyToAnswerID = "reply_to_answer_id"
+        case reactions
     }
 }
 

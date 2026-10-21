@@ -36,6 +36,29 @@ nonisolated struct MarkAnswerSeenRequest: Encodable {
     }
 }
 
+/// Sets a reaction on a message (`p_message_id`) or an answer (`p_answer_id`).
+nonisolated struct ReactionRequest: Encodable {
+    let item: DailyChatItemID
+    /// Nil takes the reaction back.
+    let emoji: String?
+
+    enum CodingKeys: String, CodingKey {
+        case messageID = "p_message_id"
+        case answerID = "p_answer_id"
+        case emoji = "p_emoji"
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch item {
+        case let .message(id): try container.encode(id, forKey: .messageID)
+        case let .answer(id): try container.encode(id, forKey: .answerID)
+        }
+        // The server needs the key, with null to take the reaction back.
+        try container.encode(emoji, forKey: .emoji)
+    }
+}
+
 nonisolated struct QuestionChatRequest: Encodable {
     let coupleID: UUID
     let questionID: UUID
@@ -74,6 +97,8 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
     let questionID: UUID
     let body: String
     let mediaAssetIDs: [UUID]
+    /// Left out of the request when nil.
+    let replyToAnswerID: UUID?
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
@@ -88,6 +113,7 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
         questionID = payload.questionID
         body = payload.body
         self.mediaAssetIDs = mediaAssetIDs
+        replyToAnswerID = payload.replyToAnswerID
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -99,6 +125,7 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
         case questionID = "p_question_id"
         case body = "p_body"
         case mediaAssetIDs = "p_media_asset_ids"
+        case replyToAnswerID = "p_reply_to_answer_id"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"
@@ -110,9 +137,9 @@ nonisolated struct SendThreadMessageRequest: Encodable {
     let threadID: UUID
     let body: String
     let mediaAssetIDs: [UUID]
-    /// Left out of the request when nil, so a plain send matches what servers
-    /// without replies accept.
+    /// What the message replies to. Each is left out of the request when nil.
     let replyToMessageID: UUID?
+    let replyToAnswerID: UUID?
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
@@ -122,13 +149,14 @@ nonisolated struct SendThreadMessageRequest: Encodable {
         threadID: UUID,
         body: String,
         mediaAssetIDs: [UUID],
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation: SyncClientOperation
     ) {
         self.threadID = threadID
         self.body = body
         self.mediaAssetIDs = mediaAssetIDs
-        self.replyToMessageID = replyToMessageID
+        replyToMessageID = replyTo?.messageID
+        replyToAnswerID = replyTo?.answerID
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -140,6 +168,7 @@ nonisolated struct SendThreadMessageRequest: Encodable {
         case body = "p_body"
         case mediaAssetIDs = "p_media_asset_ids"
         case replyToMessageID = "p_reply_to_message_id"
+        case replyToAnswerID = "p_reply_to_answer_id"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"

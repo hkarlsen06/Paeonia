@@ -418,6 +418,14 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
       .query("daily_answer_seen_states")
       .withIndex("by_user_id", (q) => q.eq("user_id", userId))
       .collect()),
+    ...(await ctx.db
+      .query("daily_answer_reactions")
+      .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+      .collect()),
+    ...(await ctx.db
+      .query("thread_message_reactions")
+      .withIndex("by_user_id", (q) => q.eq("user_id", userId))
+      .collect()),
   ];
   for (const row of rows) await ctx.db.delete(row._id);
   await ctx.scheduler.runAfter(0, internal.retention.delete_user_client_operations, { p_user_id: userId });

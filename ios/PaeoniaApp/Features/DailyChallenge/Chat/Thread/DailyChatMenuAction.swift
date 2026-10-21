@@ -41,9 +41,10 @@ enum DailyChatMenuAction: MessageMenuAction, Sendable {
             return hasText ? [.copy] : []
         }
         let isAnswer = message.id.hasPrefix(DailyChatProjection.answerRowPrefix)
-        // Only a message the server has can be replied to or reported.
+        // Only a message the server has can be replied to or reported. Answers on the page
+        // can always be replied to.
         let isOnServer = message.status == .sent
-        if !isAnswer, isOnServer {
+        if isAnswer || isOnServer {
             items.append(.reply)
         }
         // Your own text, for five minutes after the server has it. Answers never.

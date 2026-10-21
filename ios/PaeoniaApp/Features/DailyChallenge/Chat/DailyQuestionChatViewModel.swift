@@ -20,6 +20,8 @@ final class DailyQuestionChatViewModel {
         case editFailed(PaeoniaFailure)
         /// The five minutes to change a message ran out.
         case editWindowClosed
+        /// A reaction didn't reach the server. The earlier one shows again.
+        case reactionFailed(PaeoniaFailure)
     }
 
     static let maximumMessageLength = 4_000
@@ -54,14 +56,20 @@ final class DailyQuestionChatViewModel {
     var isLoadingOlderMessages = false
     /// The server said the oldest message of the chat is already on this phone.
     var hasReachedChatStart = false
-    /// The message the next send replies to, shown above the composer.
-    var replyTarget: DailyQuestionChatMessage?
+    /// The message or answer the next send replies to, shown above the composer.
+    var replyTarget: DailyChatReplyTarget?
     /// The user's own message whose text the composer is changing.
     var editTarget: DailyQuestionChatMessage?
     /// Changes when the composer should take focus, for example after picking a reply.
     var composerFocusRequest = 0
     /// Typing dots and read receipts.
     let presence: DailyChatPresenceModel
+    /// The reactions on the page's answers, as this phone last saved them. A message
+    /// carries its own.
+    private(set) var savedAnswerReactions: [DailyAnswerReaction] = []
+    /// The user's reactions that the saved copy doesn't show yet. They show at once and
+    /// stay until the saved copy agrees or the server turns them down.
+    var pendingReactions: [DailyChatItemID: PendingReaction] = [:]
     /// True while the chat is on screen and the app is in front, so reading counts.
     private var isScreenActive = false
     /// Which days the server has heard, during this visit, that the partner's answer was
@@ -227,9 +235,11 @@ final class DailyQuestionChatViewModel {
         if let cachedRounds, cachedRounds.isForCouple(question.coupleID) {
             loadedRounds = cachedRounds.rounds(currentUserID: ownerUserID)
             threadID = cachedRounds.threadID ?? threadID
+            savedAnswerReactions = cachedRounds.reactions
         }
         hasQueuedThreadCreation = isCreatingThread
         messages = DailyQuestionChatMessage.visibleOrdered(remote: cached, optimistic: pending)
+        dropSavedPendingReactions(ownerUserID: ownerUserID)
         // Removed messages are left out of the cache, so a count of what is shown cannot tell
         // whether older ones exist. A short chat costs one extra read at the top, which ends it.
         hasOlderMessages = !hasReachedChatStart && cached.contains { !$0.isSending && !$0.sendFailed }
@@ -364,45 +374,24 @@ extension DailyQuestionChatViewModel {
     }
 }
 
-// MARK: - Replies, sending, typing, and reading
+// MARK: - Sending, typing, and reading
 
 extension DailyQuestionChatViewModel {
-    /// Only messages the server has can be replied to. A message still sending has no id there yet.
-    func canReply(to message: DailyQuestionChatMessage) -> Bool {
-        !message.isSending && !message.sendFailed && message.threadID != nil
-    }
-
-    func setReplyTarget(_ message: DailyQuestionChatMessage) {
-        // The composer holds the edited text, so a reply waits until the edit is done.
-        guard canReply(to: message), editTarget == nil else { return }
-        replyTarget = message
-        composerFocusRequest += 1
-    }
-
-    func cancelReply() {
-        replyTarget = nil
-    }
-
-    /// The message a reply points at, when it is still in the chat.
-    func message(withID id: UUID) -> DailyQuestionChatMessage? {
-        messages.first { $0.id == id }
-    }
-
     /// Queues a message. `failedOperationID` is the operation of a failed message the
     /// person tapped to send again. The new message replaces it and keeps its reply.
     func send(
         _ text: String,
         replacingFailed failedOperationID: UUID? = nil,
-        replyToMessageID retriedReplyID: UUID? = nil
+        replyTo retriedReply: DailyChatItemID? = nil
     ) async -> Bool {
-        await send(text, photos: [], replacingFailed: failedOperationID, replyToMessageID: retriedReplyID)
+        await send(text, photos: [], replacingFailed: failedOperationID, replyTo: retriedReply)
     }
 
     func send(
         _ text: String,
         photos: [DailyQuestionChatPhoto],
         replacingFailed failedOperationID: UUID?,
-        replyToMessageID retriedReplyID: UUID?
+        replyTo retriedReply: DailyChatItemID?
     ) async -> Bool {
         guard let ownerUserID = participants.currentUserID, isChatAvailable else {
             notice = .unavailable
@@ -420,7 +409,7 @@ extension DailyQuestionChatViewModel {
         isQueueing = true
         defer { isQueueing = false }
 
-        let replyID = failedOperationID == nil ? replyTarget?.id : retriedReplyID
+        let reply = failedOperationID == nil ? replyTarget?.id : retriedReply
         let photosPayload = photosPayload(for: photos)
         do {
             try await queue(ownerUserID: ownerUserID, replacingFailed: failedOperationID) { createThread in
@@ -432,7 +421,7 @@ extension DailyQuestionChatViewModel {
                     body: body,
                     photos: photosPayload,
                     createThread: createThread,
-                    replyToMessageID: replyID,
+                    replyTo: reply,
                     operation: operationProvider.makeOperation()
                 )
             }

@@ -74,7 +74,7 @@ extension DailyQuestionChatService {
             isHeldOnPhone: operation.hasFailedAttempt,
             voice: content.voice?.pendingVoice,
             photos: content.photos?.pendingPhotos,
-            replyToMessageID: content.replyToMessageID
+            replyTo: content.replyTo
         )
     }
 
@@ -87,7 +87,7 @@ extension DailyQuestionChatService {
         body: String,
         photos: DailyQuestionChatPhotosPayload?,
         createThread: Bool,
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage {
         try await enqueue(
@@ -99,7 +99,7 @@ extension DailyQuestionChatService {
                 body: body,
                 photos: photos,
                 createThread: createThread,
-                replyToMessageID: replyToMessageID,
+                replyTo: replyTo,
                 operation: operation
             )
         )
@@ -113,7 +113,7 @@ extension DailyQuestionChatService {
         threadID: UUID?,
         voice: DailyQuestionChatVoicePayload,
         createThread: Bool,
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage {
         try await enqueue(
@@ -125,7 +125,7 @@ extension DailyQuestionChatService {
                 body: "",
                 voice: voice,
                 createThread: createThread,
-                replyToMessageID: replyToMessageID,
+                replyTo: replyTo,
                 operation: operation
             )
         )
@@ -159,7 +159,7 @@ private nonisolated struct OutgoingChatMessage {
     var voice: DailyQuestionChatVoicePayload?
     var photos: DailyQuestionChatPhotosPayload?
     let createThread: Bool
-    let replyToMessageID: UUID?
+    let replyTo: DailyChatItemID?
     let operation: SyncClientOperation
 
     var operationKind: SyncPendingOperationKind {
@@ -174,7 +174,8 @@ private nonisolated struct OutgoingChatMessage {
                     coupleID: coupleID,
                     body: body,
                     voice: voice,
-                    photos: photos
+                    photos: photos,
+                    replyToAnswerID: replyTo?.answerID
                 )
             )
         }
@@ -186,7 +187,7 @@ private nonisolated struct OutgoingChatMessage {
                 body: body,
                 voice: voice,
                 photos: photos,
-                replyToMessageID: replyToMessageID
+                replyTo: replyTo
             )
         )
     }
@@ -204,8 +205,8 @@ private nonisolated struct OutgoingChatMessage {
             isSending: true,
             voice: voice?.pendingVoice,
             photos: photos?.pendingPhotos,
-            // The first message creates the thread, so there is nothing to reply to yet.
-            replyToMessageID: createThread ? nil : replyToMessageID
+            // The first message creates the thread, so it can only reply to an answer.
+            replyTo: createThread ? replyTo?.answerID.map(DailyChatItemID.answer) : replyTo
         )
     }
 }
@@ -216,7 +217,7 @@ private nonisolated struct PendingChatContent {
     let threadID: UUID?
     let voice: DailyQuestionChatVoicePayload?
     let photos: DailyQuestionChatPhotosPayload?
-    var replyToMessageID: UUID?
+    var replyTo: DailyChatItemID?
 
     /// Nil when the operation is not a chat message, or belongs to another question or couple.
     /// A nil `coupleID` matches every couple.
@@ -230,6 +231,7 @@ private nonisolated struct PendingChatContent {
             threadID = nil
             voice = payload.voice
             photos = payload.photos
+            replyTo = payload.replyToAnswerID.map(DailyChatItemID.answer)
         case .sendThreadMessage:
             guard let payload = try? JSONDecoder().decode(SendDailyChatMessagePayload.self, from: data),
                   payload.questionID == questionID, coupleID == nil || payload.coupleID == coupleID
@@ -238,7 +240,7 @@ private nonisolated struct PendingChatContent {
             threadID = payload.threadID
             voice = payload.voice
             photos = payload.photos
-            replyToMessageID = payload.replyToMessageID
+            replyTo = payload.replyTo
         default:
             return nil
         }

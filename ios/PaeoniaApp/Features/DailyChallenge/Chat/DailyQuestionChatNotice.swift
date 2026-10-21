@@ -12,6 +12,7 @@ extension DailyQuestionChatViewModel.Notice {
         case .photoFailed: .dailyChatErrorPhotoTitle
         case .editFailed: .dailyChatErrorEditTitle
         case .editWindowClosed: .dailyChatErrorEditClosedTitle
+        case .reactionFailed: .dailyChatErrorReactionTitle
         }
     }
 
@@ -29,6 +30,8 @@ extension DailyQuestionChatViewModel.Notice {
         case .editFailed(let failure):
             failure == .offline ? .dailyChatErrorEditMessage : .dailyChatErrorEditFailedMessage
         case .editWindowClosed: .dailyChatErrorEditClosedMessage
+        case .reactionFailed(let failure):
+            failure == .offline ? .dailyChatErrorReactionMessage : .dailyChatErrorReactionFailedMessage
         }
     }
 }

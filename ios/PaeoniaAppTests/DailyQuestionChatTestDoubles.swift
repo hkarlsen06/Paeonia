@@ -76,7 +76,7 @@ actor PausingChatService: DailyQuestionChatServicing {
         body: String,
         photos: DailyQuestionChatPhotosPayload?,
         createThread: Bool,
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage {
         try await base.queueMessage(
@@ -87,7 +87,7 @@ actor PausingChatService: DailyQuestionChatServicing {
             body: body,
             photos: photos,
             createThread: createThread,
-            replyToMessageID: replyToMessageID,
+            replyTo: replyTo,
             operation: operation
         )
     }
@@ -137,7 +137,7 @@ actor ChatTestGateway: DailyQuestionChatGateway {
     private(set) var createCallCount = 0
     private(set) var sendCallCount = 0
     private(set) var lastMediaAssetIDs: [UUID]?
-    private(set) var lastReplyToMessageID: UUID?
+    private(set) var lastReplyTo: DailyChatItemID?
     private(set) var answerSeenCallCount = 0
     private var answerSeenFails = false
     private(set) var lastEdit: (messageID: UUID, body: String)?
@@ -270,12 +270,12 @@ actor ChatTestGateway: DailyQuestionChatGateway {
         threadID _: UUID,
         body _: String,
         mediaAssetIDs: [UUID],
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation _: SyncClientOperation
     ) throws -> DailyQuestionThreadMessageResponse {
         sendCallCount += 1
         lastMediaAssetIDs = mediaAssetIDs
-        lastReplyToMessageID = replyToMessageID
+        lastReplyTo = replyTo
         if let sendError { throw sendError }
         if shouldFail { throw ChatTestError.requested }
         return DailyQuestionThreadMessageResponse(threadID: threadID, messageID: messageID)

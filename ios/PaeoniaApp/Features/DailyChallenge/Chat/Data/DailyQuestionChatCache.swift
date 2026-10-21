@@ -190,7 +190,7 @@ actor FileDailyQuestionChatCache: DailyQuestionChatCaching {
                     sendFailed: true,
                     voice: message.voice,
                     photos: message.photos,
-                    replyToMessageID: message.replyToMessageID
+                    replyTo: message.replyTo
                 )
             }
             if found { return }

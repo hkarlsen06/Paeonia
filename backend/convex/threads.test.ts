@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
-import { answeredRound, seedQuestion } from "./dailyChat.setup";
+import { answeredRound, answerIdOf, seedQuestion } from "./dailyChat.setup";
 import type { SeededQuestion } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, photo, setMediaEnv, uploadAsset } from "./media.testing";
@@ -297,6 +297,170 @@ describe("daily question threads", () => {
     await endCouple(t, couple.coupleId, couple.first.userId);
     expect(await failure(dailyThread(couple.first, couple.coupleId, questionId))).toEqual(denied);
     expect(await failure(dailyThread(couple.second, couple.coupleId, questionId))).toEqual(denied);
+  });
+});
+
+describe("replies to answers", () => {
+  const replyRow = async (user: TestUser, threadId: string, messageId: string) =>
+    (await messagesOf(user, threadId)).find((row: { message_id: string }) => row.message_id === messageId);
+
+  test("the first message and later ones can reply to an answer on the page", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { instanceId, questionId } = await dailyInstance(t, couple);
+    const partnerAnswer = await answerIdOf(t, instanceId, couple.second);
+    const ownAnswer = await answerIdOf(t, instanceId, couple.first);
+    const [first] = await couple.first.as.mutation(api.threads.create_daily_question_thread_with_message, {
+      ...op(),
+      p_couple_id: couple.coupleId,
+      p_question_id: questionId,
+      p_body: "so true",
+      p_reply_to_answer_id: partnerAnswer.toUpperCase(),
+    });
+    expect(await replyRow(couple.second, first.thread_id, first.message_id)).toMatchObject({
+      reply_to_answer_id: partnerAnswer,
+      reply_to_message_id: null,
+    });
+    const [second] = await send(couple.first, first.thread_id, { p_body: "and mine", p_reply_to_answer_id: ownAnswer });
+    expect(await replyRow(couple.first, first.thread_id, second.message_id)).toMatchObject({ reply_to_answer_id: ownAnswer });
+  });
+
+  test("an answer the sender can't read, from another question, or hidden is refused", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const question = await seedQuestion(t);
+    await dailyInstance(t, couple, undefined, question, "2026-03-03T12:00:00.000Z");
+    const [{ thread_id: threadId }] = await dailyThread(couple.first, couple.coupleId, question.id);
+    // The question came back and only the partner has answered it so far.
+    const { instanceId: unanswered } = await dailyInstance(t, couple, [couple.second], question);
+    const unavailable = { code: "23514", message: "reply target is not available" };
+    expect(await failure(send(couple.first, threadId, { p_reply_to_answer_id: await answerIdOf(t, unanswered, couple.second) }))).toEqual(
+      unavailable,
+    );
+
+    const other = await dailyInstance(t, couple);
+    expect(
+      await failure(send(couple.first, threadId, { p_reply_to_answer_id: await answerIdOf(t, other.instanceId, couple.second) })),
+    ).toEqual({ code: "23514", message: "reply target must be in the same thread" });
+    expect(await failure(send(couple.first, threadId, { p_reply_to_answer_id: newUuid() }))).toEqual({
+      code: "23514",
+      message: "reply target must be in the same thread",
+    });
+
+    // Once the sender answers that day too, the partner's answer can be quoted, until it is hidden.
+    const partnerAnswer = await answerIdOf(t, unanswered, couple.second);
+    await t.run(async (ctx) => {
+      const now = new Date().toISOString();
+      await ctx.db.insert("daily_question_answers", {
+        id: newUuid(),
+        instance_id: unanswered,
+        user_id: couple.first.userId,
+        moderation_status: "visible",
+        created_at: now,
+        updated_at: now,
+      });
+    });
+    await send(couple.first, threadId, { p_reply_to_answer_id: partnerAnswer });
+    await t.run(async (ctx) => {
+      const row = await ctx.db.query("daily_question_answers").withIndex("by_uuid", (q) => q.eq("id", partnerAnswer)).unique();
+      await ctx.db.patch(row!._id, { moderation_status: "hidden" });
+    });
+    expect(await failure(send(couple.first, threadId, { p_reply_to_answer_id: partnerAnswer }))).toEqual(unavailable);
+  });
+
+  test("a memory chat has no answers to reply to, and a message replies to one thing", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { instanceId, questionId } = await dailyInstance(t, couple);
+    const answerId = await answerIdOf(t, instanceId, couple.second);
+    const [{ thread_id: memoryThreadId }] = await memoryThread(couple.first, await createMemory(couple.first));
+    expect(await failure(send(couple.first, memoryThreadId, { p_reply_to_answer_id: answerId }))).toEqual({
+      code: "23514",
+      message: "reply target must be in the same thread",
+    });
+    const [first] = await dailyThread(couple.first, couple.coupleId, questionId);
+    expect(
+      await failure(send(couple.second, first.thread_id, { p_reply_to_answer_id: answerId, p_reply_to_message_id: first.message_id })),
+    ).toEqual({ code: "23514", message: "a message can reply to one message or answer" });
+  });
+
+  test("strangers and former partners cannot reply to an answer", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const { instanceId, questionId } = await dailyInstance(t, couple);
+    const answerId = await answerIdOf(t, instanceId, couple.second);
+    const [first] = await dailyThread(couple.first, couple.coupleId, questionId);
+    const stranger = await createSignedInUser(t);
+    const denied = { code: "42501", message: "active entitled thread access is required" };
+    expect(await failure(send(stranger, first.thread_id, { p_reply_to_answer_id: answerId }))).toEqual(denied);
+    await endCouple(t, couple.coupleId, couple.first.userId);
+    expect(await failure(send(couple.first, first.thread_id, { p_reply_to_answer_id: answerId }))).toEqual(denied);
+  });
+});
+
+describe("set_thread_message_reaction", () => {
+  const react = (user: TestUser, messageId: string, emoji: string | null) =>
+    user.as.mutation(api.threads.set_thread_message_reaction, { p_message_id: messageId, p_emoji: emoji });
+  const reactionsOn = async (user: TestUser, threadId: string, messageId: string) =>
+    (await messagesOf(user, threadId)).find((row: { message_id: string }) => row.message_id === messageId)!.reactions;
+
+  async function sentMessage(t: TestConvex) {
+    const couple = await createCouple(t);
+    const { questionId } = await dailyInstance(t, couple);
+    const [first] = await dailyThread(couple.first, couple.coupleId, questionId);
+    return { couple, threadId: first.thread_id, messageId: first.message_id };
+  }
+
+  test("both partners react to a message, change it, and take it back", async () => {
+    const t = newTest();
+    const { couple, threadId, messageId } = await sentMessage(t);
+    await react(couple.second, messageId.toUpperCase(), "❤️");
+    await react(couple.first, messageId, "😂");
+    expect(await reactionsOn(couple.first, threadId, messageId)).toEqual(
+      expect.arrayContaining([
+        { user_id: couple.second.userId, emoji: "❤️" },
+        { user_id: couple.first.userId, emoji: "😂" },
+      ]),
+    );
+    await react(couple.second, messageId, " 🔥 ");
+    await react(couple.first, messageId, null);
+    expect(await reactionsOn(couple.second, threadId, messageId)).toEqual([{ user_id: couple.second.userId, emoji: "🔥" }]);
+    expect(await t.run((ctx) => ctx.db.query("thread_message_reactions").collect())).toHaveLength(1);
+  });
+
+  test("a removed message hides its reactions and takes no new ones", async () => {
+    const t = newTest();
+    const { couple, threadId, messageId } = await sentMessage(t);
+    await react(couple.second, messageId, "❤️");
+    await t.run(async (ctx) => {
+      const row = await ctx.db.query("thread_messages").withIndex("by_uuid", (q) => q.eq("id", messageId)).unique();
+      await ctx.db.patch(row!._id, { moderation_status: "hidden" });
+    });
+    expect(await reactionsOn(couple.first, threadId, messageId)).toEqual([]);
+    expect(await failure(react(couple.second, messageId, "😂"))).toEqual({
+      code: "23514",
+      message: "reaction target is not available",
+    });
+  });
+
+  test("anything but one emoji is refused", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sentMessage(t);
+    for (const emoji of ["ok", "7", "❤️❤️", ""]) {
+      expect(await failure(react(couple.second, messageId, emoji))).toEqual({ code: "23514", message: "reaction must be one emoji" });
+    }
+  });
+
+  test("strangers, former partners, and unknown messages are refused", async () => {
+    const t = newTest();
+    const { couple, messageId } = await sentMessage(t);
+    const denied = { code: "42501", message: "active entitled thread access is required" };
+    const stranger = await createSignedInUser(t);
+    expect(await failure(react(stranger, messageId, "❤️"))).toEqual(denied);
+    expect(await failure(react(couple.first, newUuid(), "❤️"))).toEqual(denied);
+    await endCouple(t, couple.coupleId, couple.first.userId);
+    expect(await failure(react(couple.second, messageId, "❤️"))).toEqual(denied);
+    expect(await t.run((ctx) => ctx.db.query("thread_message_reactions").collect())).toEqual([]);
   });
 });
 
@@ -720,6 +884,7 @@ describe("reads", () => {
       sender_user_id: couple.first.userId,
       body: "first",
       reply_to_message_id: null,
+      reply_to_answer_id: null,
       created_at: expect.any(String),
       edited_at: null,
       deleted_at: null,
@@ -727,6 +892,7 @@ describe("reads", () => {
       media_asset_ids: [],
       media: [],
       media_states: [],
+      reactions: [],
     });
     expect(rows[1]).toMatchObject({ body: null, moderation_status: "hidden" });
   });

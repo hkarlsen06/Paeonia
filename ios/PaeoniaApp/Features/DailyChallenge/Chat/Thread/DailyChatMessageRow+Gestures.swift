@@ -50,7 +50,7 @@ extension DailyChatMessageRow {
     /// bubble's own reply swipe keeps working. Other rows take it everywhere, because
     /// their reply swipe goes the other way or they have none.
     private var timestampSurfaceWidth: CGFloat {
-        let sharesSwipe = isCurrentUser && onReply != nil && row.message != nil
+        let sharesSwipe = isCurrentUser && onReply != nil && (row.message != nil || row.isAnswer)
         guard rowFrame.width > 0 else { return sharesSwipe ? PaeoniaSpacing.space40 : 0 }
         guard sharesSwipe else { return rowFrame.width }
         guard payloadFrame.width > 0 else { return PaeoniaSpacing.space40 }

@@ -320,11 +320,14 @@ export async function purgeCoupleContent(
         "daily_answer_partner_choice",
         "daily_answer_option_choice",
         "daily_answer_text",
+        "daily_answer_reactions",
       ] as const) {
         const rows =
           table === "daily_answer_media"
             ? await ctx.db.query(table).withIndex("by_answer_id_sort_order", (q) => q.eq("answer_id", answer.id)).collect()
-            : await ctx.db.query(table).withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id)).collect();
+            : table === "daily_answer_reactions"
+              ? await ctx.db.query(table).withIndex("by_answer_id_user_id", (q) => q.eq("answer_id", answer.id)).collect()
+              : await ctx.db.query(table).withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id)).collect();
         for (const row of rows) await remove(row);
       }
       await remove(answer);
@@ -389,6 +392,12 @@ export async function purgeCoupleContent(
           media_asset_id: item.media_asset_id,
         });
         await remove(item);
+      }
+      for (const reaction of await ctx.db
+        .query("thread_message_reactions")
+        .withIndex("by_message_id_user_id", (q) => q.eq("message_id", message.id))
+        .collect()) {
+        await remove(reaction);
       }
       await tombstoneReportTargets(ctx, "thread_message", message.id);
       await remove(message);

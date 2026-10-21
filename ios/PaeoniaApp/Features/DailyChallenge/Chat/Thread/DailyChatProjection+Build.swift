@@ -11,6 +11,8 @@ extension DailyChatProjection {
         let redrawToken: UUID
         var text = ""
         var status: ExyteChat.Message.Status?
+        /// The user's own reaction, so the long-press menu marks it.
+        var reactions: [ExyteChat.Reaction] = []
     }
 
     /// What building one message row reads besides the message itself.
@@ -133,21 +135,43 @@ extension DailyChatProjection {
         let carriedByMessage = lastSentOwnMessage.map { $0.createdAt > answer.answeredAt } ?? false
         let status: DailyChatMessageStatus? =
             answer.isOwnAnswer && round.ownAnswerSeenByPartner && !carriedByMessage ? .read : nil
+        let reactions = sortedReactions(on: .answer(answer.answerID), input: input)
         let row = DailyChatRow(
-            id: answerRowPrefix + answer.answerID.uuidString,
+            id: answerRowID(for: answer.answerID),
             kind: .answer(answer, mediaKind: round.mediaKind),
             isCurrentUser: answer.isOwnAnswer,
             createdAt: answer.answeredAt,
             groupContext: .standalone(isCurrentUser: answer.isOwnAnswer),
             status: status,
-            quotedPreview: nil
+            quotedPreview: nil,
+            reactions: reactions
         )
-        return placedRow(
+        var placed = placedRow(
             row,
             user: chatUser(answer.answerUserID, isCurrentUser: answer.isOwnAnswer, input: input),
-            redrawKey: AnswerRedrawKey(answer: answer, status: status, mediaKind: round.mediaKind),
+            redrawKey: AnswerRedrawKey(
+                answer: answer,
+                status: status,
+                mediaKind: round.mediaKind,
+                reactions: reactions
+            ),
             text: answer.textBody ?? ""
         )
+        placed.reactions = ownExyteReaction(in: reactions, input: input)
+        return placed
+    }
+
+    /// The reactions on an item, in the same order every time.
+    private static func sortedReactions(on item: DailyChatItemID, input: Input) -> [DailyChatReaction] {
+        (input.reactions[item] ?? []).sorted { $0.userID.uuidString < $1.userID.uuidString }
+    }
+
+    /// The user's own reaction in ExyteChat's form, so its long-press menu marks it.
+    private static func ownExyteReaction(in reactions: [DailyChatReaction], input: Input) -> [ExyteChat.Reaction] {
+        let currentUser = chatUser(input.currentUserID, isCurrentUser: true, input: input)
+        return reactions.filter { $0.userID == input.currentUserID }.map {
+            ExyteChat.Reaction(id: $0.userID.uuidString, user: currentUser, type: .emoji($0.emoji), status: .sent)
+        }
     }
 
     // MARK: - Messages
@@ -175,19 +199,12 @@ extension DailyChatProjection {
     ) -> PlacedRow {
         let input = context.input
         let isCurrentUser = message.senderUserID == input.currentUserID
-        var groupContext = DailyChatGrouping.context(
-            for: message,
-            previous: index > 0 ? input.messages[index - 1] : nil,
-            next: index + 1 < input.messages.count ? input.messages[index + 1] : nil,
-            currentUserID: input.currentUserID
-        )
-        if context.typingJoinsPrevious, index == input.messages.count - 1 {
-            groupContext = groupContext.joiningNext()
-        }
+        let groupContext = runContext(of: message, at: index, context: context)
         let status = messageStatus(message, context: context)
-        let quotedPreview = message.replyToMessageID.map { replyID in
-            preview(of: context.messagesByID[replyID], id: replyID, input: input)
+        let quotedPreview = message.replyTo.map { target in
+            preview(of: target, messages: context.messagesByID, input: input)
         }
+        let reactions = sortedReactions(on: .message(message.id), input: input)
         let row = DailyChatRow(
             id: rowID(for: message),
             kind: .message(message),
@@ -195,20 +212,41 @@ extension DailyChatProjection {
             createdAt: message.createdAt,
             groupContext: groupContext,
             status: status,
-            quotedPreview: quotedPreview
+            quotedPreview: quotedPreview,
+            reactions: reactions
         )
-        return placedRow(
+        var placed = placedRow(
             row,
             user: chatUser(message.senderUserID, isCurrentUser: isCurrentUser, input: input),
             redrawKey: MessageRedrawKey(
                 message: message,
                 groupContext: groupContext,
                 status: status,
-                quotedPreview: quotedPreview
+                quotedPreview: quotedPreview,
+                reactions: reactions
             ),
             text: message.voice == nil ? message.body : "",
             status: message.isSending || message.sendFailed ? .sending : .sent
         )
+        placed.reactions = ownExyteReaction(in: reactions, input: input)
+        return placed
+    }
+
+    /// Where the message sits in its run. The typing dots continue the newest message's run.
+    private static func runContext(
+        of message: DailyQuestionChatMessage,
+        at index: Int,
+        context: MessageRowContext
+    ) -> DailyChatGroupContext {
+        let messages = context.input.messages
+        let groupContext = DailyChatGrouping.context(
+            for: message,
+            previous: index > 0 ? messages[index - 1] : nil,
+            next: index + 1 < messages.count ? messages[index + 1] : nil,
+            currentUserID: context.input.currentUserID
+        )
+        guard context.typingJoinsPrevious, index == messages.count - 1 else { return groupContext }
+        return groupContext.joiningNext()
     }
 
     private static func messageStatus(
@@ -291,7 +329,8 @@ extension DailyChatProjection {
                 user: item.user,
                 status: item.status,
                 createdAt: time,
-                text: item.text
+                text: item.text,
+                reactions: item.reactions
             )
             message.triggerRedraw = item.redrawToken
             exyteMessages.append(message)
@@ -321,6 +360,7 @@ extension DailyChatProjection {
         let answer: DailyQuestionAnswerDetail
         let status: DailyChatMessageStatus?
         let mediaKind: DailyChallengeAnswerKind
+        let reactions: [DailyChatReaction]
     }
 
     private struct MatchRedrawKey: Hashable {
@@ -346,12 +386,14 @@ extension DailyChatProjection {
         let groupContext: DailyChatGroupContext
         let status: DailyChatMessageStatus?
         let quotedPreview: DailyChatReplyPreview?
+        let reactions: [DailyChatReaction]
 
         init(
             message: DailyQuestionChatMessage,
             groupContext: DailyChatGroupContext,
             status: DailyChatMessageStatus?,
-            quotedPreview: DailyChatReplyPreview?
+            quotedPreview: DailyChatReplyPreview?,
+            reactions: [DailyChatReaction]
         ) {
             body = message.body
             isSending = message.isSending
@@ -364,6 +406,7 @@ extension DailyChatProjection {
             self.groupContext = groupContext
             self.status = status
             self.quotedPreview = quotedPreview
+            self.reactions = reactions
         }
     }
 }

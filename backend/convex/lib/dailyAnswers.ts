@@ -824,6 +824,12 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
           });
           await ctx.db.delete(item._id);
         }
+        for (const reaction of await ctx.db
+          .query("thread_message_reactions")
+          .withIndex("by_message_id_user_id", (q) => q.eq("message_id", message.id))
+          .collect()) {
+          await ctx.db.delete(reaction._id);
+        }
         await tombstoneReportTargets(ctx, "thread_message", message.id);
         await ctx.db.delete(message._id);
       }
@@ -860,6 +866,12 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
         for (const row of await ctx.db
           .query("daily_answer_option_choice")
           .withIndex("by_answer_id", (q) => q.eq("answer_id", answer.id))
+          .collect()) {
+          await ctx.db.delete(row._id);
+        }
+        for (const row of await ctx.db
+          .query("daily_answer_reactions")
+          .withIndex("by_answer_id_user_id", (q) => q.eq("answer_id", answer.id))
           .collect()) {
           await ctx.db.delete(row._id);
         }

@@ -72,10 +72,12 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
     /// Photos in the message, in order. The text, if any, is their caption. Optional, so
     /// messages cached before photos existed still decode.
     var photos: [DailyQuestionChatPhoto]?
-    /// The earlier message in the thread this one answers.
-    var replyToMessageID: UUID?
+    /// The earlier message or the answer this one replies to.
+    var replyTo: DailyChatItemID?
     /// When the sender last changed the text.
     var editedAt: Date?
+    /// Who reacted with what, as the server last sent it.
+    var reactions: [DailyChatReaction] = []
 
     /// How many messages one read of a thread asks for.
     static let pageSize = 50
@@ -212,13 +214,84 @@ nonisolated struct DailyQuestionChatMessage: Codable, Equatable, Identifiable, S
             isSending: false,
             voice: voice,
             photos: photos,
-            replyToMessageID: replyToMessageID,
-            editedAt: editedAt
+            replyTo: replyTo,
+            editedAt: editedAt,
+            reactions: reactions
         )
     }
 
     var hasMedia: Bool {
         voice != nil || !(photos ?? []).isEmpty
+    }
+}
+
+/// A message in the chat or one of the answers on the page: what a reply points at, or
+/// what a reaction is on. The server keeps them apart, for example as
+/// `reply_to_message_id` and `reply_to_answer_id`.
+nonisolated enum DailyChatItemID: Codable, Hashable, Sendable {
+    case message(UUID)
+    case answer(UUID)
+
+    var messageID: UUID? {
+        if case let .message(id) = self { return id }
+        return nil
+    }
+
+    var answerID: UUID? {
+        if case let .answer(id) = self { return id }
+        return nil
+    }
+
+    init?(messageID: UUID?, answerID: UUID?) {
+        if let messageID {
+            self = .message(messageID)
+        } else if let answerID {
+            self = .answer(answerID)
+        } else {
+            return nil
+        }
+    }
+}
+
+/// The message or answer the composer's next message replies to.
+nonisolated enum DailyChatReplyTarget: Equatable, Sendable {
+    case message(DailyQuestionChatMessage)
+    case answer(DailyQuestionAnswerDetail)
+
+    var id: DailyChatItemID {
+        switch self {
+        case let .message(message): .message(message.id)
+        case let .answer(answer): .answer(answer.answerID)
+        }
+    }
+}
+
+/// One person's emoji reaction to a message or an answer in the question chat. Each
+/// person has at most one on each.
+nonisolated struct DailyChatReaction: Codable, Equatable, Hashable, Sendable {
+    let userID: UUID
+    let emoji: String
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case emoji
+    }
+}
+
+/// A reaction to an answer, as the question's rounds carry it.
+nonisolated struct DailyAnswerReaction: Codable, Equatable, Hashable, Sendable {
+    let answerID: UUID
+    let userID: UUID
+    let emoji: String
+
+    var reaction: DailyChatReaction {
+        DailyChatReaction(userID: userID, emoji: emoji)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case answerID = "answer_id"
+        case userID = "user_id"
+        case emoji
     }
 }
 
@@ -296,6 +369,8 @@ nonisolated struct CreateDailyChatThreadPayload: Codable, Equatable, Sendable {
     let body: String
     var voice: DailyQuestionChatVoicePayload?
     var photos: DailyQuestionChatPhotosPayload?
+    /// The first message can reply to an answer. There are no messages to reply to yet.
+    var replyToAnswerID: UUID?
 }
 
 nonisolated struct SendDailyChatMessagePayload: Codable, Equatable, Sendable {
@@ -305,7 +380,7 @@ nonisolated struct SendDailyChatMessagePayload: Codable, Equatable, Sendable {
     let body: String
     var voice: DailyQuestionChatVoicePayload?
     var photos: DailyQuestionChatPhotosPayload?
-    var replyToMessageID: UUID?
+    var replyTo: DailyChatItemID?
 }
 
 nonisolated struct DailyQuestionThreadMessageResponse: Decodable, Equatable, Sendable {

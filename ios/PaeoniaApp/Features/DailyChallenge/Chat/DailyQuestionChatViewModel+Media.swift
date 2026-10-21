@@ -6,7 +6,7 @@ extension DailyQuestionChatViewModel {
     /// Queues a message with photos from the composer, already compressed, and the
     /// text as their caption.
     func send(_ text: String, photos: [DailyQuestionChatPhoto]) async -> Bool {
-        await send(text, photos: photos, replacingFailed: nil, replyToMessageID: nil)
+        await send(text, photos: photos, replacingFailed: nil, replyTo: nil)
     }
 
     /// Sends a failed photo message again from the compressed copies kept on this phone.
@@ -19,7 +19,7 @@ extension DailyQuestionChatViewModel {
             message.body,
             photos: photos,
             replacingFailed: message.clientOperationID,
-            replyToMessageID: message.replyToMessageID
+            replyTo: message.replyTo
         )
     }
 
@@ -35,7 +35,7 @@ extension DailyQuestionChatViewModel {
             data: data,
             durationMs: durationMs,
             replacingFailed: nil,
-            replyToMessageID: replyTarget?.id
+            replyTo: replyTarget?.id
         )
     }
 
@@ -46,7 +46,7 @@ extension DailyQuestionChatViewModel {
             data: data,
             durationMs: message.voice?.durationMs ?? 0,
             replacingFailed: message.clientOperationID,
-            replyToMessageID: message.replyToMessageID
+            replyTo: message.replyTo
         )
     }
 
@@ -54,7 +54,7 @@ extension DailyQuestionChatViewModel {
         data: Data,
         durationMs: Int,
         replacingFailed failedOperationID: UUID?,
-        replyToMessageID: UUID?
+        replyTo: DailyChatItemID?
     ) async -> Bool {
         guard let ownerUserID = participants.currentUserID, isChatAvailable else {
             notice = .unavailable
@@ -79,7 +79,7 @@ extension DailyQuestionChatViewModel {
                         finalizeOperation: operationProvider.makeOperation()
                     ),
                     createThread: createThread,
-                    replyToMessageID: replyToMessageID,
+                    replyTo: replyTo,
                     operation: operationProvider.makeOperation()
                 )
             }

@@ -18,7 +18,7 @@ struct DailyQuestionChatVoiceTests {
                 finalizeOperation: fixture.operationProvider.makeOperation()
             ),
             createThread: false,
-            replyToMessageID: nil,
+            replyTo: nil,
             operation: fixture.operationProvider.makeOperation()
         )
     }

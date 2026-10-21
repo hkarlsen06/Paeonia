@@ -91,7 +91,7 @@ struct DailyChatPresenceModelTests {
         // swiftlint:disable:next function_parameter_count
         func queueMessage(
             ownerUserID _: UUID, coupleID _: UUID, questionID _: UUID, threadID _: UUID?, body _: String,
-            photos _: DailyQuestionChatPhotosPayload?, createThread _: Bool, replyToMessageID _: UUID?,
+            photos _: DailyQuestionChatPhotosPayload?, createThread _: Bool, replyTo _: DailyChatItemID?,
             operation _: SyncClientOperation
         ) throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
     }

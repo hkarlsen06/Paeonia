@@ -12,11 +12,12 @@ import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import { dailyQuestionThreadLink, isSharedRound, loadQuestionRounds } from "./lib/dailyQuestionRounds";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
-import { getByUuid, orNull } from "./lib/db";
+import { getByUuid, orNull, withUpdatedAt } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { enqueuePartnerNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
+import { reactionArg } from "./lib/reactions";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
@@ -171,6 +172,36 @@ async function assertReplyTargetAllowed(ctx: ReaderCtx, threadId: string, replyT
   }
 }
 
+/**
+ * A reply to an answer must point at a shown answer to the thread's question, on a day
+ * whose answers the sender can read: their own answer, or the partner's on a day they
+ * answered too.
+ */
+async function assertAnswerReplyTargetAllowed(
+  ctx: ReaderCtx,
+  threadId: string,
+  userId: string,
+  replyToAnswerId: string,
+): Promise<void> {
+  const link = await ctx.db
+    .query("daily_question_threads")
+    .withIndex("by_thread_id", (q) => q.eq("thread_id", threadId))
+    .unique();
+  const answer = await getByUuid(ctx, "daily_question_answers", replyToAnswerId);
+  const instance = answer ? await getByUuid(ctx, "daily_question_instances", answer.instance_id) : null;
+  if (!link || !instance || instance.couple_id !== link.couple_id || instance.question_id !== link.question_id) {
+    fail("23514", "reply target must be in the same thread");
+  }
+  const rounds = await loadQuestionRounds(ctx, link.couple_id, link.question_id);
+  const round = rounds.find((item) => item.answers.some((visible) => visible.id === replyToAnswerId));
+  if (!round || !round.answers.some((visible) => visible.user_id === userId)) {
+    fail("23514", "reply target is not available");
+  }
+}
+
+/** What a new message replies to: an earlier message, an answer to the question, or nothing. */
+export type ThreadMessageReply = { messageId?: string; answerId?: string };
+
 /** Port of `internal.insert_thread_message`. Returns the new message id. */
 export async function insertThreadMessage(
   ctx: WriterCtx,
@@ -178,7 +209,7 @@ export async function insertThreadMessage(
   threadId: string,
   body: string | null | undefined,
   mediaAssetIds: string[] | null | undefined,
-  replyToMessageId?: string,
+  reply: ThreadMessageReply = {},
 ): Promise<string> {
   const thread = await getByUuid(ctx, "conversation_threads", threadId);
   if (
@@ -207,7 +238,11 @@ export async function insertThreadMessage(
   }
 
   await assertThreadMessageAllowed(ctx, thread.id, userId);
-  if (replyToMessageId !== undefined) await assertReplyTargetAllowed(ctx, thread.id, replyToMessageId);
+  if (reply.messageId !== undefined && reply.answerId !== undefined) {
+    fail("23514", "a message can reply to one message or answer");
+  }
+  if (reply.messageId !== undefined) await assertReplyTargetAllowed(ctx, thread.id, reply.messageId);
+  if (reply.answerId !== undefined) await assertAnswerReplyTargetAllowed(ctx, thread.id, userId, reply.answerId);
   if (await getByUuid(ctx, "thread_messages", messageId)) uniqueViolation("thread_messages_pkey");
   const now = nowIso();
   const docId = await ctx.db.insert("thread_messages", {
@@ -215,7 +250,8 @@ export async function insertThreadMessage(
     thread_id: thread.id,
     sender_user_id: userId,
     body: normalizedBody ?? undefined,
-    reply_to_message_id: replyToMessageId,
+    reply_to_message_id: reply.messageId,
+    reply_to_answer_id: reply.answerId,
     moderation_status: "visible",
     created_at: now,
     updated_at: now,
@@ -239,43 +275,45 @@ function mediaFingerprint(body: string | null | undefined, mediaIds: string[] | 
   return [btrimToNull(body) ?? "", (mediaIds ?? []).map(uuidArg)];
 }
 
+/** A reply adds its target to the request. A plain message adds nothing. */
+function replyFingerprint(reply: ThreadMessageReply): string[] {
+  if (reply.messageId !== undefined) return [reply.messageId];
+  if (reply.answerId !== undefined) return [`answer:${reply.answerId}`];
+  return [];
+}
+
 export const send_thread_message = mutation({
   args: {
     p_thread_id: v.string(),
     p_body: v.optional(v.union(v.null(), v.string())),
     p_media_asset_ids: nullableMediaIds,
     p_reply_to_message_id: v.optional(v.union(v.null(), v.string())),
+    p_reply_to_answer_id: v.optional(v.union(v.null(), v.string())),
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const threadId = uuidArg(args.p_thread_id);
-    const replyToMessageId = optionalUuidArg(args.p_reply_to_message_id);
+    const reply = {
+      messageId: optionalUuidArg(args.p_reply_to_message_id),
+      answerId: optionalUuidArg(args.p_reply_to_answer_id),
+    };
     const stored = await runClientOperation(
       ctx,
       userId,
       toClientOperation(args, {
         kind: "send_thread_message",
         scope: "conversation_threads",
-        // A reply adds its target. A plain message keeps the request it had before
-        // replies existed, so a send queued before then still replays.
         request: [
           "send_thread_message",
           threadId,
           ...mediaFingerprint(args.p_body, args.p_media_asset_ids),
-          ...(replyToMessageId === undefined ? [] : [replyToMessageId]),
+          ...replyFingerprint(reply),
         ],
       }),
       async () => {
         await consumeRateLimit(ctx, "threadMessage", userId);
-        const messageId = await insertThreadMessage(
-          ctx,
-          userId,
-          threadId,
-          args.p_body,
-          args.p_media_asset_ids,
-          replyToMessageId,
-        );
+        const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids, reply);
         return { thread_id: threadId, message_id: messageId };
       },
     );
@@ -336,11 +374,64 @@ export const edit_thread_message = mutation({
 });
 
 /**
+ * Sets the caller's emoji reaction to a shown message, their own or the partner's, or
+ * clears it with a null `p_emoji`. A plain write without a client operation, so the same
+ * call twice changes nothing. The live message query brings the reaction to both phones,
+ * so there is no push.
+ */
+export const set_thread_message_reaction = mutation({
+  args: { p_message_id: v.string(), p_emoji: v.union(v.null(), v.string()) },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const message = await getByUuid(ctx, "thread_messages", uuidArg(args.p_message_id));
+    const thread = message ? await getByUuid(ctx, "conversation_threads", message.thread_id) : null;
+    if (!message || !thread || !(await canAccessCoupleContent(ctx, userId, thread.couple_id))) {
+      return fail("42501", "active entitled thread access is required");
+    }
+    if (
+      thread.deleted_at !== undefined ||
+      thread.moderation_status !== "visible" ||
+      message.deleted_at !== undefined ||
+      message.moderation_status !== "visible"
+    ) {
+      fail("23514", "reaction target is not available");
+    }
+    const emoji = reactionArg(args.p_emoji);
+
+    const existing = await ctx.db
+      .query("thread_message_reactions")
+      .withIndex("by_message_id_user_id", (q) => q.eq("message_id", message.id).eq("user_id", userId))
+      .unique();
+    if (emoji === null) {
+      if (existing) await ctx.db.delete(existing._id);
+      return null;
+    }
+    if (existing?.emoji === emoji) return null;
+    await consumeRateLimit(ctx, "threadMessage", userId);
+    if (existing) {
+      await ctx.db.patch(existing._id, withUpdatedAt({ emoji }));
+    } else {
+      const now = nowIso();
+      await ctx.db.insert("thread_message_reactions", {
+        message_id: message.id,
+        thread_id: thread.id,
+        user_id: userId,
+        emoji,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+    return null;
+  },
+});
+
+/**
  * Starts the chat about a question with its first message, or adds to the chat that
  * already exists. A couple has one chat per question, whatever day the question came
  * back on. Starting it needs a day on which both partners answered the question.
  * The caller names the couple, so a message queued offline in one couple can never land
- * in the chat of a couple the user joined later.
+ * in the chat of a couple the user joined later. The first message can reply to an answer,
+ * since the answers are on the page before anyone has written.
  */
 export const create_daily_question_thread_with_message = mutation({
   args: {
@@ -348,12 +439,14 @@ export const create_daily_question_thread_with_message = mutation({
     p_question_id: v.string(),
     p_body: v.optional(v.union(v.null(), v.string())),
     p_media_asset_ids: nullableMediaIds,
+    p_reply_to_answer_id: v.optional(v.union(v.null(), v.string())),
     ...clientOperationArgs,
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleId = uuidArg(args.p_couple_id);
     const questionId = uuidArg(args.p_question_id);
+    const reply = { answerId: optionalUuidArg(args.p_reply_to_answer_id) };
     const stored = await runClientOperation(
       ctx,
       userId,
@@ -365,6 +458,7 @@ export const create_daily_question_thread_with_message = mutation({
           coupleId,
           questionId,
           ...mediaFingerprint(args.p_body, args.p_media_asset_ids),
+          ...replyFingerprint(reply),
         ],
       }),
       async () => {
@@ -400,7 +494,7 @@ export const create_daily_question_thread_with_message = mutation({
             created_at: nowIso(),
           });
         }
-        const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids);
+        const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids, reply);
         return { thread_id: threadId, message_id: messageId };
       },
     );
@@ -637,12 +731,22 @@ export const get_thread_messages = query({
           updated_at: asset.updated_at,
         });
       }
+      // Who reacted with what. A removed message shows none.
+      const reactions = messageVisible
+        ? (
+            await ctx.db
+              .query("thread_message_reactions")
+              .withIndex("by_message_id_user_id", (q) => q.eq("message_id", message.id))
+              .collect()
+          ).map((reaction) => ({ user_id: reaction.user_id, emoji: reaction.emoji }))
+        : [];
       rows.push({
         thread_id: thread.id,
         message_id: message.id,
         sender_user_id: message.sender_user_id,
         body: messageVisible ? orNull(message.body) : null,
         reply_to_message_id: orNull(message.reply_to_message_id),
+        reply_to_answer_id: orNull(message.reply_to_answer_id),
         created_at: message.created_at,
         edited_at: orNull(message.edited_at),
         deleted_at: orNull(message.deleted_at),
@@ -650,6 +754,7 @@ export const get_thread_messages = query({
         media_asset_ids: mediaAssetIds,
         media,
         media_states: mediaStates,
+        reactions,
       });
     }
     return { messages: rows, has_more: hasMore };

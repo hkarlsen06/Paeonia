@@ -181,6 +181,7 @@ func decodedChatRounds(
         "thread_id": threadID?.uuidString ?? NSNull(),
         "questions": rounds.map { row($0.instance, date: $0.date, startsAt: $0.startsAt) },
         "answer_details": [Any](),
+        "reactions": [Any](),
     ]
     return try PaeoniaConvexClient.decoder.decode(
         DailyQuestionChatRoundsRow.self,

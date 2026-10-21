@@ -9,16 +9,17 @@ import SwiftUI
 /// no composer.
 ///
 /// The chat follows Tidex's friends chat: the same ExyteChat setup, row gestures
-/// (swipe to reply, swipe left for times, swipe right to go back), long-press menu,
-/// and a composer of its own. The rows come from a cached `DailyChatProjection`, and
-/// ExyteChat redraws only rows whose content changed, so scrolling stays smooth.
+/// (swipe to reply, swipe left for times, swipe right to go back), long-press menu
+/// with reactions, and a composer of its own. The rows come
+/// from a cached `DailyChatProjection`, and ExyteChat redraws only rows whose content
+/// changed, so scrolling stays smooth.
 struct DailyQuestionChatView: View {
     private static let bottomComposerClearance: CGFloat = 14
     private static let highlightDuration: Duration = .seconds(1.6)
     /// Long enough for the reveal's build-up, bounce, sparkles, and petals to finish.
     private static let revealDuration: Duration = .seconds(2)
 
-    @State private var viewModel: DailyQuestionChatViewModel
+    @State var viewModel: DailyQuestionChatViewModel
     let question: DailyChallengeQuestion
     let participants: DailyChallengeParticipants
     var onReport: ((PrivacyReportTarget) -> Void)?
@@ -106,7 +107,7 @@ struct DailyQuestionChatView: View {
         .paeoniaImageViewer(selection: $photoViewer)
     }
 
-    private var projectionInput: DailyChatProjection.Input {
+    var projectionInput: DailyChatProjection.Input {
         DailyChatProjection.Input(
             rounds: viewModel.chatRounds(celebrating: celebratingInstanceID),
             messages: viewModel.messages,
@@ -114,7 +115,8 @@ struct DailyQuestionChatView: View {
             partnerName: viewModel.participants.partnerName,
             youName: String(localized: .dailyChallengeChoiceYou),
             partnerIsTyping: viewModel.presence.partnerIsTyping,
-            partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID
+            partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID,
+            reactions: viewModel.chatReactions
         )
     }
 
@@ -154,6 +156,18 @@ struct DailyQuestionChatView: View {
             },
             messageMenuAction: handleMenuAction
         )
+        .onMessageReaction(
+            didReactTo: { message, reaction in
+                guard case let .emoji(emoji) = reaction.type,
+                      let item = reactableItem(projection.rowsByID[message.id])
+                else { return }
+                react(emoji, to: item)
+            },
+            canReactTo: { reactableItem(projection.rowsByID[$0.id]) != nil },
+            availableReactionsFor: { _ in DailyQuestionChatViewModel.quickReactions.map(ReactionType.emoji) },
+            allowEmojiSearchFor: { reactableItem(projection.rowsByID[$0.id]) != nil },
+            shouldShowOverviewFor: { _ in false }
+        )
         .localization(chatLocalization)
         .showDateHeaders(true)
         .dateHeaderBuilder { DailyChatDateSeparator(date: $0) }
@@ -186,14 +200,15 @@ struct DailyQuestionChatView: View {
     }
 
     private func messageRow(_ row: DailyChatRow, messageFrame: Binding<CGRect>?) -> some View {
-        DailyChatMessageRow(
+        let reactable = reactableItem(row)
+        return DailyChatMessageRow(
             row: row,
             participants: viewModel.participants,
             isHighlighted: row.id == highlightedRowID,
             isRevealing: row.id == revealingRowID,
-            onReply: row.message.flatMap { message in
-                viewModel.canReply(to: message) ? { viewModel.setReplyTarget(message) } : nil
-            },
+            onReply: replyAction(for: row),
+            onReact: reactable.map { item in { (emoji: String) in react(emoji, to: item) } },
+            ownReaction: reactable.flatMap { viewModel.ownReaction(to: $0) },
             onRetry: { retry(row.message) },
             onTapQuoted: jumpToMessage,
             onOpenPhoto: openPhoto,
@@ -221,11 +236,6 @@ struct DailyQuestionChatView: View {
                 }
             }
             .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.hasHeldMessages)
-    }
-
-    private var replyPreview: DailyChatReplyPreview? {
-        guard let target = viewModel.replyTarget else { return nil }
-        return DailyChatProjection.preview(of: target, id: target.id, input: projectionInput)
     }
 
     // MARK: - Waiting
@@ -278,7 +288,7 @@ extension DailyQuestionChatView {
                 _ = await viewModel.send(
                     message.body,
                     replacingFailed: message.clientOperationID,
-                    replyToMessageID: message.replyToMessageID
+                    replyTo: message.replyTo
                 )
             }
         }
@@ -292,7 +302,11 @@ extension DailyQuestionChatView {
         guard let row = projection.rowsByID[message.id] else { return }
         switch action {
         case .reply:
-            if let target = row.message { viewModel.setReplyTarget(target) }
+            if let target = row.message {
+                viewModel.setReplyTarget(target)
+            } else if let answer = row.answer {
+                viewModel.setReplyTarget(answer)
+            }
         case .edit:
             if let target = row.message { viewModel.startEditing(target) }
         case .copy:
@@ -339,10 +353,17 @@ extension DailyQuestionChatView {
         return UIImage(data: data)
     }
 
-    /// Tapping a quote scrolls to the message it answers and lights it up for a moment.
-    private func jumpToMessage(_ messageID: UUID) {
-        guard let target = viewModel.message(withID: messageID) else { return }
-        let rowID = DailyChatProjection.rowID(for: target)
+    /// Tapping a quote scrolls to the message or answer it replies to and lights it up for a moment.
+    private func jumpToMessage(_ target: DailyChatItemID) {
+        let rowID: String
+        switch target {
+        case let .message(messageID):
+            guard let message = viewModel.message(withID: messageID) else { return }
+            rowID = DailyChatProjection.rowID(for: message)
+        case let .answer(answerID):
+            rowID = DailyChatProjection.answerRowID(for: answerID)
+            guard projection.rowsByID[rowID] != nil else { return }
+        }
         scrollTarget = nil
         Task { @MainActor in
             scrollTarget = ScrollToParams(messageID: rowID, position: .middle)
@@ -367,7 +388,7 @@ extension DailyQuestionChatView {
 
     /// The partner's answer row of that day once the chat shows it.
     private var revealedPartnerAnswerRowID: String? {
-        revealedRound?.partnerAnswerDetail.map { DailyChatProjection.answerRowPrefix + $0.answerID.uuidString }
+        revealedRound?.partnerAnswerDetail.map { DailyChatProjection.answerRowID(for: $0.answerID) }
     }
 
     /// A partner's answer the user hasn't seen is the payoff, so its bubble plays the

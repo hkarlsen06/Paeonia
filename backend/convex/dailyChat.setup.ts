@@ -52,3 +52,14 @@ export async function answeredRound(
   });
   return instanceId;
 }
+
+/** The id of `user`'s answer in a round. */
+export async function answerIdOf(t: TestConvex, instanceId: string, user: TestUser): Promise<string> {
+  return await t.run(async (ctx) => {
+    const answer = await ctx.db
+      .query("daily_question_answers")
+      .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", instanceId).eq("user_id", user.userId))
+      .unique();
+    return answer!.id;
+  });
+}

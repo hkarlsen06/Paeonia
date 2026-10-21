@@ -34,7 +34,7 @@ struct DailyQuestionChatPageTests {
         let target = try #require(viewModel.messages.first)
 
         viewModel.setReplyTarget(target)
-        #expect(viewModel.replyTarget?.id == target.id)
+        #expect(viewModel.replyTarget == .message(target))
         #expect(await viewModel.send("Answering that"))
         #expect(viewModel.replyTarget == nil)
 
@@ -46,7 +46,7 @@ struct DailyQuestionChatPageTests {
             gateway: fixture.gateway,
             cache: fixture.cache
         ).send(queued, context: chatSyncContext(ownerUserID: fixture.ownerUserID))
-        #expect(await fixture.gateway.lastReplyToMessageID == target.id)
+        #expect(await fixture.gateway.lastReplyTo == .message(target.id))
     }
 
     @Test func thePageStacksEveryDayTheServerSendsAndTakesTheThreadFromThem() async throws {

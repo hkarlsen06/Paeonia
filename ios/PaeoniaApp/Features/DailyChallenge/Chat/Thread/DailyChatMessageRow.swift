@@ -2,12 +2,15 @@ import ExyteChat
 import SwiftUI
 
 /// One row of a question's chat: Paeonia's question, an answer, or a message. Ported
-/// from Tidex's chat row, so it has the same gestures. Swipe a message toward the
-/// middle to reply, swipe left anywhere to slide the bubbles over and show their
-/// times, and the row's corners join with the messages around it.
+/// from Tidex's chat row, so it has the same gestures. Swipe a message or an answer
+/// toward the middle to reply, swipe left anywhere to slide the bubbles over and show
+/// their times, and the row's corners join with the messages around it. Reactions sit
+/// on the bubble's top corner.
 struct DailyChatMessageRow: View {
     private static let maximumBubbleWidth: CGFloat = 360
     private static let avatarSize: CGFloat = 28
+    /// Room above a bubble with reactions, so the badge clears what is above it.
+    private static let reactionClearance: CGFloat = 14
     static let resetAnimationDuration: TimeInterval = 0.18
 
     let row: DailyChatRow
@@ -17,8 +20,12 @@ struct DailyChatMessageRow: View {
     var isRevealing = false
     /// Nil when this row can't be replied to.
     let onReply: (() -> Void)?
+    /// Puts an emoji on the message or answer. Nil on rows that can't get a reaction.
+    var onReact: ((String) -> Void)?
+    /// The user's own reaction on this row, for the VoiceOver actions.
+    var ownReaction: String?
     let onRetry: () -> Void
-    let onTapQuoted: (UUID) -> Void
+    let onTapQuoted: (DailyChatItemID) -> Void
     var onOpenPhoto: (DailyQuestionChatPhoto) -> Void = { _ in }
     /// Read only by the row views, so a swipe redraws them and not the page around them.
     let timestampReveal: DailyChatTimestampReveal
@@ -90,26 +97,31 @@ struct DailyChatMessageRow: View {
             }
             .accessibilityElement(children: .combine)
         case let .answer(answer, mediaKind):
-            bubbleBody(fill: bubbleFill) {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                    Label {
-                        Text(isCurrentUser
-                            ? .dailyChallengeYourAnswerTitle
-                            : .dailyChatAnswerPartnerTitle(participants.partnerName))
-                    } icon: {
-                        Image(systemName: "quote.opening")
-                    }
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(
-                        isCurrentUser ? Color.paeoniaTextPrimary.opacity(0.72) : Color.paeoniaAccentPrimary
-                    )
+            replySwipeContainer {
+                bubbleBody(fill: bubbleFill) {
+                    VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                        Label {
+                            Text(isCurrentUser
+                                ? .dailyChallengeYourAnswerTitle
+                                : .dailyChatAnswerPartnerTitle(participants.partnerName))
+                        } icon: {
+                            Image(systemName: "quote.opening")
+                        }
+                        .font(PaeoniaTypography.caption.weight(.semibold))
+                        .foregroundStyle(
+                            isCurrentUser ? Color.paeoniaTextPrimary.opacity(0.72) : Color.paeoniaAccentPrimary
+                        )
 
-                    DailyAnswerContent(detail: answer, participants: participants, mediaKind: mediaKind)
+                        DailyAnswerContent(detail: answer, participants: participants, mediaKind: mediaKind)
+                    }
                 }
+                .overlay(alignment: isCurrentUser ? .topLeading : .topTrailing) { reactionBadge }
+                .dailyChatAnswerReveal(isActive: isRevealing, seed: row.id)
             }
-            .dailyChatAnswerReveal(isActive: isRevealing, seed: row.id)
+            .padding(.top, reactionClearance)
             .frame(maxWidth: bubbleMaxWidth, alignment: isCurrentUser ? .trailing : .leading)
             .accessibilityElement(children: .contain)
+            .accessibilityActions { itemAccessibilityActions }
         case let .message(message):
             VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 2) {
                 if let quoted = row.quotedPreview {
@@ -117,27 +129,31 @@ struct DailyChatMessageRow: View {
                         preview: quoted,
                         isCurrentUser: isCurrentUser,
                         maxWidth: bubbleMaxWidth,
-                        onTap: { onTapQuoted(quoted.messageID) }
+                        onTap: { onTapQuoted(quoted.target) }
                     )
                     .allowsHitTesting(!isInMenu)
                 }
                 // The width limit goes outside the swipe area, so the area is only as
                 // wide as the bubble and the space beside it stays free for the times.
                 replySwipeContainer {
-                    if message.voice != nil {
-                        voicePayload(message)
-                    } else if let photos = message.photos, !photos.isEmpty {
-                        photoPayloads(photos, caption: message.body)
-                    } else {
-                        bubbleBody(fill: bubbleFill) {
-                            messageText(message.body)
+                    Group {
+                        if message.voice != nil {
+                            voicePayload(message)
+                        } else if let photos = message.photos, !photos.isEmpty {
+                            photoPayloads(photos, caption: message.body)
+                        } else {
+                            bubbleBody(fill: bubbleFill) {
+                                messageText(message.body)
+                            }
                         }
                     }
+                    .overlay(alignment: isCurrentUser ? .topLeading : .topTrailing) { reactionBadge }
                 }
+                .padding(.top, reactionClearance)
                 .frame(maxWidth: bubbleMaxWidth, alignment: isCurrentUser ? .trailing : .leading)
             }
             .accessibilityElement(children: .combine)
-            .accessibilityAction(named: Text(.dailyChatActionReply)) { onReply?() }
+            .accessibilityActions { itemAccessibilityActions }
         case .partnerChoiceMatch, .waiting:
             EmptyView()
         case .typing:
@@ -276,6 +292,38 @@ struct DailyChatMessageRow: View {
 }
 
 extension DailyChatMessageRow {
+    // MARK: - Reactions and actions
+
+    /// The reactions on the bubble's top corner, pushed out past its edge.
+    @ViewBuilder
+    var reactionBadge: some View {
+        if !row.reactions.isEmpty {
+            DailyChatReactionBadge(reactions: row.reactions, participants: participants)
+                .offset(x: isCurrentUser ? -PaeoniaSpacing.space8 : PaeoniaSpacing.space8, y: -12)
+        }
+    }
+
+    var reactionClearance: CGFloat {
+        row.reactions.isEmpty ? 0 : Self.reactionClearance
+    }
+
+    /// Reply and the quick reactions, for VoiceOver and Voice Control. The long-press
+    /// menu offers the same.
+    @ViewBuilder
+    var itemAccessibilityActions: some View {
+        if let onReply {
+            Button(action: onReply) { Text(.dailyChatActionReply) }
+        }
+        if let onReact {
+            ForEach(DailyQuestionChatViewModel.quickReactions.filter { $0 != ownReaction }, id: \.self) { emoji in
+                Button { onReact(emoji) } label: { Text(.dailyChatReactionAdd(emoji)) }
+            }
+            if let ownReaction {
+                Button { onReact(ownReaction) } label: { Text(.dailyChatReactionRemove) }
+            }
+        }
+    }
+
     // MARK: - Status
 
     private var isEdited: Bool {

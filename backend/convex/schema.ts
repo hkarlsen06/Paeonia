@@ -1379,6 +1379,35 @@ export default defineSchema({
     .index("by_couple_id", ["couple_id"])
     .index("by_user_id", ["user_id"]),
 
+  // One person's emoji reaction to a daily answer, from the question chat.
+  // One row per (answer_id, user_id). Choosing another emoji replaces it, and clearing deletes it.
+  // FK: answer_id -> daily_question_answers cascade; couple_id -> couples cascade; user_id -> users cascade.
+  daily_answer_reactions: defineTable({
+    answer_id: uuid,
+    couple_id: uuid,
+    user_id: uuid,
+    emoji: v.string(),
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_answer_id_user_id", ["answer_id", "user_id"])
+    .index("by_couple_id", ["couple_id"])
+    .index("by_user_id", ["user_id"]),
+
+  // One person's emoji reaction to a chat message. One row per (message_id, user_id).
+  // Choosing another emoji replaces it, and clearing deletes it.
+  // FK: message_id -> thread_messages cascade; thread_id -> conversation_threads cascade; user_id -> users cascade.
+  thread_message_reactions: defineTable({
+    message_id: uuid,
+    thread_id: uuid,
+    user_id: uuid,
+    emoji: v.string(),
+    created_at: ts,
+    updated_at: ts,
+  })
+    .index("by_message_id_user_id", ["message_id", "user_id"])
+    .index("by_user_id", ["user_id"]),
+
   // FK: message_id -> thread_messages cascade; media_asset_id -> media_assets cascade.
   // (message_id, media_asset_id) and (message_id, sort_order) are unique.
   thread_message_media: defineTable({
@@ -1392,12 +1421,15 @@ export default defineSchema({
 
   // FK: thread_id -> conversation_threads cascade. reply_to_message_id -> thread_messages
   // in the same thread, kept when that message is removed (the reader hides its text).
+  // reply_to_answer_id -> daily_question_answers of the thread's question, kept the same way.
+  // A message replies to one of the two at most.
   thread_messages: defineTable({
     id: uuid,
     thread_id: uuid,
     sender_user_id: uuid,
     body: optString,
     reply_to_message_id: optUuid,
+    reply_to_answer_id: optUuid,
     created_at: ts,
     updated_at: ts,
     edited_at: optTs,

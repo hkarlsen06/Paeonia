@@ -66,7 +66,7 @@ enum DailyChatGrouping {
     /// voice message always stands on its own, like a photo does in Tidex.
     static func shouldGroup(_ lhs: DailyQuestionChatMessage, _ rhs: DailyQuestionChatMessage) -> Bool {
         guard lhs.senderUserID == rhs.senderUserID else { return false }
-        guard !lhs.hasMedia, !rhs.hasMedia, lhs.replyToMessageID == nil, rhs.replyToMessageID == nil else {
+        guard !lhs.hasMedia, !rhs.hasMedia, lhs.replyTo == nil, rhs.replyTo == nil else {
             return false
         }
         let gap = rhs.createdAt.timeIntervalSince(lhs.createdAt)
@@ -74,15 +74,17 @@ enum DailyChatGrouping {
     }
 }
 
-/// The quoted message shown above a reply, and in the composer while writing one.
+/// The quoted message or answer shown above a reply, and in the composer while writing one.
 struct DailyChatReplyPreview: Hashable {
-    let messageID: UUID
+    let target: DailyChatItemID
     let senderName: String
-    /// Nil when the quoted message is no longer in the chat.
+    /// Nil when the quoted message or answer is no longer in the chat.
     let snippet: String?
     let isVoice: Bool
     /// The quoted message's photos, shown as small thumbnails.
     var photos: [DailyQuestionChatPhoto] = []
+
+    var isAnswer: Bool { target.answerID != nil }
 }
 
 /// The small line under your own messages. Like Tidex: Sending and Not sent show on
@@ -118,16 +120,20 @@ struct DailyChatRow {
     let groupContext: DailyChatGroupContext
     let status: DailyChatMessageStatus?
     let quotedPreview: DailyChatReplyPreview?
+    /// The emoji reactions on a message or an answer, shown on its bubble's corner.
+    var reactions: [DailyChatReaction] = []
 
     var message: DailyQuestionChatMessage? {
         if case let .message(message) = kind { return message }
         return nil
     }
 
-    var isAnswer: Bool {
-        if case .answer = kind { return true }
-        return false
+    var answer: DailyQuestionAnswerDetail? {
+        if case let .answer(answer, _) = kind { return answer }
+        return nil
     }
+
+    var isAnswer: Bool { answer != nil }
 }
 
 /// The chat list worked out from the page's data: ExyteChat's messages and the row
@@ -143,6 +149,8 @@ struct DailyChatProjection {
         let youName: String
         var partnerIsTyping = false
         var partnerLastReadMessageID: UUID?
+        /// The reactions on the messages and answers.
+        var reactions: [DailyChatItemID: [DailyChatReaction]] = [:]
     }
 
     static let questionRowPrefix = "question-"
@@ -171,6 +179,24 @@ struct DailyChatProjection {
         (message.clientOperationID ?? message.id).uuidString
     }
 
+    static func answerRowID(for answerID: UUID) -> String {
+        answerRowPrefix + answerID.uuidString
+    }
+
+    /// The quote of what a reply points at. `messages` finds a quoted message by id.
+    static func preview(
+        of target: DailyChatItemID,
+        messages: [UUID: DailyQuestionChatMessage],
+        input: Input
+    ) -> DailyChatReplyPreview {
+        switch target {
+        case let .message(id):
+            preview(of: messages[id], id: id, input: input)
+        case let .answer(id):
+            answerPreview(of: id, input: input)
+        }
+    }
+
     static func preview(
         of message: DailyQuestionChatMessage?,
         id: UUID,
@@ -178,11 +204,41 @@ struct DailyChatProjection {
     ) -> DailyChatReplyPreview {
         let isOwn = message?.senderUserID == input.currentUserID
         return DailyChatReplyPreview(
-            messageID: id,
+            target: .message(id),
             senderName: message == nil ? input.partnerName : (isOwn ? input.youName : input.partnerName),
             snippet: message.map { $0.voice == nil ? $0.body : "" },
             isVoice: message?.voice != nil,
             photos: message?.photos ?? []
+        )
+    }
+
+    /// The quote of an answer: whose answer it is, and its text, pick, photos or recording.
+    static func answerPreview(of answerID: UUID, input: Input) -> DailyChatReplyPreview {
+        let found = input.rounds.lazy.compactMap { round in
+            round.answers.first { $0.answerID == answerID }.map { (answer: $0, mediaKind: round.mediaKind) }
+        }.first
+        guard let found else {
+            return DailyChatReplyPreview(
+                target: .answer(answerID),
+                senderName: String(localized: .dailyChatReplyAnswerTitle),
+                snippet: nil,
+                isVoice: false
+            )
+        }
+        let answer = found.answer
+        let isVoice = answer.hasMedia && found.mediaKind == .voice
+        let pickedName = answer.selectedUserID.map { $0 == input.currentUserID ? input.youName : input.partnerName }
+        let snippet = answer.textBody?.trimmedNonEmpty ?? answer.selectedOptionLabel ?? pickedName ?? ""
+        return DailyChatReplyPreview(
+            target: .answer(answerID),
+            senderName: answer.isOwnAnswer
+                ? String(localized: .dailyChallengeYourAnswerTitle)
+                : String(localized: .dailyChatAnswerPartnerTitle(input.partnerName)),
+            snippet: isVoice ? "" : snippet,
+            isVoice: isVoice,
+            photos: answer.hasMedia && !isVoice
+                ? answer.mediaAssetIDs.map { DailyQuestionChatPhoto(mediaAssetID: $0) }
+                : []
         )
     }
 

@@ -49,7 +49,7 @@ protocol DailyQuestionChatServicing: Actor {
         body: String,
         photos: DailyQuestionChatPhotosPayload?,
         createThread: Bool,
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage
     /// Queues a voice message. The recording travels in the queued operation, so it
@@ -61,13 +61,24 @@ protocol DailyQuestionChatServicing: Actor {
         threadID: UUID?,
         voice: DailyQuestionChatVoicePayload,
         createThread: Bool,
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionChatMessage
     /// Replaces the text of the user's own message. The live message query brings the
     /// change to both phones. Throws `DailyQuestionChatEditWindowClosedError` once the
     /// server says the five minutes are over.
     func editMessage(messageID: UUID, body: String) async throws
+    /// Sets the user's emoji reaction to a message or an answer, or takes it back with nil,
+    /// then reads the messages or the question's days again so this phone has it.
+    /// `threadID` is the chat's thread, which a message always has.
+    func setReaction( // swiftlint:disable:this function_parameter_count
+        ownerUserID: UUID,
+        coupleID: UUID,
+        questionID: UUID,
+        threadID: UUID?,
+        item: DailyChatItemID,
+        emoji: String?
+    ) async throws
     /// Tells the partner's phone this person is typing in the chat, or has stopped.
     func setTyping(coupleID: UUID, questionID: UUID, isTyping: Bool) async
     /// Tells the server this person has read the thread up to `messageID`, for read receipts.
@@ -105,6 +116,18 @@ extension DailyQuestionChatServicing {
         throw DailyQuestionChatServiceError.unavailable
     }
 
+    // swiftlint:disable:next function_parameter_count
+    func setReaction(
+        ownerUserID _: UUID,
+        coupleID _: UUID,
+        questionID _: UUID,
+        threadID _: UUID?,
+        item _: DailyChatItemID,
+        emoji _: String?
+    ) throws {
+        throw DailyQuestionChatServiceError.unavailable
+    }
+
     func setTyping(coupleID _: UUID, questionID _: UUID, isTyping _: Bool) {}
     func markThreadReadOnServer(threadID _: UUID, messageID _: UUID) {}
     @discardableResult
@@ -121,7 +144,7 @@ extension DailyQuestionChatServicing {
         threadID _: UUID?,
         voice _: DailyQuestionChatVoicePayload,
         createThread _: Bool,
-        replyToMessageID _: UUID?,
+        replyTo _: DailyChatItemID?,
         operation _: SyncClientOperation
     ) throws -> DailyQuestionChatMessage { throw DailyQuestionChatServiceError.unavailable }
 
@@ -338,6 +361,27 @@ actor DailyQuestionChatService: DailyQuestionChatServicing {
                 throw DailyQuestionChatEditWindowClosedError()
             }
             throw error
+        }
+    }
+
+    // A reaction is not queued either. A failure puts the earlier reaction back on screen
+    // and says so, and the live query brings the change to both phones.
+    // swiftlint:disable:next function_parameter_count
+    func setReaction(
+        ownerUserID: UUID,
+        coupleID: UUID,
+        questionID: UUID,
+        threadID: UUID?,
+        item: DailyChatItemID,
+        emoji: String?
+    ) async throws {
+        try await gateway.setReaction(on: item, emoji: emoji)
+        switch item {
+        case .message:
+            guard let threadID else { return }
+            _ = try? await refreshMessages(ownerUserID: ownerUserID, questionID: questionID, threadID: threadID)
+        case .answer:
+            _ = try? await refreshRounds(ownerUserID: ownerUserID, coupleID: coupleID, questionID: questionID)
         }
     }
 

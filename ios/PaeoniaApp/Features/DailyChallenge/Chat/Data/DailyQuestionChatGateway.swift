@@ -22,10 +22,12 @@ protocol DailyQuestionChatGateway: Actor {
         threadID: UUID,
         body: String,
         mediaAssetIDs: [UUID],
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse
     func editMessage(messageID: UUID, body: String) async throws
+    /// Sets the user's reaction to a message or an answer, or takes it back with nil.
+    func setReaction(on item: DailyChatItemID, emoji: String?) async throws
     func setTyping(coupleID: UUID, questionID: UUID, isTyping: Bool) async throws
     func markThreadRead(threadID: UUID, messageID: UUID) async throws
     func markAnswerSeen(instanceID: UUID) async throws
@@ -42,6 +44,10 @@ extension DailyQuestionChatGateway {
     }
 
     func editMessage(messageID _: UUID, body _: String) throws {
+        throw DailyQuestionChatServiceError.unavailable
+    }
+
+    func setReaction(on _: DailyChatItemID, emoji _: String?) throws {
         throw DailyQuestionChatServiceError.unavailable
     }
 
@@ -215,7 +221,7 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
         threadID: UUID,
         body: String,
         mediaAssetIDs: [UUID],
-        replyToMessageID: UUID?,
+        replyTo: DailyChatItemID?,
         operation: SyncClientOperation
     ) async throws -> DailyQuestionThreadMessageResponse {
         try await PaeoniaSignedIn.require(isSignedIn)
@@ -225,11 +231,20 @@ actor LiveDailyQuestionChatGateway: DailyQuestionChatGateway {
                 threadID: threadID,
                 body: body,
                 mediaAssetIDs: mediaAssetIDs,
-                replyToMessageID: replyToMessageID,
+                replyTo: replyTo,
                 operation: operation
             )
         )
         guard let response = rows.first else { throw DailyQuestionChatServiceError.missingResponse }
         return response
+    }
+
+    func setReaction(on item: DailyChatItemID, emoji: String?) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+        let function = switch item {
+        case .message: "threads:set_thread_message_reaction"
+        case .answer: "dailyQuestionChat:set_daily_answer_reaction"
+        }
+        try await client.mutation(function, args: ReactionRequest(item: item, emoji: emoji))
     }
 }

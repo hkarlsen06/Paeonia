@@ -58,7 +58,7 @@ nonisolated extension DailyChatQuestionDocument {
             isSending: false,
             voice: index.flatMap { messages[$0].voice },
             photos: index.flatMap { messages[$0].photos },
-            replyToMessageID: index.flatMap { messages[$0].replyToMessageID }
+            replyTo: index.flatMap { messages[$0].replyTo }
         )
         if let index {
             messages[index] = confirmed

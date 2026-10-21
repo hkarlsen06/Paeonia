@@ -136,7 +136,7 @@ struct SendDailyChatMessageOperationHandler: PendingSyncOperationHandling {
                 threadID: threadID,
                 body: payload.body,
                 mediaAssetIDs: mediaAssetIDs,
-                replyToMessageID: payload.replyToMessageID,
+                replyTo: payload.replyTo,
                 operation: operation.operation
             )
         } catch {

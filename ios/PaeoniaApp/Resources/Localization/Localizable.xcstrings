@@ -8631,6 +8631,60 @@
         }
       }
     },
+    "dailyChat.error.reaction.failedMessage" : {
+      "comment" : "Banner message when a reaction could not be saved while the phone is online, so it must not blame the connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. Try again in a little while."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "dailyChat.error.reaction.message" : {
+      "comment" : "Banner message when a reaction could not be saved because the phone has no connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettet og prøv igjen."
+          }
+        }
+      }
+    },
+    "dailyChat.error.reaction.title" : {
+      "comment" : "Banner title when a reaction to a message or answer could not be saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your reaction"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre reaksjonen"
+          }
+        }
+      }
+    },
     "dailyChat.error.send.message" : {
       "comment" : "Message when a chat message could not be saved on this phone. The text stays in the message field.",
       "extractionState" : "manual",
@@ -8843,6 +8897,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bilde"
+          }
+        }
+      }
+    },
+    "dailyChat.reaction.add" : {
+      "comment" : "VoiceOver action on a message or answer in a question chat that adds an emoji reaction. %@ is the emoji.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "React with %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reager med %@"
+          }
+        }
+      }
+    },
+    "dailyChat.reaction.partner" : {
+      "comment" : "VoiceOver label for the partner's emoji reaction on a message or answer in a question chat. 1: partner name, 2: the emoji.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reacted %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reagerte med %2$@"
+          }
+        }
+      }
+    },
+    "dailyChat.reaction.remove" : {
+      "comment" : "VoiceOver action on a message or answer in a question chat that takes back the user's emoji reaction.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove your reaction"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern reaksjonen din"
+          }
+        }
+      }
+    },
+    "dailyChat.reaction.you" : {
+      "comment" : "VoiceOver label for the user's own emoji reaction on a message or answer in a question chat. %@ is the emoji.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You reacted %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du reagerte med %@"
+          }
+        }
+      }
+    },
+    "dailyChat.reply.answerTitle" : {
+      "comment" : "Shown in a quote above a chat message when the answer it replies to is no longer on the page.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An answer"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et svar"
+          }
+        }
+      }
+    },
+    "dailyChat.reply.answerUnavailable" : {
+      "comment" : "Shown in a quote when the answer a chat message replies to was removed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This answer isn't here anymore."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette svaret er ikke her lenger."
           }
         }
       }
