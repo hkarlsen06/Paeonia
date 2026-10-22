@@ -187,7 +187,9 @@
 
     init(store: DeveloperLocalFlowStore) { self.store = store }
 
-    func restoreSession() async throws -> AuthSession? { await store.restoredSession() }
+    func restoreSession() async throws -> RestoredSession? {
+      await store.restoredSession().map { RestoredSession(session: $0, access: nil) }
+    }
     func signInWithApple(_: AppleSignInCredential) async throws -> AuthSession {
       await store.signIn(provider: .apple)
     }

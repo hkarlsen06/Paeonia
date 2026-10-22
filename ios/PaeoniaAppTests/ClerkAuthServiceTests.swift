@@ -19,7 +19,7 @@ struct ClerkAuthServiceTests {
         )
         let service = ClerkAuthService(gateway: gateway)
 
-        let session = try await service.restoreSession()
+        let session = try await service.restoreSession()?.session
 
         #expect(session?.provider == .apple)
         #expect(session?.profileStatus == .needsOnboarding)
@@ -37,7 +37,7 @@ struct ClerkAuthServiceTests {
         )
         let service = ClerkAuthService(gateway: gateway)
 
-        let session = try await service.restoreSession()
+        let session = try await service.restoreSession()?.session
 
         #expect(session?.profileStatus == .needsOnboarding)
     }
@@ -49,7 +49,7 @@ struct ClerkAuthServiceTests {
         )
         let service = ClerkAuthService(gateway: gateway)
 
-        let session = try await service.restoreSession()
+        let session = try await service.restoreSession()?.session
 
         #expect(session?.displayName == "Oda")
         #expect(await gateway.updatedProfileDisplayName == nil)
@@ -65,9 +65,66 @@ struct ClerkAuthServiceTests {
         )
         let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
 
-        let restoredSession = try await service.restoreSession()
+        let restoredSession = try await service.restoreSession()?.session
 
         #expect(restoredSession == cachedSession)
+    }
+
+    @Test func restoreSessionReturnsTheAccessStateFromTheSameCall() async throws {
+        let userID = UUID()
+        let access = RemoteAccessSnapshot.pairedForFlowTest(ownerUserID: userID)
+        let gateway = FakeAuthGateway(
+            remoteSession: .test(provider: .apple),
+            profile: .test(onboardingCompletedAt: Date()),
+            launchAccess: access
+        )
+        let service = ClerkAuthService(gateway: gateway)
+
+        let restored = try await service.restoreSession()
+
+        #expect(restored?.access == access)
+    }
+
+    @Test func restoreSessionHasNoAccessStateWhenItFallsBackToTheCachedProfile() async throws {
+        let sessionCache = FakeAuthSessionCache(session: .test(profileStatus: .complete), accountID: "clerk-user")
+        let gateway = FakeAuthGateway(
+            remoteSession: .test(provider: .apple, accountID: "clerk-user"),
+            profile: .test(onboardingCompletedAt: Date()),
+            loadProfileError: URLError(.timedOut)
+        )
+        let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
+
+        let restored = try await service.restoreSession()
+
+        #expect(restored != nil)
+        #expect(restored?.access == nil)
+    }
+
+    @Test func savedSessionIsTheCachedProfileOfTheSignedInAccountOnly() async {
+        let cachedSession = AuthSession.test(profileStatus: .complete)
+        let sessionCache = FakeAuthSessionCache(session: cachedSession, accountID: "clerk-user")
+        let signedIn = ClerkAuthService(
+            gateway: FakeAuthGateway(
+                remoteSession: .test(provider: .apple, accountID: "clerk-user"),
+                profile: .test(onboardingCompletedAt: Date())
+            ),
+            sessionCache: sessionCache
+        )
+        let otherAccount = ClerkAuthService(
+            gateway: FakeAuthGateway(
+                remoteSession: .test(provider: .apple, accountID: "another-user"),
+                profile: .test(onboardingCompletedAt: Date())
+            ),
+            sessionCache: sessionCache
+        )
+        let signedOut = ClerkAuthService(
+            gateway: FakeAuthGateway(remoteSession: nil, profile: .test(onboardingCompletedAt: Date())),
+            sessionCache: sessionCache
+        )
+
+        #expect(await signedIn.savedSession() == cachedSession)
+        #expect(await otherAccount.savedSession() == nil)
+        #expect(await signedOut.savedSession() == nil)
     }
 
     @Test func restoreSessionDoesNotUseCachedProfileForAnotherUser() async {
@@ -99,7 +156,7 @@ struct ClerkAuthServiceTests {
         )
         let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
 
-        let restoredSession = try await service.restoreSession()
+        let restoredSession = try await service.restoreSession()?.session
 
         #expect(restoredSession == cachedSession)
         #expect(await sessionCache.currentSession == cachedSession)
@@ -163,7 +220,7 @@ struct ClerkAuthServiceTests {
         )
         let started = ContinuousClock.now
 
-        let restoredSession = try await service.restoreSession()
+        let restoredSession = try await service.restoreSession()?.session
 
         #expect(restoredSession == cachedSession)
         // The saved profile shortens the wait instead of holding the launch screen.
@@ -179,7 +236,7 @@ struct ClerkAuthServiceTests {
         await gateway.endSessionDuringProfileLoad()
         let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
 
-        let restoredSession = try await service.restoreSession()
+        let restoredSession = try await service.restoreSession()?.session
 
         #expect(restoredSession == nil)
         #expect(await sessionCache.currentSession == nil)
@@ -212,7 +269,7 @@ struct ClerkAuthServiceTests {
         )
         let service = ClerkAuthService(gateway: gateway, sessionCache: sessionCache)
 
-        let restoredSession = try await service.restoreSession()
+        let restoredSession = try await service.restoreSession()?.session
 
         #expect(restoredSession == nil)
         #expect(await sessionCache.currentSession == nil)

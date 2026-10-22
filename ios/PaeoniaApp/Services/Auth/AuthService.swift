@@ -11,8 +11,20 @@ enum AuthServiceError: Error, Equatable {
 
 // swiftlint:disable async_without_await
 
+/// A signed-in session restored at launch, with the access state the server
+/// answered in the same call.
+nonisolated struct RestoredSession: Equatable, Sendable {
+    let session: AuthSession
+    /// Nil when the server did not answer in time and `session` is the copy
+    /// saved on this phone. Access is then loaded with a second call.
+    let access: RemoteAccessSnapshot?
+}
+
 protocol AuthServicing: Actor {
-    func restoreSession() async throws -> AuthSession?
+    func restoreSession() async throws -> RestoredSession?
+    /// The session saved on this phone for the signed-in account, read without
+    /// a network call. Nil when nobody is signed in or nothing was saved.
+    func savedSession() async -> AuthSession?
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession
     func signInWithGoogle() async throws -> AuthSession
     func signInForDevelopment() async throws -> AuthSession
@@ -29,6 +41,12 @@ protocol AuthServicing: Actor {
     func requestAccountDeletion(appleAuthorizationCode: String?) async throws -> AccountDeletionOutcome
 }
 
+extension AuthServicing {
+    func savedSession() async -> AuthSession? {
+        nil
+    }
+}
+
 actor DevelopmentAuthService: AuthServicing {
     private var session: AuthSession?
 
@@ -36,8 +54,8 @@ actor DevelopmentAuthService: AuthServicing {
         self.session = initialSession
     }
 
-    func restoreSession() async throws -> AuthSession? {
-        session
+    func restoreSession() async throws -> RestoredSession? {
+        session.map { RestoredSession(session: $0, access: nil) }
     }
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {
@@ -149,7 +167,7 @@ actor UnavailableAuthService: AuthServicing {
         self.error = error
     }
 
-    func restoreSession() async throws -> AuthSession? {
+    func restoreSession() async throws -> RestoredSession? {
         throw error
     }
 

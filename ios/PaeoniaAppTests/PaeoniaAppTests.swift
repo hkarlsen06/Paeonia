@@ -1070,9 +1070,9 @@ private actor OrderedAuthService: AuthServicing {
         self.recorder = recorder
     }
 
-    func restoreSession() async throws -> AuthSession? {
+    func restoreSession() async throws -> RestoredSession? {
         recorder.record(.restoreSession)
-        return .test(profileStatus: .complete)
+        return RestoredSession(session: .test(profileStatus: .complete), access: nil)
     }
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {

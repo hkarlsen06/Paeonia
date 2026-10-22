@@ -25,12 +25,16 @@ struct PaeoniaApp: App {
         }
         let sessionIsActive: (@MainActor () -> Bool?)? = usesClerk ? Self.clerkSessionIsActive : nil
         let appleIsLinked: (@MainActor () async -> Bool)? = usesClerk ? ClerkSignInMethodLinker.appleIsLinked : nil
-        _rootViewModel = State(
-            initialValue: RootViewModel(
-                authProviderSessionIsActive: sessionIsActive,
-                appleIsLinked: appleIsLinked
-            )
+        let viewModel = RootViewModel(
+            authProviderSessionIsActive: sessionIsActive,
+            appleIsLinked: appleIsLinked
         )
+        if usesClerk, Self.opensProductionRoot {
+            // The launch call and its Clerk token take a while. Starting them now
+            // lets them run while the scene is set up, instead of after it.
+            viewModel.beginLaunch()
+        }
+        _rootViewModel = State(initialValue: viewModel)
         _locationViewModel = State(initialValue: LocationMapViewModel())
     }
 
@@ -71,6 +75,19 @@ struct PaeoniaApp: App {
     /// the same local stores the tests use, and slow every test run down.
     private static let isHostingUnitTests =
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
+    /// Whether the app opens the real root. Developer scenarios open their own
+    /// screens and must not start a sign-in check.
+    private static var opensProductionRoot: Bool {
+        #if DEBUG
+        if case .production = DeveloperScenarioLaunch.destination() {
+            return true
+        }
+        return false
+        #else
+        true
+        #endif
+    }
 
     @ViewBuilder
     private var appContent: some View {

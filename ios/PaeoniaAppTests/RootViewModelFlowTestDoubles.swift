@@ -30,12 +30,32 @@ extension AccessRouteResolution {
     }
 }
 
+extension RemoteAccessSnapshot {
+    /// Subscribed and not paired. Without the entitlement it would route to the paywall.
+    static func unpairedForFlowTest(ownerUserID: UUID) -> RemoteAccessSnapshot {
+        RemoteAccessSnapshot(
+            userEntitlement: AccessSyncSnapshot.testPaired(ownerUserID: ownerUserID).userEntitlement,
+            coupleEntitlement: nil,
+            relationshipState: nil
+        )
+    }
+
+    static func pairedForFlowTest(ownerUserID: UUID) -> RemoteAccessSnapshot {
+        let snapshot = AccessSyncSnapshot.testPaired(ownerUserID: ownerUserID)
+        return RemoteAccessSnapshot(
+            userEntitlement: snapshot.userEntitlement,
+            coupleEntitlement: snapshot.coupleEntitlement,
+            relationshipState: snapshot.relationshipState
+        )
+    }
+}
+
 /// Returns its resolutions in order (repeating the last) and can hold one call
 /// open until the test releases it.
 actor ScriptedAccessRouteService: AccessRouteServicing {
     private let resolutions: [AccessRouteResolution]
     private let blockedCall: Int?
-    private var callCount = 0
+    private(set) var callCount = 0
     private var blockedCallStarted = false
     private var startWaiters: [CheckedContinuation<Void, Never>] = []
     private var releaseContinuation: CheckedContinuation<Void, Never>?
@@ -87,24 +107,66 @@ actor FlowAuthService: AuthServicing {
     private let failsRestoreAfterFirst: Bool
     private var restoreCount = 0
 
+    /// What `savedSession()` returns: the copy saved on this phone.
+    private let storedSession: AuthSession?
+    /// The access state the launch call returns with the session.
+    private let launchAccess: RemoteAccessSnapshot?
+    private let restoreError: (any Error)?
+    private let gatesRestore: Bool
+    private var restoreStarted = false
+    private var restoreWaiters: [CheckedContinuation<Void, Never>] = []
+    private var restoreRelease: CheckedContinuation<Void, Never>?
+
     init(
         restoredSession: AuthSession? = nil,
         signInSession: AuthSession? = nil,
         gatesProfileUpdate: Bool = false,
-        failsRestoreAfterFirst: Bool = false
+        failsRestoreAfterFirst: Bool = false,
+        storedSession: AuthSession? = nil,
+        launchAccess: RemoteAccessSnapshot? = nil,
+        restoreError: (any Error)? = nil,
+        gatesRestore: Bool = false
     ) {
         self.session = restoredSession
         self.signInSession = signInSession
         self.gatesProfileUpdate = gatesProfileUpdate
         self.failsRestoreAfterFirst = failsRestoreAfterFirst
+        self.storedSession = storedSession
+        self.launchAccess = launchAccess
+        self.restoreError = restoreError
+        self.gatesRestore = gatesRestore
     }
 
-    func restoreSession() async throws -> AuthSession? {
+    func restoreSession() async throws -> RestoredSession? {
         restoreCount += 1
         if failsRestoreAfterFirst, restoreCount > 1 {
             throw FlowTestError.unavailable
         }
-        return session
+        if gatesRestore {
+            restoreStarted = true
+            restoreWaiters.forEach { $0.resume() }
+            restoreWaiters = []
+            await withCheckedContinuation { restoreRelease = $0 }
+        }
+        if let restoreError {
+            throw restoreError
+        }
+        return session.map { RestoredSession(session: $0, access: launchAccess) }
+    }
+
+    func savedSession() async -> AuthSession? {
+        storedSession
+    }
+
+    /// Returns once `restoreSession` is waiting for `releaseRestore`.
+    func waitForRestore() async {
+        guard !restoreStarted else { return }
+        await withCheckedContinuation { restoreWaiters.append($0) }
+    }
+
+    func releaseRestore() {
+        restoreRelease?.resume()
+        restoreRelease = nil
     }
 
     func signInWithApple(_: AppleSignInCredential) async throws -> AuthSession {

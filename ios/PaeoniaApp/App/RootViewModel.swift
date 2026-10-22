@@ -87,6 +87,11 @@ final class RootViewModel {
     /// signed-in user, started with sync and stopped on sign-out.
     @ObservationIgnored var accessObservation: (userID: UUID, task: Task<Void, Never>)?
     @ObservationIgnored private var opensWidgetDrawingWhenPaired = false
+    /// The session restore that `beginLaunch()` started. `refreshAuthRoute()`
+    /// takes it, so a launch awaits the call that is already running.
+    @ObservationIgnored var launchRestore: Task<Result<RestoredSession?, any Error>, Never>?
+    /// The saved state `beginLaunch()` read for the first frame of Home.
+    @ObservationIgnored var savedLaunchState: Task<SavedLaunchState?, Never>?
 
     /// True while the one-time celebration interstitial is presented above the
     /// paired state. The regular paired screen is shown once this is false.
@@ -153,7 +158,11 @@ final class RootViewModel {
 
     func start(deferringSyncUntilLaunchCompletes: Bool = false) async {
         watchAuthProviderSession()
-        _ = await privacyLifecycle.retryPending()
+        if await privacyLifecycle.retryPending() {
+            // A purge that is still pending could leave data of an ended
+            // relationship behind, so the saved state is not shown until it is done.
+            await showSavedLaunchPreview()
+        }
         await refreshAuthRoute()
         if !deferringSyncUntilLaunchCompletes {
             await startSyncIfNeeded()
@@ -257,27 +266,9 @@ final class RootViewModel {
         await startSyncIfNeeded()
     }
 
-    /// Restores the session at launch, or when no session is on screen.
-    func refreshAuthRoute() async {
-        do {
-            let session = try await authService.restoreSession()
-            await apply(AuthRoute(session: session))
-        } catch {
-            guard currentSession == nil else {
-                // Never sign someone out because a check failed. The live
-                // session watch notices a session that really ended.
-                logAuthError(error, notice: nil)
-                return
-            }
-            stopObservingAccessChanges()
-            invalidateAccessResolution()
-            leaveRelationshipSurfaces()
-            route = .signedOut
-            notice = .sessionLoadFailed
-        }
-    }
-
-    func apply(_ authRoute: AuthRoute) async {
+    /// `launchAccess` is the access state the restore already fetched. It saves
+    /// the second server call that resolving access would make.
+    func apply(_ authRoute: AuthRoute, launchAccess: RemoteAccessSnapshot? = nil) async {
         switch authRoute {
         case .signedOut:
             if currentSession != nil {
@@ -298,7 +289,7 @@ final class RootViewModel {
             route = .onboarding(session)
         case let .limitedAuthenticated(session):
             await clearDataFromAnotherAccount(before: session)
-            await resolveAccessRoute(for: session)
+            await resolveAccessRoute(for: session, launchAccess: launchAccess)
         }
     }
 

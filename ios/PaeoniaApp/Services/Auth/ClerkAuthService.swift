@@ -54,7 +54,7 @@ actor ClerkAuthService: AuthServicing {
         )
     }
 
-    func restoreSession() async throws -> AuthSession? {
+    func restoreSession() async throws -> RestoredSession? {
         guard let remoteSession = try await gateway.restoreSession() else {
             await sessionCache.clear()
             return nil
@@ -65,10 +65,10 @@ actor ClerkAuthService: AuthServicing {
             // below. With a cached profile to show, the launch waits much less.
             let hasCachedSession = await sessionCache.load(accountID: remoteSession.accountID) != nil
             let gateway = gateway
-            let profile = try await AuthNetworkDeadline.run(
+            let launch = try await AuthNetworkDeadline.run(
                 within: hasCachedSession ? cachedRestoreTimeout : restoreTimeout
             ) {
-                try await gateway.loadProfile()
+                try await gateway.loadLaunch()
             }
             // A sign-out can finish while the profile loads. Saving the profile
             // now would put the person back on a signed-in screen with no session.
@@ -76,18 +76,26 @@ actor ClerkAuthService: AuthServicing {
                 await sessionCache.clear()
                 return nil
             }
-            return await makeSession(remoteSession: remoteSession, profile: profile)
+            let session = await makeSession(remoteSession: remoteSession, profile: launch.profile)
+            return RestoredSession(session: session, access: launch.access)
         } catch {
             if error.isCancellation {
                 throw error
             }
             if AuthSessionFallbackPolicy.allowsCachedSession(for: error),
                let cachedSession = await sessionCache.load(accountID: remoteSession.accountID) {
-                return cachedSession
+                return RestoredSession(session: cachedSession, access: nil)
             }
             await sessionCache.clear()
             throw error
         }
+    }
+
+    func savedSession() async -> AuthSession? {
+        guard let remoteSession = await gateway.localSession() else {
+            return nil
+        }
+        return await sessionCache.load(accountID: remoteSession.accountID)
     }
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {

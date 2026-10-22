@@ -47,11 +47,22 @@ nonisolated struct RemoteProfile: Codable, Equatable, Sendable {
     }
 }
 
+/// What a cold launch needs from the server: the profile and the access state,
+/// answered by one call.
+nonisolated struct RemoteLaunch: Equatable, Sendable {
+    let profile: RemoteProfile
+    let access: RemoteAccessSnapshot
+}
+
 protocol AuthGateway: Actor {
     func restoreSession() async throws -> RemoteAuthSession?
+    /// The signed-in Clerk account stored on this phone, read without a network
+    /// call and without the debug sign-in ticket.
+    func localSession() async -> RemoteAuthSession?
     func signInWithApple(idToken: String) async throws -> RemoteAuthSession
     func signInWithGoogle() async throws -> RemoteAuthSession
     func loadProfile() async throws -> RemoteProfile
+    func loadLaunch() async throws -> RemoteLaunch
     func uploadProfilePhoto(
         userID: String,
         compressedImage: ImageCompressor.CompressedImage
@@ -88,6 +99,10 @@ actor LiveAuthGateway: AuthGateway {
         return await Self.activeClerkSession()
     }
 
+    func localSession() async -> RemoteAuthSession? {
+        await Self.activeClerkSession()
+    }
+
     func signInWithApple(idToken: String) async throws -> RemoteAuthSession {
         try await Self.signInWithClerk(fallbackProvider: .apple) {
             try await Clerk.shared.auth.signInWithIdToken(idToken, provider: .apple)
@@ -108,6 +123,16 @@ actor LiveAuthGateway: AuthGateway {
             throw AuthServiceError.noActiveSession
         }
         return row
+    }
+
+    func loadLaunch() async throws -> RemoteLaunch {
+        // Creates the user row and profile on the first signed-in call, like
+        // `loadProfile`, and returns the access state next to the profile.
+        let response: LaunchResponse = try await client.mutation("identity:launch")
+        guard let profile = response.profile else {
+            throw AuthServiceError.noActiveSession
+        }
+        return RemoteLaunch(profile: profile, access: response.access)
     }
 
     func completeProfileOnboarding(
@@ -378,6 +403,11 @@ private extension LiveAuthGateway {
 }
 
 // MARK: - Wire types
+
+nonisolated private struct LaunchResponse: Decodable {
+    let profile: RemoteProfile?
+    let access: RemoteAccessSnapshot
+}
 
 nonisolated private struct AccountDeletionStartResponse: Decodable {
     let authProvider: String

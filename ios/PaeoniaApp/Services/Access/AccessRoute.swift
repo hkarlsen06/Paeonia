@@ -109,6 +109,22 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
 }
 
 nonisolated struct AccessRouteResolver: Sendable {
+    /// The route and snapshot for what the server answered. `hasPendingInvite`
+    /// comes from this phone, since the server does not know about a saved code.
+    func resolution(
+        for access: RemoteAccessSnapshot,
+        hasPendingInvite: Bool
+    ) -> AccessRouteResolution {
+        let snapshot = AccessRouteSnapshot(
+            userEntitlement: access.userEntitlement,
+            coupleEntitlement: access.coupleEntitlement,
+            relationshipState: access.relationshipState,
+            hasPendingInvite: hasPendingInvite,
+            isBanned: access.isBanned
+        )
+        return AccessRouteResolution(route: route(for: snapshot), snapshot: snapshot)
+    }
+
     func route(for snapshot: AccessRouteSnapshot) -> AccessRoute {
         if snapshot.isBanned {
             return .accountClosed

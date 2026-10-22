@@ -3,12 +3,26 @@ import Foundation
 /// Access resolution: choosing the signed-in route from the server, the live
 /// access feed, or the snapshot saved on this phone, and running the privacy
 /// purge that an ended or paywalled relationship requires before it shows.
+/// The session and paired access state saved on this phone, read at launch.
+nonisolated struct SavedLaunchState: Sendable {
+    let session: AuthSession
+    let resolution: AccessRouteResolution
+}
+
 extension RootViewModel {
-    func resolveAccessRoute(for session: AuthSession) async {
+    /// `launchAccess` is the access state the launch call already returned. With
+    /// it the route settles without another server call.
+    func resolveAccessRoute(for session: AuthSession, launchAccess: RemoteAccessSnapshot? = nil) async {
         let generation = beginAccessResolution()
         let previous = route.accessResolution
         route = .resolvingAccess(session, previous: previous, holding: route.appState)
         let hasPendingInvite = inviteStore.loadInvite(for: session.id) != nil
+
+        if let launchAccess {
+            let resolution = AccessRouteResolver().resolution(for: launchAccess, hasPendingInvite: hasPendingInvite)
+            await finishAccessResolution(generation, resolution: resolution, for: session)
+            return
+        }
 
         guard let accessRouteService else {
             let fallback = await fallbackAccessResolution(for: session, previous: previous)
@@ -31,6 +45,48 @@ extension RootViewModel {
         }
         savedPreview?.cancel()
         await finishAccessResolution(generation, resolution: resolution, for: session)
+    }
+
+    /// Cold launch with a session and a saved paired access state on this phone:
+    /// shows Home on the first frame, before the server answers. Like the preview
+    /// after `savedAccessGracePeriod`, it only changes what is visible. It does
+    /// not commit the route, purge, or celebrate. The launch result (or the live
+    /// feed) settles all of that, and a different answer moves the person off
+    /// Home. Every other saved state keeps waiting for the server, since a
+    /// wrong paywall, onboarding or invite screen is worse than a short wait.
+    func showSavedLaunchPreview() async {
+        let pending = savedLaunchState ?? Task { await loadSavedLaunchState() }
+        savedLaunchState = nil
+        guard case .launching = route,
+              let saved = await pending.value,
+              // The read suspended. Only the first, empty launch route may be replaced.
+              case .launching = route,
+              inFlightAccessPrivacyPurge == nil
+        else {
+            return
+        }
+
+        route = .resolvingAccess(saved.session, previous: saved.resolution, holding: .launching)
+    }
+
+    /// The saved session and paired access state to open Home with, or nil. It
+    /// needs the signed-in account's saved session, a saved snapshot that routes
+    /// to `.paired`, and local data that belongs to this account.
+    func loadSavedLaunchState() async -> SavedLaunchState? {
+        guard let session = await authService.savedSession(),
+              session.profileStatus == .complete,
+              let owner = deviceOwnerStore.ownerUserID,
+              AuthUserIdentity.matches(owner, session.id),
+              let resolution = await syncedAccessResolution(
+                for: session,
+                hasPendingInvite: inviteStore.loadInvite(for: session.id) != nil
+              ),
+              resolution.route == .paired
+        else {
+            return nil
+        }
+
+        return SavedLaunchState(session: session, resolution: resolution)
     }
 
     /// After `savedAccessGracePeriod`, shows a saved paired snapshot as the

@@ -32,9 +32,9 @@ actor AuthServiceSpy: AuthServicing {
         self.accountDeletionOutcome = accountDeletionOutcome
     }
 
-    func restoreSession() async throws -> AuthSession? {
+    func restoreSession() async throws -> RestoredSession? {
         try failIfNeeded(.restoreSession)
-        return session
+        return session.map { RestoredSession(session: $0, access: nil) }
     }
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {
@@ -166,8 +166,8 @@ actor BlockingDeleteAuthService: AuthServicing {
         deleteReleaseContinuation = nil
     }
 
-    func restoreSession() async throws -> AuthSession? {
-        session
+    func restoreSession() async throws -> RestoredSession? {
+        session.map { RestoredSession(session: $0, access: nil) }
     }
 
     func signInWithApple(_ credential: AppleSignInCredential) async throws -> AuthSession {

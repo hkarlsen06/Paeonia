@@ -8,6 +8,8 @@ actor FakeAuthGateway: AuthGateway {
     /// Ends the Clerk session while `loadProfile` is in flight, like a sign-out tapped meanwhile.
     private var endsSessionDuringProfileLoad = false
     private var profile: RemoteProfile
+    /// What `loadLaunch` returns next to the profile.
+    private let launchAccess: RemoteAccessSnapshot
     private let profilePhotoAssetID: UUID
     private(set) var appleIDToken: String?
     private(set) var updatedProfileDisplayName: String?
@@ -36,6 +38,7 @@ actor FakeAuthGateway: AuthGateway {
         remoteSession: RemoteAuthSession?,
         profile: RemoteProfile,
         profilePhotoAssetID: UUID? = nil,
+        launchAccess: RemoteAccessSnapshot = .unpairedForFlowTest(ownerUserID: UUID()),
         uploadShouldFail: Bool = false,
         loadProfileError: (any Error)? = nil,
         loadProfileDelay: Duration? = nil,
@@ -47,6 +50,7 @@ actor FakeAuthGateway: AuthGateway {
     ) {
         self.remoteSession = remoteSession
         self.profile = profile
+        self.launchAccess = launchAccess
         self.profilePhotoAssetID = profilePhotoAssetID
             ?? UUID(uuidString: "A6B39D76-11D0-4A4D-8B77-5AF09A9E85E1")
             ?? UUID()
@@ -61,6 +65,10 @@ actor FakeAuthGateway: AuthGateway {
     }
 
     func restoreSession() async throws -> RemoteAuthSession? {
+        remoteSession
+    }
+
+    func localSession() async -> RemoteAuthSession? {
         remoteSession
     }
 
@@ -84,6 +92,10 @@ actor FakeAuthGateway: AuthGateway {
             remoteSession = nil
         }
         return profile
+    }
+
+    func loadLaunch() async throws -> RemoteLaunch {
+        RemoteLaunch(profile: try await loadProfile(), access: launchAccess)
     }
 
     func endSessionDuringProfileLoad() {

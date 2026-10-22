@@ -26,18 +26,7 @@ actor RemoteAccessRouteService: AccessRouteServicing {
 
     func resolveAccess(hasPendingInvite: Bool = false) async throws -> AccessRouteResolution {
         let accessSnapshot = try await gateway.loadAccessSnapshot()
-        let snapshot = AccessRouteSnapshot(
-            userEntitlement: accessSnapshot.userEntitlement,
-            coupleEntitlement: accessSnapshot.coupleEntitlement,
-            relationshipState: accessSnapshot.relationshipState,
-            hasPendingInvite: hasPendingInvite,
-            isBanned: accessSnapshot.isBanned
-        )
-
-        return AccessRouteResolution(
-            route: resolver.route(for: snapshot),
-            snapshot: snapshot
-        )
+        return resolver.resolution(for: accessSnapshot, hasPendingInvite: hasPendingInvite)
     }
 
     func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws {

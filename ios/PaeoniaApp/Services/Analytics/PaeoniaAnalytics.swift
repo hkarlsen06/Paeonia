@@ -35,6 +35,7 @@ enum PaeoniaAnalytics {
         "identity:create_privacy_request",
         "identity:delete_account",
         "identity:ensure_current_user",
+        "identity:launch",
         "identity:register_user_device",
         "identity:request_account_deletion",
         "location:update_latest_partner_location",
