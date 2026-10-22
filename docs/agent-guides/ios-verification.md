@@ -13,15 +13,15 @@ Prefer the UI test when the bug would show on screen, and the integration test w
 
 ## iOS Build And Test Commands
 
-Agents do not build just to check that a change compiles. The developer runs several agents in parallel and builds on their own device, which catches compile errors and warnings. Extra agent builds slow that loop down and fight over the simulator and DerivedData. Do not work around this with scratch copies of the repo or loops that wait for another agent's build.
+Agents build, run tests and drive the app themselves to prove a change works. Work in your own git worktree off `main`, and run every build and test through the wrappers below.
 
 To fix a compiler warning or error that reading the code can't settle, reproduce it in a small standalone file and run `scripts/swift-typecheck <file>`. It uses the app target's Swift settings and finishes in seconds. Try candidate fixes in the same file.
 
-Building and running the app on the shared simulator is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Never use a connected iPhone or iPad. [Devices And Simulators](../../AGENTS.md#devices-and-simulators) names the simulators to use.
+Drive the app on the shared simulator to see a change that shows on screen, such as a layout, animation, or navigation change. Never use a connected iPhone or iPad. [Devices And Simulators](../../AGENTS.md#devices-and-simulators) names the simulators to use.
 
-Do not run iOS tests without asking. Backend tests are fine to run any time. If you think a test run is needed, ask the developer. They run tests once all agents have finished. In the handoff, list what you did not verify and what to check on the device.
+Run the iOS tests that cover your change. Backend tests are fine to run any time.
 
-The developer uses these wrappers from the repository root:
+Run these wrappers from the repository root:
 
 ```bash
 ./scripts/xcode-build-agent.sh
