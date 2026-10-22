@@ -54,7 +54,17 @@ enum PaeoniaAnalytics {
     /// PostHog's files before anything starts.
     private static let deletesLocalDataKey = "analytics.deletesLocalDataOnLaunch"
 
-    /// PostHog is running in this process. It cannot be stopped again, only muted.
+    /// Every PostHog call runs here, one after another and off the main thread.
+    /// `PostHogSDK.setup` takes about 90 ms (the crash reporter walks every loaded
+    /// image), and PostHog's own locks make its calls safe from any thread. A
+    /// single serial queue keeps them in the order the app made them, so an opt-out
+    /// can never run before the setup it follows. Nothing leaves the phone while
+    /// `AnalyticsUploadGate` is closed, and the app closes it on the main thread
+    /// before it queues an opt-out.
+    nonisolated private static let sdkQueue = DispatchQueue(label: "no.paeonia.analytics", qos: .utility)
+
+    /// PostHog is running, or its setup is queued, in this process. It cannot be
+    /// stopped again, only muted.
     private static var isRunning = false
     /// The paired person whose use is counted, if they said yes.
     private static var sharingUserID: String?
@@ -101,7 +111,9 @@ enum PaeoniaAnalytics {
         guard isActive else {
             return
         }
-        PostHogSDK.shared.screen(name)
+        sdkQueue.async {
+            PostHogSDK.shared.screen(name)
+        }
     }
 
     /// Whether this build sends anything at all, so the app can skip the
@@ -123,29 +135,34 @@ enum PaeoniaAnalytics {
             if isRunning {
                 // Stops new events and crash reports. The gate holds back what
                 // PostHog queued earlier.
-                PostHogSDK.shared.optOut()
+                sdkQueue.async {
+                    PostHogSDK.shared.optOut()
+                }
             }
             return
         }
-        if !isRunning {
-            start(projectKey: key)
+        let startsNow = !isRunning
+        if startsNow {
+            isRunning = true
+            PaeoniaConvexClient.setWriteObserver { path in
+                guard !uncountedFunctions.contains(path) else {
+                    return
+                }
+                sdkQueue.async {
+                    PostHogSDK.shared.capture(path)
+                }
+            }
         }
-        let sdk = PostHogSDK.shared
-        sdk.optIn()
-        // `identify` keeps an earlier person it was given, so a different
-        // person starts from a fresh anonymous visitor first.
-        let distinctID = sdk.getDistinctId()
-        if distinctID != sdk.getAnonymousId(), distinctID != userID {
-            sdk.reset()
+        sdkQueue.async {
+            if startsNow {
+                start(projectKey: key)
+            }
+            identify(userID)
         }
-        sdk.identify(userID)
-        #if DEBUG
-        sdk.register(["debug_build": true])
-        #endif
         AnalyticsUploadGate.isOpen.withLock { $0 = true }
     }
 
-    private static func start(projectKey: String) {
+    nonisolated private static func start(projectKey: String) {
         let config = PostHogConfig(projectToken: projectKey, host: "https://eu.i.posthog.com")
         // Screens are named by the app (`View.analyticsScreen`), because the
         // automatic names are SwiftUI's internal type names.
@@ -165,14 +182,21 @@ enum PaeoniaAnalytics {
         config.urlSessionConfiguration = session
 
         PostHogSDK.shared.setup(config)
-        isRunning = true
+    }
 
-        PaeoniaConvexClient.setWriteObserver { path in
-            guard !uncountedFunctions.contains(path) else {
-                return
-            }
-            PostHogSDK.shared.capture(path)
+    nonisolated private static func identify(_ userID: String) {
+        let sdk = PostHogSDK.shared
+        sdk.optIn()
+        // `identify` keeps an earlier person it was given, so a different
+        // person starts from a fresh anonymous visitor first.
+        let distinctID = sdk.getDistinctId()
+        if distinctID != sdk.getAnonymousId(), distinctID != userID {
+            sdk.reset()
         }
+        sdk.identify(userID)
+        #if DEBUG
+        sdk.register(["debug_build": true])
+        #endif
     }
 
     /// Deletes PostHog's files: queued events, the stored identity, and the crash
