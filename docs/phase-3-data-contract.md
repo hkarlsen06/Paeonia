@@ -1621,7 +1621,7 @@ Backend validation responsibilities:
 
 Each partner unlocks three random questions for the couple day anchored to the user in the earliest timezone.
 
-The two partners do not have to receive the same three questions.
+The two partners never receive the same question on the same couple day. Seeding and shuffles skip every question already on that day, the partner's included.
 
 Each user's daily challenge is to answer three of their own assigned questions.
 
@@ -1634,7 +1634,7 @@ Shuffling rules:
 - A user can shuffle unanswered slots up to 5 total times per daily challenge.
 - The 5-shuffle limit spans all three assigned slots, not each slot separately.
 
-When one partner answers one of their assigned questions, that question appears in the other partner's answered-questions screen. The other partner can answer it even if it was not part of their original three. If both partners received different questions, each partner can therefore answer up to six daily questions: their own three plus the partner's three.
+When one partner answers one of their assigned questions, that question appears in the other partner's answered-questions screen. The other partner can answer it even if it was not part of their original three. Because the partners never share a question on a day, each partner can therefore answer up to six daily questions: their own three plus the partner's three.
 
 Recommended tables:
 
@@ -1687,9 +1687,8 @@ Rules:
 - Use a partial unique index for active slots.
 - `seeded_for_user_id` must be an active member of the couple.
 - Each active member gets three instances per couple day.
-- The same question may be selected for both partners on the same couple day.
+- A question appears at most once per couple day across both partners' seeded sets, shuffled-away instances included.
 - Reveal is per `daily_question_instance`, not per stable question identity.
-- If the same question appears in both partners' seeded sets on the same day, each instance is still answered/revealed independently.
 - A user's daily challenge is complete when the user has answered all three instances seeded for them, and `daily_challenges.completed_at` is set.
 - A user can answer partner-seeded instances from the answered-questions screen.
 - Answering partner-seeded instances does not replace the user's own three-question challenge.
