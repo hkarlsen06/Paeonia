@@ -7,6 +7,9 @@ import SwiftUI
 extension DrawAndGuessViewModel {
     // MARK: - Loading
 
+    /// The waits before each new try of a drawing download that failed.
+    static let drawingDownloadRetryDelays: [Duration] = [.seconds(1), .seconds(3)]
+
     /// Fetches the sent drawing file, for the guesser to replay and for the drawer's
     /// own screen after a relaunch. It waits while the screen is closed or the
     /// app is in the background.
@@ -29,8 +32,15 @@ extension DrawAndGuessViewModel {
         }
         isLoadingDrawing = true
         let transfer = dependencies.drawingTransfer
-        drawingLoadTask = Task { [weak self] in
-            let data = try? await transfer.downloadDrawing(mediaAssetID: assetID)
+        drawingLoadTask = Task { [weak self, sleep] in
+            // A finished round gets no later change that would fetch it again,
+            // so a dropped download is tried again here.
+            var data = try? await transfer.downloadDrawing(mediaAssetID: assetID)
+            for delay in Self.drawingDownloadRetryDelays where data == nil {
+                do { try await sleep(delay) } catch { return }
+                guard !Task.isCancelled, self?.loadingAssetID == assetID else { return }
+                data = try? await transfer.downloadDrawing(mediaAssetID: assetID)
+            }
             guard !Task.isCancelled else { return }
             self?.finishLoading(assetID: assetID, ownerUserID: userID, data: data, isDownloaded: true)
         }
@@ -74,7 +84,8 @@ extension DrawAndGuessViewModel {
             dependencies.drawingStore.saveDownloadedDrawing(data, mediaAssetID: assetID)
         }
         guard let data, let decoded = try? PKDrawing(data: data) else {
-            // The next state change tries again, so a phone that was offline recovers.
+            // Every try failed. "Try again", the screen coming back, or the next
+            // state change fetches it again.
             drawingLoadFailed = round?.drawingMediaAssetID == assetID
             return
         }
