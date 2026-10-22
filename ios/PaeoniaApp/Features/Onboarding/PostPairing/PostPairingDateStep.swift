@@ -50,29 +50,33 @@ struct PostPairingDateStep: View {
     }
 
     var body: some View {
-        content
-            .id(phaseID)
-            .transition(.opacity)
-            .animation(PaeoniaMotion.meaningfulMoment, value: phaseID)
-            .task {
-                milestone.setSyncAfterLocalChange { await syncAfterLocalChange() }
-                await milestone.configure(ownerUserID: ownerUserID, serverStartedOn: serverStartedOn)
+        // The animation sits outside the view that changes identity, so the old phase
+        // fades out instead of vanishing.
+        ZStack {
+            content
+                .id(phaseID)
+                .transition(.opacity)
+        }
+        .animation(PaeoniaMotion.meaningfulMoment, value: phaseID)
+        .task {
+            milestone.setSyncAfterLocalChange { await syncAfterLocalChange() }
+            await milestone.configure(ownerUserID: ownerUserID, serverStartedOn: serverStartedOn)
+        }
+        .onChange(of: milestone.error) { _, error in
+            guard let error else {
+                return
             }
-            .onChange(of: milestone.error) { _, error in
-                guard let error else {
-                    return
-                }
-                bannerCenter.show(.error(message: error.message))
-                milestone.clearError()
-            }
-            .sheet(isPresented: $isEditorPresented) {
-                RelationshipDateEditorView(
-                    selectedDate: $editorDate,
-                    isEditing: true,
-                    isSaving: milestone.isSaving,
-                    onSave: save
-                )
-            }
+            bannerCenter.show(.error(message: error.message))
+            milestone.clearError()
+        }
+        .sheet(isPresented: $isEditorPresented) {
+            RelationshipDateEditorView(
+                selectedDate: $editorDate,
+                isEditing: true,
+                isSaving: milestone.isSaving,
+                onSave: save
+            )
+        }
     }
 
     private var phaseID: Int {

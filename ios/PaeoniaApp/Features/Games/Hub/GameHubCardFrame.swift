@@ -153,7 +153,9 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
                 PaeoniaHaptics.gameContinued()
                 open()
             } label: {
+                // Redacted like the name and status, since the loading title is a guess.
                 Text(actionTitle)
+                    .redacted(reason: isLoading ? .placeholder : [])
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(isLoading)
