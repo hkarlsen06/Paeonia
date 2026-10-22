@@ -40,8 +40,6 @@ struct ThreadChatView: View {
     @State private var projectionStore = ThreadChatProjectionStore()
     @State private var timestampReveal = ThreadChatTimestampReveal()
     @State private var highlightedRowID: String?
-    /// The partner's answer row while it plays its reveal.
-    @State private var revealingRowID: String?
     /// Where the list scrolls next. Nil keeps the list where it is.
     @State private var scrollTarget: ScrollToParams?
     @State private var didApplyOpeningScroll = false
@@ -49,8 +47,6 @@ struct ThreadChatView: View {
     /// when the list does.
     @State private var openedWithoutRounds = false
     @State private var didRevealPartnerAnswer = false
-    /// The day whose partner-choice match plays its celebration, while the reveal plays.
-    @State private var celebratingInstanceID: UUID?
 
     init(
         viewModel: ThreadChatViewModel,
@@ -108,7 +104,7 @@ struct ThreadChatView: View {
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .onChange(of: viewModel.hasReadStore) { applyOpeningScroll() }
         .onChange(of: viewModel.hasLoadedRounds) { applyOpeningScroll() }
-        .onChange(of: revealedPartnerAnswerRowID, initial: true) { revealPartnerAnswer() }
+        .onChange(of: revealingRowID, initial: true) { finishRevealAfterItPlays() }
         .paeoniaImageViewer(selection: $photoViewer)
         .dailyChatDeleteConfirmation(viewModel: viewModel)
     }
@@ -411,25 +407,24 @@ extension ThreadChatView {
         return round
     }
 
-    /// The partner's answer row of that day once the chat shows it.
-    private var revealedPartnerAnswerRowID: String? {
-        revealedRound?.partnerAnswerDetail.map { ThreadChatProjection.answerRowID(for: $0.answerID) }
+    /// A partner's answer the user hasn't seen is the payoff, so its bubble plays the
+    /// reveal, haptics included (`dailyChatAnswerReveal`). It is worked out in the body,
+    /// not set after the page shows, so the bubble is hidden from its first frame.
+    private var revealingRowID: String? {
+        guard viewModel.revealsPartnerAnswer, !didRevealPartnerAnswer else { return nil }
+        return revealedRound?.partnerAnswerDetail.map { ThreadChatProjection.answerRowID(for: $0.answerID) }
     }
 
-    /// A partner's answer the user hasn't seen is the payoff, so its bubble plays the
-    /// reveal, haptics included (`dailyChatAnswerReveal`). A partner-choice match plays
-    /// its small celebration with it.
-    private func revealPartnerAnswer() {
-        guard viewModel.revealsPartnerAnswer, !didRevealPartnerAnswer,
-              let rowID = revealedPartnerAnswerRowID
-        else { return }
-        didRevealPartnerAnswer = true
-        celebratingInstanceID = revealedRound?.id
-        revealingRowID = rowID
+    /// The day whose partner-choice match plays its small celebration with the reveal.
+    private var celebratingInstanceID: UUID? {
+        revealingRowID == nil ? nil : revealedRound?.id
+    }
+
+    private func finishRevealAfterItPlays() {
+        guard revealingRowID != nil else { return }
         Task { @MainActor in
             try? await Task.sleep(for: Self.revealDuration)
-            if revealingRowID == rowID { revealingRowID = nil }
-            celebratingInstanceID = nil
+            didRevealPartnerAnswer = true
         }
     }
 
