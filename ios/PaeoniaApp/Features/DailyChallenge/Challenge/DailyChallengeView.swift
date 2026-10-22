@@ -264,7 +264,7 @@ struct DailyChallengeScreen: View {
     /// it opens complete with nothing moving in after.
     private func openChat(_ question: DailyChallengeQuestion) {
         guard !isOpeningChat else { return }
-        isOpeningChat = true
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { isOpeningChat = true }
         Task {
             await viewModel.prepareChat(for: question)
             await Task.yield()
