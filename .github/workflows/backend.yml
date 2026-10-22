@@ -14,7 +14,7 @@ on:
 
 jobs:
   convex:
-    runs-on: ubuntu-latest
+    runs-on: one-m
     defaults:
       run:
         working-directory: backend
