@@ -138,7 +138,8 @@ struct HomeWidgetCard: View {
         .accessibilityHint(Text(.homeWidgetCardHint))
         .accessibilityAddTraits(.isButton)
         // Beside the card's button, not inside it, so a tap on the reaction does not open the drawing.
-        .overlay(alignment: .topTrailing) {
+        // At the bottom, because at the top it covers the header's name and time.
+        .overlay(alignment: .bottomTrailing) {
             WidgetDrawingReactionControl(shownRevisionID: model.content.revisionID)
                 .padding(PaeoniaSpacing.space4)
         }
