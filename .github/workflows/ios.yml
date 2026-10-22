@@ -6,6 +6,7 @@ on:
       - "ios/**"
       - "scripts/xcode-*-agent.sh"
       - "scripts/lock"
+      - "scripts/lib/**"
       - ".swiftlint.yml"
       - ".github/workflows/ios.yml"
   push:
@@ -15,6 +16,7 @@ on:
       - "ios/**"
       - "scripts/xcode-*-agent.sh"
       - "scripts/lock"
+      - "scripts/lib/**"
       - ".swiftlint.yml"
       - ".github/workflows/ios.yml"
 
