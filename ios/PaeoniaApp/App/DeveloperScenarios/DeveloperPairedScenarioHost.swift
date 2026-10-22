@@ -16,11 +16,12 @@
     init(scenario: DeveloperScenario) {
       self.scenario = scenario
       let operationProvider = DeveloperScenarioOperationProvider()
-      let dailyService = DeveloperDailyChallengeService(mode: .mode(for: scenario))
       let pendingOperationStore: any PendingSyncOperationPersisting =
         scenario == .questionsOfflineQueued
         ? DeveloperOfflineDailyOperationStore()
         : InMemoryPendingSyncOperationRepository()
+      let dailyService = DeveloperDailyChallengeService(
+        mode: .mode(for: scenario), pendingOperationStore: pendingOperationStore)
       _selection = State(initialValue: Self.initialTab(for: scenario))
       _deepLink = State(
         initialValue: scenario == .questionAnswerFlow

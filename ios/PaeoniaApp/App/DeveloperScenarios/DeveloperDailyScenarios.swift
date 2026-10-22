@@ -26,9 +26,12 @@
 
     private let mode: Mode
     private let base = PreviewDailyChallengeService()
+    private let pendingOperationStore: any PendingSyncOperationPersisting
+    private var today: DailyChallengeLoadResult?
 
-    init(mode: Mode) {
+    init(mode: Mode, pendingOperationStore: any PendingSyncOperationPersisting) {
       self.mode = mode
+      self.pendingOperationStore = pendingOperationStore
     }
 
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
@@ -44,7 +47,7 @@
           streak: .none
         )
       case .unanswered:
-        return try await base.loadToday(currentUserID: currentUserID)
+        return try await todayLandingQueuedAnswers(currentUserID: currentUserID)
       case .offline:
         return offlineResult(currentUserID: currentUserID)
       case .partial:
@@ -53,6 +56,44 @@
       case .revealed:
         return revealedResult(currentUserID: currentUserID)
       }
+    }
+
+    /// Stands in for the outbox and the server, which the scenarios don't run. Today's
+    /// questions keep their ids across loads, and an answer queued since the last load
+    /// lands on its question and unlocks the partner's answer.
+    private func todayLandingQueuedAnswers(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+      let loaded: DailyChallengeLoadResult
+      if let today {
+        loaded = today
+      } else {
+        loaded = try await base.loadToday(currentUserID: currentUserID)
+      }
+      var questions = loaded.snapshot.questions
+      let operations = try await pendingOperationStore.inFlightOperations(
+        ownerUserID: currentUserID,
+        kind: .submitDailyAnswer
+      )
+      for operation in operations {
+        guard
+          let data = operation.requestData,
+          let payload = try? JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data),
+          let index = questions.firstIndex(where: { $0.id == payload.instanceID }),
+          let ownDetail = payload.ownAnswerDetail(currentUserID: currentUserID)
+        else { continue }
+        questions[index] = questions[index].answered(with: ownDetail)
+        try await pendingOperationStore.markSucceeded(clientOperationID: operation.operation.id, at: Date())
+      }
+      let result = DailyChallengeLoadResult(
+        snapshot: DailyChallengeSnapshot(
+          currentUserID: currentUserID,
+          coupleDayID: loaded.snapshot.coupleDayID,
+          questions: questions,
+          refreshedAt: loaded.snapshot.refreshedAt
+        ),
+        streak: loaded.streak
+      )
+      today = result
+      return result
     }
 
     private func offlineResult(currentUserID: UUID) -> DailyChallengeLoadResult {
@@ -198,6 +239,86 @@
           refreshedAt: result.snapshot.refreshedAt
         ),
         streak: healthyStreak
+      )
+    }
+  }
+
+  private nonisolated extension DailySubmitAnswerOperationPayload {
+    func ownAnswerDetail(currentUserID: UUID) -> DailyQuestionAnswerDetail? {
+      var text: String?
+      var selectedUserID: UUID?
+      var option: DailyAnswerOption?
+      switch content {
+      case let .text(body):
+        text = body
+      case let .partnerChoice(userID):
+        selectedUserID = userID
+      case let .textAndPartnerChoice(body, userID):
+        text = body
+        selectedUserID = userID
+      case let .optionChoice(choice):
+        option = choice
+      case let .textAndOptionChoice(body, choice):
+        text = body
+        option = choice
+      case .media, .textAndMedia:
+        // Nothing is uploaded here, so a photo or voice answer stays sending and keeps
+        // showing the copy saved on this phone.
+        return nil
+      }
+      return DailyQuestionAnswerDetail(
+        answerUserID: currentUserID,
+        answerID: answerID,
+        answeredAt: Date(),
+        isOwnAnswer: true,
+        canViewAnswer: true,
+        textBody: text,
+        selectedUserID: selectedUserID,
+        mediaAssetIDs: [],
+        selectedOption: option
+      )
+    }
+  }
+
+  private nonisolated extension DailyChallengeQuestion {
+    func answered(with ownDetail: DailyQuestionAnswerDetail) -> DailyChallengeQuestion {
+      let partnerDetail = partnerAnswer.map { summary in
+        DailyQuestionAnswerDetail(
+          answerUserID: DeveloperScenarioFixture.partnerUserID,
+          answerID: summary.id,
+          answeredAt: summary.answeredAt,
+          isOwnAnswer: false,
+          canViewAnswer: true,
+          textBody: "The lake walk when it started pouring and we just kept going.",
+          selectedUserID: nil,
+          mediaAssetIDs: []
+        )
+      }
+      return DailyChallengeQuestion(
+        id: id,
+        coupleDayID: coupleDayID,
+        coupleID: coupleID,
+        localDate: localDate,
+        effectiveLocalDate: effectiveLocalDate,
+        startsAt: startsAt,
+        endsAt: endsAt,
+        seededForUserID: seededForUserID,
+        slotNumber: slotNumber,
+        status: origin == .own ? .answered : status,
+        questionID: questionID,
+        questionVersionID: questionVersionID,
+        questionKey: questionKey,
+        prompt: prompt,
+        shortPrompt: shortPrompt,
+        answerKinds: answerKinds,
+        ownAnswer: DailyQuestionAnswerSummary(id: ownDetail.answerID, answeredAt: ownDetail.answeredAt),
+        partnerAnswer: partnerAnswer,
+        canViewPartnerAnswer: partnerDetail != nil,
+        ownAnswerDetail: ownDetail,
+        partnerAnswerDetail: partnerDetail,
+        origin: origin,
+        isCurrentDay: isCurrentDay,
+        hasSharedRound: partnerDetail != nil
       )
     }
   }
