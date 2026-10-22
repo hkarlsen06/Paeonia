@@ -98,7 +98,10 @@
         now: { DeveloperScenarioFixture.now }
       )
       let dailyViewModel = DailyChallengeViewModel(
-        service: DeveloperDailyChallengeService(mode: .unanswered),
+        service: DeveloperDailyChallengeService(
+          mode: .unanswered,
+          pendingOperationStore: pendingOperationStore
+        ),
         operationProvider: operationProvider,
         draftStore: DeveloperLocalFlowDailyDraftStore(),
         mediaDraftStore: DeveloperLocalFlowMediaDraftStore(),
