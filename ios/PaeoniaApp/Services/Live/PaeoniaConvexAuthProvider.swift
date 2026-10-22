@@ -27,8 +27,6 @@ nonisolated enum PaeoniaConvexAuthError: Error {
 /// `logout()` signs out of Clerk, so never call `logout()` on the client.
 @MainActor
 final class PaeoniaConvexAuthProvider: ConvexMobile.AuthProvider {
-    static let tokenTemplate = "convex"
-
     private var onIdToken: (@Sendable (String?) -> Void)?
     /// Changes with every logout. A token fetched before a logout, or for a session
     /// that is no longer Clerk's current one, is thrown away, so a slow fetch can never
@@ -99,7 +97,7 @@ final class PaeoniaConvexAuthProvider: ConvexMobile.AuthProvider {
     /// The cached template token while it has more than a minute left, otherwise a new one.
     private static func fetchToken(for session: Session, skipCache: Bool) async throws -> String {
         let options = Session.GetTokenOptions(
-            template: tokenTemplate,
+            template: PaeoniaClerk.convexTokenTemplate,
             expirationBuffer: ConvexTokenSchedule.refreshLead,
             skipCache: skipCache
         )

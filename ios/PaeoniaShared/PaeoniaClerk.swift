@@ -11,6 +11,10 @@ nonisolated enum PaeoniaClerk {
     static let keychainService = "no.paeonia.clerk"
     static let keychainAccessGroup = "48ZSLD4RMP.no.paeonia.shared"
 
+    /// The Clerk JWT template that Convex trusts, with a 15-minute lifetime. See
+    /// `scripts/ensure-clerk-jwt-template`.
+    static let convexTokenTemplate = "convex"
+
     @MainActor private static var isConfigured = false
 
     /// The configured key, or `nil` when the build has no Clerk key yet.
@@ -45,9 +49,12 @@ nonisolated enum PaeoniaClerk {
             )
         )
         // Fails locally with `notAuthenticated` when there is no session, so a
-        // signed-out device never sends an anonymous request.
+        // signed-out device never sends an anonymous request. The 15-minute
+        // template token is the one the live socket uses, so the two share one
+        // fetch, and a request shortly after the last one needs no new token.
         PaeoniaConvexClientProvider.shared.setTokenProvider {
-            guard let token = try await Clerk.shared.auth.getToken() else {
+            let options = Session.GetTokenOptions(template: convexTokenTemplate)
+            guard let token = try await Clerk.shared.auth.getToken(options) else {
                 throw PaeoniaConvexError.notAuthenticated
             }
             return token
