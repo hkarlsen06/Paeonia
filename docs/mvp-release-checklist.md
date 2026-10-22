@@ -314,7 +314,7 @@ Record any skipped command with the reason.
 - [ ] Backend with the `background` location source is deployed before a build with updates while closed ships.
 - [ ] On a real device: allow Always, close the app, move about 1 km, and confirm the partner sees the new location.
 - [ ] On a real device: choose "Keep Only While Using" at the iOS question and confirm the "Choose Always in Settings" note appears.
-- [x] Pausing location sharing for 1 hour, 4 hours or until morning keeps sharing on, hides both positions, and ends by itself. The partner sees that sharing is paused, with no end time.
+- [x] Pausing location sharing for 1 hour, 4 hours or until morning keeps sharing on, hides the partner's position from the person who paused, and ends by itself. The partner is not told and sees the last position and its age.
 - [ ] On a real device: pause for 1 hour with updates while closed on, close the app, wait for the pause to end, and confirm the partner sees the new location without opening the app.
 - [x] Foreground location update has a tested source path.
 - [x] Offline stale location retries cannot overwrite newer location.

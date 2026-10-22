@@ -873,7 +873,8 @@ export default defineSchema({
     // The phone restores it after a new sign-in.
     updates_while_closed: v.boolean(),
     // Sharing is paused until this time. `is_enabled` stays true, and nothing is shared meanwhile.
-    // The `resume_paused_location_sharing` cron clears it when the time passes. Never shown to the partner.
+    // The `resume_paused_location_sharing` cron clears it when the time passes. Never shown to the
+    // partner, who keeps seeing the last stored position.
     paused_until: optTs,
     // What the phone last reported, and the phone's time of that report. Never shown to the partner.
     location_permission: v.optional(locationPermission),

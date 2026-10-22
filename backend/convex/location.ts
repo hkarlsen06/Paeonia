@@ -11,6 +11,7 @@ import { optionalTimestampArg, timestampArg, uuidArg } from "./lib/ids";
 import { isSharingNow, MAX_LOCATION_PAUSE_MS } from "./lib/locationPause";
 import {
   enqueueLockScreenRefreshForPartner,
+  enqueueLockScreenRefreshForUser,
   enqueueNotificationForUser,
   enqueuePartnerNotification,
   LOCK_SCREEN_LOCATION_DELAY_SECONDS,
@@ -67,14 +68,15 @@ async function deleteLatestLocationForUser(ctx: WriterCtx, coupleId: string, use
 }
 
 /**
- * Ends a pause: clears `paused_until` and refreshes the partner's Lock Screen, because the distance
- * comes back. The cron and the first location update after the pause's time both call it.
+ * Ends a pause: clears `paused_until` and refreshes the person's own Lock Screen, because the
+ * distance comes back there. The partner's Lock Screen kept the last distance all along. The cron
+ * and the first location update after the pause's time both call it.
  */
 async function endLocationPause(ctx: WriterCtx, preference: Doc<"location_sharing_preferences">): Promise<void> {
   await ctx.db.patch(preference._id, withUpdatedAt({ paused_until: undefined }));
-  await enqueueLockScreenRefreshForPartner(ctx, {
+  await enqueueLockScreenRefreshForUser(ctx, {
     couple_id: preference.couple_id,
-    actor_user_id: preference.user_id,
+    user_id: preference.user_id,
     delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
   });
 }
@@ -351,15 +353,24 @@ export const update_location_sharing_preference = mutation({
           });
           row = (await ctx.db.get(id))!;
         }
-        // A pause hides the location like turning sharing off. The partner never sees an old position.
-        if (!isEnabled || pausedUntil !== undefined) {
+        // Turning sharing off removes the position. A pause keeps it, so the partner goes on seeing
+        // where the person last was and when, and nothing tells them about the pause.
+        if (!isEnabled) {
           await deleteLatestLocationForUser(ctx, coupleId, userId);
         }
-        // Turning sharing on, off, or pausing it shows or hides the distance on the partner's Lock Screen.
-        if (isSharingNow(existing) !== isSharingNow(row)) {
+        // Turning sharing on or off shows or hides the distance on the partner's Lock Screen. A pause
+        // only hides it on the person's own Lock Screen.
+        if ((existing?.is_enabled ?? false) !== row.is_enabled) {
           await enqueueLockScreenRefreshForPartner(ctx, {
             couple_id: coupleId,
             actor_user_id: userId,
+            delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
+          });
+        }
+        if (isSharingNow(existing) !== isSharingNow(row)) {
+          await enqueueLockScreenRefreshForUser(ctx, {
+            couple_id: coupleId,
+            user_id: userId,
             delay_seconds: LOCK_SCREEN_REFRESH_DELAY_SECONDS,
           });
         }
@@ -511,7 +522,7 @@ export const get_partner_location_visibility = query({
         visibility_state: state,
         viewer_sharing_enabled: viewerEnabled,
         partner_sharing_enabled: partnerEnabled,
-        // Only the viewer's own pause end. The partner's pause time is never sent, only the state.
+        // Only the viewer's own pause. Nothing in this result tells the viewer the partner paused.
         viewer_paused_until: viewerPausedUntil ?? null,
         partner_location_latitude: location?.latitude ?? null,
         partner_location_longitude: location?.longitude ?? null,
@@ -551,8 +562,8 @@ export const get_partner_location_visibility = query({
       return result("viewer_paused", true, partnerEnabled, preferencesUpdatedAt, undefined, pausedUntil);
     }
     if (!partnerEnabled) return result("not_sharing", true, false, preferencesUpdatedAt);
-    if (partnerPreference?.paused_until !== undefined) return result("partner_paused", true, true, preferencesUpdatedAt);
-
+    // A partner on pause looks like one whose phone has not sent a new position: the viewer sees the
+    // last one and how old it is.
     const location = await ctx.db
       .query("latest_partner_locations")
       .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", partner.user_id))

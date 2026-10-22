@@ -506,23 +506,24 @@ describe("pausing location sharing", () => {
       ...operation(sequence),
     });
 
-  test("a pause keeps sharing on, removes the stored location, and refuses updates", async () => {
+  test("a pause keeps sharing on, keeps the stored location, and refuses updates", async () => {
     const { t, couple } = await setup();
     await seedLocation(t, couple, "2026-06-28T12:00:00.000Z");
 
     const [paused] = await setPause(couple.first, couple.coupleId, PAUSE_END, 2);
     expect(paused).toMatchObject({ is_enabled: true, paused_until: PAUSE_END });
-    expect(await t.run((ctx) => ctx.db.query("latest_partner_locations").collect())).toHaveLength(0);
+    expect(await t.run((ctx) => ctx.db.query("latest_partner_locations").collect())).toHaveLength(1);
     // Pausing is not turning sharing on again.
     expect(paused.enabled_at).toBe("2026-06-28T12:30:00.000Z");
 
     await expect(sendLocation(couple.first, couple.coupleId, 3, "2026-06-28T12:29:00.000Z")).rejects.toThrow(
       /42501.*location sharing is paused/,
     );
-    expect(await t.run((ctx) => ctx.db.query("latest_partner_locations").collect())).toHaveLength(0);
+    const [kept] = await t.run((ctx) => ctx.db.query("latest_partner_locations").collect());
+    expect(kept.captured_at).toBe("2026-06-28T12:00:00.000Z");
   });
 
-  test("the partner sees that sharing is paused, with no position and no end time", async () => {
+  test("the partner sees the last position and when it was taken, and nothing about the pause", async () => {
     const { t, couple } = await setup();
     await sendLocation(couple.second, couple.coupleId, 2, "2026-06-28T12:20:00.000Z");
     await seedLocation(t, couple, "2026-06-28T12:00:00.000Z");
@@ -537,11 +538,12 @@ describe("pausing location sharing", () => {
     });
     const [seenByPartner] = await readVisibility(couple.second, couple.coupleId);
     expect(seenByPartner).toMatchObject({
-      visibility_state: "partner_paused",
+      visibility_state: "visible",
       partner_sharing_enabled: true,
       viewer_paused_until: null,
-      partner_location_latitude: null,
-      partner_location_longitude: null,
+      partner_location_latitude: 59.95,
+      partner_location_longitude: 10.75,
+      partner_location_captured_at: "2026-06-28T12:00:00.000Z",
     });
     expect(JSON.stringify(seenByPartner)).not.toContain(PAUSE_END);
   });

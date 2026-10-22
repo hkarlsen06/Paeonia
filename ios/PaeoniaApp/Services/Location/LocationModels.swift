@@ -14,9 +14,8 @@ nonisolated enum PartnerLocationVisibilityState: Codable, Equatable, Sendable {
     case visible
     case relationshipEnded
     /// You paused sharing. The partner's location is hidden from you meanwhile too.
+    /// A partner's pause has no state of its own: you see their last position and its age.
     case viewerPaused
-    /// The partner paused sharing. The server sends no position and no end time.
-    case partnerPaused
     case unknown(String)
 
     init(rawValue: String) {
@@ -31,8 +30,6 @@ nonisolated enum PartnerLocationVisibilityState: Codable, Equatable, Sendable {
             self = .relationshipEnded
         case "viewer_paused":
             self = .viewerPaused
-        case "partner_paused":
-            self = .partnerPaused
         default:
             self = .unknown(rawValue)
         }
@@ -50,8 +47,6 @@ nonisolated enum PartnerLocationVisibilityState: Codable, Equatable, Sendable {
             "relationship_ended"
         case .viewerPaused:
             "viewer_paused"
-        case .partnerPaused:
-            "partner_paused"
         case let .unknown(rawValue):
             rawValue
         }

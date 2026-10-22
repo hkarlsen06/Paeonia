@@ -58,7 +58,11 @@ async function coupleDates(ctx: ReaderCtx, coupleId: string, userId: string, now
   return { countdowns, birthdays };
 }
 
-/** The distance between the partners, only while both share their location and both have a stored fix. */
+/**
+ * The distance between the partners, only while both share their location and both have a stored
+ * fix. A viewer on pause sees no distance, since sharing is mutual. A partner on pause still counts
+ * as sharing, so the viewer keeps the last distance and its age and is not told about the pause.
+ */
 async function distanceBetween(ctx: ReaderCtx, coupleId: string, userId: string, partnerId: string) {
   const locations: Doc<"latest_partner_locations">[] = [];
   for (const id of [userId, partnerId]) {
@@ -66,7 +70,8 @@ async function distanceBetween(ctx: ReaderCtx, coupleId: string, userId: string,
       .query("location_sharing_preferences")
       .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", id))
       .unique();
-    if (!isSharingNow(preference)) return null;
+    const shares = id === userId ? isSharingNow(preference) : preference?.is_enabled === true;
+    if (!shares) return null;
     const location = await ctx.db
       .query("latest_partner_locations")
       .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", id))

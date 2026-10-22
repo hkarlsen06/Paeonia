@@ -849,7 +849,7 @@ describe("get_lock_screen_state", () => {
       expect((await stateOf(couple.first))!.distance).toBeNull();
     });
 
-    test("is null while either partner has paused sharing, and comes back after", async () => {
+    test("is null on the paused person's own Lock Screen, while the partner keeps the last distance", async () => {
       const t = newTest();
       const couple = await createCouple(t);
       await share(t, couple.coupleId, couple.first, true, 0, "2026-10-10T11:00:00.000Z");
@@ -859,11 +859,12 @@ describe("get_lock_screen_state", () => {
           const preference = await ctx.db.query("location_sharing_preferences").filter((q) => q.eq(q.field("user_id"), couple.second.userId)).unique();
           await ctx.db.patch(preference!._id, { paused_until: pausedUntil });
         });
+      const before = (await stateOf(couple.first))!.distance;
       await setPause("2026-10-10T13:00:00.000Z");
-      expect((await stateOf(couple.first))!.distance).toBeNull();
+      expect((await stateOf(couple.first))!.distance).toEqual(before);
       expect((await stateOf(couple.second))!.distance).toBeNull();
       await setPause(undefined);
-      expect((await stateOf(couple.first))!.distance).not.toBeNull();
+      expect((await stateOf(couple.second))!.distance).not.toBeNull();
     });
   });
 

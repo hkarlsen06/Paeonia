@@ -203,12 +203,6 @@ struct CoupleMapCard: View {
                 message: .homeMapRelationshipEndedMessage,
                 systemImage: "location.slash.fill"
             )
-        case .partnerPaused:
-            MapEmptyState(
-                title: .homeMapPartnerPausedTitle(partnerName),
-                message: .homeMapPartnerPausedMessage(partnerName),
-                systemImage: "pause.circle.fill"
-            )
         case .unknown:
             MapEmptyState(
                 title: .homeMapUnavailableTitle,
@@ -389,10 +383,6 @@ private func previewCard(_ state: CoupleMapState, hearts: HeartsViewModel? = nil
 
 #Preview("Sharing paused") {
     previewCard(.sharingPaused(until: .now.addingTimeInterval(10_800)))
-}
-
-#Preview("Partner paused") {
-    previewCard(.partnerUnknown(.partnerPaused))
 }
 
 #Preview("Waiting for partner") {

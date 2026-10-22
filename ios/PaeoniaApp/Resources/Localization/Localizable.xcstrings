@@ -18567,42 +18567,6 @@
         }
       }
     },
-    "home.map.partnerPaused.message" : {
-      "comment" : "Map card message when the partner paused sharing. It does not say how long. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You and %@ can't see each other on the map for now. It comes back by itself."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du og %@ ser ikke hverandre på kartet akkurat nå. Det kommer tilbake av seg selv."
-          }
-        }
-      }
-    },
-    "home.map.partnerPaused.title" : {
-      "comment" : "Map card title when the partner paused sharing. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ paused sharing"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ har satt delingen på pause"
-          }
-        }
-      }
-    },
     "home.map.partnerUnknown.message" : {
       "comment" : "Map empty-state message. %@ is the partner name.",
       "extractionState" : "manual",
@@ -18694,19 +18658,19 @@
       }
     },
     "home.map.paused.message" : {
-      "comment" : "Map card message when the user paused sharing. %@ is the time the pause ends, such as 22:00 or Thursday 08:00.",
+      "comment" : "Map card message when the user paused sharing. Their partner is not told about the pause. %@ is the time the pause ends, such as 22:00 or Thursday 08:00.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You can't see each other on the map until %@. Then sharing starts again by itself."
+            "value" : "You can't see your partner on the map until %@, and they only see where you last were. Then sharing starts again by itself."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dere ser ikke hverandre på kartet før %@. Da starter delingen igjen av seg selv."
+            "value" : "Du ser ikke partneren din på kartet før %@, og partneren din ser bare hvor du var sist. Da starter delingen igjen av seg selv."
           }
         }
       }
@@ -30048,13 +30012,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "While paused, you and %@ can't see each other on the map. Sharing starts again by itself."
+            "value" : "%@ isn't told you paused and only sees where you last were. You can't see where they are either. Sharing starts again by itself."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mens delingen er på pause, ser du og %@ ikke hverandre på kartet. Delingen starter igjen av seg selv."
+            "value" : "%@ får ikke vite at du har satt delingen på pause, og ser bare hvor du var sist. Du ser heller ikke hvor partneren din er. Delingen starter igjen av seg selv."
           }
         }
       }
