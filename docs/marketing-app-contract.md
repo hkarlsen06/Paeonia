@@ -164,7 +164,7 @@ This is not required for the app to launch, but it is useful and should stay ava
 
 ## Required Cloudflare Pages Files
 
-`marketing/wrangler.toml` pins the `paeonia` project, compatibility date, and `out/` deployment directory.
+The root `wrangler.toml` pins the `paeonia` project, compatibility date, and `marketing/out/` output directory. The Pages Git build runs from the repository root and reads this file, so it overrides the output directory in the Cloudflare dashboard. Change the output directory here, not in the dashboard.
 
 ### `/_headers`
 
@@ -197,7 +197,7 @@ Required behavior:
 
 ## Local Development
 
-`bun run dev` serves the site at `http://localhost:3001` with Vite. The dev server does not read `_redirects` or run `functions/`, so `/join/<code>` and the unprefixed `/privacy`, `/terms` and `/support` only work on Cloudflare. To test those, build and run `npx wrangler pages dev out` from `marketing/`.
+`bun run dev` serves the site at `http://localhost:3001` with Vite. The dev server does not read `_redirects` or run `functions/`, so `/join/<code>` and the unprefixed `/privacy`, `/terms` and `/support` only work on Cloudflare. To test those, build and run `bunx wrangler pages dev` from the repository root.
 
 `bun run build` writes to `marketing/out/` and `.svelte-kit/`. It doesn't touch the dev server's files, so it is safe to build while `bun run dev` runs.
 
@@ -275,4 +275,4 @@ Expected deployed result:
 - `/join/test-code` resolves to a page, not a 404.
 - privacy, terms, and support routes resolve.
 - `curl -I -H 'Accept-Language: nb' https://paeonia.no/privacy` redirects to `/no/privacy/`.
-- no app-required endpoint depends on a server runtime. The language redirects are Pages Functions in `marketing/functions/`, and the deploy script runs Wrangler from `marketing/` so it finds them. A deploy from the repository root silently leaves them out.
+- no app-required endpoint depends on a server runtime. The language redirects are Pages Functions in `marketing/functions/`. The Git build and the deploy script both run Wrangler from the repository root, which finds them through the root `functions` link. A deploy from `marketing/` uses no `wrangler.toml` and the wrong output directory.
