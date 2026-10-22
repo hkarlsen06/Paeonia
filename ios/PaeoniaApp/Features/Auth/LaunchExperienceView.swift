@@ -40,17 +40,17 @@ struct LaunchExperienceView: View {
     /// How far each half travels outward during the reveal.
     private let revealSpread: CGFloat = 100
 
-    private static let revealDuration: TimeInterval = 0.6
+    private static let revealDuration: TimeInterval = 0.35
     private static let reducedMotionExitDuration: TimeInterval = 0.22
     /// The petals start fast and settle, so they visibly part before the hole
     /// reaches them.
     private static let petalAnimation = Animation.timingCurve(0.3, 0.8, 0.3, 1, duration: revealDuration)
-    /// The hole starts slowly and speeds up, catching the petals about 120 ms in and
-    /// cutting them away over the next 80 ms. It clears the corners around 500 ms.
+    /// The hole starts slowly and speeds up, catching the petals about 70 ms in and
+    /// cutting them away over the next 45 ms. It clears the corners around 290 ms.
     private static let holeAnimation = Animation.timingCurve(0.4, 0, 0.3, 1, duration: revealDuration)
     /// When the hole's edge reaches the left and right screen edges on a phone
-    /// (about 0.42 of `holeProgress`). On iPad it arrives about 50 ms later.
-    private static let sidesUncoveredDelay: TimeInterval = 0.21
+    /// (about 0.42 of `holeProgress`). On iPad it arrives about 30 ms later.
+    private static let sidesUncoveredDelay: TimeInterval = 0.12
 
     var body: some View {
         GeometryReader { proxy in
@@ -63,6 +63,9 @@ struct LaunchExperienceView: View {
         }
         .opacity(overlayOpacity)
         .ignoresSafeArea()
+        // The mask does not change hit testing, so without this the overlay would
+        // swallow taps on the screen it is uncovering until it is removed.
+        .allowsHitTesting(!isRevealing)
         .onChange(of: contentReady, initial: true) { _, isReady in
             if isReady {
                 beginReveal()
