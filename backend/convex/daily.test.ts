@@ -95,6 +95,29 @@ describe("start_daily_challenge_snapshot", () => {
     }
   });
 
+  test("never gives both partners the same question on one day", async () => {
+    // Five questions fill four slots a day, so without the rule the partners would often share one.
+    // A shuffle and five days of seeding make a lucky pass unlikely.
+    const { t, a, b } = await readyCouple({ questions: textQuestions(5) });
+    await shuffle(b, 1);
+    for (const day of ["11", "12", "13", "14"]) {
+      vi.setSystemTime(new Date(`2026-10-${day}T10:00:00.000Z`));
+      await start(a);
+    }
+    const live = (await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).filter(
+      (row) => row.status !== "shuffled",
+    );
+    const questionsByDay = new Map<string | undefined, string[]>();
+    for (const row of live) {
+      questionsByDay.set(row.couple_day_id, [...(questionsByDay.get(row.couple_day_id) ?? []), row.question_id]);
+    }
+    expect(questionsByDay.size).toBe(5);
+    for (const questionIds of questionsByDay.values()) {
+      expect(questionIds).toHaveLength(4);
+      expect(new Set(questionIds).size).toBe(4);
+    }
+  });
+
   test("a replay of the same client operation returns the same day and adds nothing", async () => {
     const { t, a } = await readyCouple();
     const args = op();
