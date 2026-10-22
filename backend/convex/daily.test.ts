@@ -95,6 +95,29 @@ describe("start_daily_challenge_snapshot", () => {
     }
   });
 
+  test("never gives both partners the same question on one day", async () => {
+    // Five questions fill four slots a day, so without the rule the partners would often share one.
+    // A shuffle and five days of seeding make a lucky pass unlikely.
+    const { t, a, b } = await readyCouple({ questions: textQuestions(5) });
+    await shuffle(b, 1);
+    for (const day of ["11", "12", "13", "14"]) {
+      vi.setSystemTime(new Date(`2026-10-${day}T10:00:00.000Z`));
+      await start(a);
+    }
+    const live = (await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).filter(
+      (row) => row.status !== "shuffled",
+    );
+    const questionsByDay = new Map<string | undefined, string[]>();
+    for (const row of live) {
+      questionsByDay.set(row.couple_day_id, [...(questionsByDay.get(row.couple_day_id) ?? []), row.question_id]);
+    }
+    expect(questionsByDay.size).toBe(5);
+    for (const questionIds of questionsByDay.values()) {
+      expect(questionIds).toHaveLength(4);
+      expect(new Set(questionIds).size).toBe(4);
+    }
+  });
+
   test("a replay of the same client operation returns the same day and adds nothing", async () => {
     const { t, a } = await readyCouple();
     const args = op();
@@ -533,9 +556,9 @@ describe("shuffle", () => {
   }, 60_000);
 
   test("skipped questions do not come back for 14 days", async () => {
-    const { t, a } = await readyCouple({ questions: textQuestions(4) });
+    const { t, a } = await readyCouple({ questions: textQuestions(6) });
     const original = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    // Four questions: two live plus two spare. Two shuffles use up the spares and a third has nothing left.
+    // Six questions: two for each partner plus two spare. Two shuffles use up the spares and a third has nothing left.
     await shuffle(a, 1);
     await shuffle(a, 1);
     await expect(shuffle(a, 1)).rejects.toThrow(
@@ -635,25 +658,28 @@ describe("history", () => {
 });
 
 describe("questions already answered", () => {
-  test("once everything is answered, the question answered longest ago comes back first, even when it cannot resurface", async () => {
-    // Three questions that never resurface. Day one answers two of them, the first at 10:00 and the second at 12:00.
-    const { t, a } = await readyCouple({ questions: textQuestions(3).map((item) => ({ ...item, resurfaceable: false })) });
-    const first = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    await submit(a, first[0].id, { text: "early" });
+  test("once everything is answered, the questions answered longest ago come back first, even when they cannot resurface", async () => {
+    // Four questions that never resurface, two for each partner. Each partner answers their own two at 10:00 and the
+    // other's two at 12:00, so both have answered everything and their oldest answers never overlap.
+    const { t, a, b } = await readyCouple({ questions: textQuestions(4).map((item) => ({ ...item, resurfaceable: false })) });
+    const all = await t.run((ctx) => ctx.db.query("daily_question_instances").collect());
+    const seededFor = (user: TestUser) => all.filter((row) => row.seeded_for_user_id === user.userId);
+    for (const user of [a, b]) {
+      for (const instance of seededFor(user)) await submit(user, instance.id, { text: "own" });
+    }
     vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
-    await submit(a, first[1].id, { text: "late" });
-    // Tomorrow: the one unanswered question fills slot 1, and slot 2 has nothing left but answered questions.
+    for (const [user, partner] of [[a, b], [b, a]]) {
+      for (const instance of seededFor(partner)) await submit(user, instance.id, { text: "partner's" });
+    }
     vi.setSystemTime(new Date("2026-10-11T10:00:00.000Z"));
     await start(a);
     const versions = (await today(a)).filter((row) => row.is_current_day === true).map((row) => row.question_version_id);
-    expect(versions).toHaveLength(2);
-    expect(versions).toContain(first[0].question_version_id);
-    expect(versions).not.toContain(first[1].question_version_id);
+    expect(versions.sort()).toEqual(seededFor(a).map((row) => row.question_version_id).sort());
   });
 
   test("a shuffle never brings back a question the user already answered today", async () => {
-    // Two questions: slot 1 is answered, so shuffling slot 2 has no other question to give.
-    const { t, a } = await readyCouple({ questions: textQuestions(2) });
+    // Four questions: slot 1 is answered and the partner has the other two, so shuffling slot 2 has nothing to give.
+    const { t, a } = await readyCouple({ questions: textQuestions(4) });
     const own = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
     const slotOne = own.find((row) => row.slot_number === 1)!;
     await submit(a, slotOne.id, { text: "answered" });
@@ -665,7 +691,7 @@ describe("questions already answered", () => {
   });
 
   test("a question that can resurface comes back after its window", async () => {
-    const { t, a } = await readyCouple({ questions: textQuestions(3).map((item) => ({ ...item, months: 1 })) });
+    const { t, a } = await readyCouple({ questions: textQuestions(4).map((item) => ({ ...item, months: 1 })) });
     await completeDay(t, a);
     vi.setSystemTime(new Date("2026-11-11T10:00:00.000Z"));
     const rows = await start(a);

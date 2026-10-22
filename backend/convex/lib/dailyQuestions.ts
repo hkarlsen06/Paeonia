@@ -487,20 +487,14 @@ export async function pickDailyQuestionVersion(
   excludedQuestionId: string | null,
   answered?: AnsweredQuestions,
 ): Promise<string> {
-  // Every instance the user got today, answered and shuffled ones too, so the fallback
-  // can never hand out a question the user already has today.
+  // Every instance either partner got today, answered and shuffled ones too, so the fallback
+  // can never hand out a question the user already has today or give both partners the same one.
   const todaysInstances = await ctx.db
     .query("daily_question_instances")
-    .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-      q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", userId),
-    )
+    .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) => q.eq("couple_day_id", coupleDayId))
     .collect();
-  const excludedQuestionIds = new Set<string>();
+  const excludedQuestionIds = new Set(todaysInstances.map((instance) => instance.question_id));
   if (excludedQuestionId !== null) excludedQuestionIds.add(excludedQuestionId);
-  for (const instance of todaysInstances) {
-    const version = await getByUuid(ctx, "question_versions", instance.question_version_id);
-    if (version) excludedQuestionIds.add(version.question_id);
-  }
   return await pickQuestionVersion(ctx, userId, {
     excludedQuestionIds,
     answered: answered ?? (await loadAnsweredQuestions(ctx, userId)),
