@@ -97,11 +97,10 @@ The developer may run multiple agents in parallel in the same worktree.
 - If you see unrelated changes, do not touch, revert, reformat, or clean them up.
 - Treat unrelated diffs as owned by the user or another agent.
 - Only modify files and hunks required for the task.
-- If unrelated changes block the task, stop and ask before proceeding.
+- If unrelated changes block the task, start a fresh git worktree off `main` and do the task there.
 
 ### File Creation
 
-- Do not create summary documents, audit reports, or extra markdown files unless explicitly requested.
 - Prefer code changes and concise chat summaries over new documentation artifacts.
 - Keep edits scoped to the requested work.
 
@@ -144,7 +143,7 @@ The developer may run multiple agents in parallel in the same worktree.
 ### Git
 
 - Do not include `Co-Authored-By` lines in commit messages.
-- Never push automatically. Commit when requested, but wait for explicit user approval before pushing.
+- Commit on your own branch. When the task is done, push the branch and open a ready pull request with `gh`. Ask the developer before you merge a pull request or update `main`.
 - Commits must always be signed. Never disable commit signing.
 - If commit signing fails, stop and report the signing failure instead of creating an unsigned commit.
 - Before committing, inspect the full diff and write a commit message that describes the meaning of the change.
@@ -152,12 +151,11 @@ The developer may run multiple agents in parallel in the same worktree.
 ## Development Defaults
 
 - Run commands from the repository root unless explicitly stated otherwise.
-- Do not build just to check that your change compiles. The developer runs several agents at once and builds on their own device, which catches compile errors and warnings. A 10-minute agent build after a 10-minute change doubles the wait, and parallel builds fight over the simulator and DerivedData. Do not work around this with scratch copies of the repo or loops that wait for another agent's build. To settle a compiler warning or error, reproduce it in a small file with `scripts/swift-typecheck`.
-- Building and running the app on the shared simulator is fine when the task needs to see runtime behavior that reading the code can't settle, such as a layout, animation, or navigation bug. Keep those runs to what the investigation needs, and use the simulator that [Devices And Simulators](#devices-and-simulators) allows.
+- Work in your own git worktree off `main`. Prove each change there before you hand it back. Build it, run the tests that cover it, and drive the app on the simulator when the change shows on screen. [Testing](#testing) says when a change needs a new test.
+- Run Xcode builds and iOS tests through `./scripts/xcode-build-agent.sh` and `./scripts/xcode-test-agent.sh`, on the simulators that [Devices And Simulators](#devices-and-simulators) allows. To settle a compiler warning or error, reproduce it in a small file with `scripts/swift-typecheck`, which finishes in seconds.
 - Run backend tests (`npm test` and `npm run typecheck` in `backend/`) whenever they help. They run in memory and touch no simulator.
-- Do not run iOS tests (unit or UI) without asking. If you think one is needed, ask the developer. They run iOS tests themselves once all agents have finished, so parallel agents don't fight over the shared simulator. [Testing](#testing) says when a change needs a new test.
-- `swiftlint --quiet` on the files you touched is fine. In the handoff, list what you did not verify and what the developer should check on the device.
-- See [iOS verification](docs/agent-guides/ios-verification.md) for where each kind of iOS test lives and the wrapper commands the developer uses.
+- Run `swiftlint --quiet` on the files you touched. In the handoff, say what you ran and what it showed. Leave a check to the developer only when it needs a physical phone, since agents never use one.
+- See [iOS verification](docs/agent-guides/ios-verification.md) for where each kind of iOS test lives and the wrapper commands.
 - Avoid verbose command modes unless the extra output is needed to debug the issue.
 - Use `rg` for searching text or files when available.
 - Prefer existing project patterns over introducing new abstractions.
@@ -271,7 +269,3 @@ Cut AI tells from all prose you write or edit, including docs, comments, release
 31. **Prefer the plain word.** "utilize" becomes "use", "leverage" becomes "use", "facilitate" becomes "help", "numerous" becomes "many", "in the event that" becomes "if". The fancier synonym is rarely clearer.
 32. **Mannered prose.** Metaphor or flourish where a literal phrase exists: aphorisms ("wire it or delete it"), rhetorical fragments for effect, personified code ("the plan holds it"), figurative verbs ("rides along", "stands on"), stock framing phrases. "A dial worth turning" becomes "a parameter worth varying". Say what you mean. Rule 26 covers the metaphor nouns.
 33. **Over-compression.** Dropped articles, verbless fragments, symbol-speak, and abbreviations that make the reader decode instead of read. "Parser rejects bad date → exit 2, no write" becomes "The parser rejects a bad date, exits with code 2, and writes nothing." Write whole sentences with their articles and verbs, and spell out arrows and abbreviations.
-
-# Bro keep going
-
-Before you stop, ask yourself "is there a next step that the user would want me to do?" if so, keep going jobs not finished.

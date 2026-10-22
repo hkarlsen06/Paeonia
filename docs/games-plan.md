@@ -222,7 +222,7 @@ Nothing. `ALLOWED_CHANNELS` lists every kind, and your room is `<couple>:<kind>`
 
 ### Merging
 
-- Commit on your own branch, signed, at most about three logical commits per game. Never push.
+- Commit on your own branch, signed, at most about three logical commits per game. When you hand back, push the branch and open a ready pull request with `gh`.
 - Before you hand back, rebase onto local `main`. Conflicts at the registry points and in `Localizable.xcstrings` are two lists growing: keep both sides, and merge the String Catalog JSON by key so it stays valid. If a conflict is anything more, stop and ask.
 - Ask the developer before you fast-forward local `main` to your branch. Whoever merges second rebases again.
 - Every branch deploys the same Convex deployment. Before you deploy, rebase onto local `main` and confirm with the developer that no other thread is mid-test, or your deploy removes another game's functions. Relay deploys need the developer's OK too.
