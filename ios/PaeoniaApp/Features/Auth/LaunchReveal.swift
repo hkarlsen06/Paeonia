@@ -106,12 +106,14 @@ private struct ScreenEntranceModifier: ViewModifier {
 
     @Environment(\.launchContentRevealed) private var launchRevealed
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var hasAppeared = false
+    @State private var isLaidOut = false
 
     /// During a cold launch the intro's cue gates the drop-in; mid-session the first
-    /// rendered frame does, so the cascade plays right as the screen arrives.
+    /// layout with a real size does, so the cascade plays right as the screen arrives.
+    /// A new screen's first layout pass can have zero width. Dropping in during that
+    /// pass would animate the content and its place on screen from the empty size.
     private var revealed: Bool {
-        hasAppeared && launchRevealed && isReady
+        isLaidOut && launchRevealed && isReady
     }
 
     func body(content: Content) -> some View {
@@ -122,8 +124,10 @@ private struct ScreenEntranceModifier: ViewModifier {
             .opacity(revealed ? 1 : 0)
             .offset(y: revealed || reduceMotion ? 0 : -EntranceCascade.rise)
             .animation(EntranceCascade.entrance(order: order, reduceMotion: reduceMotion), value: revealed)
-            .task {
-                hasAppeared = true
+            .onGeometryChange(for: Bool.self) { $0.size.width > 0 } action: { hasWidth in
+                if hasWidth {
+                    isLaidOut = true
+                }
             }
     }
 }
