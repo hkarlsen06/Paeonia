@@ -24,6 +24,13 @@ struct MainTabIdentity: Equatable {
     }
 }
 
+/// Keys the tab bar's loads that wait for the cold-launch intro. Like the plain
+/// user key, it leaves out names and photos, so those arriving never restart a load.
+private struct IntroGatedLoadKey: Hashable {
+    var userID: UUID?
+    var introComplete: Bool
+}
+
 /// Root-owned work the tabs ask for.
 struct MainTabActions {
     var openWidgetDrawing: () -> Void = {}
@@ -210,7 +217,8 @@ struct MainTabView: View {
             .environment(reactionStore)
             // Memory comments and story replies open as chats from their own screens.
             .environment(\.threadChatContext, threadChatContext)
-            .task(id: identity.currentUserID) {
+            .task(id: introGatedLoadKey) {
+                guard introGatedLoadKey.introComplete else { return }
                 await chatSummaries.observe(ownerUserID: identity.currentUserID)
             }
             .liveFeedDemand(visibleTab: selection.wrappedValue, partnerGames: gamesViewModel.partnerGameKinds)
@@ -242,12 +250,16 @@ struct MainTabView: View {
         .onChange(of: dailyChallengeParticipants) { _, participants in
             dailyChallengeViewModel.refreshParticipants(participants)
         }
-        // Topics answer through the daily challenge, so it is attached first.
-        .task(id: identity.currentUserID) {
+        // Topics answer through the daily challenge, so it is attached first. Only
+        // the Questions tab shows them, so they wait for the intro.
+        .task(id: introGatedLoadKey) {
+            guard introGatedLoadKey.introComplete else { return }
             topicsViewModel.attach(dailyChallenge: dailyChallengeViewModel)
             await topicsViewModel.configure(currentUserID: identity.currentUserID, coupleID: identity.coupleID)
         }
         .onChange(of: identity.coupleID) { _, coupleID in
+            // Before the intro ends, the deferred load above reads the couple itself.
+            guard launchIntroComplete else { return }
             Task { await topicsViewModel.configure(currentUserID: identity.currentUserID, coupleID: coupleID) }
         }
         // A partner message in a topic question's chat brings the question back to
@@ -256,12 +268,14 @@ struct MainTabView: View {
             topicsViewModel.followWaitingTopics()
         }
         // The Games tab's badge needs the game state before the tab is opened, so
-        // the tab bar loads and follows it.
-        .task(id: identity.currentUserID) {
+        // the tab bar loads and follows it once the intro has ended.
+        .task(id: introGatedLoadKey) {
+            guard introGatedLoadKey.introComplete else { return }
             gamesViewModel.configure(participants: gamesParticipants)
             await gamesViewModel.load()
         }
-        .task(id: identity.currentUserID) {
+        .task(id: introGatedLoadKey) {
+            guard introGatedLoadKey.introComplete else { return }
             await gamesViewModel.observeStoreChanges()
         }
         .onChange(of: gamesViewModel.partnerGameKinds) { old, new in
@@ -294,7 +308,8 @@ struct MainTabView: View {
             bannerCenter.show(.error(message: error.message))
             coupleDatesViewModel.clearError()
         }
-        .task(id: identity.currentUserID) {
+        .task(id: introGatedLoadKey) {
+            guard introGatedLoadKey.introComplete else { return }
             favoritesStore.setLocalChangeSyncHandler { await actions.syncAfterLocalChange() }
             await favoritesStore.configure(ownerUserID: identity.currentUserID)
             await favoritesStore.observeStoreChanges()
@@ -311,7 +326,8 @@ struct MainTabView: View {
         .onChange(of: identity.coupleID) { _, coupleID in
             storiesViewModel.updateCoupleID(coupleID)
         }
-        .task(id: identity.currentUserID) {
+        .task(id: introGatedLoadKey) {
+            guard introGatedLoadKey.introComplete else { return }
             await reactionStore.configure(ownerUserID: identity.currentUserID, partnerName: reactionPartnerName)
             await reactionStore.observeStoreChanges()
         }
@@ -342,6 +358,12 @@ struct MainTabView: View {
         .task(id: deepLink.wrappedValue) {
             await handleDeepLink(deepLink.wrappedValue)
         }
+    }
+
+    /// The loads that only the other tabs and small badges need start once the cold
+    /// launch intro has ended, so Home's first build has the main thread to itself.
+    private var introGatedLoadKey: IntroGatedLoadKey {
+        IntroGatedLoadKey(userID: identity.currentUserID, introComplete: launchIntroComplete)
     }
 
     /// The partner's name in the words that say who reacted.

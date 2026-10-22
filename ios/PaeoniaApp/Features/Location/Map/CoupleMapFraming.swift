@@ -1,7 +1,8 @@
 import MapKit
 
 /// Picks the map area that shows both partners with an even margin around them.
-enum CoupleMapFraming {
+/// Plain math, so it can run off the main thread when the map renders.
+nonisolated enum CoupleMapFraming {
     /// How much larger than the pins' own span the framed area is, leaving an even
     /// margin around the avatars.
     static let paddingFactor = 1.7

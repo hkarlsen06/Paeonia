@@ -68,7 +68,7 @@ struct CoupleMapSnapshot: View {
     private static let minimumMoveFraction: Double = 0.06
     /// Waits between failed map renders. A render is tried once more after each wait,
     /// so three attempts in total.
-    static let retryDelays: [Duration] = [.seconds(2), .seconds(5)]
+    nonisolated static let retryDelays: [Duration] = [.seconds(2), .seconds(5)]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -111,7 +111,7 @@ struct CoupleMapSnapshot: View {
     /// unit (map and avatars together) so the flame hides the old positions while
     /// uncovering the new ones. `image` is nil for the fallback shown when the map could
     /// not be rendered: just the backdrop with the avatars at fixed spots.
-    struct SnapshotResult {
+    nonisolated struct SnapshotResult {
         let image: UIImage?
         let currentPoint: CGPoint
         let partnerPoint: CGPoint

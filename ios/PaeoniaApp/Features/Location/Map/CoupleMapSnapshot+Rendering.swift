@@ -7,6 +7,17 @@ extension CoupleMapSnapshot {
     /// `retryDelays` while the task is alive. Returns nil when every attempt failed or
     /// the task was cancelled.
     func renderMap(size: CGSize) async -> SnapshotResult? {
+        await Self.renderMap(size: size, current: currentCoordinate, partner: partnerCoordinate)
+    }
+
+    /// Runs off the main thread. Building the map configuration and snapshot options
+    /// cost about 30 ms of the first Home build while they ran on it.
+    @concurrent
+    private static func renderMap(
+        size: CGSize,
+        current currentCoordinate: CLLocationCoordinate2D,
+        partner partnerCoordinate: CLLocationCoordinate2D
+    ) async -> SnapshotResult? {
         // Muted standard config plays down roads, borders, and labels so the map
         // reads as a calm backdrop rather than a navigation map.
         let configuration = MKStandardMapConfiguration(elevationStyle: .flat, emphasisStyle: .muted)
@@ -22,10 +33,10 @@ extension CoupleMapSnapshot {
         options.traitCollection = UITraitCollection(userInterfaceStyle: .dark)
         options.preferredConfiguration = configuration
 
-        for attempt in 0...Self.retryDelays.count {
+        for attempt in 0...retryDelays.count {
             if attempt > 0 {
                 do {
-                    try await Task.sleep(for: Self.retryDelays[attempt - 1])
+                    try await Task.sleep(for: retryDelays[attempt - 1])
                 } catch {
                     return nil
                 }
