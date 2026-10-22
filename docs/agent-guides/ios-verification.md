@@ -34,6 +34,8 @@ Run these wrappers from the repository root:
 
 Agents in other worktrees share the `Shared iPhone` simulator. `xcode-test-agent.sh` holds the `simulator` lock while it runs. It waits while any other run holds it, including one from the same worktree, since several agents can share a worktree. For a simulator session of several commands, such as `sim-sign-in` and end-to-end play, take the lock with `scripts/lock acquire simulator`, release it with `scripts/lock release simulator`, and see who holds what with `scripts/lock status`.
 
+Both wrappers also hold a machine-wide lock, `/tmp/xcode-agent.lock`, while xcodebuild runs. Tidex, Kvil and Notex agents take the same lock, so only one agent's xcodebuild runs on this Mac at a time. A wrapper that has to wait prints `waiting for another agent's xcodebuild to finish` with the holder's process, repository and script. xcodebuild runs at lower CPU priority with half the CPU cores. Set `XCODE_AGENT_NICE` or `XCODE_AGENT_JOBS` to change that.
+
 ### Signing a simulator in
 
 The app offers only Apple and Google sign-in. To sign the Debug build on a simulator into one of the two test accounts on `api.paeonia.no`, install the app, then run:
