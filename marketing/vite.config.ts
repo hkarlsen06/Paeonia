@@ -12,7 +12,7 @@ export default defineConfig({
       compilerOptions: {
         runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true),
       },
-      // Cloudflare Pages serves `out`, and functions/ sits next to it (wrangler.toml).
+      // Cloudflare Pages serves out/ (pages_build_output_dir in the root wrangler.toml).
       adapter: adapter({ pages: 'out', assets: 'out' }),
       paths: { origin: 'https://paeonia.no' },
       prerender: { entries: ['*', '/en/', '/no/'] },
