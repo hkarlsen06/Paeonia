@@ -1,7 +1,7 @@
 import { type ObjectType, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, internalQuery, mutation, query, type ActionCtx } from "./_generated/server";
-import { resolveCurrentCoupleEntitlement, resolveUserEntitlement } from "./lib/access";
+import { readAccessSnapshot } from "./lib/accessSnapshot";
 import {
   type AppleRenewalInfo,
   type AppleTransactionInfo,
@@ -16,10 +16,9 @@ import {
   toDatabaseEnvironment,
   verifyTransactionWithApple,
 } from "./lib/appleStoreKit";
-import { activeUserIdForSubject, getCurrentUserId, isCurrentUserBanned, requireUserId } from "./lib/auth";
+import { activeUserIdForSubject, getCurrentUserId } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
-import { getCurrentRelationshipState } from "./lib/relationshipState";
 import { nowIso } from "./lib/time";
 import { storekitEnvironment } from "./lib/validators";
 
@@ -33,20 +32,7 @@ import { storekitEnvironment } from "./lib/validators";
  */
 export const get_access_snapshot = query({
   args: {},
-  handler: async (ctx) => {
-    if (await isCurrentUserBanned(ctx)) {
-      return [{ account_status: "banned", user_entitlement: null, couple_entitlement: null, relationship_state: null }];
-    }
-    const userId = await requireUserId(ctx);
-    return [
-      {
-        account_status: "active",
-        user_entitlement: await resolveUserEntitlement(ctx, userId),
-        couple_entitlement: await resolveCurrentCoupleEntitlement(ctx, userId),
-        relationship_state: await getCurrentRelationshipState(ctx, userId),
-      },
-    ];
-  },
+  handler: async (ctx) => [await readAccessSnapshot(ctx)],
 });
 
 /** Port of `get_or_create_app_account_token`. Returns the uuid the app passes to StoreKit as appAccountToken. */

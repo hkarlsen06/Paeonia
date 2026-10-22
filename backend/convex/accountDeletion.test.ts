@@ -245,6 +245,7 @@ describe("request_account_deletion", () => {
       "42501",
     );
     await expectFail(first.as.mutation(api.identity.ensure_current_user, {}), "42501", "account deletion is in progress");
+    await expectFail(first.as.mutation(api.identity.launch, {}), "42501", "account deletion is in progress");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

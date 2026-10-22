@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import { action, internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { requestAccountDeletion, runDeleteAccount } from "./accountDeletion";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
+import { readAccessSnapshot } from "./lib/accessSnapshot";
 import { fetchLinkedSignInProviders } from "./lib/accountDeletionProviders";
 import { authProviderFromIdentity, ensureCurrentUser, requireUserId, requireUserIdIncludingDeleted } from "./lib/auth";
 import { orNull, type ReaderCtx, withTouch } from "./lib/db";
@@ -38,6 +39,22 @@ export const ensure_current_user = mutation({
     const userId = await ensureCurrentUser(ctx);
     const profile = await findProfile(ctx, userId);
     return profile ? profileRow(profile) : null;
+  },
+});
+
+/**
+ * What a cold launch needs in one call: provisions the signed-in user like
+ * `ensure_current_user`, then returns their profile and the row
+ * `access:get_access_snapshot` returns, so the app routes without a second round trip.
+ * Refuses accounts with a pending or finished deletion, like `ensure_current_user`.
+ * A banned account gets its profile and a banned access row.
+ */
+export const launch = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await ensureCurrentUser(ctx);
+    const profile = await findProfile(ctx, userId);
+    return { profile: profile ? profileRow(profile) : null, access: await readAccessSnapshot(ctx) };
   },
 });
 

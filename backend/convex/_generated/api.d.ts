@@ -36,6 +36,7 @@ import type * as hearts from "../hearts.js";
 import type * as http from "../http.js";
 import type * as identity from "../identity.js";
 import type * as lib_access from "../lib/access.js";
+import type * as lib_accessSnapshot from "../lib/accessSnapshot.js";
 import type * as lib_accountDeletion from "../lib/accountDeletion.js";
 import type * as lib_accountDeletionProviders from "../lib/accountDeletionProviders.js";
 import type * as lib_apns from "../lib/apns.js";
@@ -185,6 +186,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   identity: typeof identity;
   "lib/access": typeof lib_access;
+  "lib/accessSnapshot": typeof lib_accessSnapshot;
   "lib/accountDeletion": typeof lib_accountDeletion;
   "lib/accountDeletionProviders": typeof lib_accountDeletionProviders;
   "lib/apns": typeof lib_apns;

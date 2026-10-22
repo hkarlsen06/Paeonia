@@ -80,6 +80,48 @@ describe("profile", () => {
     );
   });
 
+  test("launch provisions the user and returns the profile with the access snapshot", async () => {
+    const t = newTest();
+    const as = t.withIdentity({ subject: "user_new", issuer: "https://clerk.test", name: "Ada" });
+    const first = await as.mutation(api.identity.launch, {});
+    expect(first.profile).toMatchObject({ display_name: "Ada", revision: 1 });
+    expect(first.access).toEqual({
+      account_status: "active",
+      user_entitlement: expect.objectContaining({ is_entitled: false }),
+      couple_entitlement: null,
+      relationship_state: null,
+    });
+    expect((await as.mutation(api.identity.launch, {})).profile?.user_id).toBe(first.profile?.user_id);
+
+    const couple = await createCouple(t);
+    const paired = await couple.second.as.mutation(api.identity.launch, {});
+    expect(paired.access.account_status).toBe("active");
+    expect(paired.access.relationship_state).toMatchObject({ relationship_status: "active", member_status: "active" });
+    expect(paired.access.couple_entitlement).toMatchObject({ is_entitled: true });
+    expect(paired.access).toEqual((await couple.second.as.query(api.access.get_access_snapshot, {}))[0]);
+  });
+
+  test("launch refuses a signed out caller and gives a banned account only the closed-account row", async () => {
+    const t = newTest();
+    await expectFail(t.mutation(api.identity.launch, {}), "42501", "authenticated user required");
+
+    const user = await createSignedInUser(t, { name: "Ada" });
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("users")
+        .withIndex("by_clerk_user_id", (q) => q.eq("clerk_user_id", user.subject))
+        .unique();
+      await ctx.db.patch(row!._id, { banned_at: "2026-10-10T12:00:00.000Z" });
+    });
+    const banned = await user.as.mutation(api.identity.launch, {});
+    expect(banned.access).toEqual({
+      account_status: "banned",
+      user_entitlement: null,
+      couple_entitlement: null,
+      relationship_state: null,
+    });
+  });
+
   test("complete_profile_onboarding stores the time zone and finishes onboarding", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, { name: "Ada" });
