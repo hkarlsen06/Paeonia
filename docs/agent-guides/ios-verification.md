@@ -58,6 +58,10 @@ The simulator reaches the Mac's `127.0.0.1` directly, and App Transport Security
 
 Only `main` is deployed to `api.paeonia.no`, with `scripts/deploy-backend`, after the branch is merged.
 
+### Refreshing the launch order file
+
+The Release app links with `ios/Scripts/launch.order`, which lists the functions a cold launch runs so the linker places them together and the device loads fewer pages at launch. The list goes stale as code changes. A symbol that no longer exists is ignored without a warning, and a new launch function only loses the benefit. Refresh it after large launch-path changes with `ios/Scripts/generate-launch-order-file.sh`. It builds an instrumented Release copy, runs it on `Shared iPhone` while holding the `simulator` lock, and puts the previously installed app back. The simulator must be signed in to a paired account. The script takes several minutes and needs no test run.
+
 ### Toolchain Requirement
 
 Build with Xcode 27.0 beta by setting `DEVELOPER_DIR` for the command or by selecting the beta globally with `xcode-select`. On macOS 27 beta, GM Xcode 26.5's `actool` crashes when compiling the app's Icon Composer icon at `ios/PaeoniaApp/Resources/AppIcon/paeonia_app.icon`.
