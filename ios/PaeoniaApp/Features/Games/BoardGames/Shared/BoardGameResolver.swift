@@ -72,6 +72,25 @@ nonisolated struct BoardGameSnapshot<Board: BoardGameRules>: Equatable, Sendable
     }
 }
 
+nonisolated extension BoardGameSnapshot {
+    /// It is this person's move, named by the partner's move that handed it over. A
+    /// Dots and Boxes box or a Ludo 6 keeps the turn, so the name stays the same through
+    /// this person's own extra moves. A game this person moves first in counts as a
+    /// handover only when the partner started it with "Play again". `startedHere` says
+    /// this phone started it. The first game always goes first to whoever created it.
+    func attention(userID: UUID, startedHere: Bool) -> GameAttention {
+        let me = player(for: userID)
+        guard board.outcome == nil, board.next == me, let movers = Board.movers(moves) else {
+            return GameAttention()
+        }
+        if let partnerMove = movers.lastIndex(where: { $0 != me }) {
+            return GameAttention(turn: "game \(gameNumber) move \(partnerMove + 1)")
+        }
+        guard gameNumber > 1, !startedHere else { return GameAttention() }
+        return GameAttention(turn: "game \(gameNumber) started")
+    }
+}
+
 /// Builds the snapshot from the server's game and the unsent actions. Pure: no
 /// clock, no storage.
 ///

@@ -38,13 +38,6 @@ struct GuessMySpotScreen: View {
             guard phase != .inactive else { return }
             viewModel.scenePhaseChanged(isActive: phase == .active)
         }
-        .onChange(of: viewModel.phase) { old, new in
-            // The partner's photo arrived while this person waited for it.
-            if old == .waitingForPhoto, new == .guess {
-                PaeoniaHaptics.partnerDrawingReceived()
-                GameSound.nudge.play(volume: 0.6)
-            }
-        }
         .onChange(of: viewModel.notice) { _, notice in
             guard let notice else { return }
             bannerCenter.show(notice.banner)

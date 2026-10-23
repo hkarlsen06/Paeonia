@@ -197,7 +197,9 @@ At accessibility Dynamic Type sizes the capsule moves out of the toolbar to the 
 |---|---|
 | Pick a row, tool, color, tile | `PaeoniaHaptics.selection()` |
 | Done sent | `drawingSent()` |
-| Partner joins, guess arrives, missed answer | `partnerDrawingReceived()` (soft) |
+| Partner joins, missed answer | `partnerDrawingReceived()` (soft) |
+| A wrong guess on my drawing, the partner picks a word to draw | `gamePartnerStep()` (`GameAttentionCue`) |
+| The partner's drawing arrives for me to guess | `gameYourTurn()` (`GameAttentionCue`) |
 | Letter ripple on reveal | `streakTick(intensity:)`, 0.25 rising to 0.85, at most 8 ticks |
 | Reveal lands | `answerRevealed()` |
 | Score count-up and speed bonus | `streakTick`, then `streakContinued()` for the bonus |
@@ -260,7 +262,7 @@ Toolbar trailing: "Clear" with a centered alert (not the widget's copy, which ta
 
 Live indicator. The leading slot follows what the partner's phone says it is doing. A partner who is `watching` shows the avatar (24 pt, accent ring) and "[Name] is watching". A partner still on the result of the last round shows "[Name] is still looking at the last round", and one who is in the game but has not said more shows "[Name] is here", both without the ring. When the partner joins, the avatar scales 1 to 1.12 and back once (`motionDefault`) and `partnerDrawingReceived()` fires. Reduce Motion: no scale, the haptic stays. When the partner is away the slot shows "[Name] will see it later" in `.paeoniaTextTertiary`, so async never feels broken. VoiceOver announces the line whenever it changes to a new one.
 
-Wrong guesses while drawing. The newest wrong guess fills the trailing slot as a capsule (`.paeoniaSurfacePrimary`, `caption` semibold, `.paeoniaTextSecondary`, never red). It arrives with `cardReveal` and an 8 pt rise, replaces the previous one, and fades out after 6 seconds, so the row is calm again. No layout shift, because the slot is always laid out. Haptic `partnerDrawingReceived()` only while no stroke is in progress (`onStrokeInProgressChange`). Reduce Motion: fade only. VoiceOver gets a queued, low priority announcement "[Name] tried CAT". Every guess is kept for the drawer's result (phase 6).
+Wrong guesses while drawing. The newest wrong guess fills the trailing slot as a capsule (`.paeoniaSurfacePrimary`, `caption` semibold, `.paeoniaTextSecondary`, never red). It arrives with `cardReveal` and an 8 pt rise, replaces the previous one, and fades out after 6 seconds, so the row is calm again. No layout shift, because the slot is always laid out. The shared step cue (`gamePartnerStep()`) taps the phone for each wrong guess, also mid-stroke and when the drawer is on another screen. Reduce Motion: fade only. VoiceOver gets a queued, low priority announcement "[Name] tried CAT". Every guess is kept for the drawer's result (phase 6).
 
 Done. `drawingSent()`, then the phase 6 "sent" view. Offline, the drawing is stored on this phone and the sent view shows the offline line below. A draft survives leaving the screen and relaunching, as `WidgetDrawingDraftStore` does.
 

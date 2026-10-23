@@ -50,8 +50,7 @@ struct ExquisiteCorpseWatchView: View {
         }
         .exquisiteCorpseInviteToolbar(viewModel)
         .onChange(of: viewModel.partnerDonePulse) { _, _ in
-            PaeoniaHaptics.partnerDrawingReceived()
-            GameSound.nudge.play()
+            // The view model's attention cue taps once the part reaches the server.
             AccessibilityNotification.Announcement(String(localized: title)).post()
         }
     }

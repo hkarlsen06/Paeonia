@@ -136,6 +136,8 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    /// Taps when the partner hands this person the turn or guesses on their drawing.
+    @ObservationIgnored var attentionCue = GameAttentionCue()
 
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var wrongGuessTask: Task<Void, Never>?
@@ -267,7 +269,8 @@ final class DrawAndGuessViewModel {
     /// state, then runs the effects a new state needs.
     func recompute() {
         guard let userID = currentUserID else { return }
-        let resolution = DrawAndGuessResolver(userID: userID).resolve(
+        let resolver = DrawAndGuessResolver(userID: userID)
+        let resolution = resolver.resolve(
             state: state,
             pending: pending,
             isPartnerDrawingLive: isPartnerDrawingLive
@@ -296,6 +299,9 @@ final class DrawAndGuessViewModel {
         updateSpeedBonus()
         updateReveal()
         runEffects()
+        if state != nil {
+            attentionCue.update(resolver.attention(state: state, pending: pending), isActive: isRunning && isActive)
+        }
     }
 
     /// Effects that depend on the new state. Each one guards against repeating.

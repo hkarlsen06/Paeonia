@@ -201,6 +201,27 @@ enum PaeoniaHaptics {
         }
     }
 
+    /// The partner's move made it this person's turn in a game. A knock-knock: a firm
+    /// tap, then a lighter one, like someone at the door.
+    static func gameYourTurn() {
+        impact(.medium, intensity: 0.9)
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(110))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            impact(.medium, intensity: 0.6)
+        }
+    }
+
+    /// The partner did something in a game that this person should see, without making
+    /// it their turn, such as a wrong guess on their drawing. One crisp notch.
+    static func gamePartnerStep() {
+        impact(.rigid, intensity: 0.6)
+    }
+
     static func selection() {
         selectionGenerator.selectionChanged()
         selectionGenerator.prepare()

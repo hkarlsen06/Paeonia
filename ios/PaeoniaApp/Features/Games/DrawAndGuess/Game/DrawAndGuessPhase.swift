@@ -244,3 +244,28 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         }
     }
 }
+
+nonisolated extension DrawAndGuessResolver {
+    /// What needs this person in the round being played, which may be newer than the
+    /// result on screen. The guesser's turn starts when the partner sends the drawing,
+    /// and the partner picking a word tells the guesser to watch. The drawer only ever
+    /// draws after their own correct guess or after starting the game, so their turn
+    /// never counts as a handover. While the round is open, the partner's newest wrong
+    /// guess on the drawing is a step.
+    func attention(state: RemoteDrawAndGuessState?, pending: DrawAndGuessPendingWork) -> GameAttention {
+        guard let state, let game = state.game,
+              let round = effectiveRound(state: state, game: game, pending: pending),
+              !round.isFinished
+        else {
+            return GameAttention()
+        }
+        if round.isDrawer(userID) {
+            let wrongGuess = round.attempts.last { $0.userID != userID && !$0.isCorrect }
+            return GameAttention(partnerStep: wrongGuess.map { "guess \($0.id)" })
+        }
+        return GameAttention(
+            turn: round.isDrawingSent ? "round \(round.id) drawing sent" : nil,
+            partnerStep: "round \(round.id) started"
+        )
+    }
+}

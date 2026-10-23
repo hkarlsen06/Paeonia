@@ -111,12 +111,6 @@ struct DrawAndGuessDrawerResultView: View {
                 shownWrongCount = wrongAttempts.count
             }
         }
-        .onChange(of: wrongAttempts.count) { old, new in
-            if !isRevealed, new > old {
-                GameSound.nudge.play(volume: 0.7)
-                if !viewModel.board.isStrokeInProgress { PaeoniaHaptics.partnerDrawingReceived() }
-            }
-        }
         .onChange(of: partnersReaction) { old, new in
             // A reaction that shows up while the result is on screen. One that was
             // there when the screen opened comes in with the result instead.
@@ -125,9 +119,8 @@ struct DrawAndGuessDrawerResultView: View {
             GameSound.nudge.play()
         }
         .onChange(of: nextRoundCall) { _, call in
+            // The view model's attention cue plays the haptic when the round reaches this phone.
             guard let call else { return }
-            PaeoniaHaptics.partnerDrawingReceived()
-            GameSound.nudge.play()
             let announcement: String = switch call {
             case .drawing: String(localized: .gamesDrawAndGuessWaitDrawing(viewModel.partnerName))
             case .sent: String(localized: .gamesDrawAndGuessHandoffSeeDrawing(viewModel.partnerName))

@@ -128,6 +128,8 @@ final class ExquisiteCorpseViewModel {
     /// screen. The game stops when this reaches zero.
     @ObservationIgnored var visibleScreens = 0
     @ObservationIgnored var reloadGate = GameReloadGate()
+    /// Taps when the partner's part makes it this person's turn.
+    @ObservationIgnored var attentionCue = GameAttentionCue()
 
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
     @ObservationIgnored var draftTask: Task<Void, Never>?

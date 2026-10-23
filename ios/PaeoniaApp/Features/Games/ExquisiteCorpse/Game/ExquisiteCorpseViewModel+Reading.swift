@@ -96,6 +96,12 @@ extension ExquisiteCorpseViewModel {
         updateStrip()
         updateReveal(resolution)
         runEffects()
+        if state != nil {
+            attentionCue.update(
+                ExquisiteCorpseResolver.attention(resolution: resolution, game: state?.game),
+                isActive: isRunning && isActive
+            )
+        }
     }
 
     /// Works out the phase. A partner who tapped Done on the part watched here

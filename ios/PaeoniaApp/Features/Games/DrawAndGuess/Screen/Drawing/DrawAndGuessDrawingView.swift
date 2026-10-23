@@ -105,10 +105,7 @@ struct DrawAndGuessDrawingView: View {
         withAnimation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.cardReveal) {
             shownGuess = attempt
         }
-        if !board.isStrokeInProgress {
-            PaeoniaHaptics.partnerDrawingReceived()
-        }
-        GameSound.nudge.play(volume: 0.7)
+        // The view model's attention cue plays the haptic, also when this view is not on screen.
         var announcement = AttributedString(
             String(localized: .gamesDrawAndGuessDrawTried(viewModel.partnerName, attempt.text.uppercased()))
         )

@@ -38,6 +38,7 @@ extension ConsensioViewModel {
         }
         isRunning = false
         isStopped = true
+        attentionCue.reset()
         loops.cancelFollowing()
         for task in [startTask, refreshTask, liveSendTask] {
             task?.cancel()

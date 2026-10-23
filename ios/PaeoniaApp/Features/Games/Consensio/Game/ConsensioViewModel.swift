@@ -96,6 +96,8 @@ final class ConsensioViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    /// Taps when the partner places a marker and it becomes this person's turn to guess.
+    @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var refusedMoves: [ConsensioRefusedMove] = []
     /// The rendered marks and the keys they were rendered for.
     @ObservationIgnored var markImages: [UUID: (key: String, image: UIImage)] = [:]
@@ -216,6 +218,7 @@ final class ConsensioViewModel {
     }
 
     func resetForNewIdentity() {
+        attentionCue.reset()
         state = nil
         overview = nil
         game = nil

@@ -38,6 +38,7 @@ extension GuessMySpotViewModel {
         }
         isRunning = false
         isStopped = true
+        attentionCue.reset()
         loops.cancelFollowing()
         for task in [startTask, refreshTask] {
             task?.cancel()

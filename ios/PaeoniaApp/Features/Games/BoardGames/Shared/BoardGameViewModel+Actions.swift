@@ -69,6 +69,7 @@ extension BoardGameViewModel {
         )
         PaeoniaHaptics.selection()
         localActionRevision += 1
+        rematchedGameNumber = snapshot.gameNumber + 1
         outcomeTask?.cancel()
         showsOutcome = false
         result = nil
@@ -252,6 +253,15 @@ extension BoardGameViewModel {
             score = Self.score(snapshot, playStyle: overview?.settings?.playStyle ?? .against)
         }
         loadPhoto(isShowingMissedEnding ? missedEnding?.photoMediaAssetID : snapshot.photoMediaAssetID)
+        // After the first read, only a board that shows the whole game counts, so the tap
+        // comes after the partner's piece has landed and never for a move still on its way.
+        // The first read counts at once, so a move that lands during the opening replay taps.
+        if !attentionCue.hasRead || (!isReplaying && !isShowingMissedEnding && displayedMovesMatchGame) {
+            attentionCue.update(
+                snapshot.attention(userID: userID, startedHere: rematchedGameNumber == snapshot.gameNumber),
+                isActive: isRunning && isActive
+            )
+        }
     }
 
     nonisolated static func score(_ snapshot: BoardGameSnapshot<Board>, playStyle: GamePlayStyle) -> BoardGameScore {

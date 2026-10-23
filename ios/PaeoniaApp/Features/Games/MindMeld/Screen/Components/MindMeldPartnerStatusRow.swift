@@ -4,9 +4,9 @@ import SwiftUI
 /// side of the write phase's top line. It keeps one height, so the content under
 /// it never moves when the line changes.
 ///
-/// - Locked in: the line arrives with a spring, the avatar pulses once, the phone
-///   taps and VoiceOver says it.
-/// - Joins: the same pulse and tap, without the announcement.
+/// - Locked in: the line arrives with a spring, the avatar pulses once and
+///   VoiceOver says it. The view model's attention cue taps the phone.
+/// - Joins: the same pulse and a tap, without the announcement.
 struct MindMeldPartnerStatusRow: View {
     let partner: MindMeldPlayer
     let status: MindMeldPartnerStatus
@@ -77,8 +77,10 @@ struct MindMeldPartnerStatusRow: View {
         let locked = new == .locked && old != .locked
         let joined = old == .away && (new == .here || new == .typing)
         guard locked || joined else { return }
-        PaeoniaHaptics.partnerDrawingReceived()
-        GameSound.nudge.play(volume: 0.7)
+        if joined {
+            PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play(volume: 0.7)
+        }
         if locked {
             AccessibilityNotification.Announcement(String(localized: .mindMeldPartnerLocked(partner.name))).post()
         }

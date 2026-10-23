@@ -212,7 +212,8 @@ Existing tokens and sounds only.
 | Pin dropped or moved, a pin on "Our guesses" tapped | `selection()` | `tap` 0.6 |
 | Satellite button | `selection()` | `tap` 0.5 |
 | Send, Lock in my guess | `drawingSent()` | `send` |
-| Partner arrives, partner sent | `partnerDrawingReceived()` | `nudge` 0.6 |
+| Partner arrives | `partnerDrawingReceived()` | `nudge` 0.6 |
+| The partner sends a photo for you to guess | `gameYourTurn()` (`GameAttentionCue`) | `nudge` 0.6 |
 | Reveal build-up, three beats | `streakTick(intensity:)` 0.3, 0.5, 0.7 | `tick` 0.4, 0.6, 0.8 |
 | The real pin lands | `answerRevealed()` | `chime` |
 | Distance counts up | `streakTick(0.3)` per step | `tick` 0.4 |
@@ -277,7 +278,7 @@ Two cases.
 - **Waiting for the guess.** The photo I sent on top and the map under it, as on the guess screen, with my pin at the spot at 0.6 opacity. Live, the partner's pin appears where they tap, and the camera frames both pins. While the partner's pin is within 25 km, my pin shows at full strength and glows gold. Title "[Name] is guessing" while live, "Waiting for [Name]" otherwise.
 - **Waiting for a photo.** The partner's avatar, 96 pt, with a breathing ring while they are in the game. Title "[Name] is picking a photo" while their role is `choosing`, "Waiting for [Name]" otherwise.
 
-Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." Away: "We'll tell you when [Name] guesses." or "We'll tell you when it's your turn." When the send is still on the phone after a failed try, the shared offline line shows, or "We couldn't send your move yet" with Try again. When the partner's photo arrives while this screen waits for it, the guess opens with `partnerDrawingReceived()` and `nudge`.
+Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." Away: "We'll tell you when [Name] guesses." or "We'll tell you when it's your turn." When the send is still on the phone after a failed try, the shared offline line shows, or "We couldn't send your move yet" with Try again. When the partner's photo arrives, the guess opens, and the shared turn cue (`gameYourTurn()` and `nudge`) plays, also while the last reveal is still on screen.
 
 | Key | English | Norwegian |
 |---|---|---|

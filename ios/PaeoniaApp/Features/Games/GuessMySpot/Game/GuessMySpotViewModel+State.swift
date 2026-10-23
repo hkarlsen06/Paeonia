@@ -91,7 +91,8 @@ extension GuessMySpotViewModel {
         work.sends += unsavedSends.filter { !queuedIDs.contains($0.roundID) }
         work.guesses.merge(unsavedGuesses) { kept, _ in kept }
         work.seenReveals.formUnion(unsavedSeen)
-        let resolved = GuessMySpotResolver(userID: userID).resolve(
+        let resolver = GuessMySpotResolver(userID: userID)
+        let resolved = resolver.resolve(
             state: state,
             hasLoaded: hasLoaded,
             isStarting: isStartingGame,
@@ -121,6 +122,9 @@ extension GuessMySpotViewModel {
         updatePartnerStatus()
         syncLiveRole()
         runEffects()
+        if state != nil {
+            attentionCue.update(resolver.attention(state: state, pending: work), isActive: isRunning && isActive)
+        }
     }
 
     /// A new guess starts with no pin on the map.

@@ -94,7 +94,8 @@ extension MindMeldViewModel {
         for (roundID, word) in unsavedLocks {
             work.lockedWords[roundID] = word
         }
-        let resolved = MindMeldResolver(userID: userID).resolve(state: state, hasLoaded: hasLoaded, pending: work)
+        let resolver = MindMeldResolver(userID: userID)
+        let resolved = resolver.resolve(state: state, hasLoaded: hasLoaded, pending: work)
         if resolution != resolved {
             resolution = resolved
         }
@@ -111,6 +112,9 @@ extension MindMeldViewModel {
         followDraftRound()
         updatePartnerStatus()
         runEffects()
+        if state != nil {
+            attentionCue.update(resolver.attention(state: state, pending: work), isActive: isRunning && isActive)
+        }
     }
 
     /// A new round starts with an empty field. The same round keeps what was typed.

@@ -249,3 +249,17 @@ nonisolated extension MindMeldResolution {
         }
     }
 }
+
+nonisolated extension MindMeldResolver {
+    /// It is this person's turn once the partner has locked in a word for the open round
+    /// and they have not. It reads the current game and not the phase, so the turn also
+    /// arrives while the last round's reveal is still on screen.
+    func attention(state: RemoteMindMeldState?, pending: MindMeldPendingWork) -> GameAttention {
+        guard let current = state?.current else { return GameAttention() }
+        let game = apply(pending, to: current)
+        guard !game.isFinished, let open = game.openRound, open.partnerLocked, open.myWord == nil else {
+            return GameAttention()
+        }
+        return GameAttention(turn: "round \(open.id) partner locked")
+    }
+}

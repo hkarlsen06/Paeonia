@@ -88,7 +88,8 @@ extension ConsensioViewModel {
         work.placements += unsavedPlacements.filter { !queuedIDs.contains($0.roundID) }
         work.guesses.merge(unsavedGuesses) { kept, _ in kept }
         work.seenReveals.formUnion(unsavedSeen)
-        let resolved = ConsensioResolver(userID: userID).resolve(
+        let resolver = ConsensioResolver(userID: userID)
+        let resolved = resolver.resolve(
             state: state,
             hasLoaded: hasLoaded,
             isStarting: isStartingGame,
@@ -117,6 +118,9 @@ extension ConsensioViewModel {
         updatePartnerStatus()
         syncLiveRole()
         runEffects()
+        if state != nil {
+            attentionCue.update(resolver.attention(state: state, pending: work), isActive: isRunning && isActive)
+        }
     }
 
     /// A new guess starts with the marker in the middle. Leaving the guess phase

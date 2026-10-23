@@ -42,6 +42,7 @@ extension MindMeldViewModel {
         }
         isRunning = false
         isStopped = true
+        attentionCue.reset()
         cancelTasks()
         loops.endHeartbeat()
         sendTyping(false)

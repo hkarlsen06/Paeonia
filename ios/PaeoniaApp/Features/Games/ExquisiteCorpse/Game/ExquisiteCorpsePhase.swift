@@ -208,6 +208,22 @@ nonisolated struct ExquisiteCorpseResolver: Sendable {
         )
     }
 
+    /// It is this person's turn once the partner's part hands it over, also while the
+    /// last figure's reveal is still on screen. Every part the server takes moves the
+    /// turn to the other partner, so each of this person's parts follows one of the
+    /// partner's, except the very first head, which goes to whoever started the game.
+    static func attention(
+        resolution: ExquisiteCorpseResolution,
+        game: RemoteExquisiteCorpseGame?
+    ) -> GameAttention {
+        guard resolution.turnPhase == .drawing, let game,
+              game.figureNumber > 1 || game.partIndex > ExquisiteCorpsePartKind.head.rawValue
+        else {
+            return GameAttention()
+        }
+        return GameAttention(turn: "figure \(game.figureNumber) part \(game.partIndex)")
+    }
+
     /// The latest finished figure, when this person has not moved past its reveal.
     /// Only the latest counts, so a person who missed several sees one and not
     /// the whole history.

@@ -111,6 +111,8 @@ final class StoryChainViewModel {
     @ObservationIgnored var now: Date
     @ObservationIgnored var localInviteSentAt: Date?
     @ObservationIgnored var reloadGate = GameReloadGate()
+    /// Taps when the partner's line makes it this person's turn to write or to name the story.
+    @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var isRunning = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var hasEnsuredGame = false
@@ -270,7 +272,8 @@ final class StoryChainViewModel {
     func recompute() {
         guard let userID = currentUserID else { return }
         now = dependencies.now()
-        let resolution = StoryChainResolver(userID: userID).resolve(state: state, settings: settings, pending: pending)
+        let resolver = StoryChainResolver(userID: userID)
+        let resolution = resolver.resolve(state: state, settings: settings, pending: pending)
         phase = resolvedPhase(for: resolution)
         story = resolution.story
         isWaitingToSend = resolution.isWaitingToSend
@@ -300,6 +303,9 @@ final class StoryChainViewModel {
 
         live?.switchRole(to: StoryChainResolver.liveRole(for: phase))
         startGameIfNeeded()
+        if state != nil {
+            attentionCue.update(resolver.attention(state: state, pending: pending), isActive: isRunning && isActive)
+        }
     }
 
     /// Shows nothing until the next read, such as after another person signs in.

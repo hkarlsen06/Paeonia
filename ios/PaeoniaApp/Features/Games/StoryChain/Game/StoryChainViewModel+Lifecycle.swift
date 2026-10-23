@@ -39,6 +39,7 @@ extension StoryChainViewModel {
     func stop() {
         guard isRunning else { return }
         isRunning = false
+        attentionCue.reset()
         // The page that was writing a line in is gone. The line is on the page
         // the next time.
         arrivingLineID = nil
@@ -75,6 +76,7 @@ extension StoryChainViewModel {
     }
 
     func resetForNewIdentity() {
+        attentionCue.reset()
         state = nil
         settings = nil
         overviewPresence = nil

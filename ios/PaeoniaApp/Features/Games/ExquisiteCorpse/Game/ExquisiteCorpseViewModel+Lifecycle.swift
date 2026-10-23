@@ -40,6 +40,7 @@ extension ExquisiteCorpseViewModel {
         guard isRunning else { return }
         isRunning = false
         isStopped = true
+        attentionCue.reset()
         cancelTasks()
         loops.endHeartbeat()
         stopLive()
@@ -94,6 +95,7 @@ extension ExquisiteCorpseViewModel {
     }
 
     func resetForNewIdentity() {
+        attentionCue.reset()
         state = nil
         overview = nil
         pending = .none

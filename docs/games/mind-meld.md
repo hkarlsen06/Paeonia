@@ -171,7 +171,8 @@ Copy keys start with `mindMeld.`, so their Swift symbols start with `mindMeld`. 
 |---|---|
 | Surprise me, Count it | `selection()` |
 | Lock in | `drawingSent()` |
-| Partner locked in, partner joins | `partnerDrawingReceived()` |
+| Partner joins | `partnerDrawingReceived()` |
+| Partner locked in and you have not | `gameYourTurn()` (`GameAttentionCue`) |
 | Invalid word on Lock in | `validationError()` |
 | Reveal build-up, three beats | `streakTick(intensity:)` 0.3, 0.5, 0.7 |
 | Each card flips | `streakTick(intensity: 0.85)` |
@@ -195,7 +196,7 @@ Layout, top to bottom. At normal text sizes the whole phase is meant to fit abov
 
 Partner status. A 24 pt avatar and one line:
 
-- "[Name] locked in" with `lock.fill` in `.paeoniaAccentPrimary`, when the server says so. It arrives with `cardReveal`, a pulse of the avatar (1 to 1.12 and back) and `partnerDrawingReceived()`. VoiceOver announces it.
+- "[Name] locked in" with `lock.fill` in `.paeoniaAccentPrimary`, when the server says so. It arrives with `cardReveal` and a pulse of the avatar (1 to 1.12 and back). The shared turn cue taps the phone, also when the partner locked in before this screen opened its write phase. VoiceOver announces it.
 - "[Name] is typing" with three dots that rise in turn (`motionDefault`, repeating). Reduce Motion: still dots.
 - "[Name] is here" when the partner has the game open but isn't typing.
 - "[Name] will answer later" in `.paeoniaTextTertiary` when the partner is away. The invite bell shows in the toolbar until the partner arrives.

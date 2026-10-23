@@ -35,6 +35,7 @@ extension BoardGameViewModel {
     func stop() {
         guard isRunning else { return }
         isRunning = false
+        attentionCue.reset()
         loops.cancelFollowing()
         pauseDisplay()
         loops.endHeartbeat()

@@ -114,6 +114,8 @@ final class MindMeldViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    /// Taps when the partner locks in and it becomes this person's turn.
+    @ObservationIgnored var attentionCue = GameAttentionCue()
     /// Refused words that no reload has shown yet.
     @ObservationIgnored var refusedWords: [MindMeldRefusedWord] = []
     /// The open round the draft belongs to.
@@ -259,6 +261,7 @@ final class MindMeldViewModel {
 
     /// A different person or couple: nothing loaded so far is theirs.
     func resetForNewIdentity() {
+        attentionCue.reset()
         state = nil
         overview = nil
         pending = .none

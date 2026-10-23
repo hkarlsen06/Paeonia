@@ -53,6 +53,22 @@ nonisolated struct StoryChainResolver: Sendable {
         return StoryChainResolution(phase: turnPhase, story: timeline.stories.last, isWaitingToSend: waiting)
     }
 
+    /// It is this person's turn to write or to name the story once the partner's line
+    /// hands it over, also while the last story's reveal is still on screen. The opening
+    /// always goes to whoever named the last story or started the game, and line 1 to
+    /// whoever picked the opening, so neither counts as a handover.
+    func attention(state: RemoteStoryChainState?, pending: StoryChainPendingWork) -> GameAttention {
+        guard let state, let game = state.game else { return GameAttention() }
+        var timeline = Timeline(state: state, game: game, userID: userID)
+        timeline.apply(pending, game: game)
+        guard timeline.phase == .writing || timeline.phase == .naming,
+              let line = timeline.stories.last?.story.lines.last, line.authorUserID != userID
+        else {
+            return GameAttention()
+        }
+        return GameAttention(turn: "line \(line.id)")
+    }
+
     /// What this phone tells the partner's phone through the relay room.
     static func liveRole(for phase: StoryChainPhase) -> WidgetLivePresence.Role {
         switch phase {

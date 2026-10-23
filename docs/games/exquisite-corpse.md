@@ -81,7 +81,7 @@ Live runs whenever both partners have the game screen open. Without the partner 
   
   Every message carries the part id, so a message from an earlier part is ignored. The strip message is the whole state, so a lost message never leaves the watcher with missing strokes. No stroke of the drawing above the fold is ever sent.
 - **The drawer's canvas is not streamed.** The game does not attach its canvas to `WidgetLiveDrawing`, so the relay's own `live` and `ops` stroke messages never carry the hidden part. The game uses `WidgetLiveDrawing` for presence and roles only.
-- **Done, live.** The drawer's phone sends `done`. The watcher's line changes to "[Name] finished the head" and the paper gives one soft pulse with `partnerDrawingReceived()`. When the part reaches the server, the watcher's turn starts: the folded paper lifts away (`meaningfulMoment`), and the strip slides from the bottom of the watched square to the top of the new canvas (`matchedGeometryEffect`). As the strip settles, the fold sound and `partnerDrawingReceived()` mark the turn coming to you. The new canvas shows the live strip until the strip file has loaded, then the file. The two are the same drawing.
+- **Done, live.** The drawer's phone sends `done`. The watcher's line changes to "[Name] finished the head" and the paper gives one soft pulse, without a haptic. When the part reaches the server, the watcher's turn starts: the folded paper lifts away (`meaningfulMoment`), and the strip slides from the bottom of the watched square to the top of the new canvas (`matchedGeometryEffect`). As the strip settles, the fold sound marks the turn coming to you. The shared turn cue taps the phone when the server hands over the turn, whichever screen shows. The new canvas shows the live strip until the strip file has loaded, then the file. The two are the same drawing.
 - **Lost connection.** The watcher falls back to the async waiting screen. A reconnect gets the whole strip again. The drawer keeps drawing and Done still sends.
 - **The live reveal.** When the legs are done live, both phones open the reveal as soon as they have all three parts. Each phone waits for the server to finish the figure and then downloads the parts it lacks, which takes about a second. Until then both show the folded paper with "Opening…" and a slow shimmer.
 - **Invite.** The waiting screen has the shared "Tell [Name] you want to play" button while the partner isn't in the game (`docs/games-plan.md`). The push opens Exquisite corpse directly.
@@ -195,7 +195,8 @@ Haptics.
 |---|---|
 | Pick a tool, color, idea, shuffle | `selection()` |
 | Done sent | `drawingSent()` |
-| Partner joins, partner's part arrives, partner tapped Done live, the strip lands in your canvas after watching | `partnerDrawingReceived()` |
+| Partner joins | `partnerDrawingReceived()` |
+| The partner's part reaches the server and it is your turn | `gameYourTurn()` (`GameAttentionCue`) |
 | Each fold lands in the reveal | `streakTick(intensity:)`, 0.4, 0.6, 0.85 |
 | The whole figure shows | `answerRevealed()` |
 

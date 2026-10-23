@@ -120,6 +120,21 @@ nonisolated struct ConsensioResolver: Sendable {
     }
 }
 
+nonisolated extension ConsensioResolver {
+    /// It is this person's turn once the partner has placed a marker for them to guess.
+    /// It reads the rounds and not the phase, so the turn also arrives while the last
+    /// round's reveal is still on screen. Placing the next round always follows this
+    /// person's own guess, so it never counts as a handover.
+    func attention(state: RemoteConsensioState?, pending: ConsensioPendingWork) -> GameAttention {
+        guard let state, state.game != nil, let newest = apply(pending, to: state).last,
+              newest.guess == nil, newest.guesserUserID == userID, newest.placerUserID != userID
+        else {
+            return GameAttention()
+        }
+        return GameAttention(turn: "round \(newest.id) placed")
+    }
+}
+
 nonisolated extension ConsensioResolution {
     /// A topic to place, a guess, or a reveal waits for this person.
     var isYourTurn: Bool {

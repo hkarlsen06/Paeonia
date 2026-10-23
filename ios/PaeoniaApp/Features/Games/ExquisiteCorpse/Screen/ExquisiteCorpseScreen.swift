@@ -93,13 +93,11 @@ struct ExquisiteCorpseScreen: View {
     /// The turn came to this person while they watched: the strip slides from the
     /// watched square to the top of their canvas over `meaningfulMoment`. The fold
     /// sound creases for 0.1 seconds before its knock, so it starts early, and the
-    /// knock and the tap land as the strip settles.
+    /// knock lands as the strip settles. The view model's attention cue taps the phone.
     private func handoffLanded() {
         Task {
             try? await Task.sleep(for: .seconds(PaeoniaMotion.motionSlow - Self.foldSoundLead))
             GameSound.fold.play(volume: 0.7)
-            try? await Task.sleep(for: .seconds(Self.foldSoundLead))
-            PaeoniaHaptics.partnerDrawingReceived()
         }
     }
 

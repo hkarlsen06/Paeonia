@@ -117,6 +117,21 @@ nonisolated struct GuessMySpotResolver: Sendable {
     }
 }
 
+nonisolated extension GuessMySpotResolver {
+    /// It is this person's turn once the partner has sent a photo for them to guess.
+    /// It reads the rounds and not the phase, so the turn also arrives while the last
+    /// round's reveal is still on screen. Sending the next photo always follows this
+    /// person's own guess, so it never counts as a handover.
+    func attention(state: RemoteGuessMySpotState?, pending: GuessMySpotPendingWork) -> GameAttention {
+        guard let state, state.game != nil, let newest = apply(pending, to: state).last,
+              !newest.isGuessed, newest.guesserUserID == userID, newest.senderUserID != userID
+        else {
+            return GameAttention()
+        }
+        return GameAttention(turn: "round \(newest.id) sent")
+    }
+}
+
 nonisolated extension GuessMySpotResolution {
     /// A photo to send, a guess, or a reveal waits for this person.
     var isYourTurn: Bool {

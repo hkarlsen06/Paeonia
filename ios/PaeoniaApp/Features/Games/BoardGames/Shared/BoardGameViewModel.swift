@@ -124,6 +124,10 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     @ObservationIgnored var now: Date
     @ObservationIgnored var hasFailedAttempt = false
     @ObservationIgnored var reloadGate = GameReloadGate()
+    /// Taps when the partner's move lands on the board and it is this person's move.
+    @ObservationIgnored var attentionCue = GameAttentionCue()
+    /// The game number "Play again" on this phone started, so its first move is no handover.
+    @ObservationIgnored var rematchedGameNumber: Int?
     /// Goes up with each move or rematch made on this phone.
     @ObservationIgnored var localActionRevision = 0
     @ObservationIgnored var localChangeSyncHandler: (@MainActor @Sendable () async -> Void)?
@@ -308,6 +312,8 @@ final class BoardGameViewModel<Board: BoardGameRules> {
     }
 
     func resetForNewIdentity() {
+        attentionCue.reset()
+        rematchedGameNumber = nil
         replayTask?.cancel()
         outcomeTask?.cancel()
         photoTask?.cancel()

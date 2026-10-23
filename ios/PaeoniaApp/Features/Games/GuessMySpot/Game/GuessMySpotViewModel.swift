@@ -117,6 +117,8 @@ final class GuessMySpotViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    /// Taps when the partner sends a photo and it becomes this person's turn to guess.
+    @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var refusedMoves: [GuessMySpotRefusedMove] = []
     /// Refusals the person was already told about on this visit.
     @ObservationIgnored var announcedRefusals: Set<UUID> = []
@@ -234,6 +236,7 @@ final class GuessMySpotViewModel {
     }
 
     func resetForNewIdentity() {
+        attentionCue.reset()
         state = nil
         overview = nil
         game = nil

@@ -40,6 +40,7 @@ extension DrawAndGuessViewModel {
         guard isRunning else { return }
         isRunning = false
         isStopped = true
+        attentionCue.reset()
         cancelTasks()
         loops.endHeartbeat()
         stopLive()
@@ -83,6 +84,7 @@ extension DrawAndGuessViewModel {
     }
 
     func resetForNewIdentity() {
+        attentionCue.reset()
         state = nil
         pending = .none
         persistedHints = [:]
