@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Agents in other worktrees share the simulators, so a test run holds the
-# simulator lock (scripts/lock). A worktree that took it with `scripts/lock acquire`
-# runs straight away.
+# Agents in every worktree and repo on this Mac share the simulators, so a test
+# run holds the machine-wide simulator lock (scripts/lock) from start to end. It
+# takes that lock before the xcodebuild lock. A worktree that took it with
+# `scripts/lock acquire simulator` runs straight away.
 if [ -z "${PAEONIA_SIMULATOR_LOCK_HELD:-}" ]; then
   PAEONIA_SIMULATOR_LOCK_HELD=1 exec ./scripts/lock run simulator -- "$0" "$@"
 fi

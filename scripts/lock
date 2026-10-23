@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
-# Shared locks for agents working in parallel worktrees of this repo, such as
-# the simulators and the hosted backend. Locks live in the git common dir, so
-# every worktree sees the same ones. A lock belongs to the worktree that took it,
-# and only that worktree can release it.
+# Shared locks for agents working in parallel, such as the simulator lock. A
+# lock belongs to the worktree that took it, and only that worktree can release
+# it.
 #
 #   scripts/lock run <name> -- <command...>   wait for the lock, run, release
 #   scripts/lock acquire <name>               take it for a session of several commands
 #   scripts/lock release <name>               give back a lock this worktree took
 #   scripts/lock status                       list held locks
+#
+# The simulator lock is machine-wide, in /tmp/agent-locks (AGENT_SIMULATOR_LOCK_ROOT
+# overrides it), because agents from every repo on this Mac share the simulators.
+# Tidex and Paeonia each have a copy of this script, so keep the copies
+# compatible: the same lock path, owner line and stale rules. Every other lock
+# lives in this repo's git common dir, so all its worktrees see the same ones.
 #
 # `run` waits while another `run` holds the lock, even one in this worktree,
 # because several agents can share a worktree. A worktree's `acquire` session
@@ -19,21 +24,30 @@
 # (default 90).
 set -euo pipefail
 
-LOCK_ROOT="$(git rev-parse --path-format=absolute --git-common-dir)/paeonia-locks"
+REPO_LOCK_ROOT="$(git rev-parse --path-format=absolute --git-common-dir)/paeonia-locks"
+SIMULATOR_LOCK_ROOT="${AGENT_SIMULATOR_LOCK_ROOT:-/tmp/agent-locks}"
 OWNER="$(git rev-parse --show-toplevel)"
 TTL_SECONDS=$(( ${PAEONIA_LOCK_TTL_MINUTES:-45} * 60 ))
 WAIT_SECONDS=$(( ${PAEONIA_LOCK_WAIT_MINUTES:-90} * 60 ))
 
-mkdir -p "$LOCK_ROOT"
+mkdir -p "$REPO_LOCK_ROOT" "$SIMULATOR_LOCK_ROOT"
+
+lock_dir() {
+  if [ "$1" = simulator ]; then
+    echo "$SIMULATOR_LOCK_ROOT/simulator"
+  else
+    echo "$REPO_LOCK_ROOT/$1"
+  fi
+}
 
 usage() {
-  sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//' >&2
+  sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//' >&2
   exit 2
 }
 
 # Prints "owner|pid|started" for a held lock.
 read_lock() {
-  cat "$LOCK_ROOT/$1/owner" 2>/dev/null || echo "unknown||0"
+  cat "$(lock_dir "$1")/owner" 2>/dev/null || echo "unknown||0"
 }
 
 describe() {
@@ -49,7 +63,7 @@ describe() {
 
 is_stale() {
   # The taker writes the owner file right after mkdir. Until then, it is not stale.
-  [ -f "$LOCK_ROOT/$1/owner" ] || return 1
+  [ -f "$(lock_dir "$1")/owner" ] || return 1
   local owner pid started
   IFS='|' read -r owner pid started <<<"$(read_lock "$1")"
   if [ -n "$pid" ]; then
@@ -76,10 +90,11 @@ session_held_by_me() {
 # take <name> <pid or empty>. Returns 0 when it took the lock, 3 when this
 # worktree already holds it through `acquire`.
 take() {
-  local name="$1" pid="$2" waited=0
+  local name="$1" pid="$2" waited=0 dir
+  dir="$(lock_dir "$1")"
   while true; do
-    if mkdir "$LOCK_ROOT/$name" 2>/dev/null; then
-      echo "$OWNER|$pid|$(date +%s)" >"$LOCK_ROOT/$name/owner"
+    if mkdir "$dir" 2>/dev/null; then
+      echo "$OWNER|$pid|$(date +%s)" >"$dir/owner"
       return 0
     fi
     if session_held_by_me "$name"; then
@@ -87,7 +102,7 @@ take() {
     fi
     if is_stale "$name"; then
       echo "[lock] taking over a stale lock. $(describe "$name")" >&2
-      rm -rf "${LOCK_ROOT:?}/$name"
+      rm -rf "$dir"
       continue
     fi
     if [ "$waited" -ge "$WAIT_SECONDS" ]; then
@@ -103,10 +118,11 @@ take() {
 }
 
 release() {
-  local name="$1"
-  [ -d "$LOCK_ROOT/$name" ] || return 0
+  local name="$1" dir
+  dir="$(lock_dir "$1")"
+  [ -d "$dir" ] || return 0
   if held_by_me "$name"; then
-    rm -rf "${LOCK_ROOT:?}/$name"
+    rm -rf "$dir"
   else
     echo "[lock] not releasing a lock this worktree does not hold. $(describe "$name")" >&2
     return 1
@@ -140,10 +156,13 @@ case "${1:-}" in
     ;;
   status)
     found=0
-    for dir in "$LOCK_ROOT"/*/; do
+    # A simulator lock in the repo's own lock dir is left from before the
+    # simulator lock became machine-wide, so it is not listed.
+    for dir in "$REPO_LOCK_ROOT"/*/ "$SIMULATOR_LOCK_ROOT"/simulator/; do
       [ -d "$dir" ] || continue
-      found=1
       name="$(basename "$dir")"
+      [ "$dir" != "$REPO_LOCK_ROOT/simulator/" ] || continue
+      found=1
       if is_stale "$name"; then
         echo "$(describe "$name") (stale)"
       else
