@@ -130,6 +130,10 @@ nonisolated struct UnavailableGamesGateway: GamesGateway {
     func sendInvite(_: GameKind) async throws -> RemoteInviteResult {
         throw Unavailable()
     }
+
+    func hideWaitingGame(_: GameKind) async throws {
+        throw Unavailable()
+    }
 }
 
 // Each built game adds its own `extension UnavailableGamesGateway` here.

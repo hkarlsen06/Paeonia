@@ -10,7 +10,8 @@ extension EnvironmentValues {
 /// on the Home tab. The game's picture runs behind the whole card. A badge such as the
 /// score floats at the top center of its scene. Below, where the picture goes out of
 /// focus, come the partner chip, the name, a status line, the main button, and optional
-/// extras, centered. The card glows while the game waits for this person. The daily
+/// extras, centered. The card glows while the game waits for this person, and then has a
+/// "Not now" button in the top trailing corner (`GameHubCardContext.hide`). The daily
 /// question card on the Home tab uses the frame too, with no partner chip.
 ///
 /// In the hub's grid (`gameHubCardIsCompact`) the card is a small tile with the same
@@ -80,6 +81,12 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
                 .padding(.top, PaeoniaSpacing.space12)
                 // The scene is only so tall, so the badge stops growing before it covers it.
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        }
+        .overlay(alignment: .topTrailing) {
+            if let hide = context?.hide, !isLoading {
+                GameHubNotNowButton(action: hide)
+                    .padding(PaeoniaSpacing.space4)
+            }
         }
         .modifier(framing)
     }
@@ -216,6 +223,37 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
         .padding(.horizontal, PaeoniaSpacing.space12)
         .padding(.vertical, PaeoniaSpacing.space8)
         .background(.paeoniaSuccess, in: Capsule())
+    }
+}
+
+/// "Not now" on a card waiting for this person: a round button of the same tinted glass as
+/// the score badge, so it reads on bright and dark paintings alike.
+private struct GameHubNotNowButton: View {
+    let action: () -> Void
+
+    private static let glyphSize: CGFloat = 36
+    private static let hitTarget: CGFloat = 44
+
+    var body: some View {
+        Button {
+            PaeoniaHaptics.selection()
+            action()
+        } label: {
+            Image(systemName: "moon.zzz.fill")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.paeoniaTextPrimary)
+                .frame(width: Self.glyphSize, height: Self.glyphSize)
+                .glassEffect(
+                    .regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.75)).interactive(),
+                    in: Circle()
+                )
+                .frame(width: Self.hitTarget, height: Self.hitTarget)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(.gamesHubNotNow))
+        .accessibilityHint(Text(.gamesHubNotNowHint))
+        .accessibilityIdentifier("games.hub.notNow")
     }
 }
 

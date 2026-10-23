@@ -88,6 +88,10 @@ final class CorpseSimGateway: DrawAndGuessGateway, ExquisiteCorpseGateway, @unch
         try await call("invite") { try $0.sendInvite(user: $1) }
     }
 
+    func hideWaitingGame(_: GameKind) throws {
+        throw URLError(.unsupportedURL)
+    }
+
     func setPresence(_: GameKind, isPresent: Bool) async throws {
         try await call("presence") { $0.setPresence(user: $1, present: isPresent) }
     }

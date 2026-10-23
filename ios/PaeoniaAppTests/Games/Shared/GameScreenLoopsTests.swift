@@ -43,6 +43,10 @@ private final class HeldPresenceGateway: GamesGateway, @unchecked Sendable {
     func sendInvite(_: GameKind) async throws -> RemoteInviteResult {
         throw Unused()
     }
+
+    func hideWaitingGame(_: GameKind) async throws {
+        throw Unused()
+    }
     // swiftlint:enable async_without_await
 }
 

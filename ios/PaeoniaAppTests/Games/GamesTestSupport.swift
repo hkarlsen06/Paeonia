@@ -291,6 +291,10 @@ extension ScriptedGamesGateway {
         return RemoteInviteResult(sentAt: GameFixture.now)
     }
 
+    func hideWaitingGame(_: GameKind) throws {
+        try begin("hideWaitingGame")
+    }
+
     // swiftlint:disable:next async_without_await
     func setPresence(_ kind: GameKind, isPresent: Bool) async throws {
         write {

@@ -199,7 +199,7 @@
       // Each built game sets its own dependency fields on this value, so the hub
       // scenarios show its card next to Draw & Guess.
       var dependencies = GamesDependencies(
-        gateway: DeveloperGamesGateway(historyIsEmpty: scenario == .drawHistoryEmpty),
+        gateway: DeveloperGamesGateway(historyIsEmpty: scenario == .drawHistoryEmpty, cache: cache),
         cache: cache,
         pendingOperationStore: InMemoryPendingSyncOperationRepository(),
         operationProvider: DeveloperScenarioOperationProvider(),
@@ -278,11 +278,14 @@
     }
   }
 
-  /// Every call succeeds and changes nothing. The screens already show a move the
-  /// moment it is saved in the pending operations.
+  /// Every call succeeds and changes nothing, except "Not now", which the scenario's
+  /// overview keeps. The screens already show a move the moment it is saved in the
+  /// pending operations.
   struct DeveloperGamesGateway: DrawAndGuessGateway {
     /// "Our drawings" answers with no rounds and empty records.
     var historyIsEmpty = false
+    /// The scenario's cache, where "Not now" is kept like the server keeps it.
+    var cache: InMemoryGamesCache?
 
     func setSettings(playStyle: GamePlayStyle, language: GameLanguage) throws -> RemoteGameSettings {
       RemoteGameSettings(
@@ -360,6 +363,13 @@
 
     func setPresence(_: GameKind, isPresent _: Bool) throws {}
 
+    func hideWaitingGame(_ kind: GameKind) async throws {
+      let owner = DeveloperGamesFixture.me
+      guard let cache, var overview = await cache.document(ownerUserID: owner).overview else { return }
+      overview.hiddenKinds.append(kind)
+      await cache.saveOverview(overview, ownerUserID: owner)
+    }
+
     // swiftlint:disable:next async_without_await
     func loadOverview() async throws -> RemoteGamesOverview {
       // The cache is the scenario's overview. Failing keeps the cache as it is.
@@ -404,62 +414,6 @@
         try await Task.sleep(for: .seconds(86_400))
       }
       return await MainActor.run { DeveloperGamesFixture.umbrella().dataRepresentation() }
-    }
-  }
-
-  /// A Draw & Guess phase on its own screen.
-  @MainActor
-  struct DeveloperGamesScenarioView: View {
-    let scenario: DeveloperScenario
-    @State private var viewModel: DrawAndGuessViewModel
-    @State private var isReady = false
-
-    init(scenario: DeveloperScenario) {
-      self.scenario = scenario
-      let viewModel = DrawAndGuessViewModel(
-        dependencies: DeveloperGamesScenarioFactory.dependencies(for: scenario),
-        participants: DeveloperGamesFixture.participants
-      )
-      // The scenario host lets the viewer see the replay play once.
-      _viewModel = State(initialValue: viewModel)
-    }
-
-    var body: some View {
-      NavigationStack {
-        if isReady {
-          DrawAndGuessScreen(viewModel: viewModel)
-        } else {
-          Color.paeoniaBackgroundPrimary
-        }
-      }
-      .task {
-        await seed()
-        isReady = true
-      }
-    }
-
-    /// Puts the scenario's unsent move in the queue before the screen reads it.
-    private func seed() async {
-      guard scenario == .drawSavedOffline else { return }
-      let drawing = DeveloperGamesFixture.umbrella()
-      let payload = GameSubmitDrawingPayload(
-        gameID: DeveloperGamesFixture.gameID,
-        roundID: DeveloperGamesFixture.roundID,
-        coupleID: DeveloperScenarioFixture.coupleID,
-        drawingData: drawing.dataRepresentation(),
-        reserveOperation: SyncClientOperation(clientID: UUID(), clientSequence: 1),
-        finalizeOperation: SyncClientOperation(clientID: UUID(), clientSequence: 2)
-      )
-      guard let data = try? JSONEncoder().encode(payload) else { return }
-      try? await viewModel.dependencies.pendingOperationStore.enqueue(
-        PendingSyncOperationRequest(
-          ownerUserID: DeveloperGamesFixture.me,
-          operation: SyncClientOperation(clientID: UUID(), clientSequence: 3),
-          operationKind: .submitGameDrawing,
-          idempotencyScope: "game-drawing:developer",
-          requestData: data
-        )
-      )
     }
   }
 #endif

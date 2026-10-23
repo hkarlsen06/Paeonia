@@ -14,6 +14,9 @@ nonisolated protocol GamesGateway: Sendable {
     /// Tells the server this person has the game open (or has left it).
     func setPresence(_ kind: GameKind, isPresent: Bool) async throws
     func sendInvite(_ kind: GameKind) async throws -> RemoteInviteResult
+    /// "Not now" on a game that waits for this person. It stops counting toward the
+    /// badges and leaves "Right now" until the partner moves or something new arrives.
+    func hideWaitingGame(_ kind: GameKind) async throws
 }
 
 nonisolated struct LiveGamesGateway: GamesGateway {
@@ -41,6 +44,10 @@ nonisolated struct LiveGamesGateway: GamesGateway {
 
     func sendInvite(_ kind: GameKind) async throws -> RemoteInviteResult {
         try await client.mutation("games:send_game_invite", args: KindRequest(kind: kind))
+    }
+
+    func hideWaitingGame(_ kind: GameKind) async throws {
+        try await client.mutation("games:hide_waiting_game", args: KindRequest(kind: kind))
     }
 }
 

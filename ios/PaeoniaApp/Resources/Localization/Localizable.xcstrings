@@ -14673,6 +14673,42 @@
         }
       }
     },
+    "games.hub.notNow" : {
+      "comment" : "VoiceOver label of the round button on a game card under Right now. Tapping it moves the game down to More games without playing your turn.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      }
+    },
+    "games.hub.notNow.hint" : {
+      "comment" : "VoiceOver hint of the Not now button on a game card. 'More games' is the name of the section below.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moves the game down to More games until there's something new."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytter spillet ned til Flere spill til det skjer noe nytt."
+          }
+        }
+      }
+    },
     "games.hub.section.more" : {
       "comment" : "Games tab heading above the grid of the other games, shown under the Right now cards",
       "extractionState" : "manual",
@@ -15083,6 +15119,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kan ikke laste tegningen"
+          }
+        }
+      }
+    },
+    "games.notice.hideFailed.message" : {
+      "comment" : "Banner message when Not now on a game card failed because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sjekk nettforbindelsen og prøv igjen."
+          }
+        }
+      }
+    },
+    "games.notice.hideFailed.title" : {
+      "comment" : "Banner title when tapping Not now on a game card did not work.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't move the game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke flytte spillet"
           }
         }
       }

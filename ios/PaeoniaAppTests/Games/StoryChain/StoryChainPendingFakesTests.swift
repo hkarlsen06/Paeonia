@@ -186,6 +186,10 @@ final class ScriptedStoryChainDataGateway: StoryChainGateway, @unchecked Sendabl
     func sendInvite(_: GameKind) async throws -> RemoteInviteResult {
         throw Failure()
     }
+
+    func hideWaitingGame(_: GameKind) async throws {
+        throw Failure()
+    }
 }
 
 /// A queue that cannot be read or written.

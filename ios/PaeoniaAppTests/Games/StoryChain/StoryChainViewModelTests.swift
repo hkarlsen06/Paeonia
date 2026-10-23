@@ -152,6 +152,10 @@ final class ScriptedStoryChainGateway: StoryChainGateway, @unchecked Sendable {
     func sendInvite(_: GameKind) async throws -> RemoteInviteResult {
         throw Failure()
     }
+
+    func hideWaitingGame(_: GameKind) async throws {
+        throw Failure()
+    }
     // swiftlint:enable async_without_await
 }
 

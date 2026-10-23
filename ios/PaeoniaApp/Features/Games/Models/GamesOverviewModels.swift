@@ -12,6 +12,9 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
     /// One entry per game that either partner has open or has ever opened, or this
     /// person sent an invite for. Other games are left out.
     let presence: [RemoteGamePresence]
+    /// The games this person put aside with "Not now" whose turn, result or invite has
+    /// not changed since. They count toward no badge and stay out of "Right now".
+    var hiddenKinds: [GameKind] = []
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
@@ -19,6 +22,7 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
         case coupleID = "couple_id"
         case settings
         case presence
+        case hiddenKinds = "hidden_kinds"
     }
 
     func presence(for kind: GameKind) -> RemoteGamePresence? {

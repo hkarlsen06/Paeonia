@@ -41,4 +41,7 @@ struct GameHubCardContext {
     let partnerIsHere: Bool
     /// False on the Home tab, which has no room for extra links such as "Our drawings".
     let isOnHub: Bool
+    /// "Not now", which moves the card to the hub's grid. Nil when the card is not under
+    /// "Right now" for this person's turn, such as on the Home tab or while the partner is here.
+    let hide: (() -> Void)?
 }

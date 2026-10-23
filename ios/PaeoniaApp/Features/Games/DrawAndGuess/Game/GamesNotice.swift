@@ -20,6 +20,8 @@ nonisolated enum GamesNotice: Equatable, Sendable {
     /// Queueing a move on the phone failed.
     case couldNotSaveMove
     case couldNotSendInvite(PaeoniaFailure)
+    /// "Not now" on a game card did not reach the server, so the card is back.
+    case couldNotHideGame(PaeoniaFailure)
     /// An Exquisite corpse part could not be sent and is back on the canvas.
     case exquisiteCorpsePartRejected
 
@@ -49,6 +51,7 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         case .moveRejected: .gamesNoticeMoveRejectedTitle
         case .couldNotSaveMove: .gamesNoticeMoveFailedTitle
         case .couldNotSendInvite: .gamesNoticeInviteFailedTitle
+        case .couldNotHideGame: .gamesNoticeHideFailedTitle
         case .exquisiteCorpsePartRejected: nil
         }
     }
@@ -60,7 +63,9 @@ nonisolated enum GamesNotice: Equatable, Sendable {
         case .couldNotSaveSettings(.offline): .gamesNoticeSettingsFailedMessage
         case .couldNotStartGame(.offline): .gamesNoticeStartFailedMessage
         case .couldNotSendInvite(.offline): .gamesNoticeInviteFailedMessage
-        case .couldNotSaveSettings(.other), .couldNotStartGame(.other), .couldNotSendInvite(.other):
+        case .couldNotHideGame(.offline): .gamesNoticeHideFailedMessage
+        case .couldNotSaveSettings(.other), .couldNotStartGame(.other), .couldNotSendInvite(.other),
+             .couldNotHideGame(.other):
             .commonActionFailedMessage
         case .wordRejected: .gamesNoticeWordRejectedMessage
         case .wordRejectedDrawingKept: .gamesNoticeWordRejectedKeptDrawingMessage

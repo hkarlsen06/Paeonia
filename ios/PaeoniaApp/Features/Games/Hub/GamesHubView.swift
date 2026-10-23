@@ -13,6 +13,8 @@ struct GamesHubView: View {
     let isShowingGame: Bool
     let open: (GamesDestination) -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var cardSpace
     @State private var isChangingSettings = false
     @State private var isWideLayout = false
     @State private var cardFrames = CardFrames()
@@ -85,6 +87,8 @@ struct GamesHubView: View {
                 }
             }
         }
+        // "Not now" moves the card down into the grid, and it moves back up when something new arrives.
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.hiddenKinds)
     }
 
     /// One card per row, two on a wide iPad. A `Grid` rather than a lazy grid, so the
@@ -110,9 +114,11 @@ struct GamesHubView: View {
             open(destination)
         }
         if let card {
-            card.id(game.kind).onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView) } action: { frame in
-                cardFrames.frames[game.kind] = frame
-            }
+            card.id(game.kind)
+                .matchedGeometryEffect(id: game.kind, in: cardSpace)
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView) } action: { frame in
+                    cardFrames.frames[game.kind] = frame
+                }
         }
     }
 

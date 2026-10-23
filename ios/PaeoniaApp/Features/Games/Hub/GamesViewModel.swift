@@ -73,6 +73,9 @@ final class GamesViewModel {
     private(set) var partnerGameKinds: [GameKind] = []
     /// When either partner last had each game open. A game neither ever opened is missing.
     private(set) var lastPlayed: [GameKind: Date] = [:]
+    /// The games this person put aside with "Not now", from the overview and from taps
+    /// still on their way to the server. They stay out of "Right now" while it is their turn.
+    private(set) var hiddenKinds: Set<GameKind> = []
 
     // MARK: - Built games
 
@@ -104,6 +107,8 @@ final class GamesViewModel {
     private var neededIntro: IntroStep?
     /// The game that opens when the first-time steps end.
     private var destinationAfterIntro: GamesDestination?
+    /// "Not now" taps the overview has not answered yet.
+    private var hidingKinds: Set<GameKind> = []
 
     init(dependencies: GamesDependencies, drawAndGuess: DrawAndGuessViewModel? = nil) {
         self.dependencies = dependencies
@@ -127,7 +132,7 @@ final class GamesViewModel {
         Self.featuredOrder(
             games.map(\.kind),
             partnerGames: partnerGameKinds,
-            yourTurn: Set(games.filter(\.isYourTurn).map(\.kind)),
+            yourTurn: yourTurnKinds,
             lastPlayed: lastPlayed
         ).compactMap { game($0) }
     }
@@ -153,11 +158,6 @@ final class GamesViewModel {
         partnerGameKinds.contains(kind)
     }
 
-    /// What a game's card needs from the tab.
-    func cardContext(for kind: GameKind, isOnHub: Bool) -> GameHubCardContext {
-        GameHubCardContext(partnerName: partnerName, partnerIsHere: partnerIsHere(in: kind), isOnHub: isOnHub)
-    }
-
     /// The screen for a destination, from the game that owns it.
     func screen(for destination: GamesDestination) -> AnyView? {
         games.lazy.compactMap { $0.screen(for: destination) }.first
@@ -179,6 +179,8 @@ final class GamesViewModel {
             overview = nil
             partnerGameKinds = []
             lastPlayed = [:]
+            hiddenKinds = []
+            hidingKinds = []
             screen = .loading
         }
     }
@@ -214,6 +216,7 @@ final class GamesViewModel {
         if lastPlayed != newLastPlayed {
             lastPlayed = newLastPlayed
         }
+        updateHiddenKinds()
         if settings != overview?.settings {
             settings = overview?.settings
             if let settings {
@@ -355,6 +358,53 @@ final class GamesViewModel {
 
     func clearNotice() {
         notice = nil
+    }
+}
+
+extension GamesViewModel {
+    /// What a game's card needs from the tab. Only a hub card that is under "Right now"
+    /// because it waits for this person offers "Not now".
+    func cardContext(for kind: GameKind, isOnHub: Bool) -> GameHubCardContext {
+        let partnerIsHere = partnerIsHere(in: kind)
+        let canHide = isOnHub && !partnerIsHere && yourTurnKinds.contains(kind)
+        return GameHubCardContext(
+            partnerName: partnerName,
+            partnerIsHere: partnerIsHere,
+            isOnHub: isOnHub,
+            hide: canHide ? { [weak self] in self?.hide(kind) } : nil
+        )
+    }
+
+    /// "Not now" on a game waiting for this person. The card moves to the grid at once.
+    /// The server keeps it there until the partner moves or something new arrives. When
+    /// the server can't be reached, the card comes back and a banner says so.
+    func hide(_ kind: GameKind) {
+        guard let userID = currentUserID, !hidingKinds.contains(kind) else { return }
+        hidingKinds.insert(kind)
+        updateHiddenKinds()
+        Task {
+            do {
+                try await dependencies.gateway.hideWaitingGame(kind)
+                _ = try? await dependencies.cache.fetchOverview(from: dependencies.gateway, ownerUserID: userID)
+            } catch {
+                notice = .couldNotHideGame(PaeoniaFailure(error))
+            }
+            guard currentUserID == userID else { return }
+            hidingKinds.remove(kind)
+            await reload()
+        }
+    }
+
+    private func updateHiddenKinds() {
+        let newHiddenKinds = Set(overview?.hiddenKinds ?? []).union(hidingKinds)
+        if hiddenKinds != newHiddenKinds {
+            hiddenKinds = newHiddenKinds
+        }
+    }
+
+    /// The games waiting for this person that they have not put aside.
+    private var yourTurnKinds: Set<GameKind> {
+        Set(games.filter(\.isYourTurn).map(\.kind)).subtracting(hiddenKinds)
     }
 }
 

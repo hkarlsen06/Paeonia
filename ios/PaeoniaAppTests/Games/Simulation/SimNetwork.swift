@@ -272,6 +272,10 @@ final class SimGateway: DrawAndGuessGateway, @unchecked Sendable {
         try await call("invite") { try $0.sendInvite(user: $1) }
     }
 
+    func hideWaitingGame(_: GameKind) throws {
+        throw URLError(.unsupportedURL)
+    }
+
     /// The relay ticket. It changes nothing on the server.
     func fetchLiveTicket() async throws {
         try await call("ticket") { _, _ in () }

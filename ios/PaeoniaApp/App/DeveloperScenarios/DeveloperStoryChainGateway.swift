@@ -36,6 +36,10 @@
       try games.sendInvite(kind)
     }
 
+    func hideWaitingGame(_ kind: GameKind) async throws {
+      try await games.hideWaitingGame(kind)
+    }
+
     // MARK: Reading
 
     func ensureStoryChainGame() async throws -> RemoteEnsureStoryChainResult {
