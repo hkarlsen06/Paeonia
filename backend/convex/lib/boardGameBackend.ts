@@ -52,7 +52,9 @@ export const boardGameBackend: GameBackend = {
    */
   async waitingFor(ctx, coupleId, userId) {
     const games = await ctx.db.query("board_games").withIndex("by_couple_id_kind", (q) => q.eq("couple_id", coupleId)).collect();
-    return games.filter((game) => game.status === "playing" && game.turn_user_id === userId).length;
+    return games
+      .filter((game) => game.status === "playing" && game.turn_user_id === userId)
+      .map((game) => ({ kind: game.kind, key: `turn:${game.id}:${boardGameTurnToken(game)}` }));
   },
 
   async deleteCoupleRows(ctx, coupleId) {

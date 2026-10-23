@@ -360,15 +360,17 @@ export const exquisiteCorpseBackend: GameBackend = {
   /** The couple's one game, when it is the user's turn or the newest finished figure's reveal is unseen by them. */
   async waitingFor(ctx, coupleId, userId) {
     const game = await getCorpseGame(ctx, coupleId);
-    if (!game) return 0;
-    if (game.turn_user_id === userId) return 1;
+    if (!game) return [];
+    if (game.turn_user_id === userId) return [{ kind: "exquisite_corpse", key: `turn:${game.id}:${game.turn_started_at}` }];
     const finished = await ctx.db
       .query("exquisite_corpse_figures")
       .withIndex("by_game_id_number", (q) => q.eq("game_id", game.id))
       .order("desc")
       .filter((q) => q.neq(q.field("finished_at"), undefined))
       .first();
-    return finished !== null && revealSeenAt(finished, userId) === undefined ? 1 : 0;
+    return finished !== null && revealSeenAt(finished, userId) === undefined
+      ? [{ kind: "exquisite_corpse", key: `result:${finished.id}` }]
+      : [];
   },
 
   async deleteCoupleRows(ctx, coupleId) {

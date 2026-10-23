@@ -8,7 +8,7 @@ import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import type { GameBackend } from "./gameRegistry";
 import type { GameLanguage } from "./gameWords";
-import { enqueueGamePush, isGamePresent, TURN_REMINDER_AFTER_MS, type GamePushKind } from "./games";
+import { enqueueGamePush, isGamePresent, TURN_REMINDER_AFTER_MS, type GamePushKind, type GameWait } from "./games";
 import { charLength } from "./text";
 import { addMs, nowIso } from "./time";
 import { gameLanguage } from "./validators";
@@ -257,17 +257,17 @@ export async function consensioPushStillWanted(
 }
 
 /** The couple's one game, when it is the user's turn or one of the two newest guessed rounds has a reveal they have not seen. */
-export async function consensioWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+export async function consensioWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<GameWait[]> {
   const game = await getCoupleGame(ctx, coupleId);
-  if (!game) return 0;
-  if (game.turn_user_id === userId) return 1;
-  const unseen = (await newestRounds(ctx, game.id, 2)).some(
+  if (!game) return [];
+  if (game.turn_user_id === userId) return [{ kind: "consensio", key: `turn:${game.id}:${game.turn_started_at}` }];
+  const unseen = (await newestRounds(ctx, game.id, 2)).find(
     (round) =>
       round.guess !== undefined &&
       ((round.placer_user_id === userId && round.placer_reveal_seen_at === undefined) ||
         (round.guesser_user_id === userId && round.guesser_reveal_seen_at === undefined)),
   );
-  return unseen ? 1 : 0;
+  return unseen ? [{ kind: "consensio", key: `result:${unseen.id}` }] : [];
 }
 
 /**

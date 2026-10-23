@@ -620,6 +620,10 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     group: "games",
     about: { en: "When you last opened each game.", nb: "Når dere sist åpnet hvert spill." },
   }),
+  game_hidden_waits: yours("by_couple_id_user_id_kind", "user_id", {
+    group: "games",
+    about: { en: "Games you put aside with \"Not now\" until your partner's next move.", nb: "Spill du la til side med «Ikke nå» til partneren din gjør neste trekk." },
+  }),
   games: shared("by_couple_id_kind", {
     group: "games",
     about: { en: "Your Draw & Guess game: whose turn it is and the score.", nb: "Tegn og gjett-spillet deres: hvem sin tur det er og stillingen." },

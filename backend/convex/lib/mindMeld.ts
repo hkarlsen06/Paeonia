@@ -5,7 +5,7 @@ import { canAccessCoupleContent, listActiveMembers } from "./access";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import type { GameBackend } from "./gameRegistry";
-import { enqueueGamePush, TURN_REMINDER_AFTER_MS, type GamePushKind } from "./games";
+import { enqueueGamePush, TURN_REMINDER_AFTER_MS, type GamePushKind, type GameWait } from "./games";
 import { charLength } from "./text";
 import { addMs } from "./time";
 import { literals } from "./validators";
@@ -247,16 +247,16 @@ export async function mindMeldPushStillWanted(
  * locked in and the user has not, or when one of its two newest rounds is revealed and the user has
  * not seen it. A finished game counts until the user has seen how it ended.
  */
-export async function mindMeldWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+export async function mindMeldWaitingFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<GameWait[]> {
   const games = await ctx.db
     .query("mind_meld_games")
     .withIndex("by_couple_id_game_number", (q) => q.eq("couple_id", coupleId))
     .order("desc")
     .take(2);
-  let waiting = 0;
+  const waits: GameWait[] = [];
   for (const game of games) {
     if (game.state !== "playing") {
-      if (game.end_seen_by_user[userId] === undefined) waiting += 1;
+      if (game.end_seen_by_user[userId] === undefined) waits.push({ kind: "mind_meld", key: `end:${game.id}` });
       continue;
     }
     const rounds = await ctx.db
@@ -272,12 +272,12 @@ export async function mindMeldWaitingFor(ctx: ReaderCtx, coupleId: string, userI
       const myTurn = round.state === "open" && round.waiting_since !== undefined && mine === null;
       const unseenReveal = round.state === "revealed" && mine !== null && mine.reveal_seen_at === undefined;
       if (myTurn || unseenReveal) {
-        waiting += 1;
+        waits.push({ kind: "mind_meld", key: `${myTurn ? "turn" : "result"}:${round.id}` });
         break;
       }
     }
   }
-  return waiting;
+  return waits;
 }
 
 /**

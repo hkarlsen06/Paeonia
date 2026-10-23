@@ -344,15 +344,15 @@ export const drawAndGuessBackend: GameBackend = {
    */
   async waitingFor(ctx, coupleId, userId) {
     const game = await getGame(ctx, coupleId, "draw_and_guess");
-    if (!game) return 0;
-    if (game.turn_user_id === userId) return 1;
-    const unseen = (await getMovesByGame(ctx, game.id, 2)).some(
+    if (!game) return [];
+    if (game.turn_user_id === userId) return [{ kind: "draw_and_guess", key: `turn:${game.id}:${game.turn_started_at}` }];
+    const unseen = (await getMovesByGame(ctx, game.id, 2)).find(
       (move) =>
         (move.state === "solved" || move.state === "missed") &&
         ((move.drawer_user_id === userId && move.drawer_result_seen_at === undefined) ||
           (move.guesser_user_id === userId && move.guesser_result_seen_at === undefined)),
     );
-    return unseen ? 1 : 0;
+    return unseen ? [{ kind: "draw_and_guess", key: `result:${unseen.id}` }] : [];
   },
 
   /** Words already offered for the open turn come from the old language. */

@@ -60,6 +60,7 @@ describe("access", () => {
       expect((await failure(loner.as.mutation(api.games.send_game_invite, { p_kind: kind }))).code).toBe("42501");
       expect((await failure(loner.as.mutation(api.games.set_game_presence, { p_kind: kind, p_present: true }))).code).toBe("42501");
       expect((await failure(loner.as.mutation(api.games.create_game_live_ticket, { p_kind: kind }))).code).toBe("42501");
+      expect((await failure(loner.as.mutation(api.games.hide_waiting_game, { p_kind: kind }))).code).toBe("42501");
     }
   });
 
@@ -70,6 +71,7 @@ describe("access", () => {
     expect((await failure(couple.first.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" }))).code).toBe("42501");
     expect((await failure(couple.first.as.mutation(api.games.mark_game_settings_seen, {}))).code).toBe("42501");
     expect((await failure(couple.first.as.mutation(api.games.set_game_presence, { p_kind: "mind_meld", p_present: true }))).code).toBe("42501");
+    expect((await failure(couple.first.as.mutation(api.games.hide_waiting_game, { p_kind: "mind_meld" }))).code).toBe("42501");
   });
 
   test("a kind outside the catalog is refused", async () => {
@@ -129,6 +131,7 @@ describe("get_games_overview", () => {
       couple_id: s.couple.coupleId,
       settings: null,
       presence: [],
+      hidden_kinds: [],
     });
     expect((await s.b.as.query(api.games.get_games_overview, {})).partner_user_id).toBe(s.a.userId);
   });

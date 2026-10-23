@@ -324,15 +324,15 @@ export const storyChainBackend: GameBackend = {
   /** The couple's one game, when it is the user's turn or the newest finished story is unseen by them. */
   async waitingFor(ctx, coupleId, userId) {
     const game = await getStoryChainGame(ctx, coupleId);
-    if (!game) return 0;
-    if (game.turn_user_id === userId) return 1;
+    if (!game) return [];
+    if (game.turn_user_id === userId) return [{ kind: "story_chain", key: `turn:${game.id}:${game.turn_started_at}` }];
     const finished = await ctx.db
       .query("story_chain_stories")
       .withIndex("by_game_id_story_number", (q) => q.eq("game_id", game.id))
       .order("desc")
       .filter((q) => q.eq(q.field("state"), "finished"))
       .first();
-    return finished !== null && !finished.seen_by.includes(userId) ? 1 : 0;
+    return finished !== null && !finished.seen_by.includes(userId) ? [{ kind: "story_chain", key: `result:${finished.id}` }] : [];
   },
 
   // ponytail: one mutation for the whole couple. A couple writes a few stories a week, so this stays

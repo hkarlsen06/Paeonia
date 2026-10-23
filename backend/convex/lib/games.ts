@@ -69,16 +69,25 @@ export async function isGamePresent(ctx: ReaderCtx, coupleId: string, kind: Game
 // --- Invites ----------------------------------------------------------------
 
 /**
+ * One thing a game waits on a person for, such as their turn or a result they have not seen. `key`
+ * names this wait and changes when the wait does, so a wait the person put aside with "Not now"
+ * (`game_hidden_waits`) comes back on its own when the partner moves or a new result or invite arrives.
+ */
+export type GameWait = { kind: GameKind; key: string };
+
+/**
  * The partner's invites that still wait for `userId`: sent within `INVITE_INTERVAL_MS`, the time its
  * sender waits before another one, and not answered. Opening the game answers an invite.
  */
-export async function openGameInvitesFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
+export async function openGameInvitesFor(ctx: ReaderCtx, coupleId: string, userId: string): Promise<GameWait[]> {
   const since = addMs(nowIso(), -INVITE_INTERVAL_MS);
   const invites = await ctx.db
     .query("game_invites")
     .withIndex("by_couple_id_kind_sender_user_id", (q) => q.eq("couple_id", coupleId))
     .collect();
-  return invites.filter((invite) => invite.sender_user_id !== userId && invite.answered_at === undefined && invite.sent_at > since).length;
+  return invites
+    .filter((invite) => invite.sender_user_id !== userId && invite.answered_at === undefined && invite.sent_at > since)
+    .map((invite) => ({ kind: invite.kind, key: `invite:${invite._id}:${invite.sent_at}` }));
 }
 
 /** `userId` opened the game, which answers the partner's invite to it. Writes once per invite. */

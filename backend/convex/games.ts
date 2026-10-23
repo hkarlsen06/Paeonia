@@ -86,16 +86,19 @@ function withSeen(userIds: string[], userId: string): string[] {
 }
 
 /**
- * What the Games tab and every game share, for the caller. Subscribe to it. It does not read the
- * clock: the presence component marks a closed screen offline, and the app judges the invite time.
+ * What the Games tab and every game share, for the caller. Subscribe to it. The presence component
+ * marks a closed screen offline, and the app judges the invite time. The one clock read is in
+ * `hidden_kinds`, which counts a partner's invite as a wait for 15 minutes. A subscriber may keep a
+ * kind visible after that until the next write, which is harmless.
  *
- * Result: `{ user_id, partner_user_id, couple_id, settings, presence }`. `partner_user_id` is null
+ * Result: `{ user_id, partner_user_id, couple_id, settings, presence, hidden_kinds }`. `partner_user_id` is null
  * without an active partner, and `settings` is null until the couple sets them. `presence` has one
  * entry per game kind (in `GAME_KINDS` order) that either partner has open or has ever opened, or
  * the caller sent an invite for, and leaves the other kinds out. An entry is `{ kind, my_present,
  * partner_present, last_invite_at, last_played_at }`. `last_invite_at` is the caller's own last
  * invite for that kind, or null. `last_played_at` is when either partner last had the game open, or
- * null when neither ever opened it.
+ * null when neither ever opened it. `hidden_kinds` lists the kinds the caller put aside with "Not now"
+ * (`hide_waiting_game`) whose waits have not changed since, in `GAME_KINDS` order.
  */
 export const get_games_overview = query({
   args: {},
@@ -132,13 +135,33 @@ export const get_games_overview = query({
       });
     }
 
+    const hiddenKinds: GameKind[] = await ctx.runQuery(internal.gameHooks.hidden_game_kinds, { couple_id: coupleId, user_id: userId });
+
     return {
       user_id: userId,
       partner_user_id: partnerId,
       couple_id: coupleId,
       settings: settings ? settingsJson(settings) : null,
       presence,
+      hidden_kinds: hiddenKinds,
     };
+  },
+});
+
+/**
+ * "Not now" on a game that waits for the caller. What waits for them in that game stops counting
+ * toward the badges, stops putting the game under "Right now" (`hidden_kinds` in the overview), and
+ * gets no turn reminder. It comes back by itself with the partner's next move, a new result or a
+ * new invite. Safe to repeat. Returns null.
+ */
+export const hide_waiting_game = mutation({
+  args: { p_kind: gameKind },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    await assertNoPendingAccountDeletion(ctx, userId);
+    const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
+    await ctx.runMutation(internal.gameHooks.hide_waiting_game, { couple_id: coupleId, user_id: userId, kind: args.p_kind });
+    return null;
   },
 });
 
