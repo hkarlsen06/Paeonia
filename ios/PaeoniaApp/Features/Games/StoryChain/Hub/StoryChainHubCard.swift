@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Story Chain on the hub: artwork, whose turn it is, who is here, and how many
-/// stories the two of them have finished. The Us tab shows the same card while
+/// stories the two of them have finished. The Home tab shows the same card while
 /// the partner is in the game.
 struct StoryChainHubCard: View {
     let summary: StoryChainHubSummary

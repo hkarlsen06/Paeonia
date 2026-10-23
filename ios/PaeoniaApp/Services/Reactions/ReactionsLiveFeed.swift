@@ -5,10 +5,10 @@ import Foundation
 nonisolated struct ReactionsLiveFeed: LiveFeed {
     let name = "reactions"
 
-    /// Stories and drawings show on Home, memories on the Memories tab, game creations on the
-    /// Games tab, and the Us tab opens the game the partner is in.
+    /// Stories and drawings show on Home, which also opens the game the partner is in, memories
+    /// on the Memories tab, and game creations on the Games tab.
     var activation: LiveFeedActivation {
-        .whileNeeded([.homeTab, .memoriesTab, .gamesTab, .usTab])
+        .whileNeeded([.homeTab, .memoriesTab, .gamesTab])
     }
 
     private let cache: any ReactionsCaching
