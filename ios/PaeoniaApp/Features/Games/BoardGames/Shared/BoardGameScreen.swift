@@ -1,5 +1,21 @@
 import SwiftUI
 
+/// A button a game puts under its board.
+struct BoardGameScreenAction {
+    enum State {
+        /// Invisible, but it keeps its space so the board doesn't move when
+        /// the button comes back.
+        case hidden
+        case disabled
+        case enabled
+    }
+
+    let title: LocalizedStringResource
+    let state: State
+    let identifier: String
+    let perform: () -> Void
+}
+
 /// A board game screen: the shared shell around one game's board. It holds no
 /// game rules. `BoardGameViewModel` decides what shows, and the board calls its
 /// `play`.
@@ -15,6 +31,9 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     var boardBleeds = false
     /// "Past games" of this game. The score opens it.
     var history: GamesDestination?
+    /// A game's own button under the board, such as Ultimate Tic-Tac-Toe's
+    /// "Lock in". It shows while there is no result and no move waiting to send.
+    var action: BoardGameScreenAction?
     /// The game's board, built from the view model's board state.
     @ViewBuilder let board: () -> BoardContent
 
@@ -132,7 +151,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
         )
     }
 
-    /// The result, the line about a move waiting on this phone, or the invite.
+    /// The result, the line about a move waiting on this phone, the game's own
+    /// button, or the invite.
     @ViewBuilder
     private var bottom: some View {
         if let result = viewModel.result {
@@ -152,6 +172,16 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             BoardGameOfflineLine(isWaiting: true, failedWhileOnline: viewModel.failedWhileOnline) {
                 Task { await viewModel.retrySending() }
             }
+        } else if let action {
+            Button(action: action.perform) {
+                Text(action.title)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .disabled(action.state != .enabled)
+            .opacity(action.state == .hidden ? 0 : 1)
+            .accessibilityHidden(action.state == .hidden)
+            .animation(PaeoniaMotion.stateChange, value: action.state)
+            .accessibilityIdentifier(action.identifier)
         } else if boardBleeds, invite != .hidden {
             GameInviteButton(
                 invite: invite,
