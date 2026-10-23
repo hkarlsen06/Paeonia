@@ -151,3 +151,23 @@ struct MindMeldResolverTests: MindMeldResolverFixtures {
         #expect(resolution.round?.id == first.id)
     }
 }
+
+// MARK: - Attention
+
+extension MindMeldResolverTests {
+    /// The partner locking in first makes it my turn, named by the round, also while the
+    /// last round's reveal waits. My own word ends it.
+    @Test func thePartnerLockingInFirstMakesItMyTurnUntilMyWordIsIn() {
+        let lockedByPartner = open(2, partnerLocked: true)
+        let duringReveal = state(current: game(rounds: [revealed(1, seen: false), lockedByPartner]))
+        let afterReveal = state(current: game(rounds: [revealed(1, seen: true), lockedByPartner]))
+        var myWord = MindMeldPendingWork.none
+        myWord.lockedWords[lockedByPartner.id] = "ocean"
+
+        let turn = resolver.attention(state: duringReveal, pending: .none).turn
+        #expect(turn != nil)
+        #expect(resolver.attention(state: afterReveal, pending: .none).turn == turn)
+        #expect(resolver.attention(state: afterReveal, pending: myWord).turn == nil)
+        #expect(resolver.attention(state: state(current: game(rounds: [open(2)])), pending: .none).turn == nil)
+    }
+}

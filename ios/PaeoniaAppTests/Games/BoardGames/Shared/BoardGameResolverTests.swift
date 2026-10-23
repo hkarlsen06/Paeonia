@@ -263,3 +263,35 @@ struct BoardGameResolverTests {
         #expect(snapshot == nil)
     }
 }
+
+// MARK: - Attention
+
+extension BoardGameResolverTests {
+    /// The partner's move makes it my move, named by that move. A box I close keeps the
+    /// turn and the name, and a move of mine that hands the turn back ends it.
+    @Test func thePartnersMoveMakesItMyMoveThroughMyExtraTurns() throws {
+        let box = DotsAndBoxesBoard.lines(of: 0)
+        func turn(_ moves: [Int]) throws -> String? {
+            let game = Fixture.game(kind: .dotsAndBoxes, first: partner, moves: moves)
+            return try resolve(game, [], as: DotsAndBoxesBoard.self).attention(userID: me, startedHere: false).turn
+        }
+
+        let afterPartner = try turn(Array(box.prefix(3)))
+        #expect(afterPartner != nil)
+        #expect(try turn(box) == afterPartner)
+        #expect(try turn(box + [39]) == nil)
+        #expect(try turn(Array(box.prefix(1))) != nil)
+        #expect(try turn(Array(box.prefix(1))) != afterPartner)
+    }
+
+    /// A game I move first in is a handover only when the partner started it with
+    /// "Play again". The first game is always its creator's own.
+    @Test func aGameThePartnerStartedForMeIsMyMove() throws {
+        let rematch = try resolve(Fixture.game(gameNumber: 2), [], as: ConnectFourBoard.self)
+        let created = try resolve(Fixture.game(gameNumber: 1), [], as: ConnectFourBoard.self)
+
+        #expect(rematch.attention(userID: me, startedHere: false).turn != nil)
+        #expect(rematch.attention(userID: me, startedHere: true).turn == nil)
+        #expect(created.attention(userID: me, startedHere: false).turn == nil)
+    }
+}

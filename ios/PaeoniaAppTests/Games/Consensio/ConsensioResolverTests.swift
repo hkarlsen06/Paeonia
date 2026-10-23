@@ -209,3 +209,27 @@ struct ConsensioResolverTests {
             == .waitingForGuess(isQueued: true))
     }
 }
+
+// MARK: - Attention
+
+extension ConsensioResolverTests {
+    /// The partner's marker makes it my turn, named by the round, also while my last
+    /// round's reveal waits. My own guess ends it, and my own marker is never my turn.
+    @Test func thePartnersMarkerMakesItMyTurnUntilIGuess() {
+        func turn(_ state: RemoteConsensioState, pending: ConsensioPendingWork = .none) -> String? {
+            ConsensioResolver(userID: me).attention(state: state, pending: pending).turn
+        }
+        let revealed = round(1, placer: me, guess: 44)
+        var seen = revealed
+        seen.myRevealSeenAt = now
+        let theirs = round(2, placer: partner, spot: nil)
+        var myGuess = ConsensioPendingWork.none
+        myGuess.guesses[theirs.id] = 50
+
+        let handedOver = turn(state(game: game(turn: me), current: theirs, previous: revealed))
+        #expect(handedOver != nil)
+        #expect(turn(state(game: game(turn: me), current: theirs, previous: seen)) == handedOver)
+        #expect(turn(state(game: game(turn: me), current: theirs), pending: myGuess) == nil)
+        #expect(turn(state(game: game(turn: partner), current: round(placer: me))) == nil)
+    }
+}

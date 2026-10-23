@@ -122,3 +122,24 @@ struct ExquisiteCorpsePhaseTests {
         #expect(reveal.figure?.number == 2)
     }
 }
+
+// MARK: - Attention
+
+extension ExquisiteCorpsePhaseTests {
+    /// The partner's legs hand me the next head, named by the part, also while the
+    /// figure's reveal waits. My own queued head ends it. The game's very first head is
+    /// the starter's own, so it is no handover.
+    @Test func thePartnersPartMakesItMyTurnUntilMyPartIsIn() {
+        func attention(_ state: RemoteExquisiteCorpseState, pending: ExquisiteCorpsePendingWork = .none) -> String? {
+            ExquisiteCorpseResolver.attention(resolution: resolve(state, pending: pending), game: state.game).turn
+        }
+        let myHead = Fixture.game(figure: 2, partIndex: 0, turn: Fixture.me)
+        let state = Fixture.state(game: myHead, recent: [Fixture.figure(1)])
+
+        let turn = attention(state)
+        #expect(turn != nil)
+        #expect(attention(state, pending: Fixture.pending(revealsSeen: [Fixture.figureID(1)])) == turn)
+        #expect(attention(state, pending: Fixture.pending(parts: [Fixture.queuedPart(figure: 2, partIndex: 0)])) == nil)
+        #expect(attention(Fixture.state(game: Fixture.game(figure: 1, partIndex: 0, turn: Fixture.me))) == nil)
+    }
+}

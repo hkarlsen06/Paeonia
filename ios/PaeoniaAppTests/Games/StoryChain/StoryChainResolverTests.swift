@@ -298,3 +298,36 @@ struct StoryChainResolverTests {
 
     // MARK: Live role
 }
+
+// MARK: - Attention
+
+extension StoryChainResolverTests {
+    /// The partner's line makes it my turn to write, and their last line my turn to name
+    /// the story, each named by that line, also while the last story's reveal waits. My
+    /// own line ends it, and line 1 of a story I started is no handover.
+    @Test func thePartnersLineMakesItMyTurnUntilMyLineIsIn() {
+        func turn(_ state: RemoteStoryChainState, pending: StoryChainPendingWork = .none) -> String? {
+            resolver.attention(state: state, pending: pending).turn
+        }
+        let game = Fixture.game(.writing, turn: Fixture.me, current: Fixture.nextStoryID, stories: 2)
+        let partnersLine = Fixture.lines(1, starter: Fixture.partner)
+        let writing = Fixture.story(.writing, id: Fixture.nextStoryID, number: 2, lines: partnersLine)
+        let unseen = Fixture.story(.finished, lines: Fixture.lines(8, starter: Fixture.me))
+        var seen = unseen
+        seen.seenByMe = true
+        var myLine = StoryChainPendingWork.none
+        myLine.lines = [Fixture.queuedLine(story: Fixture.nextStoryID)]
+
+        let handedOver = turn(Fixture.state(game, current: writing, previous: unseen))
+        #expect(handedOver != nil)
+        #expect(turn(Fixture.state(game, current: writing, previous: seen)) == handedOver)
+        #expect(turn(Fixture.state(game, current: writing), pending: myLine) == nil)
+
+        let lastLine = Fixture.story(.titling, lines: Fixture.lines(8, starter: Fixture.me))
+        let naming = turn(Fixture.state(Fixture.game(.titling, turn: Fixture.me), current: lastLine))
+        #expect(naming != nil && naming != handedOver)
+
+        let started = Fixture.story(.writing, starter: Fixture.me)
+        #expect(turn(Fixture.state(Fixture.game(.writing, turn: Fixture.me), current: started)) == nil)
+    }
+}

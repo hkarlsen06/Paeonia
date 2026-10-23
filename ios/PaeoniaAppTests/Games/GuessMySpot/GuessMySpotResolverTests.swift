@@ -219,3 +219,27 @@ struct GuessMySpotResolverTests {
             == .waitingForGuess(isQueued: true))
     }
 }
+
+// MARK: - Attention
+
+extension GuessMySpotResolverTests {
+    /// The partner's photo makes it my turn, named by the round, also while my last
+    /// round's reveal waits. My own guess ends it, and my own photo is never my turn.
+    @Test func thePartnersPhotoMakesItMyTurnUntilIGuess() {
+        func turn(_ state: RemoteGuessMySpotState, pending: GuessMySpotPendingWork = .none) -> String? {
+            GuessMySpotResolver(userID: me).attention(state: state, pending: pending).turn
+        }
+        let revealed = round(1, sender: me, spot: bergen, guess: oslo)
+        var seen = revealed
+        seen.myRevealSeenAt = now
+        let theirs = round(2, sender: partner)
+        var myGuess = GuessMySpotPendingWork.none
+        myGuess.guesses[theirs.id] = oslo
+
+        let handedOver = turn(state(game: game(turn: me), current: theirs, previous: revealed))
+        #expect(handedOver != nil)
+        #expect(turn(state(game: game(turn: me), current: theirs, previous: seen)) == handedOver)
+        #expect(turn(state(game: game(turn: me), current: theirs), pending: myGuess) == nil)
+        #expect(turn(state(game: game(turn: partner), current: round(sender: me))) == nil)
+    }
+}
