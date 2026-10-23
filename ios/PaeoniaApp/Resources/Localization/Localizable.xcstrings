@@ -36842,6 +36842,24 @@
         }
       }
     },
+    "ultimateTicTacToe.cell.picked.a11y" : {
+      "comment" : "VoiceOver announcement after the player picks a square in Ultimate Tic-Tac-Toe. Row and column numbers. The square is played only after the Lock in button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Row %1$lld, column %2$lld picked. Lock in to play."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rad %1$lld, kolonne %2$lld er valgt. Trykk på Bekreft trekk for å spille."
+          }
+        }
+      }
+    },
     "ultimateTicTacToe.cell.yours.a11y" : {
       "comment" : "VoiceOver label of a cell this person played.",
       "extractionState" : "manual",
@@ -36860,6 +36878,24 @@
         }
       }
     },
+    "ultimateTicTacToe.hint.chooseBoard" : {
+      "comment" : "Ultimate Tic-Tac-Toe status line under the board when the player may play in any open small board. They tap a small board first, then a square in it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the board you want to play in."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg brettet du vil spille i."
+          }
+        }
+      }
+    },
     "ultimateTicTacToe.hub.subtitle" : {
       "comment" : "Ultimate Tic-Tac-Toe card on the Games tab before the couple has played it: what the game is.",
       "extractionState" : "manual",
@@ -36874,6 +36910,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bondesjakk inni bondesjakk. Vinn tre brett på rad."
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.lockIn" : {
+      "comment" : "Ultimate Tic-Tac-Toe button under the board. The player has picked a square and this plays it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock in"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bekreft trekk"
           }
         }
       }
@@ -37054,24 +37108,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "øverst til høyre"
-          }
-        }
-      }
-    },
-    "ultimateTicTacToe.wholeBoard.a11y" : {
-      "comment" : "VoiceOver label of the button that zooms out to all nine small boards in Ultimate Tic-Tac-Toe.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Whole board"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hele brettet"
           }
         }
       }

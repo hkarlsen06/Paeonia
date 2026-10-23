@@ -14,7 +14,8 @@ private enum UltimateTicTacToePreviewData {
     ]
 }
 
-/// A board both sides can play by tapping, so every beat shows in the canvas.
+/// A board both sides can play by picking a cell and locking it in, so every
+/// beat shows in the canvas.
 /// Player one is me. With `partnerReplies`, player two answers on its own
 /// about a second after each of my moves, as a real partner would.
 private struct UltimateTicTacToePlayablePreview: View {
@@ -24,6 +25,7 @@ private struct UltimateTicTacToePlayablePreview: View {
     @State private var lastMove: BoardMoveEvent?
     @State private var moveCount = 0
     @State private var showsOutcome = false
+    @State private var pick = UltimateTicTacToePick.none
 
     private var canPlay: Bool {
         board.outcome == nil && (!partnerReplies || board.next == .one)
@@ -37,12 +39,19 @@ private struct UltimateTicTacToePlayablePreview: View {
                 styles: UltimateTicTacToePreviewData.styles,
                 me: .one,
                 canPlay: canPlay,
+                pick: $pick,
                 showsOutcome: showsOutcome,
                 bloomSeed: "preview",
                 partnerName: "Kari"
-            ) { move in
-                play(move)
+            )
+            Button {
+                if let move = pick.move(on: board) {
+                    play(move)
+                }
+            } label: {
+                Text(verbatim: "Lock in")
             }
+            .disabled(!canPlay || pick.move(on: board) == nil)
             Button {
                 board = .initial
                 lastMove = nil
@@ -74,6 +83,7 @@ private struct UltimateTicTacToePlayablePreview: View {
         let mover = board.next
         guard let after = board.applying(move) else { return }
         moveCount += 1
+        pick = .none
         lastMove = BoardMoveEvent(number: moveCount, move: move, player: mover, isMine: mover == .one)
         board = after
         if after.outcome != nil {
@@ -101,10 +111,11 @@ private struct UltimateTicTacToeFinishedPreview: View {
                 styles: UltimateTicTacToePreviewData.styles,
                 me: .one,
                 canPlay: false,
+                pick: .constant(.none),
                 showsOutcome: showsOutcome,
                 bloomSeed: "preview",
                 partnerName: "Kari"
-            ) { _ in }
+            )
             Button {
                 showsOutcome = false
                 Task {

@@ -3,9 +3,7 @@ import SwiftUI
 
 /// The animations the board plays. The spans match `UltimateTicTacToeTiming`.
 enum UltimateTicTacToeMotion {
-    static let zoomToMove = Animation.spring(duration: UltimateTicTacToeTiming.zoomToMove, bounce: 0.05)
-    static let choose = Animation.spring(duration: 0.45, bounce: 0.08)
-    static let regroup = PaeoniaMotion.heroMorph
+    static let camera = Animation.spring(duration: 0.45, bounce: 0.08)
     static let markDraw = Animation.spring(duration: UltimateTicTacToeTiming.markDraw, bounce: 0.3)
     static let close = Animation.spring(duration: UltimateTicTacToeTiming.close, bounce: 0.2)
     static let snap = PaeoniaMotion.buttonPress
@@ -14,13 +12,11 @@ enum UltimateTicTacToeMotion {
 }
 
 /// Plays the board's beats and owns the one value that says where the camera
-/// is. Every zoom goes through `focus`, so a partner's move, my own move, the
-/// player's taps and the outcome never fight over it.
+/// is. The camera shows the whole board unless the player pinches into a small
+/// board, and a new move or the outcome brings it back to the whole board.
 ///
 /// Each beat checks a run id after it sleeps, so a move that arrives while the
 /// last one is still playing finishes the old one at once and starts its own.
-/// The playback never zooms while the player is pinching. It remembers where
-/// the camera should go and moves there when the fingers lift.
 @MainActor
 @Observable
 final class UltimateTicTacToePlayback {
@@ -28,27 +24,25 @@ final class UltimateTicTacToePlayback {
     struct Input: Equatable {
         var board: UltimateTicTacToeBoard
         var lastMove: BoardMoveEvent?
-        var canPlay: Bool
         var showsOutcome: Bool
-        /// False for VoiceOver, which never zooms.
-        var zoomEnabled: Bool
-        /// The camera cuts instead of gliding, and a move shows without its beats.
+        /// A move draws in, closes its small board and sends a spark. Off for
+        /// Reduce Motion, VoiceOver and a replay, where a move just shows.
+        var playsBeats: Bool
+        /// The camera cuts instead of gliding, and the outcome shows settled.
         var reduceMotion: Bool
         /// A finished game played again: moves make no haptics or sounds.
         var isReplay = false
     }
 
-    private struct DeferredFocus {
-        let board: Int?
-        let animation: Animation
-    }
-
     // MARK: What the board draws
 
-    /// The small board that fills the view, or nil for the whole board.
+    /// The small board the player pinched into, or nil for the whole board.
     private(set) var focus: Int?
     private(set) var hold = UltimateTicTacToeHold.none
     private(set) var glowHeld = false
+    /// The spark in flight, from the cell just played to the board it sends
+    /// the next player to.
+    private(set) var spark: UltimateTicTacToeSpark?
     /// How often each small board has pulsed.
     private(set) var pulseCounts = Array(repeating: 0, count: 9)
     private(set) var outcome = UltimateTicTacToeOutcomeState.idle
@@ -62,24 +56,18 @@ final class UltimateTicTacToePlayback {
 
     // MARK: Internals
 
-    @ObservationIgnored private(set) var zoom: UltimateTicTacToeZoom
     @ObservationIgnored private var input: Input
-    @ObservationIgnored private var hasStarted = false
     @ObservationIgnored private var runID = 0
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var outcomeRunID = 0
     @ObservationIgnored private var outcomeTask: Task<Void, Never>?
     @ObservationIgnored private var outcomeShown: Bool
     @ObservationIgnored private var outcomeRequested = false
-    @ObservationIgnored private var isGliding = false
-    @ObservationIgnored private var isUserGesturing = false
-    @ObservationIgnored private var deferredFocus: DeferredFocus?
 
     /// Starts from what is on the screen. Moves already on the board and an
     /// outcome already showing just show, with no beat.
     init(_ input: Input) {
         self.input = input
-        zoom = UltimateTicTacToeZoom(board: input.board, canPlay: input.canPlay, zoomEnabled: input.zoomEnabled)
         handledMoveNumber = input.lastMove?.number
         outcomeShown = input.showsOutcome
         if input.showsOutcome {
@@ -91,11 +79,10 @@ final class UltimateTicTacToePlayback {
 
     /// Takes the screen's newest state. Call it whenever any part changes.
     func update(_ new: Input) {
+        let boardChanged = new.board != input.board
         input = new
-        syncZoom()
-        if !hasStarted {
-            hasStarted = true
-            startIntro()
+        if boardChanged {
+            setFocus(nil)
         }
         if let move = new.lastMove {
             if move.number != handledMoveNumber {
@@ -106,26 +93,25 @@ final class UltimateTicTacToePlayback {
             skip()
         }
         updateOutcome()
-        if !isBusy || isGliding {
-            settleFocus()
-        }
     }
 
-    /// The player picked a zoom: a board to play in, or the whole board.
-    func choose(_ choice: UltimateTicTacToeZoom.Choice) {
-        zoom.choice = choice
-        applyFocus(zoom.restingFocus, animation: UltimateTicTacToeMotion.choose)
+    /// Moves the camera to a small board, or to the whole board with nil.
+    func setFocus(_ target: Int?) {
+        guard focus != target else { return }
+        withAnimation(input.reduceMotion ? nil : UltimateTicTacToeMotion.camera) {
+            focus = target
+        }
     }
 
     /// A tap while a move plays: show the end of it now.
     func skip() {
         guard isBusy else { return }
         cancelSequence()
+        spark = nil
         withAnimation(UltimateTicTacToeMotion.snap) {
             hold = .none
             glowHeld = false
         }
-        settleFocus()
         if outcomeRequested {
             startOutcome()
         }
@@ -141,20 +127,13 @@ final class UltimateTicTacToePlayback {
         }
     }
 
-    /// The player's fingers are on the board, pinching. The camera waits.
-    func setUserGesture(active: Bool) {
-        isUserGesturing = active
-        if !active, let deferred = deferredFocus {
-            applyFocus(deferred.board, animation: deferred.animation)
-        }
-    }
-
     /// The view is going away. Stops every beat and keeps what was shown.
     func stop() {
         cancelSequence()
         cancelOutcome()
         hold = .none
         glowHeld = false
+        spark = nil
         bloomStart = nil
         if outcomeShown {
             outcome = .settled(for: input.board.outcome)
@@ -162,25 +141,15 @@ final class UltimateTicTacToePlayback {
     }
 }
 
-/// The beats: a move's sequence, the camera and the outcome highlight.
+/// The beats: a move's sequence and the outcome highlight.
 extension UltimateTicTacToePlayback {
     // MARK: Moves
-
-    private func syncZoom() {
-        let changed = zoom.board != input.board || zoom.canPlay != input.canPlay
-        zoom.board = input.board
-        zoom.canPlay = input.canPlay
-        zoom.zoomEnabled = input.zoomEnabled
-        if changed {
-            zoom.choice = .automatic
-        }
-    }
 
     private func handle(_ event: BoardMoveEvent) {
         handledMoveNumber = event.number
         cancelSequence()
-        guard input.zoomEnabled, !input.reduceMotion,
-              let arriving = UltimateTicTacToeHold.arriving(event, on: input.board) else {
+        spark = nil
+        guard input.playsBeats, let arriving = UltimateTicTacToeHold.arriving(event, on: input.board) else {
             withAnimation(UltimateTicTacToeMotion.snap) {
                 hold = .none
                 glowHeld = false
@@ -190,18 +159,14 @@ extension UltimateTicTacToePlayback {
         }
         withAnimation(UltimateTicTacToeMotion.snap) {
             hold = arriving
-            glowHeld = !event.isMine
+            glowHeld = true
         }
         run { [weak self] id in
-            if event.isMine {
-                await self?.playMine(event, id: id)
-            } else {
-                await self?.playPartner(event, id: id)
-            }
+            await self?.play(event, id: id)
         }
     }
 
-    /// Without the zoom beats, the marks and lines animate on their own. Only the
+    /// Without the beats, the marks and lines animate on their own. Only the
     /// haptics are left.
     private func playHaptics(for event: BoardMoveEvent) {
         guard !input.isReplay else { return }
@@ -219,40 +184,31 @@ extension UltimateTicTacToePlayback {
         input.board.boards.indices.contains(event.move / 9) ? input.board.boards[event.move / 9] : nil
     }
 
-    /// My partner's move: the camera goes to the board, the mark draws in, the
-    /// board rests, then the camera goes where I play next.
-    private func playPartner(_ event: BoardMoveEvent, id: Int) async {
-        let board = event.move / 9
-        guard await travel(to: board, animation: UltimateTicTacToeMotion.zoomToMove, id: id) else { return }
-        guard await pause(UltimateTicTacToeTiming.zoomToMove, id: id) else { return }
-        PaeoniaHaptics.partnerDrawingReceived()
-        GameSound.mark.play(volume: 0.85)
-        withAnimation(UltimateTicTacToeMotion.markDraw) {
-            hold.hiddenMove = nil
+    /// A move on the whole board: my mark pops in or my partner's draws in, a
+    /// small board it closed closes, and a spark flies to the board the next
+    /// player is sent to. When they may choose, every open board lights up as
+    /// the beat ends instead. `UltimateTicTacToeTiming.beat` adds up the same
+    /// steps.
+    private func play(_ event: BoardMoveEvent, id: Int) async {
+        if event.isMine {
+            guard await pause(UltimateTicTacToeTiming.minePop, id: id) else { return }
+        } else {
+            PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.mark.play(volume: 0.85)
+            withAnimation(UltimateTicTacToeMotion.markDraw) {
+                hold.hiddenMove = nil
+            }
+            guard await pause(UltimateTicTacToeTiming.markDraw, id: id) else { return }
         }
-        let rest = input.board.outcome == nil ? UltimateTicTacToeTiming.hold : 0
-        guard await pause(UltimateTicTacToeTiming.markDraw + rest, id: id) else { return }
-        guard await closeBoard(board, id: id) else { return }
-        isGliding = true
-        guard await travel(to: zoom.restingFocus, animation: UltimateTicTacToeMotion.regroup, id: id) else { return }
-        if input.board.outcome == nil {
-            _ = await pause(UltimateTicTacToeTiming.regroup, id: id)
-        }
-    }
-
-    /// My move: the mark pops in, the camera pulls back and the board my
-    /// partner is sent to pulses once.
-    private func playMine(_ event: BoardMoveEvent, id: Int) async {
-        guard await pause(UltimateTicTacToeTiming.minePop, id: id) else { return }
         guard await closeBoard(event.move / 9, id: id) else { return }
-        isGliding = true
-        settleFocus()
-        guard input.board.outcome == nil else { return }
-        guard await pause(UltimateTicTacToeTiming.pulseDelay, id: id) else { return }
-        if let target = input.board.forced {
-            pulseCounts[target] += 1
+        guard input.board.outcome == nil, let target = input.board.forced else { return }
+        spark = UltimateTicTacToeSpark(move: event.move, target: target, start: .now)
+        guard await pause(UltimateTicTacToeTiming.spark, id: id) else { return }
+        spark = nil
+        withAnimation(UltimateTicTacToeMotion.lightUp) {
+            glowHeld = false
         }
-        _ = await pause(UltimateTicTacToeTiming.pulse, id: id)
+        pulseCounts[target] += 1
     }
 
     /// The closing beat of a small board a move just closed: the strike line
@@ -271,22 +227,12 @@ extension UltimateTicTacToePlayback {
         return await pause(UltimateTicTacToeTiming.close + rest, id: id)
     }
 
-    /// The camera waits for the opening zoom into the board I must play in, so
-    /// the whole board shows for a moment first.
-    private func startIntro() {
-        guard !input.reduceMotion, zoom.restingFocus != nil else { return }
-        run { [weak self] id in
-            _ = await self?.pause(UltimateTicTacToeTiming.intro, id: id)
-        }
-    }
-
     // MARK: Run
 
     private func run(_ body: @escaping @MainActor (Int) async -> Void) {
         runID += 1
         let id = runID
         isBusy = true
-        isGliding = false
         task = Task { [weak self] in
             await body(id)
             self?.sequenceEnded(id: id)
@@ -297,13 +243,12 @@ extension UltimateTicTacToePlayback {
         guard id == runID else { return }
         task = nil
         isBusy = false
-        isGliding = false
+        spark = nil
         if glowHeld {
-            withAnimation(PaeoniaMotion.stateChange) {
+            withAnimation(UltimateTicTacToeMotion.lightUp) {
                 glowHeld = false
             }
         }
-        settleFocus()
         if outcomeRequested {
             startOutcome()
         }
@@ -314,50 +259,12 @@ extension UltimateTicTacToePlayback {
         task?.cancel()
         task = nil
         isBusy = false
-        isGliding = false
     }
 
     /// Sleeps, then says whether this run is still the current one.
     private func pause(_ seconds: TimeInterval, id: Int) async -> Bool {
         try? await Task.sleep(for: .seconds(seconds))
         return id == runID && !Task.isCancelled
-    }
-
-    // MARK: Camera
-
-    private func settleFocus() {
-        requestFocus(zoom.restingFocus, animation: UltimateTicTacToeMotion.regroup)
-    }
-
-    /// Moves the camera to `target`. A trip from one small board to another
-    /// first heads out toward the whole board, then turns to the target before
-    /// it gets there. The springs keep their speed through the turn, so the trip
-    /// is one swoop that pulls back on the way, not a fast slide at full zoom.
-    /// A longer trip heads out for longer. False if cancelled.
-    private func travel(to target: Int?, animation: Animation, id: Int) async -> Bool {
-        if let from = focus, let target, from != target {
-            let steps = max(abs(from % 3 - target % 3), abs(from / 3 - target / 3))
-            requestFocus(nil, animation: UltimateTicTacToeMotion.regroup)
-            guard await pause(UltimateTicTacToeTiming.pullBack * Double(steps), id: id) else { return false }
-        }
-        requestFocus(target, animation: animation)
-        return true
-    }
-
-    private func requestFocus(_ target: Int?, animation: Animation) {
-        guard !isUserGesturing else {
-            deferredFocus = DeferredFocus(board: target, animation: animation)
-            return
-        }
-        applyFocus(target, animation: animation)
-    }
-
-    private func applyFocus(_ target: Int?, animation: Animation) {
-        deferredFocus = nil
-        guard focus != target else { return }
-        withAnimation(input.reduceMotion ? nil : animation) {
-            focus = target
-        }
     }
 
     // MARK: Outcome
@@ -399,7 +306,7 @@ extension UltimateTicTacToePlayback {
         let id = outcomeRunID
         isPlayingOutcome = true
         outcome.origin = input.lastMove.map { $0.move / 9 }
-        requestFocus(nil, animation: UltimateTicTacToeMotion.regroup)
+        setFocus(nil)
         let beats = UltimateTicTacToeOutcomeScript.beats(lineCount: result.line.count, isDraw: result.winner == nil)
         outcomeTask = Task { [weak self] in
             let start = ContinuousClock.now

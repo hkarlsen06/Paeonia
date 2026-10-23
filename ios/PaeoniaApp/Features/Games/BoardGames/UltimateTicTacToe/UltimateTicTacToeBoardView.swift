@@ -1,19 +1,23 @@
 import SwiftUI
 
-/// The Ultimate Tic-Tac-Toe board: nine small boards in a 3 by 3 grid, with a
-/// camera that zooms into the small board being played.
+/// The Ultimate Tic-Tac-Toe board: nine small boards in a 3 by 3 grid. The
+/// whole board shows unless the player pinches into a small board.
 ///
-/// - When I must play in one small board, the camera zooms into it and a tap
-///   on a cell plays it.
-/// - When I may choose, the whole board shows. A tap on a small board zooms in.
-///   A tap outside it, a pinch in, or the "Whole board" button zooms out.
-/// - My partner's move zooms to the board they played, draws their mark in,
-///   rests, and then moves to the board I play in next. A move from one small
-///   board to another pulls back on the way.
-/// - Reduce Motion still zooms, so the cells stay large enough to tap, but the
-///   camera cuts instead of gliding and skips the trip to my partner's move.
-/// - VoiceOver never zooms. A tap on any cell plays it.
-/// - A replay of a finished game never zooms either, and its moves make no
+/// - When I must play in one small board, a tap anywhere in its part of the
+///   board picks its nearest cell.
+/// - When I may choose, a tap on an open small board picks it and the other
+///   open boards stop glowing. A tap on another open board switches, and a tap
+///   on a cell of the picked board picks the cell.
+/// - A picked cell shows my mark faintly. "Lock in" under the board plays it.
+///   The screen owns the pick and the button.
+/// - A move draws in on the whole board. Then a spark flies from its cell to
+///   the small board the next player is sent to, which lights up and pulses
+///   once. When the next player may choose, every open board lights up instead.
+/// - A pinch out over a small board zooms into it to look closely. A pinch in,
+///   a tap outside it, or a new move zooms back out.
+/// - Reduce Motion shows a move at once with no spark, and the glow fades in.
+/// - VoiceOver never zooms. Activating a cell picks it.
+/// - A replay of a finished game never zooms, and its moves make no sparks,
 ///   haptics or sounds.
 ///
 /// The screen decides what is on the board. This view animates changes to it.
@@ -21,16 +25,15 @@ struct UltimateTicTacToeBoardView: View {
     /// The longest the board grows.
     static let maxSide: CGFloat = 560
 
-    /// How long the board takes to show one move, for the screen's replay. My
-    /// move that ends the game is over once its small board has closed, so the
-    /// outcome follows without a gap.
+    /// How long the board takes to show one move, for the screen's replay. A
+    /// move takes as long as its beat, so a move that ends the game is over once
+    /// its small board has closed and the outcome follows without a gap.
     static let moveTiming = BoardGameMoveTiming(
-        mine: UltimateTicTacToeTiming.mine,
-        partner: UltimateTicTacToeTiming.partner,
+        mine: .seconds(UltimateTicTacToeTiming.minePop + UltimateTicTacToeTiming.spark),
+        partner: .seconds(UltimateTicTacToeTiming.markDraw + UltimateTicTacToeTiming.spark),
         openLeadIn: UltimateTicTacToeTiming.openLeadIn,
         exact: { event, board in
-            guard event.isMine, (board as? UltimateTicTacToeBoard)?.outcome != nil else { return nil }
-            return UltimateTicTacToeTiming.mineEnding
+            (board as? UltimateTicTacToeBoard).map { .seconds(UltimateTicTacToeTiming.beat(of: event, on: $0)) }
         }
     )
 
@@ -42,6 +45,9 @@ struct UltimateTicTacToeBoardView: View {
     let me: BoardPlayer
     /// True while it is my turn and the board takes input.
     let canPlay: Bool
+    /// What I picked on this turn. The screen resets it when the board or the
+    /// turn changes.
+    @Binding var pick: UltimateTicTacToePick
     /// Turns true 0.15 s after the last move landed on a finished game. Then
     /// the outcome highlight plays.
     let showsOutcome: Bool
@@ -50,14 +56,10 @@ struct UltimateTicTacToeBoardView: View {
     let partnerName: String
     /// A finished game played again from "Past games".
     let isReplay: Bool
-    let onPlay: (Int) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @State private var playback: UltimateTicTacToePlayback
-    /// True while the player's fingers pinch. It resets itself when the system
-    /// cancels the gesture, so the camera never stays frozen.
-    @GestureState private var isPinching = false
 
     init(
         board: UltimateTicTacToeBoard,
@@ -65,31 +67,30 @@ struct UltimateTicTacToeBoardView: View {
         styles: BoardPieceStyles,
         me: BoardPlayer,
         canPlay: Bool,
+        pick: Binding<UltimateTicTacToePick>,
         showsOutcome: Bool,
         bloomSeed: String,
         partnerName: String = "",
-        isReplay: Bool = false,
-        onPlay: @escaping (Int) -> Void
+        isReplay: Bool = false
     ) {
         self.board = board
         self.lastMove = lastMove
         self.styles = styles
         self.me = me
         self.canPlay = canPlay
+        _pick = pick
         self.showsOutcome = showsOutcome
         self.bloomSeed = bloomSeed
         self.partnerName = partnerName
         self.isReplay = isReplay
-        self.onPlay = onPlay
         // Moves and an outcome already on screen when the view first appears
         // just show, so the playback starts having seen them.
         _playback = State(initialValue: UltimateTicTacToePlayback(
             UltimateTicTacToePlayback.Input(
                 board: board,
                 lastMove: lastMove,
-                canPlay: canPlay,
                 showsOutcome: showsOutcome,
-                zoomEnabled: false,
+                playsBeats: false,
                 reduceMotion: false,
                 isReplay: isReplay
             )
@@ -100,19 +101,12 @@ struct UltimateTicTacToeBoardView: View {
         !voiceOverEnabled && !isReplay
     }
 
-    /// The beats of a move: zoom to it, hold it back, draw it in. Reduce Motion
-    /// shows the move at once.
-    private var playsMoveBeats: Bool {
-        zoomEnabled && !reduceMotion
-    }
-
     private var playbackInput: UltimateTicTacToePlayback.Input {
         UltimateTicTacToePlayback.Input(
             board: board,
             lastMove: lastMove,
-            canPlay: canPlay,
             showsOutcome: showsOutcome,
-            zoomEnabled: zoomEnabled,
+            playsBeats: zoomEnabled && !reduceMotion,
             reduceMotion: reduceMotion,
             isReplay: isReplay
         )
@@ -129,9 +123,6 @@ struct UltimateTicTacToeBoardView: View {
         .frame(maxWidth: Self.maxSide)
         .onChange(of: playbackInput, initial: true) { _, input in
             playback.update(input)
-        }
-        .onChange(of: isPinching) { _, active in
-            playback.setUserGesture(active: active)
         }
         .onDisappear { playback.stop() }
     }
@@ -154,9 +145,8 @@ struct UltimateTicTacToeBoardView: View {
                 .gesture(SpatialTapGesture().onEnded { value in
                     handleTap(at: transform.invert(value.location), geometry: geometry)
                 })
-                .simultaneousGesture(pinch)
+                .simultaneousGesture(pinch(transform, geometry: geometry))
             bloom(geometry)
-            wholeBoardButton
         }
         .frame(width: side, height: side)
     }
@@ -166,13 +156,14 @@ struct UltimateTicTacToeBoardView: View {
             lastMove: lastMove,
             handled: playback.handledMoveNumber,
             board: board,
-            enabled: playsMoveBeats
+            enabled: zoomEnabled && !reduceMotion
         )
         return UltimateTicTacToeLook(
             board: board,
             hold: pending ?? playback.hold,
             focus: playback.focus,
-            glowHeld: playback.glowHeld || (pending != nil && lastMove?.isMine == false),
+            playingBoard: pick.playingBoard(on: board),
+            glowHeld: playback.glowHeld || pending != nil,
             outcome: playback.outcome
         )
     }
@@ -196,6 +187,7 @@ struct UltimateTicTacToeBoardView: View {
                 )
                 .position(x: rect.midX, y: rect.midY)
             }
+            pendingMark(geometry)
             outcomeLines(geometry)
             ForEach(0..<9, id: \.self) { index in
                 let rect = geometry.smallRect(index)
@@ -208,6 +200,7 @@ struct UltimateTicTacToeBoardView: View {
                 )
                 .position(x: rect.midX, y: rect.midY)
             }
+            sparkLayer(geometry)
         }
     }
 
@@ -216,6 +209,27 @@ struct UltimateTicTacToeBoardView: View {
         case .none: .paeoniaAccentPrimary
         case .next: styles[board.next].color
         case .winner: styles[board.outcome?.winner ?? board.next].color
+        }
+    }
+
+    /// The spark after a move, in the next player's color.
+    @ViewBuilder
+    private func sparkLayer(_ geometry: UltimateTicTacToeBoardGeometry) -> some View {
+        if let spark = playback.spark {
+            UltimateTicTacToeSparkView(spark: spark, geometry: geometry, color: styles[board.next].color)
+        }
+    }
+
+    /// My mark, faint, in the cell I picked. A new pick fades it in afresh.
+    @ViewBuilder
+    private func pendingMark(_ geometry: UltimateTicTacToeBoardGeometry) -> some View {
+        if canPlay, let move = pick.move(on: board) {
+            let rect = geometry.cellRect(board: move / 9, cell: move % 9)
+            UltimateTicTacToePendingMark(style: styles[me])
+                .frame(width: rect.width * 0.62, height: rect.height * 0.62)
+                .position(x: rect.midX, y: rect.midY)
+                .id(move)
+                .transition(.opacity)
         }
     }
 }
@@ -279,64 +293,40 @@ extension UltimateTicTacToeBoardView {
             playback.skip()
             return
         }
-        switch playback.zoom.tap(at: point, geometry: geometry, focus: playback.focus) {
-        case .focus(let target):
-            PaeoniaHaptics.selection()
-            GameSound.tap.play(volume: 0.6)
-            playback.choose(.board(target))
-        case .play(let move):
-            PaeoniaHaptics.selection()
-            GameSound.mark.play()
-            onPlay(move)
+        switch pick.tap(at: point, on: board, canPlay: canPlay, geometry: geometry, focus: playback.focus) {
+        case .pick(let next):
+            choose(next)
         case .zoomOut:
-            playback.choose(.wholeBoard)
+            playback.setFocus(nil)
         case .ignore:
             break
         }
     }
 
-    private var pinch: some Gesture {
-        MagnifyGesture()
-            .updating($isPinching) { _, state, _ in
-                state = true
-            }
-            .onChanged { value in
-                if UltimateTicTacToeZoom.isZoomOutPinch(value.magnification),
-                   playback.focus != nil,
-                   !playback.isBusy {
-                    playback.choose(.wholeBoard)
-                }
-            }
-    }
-
-    private var showsWholeBoardButton: Bool {
-        playback.focus != nil && canPlay && !playback.isBusy
-    }
-
-    /// The button lives in its own view so its fade does not take over the
-    /// zoom, which changes in the same update.
-    private var wholeBoardButton: some View {
-        ZStack {
-            if showsWholeBoardButton {
-                Button {
-                    playback.choose(.wholeBoard)
-                } label: {
-                    Image(systemName: "arrow.down.right.and.arrow.up.left")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .frame(width: 32, height: 32)
-                        .glassEffect(.regular, in: Circle())
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text(.ultimateTicTacToeWholeBoardA11Y))
-                .accessibilityIdentifier("ultimateTicTacToe.wholeBoard")
-                .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.8)))
-            }
+    private func choose(_ next: UltimateTicTacToePick) {
+        PaeoniaHaptics.selection()
+        GameSound.tap.play(volume: 0.6)
+        withAnimation(PaeoniaMotion.stateChange) {
+            pick = next
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-        .animation(PaeoniaMotion.stateChange, value: showsWholeBoardButton)
+    }
+
+    /// A spread over a small board zooms into it, and a pinch in zooms back
+    /// out. Nothing zooms while a move plays, so the spark stays in view.
+    private func pinch(
+        _ transform: UltimateTicTacToeViewTransform,
+        geometry: UltimateTicTacToeBoardGeometry
+    ) -> some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                guard zoomEnabled, !playback.isBusy else { return }
+                playback.setFocus(UltimateTicTacToeZoom.focus(
+                    afterPinch: value.magnification,
+                    from: playback.focus,
+                    startingAt: transform.invert(value.startLocation),
+                    geometry: geometry
+                ))
+            }
     }
 
     // MARK: VoiceOver
@@ -349,14 +339,18 @@ extension UltimateTicTacToeBoardView {
             partnerName: partnerName,
             isUsable: isUsable,
             playableCells: isUsable ? Set(playable) : [],
-            play: { cell in playFromAccessibility(index * 9 + cell) }
+            pick: { cell in pickFromAccessibility(index * 9 + cell) }
         )
     }
 
-    private func playFromAccessibility(_ move: Int) {
+    /// One path for everyone: activating a cell picks it, and "Lock in" plays
+    /// it. In free choice the cell's small board becomes the picked board too.
+    private func pickFromAccessibility(_ move: Int) {
         guard canPlay, board.isLegal(move) else { return }
-        PaeoniaHaptics.selection()
-        GameSound.mark.play()
-        onPlay(move)
+        choose(.move(move))
+        let cell = move % 9
+        AccessibilityNotification.Announcement(
+            String(localized: .ultimateTicTacToeCellPickedA11Y(cell / 3 + 1, cell % 3 + 1))
+        ).post()
     }
 }

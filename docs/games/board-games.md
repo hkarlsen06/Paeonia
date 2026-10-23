@@ -34,7 +34,7 @@ Made on 2026-10-14 while the developer was away. Each is the option that was rec
 - **The reminder uses the shared body.** "Pick up where you left off." The title names the game.
 - **Turn pushes carry a turn token.** `round_id` holds `<game number>:<move count>`, so the drain can tell whether the push is still wanted. It never holds the move.
 - **The petal bloom comes from the board.** The result panel draws none, so a win blooms once, from the winning line.
-- **"Whole board" also shows in a forced zoom** in Ultimate Tic-Tac-Toe, so a player who was sent to a board can still look at the whole game.
+- **Ultimate Tic-Tac-Toe never zooms by itself** (decided on 2026-10-23). The whole board stays in view, so the player keeps the overview. Zooming into a small board is a pinch, for looking closely, and there is no "Whole board" button.
 - **A Connect Four draw** dims the discs to 60% and brings them back.
 - **Marks are drawn in blush** on boxes and cells, so both partners' marks read the same on their colors.
 - **The partner's pieces are lavender.** Draw & Guess's second partner color is a pink close to the first, and on a full board the two sides were hard to tell apart, so the partner's pieces, glow and badge use `.paeoniaInkLavender`.
@@ -212,11 +212,15 @@ The moment the last move lands.
 ### Ultimate Tic-Tac-Toe
 
 - The big grid has 9 small boards with wide gaps. Open boards that the next move may use glow softly in the mover's color. Other boards dim.
-- Zoom. When I must play in one board, the board zooms in on it so its cells are large, then I tap a cell. When I may choose, the whole board shows, I tap a small board to zoom into it, and a tap outside it or a pinch zooms back out. After my move the board zooms out, and once the camera has settled, the board my partner is sent to pulses once to 110%.
-- The partner's move. The board zooms into the small board they played, their mark draws in, then the view moves to the board I am sent to. A move from one small board to another pulls back partway and swoops in, so it never slides across the board at full zoom.
+- The whole board always shows. The board never zooms by itself.
+- Playing when I am sent to one board. I tap a cell of that board on the whole board. Each small board owns the area up to the middle of its gaps, and a tap anywhere in the board's area picks its nearest cell. Taps in other boards do nothing.
+- Playing when I may choose. The status row says "Choose the board you want to play in." ("Velg brettet du vil spille i."). A tap on an open board picks it: it keeps its glow and the other open boards stop glowing, but they stay tappable, so a tap on another one switches. Then a tap on a cell of the picked board picks the cell.
+- Lock in. Picking a cell does not play it. My mark shows in the cell at about 45% and breathes slowly, and a tap on another cell moves it. "Lock in" ("Bekreft trekk") under the board plays the move. The button shows for my whole turn and stays disabled until I pick a cell. Picking makes the selection haptic and the tap sound. Lock in plays the mark sound.
+- After a move. The mark draws in on the whole board. Then a small glowing spark in the next player's color flies on a slight arc from the cell just played to the small board it sends the next player to, in 0.45 seconds. When it lands, that board lights up and pulses once to 110%. This plays after my partner's move and after mine. A move that lets the next player choose sends no spark, and every open board lights up.
+- Pinch. Spreading two fingers over a small board zooms into it, so any of the nine can be looked at closely. Picking works the same while zoomed. A pinch in, a tap outside the board, or a new move zooms back out.
 - A won small board gets a strike line through its three cells, its cells fade to 30%, and the winner's mark draws large over it. The strike line lies under the big mark and is paler than it (45% saturation, 70% opacity), so the line never covers the mark. The line through the three winning boards at the end of a game is drawn the same way, under the big marks. A full small board without a winner fades to 30%. When a move closes a small board and ends the game, the board goes straight on to the result, which starts 0.15 seconds after the closing beat.
-- Reduce Motion. The board still zooms, so the cells stay large enough to tap, but the view cuts to the new board instead of gliding. My partner's move shows at once, without the trip to their board. VoiceOver never zooms. The board I am sent to keeps its glow.
-- VoiceOver. Each small board is a group, "Board 5, center, open" or "Board 5, won by [Name]". Each cell reads "Row 1, column 2, empty".
+- Reduce Motion. A move shows at once with no spark, and the glow of the next board fades in. The picked cell's mark does not breathe. A pinch cuts to the small board instead of gliding.
+- VoiceOver. Each small board is a group, "Board 5, center, open" or "Board 5, won by [Name]". Each cell reads "Row 1, column 2, empty". Activating a cell picks it and announces "Row 1, column 2 picked. Lock in to play.", and the Lock in button plays it. VoiceOver never zooms.
 
 ### Past games
 

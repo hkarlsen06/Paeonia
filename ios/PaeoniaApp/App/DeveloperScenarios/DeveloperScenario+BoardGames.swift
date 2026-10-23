@@ -59,15 +59,15 @@
     )
     static let ultimateTicTacToeForced = boardGameScreen(
       "ultimate-tic-tac-toe-forced", "Ultimate Tic-Tac-Toe · sent to one board",
-      "Robin's last move sent you to the bottom left board, which zooms in"
+      "Robin's last move sent you to the bottom left board. Tap a square there, then Lock in"
     )
     static let ultimateTicTacToeFree = boardGameScreen(
       "ultimate-tic-tac-toe-free", "Ultimate Tic-Tac-Toe · free choice",
-      "The board you were sent to is already won, so you may play in any open board"
+      "The board you were sent to is already won, so you choose a board first, then a square"
     )
     static let ultimateTicTacToePartnerMove = boardGameScreen(
       "ultimate-tic-tac-toe-partner-move", "Ultimate Tic-Tac-Toe · Robin's move arrives",
-      "Opens one move behind: Robin's move plays, then the board you are sent to zooms in"
+      "Opens one move behind: Robin's move draws in and a spark flies to the board you are sent to"
     )
     static let ultimateTicTacToeWon = boardGameScreen(
       "ultimate-tic-tac-toe-won", "Ultimate Tic-Tac-Toe · you win",

@@ -138,9 +138,13 @@ nonisolated struct UltimateTicTacToeLook: Equatable {
 
     let board: UltimateTicTacToeBoard
     let hold: UltimateTicTacToeHold
+    /// The small board the player pinched into. It never dims.
     let focus: Int?
-    /// No glow and no dimming while my partner's move plays, so the board
-    /// stays calm until the camera moves on.
+    /// The board I play in, once I have one (`UltimateTicTacToePick.playingBoard`).
+    /// The other open boards stop glowing.
+    let playingBoard: Int?
+    /// No glow and no dimming while a move plays, so the board stays calm
+    /// until the spark lands.
     let glowHeld: Bool
     let outcome: UltimateTicTacToeOutcomeState
 
@@ -154,7 +158,8 @@ nonisolated struct UltimateTicTacToeLook: Equatable {
         }
         guard !glowHeld else { return .plain }
         if board.openBoards.contains(index) {
-            return UltimateTicTacToeEmphasis(glow: .next, opacity: 1)
+            let glows = playingBoard == nil || playingBoard == index
+            return glows ? UltimateTicTacToeEmphasis(glow: .next, opacity: 1) : .plain
         }
         let isOpen = hold.unclosedBoard == index || board.boards[index] == .open
         if isOpen, index != focus, !hold.isHolding(index) {

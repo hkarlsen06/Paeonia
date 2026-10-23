@@ -52,3 +52,24 @@ struct UltimateTicTacToePulse: ViewModifier {
         }
     }
 }
+
+/// My mark in the cell I picked, faint until I lock it in. It breathes slowly,
+/// except with Reduce Motion.
+struct UltimateTicTacToePendingMark: View {
+    let style: BoardPieceStyle
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isDim = false
+
+    var body: some View {
+        BoardMarkView(style: style, tint: style.color)
+            .opacity(reduceMotion ? 0.45 : (isDim ? 0.32 : 0.55))
+            .animation(
+                reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: 1.1).repeatForever(autoreverses: true),
+                value: isDim
+            )
+            .onAppear { isDim = !reduceMotion }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+}

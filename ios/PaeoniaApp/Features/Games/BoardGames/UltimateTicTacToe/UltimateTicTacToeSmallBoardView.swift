@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// What VoiceOver needs from the screen to describe and play one small board.
+/// What VoiceOver needs from the screen to describe one small board and pick
+/// its cells.
 struct UltimateTicTacToeSmallBoardAccess {
     let me: BoardPlayer
     let partnerName: String
@@ -8,7 +9,8 @@ struct UltimateTicTacToeSmallBoardAccess {
     let isUsable: Bool
     /// The empty cells I can play here, as 0 to 8.
     let playableCells: Set<Int>
-    let play: (Int) -> Void
+    /// Picks a cell, 0 to 8. "Lock in" plays it.
+    let pick: (Int) -> Void
 }
 
 /// One of the nine boards: the surface, the grid, the marks, and once the board
@@ -159,7 +161,7 @@ struct UltimateTicTacToeSmallBoardView: View {
                 .accessibilityAddTraits(access.playableCells.contains(cell) ? .isButton : [])
                 .accessibilityAction {
                     if access.playableCells.contains(cell) {
-                        access.play(cell)
+                        access.pick(cell)
                     }
                 }
                 .accessibilityIdentifier("ultimateTicTacToe.cell.\(index * 9 + cell)")
