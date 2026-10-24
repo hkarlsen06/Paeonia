@@ -53,7 +53,7 @@ These block TestFlight/App Review until resolved.
 - [x] In-app legal/support links open the production URLs.
 - [ ] Account deletion works end-to-end from the app. Needs a device: the backend (`accountDeletion.test.ts`) and app (`RootViewModelFlowTests`) are tested, but the Clerk user removal and Apple token revocation need a real account.
 - [x] Relationship leave/disconnect hides shared content after sync. `relationship.test.ts`, `LocalPrivacyPurgeTests`, `RelationshipEventsLiveFeedTests`.
-- [ ] App Review can access a paired demo state without needing two reviewer-controlled devices. The backend is tested (`review.test.ts`). Blocked on the production Clerk instance: the demo partner accounts must exist there before `mint-review-codes.mjs` can run.
+- [ ] App Review can access a paired demo state without needing two reviewer-controlled devices. The backend is tested (`review.test.ts`). Next, sign in three demo partner accounts on the production Clerk instance and run `mint-review-codes.mjs`.
 - [x] In-app purchase products are configured in App Store Connect.
 - [x] StoreKit sandbox monthly and annual purchases and entitlement refresh are tested on device. Measured on 2026-10-24: `api.paeonia.no` holds 15 monthly and 5 yearly verified sandbox transactions, with renewal, expiry and plan-change notifications.
 - [ ] StoreKit sandbox restore is tested on device. Needs a device.
@@ -114,17 +114,18 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Notification Service Extension is configured if required by the shipped notification behavior.
 - [x] App icon asset is linked correctly in all relevant targets.
 - [x] Launch screen uses final brand treatment or an intentionally minimal native launch.
-- [ ] Release build configuration points at the production Convex URL (`https://api.paeonia.no`), a `pk_live_` Clerk key from the production Clerk instance, and production marketing URLs. Gap: Convex and the marketing URLs are right, but `ios/release.xcconfig` holds the development instance key (`verified-badger-10.clerk.accounts.dev`).
+- [x] Release build configuration points at the production Convex URL (`https://api.paeonia.no`), a `pk_live_` Clerk key from the production Clerk instance (`clerk.paeonia.no`), and production marketing URLs. Switched on 2026-10-24.
 - [x] Debug/test account shortcuts are unavailable in release builds.
 
 ## Authentication And Onboarding
 
-- [ ] Sign in with Apple works with normal Apple ID (native ID token exchanged through Clerk). Needs a device, on the production Clerk instance.
+- [ ] Sign in with Apple works with normal Apple ID (native ID token exchanged through Clerk). Needs a device.
 - [ ] Sign in with Apple works with Hide My Email. Needs a device. Nothing in the app reads the email address.
-- [ ] Google Sign-In works (Clerk's OAuth sheet). Needs a device, on the production Clerk instance, which needs its own Google OAuth client.
+- [ ] Google Sign-In works (Clerk's OAuth sheet). Needs a device. The Google client lives in Google Cloud project `paeonia-hkarlsen06`, and its consent screen is published.
 - [x] No email/password, magic-link, or passkey sign-up surface is reachable in MVP.
 - [ ] Auth errors are understandable to a normal user. Gap: every sign-in and account-deletion failure says "Check your connection and try again" (`RootViewModel+Account.swift` `performAuthAction`, keys `auth.notice.signInFailed.message` and `auth.notice.deleteAccountFailed.message`). Only `PaeoniaFailure` `.offline` may say that.
-- [ ] A production Clerk instance exists. Its issuer matches `CLERK_JWT_ISSUER_DOMAIN` on `api.paeonia.no`, and its Sign in with Apple and Google settings use Paeonia's own credentials. `scripts/deploy-backend` creates the `convex` JWT template on each deploy. Gap: `api.paeonia.no` and both xcconfigs use the development instance.
+- [x] A production Clerk instance exists at `clerk.paeonia.no`. Its issuer is `CLERK_JWT_ISSUER_DOMAIN` on `api.paeonia.no`, which accepts its tokens and refuses the development instance's (checked 2026-10-24). Apple uses Services ID `no.paeonia.app.clerk` and the iOS app `48ZSLD4RMP` / `no.paeonia.app`. Google uses its own client. `scripts/deploy-backend` creates the `convex` JWT template on each deploy.
+- [ ] The Google client secret and the Sign in with Apple key `7HMG8DVAK4` are rotated. Gap: both appeared in an agent's tool output on 2026-10-24. The Apple key is also `APPLE_SIGN_IN_PRIVATE_KEY` on `api.paeonia.no`.
 - [x] OAuth profile name is used when available. `ClerkAuthServiceSignInTests`, `lib/auth.test.ts`.
 - [x] Name fallback flow works when OAuth does not provide a usable name. Onboarding refuses a blank name, `identity.test.ts` refuses it on the server, and the UI test types a name.
 - [x] Display name can be changed later.
@@ -399,7 +400,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earlier Supabase checks (migrations, RLS, pgTAP, advisors, Edge Functions, Storage buckets) no longer apply.
 
 - [x] `scripts/deploy-backend` succeeds against `https://api.paeonia.no`. Deployed `9a6d88d4` on 2026-10-24.
-- [x] Every environment variable the backend reads is set on `api.paeonia.no` (checked 2026-10-24). `CLERK_JWT_ISSUER_DOMAIN` and `CLERK_SECRET_KEY` still belong to the development Clerk instance.
+- [x] Every environment variable the backend reads is set on `api.paeonia.no` (checked 2026-10-24). Clerk points at the production instance.
 - [x] `https://api.paeonia.no` and `https://actions.paeonia.no` serve over TLS. `https://convex.paeonia.no` is reachable on the tailnet only.
 - [x] Every app-callable function checks membership, entitlement, block state, and ownership from the session. 175 of 183 public functions call an auth helper. The other 8 need none. Convex has no row level security, so the tests in `backend/convex/*.test.ts` are the safety net.
 - [x] Media uploads reject a mismatched size or content type, and signed media URLs (`GET /media`) expire and reject a bad signature.
@@ -410,7 +411,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [ ] A queued push reaches a real device as an alert and as a widget update. Needs a device.
 - [ ] A restore from a nightly backup has been tried. Hourly and nightly backups run (checked 2026-10-24). The storage move on 2026-10-14 used the restore steps, but no drill has used a nightly backup.
 - [x] No Convex admin key or Clerk secret key is reachable from the client source or the marketing app.
-- [ ] `ios/Scripts/mint-review-codes.mjs` works against production, including registered demo partners. Blocked on the production Clerk instance.
+- [ ] `ios/Scripts/mint-review-codes.mjs` works against production, including registered demo partners. Needs three demo partner accounts on the production Clerk instance.
 
 ## Marketing Site
 
