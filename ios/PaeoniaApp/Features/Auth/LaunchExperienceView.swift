@@ -47,10 +47,11 @@ struct LaunchExperienceView: View {
     private static let petalAnimation = Animation.timingCurve(0.3, 0.8, 0.3, 1, duration: revealDuration)
     /// The hole starts slowly and speeds up, catching the petals about 70 ms in and
     /// cutting them away over the next 45 ms. It clears the corners around 290 ms.
-    private static let holeAnimation = Animation.timingCurve(0.4, 0, 0.3, 1, duration: revealDuration)
-    /// When the hole's edge reaches the left and right screen edges on a phone
-    /// (about 0.42 of `holeProgress`). On iPad it arrives about 30 ms later.
-    private static let sidesUncoveredDelay: TimeInterval = 0.12
+    private static let holeCurve = UnitCurve.bezier(
+        startControlPoint: UnitPoint(x: 0.4, y: 0),
+        endControlPoint: UnitPoint(x: 0.3, y: 1)
+    )
+    private static let holeAnimation = Animation.timingCurve(holeCurve, duration: revealDuration)
 
     var body: some View {
         GeometryReader { proxy in
@@ -60,17 +61,17 @@ struct LaunchExperienceView: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .mask { holeCutout(in: proxy.size) }
+            .onChange(of: contentReady, initial: true) { _, isReady in
+                if isReady {
+                    beginReveal(in: proxy.size)
+                }
+            }
         }
         .opacity(overlayOpacity)
         .ignoresSafeArea()
         // The mask does not change hit testing, so without this the overlay would
         // swallow taps on the screen it is uncovering until it is removed.
         .allowsHitTesting(!isRevealing)
-        .onChange(of: contentReady, initial: true) { _, isReady in
-            if isReady {
-                beginReveal()
-            }
-        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.appStateLaunching))
     }
@@ -79,7 +80,7 @@ struct LaunchExperienceView: View {
     /// the hole's edge has passed the furthest corner with a little slack, so no lit
     /// sliver survives to be cut off by the overlay's unmount.
     private func holeCutout(in size: CGSize) -> some View {
-        let diameter = holeProgress * (hypot(size.width, size.height) + 2)
+        let diameter = holeProgress * Self.fullHoleDiameter(in: size)
         return Rectangle()
             .fill(.black)
             .overlay {
@@ -107,8 +108,19 @@ struct LaunchExperienceView: View {
         .accessibilityHidden(true)
     }
 
+    private static func fullHoleDiameter(in size: CGSize) -> CGFloat {
+        hypot(size.width, size.height) + 2
+    }
+
+    /// How long the hole takes to reach the left and right screen edges: about
+    /// 120 ms on a phone and 150 ms on an iPad, whose wider screen it fills later.
+    private static func sidesUncoveredDelay(in size: CGSize) -> TimeInterval {
+        let progressAtSides = size.width / fullHoleDiameter(in: size)
+        return holeCurve.inverse.value(at: progressAtSides) * revealDuration
+    }
+
     /// Runs once. Readiness can flip again while the reveal plays.
-    private func beginReveal() {
+    private func beginReveal(in size: CGSize) {
         guard !isRevealing else {
             return
         }
@@ -118,9 +130,10 @@ struct LaunchExperienceView: View {
         if reduceMotion {
             withAnimation(.easeOut(duration: Self.reducedMotionExitDuration)) {
                 overlayOpacity = 0
+            } completion: {
+                onFinished()
             }
             onSidesUncovered()
-            finish(after: Self.reducedMotionExitDuration)
             return
         }
 
@@ -129,18 +142,12 @@ struct LaunchExperienceView: View {
         }
         withAnimation(Self.holeAnimation) {
             holeProgress = 1
-        }
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(Self.sidesUncoveredDelay))
-            onSidesUncovered()
-        }
-        finish(after: Self.revealDuration)
-    }
-
-    private func finish(after delay: TimeInterval) {
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(delay))
+        } completion: {
             onFinished()
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Self.sidesUncoveredDelay(in: size)))
+            onSidesUncovered()
         }
     }
 }
