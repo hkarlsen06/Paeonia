@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { makeChain, removeChains, signJws, type Chain } from "./appleChain.testHelpers";
 import { newUuid } from "./lib/ids";
 import { seedProducts } from "./storekit.testHelpers";
-import { createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
+import { createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
 
 let apple: Chain;
 let fetchMock: ReturnType<typeof vi.fn<(url: string) => Promise<Response>>>;
@@ -112,6 +112,47 @@ describe("POST /apple/server-notifications", () => {
     expect(row).toMatchObject({ status: "refunded", revocation_reason: "customer_refund" });
     expect(row.revoked_at).toBeDefined();
     expect((await user.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement?.is_entitled).toBe(false);
+  });
+
+  test("a billing grace period keeps both partners in until the grace period ends", async () => {
+    const t = newTest();
+    await seedProducts(t);
+    const { first, second } = await createCouple(t, { entitled: false });
+    const token = await first.as.mutation(api.access.get_or_create_app_account_token, { p_user_id: first.userId });
+    const graceEndsAt = Date.now() + 16 * day;
+    const signedPayload = signedNotification(transactionPayload(token, { expiresDate: Date.now() - day }), {
+      notificationType: "DID_FAIL_TO_RENEW",
+      subtype: "GRACE_PERIOD",
+      data: {
+        bundleId: "no.paeonia.app",
+        environment: "Sandbox",
+        signedTransactionInfo: signJws(apple, transactionPayload(token, { expiresDate: Date.now() - day })),
+        signedRenewalInfo: signJws(apple, {
+          originalTransactionId: "2000000000001",
+          autoRenewProductId: "no.paeonia.couple",
+          autoRenewStatus: 1,
+          isInBillingRetryPeriod: true,
+          gracePeriodExpiresDate: graceEndsAt,
+          environment: "Sandbox",
+          signedDate: Date.now(),
+        }),
+      },
+    });
+    expect((await post(t, { signedPayload })).body).toMatchObject({ processed: true });
+
+    const coupleEntitled = async () =>
+      await Promise.all(
+        [first, second].map(async (user) => (await user.as.query(api.access.get_access_snapshot, {}))[0].couple_entitlement?.is_entitled),
+      );
+    expect(await coupleEntitled()).toEqual([true, true]);
+
+    const expire = (now: number) =>
+      t.mutation(internal.storekit.expire_stale_entitlements, { p_now: new Date(now).toISOString() });
+    expect(await expire(Date.now())).toEqual([{ storekit_transactions_expired: 0, entitlement_grants_expired: 0 }]);
+    expect(await coupleEntitled()).toEqual([true, true]);
+
+    expect(await expire(graceEndsAt + 1)).toEqual([{ storekit_transactions_expired: 1, entitlement_grants_expired: 0 }]);
+    expect(await coupleEntitled()).toEqual([false, false]);
   });
 
   test("a streak restore refund is logged on the restore ledger", async () => {
