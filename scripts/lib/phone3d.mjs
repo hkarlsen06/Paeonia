@@ -170,6 +170,14 @@ export async function renderPhones({ phones, finish, W, H, captures }) {
   }
   renderer.dispose();
 
+  // Every phone stays inside the panel its centre is in, so no screenshot cuts off part of a phone.
+  for (const [i, spec] of phones.entries()) {
+    const box = bounds[i], panel = Math.floor((box.left + box.right) / 2 / W), margin = 0.02 * W;
+    if (box.left < panel * W + margin || box.right > (panel + 1) * W - margin) {
+      throw new Error(`The ${spec.screen} phone is cut off at the edge of panel ${panel + 1}`);
+    }
+  }
+
   // Shrink long translations until they fit their panel, clear the phones and break no word.
   await document.fonts.ready;
   for (const [index, section] of [...document.querySelectorAll('section')].entries()) {
@@ -186,5 +194,8 @@ export async function renderPhones({ phones, finish, W, H, captures }) {
       if ((size -= 4) < 72) throw new Error(`Panel ${index + 1} text ${problem()} even at 76px`);
       section.style.fontSize = `${size}px`;
     }
+    const headline = section.querySelector('h1');
+    const lines = Math.round(headline.getBoundingClientRect().height / parseFloat(getComputedStyle(headline).lineHeight));
+    if (lines !== 2) throw new Error(`Panel ${index + 1} headline wraps to ${lines} line(s), not 2: ${headline.textContent}`);
   }
 }

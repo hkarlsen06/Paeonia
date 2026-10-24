@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Render App Store screenshots with 3D iPhone 17 Pro Max models around unmodified simulator captures.
-// Every panel is cut from one wide canvas, so a phone placed on a panel boundary continues into the
-// next screenshot. The phone model is in lib/phone3d.mjs.
+// Every panel is cut from one wide canvas. The render fails when a phone crosses a panel edge or a
+// headline does not take exactly two lines. The phone model is in lib/phone3d.mjs.
 //
 // Usage: node scripts/render-3d-screenshots.mjs [config.json] [captures-dir] [output-dir]
 // Defaults render Paeonia from ios/ASConnectScreenshots/trial-1/raw into ios/ASConnectScreenshots/trial-1/3d.

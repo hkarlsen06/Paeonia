@@ -8,12 +8,12 @@
   "finish": "#c9c4c8",
   "capture": "{locale}/iPhone-{screen}.png",
   "phones": [
-    { "screen": "01-widget", "x": 0.64, "y": 0.64, "height": 0.72, "rotate": [4, 22, 6] },
-    { "screen": "02-question", "x": 1.6, "y": 0.66, "height": 0.6, "rotate": [0, -18, -4] },
-    { "screen": "03-ludo", "x": 2.66, "y": 0.64, "height": 0.7, "rotate": [2, -24, -7] },
-    { "screen": "04-home", "x": 3.8, "y": 0.64, "height": 0.64, "rotate": [0, 24, 6] },
-    { "screen": "06-chat", "x": 5.2, "y": 0.64, "height": 0.64, "rotate": [0, -24, -6] },
-    { "screen": "05-memories", "x": 4.5, "y": 0.62, "height": 0.67, "rotate": [0, 0, 0] }
+    { "screen": "01-widget", "x": 0.5, "y": 0.645, "height": 0.7, "rotate": [3, 18, 5] },
+    { "screen": "02-question", "x": 1.5, "y": 0.65, "height": 0.66, "rotate": [0, -16, -4] },
+    { "screen": "03-ludo", "x": 2.5, "y": 0.65, "height": 0.66, "rotate": [2, 16, 4] },
+    { "screen": "06-chat", "x": 5.45, "y": 0.665, "height": 0.68, "rotate": [0, -14, -7] },
+    { "screen": "04-home", "x": 3.55, "y": 0.665, "height": 0.68, "rotate": [0, 14, 7] },
+    { "screen": "05-memories", "x": 4.5, "y": 0.645, "height": 0.7, "rotate": [0, 0, 0] }
   ],
   "panels": {
     "en-US": [
@@ -26,7 +26,7 @@
     ],
     "no": [
       ["Våkn opp til <em>en liten tegning</em>", "Partneren din tegner rett på Hjem-skjermen din."],
-      ["Ett spørsmål <em>til dere to</em>", "Svar på dagens spørsmål, og se hva partneren din svarte."],
+      ["Ett spørsmål om dagen<br><em>til dere to</em>", "Svar på dagens spørsmål, og se hva partneren din svarte."],
       ["Spill sammen, <em>selv på avstand</em>", "Ludo og flere spill dere tar på tur, når dere har et minutt."],
       ["Tell ned til <em>neste gang dere ses</em>", "Se hvor mange dager det er til dere møtes igjen."],
       ["Ta vare på <em>de fine øyeblikkene</em>", "Samle bilder fra dagene sammen på ett sted dere deler."],
