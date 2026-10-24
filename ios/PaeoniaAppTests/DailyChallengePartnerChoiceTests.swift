@@ -9,17 +9,11 @@ struct DailyChallengePartnerChoiceTests {
         let snapshot = makeDailySnapshot(
             rows: [
                 dailyQuestionRow(
-                    slotNumber: 1,
-                    seededForUserID: TestDailyChallengeIDs.currentUser,
-                    status: "answered",
                     answerKinds: [.partnerChoice],
                     ownAnswerID: privateAnswerID,
                     ownAnsweredAt: TestDailyChallengeIDs.answerDate
                 ),
                 dailyQuestionRow(
-                    slotNumber: 2,
-                    seededForUserID: TestDailyChallengeIDs.currentUser,
-                    status: "answered",
                     answerKinds: [.partnerChoice],
                     ownAnswerID: UUID(),
                     ownAnsweredAt: TestDailyChallengeIDs.answerDate,
@@ -37,7 +31,7 @@ struct DailyChallengePartnerChoiceTests {
             ]
         )
 
-        let own = snapshot.ownQuestions
+        let own = snapshot.questions
         #expect(own[0].editableAnswerKind == .partnerChoice)  // answered, still private
         #expect(own[0].canEditOwnAnswer)
         #expect(own[1].editableAnswerKind == nil)             // revealed once partner answered
@@ -52,7 +46,6 @@ struct DailyChallengePartnerChoiceTests {
         let snapshot = makeDailySnapshot(
             rows: [
                 dailyQuestionRow(
-                    slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, status: "answered",
                     answerKinds: [.partnerChoice], ownAnswerID: ownAnswerID,
                     ownAnsweredAt: TestDailyChallengeIDs.answerDate, partnerAnswerID: partnerAnswerID,
                     partnerAnsweredAt: TestDailyChallengeIDs.answerDate, canViewPartnerAnswer: partnerCanView
@@ -69,7 +62,7 @@ struct DailyChallengePartnerChoiceTests {
                 ),
             ]
         )
-        return try #require(snapshot.ownQuestions.first)
+        return try #require(snapshot.todayQuestion)
     }
 
     @Test func sharedPartnerChoiceCollapsesOnlyWhenBothPickSamePersonWithNothingElse() throws {

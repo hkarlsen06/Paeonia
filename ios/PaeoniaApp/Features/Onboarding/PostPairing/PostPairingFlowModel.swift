@@ -21,7 +21,7 @@ enum PostPairingOutcome: Equatable {
 /// Runs the first day sequence between the pairing celebration and the tabs.
 ///
 /// `prepare` starts loading while the celebration still plays: the partner's widget
-/// drawing, the question time setting, and today's questions. `start` then decides
+/// drawing, the question time setting, and today's question. `start` then decides
 /// the steps from what loaded (`PostPairingPlan`) and from this phone's progress for
 /// the pair, so a step the person already moved past never comes back. A load that
 /// fails or takes too long only skips its own step.
@@ -255,10 +255,10 @@ final class PostPairingFlowModel {
         }
     }
 
-    /// The partner may finish their first answers after the sequence decided its
+    /// The partner may answer the first question after the sequence decided its
     /// steps, such as an inviter who was still answering when the partner joined.
     /// The check runs while the last step shows, so ending doesn't wait on it.
-    /// Answers that come later still show up in today's questions.
+    /// An answer that comes later still shows up on today's question.
     private func startLateAnswersCheck() {
         guard let context, !facts.partnerAnswersWaiting, screen != .answerInvite else {
             return

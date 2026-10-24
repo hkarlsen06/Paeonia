@@ -268,7 +268,6 @@ nonisolated struct DailyChallengeParticipants: Equatable, Sendable {
 
 nonisolated enum DailyQuestionInstanceStatus: Equatable, Hashable, Sendable {
     case active
-    case answered
     case shuffled
     case unknown(String)
 
@@ -276,8 +275,6 @@ nonisolated enum DailyQuestionInstanceStatus: Equatable, Hashable, Sendable {
         switch rawValue {
         case "active":
             self = .active
-        case "answered":
-            self = .answered
         case "shuffled":
             self = .shuffled
         default:
@@ -317,11 +314,6 @@ nonisolated struct DailyQuestionAnswerDetail: Equatable, Hashable, Sendable {
     }
 }
 
-nonisolated enum DailyQuestionOrigin: Equatable, Hashable, Sendable {
-    case own
-    case partner
-}
-
 nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Sendable {
     let id: UUID
     let coupleDayID: UUID
@@ -334,8 +326,6 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     let effectiveLocalDate: String
     let startsAt: Date
     let endsAt: Date
-    let seededForUserID: UUID
-    let slotNumber: Int
     let status: DailyQuestionInstanceStatus
     let questionID: UUID
     let questionVersionID: UUID
@@ -348,11 +338,11 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     let canViewPartnerAnswer: Bool
     var ownAnswerDetail: DailyQuestionAnswerDetail?
     let partnerAnswerDetail: DailyQuestionAnswerDetail?
-    let origin: DailyQuestionOrigin
-    /// Whether this row belongs to the active day returned by the backend. Carried
-    /// unresolved exchanges from older days stay visible in the Questions tab, but
-    /// they must not affect today's Home card or own-question progress.
-    let isCurrentDay: Bool
+    /// Whether this row is the active day's question. Unfinished exchanges carried over
+    /// from older days stay visible in the Questions tab, but they must not affect
+    /// today's Home card. Turns false when the day ends on this phone
+    /// (`DailyChallengeSnapshot.endingCurrentDay`).
+    var isCurrentDay: Bool
     /// When the user first saw the partner's answer, on any of their devices.
     var partnerAnswerSeenAt: Date?
     /// When the partner first saw the user's answer.
@@ -399,12 +389,13 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
         partnerAnswer != nil
     }
 
-    var isVisibleToCurrentUser: Bool {
-        origin == .own || hasPartnerAnswer || hasOwnAnswer
+    var isAvailableToAnswer: Bool {
+        status != .shuffled && !hasOwnAnswer
     }
 
-    var isAvailableToAnswer: Bool {
-        status != .shuffled && !hasOwnAnswer && (origin == .own || hasPartnerAnswer)
+    /// Today's question can be swapped for another one until either partner answers it.
+    var canBeSkipped: Bool {
+        !isTopicQuestion && isCurrentDay && status != .shuffled && !hasOwnAnswer && !hasPartnerAnswer
     }
 
     var supportsTextAnswer: Bool {
@@ -470,7 +461,6 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
     /// answers can be changed; media answers cannot.
     var editableAnswerKind: DailyChallengeAnswerKind? {
         guard
-            origin == .own,
             hasOwnAnswer,
             partnerAnswer == nil,
             status != .shuffled,
@@ -489,11 +479,11 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
         editableAnswerKind != nil
     }
 
-    /// A partner's question the user can still answer — a "to-do" that should surface
-    /// above already-handled cards in the Questions tab so it's never buried under the
-    /// recency timeline.
+    /// A question the partner has answered and the user can still answer to see it. A
+    /// "to-do" that surfaces above already-handled cards in the Questions tab so it's
+    /// never buried under the recency timeline.
     var isAwaitingCurrentUserAnswer: Bool {
-        origin == .partner && isAvailableToAnswer
+        hasPartnerAnswer && isAvailableToAnswer
     }
 
     /// The most recent answer time on this question — the later of the user's and the

@@ -169,7 +169,7 @@
         paywallPresentationOverride: Self.paywallOverride(store: store),
         pairingInviteViewModel: pairingViewModel,
         inviterFirstDayModel: DeveloperInviterFixture.firstDayModel(
-          answered: 0,
+          answered: false,
           canvas: widgetCanvasService,
           pendingUploads: pendingUploads
         ),

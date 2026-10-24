@@ -10,9 +10,13 @@
       case loading
       case failing
       case offline
+      /// Like `unanswered`, but the partner answers today's question just as the user's
+      /// answer lands, so the phone hears of both at once.
+      case partnerAnswersMeanwhile
 
       static func mode(for scenario: DeveloperScenario) -> Mode {
         switch scenario {
+        case .questionPartnerAnswersMeanwhile: .partnerAnswersMeanwhile
         case .questionsPartial: .partial
         case .questionsRevealed: .revealed
         case .questionsEmpty: .empty
@@ -46,7 +50,7 @@
           snapshot: .empty(currentUserID: currentUserID),
           streak: .none
         )
-      case .unanswered:
+      case .unanswered, .partnerAnswersMeanwhile:
         return try await todayLandingQueuedAnswers(currentUserID: currentUserID)
       case .offline:
         return offlineResult(currentUserID: currentUserID)
@@ -80,7 +84,10 @@
           let index = questions.firstIndex(where: { $0.id == payload.instanceID }),
           let ownDetail = payload.ownAnswerDetail(currentUserID: currentUserID)
         else { continue }
-        questions[index] = questions[index].answered(with: ownDetail)
+        let partnerAnswer = mode == .partnerAnswersMeanwhile && questions[index].partnerAnswer == nil
+          ? DailyQuestionAnswerSummary(id: UUID(), answeredAt: Date())
+          : questions[index].partnerAnswer
+        questions[index] = questions[index].answered(with: ownDetail, partnerAnswer: partnerAnswer)
         try await pendingOperationStore.markSucceeded(clientOperationID: operation.operation.id, at: Date())
       }
       let result = DailyChallengeLoadResult(
@@ -115,8 +122,6 @@
     ) -> DailyChallengeLoadResult {
       let answered = previewHistoryQuestion(
         localDate: "2026-07-15",
-        slot: 1,
-        seededFor: currentUserID,
         prompt: "What made you smile today?",
         ownText: "Your good-morning photo.",
         partnerText: "The voice note you sent on the bus.",
@@ -129,18 +134,14 @@
       let questions = [
         previewHistoryQuestion(
           localDate: "2026-07-15",
-          slot: 1,
-          seededFor: currentUserID,
-          prompt: "What small moment made you think of us today?",
+          prompt: "What small moment made you think of your partner today?",
           ownText: "I walked past the bakery we like.",
           partnerText: "Our song played while I was making dinner.",
           currentUserID: currentUserID
         ),
         previewHistoryQuestion(
-          localDate: "2026-07-15",
-          slot: 2,
-          seededFor: UUID(),
-          prompt: "What are you looking forward to together?",
+          localDate: "2026-07-14",
+          prompt: "What are the two of you looking forward to?",
           ownText: "A slow Sunday morning.",
           partnerText: "The train ride to Bergen.",
           currentUserID: currentUserID
@@ -179,7 +180,7 @@
     func editPartnerChoice(
       instanceID _: UUID, selectedUserID _: UUID, operation _: SyncClientOperation
     ) throws -> UUID { UUID() }
-    func shuffleQuestion(currentUserID: UUID, slotNumber _: Int, operation _: SyncClientOperation)
+    func shuffleQuestion(currentUserID: UUID, operation _: SyncClientOperation)
       async throws -> DailyChallengeLoadResult
     {
       try await loadToday(currentUserID: currentUserID)
@@ -205,13 +206,11 @@
         effectiveLocalDate: "2026-07-16",
         startsAt: DeveloperScenarioFixture.now,
         endsAt: DeveloperScenarioFixture.now.addingTimeInterval(86_400),
-        seededForUserID: DeveloperScenarioFixture.partnerUserID,
-        slotNumber: 1,
         status: .active,
         questionID: UUID(),
         questionVersionID: UUID(),
         questionKey: "developer_offline_question",
-        prompt: "What made you feel close to me today?",
+        prompt: "What made you feel close to your partner today?",
         shortPrompt: "A close moment today",
         answerKinds: [.text],
         ownAnswer: nil,
@@ -222,7 +221,6 @@
         canViewPartnerAnswer: false,
         ownAnswerDetail: nil,
         partnerAnswerDetail: nil,
-        origin: .partner,
         isCurrentDay: true
       )
     }
@@ -281,7 +279,10 @@
   }
 
   private nonisolated extension DailyChallengeQuestion {
-    func answered(with ownDetail: DailyQuestionAnswerDetail) -> DailyChallengeQuestion {
+    func answered(
+      with ownDetail: DailyQuestionAnswerDetail,
+      partnerAnswer: DailyQuestionAnswerSummary?
+    ) -> DailyChallengeQuestion {
       let partnerDetail = partnerAnswer.map { summary in
         DailyQuestionAnswerDetail(
           answerUserID: DeveloperScenarioFixture.partnerUserID,
@@ -302,9 +303,7 @@
         effectiveLocalDate: effectiveLocalDate,
         startsAt: startsAt,
         endsAt: endsAt,
-        seededForUserID: seededForUserID,
-        slotNumber: slotNumber,
-        status: origin == .own ? .answered : status,
+        status: status,
         questionID: questionID,
         questionVersionID: questionVersionID,
         questionKey: questionKey,
@@ -316,7 +315,6 @@
         canViewPartnerAnswer: partnerDetail != nil,
         ownAnswerDetail: ownDetail,
         partnerAnswerDetail: partnerDetail,
-        origin: origin,
         isCurrentDay: isCurrentDay,
         hasSharedRound: partnerDetail != nil
       )

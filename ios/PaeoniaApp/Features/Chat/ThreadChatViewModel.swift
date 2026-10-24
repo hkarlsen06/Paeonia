@@ -279,7 +279,7 @@ final class ThreadChatViewModel {
         )
         guard generation == readGeneration else { return }
         if let cachedRounds, cachedRounds.isForCouple(coupleID) {
-            loadedRounds = cachedRounds.rounds(currentUserID: ownerUserID)
+            loadedRounds = cachedRounds.rounds()
             threadID = cachedRounds.threadID ?? threadID
             savedAnswerReactions = cachedRounds.reactions
         }

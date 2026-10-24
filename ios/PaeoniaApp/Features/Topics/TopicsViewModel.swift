@@ -379,11 +379,10 @@ extension TopicsViewModel {
     }
 
     private func buildItems(for detail: RemoteTopicDetail) {
-        guard let currentUserID, let coupleID else { return }
+        guard currentUserID != nil, let coupleID else { return }
         let key = detail.topic.topicKey
         let built = TopicQuestionItem.items(
             from: detail,
-            currentUserID: currentUserID,
             coupleID: coupleID,
             locale: locale
         )

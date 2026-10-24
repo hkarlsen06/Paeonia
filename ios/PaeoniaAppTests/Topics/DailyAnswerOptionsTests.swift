@@ -39,13 +39,12 @@ struct PickMatchTests {
         return DailyChallengeQuestion(
             id: UUID(), coupleDayID: UUID(), coupleID: TestDailyChallengeIDs.couple, localDate: "",
             effectiveLocalDate: "", startsAt: Date(), endsAt: Date(),
-            seededForUserID: TestDailyChallengeIDs.currentUser,
-            slotNumber: 0, status: .answered, questionID: UUID(), questionVersionID: UUID(), questionKey: "wyr",
+            status: .active, questionID: UUID(), questionVersionID: UUID(), questionKey: "wyr",
             prompt: "Sea or mountains?", shortPrompt: "Sea or mountains", answerKinds: [.eitherOr, .text],
             ownAnswer: DailyQuestionAnswerSummary(id: ownDetail.answerID, answeredAt: Date()),
             partnerAnswer: DailyQuestionAnswerSummary(id: partnerDetail.answerID, answeredAt: Date()),
             canViewPartnerAnswer: true, ownAnswerDetail: ownDetail, partnerAnswerDetail: partnerDetail,
-            origin: .own, isCurrentDay: false, options: options
+            isCurrentDay: false, options: options
         )
     }
 

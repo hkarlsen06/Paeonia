@@ -4,7 +4,7 @@ Plan date: 2026-07-01
 
 This is the agreed plan for Paeonia's first-run experience, split into pre-auth (the hook) and post-auth (setup + activation). It captures the current baseline as verified in code, the locked product decisions, the target flow for both partners, and the implementation slices in build order.
 
-First-class invite-code entry, the anniversary refactor, the paywall reframe, and permission priming are implemented. The pre-auth carousel was built and later replaced: the signed-out flow is now welcome, then for the person starting the couple the start date and a first drawing for the partner, then sign-in (`ios/PaeoniaApp/Features/Auth/Welcome/`). Sign-in then saves something they made, and the invite screen sends the drawing. The waiting-room gift became that first drawing plus the first questions on the invite screen. `docs/implementation-map.md` is the source of truth for the files that own landed behavior.
+First-class invite-code entry, the anniversary refactor, the paywall reframe, and permission priming are implemented. The pre-auth carousel was built and later replaced: the signed-out flow is now welcome, then for the person starting the couple the start date and a first drawing for the partner, then sign-in (`ios/PaeoniaApp/Features/Auth/Welcome/`). Sign-in then saves something they made, and the invite screen sends the drawing. The waiting-room gift became that first drawing plus the first question on the invite screen. `docs/implementation-map.md` is the source of truth for the files that own landed behavior.
 
 ## Guiding Insight
 

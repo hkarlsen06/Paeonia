@@ -155,7 +155,6 @@ extension TopicQuestionItem {
     /// this person can start, under the id both phones share.
     nonisolated static func items(
         from detail: RemoteTopicDetail,
-        currentUserID: UUID,
         coupleID: UUID,
         locale: Locale = .current
     ) -> [TopicQuestionItem] {
@@ -163,7 +162,6 @@ extension TopicQuestionItem {
         return detail.questions.map { remote in
             let started = remote.row.flatMap { row in
                 DailyChallengeQuestion.list(
-                    currentUserID: currentUserID,
                     rows: [row],
                     answerDetails: detail.answerDetails,
                     locale: locale
@@ -172,7 +170,6 @@ extension TopicQuestionItem {
             var question = started ?? .unstartedTopicQuestion(
                 remote,
                 topicKey: topicKey,
-                currentUserID: currentUserID,
                 coupleID: coupleID,
                 locale: locale
             )
@@ -188,7 +185,6 @@ extension DailyChallengeQuestion {
     nonisolated static func unstartedTopicQuestion(
         _ remote: RemoteTopicQuestionRow,
         topicKey: String,
-        currentUserID: UUID,
         coupleID: UUID,
         locale: Locale
     ) -> DailyChallengeQuestion {
@@ -202,8 +198,6 @@ extension DailyChallengeQuestion {
             effectiveLocalDate: "",
             startsAt: .distantPast,
             endsAt: .distantFuture,
-            seededForUserID: currentUserID,
-            slotNumber: 0,
             status: .active,
             questionID: remote.questionID,
             questionVersionID: remote.questionVersionID,
@@ -216,7 +210,6 @@ extension DailyChallengeQuestion {
             canViewPartnerAnswer: false,
             ownAnswerDetail: nil,
             partnerAnswerDetail: nil,
-            origin: .own,
             isCurrentDay: false,
             topicKey: topicKey,
             options: DailyAnswerOptions.make(

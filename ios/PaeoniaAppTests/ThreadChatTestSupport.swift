@@ -375,9 +375,7 @@ func makeChatQuestion(
         effectiveLocalDate: "2026-08-04",
         startsAt: Date(timeIntervalSince1970: 1),
         endsAt: Date(timeIntervalSince1970: 2),
-        seededForUserID: ownerUserID,
-        slotNumber: 1,
-        status: .answered,
+        status: .active,
         questionID: UUID(),
         questionVersionID: UUID(),
         questionKey: "chat.test",
@@ -394,7 +392,6 @@ func makeChatQuestion(
             isOwn: false,
             visible: revealed
         ),
-        origin: .own,
         isCurrentDay: true
     )
 }

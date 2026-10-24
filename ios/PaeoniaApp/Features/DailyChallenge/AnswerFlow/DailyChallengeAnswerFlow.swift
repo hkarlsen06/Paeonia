@@ -1,15 +1,19 @@
 import Foundation
 import SwiftUI
 
-/// The focused, full-screen answering experience for today's daily challenge.
+/// The focused, full-screen flow for answering one daily question.
 ///
-/// It is presented as a full-screen cover that zooms out of the card that opened it
-/// (the Home tab prompt card or the Questions overview hero card), so the card appears to
-/// grow into the screen. The body steps through one question at a time, a quiet "Skip"
-/// swaps an unanswered question for a fresh one (the backend caps swaps per day), and
-/// the Close button — or a drag-down — shrinks it back into the card.
+/// It is presented as a full-screen cover that zooms out of the card that opened it: the
+/// Home or Questions card for today's question, or a question's own row. It shows the
+/// question and its composer, and a quiet "Skip" swaps today's question for a fresh one
+/// while neither partner has answered it. Sending turns the screen over to what comes
+/// next. When the partner had answered already, their answer is revealed in place with a
+/// chime and a petal burst, and the screen offers Done and Open chat. Otherwise the
+/// streak celebration shows. The Close button, or a drag down, shrinks it back.
 struct DailyChallengeAnswerFlow: View {
     let viewModel: DailyChallengeViewModel
+    /// The question to answer. Nil answers today's question.
+    var questionID: UUID?
     var onClose: () -> Void = {}
     /// Builds the streak-restore purchase view model the completion screen uses to
     /// buy a slipped streak back in place. Called once, lazily, the first time a
@@ -17,19 +21,15 @@ struct DailyChallengeAnswerFlow: View {
     var makeStreakRestoreViewModel: @MainActor () -> StreakRestoreViewModel = {
         StreakRestoreViewModel(streak: .none, userID: nil)
     }
-    /// Opens the Questions tab so the user can pick up optional partner
-    /// answers after their required streak questions are finished.
-    var onOpenPartnerQuestions: () -> Void = {}
     /// Claims the streak milestone the finished day reaches, if this phone has not
     /// celebrated it yet. See `StreakMilestoneStore.claim`.
     var claimStreakMilestone: @MainActor (Int) -> Int? = { _ in nil }
-    /// Closes the flow and opens a question's chat, for the note about an earlier answer.
+    /// Closes the flow and opens a question's chat: the reveal's Open chat, and the note
+    /// about an earlier answer.
     var onOpenQuestionChat: (DailyChallengeQuestion) -> Void = { _ in }
 
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State var index = 0
-    @State var didSetInitialIndex = false
     @State var didCelebrate = false
     @State var celebratedMilestone: Int?
     /// The in-place streak-restore purchase driver, created only when a slipped
@@ -37,12 +37,14 @@ struct DailyChallengeAnswerFlow: View {
     /// revive-and-refill celebration once a purchase lands.
     @State var restoreViewModel: StreakRestoreViewModel?
     @State var committedAnswerHold: DailyAnswerStepVisualHold?
-    /// A partner question stays captured while its answer sends and its unlocked
-    /// exchange loads. It must not be derived from `answerFlowQuestions`: that list
-    /// intentionally removes the question once the user answers, which used to swap
-    /// this cover to completion before the reveal appeared.
-    @State var partnerRevealQuestion: DailyChallengeQuestion?
-    @State var isAwaitingPartnerReveal = false
+    /// The question whose partner answer the reveal shows. It is captured on send, so
+    /// the reveal stays on screen while the live question list changes under it.
+    @State var revealQuestion: DailyChallengeQuestion?
+    @State var isAwaitingReveal = false
+    /// The question the user sent an answer to in this flow. When the partner's answer
+    /// turns out to be in once the exchange is confirmed, the screen turns to the reveal,
+    /// even if the phone did not know about it when the user sent.
+    @State var sentQuestionID: UUID?
     /// The question the user just answered that they had answered on an earlier day. The
     /// note offers their old answers, and goes away on its own. It waits for the chat to be
     /// available, which can come a moment after the send, when the partner's answer opens.
@@ -56,21 +58,18 @@ struct DailyChallengeAnswerFlow: View {
         case complete
     }
 
-    var questions: [DailyChallengeQuestion] {
-        viewModel.snapshot.answerFlowQuestions
-    }
-
-    var requiredQuestions: [DailyChallengeQuestion] {
-        viewModel.snapshot.ownQuestions
-    }
-
-    var hasPartnerQuestionsToAnswer: Bool {
-        viewModel.snapshot.hasAnswerablePartnerQuestions
+    /// The question on screen, from the live snapshot: the one this flow opened for, or
+    /// today's question. A skip swaps today's question, and the flow follows it.
+    var currentQuestion: DailyChallengeQuestion? {
+        if let questionID {
+            return viewModel.knownQuestion(questionID)
+        }
+        return viewModel.snapshot.todayQuestion
     }
 
     var phase: Phase {
         if didCelebrate { return .complete }
-        if !questions.isEmpty { return .answering }
+        if currentQuestion != nil { return .answering }
         if viewModel.isStarting || viewModel.isLoading { return .loading }
         return .unavailable
     }
@@ -109,8 +108,8 @@ struct DailyChallengeAnswerFlow: View {
 
     var body: some View {
         ZStack {
-            if let partnerRevealQuestion {
-                partnerRevealContent(partnerRevealQuestion)
+            if let revealQuestion {
+                revealContent(revealQuestion)
             } else {
                 phaseContent
             }
@@ -135,23 +134,15 @@ struct DailyChallengeAnswerFlow: View {
             guard !Task.isCancelled else { return }
             withAnimation(PaeoniaMotion.stateChange) { earlierCandidate = nil }
         }
-        .onAppear { setInitialIndexIfNeeded() }
-        .onChange(of: questions.count) { _, newCount in
-            setInitialIndexIfNeeded()
-            // Keep the selected step valid if the list shrinks under us.
-            if newCount > 0, index > newCount - 1 {
-                index = newCount - 1
-            }
+        .onChange(of: sentQuestionIsRevealed) { _, revealed in
+            guard revealed, revealQuestion == nil, let sentQuestionID,
+                  let live = viewModel.knownQuestion(sentQuestionID)
+            else { return }
+            withAnimation(PaeoniaMotion.meaningfulMoment) { revealQuestion = live }
         }
-        .onChange(of: index) { _, _ in isComposerFocused = false }
-        .onChange(of: wasPartnerAnswerReturned) { _, returned in
-            guard returned, let questionID = partnerRevealQuestion?.id else { return }
-            withAnimation(PaeoniaMotion.stateChange) {
-                partnerRevealQuestion = nil
-                if let returnedIndex = questions.firstIndex(where: { $0.id == questionID }) {
-                    index = returnedIndex
-                }
-            }
+        .onChange(of: wasAnswerReturned) { _, returned in
+            guard returned else { return }
+            withAnimation(PaeoniaMotion.stateChange) { revealQuestion = nil }
         }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
     }

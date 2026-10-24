@@ -1,10 +1,10 @@
 import CoreGraphics
 import Foundation
 
-/// The calls behind the inviter's first day draft: the start date, the two first
-/// answers, and the first drawing. Every write refuses a person who is already paired.
+/// The calls behind the inviter's first day draft: the start date, the answer to the
+/// first question, and the first drawing. Every write refuses a person who is already paired.
 nonisolated protocol FirstDayGateway: Sendable {
-    /// Creates the draft and picks its two questions the first time, then returns it.
+    /// Creates the draft and picks its question the first time, then returns it.
     func startDraft() async throws -> FirstDayDraft
 
     func setStartedOn(_ startedOn: String?, operation: SyncClientOperation) async throws

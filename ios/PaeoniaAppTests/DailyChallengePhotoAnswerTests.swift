@@ -8,7 +8,7 @@ struct DailyChallengePhotoAnswerTests {
     @Test func submitPhotoAnswerQueuesForBackgroundSendAndMarksSending() async throws {
         let snapshot = makeDailySnapshot(rows: [
             dailyQuestionRow(
-                slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, answerKinds: [.photo, .text]
+                answerKinds: [.photo, .text]
             ),
         ])
         let service = RecordingDailyChallengeService(snapshots: [snapshot])
@@ -21,7 +21,7 @@ struct DailyChallengePhotoAnswerTests {
         )
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
 
         // A two-kind question opens on text and isn't sendable until a photo is staged.
         #expect(viewModel.composeKind(for: question) == .text)
@@ -76,8 +76,8 @@ struct DailyChallengePhotoAnswerTests {
     @Test func combinedComposeAppliesOnlyToTextWithPhotoOrPartnerChoice() {
         func secondaryKind(_ kinds: [DailyChallengeAnswerKind]) -> DailyChallengeAnswerKind? {
             makeDailySnapshot(rows: [
-                dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, answerKinds: kinds)
-            ]).ownQuestions[0].combinedSecondaryKind
+                dailyQuestionRow(answerKinds: kinds)
+            ]).questions[0].combinedSecondaryKind
         }
 
         #expect(secondaryKind([.text, .photo]) == .photo)
@@ -91,26 +91,20 @@ struct DailyChallengePhotoAnswerTests {
     @Test func combinedAnswersAreNotEditable() {
         let combined = makeDailySnapshot(rows: [
             dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
                 answerKinds: [.photo, .text],
                 ownAnswerID: UUID()
             ),
-        ]).ownQuestions[0]
+        ]).questions[0]
         #expect(combined.usesCombinedCompose)
         #expect(combined.editableAnswerKind == nil)
 
         // A plain text answer is still editable while it's private.
         let textOnly = makeDailySnapshot(rows: [
             dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
                 answerKinds: [.text],
                 ownAnswerID: UUID()
             ),
-        ]).ownQuestions[0]
+        ]).questions[0]
         #expect(textOnly.editableAnswerKind == .text)
     }
 
@@ -118,8 +112,6 @@ struct DailyChallengePhotoAnswerTests {
     @Test func submitCombinedPhotoAndTextQueuesBothTogether() async throws {
         let snapshot = makeDailySnapshot(rows: [
             dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
                 answerKinds: [.photo, .text]
             ),
         ])
@@ -135,7 +127,7 @@ struct DailyChallengePhotoAnswerTests {
         )
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
         #expect(question.usesCombinedCompose)
 
         // The user adds both a photo and a caption; either alone would also send.

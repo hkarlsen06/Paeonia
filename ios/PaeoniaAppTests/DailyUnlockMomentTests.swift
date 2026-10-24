@@ -15,8 +15,6 @@ private enum IDs {
 }
 
 private func row(
-    slot: Int,
-    seededFor: UUID,
     shortPrompt: String = "A small moment today",
     coupleDay: UUID = IDs.today,
     isCurrentDay: Bool = true,
@@ -35,12 +33,10 @@ private func row(
         startsAt: startsAt,
         endsAt: IDs.dayEnd,
         instanceID: instanceID,
-        seededForUserID: seededFor,
-        slotNumber: slot,
         instanceStatus: "active",
         questionID: UUID(),
         questionVersionID: UUID(),
-        questionKey: "key_\(slot)",
+        questionKey: "small_moment_today",
         promptEN: "Long prompt \(shortPrompt)",
         shortPromptEN: shortPrompt,
         promptNB: "Lang tekst \(shortPrompt)",
@@ -78,8 +74,6 @@ private func detail(
     DailyAnswerDetailRow(
         coupleDayID: IDs.today,
         instanceID: UUID(),
-        seededForUserID: IDs.partner,
-        slotNumber: 1,
         answerUserID: user,
         answerID: answerID,
         answeredAt: IDs.answeredAt,
@@ -94,12 +88,11 @@ private func detail(
 struct LockedPartnerQuestionTests {
     @Test func leavesOutQuestionsTheUserAlreadyAnswered() {
         let state = snapshot([
-            row(slot: 1, seededFor: IDs.me, ownAnswerID: UUID()),
-            row(slot: 2, seededFor: IDs.me, ownAnswerID: UUID()),
+            row(ownAnswerID: UUID()),
             row(
-                slot: 1,
-                seededFor: IDs.partner,
                 shortPrompt: "Answered already",
+                coupleDay: IDs.yesterday,
+                isCurrentDay: false,
                 ownAnswerID: UUID(),
                 partnerAnswerID: UUID(),
                 canViewPartnerAnswer: true
@@ -109,27 +102,25 @@ struct LockedPartnerQuestionTests {
         #expect(state.kind == .complete)
         #expect(state.lockedPartnerQuestions.isEmpty)
         #expect(state.moreLockedPartnerQuestionCount == 0)
-        #expect(!state.hasAnswerablePartnerQuestions)
+        #expect(!state.hasEarlierQuestionsToAnswer)
     }
 
-    @Test func rowsOpenOnlyOnceOwnQuestionsAreDone() {
-        let waiting = row(slot: 1, seededFor: IDs.partner, partnerAnswerID: UUID())
+    @Test func rowsListOnlyEarlierDaysThePartnerAnswered() {
+        let earlier = row(
+            shortPrompt: "From yesterday",
+            coupleDay: IDs.yesterday,
+            isCurrentDay: false,
+            partnerAnswerID: UUID()
+        )
 
-        let active = snapshot([
-            row(slot: 1, seededFor: IDs.me),
-            row(slot: 2, seededFor: IDs.me, ownAnswerID: UUID()),
-            waiting,
-        ]).homeCardState
-        let complete = snapshot([
-            row(slot: 1, seededFor: IDs.me, ownAnswerID: UUID()),
-            row(slot: 2, seededFor: IDs.me, ownAnswerID: UUID()),
-            waiting,
-        ]).homeCardState
+        // Today's question is the card itself, so it never shows as a locked row, even
+        // after the partner answered it.
+        let state = snapshot([row(partnerAnswerID: UUID()), earlier]).homeCardState
 
-        #expect(active.lockedPartnerQuestions.count == 1)
-        #expect(!active.lockedPartnerQuestionsAreOpenable)
-        #expect(complete.lockedPartnerQuestions.count == 1)
-        #expect(complete.lockedPartnerQuestionsAreOpenable)
+        #expect(state.kind == .active(prompt: "A small moment today"))
+        #expect(state.hasPartnerAnsweredToday)
+        #expect(state.lockedPartnerQuestions.map(\.id) == [earlier.instanceID])
+        #expect(state.hasEarlierQuestionsToAnswer)
     }
 }
 
@@ -176,8 +167,6 @@ struct PartnerChoiceMatchTests {
             snapshot(
                 [
                     row(
-                        slot: 1,
-                        seededFor: IDs.partner,
                         answerKinds: [.partnerChoice],
                         ownAnswerID: ownAnswer,
                         partnerAnswerID: partnerAnswer,

@@ -3,53 +3,6 @@ import SwiftUI
 extension DailyChallengeAnswerFlow {
     // MARK: - Current question helpers
 
-    var boundedIndex: Int {
-        guard !questions.isEmpty else { return 0 }
-        return min(max(index, 0), questions.count - 1)
-    }
-
-    var currentQuestion: DailyChallengeQuestion? {
-        guard !questions.isEmpty else { return nil }
-        return questions[boundedIndex]
-    }
-
-    var isLastStep: Bool {
-        boundedIndex >= questions.count - 1
-    }
-
-    var currentRequiredStep: Int? {
-        guard let currentQuestion, currentQuestion.origin == .own else { return nil }
-        return requiredQuestions.firstIndex { $0.id == currentQuestion.id }
-    }
-
-    /// The required steps the user has answered, by position. An answer that is still
-    /// sending counts, because it's done from the user's side.
-    var answeredRequiredSteps: Set<Int> {
-        Set(requiredQuestions.indices.filter { index in
-            requiredQuestions[index].hasOwnAnswer || viewModel.isSending(requiredQuestions[index].id)
-        })
-    }
-
-    private var answeredRequiredCount: Int {
-        min(answeredRequiredSteps.count, DailyChallengeProgress.requiredOwnQuestionCount)
-    }
-
-    var hasFinishedRequiredQuestions: Bool {
-        answeredRequiredCount >= DailyChallengeProgress.requiredOwnQuestionCount
-    }
-
-    var answerableIndices: [Int] {
-        questions.indices.filter {
-            !questions[$0].hasOwnAnswer
-            && questions[$0].isAvailableToAnswer
-            && !viewModel.isSending(questions[$0].id)
-        }
-    }
-
-    var answerableRequiredIndices: [Int] {
-        answerableIndices.filter { questions[$0].origin == .own }
-    }
-
     var isSubmittingCurrent: Bool {
         guard let currentQuestion else { return false }
         return viewModel.submittingQuestionID == currentQuestion.id
@@ -62,10 +15,7 @@ extension DailyChallengeAnswerFlow {
 
     var canSkipCurrent: Bool {
         guard let currentQuestion else { return false }
-        return currentQuestion.origin == .own
-            && !currentQuestion.hasOwnAnswer
-            && currentQuestion.isAvailableToAnswer
-            && !viewModel.isSending(currentQuestion.id)
+        return currentQuestion.canBeSkipped && !viewModel.isSending(currentQuestion.id)
     }
 
     /// True once anything is typed, picked, or staged. Skipping discards it, so Skip
@@ -76,17 +26,22 @@ extension DailyChallengeAnswerFlow {
         return viewModel.hasDraftContent(for: currentQuestion.id)
     }
 
-    /// The server refused the partner answer on the reveal for good, and it is back in
-    /// the composer. Nothing will unlock, so the reveal gives way to the question.
-    var wasPartnerAnswerReturned: Bool {
-        guard let questionID = partnerRevealQuestion?.id, !isAwaitingPartnerReveal else { return false }
+    /// Both answers of the question the user sent are in and the partner's can be read.
+    var sentQuestionIsRevealed: Bool {
+        sentQuestionID.flatMap(viewModel.knownQuestion)?.hasRevealedPartnerAnswer == true
+    }
+
+    /// The server refused the answer on the reveal for good, and it is back in the
+    /// composer. Nothing will unlock, so the reveal gives way to the question.
+    var wasAnswerReturned: Bool {
+        guard let questionID = revealQuestion?.id, !isAwaitingReveal else { return false }
         return !viewModel.isSending(questionID)
-            && revealedQuestion(for: questionID)?.hasOwnAnswer != true
+            && viewModel.knownQuestion(questionID)?.hasOwnAnswer != true
             && viewModel.hasDraftContent(for: questionID)
     }
 
     /// The flow's primary button sends a new answer when one is being typed, saves
-    /// an edit to an answer that can still be changed, or just moves the user along.
+    /// an edit to an answer that can still be changed, or closes the flow.
     var isPrimaryActionSend: Bool {
         guard let currentQuestion else { return false }
         return !currentQuestion.hasOwnAnswer
@@ -95,8 +50,7 @@ extension DailyChallengeAnswerFlow {
     }
 
     /// True only when the user has actually changed a previously sent answer (and
-    /// not blanked it). When there's no change, the button becomes Next/Done instead
-    /// so they can step forward without reaching for the progress bar.
+    /// not blanked it). When there's no change, the button becomes Done instead.
     var isPrimaryActionSave: Bool {
         guard let currentQuestion, let kind = currentQuestion.editableAnswerKind else { return false }
         switch kind {
@@ -115,7 +69,7 @@ extension DailyChallengeAnswerFlow {
     var primaryActionTitle: LocalizedStringResource {
         if isPrimaryActionSend { return .dailyChallengeSubmitButton }
         if isPrimaryActionSave { return .dailyChallengeFlowSaveButton }
-        return isLastStep ? .dailyChallengeFlowDoneButton : .dailyChallengeFlowNextButton
+        return .dailyChallengeFlowDoneButton
     }
 
     var isPrimaryDisabled: Bool {
@@ -129,7 +83,7 @@ extension DailyChallengeAnswerFlow {
             return isSubmittingCurrent || viewModel.isDraftTextTooLong(for: currentQuestion.id)
         }
 
-        // Next / Done is plain navigation, always available.
+        // Done is plain navigation, always available.
         return false
     }
 }

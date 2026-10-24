@@ -33,9 +33,7 @@ struct FirstDayAnswerDraftAdoptionTests {
         let viewModel = await configuredViewModel(
             row: dailyQuestionRow(
                 instanceID: instanceID,
-                questionVersionID: versionID,
-                slotNumber: 1,
-                seededForUserID: userID
+                questionVersionID: versionID
             ),
             draftStore: draftStore,
             firstDayStore: firstDayStore
@@ -55,7 +53,7 @@ struct FirstDayAnswerDraftAdoptionTests {
         cache.save(
             DailyChallengeRemoteSnapshotRow(
                 questions: [
-                    dailyQuestionRow(questionVersionID: firstDayUUID(2), slotNumber: 1, seededForUserID: userID),
+                    dailyQuestionRow(questionVersionID: firstDayUUID(2)),
                 ],
                 answerDetails: [],
                 streak: CoupleStreakRow(
@@ -75,9 +73,7 @@ struct FirstDayAnswerDraftAdoptionTests {
         let viewModel = await configuredViewModel(
             row: dailyQuestionRow(
                 instanceID: instanceID,
-                questionVersionID: versionID,
-                slotNumber: 1,
-                seededForUserID: userID
+                questionVersionID: versionID
             ),
             draftStore: InMemoryDailyChallengeDraftStore(),
             firstDayStore: firstDayStore,
@@ -97,9 +93,7 @@ struct FirstDayAnswerDraftAdoptionTests {
         let viewModel = await configuredViewModel(
             row: dailyQuestionRow(
                 instanceID: instanceID,
-                questionVersionID: versionID,
-                slotNumber: 1,
-                seededForUserID: userID
+                questionVersionID: versionID
             ),
             draftStore: draftStore,
             firstDayStore: firstDayStore
@@ -119,9 +113,7 @@ struct FirstDayAnswerDraftAdoptionTests {
         let viewModel = await configuredViewModel(
             row: dailyQuestionRow(
                 instanceID: instanceID,
-                questionVersionID: versionID,
-                slotNumber: 1,
-                seededForUserID: userID
+                questionVersionID: versionID
             ),
             draftStore: InMemoryDailyChallengeDraftStore(),
             firstDayStore: firstDayStore

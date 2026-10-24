@@ -42,7 +42,6 @@ actor BlockingDailyChallengeService: DailyChallengeServicing {
 
     func shuffleQuestion(
         currentUserID: UUID,
-        slotNumber _: Int,
         operation _: SyncClientOperation
     ) throws -> DailyChallengeLoadResult {
         DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)
@@ -83,7 +82,6 @@ actor ImmediateDailyChallengeService: DailyChallengeServicing {
 
     func shuffleQuestion(
         currentUserID: UUID,
-        slotNumber _: Int,
         operation _: SyncClientOperation
     ) throws -> DailyChallengeLoadResult {
         DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The partner already answered questions that wait for this person. Their answers
-/// stay hidden until this person answers too, which is the pull to answer now.
+/// The partner already answered the couple's first question, which waits for this
+/// person. The answer stays hidden until this person answers too, which is the pull to
+/// answer now.
 struct PostPairingAnswerInviteStep: View {
     let partnerName: String
     let onFinish: (_ answerNow: Bool) -> Void

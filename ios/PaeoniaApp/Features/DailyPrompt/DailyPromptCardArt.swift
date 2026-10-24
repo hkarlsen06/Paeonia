@@ -8,16 +8,16 @@ nonisolated struct DailyPromptCardArt: Equatable, Sendable {
         /// The picture card with the sealed envelope, while there is something to do.
         /// It also stands in while the questions load, so the card does not jump.
         case hero
-        /// A short row with the envelope, once today's questions are done. The envelope
-        /// stays sealed until the partner's answers can be read.
+        /// A short row with the envelope, once today's question is answered. The envelope
+        /// stays sealed until the partner's answer can be read.
         case compact
     }
 
     enum Seal: Equatable, Sendable {
         /// This person's color.
         case pink
-        /// The partner's color, once the partner has answered today or left a question
-        /// to unlock: a letter from them waits.
+        /// The partner's color, once the partner has answered today or left an earlier
+        /// question to unlock: a letter from them waits.
         case lavender
     }
 
@@ -25,42 +25,33 @@ nonisolated struct DailyPromptCardArt: Equatable, Sendable {
     let seal: Seal
     /// The card glows while a question waits for this person.
     let glows: Bool
-    /// The "1 of 2 answered" capsule at the top of the picture.
-    let showsProgressBadge: Bool
-    /// The envelope holds the partner's answers, so it is open once they can be read.
+    /// The envelope holds the partner's answer, so it is open once it can be read.
     let isEnvelopeOpen: Bool
 
-    /// This person's questions are done and the partner has answered today, so the
-    /// partner's answers can be read.
+    /// This person has answered today's question and the partner has too, so the
+    /// partner's answer can be read.
     static func partnerAnswersAreReadable(_ state: DailyChallengeCardState) -> Bool {
-        state.kind == .complete && state.hasPartnerAnswersForToday
+        state.kind == .complete && state.hasPartnerAnsweredToday
     }
 
     init(_ state: DailyChallengeCardState) {
-        seal = state.hasPartnerAnswersForToday || state.hasAnswerablePartnerQuestions ? .lavender : .pink
+        seal = state.hasPartnerAnsweredToday || state.hasEarlierQuestionsToAnswer ? .lavender : .pink
         isEnvelopeOpen = Self.partnerAnswersAreReadable(state)
         switch state.kind {
         case .loading:
             shape = .hero
             glows = false
-            showsProgressBadge = false
-        case .noChallenge:
+        case .noChallenge, .active:
             shape = .hero
             glows = true
-            showsProgressBadge = false
-        case .active:
-            shape = .hero
-            glows = true
-            showsProgressBadge = state.totalCount > 0
         case .complete:
             shape = .compact
             glows = false
-            showsProgressBadge = false
         }
     }
 }
 
-/// Keeps the card looking like it did before the last question was answered, so the
+/// Keeps the card looking like it did before today's question was answered, so the
 /// seal can break on screen before the card shrinks. The answer flow covers the card
 /// while the state turns complete, so the card must not collapse behind the flow.
 nonisolated struct DailyPromptCardHold: Equatable, Sendable {
@@ -85,19 +76,10 @@ nonisolated struct DailyPromptCardHold: Equatable, Sendable {
         state.kind == .complete && lastActive != nil
     }
 
-    /// The state the card draws. While holding it is the last active picture with the
-    /// real step count, so the badge reads "2 of 2 answered" as the seal breaks.
+    /// The state the card draws. While holding it is the last active picture.
     func shownState(for state: DailyChallengeCardState) -> DailyChallengeCardState {
         guard isHolding(for: state), let last = lastActive else { return state }
-        return DailyChallengeCardState(
-            kind: last.kind,
-            answeredCount: state.answeredCount,
-            totalCount: state.totalCount,
-            hasPartnerAnswersForToday: last.hasPartnerAnswersForToday,
-            hasAnswerablePartnerQuestions: last.hasAnswerablePartnerQuestions,
-            lockedPartnerQuestions: last.lockedPartnerQuestions,
-            moreLockedPartnerQuestionCount: last.moreLockedPartnerQuestionCount
-        )
+        return last
     }
 
     /// Lets the card show its real state.

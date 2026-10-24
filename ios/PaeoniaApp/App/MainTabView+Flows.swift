@@ -30,7 +30,6 @@ extension MainTabView {
                     viewModel: dailyChallengeViewModel,
                     onClose: closeAnswerFlow,
                     makeStreakRestoreViewModel: makeStreakRestoreViewModel,
-                    onOpenPartnerQuestions: openQuestionsTabFromAnswerFlow,
                     claimStreakMilestone: claimStreakMilestone,
                     onOpenQuestionChat: openQuestionChatFromAnswerFlow
                 )
@@ -39,7 +38,7 @@ extension MainTabView {
                 .environment(bannerCenter)
                 .paeoniaTopBanner(bannerCenter)
             }
-            // The single-question partner-answer flow zooms out of the tapped card.
+            // A question opened from its own row zooms out of that row.
             .fullScreenCover(
                 item: $partnerAnswerQuestion,
                 onDismiss: offerNotificationsIfAnswered,
@@ -79,21 +78,22 @@ extension MainTabView {
         }
     }
 
-    /// Answering a question the partner already answered. Sending it turns the
-    /// cover into the question's chat.
+    /// Answering a question opened from its row: a daily question from an earlier day
+    /// that the partner answered, or a topic question.
     private func partnerAnswerFlow(for question: DailyChallengeQuestion) -> some View {
         Group {
             if question.isTopicQuestion {
                 topicAnswerSession(for: question)
             } else {
-                DailyPartnerAnswerFlow(
-                    question: question,
+                DailyChallengeAnswerFlow(
                     viewModel: dailyChallengeViewModel,
-                    privacySafetyService: dependencies.settingsPrivacyService,
-                    privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
-                    onReportedAndLeft: actions.leftRelationship,
-                    onClose: closePartnerAnswerFlow
+                    questionID: question.id,
+                    onClose: closePartnerAnswerFlow,
+                    makeStreakRestoreViewModel: makeStreakRestoreViewModel,
+                    claimStreakMilestone: claimStreakMilestone,
+                    onOpenQuestionChat: openQuestionChatFromRowFlow
                 )
+                .analyticsScreen("daily_answer")
             }
         }
         .zoomTransition(partnerAnswerZoomSourceID(for: question), in: zoomNamespace, enabled: !reduceMotion)
@@ -101,8 +101,8 @@ extension MainTabView {
         .paeoniaTopBanner(bannerCenter)
     }
 
-    /// The row the partner-answer flow zooms out of: the locked row on the Home card
-    /// when it opened from there, otherwise the question's row in the Questions tab.
+    /// The row the flow zooms out of: the locked row on the Home card when it opened from
+    /// there, otherwise the question's row in the Questions tab.
     private func partnerAnswerZoomSourceID(for question: DailyChallengeQuestion) -> AnyHashable {
         partnerAnswerOpenedFromHome
             ? AnyHashable(DailyFlowZoom.homePartnerQuestion(question.id))
@@ -213,58 +213,58 @@ extension MainTabView {
     }
 
     /// Matches the Home card's label. "See partner's answers" goes straight to the
-    /// Questions tab. "See your answers" opens the user's answers first, then lands
-    /// on the Questions tab when the partner has answers to read there.
+    /// Questions tab, where the earlier questions waiting for the user are. Once both
+    /// have answered today, "Open chat" opens today's question's chat. Otherwise the card
+    /// opens today's question, to answer it or to look at the answer the user sent.
     func openDailyChallengeFromHome() {
         let state = dailyChallengeViewModel.homeCardState
-        if state.kind == .complete, state.hasAnswerablePartnerQuestions {
+        if state.kind == .complete, state.hasEarlierQuestionsToAnswer {
             openPartnerQuestionsInQuestionsTab()
             return
         }
+        if state.kind == .complete, state.completeFollowUp == .bothAnswered,
+           let today = dailyChallengeViewModel.snapshot.todayQuestion {
+            startOpeningDailyChat(instanceID: today.id)
+            return
+        }
 
-        openAnswerFlow(
-            source: .home,
-            returnsToQuestions: state.kind == .complete && state.hasPartnerAnswersForToday
-        )
+        openAnswerFlow(source: .home)
     }
 
-    /// Today's questions are created lazily, so opening the flow before the couple
-    /// has started kicks off that one-time setup; the flow shows a brief loading
-    /// state until the questions arrive.
-    func openAnswerFlow(source: DailyFlowSource, returnsToQuestions: Bool = false) {
+    /// Today's question is created lazily, so opening the flow before the couple has
+    /// started kicks off that one-time setup; the flow shows a brief loading state until
+    /// the question arrives.
+    func openAnswerFlow(source: DailyFlowSource) {
         if dailyChallengeViewModel.homeCardState.kind == .noChallenge {
             Task { await dailyChallengeViewModel.startToday() }
         }
-        returnsToQuestionsOnClose = returnsToQuestions
         withAnimation(zoomPresentationAnimation) {
             dailyFlowSource = source
             isAnswerFlowPresented = true
         }
     }
 
-    private func openQuestionsTabFromAnswerFlow() {
-        openPartnerQuestionsInQuestionsTab()
-        isAnswerFlowPresented = false
-    }
-
-    /// Lands on the Questions tab with the partner's waiting questions outlined, so
-    /// the user can see which rows the button meant.
+    /// Lands on the Questions tab with the waiting questions outlined, so the user can
+    /// see which rows the button meant.
     private func openPartnerQuestionsInQuestionsTab() {
         selection.wrappedValue = .questions
-        focusedDailyQuestionIDs = dailyChallengeViewModel.snapshot.answerablePartnerQuestions.map(\.id)
+        focusedDailyQuestionIDs = dailyChallengeViewModel.snapshot.earlierQuestionsAwaitingAnswer.map(\.id)
     }
 
-    /// The note about an earlier answer: closes the flow and opens the question's chat,
-    /// scrolled to the day the user just answered, with the earlier days above it.
+    /// The reveal's Open chat, and the note about an earlier answer: closes the flow and
+    /// opens the question's chat, scrolled to the day the user just answered, with the
+    /// earlier days above it.
     private func openQuestionChatFromAnswerFlow(_ question: DailyChallengeQuestion) {
         isAnswerFlowPresented = false
         startOpeningDailyChat(instanceID: question.id)
     }
 
+    private func openQuestionChatFromRowFlow(_ question: DailyChallengeQuestion) {
+        partnerAnswerQuestion = nil
+        startOpeningDailyChat(instanceID: question.id)
+    }
+
     private func closeAnswerFlow() {
-        if returnsToQuestionsOnClose {
-            selection.wrappedValue = .questions
-        }
         isAnswerFlowPresented = false
     }
 
@@ -275,7 +275,7 @@ extension MainTabView {
         }
     }
 
-    /// A locked row on the Home card opens the same single-question flow.
+    /// A locked row on the Home card opens the same flow as the question's row.
     func openPartnerQuestionFromHome(_ id: UUID) {
         guard let question = dailyChallengeViewModel.snapshot.questions.first(where: { $0.id == id }) else { return }
         partnerAnswerOpenedFromHome = true

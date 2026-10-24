@@ -1,15 +1,15 @@
 #if DEBUG
   import SwiftUI
 
-  /// The daily question card's envelope on its own. The envelope holds Robin's answers,
-  /// so it opens once they can be read. Finish first and it stays sealed until Robin
+  /// The daily question card's envelope on its own. The envelope holds Robin's answer,
+  /// so it opens once it can be read. Answer first and it stays sealed until Robin
   /// answers. Let Robin answer first and it opens as the card shrinks.
   nonisolated extension DeveloperScenario {
     static let dailyCard: [DeveloperScenario] = [dailyCardSealMoment]
 
     static let dailyCardSealMoment = DeveloperScenario(
       "daily-card-seal-moment", "Questions · seal moment",
-      "Finish today's questions and let Robin answer, in either order", .questions
+      "Answer today's question and let Robin answer, in either order", .questions
     ) { _ in DeveloperDailyCardSealScenarioView() }
   }
 
@@ -21,10 +21,8 @@
       DailyChallengeCardState(
         kind: isFinished
           ? .complete
-          : .active(prompt: "What is a small thing I do that always makes your day better?"),
-        answeredCount: isFinished ? 2 : 1,
-        totalCount: 2,
-        hasPartnerAnswersForToday: robinAnswered
+          : .active(prompt: "What is one small thing your partner did recently that stayed with you?"),
+        hasPartnerAnsweredToday: robinAnswered
       )
     }
 
@@ -35,7 +33,7 @@
             .padding(.bottom, PaeoniaSpacing.space12)
 
           if !isFinished {
-            button("Finish today's questions") { isFinished = true }
+            button("Answer today's question") { isFinished = true }
           }
           if !robinAnswered {
             button("Robin answers") { robinAnswered = true }

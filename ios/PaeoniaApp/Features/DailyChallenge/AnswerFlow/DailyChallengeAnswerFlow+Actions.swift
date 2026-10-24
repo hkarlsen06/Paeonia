@@ -9,16 +9,7 @@ extension DailyChallengeAnswerFlow {
         } else if isPrimaryActionSave {
             Task { await editCurrent() }
         } else {
-            advanceOrFinish()
-        }
-    }
-
-    /// Move to the next question, or leave the flow when this is the last one.
-    private func advanceOrFinish() {
-        if isLastStep {
             dismiss()
-        } else {
-            withAnimation(PaeoniaMotion.stateChange) { index = boundedIndex + 1 }
         }
     }
 
@@ -30,21 +21,20 @@ extension DailyChallengeAnswerFlow {
     private func submitCurrent() async {
         // A second tap's task runs after the first one has started saving. Without
         // this guard it would see "not sent yet" and clear the first send's held
-        // answer, so the composer flashed empty before moving on.
+        // answer, so the composer flashed empty.
         guard
             let question = currentQuestion,
             viewModel.submittingQuestionID == nil,
-            partnerRevealQuestion == nil
+            revealQuestion == nil
         else { return }
 
         committedAnswerHold = DailyAnswerStepVisualHold(question: question, viewModel: viewModel)
         await viewModel.submitAnswer(for: question)
 
-        // Advance once the answer has landed on the server or — for a photo — been
+        // Move on once the answer has landed on the server or — for a photo — been
         // staged to send in the background. A failure leaves the draft in place and
         // surfaces a banner instead.
-        let didAnswer = (viewModel.snapshot.questions
-            .first(where: { $0.id == question.id })?.hasOwnAnswer ?? false)
+        let didAnswer = (viewModel.knownQuestion(question.id)?.hasOwnAnswer ?? false)
             || viewModel.isSending(question.id)
         guard didAnswer else {
             clearVisualHold(for: question.id)
@@ -52,54 +42,36 @@ extension DailyChallengeAnswerFlow {
         }
 
         isComposerFocused = false
+        sentQuestionID = question.id
         withAnimation(PaeoniaMotion.stateChange) {
             earlierCandidate = question.earlierRoundCount > 0 ? question : nil
         }
 
-        if question.origin == .partner {
-            partnerRevealQuestion = question
-            isAwaitingPartnerReveal = true
-
-            let didReveal = await viewModel.awaitAnswerReveal(for: question.id)
-            if didReveal, revealedQuestion(for: question.id)?.canViewPartnerAnswer == true {
-                PaeoniaHaptics.answerRevealed()
-            }
+        // The partner's answer may have reached the phone while the user was writing.
+        if question.hasPartnerAnswer || viewModel.knownQuestion(question.id)?.hasPartnerAnswer == true {
+            // The partner answered first, so this answer unlocks theirs. The composer
+            // holds as it was for a moment, so a quick reply turns over in one step.
+            revealQuestion = question
+            isAwaitingReveal = true
+            _ = await viewModel.awaitAnswerReveal(for: question.id)
             // Slow or offline: the reveal still opens, shows the answer as saved, and
             // fills in their reply when it arrives.
             withAnimation(PaeoniaMotion.meaningfulMoment) {
-                isAwaitingPartnerReveal = false
+                isAwaitingReveal = false
             }
-            releaseVisualHold(for: question.id)
-        } else if hasFinishedRequiredQuestions {
-            celebrate()
-            releaseVisualHold(for: question.id)
-        } else if let next = nextAnswerableIndex(after: boundedIndex) {
-            withAnimation(PaeoniaMotion.stateChange) { index = next }
-            releaseVisualHold(for: question.id)
         } else {
-            celebrate()
-            releaseVisualHold(for: question.id)
-        }
-    }
-
-    func revealedQuestion(for questionID: UUID) -> DailyChallengeQuestion? {
-        viewModel.snapshot.questions.first { $0.id == questionID }
-    }
-
-    func finishPartnerReveal() {
-        guard let questionID = partnerRevealQuestion?.id else { return }
-        partnerRevealQuestion = nil
-        isAwaitingPartnerReveal = false
-        clearVisualHold(for: questionID)
-        advanceAfterPartnerAnswer()
-    }
-
-    private func advanceAfterPartnerAnswer() {
-        if let next = nextAnswerableIndex(after: -1) {
-            withAnimation(PaeoniaMotion.stateChange) { index = next }
-        } else {
+            // A partner answer that lands with this one turns the screen to the reveal
+            // (`sentQuestionIsRevealed`).
             celebrate()
         }
+        releaseVisualHold(for: question.id)
+    }
+
+    /// Closes the flow and opens the revealed question's chat.
+    func openRevealedChat() {
+        guard let revealQuestion else { return }
+        isComposerFocused = false
+        onOpenQuestionChat(viewModel.latestQuestion(revealQuestion))
     }
 
     private func editCurrent() async {
@@ -114,12 +86,9 @@ extension DailyChallengeAnswerFlow {
             let attempted = viewModel.partnerChoiceSelection(for: question.id)
             await viewModel.editPartnerChoiceAnswer(for: question)
 
-            // Move on only if the save landed; a failure keeps the user here with a banner.
-            let savedNow = viewModel.snapshot.answerFlowQuestions
-                .first(where: { $0.id == question.id })?
-                .ownAnswerDetail?.selectedUserID
-            if savedNow == attempted {
-                advanceOrFinish()
+            // Close only if the save landed; a failure keeps the user here with a banner.
+            if viewModel.knownQuestion(question.id)?.ownAnswerDetail?.selectedUserID == attempted {
+                dismiss()
             }
         default:
             let attempted = viewModel.draftText(for: question.id)
@@ -128,12 +97,11 @@ extension DailyChallengeAnswerFlow {
             await viewModel.editTextAnswer(for: question)
             isComposerFocused = false
 
-            let savedNow = viewModel.snapshot.answerFlowQuestions
-                .first(where: { $0.id == question.id })?
+            let savedNow = viewModel.knownQuestion(question.id)?
                 .ownAnswerDetail?.textBody?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             if savedNow == attempted {
-                advanceOrFinish()
+                dismiss()
             }
         }
     }
@@ -142,41 +110,6 @@ extension DailyChallengeAnswerFlow {
         guard let question = currentQuestion else { return }
         isComposerFocused = false
         await viewModel.shuffle(question)
-    }
-
-    /// Jump to a question tapped in the progress bar. Drafts are kept, so an
-    /// unanswered question reopens with your in-progress text; an answered one opens
-    /// to review what you sent.
-    func goToRequiredStep(_ step: Int) {
-        guard
-            step >= 0,
-            step < requiredQuestions.count,
-            let questionIndex = questions.firstIndex(where: { $0.id == requiredQuestions[step].id }),
-            questionIndex != boundedIndex
-        else { return }
-        isComposerFocused = false
-        withAnimation(PaeoniaMotion.stateChange) { index = questionIndex }
-    }
-
-    private func nextAnswerableIndex(after current: Int) -> Int? {
-        answerableIndices.first(where: { $0 > current }) ?? answerableIndices.first
-    }
-
-    private func nextRequiredAnswerableIndex(after current: Int) -> Int? {
-        answerableRequiredIndices.first(where: { $0 > current }) ?? answerableRequiredIndices.first
-    }
-
-    func setInitialIndexIfNeeded() {
-        guard !didSetInitialIndex, !questions.isEmpty else { return }
-        didSetInitialIndex = true
-        if let first = nextRequiredAnswerableIndex(after: -1) {
-            index = first
-        } else if let firstRequiredQuestion = requiredQuestions.first,
-                  let first = questions.firstIndex(where: { $0.id == firstRequiredQuestion.id }) {
-            index = first
-        } else if let first = nextAnswerableIndex(after: -1) {
-            index = first
-        }
     }
 
     func visualHold(for question: DailyChallengeQuestion) -> DailyAnswerStepVisualHold? {

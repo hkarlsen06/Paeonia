@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "When should your questions arrive?" Picking a concrete moment, like the morning
+/// "When should your question arrive?" Picking a concrete moment, like the morning
 /// coffee, makes the habit easier to keep, so each choice names one. The primary
 /// button repeats the time ("Remind me at 20:00"), saves the reminder and then asks
 /// iOS for notification permission. "Not now" finishes without saving.

@@ -1,17 +1,18 @@
 import Foundation
 import Observation
 
-/// The first questions on the invite screen: the inviter answers their first two
-/// questions while the code is out, and the partner sees the answers when they join.
+/// The first question on the invite screen: the inviter answers it while the code is
+/// out. When the partner joins, it is the couple's question for their first day, and the
+/// partner sees the answer once they have answered it too.
 ///
-/// `load` makes sure the server has a draft, which also picks the questions, and reads
-/// what was answered so far. It also sends the first drawing for the partner, made
+/// `load` makes sure the server has a draft, which also picks the question, and reads
+/// whether it is answered. It also sends the first drawing for the partner, made
 /// before sign-in (`WelcomeDrawingStep`) and saved on this phone, whenever the screen
 /// loads or comes back to the front, until it reaches the draft.
 @MainActor
 @Observable
 final class InviterFirstDayModel {
-    /// The answers just turned done, for the row's completion beat. A fresh id each
+    /// The question was just answered, for the row's completion beat. A fresh id each
     /// time makes `onChange` fire.
     struct Completion: Equatable {
         let id = UUID()
@@ -23,8 +24,8 @@ final class InviterFirstDayModel {
     /// iOS allows notifications, so the person hears when their partner joins.
     private(set) var notificationsAllowed = false
     private(set) var completion: Completion?
-    /// Set when opening the questions could not load them. The view shows it and
-    /// then clears it.
+    /// Set when opening the question could not load it. The view shows it and then
+    /// clears it.
     private(set) var loadFailure: PaeoniaFailure?
 
     let ownerUserID: UUID?
@@ -58,8 +59,8 @@ final class InviterFirstDayModel {
         self.questionPreferences = questionPreferences
     }
 
-    var hasAnsweredQuestions: Bool {
-        draft?.hasAnsweredAll ?? false
+    var hasAnsweredQuestion: Bool {
+        draft?.hasAnswered ?? false
     }
 
     /// What the share sheet says next to the invite link. It names the gift waiting for
@@ -68,7 +69,7 @@ final class InviterFirstDayModel {
     var shareMessage: LocalizedStringResource {
         if draft?.drawing != nil {
             .pairingInviteShareMessageDrawing
-        } else if hasAnsweredQuestions {
+        } else if hasAnsweredQuestion {
             .pairingInviteShareMessageAnswers
         } else {
             .pairingInviteShareMessage
@@ -112,7 +113,7 @@ final class InviterFirstDayModel {
         } catch is CancellationError {
             return
         } catch {
-            // The screen keeps what it had. Opening the questions tries again.
+            // The screen keeps what it had. Opening the question tries again.
             if reportingFailure {
                 loadFailure = PaeoniaFailure(error)
             }
@@ -126,36 +127,36 @@ final class InviterFirstDayModel {
         notificationsAllowed = !isUndecided && !isDenied
     }
 
-    // MARK: Questions
+    // MARK: Question
 
-    /// The questions model for the answer flow, loading the draft first when the screen
-    /// could not. Nil when that fails too, with `loadFailure` set.
+    /// The model for the answer flow, loading the draft first when the screen could
+    /// not. Nil when that fails too, with `loadFailure` set.
     func makeQuestionsModel() async -> FirstDayQuestionsModel? {
         if draft == nil {
             await loadDraft(reportingFailure: true)
         }
-        guard let draft, !draft.questions.isEmpty, let ownerUserID, let gateway else {
+        guard let draft, let question = draft.question, let ownerUserID, let gateway else {
             if loadFailure == nil {
                 loadFailure = .other
             }
             return nil
         }
-        answeredBeforeFlow = draft.hasAnsweredAll
+        answeredBeforeFlow = draft.hasAnswered
         return FirstDayQuestionsModel(
-            questions: draft.questions,
+            question: question,
             ownerUserID: ownerUserID,
             gateway: gateway,
             preferences: questionPreferences
         )
     }
 
-    func questionsFlowClosed(with questions: [FirstDayQuestion]) {
+    func questionsFlowClosed(with question: FirstDayQuestion) {
         guard var draft else {
             return
         }
-        draft.questions = questions
+        draft.question = question
         self.draft = draft
-        if !answeredBeforeFlow, draft.hasAnsweredAll {
+        if !answeredBeforeFlow, draft.hasAnswered {
             completion = Completion()
         }
     }

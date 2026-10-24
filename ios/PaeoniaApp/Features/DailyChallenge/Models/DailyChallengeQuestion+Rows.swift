@@ -3,15 +3,14 @@ import Foundation
 extension DailyChallengeQuestion {
     /// Builds the domain questions from the backend read-model rows and the matching
     /// answer detail rows. Shared by today's snapshot and the Questions history, so
-    /// both surfaces map rows the same way: shuffled instances are dropped, answer
-    /// details are attached by answer id, and only rows the current user can see
-    /// survive. The caller decides how to slice or group the result.
+    /// both surfaces map rows the same way: shuffled instances are dropped and answer
+    /// details are attached by answer id. The caller decides how to slice or group the
+    /// result.
     ///
     /// `nonisolated` so the nonisolated `DailyChallengeSnapshot.make` and the
     /// `DailyChallengeService` actor can both build questions off the main
     /// actor (an extension doesn't inherit the type's `nonisolated` by default).
     nonisolated static func list(
-        currentUserID: UUID,
         rows: [DailyQuestionRow],
         answerDetails: [DailyAnswerDetailRow],
         locale: Locale = .current
@@ -26,17 +25,14 @@ extension DailyChallengeQuestion {
             .map {
                 DailyChallengeQuestion(
                     row: $0,
-                    currentUserID: currentUserID,
                     detailsByAnswerID: detailsByAnswerID,
                     locale: locale
                 )
             }
-            .filter(\.isVisibleToCurrentUser)
     }
 
     private nonisolated init(
         row: DailyQuestionRow,
-        currentUserID: UUID,
         detailsByAnswerID: [UUID: DailyQuestionAnswerDetail],
         locale: Locale
     ) {
@@ -49,8 +45,6 @@ extension DailyChallengeQuestion {
             effectiveLocalDate: row.effectiveLocalDate ?? row.localDate,
             startsAt: row.startsAt,
             endsAt: row.endsAt,
-            seededForUserID: row.seededForUserID,
-            slotNumber: Int(row.slotNumber),
             status: DailyQuestionInstanceStatus(rawValue: row.instanceStatus),
             questionID: row.questionID,
             questionVersionID: row.questionVersionID,
@@ -63,7 +57,6 @@ extension DailyChallengeQuestion {
             canViewPartnerAnswer: row.canViewPartnerAnswer,
             ownAnswerDetail: row.ownAnswerID.flatMap { detailsByAnswerID[$0] }?.labelingPick(with: options),
             partnerAnswerDetail: row.partnerAnswerID.flatMap { detailsByAnswerID[$0] }?.labelingPick(with: options),
-            origin: row.seededForUserID == currentUserID ? .own : .partner,
             isCurrentDay: row.isCurrentDay,
             partnerAnswerSeenAt: row.partnerAnswerSeenAt,
             ownAnswerSeenByPartnerAt: row.ownAnswerSeenByPartnerAt,

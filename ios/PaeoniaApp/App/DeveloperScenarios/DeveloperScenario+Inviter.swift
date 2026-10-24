@@ -2,29 +2,26 @@
   import SwiftUI
 
   /// The inviter's path before their partner joins: the start date step before
-  /// sign-in, and the invite screen's first questions with one or both answered. The
-  /// rest of the path runs in `Local flow · fresh install` and `Local flow · onboarding`.
+  /// sign-in, and the invite screen with the first question answered. `Pairing invite ·
+  /// ready` shows it unanswered. The rest of the path runs in `Local flow · fresh
+  /// install` and `Local flow · onboarding`.
   nonisolated extension DeveloperScenario {
     static let inviter: [DeveloperScenario] = [
-      welcomeStartDate, pairingInviteFirstDayHalf, pairingInviteFirstDayDone, pairingInviteFirstDrawing,
+      welcomeStartDate, pairingInviteFirstDayDone, pairingInviteFirstDrawing,
     ]
 
     static let welcomeStartDate = DeveloperScenario(
       "welcome-start-date", "Welcome · start date",
       "When did you get together, then the days count-up", .launchAndAuth
     ) { _ in DeveloperStartDateScenarioView() }
-    static let pairingInviteFirstDayHalf = DeveloperScenario(
-      "pairing-invite-first-day-half", "Pairing invite · first questions, one answered",
-      "One of two first answers saved", .pairing
-    ) { _ in DeveloperInviterScenarioView(answered: 1) }
     static let pairingInviteFirstDayDone = DeveloperScenario(
-      "pairing-invite-first-day-done", "Pairing invite · first questions, both answered",
-      "Both first answers saved", .pairing
-    ) { _ in DeveloperInviterScenarioView(answered: 2) }
+      "pairing-invite-first-day-done", "Pairing invite · first question answered",
+      "First answer saved", .pairing
+    ) { _ in DeveloperInviterScenarioView() }
     static let pairingInviteFirstDrawing = DeveloperScenario(
       "pairing-invite-first-drawing", "Pairing invite · first drawing made",
       "The first drawing is saved, so the share text names a gift", .pairing
-    ) { _ in DeveloperInviterScenarioView(answered: 0, drawing: true) }
+    ) { _ in DeveloperInviterScenarioView(answered: false, drawing: true) }
   }
 
   /// The start date step on its own. Continue plays the count-up, and the step stays.
@@ -38,7 +35,7 @@
 
   /// The invite screen with a local invite and a local first day draft.
   private struct DeveloperInviterScenarioView: View {
-    let answered: Int
+    var answered = true
     var drawing = false
 
     var body: some View {
@@ -69,7 +66,7 @@
     /// widget, so a drawing made before sign-in in a local flow is sent locally too.
     @MainActor
     static func firstDayModel(
-      answered: Int,
+      answered: Bool,
       drawing: Bool = false,
       canvas: DeveloperWidgetCanvasService = DeveloperWidgetCanvasService(),
       pendingUploads: WidgetPendingUploadStore? = nil
@@ -101,26 +98,15 @@
   actor DeveloperFirstDayGateway: FirstDayGateway {
     private var draft: FirstDayDraft
 
-    init(answered: Int, drawing: Bool = false) {
-      let questions = [
-        FirstDayQuestion(
-          slotNumber: 1,
+    init(answered: Bool, drawing: Bool = false) {
+      draft = FirstDayDraft(
+        startedOn: nil,
+        question: FirstDayQuestion(
           questionVersionID: UUID(uuidString: "F1F1F1F1-0000-0000-0000-000000000001") ?? UUID(),
           promptEN: "What is one small thing your partner did recently that stayed with you?",
           promptNB: "Hva er en liten ting partneren din gjorde nylig som har blitt værende hos deg?",
-          answerText: answered >= 1 ? "The voice note they sent from the train." : nil
+          answerText: answered ? "The voice note they sent from the train." : nil
         ),
-        FirstDayQuestion(
-          slotNumber: 2,
-          questionVersionID: UUID(uuidString: "F1F1F1F1-0000-0000-0000-000000000002") ?? UUID(),
-          promptEN: "What is one place you would like to show them?",
-          promptNB: "Hvilket sted har du lyst til å vise dem?",
-          answerText: answered >= 2 ? "The bakery by the harbour." : nil
-        ),
-      ]
-      draft = FirstDayDraft(
-        startedOn: nil,
-        questions: questions,
         drawing: drawing ? FirstDayDrawingReference(mediaAssetID: UUID(), revisionID: UUID()) : nil
       )
     }
@@ -133,8 +119,8 @@
 
     func saveAnswer(questionVersionID: UUID, text: String, operation _: SyncClientOperation) async throws {
       try await Task.sleep(for: .milliseconds(500))
-      if let index = draft.questions.firstIndex(where: { $0.id == questionVersionID }) {
-        draft.questions[index].answerText = text
+      if draft.question?.id == questionVersionID {
+        draft.question?.answerText = text
       }
     }
 
@@ -156,7 +142,7 @@
     func saveDrawing(_: WidgetDrawingUploadPayload, mediaAssetID: UUID, operation _: SyncClientOperation) {
       draft = FirstDayDraft(
         startedOn: draft.startedOn,
-        questions: draft.questions,
+        question: draft.question,
         drawing: FirstDayDrawingReference(mediaAssetID: mediaAssetID, revisionID: UUID())
       )
     }

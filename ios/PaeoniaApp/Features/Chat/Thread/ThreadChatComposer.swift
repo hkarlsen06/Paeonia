@@ -217,6 +217,7 @@ struct ThreadChatComposer: View {
             .foregroundStyle(.paeoniaTextPrimary)
             .lineLimit(1...7)
             .focused($isFocused)
+            .accessibilityIdentifier("chat.composer.field")
             // While an edit saves, the text stays as sent, so the result can't overwrite new typing.
             .disabled(staging.isProcessing || (editingMessage != nil && isSubmitting))
             .padding(.vertical, PaeoniaSpacing.space12 + 2)

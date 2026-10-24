@@ -5,27 +5,24 @@ import Foundation
 /// partner joins, the server turns it into the couple's first day.
 nonisolated struct FirstDayDraft: Decodable, Equatable, Sendable {
     let startedOn: String?
-    var questions: [FirstDayQuestion]
+    /// Nil until the server has picked the question.
+    var question: FirstDayQuestion?
     let drawing: FirstDayDrawingReference?
 
-    var answeredCount: Int {
-        questions.count { $0.answerText != nil }
-    }
-
-    var hasAnsweredAll: Bool {
-        !questions.isEmpty && answeredCount == questions.count
+    var hasAnswered: Bool {
+        question?.answerText != nil
     }
 
     enum CodingKeys: String, CodingKey {
         case startedOn = "started_on"
-        case questions
+        case question
         case drawing
     }
 }
 
-/// One of the inviter's two first daily questions, with their saved answer.
+/// The inviter's first daily question, with their saved answer. When the partner joins,
+/// it becomes the couple's question for their first day, and the partner answers it too.
 nonisolated struct FirstDayQuestion: Decodable, Equatable, Identifiable, Sendable {
-    let slotNumber: Int
     let questionVersionID: UUID
     let promptEN: String
     let promptNB: String
@@ -40,7 +37,6 @@ nonisolated struct FirstDayQuestion: Decodable, Equatable, Identifiable, Sendabl
     }
 
     enum CodingKeys: String, CodingKey {
-        case slotNumber = "slot_number"
         case questionVersionID = "question_version_id"
         case promptEN = "prompt_en"
         case promptNB = "prompt_nb"

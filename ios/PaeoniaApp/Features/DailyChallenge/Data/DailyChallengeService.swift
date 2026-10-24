@@ -16,7 +16,6 @@ protocol DailyChallengeServicing: Actor {
     func editPartnerChoice(instanceID: UUID, selectedUserID: UUID, operation: SyncClientOperation) async throws -> UUID
     func shuffleQuestion(
         currentUserID: UUID,
-        slotNumber: Int,
         operation: SyncClientOperation
     ) async throws -> DailyChallengeLoadResult
 }
@@ -40,10 +39,7 @@ protocol DailyChallengeGateway: Actor {
         selectedUserID: UUID,
         operation: SyncClientOperation
     ) async throws -> UUID
-    func shuffleQuestion(
-        slotNumber: Int,
-        operation: SyncClientOperation
-    ) async throws -> DailyChallengeRemoteSnapshotRow
+    func shuffleQuestion(operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow
     /// Answers a topic question. The server starts the couple's instance of the
     /// question when nobody has answered it yet.
     func submitTopicAnswer(
@@ -141,7 +137,6 @@ actor DailyChallengeService: DailyChallengeServicing {
         let rows = try await rowsTask
         let answerDetails = try await detailsTask
         return DailyChallengeQuestion.list(
-            currentUserID: currentUserID,
             rows: rows,
             answerDetails: answerDetails,
             locale: locale
@@ -196,13 +191,12 @@ actor DailyChallengeService: DailyChallengeServicing {
 
     func shuffleQuestion(
         currentUserID: UUID,
-        slotNumber: Int,
         operation: SyncClientOperation
     ) async throws -> DailyChallengeLoadResult {
         let liveWritesBefore = liveWrites.count(ownerUserID: currentUserID)
         let remote: DailyChallengeRemoteSnapshotRow
         do {
-            remote = try await gateway.shuffleQuestion(slotNumber: slotNumber, operation: operation)
+            remote = try await gateway.shuffleQuestion(operation: operation)
         } catch {
             // The backend caps each person at a few swaps per day. Translate that
             // one specific case into a typed error so the UI can show a friendly,
@@ -366,16 +360,10 @@ actor LiveDailyChallengeGateway: DailyChallengeGateway {
         )
     }
 
-    func shuffleQuestion(
-        slotNumber: Int,
-        operation: SyncClientOperation
-    ) async throws -> DailyChallengeRemoteSnapshotRow {
+    func shuffleQuestion(operation: SyncClientOperation) async throws -> DailyChallengeRemoteSnapshotRow {
         try await snapshotMutation(
             "daily:shuffle_daily_question_snapshot",
-            args: ShuffleDailyQuestionRequest(
-                slotNumber: slotNumber,
-                operation: operation
-            )
+            args: ShuffleDailyQuestionRequest(operation: operation)
         )
     }
 }
@@ -427,7 +415,6 @@ private actor EmptyDailyChallengeService: DailyChallengeServicing {
 
     func shuffleQuestion(
         currentUserID: UUID,
-        slotNumber _: Int,
         operation _: SyncClientOperation
     ) throws -> DailyChallengeLoadResult {
         DailyChallengeLoadResult(snapshot: .empty(currentUserID: currentUserID), streak: .none)

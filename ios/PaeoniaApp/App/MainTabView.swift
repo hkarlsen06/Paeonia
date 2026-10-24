@@ -133,9 +133,6 @@ struct MainTabView: View {
     /// Which card the daily answer flow should zoom out of (the Home prompt card or the
     /// Questions-tab hero card), so the cover grows from the one the user tapped.
     @State var dailyFlowSource: DailyFlowSource = .home
-    /// Set when Home's "See your answers" opens the flow while the partner has
-    /// answers today, so closing it lands on the Questions tab to read them.
-    @State var returnsToQuestionsOnClose = false
     /// Streak-restore offer opened from the streak badge when a lost streak can still
     /// be bought back, outside the answer flow.
     @State var showStreakRestore = false
@@ -150,11 +147,11 @@ struct MainTabView: View {
     /// The Questions-tab single-question partner-answer flow. The tapped question drives
     /// presentation and is the card the cover zooms out of.
     @State var partnerAnswerQuestion: DailyChallengeQuestion?
-    /// The partner-answer flow was opened from a locked row on the Home card, so it
-    /// zooms out of that row and not out of the Questions tab list.
+    /// The answer flow for a question's row was opened from a locked row on the Home
+    /// card, so it zooms out of that row and not out of the Questions tab list.
     @State var partnerAnswerOpenedFromHome = false
     /// Questions to scroll to and briefly highlight, after a notification deep link
-    /// or a button that sends the user to answer the partner's questions.
+    /// or a button that sends the user to the questions the partner answered.
     @State var focusedDailyQuestionIDs: [UUID] = []
     @State var dailyChatQuestion: DailyChallengeQuestion?
     /// What the Questions tab has pushed: the Topics shelf and a topic.

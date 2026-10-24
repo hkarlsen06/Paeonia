@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// The inviter answers their two first questions before the partner joins, one page
-/// each, like the daily answer flow. Then it asks when questions should arrive, unless
-/// the reminder is on already, and ends on a small finish. Shown as a full-screen cover
-/// from the invite screen. `onClose` gets the questions with their saved answers.
+/// The inviter answers their first question before the partner joins, on a page like
+/// the daily answer flow's. Then it asks when questions should arrive, unless the
+/// reminder is on already, and ends on a small finish. Shown as a full-screen cover
+/// from the invite screen. `onClose` gets the question with its saved answer.
 struct FirstDayQuestionsFlow: View {
     @Bindable var model: FirstDayQuestionsModel
-    let onClose: ([FirstDayQuestion]) -> Void
+    let onClose: (FirstDayQuestion) -> Void
 
     @FocusState private var isComposerFocused: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
@@ -15,12 +15,9 @@ struct FirstDayQuestionsFlow: View {
     var body: some View {
         ZStack {
             switch model.step {
-            case let .question(index):
-                if model.questions.indices.contains(index) {
-                    questionPage(model.questions[index], index: index)
-                        .id(index)
-                        .transition(pageTransition)
-                }
+            case .question:
+                questionPage
+                    .transition(pageTransition)
             case .questionTime:
                 QuestionTimeStep(
                     context: .waitingForPartner,
@@ -72,17 +69,13 @@ struct FirstDayQuestionsFlow: View {
 
     // MARK: Question page
 
-    private func questionPage(_ question: FirstDayQuestion, index: Int) -> some View {
+    private var questionPage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 closeButton
 
-                DailyQuestionCard(prompt: question.prompt(for: .current)) {
-                    Text(.firstDayQuestionsEyebrow(index + 1, model.questions.count))
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .textCase(.uppercase)
-                        .tracking(0.8)
-                        .foregroundStyle(.paeoniaAccentPrimary)
+                DailyQuestionCard(prompt: model.question.prompt(for: .current)) {
+                    EmptyView()
                 } footer: {
                     Label {
                         Text(.firstDayQuestionsRevealRule)
@@ -95,7 +88,7 @@ struct FirstDayQuestionsFlow: View {
                     .fixedSize(horizontal: false, vertical: true)
                 }
 
-                DailyAnswerTextField(text: composerText(for: question), isFocused: $isComposerFocused)
+                DailyAnswerTextField(text: composerText, isFocused: $isComposerFocused)
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space8)
@@ -104,21 +97,20 @@ struct FirstDayQuestionsFlow: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
-        // Rides above the keyboard like the daily answer flow's bar, so Next is in
+        // Rides above the keyboard like the daily answer flow's bar, so Done is in
         // reach while typing.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             continueButton
         }
     }
 
-    /// Ignores typing while the answer saves, without disabling the field. A disabled
-    /// field drops the keyboard, which would then have to come back for the next page.
-    /// Reads the page's own question, so the page keeps its text while it slides out.
-    private func composerText(for question: FirstDayQuestion) -> Binding<String> {
+    /// Ignores typing while the answer saves, without disabling the field, so the
+    /// keyboard stays up if the save fails.
+    private var composerText: Binding<String> {
         Binding(
-            get: { model.text(for: question) },
+            get: { model.text },
             set: { newValue in
-                if !model.isSaving, model.currentQuestion?.id == question.id {
+                if !model.isSaving {
                     model.text = newValue
                 }
             }
@@ -127,7 +119,7 @@ struct FirstDayQuestionsFlow: View {
 
     private var continueButton: some View {
         Button(action: continueFromQuestion) {
-            Text(model.isLastQuestion ? .dailyChallengeFlowDoneButton : .dailyChallengeFlowNextButton)
+            Text(.dailyChallengeFlowDoneButton)
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: model.isSaving))
         .disabled(!model.canContinue)
@@ -160,18 +152,17 @@ struct FirstDayQuestionsFlow: View {
             }
             PaeoniaHaptics.firstDayAnswerSaved()
             GameSound.send.play(volume: 0.6)
-            // The next page's field takes over the keyboard. After the last one it goes.
-            isComposerFocused = model.currentQuestion != nil
+            isComposerFocused = false
         }
     }
 
     private func close() {
         isComposerFocused = false
-        onClose(model.questions)
+        onClose(model.question)
     }
 }
 
-/// The last page: the answers are saved for the partner. A heart burst rises from the
+/// The last page: the answer is saved for the partner. A heart burst rises from the
 /// icon as it lands, with a chime.
 private struct FirstDayQuestionsFinish: View {
     let onDone: () -> Void
@@ -238,23 +229,14 @@ private struct FirstDayQuestionsFinish: View {
 #if DEBUG
 #Preview {
     @Previewable @State var bannerCenter = PaeoniaBannerCenter()
-    let gateway = DeveloperFirstDayGateway(answered: 0)
+    let gateway = DeveloperFirstDayGateway(answered: false)
     FirstDayQuestionsFlow(
         model: FirstDayQuestionsModel(
-            questions: [
-                FirstDayQuestion(
-                    slotNumber: 1,
-                    questionVersionID: UUID(),
-                    promptEN: "What is one small thing your partner did recently that stayed with you?",
-                    promptNB: "Hva er en liten ting partneren din gjorde nylig som har blitt værende hos deg?"
-                ),
-                FirstDayQuestion(
-                    slotNumber: 2,
-                    questionVersionID: UUID(),
-                    promptEN: "What is one place you would like to show them?",
-                    promptNB: "Hvilket sted har du lyst til å vise dem?"
-                ),
-            ],
+            question: FirstDayQuestion(
+                questionVersionID: UUID(),
+                promptEN: "What is one small thing your partner did recently that stayed with you?",
+                promptNB: "Hva er en liten ting partneren din gjorde nylig som har blitt værende hos deg?"
+            ),
             ownerUserID: UUID(),
             gateway: gateway,
             draftStore: UserDefaultsFirstDayAnswerDraftStore(

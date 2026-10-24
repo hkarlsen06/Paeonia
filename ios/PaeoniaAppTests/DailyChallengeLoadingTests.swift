@@ -11,13 +11,12 @@ struct DailyChallengeLoadingTests {
         let previousEnd = TestDailyChallengeIDs.startsAt
         let rows = [
             dailyQuestionRow(
-                slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, status: "answered",
                 ownAnswerID: currentAnswerID, ownAnsweredAt: TestDailyChallengeIDs.answerDate, isCurrentDay: true
             ),
             dailyQuestionRow(
                 coupleDayID: TestDailyChallengeIDs.previousCoupleDay, localDate: "2026-06-26", startsAt: previousStart,
-                endsAt: previousEnd, slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered", ownAnswerID: previousAnswerID, ownAnsweredAt: previousStart.addingTimeInterval(600),
+                endsAt: previousEnd,
+                ownAnswerID: previousAnswerID, ownAnsweredAt: previousStart.addingTimeInterval(600),
                 isCurrentDay: false
             ),
         ]
@@ -38,11 +37,11 @@ struct DailyChallengeLoadingTests {
 
         #expect(await gateway.todaySnapshotLoadCount == 1)
         #expect(await gateway.loadedAnswerDetailCoupleDayIDs.isEmpty)
-        #expect(result.snapshot.visibleQuestions.map { $0.ownAnswerDetail?.textBody } == [
+        #expect(result.snapshot.questions.map { $0.ownAnswerDetail?.textBody } == [
             "Today",
             "Yesterday",
         ])
-        #expect(result.snapshot.ownQuestionsForReadOverview.map { $0.ownAnswerDetail?.textBody } == ["Today"])
+        #expect(result.snapshot.todayQuestion?.ownAnswerDetail?.textBody == "Today")
     }
 
     @MainActor
@@ -67,7 +66,7 @@ struct DailyChallengeLoadingTests {
     @MainActor
     @Test func overlappingReloadsShareTheInFlightLoad() async throws {
         let snapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+            dailyQuestionRow(),
         ])
         let loadProbe = DailyChallengeSyncNudgeProbe()
         let service = RecordingDailyChallengeService(
@@ -103,7 +102,7 @@ struct DailyChallengeLoadingTests {
         // challenge on screen. Keep that last-known state and log the failure, but do
         // not show an error banner over usable content.
         let snapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+            dailyQuestionRow(),
         ])
         let service = RecordingDailyChallengeService(
             snapshots: [snapshot],

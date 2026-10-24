@@ -7,7 +7,7 @@ struct DailyChallengeSubmitTests {
     @MainActor
     @Test func submitAnswerQueuesTrimmedTextForBackgroundSend() async throws {
         let baseSnapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+            dailyQuestionRow(),
         ])
         let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
         let pendingStore = InMemoryPendingSyncOperationRepository()
@@ -17,7 +17,7 @@ struct DailyChallengeSubmitTests {
         )
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
         viewModel.setDraftText("  Thinking of you  ", for: question.id)
 
         await viewModel.submitAnswer(for: question)
@@ -57,40 +57,9 @@ struct DailyChallengeSubmitTests {
     }
 
     @MainActor
-    @Test func requiredCompletionCountsQueuedOwnAnswers() async throws {
-        let baseSnapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
-            dailyQuestionRow(slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser),
-        ])
-        let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
-        let pendingStore = InMemoryPendingSyncOperationRepository()
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider(),
-            draftStore: InMemoryDailyChallengeDraftStore(),
-            pendingOperationStore: pendingStore
-        )
-
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let questions = viewModel.snapshot.ownQuestions
-
-        #expect(questions.count == DailyChallengeProgress.requiredOwnQuestionCount)
-        #expect(!viewModel.snapshot.progress.isComplete)
-        #expect(!viewModel.hasCompletedRequiredDailyQuestions)
-
-        for question in questions {
-            viewModel.setDraftText("Answer \(question.slotNumber)", for: question.id)
-            await viewModel.submitAnswer(for: question)
-        }
-
-        #expect(!viewModel.snapshot.progress.isComplete)
-        #expect(viewModel.hasCompletedRequiredDailyQuestions)
-    }
-
-    @MainActor
     @Test func submitAnswerDoesNotWaitForSyncNudge() async throws {
         let baseSnapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+            dailyQuestionRow(),
         ])
         let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
         let pendingStore = InMemoryPendingSyncOperationRepository()
@@ -106,7 +75,7 @@ struct DailyChallengeSubmitTests {
         }
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
         viewModel.setDraftText(" Thinking of you ", for: question.id)
 
         let submitTask = Task { @MainActor in

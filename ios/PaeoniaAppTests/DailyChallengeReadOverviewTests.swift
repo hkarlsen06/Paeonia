@@ -8,74 +8,84 @@ struct DailyChallengeReadOverviewTests {
         let t1 = TestDailyChallengeIDs.answerDate
         let t2 = t1.addingTimeInterval(3_600)
         let t3 = t2.addingTimeInterval(3_600)
+        let awaiting = UUID()
+        let today = UUID()
+        let finished = UUID()
 
         let snapshot = makeDailySnapshot(rows: [
-            // A partner question still waiting for the user — answered EARLIEST of all,
-            // so pure recency would bury it last. Pinning must float it to the top.
+            // An earlier day's question still waiting for the user, answered EARLIEST of
+            // all, so pure recency would bury it last. Pinning must float it to the top.
             dailyQuestionRow(
-                slotNumber: 3,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                coupleDayID: TestDailyChallengeIDs.previousCoupleDay,
+                localDate: "2026-06-26",
+                instanceID: awaiting,
                 partnerAnswerID: UUID(),
-                partnerAnsweredAt: t1
+                partnerAnsweredAt: t1,
+                isCurrentDay: false
             ),
-            // The user's own question, answered most recently (no reply yet).
+            // Today's question, answered by the user most recently (no reply yet).
             dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
+                instanceID: today,
                 ownAnswerID: UUID(),
                 ownAnsweredAt: t3
             ),
-            // A finished partner exchange in the middle.
+            // A finished exchange in the middle.
             dailyQuestionRow(
-                slotNumber: 2,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
-                status: "answered",
+                coupleDayID: UUID(),
+                localDate: "2026-06-25",
+                instanceID: finished,
                 ownAnswerID: UUID(),
                 ownAnsweredAt: t2,
                 partnerAnswerID: UUID(),
                 partnerAnsweredAt: t2,
-                canViewPartnerAnswer: true
+                canViewPartnerAnswer: true,
+                isCurrentDay: false
             ),
         ])
 
-        // One list: the to-do (slot 3) is pinned on top despite being the oldest, then
-        // the rest by most recent answer (slot 1 at t3, slot 2 at t2). Pure recency
-        // would have been [1, 2, 3].
-        #expect(snapshot.readOverviewQuestions().map(\.slotNumber) == [3, 1, 2])
+        // One list: the to-do is pinned on top despite being the oldest, then the rest
+        // by most recent answer (today at t3, the finished one at t2). Pure recency
+        // would have put the to-do last.
+        #expect(snapshot.readOverviewQuestions().map(\.id) == [awaiting, today, finished])
 
-        // Something new on the oldest finished exchange (slot 2) moves it above the
-        // timeline, but still below the to-do.
+        // Something new on the oldest finished exchange moves it above the timeline,
+        // but still below the to-do.
         #expect(
-            snapshot.readOverviewQuestions(isNew: { $0.slotNumber == 2 }).map(\.slotNumber)
-                == [3, 2, 1]
+            snapshot.readOverviewQuestions(isNew: { $0.id == finished }).map(\.id)
+                == [awaiting, finished, today]
         )
     }
 
     @Test func aPartnerAnswerIsNewUntilYouHaveSeenIt() throws {
         let t1 = TestDailyChallengeIDs.answerDate
         let t2 = t1.addingTimeInterval(3_600)
+        let answeredFirst = UUID()
+        let answeredSecond = UUID()
+        let hidden = UUID()
         let snapshot = makeDailySnapshot(rows: [
-            // Your question: you answered, then your partner did.
+            // You answered, then your partner did.
             dailyQuestionRow(
-                slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, status: "answered",
+                instanceID: answeredFirst,
                 ownAnswerID: UUID(), ownAnsweredAt: t1, partnerAnswerID: UUID(), partnerAnsweredAt: t2,
                 canViewPartnerAnswer: true
             ),
-            // Their question: you answered second, and the reveal hasn't shown the reply yet.
+            // You answered second, and the reveal hasn't shown the reply yet.
             dailyQuestionRow(
-                slotNumber: 2, seededForUserID: TestDailyChallengeIDs.partnerUser, status: "answered",
+                coupleDayID: TestDailyChallengeIDs.previousCoupleDay, localDate: "2026-06-26",
+                instanceID: answeredSecond,
                 ownAnswerID: UUID(), ownAnsweredAt: t2, partnerAnswerID: UUID(), partnerAnsweredAt: t1,
-                canViewPartnerAnswer: true
+                canViewPartnerAnswer: true, isCurrentDay: false
             ),
-            // Your question: your partner answered, but you can't see it yet.
+            // Your partner answered, but you can't see it yet.
             dailyQuestionRow(
-                slotNumber: 3, seededForUserID: TestDailyChallengeIDs.currentUser, status: "answered",
-                ownAnswerID: UUID(), ownAnsweredAt: t1, partnerAnswerID: UUID(), partnerAnsweredAt: t2
+                coupleDayID: UUID(), localDate: "2026-06-25",
+                instanceID: hidden,
+                ownAnswerID: UUID(), ownAnsweredAt: t1, partnerAnswerID: UUID(), partnerAnsweredAt: t2,
+                isCurrentDay: false
             ),
         ])
-        let bySlot = Dictionary(uniqueKeysWithValues: snapshot.questions.map { ($0.slotNumber, $0) })
-        let mine = try #require(bySlot[1])
+        let byID = Dictionary(uniqueKeysWithValues: snapshot.questions.map { ($0.id, $0) })
+        let mine = try #require(byID[answeredFirst])
 
         #expect(mine.hasNewPartnerAnswer(seen: []))
         #expect(!mine.hasNewPartnerAnswer(seen: [mine.id]))
@@ -83,40 +93,40 @@ struct DailyChallengeReadOverviewTests {
         var seenElsewhere = mine
         seenElsewhere.partnerAnswerSeenAt = t2
         #expect(!seenElsewhere.hasNewPartnerAnswer(seen: []))
-        #expect(bySlot[2]?.hasNewPartnerAnswer(seen: []) == true)
-        #expect(bySlot[3]?.hasNewPartnerAnswer(seen: []) == false)
+        #expect(byID[answeredSecond]?.hasNewPartnerAnswer(seen: []) == true)
+        #expect(byID[hidden]?.hasNewPartnerAnswer(seen: []) == false)
     }
 
     @Test func carriedForwardQuestionsSortBelowCurrentDayQuestions() {
         let previousStart = TestDailyChallengeIDs.startsAt.addingTimeInterval(-86_400)
         let previousEnd = TestDailyChallengeIDs.startsAt
+        let olderStart = previousStart.addingTimeInterval(-86_400)
         let currentPartnerAnswer = TestDailyChallengeIDs.answerDate.addingTimeInterval(60)
         let olderPartnerAnswer = TestDailyChallengeIDs.answerDate.addingTimeInterval(-86_400)
+        let today = UUID()
+        let yesterday = UUID()
+        let twoDaysAgo = UUID()
 
         let snapshot = makeDailySnapshot(rows: [
             dailyQuestionRow(
-                coupleDayID: TestDailyChallengeIDs.previousCoupleDay, localDate: "2026-06-26", startsAt: previousStart,
-                endsAt: previousEnd, slotNumber: 1, seededForUserID: TestDailyChallengeIDs.partnerUser,
+                coupleDayID: UUID(), localDate: "2026-06-25", startsAt: olderStart,
+                endsAt: previousStart, instanceID: twoDaysAgo,
                 partnerAnswerID: UUID(), partnerAnsweredAt: olderPartnerAnswer, isCurrentDay: false
             ),
             dailyQuestionRow(
-                slotNumber: 1, seededForUserID: TestDailyChallengeIDs.partnerUser, partnerAnswerID: UUID(),
-                partnerAnsweredAt: currentPartnerAnswer, isCurrentDay: true
-            ),
-            dailyQuestionRow(
                 coupleDayID: TestDailyChallengeIDs.previousCoupleDay, localDate: "2026-06-26", startsAt: previousStart,
-                endsAt: previousEnd, slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered", ownAnswerID: UUID(), ownAnsweredAt: olderPartnerAnswer, isCurrentDay: false
+                endsAt: previousEnd, instanceID: yesterday,
+                partnerAnswerID: UUID(), partnerAnsweredAt: olderPartnerAnswer, isCurrentDay: false
             ),
             dailyQuestionRow(
-                slotNumber: 2, seededForUserID: TestDailyChallengeIDs.currentUser, status: "answered",
-                ownAnswerID: UUID(), ownAnsweredAt: currentPartnerAnswer, isCurrentDay: true
+                instanceID: today,
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: currentPartnerAnswer, isCurrentDay: true
             ),
         ])
 
-        #expect(snapshot.partnerQuestionsForReadOverview.map(\.isCurrentDay) == [true, false])
-        #expect(snapshot.ownQuestionsForReadOverview.map(\.isCurrentDay) == [true])
-        #expect(snapshot.answerFlowQuestions.map(\.isCurrentDay) == [true, true, false])
+        #expect(snapshot.questionsAwaitingAnswer.map(\.id) == [today, yesterday, twoDaysAgo])
+        #expect(snapshot.earlierQuestionsAwaitingAnswer.map(\.id) == [yesterday, twoDaysAgo])
     }
 
     @Test func homeCardIgnoresCarriedForwardQuestionsWhenTodayHasNotStarted() {
@@ -129,8 +139,6 @@ struct DailyChallengeReadOverviewTests {
                 localDate: "2026-06-26",
                 startsAt: previousStart,
                 endsAt: previousEnd,
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
                 partnerAnswerID: UUID(),
                 partnerAnsweredAt: previousStart.addingTimeInterval(600),
                 isCurrentDay: false
@@ -138,8 +146,8 @@ struct DailyChallengeReadOverviewTests {
         ])
 
         #expect(snapshot.hasAnyQuestions)
-        #expect(!snapshot.hasAnyCurrentDayQuestions)
-        #expect(snapshot.partnerQuestionsForReadOverview.count == 1)
+        #expect(snapshot.todayQuestion == nil)
+        #expect(snapshot.earlierQuestionsAwaitingAnswer.count == 1)
         #expect(snapshot.homeCardState.kind == .noChallenge)
     }
 }

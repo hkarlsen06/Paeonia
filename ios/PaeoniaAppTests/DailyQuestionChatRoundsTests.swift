@@ -44,9 +44,7 @@ struct DailyChatRoundsTests {
             effectiveLocalDate: "2026-03-03",
             startsAt: Date(timeIntervalSince1970: seconds),
             endsAt: Date(timeIntervalSince1970: seconds + 86_400),
-            seededForUserID: me,
-            slotNumber: 1,
-            status: .answered,
+            status: .active,
             questionID: questionID,
             questionVersionID: UUID(),
             questionKey: "rounds.test",
@@ -65,7 +63,6 @@ struct DailyChatRoundsTests {
                         isOwnAnswer: false, canViewAnswer: false, textBody: nil, selectedUserID: nil, mediaAssetIDs: []
                     )
             },
-            origin: .own,
             isCurrentDay: false,
             hasSharedRound: sharedRound
         )
@@ -168,7 +165,7 @@ func decodedChatRounds(
         [
             "couple_day_id": UUID().uuidString, "couple_id": coupleID.uuidString, "local_date": date,
             "starts_at": startsAt, "ends_at": startsAt, "instance_id": instance.uuidString,
-            "seeded_for_user_id": user.uuidString, "slot_number": 1, "instance_status": "active",
+            "instance_status": "active",
             "question_id": questionID.uuidString, "question_version_id": UUID().uuidString,
             "question_key": "q", "prompt_en": "Prompt", "short_prompt_en": "Short", "prompt_nb": "Spørsmål",
             "short_prompt_nb": "Kort", "answer_kinds": ["text"], "own_answer_id": NSNull(),
@@ -205,7 +202,7 @@ struct DailyChatRoundsDecodingTests {
             ],
             user: user, coupleID: coupleID, questionID: questionID
         )
-        let rounds = row.rounds(currentUserID: user, locale: Locale(identifier: "en"))
+        let rounds = row.rounds(locale: Locale(identifier: "en"))
 
         #expect(row.threadID == threadID)
         #expect(row.isForCouple(coupleID))

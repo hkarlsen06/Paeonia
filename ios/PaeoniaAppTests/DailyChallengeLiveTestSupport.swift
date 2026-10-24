@@ -65,7 +65,6 @@ actor GatedShuffleGateway: DailyChallengeGateway {
     }
 
     func shuffleQuestion(
-        slotNumber _: Int,
         operation _: SyncClientOperation
     ) async throws -> DailyChallengeRemoteSnapshotRow {
         started = true

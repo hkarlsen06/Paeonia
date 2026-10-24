@@ -23,9 +23,7 @@ private enum CacheTestIDs {
 
 /// Builds a minimal `DailyChallengeRemoteSnapshotRow` with one question and one
 /// answer for use across multiple cache tests.
-private func sampleSnapshotRow(
-    ownerUserID: UUID = CacheTestIDs.ownerUserID
-) -> DailyChallengeRemoteSnapshotRow {
+private func sampleSnapshotRow() -> DailyChallengeRemoteSnapshotRow {
     let questionRow = DailyQuestionRow(
         coupleDayID: CacheTestIDs.coupleDay,
         coupleID: CacheTestIDs.coupleID,
@@ -34,8 +32,6 @@ private func sampleSnapshotRow(
         startsAt: CacheTestIDs.startsAt,
         endsAt: CacheTestIDs.endsAt,
         instanceID: fixedUUID("eeee0000-0000-0000-0000-000000000000"),
-        seededForUserID: ownerUserID,
-        slotNumber: 1,
         instanceStatus: "active",
         questionID: fixedUUID("ffff0000-0000-0000-0000-000000000000"),
         questionVersionID: fixedUUID("1111aaaa-0000-0000-0000-000000000000"),
@@ -105,7 +101,7 @@ struct DailyChallengeSnapshotCacheTests {
         defer { try? FileManager.default.removeItem(at: dir) }
 
         let cache = FileDailyChallengeSnapshotCache(directoryURL: dir)
-        let row = sampleSnapshotRow(ownerUserID: CacheTestIDs.ownerUserID)
+        let row = sampleSnapshotRow()
 
         cache.save(row, ownerUserID: CacheTestIDs.ownerUserID)
 
@@ -160,7 +156,7 @@ struct DailyChallengeViewModelSeedTests {
     @MainActor
     @Test func configureSeederFromCacheBeforeNetworkReturns() async throws {
         let cache = InMemoryDailyChallengeSnapshotCache()
-        let cachedRow = sampleSnapshotRow(ownerUserID: CacheTestIDs.ownerUserID)
+        let cachedRow = sampleSnapshotRow()
         cache.save(cachedRow, ownerUserID: CacheTestIDs.ownerUserID)
 
         // The network service blocks until `loadProbe.release()` is called, so
@@ -188,7 +184,7 @@ struct DailyChallengeViewModelSeedTests {
             await Task.yield()
         }
 
-        #expect(viewModel.snapshot.ownQuestions.count == 1,
+        #expect(viewModel.snapshot.todayQuestion != nil,
             "Expected cache-seeded question before network returns")
         #expect(viewModel.snapshot.currentUserID == CacheTestIDs.ownerUserID)
 
@@ -197,7 +193,7 @@ struct DailyChallengeViewModelSeedTests {
         await configureTask.value
 
         // After configure finishes, the network result should be applied.
-        #expect(viewModel.snapshot.ownQuestions.count == networkSnapshot.ownQuestions.count)
+        #expect(viewModel.snapshot.todayQuestion?.id == networkSnapshot.todayQuestion?.id)
         // The cache should have been written once (by the service after the
         // network call — via RecordingDailyChallengeService wiring in the live
         // path; here we verify the service was called at all).
@@ -208,7 +204,7 @@ struct DailyChallengeViewModelSeedTests {
     @Test func differentUserGetsSeparateCacheAndDoesNotSeeCrossContent() async throws {
         // Save a row for ownerUserID. Then configure with otherUserID.
         let cache = InMemoryDailyChallengeSnapshotCache()
-        let ownerRow = sampleSnapshotRow(ownerUserID: CacheTestIDs.ownerUserID)
+        let ownerRow = sampleSnapshotRow()
         cache.save(ownerRow, ownerUserID: CacheTestIDs.ownerUserID)
 
         let service = ImmediateDailyChallengeService(
@@ -226,49 +222,42 @@ struct DailyChallengeViewModelSeedTests {
         #expect(viewModel.snapshot.currentUserID == CacheTestIDs.otherUserID)
         // Empty because the cache has no entry for otherUserID, and the service
         // returns an empty snapshot.
-        #expect(viewModel.snapshot.ownQuestions.isEmpty)
+        #expect(!viewModel.snapshot.hasAnyQuestions)
     }
 }
 
 // MARK: - Private test helpers
 
-/// Builds a minimal snapshot with `slotCount` active questions seeded for
-/// `ownerUserID`, for use in seed tests.
-private func makeSeedTestSnapshot(
-    ownerUserID: UUID,
-    slotCount: Int = 1
-) -> DailyChallengeSnapshot {
-    let rows = (1...max(1, slotCount)).map { slot in
-        DailyQuestionRow(
-            coupleDayID: CacheTestIDs.coupleDay,
-            coupleID: CacheTestIDs.coupleID,
-            localDate: "2026-06-27",
-            effectiveLocalDate: nil,
-            startsAt: CacheTestIDs.startsAt,
-            endsAt: CacheTestIDs.endsAt,
-            instanceID: UUID(),
-            seededForUserID: ownerUserID,
-            slotNumber: slot,
-            instanceStatus: "active",
-            questionID: UUID(),
-            questionVersionID: UUID(),
-            questionKey: "small_moment_today",
-            promptEN: "What small moment made you think of us today? [\(slot)]",
-            shortPromptEN: "A small moment today",
-            promptNB: "Prompt NB",
-            shortPromptNB: "Short NB",
-            answerKinds: [.text],
-            ownAnswerID: nil,
-            ownAnsweredAt: nil,
-            partnerAnswerID: nil,
-            partnerAnsweredAt: nil,
-            canViewPartnerAnswer: false,
-            isCurrentDay: true
-        )
-    }
+/// Builds a minimal snapshot with today's question for `ownerUserID`, for use in
+/// seed tests.
+private func makeSeedTestSnapshot(ownerUserID: UUID) -> DailyChallengeSnapshot {
+    let row = DailyQuestionRow(
+        coupleDayID: CacheTestIDs.coupleDay,
+        coupleID: CacheTestIDs.coupleID,
+        localDate: "2026-06-27",
+        effectiveLocalDate: nil,
+        startsAt: CacheTestIDs.startsAt,
+        endsAt: CacheTestIDs.endsAt,
+        instanceID: UUID(),
+        instanceStatus: "active",
+        questionID: UUID(),
+        questionVersionID: UUID(),
+        questionKey: "small_moment_today",
+        promptEN: "What small moment made you think of us today?",
+        shortPromptEN: "A small moment today",
+        promptNB: "Prompt NB",
+        shortPromptNB: "Short NB",
+        answerKinds: [.text],
+        ownAnswerID: nil,
+        ownAnsweredAt: nil,
+        partnerAnswerID: nil,
+        partnerAnsweredAt: nil,
+        canViewPartnerAnswer: false,
+        isCurrentDay: true
+    )
     return DailyChallengeSnapshot.make(
         currentUserID: ownerUserID,
-        rows: rows,
+        rows: [row],
         answerDetails: [],
         locale: Locale(identifier: "en_US"),
         refreshedAt: CacheTestIDs.generatedAt

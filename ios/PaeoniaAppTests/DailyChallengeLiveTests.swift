@@ -23,9 +23,6 @@ struct DailyChallengeLiveTests {
             dailyQuestionRow(
                 coupleDayID: dayID ?? UUID(),
                 instanceID: instanceID,
-                slotNumber: 1,
-                seededForUserID: partner,
-                status: revealed ? "answered" : "active",
                 ownAnswerID: ownAnswerID,
                 ownAnsweredAt: TestDailyChallengeIDs.answerDate,
                 partnerAnswerID: partnerAnswered ? partnerAnswerID : nil,

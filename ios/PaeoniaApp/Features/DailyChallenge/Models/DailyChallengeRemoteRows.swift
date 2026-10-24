@@ -26,14 +26,12 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
     let localDate: String
     /// The couple-local date the question effectively belongs to — the day of its most
     /// recent answer. Returned by the history read model so an exchange completed after
-    /// midnight lands on the day it was finished, not the day its instance was seeded.
+    /// midnight lands on the day it was finished, not the day its question was given.
     /// Absent on the "today" read model; callers fall back to `localDate`.
     let effectiveLocalDate: String?
     let startsAt: Date
     let endsAt: Date
     let instanceID: UUID
-    let seededForUserID: UUID
-    let slotNumber: Int
     let instanceStatus: String
     let questionID: UUID
     let questionVersionID: UUID
@@ -76,8 +74,6 @@ nonisolated struct DailyQuestionRow: Codable, Equatable, Sendable {
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case instanceID = "instance_id"
-        case seededForUserID = "seeded_for_user_id"
-        case slotNumber = "slot_number"
         case instanceStatus = "instance_status"
         case questionID = "question_id"
         case questionVersionID = "question_version_id"
@@ -197,8 +193,6 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
 nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
     let coupleDayID: UUID
     let instanceID: UUID
-    let seededForUserID: UUID
-    let slotNumber: Int
     let answerUserID: UUID
     let answerID: UUID
     let answeredAt: Date
@@ -212,8 +206,6 @@ nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case coupleDayID = "couple_day_id"
         case instanceID = "instance_id"
-        case seededForUserID = "seeded_for_user_id"
-        case slotNumber = "slot_number"
         case answerUserID = "answer_user_id"
         case answerID = "answer_id"
         case answeredAt = "answered_at"

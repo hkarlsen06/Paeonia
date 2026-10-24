@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 /// model lazily and hands it over.
 struct PairingInviteContent: View {
     let viewModel: PairingInviteViewModel
-    /// The first questions. Nil until the parent builds it.
+    /// The first question. Nil until the parent builds it.
     let firstDay: InviterFirstDayModel?
     /// Adds the button that opens Apple's subscription sheet, below the first screen.
     let showsManageSubscription: Bool

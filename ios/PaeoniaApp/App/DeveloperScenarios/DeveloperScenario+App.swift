@@ -13,7 +13,7 @@
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
       paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallLoading,
       pairedHome, questions, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
-      questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow,
+      questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
       streakHealthy, streakBroken, streakRestored,
       memoriesEmpty, memoriesPopulated, memoryEditor, memoryDetail,
       countdownMissing, countdownUpcoming, countdownToday,
@@ -170,6 +170,10 @@
     )
     static let questionAnswerFlow = pairedApp(
       "question-answer-flow", "Questions · answer flow", "Full-screen answer composer opened directly", .questions
+    )
+    static let questionPartnerAnswersMeanwhile = pairedApp(
+      "question-partner-answers-meanwhile", "Questions · partner answers meanwhile",
+      "Robin's answer lands right after yours, so the flow turns to the reveal", .questions
     )
 
     // MARK: Streak

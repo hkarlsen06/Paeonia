@@ -27,7 +27,6 @@ extension DailyChallengeLiveTests {
         let shuffle = Task {
             try await service.shuffleQuestion(
                 currentUserID: currentUser,
-                slotNumber: 1,
                 operation: dailyFixedClientOperation()
             )
         }
@@ -60,7 +59,6 @@ extension DailyChallengeLiveTests {
 
         _ = try await service.shuffleQuestion(
             currentUserID: user,
-            slotNumber: 1,
             operation: dailyFixedClientOperation()
         )
 

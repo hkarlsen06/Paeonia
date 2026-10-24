@@ -80,7 +80,7 @@ final class DailyChallengeViewModel {
     private(set) var isLoading = false
     private(set) var isStarting = false
     var submittingQuestionID: UUID?
-    var shufflingSlotNumber: Int?
+    var shufflingQuestionID: UUID?
     var notice: Notice?
     /// The couple's shared streak, shown on the completion celebration. Loaded on
     /// demand and kept across failures so a transient error never blanks it.

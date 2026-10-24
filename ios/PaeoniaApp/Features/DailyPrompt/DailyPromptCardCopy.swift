@@ -34,7 +34,7 @@ struct DailyPromptCardCopy {
             prompt
         case .complete:
             switch state.completeFollowUp {
-            case .partnerQuestionsToAnswer:
+            case .earlierQuestionsToAnswer:
                 String(localized: .dailyChallengeHomeCompletePartnerAnsweredMessage(partnerName))
             case .waitingForPartner:
                 // Their part is still to come; say what happens next.
@@ -54,20 +54,22 @@ struct DailyPromptCardCopy {
         case .complete:
             if showsPartnerAnswersCTA {
                 .dailyChallengeSeePartnerAnswersButton(partnerName)
+            } else if state.completeFollowUp == .bothAnswered {
+                .dailyChallengeOpenChatButton
             } else {
                 .dailyChallengeSeeYourAnswersButton
             }
         }
     }
 
-    /// Whether the complete-state button points at partner replies the user can still
-    /// unlock, instead of only reviewing answers that are all in.
+    /// Whether the complete-state button points at earlier questions the partner
+    /// answered and the user can still unlock, instead of today's answers.
     var showsPartnerAnswersCTA: Bool {
-        prefersPartnerAnswersWhenComplete && state.hasAnswerablePartnerQuestions
+        prefersPartnerAnswersWhenComplete && state.hasEarlierQuestionsToAnswer
     }
 
-    /// Once the day is complete the button only reviews answers, so it drops to the
-    /// neutral style, unless the partner's replies are waiting.
+    /// Once today's question is answered the button only reviews answers, so it drops
+    /// to the neutral style, unless the partner's earlier answers are waiting.
     var isReviewAction: Bool {
         state.kind == .complete && !showsPartnerAnswersCTA
     }

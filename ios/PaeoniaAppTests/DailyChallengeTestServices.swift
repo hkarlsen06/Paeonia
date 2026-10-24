@@ -14,7 +14,7 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
     private let historyReloadError: Error?
     private let streak: CoupleStreak
     private var historyLoadCount = 0
-    private(set) var shuffledSlots: [Int] = []
+    private(set) var shuffleCount = 0
     private(set) var loadCount = 0
 
     init(
@@ -97,10 +97,9 @@ actor RecordingDailyChallengeService: DailyChallengeServicing {
 
     func shuffleQuestion(
         currentUserID: UUID,
-        slotNumber: Int,
         operation _: SyncClientOperation
     ) throws -> DailyChallengeLoadResult {
-        shuffledSlots.append(slotNumber)
+        shuffleCount += 1
         return DailyChallengeLoadResult(
             snapshot: shuffleSnapshot ?? snapshots.first ?? .empty(currentUserID: currentUserID),
             streak: streak
@@ -187,7 +186,6 @@ actor RecordingDailyChallengeReadGateway: DailyChallengeGateway {
     }
 
     func shuffleQuestion(
-        slotNumber _: Int,
         operation _: SyncClientOperation
     ) throws -> DailyChallengeRemoteSnapshotRow {
         shuffleSnapshotLoadCount += 1
@@ -271,7 +269,6 @@ actor RecordingDailyChallengeGateway: DailyChallengeGateway {
     }
 
     func shuffleQuestion(
-        slotNumber _: Int,
         operation _: SyncClientOperation
     ) throws -> DailyChallengeRemoteSnapshotRow {
         DailyChallengeRemoteSnapshotRow(questions: [], answerDetails: [], streak: nil, generatedAt: Date())

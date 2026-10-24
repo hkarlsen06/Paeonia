@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The daily question card once today's questions are done: a short row that leaves the
+/// The daily question card once today's question is answered: a short row that leaves the
 /// screen to the other cards. The envelope sits beside the title and one line about what
 /// happens next, with the button below and the partner's waiting questions under it. The
 /// envelope stays sealed until the partner's answers can be read, then it is open.

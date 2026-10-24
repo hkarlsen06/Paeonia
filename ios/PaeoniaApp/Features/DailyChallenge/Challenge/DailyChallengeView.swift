@@ -1,28 +1,28 @@
 import SwiftUI
 
-/// The Questions tab: a calm overview of today's challenge. The hero card mirrors
-/// the Home tab prompt card and opens the focused answering flow (zooming into it).
-/// Once the user has answered today's questions it shrinks to a one-row card.
-/// Below it, every question — the user's own and the partner's — sits in one list:
-/// questions still waiting for the user's answer are pinned on top so they're never
-/// buried, then everything else follows by most recent answer. The rows hold no
+/// The Questions tab: a calm overview of today's question. The hero card mirrors the
+/// Home tab prompt card and opens the focused answering flow (zooming into it). Once the
+/// user has answered today's question it shrinks to a one-row card. Below it, today's
+/// question (once the user answered it) and the open exchanges from earlier days sit in
+/// one list: questions still waiting for the user's answer are pinned on top so they're
+/// never buried, then everything else follows by most recent answer. The rows hold no
 /// answers. A row the user has answered opens the question's page, where the answers
-/// start the chat. A partner question the user can still answer zooms into its
-/// single-question flow, where the reply is revealed on send. Topic questions waiting
-/// for the user join the list until they are answered and seen, and then show only
-/// in their topic. Earlier days follow under today's list, with a date divider per day.
+/// start the chat. A question the partner answered that the user can still answer zooms
+/// into the answer flow, where the reply is revealed on send. Topic questions waiting
+/// for the user join the list until they are answered and seen, and then show only in
+/// their topic. Earlier days follow under today's list, with a date divider per day.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
-    /// Namespace for the Daily Challenge zoom transition. The hero card and each
-    /// answerable partner card mark themselves as zoom sources in it, so the tapped
-    /// card appears to grow into its full-screen answer flow.
+    /// Namespace for the daily question zoom transition. The hero card and each
+    /// answerable row mark themselves as zoom sources in it, so the tapped card appears
+    /// to grow into its full-screen answer flow.
     var zoomNamespace: Namespace.ID?
     var focusedQuestionIDs: Binding<[UUID]> = .constant([])
     var chatQuestion: Binding<DailyChallengeQuestion?> = .constant(nil)
     var onOpenAnswerFlow: () -> Void = {}
     var onTapStreak: () -> Void = {}
     var onRefresh: (() async -> Void)?
-    /// Opens the single-question answer flow for a partner-answered question.
+    /// Opens the answer flow for a question opened from its row.
     var onAnswerPartnerQuestion: (DailyChallengeQuestion) -> Void = { _ in }
     var privacySafetyService: (any PrivacySafetyServicing)?
     var privacyOperationProvider: (any SyncClientOperationProviding)?
@@ -132,25 +132,19 @@ struct DailyChallengeScreen: View {
     @ViewBuilder
     private var todayList: some View {
         if !readQuestions.isEmpty {
-            // One list for everything — the partner's questions and the user's
-            // own. Questions still waiting for you are pinned on top, then cards
-            // with a partner answer or message you haven't seen (so nothing new
-            // is buried); everything else follows by most recent answer. A
-            // partner question you can still answer opens its flow, locked until
-            // you finish your own questions (answers saved locally and still
-            // sending count), matching the answer flow's gating. A row
-            // you have answered opens the question's page with the answers and
-            // the chat. Answering reveals the reply in the flow itself, so it's
-            // fine that the row then re-sorts down here.
+            // One list for everything. Questions still waiting for you are pinned
+            // on top, then cards with a partner answer or message you haven't seen
+            // (so nothing new is buried); everything else follows by most recent
+            // answer. A question you can still answer opens its flow. A row you
+            // have answered opens the question's page with the answers and the
+            // chat. Answering reveals the reply in the flow itself, so it's fine
+            // that the row then re-sorts down here.
             VStack(spacing: PaeoniaSpacing.space12) {
                 ForEach(readQuestions) { question in
                     DailyChallengeReadCard(
                         question: question,
                         participants: viewModel.participants,
                         sending: viewModel.sendingPreview(for: question),
-                        // Topic questions never wait for the daily questions.
-                        isOwnChallengeComplete: question.isTopicQuestion
-                            || viewModel.hasCompletedRequiredDailyQuestions,
                         zoomNamespace: zoomNamespace,
                         isHighlighted: highlightedQuestionIDs.contains(question.id),
                         onAnswer: { onAnswerPartnerQuestion(question) },
@@ -165,7 +159,7 @@ struct DailyChallengeScreen: View {
             }
             // A refreshed snapshot re-sorts, adds, or removes cards with
             // a glide instead of reflowing the list in one frame — e.g.
-            // an answered partner question settling down into the
+            // an answered question settling down into the
             // timeline, or a new card arriving mid-session.
             .animation(PaeoniaMotion.stateChange, value: readQuestions.map(\.id))
         }
@@ -190,8 +184,8 @@ struct DailyChallengeScreen: View {
         StreakPillState(viewModel.streak)
     }
 
-    /// Whether the user has answered today's questions. The big card then gives way to
-    /// the one-row card, which opens the same flow to review the user's answers.
+    /// Whether the user has answered today's question. The big card then gives way to
+    /// the one-row card, which opens the same flow to review the user's answer.
     private var isDayComplete: Bool {
         viewModel.homeCardState.kind == .complete
     }
@@ -222,8 +216,8 @@ struct DailyChallengeScreen: View {
         .zoomSource(DailyFlowZoom.questions, in: zoomNamespace)
     }
 
-    /// A locked row on the hero card opens the same single-question flow as the
-    /// question's own row in the list below.
+    /// A locked row on the hero card opens the same flow as the question's own row in
+    /// the list below.
     private func openLockedPartnerQuestion(_ id: UUID) {
         guard let question = viewModel.snapshot.questions.first(where: { $0.id == id }) else { return }
         onAnswerPartnerQuestion(question)
@@ -330,13 +324,16 @@ struct DailyChallengeScreen: View {
 }
 
 extension DailyChallengeScreen {
-    /// Every read card in one list — the partner's started questions plus the user's
-    /// own answered (or still-sending) questions, and the topic questions waiting for
-    /// the user. The ordering (to-dos, then anything new from the partner, then by most
-    /// recent answer) is `DailyChallengeSnapshot.questionsTabOrder`.
+    /// Every read card in one list: questions the user answered (or whose answer still
+    /// sends), questions from earlier days the partner answered, and the topic questions
+    /// waiting for the user. Before the user answers, today's question is the hero card.
+    /// The ordering (to-dos, then anything new from the partner, then by most recent
+    /// answer) is `DailyChallengeSnapshot.questionsTabOrder`.
     private var readQuestions: [DailyChallengeQuestion] {
         let daily = viewModel.snapshot.readOverviewQuestions(isNew: viewModel.hasNewFromPartner).filter { question in
-            question.origin == .partner || question.hasOwnAnswer || viewModel.isSending(question.id)
+            question.hasOwnAnswer
+                || viewModel.isSending(question.id)
+                || (!question.isCurrentDay && question.isAwaitingCurrentUserAnswer)
         }
         let topics = topicsCard?.waitingQuestions ?? []
         guard !topics.isEmpty else { return daily }

@@ -7,7 +7,7 @@ struct DailyChallengeVoiceAndDraftTests {
     @MainActor
     @Test func stageVoiceQueuesVoiceAnswerForBackgroundSend() async throws {
         let snapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser, answerKinds: [.voice]),
+            dailyQuestionRow(answerKinds: [.voice]),
         ])
         let service = RecordingDailyChallengeService(snapshots: [snapshot])
         let pendingStore = InMemoryPendingSyncOperationRepository()
@@ -19,7 +19,7 @@ struct DailyChallengeVoiceAndDraftTests {
         )
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
         #expect(viewModel.composeKind(for: question) == .voice)
         #expect(!viewModel.hasDraftToSubmit(for: question))
 

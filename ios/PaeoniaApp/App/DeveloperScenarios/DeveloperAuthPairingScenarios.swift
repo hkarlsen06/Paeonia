@@ -79,7 +79,7 @@
           PairingInviteView(
             session: DeveloperScenarioFixture.completeSession,
             viewModel: inviteViewModel,
-            firstDayModel: DeveloperInviterFixture.firstDayModel(answered: 0),
+            firstDayModel: DeveloperInviterFixture.firstDayModel(answered: false),
             showsManageSubscription: true,
             onSubmitJoinCode: { _ in true },
             onRefreshAccess: {}

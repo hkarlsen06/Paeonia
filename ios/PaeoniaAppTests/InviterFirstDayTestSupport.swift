@@ -13,7 +13,7 @@ actor FirstDayGatewaySpy {
     private var failingStep: String?
     private var failure: any Error = URLError(.notConnectedToInternet)
 
-    init(draft: FirstDayDraft = firstDayDraft(answered: 0)) {
+    init(draft: FirstDayDraft = firstDayDraft()) {
         self.draft = draft
     }
 
@@ -162,21 +162,14 @@ nonisolated func firstDayUUID(_ number: Int) -> UUID {
     UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", number)) ?? UUID()
 }
 
-/// Two questions, the first `answered` of them answered.
-nonisolated func firstDayDraft(answered: Int, drawing: FirstDayDrawingReference? = nil) -> FirstDayDraft {
-    FirstDayDraft(
-        startedOn: nil,
-        questions: (1...2).map { slot in
-            FirstDayQuestion(
-                slotNumber: slot,
-                questionVersionID: firstDayUUID(slot),
-                promptEN: "Prompt \(slot)",
-                promptNB: "Spørsmål \(slot)",
-                answerText: slot <= answered ? "Answer \(slot)" : nil
-            )
-        },
-        drawing: drawing
-    )
+/// The draft's question, not answered yet.
+nonisolated func firstDayQuestion() -> FirstDayQuestion {
+    FirstDayQuestion(questionVersionID: firstDayUUID(1), promptEN: "Prompt", promptNB: "Spørsmål")
+}
+
+/// A draft with its question not answered yet.
+nonisolated func firstDayDraft() -> FirstDayDraft {
+    FirstDayDraft(startedOn: nil, question: firstDayQuestion(), drawing: nil)
 }
 
 func firstDayTestDefaults() throws -> UserDefaults {

@@ -92,6 +92,6 @@ nonisolated struct LivePostPairingDataLoader: PostPairingDataLoading {
 
     func partnerAnswersWaiting(currentUserID: UUID) async -> Bool {
         let today = try? await dailyChallenge.loadToday(currentUserID: currentUserID)
-        return today?.snapshot.hasAnswerablePartnerQuestions ?? false
+        return today?.snapshot.hasQuestionsAwaitingAnswer ?? false
     }
 }

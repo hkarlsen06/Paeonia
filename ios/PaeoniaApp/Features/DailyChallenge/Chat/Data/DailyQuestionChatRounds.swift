@@ -25,9 +25,8 @@ nonisolated struct DailyQuestionChatRoundsRow: Codable, Equatable, Sendable {
     }
 
     /// The rounds as questions, oldest first.
-    func rounds(currentUserID: UUID, locale: Locale = .current) -> [DailyChallengeQuestion] {
+    func rounds(locale: Locale = .current) -> [DailyChallengeQuestion] {
         DailyChallengeQuestion.list(
-            currentUserID: currentUserID,
             rows: questions,
             answerDetails: answerDetails,
             locale: locale

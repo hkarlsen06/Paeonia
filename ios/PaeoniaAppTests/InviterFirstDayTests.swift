@@ -29,15 +29,12 @@ struct FirstDayRequestTests {
         let json = """
         {
           "started_on": null,
-          "questions": [
-            { "slot_number": 1, "question_version_id": "\(firstDayUUID(1).uuidString.lowercased())",
-              "question_key": "a", "prompt_en": "English", "prompt_nb": "Norsk",
-              "short_prompt_en": "E", "short_prompt_nb": "N", "answer_text": "Yes",
-              "answered_at": "2026-10-17T10:00:00.000Z" },
-            { "slot_number": 2, "question_version_id": "\(firstDayUUID(2).uuidString.lowercased())",
-              "question_key": "b", "prompt_en": "Two", "prompt_nb": "To",
-              "short_prompt_en": "T", "short_prompt_nb": "T", "answer_text": null, "answered_at": null }
-          ],
+          "question": {
+            "question_version_id": "\(firstDayUUID(1).uuidString.lowercased())",
+            "question_key": "a", "prompt_en": "English", "prompt_nb": "Norsk",
+            "short_prompt_en": "E", "short_prompt_nb": "N", "answer_text": "Yes",
+            "answered_at": "2026-10-17T10:00:00.000Z"
+          },
           "drawing": {
             "media_asset_id": "\(firstDayUUID(7).uuidString)",
             "revision_id": "\(firstDayUUID(8).uuidString)",
@@ -48,25 +45,23 @@ struct FirstDayRequestTests {
         """
         let draft = try PaeoniaConvexClient.decoder.decode(FirstDayDraft.self, from: Data(json.utf8))
 
-        #expect(draft.answeredCount == 1)
-        #expect(!draft.hasAnsweredAll)
-        #expect(draft.questions.first?.questionVersionID == firstDayUUID(1))
+        #expect(draft.hasAnswered)
+        #expect(draft.question?.questionVersionID == firstDayUUID(1))
         #expect(draft.drawing?.mediaAssetID == firstDayUUID(7))
-        #expect(draft.questions.first?.prompt(for: Locale(identifier: "nb_NO")) == "Norsk")
-        #expect(draft.questions.first?.prompt(for: Locale(identifier: "en_US")) == "English")
+        #expect(draft.question?.prompt(for: Locale(identifier: "nb_NO")) == "Norsk")
+        #expect(draft.question?.prompt(for: Locale(identifier: "en_US")) == "English")
     }
 }
 
 @MainActor
 struct FirstDayQuestionsModelTests {
     private func makeModel(
-        answered: Int,
         gateway: FirstDayGatewaySpy? = nil,
         questionTimeEnabled: Bool = false
     ) throws -> (FirstDayQuestionsModel, FirstDayGatewaySpy) {
         let gateway = gateway ?? FirstDayGatewaySpy()
         let model = FirstDayQuestionsModel(
-            questions: firstDayDraft(answered: answered).questions,
+            question: firstDayQuestion(),
             ownerUserID: firstDayUUID(100),
             gateway: gateway,
             operationProvider: FixedDailyChallengeOperationProvider(),
@@ -76,41 +71,39 @@ struct FirstDayQuestionsModelTests {
         return (model, gateway)
     }
 
-    @Test func savesEachAnswerTrimmedAndMovesOnToQuestionTime() async throws {
-        let (model, gateway) = try makeModel(answered: 0)
+    @Test func savesTheAnswerTrimmedAndMovesOnToQuestionTime() async throws {
+        let (model, gateway) = try makeModel()
 
         model.text = "  First  "
         #expect(await model.continueFromQuestion())
-        model.text = "Second"
-        #expect(await model.continueFromQuestion())
 
         let saved = await gateway.savedAnswers
-        #expect(saved.map(\.text) == ["First", "Second"])
-        #expect(saved.map(\.questionVersionID) == [firstDayUUID(1), firstDayUUID(2)])
-        #expect(model.answeredCount == 2)
+        #expect(saved.map(\.text) == ["First"])
+        #expect(saved.map(\.questionVersionID) == [firstDayUUID(1)])
+        #expect(model.question.answerText == "First")
         #expect(model.step == .questionTime)
     }
 
     @Test func aFailedSaveKeepsThePersonOnThePageWithTheirText() async throws {
         let gateway = FirstDayGatewaySpy()
         await gateway.fail("answer")
-        let (model, _) = try makeModel(answered: 0, gateway: gateway)
+        let (model, _) = try makeModel(gateway: gateway)
 
         model.text = "Keep me"
         #expect(await model.continueFromQuestion() == false)
 
-        #expect(model.step == .question(0))
+        #expect(model.step == .question)
         #expect(model.text == "Keep me")
         #expect(model.saveFailure == .offline)
-        #expect(model.questions[0].answerText == nil)
+        #expect(model.question.answerText == nil)
     }
 
     @Test func typedTextSurvivesReopening() throws {
         let defaults = try firstDayTestDefaults()
         let store = UserDefaultsFirstDayAnswerDraftStore(defaults: defaults)
-        let questions = firstDayDraft(answered: 0).questions
+        let question = firstDayQuestion()
         let first = FirstDayQuestionsModel(
-            questions: questions,
+            question: question,
             ownerUserID: firstDayUUID(100),
             gateway: FirstDayGatewaySpy(),
             draftStore: store,
@@ -119,7 +112,7 @@ struct FirstDayQuestionsModelTests {
         first.text = "Half written"
 
         let reopened = FirstDayQuestionsModel(
-            questions: questions,
+            question: question,
             ownerUserID: firstDayUUID(100),
             gateway: FirstDayGatewaySpy(),
             draftStore: store,

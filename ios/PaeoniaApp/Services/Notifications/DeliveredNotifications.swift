@@ -21,7 +21,7 @@ nonisolated enum DeliveredNotifications {
     }
 
     /// The person opened this question and saw the partner's answer: its reveal
-    /// alert is read, and "finished today's questions" has done its job. A question's
+    /// alert is read, and "answered today's question" has done its job. A question's
     /// page shows every day it came up, so it passes all their instance ids. One
     /// "answered too" alert can cover several questions, and opening any of them
     /// clears it. Chat alerts go only for the messages on screen.

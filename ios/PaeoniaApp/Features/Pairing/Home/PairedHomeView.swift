@@ -31,7 +31,7 @@ struct PairedHomeView: View {
     var onOpenGame: (GamesDestination) -> Void = { _ in }
     var onTapStreak: (() -> Void)?
     var onOpenDailyChallenge: () -> Void = {}
-    /// Opens the answer flow of a partner question shown as a locked row on the daily card.
+    /// Opens the answer flow of an earlier question shown as a locked row on the daily card.
     var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
     var onOpenWidgetDrawing: () -> Void = {}
     /// The old question, drawing or memory shown under the daily card. Hidden when there is none.
@@ -67,11 +67,7 @@ struct PairedHomeView: View {
         onSaveRelationshipStartedOn: @escaping (Date) async -> Bool = { _ in false },
         coupleDates: CoupleDatesViewModel? = nil,
         coupleDateNames: CoupleDateNames = CoupleDateNames(),
-        dailyChallengeCardState: DailyChallengeCardState = DailyChallengeCardState(
-            kind: .loading,
-            answeredCount: 0,
-            totalCount: DailyChallengeProgress.requiredOwnQuestionCount
-        ),
+        dailyChallengeCardState: DailyChallengeCardState = DailyChallengeCardState(kind: .loading),
         dailyChallengeStreak: StreakPillState = .hidden,
         zoomNamespace: Namespace.ID? = nil,
         locationMapState: CoupleMapState,
@@ -163,7 +159,7 @@ struct PairedHomeView: View {
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: accessNotice)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
-            // The daily card is tall until today's questions are done, then a short row.
+            // The daily card is tall until today's question is answered, then a short row.
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
         }
         .paeoniaWideLayout($isWideLayout)

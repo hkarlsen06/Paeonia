@@ -8,12 +8,10 @@ extension DailyFlowZoom {
     }
 }
 
-/// The partner's questions that wait for the user's answer, shown inside a daily
-/// question card as locked rows: Robin answered "**A memory that stayed**". A row shows
-/// only the question's short prompt, never the partner's answer. Once the user's own
-/// questions are done, a row opens that question's answer flow. Before that it only
-/// says the partner has answered, and the card's main button stays on the user's own
-/// questions.
+/// Questions from earlier days that the partner answered and the user has not, shown
+/// inside a daily question card as locked rows: Robin answered "**A memory that
+/// stayed**" yesterday. A row shows only the question's short prompt, never the
+/// partner's answer, and opens that question's answer flow.
 struct LockedPartnerQuestionRows: View {
     let state: DailyChallengeCardState
     let partnerName: String
@@ -39,27 +37,18 @@ struct LockedPartnerQuestionRows: View {
         }
     }
 
-    @ViewBuilder
     private func row(_ question: DailyChallengeCardState.LockedPartnerQuestion) -> some View {
-        if state.lockedPartnerQuestionsAreOpenable {
-            Button { onOpen(question.id) } label: {
-                rowContent(question, showsChevron: true)
-            }
-            .buttonStyle(.plain)
-            .zoomSource(DailyFlowZoom.homePartnerQuestion(question.id), in: zoomNamespace)
-            .accessibilityLabel(Text(.dailyChallengeLockedA11YReady(partnerName, question.shortPrompt)))
-            .accessibilityAddTraits(.isButton)
-        } else {
-            rowContent(question, showsChevron: false)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(.dailyChallengeLockedA11YWaiting(partnerName, question.shortPrompt)))
+        Button { onOpen(question.id) } label: {
+            rowContent(question)
         }
+        .buttonStyle(.plain)
+        .zoomSource(DailyFlowZoom.homePartnerQuestion(question.id), in: zoomNamespace)
+        .accessibilityLabel(Text(.dailyChallengeLockedA11YReady(partnerName, question.shortPrompt)))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("daily.lockedRow")
     }
 
-    private func rowContent(
-        _ question: DailyChallengeCardState.LockedPartnerQuestion,
-        showsChevron: Bool
-    ) -> some View {
+    private func rowContent(_ question: DailyChallengeCardState.LockedPartnerQuestion) -> some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             lockedAvatar
 
@@ -70,12 +59,10 @@ struct LockedPartnerQuestionRows: View {
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            if showsChevron {
-                Image(systemName: "chevron.right")
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextTertiary)
-                    .accessibilityHidden(true)
-            }
+            Image(systemName: "chevron.right")
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextTertiary)
+                .accessibilityHidden(true)
         }
         .padding(PaeoniaSpacing.space12)
         .background(.paeoniaSurfaceSecondary)
@@ -83,8 +70,8 @@ struct LockedPartnerQuestionRows: View {
         .contentShape(Rectangle())
     }
 
-    /// The row's sentence with the question's short prompt in bold, then in gray when
-    /// the partner's question is from an earlier day, such as "yesterday".
+    /// The row's sentence with the question's short prompt in bold, then the day it is
+    /// from in gray, such as "yesterday".
     private func rowText(_ question: DailyChallengeCardState.LockedPartnerQuestion) -> AttributedString {
         var text = AttributedString(localized: .dailyChallengeLockedRow(partnerName, question.shortPrompt))
         // Search from the end so a partner name that contains the prompt stays plain.
@@ -140,8 +127,8 @@ struct LockedPartnerQuestionRows: View {
         DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "Something small you love", daysAgo: 1),
     ]
     return VStack(spacing: PaeoniaSpacing.space24) {
-        lockedRowsPreview(kind: .complete, answeredCount: 2, questions: questions, moreCount: 3)
-        lockedRowsPreview(kind: .active(prompt: "x"), answeredCount: 0, questions: questions, moreCount: 0)
+        lockedRowsPreview(questions: questions, moreCount: 3)
+        lockedRowsPreview(questions: questions, moreCount: 0)
     }
     .padding(PaeoniaSpacing.screenHorizontalPadding)
     .background(.paeoniaBackgroundPrimary)
@@ -149,17 +136,13 @@ struct LockedPartnerQuestionRows: View {
 }
 
 private func lockedRowsPreview(
-    kind: DailyChallengeCardState.Kind,
-    answeredCount: Int,
     questions: [DailyChallengeCardState.LockedPartnerQuestion],
     moreCount: Int
 ) -> some View {
     LockedPartnerQuestionRows(
         state: DailyChallengeCardState(
-            kind: kind,
-            answeredCount: answeredCount,
-            totalCount: 2,
-            hasAnswerablePartnerQuestions: true,
+            kind: .complete,
+            hasEarlierQuestionsToAnswer: true,
             lockedPartnerQuestions: questions,
             moreLockedPartnerQuestionCount: moreCount
         ),

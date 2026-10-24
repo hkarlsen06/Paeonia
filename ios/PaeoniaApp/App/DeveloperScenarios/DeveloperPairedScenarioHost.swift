@@ -24,7 +24,7 @@
         mode: .mode(for: scenario), pendingOperationStore: pendingOperationStore)
       _selection = State(initialValue: Self.initialTab(for: scenario))
       _deepLink = State(
-        initialValue: scenario == .questionAnswerFlow
+        initialValue: Self.opensAnswerFlow(scenario)
           ? .dailyToday(coupleDayID: DeveloperScenarioDailyFixture.coupleDayID)
           : nil
       )
@@ -56,6 +56,11 @@
       locationViewModel = Self.makeLocationViewModel(operationProvider: operationProvider)
     }
 
+    /// Scenarios that show the answer flow on its own, for today's question.
+    private static func opensAnswerFlow(_ scenario: DeveloperScenario) -> Bool {
+      scenario == .questionAnswerFlow || scenario == .questionPartnerAnswersMeanwhile
+    }
+
     private static func makeMemoriesViewModel(
       scenario: DeveloperScenario,
       operationProvider: DeveloperScenarioOperationProvider
@@ -83,7 +88,8 @@
     private static func initialTab(for scenario: DeveloperScenario) -> MainTab {
       switch scenario {
       case .questions, .questionsPartial, .questionsRevealed, .questionsEmpty,
-        .questionsLoading, .questionsError, .questionsHistory, .questionAnswerFlow:
+        .questionsLoading, .questionsError, .questionsHistory, .questionAnswerFlow,
+        .questionPartnerAnswersMeanwhile:
         .questions
       case .memoriesEmpty, .memoriesPopulated, .memoriesMapTab:
         .memories
@@ -110,7 +116,7 @@
 
     @ViewBuilder
     var body: some View {
-      if scenario == .questionAnswerFlow {
+      if Self.opensAnswerFlow(scenario) {
         DailyChallengeAnswerFlow(viewModel: dailyChallengeViewModel)
           .task {
             await dailyChallengeViewModel.configure(

@@ -1,17 +1,17 @@
 import SwiftUI
 
 /// The one-row card the Questions tab shows instead of the big prompt card once the
-/// user has answered today's questions. It says the user is done and what happens next,
-/// and opens the answer flow to review the user's own answers. Like the prompt card, its
-/// parent marks it as the source the flow zooms out of. The partner's questions waiting
-/// for the user's answer show as locked rows under it.
+/// user has answered today's question. It says the user is done and what happens next,
+/// and opens the answer flow to review the user's own answer. Like the prompt card, its
+/// parent marks it as the source the flow zooms out of. Questions from earlier days
+/// that wait for the user's answer show as locked rows under it.
 struct DailyChallengeDoneCard: View {
     let state: DailyChallengeCardState
     let partnerName: String
     /// The partner's profile photo, shown on the locked partner-question rows.
     var partnerPhotoAssetID: UUID?
     var onOpen: () -> Void = {}
-    /// Opens the answer flow of a partner question shown as a locked row.
+    /// Opens the answer flow of an earlier question shown as a locked row.
     var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
 
     var body: some View {
@@ -61,7 +61,7 @@ struct DailyChallengeDoneCard: View {
 
     private var followUp: LocalizedStringResource {
         switch state.completeFollowUp {
-        case .partnerQuestionsToAnswer:
+        case .earlierQuestionsToAnswer:
             .dailyChallengeQuestionsDonePartnerQuestions(partnerName)
         case .waitingForPartner:
             .dailyChallengeQuestionsDoneWaiting(partnerName)
@@ -74,7 +74,7 @@ struct DailyChallengeDoneCard: View {
 #if DEBUG
 #Preview("Waiting for partner") {
     DailyChallengeDoneCard(
-        state: DailyChallengeCardState(kind: .complete, answeredCount: 2, totalCount: 2),
+        state: DailyChallengeCardState(kind: .complete),
         partnerName: "Oda"
     )
     .padding(PaeoniaSpacing.screenHorizontalPadding)
@@ -82,14 +82,12 @@ struct DailyChallengeDoneCard: View {
     .preferredColorScheme(.dark)
 }
 
-#Preview("Partner questions waiting") {
+#Preview("Earlier questions waiting") {
     DailyChallengeDoneCard(
         state: DailyChallengeCardState(
             kind: .complete,
-            answeredCount: 2,
-            totalCount: 2,
-            hasPartnerAnswersForToday: true,
-            hasAnswerablePartnerQuestions: true,
+            hasPartnerAnsweredToday: true,
+            hasEarlierQuestionsToAnswer: true,
             lockedPartnerQuestions: [
                 .init(id: UUID(), shortPrompt: "A memory that stayed"),
                 .init(id: UUID(), shortPrompt: "Something small you love"),

@@ -6382,13 +6382,13 @@
       }
     },
     "dailyChallenge.dayEnded.message" : {
-      "comment" : "Banner message after the couple's day ended while answering. Tells the user new questions are ready.",
+      "comment" : "Banner message after the couple's day ended while answering. Tells the user a new question is ready.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A new day has started. Open today's questions to keep going."
+            "value" : "A new day has started. Open today's question to keep going."
           }
         },
         "nb" : {
@@ -6400,13 +6400,13 @@
       }
     },
     "dailyChallenge.dayEnded.title" : {
-      "comment" : "Banner title when the user tries to send an answer to one of their own questions after the couple's day has ended",
+      "comment" : "Banner title when the user tries to send an answer to a question after the couple's day has ended",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Today's questions have ended"
+            "value" : "Today's question has ended"
           }
         },
         "nb" : {
@@ -6598,37 +6598,37 @@
       }
     },
     "dailyChallenge.flow.allDone.message" : {
-      "comment" : "Shown after finishing today's questions. %@ is the partner's name.",
+      "comment" : "Shown after the user answers today's question, before the partner has answered it. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nice. We'll let %@ know. Come back to see their answers when they reply."
+            "value" : "Nice. We'll let %@ know. Come back to see their answer when they reply."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fint. Vi gir %@ beskjed. Kom tilbake for å se svarene deres når de svarer."
+            "value" : "Fint. Vi gir %@ beskjed. Kom tilbake for å se svaret når de svarer."
           }
         }
       }
     },
     "dailyChallenge.flow.allDone.title" : {
-      "comment" : "Celebration title shown after the user answers all of their daily questions",
+      "comment" : "Celebration title shown after the user answers today's question, before the partner has answered it",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "All answered"
+            "value" : "You answered"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alt besvart"
+            "value" : "Du har svart"
           }
         }
       }
@@ -6665,42 +6665,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ferdig"
-          }
-        }
-      }
-    },
-    "dailyChallenge.flow.nextButton" : {
-      "comment" : "Button that moves to the next daily question",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neste"
-          }
-        }
-      }
-    },
-    "dailyChallenge.flow.partnerQuestionsButton" : {
-      "comment" : "Button to go answer the partner's questions. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Answer %@'s questions"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar på spørsmålene til %@"
           }
         }
       }
@@ -6778,13 +6742,13 @@
       }
     },
     "dailyChallenge.home.active.title" : {
-      "comment" : "Title on the Home daily challenge card when questions are available",
+      "comment" : "Title on the daily question card while today's question waits for the user's answer",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Questions for today"
+            "value" : "Today's question"
           }
         },
         "nb" : {
@@ -6796,25 +6760,25 @@
       }
     },
     "dailyChallenge.home.complete.message" : {
-      "comment" : "Message on the Home daily challenge card when the user's daily questions are answered",
+      "comment" : "Message on the Home daily question card once both partners have answered today's question",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your questions are answered."
+            "value" : "You both answered today's question."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spørsmålene dine er besvart."
+            "value" : "Dere har begge svart på dagens spørsmål."
           }
         }
       }
     },
     "dailyChallenge.home.complete.title" : {
-      "comment" : "Title on the Home daily challenge card when the user's daily questions are answered",
+      "comment" : "Title on the daily question card once the user has answered today's question",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -6832,49 +6796,49 @@
       }
     },
     "dailyChallenge.home.completePartnerAnsweredMessage" : {
-      "comment" : "Home daily card message after the user answered their questions and the partner has answers they can now see. The argument is the partner's name.",
+      "comment" : "Home daily card message after the user answered today's question, when the partner has answered a question from an earlier day that the user hasn't. The argument is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ has answered too. See what they said."
+            "value" : "%@ answered an earlier question. Answer it too to see theirs."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ har også svart. Se hva som ble svart."
+            "value" : "%@ har svart på et tidligere spørsmål. Svar du også, så ser du svaret."
           }
         }
       }
     },
     "dailyChallenge.home.completeWaitingMessage" : {
-      "comment" : "Home daily card message after the user answered their questions while the partner hasn't answered yet today. Shown under the title 'Your part is done', so it doesn't repeat it. The argument is the partner's name.",
+      "comment" : "Home daily card message after the user answered today's question while the partner hasn't answered it yet. Shown under the title 'Your part is done'. The argument is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll see %@'s answers when they reply."
+            "value" : "You'll see %@'s answer when they reply."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du ser svarene når %@ svarer."
+            "value" : "Du ser svaret når %@ svarer."
           }
         }
       }
     },
     "dailyChallenge.home.loading.title" : {
-      "comment" : "Title on the Home daily challenge card while questions are loading",
+      "comment" : "Title on the daily question card while today's question is loading",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Loading questions for today"
+            "value" : "Loading today's question"
           }
         },
         "nb" : {
@@ -6886,19 +6850,19 @@
       }
     },
     "dailyChallenge.home.noChallenge.message" : {
-      "comment" : "Message on the Home daily challenge card before the user has started today's questions",
+      "comment" : "Message on the daily question card before today's question has been opened",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start your questions for today."
+            "value" : "A new question for the two of you."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start spørsmålene dine for i dag."
+            "value" : "Et nytt spørsmål til dere to."
           }
         }
       }
@@ -6917,24 +6881,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Klar for i dag?"
-          }
-        }
-      }
-    },
-    "dailyChallenge.home.progressBadge" : {
-      "comment" : "Small capsule at the top of today's question card on the Home tab. First number is how many of today's questions the person has answered, second is how many there are.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld of %lld answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld av %lld besvart"
           }
         }
       }
@@ -7048,13 +6994,13 @@
       }
     },
     "dailyChallenge.loadFailed.title" : {
-      "comment" : "Banner title shown when the daily challenge could not be loaded",
+      "comment" : "Banner title shown when today's question could not be loaded",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We could not load questions for today"
+            "value" : "We could not load today's question"
           }
         },
         "nb" : {
@@ -7079,24 +7025,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ svarte på %2$@. Svar selv for å se svaret."
-          }
-        }
-      }
-    },
-    "dailyChallenge.locked.a11y.waiting" : {
-      "comment" : "VoiceOver label for a locked partner question row that cannot be opened yet because the user still has their own questions. First %@ is the partner's name, second %@ is the short question text.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ answered %2$@. Finish your own questions to see theirs."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ svarte på %2$@. Fullfør dine egne spørsmål for å se svaret."
           }
         }
       }
@@ -7372,37 +7300,37 @@
       }
     },
     "dailyChallenge.openButton" : {
-      "comment" : "Button that opens the Daily Challenge screen",
+      "comment" : "Button on the daily question card that opens today's question to answer it",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open your questions"
+            "value" : "Answer now"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Åpne spørsmålene dine"
+            "value" : "Svar nå"
           }
         }
       }
     },
-    "dailyChallenge.partner.lockedCta" : {
-      "comment" : "Disabled button on a partner-answered question, shown until the user has finished their own daily questions",
+    "dailyChallenge.openChatButton" : {
+      "comment" : "Button on the answer reveal, and on the Home card once both partners answered today's question. Opens the question's chat, where the couple can talk about their answers.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Finish your questions first"
+            "value" : "Open chat"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fullfør spørsmålene dine først"
+            "value" : "Åpne praten"
           }
         }
       }
@@ -7750,7 +7678,7 @@
       }
     },
     "dailyChallenge.questions.done.bothAnswered" : {
-      "comment" : "Second line on the compact done card on the Questions tab when both partners have answered today.",
+      "comment" : "Second line on the compact done card on the Questions tab when both partners have answered today's question.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7768,25 +7696,25 @@
       }
     },
     "dailyChallenge.questions.done.partnerQuestions" : {
-      "comment" : "Second line on the compact done card on the Questions tab when the partner has questions the user can answer below. The argument is the partner's name.",
+      "comment" : "Second line on the compact done card on the Questions tab when the partner has answered a question from an earlier day that the user can answer below. The argument is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ has questions for you below."
+            "value" : "%@ answered an earlier question. You'll find it below."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ har spørsmål til deg under."
+            "value" : "%@ har svart på et tidligere spørsmål. Du finner det under."
           }
         }
       }
     },
     "dailyChallenge.questions.done.waiting" : {
-      "comment" : "Second line on the compact done card on the Questions tab when the partner has not answered yet today. The argument is the partner's name.",
+      "comment" : "Second line on the compact done card on the Questions tab when the partner has not answered today's question yet. The argument is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7858,7 +7786,7 @@
       }
     },
     "dailyChallenge.seePartnerAnswersButton" : {
-      "comment" : "Button to view the partner's answers. %@ is the partner's name.",
+      "comment" : "Button on the daily question card that goes to the questions from earlier days the partner answered. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -7876,19 +7804,19 @@
       }
     },
     "dailyChallenge.seeYourAnswersButton" : {
-      "comment" : "Button on the daily challenge card opens the user's completed daily answers",
+      "comment" : "Button on the daily question card that opens the answer the user sent today, before the partner has answered",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "See your answers"
+            "value" : "See your answer"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se svarene dine"
+            "value" : "Se svaret ditt"
           }
         }
       }
@@ -7954,13 +7882,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You've used all your skips for today. Try answering one of these."
+            "value" : "You've used all your skips for today. Try answering this one."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du har brukt opp byttene dine for i dag. Prøv å svare på et av disse."
+            "value" : "Du har brukt opp byttene dine for i dag. Prøv å svare på dette."
           }
         }
       }
@@ -8002,19 +7930,19 @@
       }
     },
     "dailyChallenge.startButton" : {
-      "comment" : "Button that starts the daily challenge",
+      "comment" : "Button that opens today's question for the first time today",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start questions"
+            "value" : "See today's question"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start spørsmål"
+            "value" : "Se dagens spørsmål"
           }
         }
       }
@@ -8038,19 +7966,19 @@
       }
     },
     "dailyChallenge.startFailed.title" : {
-      "comment" : "Banner title shown when the daily challenge could not be started",
+      "comment" : "Banner title shown when today's question could not be opened",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We could not start questions for today"
+            "value" : "We could not open today's question"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke starte dagens spørsmål"
+            "value" : "Vi kunne ikke åpne dagens spørsmål"
           }
         }
       }
@@ -11812,61 +11740,43 @@
       }
     },
     "firstDay.questions.done.message" : {
-      "comment" : "First questions before the partner joins: message after both are answered. The partner sees these answers only after answering the same questions",
+      "comment" : "First question before the partner joins: message after it is answered",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Once you're connected, your partner sees your answers after answering these questions too."
+            "value" : "When your partner joins, they get the same question. Once you've both answered, you'll see each other's answers."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Når dere er koblet sammen, ser partneren din svarene dine etter å ha svart på de samme spørsmålene."
+            "value" : "Partneren din får det samme spørsmålet når dere er koblet sammen. Når dere begge har svart, ser dere svarene til hverandre."
           }
         }
       }
     },
     "firstDay.questions.done.title" : {
-      "comment" : "First questions before the partner joins: title after both are answered",
+      "comment" : "First question before the partner joins: title after it is answered",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your answers are ready"
+            "value" : "Your answer is ready"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svarene dine er klare"
-          }
-        }
-      }
-    },
-    "firstDay.questions.eyebrow" : {
-      "comment" : "First questions before the partner joins: small heading on the question card, such as 'Question 1 of 2'",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Question %1$lld of %2$lld"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spørsmål %1$lld av %2$lld"
+            "value" : "Svaret ditt er klart"
           }
         }
       }
     },
     "firstDay.questions.revealRule" : {
-      "comment" : "First questions before the partner joins: explains when the partner can read the answer",
+      "comment" : "First question before the partner joins: explains when the partner can read the answer",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -11902,7 +11812,7 @@
       }
     },
     "firstDay.questions.saveFailed.title" : {
-      "comment" : "Banner title when an answer to a first question could not be saved",
+      "comment" : "Banner title when the answer to the first question could not be saved",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -18352,13 +18262,13 @@
       }
     },
     "home.dailyPrompt.eyebrow" : {
-      "comment" : "Small overline above today's shared questions on the Home tab; the couple answers three each day",
+      "comment" : "Small overline above today's question on the Home tab. Both partners answer the same question each day.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Today's questions"
+            "value" : "Today's question"
           }
         },
         "nb" : {
@@ -20242,7 +20152,7 @@
       }
     },
     "inviter.questions.loadFailed.offlineMessage" : {
-      "comment" : "Banner message when the first questions could not be loaded because the phone is offline",
+      "comment" : "Banner message when the first question could not be loaded because the phone is offline",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -20260,91 +20170,73 @@
       }
     },
     "inviter.questions.loadFailed.title" : {
-      "comment" : "Banner title when the first questions could not be loaded on the invite screen",
+      "comment" : "Banner title when the first question could not be loaded on the invite screen",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't get your questions"
+            "value" : "We couldn't get your question"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi fikk ikke hentet spørsmålene"
+            "value" : "Vi fikk ikke hentet spørsmålet"
           }
         }
       }
     },
     "inviter.questions.row.done" : {
-      "comment" : "Invite screen: line under 'Answer your first questions' once both are answered",
+      "comment" : "Invite screen: line under 'Answer your first question' once it is answered",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ready for them. Tap to change your answers."
+            "value" : "Ready for them. Tap to change your answer."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Venter på partneren din. Trykk for å endre svarene."
-          }
-        }
-      }
-    },
-    "inviter.questions.row.progress" : {
-      "comment" : "Invite screen, VoiceOver: how many of the first questions are answered, such as '1 of 2 answered'",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld of %2$lld answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld av %2$lld besvart"
+            "value" : "Venter på partneren din. Trykk for å endre svaret."
           }
         }
       }
     },
     "inviter.questions.row.subtitle" : {
-      "comment" : "Invite screen: line under 'Answer your first questions' before they are answered. The partner gets their own questions, and sees these answers only after answering them too",
+      "comment" : "Invite screen: line under 'Answer your first question' before it is answered",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your partner sees your answers after answering them too."
+            "value" : "Your partner gets the same question when they join."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partneren din ser svarene dine etter å ha svart på dem selv."
+            "value" : "Partneren din får det samme spørsmålet når dere er koblet sammen."
           }
         }
       }
     },
     "inviter.questions.row.title" : {
-      "comment" : "Invite screen: row that opens the first two daily questions to answer before the partner joins",
+      "comment" : "Invite screen: row that opens the first daily question to answer before the partner joins",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer your first questions"
+            "value" : "Answer your first question"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar på de første spørsmålene"
+            "value" : "Svar på det første spørsmålet"
           }
         }
       }
@@ -24786,13 +24678,13 @@
       }
     },
     "onboarding.firstDay.answers.message" : {
-      "comment" : "Line under the title. The partner's answers stay hidden until the person answers too. %@ is the partner's name.",
+      "comment" : "Line under the title. The partner's answer stays hidden until the person answers too. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer them too, and you'll see what %@ said."
+            "value" : "Answer it too, and you'll see what %@ said."
           }
         },
         "nb" : {
@@ -24804,7 +24696,7 @@
       }
     },
     "onboarding.firstDay.answers.now.button" : {
-      "comment" : "Button that opens the daily questions so the person can answer them right away.",
+      "comment" : "Button that opens the daily question so the person can answer it right away.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -24822,19 +24714,19 @@
       }
     },
     "onboarding.firstDay.answers.title" : {
-      "comment" : "Title when the partner has already answered the couple's first daily questions. %@ is the partner's name.",
+      "comment" : "Title when the partner has already answered the couple's first daily question. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ answered the first questions"
+            "value" : "%@ answered the first question"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ har svart på de første spørsmålene"
+            "value" : "%@ har svart på det første spørsmålet"
           }
         }
       }
@@ -25548,13 +25440,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When should your questions arrive?"
+            "value" : "When should your question arrive?"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Når skal spørsmålene komme?"
+            "value" : "Når skal spørsmålet komme?"
           }
         }
       }
@@ -26322,13 +26214,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I answered our first questions on Paeonia. Open this link to answer them too."
+            "value" : "I answered our first question on Paeonia. Open this link to answer it too."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jeg har svart på de første spørsmålene våre på Paeonia. Åpne lenken og svar du også."
+            "value" : "Jeg har svart på det første spørsmålet vårt på Paeonia. Åpne lenken og svar du også."
           }
         }
       }
@@ -30510,31 +30402,31 @@
       }
     },
     "settings.notifications.dailyChallenge.subtitle" : {
-      "comment" : "Explains daily challenge completion notifications. %@ is the partner's name.",
+      "comment" : "Explains the notification for when the partner answers today's question first. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a notification when %@ finishes today's questions."
+            "value" : "Get a notification when %@ answers today's question."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få et varsel når %@ fullfører dagens spørsmål."
+            "value" : "Få et varsel når %@ svarer på dagens spørsmål."
           }
         }
       }
     },
     "settings.notifications.dailyChallenge.title" : {
-      "comment" : "Toggle title: get notified when partner completes today's daily questions",
+      "comment" : "Toggle title: get notified when the partner answers today's question",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daily questions"
+            "value" : "Daily question"
           }
         },
         "nb" : {
@@ -30834,19 +30726,19 @@
       }
     },
     "settings.notifications.questionTime.subtitle" : {
-      "comment" : "Explains the question time toggle: a reminder at the chosen time, only if the user has not started today's questions",
+      "comment" : "Explains the question time toggle: a reminder at the chosen time, only if the user has not answered today's question",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Get a reminder at a time you choose if you haven't started today's questions."
+            "value" : "Get a reminder at a time you choose if you haven't answered today's question."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Få en påminnelse til et tidspunkt du velger hvis du ikke har startet på dagens spørsmål."
+            "value" : "Få en påminnelse til et tidspunkt du velger hvis du ikke har svart på dagens spørsmål."
           }
         }
       }

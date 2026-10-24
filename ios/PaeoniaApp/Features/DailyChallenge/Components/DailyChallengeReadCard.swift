@@ -16,14 +16,13 @@ struct DailySendingPreview {
 /// happens next. The answers themselves live on the question's own page, so tapping
 /// a row you have answered opens that page, where the answers start the chat.
 ///
-/// A partner question the user can still answer opens the answer flow instead, and
-/// is the zoom source for it. That stays locked until the user finishes their own
-/// questions. A row whose answer is still saving shows what was saved.
+/// A question the partner answered that the user can still answer opens the answer flow
+/// instead, and is the zoom source for it. A row whose answer is still saving shows what
+/// was saved.
 struct DailyChallengeReadCard: View {
     let question: DailyChallengeQuestion
     var participants = DailyChallengeParticipants()
     var sending: DailySendingPreview?
-    var isOwnChallengeComplete = true
     var zoomNamespace: Namespace.ID?
     var isHighlighted = false
     var onAnswer: () -> Void = {}
@@ -36,15 +35,11 @@ struct DailyChallengeReadCard: View {
     /// The topic's name, for a topic question listed with the daily ones.
     var topicTitle: String?
 
-    /// A partner question the user can still answer to reveal the reply. When sending,
-    /// the row shows the "saved, sending" preview instead, so this stays false.
+    /// A question the partner answered that the user can still answer to reveal the
+    /// reply. When sending, the row shows the "saved, sending" preview instead, so this
+    /// stays false.
     private var isAnswerable: Bool {
-        sending == nil && question.origin == .partner && question.isAvailableToAnswer
-    }
-
-    /// Answering a partner's question is gated behind finishing your own questions first.
-    private var canOpenAnswerFlow: Bool {
-        isAnswerable && isOwnChallengeComplete
+        sending == nil && question.isAwaitingCurrentUserAnswer
     }
 
     private var opensPage: Bool {
@@ -62,7 +57,7 @@ struct DailyChallengeReadCard: View {
 
     var body: some View {
         Group {
-            if canOpenAnswerFlow {
+            if isAnswerable {
                 Button(action: onAnswer) { card }
                     .buttonStyle(.plain)
             } else if opensPage, let onOpen {
@@ -72,9 +67,9 @@ struct DailyChallengeReadCard: View {
                 card
             }
         }
-        // Answerable rows are the source the single-question flow zooms out of, so the
-        // tapped row appears to grow into the full-screen flow.
-        .zoomSource(question.id, in: canOpenAnswerFlow ? zoomNamespace : nil)
+        // Answerable rows are the source the answer flow zooms out of, so the tapped row
+        // appears to grow into the full-screen flow.
+        .zoomSource(question.id, in: isAnswerable ? zoomNamespace : nil)
         .overlay {
             let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
             if isHighlighted {
@@ -144,9 +139,7 @@ struct DailyChallengeReadCard: View {
     /// What the row says about the question, in the order the cases can happen.
     private var statusText: Text {
         if isAnswerable {
-            return Text(canOpenAnswerFlow
-                ? .dailyChallengePartnerHiddenMessage(participants.partnerName)
-                : .dailyChallengePartnerLockedCta)
+            return Text(.dailyChallengePartnerHiddenMessage(participants.partnerName))
         }
         guard question.hasOwnAnswer else { return Text(.dailyChallengeNotAnswered) }
         guard question.hasPartnerAnswer else { return Text(.dailyChallengeRowWaiting(participants.partnerName)) }
@@ -167,11 +160,7 @@ struct DailyChallengeReadCard: View {
                     .fill(.paeoniaAccentPrimary)
                     .frame(width: 10, height: 10)
             }
-            if isAnswerable, !canOpenAnswerFlow {
-                Image(systemName: "lock.fill")
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextTertiary)
-            } else if canOpenAnswerFlow || opensPage {
+            if isAnswerable || opensPage {
                 Image(systemName: "chevron.right")
                     .font(PaeoniaTypography.caption.weight(.semibold))
                     .foregroundStyle(.paeoniaTextTertiary)

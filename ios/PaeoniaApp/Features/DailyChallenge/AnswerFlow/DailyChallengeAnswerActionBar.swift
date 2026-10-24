@@ -90,6 +90,7 @@ struct DailyChallengeAnswerActionBar: View {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .disabled(isPrimaryDisabled || isPrimaryBusy)
+        .accessibilityIdentifier("daily.flow.primary")
     }
 
     /// The trailing icon. Done while composing (put the keyboard away); otherwise

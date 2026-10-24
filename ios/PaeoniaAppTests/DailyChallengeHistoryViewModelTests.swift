@@ -117,8 +117,8 @@ struct DailyChallengeHistoryViewModelTests {
 
     @MainActor
     @Test func daysLeaveOutQuestionsTodaysListShows() async {
-        let shown = makeQuestion(localDate: Self.day2, slot: 1)
-        let kept = makeQuestion(localDate: Self.day2, slot: 2)
+        let shown = makeQuestion(localDate: Self.day2)
+        let kept = makeQuestion(localDate: Self.day2)
         let onlyShown = makeQuestion(localDate: Self.day1)
         let service = GatedHistoryService(immediateResult: [shown, kept, onlyShown])
         let viewModel = DailyChallengeHistoryViewModel(
@@ -149,11 +149,9 @@ private enum HistoryTestIDs {
 }
 
 /// A question the current user answered on `localDate`.
-private func makeQuestion(localDate: String, slot: Int = 1) -> DailyChallengeQuestion {
+private func makeQuestion(localDate: String) -> DailyChallengeQuestion {
     makeQuestion(
         localDate: localDate,
-        slot: slot,
-        origin: .own,
         ownAnsweredAt: HistoryTestIDs.answerDate,
         partnerAnsweredAt: nil
     )
@@ -161,8 +159,6 @@ private func makeQuestion(localDate: String, slot: Int = 1) -> DailyChallengeQue
 
 private func makeQuestion(
     localDate: String,
-    slot: Int,
-    origin: DailyQuestionOrigin,
     ownAnsweredAt: Date?,
     partnerAnsweredAt: Date?
 ) -> DailyChallengeQuestion {
@@ -174,9 +170,7 @@ private func makeQuestion(
         effectiveLocalDate: localDate,
         startsAt: HistoryTestIDs.startsAt,
         endsAt: HistoryTestIDs.startsAt.addingTimeInterval(86_400),
-        seededForUserID: origin == .own ? HistoryTestIDs.currentUser : HistoryTestIDs.partnerUser,
-        slotNumber: slot,
-        status: ownAnsweredAt == nil ? .active : .answered,
+        status: .active,
         questionID: UUID(),
         questionVersionID: UUID(),
         questionKey: "history_test_question",
@@ -188,7 +182,6 @@ private func makeQuestion(
         canViewPartnerAnswer: false,
         ownAnswerDetail: nil,
         partnerAnswerDetail: nil,
-        origin: origin,
         isCurrentDay: false
     )
 }
@@ -272,7 +265,6 @@ private actor GatedHistoryService: DailyChallengeServicing {
 
     func shuffleQuestion(
         currentUserID _: UUID,
-        slotNumber _: Int,
         operation _: SyncClientOperation
     ) throws -> DailyChallengeLoadResult {
         throw UnusedHistoryServiceCall()

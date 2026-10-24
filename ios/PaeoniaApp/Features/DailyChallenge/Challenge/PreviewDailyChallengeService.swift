@@ -3,34 +3,26 @@ import Foundation
 #if DEBUG
 actor PreviewDailyChallengeService: DailyChallengeServicing {
     static let userID = UUID()
-    private let partnerUserID = UUID()
+    private let todayID = UUID()
 
+    /// Today's question, which the partner hasn't answered yet, and yesterday's, which
+    /// waits for the user's answer to show the partner's.
     func loadToday(currentUserID: UUID) throws -> DailyChallengeLoadResult {
         DailyChallengeLoadResult(
             snapshot: DailyChallengeSnapshot(
                 currentUserID: currentUserID,
-                coupleDayID: UUID(),
+                coupleDayID: todayID,
                 questions: [
                     previewDailyQuestion(
-                        slot: 1,
-                        seededFor: currentUserID,
-                        origin: .own,
-                        prompt: "What small moment made you think of us today?",
+                        coupleDayID: todayID,
+                        prompt: "What is one small moment from today that made you think of your partner?",
                         short: "A small moment today"
                     ),
                     previewDailyQuestion(
-                        slot: 2,
-                        seededFor: currentUserID,
-                        origin: .own,
-                        prompt: "What's one thing you're looking forward to together?",
-                        short: "Something to look forward to",
-                        answerKinds: [.voice, .text]
-                    ),
-                    previewDailyQuestion(
-                        slot: 1,
-                        seededFor: partnerUserID,
-                        origin: .partner,
-                        prompt: "What's a favourite memory of us from this month?",
+                        coupleDayID: UUID(),
+                        localDate: "2026-06-26",
+                        isCurrentDay: false,
+                        prompt: "What is a favourite memory of the two of you from this month?",
                         short: "A favourite memory",
                         partnerAnswered: true
                     ),
@@ -49,27 +41,24 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
         [
             previewHistoryQuestion(
                 localDate: "2026-06-27",
-                slot: 1,
-                seededFor: currentUserID,
-                prompt: "What small moment made you think of us today?",
+                prompt: "What small moment made you think of your partner today?",
                 ownText: "Your text came up on my lock screen mid-meeting.",
-                partnerText: "I saw a couple on the tram holding hands like we do."
+                partnerText: "I saw a couple on the tram holding hands like we do.",
+                currentUserID: currentUserID
             ),
             previewHistoryQuestion(
                 localDate: "2026-06-26",
-                slot: 1,
-                seededFor: currentUserID,
-                prompt: "What's one thing you're looking forward to together?",
+                prompt: "What's one thing the two of you are looking forward to?",
                 ownText: "The long weekend with nothing planned.",
-                partnerText: "Cooking that pasta again, but slower this time."
+                partnerText: "Cooking that pasta again, but slower this time.",
+                currentUserID: currentUserID
             ),
             previewHistoryQuestion(
-                localDate: "2026-06-26",
-                slot: 2,
-                seededFor: partnerUserID,
+                localDate: "2026-06-25",
                 prompt: "What made you laugh recently?",
                 ownText: "Your voice note where you forgot what you were saying.",
-                partnerText: "The dog video you sent at 1am."
+                partnerText: "The dog video you sent at 1am.",
+                currentUserID: currentUserID
             ),
         ]
     }
@@ -108,7 +97,6 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
 
     func shuffleQuestion(
         currentUserID: UUID,
-        slotNumber _: Int,
         operation _: SyncClientOperation
     ) throws -> DailyChallengeLoadResult {
         try loadToday(currentUserID: currentUserID)
@@ -116,24 +104,23 @@ actor PreviewDailyChallengeService: DailyChallengeServicing {
 }
 
 nonisolated func previewDailyQuestion(
-    slot: Int,
-    seededFor userID: UUID,
-    origin: DailyQuestionOrigin,
+    coupleDayID: UUID,
+    localDate: String = "2026-06-27",
+    isCurrentDay: Bool = true,
     prompt: String,
     short: String,
     answerKinds: [DailyChallengeAnswerKind] = [.text],
     partnerAnswered: Bool = false
 ) -> DailyChallengeQuestion {
-    DailyChallengeQuestion(
+    let startsAt = isCurrentDay ? Date.now : Date.now.addingTimeInterval(-86_400)
+    return DailyChallengeQuestion(
         id: UUID(),
-        coupleDayID: UUID(),
+        coupleDayID: coupleDayID,
         coupleID: UUID(),
-        localDate: "2026-06-27",
-        effectiveLocalDate: "2026-06-27",
-        startsAt: .now,
-        endsAt: .now.addingTimeInterval(86_400),
-        seededForUserID: userID,
-        slotNumber: slot,
+        localDate: localDate,
+        effectiveLocalDate: localDate,
+        startsAt: startsAt,
+        endsAt: startsAt.addingTimeInterval(86_400),
         status: .active,
         questionID: UUID(),
         questionVersionID: UUID(),
@@ -146,8 +133,7 @@ nonisolated func previewDailyQuestion(
         canViewPartnerAnswer: false,
         ownAnswerDetail: nil,
         partnerAnswerDetail: nil,
-        origin: origin,
-        isCurrentDay: true
+        isCurrentDay: isCurrentDay
     )
 }
 
@@ -155,15 +141,13 @@ nonisolated func previewDailyQuestion(
 /// and both replies are revealed, so the read card shows a complete exchange.
 nonisolated func previewHistoryQuestion(
     localDate: String,
-    slot: Int = 1,
-    seededFor userID: UUID,
     prompt: String,
     ownText: String,
     partnerText: String,
-    currentUserID: UUID = PreviewDailyChallengeService.userID
+    currentUserID: UUID = PreviewDailyChallengeService.userID,
+    partnerUserID: UUID = UUID()
 ) -> DailyChallengeQuestion {
     let answeredAt = Date()
-    let partnerUserID = userID == currentUserID ? UUID() : userID
     let ownDetail = previewHistoryAnswerDetail(
         answerUserID: currentUserID,
         answeredAt: answeredAt,
@@ -185,9 +169,7 @@ nonisolated func previewHistoryQuestion(
         effectiveLocalDate: localDate,
         startsAt: answeredAt,
         endsAt: answeredAt.addingTimeInterval(86_400),
-        seededForUserID: userID,
-        slotNumber: slot,
-        status: .answered,
+        status: .active,
         questionID: UUID(),
         questionVersionID: UUID(),
         questionKey: "preview_history_question",
@@ -199,7 +181,6 @@ nonisolated func previewHistoryQuestion(
         canViewPartnerAnswer: true,
         ownAnswerDetail: ownDetail,
         partnerAnswerDetail: partnerDetail,
-        origin: userID == currentUserID ? .own : .partner,
         isCurrentDay: false
     )
 }

@@ -201,14 +201,12 @@ nonisolated struct EditDailyPartnerChoiceRequest: Encodable {
 }
 
 nonisolated struct ShuffleDailyQuestionRequest: Encodable {
-    let slotNumber: Int
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
     let localCreatedAt: Date
 
-    init(slotNumber: Int, operation: SyncClientOperation) {
-        self.slotNumber = slotNumber
+    init(operation: SyncClientOperation) {
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -216,7 +214,6 @@ nonisolated struct ShuffleDailyQuestionRequest: Encodable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case slotNumber = "p_slot_number"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"

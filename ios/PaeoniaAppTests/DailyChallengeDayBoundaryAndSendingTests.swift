@@ -27,14 +27,11 @@ struct DailyChallengeDayBoundaryAndSendingTests {
     }
 
     @Test func aDayWhoseEndHasPassedIsNotShownAsToday() async throws {
-        let partnerQuestionID = UUID()
+        let questionID = UUID()
         let snapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(endsAt: dayEnd, slotNumber: 1, seededForUserID: user),
             dailyQuestionRow(
                 endsAt: dayEnd,
-                instanceID: partnerQuestionID,
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
+                instanceID: questionID,
                 partnerAnswerID: UUID(),
                 partnerAnsweredAt: TestDailyChallengeIDs.answerDate
             ),
@@ -42,7 +39,7 @@ struct DailyChallengeDayBoundaryAndSendingTests {
         let clock = LockedBox(dayEnd.addingTimeInterval(-60))
         let before = makeViewModel(service: RecordingDailyChallengeService(snapshots: [snapshot]), now: { clock.value })
         await before.configure(currentUserID: user)
-        #expect(before.snapshot.ownQuestions.count == 1)
+        #expect(before.snapshot.todayQuestion?.id == questionID)
 
         // The same day seen after it ended (for example from the cache on an offline
         // launch the next morning) is not today any more.
@@ -50,14 +47,22 @@ struct DailyChallengeDayBoundaryAndSendingTests {
         let after = makeViewModel(service: RecordingDailyChallengeService(snapshots: [snapshot]), now: { clock.value })
         await after.configure(currentUserID: user)
 
-        #expect(after.snapshot.ownQuestions.isEmpty)
+        #expect(after.snapshot.todayQuestion == nil)
         #expect(after.homeCardState.kind == .noChallenge)
-        // The partner's question can still be answered on a later day.
-        #expect(after.snapshot.answerablePartnerQuestions.map(\.id) == [partnerQuestionID])
+        // The partner answered it, so it carries over as an earlier day's locked row.
+        #expect(after.snapshot.questionsAwaitingAnswer.map(\.id) == [questionID])
+        #expect(after.homeCardState.lockedPartnerQuestions.map(\.id) == [questionID])
     }
 
-    @Test func sendingYourOwnAnswerAfterTheDayEndedQueuesNothingAndKeepsTheDraft() async throws {
-        let snapshot = makeDailySnapshot(rows: [dailyQuestionRow(endsAt: dayEnd, slotNumber: 1, seededForUserID: user)])
+    @Test(arguments: [false, true])
+    func sendingAfterTheDayEndedQueuesOnlyWhenThePartnerAnswered(partnerAnswered: Bool) async throws {
+        let snapshot = makeDailySnapshot(rows: [
+            dailyQuestionRow(
+                endsAt: dayEnd,
+                partnerAnswerID: partnerAnswered ? UUID() : nil,
+                partnerAnsweredAt: partnerAnswered ? TestDailyChallengeIDs.answerDate : nil
+            ),
+        ])
         let clock = LockedBox(dayEnd.addingTimeInterval(-60))
         let pendingStore = InMemoryPendingSyncOperationRepository()
         let viewModel = makeViewModel(
@@ -66,21 +71,25 @@ struct DailyChallengeDayBoundaryAndSendingTests {
             now: { clock.value }
         )
         await viewModel.configure(currentUserID: user)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
         viewModel.setDraftText("Late answer", for: question.id)
 
-        // The screen stayed open past the end of the couple's day. The server only
-        // takes your own answers made during their day, so a queued one would never
-        // send and would show as "sending" forever.
+        // The screen stayed open past the end of the couple's day. After its day the
+        // server takes an answer only when the partner has answered. Otherwise a queued
+        // one would never send and would show as "sending" forever.
         clock.mutate { $0 = dayEnd.addingTimeInterval(1) }
         await viewModel.submitAnswer(for: question)
 
-        #expect(viewModel.notice == .dayEnded)
-        #expect(!viewModel.isSending(question.id))
-        #expect(viewModel.draftText(for: question.id) == "Late answer")
-        #expect(viewModel.snapshot.ownQuestions.isEmpty)
         let queued = try await pendingStore.inFlightOperations(ownerUserID: user, kind: .submitDailyAnswer)
-        #expect(queued.isEmpty)
+        #expect(queued.count == (partnerAnswered ? 1 : 0))
+        #expect(viewModel.isSending(question.id) == partnerAnswered)
+        if partnerAnswered {
+            #expect(viewModel.notice == nil)
+        } else {
+            #expect(viewModel.notice == .dayEnded)
+            #expect(viewModel.draftText(for: question.id) == "Late answer")
+            #expect(viewModel.snapshot.todayQuestion == nil)
+        }
     }
 
     @Test func theCompletionDateIsTheActiveDayEvenWhenACarriedQuestionComesFirst() {
@@ -88,13 +97,11 @@ struct DailyChallengeDayBoundaryAndSendingTests {
             dailyQuestionRow(
                 coupleDayID: TestDailyChallengeIDs.previousCoupleDay,
                 localDate: "2026-06-26",
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
                 partnerAnswerID: UUID(),
                 partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
                 isCurrentDay: false
             ),
-            dailyQuestionRow(localDate: "2026-06-27", slotNumber: 1, seededForUserID: user, isCurrentDay: true),
+            dailyQuestionRow(localDate: "2026-06-27", isCurrentDay: true),
         ])
 
         #expect(snapshot.questions.first?.localDate == "2026-06-26")
@@ -102,14 +109,14 @@ struct DailyChallengeDayBoundaryAndSendingTests {
     }
 
     @Test func anAnswerLongerThanTheServerAllowsCannotBeSent() async throws {
-        let snapshot = makeDailySnapshot(rows: [dailyQuestionRow(slotNumber: 1, seededForUserID: user)])
+        let snapshot = makeDailySnapshot(rows: [dailyQuestionRow()])
         let pendingStore = InMemoryPendingSyncOperationRepository()
         let viewModel = makeViewModel(
             service: RecordingDailyChallengeService(snapshots: [snapshot]),
             pendingStore: pendingStore
         )
         await viewModel.configure(currentUserID: user)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
 
         viewModel.setDraftText(String(repeating: "a", count: DailyAnswerDraft.maxTextLength), for: question.id)
         #expect(viewModel.hasDraftToSubmit(for: question))
@@ -130,13 +137,11 @@ struct DailyChallengeDayBoundaryAndSendingTests {
     @Test func aResultThatCarriesTheSentAnswerEndsTheSendingPreview() async throws {
         let instanceID = UUID()
         let unanswered = makeDailySnapshot(rows: [
-            dailyQuestionRow(instanceID: instanceID, slotNumber: 1, seededForUserID: user),
+            dailyQuestionRow(instanceID: instanceID),
         ])
         let answered = makeDailySnapshot(rows: [
             dailyQuestionRow(
                 instanceID: instanceID,
-                slotNumber: 1,
-                seededForUserID: user,
                 ownAnswerID: UUID(),
                 ownAnsweredAt: TestDailyChallengeIDs.answerDate
             ),
@@ -149,27 +154,27 @@ struct DailyChallengeDayBoundaryAndSendingTests {
         // result lands but before the outbox marks the send finished.
         let viewModel = makeViewModel(service: service)
         await viewModel.configure(currentUserID: user)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
         viewModel.setDraftText("On my way", for: question.id)
         await viewModel.submitAnswer(for: question)
         #expect(viewModel.isSending(question.id))
 
         await viewModel.reload()
 
-        #expect(viewModel.snapshot.ownQuestions.first?.hasOwnAnswer == true)
+        #expect(viewModel.snapshot.todayQuestion?.hasOwnAnswer == true)
         #expect(!viewModel.isSending(question.id))
         #expect(viewModel.sendingPreview(for: question) == nil)
     }
 
     @Test func aSendDuringAnOlderStoreReadStaysShownAsSending() async throws {
-        let snapshot = makeDailySnapshot(rows: [dailyQuestionRow(slotNumber: 1, seededForUserID: user)])
+        let snapshot = makeDailySnapshot(rows: [dailyQuestionRow()])
         let pendingStore = GatedReadPendingStore()
         let viewModel = makeViewModel(
             service: RecordingDailyChallengeService(snapshots: [snapshot]),
             pendingStore: pendingStore
         )
         await viewModel.configure(currentUserID: user)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
 
         // A reload reads the outbox before the answer is queued, and its result
         // arrives after the send. Other tests' outbox changes for the same test user
@@ -192,8 +197,8 @@ struct DailyChallengeDayBoundaryAndSendingTests {
     }
 
     @Test func skippingAQuestionRemovesItsStagedPhoto() async throws {
-        let question = dailyQuestionRow(slotNumber: 1, seededForUserID: user, answerKinds: [.photo])
-        let replacement = dailyQuestionRow(slotNumber: 1, seededForUserID: user, answerKinds: [.photo])
+        let question = dailyQuestionRow(answerKinds: [.photo])
+        let replacement = dailyQuestionRow(answerKinds: [.photo])
         let mediaStore = InMemoryDailyAnswerMediaDraftStore()
         let viewModel = makeViewModel(
             service: RecordingDailyChallengeService(
@@ -203,7 +208,7 @@ struct DailyChallengeDayBoundaryAndSendingTests {
             mediaStore: mediaStore
         )
         await viewModel.configure(currentUserID: user)
-        let current = try #require(viewModel.snapshot.ownQuestions.first)
+        let current = try #require(viewModel.snapshot.todayQuestion)
         await viewModel.stagePhoto(dailySampleImageData(), for: current.id)
         #expect(mediaStore.stagedMediaData(instanceID: current.id) != nil)
 
@@ -212,7 +217,7 @@ struct DailyChallengeDayBoundaryAndSendingTests {
         // The skipped question is gone for good, so its private photo shouldn't stay
         // on the phone.
         #expect(mediaStore.stagedMediaData(instanceID: current.id) == nil)
-        #expect(viewModel.snapshot.ownQuestions.first?.id == replacement.instanceID)
+        #expect(viewModel.snapshot.todayQuestion?.id == replacement.instanceID)
     }
 
     @Test func removingAPhotoWhileItIsBeingPreparedDropsIt() async throws {
@@ -221,14 +226,14 @@ struct DailyChallengeDayBoundaryAndSendingTests {
             service: RecordingDailyChallengeService(
                 snapshots: [
                     makeDailySnapshot(rows: [
-                        dailyQuestionRow(slotNumber: 1, seededForUserID: user, answerKinds: [.photo]),
+                        dailyQuestionRow(answerKinds: [.photo]),
                     ]),
                 ]
             ),
             mediaStore: mediaStore
         )
         await viewModel.configure(currentUserID: user)
-        let question = try #require(viewModel.snapshot.ownQuestions.first)
+        let question = try #require(viewModel.snapshot.todayQuestion)
 
         // Large enough that compressing it takes a moment.
         let photo = dailyLargeSampleImageData()

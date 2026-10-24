@@ -23,19 +23,17 @@ private func previewCard(
 }
 
 #Preview("Loading") {
-    previewCard(DailyChallengeCardState(kind: .loading, answeredCount: 0, totalCount: 2))
+    previewCard(DailyChallengeCardState(kind: .loading))
 }
 
 #Preview("No challenge yet") {
-    previewCard(DailyChallengeCardState(kind: .noChallenge, answeredCount: 0, totalCount: 0))
+    previewCard(DailyChallengeCardState(kind: .noChallenge))
 }
 
 #Preview("Active") {
     previewCard(
         DailyChallengeCardState(
-            kind: .active(prompt: "What is a small thing I do that always makes your day better?"),
-            answeredCount: 1,
-            totalCount: 2
+            kind: .active(prompt: "What is a small thing I do that always makes your day better?")
         )
     )
 }
@@ -44,10 +42,8 @@ private func previewCard(
     previewCard(
         DailyChallengeCardState(
             kind: .active(prompt: "What is a small thing I do that always makes your day better?"),
-            answeredCount: 1,
-            totalCount: 2,
-            hasPartnerAnswersForToday: true,
-            hasAnswerablePartnerQuestions: true,
+            hasPartnerAnsweredToday: true,
+            hasEarlierQuestionsToAnswer: true,
             lockedPartnerQuestions: previewLockedQuestions,
             moreLockedPartnerQuestionCount: 1
         )
@@ -57,22 +53,18 @@ private func previewCard(
 #Preview("Active, accessibility text") {
     previewCard(
         DailyChallengeCardState(
-            kind: .active(prompt: "What is a small thing I do that always makes your day better?"),
-            answeredCount: 0,
-            totalCount: 2
+            kind: .active(prompt: "What is a small thing I do that always makes your day better?")
         )
     )
     .dynamicTypeSize(.accessibility3)
 }
 
-#Preview("Complete, partner questions waiting") {
+#Preview("Complete, earlier questions waiting") {
     previewCard(
         DailyChallengeCardState(
             kind: .complete,
-            answeredCount: 2,
-            totalCount: 2,
-            hasPartnerAnswersForToday: true,
-            hasAnswerablePartnerQuestions: true,
+            hasPartnerAnsweredToday: true,
+            hasEarlierQuestionsToAnswer: true,
             lockedPartnerQuestions: Array(previewLockedQuestions.prefix(1))
         ),
         prefersPartnerAnswersWhenComplete: true
@@ -80,11 +72,11 @@ private func previewCard(
 }
 
 #Preview("Complete") {
-    previewCard(DailyChallengeCardState(kind: .complete, answeredCount: 2, totalCount: 2))
+    previewCard(DailyChallengeCardState(kind: .complete))
 }
 
 #Preview("Complete, accessibility text") {
-    previewCard(DailyChallengeCardState(kind: .complete, answeredCount: 2, totalCount: 2))
+    previewCard(DailyChallengeCardState(kind: .complete))
         .dynamicTypeSize(.accessibility3)
 }
 #endif

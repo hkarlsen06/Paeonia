@@ -185,10 +185,10 @@ Record any skipped command with the reason. Run all six again for the release ca
 ## Daily Challenge
 
 - [x] Today's challenge loads from database-backed question content.
-- [x] Each partner gets two own questions per couple day.
-- [x] A user must answer two own daily questions to complete the challenge.
-- [x] Partners never get the same question on one day.
-- [x] A question the partner answered shows as a locked row in the user's Questions list, and the user can answer it.
+- [x] Both partners get the same single question each couple day.
+- [x] Each partner answers it once, in either order.
+- [x] A question only one partner answered carries over, and the other can answer it late.
+- [x] A question the partner answered on an earlier day shows as a locked row on the daily card and in the Questions list, and the user can answer it.
 - [x] Partner answers remain hidden until the current user answers that same question.
 - [x] Locked/revealed answer states are clear without relying only on icons.
 - [x] Answer kinds are respected per question version.
@@ -201,29 +201,29 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Offline answers queue and show local-first reassurance.
 - [x] Queued answers upload later without duplication.
 - [ ] Media/voice upload failure does not drop user content. Built, untested: `DailyChallengePendingOperationHandler` keeps the staged file, but no test makes the upload throw.
-- [x] Answer reveal works after both partners answer.
+- [x] Answer reveal works after both partners answer, with the chime and petal moment, and offers Open chat and Done.
 - [x] Only fully revealed question cards open their private question chat.
 - [x] The first follow-up message creates the thread lazily; opening chat never creates an empty thread.
 - [x] Offline chat messages appear immediately and later send without duplication.
 - [ ] Question-chat notifications route to the right question without exposing message content on the lock screen. Needs a device. The push copy and deep link are tested (`threads.test.ts`).
 - [x] Question-chat UI and notification settings are localized in English and Norwegian Bokmal.
 - [x] Partner-answer notification does not expose answer content.
-- [x] Challenge completion notification copy explains that the recipient must answer to see partner content.
+- [x] The "answered today's question" notification copy explains that the recipient must answer to see the partner's answer.
 - [x] Daily challenge history groups questions by effective latest-answer day.
-- [x] Carried-over partner questions remain answerable for 30 days.
+- [x] Carried-over questions the partner answered remain answerable for 30 days.
 - [x] Skip works, up to 30 a day.
 - [ ] Skipped questions stay away for 14 days. Built, untested: `daily.test.ts` never moves the clock past the window.
 - [ ] Resurfaceable questions can reappear after the configured period and show prior answer dates. Built, untested: the resurfacing test passes whatever the rule is.
-- [x] When a couple has seen every active question, the picker repeats the one answered longest ago instead of failing.
+- [x] When a couple has seen every active question, the picker repeats the one the couple had longest ago instead of failing.
 - [x] Question content has English and Norwegian Bokmal localizations.
 - [x] No question prompt assumes gender, public sharing, or unsafe relationship behavior.
 
 ## Streaks
 
 - [x] Couple-level streak is calculated from qualifying activity.
-- [x] Completing daily challenge keeps the streak alive.
+- [x] Answering the daily question keeps the streak alive.
 - [x] Updating the shared widget keeps the streak alive.
-- [ ] Creating or editing a memory keeps the streak alive. In progress since 2026-10-24. `memory_created` and `memory_updated` are streak activity kinds, but no memory write records them yet.
+- [ ] Creating or editing a memory keeps the streak alive. Creating one records `memory_created` (`lib/streaks.test.ts`). No memory edit records `memory_updated` yet.
 - [x] Streak does not expire before midnight in the latest partner timezone.
 - [ ] Started couple-day timezone window is frozen as documented. Built, untested: `coupleDays.ts` returns the stored day, but no test changes a time zone mid-day.
 - [x] Streak reminder can be scheduled before expiry.
@@ -476,8 +476,8 @@ Run these on real devices where possible.
 - [ ] Payer subscribes -> creates invite.
 - [ ] Partner signs in -> accepts invite -> paired home.
 - [ ] Non-paying partner receives entitlement after pairing.
-- [ ] Both users answer daily questions -> reveal works.
-- [ ] One user answers partner question -> reveal works.
+- [ ] Both users answer today's question -> reveal works for the one who answers second.
+- [ ] One user answers a question the partner answered on an earlier day -> reveal works.
 - [ ] One user records voice answer -> partner can play it after reveal.
 - [ ] One user sends photo answer -> partner can view it after reveal.
 - [ ] One user creates memory with note.

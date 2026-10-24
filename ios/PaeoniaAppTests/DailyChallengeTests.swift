@@ -5,28 +5,25 @@ import UIKit
 
 struct DailyChallengeMappingTests {
     @Test func completedDayFollowUpDependsOnThePartner() {
-        func state(partnerAnswered: Bool, answerable: Bool) -> DailyChallengeCardState {
+        func state(partnerAnswered: Bool, earlierWaiting: Bool) -> DailyChallengeCardState {
             DailyChallengeCardState(
                 kind: .complete,
-                answeredCount: 2,
-                totalCount: 2,
-                hasPartnerAnswersForToday: partnerAnswered,
-                hasAnswerablePartnerQuestions: answerable
+                hasPartnerAnsweredToday: partnerAnswered,
+                hasEarlierQuestionsToAnswer: earlierWaiting
             )
         }
 
-        // Open partner questions come first, even when the partner also answered today.
-        #expect(state(partnerAnswered: true, answerable: true).completeFollowUp == .partnerQuestionsToAnswer)
-        #expect(state(partnerAnswered: false, answerable: false).completeFollowUp == .waitingForPartner)
-        #expect(state(partnerAnswered: true, answerable: false).completeFollowUp == .bothAnswered)
+        // Earlier questions waiting for the user come first, even when the partner also
+        // answered today.
+        #expect(state(partnerAnswered: true, earlierWaiting: true).completeFollowUp == .earlierQuestionsToAnswer)
+        #expect(state(partnerAnswered: false, earlierWaiting: false).completeFollowUp == .waitingForPartner)
+        #expect(state(partnerAnswered: true, earlierWaiting: false).completeFollowUp == .bothAnswered)
     }
 
     @Test func partnerAnsweredUnrevealedQuestionCanBeAnsweredButBodyStaysHidden() throws {
         let partnerAnswerID = dailyFixedUUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
         let snapshot = makeDailySnapshot(rows: [
             dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
                 answerKinds: [.voice, .text],
                 partnerAnswerID: partnerAnswerID,
                 partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
@@ -34,10 +31,10 @@ struct DailyChallengeMappingTests {
             ),
         ])
 
-        let question = try #require(snapshot.partnerStartedQuestions.first)
+        let question = try #require(snapshot.todayQuestion)
 
-        #expect(question.origin == .partner)
         #expect(question.hasPartnerAnswer)
+        #expect(question.isAwaitingCurrentUserAnswer)
         #expect(question.canSubmitTextAnswer)
         #expect(!question.canViewPartnerAnswer)
         #expect(question.partnerAnswerDetail == nil)
@@ -49,8 +46,6 @@ struct DailyChallengeMappingTests {
         let snapshot = makeDailySnapshot(
             rows: [
                 dailyQuestionRow(
-                    slotNumber: 2,
-                    seededForUserID: TestDailyChallengeIDs.partnerUser,
                     ownAnswerID: ownAnswerID,
                     ownAnsweredAt: TestDailyChallengeIDs.answerDate.addingTimeInterval(30),
                     partnerAnswerID: partnerAnswerID,
@@ -69,7 +64,7 @@ struct DailyChallengeMappingTests {
             ]
         )
 
-        let question = try #require(snapshot.partnerStartedQuestions.first)
+        let question = try #require(snapshot.todayQuestion)
 
         #expect(question.hasOwnAnswer)
         #expect(question.canViewPartnerAnswer)
@@ -77,16 +72,13 @@ struct DailyChallengeMappingTests {
         #expect(question.partnerAnswerDetail?.textBody == "A walk after school.")
     }
 
-    @Test func answeredPartnerQuestionRemainsResolvableAfterLeavingAnswerFlowOrder() throws {
+    @Test func answeredQuestionRemainsResolvableAfterLeavingTheWaitingList() throws {
         let instanceID = UUID()
         let ownAnswerID = UUID()
         let partnerAnswerID = UUID()
         let snapshot = makeDailySnapshot(rows: [
             dailyQuestionRow(
                 instanceID: instanceID,
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
-                status: "answered",
                 ownAnswerID: ownAnswerID,
                 ownAnsweredAt: TestDailyChallengeIDs.answerDate.addingTimeInterval(10),
                 partnerAnswerID: partnerAnswerID,
@@ -95,9 +87,9 @@ struct DailyChallengeMappingTests {
             ),
         ])
 
-        // Answer-flow ordering intentionally drops a partner question after this user
-        // answers it, but a presented reveal must still resolve it by stable instance id.
-        #expect(snapshot.answerFlowQuestions.allSatisfy { $0.id != instanceID })
+        // The waiting list drops a question once this user answers it, but a presented
+        // reveal must still resolve it by stable instance id.
+        #expect(snapshot.questionsAwaitingAnswer.allSatisfy { $0.id != instanceID })
         let revealed = try #require(snapshot.questions.first { $0.id == instanceID })
         #expect(revealed.canViewPartnerAnswer)
     }
@@ -109,45 +101,5 @@ struct DailyChallengeMappingTests {
         #expect(DailyChallengeAnswerKind(rawValue: "partner_choice") == .partnerChoice)
         #expect(DailyChallengeAnswerKind(rawValue: "sticker") == .unknown("sticker"))
         #expect(DailyChallengeAnswerKind(rawValue: "voice").rawValue == "voice")
-    }
-
-    @Test func challengeProgressUsesOnlyCurrentUsersTwoSeededQuestions() {
-        let snapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
-                ownAnswerID: UUID()
-            ),
-            dailyQuestionRow(
-                slotNumber: 2,
-                seededForUserID: TestDailyChallengeIDs.currentUser,
-                status: "answered",
-                ownAnswerID: UUID()
-            ),
-            dailyQuestionRow(
-                slotNumber: 1,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
-                partnerAnswerID: UUID(),
-                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
-            ),
-            dailyQuestionRow(
-                slotNumber: 2,
-                seededForUserID: TestDailyChallengeIDs.partnerUser,
-                partnerAnswerID: UUID(),
-                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
-            ),
-        ])
-
-        #expect(snapshot.visibleQuestions.count == 4)
-        #expect(snapshot.progress.ownQuestionCount == 2)
-        #expect(snapshot.progress.ownAnsweredCount == 2)
-        #expect(snapshot.progress.partnerQuestionCount == 2)
-        #expect(snapshot.progress.isComplete)
-        #expect(snapshot.hasPartnerAnswersForToday)
-        #expect(snapshot.homeCardState.hasPartnerAnswersForToday)
-        #expect(snapshot.hasAnswerablePartnerQuestions)
-        #expect(snapshot.answerablePartnerQuestions.count == 2)
-        #expect(snapshot.answerFlowQuestions.count == 4)
     }
 }

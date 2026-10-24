@@ -158,29 +158,14 @@ extension DailyChallengeViewModel {
         reloadTaskUserID = nil
     }
 
-    var hasCompletedRequiredDailyQuestions: Bool {
-        let requiredCount = DailyChallengeProgress.requiredOwnQuestionCount
-        guard snapshot.ownQuestions.count >= requiredCount else { return false }
-
-        let completedCount = snapshot.ownQuestions.filter { question in
-            question.hasOwnAnswer || sendingAnswers[question.id] != nil
-        }.count
-        return completedCount >= requiredCount
-    }
-
     var homeCardState: DailyChallengeCardState {
         // Show loading until today's state first resolves for this user, so the empty
         // initial snapshot never flashes "no challenge" before the load settles.
-        // Seeded current-day content shows immediately (it satisfies
-        // `hasAnyCurrentDayQuestions`); once resolved the card keeps the real,
-        // last-known state even while a refresh is in flight, so it never drops back
-        // to loading.
-        if !hasResolvedTodayState && !snapshot.hasAnyCurrentDayQuestions {
-            return DailyChallengeCardState(
-                kind: .loading,
-                answeredCount: snapshot.progress.ownAnsweredCount,
-                totalCount: snapshot.progress.requiredQuestionCount
-            )
+        // A cached question for today shows immediately; once resolved the card keeps
+        // the real, last-known state even while a refresh is in flight, so it never
+        // drops back to loading.
+        if !hasResolvedTodayState && snapshot.todayQuestion == nil {
+            return DailyChallengeCardState(kind: .loading)
         }
         return snapshot.homeCardState
     }

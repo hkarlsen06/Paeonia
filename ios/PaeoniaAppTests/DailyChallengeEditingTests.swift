@@ -7,7 +7,7 @@ struct DailyChallengeEditingTests {
     @MainActor
     @Test func draftsSurviveReopenAndClearOnSubmit() async throws {
         let baseSnapshot = makeDailySnapshot(rows: [
-            dailyQuestionRow(slotNumber: 1, seededForUserID: TestDailyChallengeIDs.currentUser),
+            dailyQuestionRow(),
         ])
         let service = RecordingDailyChallengeService(snapshots: [baseSnapshot])
         let store = InMemoryDailyChallengeDraftStore()
@@ -20,7 +20,7 @@ struct DailyChallengeEditingTests {
             pendingOperationStore: pendingStore
         )
         await first.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let question = try #require(first.snapshot.ownQuestions.first)
+        let question = try #require(first.snapshot.todayQuestion)
         first.setDraftText("Halfway through a thought", for: question.id)
         // Typed text reaches the store after a short pause, or when the screen closes.
         #expect(store.drafts(for: TestDailyChallengeIDs.currentUser).isEmpty)
@@ -45,7 +45,7 @@ struct DailyChallengeEditingTests {
     @Test func shuffleNeverSwapsATopicQuestion() async throws {
         let service = RecordingDailyChallengeService(snapshots: [
             makeDailySnapshot(rows: [
-                dailyQuestionRow(slotNumber: 0, seededForUserID: TestDailyChallengeIDs.currentUser),
+                dailyQuestionRow(),
             ]),
         ])
         let viewModel = DailyChallengeViewModel(
@@ -54,42 +54,48 @@ struct DailyChallengeEditingTests {
         )
 
         await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        var topicQuestion = try #require(viewModel.snapshot.ownQuestions.first)
+        var topicQuestion = try #require(viewModel.snapshot.todayQuestion)
         topicQuestion.topicKey = "would_you_rather"
 
         await viewModel.shuffle(topicQuestion)
 
-        #expect(await service.shuffledSlots.isEmpty)
+        #expect(await service.shuffleCount == 0)
     }
 
     @MainActor
-    @Test func shuffleIgnoresAlreadyAnsweredOwnQuestion() async throws {
+    @Test func shuffleIgnoresAQuestionEitherPartnerAnswered() async throws {
         let answerID = UUID()
-        let answeredSnapshot = makeDailySnapshot(
+        let ownAnswered = makeDailySnapshot(
             rows: [
                 dailyQuestionRow(
-                    slotNumber: 1,
-                    seededForUserID: TestDailyChallengeIDs.currentUser,
-                    status: "answered",
                     ownAnswerID: answerID,
                     ownAnsweredAt: TestDailyChallengeIDs.answerDate
                 ),
             ],
             details: [dailyAnswerDetail(answerID: answerID, isOwnAnswer: true, textBody: "Done already.")]
         )
-        let service = RecordingDailyChallengeService(snapshots: [answeredSnapshot])
-        let viewModel = DailyChallengeViewModel(
-            service: service,
-            operationProvider: FixedDailyChallengeOperationProvider()
-        )
+        let partnerAnswered = makeDailySnapshot(rows: [
+            dailyQuestionRow(
+                partnerAnswerID: UUID(),
+                partnerAnsweredAt: TestDailyChallengeIDs.answerDate
+            ),
+        ])
 
-        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
-        let answered = try #require(viewModel.snapshot.ownQuestions.first)
+        for snapshot in [ownAnswered, partnerAnswered] {
+            let service = RecordingDailyChallengeService(snapshots: [snapshot])
+            let viewModel = DailyChallengeViewModel(
+                service: service,
+                operationProvider: FixedDailyChallengeOperationProvider()
+            )
 
-        await viewModel.shuffle(answered)
+            await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+            let answered = try #require(viewModel.snapshot.todayQuestion)
 
-        #expect(await service.shuffledSlots.isEmpty)
-        #expect(viewModel.notice == nil)
+            await viewModel.shuffle(answered)
+
+            #expect(await service.shuffleCount == 0)
+            #expect(viewModel.notice == nil)
+        }
     }
 
     @Test func ownTextAnswerIsEditableOnlyWhilePrivate() {
@@ -97,28 +103,22 @@ struct DailyChallengeEditingTests {
         let snapshot = makeDailySnapshot(
             rows: [
                 dailyQuestionRow(
-                    slotNumber: 1,
-                    seededForUserID: TestDailyChallengeIDs.currentUser,
-                    status: "answered",
                     ownAnswerID: privateAnswerID,
                     ownAnsweredAt: TestDailyChallengeIDs.answerDate
                 ),
                 dailyQuestionRow(
-                    slotNumber: 2,
-                    seededForUserID: TestDailyChallengeIDs.currentUser,
-                    status: "answered",
                     ownAnswerID: UUID(),
                     ownAnsweredAt: TestDailyChallengeIDs.answerDate,
                     partnerAnswerID: UUID(),
                     partnerAnsweredAt: TestDailyChallengeIDs.answerDate,
                     canViewPartnerAnswer: true
                 ),
-                dailyQuestionRow(slotNumber: 3, seededForUserID: TestDailyChallengeIDs.currentUser),
+                dailyQuestionRow(),
             ],
             details: [dailyAnswerDetail(answerID: privateAnswerID, isOwnAnswer: true, textBody: "Private draft")]
         )
 
-        let own = snapshot.ownQuestions
+        let own = snapshot.questions
 
         #expect(own[0].canEditOwnAnswer)   // answered, partner hasn't seen it
         #expect(!own[1].canEditOwnAnswer)  // revealed once partner answered

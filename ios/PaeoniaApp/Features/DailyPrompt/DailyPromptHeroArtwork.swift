@@ -4,7 +4,7 @@ import SwiftUI
 /// presses the wax seal onto the flap once when the card appears, and a warm gold glow
 /// swells behind it. It follows `docs/games/hub-artwork.md`.
 ///
-/// `sealBreak` runs from 0 to 1 when the seal breaks, once today's questions are done.
+/// `sealBreak` runs from 0 to 1 when the seal breaks, once today's question is answered.
 /// The seal flies off the flap and the glow flashes. Then `opening` folds the flap back
 /// and a letter rises in the pocket. The card animates both, since they are not part of
 /// the beat.

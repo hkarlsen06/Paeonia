@@ -34,7 +34,7 @@ struct RootView: View {
     /// A permission primer appeared since the app last came to the front. Only
     /// one is offered per visit; the flag resets when the app goes to the background.
     @State var primerShownThisVisit = false
-    /// The invite screen's first questions are open. A partner who joins meanwhile
+    /// The invite screen's first question is open. A partner who joins meanwhile
     /// waits on the invite screen until they close, then the celebration plays.
     @State var inviterTaskIsOpen = false
     /// The paired person's answer to "Help us improve Paeonia?".

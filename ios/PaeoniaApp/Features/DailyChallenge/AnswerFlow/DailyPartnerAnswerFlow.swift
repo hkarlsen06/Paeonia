@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// The focused, full-screen flow for answering one question your partner has already
-/// answered, opened from its card in the Questions tab (or the history).
+/// The focused, full-screen flow for answering one topic question, opened from its card
+/// in the Questions tab or its topic (`TopicAnswerSession`). Daily questions use
+/// `DailyChallengeAnswerFlow`.
 ///
 /// It is presented as a full-screen cover that zooms out of the tapped card, so the
-/// card appears to grow into the screen. It reuses the daily challenge's prompt and
-/// composer, but without the multi-question chrome (no eyebrow, step bar, or skip).
-/// Sending your answer unlocks your partner's reply. The composer stays as it was
-/// until the reply loads, then the flow fades straight into the question's chat, where
-/// their answer plays its reveal, so the user can read it and reply without finding
-/// the card again. When the send is slow or offline, the chat's waiting page shows the
-/// user's answer and opens up once the reply arrives. Close ends the flow at any point.
+/// card appears to grow into the screen. It reuses the daily question's prompt and
+/// composer. Sending your answer unlocks your partner's reply when they have answered.
+/// The composer stays as it was until the reply loads, then the flow fades straight
+/// into the question's chat, where their answer plays its reveal. When the send is slow
+/// or offline, the chat's waiting page shows the user's answer and opens up once the
+/// reply arrives. Close ends the flow at any point.
 struct DailyPartnerAnswerFlow: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
@@ -248,14 +248,16 @@ struct DailyPartnerAnswerFlow: View {
     }
 }
 
-/// The revealed exchange in the main challenge flow. It receives the originally
-/// presented question separately from the live snapshot so reloads may reorder the
-/// question list without changing the prompt or invalidating the presentation that is
-/// already on screen.
+/// The reveal at the end of the daily answer flow, once the user has answered a question
+/// the partner answered first. It receives the originally presented question separately
+/// from the live snapshot so reloads may reorder the question list without changing the
+/// prompt or invalidating the presentation that is already on screen.
 ///
-/// Until the partner's answer can be shown (the user's answer is still sending, or
-/// the reply hasn't loaded), it shows a waiting block for the partner and the user's
-/// saved answer. The reply fades in on its own when the live snapshot unlocks it.
+/// Until the partner's answer can be shown (the user's answer is still sending, or the
+/// reply hasn't loaded), it shows a waiting block for the partner and the user's saved
+/// answer, and only Done. When the live snapshot unlocks the reply, the answers arrive
+/// with the same moment the chat plays (`dailyChatAnswerReveal`): a short build-up, a
+/// chime, a glow and a petal burst. The screen then offers Open chat and Done.
 struct DailyPartnerAnswerRevealView: View {
     let question: DailyChallengeQuestion
     let revealedQuestion: DailyChallengeQuestion?
@@ -264,23 +266,21 @@ struct DailyPartnerAnswerRevealView: View {
     var sending: DailySendingPreview?
     /// The partner's answer is on screen, so it counts as seen.
     var onRevealed: (DailyChallengeQuestion) -> Void = { _ in }
+    /// Closes the flow and opens the question's chat. Offered once the answers show.
+    var onOpenChat: () -> Void = {}
     let onDone: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The exchange as last seen unlocked. After the couple's day ends, today's
     /// snapshot can drop a finished exchange, and an open reveal must not lose it.
     @State private var lastRevealed: DailyChallengeQuestion?
-    /// The partner's answer starts blurred behind a lock and clears a moment after it
-    /// shows. This is the unlock the reveal plays.
-    @State private var isPartnerAnswerClear = false
     @State private var scrollPosition = ScrollPosition(edge: .top)
-    /// The match card shows after the answers have cleared.
+    /// The match card shows after the answers have landed.
     @State private var showsMatch = false
 
-    /// How long the lock shows before the answer clears. Short with Reduce Motion,
-    /// which has no lock to look at.
-    private var lockHold: Duration {
-        .milliseconds(reduceMotion ? 100 : 350)
+    /// How long the answers take to land, so the match card comes after them.
+    private var revealLength: Duration {
+        .milliseconds(reduceMotion ? 250 : 1_000)
     }
 
     private static func isUnlocked(_ question: DailyChallengeQuestion?) -> Bool {
@@ -321,12 +321,9 @@ struct DailyPartnerAnswerRevealView: View {
             }
             .scrollPosition($scrollPosition)
 
-            Button(action: onDone) {
-                Text(.dailyChallengeFlowDoneButton)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.bottom, PaeoniaSpacing.space8)
+            actions
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.bottom, PaeoniaSpacing.space8)
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: isRevealed)
         .onChange(of: revealedQuestion, initial: true) { _, question in
@@ -335,21 +332,12 @@ struct DailyPartnerAnswerRevealView: View {
         .onChange(of: shownQuestion?.id, initial: true) {
             if let shownQuestion { onRevealed(shownQuestion) }
         }
-        .onChange(of: isRevealed) { _, revealed in
-            if revealed { PaeoniaHaptics.answerRevealed() }
-        }
         .task(id: shownQuestion?.id) {
-            guard shownQuestion != nil else { return }
-            try? await Task.sleep(for: lockHold)
-            guard !Task.isCancelled else { return }
-            withAnimation(PaeoniaMotion.standardCurve(duration: reduceMotion ? PaeoniaMotion.motionDefault : 0.7)) {
-                isPartnerAnswerClear = true
-            }
-            // The match card comes once the answers have cleared. It lands under them,
+            // The match card comes once the answers have landed. It lands under them,
             // often below the fold, so the page follows it in and the bloom plays in
-            // view. A scroll during the unlock animation doesn't take.
-            guard hasMatch else { return }
-            try? await Task.sleep(for: .milliseconds(reduceMotion ? 250 : 750))
+            // view. A scroll during the reveal animation doesn't take.
+            guard shownQuestion != nil, hasMatch else { return }
+            try? await Task.sleep(for: revealLength)
             guard !Task.isCancelled else { return }
             showsMatch = true
             try? await Task.sleep(for: .milliseconds(50))
@@ -360,17 +348,40 @@ struct DailyPartnerAnswerRevealView: View {
         }
     }
 
-    /// The partner's answer, unlocking from blurred to clear, then a card about how
-    /// the two picks lined up on a "who is more likely" or pick-one-of-two question.
+    /// Open chat once the answers show, so the two can talk about them, and Done.
+    @ViewBuilder
+    private var actions: some View {
+        if isRevealed {
+            VStack(spacing: PaeoniaSpacing.space12) {
+                Button(action: onOpenChat) {
+                    Text(.dailyChallengeOpenChatButton)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle())
+                .accessibilityIdentifier("daily.reveal.openChat")
+
+                Button(action: onDone) {
+                    Text(.dailyChallengeFlowDoneButton)
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                .accessibilityIdentifier("daily.reveal.done")
+            }
+        } else {
+            Button(action: onDone) {
+                Text(.dailyChallengeFlowDoneButton)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .accessibilityIdentifier("daily.reveal.done")
+        }
+    }
+
+    /// Both answers, the partner's arriving with the chat's reveal moment, then a card
+    /// about how the two picks lined up on a "who is more likely" or pick-one-of-two question.
     @ViewBuilder
     private func revealedContent(_ shownQuestion: DailyChallengeQuestion) -> some View {
         DailyQuestionStatusView(question: shownQuestion, participants: participants)
-        DailyAnswerDetailsView(
-            question: shownQuestion,
-            participants: participants,
-            partnerAnswerIsClear: isPartnerAnswerClear
-        )
-        .transition(.opacity)
+        DailyAnswerDetailsView(question: shownQuestion, participants: participants, revealsPartnerAnswer: true)
+            .transition(.opacity)
 
         if showsMatch,
            let match = shownQuestion.partnerChoiceMatch(participants: participants) {

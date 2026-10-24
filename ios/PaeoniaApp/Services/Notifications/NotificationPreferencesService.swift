@@ -4,7 +4,7 @@ import OSLog
 #endif
 
 /// The opt-in "question time" reminder: a time of day when Paeonia nudges you if you
-/// have not started today's questions. It is off until the user turns it on.
+/// have not answered today's question. It is off until the user turns it on.
 nonisolated struct QuestionTimeReminder: Equatable, Sendable {
     static let defaultMinutes = 20 * 60
 

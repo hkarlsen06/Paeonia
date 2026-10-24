@@ -20,9 +20,9 @@ extension DailyChallengeViewModel {
         // The composer's counter already shows this; the backend would reject it.
         guard !isDraftTextTooLong(for: question.id) else { return }
         // The couple's day ended while this was open (offline, or before the live
-        // update arrived). The server only takes your own answers made during their
-        // day, so a queued one would never send.
-        if question.origin == .own, !question.isTopicQuestion, question.endsAt <= now() {
+        // update arrived). After its day the server takes an answer only when the
+        // partner has answered, so a queued one would never send.
+        if !question.hasPartnerAnswer, !question.isTopicQuestion, question.endsAt <= now() {
             endCurrentDayIfNeeded()
             notice = .dayEnded
             Task { await reload() }
@@ -195,7 +195,7 @@ extension DailyChallengeViewModel {
         guard
             question.editableAnswerKind == .text,
             submittingQuestionID == nil,
-            shufflingSlotNumber == nil,
+            shufflingQuestionID == nil,
             !isDraftTextTooLong(for: question.id)
         else { return }
 
@@ -235,7 +235,7 @@ extension DailyChallengeViewModel {
         guard
             question.editableAnswerKind == .partnerChoice,
             submittingQuestionID == nil,
-            shufflingSlotNumber == nil
+            shufflingQuestionID == nil
         else { return }
 
         guard let selection = partnerChoiceSelection(for: question.id) else {
@@ -266,26 +266,23 @@ extension DailyChallengeViewModel {
         submittingQuestionID = nil
     }
 
-    /// Swaps one of the user's own, still-unanswered questions for a fresh one.
-    /// The backend caps the number of swaps per day; when that cap is hit we show
-    /// a calm, plain-language notice instead of a generic error.
+    /// Swaps today's question for a fresh one, for both partners, while neither has
+    /// answered it. The backend caps the number of swaps per day; when that cap is hit
+    /// we show a calm, plain-language notice instead of a generic error.
     func shuffle(_ question: DailyChallengeQuestion) async {
         guard
-            !question.isTopicQuestion,
-            question.origin == .own,
-            !question.hasOwnAnswer,
+            question.canBeSkipped,
             !isSending(question.id),
             submittingQuestionID == nil,
-            shufflingSlotNumber == nil,
+            shufflingQuestionID == nil,
             let currentUserID
         else { return }
 
         cancelInFlightReload()
-        shufflingSlotNumber = question.slotNumber
+        shufflingQuestionID = question.id
         do {
             let result = try await service.shuffleQuestion(
                 currentUserID: currentUserID,
-                slotNumber: question.slotNumber,
                 operation: operationProvider.makeOperation()
             )
             apply(result)
@@ -303,10 +300,10 @@ extension DailyChallengeViewModel {
                 notice = .shuffleFailed(PaeoniaFailure(error))
             }
         }
-        shufflingSlotNumber = nil
+        shufflingQuestionID = nil
     }
 
     func isShuffling(_ question: DailyChallengeQuestion) -> Bool {
-        shufflingSlotNumber == question.slotNumber
+        shufflingQuestionID == question.id
     }
 }

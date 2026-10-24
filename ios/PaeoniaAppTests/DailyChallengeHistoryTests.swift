@@ -8,10 +8,9 @@ struct DailyChallengeHistoryTests {
     private static let day2 = "2026-06-26"
     private static let day3 = "2026-06-27"
 
-    /// An answered own-question row for `localDate`, answered at `answeredAt`.
+    /// A row the user answered on `localDate`, at `answeredAt`.
     private func answeredOwnRow(
         localDate: String,
-        slotNumber: Int,
         answeredAt: Date,
         ownAnswerID: UUID = UUID()
     ) -> DailyQuestionRow {
@@ -20,9 +19,6 @@ struct DailyChallengeHistoryTests {
         dailyQuestionRow(
             coupleDayID: UUID(),
             localDate: localDate,
-            slotNumber: slotNumber,
-            seededForUserID: TestDailyChallengeIDs.currentUser,
-            status: "answered",
             ownAnswerID: ownAnswerID,
             ownAnsweredAt: answeredAt
         )
@@ -33,7 +29,6 @@ struct DailyChallengeHistoryTests {
         details: [DailyAnswerDetailRow] = []
     ) -> [DailyChallengeQuestion] {
         DailyChallengeQuestion.list(
-            currentUserID: TestDailyChallengeIDs.currentUser,
             rows: rows,
             answerDetails: details,
             locale: Locale(identifier: "en_US")
@@ -42,10 +37,10 @@ struct DailyChallengeHistoryTests {
 
     @Test func groupsByLocalDateNewestFirst() {
         let questions = historyQuestions([
-            answeredOwnRow(localDate: Self.day1, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-            answeredOwnRow(localDate: Self.day2, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
-            answeredOwnRow(localDate: Self.day2, slotNumber: 2, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day1, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day3, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day2, answeredAt: TestDailyChallengeIDs.answerDate),
+            answeredOwnRow(localDate: Self.day2, answeredAt: TestDailyChallengeIDs.answerDate),
         ])
 
         let days = DailyChallengeHistory.grouped(questions)
@@ -59,17 +54,16 @@ struct DailyChallengeHistoryTests {
         let early = TestDailyChallengeIDs.answerDate
         let late = early.addingTimeInterval(3_600)
 
-        // Slot 1 answered later than slot 2, so the most-recently-answered comes first
-        // regardless of slot order.
-        let questions = historyQuestions([
-            answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: late),
-            answeredOwnRow(localDate: Self.day3, slotNumber: 2, answeredAt: early),
-        ])
+        // Two exchanges finished on the same day: the most recently answered comes
+        // first, whatever order the rows arrive in.
+        let earlyRow = answeredOwnRow(localDate: Self.day3, answeredAt: early)
+        let lateRow = answeredOwnRow(localDate: Self.day3, answeredAt: late)
+        let questions = historyQuestions([earlyRow, lateRow])
 
         let days = DailyChallengeHistory.grouped(questions)
 
         #expect(days.count == 1)
-        #expect(days[0].questions.map(\.slotNumber) == [1, 2])
+        #expect(days[0].questions.map(\.id) == [lateRow.instanceID, earlyRow.instanceID])
     }
 
     @Test func usesLatestOfOwnAndPartnerAnswerAsSortKey() {
@@ -83,21 +77,18 @@ struct DailyChallengeHistoryTests {
         // earliest/own answer instead of the latest of the two.
         let questionA = dailyQuestionRow(
             localDate: Self.day3,
-            slotNumber: 1,
-            seededForUserID: TestDailyChallengeIDs.currentUser,
-            status: "answered",
             ownAnswerID: UUID(),
             ownAnsweredAt: early,
             partnerAnswerID: UUID(),
             partnerAnsweredAt: late,
             canViewPartnerAnswer: true
         )
-        let questionB = answeredOwnRow(localDate: Self.day3, slotNumber: 2, answeredAt: mid)
+        let questionB = answeredOwnRow(localDate: Self.day3, answeredAt: mid)
 
         let days = DailyChallengeHistory.grouped(historyQuestions([questionB, questionA]))
 
         #expect(days.count == 1)
-        #expect(days[0].questions.map(\.slotNumber) == [1, 2])
+        #expect(days[0].questions.map(\.id) == [questionA.instanceID, questionB.instanceID])
     }
 
     @Test func placesQuestionInLatestAnswerDayNotInstanceDay() {
@@ -111,9 +102,6 @@ struct DailyChallengeHistoryTests {
         let carried = dailyQuestionRow(
             localDate: Self.day2,
             effectiveLocalDate: Self.day3,
-            slotNumber: 1,
-            seededForUserID: TestDailyChallengeIDs.partnerUser,
-            status: "answered",
             ownAnswerID: UUID(),
             ownAnsweredAt: afterMidnight,
             partnerAnswerID: UUID(),
@@ -143,7 +131,6 @@ struct DailyChallengeHistoryTests {
             historyRows: [
                 answeredOwnRow(
                     localDate: Self.day3,
-                    slotNumber: 1,
                     answeredAt: TestDailyChallengeIDs.answerDate,
                     ownAnswerID: ownAnswerID
                 ),
@@ -167,7 +154,7 @@ struct DailyChallengeHistoryTests {
         let service = RecordingDailyChallengeService(
             snapshots: [],
             historyQuestions: historyQuestions([
-                answeredOwnRow(localDate: Self.day3, slotNumber: 1, answeredAt: TestDailyChallengeIDs.answerDate),
+                answeredOwnRow(localDate: Self.day3, answeredAt: TestDailyChallengeIDs.answerDate),
             ]),
             historyReloadError: URLError(.timedOut)
         )

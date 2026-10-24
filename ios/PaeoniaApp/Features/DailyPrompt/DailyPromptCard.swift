@@ -9,7 +9,7 @@ extension EnvironmentValues {
 /// Today's Daily Challenge on the Home tab and the Questions tab.
 ///
 /// While there is something to do (and while the questions load) it is the picture card
-/// with the sealed envelope (`DailyPromptHeroCard`). Once today's questions are done it is
+/// with the sealed envelope (`DailyPromptHeroCard`). Once today's question is answered it is
 /// a short row (`DailyPromptCompactCard`). The envelope holds the partner's answers, so it
 /// opens only once they can be read. When the last answer comes in and the partner has
 /// answered, the seal breaks, the envelope opens and the card shrinks. Otherwise the card
@@ -32,7 +32,7 @@ struct DailyPromptCard: View {
     /// Set on Home so a tapped locked row is the source its answer flow zooms out of.
     var zoomNamespace: Namespace.ID?
     var onAnswer: () -> Void = {}
-    /// Opens the answer flow of a partner question shown as a locked row.
+    /// Opens the answer flow of an earlier question shown as a locked row.
     var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
 
     private enum MomentPhase {

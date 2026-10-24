@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The first questions on the invite screen: a tool the inviter opens, so it is a
+/// The first question on the invite screen: a tool the inviter opens, so it is a
 /// pressable card. When it turns done the card pops and hearts rise from its trailing mark.
 struct InviterFirstDayRow<Leading: View, Trailing: View>: View {
     let title: LocalizedStringResource
@@ -103,25 +103,10 @@ struct InviterFirstDayRowIcon: View {
     }
 }
 
-/// A check once the item is done, and a chevron before.
+/// A check once the item is done, and a chevron before. A spinner while the item loads
+/// because the row was tapped. VoiceOver skips it, since the row's subtitle says the same.
 struct InviterFirstDayCheck: View {
     let isDone: Bool
-
-    var body: some View {
-        Image(systemName: isDone ? "checkmark.circle.fill" : "chevron.right")
-            .font(isDone ? .title2.weight(.semibold) : .body.weight(.semibold))
-            .foregroundStyle(isDone ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
-            .contentTransition(.symbolEffect(.replace))
-            .symbolEffect(.bounce, value: isDone)
-            .accessibilityHidden(true)
-    }
-}
-
-/// How many of the first questions are answered, as a ring that fills, then a check.
-struct InviterQuestionsProgress: View {
-    let answered: Int
-    let total: Int
-    /// The questions are loading because the row was tapped.
     var isLoading = false
 
     @ScaledMetric(relativeTo: .body) private var size: CGFloat = 34
@@ -131,34 +116,15 @@ struct InviterQuestionsProgress: View {
             if isLoading {
                 ProgressView()
                     .tint(.paeoniaAccentPrimary)
-            } else if total > 0, answered < total {
-                ring
             } else {
-                InviterFirstDayCheck(isDone: total > 0)
+                Image(systemName: isDone ? "checkmark.circle.fill" : "chevron.right")
+                    .font(isDone ? .title2.weight(.semibold) : .body.weight(.semibold))
+                    .foregroundStyle(isDone ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
+                    .contentTransition(.symbolEffect(.replace))
+                    .symbolEffect(.bounce, value: isDone)
             }
         }
         .frame(minWidth: size, minHeight: size)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(total > 0 ? Text(.inviterQuestionsRowProgress(answered, total)) : Text(verbatim: ""))
-    }
-
-    private var ring: some View {
-        ZStack {
-            Circle()
-                .stroke(.paeoniaSurfacePressed, lineWidth: 3)
-
-            Circle()
-                .trim(from: 0, to: CGFloat(answered) / CGFloat(total))
-                .stroke(.paeoniaAccentPrimary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-
-            Text(verbatim: "\(answered)/\(total)")
-                .font(.caption2.weight(.bold))
-                .monospacedDigit()
-                .foregroundStyle(.paeoniaTextPrimary)
-                .contentTransition(.numericText())
-        }
-        .frame(width: size, height: size)
-        .animation(PaeoniaMotion.cardReveal, value: answered)
+        .accessibilityHidden(true)
     }
 }

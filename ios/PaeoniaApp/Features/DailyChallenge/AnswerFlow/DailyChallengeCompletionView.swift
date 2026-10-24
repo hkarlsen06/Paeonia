@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The streak screen the answer flow turns over to once the user's questions
-/// are answered. A slipped streak's version offers to buy the streak back in place.
+/// The streak screen the answer flow turns over to once the user has answered and the
+/// partner's answer is still to come. A slipped streak's version offers to buy the
+/// streak back in place.
 struct DailyChallengeCompletionView: View {
     let streak: Int
     /// The partner's display name, so the finish copy and CTA name them.
@@ -18,8 +19,6 @@ struct DailyChallengeCompletionView: View {
     /// completion; `nil` for a normal finish. Once its `restoredCount` lands the
     /// screen turns celebratory and the flame reignites and refills.
     var restoreViewModel: StreakRestoreViewModel?
-    var hasPartnerQuestionsToAnswer = false
-    var onOpenPartnerQuestions: () -> Void = {}
     /// The streak milestone this finish reaches, when this phone has not celebrated
     /// it yet. The screen then shows the milestone moment instead of the usual copy.
     var milestone: Int?
@@ -177,8 +176,6 @@ struct DailyChallengeCompletionView: View {
 
             purchaseButton(now: now)
 
-            partnerQuestionsButton(style: .secondary)
-
             Button(action: onDone) {
                 Text(.dailyChallengeFlowDoneButton)
             }
@@ -214,26 +211,13 @@ struct DailyChallengeCompletionView: View {
         )
     }
 
-    /// Actions for a normal celebratory finish and, after a restore, the revived
-    /// streak too: pick up optional partner questions, or just finish.
-    @ViewBuilder
+    /// The action for a normal celebratory finish and, after a restore, the revived
+    /// streak too.
     private var finishedActions: some View {
-        if hasPartnerQuestionsToAnswer {
-            VStack(spacing: PaeoniaSpacing.space12) {
-                partnerQuestionsButton(style: .primary)
-
-                Button(action: onDone) {
-                    Text(.dailyChallengeFlowDoneButton)
-                }
-                .buttonStyle(PaeoniaQuietButtonStyle())
-                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-            }
-        } else {
-            Button(action: onDone) {
-                Text(.dailyChallengeFlowDoneButton)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
+        Button(action: onDone) {
+            Text(.dailyChallengeFlowDoneButton)
         }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
     }
 
     /// The buy button's title: "Restore streak", with the price appended once the
@@ -253,29 +237,6 @@ struct DailyChallengeCompletionView: View {
                 _ = await restoreViewModel.purchase()
             }
         }
-    }
-
-    @ViewBuilder
-    private func partnerQuestionsButton(style: PartnerQuestionsButtonStyle) -> some View {
-        if hasPartnerQuestionsToAnswer {
-            switch style {
-            case .primary:
-                Button(action: onOpenPartnerQuestions) {
-                    Text(.dailyChallengeFlowPartnerQuestionsButton(partnerName))
-                }
-                .buttonStyle(PaeoniaPrimaryButtonStyle())
-            case .secondary:
-                Button(action: onOpenPartnerQuestions) {
-                    Text(.dailyChallengeFlowPartnerQuestionsButton(partnerName))
-                }
-                .buttonStyle(PaeoniaSecondaryButtonStyle())
-            }
-        }
-    }
-
-    private enum PartnerQuestionsButtonStyle {
-        case primary
-        case secondary
     }
 }
 

@@ -41,7 +41,7 @@ private func detailJSON() -> String {
      "row":{"couple_day_id":"\(TestDailyChallengeIDs.coupleDay)","couple_id":"\(TopicIDs.couple)",
             "local_date":"2026-10-18","starts_at":"2026-10-18T00:00:00.000Z",
             "ends_at":"2026-10-19T00:00:00.000Z","instance_id":"\(instance)",
-            "seeded_for_user_id":"\(TopicIDs.partner)","slot_number":0,"instance_status":"active",
+            "instance_status":"active",
             "question_id":"\(TopicIDs.startedQuestion)","question_version_id":"\(TopicIDs.version)",
             "question_key":"travel_best_view","prompt_en":"Best view?","short_prompt_en":"The best view",
             "prompt_nb":"Fineste utsikt?","short_prompt_nb":"Den fineste utsikten",
@@ -67,7 +67,6 @@ private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
 private func items(locale: Locale = Locale(identifier: "en")) throws -> [TopicQuestionItem] {
     TopicQuestionItem.items(
         from: try decode(RemoteTopicDetail.self, detailJSON()),
-        currentUserID: TopicIDs.me,
         coupleID: TopicIDs.couple,
         locale: locale
     )
@@ -89,12 +88,10 @@ struct TopicModelTests {
         let built = try items()
         #expect(built.count == 2)
         let started = try #require(built.first { $0.question.questionID == TopicIDs.startedQuestion })
-        #expect(started.question.origin == .partner)
         #expect(started.question.hasPartnerAnswer)
         #expect(started.question.topicKey == "travel_and_places")
         let fresh = try #require(built.first { $0.question.questionID == TopicIDs.freshQuestion })
         #expect(fresh.id == TopicInstanceID.make(coupleID: TopicIDs.couple, questionID: TopicIDs.freshQuestion))
-        #expect(fresh.question.origin == .own)
         #expect(fresh.question.isTopicQuestion)
         #expect(fresh.question.isAvailableToAnswer)
         #expect(fresh.question.shortPrompt == "The best souvenir")
