@@ -1,7 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import { getEntitledCoupleIdForUser, listActiveMembers } from "./access";
 import { findCoupleDayAt, resolveCoupleDayAnchorAt, userLocalDate } from "./coupleDays";
-import { instancesOfDay, isLive, visibleAnswersOf } from "./dailyQuestions";
+import { activeInstanceOfDay, visibleAnswersOf } from "./dailyQuestions";
 import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
 import { newestGame as newestMindMeldGame } from "./mindMeld";
@@ -86,24 +86,15 @@ async function distanceBetween(ctx: ReaderCtx, coupleId: string, userId: string,
   };
 }
 
-/**
- * Whether each partner finished their own daily questions on the day. A partner is done when every
- * live question seeded for them has a visible answer from them. Null when the day has no live question.
- */
+/** Whether each partner answered the day's question. Null when the day has no question yet. */
 async function dailyQuestionState(ctx: ReaderCtx, coupleDayId: string, userId: string, partnerId: string | null) {
-  const live = (await instancesOfDay(ctx, coupleDayId)).filter(isLive);
-  if (live.length === 0) return null;
-  const answered = new Set<string>();
-  for (const instance of live) {
-    const answers = await visibleAnswersOf(ctx, instance.id);
-    if (answers.some((answer) => answer.user_id === instance.seeded_for_user_id)) answered.add(instance.id);
-  }
-  const done = (id: string | null) => {
-    if (id === null) return false;
-    const own = live.filter((instance) => instance.seeded_for_user_id === id);
-    return own.length > 0 && own.every((instance) => answered.has(instance.id));
+  const instance = await activeInstanceOfDay(ctx, coupleDayId);
+  if (!instance) return null;
+  const answers = await visibleAnswersOf(ctx, instance.id);
+  return {
+    me_answered: answers.some((answer) => answer.user_id === userId),
+    partner_answered: answers.some((answer) => answer.user_id === partnerId),
   };
-  return { me_answered: done(userId), partner_answered: done(partnerId) };
 }
 
 type Turn = { kind: string; updated_at: string };

@@ -308,23 +308,13 @@ export function notificationAlertBody(
     case "widget_updated":
       return nb ? "Tegnet noe til deg" : "Drew something for you";
     case "partner_answered":
-      // `question_count` is how many of the recipient's questions the partner answered in this push.
+      // `question_count` is how many answers the recipient can now see (lib/dailyPartnerPush.ts).
       if (typeof payload.question_count === "number" && payload.question_count > 1) {
         return nb ? "Nå kan du se svarene." : "Their answers are ready to see.";
       }
       return nb ? "Nå kan du se svaret." : "Their answer is ready to see.";
     case "daily_challenge_completed":
-      // `to_answer`: the partner's questions still wait for the recipient's answer. `to_see`: the
-      // partner answered the recipient's questions too. Set at send time (lib/dailyPartnerPush.ts).
-      if (payload.to_answer === false) {
-        return nb ? "Nå kan du se svarene." : "Their answers are ready to see.";
-      }
-      if (payload.to_see === true) {
-        return nb
-          ? "Se svarene, og svar så på spørsmålene som venter."
-          : "See their answers, then answer their questions.";
-      }
-      return nb ? "Svar selv, så ser du svarene." : "Answer their questions to see what they wrote.";
+      return nb ? "Svar selv, så ser du svaret." : "Answer it to see what they said.";
     case "memory_created":
       return nb ? "Se det blant minnene deres." : "See it in your memories.";
     case "story_posted":
@@ -378,11 +368,11 @@ export function notificationAlertBody(
     case "question_time_reminder":
       switch (dailyVariant(payload.expires_at, QUESTION_TIME_VARIANTS)) {
         case 1:
-          return nb ? "Svar på dine, så ser du hva partneren din sa." : "Answer yours, then see what your partner said.";
+          return nb ? "Svar på det, så ser du hva partneren din sa." : "Answer it, then see what your partner said.";
         case 2:
           return nb ? "Svar når du har noen minutter." : "Answer when you have a few minutes.";
         default:
-          return nb ? "To spørsmål venter. Det tar bare noen minutter." : "Two questions are waiting. They take a few minutes.";
+          return nb ? "Dagens spørsmål venter. Det tar bare et par minutter." : "Today's question is waiting. It takes a minute or two.";
       }
     case "streak_reminder":
       // `partner_checked_in`: the partner already did their part today (streaks.ts).
@@ -447,7 +437,7 @@ export async function notificationAlertTitle(
     case "partner_answered":
       return nb ? `${name} svarte også` : `${name} answered too`;
     case "daily_challenge_completed":
-      return nb ? `${name} fullførte dagens spørsmål` : `${name} finished today's questions`;
+      return nb ? `${name} svarte på dagens spørsmål` : `${name} answered today's question`;
     case "memory_created":
       return nb ? `${name} la til et minne` : `${name} added a memory`;
     case "story_posted":
@@ -491,9 +481,9 @@ export async function notificationAlertTitle(
         case 1:
           return nb ? "Spørsmålstid" : "Question time";
         case 2:
-          return nb ? "De to spørsmålene dine er her" : "Your two questions are here";
+          return nb ? "Et nytt spørsmål er her" : "A new question is here";
         default:
-          return nb ? "Dagens spørsmål er klare" : "Today's questions are ready";
+          return nb ? "Dagens spørsmål er klart" : "Today's question is ready";
       }
     case "streak_reminder":
       // `actor_user_id` is the partner here (streaks.ts).

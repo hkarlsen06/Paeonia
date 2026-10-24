@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
-import { liveInstancesFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
+import { currentQuestionFor, dailyQuestionsFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { deliverDuePushes } from "./push.testing";
 import { addDevice, createCouple, createSignedInUser, newTest, setTimeZone, type TestConvex, type TestUser } from "./test.setup";
@@ -29,8 +29,8 @@ function op(at: string = new Date().toISOString()) {
 
 const start = (user: TestUser, args = op()) =>
   user.as.mutation(api.daily.start_daily_challenge_snapshot, args).then(([snapshot]) => snapshot.questions);
-const shuffle = (user: TestUser, slot: number, args = op()) =>
-  user.as.mutation(api.daily.shuffle_daily_question_snapshot, { p_slot_number: slot, ...args }).then(([snapshot]) => snapshot.questions);
+const shuffle = (user: TestUser, args = op()) =>
+  user.as.mutation(api.daily.shuffle_daily_question_snapshot, args).then(([snapshot]) => snapshot.questions);
 const today = (user: TestUser) =>
   user.as.query(api.daily.get_today_daily_challenge_snapshot, {}).then(([snapshot]) => snapshot.questions);
 
@@ -43,39 +43,35 @@ async function readyCouple(options: { timeZones?: [string, string]; questions?: 
   await seedCatalog(t, options.questions ?? textQuestions(12));
   const couple = await createCouple(t, { timeZones: options.timeZones ?? OSLO });
   await start(couple.first);
-  return { t, couple, a: couple.first, b: couple.second };
+  const question = await currentQuestionFor(t, couple.first.userId);
+  return { t, couple, a: couple.first, b: couple.second, question };
 }
 
-async function completeDay(t: TestConvex, user: TestUser, text = "done") {
-  const mine = (await liveInstancesFor(t, user.userId)).filter((row) => row.seeded_for_user_id === user.userId);
-  for (const instance of mine.slice(-2)) {
-    await submit(user, instance.id, { text });
-  }
+/** Moves the clock to 10:00 UTC on a day in October 2026 and starts that day. */
+async function nextDay(user: TestUser, day: string) {
+  vi.setSystemTime(new Date(`2026-10-${day}T10:00:00.000Z`));
+  return await start(user);
 }
 
 describe("start_daily_challenge_snapshot", () => {
-  test("stores each instance's couple and question for the chat's index", async () => {
-    const { t, couple, a } = await readyCouple();
-    const instances = await liveInstancesFor(t, a.userId);
-    expect(instances.length).toBeGreaterThan(0);
-    for (const instance of instances) {
-      const version = await t.run((ctx) =>
-        ctx.db.query("question_versions").withIndex("by_uuid", (q) => q.eq("id", instance.question_version_id)).unique(),
-      );
-      expect(instance.couple_id).toBe(couple.coupleId);
-      expect(instance.question_id).toBe(version!.question_id);
-    }
+  test("stores the instance's couple and question for the chat's index", async () => {
+    const { t, couple, question } = await readyCouple();
+    const version = await t.run((ctx) =>
+      ctx.db.query("question_versions").withIndex("by_uuid", (q) => q.eq("id", question.question_version_id)).unique(),
+    );
+    expect(question.couple_id).toBe(couple.coupleId);
+    expect(question.question_id).toBe(version!.question_id);
   });
 
-  test("seeds two slots per partner and shows each partner only their own questions", async () => {
-    const { t, a, b } = await readyCouple();
+  test("seeds one question per couple day, and both partners get the same one", async () => {
+    const { t, a, b, question } = await readyCouple();
     const aRows = await today(a);
-    expect(aRows).toHaveLength(2);
-    expect(aRows.every((row) => row.seeded_for_user_id === a.userId && row.is_current_day === true)).toBe(true);
-    expect(aRows.map((row) => row.slot_number)).toEqual([1, 2]);
+    expect(aRows).toHaveLength(1);
     expect(aRows[0]).toMatchObject({
+      instance_id: question.id,
       local_date: "2026-10-10",
       instance_status: "active",
+      is_current_day: true,
       answer_kinds: ["text"],
       own_answer_id: null,
       partner_answer_id: null,
@@ -83,39 +79,8 @@ describe("start_daily_challenge_snapshot", () => {
     });
     expect(aRows[0].prompt_en).toMatch(/prompt en$/);
     expect(aRows[0].prompt_nb).toMatch(/prompt nb$/);
-    expect(await today(b)).toHaveLength(2);
-    const challenges = await t.run((ctx) => ctx.db.query("daily_challenges").collect());
-    expect(challenges).toHaveLength(2);
-    const all = await t.run((ctx) => ctx.db.query("daily_question_instances").collect());
-    expect(all).toHaveLength(4);
-    // Two distinct questions per partner.
-    for (const user of [a, b]) {
-      const versions = all.filter((row) => row.seeded_for_user_id === user.userId).map((row) => row.question_version_id);
-      expect(new Set(versions).size).toBe(2);
-    }
-  });
-
-  test("never gives both partners the same question on one day", async () => {
-    // Five questions fill four slots a day, so without the rule the partners would often share one.
-    // A shuffle and five days of seeding make a lucky pass unlikely.
-    const { t, a, b } = await readyCouple({ questions: textQuestions(5) });
-    await shuffle(b, 1);
-    for (const day of ["11", "12", "13", "14"]) {
-      vi.setSystemTime(new Date(`2026-10-${day}T10:00:00.000Z`));
-      await start(a);
-    }
-    const live = (await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).filter(
-      (row) => row.status !== "shuffled",
-    );
-    const questionsByDay = new Map<string | undefined, string[]>();
-    for (const row of live) {
-      questionsByDay.set(row.couple_day_id, [...(questionsByDay.get(row.couple_day_id) ?? []), row.question_id]);
-    }
-    expect(questionsByDay.size).toBe(5);
-    for (const questionIds of questionsByDay.values()) {
-      expect(questionIds).toHaveLength(4);
-      expect(new Set(questionIds).size).toBe(4);
-    }
+    expect((await start(b)).map((row) => row.instance_id)).toEqual([question.id]);
+    expect(await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).toHaveLength(1);
   });
 
   test("a replay of the same client operation returns the same day and adds nothing", async () => {
@@ -124,9 +89,8 @@ describe("start_daily_challenge_snapshot", () => {
     const first = await start(a, args);
     const second = await start(a, args);
     expect(second.map((row) => row.instance_id)).toEqual(first.map((row) => row.instance_id));
-    expect(await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).toHaveLength(4);
     await start(a, op());
-    expect(await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).toHaveLength(4);
+    expect(await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).toHaveLength(1);
     await expect(
       start(a, { ...args, p_local_created_at: "2026-10-10T10:05:00.000Z" }),
     ).rejects.toThrow(/23505.*client operation replay hash mismatch/);
@@ -135,7 +99,7 @@ describe("start_daily_challenge_snapshot", () => {
   test("returns the snapshot shape the app decodes", async () => {
     const { a } = await readyCouple();
     const [snapshot] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, {});
-    expect(snapshot.questions).toHaveLength(2);
+    expect(snapshot.questions).toHaveLength(1);
     expect(snapshot.answer_details).toEqual([]);
     expect(snapshot.streak).toEqual({
       current_count: 0,
@@ -152,8 +116,6 @@ describe("start_daily_challenge_snapshot", () => {
       partner_contributed_today: false,
     });
     expect(snapshot.generated_at).toBe("2026-10-10T10:00:00.000Z");
-    const [started] = await a.as.mutation(api.daily.start_daily_challenge_snapshot, op());
-    expect(started.questions).toHaveLength(2);
   });
 
   test("needs a signed-in user in an entitled couple", async () => {
@@ -168,7 +130,7 @@ describe("start_daily_challenge_snapshot", () => {
 
   test("fails with a clear error when no question is eligible", async () => {
     const t = newTest();
-    await seedCatalog(t, textQuestions(1));
+    await seedCatalog(t, []);
     const couple = await createCouple(t);
     await expect(start(couple.first)).rejects.toThrow(/22023.*no eligible daily questions are available/);
   });
@@ -176,17 +138,15 @@ describe("start_daily_challenge_snapshot", () => {
 
 describe("answers and the reveal rule", () => {
   test("a partner's answer stays hidden in every read until both have answered", async () => {
-    const { t, couple, a, b } = await readyCouple();
+    const { t, a, b, question } = await readyCouple();
     const secret = "only for the reveal";
-    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    const answerId = await submit(a, aFirst.id, { text: secret });
+    const answerId = await submit(a, question.id, { text: secret });
 
     const bRows = await today(b);
-    const row = bRows.find((item) => item.instance_id === aFirst.id)!;
-    expect(bRows).toHaveLength(3);
-    expect(row).toMatchObject({ partner_answer_id: answerId, can_view_partner_answer: false, own_answer_id: null });
+    expect(bRows).toHaveLength(1);
+    expect(bRows[0]).toMatchObject({ partner_answer_id: answerId, can_view_partner_answer: false, own_answer_id: null });
 
-    const dayId = row.couple_day_id;
+    const dayId = bRows[0].couple_day_id;
     const reads = [
       await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId }),
       await b.as.query(api.daily.get_daily_answer_history_details, {}),
@@ -205,33 +165,33 @@ describe("answers and the reveal rule", () => {
     expect(await outsider.first.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId })).toEqual([]);
 
     // The partner answers, and now both sides see both answers.
-    await submit(b, aFirst.id, { text: "reply" });
+    await submit(b, question.id, { text: "reply" });
     const afterB = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: dayId });
     expect(afterB.map((item) => [item.text_body, item.can_view_answer]).sort()).toEqual([
       [secret, true],
       ["reply", true],
     ]);
-    const history = await b.as.query(api.daily.get_daily_answer_history_details, {});
-    expect(history).toHaveLength(2);
-    const [bView] = (await b.as.query(api.daily.get_today_daily_challenge_snapshot, {}));
-    expect(bView.questions.find((item) => item.instance_id === aFirst.id)?.can_view_partner_answer).toBe(true);
-    expect(couple.coupleId).toBeTruthy();
+    expect(await b.as.query(api.daily.get_daily_answer_history_details, {})).toHaveLength(2);
+    expect((await today(a))[0].can_view_partner_answer).toBe(true);
+    expect((await today(b))[0].can_view_partner_answer).toBe(true);
   });
 
-  test("a partner-seeded question can only be answered after the partner answers", async () => {
-    const { t, a, b } = await readyCouple();
-    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    await expect(submit(b, aFirst.id, { text: "too early" })).rejects.toThrow(
-      /42501.*partner-seeded questions can be answered after your partner answers/,
+  test("either partner can answer first, and someone outside the couple cannot answer at all", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await expect(submit(b, question.id, { text: "me first" })).resolves.toEqual(expect.any(String));
+    await expect(submit(a, question.id, { text: "then me" })).resolves.toEqual(expect.any(String));
+
+    const outsider = await createCouple(t);
+    await expect(submit(outsider.first, question.id, { text: "not mine" })).rejects.toThrow(
+      /42501.*active entitled couple access is required/,
     );
-    await submit(a, aFirst.id, { text: "first" });
-    await expect(submit(b, aFirst.id, { text: "ok now" })).resolves.toEqual(expect.any(String));
+    const lonely = await createSignedInUser(t);
+    await expect(submit(lonely, question.id, { text: "not mine" })).rejects.toThrow(/42501/);
   });
 
   test("submitting twice with one client operation stores one answer", async () => {
-    const { t, a } = await readyCouple();
-    const [first] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    const args = { p_instance_id: first.id, p_payload: { text: "once", answer_id: newUuid().toUpperCase() }, ...op() };
+    const { t, a, question } = await readyCouple();
+    const args = { p_instance_id: question.id, p_payload: { text: "once", answer_id: newUuid().toUpperCase() }, ...op() };
     const answerId = await a.as.mutation(api.daily.submit_daily_answer, args);
     expect(await a.as.mutation(api.daily.submit_daily_answer, args)).toBe(answerId);
     expect(answerId).toBe(args.p_payload.answer_id.toLowerCase());
@@ -241,21 +201,15 @@ describe("answers and the reveal rule", () => {
       a.as.mutation(api.daily.submit_daily_answer, { ...args, p_payload: { text: "changed", answer_id: args.p_payload.answer_id } }),
     ).rejects.toThrow(/23505.*client operation replay hash mismatch/);
     // A second operation for the same question hits the one-answer-per-person rule.
-    await expect(submit(a, first.id, { text: "again" })).rejects.toThrow(
+    await expect(submit(a, question.id, { text: "again" })).rejects.toThrow(
       /23505.*daily_question_answers_instance_user_unique/,
     );
   });
 
   test("validates the payload and the answer kinds", async () => {
-    const { t, a, couple } = await readyCouple({
-      questions: [
-        { key: "text_only" },
-        ...textQuestions(11).map((item) => ({ ...item, key: `x_${item.key}` })),
-      ],
-    });
-    const [first] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
+    const { a, couple, question } = await readyCouple();
     const send = (payload: unknown) =>
-      a.as.mutation(api.daily.submit_daily_answer, { p_instance_id: first.id, p_payload: payload, ...op() });
+      a.as.mutation(api.daily.submit_daily_answer, { p_instance_id: question.id, p_payload: payload, ...op() });
     await expect(send([])).rejects.toThrow(/23514.*answer payload must be an object/);
     await expect(send({})).rejects.toThrow(/23514.*answer payload must include at least one answer kind/);
     await expect(send({ text: "   " })).rejects.toThrow(/answer payload must include at least one answer kind/);
@@ -275,21 +229,21 @@ describe("answers and the reveal rule", () => {
   });
 
   test("text plus photo answers attach media, and the photo stays hidden until the partner answers", async () => {
-    const { t, couple, a, b } = await readyCouple({
+    const { t, couple, a, b, question } = await readyCouple({
       questions: textQuestions(12).map((item) => ({ ...item, kinds: ["text", "photo"] as ("text" | "photo")[] })),
     });
-    const [first] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
     const answerId = newUuid();
     const assetId = await insertAnswerAsset(t, { ownerUserId: a.userId, coupleId: couple.coupleId, answerId });
-    await submit(a, first.id, { text: "caption", answer_id: answerId, media_asset_ids: [assetId.toUpperCase()] });
-    const day = (await today(a))[0].couple_day_id;
+    await submit(a, question.id, { text: "caption", answer_id: answerId, media_asset_ids: [assetId.toUpperCase()] });
+    const day = question.couple_day_id!;
     const mine = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
     expect(mine[0]).toMatchObject({ text_body: "caption", media_asset_ids: [assetId], can_view_answer: true });
     const theirs = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
     expect(theirs[0]).toMatchObject({ text_body: null, media_asset_ids: [], can_view_answer: false });
-    // The asset has to be reserved for this answer.
-    const [second] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId).slice(1);
-    await expect(submit(a, second.id, { text: "x", media_asset_ids: [assetId] })).rejects.toThrow(
+    // The asset has to be reserved for this answer, so tomorrow's question cannot reuse it.
+    await nextDay(a, "11");
+    const tomorrow = await currentQuestionFor(t, a.userId);
+    await expect(submit(a, tomorrow.id, { text: "x", media_asset_ids: [assetId] })).rejects.toThrow(
       /23514.*daily answer media asset is not usable for this answer/,
     );
     // A hidden asset drops out of the list.
@@ -302,19 +256,18 @@ describe("answers and the reveal rule", () => {
   });
 
   test("partner choice answers pick an active member and can be edited until the partner answers", async () => {
-    const { t, couple, a, b } = await readyCouple({
+    const { t, couple, a, b, question } = await readyCouple({
       questions: textQuestions(12).map((item) => ({ ...item, kinds: ["text", "partner_choice"] as ("text" | "partner_choice")[] })),
     });
-    const [first] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
     const outsider = await createSignedInUser(t);
-    await expect(submit(a, first.id, { partner_choice_user_id: outsider.userId })).rejects.toThrow(
+    await expect(submit(a, question.id, { partner_choice_user_id: outsider.userId })).rejects.toThrow(
       /23514.*partner choice must select an active couple member/,
     );
-    const answerId = await submit(a, first.id, { partner_choice_user_id: a.userId.toUpperCase(), text: "me" });
-    const day = (await today(a))[0].couple_day_id;
+    const answerId = await submit(a, question.id, { partner_choice_user_id: a.userId.toUpperCase(), text: "me" });
+    const day = question.couple_day_id!;
     expect((await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day }))[0].selected_user_id).toBe(a.userId);
     const edited = await a.as.mutation(api.daily.update_daily_answer_partner_choice, {
-      p_instance_id: first.id,
+      p_instance_id: question.id,
       p_selected_user_id: couple.second.userId,
       ...op(),
     });
@@ -323,12 +276,12 @@ describe("answers and the reveal rule", () => {
       couple.second.userId,
     );
     await expect(
-      a.as.mutation(api.daily.update_daily_answer_partner_choice, { p_instance_id: first.id, p_selected_user_id: null, ...op() }),
+      a.as.mutation(api.daily.update_daily_answer_partner_choice, { p_instance_id: question.id, p_selected_user_id: null, ...op() }),
     ).rejects.toThrow(/23514.*partner choice selection is required/);
-    await submit(b, first.id, { text: "seen" });
+    await submit(b, question.id, { text: "seen" });
     await expect(
       a.as.mutation(api.daily.update_daily_answer_partner_choice, {
-        p_instance_id: first.id,
+        p_instance_id: question.id,
         p_selected_user_id: a.userId,
         ...op(),
       }),
@@ -336,142 +289,140 @@ describe("answers and the reveal rule", () => {
   });
 
   test("editing text moves the answered time and locks once the partner answers", async () => {
-    const { t, a, b } = await readyCouple();
-    const [first] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    const answerId = await submit(a, first.id, { text: "draft" });
+    const { a, b, question } = await readyCouple();
+    const answerId = await submit(a, question.id, { text: "draft" });
     vi.setSystemTime(new Date("2026-10-10T10:30:00.000Z"));
-    const edit = (text: string | null) =>
-      a.as.mutation(api.daily.update_daily_answer_text, { p_instance_id: first.id, p_text: text, ...op() });
-    expect(await edit("  better  ")).toBe(answerId);
-    const day = (await today(a))[0].couple_day_id;
-    const [detail] = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    const edit = (user: TestUser, text: string | null) =>
+      user.as.mutation(api.daily.update_daily_answer_text, { p_instance_id: question.id, p_text: text, ...op() });
+    expect(await edit(a, "  better  ")).toBe(answerId);
+    const [detail] = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: question.couple_day_id! });
     expect(detail).toMatchObject({ text_body: "better", answered_at: "2026-10-10T10:30:00.000Z" });
-    await expect(edit("   ")).rejects.toThrow(/23514.*answer text is required/);
-    await expect(edit(null)).rejects.toThrow(/23514.*answer text is required/);
-    await expect(edit("y".repeat(2001))).rejects.toThrow(/23514.*answer text is too long/);
-    const [second] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId).slice(1);
-    await expect(
-      a.as.mutation(api.daily.update_daily_answer_text, { p_instance_id: second.id, p_text: "x", ...op() }),
-    ).rejects.toThrow(/22023.*there is no answer to edit/);
-    await submit(b, first.id, { text: "my turn" });
-    await expect(edit("too late")).rejects.toThrow(/23514.*answers cannot be edited after your partner has answered/);
-  });
-
-  test("tells the first partner when the second answers", async () => {
-    const { t, a, b } = await readyCouple();
-    await addDevice(t, a.userId);
-    const [first] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    await submit(a, first.id, { text: "hello" });
-    expect(await t.run((ctx) => ctx.db.query("notification_outbox").collect())).toHaveLength(0);
-    await submit(b, first.id, { text: "hi" });
-    const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
-    expect(outbox.map((row) => [row.kind, row.recipient_user_id])).toEqual([["partner_answered", a.userId]]);
-    // The push waits a little in case the partner answers more right after.
-    expect(await deliverDuePushes(t)).toEqual([]);
-    vi.setSystemTime(new Date("2026-10-10T10:01:15.000Z"));
-    const [push] = await deliverDuePushes(t);
-    expect(push.payload).toMatchObject({
-      type: "partner_answered",
-      instance_ids: [first.id],
-      question_count: 1,
-      deeplink: `paeonia://daily/reveal?instanceId=${first.id}&coupleDayId=${first.couple_day_id}`,
-    });
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    await expect(edit(a, "   ")).rejects.toThrow(/23514.*answer text is required/);
+    await expect(edit(a, null)).rejects.toThrow(/23514.*answer text is required/);
+    await expect(edit(a, "y".repeat(2001))).rejects.toThrow(/23514.*answer text is too long/);
+    await expect(edit(b, "x")).rejects.toThrow(/22023.*there is no answer to edit/);
+    await submit(b, question.id, { text: "my turn" });
+    await expect(edit(a, "too late")).rejects.toThrow(/23514.*answers cannot be edited after your partner has answered/);
   });
 });
 
 describe("partner pushes", () => {
-  const ownInstances = async (t: TestConvex, user: TestUser) =>
-    (await liveInstancesFor(t, user.userId)).filter((row) => row.seeded_for_user_id === user.userId);
   const outboxFor = (t: TestConvex, user: TestUser) =>
     t.run(async (ctx) =>
       (await ctx.db.query("notification_outbox").collect()).filter((row) => row.recipient_user_id === user.userId),
     );
-  const pushesDue = async (t: TestConvex) => {
-    vi.setSystemTime(new Date("2026-10-10T10:01:15.000Z"));
+  const pushesDue = async (t: TestConvex, at = "2026-10-10T10:01:15.000Z") => {
+    vi.setSystemTime(new Date(at));
     return await deliverDuePushes(t);
   };
 
-  test("a partner who answers your questions and finishes their own sends one push", async () => {
-    const { t, a, b } = await readyCouple();
+  test("the first answer tells the partner, and the second tells the first that both answers are ready", async () => {
+    const { t, a, b, question } = await readyCouple();
     await addDevice(t, a.userId);
-    await completeDay(t, a);
-    const mine = await ownInstances(t, a);
-    for (const instance of mine) await submit(b, instance.id, { text: "yours" });
-    await completeDay(t, b);
-    expect(await outboxFor(t, a)).toHaveLength(1);
-
-    const pushes = await pushesDue(t);
-    expect(pushes).toHaveLength(1);
-    expect(pushes[0].payload).toMatchObject({
+    await addDevice(t, b.userId);
+    await submit(a, question.id, { text: "hello" });
+    expect((await outboxFor(t, b)).map((row) => row.kind)).toEqual(["daily_challenge_completed"]);
+    // The push waits a little, so a quick answer from the partner can change it.
+    expect(await deliverDuePushes(t)).toEqual([]);
+    const [toB] = await pushesDue(t);
+    expect(toB).toMatchObject({ title: "First Partner answered today's question" });
+    expect(toB.payload).toMatchObject({
       type: "daily_challenge_completed",
-      to_answer: true,
-      to_see: true,
-      deeplink: `paeonia://daily/today?coupleDayId=${mine[0].couple_day_id}`,
+      instance_ids: [question.id],
+      deeplink: `paeonia://daily/today?coupleDayId=${question.couple_day_id}`,
     });
-    expect([...(pushes[0].payload.instance_ids as string[])].sort()).toEqual(mine.map((row) => row.id).sort());
-    expect((await outboxFor(t, a)).map((row) => row.kind)).toEqual(["daily_challenge_completed"]);
+
+    vi.setSystemTime(new Date("2026-10-10T11:00:00.000Z"));
+    await submit(b, question.id, { text: "hi" });
+    expect((await outboxFor(t, a)).map((row) => row.kind)).toEqual(["partner_answered"]);
+    const [toA] = await pushesDue(t, "2026-10-10T11:01:15.000Z");
+    expect(toA).toMatchObject({ title: "Second Partner answered too" });
+    expect(toA.payload).toMatchObject({
+      type: "partner_answered",
+      instance_ids: [question.id],
+      question_count: 1,
+      deeplink: `paeonia://daily/reveal?instanceId=${question.id}&coupleDayId=${question.couple_day_id}`,
+    });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("answering the partner's questions before the push goes out takes the answer prompt out of it", async () => {
-    const { t, a, b } = await readyCouple();
-    await addDevice(t, a.userId);
-    await completeDay(t, a);
-    for (const instance of await ownInstances(t, a)) await submit(b, instance.id, { text: "yours" });
-    await completeDay(t, b);
-    for (const instance of await ownInstances(t, b)) await submit(a, instance.id, { text: "back" });
-
-    const [push] = await pushesDue(t);
-    expect(push.payload).toMatchObject({ type: "daily_challenge_completed", to_answer: false, to_see: true });
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
-  });
-
-  test("a finished day with nothing left to answer or see sends nothing", async () => {
-    const { t, a, b } = await readyCouple();
-    await addDevice(t, a.userId);
-    await completeDay(t, b);
-    for (const instance of await ownInstances(t, b)) await submit(a, instance.id, { text: "back" });
-
+  test("answering back and seeing the reveal before the push goes out drops it", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await addDevice(t, b.userId);
+    await submit(a, question.id, { text: "hello" });
+    await submit(b, question.id, { text: "quick reply" });
+    await b.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: question.id });
     expect(await pushesDue(t)).toEqual([]);
-    expect(await outboxFor(t, a)).toEqual([
+    expect(await outboxFor(t, b)).toEqual([
       expect.objectContaining({ kind: "daily_challenge_completed", last_error: "notification is out of date" }),
     ]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("answers to several of your questions in a row send one push for all of them", async () => {
-    const { t, a, b } = await readyCouple();
-    await addDevice(t, a.userId);
-    await completeDay(t, a);
-    const mine = await ownInstances(t, a);
-    for (const instance of mine) await submit(b, instance.id, { text: "yours" });
-
-    const pushes = await pushesDue(t);
-    expect(pushes).toHaveLength(1);
-    expect(pushes[0].payload).toMatchObject({
+  test("answering second without seeing the partner's answer still brings the push", async () => {
+    // b composed before a's answer reached b's phone, so b's app showed no reveal.
+    const { t, a, b, question } = await readyCouple();
+    await addDevice(t, b.userId);
+    await submit(a, question.id, { text: "hello" });
+    await submit(b, question.id, { text: "sent before seeing it" });
+    const [push] = await pushesDue(t);
+    expect(push).toMatchObject({ title: "First Partner answered too" });
+    expect(push.payload).toMatchObject({
       type: "partner_answered",
-      question_count: 2,
-      deeplink: `paeonia://daily/today?coupleDayId=${mine[0].couple_day_id}`,
+      deeplink: `paeonia://daily/reveal?instanceId=${question.id}&coupleDayId=${question.couple_day_id}`,
     });
-    expect([...(pushes[0].payload.instance_ids as string[])].sort()).toEqual(mine.map((row) => row.id).sort());
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("an answer the first partner already opened sends nothing", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await addDevice(t, a.userId);
+    await submit(a, question.id, { text: "hello" });
+    await submit(b, question.id, { text: "reply" });
+    await a.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: question.id });
+    expect(await pushesDue(t)).toEqual([]);
+    expect(await outboxFor(t, a)).toEqual([
+      expect.objectContaining({ kind: "partner_answered", last_error: "notification is out of date" }),
+    ]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("a late answer and today's answer in a row send one push for both", async () => {
+    const { t, a, b, question: yesterday } = await readyCouple();
+    await addDevice(t, b.userId);
+    await submit(b, yesterday.id, { text: "waiting for you" });
+    await t.run(async (ctx) => {
+      for (const row of await ctx.db.query("notification_outbox").collect()) await ctx.db.delete(row._id);
+    });
+
+    await nextDay(a, "11");
+    const todays = await currentQuestionFor(t, a.userId);
+    await submit(a, yesterday.id, { text: "sorry, late" });
+    await submit(a, todays.id, { text: "today" });
+    expect(await outboxFor(t, b)).toHaveLength(1);
+    const [push] = await pushesDue(t, "2026-10-11T10:01:15.000Z");
+    // Today's question still waits for b, so the push asks for that answer.
+    expect(push.payload).toMatchObject({
+      type: "daily_challenge_completed",
+      deeplink: `paeonia://daily/today?coupleDayId=${todays.couple_day_id}`,
+    });
+    expect([...(push.payload.instance_ids as string[])].sort()).toEqual([yesterday.id, todays.id].sort());
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
 
 describe("seen answers", () => {
   test("each side sees when the other first saw their answer", async () => {
-    const { t, a, b } = await readyCouple();
-    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    const seen = (user: TestUser) => user.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: aFirst.id });
-    const row = async (user: TestUser) => (await today(user)).find((item) => item.instance_id === aFirst.id)!;
+    const { t, a, b, question } = await readyCouple();
+    const seen = (user: TestUser) => user.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: question.id });
+    const row = async (user: TestUser) => (await today(user)).find((item) => item.instance_id === question.id)!;
 
-    await submit(a, aFirst.id, { text: "mine" });
+    await submit(a, question.id, { text: "mine" });
     // b can't read a's answer before answering, so b can't have seen it.
     await expect(seen(b)).rejects.toThrow(/23514.*partner answer is not visible yet/);
 
     vi.setSystemTime(new Date("2026-10-10T11:00:00.000Z"));
-    await submit(b, aFirst.id, { text: "reply" });
+    await submit(b, question.id, { text: "reply" });
     expect(await row(a)).toMatchObject({ partner_answer_seen_at: null, own_answer_seen_by_partner_at: null });
 
     vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
@@ -481,95 +432,91 @@ describe("seen answers", () => {
     expect(await row(a)).toMatchObject({ partner_answer_seen_at: "2026-10-10T12:00:00.000Z", own_answer_seen_by_partner_at: null });
     expect(await row(b)).toMatchObject({ partner_answer_seen_at: null, own_answer_seen_by_partner_at: "2026-10-10T12:00:00.000Z" });
     const history = await b.as.query(api.daily.get_daily_questions_history, {});
-    expect(history.find((item) => item.instance_id === aFirst.id)).toMatchObject({
+    expect(history.find((item) => item.instance_id === question.id)).toMatchObject({
       own_answer_seen_by_partner_at: "2026-10-10T12:00:00.000Z",
     });
 
     const stranger = await createSignedInUser(t);
     await expect(
-      stranger.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: aFirst.id }),
+      stranger.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: question.id }),
     ).rejects.toThrow(/42501/);
   });
 });
 
 describe("shuffle", () => {
-  test("replaces a slot, skips the old question, and refuses answered or shuffled slots", async () => {
-    const { t, a } = await readyCouple({ questions: textQuestions(12) });
-    const before = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    const oldVersions = new Set(before.map((row) => row.question_version_id));
-    const rows = await shuffle(a, 2);
-    expect(rows).toHaveLength(2);
-    const replaced = rows.find((row) => row.slot_number === 2)!;
-    expect(replaced.instance_id).not.toBe(before[1].id);
-    expect(oldVersions.has(replaced.question_version_id)).toBe(false);
+  test("swaps the day's question for both partners, skips the old one, and stops once someone answered", async () => {
+    const { t, a, b, question: before } = await readyCouple();
+    const rows = await shuffle(b);
+    expect(rows).toHaveLength(1);
+    const replaced = rows[0];
+    expect(replaced.instance_id).not.toBe(before.id);
+    expect(replaced.question_id).not.toBe(before.question_id);
+    expect((await today(a)).map((row) => row.instance_id)).toEqual([replaced.instance_id]);
     const state = await t.run(async (ctx) => ({
-      old: await ctx.db.query("daily_question_instances").withIndex("by_uuid", (q) => q.eq("id", before[1].id)).unique(),
+      old: await ctx.db.query("daily_question_instances").withIndex("by_uuid", (q) => q.eq("id", before.id)).unique(),
       shuffles: await ctx.db.query("daily_question_shuffles").collect(),
     }));
     expect(state.old).toMatchObject({ status: "shuffled", replaced_by_instance_id: replaced.instance_id });
     expect(state.old?.replaced_at).toBe("2026-10-10T10:00:00.000Z");
-    expect(state.shuffles).toHaveLength(1);
-    expect(state.shuffles[0]).toMatchObject({
-      slot_number: 2,
-      skipped_instance_id: before[1].id,
-      replacement_instance_id: replaced.instance_id,
-      exclude_until: "2026-10-24T10:00:00.000Z",
-    });
+    expect(state.shuffles).toEqual([
+      expect.objectContaining({
+        user_id: b.userId,
+        skipped_instance_id: before.id,
+        replacement_instance_id: replaced.instance_id,
+        exclude_until: "2026-10-24T10:00:00.000Z",
+      }),
+    ]);
 
-    await expect(submit(a, before[1].id, { text: "late" })).rejects.toThrow(
-      /23514.*shuffled daily questions cannot be answered/,
-    );
+    await expect(submit(a, before.id, { text: "late" })).rejects.toThrow(/23514.*shuffled daily questions cannot be answered/);
     await expect(
-      a.as.mutation(api.daily.update_daily_answer_text, { p_instance_id: before[1].id, p_text: "x", ...op() }),
+      a.as.mutation(api.daily.update_daily_answer_text, { p_instance_id: before.id, p_text: "x", ...op() }),
     ).rejects.toThrow(/23514.*shuffled daily questions cannot be edited/);
 
-    await submit(a, before[0].id, { text: "answered" });
-    // Answering moves the slot to 'answered', so it no longer counts as an active slot.
-    await expect(shuffle(a, 1)).rejects.toThrow(
-      /22023.*active daily question slot was not found/,
-    );
-    await expect(shuffle(a, 3)).rejects.toThrow(
-      /23514.*slot number is out of range/,
-    );
-    const [snapshot] = await a.as.mutation(api.daily.shuffle_daily_question_snapshot, { p_slot_number: 2, ...op() });
-    expect(snapshot.questions).toHaveLength(2);
+    // Once the partner has answered, the question is theirs to share and stays.
+    await submit(a, replaced.instance_id, { text: "answered" });
+    await expect(shuffle(b)).rejects.toThrow(/23514.*answered daily questions cannot be shuffled/);
+  });
+
+  test("needs a signed-in user in an entitled couple", async () => {
+    const { t } = await readyCouple();
+    await expect(t.mutation(api.daily.shuffle_daily_question_snapshot, op())).rejects.toThrow(/42501.*authenticated user required/);
+    const lonely = await createSignedInUser(t);
+    await expect(shuffle(lonely)).rejects.toThrow(/42501.*active entitled couple access is required/);
+    const unpaid = await createCouple(t, { entitled: false });
+    await expect(shuffle(unpaid.first)).rejects.toThrow(/42501.*active entitled couple access is required/);
   });
 
   test("a replayed shuffle changes nothing the second time", async () => {
     const { t, a } = await readyCouple();
     const args = op();
-    const first = await shuffle(a, 1, args);
-    const second = await shuffle(a, 1, args);
+    const first = await shuffle(a, args);
+    const second = await shuffle(a, args);
     expect(second.map((row) => row.instance_id)).toEqual(first.map((row) => row.instance_id));
     expect(await t.run((ctx) => ctx.db.query("daily_question_shuffles").collect())).toHaveLength(1);
   });
 
-  test("allows 30 shuffles a day and refuses the 31st", async () => {
+  test("allows 30 shuffles a day per person and refuses the 31st", async () => {
     const { t, a } = await readyCouple({ questions: textQuestions(45) });
     for (let index = 0; index < 30; index += 1) {
-      await shuffle(a, (index % 2) + 1);
+      await shuffle(a);
     }
-    await expect(shuffle(a, 1)).rejects.toThrow(
-      /23514.*daily shuffle limit reached/,
-    );
+    await expect(shuffle(a)).rejects.toThrow(/23514.*daily shuffle limit reached/);
     expect(await t.run((ctx) => ctx.db.query("daily_question_shuffles").collect())).toHaveLength(30);
   }, 60_000);
 
-  test("skipped questions do not come back for 14 days", async () => {
-    const { t, a } = await readyCouple({ questions: textQuestions(6) });
-    const original = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    // Six questions: two for each partner plus two spare. Two shuffles use up the spares and a third has nothing left.
-    await shuffle(a, 1);
-    await shuffle(a, 1);
-    await expect(shuffle(a, 1)).rejects.toThrow(
-      /22023.*no eligible daily questions are available/,
-    );
-    expect(original).toHaveLength(2);
+  test("a skipped question stays out for both partners for 14 days", async () => {
+    // Three questions: the day's question and two spares. Two skips use up the spares, and the
+    // skipped ones and today's are all out, for either partner.
+    const { a, b } = await readyCouple({ questions: textQuestions(3) });
+    await shuffle(a);
+    await shuffle(b);
+    await expect(shuffle(a)).rejects.toThrow(/22023.*no eligible daily questions are available/);
+    await expect(shuffle(b)).rejects.toThrow(/22023.*no eligible daily questions are available/);
   });
 });
 
 describe("time zones and day boundaries", () => {
-  test("the couple day follows the westmost partner and bounds the seeded user's answers", async () => {
+  test("the couple day follows the westmost partner and bounds a first answer", async () => {
     const t = newTest();
     await seedCatalog(t, textQuestions(12));
     const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "America/Los_Angeles"] });
@@ -577,14 +524,14 @@ describe("time zones and day boundaries", () => {
     vi.setSystemTime(new Date(at));
     const rows = await start(couple.first, op(at));
     expect(rows[0]).toMatchObject({ local_date: "2026-10-10", starts_at: "2026-10-10T07:00:00.000Z", ends_at: "2026-10-11T07:00:00.000Z" });
-    const [mine] = (await liveInstancesFor(t, couple.first.userId)).filter((row) => row.seeded_for_user_id === couple.first.userId);
-    await expect(submit(couple.first, mine.id, { text: "x" }, "2026-10-11T07:00:00.000Z")).rejects.toThrow(
+    const question = rows[0].instance_id;
+    await expect(submit(couple.first, question, { text: "x" }, "2026-10-11T07:00:00.000Z")).rejects.toThrow(
       /23514.*daily answer timestamp is outside the question day/,
     );
-    await expect(submit(couple.first, mine.id, { text: "x" }, "2026-10-10T06:59:59.999Z")).rejects.toThrow(
+    await expect(submit(couple.first, question, { text: "x" }, "2026-10-10T06:59:59.999Z")).rejects.toThrow(
       /23514.*daily answer timestamp is outside the question day/,
     );
-    await expect(submit(couple.first, mine.id, { text: "x" }, "2026-10-11T06:59:59.000Z")).resolves.toEqual(expect.any(String));
+    await expect(submit(couple.first, question, { text: "x" }, "2026-10-11T06:59:59.000Z")).resolves.toEqual(expect.any(String));
   });
 
   test("a start at the same instant lands on different couple days for different zones", async () => {
@@ -600,102 +547,91 @@ describe("time zones and day boundaries", () => {
     expect(aucklandRow.local_date).toBe("2026-10-11");
   });
 
-  test("an unfinished exchange from yesterday carries over to today", async () => {
-    const { t, a, b } = await readyCouple();
-    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    await submit(a, aFirst.id, { text: "waiting" });
-    vi.setSystemTime(new Date("2026-10-11T10:00:00.000Z"));
-    await start(b);
+  test("a question one partner answered carries over, and the other can still answer it late", async () => {
+    const { a, b, question } = await readyCouple();
+    await submit(a, question.id, { text: "waiting" });
+    await nextDay(b, "11");
     const rows = await today(b);
-    const carried = rows.find((row) => row.instance_id === aFirst.id)!;
-    expect(carried).toMatchObject({ is_current_day: false, can_view_partner_answer: false, local_date: "2026-10-10" });
-    expect(rows.filter((row) => row.is_current_day === true)).toHaveLength(2);
+    expect(rows).toHaveLength(2);
     expect(rows[0].is_current_day).toBe(true);
-    expect(rows[rows.length - 1].instance_id).toBe(aFirst.id);
-    // B answers late and the exchange resolves; it stays on the list for the rest of the day it finished.
-    await submit(b, aFirst.id, { text: "sorry, late" });
-    const after = (await today(b)).find((row) => row.instance_id === aFirst.id)!;
+    expect(rows[1]).toMatchObject({ instance_id: question.id, is_current_day: false, can_view_partner_answer: false, local_date: "2026-10-10" });
+    // a sees it too, waiting for b.
+    expect((await today(a)).map((row) => row.instance_id)).toContain(question.id);
+
+    // b answers late and the exchange resolves. It stays on the list for the rest of the day it finished.
+    await submit(b, question.id, { text: "sorry, late" });
+    const after = (await today(b)).find((row) => row.instance_id === question.id)!;
     expect(after).toMatchObject({ is_current_day: false, can_view_partner_answer: true });
-    vi.setSystemTime(new Date("2026-10-12T10:00:00.000Z"));
-    await start(b);
-    expect((await today(b)).some((row) => row.instance_id === aFirst.id)).toBe(false);
+    await nextDay(b, "12");
+    expect((await today(b)).some((row) => row.instance_id === question.id)).toBe(false);
+  });
+
+  test("a question nobody answered ends with its day", async () => {
+    const { a, question } = await readyCouple();
+    await nextDay(a, "11");
+    expect((await today(a)).map((row) => row.instance_id)).not.toContain(question.id);
+    await expect(submit(a, question.id, { text: "too late" })).rejects.toThrow(
+      /23514.*daily answer timestamp is outside the question day/,
+    );
   });
 });
 
 describe("history", () => {
   test("lists what the viewer answered, newest day first, with the day each exchange finished", async () => {
-    const { t, a, b } = await readyCouple();
-    const [aFirst, aSecond] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    await submit(a, aFirst.id, { text: "one" });
+    const { t, a, b, question: first } = await readyCouple();
+    await submit(a, first.id, { text: "one" });
     expect(await b.as.query(api.daily.get_daily_questions_history, {})).toEqual([]);
     vi.setSystemTime(new Date("2026-10-11T10:00:00.000Z"));
-    await submit(b, aFirst.id, { text: "reply" });
-    vi.setSystemTime(new Date("2026-10-12T10:00:00.000Z"));
-    await submit(a, aSecond.id, { text: "two" }, "2026-10-10T20:00:00.000Z");
+    await submit(b, first.id, { text: "reply" });
+    await nextDay(a, "12");
+    const third = await currentQuestionFor(t, a.userId);
+    await submit(a, third.id, { text: "three" });
     const rows = await a.as.query(api.daily.get_daily_questions_history, {});
     expect(rows.map((row) => [row.instance_id, row.effective_local_date, row.can_view_partner_answer, row.is_current_day])).toEqual([
-      [aSecond.id, "2026-10-12", false, false],
-      [aFirst.id, "2026-10-11", true, false],
+      [third.id, "2026-10-12", false, false],
+      [first.id, "2026-10-11", true, false],
     ]);
     const details = await a.as.query(api.daily.get_daily_answer_history_details, {});
-    expect(details.map((row) => row.text_body)).toEqual(["one", "reply", "two"]);
+    expect(details.map((row) => row.text_body)).toEqual(["three", "one", "reply"]);
   });
 
   test("an exchange stays on the day it finished after a partner changes time zone", async () => {
-    const { t, a, b } = await readyCouple();
-    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    await submit(a, aFirst.id, { text: "one" });
+    const { t, a, b, question } = await readyCouple();
+    await submit(a, question.id, { text: "one" });
     // 07:00 on 2026-10-11 in Oslo, still 22:00 on 2026-10-10 in Los Angeles.
     vi.setSystemTime(new Date("2026-10-11T05:00:00.000Z"));
-    await submit(b, aFirst.id, { text: "reply" });
+    await submit(b, question.id, { text: "reply" });
     const history = async () =>
       (await a.as.query(api.daily.get_daily_questions_history, {})).map((row) => row.effective_local_date);
     expect(await history()).toEqual(["2026-10-11"]);
     await setTimeZone(t, b.userId, "America/Los_Angeles");
     expect(await history()).toEqual(["2026-10-11"]);
   });
-
 });
 
-describe("questions already answered", () => {
-  test("once everything is answered, the questions answered longest ago come back first, even when they cannot resurface", async () => {
-    // Four questions that never resurface, two for each partner. Each partner answers their own two at 10:00 and the
-    // other's two at 12:00, so both have answered everything and their oldest answers never overlap.
-    const { t, a, b } = await readyCouple({ questions: textQuestions(4).map((item) => ({ ...item, resurfaceable: false })) });
-    const all = await t.run((ctx) => ctx.db.query("daily_question_instances").collect());
-    const seededFor = (user: TestUser) => all.filter((row) => row.seeded_for_user_id === user.userId);
-    for (const user of [a, b]) {
-      for (const instance of seededFor(user)) await submit(user, instance.id, { text: "own" });
-    }
-    vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));
-    for (const [user, partner] of [[a, b], [b, a]]) {
-      for (const instance of seededFor(partner)) await submit(user, instance.id, { text: "partner's" });
-    }
-    vi.setSystemTime(new Date("2026-10-11T10:00:00.000Z"));
-    await start(a);
-    const versions = (await today(a)).filter((row) => row.is_current_day === true).map((row) => row.question_version_id);
-    expect(versions.sort()).toEqual(seededFor(a).map((row) => row.question_version_id).sort());
-  });
-
-  test("a shuffle never brings back a question the user already answered today", async () => {
-    // Four questions: slot 1 is answered and the partner has the other two, so shuffling slot 2 has nothing to give.
-    const { t, a } = await readyCouple({ questions: textQuestions(4) });
-    const own = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    const slotOne = own.find((row) => row.slot_number === 1)!;
-    await submit(a, slotOne.id, { text: "answered" });
-    await expect(shuffle(a, 2)).rejects.toThrow(/22023.*no eligible daily questions are available/);
-    const sameQuestionToday = (await t.run((ctx) => ctx.db.query("daily_question_instances").collect())).filter(
-      (row) => row.seeded_for_user_id === a.userId && row.question_version_id === slotOne.question_version_id,
-    );
-    expect(sameQuestionToday).toHaveLength(1);
+describe("questions the couple had before", () => {
+  test("once every question was used, the one the couple had longest ago comes back first, even when it cannot resurface", async () => {
+    const { t, a } = await readyCouple({ questions: textQuestions(3).map((item) => ({ ...item, resurfaceable: false })) });
+    await nextDay(a, "11");
+    await nextDay(a, "12");
+    const [first, second, third] = await dailyQuestionsFor(t, a.userId);
+    expect(new Set([first.question_id, second.question_id, third.question_id]).size).toBe(3);
+    await nextDay(a, "13");
+    expect((await currentQuestionFor(t, a.userId)).question_id).toBe(first.question_id);
   });
 
   test("a question that can resurface comes back after its window", async () => {
-    const { t, a } = await readyCouple({ questions: textQuestions(4).map((item) => ({ ...item, months: 1 })) });
-    await completeDay(t, a);
-    vi.setSystemTime(new Date("2026-11-11T10:00:00.000Z"));
-    const rows = await start(a);
-    expect(rows.filter((row) => row.is_current_day === true)).toHaveLength(2);
+    const { t, a } = await readyCouple({
+      questions: [{ key: "again", months: 1 }, { key: "once_a", resurfaceable: false }, { key: "once_b", resurfaceable: false }],
+    });
+    await nextDay(a, "11");
+    await nextDay(a, "12");
+    expect(await dailyQuestionsFor(t, a.userId)).toHaveLength(3);
+    // A month later only "again" may come back, whatever order the three came in.
+    vi.setSystemTime(new Date("2026-11-13T10:00:00.000Z"));
+    await start(a);
+    const [snapshot] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, {});
+    expect(snapshot.questions.find((row) => row.is_current_day)?.question_key).toBe("again");
   });
 });
 
@@ -710,7 +646,7 @@ describe("get_daily_challenge_snapshot", () => {
     const [started] = await a.as.mutation(api.daily.start_daily_challenge_snapshot, op());
     const [watched] = await a.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId });
     expect(watched).toEqual(started);
-    expect(watched.questions).toHaveLength(2);
+    expect(watched.questions).toHaveLength(1);
     expect(watched).toMatchObject({
       couple_day_id: dayId,
       local_date: "2026-10-10",
@@ -744,47 +680,35 @@ describe("get_daily_challenge_snapshot", () => {
     expect(later).toEqual(first);
   });
 
-  test("a partner's answer, a reveal, and a shuffle change the result", async () => {
+  test("a shuffle, a partner's answer, and a reveal change the result", async () => {
     const { t, a, b } = await readyCouple();
     const dayId = await todayDayId(t);
     const read = async (user: TestUser) => (await user.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId }))[0];
     const before = await read(b);
-    const [aFirst] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
 
-    await submit(a, aFirst.id, { text: "hello" });
+    await shuffle(b);
+    const shuffled = await read(b);
+    expect(shuffled.questions.map((row) => row.instance_id)).not.toEqual(before.questions.map((row) => row.instance_id));
+    const question = shuffled.questions[0].instance_id;
+
+    await submit(a, question, { text: "hello" });
     const partnerAnswered = await read(b);
-    expect(partnerAnswered).not.toEqual(before);
-    const aRow = partnerAnswered.questions.find((row) => row.instance_id === aFirst.id)!;
-    expect(aRow.partner_answer_id).not.toBeNull();
-    expect(aRow.can_view_partner_answer).toBe(false);
+    expect(partnerAnswered.questions[0].partner_answer_id).not.toBeNull();
+    expect(partnerAnswered.questions[0].can_view_partner_answer).toBe(false);
     expect(partnerAnswered.answer_details.every((row) => row.text_body === null || row.is_own_answer)).toBe(true);
 
-    await submit(b, aFirst.id, { text: "reply" });
+    await submit(b, question, { text: "reply" });
     const revealed = await read(b);
-    expect(revealed.questions.find((row) => row.instance_id === aFirst.id)!.can_view_partner_answer).toBe(true);
+    expect(revealed.questions[0].can_view_partner_answer).toBe(true);
     expect(revealed.answer_details.find((row) => !row.is_own_answer)!.text_body).toBe("hello");
-
-    const mineB = (await liveInstancesFor(t, b.userId)).filter((row) => row.seeded_for_user_id === b.userId);
-    await b.as.mutation(api.daily.shuffle_daily_question_snapshot, { p_slot_number: mineB[1].slot_number, ...op() });
-    const shuffled = await read(b);
-    expect(shuffled.questions.map((row) => row.instance_id)).not.toEqual(revealed.questions.map((row) => row.instance_id));
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("the shuffle snapshot carries the day it shuffled", async () => {
     const { t, a } = await readyCouple();
     const dayId = await todayDayId(t);
-    const [snapshot] = await a.as.mutation(api.daily.shuffle_daily_question_snapshot, { p_slot_number: 1, ...op() });
+    const [snapshot] = await a.as.mutation(api.daily.shuffle_daily_question_snapshot, op());
     expect(snapshot.couple_day_id).toBe(dayId);
-  });
-
-  test("shows the streak with the day's contributions", async () => {
-    const { t, a, b } = await readyCouple();
-    const dayId = await todayDayId(t);
-    await completeDay(t, a);
-    const [snapshot] = await b.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: dayId });
-    expect(snapshot.streak).toMatchObject({ current_user_contributed_today: false, partner_contributed_today: true });
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("fails for people outside the couple, unknown days, and signed-out callers", async () => {
@@ -819,34 +743,26 @@ describe("get_daily_challenge_snapshot", () => {
   });
 });
 
-describe("completing the day", () => {
-  test("two answers complete the challenge, tell the partner, and both partners together start the streak", async () => {
-    const { t, a, b } = await readyCouple();
-    await addDevice(t, b.userId);
-    await completeDay(t, a);
-    const challenge = await t.run(async (ctx) =>
-      (await ctx.db.query("daily_challenges").collect()).find((row) => row.user_id === a.userId),
-    );
-    expect(challenge).toMatchObject({ completed_at: "2026-10-10T10:00:00.000Z", partner_notified_at: "2026-10-10T10:00:00.000Z" });
-    const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
-    expect(outbox.map((row) => [row.kind, row.recipient_user_id])).toEqual([["daily_challenge_completed", b.userId]]);
+describe("the streak", () => {
+  test("each partner's answer counts, and both together start the streak", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await submit(a, question.id, { text: "mine" });
+    const events = await t.run((ctx) => ctx.db.query("couple_activity_events").collect());
+    expect(events.map((row) => [row.activity_kind, row.user_id, row.couple_day_id])).toEqual([
+      ["daily_answer_submitted", a.userId, question.couple_day_id],
+    ]);
     expect(await a.as.query(api.streaks.get_couple_streak, {})).toEqual([
       expect.objectContaining({ current_count: 0, current_user_contributed_today: true, partner_contributed_today: false }),
     ]);
-    expect(await t.run((ctx) => ctx.db.query("streak_states").collect())).toEqual([]);
+    const [partnerView] = await b.as.query(api.daily.get_daily_challenge_snapshot, { p_couple_day_id: question.couple_day_id! });
+    expect(partnerView.streak).toMatchObject({ current_user_contributed_today: false, partner_contributed_today: true });
 
-    await completeDay(t, b);
+    await submit(b, question.id, { text: "yours" });
     const [streak] = await b.as.query(api.streaks.get_couple_streak, {});
-    expect(streak).toEqual({
+    expect(streak).toMatchObject({
       current_count: 1,
       longest_count: 1,
       last_qualified_date: "2026-10-10",
-      restore_available: false,
-      restorable_count: 0,
-      restore_deadline: null,
-      freeze_available: false,
-      freeze_ready_at: null,
-      freeze_saved_streak: false,
       // Local midnight two days after the qualifying day, in Oslo.
       next_activity_deadline_at: "2026-10-11T22:00:00.000Z",
       current_user_contributed_today: true,
@@ -857,27 +773,28 @@ describe("completing the day", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("one answered slot is not enough", async () => {
-    const { t, a } = await readyCouple();
-    const mine = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    await submit(a, mine[0].id, { text: "1" });
-    const challenge = await t.run(async (ctx) =>
-      (await ctx.db.query("daily_challenges").collect()).find((row) => row.user_id === a.userId),
+  test("a late answer counts on the day it was given", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await submit(a, question.id, { text: "mine" });
+    await nextDay(b, "11");
+    const todays = await currentQuestionFor(t, b.userId);
+    await submit(b, question.id, { text: "late" });
+    const late = await t.run(async (ctx) =>
+      (await ctx.db.query("couple_activity_events").collect()).find((row) => row.user_id === b.userId),
     );
-    expect(challenge?.completed_at).toBeUndefined();
-    expect(await t.run((ctx) => ctx.db.query("couple_activity_events").collect())).toEqual([]);
+    expect(late?.couple_day_id).toBe(todays.couple_day_id);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
 
 describe("reset_daily_challenge_for_testing", () => {
-  test("clears today's answers, skips, and completion, then seeds fresh slots", async () => {
-    const { t, couple, a, b } = await readyCouple();
-    const before = await liveInstancesFor(t, a.userId);
-    await shuffle(a, 1);
-    await completeDay(t, a);
-    const [answered] = (await liveInstancesFor(t, a.userId)).filter((row) => row.seeded_for_user_id === a.userId);
-    await submit(b, answered.id, { text: "reply" });
-    await a.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: answered.id });
+  test("clears today's answers and skips, then seeds a fresh question", async () => {
+    const { t, couple, a, b, question: before } = await readyCouple();
+    await shuffle(a);
+    const question = await currentQuestionFor(t, a.userId);
+    await submit(a, question.id, { text: "mine" });
+    await submit(b, question.id, { text: "reply" });
+    await a.as.mutation(api.chatPresence.mark_daily_answer_seen, { p_instance_id: question.id });
     const reset = await t.mutation(internal.daily.reset_daily_challenge_for_testing, { p_couple_id: couple.coupleId });
     expect(reset).toBe(1);
     const state = await t.run(async (ctx) => ({
@@ -885,17 +802,15 @@ describe("reset_daily_challenge_for_testing", () => {
       texts: await ctx.db.query("daily_answer_text").collect(),
       shuffles: await ctx.db.query("daily_question_shuffles").collect(),
       instances: await ctx.db.query("daily_question_instances").collect(),
-      challenges: await ctx.db.query("daily_challenges").collect(),
       seen: await ctx.db.query("daily_answer_seen_states").collect(),
     }));
     expect(state.answers).toEqual([]);
     expect(state.seen).toEqual([]);
     expect(state.texts).toEqual([]);
     expect(state.shuffles).toEqual([]);
-    expect(state.instances).toHaveLength(4);
-    expect(state.instances.every((row) => row.status === "active")).toBe(true);
-    expect(state.instances.map((row) => row.id)).not.toContain(before[0].id);
-    expect(state.challenges.every((row) => row.completed_at === undefined && row.partner_notified_at === undefined)).toBe(true);
+    expect(state.instances).toHaveLength(1);
+    expect(state.instances[0].status).toBe("active");
+    expect(state.instances.map((row) => row.id)).not.toContain(before.id);
     await expect(t.mutation(internal.daily.reset_daily_challenge_for_testing, { p_couple_id: null })).rejects.toThrow(
       /22023.*p_couple_id is required/,
     );

@@ -1,21 +1,22 @@
 import type { Doc } from "../_generated/dataModel";
 import { canAccessCoupleContent, isActiveCoupleMember } from "./access";
 import { runClientOperation } from "./clientOperations";
+import { getOrCreateCoupleDayAt } from "./coupleDays";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
 import { checkViolation, fail, uniqueViolation } from "./errors";
 import { newUuid, uuidArg } from "./ids";
 import { deleteFavoritesOfTarget } from "./favoriteRows";
 import { jsonbByteLength, jsonbText } from "./json";
-import { enqueueDailyChallengeCompletedNotification, enqueuePartnerAnsweredNotification } from "./dailyPartnerPush";
+import { enqueueDailyPartnerPush } from "./dailyPartnerPush";
 import { deleteReactionsOf } from "./reactions";
 import { tombstoneReportTargets } from "./reports";
 import { applyCoupleActivity } from "./streaks";
 import { nowIso } from "./time";
 import {
-  DAILY_QUESTION_SLOTS,
-  ensureDailyChallengeSlots,
+  ensureDailyQuestion,
   instanceDay,
+  instancesOfDay,
   isTopicInstance,
   isVisibleAnswer,
   visibleAnswersOf,
@@ -31,8 +32,6 @@ import {
 export type DailyAnswerDetailRow = {
   couple_day_id: string;
   instance_id: string;
-  seeded_for_user_id: string;
-  slot_number: number;
   answer_user_id: string;
   answer_id: string;
   answered_at: string;
@@ -139,8 +138,6 @@ export async function detailRow(
   return {
     couple_day_id: day.id,
     instance_id: instance.id,
-    seeded_for_user_id: instance.seeded_for_user_id,
-    slot_number: instance.slot_number,
     answer_user_id: answer.user_id,
     answer_id: answer.id,
     answered_at: answer.created_at,
@@ -155,13 +152,6 @@ export async function detailRow(
 
 function compareStrings(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
-}
-
-async function instancesOfDay(ctx: ReaderCtx, coupleDayId: string): Promise<Doc<"daily_question_instances">[]> {
-  return await ctx.db
-    .query("daily_question_instances")
-    .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) => q.eq("couple_day_id", coupleDayId))
-    .collect();
 }
 
 /** Port of `internal.get_daily_answer_details`: every visible answer on one couple day, with the reveal rule applied. */
@@ -179,7 +169,7 @@ export async function getDailyAnswerDetails(
       rows.push(await detailRow(ctx, userId, day, instance, answer, await canViewDailyAnswer(ctx, access, answer, day)));
     }
   }
-  return rows.sort((a, b) => a.slot_number - b.slot_number || compareStrings(a.answered_at, b.answered_at));
+  return rows.sort((a, b) => compareStrings(a.answered_at, b.answered_at));
 }
 
 /**
@@ -210,7 +200,6 @@ export async function getDailyAnswerDetailsForContext(
     .sort(
       (a, b) =>
         compareStrings(b.startsAt, a.startsAt) ||
-        a.row.slot_number - b.row.slot_number ||
         compareStrings(a.row.answered_at, b.row.answered_at) ||
         compareStrings(a.row.answer_id, b.row.answer_id),
     )
@@ -259,7 +248,6 @@ export async function getDailyAnswerHistoryDetails(
     .sort(
       (a, b) =>
         compareStrings(b.startsAt, a.startsAt) ||
-        a.row.slot_number - b.row.slot_number ||
         compareStrings(a.row.answered_at, b.row.answered_at),
     )
     .map((item) => item.row);
@@ -391,48 +379,6 @@ async function insertAnswerMedia(
     uniqueViolation("daily_answer_media_primary_key");
   }
   await ctx.db.insert("daily_answer_media", { answer_id: answer.id, media_asset_id: mediaAssetId, sort_order: sortOrder });
-}
-
-/**
- * Port of the `handle_daily_challenge_completed` trigger. Call after a user's last
- * own slot is answered. Counts the day for the streak and, with `notifyPartner`, tells the partner once
- * through their daily push lane (lib/dailyPartnerPush.ts).
- */
-async function completeDailyChallenge(
-  ctx: WriterCtx,
-  coupleDayId: string,
-  userId: string,
-  notifyPartner: boolean,
-): Promise<void> {
-  const challenge = await ctx.db
-    .query("daily_challenges")
-    .withIndex("by_couple_day_id_user_id", (q) => q.eq("couple_day_id", coupleDayId).eq("user_id", userId))
-    .unique();
-  if (!challenge || challenge.completed_at !== undefined) return;
-  const completedAt = nowIso();
-  const day = await getByUuid(ctx, "couple_days", coupleDayId);
-  let partnerNotifiedAt: string | undefined;
-  if (day) {
-    const dedupeKey = `daily_challenge_completed:${coupleDayId}:${userId}`;
-    await applyCoupleActivity(ctx, {
-      couple_id: day.couple_id,
-      user_id: userId,
-      couple_day_id: coupleDayId,
-      activity_kind: "daily_challenge_completed",
-      occurred_at: completedAt,
-      dedupe_key: dedupeKey,
-      metadata: { source: "daily_challenge" },
-    });
-    if (notifyPartner) {
-      await enqueueDailyChallengeCompletedNotification(ctx, {
-        couple_id: day.couple_id,
-        couple_day_id: coupleDayId,
-        actor_user_id: userId,
-      });
-      partnerNotifiedAt = completedAt;
-    }
-  }
-  await ctx.db.patch(challenge._id, { completed_at: completedAt, partner_notified_at: partnerNotifiedAt });
 }
 
 export type ClientOperationArgs = {
@@ -583,10 +529,9 @@ export async function submitDailyAnswer(
         fail("23514", "topic questions are answered with submit_topic_answer");
       }
 
-      if (
-        operation.localCreatedAt < day.starts_at ||
-        (userId === instance.seeded_for_user_id && operation.localCreatedAt >= day.ends_at)
-      ) {
+      // After its day, a question stays open only for the partner who has not answered it yet.
+      const partnerAnswered = (await visibleAnswersOf(ctx, instance.id)).some((answer) => answer.user_id !== userId);
+      if (operation.localCreatedAt < day.starts_at || (operation.localCreatedAt >= day.ends_at && !partnerAnswered)) {
         fail("23514", "daily answer timestamp is outside the question day");
       }
       if (!(await canAccessCoupleContent(ctx, userId, day.couple_id))) {
@@ -595,18 +540,12 @@ export async function submitDailyAnswer(
       if (!(await isActiveCoupleMember(ctx, userId, day.couple_id))) {
         fail("42501", "answer user must be an active couple member");
       }
-      if (userId !== instance.seeded_for_user_id) {
-        const seededAnswered = (await visibleAnswersOf(ctx, instance.id)).some(
-          (answer) => answer.user_id === instance.seeded_for_user_id,
-        );
-        if (!seededAnswered) {
-          fail("42501", "partner-seeded questions can be answered after your partner answers");
-        }
-      }
 
       const parsed = await parseAnswerPayload(ctx, userId, instance, body);
       // assert_daily_question_answer_member: the author is an active member (checked above).
-      await insertDailyAnswer(ctx, { userId, instance, ...parsed, notifyPartner: true });
+      const now = nowIso();
+      const answeredAt = operation.localCreatedAt < now ? operation.localCreatedAt : now;
+      await insertDailyAnswer(ctx, { userId, instance, ...parsed, notifyPartner: true, answeredAt });
       return { answer_id: parsed.answerId };
     },
   );
@@ -614,10 +553,10 @@ export async function submitDailyAnswer(
 }
 
 /**
- * Writes a checked answer: the answer row and its parts, the user's own instance marked
- * answered, and the day completed once every own slot is answered. The caller has checked
- * access, the answer kinds, and that the user has no answer on the instance yet.
- * `notifyPartner: false` keeps the streak effects but sends the partner no push.
+ * Writes a checked answer: the answer row and its parts. A daily answer also counts for the
+ * streak on the couple day of `answeredAt`, and with `notifyPartner` tells the partner through
+ * their daily push lane. The caller has checked access, the answer kinds, and that the user has
+ * no answer on the instance yet.
  */
 export async function insertDailyAnswer(
   ctx: WriterCtx,
@@ -630,6 +569,8 @@ export async function insertDailyAnswer(
     selectedOption: "a" | "b" | null;
     mediaAssetIds: string[];
     notifyPartner: boolean;
+    /** When the person answered, for the streak day. Topic answers count their own activity. */
+    answeredAt: string;
   },
 ): Promise<void> {
   const { userId, instance } = input;
@@ -643,9 +584,6 @@ export async function insertDailyAnswer(
     moderation_status: "visible",
   });
   const answer = (await ctx.db.get(answerDocId))!;
-  if (input.notifyPartner) {
-    await enqueuePartnerAnsweredNotification(ctx, answer);
-  }
 
   if (input.textBody !== "") {
     await upsertAnswerText(ctx, answer, instance, input.textBody);
@@ -660,22 +598,18 @@ export async function insertDailyAnswer(
     await insertAnswerMedia(ctx, answer, instance, mediaAssetId, index + 1);
   }
 
-  if (userId === instance.seeded_for_user_id) {
-    if (instance.status === "active") {
-      await ctx.db.patch(instance._id, { status: "answered" });
-    }
-    // A topic instance has no couple day, so a topic answer never completes the daily challenge.
-    const coupleDayId = instance.couple_day_id;
-    if (coupleDayId === undefined) return;
-    const ownInstances = await ctx.db
-      .query("daily_question_instances")
-      .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-        q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", userId).eq("status", "answered"),
-      )
-      .collect();
-    if (ownInstances.length === DAILY_QUESTION_SLOTS) {
-      await completeDailyChallenge(ctx, coupleDayId, userId, input.notifyPartner);
-    }
+  if (isTopicInstance(instance)) return;
+  await applyCoupleActivity(ctx, {
+    couple_id: instance.couple_id,
+    user_id: userId,
+    couple_day_id: await getOrCreateCoupleDayAt(ctx, instance.couple_id, input.answeredAt),
+    activity_kind: "daily_answer_submitted",
+    occurred_at: input.answeredAt,
+    dedupe_key: `daily_answer_submitted:${answer.id}`,
+    metadata: { source: "daily_question" },
+  });
+  if (input.notifyPartner) {
+    await enqueueDailyPartnerPush(ctx, answer, instance);
   }
 }
 
@@ -796,7 +730,7 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
   for (const day of days) {
     const instances = await ctx.db
       .query("daily_question_instances")
-      .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) => q.eq("couple_day_id", day.id))
+      .withIndex("by_couple_day_id_status", (q) => q.eq("couple_day_id", day.id))
       .collect();
 
     // 1. The chats of the day's questions. A chat spans every day its question came back on,
@@ -877,7 +811,7 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
     // 3. The day's skips.
     for (const shuffle of await ctx.db
       .query("daily_question_shuffles")
-      .withIndex("by_couple_id", (q) => q.eq("couple_id", coupleId))
+      .withIndex("by_couple_id_question_id_exclude_until", (q) => q.eq("couple_id", coupleId))
       .collect()) {
       if (shuffle.couple_day_id === day.id) await ctx.db.delete(shuffle._id);
     }
@@ -894,16 +828,8 @@ export async function resetDailyChallengeForCouple(ctx: WriterCtx, coupleId: str
       await ctx.db.delete(instance._id);
     }
 
-    // 5. Clear completion so the card returns to its active state.
-    for (const challenge of await ctx.db
-      .query("daily_challenges")
-      .withIndex("by_couple_day_id_user_id", (q) => q.eq("couple_day_id", day.id))
-      .collect()) {
-      await ctx.db.patch(challenge._id, { completed_at: undefined, partner_notified_at: undefined });
-    }
-
-    // 6. Fresh slots.
-    await ensureDailyChallengeSlots(ctx, day.id);
+    // 5. A fresh question.
+    await ensureDailyQuestion(ctx, day.id);
   }
   return days.length;
 }

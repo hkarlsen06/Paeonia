@@ -191,7 +191,7 @@ async function questionCandidates(frame: Frame): Promise<Candidate[]> {
     if (!day) continue;
     const rows = await ctx.db
       .query("daily_question_instances")
-      .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) => q.eq("couple_day_id", day.id))
+      .withIndex("by_couple_day_id_status", (q) => q.eq("couple_day_id", day.id))
       .take(DAY_LIMIT);
     for (const instance of rows) instances.set(instance.id, { instance, day });
   }

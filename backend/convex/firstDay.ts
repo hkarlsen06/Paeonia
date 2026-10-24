@@ -14,7 +14,7 @@ import {
   findPairedFirstDayQuestion,
   firstDayDraftJson,
   firstDayDrawingPath,
-  pickFirstDayQuestionVersions,
+  pickFirstDayQuestionVersion,
 } from "./lib/firstDay";
 import { optionalDateArg, timestampArg, uuidArg } from "./lib/ids";
 import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
@@ -28,14 +28,14 @@ import {
 } from "./lib/widgetDrawings";
 
 /**
- * The inviter's first day, before their partner joins: the start date, the first two daily
- * questions, and the first widget drawing. Everything waits in the caller's `first_day_drafts`
+ * The inviter's first day, before their partner joins: the start date, an answer to the
+ * couple's first daily question, and the first widget drawing. Everything waits in the caller's `first_day_drafts`
  * row until `pairing:accept_pairing_invite` turns it into couple content (lib/firstDay.ts).
  * Every write refuses a user who already has an active couple.
  */
 
 /**
- * Creates the caller's draft and picks its questions once. Returns what `get_first_day_draft`
+ * Creates the caller's draft and picks its question once. Returns what `get_first_day_draft`
  * returns.
  */
 export const start_first_day_draft = mutation({
@@ -44,18 +44,15 @@ export const start_first_day_draft = mutation({
     const userId = await requireUserId(ctx);
     await assertFirstDayDraftAllowed(ctx, userId, { entitled: false });
     const draft = await ensureFirstDayDraft(ctx, userId);
-    if (draft.question_version_ids.length > 0) return await firstDayDraftJson(ctx, draft);
-    await ctx.db.patch(
-      draft._id,
-      withUpdatedAt({ question_version_ids: await pickFirstDayQuestionVersions(ctx, userId) }),
-    );
+    if (draft.question_version_id !== undefined) return await firstDayDraftJson(ctx, draft);
+    await ctx.db.patch(draft._id, withUpdatedAt({ question_version_id: await pickFirstDayQuestionVersion(ctx) }));
     return await firstDayDraftJson(ctx, (await ctx.db.get(draft._id))!);
   },
 });
 
 /**
- * The caller's draft: `{ started_on, questions, drawing, updated_at }`, or null before
- * the first write. `questions` has one row per slot with the prompt and the saved answer.
+ * The caller's draft: `{ started_on, question, drawing, updated_at }`, or null before
+ * the first write. `question` has the prompt and the saved answer, null before it is picked.
  * `drawing` is `{ media_asset_id, revision_id, saved_at, bounds }`. The widget extension shows
  * it while the caller has no couple.
  */
@@ -92,9 +89,9 @@ export const set_first_day_started_on = mutation({
 });
 
 /**
- * Saves or replaces the caller's written answer to one of the draft's questions. Once the
- * partner has joined, the draft is gone and its questions are the couple's first day, so the
- * answer goes to that question instead, the same way a daily answer does.
+ * Saves or replaces the caller's written answer to the draft's question. Once the partner has
+ * joined, the draft is gone and its question is the couple's first day, so the answer goes to
+ * that question instead, the same way a daily answer does.
  */
 export const save_first_day_answer = mutation({
   args: { p_question_version_id: v.string(), p_text: v.string(), ...clientOperationArgs },
@@ -112,7 +109,11 @@ export const save_first_day_answer = mutation({
         clientSequence: args.p_client_sequence,
         localCreatedAt: timestampArg(args.p_local_created_at),
       };
-      if (pairedQuestion.status === "answered") {
+      const ownAnswer = await ctx.db
+        .query("daily_question_answers")
+        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", pairedQuestion.id).eq("user_id", userId))
+        .unique();
+      if (ownAnswer) {
         await updateDailyAnswerText(ctx, userId, pairedQuestion.id, body, operation);
       } else {
         await submitDailyAnswer(ctx, userId, pairedQuestion.id, { text: body }, operation);
@@ -128,12 +129,10 @@ export const save_first_day_answer = mutation({
       await assertFirstDayDraftAllowed(ctx, userId, { entitled: true });
       if (await isSupersededClientOperation(ctx, userId, input)) return null;
       const draft = await findFirstDayDraft(ctx, userId);
-      if (!draft || !draft.question_version_ids.includes(versionId)) {
+      if (!draft || draft.question_version_id !== versionId) {
         return fail("22023", "first day question was not found");
       }
-      const answers = draft.answers.filter((answer) => answer.question_version_id !== versionId);
-      answers.push({ question_version_id: versionId, body, answered_at: nowIso() });
-      await ctx.db.patch(draft._id, withUpdatedAt({ answers }));
+      await ctx.db.patch(draft._id, withUpdatedAt({ answer: { body, answered_at: nowIso() } }));
       return null;
     });
     return null;

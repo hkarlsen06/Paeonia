@@ -3,16 +3,9 @@ import { findCurrentCouple, userHasDirectEntitlement } from "./access";
 import { assertNoPendingAccountDeletion } from "./accountDeletion";
 import { findCoupleDayAt, getOrCreateCoupleDayAt } from "./coupleDays";
 import { insertDailyAnswer } from "./dailyAnswers";
-import {
-  DAILY_QUESTION_SLOTS,
-  QuestionContentReader,
-  ensureDailyChallengeSlots,
-  insertDailyQuestionInstance,
-  loadAnsweredQuestions,
-  pickQuestionVersion,
-} from "./dailyQuestions";
+import { QuestionContentReader, insertDailyQuestionInstance, pickQuestionVersion } from "./dailyQuestions";
 import type { ReaderCtx, WriterCtx } from "./db";
-import { getByUuid, orNull, requireByUuid, withUpdatedAt } from "./db";
+import { getByUuid, orNull, withUpdatedAt } from "./db";
 import { fail } from "./errors";
 import { newUuid } from "./ids";
 import { queueOrphanedMediaAssetForDelete } from "./mediaOrphans";
@@ -26,9 +19,9 @@ import {
 
 /**
  * First day drafts: what the inviter makes while they wait for their partner. A couple only
- * exists once the partner accepts the invite, so the start date, the first answers, and the
- * first widget drawing wait in `first_day_drafts`, and `accept_pairing_invite` turns them into
- * couple content with `materializeFirstDayDrafts`.
+ * exists once the partner accepts the invite, so the start date, the answer to the couple's
+ * first question, and the first widget drawing wait in `first_day_drafts`, and
+ * `accept_pairing_invite` turns them into couple content with `materializeFirstDayDrafts`.
  */
 
 type Draft = Doc<"first_day_drafts">;
@@ -54,9 +47,8 @@ export async function assertFirstDayDraftAllowed(ctx: ReaderCtx, userId: string,
 }
 
 /**
- * The question of the couple's current day that a first day question became when the partner
- * joined, found by its question version and seeded for `userId`. Null without a couple or
- * without that question today.
+ * The question of the couple's current day that the first day question became when the partner
+ * joined, found by its question version. Null without a couple or without that question today.
  */
 export async function findPairedFirstDayQuestion(
   ctx: ReaderCtx,
@@ -72,7 +64,7 @@ export async function findPairedFirstDayQuestion(
       q.eq("couple_day_id", day.id).eq("question_version_id", questionVersionId),
     )
     .collect();
-  return instances.find((instance) => instance.seeded_for_user_id === userId && instance.status !== "shuffled") ?? null;
+  return instances.find((instance) => instance.status === "active") ?? null;
 }
 
 export async function findFirstDayDraft(ctx: ReaderCtx, userId: string): Promise<Draft | null> {
@@ -88,8 +80,6 @@ export async function ensureFirstDayDraft(ctx: WriterCtx, userId: string): Promi
   const now = nowIso();
   const docId = await ctx.db.insert("first_day_drafts", {
     user_id: userId,
-    question_version_ids: [],
-    answers: [],
     created_at: now,
     updated_at: now,
   });
@@ -101,46 +91,33 @@ function firstDayAnswerKinds(kinds: string[]): boolean {
   return kinds.includes("text") && !kinds.includes("partner_choice");
 }
 
-/** One version per daily slot, each of a different question, by the daily selection rules. */
-export async function pickFirstDayQuestionVersions(ctx: ReaderCtx, userId: string): Promise<string[]> {
-  const answered = await loadAnsweredQuestions(ctx, userId);
-  const excludedQuestionIds = new Set<string>();
-  const versionIds: string[] = [];
-  for (let slot = 1; slot <= DAILY_QUESTION_SLOTS; slot += 1) {
-    const versionId = await pickQuestionVersion(ctx, userId, {
-      excludedQuestionIds,
-      answered,
-      acceptsKinds: firstDayAnswerKinds,
-    });
-    versionIds.push(versionId);
-    excludedQuestionIds.add((await requireByUuid(ctx, "question_versions", versionId)).question_id);
-  }
-  return versionIds;
+/** The couple's first question, by the daily selection rules. A new couple has no history yet. */
+export async function pickFirstDayQuestionVersion(ctx: ReaderCtx): Promise<string> {
+  return await pickQuestionVersion(ctx, {
+    coupleId: null,
+    excludedQuestionIds: new Set(),
+    history: new Map(),
+    acceptsKinds: firstDayAnswerKinds,
+  });
 }
 
 /** The `get_first_day_draft` result. */
 export async function firstDayDraftJson(ctx: ReaderCtx, draft: Draft) {
-  const reader = new QuestionContentReader(ctx);
-  const questions = [];
-  for (const [index, versionId] of draft.question_version_ids.entries()) {
-    const content = await reader.get(versionId);
-    if (!content) continue;
-    const answer = draft.answers.find((item) => item.question_version_id === versionId);
-    questions.push({
-      slot_number: index + 1,
-      question_version_id: versionId,
-      question_key: content.question.key,
-      prompt_en: content.en.prompt,
-      prompt_nb: content.nb.prompt,
-      short_prompt_en: content.en.short_prompt,
-      short_prompt_nb: content.nb.short_prompt,
-      answer_text: answer?.body ?? null,
-      answered_at: answer?.answered_at ?? null,
-    });
-  }
+  const content = draft.question_version_id ? await new QuestionContentReader(ctx).get(draft.question_version_id) : null;
   return {
     started_on: orNull(draft.started_on),
-    questions,
+    question: content
+      ? {
+          question_version_id: content.version.id,
+          question_key: content.question.key,
+          prompt_en: content.en.prompt,
+          prompt_nb: content.nb.prompt,
+          short_prompt_en: content.en.short_prompt,
+          short_prompt_nb: content.nb.short_prompt,
+          answer_text: draft.answer?.body ?? null,
+          answered_at: draft.answer?.answered_at ?? null,
+        }
+      : null,
     drawing: draft.drawing
       ? {
           media_asset_id: draft.drawing.media_asset_id,
@@ -230,36 +207,44 @@ export async function materializeFirstDayDrafts(
     await ctx.db.patch(couple._id, withUpdatedAt({ started_on: startedOn }));
   }
 
-  if (drafts.some((draft) => draft.question_version_ids.length > 0)) {
-    const dayId = await getOrCreateCoupleDayAt(ctx, input.coupleId, now);
-    const seeded: { draft: Draft; versionId: string; instanceId: string }[] = [];
-    for (const draft of drafts) {
-      for (const [index, versionId] of draft.question_version_ids.entries()) {
-        if (!(await getByUuid(ctx, "question_versions", versionId))) continue;
-        const instanceId = await insertDailyQuestionInstance(ctx, {
-          couple_day_id: dayId,
-          question_version_id: versionId,
-          seeded_for_user_id: draft.user_id,
-          slot_number: index + 1,
-        });
-        seeded.push({ draft, versionId, instanceId });
-      }
+  // A couple day has one question. The creator's answered draft question becomes today's,
+  // then the partner's. When both answered different questions, the partner's becomes the
+  // next day's question with their answer on it, so no saved answer is lost.
+  const reader = new QuestionContentReader(ctx);
+  const usable: (Draft & { question_version_id: string })[] = [];
+  for (const draft of [creatorDraft, partnerDraft]) {
+    if (draft?.question_version_id && (await reader.get(draft.question_version_id))) {
+      usable.push({ ...draft, question_version_id: draft.question_version_id });
     }
-    // Fills the remaining slots and the challenge rows, which the answers below complete.
-    await ensureDailyChallengeSlots(ctx, dayId);
-    const reader = new QuestionContentReader(ctx);
-    for (const { draft, versionId, instanceId } of seeded) {
-      const answer = draft.answers.find((item) => item.question_version_id === versionId);
-      if (!answer || !(await reader.get(versionId))?.answer_kinds.includes("text")) continue;
+  }
+  const answered = usable.filter((draft) => draft.answer !== undefined);
+  const versionIds: string[] = [];
+  for (const draft of [...answered, ...usable]) {
+    if (!versionIds.includes(draft.question_version_id)) versionIds.push(draft.question_version_id);
+  }
+  // A question after the first only gets a day when it holds an answer.
+  const daysOfQuestions = versionIds.filter(
+    (versionId, index) => index === 0 || answered.some((draft) => draft.question_version_id === versionId),
+  );
+  let dayStart = now;
+  for (const versionId of daysOfQuestions) {
+    const dayId = await getOrCreateCoupleDayAt(ctx, input.coupleId, dayStart);
+    dayStart = (await getByUuid(ctx, "couple_days", dayId))!.ends_at;
+    const instanceId = await insertDailyQuestionInstance(ctx, { couple_day_id: dayId, question_version_id: versionId });
+    const instance = (await getByUuid(ctx, "daily_question_instances", instanceId))!;
+    for (const draft of usable) {
+      if (draft.question_version_id !== versionId || !draft.answer) continue;
+      if (!(await reader.get(versionId))?.answer_kinds.includes("text")) continue;
       await insertDailyAnswer(ctx, {
         userId: draft.user_id,
-        instance: (await getByUuid(ctx, "daily_question_instances", instanceId))!,
+        instance,
         answerId: newUuid(),
-        textBody: answer.body,
+        textBody: draft.answer.body,
         selectedPartnerUserId: null,
         selectedOption: null,
         mediaAssetIds: [],
         notifyPartner: false,
+        answeredAt: now,
       });
     }
   }

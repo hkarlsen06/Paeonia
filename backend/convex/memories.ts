@@ -5,6 +5,7 @@ import { canAccessCoupleContent, getCurrentEntitledCoupleId, isActiveCoupleMembe
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
+import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
 import type { ReaderCtx, WriterCtx } from "./lib/db";
 import { getByUuid, orNull, withTouch, withUpdatedAt } from "./lib/db";
 import { checkViolation, fail, uniqueViolation } from "./lib/errors";
@@ -13,6 +14,7 @@ import { queueMemoryMediaAssetsIfOrphaned, queueThreadMediaAssetsIfOrphaned } fr
 import { enqueueMemoryCreatedNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { deleteReactionsOf, deleteReactionsOfThread } from "./lib/reactions";
+import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
 
@@ -380,6 +382,16 @@ export const create_memory = mutation({
           await insertMemoryNote(ctx, { memory_id: memoryId, user_id: userId, body: noteBody });
         }
         await attachMemoryMediaAssets(ctx, userId, memoryId, mediaIds);
+        const now = nowIso();
+        await applyCoupleActivity(ctx, {
+          couple_id: coupleId,
+          user_id: userId,
+          couple_day_id: await getOrCreateCoupleDayAt(ctx, coupleId, now),
+          activity_kind: "memory_created",
+          occurred_at: now,
+          dedupe_key: `memory_created:${memoryId}`,
+          metadata: { memory_id: memoryId },
+        });
         return { memory_id: memoryId };
       },
     );

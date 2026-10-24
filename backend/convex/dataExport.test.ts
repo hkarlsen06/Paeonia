@@ -322,33 +322,30 @@ describe("Download my data", () => {
     expect(await t.run((ctx) => ctx.db.query("data_export_chunks").collect())).toHaveLength(0);
   });
 
-  test("an answer to a question that was given to the partner comes with the question", async () => {
+  test("the couple's questions come with the export, and the partner's answers never do", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    const mine = await seedQuestion(t);
-    const theirs = await seedQuestion(t);
-    const untouched = await seedQuestion(t);
-    const answeredHere = await answeredRound(t, couple, mine, {
-      seededFor: couple.second,
+    const both = await seedQuestion(t);
+    const partnerOnly = await seedQuestion(t);
+    const answeredHere = await answeredRound(t, couple, both, {
       texts: { [couple.first.userId]: "AAA my answer", [couple.second.userId]: "AAA their answer" },
     });
-    // The partner's question, which I never answered, stays out.
-    const notAnswered = await answeredRound(t, couple, untouched, { seededFor: couple.second, answeredBy: [couple.second] });
-    // My own question has no change.
-    const ownInstance = await answeredRound(t, couple, theirs, { seededFor: couple.first, answeredBy: [couple.first] });
+    // A question only the partner has answered so far is the couple's question too.
+    const waiting = await answeredRound(t, couple, partnerOnly, {
+      answeredBy: [couple.second],
+      texts: { [couple.second.userId]: "BBB their answer" },
+    });
 
     const { status } = await requestExport(t, couple.first);
     const { zips } = await downloadZips(t, couple.first, status.id);
     const zip = zips[0]!;
     const instances = jsonOf<{ id: string }[]>(zip, "daily-questions/daily_question_instances.json").map((row) => row.id);
-    expect(instances).toContain(answeredHere);
-    expect(instances).toContain(ownInstance);
-    expect(instances).not.toContain(notAnswered);
+    expect(instances).toEqual(expect.arrayContaining([answeredHere, waiting]));
     const versions = jsonOf<{ question_version_id: string }[]>(zip, "daily-questions/question_version_localizations.json").map((row) => row.question_version_id);
-    expect(versions).toContain(mine.versionId);
-    expect(versions).toContain(theirs.versionId);
-    expect(versions).not.toContain(untouched.versionId);
+    expect(versions).toEqual(expect.arrayContaining([both.versionId, partnerOnly.versionId]));
+    expect(allJsonText(zips)).toContain("AAA my answer");
     expect(allJsonText(zips)).not.toContain("AAA their answer");
+    expect(allJsonText(zips)).not.toContain("BBB their answer");
   });
 
   test("a file that is gone from storage is left out and counted", async () => {

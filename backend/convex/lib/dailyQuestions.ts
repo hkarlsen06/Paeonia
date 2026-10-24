@@ -1,25 +1,21 @@
 import type { Doc } from "../_generated/dataModel";
-import { isActiveCoupleMember, listActiveMembers } from "./access";
 import { findCoupleDayAt, resolveCoupleDayAnchor } from "./coupleDays";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, requireByUuid } from "./db";
-import { checkViolation, fail, uniqueViolation } from "./errors";
+import { fail, uniqueViolation } from "./errors";
 import { newUuid } from "./ids";
 import { addDaysToInstant, localDateOf, nowIso } from "./time";
 
 /**
- * Daily question selection and the question read models. Ports of
- * `ensure_daily_challenge_slots`, `pick_daily_question_version`,
- * `get_today_daily_questions_for_context`, and `get_daily_questions_history`.
+ * Daily question selection and the question read models. A couple day has one active
+ * instance, the question both partners answer that day. Each partner answers it once, and
+ * each sees the other's answer once both have answered.
  */
 
 /** Carried-over exchanges older than this many days stay out of the today read model. */
 // ponytail: SQL scanned every couple day. A bounded window keeps the mutation's reads flat. Raise it if a
 // question left unanswered for longer than this must still show up.
 export const CARRY_OVER_LOOKBACK_DAYS = 30;
-
-/** Daily questions each partner gets and must answer per couple day. */
-export const DAILY_QUESTION_SLOTS = 2;
 
 export type DailyQuestionRow = {
   couple_day_id: string;
@@ -29,8 +25,6 @@ export type DailyQuestionRow = {
   starts_at: string;
   ends_at: string;
   instance_id: string;
-  seeded_for_user_id: string;
-  slot_number: number;
   instance_status: string;
   question_id: string;
   question_version_id: string;
@@ -156,8 +150,6 @@ export function questionRow(
     starts_at: day.starts_at,
     ends_at: day.ends_at,
     instance_id: instance.id,
-    seeded_for_user_id: instance.seeded_for_user_id,
-    slot_number: instance.slot_number,
     instance_status: instance.status,
     question_id: content.question.id,
     question_version_id: content.version.id,
@@ -202,12 +194,13 @@ function compareStrings(a: string, b: string): number {
 export async function instancesOfDay(ctx: ReaderCtx, coupleDayId: string): Promise<Doc<"daily_question_instances">[]> {
   return await ctx.db
     .query("daily_question_instances")
-    .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) => q.eq("couple_day_id", coupleDayId))
+    .withIndex("by_couple_day_id_status", (q) => q.eq("couple_day_id", coupleDayId))
     .collect();
 }
 
+/** False for a question someone skipped. */
 export function isLive(instance: Doc<"daily_question_instances">): boolean {
-  return instance.status === "active" || instance.status === "answered";
+  return instance.status === "active";
 }
 
 /** A topic question's instance. It has no couple day, so it never shows up in daily reads. */
@@ -306,16 +299,15 @@ async function todayQuestionsForFrame(
       if (!isLive(instance)) continue;
       const answers = await visibleAnswersOf(ctx, instance.id);
       const viewerAnswer = answers.find((answer) => answer.user_id === currentUserId);
-      const seededAnswer = answers.find((answer) => answer.user_id === instance.seeded_for_user_id);
       const otherAnswer = answers.find((answer) => answer.user_id !== currentUserId);
       const latest = [viewerAnswer?.created_at, otherAnswer?.created_at]
         .filter((value): value is string => value !== undefined)
         .sort()
         .pop();
-      const partnerAnsweredMine = instance.seeded_for_user_id !== currentUserId && seededAnswer && !viewerAnswer;
-      const iAnsweredMine = instance.seeded_for_user_id === currentUserId && viewerAnswer && !otherAnswer;
+      // One partner answered and the other has not yet, so the exchange is still open.
+      const waiting = (viewerAnswer === undefined) !== (otherAnswer === undefined);
       const finishedToday = latest !== undefined && localDateOf(latest, frame.anchorTimeZoneId) === todayLocalDate;
-      if (partnerAnsweredMine || iAnsweredMine || finishedToday) {
+      if (waiting || finishedToday) {
         selected.push({ day, instance, isCurrentDay: false, answers });
       }
     }
@@ -328,7 +320,6 @@ async function todayQuestionsForFrame(
     if (!content) continue;
     const ownAnswer = item.answers.find((answer) => answer.user_id === currentUserId) ?? null;
     const partnerAnswer = item.answers.find((answer) => answer.user_id !== currentUserId) ?? null;
-    if (item.isCurrentDay && item.instance.seeded_for_user_id !== currentUserId && !partnerAnswer) continue;
     const row = questionRow(
       item.day,
       item.instance,
@@ -344,12 +335,7 @@ async function todayQuestionsForFrame(
   rows.sort((a, b) => {
     if (a.row.is_current_day !== b.row.is_current_day) return a.row.is_current_day ? -1 : 1;
     if (a.day.starts_at !== b.day.starts_at) return compareStrings(b.day.starts_at, a.day.starts_at);
-    const aMine = a.instance.seeded_for_user_id === currentUserId;
-    const bMine = b.instance.seeded_for_user_id === currentUserId;
-    if (aMine !== bMine) return aMine ? -1 : 1;
     return (
-      compareStrings(a.instance.seeded_for_user_id, b.instance.seeded_for_user_id) ||
-      a.instance.slot_number - b.instance.slot_number ||
       compareStrings(a.instance.created_at, b.instance.created_at) ||
       a.instance._creationTime - b.instance._creationTime
     );
@@ -392,7 +378,6 @@ export async function getDailyQuestionsHistory(
   rows.sort(
     (a, b) =>
       compareStrings(b.row.effective_local_date!, a.row.effective_local_date!) ||
-      a.row.slot_number - b.row.slot_number ||
       compareStrings(a.instance.created_at, b.instance.created_at),
   );
   const result = rows.map((item) => item.row);
@@ -413,28 +398,23 @@ export function subtractMonths(iso: string, months: number): string {
   return date.toISOString();
 }
 
-/** When the user last answered each question, by stable question id. Soft deleted answers do not count. */
-export type AnsweredQuestions = Map<string, string>;
+/** When the couple last got each question as a daily question, by stable question id. */
+export type QuestionHistory = Map<string, string>;
 
-export async function loadAnsweredQuestions(ctx: ReaderCtx, userId: string): Promise<AnsweredQuestions> {
-  const answers = await ctx.db
-    .query("daily_question_answers")
-    .withIndex("by_user_id_created_at", (q) => q.eq("user_id", userId))
+/**
+ * Reads the couple's daily instances, one per couple day plus skipped ones. Skipped questions
+ * don't count, since a skip has its own exclusion window.
+ */
+export async function loadCoupleQuestionHistory(ctx: ReaderCtx, coupleId: string): Promise<QuestionHistory> {
+  const instances = await ctx.db
+    .query("daily_question_instances")
+    .withIndex("by_couple_id_question_id", (q) => q.eq("couple_id", coupleId))
     .collect();
-  const questionByVersion = new Map<string, string | null>();
-  const latest: AnsweredQuestions = new Map();
-  for (const answer of answers) {
-    if (answer.deleted_at !== undefined) continue;
-    const instance = await getByUuid(ctx, "daily_question_instances", answer.instance_id);
-    if (!instance || isTopicInstance(instance)) continue;
-    let questionId = questionByVersion.get(instance.question_version_id);
-    if (questionId === undefined) {
-      questionId = (await getByUuid(ctx, "question_versions", instance.question_version_id))?.question_id ?? null;
-      questionByVersion.set(instance.question_version_id, questionId);
-    }
-    if (questionId === null) continue;
-    const seen = latest.get(questionId);
-    if (seen === undefined || answer.created_at > seen) latest.set(questionId, answer.created_at);
+  const latest: QuestionHistory = new Map();
+  for (const instance of instances) {
+    if (isTopicInstance(instance) || !isLive(instance)) continue;
+    const seen = latest.get(instance.question_id);
+    if (seen === undefined || instance.created_at > seen) latest.set(instance.question_id, instance.created_at);
   }
   return latest;
 }
@@ -471,33 +451,25 @@ async function usableVersionId(ctx: ReaderCtx, questionId: string, acceptsKinds:
 }
 
 /**
- * Port of `internal.pick_daily_question_version`: a random active system question
- * that is ready, not already given to the user on this day, not recently skipped,
- * and not answered yet (or answered long enough ago when it can resurface).
- * A couple answers up to four questions per person per day (their own and the
- * partner's), so a small catalog runs dry. When no question passes those rules, the
- * picker falls back to the usable question the user answered longest ago, whether or
- * not it can resurface. It fails only when no usable question is left at all.
- * `answered` can be shared across picks that do not write answers.
+ * A random active system question for the couple's day: ready, not already used on this day,
+ * not recently skipped by the couple, and not given to the couple before (or long enough ago
+ * when it can resurface). When no question passes those rules, the picker falls back to the
+ * usable question the couple got longest ago, whether or not it can resurface. It fails only
+ * when no usable question is left at all.
  */
 export async function pickDailyQuestionVersion(
   ctx: ReaderCtx,
+  coupleId: string,
   coupleDayId: string,
-  userId: string,
   excludedQuestionId: string | null,
-  answered?: AnsweredQuestions,
 ): Promise<string> {
-  // Every instance either partner got today, answered and shuffled ones too, so the fallback
-  // can never hand out a question the user already has today or give both partners the same one.
-  const todaysInstances = await ctx.db
-    .query("daily_question_instances")
-    .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) => q.eq("couple_day_id", coupleDayId))
-    .collect();
-  const excludedQuestionIds = new Set(todaysInstances.map((instance) => instance.question_id));
+  // Skipped instances of the day too, so a skip never brings back a question the couple had today.
+  const excludedQuestionIds = new Set((await instancesOfDay(ctx, coupleDayId)).map((instance) => instance.question_id));
   if (excludedQuestionId !== null) excludedQuestionIds.add(excludedQuestionId);
-  return await pickQuestionVersion(ctx, userId, {
+  return await pickQuestionVersion(ctx, {
+    coupleId,
     excludedQuestionIds,
-    answered: answered ?? (await loadAnsweredQuestions(ctx, userId)),
+    history: await loadCoupleQuestionHistory(ctx, coupleId),
     acceptsKinds: () => true,
   });
 }
@@ -505,14 +477,19 @@ export async function pickDailyQuestionVersion(
 /**
  * The selection rules of `pickDailyQuestionVersion` without a couple day: a random usable
  * version of an active system question outside `excludedQuestionIds`, preferring questions
- * the user has not answered or may see again, then the one answered longest ago.
+ * not in `history` or that may come back, then the one in `history` longest ago. Without a
+ * couple (a first day draft) no skips apply.
  */
 export async function pickQuestionVersion(
   ctx: ReaderCtx,
-  userId: string,
-  options: { excludedQuestionIds: Set<string>; answered: AnsweredQuestions; acceptsKinds: AnswerKindFilter },
+  options: {
+    coupleId: string | null;
+    excludedQuestionIds: Set<string>;
+    history: QuestionHistory;
+    acceptsKinds: AnswerKindFilter;
+  },
 ): Promise<string> {
-  const { excludedQuestionIds, answered: history, acceptsKinds } = options;
+  const { coupleId, excludedQuestionIds, history, acceptsKinds } = options;
   const now = nowIso();
   const collection = await ctx.db
     .query("question_collections")
@@ -525,64 +502,58 @@ export async function pickQuestionVersion(
         .collect()
     : [];
 
-  const answeredBefore: { questionId: string; lastAnsweredAt: string }[] = [];
+  const usedBefore: { questionId: string; lastUsedAt: string }[] = [];
   for (const question of shuffled(questions)) {
     if (excludedQuestionIds.has(question.id)) continue;
-    const skipped = await ctx.db
-      .query("daily_question_shuffles")
-      .withIndex("by_user_id_question_id_exclude_until", (q) =>
-        q.eq("user_id", userId).eq("question_id", question.id).gt("exclude_until", now),
-      )
-      .first();
+    const skipped =
+      coupleId !== null &&
+      (await ctx.db
+        .query("daily_question_shuffles")
+        .withIndex("by_couple_id_question_id_exclude_until", (q) =>
+          q.eq("couple_id", coupleId).eq("question_id", question.id).gt("exclude_until", now),
+        )
+        .first());
     if (skipped) continue;
-    const lastAnsweredAt = history.get(question.id);
+    const lastUsedAt = history.get(question.id);
     if (
-      lastAnsweredAt !== undefined &&
-      !(question.resurfaceable && lastAnsweredAt <= subtractMonths(now, question.resurface_after_months ?? 6))
+      lastUsedAt !== undefined &&
+      !(question.resurfaceable && lastUsedAt <= subtractMonths(now, question.resurface_after_months ?? 6))
     ) {
-      answeredBefore.push({ questionId: question.id, lastAnsweredAt });
+      usedBefore.push({ questionId: question.id, lastUsedAt });
       continue;
     }
     const versionId = await usableVersionId(ctx, question.id, acceptsKinds);
     if (versionId) return versionId;
   }
-  // ponytail: oldest answer first, resurfaceable or not. Add a resurfaceable-first tier if repeats of questions
+  // ponytail: oldest first, resurfaceable or not. Add a resurfaceable-first tier if repeats of questions
   // marked as one-time ever matter more than repeats of resurfaceable ones.
-  answeredBefore.sort((a, b) => compareStrings(a.lastAnsweredAt, b.lastAnsweredAt));
-  for (const { questionId } of answeredBefore) {
+  usedBefore.sort((a, b) => compareStrings(a.lastUsedAt, b.lastUsedAt));
+  for (const { questionId } of usedBefore) {
     const versionId = await usableVersionId(ctx, questionId, acceptsKinds);
     if (versionId) return versionId;
   }
   return fail("22023", "no eligible daily questions are available");
 }
 
-/**
- * Write helper for `daily_question_instances`. Runs the `assert_daily_question_instance_member`
- * trigger and the constraints on the table.
- */
+/** The day's question, or null before it is seeded. */
+export async function activeInstanceOfDay(
+  ctx: ReaderCtx,
+  coupleDayId: string,
+): Promise<Doc<"daily_question_instances"> | null> {
+  return await ctx.db
+    .query("daily_question_instances")
+    .withIndex("by_couple_day_id_status", (q) => q.eq("couple_day_id", coupleDayId).eq("status", "active"))
+    .first();
+}
+
+/** Write helper for daily `daily_question_instances`. A couple day has at most one active instance. */
 export async function insertDailyQuestionInstance(
   ctx: WriterCtx,
-  input: { couple_day_id: string; question_version_id: string; seeded_for_user_id: string; slot_number: number },
+  input: { couple_day_id: string; question_version_id: string },
 ): Promise<string> {
-  const day = await getByUuid(ctx, "couple_days", input.couple_day_id);
-  if (!day || !(await isActiveCoupleMember(ctx, input.seeded_for_user_id, day.couple_id))) {
-    fail("23514", "daily question instance user must be an active couple member");
-  }
-  if (!Number.isInteger(input.slot_number) || input.slot_number < 1 || input.slot_number > DAILY_QUESTION_SLOTS) {
-    checkViolation("daily_question_instances", "daily_question_instances_slot_number_check");
-  }
-  const sameSlot = await ctx.db
-    .query("daily_question_instances")
-    .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-      q
-        .eq("couple_day_id", input.couple_day_id)
-        .eq("seeded_for_user_id", input.seeded_for_user_id)
-        .eq("status", "active")
-        .eq("slot_number", input.slot_number),
-    )
-    .first();
-  if (sameSlot) {
-    uniqueViolation("daily_question_instances_active_slot_unique_idx");
+  const day = await requireByUuid(ctx, "couple_days", input.couple_day_id);
+  if (await activeInstanceOfDay(ctx, input.couple_day_id)) {
+    uniqueViolation("daily_question_instances_active_day_unique_idx");
   }
   const version = await requireByUuid(ctx, "question_versions", input.question_version_id);
   const id = newUuid();
@@ -592,51 +563,19 @@ export async function insertDailyQuestionInstance(
     couple_id: day.couple_id,
     question_id: version.question_id,
     question_version_id: input.question_version_id,
-    seeded_for_user_id: input.seeded_for_user_id,
-    slot_number: input.slot_number,
     status: "active",
     created_at: nowIso(),
   });
   return id;
 }
 
-/** Port of `internal.ensure_daily_challenge_slots`: a challenge row and the live slots per active member. */
-export async function ensureDailyChallengeSlots(ctx: WriterCtx, coupleDayId: string): Promise<void> {
+/** Seeds the couple day's question when it has none yet. */
+export async function ensureDailyQuestion(ctx: WriterCtx, coupleDayId: string): Promise<void> {
+  if (await activeInstanceOfDay(ctx, coupleDayId)) return;
   const day = await getByUuid(ctx, "couple_days", coupleDayId);
   if (!day) {
     fail("22023", "couple day was not found");
   }
-  const members = (await listActiveMembers(ctx, day.couple_id)).sort(
-    (a, b) => compareStrings(a.joined_at, b.joined_at) || compareStrings(a.user_id, b.user_id),
-  );
-  for (const member of members) {
-    const challenge = await ctx.db
-      .query("daily_challenges")
-      .withIndex("by_couple_day_id_user_id", (q) => q.eq("couple_day_id", coupleDayId).eq("user_id", member.user_id))
-      .unique();
-    if (!challenge) {
-      // assert_daily_challenge_member holds here: the loop only visits active members of an active couple.
-      await ctx.db.insert("daily_challenges", { couple_day_id: coupleDayId, user_id: member.user_id });
-    }
-    const existing = (
-      await ctx.db
-        .query("daily_question_instances")
-        .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-          q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", member.user_id),
-        )
-        .collect()
-    ).filter(isLive);
-    let answered: AnsweredQuestions | undefined;
-    for (let slot = 1; slot <= DAILY_QUESTION_SLOTS; slot += 1) {
-      if (existing.some((instance) => instance.slot_number === slot)) continue;
-      answered ??= await loadAnsweredQuestions(ctx, member.user_id);
-      const versionId = await pickDailyQuestionVersion(ctx, coupleDayId, member.user_id, null, answered);
-      await insertDailyQuestionInstance(ctx, {
-        couple_day_id: coupleDayId,
-        question_version_id: versionId,
-        seeded_for_user_id: member.user_id,
-        slot_number: slot,
-      });
-    }
-  }
+  const versionId = await pickDailyQuestionVersion(ctx, day.couple_id, coupleDayId, null);
+  await insertDailyQuestionInstance(ctx, { couple_day_id: coupleDayId, question_version_id: versionId });
 }

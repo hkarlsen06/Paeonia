@@ -208,8 +208,6 @@ export const submit_topic_answer = mutation({
             couple_id: coupleId,
             question_id: questionId,
             question_version_id: version.id,
-            seeded_for_user_id: userId,
-            slot_number: 0,
             status: "active",
             topic_collection_id: topic.id,
             started_couple_day_id: dayId,
@@ -218,7 +216,7 @@ export const submit_topic_answer = mutation({
           instance = (await getByUuid(ctx, "daily_question_instances", instanceId))!;
         }
         const parsed = await parseAnswerPayload(ctx, userId, instance, body);
-        await insertDailyAnswer(ctx, { userId, instance, ...parsed, notifyPartner: false });
+        await insertDailyAnswer(ctx, { userId, instance, ...parsed, notifyPartner: false, answeredAt: now });
         // Answering a question the couple put aside brings it back.
         const skip = await skipRow(ctx, coupleId, questionId);
         if (skip) await ctx.db.delete(skip._id);

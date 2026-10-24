@@ -11,7 +11,7 @@ import { addMs, nowIso } from "./time";
  * apart from the daily questions. Each topic is a `topic` question collection. A started question is a
  * `daily_question_instances` row with `topic_collection_id` and no `couple_day_id`, so the daily reads
  * never see it, while answers, the reveal rule, seen marks, reports and the question's chat work as for
- * daily questions. Whoever answers first starts it (`seeded_for_user_id`), and the partner answers the
+ * daily questions. Whoever answers first starts it, and the partner answers the
  * same instance. A topic marked `private` (Flirt) is kept off the lock screen: its chat pushes name only
  * the sender. The topic reads take a topic's names and questions from its `topic_catalog` row
  * (`lib/topicCatalog.ts`), which the catalog sync rebuilds.

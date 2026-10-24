@@ -33,7 +33,7 @@ export {
 } from "./streakDeadlines";
 
 export const ACTIVITY_KINDS = [
-  "daily_challenge_completed",
+  "daily_answer_submitted",
   "widget_drawing_saved",
   "memory_created",
   "memory_updated",
@@ -124,7 +124,7 @@ export async function applyCoupleActivity(
   // other two. Other events (a chat message) change nothing there, so they queue no push.
   // A game turn that changes only "your move" waits in the slower games lane.
   const firstToday = !earlierEventsToday.some((event) => event.couple_id === coupleId && event.user_id === args.user_id);
-  if (firstToday || args.activity_kind === "daily_challenge_completed") {
+  if (firstToday || args.activity_kind === "daily_answer_submitted") {
     await enqueueLockScreenRefreshForPartner(ctx, {
       couple_id: coupleId,
       actor_user_id: args.user_id,

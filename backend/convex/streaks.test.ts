@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
-import { liveInstancesFor, seedCatalog, textQuestions } from "./daily.setup";
+import { currentQuestionFor, seedCatalog, textQuestions } from "./daily.setup";
 import { newUuid } from "./lib/ids";
 import { applyStreakRestore, detectStreakBreak } from "./lib/streaks";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestUser } from "./test.setup";
@@ -27,14 +27,11 @@ function op() {
 }
 
 async function answerAll(t: ReturnType<typeof newTest>, user: TestUser) {
-  const mine = (await liveInstancesFor(t, user.userId)).filter((row) => row.seeded_for_user_id === user.userId);
-  for (const instance of mine.slice(-2)) {
-    await user.as.mutation(api.daily.submit_daily_answer, {
-      p_instance_id: instance.id,
-      p_payload: { text: "ok" },
-      ...op(),
-    });
-  }
+  await user.as.mutation(api.daily.submit_daily_answer, {
+    p_instance_id: (await currentQuestionFor(t, user.userId)).id,
+    p_payload: { text: "ok" },
+    ...op(),
+  });
 }
 
 async function streakCouple() {

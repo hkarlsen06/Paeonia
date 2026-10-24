@@ -141,9 +141,7 @@ describe("sync_catalog", () => {
         couple_id: crypto.randomUUID(),
         question_id: v1.question_id,
         question_version_id: v1.id,
-        seeded_for_user_id: crypto.randomUUID(),
-        slot_number: 1,
-        status: "answered",
+        status: "active",
         created_at: "2026-10-01T00:00:00.000Z",
       });
     });

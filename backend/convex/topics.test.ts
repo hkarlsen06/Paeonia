@@ -186,10 +186,8 @@ describe("answering", () => {
     const instances = await t.run((ctx) => ctx.db.query("daily_question_instances").collect());
     expect(instances).toHaveLength(1);
     expect(instances[0]).toMatchObject({
-      seeded_for_user_id: a.userId,
       topic_collection_id: topic.collectionId,
-      slot_number: 0,
-      status: "answered",
+      status: "active",
     });
     expect(instances[0].couple_day_id).toBeUndefined();
     expect(instances[0].started_couple_day_id).toBeDefined();
@@ -231,7 +229,6 @@ describe("answering", () => {
 
     const events = await t.run((ctx) => ctx.db.query("couple_activity_events").collect());
     expect(events.map((event) => event.activity_kind)).toEqual(["topic_answer_submitted", "topic_answer_submitted"]);
-    expect(await t.run((ctx) => ctx.db.query("daily_challenges").collect())).toHaveLength(0);
     expect(await t.run((ctx) => ctx.db.query("streak_states").collect())).toMatchObject([{ current_count: 1 }]);
     expect(await a.as.query(api.daily.get_daily_questions_history, {})).toEqual([]);
     expect(await a.as.query(api.daily.get_daily_answer_history_details, {})).toEqual([]);

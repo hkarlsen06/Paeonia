@@ -648,7 +648,7 @@ describe("get_media_signed_url and GET /media", () => {
       });
       await ctx.db.insert("daily_question_instances", {
         id: instanceId, couple_day_id: dayId, couple_id: couple.coupleId, question_id: newUuid(), question_version_id: newUuid(),
-        seeded_for_user_id: couple.first.userId, slot_number: 1, status: "active", created_at: now,
+        status: "active", created_at: now,
       });
       const answerId = newUuid();
       await ctx.db.insert("daily_question_answers", {

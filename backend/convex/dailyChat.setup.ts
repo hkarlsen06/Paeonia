@@ -19,7 +19,7 @@ export async function answeredRound(
   t: TestConvex,
   couple: TestCouple,
   question: SeededQuestion,
-  options: { answeredBy?: TestUser[]; at?: string; texts?: Record<string, string>; seededFor?: TestUser } = {},
+  options: { answeredBy?: TestUser[]; at?: string; texts?: Record<string, string> } = {},
 ): Promise<string> {
   const instanceId = newUuid();
   const at = options.at ?? new Date().toISOString();
@@ -31,8 +31,6 @@ export async function answeredRound(
       couple_id: couple.coupleId,
       question_id: question.id,
       question_version_id: question.versionId,
-      seeded_for_user_id: (options.seededFor ?? couple.first).userId,
-      slot_number: 1,
       status: "active",
       created_at: at,
     });

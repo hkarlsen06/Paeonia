@@ -17,13 +17,14 @@ import {
   type ClientOperationArgs,
 } from "./lib/dailyAnswers";
 import {
-  DAILY_QUESTION_SLOTS,
-  ensureDailyChallengeSlots,
+  activeInstanceOfDay,
+  ensureDailyQuestion,
   getDailyQuestionsForCoupleDay,
   getDailyQuestionsHistory,
   getTodayDailyQuestionsForContext,
   insertDailyQuestionInstance,
   pickDailyQuestionVersion,
+  visibleAnswersOf,
 } from "./lib/dailyQuestions";
 import { addRoundInfo } from "./lib/dailyQuestionRounds";
 import { fail } from "./lib/errors";
@@ -92,22 +93,15 @@ async function startChallenge(ctx: MutationCtx, userId: string, args: OperationA
     },
     async () => {
       const coupleDayId = await getOrCreateCoupleDayAt(ctx, coupleId, operation.localCreatedAt);
-      await ensureDailyChallengeSlots(ctx, coupleDayId);
+      await ensureDailyQuestion(ctx, coupleDayId);
       return { couple_day_id: coupleDayId };
     },
   );
   return stored.couple_day_id;
 }
 
-async function shuffleQuestion(
-  ctx: MutationCtx,
-  userId: string,
-  args: OperationArgs & { p_slot_number: number },
-): Promise<string> {
-  const slot = args.p_slot_number;
-  if (!Number.isInteger(slot) || slot < 1 || slot > DAILY_QUESTION_SLOTS) {
-    fail("23514", "slot number is out of range");
-  }
+/** Swaps the day's question for another one. Either partner can, until someone has answered it. */
+async function shuffleQuestion(ctx: MutationCtx, userId: string, args: OperationArgs): Promise<string> {
   const operation = operationFrom(args);
   const coupleId = await getCurrentEntitledCoupleId(ctx, userId);
   const stored = await runClientOperation(
@@ -124,13 +118,12 @@ async function shuffleQuestion(
         kind: "shuffle_daily_question",
         couple_id: coupleId,
         user_id: userId,
-        slot_number: slot,
         local_created_at: operation.localCreatedAt,
       },
     },
     async () => {
       const coupleDayId = await getOrCreateCoupleDayAt(ctx, coupleId, operation.localCreatedAt);
-      await ensureDailyChallengeSlots(ctx, coupleDayId);
+      await ensureDailyQuestion(ctx, coupleDayId);
 
       const shuffles = await ctx.db
         .query("daily_question_shuffles")
@@ -140,37 +133,22 @@ async function shuffleQuestion(
         fail("23514", "daily shuffle limit reached");
       }
 
-      const active = await ctx.db
-        .query("daily_question_instances")
-        .withIndex("by_couple_day_id_seeded_for_user_id_status_slot_number", (q) =>
-          q.eq("couple_day_id", coupleDayId).eq("seeded_for_user_id", userId).eq("status", "active").eq("slot_number", slot),
-        )
-        .first();
-      if (!active) {
-        return fail("22023", "active daily question slot was not found");
-      }
-      const answered = await ctx.db
-        .query("daily_question_answers")
-        .withIndex("by_instance_id_user_id", (q) => q.eq("instance_id", active.id).eq("user_id", userId))
-        .first();
-      if (answered && answered.deleted_at === undefined) {
+      const active = (await activeInstanceOfDay(ctx, coupleDayId))!;
+      // An answer, even the partner's, makes the question theirs to share, so it stays.
+      if ((await visibleAnswersOf(ctx, active.id)).length > 0) {
         fail("23514", "answered daily questions cannot be shuffled");
       }
 
-      const skippedVersion = await getByUuid(ctx, "question_versions", active.question_version_id);
-      const skippedQuestionId = skippedVersion!.question_id;
-      const pickedVersionId = await pickDailyQuestionVersion(ctx, coupleDayId, userId, skippedQuestionId);
+      const skippedQuestionId = active.question_id;
+      const pickedVersionId = await pickDailyQuestionVersion(ctx, coupleId, coupleDayId, skippedQuestionId);
 
       const now = nowIso();
       await ctx.db.patch(active._id, { status: "shuffled", replaced_at: now });
       const replacementId = await insertDailyQuestionInstance(ctx, {
         couple_day_id: coupleDayId,
         question_version_id: pickedVersionId,
-        seeded_for_user_id: userId,
-        slot_number: slot,
       });
       await ctx.db.patch(active._id, { replaced_by_instance_id: replacementId });
-      // assert_daily_question_shuffle_valid holds: both instances share this day, user, and slot.
       await ctx.db.insert("daily_question_shuffles", {
         id: newUuid(),
         couple_id: coupleId,
@@ -179,7 +157,6 @@ async function shuffleQuestion(
         question_id: skippedQuestionId,
         skipped_instance_id: active.id,
         replacement_instance_id: replacementId,
-        slot_number: slot,
         skipped_at: now,
         exclude_until: addDaysToInstant(now, SHUFFLE_EXCLUDE_DAYS),
       });
@@ -222,17 +199,11 @@ async function snapshotRow(
     : { current_user_contributed_today: false, partner_contributed_today: false };
   questions.sort((a, b) => {
     if (a.is_current_day !== b.is_current_day) return a.is_current_day ? -1 : 1;
-    return (
-      byString(b.starts_at, a.starts_at) ||
-      byString(a.seeded_for_user_id, b.seeded_for_user_id) ||
-      a.slot_number - b.slot_number ||
-      byString(a.instance_id, b.instance_id)
-    );
+    return byString(b.starts_at, a.starts_at) || byString(a.instance_id, b.instance_id);
   });
   answerDetails.sort(
     (a, b) =>
       byString(a.couple_day_id, b.couple_day_id) ||
-      a.slot_number - b.slot_number ||
       byString(a.answered_at, b.answered_at) ||
       byString(a.answer_id, b.answer_id),
   );
@@ -312,7 +283,7 @@ export const get_daily_challenge_snapshot = query({
 });
 
 export const shuffle_daily_question_snapshot = mutation({
-  args: { p_slot_number: v.number(), ...clientOperationArgs },
+  args: clientOperationArgs,
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleDayId = await shuffleQuestion(ctx, userId, args);
@@ -384,7 +355,7 @@ export const get_daily_answer_history_details = query({
 
 // ---- operator ----
 
-/** Wipes today's answers, skips, and instances for a couple and seeds fresh slots. Run with `npx convex run`. */
+/** Wipes today's answers, skips, and instances for a couple and seeds a fresh question. Run with `npx convex run`. */
 export const reset_daily_challenge_for_testing = internalMutation({
   args: { p_couple_id: nullableString },
   handler: async (ctx, args) => {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
-import { liveInstancesFor, seedCatalog, textQuestions } from "./daily.setup";
+import { currentQuestionFor, seedCatalog, textQuestions } from "./daily.setup";
 import { buildAppRequest } from "./lib/apns";
 import { newUuid } from "./lib/ids";
 import { questionTimeDue } from "./lib/questionTime";
@@ -101,15 +101,12 @@ const outbox = (t: TestConvex) =>
     (await ctx.db.query("notification_outbox").collect()).filter((row) => row.kind === "question_time_reminder"),
   );
 
-async function answer(t: TestConvex, user: TestUser, count: number) {
-  const mine = (await liveInstancesFor(t, user.userId)).filter((row) => row.seeded_for_user_id === user.userId);
-  for (const instance of mine.slice(-count)) {
-    await user.as.mutation(api.daily.submit_daily_answer, {
-      p_instance_id: instance.id,
-      p_payload: { text: "ok" },
-      ...op(),
-    });
-  }
+async function answer(t: TestConvex, user: TestUser) {
+  await user.as.mutation(api.daily.submit_daily_answer, {
+    p_instance_id: (await currentQuestionFor(t, user.userId)).id,
+    p_payload: { text: "ok" },
+    ...op(),
+  });
 }
 
 describe("set_question_time_reminder", () => {
@@ -150,8 +147,8 @@ describe("enqueue_question_time_reminders", () => {
     expect(row).toMatchObject({
       kind: "question_time_reminder",
       recipient_user_id: a.userId,
-      title: "Today's questions are ready",
-      body: "Two questions are waiting. They take a few minutes.",
+      title: "Today's question is ready",
+      body: "Today's question is waiting. It takes a minute or two.",
       payload: {
         type: "question_time_reminder",
         route: "daily",
@@ -175,8 +172,8 @@ describe("enqueue_question_time_reminders", () => {
     await enable(b);
     expect(await run(t, "2026-10-10T18:00:00Z")).toBe(1);
     expect((await outbox(t))[0]).toMatchObject({
-      title: "Dagens spørsmål er klare",
-      body: "To spørsmål venter. Det tar bare noen minutter.",
+      title: "Dagens spørsmål er klart",
+      body: "Dagens spørsmål venter. Det tar bare et par minutter.",
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
@@ -206,30 +203,30 @@ describe("enqueue_question_time_reminders", () => {
     await enable(a);
     expect(await run(t, "2026-10-10T18:00:00Z")).toBe(1);
 
-    // The next day the partner finishes both questions first. That does not stop a's reminder.
+    // The next day the partner answers first. That does not stop a's reminder.
     vi.setSystemTime(new Date("2026-10-11T10:00:00.000Z"));
     await b.as.mutation(api.daily.start_daily_challenge_snapshot, op());
-    await answer(t, b, 2);
+    await answer(t, b);
     expect(await run(t, "2026-10-11T18:00:00Z")).toBe(1);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("skips someone who answered one question or finished the day", async () => {
+  test("skips someone who answered today's question", async () => {
     const { t, a, b } = await questionCouple();
     await enable(a);
     await enable(b);
     vi.setSystemTime(new Date("2026-10-10T17:00:00.000Z"));
     await a.as.mutation(api.daily.start_daily_challenge_snapshot, op());
-    await answer(t, a, 1);
-    // a has answered one of two questions, b has answered nothing.
+    await answer(t, a);
+    // a has answered, b has not.
     expect(await run(t, "2026-10-10T18:00:00Z")).toBe(1);
     expect((await outbox(t)).map((row) => row.recipient_user_id)).toEqual([b.userId]);
 
-    // Once b finishes both, the next run (without the earlier row to dedupe against) sends nothing.
+    // Once b answers too, the next run (without the earlier row to dedupe against) sends nothing.
     await t.run(async (ctx) => {
       for (const row of await ctx.db.query("notification_outbox").collect()) await ctx.db.delete(row._id);
     });
-    await answer(t, b, 2);
+    await answer(t, b);
     expect(await run(t, "2026-10-10T18:05:00Z")).toBe(0);
     expect(await outbox(t)).toHaveLength(0);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -285,7 +282,7 @@ describe("enqueue_question_time_reminders", () => {
     await a.as.mutation(api.daily.start_daily_challenge_snapshot, op());
     expect(await run(t, "2026-10-10T18:00:00Z")).toBe(1);
     vi.setSystemTime(new Date("2026-10-10T18:00:30.000Z"));
-    await answer(t, a, 1);
+    await answer(t, a);
     expect(await deliverDuePushes(t)).toHaveLength(0);
     expect((await outbox(t))[0]).toMatchObject({ last_error: "notification is out of date" });
     await t.finishAllScheduledFunctions(vi.runAllTimers);

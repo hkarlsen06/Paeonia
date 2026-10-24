@@ -683,16 +683,6 @@ export default defineSchema({
     .index("by_answer_id", ["answer_id"])
     .searchIndex("search_body", { searchField: "body", filterFields: ["couple_id"] }),
 
-  // FK: couple_day_id -> couple_days cascade. (couple_day_id, user_id) is unique.
-  daily_challenges: defineTable({
-    couple_day_id: uuid,
-    user_id: uuid,
-    completed_at: optTs,
-    partner_notified_at: optTs,
-  })
-    .index("by_couple_day_id_user_id", ["couple_day_id", "user_id"])
-    .index("by_user_id", ["user_id"]),
-
   // FK: instance_id -> daily_question_instances cascade. (instance_id, user_id) is unique.
   daily_question_answers: defineTable({
     id: uuid,
@@ -710,7 +700,7 @@ export default defineSchema({
     .index("by_moderation_report_id", ["moderation_report_id"]),
 
   // FK: couple_day_id -> couple_days cascade; question_version_id -> question_versions cascade; replaced_by_instance_id -> self set null.
-  // Active slot is unique per (couple_day_id, seeded_for_user_id, slot_number) while status is active.
+  // A couple day has at most one active instance: the question both partners answer that day.
   daily_question_instances: defineTable({
     id: uuid,
     // Set on daily instances only. A topic instance has none, so day-based reads never see it.
@@ -723,26 +713,18 @@ export default defineSchema({
     couple_id: uuid,
     question_id: uuid,
     question_version_id: uuid,
-    seeded_for_user_id: uuid,
-    slot_number: v.number(),
-    status: literals("active", "shuffled", "answered"),
+    status: literals("active", "shuffled"),
     replaced_by_instance_id: optUuid,
     replaced_at: optTs,
     created_at: ts,
   })
     .index("by_uuid", ["id"])
-    .index("by_couple_day_id_seeded_for_user_id_status_slot_number", [
-      "couple_day_id",
-      "seeded_for_user_id",
-      "status",
-      "slot_number",
-    ])
+    .index("by_couple_day_id_status", ["couple_day_id", "status"])
     .index("by_couple_day_id_question_version_id", ["couple_day_id", "question_version_id"])
     .index("by_couple_id_question_id", ["couple_id", "question_id"])
     .index("by_couple_id_topic_collection_id", ["couple_id", "topic_collection_id"])
     .index("by_question_version_id", ["question_version_id"])
-    .index("by_replaced_by_instance_id", ["replaced_by_instance_id"])
-    .index("by_seeded_for_user_id_status", ["seeded_for_user_id", "status"]),
+    .index("by_replaced_by_instance_id", ["replaced_by_instance_id"]),
 
   // FK: couple_id, couple_day_id, question_id, skipped_instance_id, replacement_instance_id, user_id all cascade
   daily_question_shuffles: defineTable({
@@ -753,13 +735,13 @@ export default defineSchema({
     question_id: uuid,
     skipped_instance_id: uuid,
     replacement_instance_id: uuid,
-    slot_number: v.number(),
     skipped_at: ts,
     exclude_until: ts,
   })
     .index("by_uuid", ["id"])
     .index("by_couple_day_id_user_id", ["couple_day_id", "user_id"])
-    .index("by_couple_id", ["couple_id"])
+    // A skipped question stays out of the couple's picks until exclude_until.
+    .index("by_couple_id_question_id_exclude_until", ["couple_id", "question_id", "exclude_until"])
     .index("by_question_id", ["question_id"])
     .index("by_replacement_instance_id", ["replacement_instance_id"])
     .index("by_skipped_instance_id", ["skipped_instance_id"])
@@ -1581,9 +1563,9 @@ export default defineSchema({
   first_day_drafts: defineTable({
     user_id: uuid,
     started_on: v.optional(date),
-    // Picked once by start_first_day_draft. The slot is the index + 1.
-    question_version_ids: v.array(uuid),
-    answers: v.array(v.object({ question_version_id: uuid, body: v.string(), answered_at: ts })),
+    // Picked once by start_first_day_draft. It becomes the couple's question on the day the partner joins.
+    question_version_id: optUuid,
+    answer: v.optional(v.object({ body: v.string(), answered_at: ts })),
     drawing: v.optional(
       v.object({
         media_asset_id: uuid,

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
-import { liveInstancesFor, seedCatalog, textQuestions } from "./daily.setup";
+import { currentQuestionFor, seedCatalog, textQuestions } from "./daily.setup";
 import { hmacSha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
 import { endCouple, failure, op, setMediaEnv, uploadAsset } from "./media.testing";
@@ -868,7 +868,7 @@ describe("get_lock_screen_state", () => {
     });
   });
 
-  test("tracks the daily questions and the streak halves for each partner", async () => {
+  test("tracks the daily question and the streak halves for each partner", async () => {
     const t = newTest();
     await seedCatalog(t, textQuestions(12));
     const couple = await createCouple(t);
@@ -877,21 +877,17 @@ describe("get_lock_screen_state", () => {
     await first.as.mutation(api.daily.start_daily_challenge_snapshot, op());
     expect((await stateOf(first))!.daily_question).toEqual({ me_answered: false, partner_answered: false });
 
-    const answer = async (user: TestUser, from: number, to: number) => {
-      const own = (await liveInstancesFor(t, user.userId)).filter((row) => row.seeded_for_user_id === user.userId);
-      for (const instance of own.slice(from, to)) {
-        await user.as.mutation(api.daily.submit_daily_answer, { p_instance_id: instance.id, p_payload: { text: "secret" }, ...op() });
-      }
+    const answer = async (user: TestUser) => {
+      const instance = await currentQuestionFor(t, user.userId);
+      await user.as.mutation(api.daily.submit_daily_answer, { p_instance_id: instance.id, p_payload: { text: "secret" }, ...op() });
     };
-    await answer(first, 0, 1);
-    expect((await stateOf(first))!.daily_question).toEqual({ me_answered: false, partner_answered: false });
-    await answer(first, 1, 2);
+    await answer(first);
     expect((await stateOf(first))!.daily_question).toEqual({ me_answered: true, partner_answered: false });
     expect((await stateOf(second))!.daily_question).toEqual({ me_answered: false, partner_answered: true });
     expect((await stateOf(first))!.streak).toEqual({ current_count: 0, me_active_today: true, partner_active_today: false });
     expect((await stateOf(second))!.streak).toEqual({ current_count: 0, me_active_today: false, partner_active_today: true });
 
-    await answer(second, 0, 2);
+    await answer(second);
     expect((await stateOf(first))!.daily_question).toEqual({ me_answered: true, partner_answered: true });
     expect((await stateOf(first))!.streak).toEqual({ current_count: 1, me_active_today: true, partner_active_today: true });
     expect(JSON.stringify(await stateOf(first))).not.toMatch(/secret|prompt/);

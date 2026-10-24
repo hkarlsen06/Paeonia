@@ -58,7 +58,7 @@ const assetOf = (t: TestConvex, assetId: string) =>
   t.run((ctx) => ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", assetId)).unique());
 
 describe("start_first_day_draft", () => {
-  test("picks two different written questions without partner choice, once", async () => {
+  test("picks one written question without partner choice, once", async () => {
     const t = newTest();
     await seedCatalog(t, [
       { key: "choice", kinds: ["text", "partner_choice"] },
@@ -70,9 +70,8 @@ describe("start_first_day_draft", () => {
     expect(await draftOf(user)).toBeNull();
 
     const draft = await user.as.mutation(api.firstDay.start_first_day_draft, {});
-    expect(draft.questions.map((row) => row.slot_number)).toEqual([1, 2]);
-    expect(draft.questions.map((row) => row.question_key).sort()).toEqual(["written", "written_or_photo"]);
-    expect(draft.questions[0]).toMatchObject({ answer_text: null, answered_at: null, prompt_nb: expect.stringContaining("prompt nb") });
+    expect(["written", "written_or_photo"]).toContain(draft.question?.question_key);
+    expect(draft.question).toMatchObject({ answer_text: null, answered_at: null, prompt_nb: expect.stringContaining("prompt nb") });
     expect(draft).toMatchObject({ started_on: null, drawing: null, updated_at: NOW });
 
     expect(await user.as.mutation(api.firstDay.start_first_day_draft, {})).toEqual(draft);
@@ -96,7 +95,7 @@ describe("set_first_day_started_on", () => {
     const t = newTest();
     const user = await inviter(t, { entitled: false });
     await user.as.mutation(api.firstDay.set_first_day_started_on, { ...op(), p_started_on: "2026-10-10" });
-    expect(await draftOf(user)).toMatchObject({ started_on: "2026-10-10", questions: [] });
+    expect(await draftOf(user)).toMatchObject({ started_on: "2026-10-10", question: null });
 
     expect(await failure(user.as.mutation(api.firstDay.set_first_day_started_on, { ...op(), p_started_on: "2026-10-11" }))).toEqual({
       code: "23514",
@@ -118,7 +117,7 @@ describe("save_first_day_answer", () => {
       await failure(
         unpaid.as.mutation(api.firstDay.save_first_day_answer, {
           ...op(),
-          p_question_version_id: unpaidDraft.questions[0].question_version_id,
+          p_question_version_id: unpaidDraft.question!.question_version_id,
           p_text: "Hello",
         }),
       ),
@@ -126,7 +125,7 @@ describe("save_first_day_answer", () => {
 
     const user = await inviter(t);
     const draft = await user.as.mutation(api.firstDay.start_first_day_draft, {});
-    const versionId = draft.questions[0].question_version_id;
+    const versionId = draft.question!.question_version_id;
     const save = (text: string, id = versionId) =>
       user.as.mutation(api.firstDay.save_first_day_answer, { ...op(), p_question_version_id: id.toUpperCase(), p_text: text });
 
@@ -135,12 +134,9 @@ describe("save_first_day_answer", () => {
     expect(await failure(save("x".repeat(2001)))).toEqual({ code: "23514", message: "answer text is too long" });
 
     await save("  Hello  ");
-    expect((await draftOf(user))!.questions[0]).toMatchObject({ answer_text: "Hello", answered_at: NOW });
+    expect((await draftOf(user))!.question).toMatchObject({ answer_text: "Hello", answered_at: NOW });
     await save("Edited");
-    const saved = await draftOf(user);
-    expect(saved!.questions.map((row) => row.answer_text)).toEqual(["Edited", null]);
-    const [row] = await t.run((ctx) => ctx.db.query("first_day_drafts").withIndex("by_user_id", (q) => q.eq("user_id", user.userId)).collect());
-    expect(row.answers).toHaveLength(1);
+    expect((await draftOf(user))!.question?.answer_text).toBe("Edited");
   });
 });
 
@@ -203,17 +199,17 @@ describe("first day drawing", () => {
 });
 
 describe("accept_pairing_invite with a first day draft", () => {
-  async function inviterWithDraft(t: TestConvex, options: { answered?: number } = {}) {
+  async function inviterWithDraft(t: TestConvex, options: { answered?: boolean } = {}) {
     await seedCatalog(t, textQuestions(8));
     const creator = await inviter(t);
     await addDevice(t, creator.userId, { locale: "en" });
     const draft = await creator.as.mutation(api.firstDay.start_first_day_draft, {});
     await creator.as.mutation(api.firstDay.set_first_day_started_on, { ...op(), p_started_on: "2026-09-01" });
-    for (const [index, question] of draft.questions.slice(0, options.answered ?? 2).entries()) {
+    if (options.answered !== false) {
       await creator.as.mutation(api.firstDay.save_first_day_answer, {
         ...op(),
-        p_question_version_id: question.question_version_id,
-        p_text: `Answer ${index + 1}`,
+        p_question_version_id: draft.question!.question_version_id,
+        p_text: "First answer",
       });
     }
     const drawing = await uploadDraftDrawing(t, creator);
@@ -233,25 +229,25 @@ describe("accept_pairing_invite with a first day draft", () => {
     const state = await t.run(async (ctx) => ({
       couple: await ctx.db.query("couples").withIndex("by_uuid", (q) => q.eq("id", coupleId)).unique(),
       drafts: await ctx.db.query("first_day_drafts").collect(),
-      challenges: await ctx.db.query("daily_challenges").collect(),
+      activity: await ctx.db.query("couple_activity_events").collect(),
       outbox: await ctx.db.query("notification_outbox").collect(),
     }));
     expect(state.couple?.started_on).toBe("2026-09-01");
     expect(state.drafts).toEqual([]);
-    const creatorChallenge = state.challenges.find((row) => row.user_id === creator.userId);
-    expect(creatorChallenge?.completed_at).toBe(NOW);
-    expect(creatorChallenge?.partner_notified_at).toBeUndefined();
+    // The inviter's answer counts for the streak on the first day.
+    expect(state.activity.map((row) => [row.activity_kind, row.user_id])).toContainEqual(["daily_answer_submitted", creator.userId]);
 
-    // The partner sees the inviter's answered questions, in their slots, and has their own two.
+    // The draft's question is the couple's one question today, with the inviter's answer waiting for the partner.
     const [snapshot] = await partner.as.query(api.daily.get_today_daily_challenge_snapshot, {});
-    const creatorRows = snapshot.questions.filter((row) => row.seeded_for_user_id === creator.userId);
-    expect(creatorRows.map((row) => [row.slot_number, row.question_version_id])).toEqual(
-      draft.questions.map((row) => [row.slot_number, row.question_version_id]),
-    );
-    expect(creatorRows.every((row) => row.partner_answer_id !== null && row.own_answer_id === null)).toBe(true);
-    expect(snapshot.questions.filter((row) => row.seeded_for_user_id === partner.userId)).toHaveLength(2);
+    expect(snapshot.questions).toHaveLength(1);
+    expect(snapshot.questions[0]).toMatchObject({
+      question_version_id: draft.question!.question_version_id,
+      own_answer_id: null,
+      can_view_partner_answer: false,
+    });
+    expect(snapshot.questions[0].partner_answer_id).not.toBeNull();
     const [own] = await creator.as.query(api.daily.get_today_daily_challenge_snapshot, {});
-    expect(own.answer_details.filter((row) => row.is_own_answer).map((row) => row.text_body).sort()).toEqual(["Answer 1", "Answer 2"]);
+    expect(own.answer_details.filter((row) => row.is_own_answer).map((row) => row.text_body)).toEqual(["First answer"]);
 
     // The drawing is the active widget revision, by the inviter, and the partner can open it.
     const [canvas] = await partner.as.query(api.widget.get_widget_canvas, {});
@@ -279,26 +275,67 @@ describe("accept_pairing_invite with a first day draft", () => {
 
   test("an answer saved after the partner joined goes to the couple's first day question", async () => {
     const t = newTest();
-    const { creator, partner, draft } = await inviterWithDraft(t, { answered: 1 });
+    const { creator, partner, draft } = await inviterWithDraft(t, { answered: false });
     await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" });
-    const save = (index: number, text: string) =>
+    const save = (text: string) =>
       creator.as.mutation(api.firstDay.save_first_day_answer, {
         ...op(),
-        p_question_version_id: draft.questions[index].question_version_id,
+        p_question_version_id: draft.question!.question_version_id,
         p_text: text,
       });
 
-    // The unanswered question gets its answer, which completes the inviter's day, and the
-    // partner hears about it like any finished day.
-    await save(1, "Late answer");
-    // The one answered before pairing is edited in place.
-    await save(0, "Edited after pairing");
+    // The question gets its answer, and the partner hears about it like any first answer.
+    await save("Late answer");
+    // Saving again edits it in place.
+    await save("Edited after pairing");
 
     const [own] = await creator.as.query(api.daily.get_today_daily_challenge_snapshot, {});
     const texts = own.answer_details.filter((row) => row.is_own_answer).map((row) => row.text_body);
-    expect(texts.sort()).toEqual(["Edited after pairing", "Late answer"]);
+    expect(texts).toEqual(["Edited after pairing"]);
     const outbox = await t.run((ctx) => ctx.db.query("notification_outbox").collect());
     expect(outbox.filter((row) => row.recipient_user_id === partner.userId && row.kind === "daily_challenge_completed")).toHaveLength(1);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("when both partners answered different first questions, neither answer is lost", async () => {
+    const t = newTest();
+    const { creator, partner, draft } = await inviterWithDraft(t);
+    // The joining partner had started a couple too, and answered another question.
+    await grantLifetime(t, partner.userId);
+    let partnerDraft = await partner.as.mutation(api.firstDay.start_first_day_draft, {});
+    for (let attempt = 0; partnerDraft.question!.question_version_id === draft.question!.question_version_id; attempt += 1) {
+      // The picker is random, so pick again until the two drafts hold different questions.
+      if (attempt > 20) throw new Error("the drafts kept the same question");
+      await t.run(async (ctx) => {
+        const row = (await ctx.db.query("first_day_drafts").collect()).find((item) => item.user_id === partner.userId)!;
+        await ctx.db.delete(row._id);
+      });
+      partnerDraft = await partner.as.mutation(api.firstDay.start_first_day_draft, {});
+    }
+    await partner.as.mutation(api.firstDay.save_first_day_answer, {
+      ...op(),
+      p_question_version_id: partnerDraft.question!.question_version_id,
+      p_text: "Partner's first answer",
+    });
+
+    await partner.as.mutation(api.pairing.accept_pairing_invite, { ...op(), p_invite_code: "ABC123" });
+
+    // Today is the creator's question. The partner's answered question is the next day's.
+    const [today] = await creator.as.query(api.daily.get_today_daily_challenge_snapshot, {});
+    expect(today.questions.map((row) => row.question_version_id)).toEqual([draft.question!.question_version_id]);
+    vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
+    const [tomorrow] = await creator.as.mutation(api.daily.start_daily_challenge_snapshot, op());
+    const next = tomorrow.questions.find((row) => row.is_current_day)!;
+    expect(next).toMatchObject({
+      question_version_id: partnerDraft.question!.question_version_id,
+      own_answer_id: null,
+      can_view_partner_answer: false,
+    });
+    expect(next.partner_answer_id).not.toBeNull();
+    const [partnerView] = await partner.as.query(api.daily.get_today_daily_challenge_snapshot, {});
+    expect(partnerView.answer_details.filter((row) => row.is_own_answer).map((row) => row.text_body)).toEqual([
+      "Partner's first answer",
+    ]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

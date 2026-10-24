@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { api } from "../_generated/api";
+import { seedCatalog, textQuestions } from "../daily.setup";
+import { op } from "../media.testing";
 import { addDevice, createCouple, newTest, setTimeZone, type TestConvex } from "../test.setup";
 import { newUuid } from "./ids";
 import {
@@ -182,7 +185,7 @@ describe("mutual participation", () => {
 
   test("one partner cannot start or extend the streak, repeat events do not qualify the day", async () => {
     const { t, couple, yesterday, today, activity } = await setup();
-    await activity(couple.first.userId, yesterday, "daily_challenge_completed", "2026-10-09T10:00:00.000Z", "first-a");
+    await activity(couple.first.userId, yesterday, "daily_answer_submitted", "2026-10-09T10:00:00.000Z", "first-a");
     expect(await streakState(t, couple.coupleId)).toBeNull();
     await activity(couple.first.userId, yesterday, "widget_drawing_saved", "2026-10-09T11:00:00.000Z", "second-a");
     expect(await t.run((ctx) => getCoupleDayStreakQualifiedAt(ctx, couple.coupleId, yesterday))).toBeNull();
@@ -633,6 +636,45 @@ describe("streak read model", () => {
     const { t, couple } = await setup();
     await t.run((ctx) => detectStreakBreak(ctx, couple.coupleId));
     expect(await streakState(t, couple.coupleId)).toMatchObject({ restorable_count: 0, current_count: 5 });
+  });
+});
+
+describe("what counts", () => {
+  const activityOf = (t: TestConvex) =>
+    t.run(async (ctx) =>
+      (await ctx.db.query("couple_activity_events").collect()).map((event) => [event.activity_kind, event.user_id]),
+    );
+
+  test("each partner's answer to the day's question counts, and two answers start the streak", async () => {
+    const t = newTest();
+    await seedCatalog(t, textQuestions(3));
+    const couple = await createCouple(t, { timeZones: ["UTC", "UTC"] });
+    const [snapshot] = await couple.first.as.mutation(api.daily.start_daily_challenge_snapshot, op());
+    const question = snapshot.questions[0].instance_id;
+    await couple.second.as.mutation(api.daily.submit_daily_answer, { p_instance_id: question, p_payload: { text: "first" }, ...op() });
+    expect(await activityOf(t)).toEqual([["daily_answer_submitted", couple.second.userId]]);
+    expect(await streakState(t, couple.coupleId)).toBeNull();
+    await couple.first.as.mutation(api.daily.submit_daily_answer, { p_instance_id: question, p_payload: { text: "second" }, ...op() });
+    expect(await streakState(t, couple.coupleId)).toMatchObject({ current_count: 1, last_qualified_date: "2026-10-10" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("adding a memory counts", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["UTC", "UTC"] });
+    const memoryArgs = () => ({
+      ...op(),
+      p_memory_id: newUuid(),
+      p_title: "Beach weekend",
+      p_memory_date: "2026-10-01",
+      p_note_body: "Warm sand",
+      p_media_asset_ids: [],
+    });
+    await couple.first.as.mutation(api.memories.create_memory, memoryArgs());
+    expect(await activityOf(t)).toEqual([["memory_created", couple.first.userId]]);
+    await couple.second.as.mutation(api.memories.create_memory, memoryArgs());
+    expect(await streakState(t, couple.coupleId)).toMatchObject({ current_count: 1, last_qualified_date: "2026-10-10" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
 

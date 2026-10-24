@@ -367,9 +367,7 @@ async function endedCoupleWithContent(t: TestConvex): Promise<TestCouple & { ass
       couple_id: couple.coupleId,
       question_id: newUuid(),
       question_version_id: newUuid(),
-      seeded_for_user_id: couple.first.userId,
-      slot_number: 1,
-      status: "answered",
+      status: "active",
       created_at: NOW,
     });
     await ctx.db.insert("daily_question_answers", {

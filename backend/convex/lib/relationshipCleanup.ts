@@ -514,19 +514,13 @@ export async function purgeCoupleContent(
   }
   for (const shuffle of await ctx.db
     .query("daily_question_shuffles")
-    .withIndex("by_couple_id", (q) => q.eq("couple_id", couple.id))
+    .withIndex("by_couple_id_question_id_exclude_until", (q) => q.eq("couple_id", couple.id))
     .take(Math.max(budget.left, 1))) {
     if (budget.left <= 0) return unfinished();
     await remove(shuffle);
   }
   for (const day of days) {
     if (budget.left <= 0) return unfinished();
-    for (const challenge of await ctx.db
-      .query("daily_challenges")
-      .withIndex("by_couple_day_id_user_id", (q) => q.eq("couple_day_id", day.id))
-      .collect()) {
-      await remove(challenge);
-    }
     await remove(day);
   }
   for (const preference of await ctx.db

@@ -11,7 +11,7 @@ import {
   notificationLocaleLanguage,
   notificationPayloadIsSafe,
 } from "./notifications";
-import { enqueuePartnerAnsweredNotification } from "./dailyPartnerPush";
+import { enqueueDailyPartnerPush } from "./dailyPartnerPush";
 import { enqueueGamePush } from "./games";
 import { GAME_PUSH_COPY, notificationAlertTitle } from "./notificationCopy";
 import { GAME_KINDS } from "./validators";
@@ -320,7 +320,7 @@ describe("trigger helpers", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("partner answered notifies the first answerer when the second answer arrives", async () => {
+  test("each answer tells the partner: answered first, then answered too", async () => {
     const t = newTest();
     const couple = await createCouple(t, { timeZones: ["UTC", "UTC"] });
     await addDevice(t, couple.first.userId, { locale: "en" });
@@ -342,17 +342,21 @@ describe("trigger helpers", () => {
         starts_at: "2026-10-10T00:00:00.000Z", ends_at: "2026-10-11T00:00:00.000Z", created_at: now,
       });
       await ctx.db.insert("daily_question_instances", {
-        id: instanceId, couple_day_id: dayId, couple_id: couple.coupleId, question_id: newUuid(), question_version_id: newUuid(), seeded_for_user_id: couple.first.userId,
-        slot_number: 1, status: "active", created_at: now,
+        id: instanceId, couple_day_id: dayId, couple_id: couple.coupleId, question_id: newUuid(), question_version_id: newUuid(),
+        status: "active", created_at: now,
       });
     });
-    // The SQL trigger ran after each insert, so the first answer sees only itself.
+    const instance = async () =>
+      (await t.run((ctx) => ctx.db.query("daily_question_instances").withIndex("by_uuid", (q) => q.eq("id", instanceId)).unique()))!;
     const firstAnswer = await insertAnswer(couple.first.userId);
-    await t.run((ctx) => enqueuePartnerAnsweredNotification(ctx, firstAnswer));
-    expect(await outbox(t)).toHaveLength(0);
+    const firstInstance = await instance();
+    await t.run((ctx) => enqueueDailyPartnerPush(ctx, firstAnswer, firstInstance));
+    expect((await outbox(t)).map((row) => [row.kind, row.recipient_user_id, row.title])).toEqual([
+      ["daily_challenge_completed", couple.second.userId, "First Partner answered today's question"],
+    ]);
     const secondAnswer = await insertAnswer(couple.second.userId);
-    await t.run((ctx) => enqueuePartnerAnsweredNotification(ctx, secondAnswer));
-    const rows = await outbox(t);
+    await t.run((ctx) => enqueueDailyPartnerPush(ctx, secondAnswer, firstInstance));
+    const rows = (await outbox(t)).filter((row) => row.recipient_user_id === couple.first.userId);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       recipient_user_id: couple.first.userId,

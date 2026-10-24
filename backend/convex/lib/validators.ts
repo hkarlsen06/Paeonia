@@ -40,7 +40,7 @@ export const locationSource = literals("foreground_open", "manual_refresh", "set
 /** The iOS location access the phone last reported for Paeonia. */
 export const locationPermission = literals("always", "when_in_use", "denied", "restricted", "not_determined");
 export const activityKind = literals(
-  "daily_challenge_completed",
+  "daily_answer_submitted",
   "widget_drawing_saved",
   "memory_created",
   "memory_updated",

@@ -389,14 +389,14 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
     },
   }),
   daily_question_instances: {
-    ...yours("by_couple_id_question_id", "seeded_for_user_id", {
+    ...shared("by_couple_id_question_id", {
       group: "daily",
       about: {
-        en: "The questions you were given or answered, and on which day.",
-        nb: "Spørsmålene du fikk eller svarte på, og hvilken dag.",
+        en: "The questions the two of you were given or answered, and on which day.",
+        nb: "Spørsmålene dere fikk eller svarte på, og hvilken dag.",
       },
     }),
-    // A person can answer a question that was given to the partner, in the daily and topic flows.
+    // The questions of an earlier relationship come along when the person answered them.
     referencedBy: { table: "daily_question_answers", field: "instance_id", index: "by_instance_id_user_id" },
   },
   question_version_localizations: child(
@@ -425,10 +425,6 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
       en: "Which chat belongs to which question.",
       nb: "Hvilken samtale som hører til hvilket spørsmål.",
     },
-  }),
-  daily_challenges: own("user_id", "by_user_id", {
-    group: "daily",
-    about: { en: "Days you finished the daily questions.", nb: "Dager du ble ferdig med dagens spørsmål." },
   }),
   daily_answer_seen_states: own("user_id", "by_user_id", {
     group: "daily",

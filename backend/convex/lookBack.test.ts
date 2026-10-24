@@ -225,9 +225,7 @@ async function insertRound(
       couple_id: couple.coupleId,
       question_id: (await getByUuid(ctx, "question_versions", versionId))!.question_id,
       question_version_id: versionId,
-      seeded_for_user_id: couple.first.userId,
-      slot_number: 1,
-      status: options.status ?? "answered",
+      status: options.status ?? "active",
       created_at: dayStart,
     });
     const answered = `${localDate}T10:00:00.000Z`;

@@ -74,17 +74,29 @@ export async function seedCatalog(t: TestConvex, questions: SeedQuestion[]): Pro
   });
 }
 
-/** A user's instances on any day that are not shuffled away, oldest first. */
-export async function liveInstancesFor(t: TestConvex, userId: string): Promise<Doc<"daily_question_instances">[]> {
+/** The daily questions of the couple `userId` is in, on any day, that nobody skipped, oldest first. */
+export async function dailyQuestionsFor(t: TestConvex, userId: string): Promise<Doc<"daily_question_instances">[]> {
   return await t.run(async (ctx) => {
+    const member = await ctx.db
+      .query("couple_members")
+      .withIndex("by_user_id_status_couple_id", (q) => q.eq("user_id", userId).eq("status", "active"))
+      .first();
+    if (!member) return [];
     const rows = await ctx.db
       .query("daily_question_instances")
-      .withIndex("by_seeded_for_user_id_status", (q) => q.eq("seeded_for_user_id", userId))
+      .withIndex("by_couple_id_question_id", (q) => q.eq("couple_id", member.couple_id))
       .collect();
     return rows
-      .filter((row) => row.status !== "shuffled")
+      .filter((row) => row.couple_day_id !== undefined && row.status === "active")
       .sort((a, b) => a._creationTime - b._creationTime);
   });
+}
+
+/** The newest daily question of the couple `userId` is in. */
+export async function currentQuestionFor(t: TestConvex, userId: string): Promise<Doc<"daily_question_instances">> {
+  const rows = await dailyQuestionsFor(t, userId);
+  if (rows.length === 0) throw new Error("the couple has no daily question yet");
+  return rows[rows.length - 1];
 }
 
 /** Inserts a finalized image or voice asset reserved for a daily answer. */
