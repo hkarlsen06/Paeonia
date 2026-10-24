@@ -1096,13 +1096,16 @@ export default defineSchema({
     accepted_at: optTs,
     revoked_at: optTs,
     couple_id: optUuid,
+    // When the reminder cron dealt with this invite, whether or not it sent the push. See pairingReminders.ts.
+    reminded_at: optTs,
     created_at: ts,
     updated_at: ts,
   })
     .index("by_uuid", ["id"])
     .index("by_couple_id", ["couple_id"])
     .index("by_created_by_user_id_status_expires_at", ["created_by_user_id", "status", "expires_at"])
-    .index("by_status_expires_at", ["status", "expires_at"]),
+    .index("by_status_expires_at", ["status", "expires_at"])
+    .index("by_status_reminded_at_created_at", ["status", "reminded_at", "created_at"]),
 
   privacy_requests: defineTable({
     id: uuid,

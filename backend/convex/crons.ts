@@ -58,6 +58,9 @@ crons.interval(
   {},
 );
 crons.interval("paeonia-expire-stale-pairing-invites", { hours: 1 }, internal.pairing.expire_stale_pairing_invites, {});
+// New in Convex: one reminder to share an invite again when nobody joined within 2 days. It waits out
+// the inviter's night, so hourly runs are enough. See pairingReminders.ts.
+crons.interval("send-pairing-invite-reminders", { hours: 1 }, internal.pairingReminders.send_pairing_invite_reminders, {});
 
 // New in Convex: deletes notes whose 24 hours are over, so they are gone and not only hidden.
 // Stories have no cleanup cron: they leave Home on the phone after 24 hours and stay in the

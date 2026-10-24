@@ -154,6 +154,7 @@ const NOTIFICATION_CATEGORY: Record<
   story_posted: "partner",
   reaction_added: "partner",
   partner_joined: "partner",
+  pairing_invite_reminder: "reminder",
   data_export_ready: "account",
   question_time_reminder: "reminder",
   date_reminder: "reminder",
@@ -192,6 +193,7 @@ export function notificationThreadId(payload: Record<string, unknown>): string |
     case "reaction_added":
       return "reactions";
     case "partner_joined":
+    case "pairing_invite_reminder":
       return "pairing";
     case "streak_reminder":
       return "streak";

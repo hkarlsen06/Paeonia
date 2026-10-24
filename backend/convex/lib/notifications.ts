@@ -37,6 +37,7 @@ const NOTIFICATION_KINDS = [
   "question_time_reminder",
   "date_reminder",
   "partner_joined",
+  "pairing_invite_reminder",
   "topics_waiting",
   "reaction_added",
   "badge_update",

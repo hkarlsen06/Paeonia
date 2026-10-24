@@ -13,6 +13,7 @@ import { gamePushStillWanted } from "./lib/gameRegistry";
 import type { GamePushKind } from "./lib/games";
 import { uuidArg } from "./lib/ids";
 import { reactionPreferenceAllows } from "./lib/notifications";
+import { pairingInviteStillWaiting } from "./lib/pairingInviteReminder";
 import { hasStartedToday } from "./lib/questionTimeStatus";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { isValidTimeZone, nowIso } from "./lib/time";
@@ -144,6 +145,12 @@ async function rowStillWanted(
       (await topicPushTooSoon(ctx, recipientUserId, row.scheduled_for, nowIso())))
   ) {
     return { wanted: false, reason: "out_of_date" };
+  }
+  // The invite reminder goes out only while the invite still waits for the partner.
+  if (row.kind === "pairing_invite_reminder") {
+    const invite = typeof payload.invite_id === "string" ? await getByUuid(ctx, "pairing_invites", payload.invite_id) : null;
+    if (!invite || invite.created_by_user_id !== recipientUserId) return { wanted: false, reason: "ineligible" };
+    if (!(await pairingInviteStillWaiting(ctx, invite, nowIso()))) return { wanted: false, reason: "out_of_date" };
   }
   if (
     row.kind === "question_time_reminder" &&

@@ -350,6 +350,8 @@ export function notificationAlertBody(
       return nb ? "Kopien din er klar til nedlasting." : "Your copy is ready to download.";
     case "partner_joined":
       return nb ? "Se deres første dag sammen." : "See your first day together.";
+    case "pairing_invite_reminder":
+      return nb ? "Kanskje lenken ble borte. Send den til partneren din igjen." : "Maybe the link got lost. Send it to your partner again.";
     case "date_reminder":
       switch (dateReminderKind(payload)) {
         case "partner_birthday_soon":
@@ -465,6 +467,9 @@ export async function notificationAlertTitle(
       return nb ? "Dataene dine er klare" : "Your data is ready";
     case "partner_joined":
       return nb ? `${name} ble med deg` : `${name} joined you`;
+    case "pairing_invite_reminder":
+      // Paeonia's own voice. Nobody has joined, so there is no partner to name.
+      return nb ? "Invitasjonen din venter fortsatt" : "Your invite is still waiting";
     case "date_reminder":
       return dateReminderTitle(payload, nb, name);
     case "question_time_reminder":
