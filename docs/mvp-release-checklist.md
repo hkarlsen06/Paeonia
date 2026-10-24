@@ -155,8 +155,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [ ] Billing Grace Period is turned on in App Store Connect, and a subscription in grace keeps access for both partners until the grace period ends. In App Store Connect. The backend half is tested (`storekitWebhook.test.ts`) and deployed on 2026-10-24.
 - [x] Expired subscription removes entitlement when neither partner has active access. `storekit.test.ts` "expires lapsed transactions and grants".
 - [ ] Lifetime/test/review grants are scoped, auditable, revocable, and intentional. Gap: no code creates or revokes a grant, so grants are hand-edited rows, and nothing enforces one active grant per user, kind and product.
-- [ ] App checks whether the current couple already has active entitlement before starting purchase. Gap: `PaywallViewModel` goes straight to StoreKit. The live access feed usually closes the paywall first.
-- [ ] Two partners cannot both buy a subscription for the same couple. Gap: if both pay at the same time, both purchases go through and the couple is billed twice.
+- [x] A partner does not buy a second subscription for a couple that already has access. The live access feed closes the paywall for both partners as soon as one purchase verifies, so `PaywallViewModel` needs no check of its own. Two partners who confirm the purchase sheet within the same few seconds can both be billed. That is accepted (decided 2026-10-24).
 - [x] Manage subscription link is available in settings or paywall footer.
 - [x] Subscription sharing is explained clearly: one subscription unlocks Paeonia for both partners.
 - [x] Paywall does not imply free access if the product is paid.
