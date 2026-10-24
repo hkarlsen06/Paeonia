@@ -7371,24 +7371,6 @@
         }
       }
     },
-    "dailyChallenge.partnerReveal.eyebrow" : {
-      "comment" : "Small label above the revealed partner answer shown after answering their question",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their answer"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deres svar"
-          }
-        }
-      }
-    },
     "dailyChallenge.partnerReveal.waiting" : {
       "comment" : "Shown on the reveal screen while the user's answer finishes sending. The argument is the partner's name.",
       "extractionState" : "manual",

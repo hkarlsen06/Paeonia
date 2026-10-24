@@ -131,7 +131,7 @@ struct DailyAnswerKindBadges: View {
         }
 
         DailyQuestionCard(prompt: "What made you smile today?") {
-            PaeoniaCardEyebrow(.dailyChallengePartnerRevealEyebrow)
+            PaeoniaCardEyebrow(.homeDailyPromptEyebrow)
         }
     }
     .padding()

@@ -26,18 +26,10 @@ extension MainTabView {
             // The Home card waits for the flow to close before its seal breaks.
             .environment(\.dailyFlowIsPresented, isAnswerFlowPresented)
             .fullScreenCover(isPresented: $isAnswerFlowPresented, onDismiss: offerNotificationsIfAnswered) {
-                DailyChallengeAnswerFlow(
-                    viewModel: dailyChallengeViewModel,
-                    onClose: closeAnswerFlow,
-                    makeStreakRestoreViewModel: makeStreakRestoreViewModel,
-                    claimStreakMilestone: claimStreakMilestone,
-                    claimStreakSave: claimStreakSave,
-                    onOpenQuestionChat: openQuestionChatFromAnswerFlow
-                )
-                .analyticsScreen("daily_answer")
-                .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
-                .environment(bannerCenter)
-                .paeoniaTopBanner(bannerCenter)
+                dailyAnswerFlow(questionID: nil, onClose: closeAnswerFlow)
+                    .zoomTransition(dailyFlowSource.zoomSourceID, in: zoomNamespace, enabled: !reduceMotion)
+                    .environment(bannerCenter)
+                    .paeoniaTopBanner(bannerCenter)
             }
             // A question opened from its own row zooms out of that row.
             .fullScreenCover(
@@ -86,21 +78,30 @@ extension MainTabView {
             if question.isTopicQuestion {
                 topicAnswerSession(for: question)
             } else {
-                DailyChallengeAnswerFlow(
-                    viewModel: dailyChallengeViewModel,
-                    questionID: question.id,
-                    onClose: closePartnerAnswerFlow,
-                    makeStreakRestoreViewModel: makeStreakRestoreViewModel,
-                    claimStreakMilestone: claimStreakMilestone,
-                    claimStreakSave: claimStreakSave,
-                    onOpenQuestionChat: openQuestionChatFromRowFlow
-                )
-                .analyticsScreen("daily_answer")
+                dailyAnswerFlow(questionID: question.id, onClose: closePartnerAnswerFlow)
             }
         }
         .zoomTransition(partnerAnswerZoomSourceID(for: question), in: zoomNamespace, enabled: !reduceMotion)
         .environment(bannerCenter)
         .paeoniaTopBanner(bannerCenter)
+    }
+
+    /// The daily answer flow for one question, or today's question when `questionID` is nil.
+    /// It ends in the question's chat inside the same cover, so closing returns the user
+    /// to the screen that opened it.
+    private func dailyAnswerFlow(questionID: UUID?, onClose: @escaping () -> Void) -> some View {
+        DailyChallengeAnswerFlow(
+            viewModel: dailyChallengeViewModel,
+            questionID: questionID,
+            onClose: onClose,
+            makeStreakRestoreViewModel: makeStreakRestoreViewModel,
+            claimStreakMilestone: claimStreakMilestone,
+            claimStreakSave: claimStreakSave,
+            privacySafetyService: dependencies.settingsPrivacyService,
+            privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
+            onReportedAndLeft: actions.leftRelationship
+        )
+        .analyticsScreen("daily_answer")
     }
 
     /// The row the flow zooms out of: the locked row on the Home card when it opened from
@@ -262,19 +263,6 @@ extension MainTabView {
     private func openPartnerQuestionsInQuestionsTab() {
         selection.wrappedValue = .questions
         focusedDailyQuestionIDs = dailyChallengeViewModel.snapshot.earlierQuestionsAwaitingAnswer.map(\.id)
-    }
-
-    /// The reveal's Open chat, and the note about an earlier answer: closes the flow and
-    /// opens the question's chat, scrolled to the day the user just answered, with the
-    /// earlier days above it.
-    private func openQuestionChatFromAnswerFlow(_ question: DailyChallengeQuestion) {
-        isAnswerFlowPresented = false
-        startOpeningDailyChat(instanceID: question.id)
-    }
-
-    private func openQuestionChatFromRowFlow(_ question: DailyChallengeQuestion) {
-        partnerAnswerQuestion = nil
-        startOpeningDailyChat(instanceID: question.id)
     }
 
     private func closeAnswerFlow() {

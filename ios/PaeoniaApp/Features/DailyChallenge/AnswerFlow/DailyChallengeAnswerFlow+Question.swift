@@ -31,10 +31,10 @@ extension DailyChallengeAnswerFlow {
         sentQuestionID.flatMap(viewModel.knownQuestion)?.hasRevealedPartnerAnswer == true
     }
 
-    /// The server refused the answer on the reveal for good, and it is back in the
-    /// composer. Nothing will unlock, so the reveal gives way to the question.
+    /// The server refused the answer for good while the chat showed, and it is back in
+    /// the composer. Nothing will unlock, so the chat gives way to the question.
     var wasAnswerReturned: Bool {
-        guard let questionID = revealQuestion?.id, !isAwaitingReveal else { return false }
+        guard chat != nil, let questionID = sentQuestionID else { return false }
         return !viewModel.isSending(questionID)
             && viewModel.knownQuestion(questionID)?.hasOwnAnswer != true
             && viewModel.hasDraftContent(for: questionID)

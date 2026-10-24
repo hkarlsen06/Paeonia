@@ -7,9 +7,10 @@ import SwiftUI
 /// Home or Questions card for today's question, or a question's own row. It shows the
 /// question and its composer, and a quiet "Skip" swaps today's question for a fresh one
 /// while neither partner has answered it. Sending turns the screen over to what comes
-/// next. When the partner had answered already, their answer is revealed in place with a
-/// chime and a petal burst, and the screen offers Done and Open chat. Otherwise the
-/// streak celebration shows. The Close button, or a drag down, shrinks it back.
+/// next. When the partner had answered already, the cover turns into the question's chat
+/// (`DailyAnswerFlowChat`), where their answer plays its reveal. Otherwise the streak
+/// celebration shows. The Close button, or a drag down, shrinks it back to the screen
+/// that opened it.
 struct DailyChallengeAnswerFlow: View {
     let viewModel: DailyChallengeViewModel
     /// The question to answer. Nil answers today's question.
@@ -28,9 +29,9 @@ struct DailyChallengeAnswerFlow: View {
     /// the streak to a count, if this phone has not celebrated it yet. See
     /// `StreakMilestoneStore.claimSave`.
     var claimStreakSave: @MainActor (String, Int) -> Bool = { _, _ in false }
-    /// Closes the flow and opens a question's chat: the reveal's Open chat, and the note
-    /// about an earlier answer.
-    var onOpenQuestionChat: (DailyChallengeQuestion) -> Void = { _ in }
+    var privacySafetyService: (any PrivacySafetyServicing)?
+    var privacyOperationProvider: (any SyncClientOperationProviding)?
+    var onReportedAndLeft: () -> Void = {}
 
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -43,12 +44,14 @@ struct DailyChallengeAnswerFlow: View {
     /// revive-and-refill celebration once a purchase lands.
     @State var restoreViewModel: StreakRestoreViewModel?
     @State var committedAnswerHold: DailyAnswerStepVisualHold?
-    /// The question whose partner answer the reveal shows. It is captured on send, so
-    /// the reveal stays on screen while the live question list changes under it.
+    /// The question the partner answered first, captured on send. Its composer holds as
+    /// it was while the partner's answer unlocks, even when the live question list
+    /// changes under it, until the chat takes over.
     @State var revealQuestion: DailyChallengeQuestion?
-    @State var isAwaitingReveal = false
+    /// The question's chat, shown in the cover once it is ready.
+    @State var chat: ThreadChatViewModel?
     /// The question the user sent an answer to in this flow. When the partner's answer
-    /// turns out to be in once the exchange is confirmed, the screen turns to the reveal,
+    /// turns out to be in once the exchange is confirmed, the cover turns to the chat,
     /// even if the phone did not know about it when the user sent.
     @State var sentQuestionID: UUID?
     /// The question the user just answered that they had answered on an earlier day. The
@@ -114,9 +117,48 @@ struct DailyChallengeAnswerFlow: View {
     }
 
     var body: some View {
+        Group {
+            if let chat {
+                DailyAnswerFlowChat(
+                    chat: chat,
+                    viewModel: viewModel,
+                    privacySafetyService: privacySafetyService,
+                    privacyOperationProvider: privacyOperationProvider,
+                    onReportedAndLeft: onReportedAndLeft,
+                    onClose: dismiss
+                )
+                .transition(.opacity)
+            } else {
+                flowContent
+            }
+        }
+        .task(id: earlierCandidate?.id) {
+            guard earlierCandidate != nil else { return }
+            try? await Task.sleep(for: Self.earlierAnswerNoteDuration)
+            guard !Task.isCancelled else { return }
+            withAnimation(PaeoniaMotion.stateChange) { earlierCandidate = nil }
+        }
+        .onChange(of: sentQuestionIsRevealed) { _, revealed in
+            guard revealed, revealQuestion == nil, let sentQuestionID,
+                  let live = viewModel.knownQuestion(sentQuestionID)
+            else { return }
+            Task { await openChat(for: live, revealsPartnerAnswer: true) }
+        }
+        .onChange(of: wasAnswerReturned) { _, returned in
+            guard returned else { return }
+            withAnimation(PaeoniaMotion.stateChange) {
+                chat = nil
+                revealQuestion = nil
+            }
+        }
+        .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
+    }
+
+    /// The question and what follows it, on the plum background. The chat brings its own.
+    private var flowContent: some View {
         ZStack {
             if let revealQuestion {
-                revealContent(revealQuestion)
+                revealHoldingState(revealQuestion)
             } else {
                 phaseContent
             }
@@ -135,23 +177,6 @@ struct DailyChallengeAnswerFlow: View {
                     .transition(.opacity)
             }
         }
-        .task(id: earlierCandidate?.id) {
-            guard earlierCandidate != nil else { return }
-            try? await Task.sleep(for: Self.earlierAnswerNoteDuration)
-            guard !Task.isCancelled else { return }
-            withAnimation(PaeoniaMotion.stateChange) { earlierCandidate = nil }
-        }
-        .onChange(of: sentQuestionIsRevealed) { _, revealed in
-            guard revealed, revealQuestion == nil, let sentQuestionID,
-                  let live = viewModel.knownQuestion(sentQuestionID)
-            else { return }
-            withAnimation(PaeoniaMotion.meaningfulMoment) { revealQuestion = live }
-        }
-        .onChange(of: wasAnswerReturned) { _, returned in
-            guard returned else { return }
-            withAnimation(PaeoniaMotion.stateChange) { revealQuestion = nil }
-        }
-        .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
     }
 }
 

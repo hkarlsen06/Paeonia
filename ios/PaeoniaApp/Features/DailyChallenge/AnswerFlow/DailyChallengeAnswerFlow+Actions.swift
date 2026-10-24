@@ -52,26 +52,30 @@ extension DailyChallengeAnswerFlow {
             // The partner answered first, so this answer unlocks theirs. The composer
             // holds as it was for a moment, so a quick reply turns over in one step.
             revealQuestion = question
-            isAwaitingReveal = true
             _ = await viewModel.awaitAnswerReveal(for: question.id)
-            // Slow or offline: the reveal still opens, shows the answer as saved, and
-            // fills in their reply when it arrives.
-            withAnimation(PaeoniaMotion.meaningfulMoment) {
-                isAwaitingReveal = false
-            }
+            // Slow or offline: the chat still opens, on its waiting page with the answer
+            // as saved, and opens up when their reply arrives.
+            await openChat(for: viewModel.latestQuestion(question), revealsPartnerAnswer: true)
         } else {
-            // A partner answer that lands with this one turns the screen to the reveal
+            // A partner answer that lands with this one turns the cover to the chat
             // (`sentQuestionIsRevealed`).
             celebrate()
         }
         releaseVisualHold(for: question.id)
     }
 
-    /// Closes the flow and opens the revealed question's chat.
-    func openRevealedChat() {
-        guard let revealQuestion else { return }
+    /// Turns the cover into the question's chat, scrolled to this day, with the earlier
+    /// days above it. It reads the chat from this phone first, so it opens complete.
+    /// `revealsPartnerAnswer` plays the reveal on the partner's answer whenever it shows,
+    /// since their reply may still be on its way.
+    func openChat(for question: DailyChallengeQuestion, revealsPartnerAnswer: Bool = false) async {
+        guard chat == nil else { return }
         isComposerFocused = false
-        onOpenQuestionChat(viewModel.latestQuestion(revealQuestion))
+        await viewModel.prepareChat(for: question)
+        let chat = viewModel.makeChatViewModel(question: question)
+        if revealsPartnerAnswer { chat.revealsPartnerAnswer = true }
+        guard self.chat == nil else { return }
+        withAnimation(PaeoniaMotion.meaningfulMoment) { self.chat = chat }
     }
 
     private func editCurrent() async {

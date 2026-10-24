@@ -56,15 +56,6 @@ extension DailyChallengeViewModel {
         question.hasNewPartnerAnswer(seen: seenPartnerAnswerIDs)
     }
 
-    /// The answer flow showed the partner's answer. Saved on this phone first, which
-    /// sends it to the server through `uploadSeenPartnerAnswers`.
-    func markPartnerAnswerSeen(_ question: DailyChallengeQuestion) {
-        Task { await DeliveredNotifications.clearQuestion(instanceIDs: [question.id]) }
-        guard let currentUserID, question.hasRevealedPartnerAnswer, question.partnerAnswerSeenAt == nil else { return }
-        let chatService = chatService
-        Task { await chatService.markPartnerAnswerSeen(ownerUserID: currentUserID, instanceID: question.id) }
-    }
-
     /// Sends answers seen on this phone that the server doesn't know about yet. Runs
     /// whenever the questions or the seen list change, so one that failed offline is
     /// sent again once a live update arrives. The server keeps the first time it heard.

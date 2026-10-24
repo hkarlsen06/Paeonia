@@ -4,26 +4,6 @@ extension DailyChallengeAnswerFlow {
     // MARK: - Content
 
     @ViewBuilder
-    func revealContent(_ question: DailyChallengeQuestion) -> some View {
-        if isAwaitingReveal {
-            revealHoldingState(question)
-        } else {
-            DailyPartnerAnswerRevealView(
-                question: question,
-                revealedQuestion: viewModel.knownQuestion(question.id),
-                participants: viewModel.participants,
-                sending: viewModel.sendingPreview(
-                    for: viewModel.knownQuestion(question.id) ?? question
-                ),
-                onRevealed: viewModel.markPartnerAnswerSeen,
-                onOpenChat: openRevealedChat,
-                onDone: dismiss
-            )
-            .transition(.opacity)
-        }
-    }
-
-    @ViewBuilder
     var phaseContent: some View {
         switch phase {
         case .complete:
@@ -56,7 +36,7 @@ extension DailyChallengeAnswerFlow {
     static let earlierAnswerNoteDuration: Duration = .seconds(12)
 
     /// The note sits above the question while it is answered, and over the top of the
-    /// other screens, such as the completion celebration.
+    /// other screens, such as the completion celebration. The chat never shows it.
     var showsEarlierAnswerInline: Bool {
         revealQuestion == nil && phase == .answering
     }
@@ -70,7 +50,7 @@ extension DailyChallengeAnswerFlow {
     func earlierAnswerNote(_ earlierAnswer: DailyChallengeEarlierAnswer) -> some View {
         DailyChallengeEarlierAnswerNote(
             earlierAnswer: earlierAnswer,
-            onOpen: { onOpenQuestionChat(earlierAnswer.question) },
+            onOpen: { Task { await openChat(for: earlierAnswer.question) } },
             onDismiss: { withAnimation(PaeoniaMotion.stateChange) { earlierCandidate = nil } }
         )
     }
@@ -108,10 +88,10 @@ extension DailyChallengeAnswerFlow {
         .dismissesKeyboardOnTap { isComposerFocused = false }
     }
 
-    /// Holds the sent answer as it was while the partner's answer unlocks. The captured
-    /// question and visual draft keep this surface stable even when the live question
-    /// list re-sorts underneath it.
-    private func revealHoldingState(_ question: DailyChallengeQuestion) -> some View {
+    /// Holds the sent answer as it was while the partner's answer unlocks and the chat
+    /// loads. The captured question and visual draft keep this surface stable even when
+    /// the live question list re-sorts underneath it.
+    func revealHoldingState(_ question: DailyChallengeQuestion) -> some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             DailyChallengeAnswerStep(
                 question: question,
