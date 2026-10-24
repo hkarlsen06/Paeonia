@@ -59,7 +59,7 @@ These block TestFlight/App Review until resolved.
 - [ ] StoreKit sandbox restore is tested on device. Needs a device.
 - [x] One paying partner unlocks both partners through backend entitlement. `storekit.test.ts` "one paying partner unlocks the couple for both".
 - [x] Subscription terms are clear before purchase.
-- [ ] App icon is final in the app target and App Store assets. Your call. The app uses `paeonia_app.icon`. A widget extension has no icon of its own.
+- [x] App icon is final in the app target and App Store assets. The app uses `paeonia_app.icon`. A widget extension has no icon of its own.
 - [x] App Store privacy labels match the actual data collected by the build.
 - [x] App Store privacy labels include the PostHog data: product interaction, device ID and crash data, linked to the user, used for analytics, not for tracking. There are no screen recordings.
 - [ ] Confirm in App Store Connect that the declared Product Interaction for Analytics also covers the signed-out welcome step counts (`onboarding:record_welcome_step`): a step name only, kept as daily totals, with no user, phone or install identifier. In App Store Connect.
@@ -102,7 +102,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Bundle identifier is final: `no.paeonia.app`.
 - [x] Display name is final: `Paeonia`.
 - [x] Minimum supported iOS version is intentional.
-- [ ] Supported devices are intentional. Your call. `TARGETED_DEVICE_FAMILY` is iPhone and iPad (`1,2`), but the site says iPhone only. iPad support means iPad screenshots and iPad QA.
+- [x] Supported devices are intentional. Paeonia supports iPhone and iPad (`TARGETED_DEVICE_FAMILY = "1,2"`).
 - [x] App Group entitlement is present for app and widget.
 - [x] Associated Domains include `applinks:paeonia.no`.
 - [x] Push notification capability is configured.
@@ -215,7 +215,6 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [ ] Skipped questions stay away for 14 days. Built, untested: `daily.test.ts` never moves the clock past the window.
 - [ ] Resurfaceable questions can reappear after the configured period and show prior answer dates. Built, untested: the resurfacing test passes whatever the rule is.
 - [x] When a couple has seen every active question, the picker repeats the one answered longest ago instead of failing.
-- [ ] The question pool lasts through the first months. Your call. 156 active questions at about four a day run out of fresh picks around day 39, and after that the picker repeats questions.
 - [x] Question content has English and Norwegian Bokmal localizations.
 - [x] No question prompt assumes gender, public sharing, or unsafe relationship behavior.
 
@@ -224,7 +223,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Couple-level streak is calculated from qualifying activity.
 - [x] Completing daily challenge keeps the streak alive.
 - [x] Updating the shared widget keeps the streak alive.
-- [ ] Creating or editing a memory keeps the streak alive. Your call. `memory_created` and `memory_updated` are streak activity kinds, but no memory write records them.
+- [ ] Creating or editing a memory keeps the streak alive. In progress since 2026-10-24. `memory_created` and `memory_updated` are streak activity kinds, but no memory write records them yet.
 - [x] Streak does not expire before midnight in the latest partner timezone.
 - [ ] Started couple-day timezone window is frozen as documented. Built, untested: `coupleDays.ts` returns the stored day, but no test changes a time zone mid-day.
 - [x] Streak reminder can be scheduled before expiry.
@@ -427,11 +426,12 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [x] Marketing logo assets load in production.
 - [x] Favicon uses the mark, not a broken app-icon asset.
 - [x] Header/footer links are not duplicated or noisy.
-- [x] Landing page language matches shipped app state: private beta, TestFlight, or launched. It says "Coming soon to iPhone".
+- [x] Landing page language matches shipped app state: private beta, TestFlight, or launched.
+- [ ] The site says Paeonia runs on iPhone and iPad. Gap: the hero says "Coming soon to iPhone" and the FAQ says "Paeonia is only for iPhone for now" (`marketing/src/lib/i18n/dictionaries/marketing.en.ts`, and the Norwegian dictionary).
 - [ ] Landing page does not promise unshipped features. Gap: the FAQ says there are no extra purchases, but the streak restore is a paid purchase.
 - [x] Legal pages are published with production-oriented English and Norwegian privacy and terms text, including final operator details approved by the release owner.
 - [x] Support page lists current support/contact emails.
-- [ ] Open Graph metadata uses final brand assets. Your call. The image is the mark on cream, while the site is dark plum.
+- [x] Open Graph metadata uses final brand assets. Fixed on 2026-10-24.
 
 ## Localization And Copy
 
@@ -452,6 +452,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 
 - [ ] Small iPhone layout pass.
 - [ ] Large iPhone layout pass.
+- [ ] iPad layout pass, in portrait, landscape and split view.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
 - [ ] Dynamic Type pass.
@@ -547,7 +548,7 @@ The text metadata lives in `ios/Scripts/appstore-metadata-source.json`, and `ios
 - [ ] Screenshots show Home, a game such as Ludo or Draw & Guess, the daily questions and chat, Memories, and the drawing widget or distance.
 - [ ] Screenshots do not imply unshipped features.
 - [ ] Screenshots match final app icon, colors, and layout.
-- [ ] Required device sizes are generated, including iPad if the app keeps iPad support.
+- [ ] Required device sizes are generated, iPad included.
 
 ## TestFlight
 
