@@ -130,6 +130,7 @@ import type * as media from "../media.js";
 import type * as memories from "../memories.js";
 import type * as mindMeld from "../mindMeld.js";
 import type * as moderation from "../moderation.js";
+import type * as onboarding from "../onboarding.js";
 import type * as pairing from "../pairing.js";
 import type * as partnerNickname from "../partnerNickname.js";
 import type * as push from "../push.js";
@@ -280,6 +281,7 @@ declare const fullApi: ApiFromModules<{
   memories: typeof memories;
   mindMeld: typeof mindMeld;
   moderation: typeof moderation;
+  onboarding: typeof onboarding;
   pairing: typeof pairing;
   partnerNickname: typeof partnerNickname;
   push: typeof push;

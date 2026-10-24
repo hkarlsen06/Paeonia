@@ -60,7 +60,7 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 21 October 2026',
+    updated: 'Last updated 24 October 2026',
     sections: [
       {
         heading: 'Who this policy is for',
@@ -76,7 +76,8 @@ export const legalEn = {
           'Relationship data includes invites, relationship membership and status, your relationship start date if you add it, blocks, safety warnings, and the choices needed to manage access to a shared space.',
           'Content you choose to add includes your answers to daily questions (text, photos, voice, and partner choices), chat messages with replies, photos, and voice messages, memories with photos and notes, stories (a photo with an optional caption), short notes, dates and countdowns, hearts, drawings, and your moves, drawings, words, and guesses in games. Paeonia only reads the photos you pick or take, and it saves a photo to your photo library only when you tap Save to Photos. This content is private to the shared space unless it is reported or access is needed for the limited purposes described below.',
           'Service data includes subscription and access status, App Store transaction references (including one-time purchases such as bringing back a streak), streak progress, notification choices, your phone\'s push token, app version, language, and time zone, upload and sync status, request identifiers used to prevent duplicate actions, and security or operational records. Apple processes your payment details. Paeonia does not receive your payment-card details.',
-          'Usage statistics and crash reports show us which parts of Paeonia get used and where the app breaks. The app asks you once, after you pair, whether to share them, and sends nothing before you say yes. If you do, it sends which screens you open, which actions you take (for example that you sent an answer, never what it says), crash reports, and details about your iPhone such as model, iOS version, language, and time zone. It never records your screen. This data is linked to your Paeonia account, and PostHog keeps a random code on your phone to tell one phone from another. It is not used for advertising, and Paeonia does not track you across other apps or websites.',
+          'Usage statistics and crash reports show us which parts of Paeonia get used and where the app breaks. The app asks you once, after you pair, whether to share them, and sends none of them before you say yes. If you do, it sends which screens you open, which actions you take (for example that you sent an answer, never what it says), crash reports, and details about your iPhone such as model, iOS version, language, and time zone. It never records your screen. This data is linked to your Paeonia account, and PostHog keeps a random code on your phone to tell one phone from another. It is not used for advertising, and Paeonia does not track you across other apps or websites.',
+          'Before you sign in, the app counts how many people reach each step of the welcome screens, such as choosing to start or picking a date. It sends only the name of the step, and our server adds one to a count for that day. Nothing in this count is tied to you or your phone, and it does not use PostHog.',
           'The website paeonia.no sets no cookies and uses no analytics. Cloudflare, which delivers the website, processes technical request data such as your IP address to serve the pages.',
           'If you turn on location sharing, Paeonia processes your latest precise location and when it was recorded. We do not keep a location history for this feature.',
         ],

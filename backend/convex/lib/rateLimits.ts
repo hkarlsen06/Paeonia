@@ -4,7 +4,7 @@ import type { MutationCtx } from "../_generated/server";
 import { fail } from "./errors";
 
 /**
- * Every rate limit, keyed by the Paeonia user id. Content limits sit far above
+ * Every rate limit. All but `welcomeStep` are keyed by the Paeonia user id. Content limits sit far above
  * what a couple does, and their capacity lets a phone that was offline for days
  * send its whole backlog at once (a chat message holds up to 4 photos, a memory
  * up to 5 per partner).
@@ -25,6 +25,9 @@ const LIMITS = {
   contentReport: { kind: "token bucket", rate: 10, period: HOUR, capacity: 10 },
   // "Download my data" builds a copy of everything, so it is limited to a few a day.
   dataExportRequest: { kind: "token bucket", rate: 3, period: 24 * HOUR, capacity: 3 },
+  // The signed-out welcome counts have no user, so one bucket covers every phone. It only
+  // stops a flood from filling the counts, far above what real installs send.
+  welcomeStep: { kind: "token bucket", rate: 6000, period: HOUR, capacity: 1000 },
 } as const;
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, LIMITS);
@@ -40,5 +43,11 @@ export type RateLimitName = keyof typeof LIMITS;
  */
 export async function consumeRateLimit(ctx: MutationCtx, name: RateLimitName, userId: string): Promise<void> {
   const { ok } = await rateLimiter.limit(ctx, name, { key: userId });
+  if (!ok) fail("53300", `too many requests: ${name}`);
+}
+
+/** Takes one from the shared `name` bucket that has no user, like `consumeRateLimit` otherwise. */
+export async function consumeGlobalRateLimit(ctx: MutationCtx, name: RateLimitName): Promise<void> {
+  const { ok } = await rateLimiter.limit(ctx, name);
   if (!ok) fail("53300", `too many requests: ${name}`);
 }

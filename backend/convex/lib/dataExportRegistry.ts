@@ -767,6 +767,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   question_collections: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
   question_collection_localizations: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
   question_versions: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
+  welcome_step_counts: excluded("Daily counts of how many installs reached each welcome step. They belong to no person."),
   questions: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
   topic_catalog: excluded("Paeonia's question catalog. It is the same for everyone and holds no personal data."),
   subscription_products: excluded("Paeonia's list of App Store products. It is the same for everyone."),

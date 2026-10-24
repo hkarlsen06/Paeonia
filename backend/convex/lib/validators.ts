@@ -123,3 +123,21 @@ export const FAVORITE_KINDS = [
   "story_chain_story",
 ] as const;
 export const favoriteKind = literals(...FAVORITE_KINDS);
+
+/**
+ * The signed-out welcome steps the app counts (`onboarding:record_welcome_step`). The counts
+ * are per day and step only, so a step name is all the app sends.
+ */
+export const WELCOME_STEPS = [
+  "welcome_shown",
+  "start_chosen",
+  "joiner_chosen",
+  "returning_chosen",
+  "date_saved",
+  "date_skipped",
+  "drawing_sent",
+  "drawing_skipped",
+  "sign_in_shown",
+  "signed_in",
+] as const;
+export const welcomeStep = literals(...WELCOME_STEPS);
