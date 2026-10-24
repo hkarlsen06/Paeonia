@@ -98,6 +98,7 @@ The developer may run multiple agents in parallel in the same worktree.
 - Treat unrelated diffs as owned by the user or another agent.
 - Only modify files and hunks required for the task.
 - If unrelated changes block the task, start a fresh git worktree off `main` and do the task there.
+- After you revert your own experimental edit, check `git diff HEAD -- <file>`, not only `git diff`. Another agent may have staged the edit, and `git checkout <file>` then restores the staged copy and keeps it. If only your hunk is staged, `git restore --staged --worktree <file>`. If other hunks are staged too, remove your lines by hand.
 
 ### File Creation
 
@@ -146,6 +147,8 @@ The developer may run multiple agents in parallel in the same worktree.
 - Commits must always be signed. Never disable commit signing.
 - If commit signing fails, stop and report the signing failure instead of creating an unsigned commit.
 - Before committing, inspect the full diff and write a commit message that describes the meaning of the change.
+- Commit with an explicit pathspec: `git commit -m "..." -- <your files>`. Other agents stage their own files in the same checkout, and a plain `git commit` takes everything staged. Check `git status --porcelain` for staged entries that aren't yours.
+- Group a piece of work into at most about three logical commits, for example backend, iOS and tests. Squash checkpoint commits before you hand back, but only commits not on `origin` yet (`git log origin/main..HEAD`). Other agents commit on local `main` too. If one has committed on top of yours, add a separate commit instead of rebasing under theirs, because a rebase rewrites their SHAs.
 
 ## Development Defaults
 
@@ -162,6 +165,8 @@ The developer may run multiple agents in parallel in the same worktree.
 - Use Tidex's project setup as the default template. Do not introduce a generated Xcode project, alternative build system, different package manager, or different deployment workflow without first discussing the tradeoff with the user.
 - The Xcode project uses filesystem-synchronized groups (`PBXFileSystemSynchronizedRootGroup`), so new `.swift` files under synchronized source folders are auto-included. Do not edit `project.pbxproj` just to add those files.
 - Install local hooks with `./scripts/install-git-hooks.sh` after cloning if they are not already active.
+- When Xcode shows errors that a clean build of the same commit does not, such as "Cannot find X in scope" for a type in the same module, the cache is stale. Check that no `xcodebuild` is running, delete `~/Library/Developer/Xcode/DerivedData/Paeonia-*` (and `ModuleCache.noindex` if needed) yourself, and say so. Do not hand the developer a Clean Build Folder step.
+- When a change needs external setup, make a script or `scripts/deploy-backend` do it idempotently, as `scripts/ensure-clerk-jwt-template` does for the Clerk JWT template. Do not add a step the developer must remember to the checklist or the handoff. Leave a manual step only when it needs the developer, such as DNS, credentials or a purchase, and say why.
 
 ## Testing
 
@@ -189,12 +194,14 @@ Most of the test weight sits on integration and end-to-end tests. Unit tests are
 
 Agents in several repos share this Mac, and simulators created by agents once filled its disk. Whenever the app or tests run:
 
-- Never run the app or tests on a connected iPhone or iPad. Those are the developer's own phones, even when `xcrun xctrace list devices` lists them.
+- Never run the app or tests on a connected iPhone or iPad. Those are the developer's own phones, even when `xcrun xctrace list devices` lists them. The one exception is a device run the developer asks for in that task. Then only the parent agent touches the device, never a subagent.
+- Never sign a simulator in as a real account on `api.paeonia.no`. End-to-end checks send pushes and write content, so run them against your worktree's local backend with the test couple ([iOS verification](docs/agent-guides/ios-verification.md#signing-a-simulator-in)).
 - Use the one shared simulator, `Shared iPhone`, as `platform=iOS Simulator,name=Shared iPhone`, for example `XCODE_TEST_AGENT_DESTINATION="platform=iOS Simulator,name=Shared iPhone" ./scripts/xcode-test-agent.sh`. Agents in every worktree and every repo on this Mac use that same simulator.
 - The only other simulator allowed is `Shared iPhone SE`, for checking layouts on a small screen. Use it only for that, and shut it down when you're done.
 - Always set `XCODE_TEST_AGENT_DESTINATION`. Without it, the test wrapper picks whatever simulator it finds first.
 - Before you drive a shared simulator by hand, take the simulator lock with `scripts/lock acquire simulator`, and release it with `scripts/lock release simulator` when you're done. Start every simulator command with `scripts/lock acquire simulator &&`. Each one counts as a use, and a session nobody has used for 10 minutes goes stale, so a lock you forget to release frees itself 10 minutes after your last command. Driving by hand covers the T3 Device panel (`device_open`), `agent-device`, `xcrun simctl install`, `launch` and `uninstall`, `scripts/sim-sign-in` and end-to-end play. The lock is machine-wide, so Tidex agents wait for it too. `scripts/lock status` shows who holds it. Never close or take over another agent's device session. The test wrapper takes the lock itself. Do not hold the xcodebuild lock to drive a simulator.
-- Do not create, clone or erase simulators, and do not boot any simulator other than these two. To clear the app's data, uninstall it (`xcrun simctl uninstall "Shared iPhone" no.paeonia.app`) instead of erasing the simulator.
+- Hold the simulator lock only around the commands that use the simulator, such as install, launch, recording and screenshots. A build into a scratch `-derivedDataPath` only compiles, even with the simulator as its destination. Build first without the lock, then run `scripts/lock acquire simulator && <install> && <record>; scripts/lock release simulator` as one command.
+- Do not create, clone or erase simulators, and do not boot any simulator other than these two. The one exception is App Store screenshot work, which runs on its own simulator (`--simulator` in `scripts/capture-app-store-screenshots.py`) so `Shared iPhone` stays free. Delete that simulator when the set is done. To clear the app's data, uninstall it (`xcrun simctl uninstall "Shared iPhone" no.paeonia.app`) instead of erasing the simulator.
 - Do not download simulator runtimes or platforms, through `xcodebuild -downloadPlatform`, `xcrun simctl runtime add` or Xcode's Components settings. If a shared simulator is missing or no runtime is installed, stop and ask the developer.
 - Builds that only compile, such as `./scripts/xcode-build-agent.sh` and the pre-push hook, use the generic simulator destination. That needs no simulator or runtime, so these rules don't change them.
 
@@ -204,7 +211,7 @@ Read only guidance relevant to the change. Commands and source paths in these do
 
 - Native iOS work: [ios/AGENTS.md](ios/AGENTS.md).
 - Backend, Clerk auth, or iOS auth/RPC integration: [backend/AGENTS.md](backend/AGENTS.md). Keep the explicit authorization checks. Change function contracts freely, and update the iOS callers in the same change.
-- Marketing routes or deployment: [marketing/AGENTS.md](marketing/AGENTS.md).
+- Marketing routes or deployment, App Store listing text, screenshots, or other marketing copy: [marketing/AGENTS.md](marketing/AGENTS.md).
 
 ## Product-Specific Quality Bar
 
@@ -214,6 +221,9 @@ Paeonia handles private relationship content. Treat reliability and privacy as c
 - The app must not destroy a user's local data except through an explicit user action, such as deleting content, leaving the relationship, or signing out. This rule is about runtime behavior. It does not require migration code for storage format changes during development.
 - Make delete/export/privacy flows explicit and testable.
 - Be careful with notification content; avoid exposing sensitive relationship content on locked screens without a clear setting.
+- The app icon badge counts only things that wait for this person (`badgeCountsForUser` in `backend/convex/lib/badges.ts`). Reminders, streaks and the trial notice never count. The developer wants badges, so keep `.badge` in the push authorization request.
+- Usage statistics (PostHog) are off until the user says yes, because two legal reviews found on-by-default unlawful under ekomloven § 3-15. Session replay and GeoIP stay off.
+- Onboarding delivers real value instead of explaining the app. Every step makes something the couple sees or that feeds a widget or ritual. The person who starts the couple makes things before their partner joins (start date, first drawing, first answer), and the joining partner unwraps them. Keep the joiner's path short and about their partner. A joiner with a code never sees the paywall. Do not add intro carousels or ask for the partner's location.
 - Prefer forgiving streak rules over punitive engagement mechanics.
 - Make timezone behavior explicit for couple-shared rituals.
 
