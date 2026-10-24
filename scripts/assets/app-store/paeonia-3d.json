@@ -1,0 +1,36 @@
+{
+  "font": "Fraunces72ptSuperSoft-SemiBold.ttf",
+  "background": "linear-gradient(100deg, #1f0716 0%, #380f27 38%, #4f203a 72%, #6e2c50 100%)",
+  "glow": "#ef509450",
+  "accent": "#f27eb2",
+  "text": "#fbf3f7",
+  "shadow": "#12030c99",
+  "finish": "#c9c4c8",
+  "capture": "{locale}/iPhone-{screen}.png",
+  "phones": [
+    { "screen": "01-widget", "x": 0.64, "y": 0.64, "height": 0.72, "rotate": [4, 22, 6] },
+    { "screen": "02-question", "x": 1.6, "y": 0.66, "height": 0.6, "rotate": [0, -18, -4] },
+    { "screen": "03-ludo", "x": 2.66, "y": 0.64, "height": 0.7, "rotate": [2, -24, -7] },
+    { "screen": "04-home", "x": 3.8, "y": 0.64, "height": 0.64, "rotate": [0, 24, 6] },
+    { "screen": "06-chat", "x": 5.2, "y": 0.64, "height": 0.64, "rotate": [0, -24, -6] },
+    { "screen": "05-memories", "x": 4.5, "y": 0.62, "height": 0.67, "rotate": [0, 0, 0] }
+  ],
+  "panels": {
+    "en-US": [
+      ["Wake up to <em>a little drawing</em>", "Your partner draws right onto your Home Screen."],
+      ["One question <em>for the two of you</em>", "Answer today's question, then see what your partner said."],
+      ["Play together, <em>even far apart</em>", "Ludo and more games to play in turns, whenever you have a minute."],
+      ["Count down to <em>the next visit</em>", "See how many days are left until you meet again."],
+      ["Keep your <em>best moments</em>", "Save photos from your days together in one shared place."],
+      ["Talk about <em>what you answered</em>", "Every question gets its own chat, so one answer can start a real talk."]
+    ],
+    "no": [
+      ["Våkn opp til <em>en liten tegning</em>", "Partneren din tegner rett på Hjem-skjermen din."],
+      ["Ett spørsmål <em>til dere to</em>", "Svar på dagens spørsmål, og se hva partneren din svarte."],
+      ["Spill sammen, <em>selv på avstand</em>", "Ludo og flere spill dere tar på tur, når dere har et minutt."],
+      ["Tell ned til <em>neste gang dere ses</em>", "Se hvor mange dager det er til dere møtes igjen."],
+      ["Ta vare på <em>de fine øyeblikkene</em>", "Samle bilder fra dagene sammen på ett sted dere deler."],
+      ["Snakk om <em>det dere svarte</em>", "Hvert spørsmål får sin egen prat, så ett svar kan bli en hel samtale."]
+    ]
+  }
+}

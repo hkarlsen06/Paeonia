@@ -16,9 +16,12 @@
     "open-ios": "open ios/Paeonia.xcodeproj",
     "review-codes:mint": "bun ios/Scripts/mint-review-codes.mjs",
     "review-codes:revoke": "bun ios/Scripts/revoke-review-codes.mjs",
+    "screenshots:3d": "node scripts/render-3d-screenshots.mjs",
     "swiftlint": "sh -c 'if [ \"$1\" = \"--\" ]; then shift; fi; for arg in \"$@\"; do if [ \"$arg\" = \"--fix\" ] || [ \"$arg\" = \"autocorrect\" ]; then echo \"swiftlint autocorrect is disabled in this repo. Use swift-format once configured.\"; exit 1; fi; done; swiftlint lint \"$@\"' --"
   },
   "devDependencies": {
+    "playwright": "1.58.1",
+    "three": "0.186.1",
     "wrangler": "4.118.0"
   }
 }
