@@ -24,7 +24,6 @@ import os
 import re
 import secrets
 import subprocess
-import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -162,25 +161,6 @@ def upload_profile_photo(convex: Convex, token: str, user_id: str, photo: Path) 
     return row["media_asset_id"]
 
 
-def ensure_test_grant(convex: Convex, user_id: str) -> None:
-    """A test grant gives access only until its expires_at, so a run after it ran out adds a new one."""
-    now = now_iso()
-    rows = convex.cli("data", "entitlement_grants", "--limit", "1000", "--format", "jsonLines").splitlines()
-    for line in rows:
-        grant = json.loads(line)
-        if (grant["user_id"] == user_id and grant["grant_kind"] == "test" and grant["status"] == "active"
-                and grant.get("expires_at", "") > now):
-            return
-    grant = {"id": str(uuid.uuid4()), "user_id": user_id, "grant_kind": "test", "status": "active",
-             "scope": "user", "reason": "test couple (scripts/test-couple)", "granted_by": "scripts/test-couple",
-             "granted_at": now, "expires_at": iso(datetime.now(timezone.utc) + timedelta(days=365)),
-             "created_at": now, "updated_at": now}
-    with tempfile.NamedTemporaryFile("w", suffix=".jsonl") as file:
-        file.write(json.dumps(grant) + "\n")
-        file.flush()
-        convex.cli("import", "--table", "entitlement_grants", "--append", "-y", "--format", "jsonLines", file.name)
-
-
 def main() -> None:
     convex = Convex()
     clerk = Clerk(hosted_env_get("CLERK_DEV_SECRET_KEY"), hosted_env_get("CLERK_DEV_JWT_ISSUER_DOMAIN"))
@@ -199,7 +179,10 @@ def main() -> None:
         print(f"{account['name']}: Clerk {clerk_id}, Paeonia {user_id}, onboarded")
 
     first, second = people
-    ensure_test_grant(convex, first["user_id"])
+    # Returns the live test grant unchanged when there is one, and adds a new one after it ran out.
+    convex.cli("run", "entitlementGrants:create_entitlement_grant", json.dumps({
+        "p_user_id": first["user_id"], "p_grant_kind": "test", "p_reason": "test couple",
+        "p_granted_by": "scripts/test-couple", "p_expires_at": iso(datetime.now(timezone.utc) + timedelta(days=365))}))
     [access] = convex.call(first["token"], "query", "access:get_access_snapshot", {})
     if access["relationship_state"] is None:
         code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(6))
