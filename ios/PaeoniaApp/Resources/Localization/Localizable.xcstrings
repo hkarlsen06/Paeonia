@@ -37275,19 +37275,19 @@
       }
     },
     "welcome.haveInviteCode" : {
-      "comment" : "Welcome/sign-in: open invite code entry for a joining partner",
+      "comment" : "Welcome/sign-in: quiet button for a partner who was invited. Opens invite code entry so the app shows the joining onboarding after sign-in.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Have an invite code?"
+            "value" : "Have you been invited?"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Har du en invitasjonskode?"
+            "value" : "Har du blitt invitert?"
           }
         }
       }
@@ -37353,13 +37353,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your partner already started Paeonia? Add their code, then sign in to join them."
+            "value" : "Ask your partner for your invite code."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Har partneren din allerede startet Paeonia? Legg inn koden deres, og logg inn for å bli med."
+            "value" : "Spør partneren din om invitasjonskoden."
           }
         }
       }

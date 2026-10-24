@@ -5,7 +5,7 @@ import SwiftUI
 /// page through first. It is the first surface the cold-launch intro uncovers,
 /// so its parts cascade in with `View.launchEntrance(order:)`.
 ///
-/// "Have an invite code?" is for a partner who was sent a code. The code is
+/// "Have you been invited?" is for a partner who was sent a code. The code is
 /// saved before sign-in, then joined on the next screen. A partner who installed
 /// from the invite web page gets a Paste button for the link it copied instead.
 struct WelcomeView: View {
