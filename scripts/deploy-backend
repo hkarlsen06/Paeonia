@@ -39,6 +39,12 @@ deploy() {
     npx convex deploy -y
   echo "[deploy-backend] deployed $(git rev-parse --short HEAD) to api.paeonia.no"
 
+  # verify_purchase refuses a product the table lacks. The seed updates rows in place.
+  CONVEX_DEPLOYMENT= \
+    CONVEX_SELF_HOSTED_URL=https://api.paeonia.no \
+    CONVEX_SELF_HOSTED_ADMIN_KEY="$(ssh one-s cat /srv/paeonia/convex/admin-key)" \
+    npx convex run catalog:seed_subscription_products
+
   # The app's live socket needs the deployment's Clerk instance to have the `convex` JWT template.
   CLERK_SECRET_KEY="$(CONVEX_DEPLOYMENT= \
     CONVEX_SELF_HOSTED_URL=https://api.paeonia.no \
