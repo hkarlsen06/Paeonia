@@ -47,7 +47,7 @@ These block TestFlight/App Review until resolved.
 - [x] `docs/implementation-map.md` accurately reflects the current feature ownership.
 - [x] No reachable app screen says "test account", "not ready", "still building", or similar placeholder copy.
 - [x] App and widget privacy manifests declare their required-reason API usage.
-- [x] Public privacy policy is final and live at `https://paeonia.no/privacy`. The location pause paragraph was fixed on 2026-10-24. It is live once `main` is pushed.
+- [x] Public privacy policy is final and live at `https://paeonia.no/privacy`. The location pause paragraph was fixed on 2026-10-24, including the one location sent when a pause ends while the app is closed. It is live once `main` is pushed.
 - [x] Public terms are final and live at `https://paeonia.no/terms`.
 - [x] Support page is final and live at `https://paeonia.no/support`.
 - [x] In-app legal/support links open the production URLs.
@@ -123,7 +123,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [ ] Sign in with Apple works with Hide My Email. Needs a device. Nothing in the app reads the email address.
 - [ ] Google Sign-In works (Clerk's OAuth sheet). Needs a device. The Google client lives in Google Cloud project `paeonia-hkarlsen06`, and its consent screen is published.
 - [x] No email/password, magic-link, or passkey sign-up surface is reachable in MVP.
-- [ ] Auth errors are understandable to a normal user. Gap: every sign-in and account-deletion failure says "Check your connection and try again" (`RootViewModel+Account.swift` `performAuthAction`, keys `auth.notice.signInFailed.message` and `auth.notice.deleteAccountFailed.message`). Only `PaeoniaFailure` `.offline` may say that.
+- [x] Auth errors are understandable to a normal user. Sign-in, account deletion and the relationship-ended notice say to check the connection only when `PaeoniaFailure` is `.offline`, and otherwise say something went wrong (`RootNoticeLocalization.swift`). Cancelling sign-in shows nothing.
 - [x] A production Clerk instance exists at `clerk.paeonia.no`. Its issuer is `CLERK_JWT_ISSUER_DOMAIN` on `api.paeonia.no`, which accepts its tokens and refuses the development instance's (checked 2026-10-24). Apple uses Services ID `no.paeonia.app.clerk` and the iOS app `48ZSLD4RMP` / `no.paeonia.app`. Google uses its own client. `scripts/deploy-backend` creates the `convex` JWT template on each deploy.
 - [ ] The Google client secret and the Sign in with Apple key `7HMG8DVAK4` are rotated. Gap: both appeared in an agent's tool output on 2026-10-24. The Apple key is also `APPLE_SIGN_IN_PRIVATE_KEY` on `api.paeonia.no`.
 - [x] OAuth profile name is used when available. `ClerkAuthServiceSignInTests`, `lib/auth.test.ts`.
@@ -391,7 +391,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Account deletion clears private local caches.
 - [x] Media draft stores do not leak content across users.
 - [ ] Slow network states are understandable. Needs a device.
-- [ ] Recoverable errors show plain copy. Gap: besides the sign-in copy above, a purchase the server could not confirm also says "Check your connection" (`PaywallError.swift`).
+- [ ] Recoverable errors show plain copy. Gap: sign-in and purchase copy is fixed, but about 20 other strings still say to check the connection for any error, such as `admin.error.banFailed`, `games.notice.*Failed.message`, `pairing.join.error.*`, `reportAndLeave.failed.message` and `streakRestore.error.priceUnavailable`.
 - [x] No private content is written to logs.
 
 ## Convex Backend
@@ -427,8 +427,8 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [x] Favicon uses the mark, not a broken app-icon asset.
 - [x] Header/footer links are not duplicated or noisy.
 - [x] Landing page language matches shipped app state: private beta, TestFlight, or launched.
-- [ ] The site says Paeonia runs on iPhone and iPad. Gap: the hero says "Coming soon to iPhone" and the FAQ says "Paeonia is only for iPhone for now" (`marketing/src/lib/i18n/dictionaries/marketing.en.ts`, and the Norwegian dictionary).
-- [ ] Landing page does not promise unshipped features. Gap: the FAQ says there are no extra purchases, but the streak restore is a paid purchase.
+- [x] The site says Paeonia runs on iPhone and iPad. The hero, the FAQ and the join page say so in both languages. It is live once `main` is pushed.
+- [x] Landing page does not promise unshipped features. The FAQ says the streak restore is the only extra purchase, and that it is optional.
 - [x] Legal pages are published with production-oriented English and Norwegian privacy and terms text, including final operator details approved by the release owner.
 - [x] Support page lists current support/contact emails.
 - [x] Open Graph metadata uses final brand assets. Fixed on 2026-10-24.
@@ -436,11 +436,11 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 ## Localization And Copy
 
 - [x] All user-facing iOS strings are in String Catalogs.
-- [ ] Swift code uses generated localization symbols, not raw keys. Gap: six widget App Intent strings use raw keys (`PaeoniaWidgetRefreshIntent.swift`, `CountdownWidgetIntent.swift`). App Intents may require that. If so, note the exception in `docs/agent-guides/ios-localization.md`.
+- [x] Swift code uses generated localization symbols, not raw keys. App Intents metadata is the exception, because the build rejects generated symbols there. `docs/agent-guides/ios-localization.md` records it.
 - [ ] English strings are clear enough for a 16-year-old user. Needs a person. No technical words were found.
 - [ ] Norwegian Bokmal strings are natural, not technical database-sounding translations. Needs a native speaker.
 - [x] All new keys have English, Norwegian Bokmal, and translator comments.
-- [ ] No stale placeholder localization keys are reachable. Gap: `favorites.load.failed`, `favorites.load.offline`, `stories.viewer.replies.open` and the app-catalog stub `widget.refresh` are unused and can be deleted.
+- [x] No stale placeholder localization keys are reachable. The four unused keys were deleted on 2026-10-24.
 - [x] Paywall copy is audited in English and Norwegian.
 - [x] Account deletion copy is audited in English and Norwegian.
 - [x] Location sharing copy is audited in English and Norwegian.
