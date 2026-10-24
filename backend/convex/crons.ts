@@ -40,6 +40,10 @@ crons.interval("enqueue-date-reminders", { minutes: 15 }, internal.dateReminders
 // pg_cron 'queue-subscription-trial-reminders' (internal.queue_subscription_trial_reminders), minute 15 of every hour.
 crons.cron("queue-subscription-trial-reminders", "15 * * * *", internal.storekit.queue_subscription_trial_reminders, {});
 
+// New in Convex: tells both partners five days before access ends when the payer turned off auto-renew.
+// Hourly, deduped per couple and end. See lib/subscriptionNotices.ts.
+crons.cron("queue-subscription-ending-reminders", "45 * * * *", internal.storekit.queue_subscription_ending_reminders, {});
+
 // pg_cron 'paeonia-account-deletion-drain' has no entry. requestAccountDeletion queues the
 // Clerk delete as a backgroundWorkpool job that retries itself. See accountDeletion.ts.
 

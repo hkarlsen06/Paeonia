@@ -415,6 +415,9 @@ export default defineSchema({
     // True when the purchase started with a free trial offer, read from the payload when recorded.
     // Stored only when true, so the trial reminder cron reads trials and no other row.
     is_free_trial: v.optional(v.boolean()),
+    // True when the payer turned off auto-renew, read from Apple's renewal info each time the row is
+    // recorded. Stored only when true, so the ending reminder cron reads these rows and no other.
+    auto_renew_off: v.optional(v.boolean()),
     raw_payload_id: optUuid,
     created_at: ts,
     updated_at: ts,
@@ -426,6 +429,7 @@ export default defineSchema({
     .index("by_raw_payload_id", ["raw_payload_id"])
     .index("by_status_expires_at", ["status", "expires_at"])
     .index("by_is_free_trial_status_expires_at", ["is_free_trial", "status", "expires_at"])
+    .index("by_auto_renew_off_status_expires_at", ["auto_renew_off", "status", "expires_at"])
     .index("by_user_id_status_expires_at", ["user_id", "status", "expires_at"]),
 
   // FK: couple_id -> couples cascade; product_id -> subscription_products restrict
@@ -1325,7 +1329,6 @@ export default defineSchema({
       "relationship_ended",
       "relationship_deleted",
       "entitlement_lost",
-      "entitlement_restored",
       "content_hidden",
       "content_cleanup_scheduled",
       "content_purged",

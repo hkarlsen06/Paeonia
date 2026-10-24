@@ -7,6 +7,7 @@ import { getEntitledCoupleIdForUser } from "./access";
 import { newUuid, optionalTimestampArg, uuidArg } from "./ids";
 import { isJsonObject } from "./json";
 import { applyStreakRestore } from "./streaks";
+import { invalidateAccessEndingPushes, queuePaymentFailedPush } from "./subscriptionNotices";
 import { nowIso } from "./time";
 
 export const STOREKIT_STATUSES = ["active", "grace", "billing_retry", "expired", "revoked", "refunded"] as const;
@@ -144,9 +145,13 @@ export async function patchStorekitTransaction(
 ): Promise<void> {
   const statusChanged = "status" in patch && patch.status !== tx.status;
   const expiryChanged = "expires_at" in patch && patch.expires_at !== tx.expires_at;
+  const renewalChanged = "auto_renew_off" in patch && patch.auto_renew_off !== tx.auto_renew_off;
   await ctx.db.patch(tx._id, withUpdatedAt(patch));
   if (statusChanged || expiryChanged) {
     await invalidateSubscriptionTrialReminder(ctx, tx.id);
+  }
+  if (renewalChanged || statusChanged || expiryChanged) {
+    await invalidateAccessEndingPushes(ctx, tx.user_id);
   }
 }
 
@@ -200,6 +205,8 @@ export type VerifiedTransactionInput = {
   p_expires_at?: string | null;
   p_revoked_at?: string | null;
   p_revocation_reason?: string | null;
+  /** True when Apple's renewal info says the payer turned off auto-renew. Null keeps what is stored. */
+  p_auto_renew_off?: boolean | null;
   p_signed_payload?: string | null;
   p_payload_json?: unknown;
 };
@@ -347,6 +354,7 @@ export async function recordVerifiedStorekitTransaction(
     revoked_at: optionalTimestampArg(input.p_revoked_at),
     revocation_reason: input.p_revocation_reason ?? undefined,
     is_free_trial: isFreeTrialPayload(input.p_payload_json) ? true : undefined,
+    auto_renew_off: (input.p_auto_renew_off ?? existing?.auto_renew_off) === true ? true : undefined,
     raw_payload_id: payloadId,
   });
 
@@ -431,6 +439,7 @@ export type ServerNotificationInput = {
   p_expires_at?: string | null;
   p_revoked_at?: string | null;
   p_revocation_reason?: string | null;
+  p_auto_renew_off?: boolean | null;
   p_signed_notification_payload?: string | null;
   p_signed_transaction_info?: string | null;
   p_payload_json?: unknown;
@@ -558,6 +567,7 @@ export async function recordStorekitServerNotification(
     p_expires_at: input.p_expires_at,
     p_revoked_at: input.p_revoked_at,
     p_revocation_reason: input.p_revocation_reason,
+    p_auto_renew_off: input.p_auto_renew_off,
     p_signed_payload: input.p_signed_transaction_info,
     p_payload_json: {
       ...input.p_payload_json,
@@ -567,6 +577,11 @@ export async function recordStorekitServerNotification(
   });
 
   if (result.ok) {
+    // Apple could not take the renewal payment. It keeps trying, during the grace period with
+    // access, and the payer is told once. Recovery or a renewal records a new active transaction.
+    if (notificationType === "DID_FAIL_TO_RENEW") {
+      await queuePaymentFailedPush(ctx, resolvedUserId, result.transactionId as string);
+    }
     await setEvent({ processed_at: nowIso(), processing_error: undefined });
     return { ok: true, duplicate: false, processed: true, transaction: result };
   }

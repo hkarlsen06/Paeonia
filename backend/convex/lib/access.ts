@@ -2,6 +2,7 @@ import type { Doc } from "../_generated/dataModel";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid } from "./db";
 import {
+  accessEndsAt,
   compareByPeriodAndUpdate,
   resolveUserEntitlement,
   type ResolvedEntitlement,
@@ -187,6 +188,8 @@ export type CoupleEntitlement = {
   product_id: string | null;
   billing_period: string | null;
   current_period_end: string | null;
+  /** When the couple's access ends because nobody's subscription renews, or null. Both partners see it. */
+  access_ends_at: string | null;
   updated_at: string | null;
 };
 
@@ -207,13 +210,11 @@ export async function resolveCurrentCoupleEntitlement(
     .query("couple_members")
     .withIndex("by_couple_id_status", (q) => q.eq("couple_id", couple.id).eq("status", "active"))
     .collect();
-  const entitled: ResolvedEntitlement[] = [];
+  const resolvedMembers: ResolvedEntitlement[] = [];
   for (const member of members) {
-    const resolved = await resolveUserEntitlement(ctx, member.user_id);
-    if (resolved.is_entitled) {
-      entitled.push(resolved);
-    }
+    resolvedMembers.push(await resolveUserEntitlement(ctx, member.user_id));
   }
+  const entitled = resolvedMembers.filter((resolved) => resolved.is_entitled);
   entitled.sort((a, b) => {
     const rank = statusRank(a.status) - statusRank(b.status);
     return rank !== 0 ? rank : compareByPeriodAndUpdate(a, b);
@@ -228,6 +229,7 @@ export async function resolveCurrentCoupleEntitlement(
     product_id: best?.product_id ?? null,
     billing_period: best?.billing_period ?? null,
     current_period_end: best?.current_period_end ?? null,
+    access_ends_at: accessEndsAt(resolvedMembers),
     updated_at: best?.updated_at ?? null,
   };
 }

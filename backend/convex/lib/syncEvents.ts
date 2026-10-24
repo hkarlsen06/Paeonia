@@ -10,7 +10,6 @@ export type SyncEventKind =
   | "relationship_ended"
   | "relationship_deleted"
   | "entitlement_lost"
-  | "entitlement_restored"
   | "content_hidden"
   | "content_cleanup_scheduled"
   | "content_purged"

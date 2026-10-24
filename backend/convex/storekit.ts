@@ -12,11 +12,13 @@ import {
   stringOrNull,
   determineSubscription,
   toDatabaseEnvironment,
+  autoRenewOff,
 } from "./lib/appleStoreKit";
 import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { timestampArg } from "./lib/ids";
 import { enqueueNotificationForUser } from "./lib/notifications";
+import { ENDING_NOTICE_DAYS, queueAccessEndingPushes } from "./lib/subscriptionNotices";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import {
   patchStorekitTransaction,
@@ -29,6 +31,7 @@ import { addMs, nowIso } from "./lib/time";
 const STREAK_RESTORE_PRODUCT_ID = "no.paeonia.streak.restore";
 
 const nullableString = v.optional(v.union(v.null(), v.string()));
+const nullableBoolean = v.optional(v.union(v.null(), v.boolean()));
 
 // ---- StoreKit recording (the actions in access.ts and the webhook below call these) ----
 
@@ -46,6 +49,7 @@ export const record_verified_storekit_transaction = internalMutation({
     p_expires_at: nullableString,
     p_revoked_at: nullableString,
     p_revocation_reason: nullableString,
+    p_auto_renew_off: nullableBoolean,
     p_signed_payload: nullableString,
     p_payload_json: v.optional(v.any()),
   },
@@ -83,6 +87,7 @@ export const record_storekit_server_notification = internalMutation({
     p_expires_at: nullableString,
     p_revoked_at: nullableString,
     p_revocation_reason: nullableString,
+    p_auto_renew_off: nullableBoolean,
     p_signed_notification_payload: nullableString,
     p_signed_transaction_info: nullableString,
     p_payload_json: v.optional(v.any()),
@@ -306,6 +311,33 @@ export const queue_subscription_trial_reminders = internalMutation({
   },
 });
 
+// ---- Ending reminders ----
+
+/**
+ * Hourly (`queue-subscription-ending-reminders`). Finds subscriptions whose payer turned off
+ * auto-renew and whose period ends within `ENDING_NOTICE_DAYS` days and an hour, and queues the
+ * ending push for the payer and their partner (`queueAccessEndingPushes`). Each one is deduped per
+ * couple and end, so later runs queue nothing new. Returns the number of outbox rows queued.
+ */
+export const queue_subscription_ending_reminders = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = nowIso();
+    const horizon = addMs(now, ENDING_NOTICE_DAYS * 86_400_000 + 3_600_000);
+    const candidates = await ctx.db
+      .query("storekit_transactions")
+      .withIndex("by_auto_renew_off_status_expires_at", (q) =>
+        q.eq("auto_renew_off", true).eq("status", "active").gt("expires_at", now).lte("expires_at", horizon),
+      )
+      .collect();
+    let queued = 0;
+    for (const payerUserId of new Set(candidates.map((tx) => tx.user_id))) {
+      queued += await queueAccessEndingPushes(ctx, payerUserId, now);
+    }
+    return queued;
+  },
+});
+
 // ---- Apple App Store Server Notifications webhook ----
 
 function jsonResponse(status: number, body: Record<string, unknown>): Response {
@@ -417,6 +449,7 @@ export const apple_server_notifications = httpAction(async (ctx, request) => {
         p_expires_at: millisToIsoOrNull(subscription?.expiresAt),
         p_revoked_at: revocation.revokedAt,
         p_revocation_reason: revocation.reason,
+        p_auto_renew_off: autoRenewOff(renewalInfo),
         p_signed_notification_payload: signedPayload,
         p_signed_transaction_info: notification.data?.signedTransactionInfo ?? null,
         p_payload_json: JSON.parse(

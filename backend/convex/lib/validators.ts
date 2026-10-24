@@ -71,6 +71,8 @@ export const notificationKind = literals(
   "location_updated",
   "location_pause_ended",
   "subscription_trial_reminder",
+  "subscription_payment_failed",
+  "subscription_ending",
   "memory_created",
   "story_posted",
   "thread_message_sent",

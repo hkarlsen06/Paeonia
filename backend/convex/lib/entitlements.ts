@@ -9,6 +9,8 @@ export type EntitlementRow = {
   status: string;
   product_id: string | null;
   current_period_end: string | null;
+  /** True for a subscription that renews by itself. A grant never renews, and a lifetime grant has no end. */
+  will_renew: boolean;
   updated_at: string;
 };
 
@@ -22,6 +24,7 @@ export type ResolvedEntitlement = {
   /** "monthly" or "yearly" for a subscription product. Null for grants without a product. */
   billing_period: string | null;
   current_period_end: string | null;
+  will_renew: boolean;
   updated_at: string | null;
 };
 
@@ -32,6 +35,7 @@ function storekitRow(tx: Doc<"storekit_transactions">): EntitlementRow {
     status: tx.status,
     product_id: tx.product_id,
     current_period_end: tx.expires_at ?? null,
+    will_renew: tx.auto_renew_off !== true,
     updated_at: tx.updated_at,
   };
 }
@@ -61,6 +65,7 @@ function grantRow(grant: Doc<"entitlement_grants">, now: string): EntitlementRow
     status,
     product_id: grant.product_id ?? null,
     current_period_end: grant.expires_at ?? null,
+    will_renew: false,
     updated_at: grant.updated_at,
   };
 }
@@ -168,8 +173,24 @@ export async function resolveUserEntitlement(
     product_id: best?.product_id ?? null,
     billing_period: product?.billing_period ?? null,
     current_period_end: best?.current_period_end ?? null,
+    will_renew: best?.will_renew ?? false,
     updated_at: best?.updated_at ?? null,
   };
+}
+
+/**
+ * When access ends for the people these entitlements belong to (a couple, or one person without
+ * one), or null when nothing ends it: someone's subscription renews by itself, someone has access
+ * with no end, or nobody has access.
+ */
+export function accessEndsAt(entitlements: ResolvedEntitlement[]): string | null {
+  let end: string | null = null;
+  for (const entitlement of entitlements) {
+    if (!entitlement.is_entitled) continue;
+    if (entitlement.will_renew || entitlement.current_period_end === null) return null;
+    if (end === null || entitlement.current_period_end > end) end = entitlement.current_period_end;
+  }
+  return end;
 }
 
 /** Port of `internal.user_has_direct_entitlement`. */

@@ -300,6 +300,12 @@ export function determineSubscription(
   return atTransactionExpiry("expired");
 }
 
+/** Whether the payer turned off auto-renew (`autoRenewStatus` 0), or null when Apple did not say. */
+export function autoRenewOff(renewalInfo: AppleRenewalInfo | null | undefined): boolean | null {
+  const status = renewalInfo?.autoRenewStatus;
+  return status === 0 ? true : status === 1 ? false : null;
+}
+
 export function revocationReason(transactionInfo: AppleTransactionInfo): string | null {
   if (!transactionInfo.revocationDate) return null;
   if (transactionInfo.revocationReason === 1) return "customer_refund";

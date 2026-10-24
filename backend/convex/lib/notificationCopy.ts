@@ -405,6 +405,19 @@ export function notificationAlertBody(
       return nb
         ? `${daysLeft}${daysLeft === 1 ? " dag igjen. " : " dager igjen. "}Se over abonnementet ditt i App Store.`
         : `${daysLeft}${daysLeft === 1 ? " day left. " : " days left. "}Review your subscription in the App Store.`;
+    case "subscription_payment_failed":
+      return nb
+        ? "Oppdater betalingsinformasjonen i App Store for å beholde Paeonia for dere begge."
+        : "Update your payment details in the App Store to keep Paeonia for you both.";
+    case "subscription_ending":
+      // `own_subscription`: the recipient pays and can turn renewal back on. The partner's copy
+      // names nobody and asks nothing of them.
+      if (payload.own_subscription === true) {
+        return nb
+          ? "Slå på abonnementet igjen i App Store for å beholde det for dere begge."
+          : "Turn your subscription back on in the App Store to keep it for you both.";
+      }
+      return nb ? "Fram til da fungerer alt som vanlig." : "Until then, everything works as usual.";
     default:
       return null;
   }
@@ -497,6 +510,15 @@ export async function notificationAlertTitle(
       }
     case "subscription_trial_reminder":
       return nb ? "Prøveperioden avsluttes snart" : "Your free trial ends soon";
+    case "subscription_payment_failed":
+      // Paeonia's own voice. Only the person who pays gets it.
+      return nb ? "Betalingen din gikk ikke gjennom" : "Your payment didn't go through";
+    case "subscription_ending": {
+      // Both partners get this title, so it never says who stopped paying.
+      const days = payloadCount(payload.days_left);
+      if (days === 1) return nb ? "Paeonia avsluttes snart" : "Paeonia ends soon";
+      return nb ? `Paeonia avsluttes om ${days} dager` : `Paeonia ends in ${days} days`;
+    }
     default:
       return fallback;
   }

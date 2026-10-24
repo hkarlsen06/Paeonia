@@ -156,6 +156,8 @@ const NOTIFICATION_CATEGORY: Record<
   partner_joined: "partner",
   pairing_invite_reminder: "reminder",
   data_export_ready: "account",
+  subscription_payment_failed: "account",
+  subscription_ending: "account",
   question_time_reminder: "reminder",
   date_reminder: "reminder",
   streak_reminder: "reminder",
@@ -198,6 +200,8 @@ export function notificationThreadId(payload: Record<string, unknown>): string |
     case "streak_reminder":
       return "streak";
     case "subscription_trial_reminder":
+    case "subscription_payment_failed":
+    case "subscription_ending":
       return "subscription";
     default:
       return null;
@@ -229,7 +233,8 @@ function notificationGrouping(
 
 /**
  * When a reminder stops being true: a streak reminder at its deadline, a trial
- * reminder when the trial ends, a question time or date reminder at the end of the user's local day.
+ * reminder when the trial ends, an ending reminder when access ends, a question time or date
+ * reminder at the end of the user's local day.
  * `prepare_notification` drops a row past this time, and APNs drops it on a phone that stays
  * offline past it. Null for everything else.
  */
@@ -239,9 +244,11 @@ export function notificationStaleAt(payload: Record<string, unknown>): string | 
       ? payload.next_activity_deadline_at
       : payload.type === "subscription_trial_reminder"
         ? payload.trial_ends_at
-        : payload.type === "question_time_reminder" || payload.type === "date_reminder"
-          ? payload.expires_at
-          : null;
+        : payload.type === "subscription_ending"
+          ? payload.ends_at
+          : payload.type === "question_time_reminder" || payload.type === "date_reminder"
+            ? payload.expires_at
+            : null;
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null;
 }
 

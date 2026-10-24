@@ -15,6 +15,7 @@ import { uuidArg } from "./lib/ids";
 import { reactionPreferenceAllows } from "./lib/notifications";
 import { pairingInviteStillWaiting } from "./lib/pairingInviteReminder";
 import { hasStartedToday } from "./lib/questionTimeStatus";
+import { accessEndingPushStillWanted, paymentProblemPushWanted } from "./lib/subscriptionNotices";
 import { refreshStreakAfterDeviceTimeZoneChange } from "./lib/streaks";
 import { isValidTimeZone, nowIso } from "./lib/time";
 import { hasTopicWaiting, topicPushTooSoon } from "./lib/topics";
@@ -157,6 +158,13 @@ async function rowStillWanted(
     typeof payload.couple_id === "string" &&
     (await hasStartedToday(ctx, payload.couple_id, recipientUserId, nowIso()))
   ) {
+    return { wanted: false, reason: "out_of_date" };
+  }
+  // A payment that went through, or renewal turned back on, before the alert went out needs no alert.
+  if (row.kind === "subscription_payment_failed" && !(await paymentProblemPushWanted(ctx, recipientUserId))) {
+    return { wanted: false, reason: "out_of_date" };
+  }
+  if (row.kind === "subscription_ending" && !(await accessEndingPushStillWanted(ctx, recipientUserId, payload))) {
     return { wanted: false, reason: "out_of_date" };
   }
   return { wanted: true };

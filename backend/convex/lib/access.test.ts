@@ -58,6 +58,7 @@ describe("entitlements", () => {
       product_id: null,
       billing_period: null,
       current_period_end: null,
+      will_renew: false,
       updated_at: null,
     });
   });

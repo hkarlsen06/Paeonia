@@ -7,6 +7,7 @@ import {
   type AppleTransactionInfo,
   appleBundleId,
   assertAppleEnvironmentConfigured,
+  autoRenewOff,
   decodeAppleJWS,
   determineSubscription,
   failWithClientSafeError,
@@ -213,6 +214,7 @@ async function runVerifyPurchase(ctx: ActionCtx, args: PurchaseArgs): Promise<Su
       p_expires_at: millisToIsoOrNull(expiresAt),
       p_revoked_at: millisToIsoOrNull(transactionInfo.revocationDate),
       p_revocation_reason: revocationReason(transactionInfo),
+      p_auto_renew_off: autoRenewOff(renewalInfo),
       p_signed_payload: verified.signedTransactionInfo,
       p_payload_json: plain({
         transactionInfo,

@@ -115,6 +115,7 @@ import type * as lib_storekit from "../lib/storekit.js";
 import type * as lib_storyChain from "../lib/storyChain.js";
 import type * as lib_streakDeadlines from "../lib/streakDeadlines.js";
 import type * as lib_streaks from "../lib/streaks.js";
+import type * as lib_subscriptionNotices from "../lib/subscriptionNotices.js";
 import type * as lib_syncEvents from "../lib/syncEvents.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_threadSubjects from "../lib/threadSubjects.js";
@@ -268,6 +269,7 @@ declare const fullApi: ApiFromModules<{
   "lib/storyChain": typeof lib_storyChain;
   "lib/streakDeadlines": typeof lib_streakDeadlines;
   "lib/streaks": typeof lib_streaks;
+  "lib/subscriptionNotices": typeof lib_subscriptionNotices;
   "lib/syncEvents": typeof lib_syncEvents;
   "lib/text": typeof lib_text;
   "lib/threadSubjects": typeof lib_threadSubjects;

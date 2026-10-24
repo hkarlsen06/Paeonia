@@ -146,6 +146,7 @@ describe("access snapshot", () => {
           product_id: null,
           billing_period: null,
           current_period_end: null,
+          will_renew: false,
           updated_at: null,
         },
         couple_entitlement: null,
@@ -166,6 +167,7 @@ describe("access snapshot", () => {
       covering_user_id: couple.first.userId,
       source: "lifetime_grant",
       status: "lifetime",
+      access_ends_at: null,
     });
     expect(row.relationship_state).toMatchObject({
       couple_id: couple.coupleId,
