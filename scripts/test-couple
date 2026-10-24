@@ -29,7 +29,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
@@ -48,8 +48,12 @@ CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 USER_AGENT = {"User-Agent": "paeonia-test-couple"}
 
 
+def iso(moment: datetime) -> str:
+    return moment.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return iso(datetime.now(timezone.utc))
 
 
 def hosted_env_get(name: str) -> str:
@@ -159,15 +163,18 @@ def upload_profile_photo(convex: Convex, token: str, user_id: str, photo: Path) 
 
 
 def ensure_test_grant(convex: Convex, user_id: str) -> None:
+    """A test grant gives access only until its expires_at, so a run after it ran out adds a new one."""
+    now = now_iso()
     rows = convex.cli("data", "entitlement_grants", "--limit", "1000", "--format", "jsonLines").splitlines()
     for line in rows:
         grant = json.loads(line)
-        if grant["user_id"] == user_id and grant["grant_kind"] == "test" and grant["status"] == "active":
+        if (grant["user_id"] == user_id and grant["grant_kind"] == "test" and grant["status"] == "active"
+                and grant.get("expires_at", "") > now):
             return
-    now = now_iso()
     grant = {"id": str(uuid.uuid4()), "user_id": user_id, "grant_kind": "test", "status": "active",
              "scope": "user", "reason": "test couple (scripts/test-couple)", "granted_by": "scripts/test-couple",
-             "granted_at": now, "created_at": now, "updated_at": now}
+             "granted_at": now, "expires_at": iso(datetime.now(timezone.utc) + timedelta(days=365)),
+             "created_at": now, "updated_at": now}
     with tempfile.NamedTemporaryFile("w", suffix=".jsonl") as file:
         file.write(json.dumps(grant) + "\n")
         file.flush()
