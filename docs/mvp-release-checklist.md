@@ -391,7 +391,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Account deletion clears private local caches.
 - [x] Media draft stores do not leak content across users.
 - [ ] Slow network states are understandable. Needs a device.
-- [ ] Recoverable errors show plain copy. Gap: sign-in and purchase copy is fixed, but about 20 other strings still say to check the connection for any error, such as `admin.error.banFailed`, `games.notice.*Failed.message`, `pairing.join.error.*`, `reportAndLeave.failed.message` and `streakRestore.error.priceUnavailable`.
+- [x] Recoverable errors show plain copy. Every message that tells people to check their connection is shown only when `PaeoniaFailure` is `.offline`, including StoreKit's network error (`PaeoniaFailureTests`). Checked on 2026-10-24 by scanning all 78 such strings. Some "saved on this phone" lines still say "when you're online" after a server error on a working connection, because those features' sending states don't tell the two apart.
 - [x] No private content is written to logs.
 
 ## Convex Backend
