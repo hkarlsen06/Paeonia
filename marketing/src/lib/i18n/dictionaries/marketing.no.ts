@@ -15,7 +15,7 @@ export const marketingNo = {
       'En privat app for dere to. Kast terningen i Ludo, gjett hverandres tegninger, svar på noen spørsmål hver dag og tell ned til neste gang dere ses.',
     primaryCta: 'Jeg er interessert',
     secondaryCta: 'Se spillene',
-    note: 'Kommer snart til iPhone',
+    note: 'Kommer snart til iPhone og iPad',
     screenshots: [
       {
         src: 'home',
@@ -215,7 +215,7 @@ export const marketingNo = {
         question: 'Må begge betale?',
         answers: [
           'Nei. Ett abonnement dekker dere begge. Den som blir med gjennom en invitasjon, betaler ikke.',
-          'Alle spill og funksjoner er med. Det finnes ingen ekstra kjøp for å låse dem opp.',
+          'Alle spill og funksjoner er med. Det eneste ekstra kjøpet er frivillig. Hvis rekken deres tar slutt, kan dere betale én gang for å hente den tilbake.',
         ],
       },
       {
@@ -234,7 +234,7 @@ export const marketingNo = {
       },
       {
         question: 'Finnes Paeonia for Android?',
-        answers: ['Nei. Foreløpig finnes Paeonia bare for iPhone.'],
+        answers: ['Nei. Foreløpig finnes Paeonia bare for iPhone og iPad.'],
       },
     ],
   },

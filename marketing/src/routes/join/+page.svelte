@@ -51,7 +51,7 @@
   const home = $derived(language === 'nb' ? '/no/' : '/en/');
 </script>
 
-<PageHead title="Join Paeonia - Paeonia" description="Open a Paeonia partner invite on your iPhone." noindex />
+<PageHead title="Join Paeonia - Paeonia" description="Open a Paeonia partner invite on your iPhone or iPad." noindex />
 
 <main class="join-page">
   <a class="join-brand" href={home}>

@@ -15,7 +15,7 @@ export const marketingEn = {
       'A private app for the two of you. Roll the die in Ludo, guess each other\'s drawings, answer a few questions a day, and count down to the next time you meet.',
     primaryCta: "I'm interested",
     secondaryCta: 'See the games',
-    note: 'Coming soon to iPhone',
+    note: 'Coming soon to iPhone and iPad',
     screenshots: [
       {
         src: 'home',
@@ -215,7 +215,7 @@ export const marketingEn = {
         question: 'Do both people need to pay?',
         answers: [
           'No. One subscription covers both of you. The partner who joins through an invite does not pay.',
-          'Every game and feature is included. There are no extra purchases to unlock them.',
+          'Every game and feature is included. The only extra purchase is optional. If your streak ends, you can pay once to bring it back.',
         ],
       },
       {
@@ -234,7 +234,7 @@ export const marketingEn = {
       },
       {
         question: 'Is there an Android version?',
-        answers: ['No. Paeonia is only for iPhone for now.'],
+        answers: ['No. Paeonia is only for iPhone and iPad for now.'],
       },
     ],
   },
