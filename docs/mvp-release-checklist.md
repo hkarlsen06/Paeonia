@@ -200,7 +200,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Staged drafts survive closing/reopening the answer composer.
 - [x] Offline answers queue and show local-first reassurance.
 - [x] Queued answers upload later without duplication.
-- [ ] Media/voice upload failure does not drop user content. Built, untested: `DailyChallengePendingOperationHandler` keeps the staged file, but no test makes the upload throw.
+- [x] Media/voice upload failure does not drop user content. `MediaUploadFlowTests` "aDailyVoiceAnswerWhoseUploadFailsStaysQueuedAndSendsOnTheRetry" keeps the staged file and the queued answer after a failed upload, then sends both on the retry.
 - [x] Answer reveal works after both partners answer, with the chime and petal moment, and offers Open chat and Done.
 - [x] Only fully revealed question cards open their private question chat.
 - [x] The first follow-up message creates the thread lazily; opening chat never creates an empty thread.
@@ -248,7 +248,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Photo compression follows the intended space-saving approach.
 - [x] Photo upload failure leaves the draft intact.
 - [x] Memory photos are loaded through private signed URLs.
-- [ ] Memory media cache clears on relationship access loss. Built, untested: `LocalPrivacyPurgeService` clears it, but the privacy tests use a fake purger.
+- [x] Memory media cache clears on relationship access loss. `LocalPrivacyPurgeTests` "everyPurgeRemovesCachedMemoryPhotos" runs the real purger for every purge scope.
 - [x] Memory deletion/hide behavior matches product decision and the access checks in `backend/convex/memories.ts`.
 - [x] Memory comments are in the UI (`MemoryCommentsSection`).
 - [x] Memory voice notes are cut from MVP; active product copy and App Store materials must not imply that memories include voice. The backend and `MemoryMediaPurpose.voice` still accept memory voice, which can be deleted.
@@ -284,7 +284,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [ ] A partner's answer, game move, countdown change, or start date change updates the other phone's widgets while Paeonia is closed. Needs a device. The server side is tested (`widget.test.ts`).
 - [x] Their time stays correct across a daylight saving change in either time zone.
 - [x] Tapping each widget opens the matching screen. Their time and Distance apart open the app on purpose.
-- [ ] The lock screen widget cache clears on sign-out, account deletion, and relationship access loss. Built, untested: the privacy test checks the drawing files but not the lock screen file.
+- [x] The lock screen widget cache clears on sign-out, account deletion, and relationship access loss. `LocalPrivacyPurgeTests` "everyPurgeRemovesWhatTheLockScreenAndHomeScreenWidgetsShow" covers every purge scope.
 - [ ] Widget names and copy are audited in English and Norwegian. Needs a person. Both languages are complete.
 
 ## Home Screen Widgets
@@ -297,7 +297,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Today's question never shows question or answer text, and its status changes when the partner answers while Paeonia is closed.
 - [ ] Countdown titles stay hidden on a locked phone (StandBy). Needs a device.
 - [x] Tapping each widget opens the matching screen: dates timeline, streak, today's question, drawing.
-- [ ] The widgets clear on sign-out, account deletion, and relationship access loss. Built, untested, as for the lock screen widgets.
+- [x] The widgets clear on sign-out, account deletion, and relationship access loss. Covered by the same test as the lock screen widgets, which also checks that the widgets reload.
 - [ ] Widget names, settings and copy are audited in English and Norwegian. Needs a person.
 
 ## Countdown And Relationship Milestones
