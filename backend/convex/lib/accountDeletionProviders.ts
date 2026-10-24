@@ -29,29 +29,10 @@ export function stableAuthDeleteErrorCode(error: unknown): string {
   return "auth_delete_unexpected";
 }
 
-/**
- * The secret keys of the Clerk instances this deployment trusts. A Clerk user id names no instance, so a
- * lookup asks each in turn and a 404 moves on. The development key is set only while api.paeonia.no also
- * trusts simulator builds (CLERK_DEV_JWT_ISSUER_DOMAIN in auth.config.ts).
- */
-function clerkSecretKeys(): string[] {
-  const keys = [process.env.CLERK_SECRET_KEY, process.env.CLERK_DEV_SECRET_KEY].filter((key): key is string => !!key);
-  if (keys.length === 0) throw new ProviderError("auth_configuration_missing");
-  return keys;
-}
-
-/** The first response from an instance that knows the user, or the last 404 when none does. */
-async function fetchClerkUser(clerkUserId: string, method: "GET" | "DELETE"): Promise<Response> {
-  let response: Response | undefined;
-  for (const key of clerkSecretKeys()) {
-    response = await fetch(`${CLERK_API}/users/${encodeURIComponent(clerkUserId)}`, {
-      method,
-      headers: { Authorization: `Bearer ${key}` },
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (response.status !== 404) return response;
-  }
-  return response!;
+function clerkHeaders(): Record<string, string> {
+  const key = process.env.CLERK_SECRET_KEY;
+  if (!key) throw new ProviderError("auth_configuration_missing");
+  return { Authorization: `Bearer ${key}` };
 }
 
 type ClerkExternalAccount = { provider?: unknown; provider_user_id?: unknown; verification?: { status?: unknown } | null };
@@ -59,7 +40,10 @@ type ClerkExternalAccount = { provider?: unknown; provider_user_id?: unknown; ve
 /** The external accounts Clerk lists for a user, or null when Clerk could not be asked. */
 async function fetchExternalAccounts(clerkUserId: string): Promise<ClerkExternalAccount[] | null> {
   try {
-    const response = await fetchClerkUser(clerkUserId, "GET");
+    const response = await fetch(`${CLERK_API}/users/${encodeURIComponent(clerkUserId)}`, {
+      headers: clerkHeaders(),
+      signal: AbortSignal.timeout(15_000),
+    });
     if (!response.ok) return null;
     const body = (await response.json()) as { external_accounts?: ClerkExternalAccount[] };
     return body.external_accounts ?? [];
@@ -106,7 +90,11 @@ export async function fetchLinkedSignInProviders(clerkUserId: string): Promise<S
 export async function deleteClerkUser(clerkUserId: string): Promise<void> {
   let response: Response;
   try {
-    response = await fetchClerkUser(clerkUserId, "DELETE");
+    response = await fetch(`${CLERK_API}/users/${encodeURIComponent(clerkUserId)}`, {
+      method: "DELETE",
+      headers: clerkHeaders(),
+      signal: AbortSignal.timeout(15_000),
+    });
   } catch (error) {
     if (error instanceof ProviderError) throw error;
     throw new ProviderError("auth_unreachable");

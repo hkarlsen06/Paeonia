@@ -606,33 +606,6 @@ describe("an account with Apple and Google linked", () => {
     await expectFail(first.as.action(api.identity.sync_sign_in_methods, {}), "sign_in_methods_unavailable");
   });
 
-  test("delete_account deletes a user of the development Clerk instance with its own key", async () => {
-    const t = newTest();
-    process.env.CLERK_DEV_SECRET_KEY = "sk_test_dev";
-    const clerkCalls: string[] = [];
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-        const url = String(input);
-        if (url === POSTHOG_BULK_DELETE) return Response.json({ deletion_errors: [] }, { status: 202 });
-        const key = (init?.headers as Record<string, string>).Authorization.replace("Bearer ", "");
-        const method = init?.method ?? "GET";
-        clerkCalls.push(`${method} ${key}`);
-        if (key !== "sk_test_dev") return new Response("{}", { status: 404 });
-        if (method === "DELETE") return new Response("{}", { status: 200 });
-        return Response.json({ external_accounts: [] });
-      }),
-    );
-    try {
-      const { first } = await createCouple(t);
-      const response = await first.as.action(api.identity.delete_account, {});
-      expect(response).toMatchObject({ authDeleteStatus: "completed" });
-      expect(clerkCalls).toEqual(["GET sk_test_clerk", "GET sk_test_dev", "DELETE sk_test_clerk", "DELETE sk_test_dev"]);
-    } finally {
-      delete process.env.CLERK_DEV_SECRET_KEY;
-    }
-  });
-
   test("delete_account revokes Apple for a user whose stored provider is Google", async () => {
     const t = newTest();
     await configureApple();

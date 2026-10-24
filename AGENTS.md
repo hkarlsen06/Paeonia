@@ -33,7 +33,7 @@ Product constraints:
 - Shared daily prompts, memories, countdowns, widgets, respectful notifications, and couple pairing.
 - Minimum deployment target is iOS 27.0.
 - Initial iOS targets include app, widget, notification service extension, unit tests, and UI tests.
-- Auth uses Sign in with Apple and Google Sign-In only for MVP; no separate sign-up page, passkey flow, email/password, or email magic-link auth for MVP. The production Clerk instance allows only Apple and Google. Until launch, simulator Debug builds sign in through the development Clerk instance, which `api.paeonia.no` also trusts, so the test couple from `scripts/test-couple` can sign in there.
+- Auth uses Sign in with Apple and Google Sign-In only for MVP; no separate sign-up page, passkey flow, email/password, or email magic-link auth for MVP. The production Clerk instance allows only Apple and Google, and `api.paeonia.no` trusts only it. Local backends (`scripts/local-backend`) trust the development Clerk instance instead, where the test couple from `scripts/test-couple` lives.
 - Project setup should stay nearly identical to Tidex. Discuss deviations with the user before making them.
 - Associated Domains should be configured from the start for `applinks:paeonia.no`.
 - Localization must use Xcode String Catalog generated symbols from day one. Start with English and Norwegian Bokmal.
