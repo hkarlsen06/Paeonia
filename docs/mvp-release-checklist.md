@@ -212,8 +212,8 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Daily challenge history groups questions by effective latest-answer day.
 - [x] Carried-over questions the partner answered remain answerable for 30 days.
 - [x] Skip works, up to 30 a day.
-- [ ] Skipped questions stay away for 14 days. Built, untested: `daily.test.ts` never moves the clock past the window.
-- [ ] Resurfaceable questions can reappear after the configured period and show prior answer dates. Built, untested: the resurfacing test passes whatever the rule is.
+- [x] Skipped questions stay away for 14 days. `daily.test.ts` "a skipped question stays away on later days and comes back once 14 days have passed".
+- [x] Resurfaceable questions can reappear after the configured period and show prior answer dates. `daily.test.ts` "a question that can resurface stays away for its months, then comes back with the day it was answered".
 - [x] When a couple has seen every active question, the picker repeats the one the couple had longest ago instead of failing.
 - [x] Question content has English and Norwegian Bokmal localizations.
 - [x] No question prompt assumes gender, public sharing, or unsafe relationship behavior.
@@ -225,7 +225,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Updating the shared widget keeps the streak alive.
 - [ ] Creating or editing a memory keeps the streak alive. Creating one records `memory_created` (`lib/streaks.test.ts`). No memory edit records `memory_updated` yet.
 - [x] Streak does not expire before midnight in the latest partner timezone.
-- [ ] Started couple-day timezone window is frozen as documented. Built, untested: `coupleDays.ts` returns the stored day, but no test changes a time zone mid-day.
+- [x] Started couple-day timezone window is frozen as documented. `daily.test.ts` "a partner who changes time zone mid-day does not move the day that already started".
 - [x] Streak reminder can be scheduled before expiry.
 - [x] Streak reminder copy is privacy-safe.
 - [ ] Broken streak state is understandable. Needs a device.
@@ -344,13 +344,13 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Device tokens are stored per user with their APNs environment. The couple is checked when the push is sent.
 - [x] Notification preferences are available in settings.
 - [x] User can disable streak reminders.
-- [ ] User can disable partner-answer notifications. Built, untested: the check is in `pushQueue.ts`, but no test turns `partner_answered_enabled` off.
+- [x] User can disable partner-answer notifications. `daily.test.ts` covers the setting when the push is queued and when it is due.
 - [x] User can disable widget drawing notifications.
 - [x] New drawing notification works.
 - [x] Partner-answer notification works.
 - [x] Partner-completed-daily-challenge notification works if shipped.
 - [x] Streak-expiry reminder works if shipped.
-- [ ] Notification payloads do not include answer text, note text, media URLs, invite codes, precise location, or report details. Gap: `lib/notificationCopy.ts` blocks by key name from a short list, so keys like `answer_text` or `note` would pass, and the test covers three of the six kinds.
+- [x] Notification payloads do not include answer text, note text, media URLs, invite codes, precise location, or report details. `NOTIFICATION_PAYLOAD_FIELDS` in `lib/notifications.ts` lists the only fields each kind may carry, and `prepare_notification` checks again before the send. `lib/notifications.test.ts` covers all six kinds of content across every notification kind.
 - [x] Notification outbox records delivery attempts and failures.
 - [ ] Permission-denied state is graceful. Needs a device.
 - [ ] App still works if notifications are never enabled. Needs a device.
