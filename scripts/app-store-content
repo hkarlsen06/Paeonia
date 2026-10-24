@@ -26,8 +26,14 @@
 # times a day. The script skips until today's question is QUESTION_KEY. When the
 # skips run out, it runs the operator mutation daily:reset_daily_challenge_for_testing
 # with `npx convex run`, which clears today's question and skips, and tries again.
-# That is the one step that does not run as an account. It refuses to run unless
-# backend/.env.local names the same local backend as ios/local.xcconfig.
+# Two more steps do not run as an account, because the app's functions cannot do
+# them: the couple's streak (STREAK_DAYS answered days in a row)
+# and the drawing's time (--drawing-time, so the widget and the Home card show a
+# morning time beside the 9:41 status bar). Both rewrite one table on the local
+# backend with `npx convex data` and `npx convex import --replace`. These steps
+# refuse to run unless backend/.env.local names the same local backend as
+# ios/local.xcconfig. Seed once per locale and capture every screen from that one
+# seeding, so the drawing shows the same time everywhere.
 #
 # The drawing is PKDrawing.dataRepresentation() bytes. Without the stroke count,
 # point count and bounds it reads them from the file with a small PencilKit
@@ -63,7 +69,10 @@ TIME_ZONE = ZoneInfo("Europe/Oslo")  # scripts/test-couple onboards both account
 ID_NAMESPACE = uuid.UUID("5d0f5c2e-8a43-4d55-9a5f-4f1c2b7a9e10")
 
 DAYS_TOGETHER = 504  # Past the 500-day mark and far from the next milestone.
+# Most days of the 504, and not a milestone (StreakMilestones.swift), so no celebration opens.
+STREAK_DAYS = 412
 VISIT_IN_DAYS = 12
+ROW_LIMIT = 10000  # The most rows `npx convex data` lists; it fails on far larger limits.
 DAILY_SHUFFLE_LIMIT = 30  # DAILY_SHUFFLE_LIMIT in backend/convex/daily.ts, per person per day.
 # A round of 60 skips sees 61 of the 156 questions, so 25 rounds all miss about once in 200,000 runs.
 DAILY_RESET_LIMIT = 25
@@ -451,6 +460,46 @@ def drawing_shape(path: Path) -> tuple[int, int, list[float]]:
     return int(strokes), int(points), [float(value) for value in bounds]
 
 
+def replace_rows(convex: Convex, table: str, edit) -> None:
+    """Rewrites a whole table on the local backend: edit gets every row and returns the rows to keep."""
+    rows = [json.loads(line) for line in convex.cli("data", table, "--limit", str(ROW_LIMIT), "--format", "jsonLines")
+            .splitlines() if line.strip()]
+    if len(rows) >= ROW_LIMIT:
+        raise SystemExit(f"{table} has {ROW_LIMIT} rows or more, so the export may be cut off. Not replacing it.")
+    with tempfile.TemporaryDirectory() as scratch:
+        file = Path(scratch) / f"{table}.jsonl"
+        file.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in edit(rows)))
+        convex.cli("import", "--table", table, "--replace", "-y", str(file))
+
+
+def seed_streak(convex: Convex, couple_id: str, day_id: str) -> None:
+    """Sets the couple's streak to STREAK_DAYS, qualified through today, so answering today keeps the count."""
+    tomorrow_ends = datetime.combine(today() + timedelta(days=2), datetime.min.time(), TIME_ZONE)
+    streak = {"couple_id": couple_id, "current_count": STREAK_DAYS, "longest_count": STREAK_DAYS,
+              "last_qualified_date": today().isoformat(), "last_qualified_couple_day_id": day_id,
+              "next_activity_deadline_at": iso(tomorrow_ends.astimezone(timezone.utc)), "updated_at": now_iso(),
+              "restorable_count": 0}
+
+    def edit(rows: list) -> list:
+        mine = [row for row in rows if row["couple_id"] == couple_id]
+        others = [row for row in rows if row["couple_id"] != couple_id]
+        keep = {key: mine[0][key] for key in ("_id", "_creationTime")} if mine else {}
+        return others + [{**keep, **streak}]
+
+    replace_rows(convex, "streak_states", edit)
+    print(f"Streak set to {STREAK_DAYS} days")
+
+
+def set_drawing_time(convex: Convex, revision_id: str, clock: str) -> None:
+    """Moves the drawing's created_at, which the widget and the Home card show, to clock today."""
+    hour, minute = (int(part) for part in clock.split(":"))
+    moment = datetime.combine(today(), datetime.min.time(), TIME_ZONE).replace(hour=hour, minute=minute)
+    created_at = iso(moment.astimezone(timezone.utc))
+    replace_rows(convex, "widget_drawing_revisions", lambda rows: [
+        {**row, "created_at": created_at} if row["id"] == revision_id else row for row in rows])
+    print(f"Drawing time set to {clock}")
+
+
 def seed_widget_drawing(second: Person, path: Path, args: argparse.Namespace) -> str:
     data = path.read_bytes()
     if args.drawing_strokes is None or args.drawing_points is None or args.drawing_bounds is None:
@@ -488,6 +537,8 @@ def main() -> None:
     parser.add_argument("--drawing-strokes", type=int)
     parser.add_argument("--drawing-points", type=int)
     parser.add_argument("--drawing-bounds", help="x,y,width,height of PKDrawing.bounds in points")
+    parser.add_argument("--drawing-time", default="07:24",
+                        help="the time today, HH:MM in Oslo, that the drawing shows (default 07:24)")
     stage = parser.add_mutually_exclusive_group()
     stage.add_argument("--for-reveal", action="store_true",
                        help="only Elena answers today's question, so Hjalmar can answer in the app and see the reveal")
@@ -524,8 +575,9 @@ def main() -> None:
     memory_ids = seed_memories(people, couple_id, locale)
     ludo_id = seed_ludo(people, locale)
     seed_home(people, couple_id, locale)
+    seed_streak(convex, couple_id, day_id)
     if args.drawing:
-        seed_widget_drawing(second, args.drawing, args)
+        set_drawing_time(convex, seed_widget_drawing(second, args.drawing, args), args.drawing_time)
     print(json.dumps({"couple_day_id": day_id, "instance_id": question["instance_id"],
                       "question_id": question["question_id"], "memory_ids": memory_ids, "ludo_game_id": ludo_id,
                       "partner_clerk_subject": subjects["second"],

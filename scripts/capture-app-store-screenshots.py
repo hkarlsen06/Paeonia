@@ -10,15 +10,29 @@ and scripts/sim-sign-in, with the simulator signed in as Hjalmar:
 
 --ids is the JSON line scripts/app-store-content prints last. The screens open
 through Paeonia's deep links. simctl openurl asks "Open in Paeonia?" first, so
-the links go through agent-device's `open <app> <url>`, which does not. The
-simulator's Home Screen must already hold the large Paeonia drawing widget on
-the page it shows, because 01-widget is the Home Screen after the app closes.
+the links go through agent-device's `open <app> <url>`, which does not.
 
-02-question is the moment Elena's answer is revealed: the script opens today's
-question, types Hjalmar's answer from --ids, sends it, and captures the reveal.
-So seed with `scripts/app-store-content --for-reveal`, capture every screen but
-06-chat, add the chat with `scripts/app-store-content --chat-only`, then capture
-06-chat and 03-ludo.
+01-widget is the Home Screen. The script lays it out with Paeonia only: the
+large drawing widget on top, the streak and countdown widgets below it, and the
+Paeonia app alone in the dock. Every other app moves to the App Library. It
+writes SpringBoard's IconState.plist while the simulator is shut down, so the
+first run reboots the simulator. Set the dark plum Home Screen wallpaper by hand
+once per simulator: add the image from scripts/app-store-wallpaper.mjs with
+`xcrun simctl addmedia`, then in Photos use Share > Use as Wallpaper > Customize
+Home Screen > Gradient. A photo wallpaper renders black on the simulator, so the
+gradient picks up its plum colour instead.
+
+The screens are captured in the order of SCREENS, all from one seeding, so the
+drawing's time and the streak match everywhere. Seed with
+`scripts/app-store-content --for-reveal`, so only Elena has answered today's
+question. Home is captured while today's question still waits for Hjalmar.
+Then 02-question opens today's question, types Hjalmar's answer from --ids,
+sends it, and captures the moment Elena's answer is revealed. Then add the chat
+with `scripts/app-store-content --chat-only` and capture 06-chat and 03-ludo:
+
+    ... --screens 01-widget,04-home,05-memories,02-question
+    scripts/app-store-content --locale <en|nb> --chat-only
+    ... --screens 06-chat,03-ludo
 
 The script sets the simulator's language for the locale (rebooting when it
 changes it) and the status bar to 9:41 with full bars and battery, and checks
@@ -29,12 +43,14 @@ import argparse
 import json
 import os
 from pathlib import Path
+import plistlib
 import re
 import shlex
 import struct
 import subprocess
 import tempfile
 import time
+import uuid
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,16 +64,23 @@ LAUNCH_SECONDS = 12
 # Mean difference per colour channel, out of 255, below which two captures count as the same screen.
 DUPLICATE_THRESHOLD = 6
 # Each screen's deep link and the seconds to wait for its live data, or the Ludo
-# table, to load. They are captured in this order. Ludo comes last, because
+# table, to load. They are captured in this order. Home comes before the
+# question, so it still invites Hjalmar to answer. Ludo comes last, because
 # Elena's presence at the table puts a "here now" card at the top of Home.
+# 01-widget opens the app so it syncs the widgets, then goes to the Home Screen.
 SCREENS = {
-    "01-widget": (None, 4),
-    "02-question": ("paeonia://daily/today", 4),
+    "01-widget": ("paeonia://home", 10),
     "04-home": ("paeonia://home", 10),
     "05-memories": ("paeonia://memories", 8),
+    "02-question": ("paeonia://daily/today", 4),
     "06-chat": ("paeonia://daily/chat?questionId={question_id}", 8),
     "03-ludo": ("paeonia://games/ludo", 25),
 }
+# The Home Screen of 01-widget, in grid order: (widget kind, size). The large drawing fills
+# the top four rows and the two small widgets the last two.
+HOME_SCREEN = [("PaeoniaWidget", "large"), ("PaeoniaHomeStreakWidget", "small"),
+               ("PaeoniaHomeCountdownWidget", "small")]
+WIDGET_EXTENSION = "no.paeonia.app.widget"
 
 
 def run(*args, **kwargs):
@@ -77,16 +100,57 @@ def device(name):
     raise SystemExit(f"No available simulator named {name}.")
 
 
+def shut_down(udid):
+    """Shuts the simulator down and waits, because simctl returns while it is still shutting down."""
+    simctl("shutdown", udid)
+    while device(udid)["state"] != "Shutdown":
+        time.sleep(1)
+
+
+def home_screen_widget(kind, size):
+    ids = (str(uuid.uuid5(uuid.NAMESPACE_URL, f"paeonia-app-store:{kind}:{size}:{part}")).upper() for part in "du")
+    return {"widgetIdentifier": kind, "elementType": "widget", "containerBundleIdentifier": BUNDLE_ID,
+            "bundleIdentifier": WIDGET_EXTENSION, "displayIdentifier": next(ids), "uniqueIdentifier": next(ids),
+            "gridSize": size, "iconType": "custom", "allowsSuggestions": False, "allowsExternalSuggestions": False}
+
+
+def apps_in(icons):
+    """The bundle ids in a Home Screen icon list, including the ones inside folders."""
+    if isinstance(icons, str):
+        return [icons]
+    if isinstance(icons, list):
+        return [app for icon in icons for app in apps_in(icon)]
+    return apps_in(icons.get("iconLists", []))
+
+
+def lay_out_home_screen(udid):
+    """Gives the Home Screen one page of Paeonia widgets and Paeonia alone in the dock. Reboots when it changes it."""
+    path = Path.home() / f"Library/Developer/CoreSimulator/Devices/{udid}/data/Library/SpringBoard/IconState.plist"
+    state = plistlib.loads(path.read_bytes())
+    page = [home_screen_widget(kind, size) for kind, size in HOME_SCREEN]
+    if state["iconLists"] == [page] and state["buttonBar"] == [BUNDLE_ID]:
+        return
+    shut_down(udid)
+    state = plistlib.loads(path.read_bytes())  # SpringBoard saves it again while it shuts down.
+    state["ignored"] = sorted({*state.get("ignored", []), *apps_in([*state["iconLists"], state["buttonBar"]])}
+                              - {BUNDLE_ID})
+    state["iconLists"] = [page]
+    state["listUniqueIdentifiers"] = state["listUniqueIdentifiers"][:1]
+    state["buttonBar"] = [BUNDLE_ID]
+    path.write_bytes(plistlib.dumps(state, fmt=plistlib.FMT_BINARY))
+    simctl("bootstatus", udid, "-b", stdout=subprocess.DEVNULL)
+
+
 def prepare(udid, locale):
-    """Boots the simulator in the locale's language with the App Store status bar."""
+    """Boots the simulator in the locale's language with the App Store status bar and Home Screen."""
     languages, region = LANGUAGES[locale]
     simctl("bootstatus", udid, "-b", stdout=subprocess.DEVNULL)
+    lay_out_home_screen(udid)
     current = simctl("spawn", udid, "defaults", "read", "-g", "AppleLanguages", capture_output=True).stdout
     if f'"{languages}"' not in current and languages not in current.split():
         simctl("spawn", udid, "defaults", "write", "-g", "AppleLanguages", "-array", languages)
         simctl("spawn", udid, "defaults", "write", "-g", "AppleLocale", region)
-        simctl("shutdown", udid)
-        simctl("boot", udid)
+        shut_down(udid)
         simctl("bootstatus", udid, "-b", stdout=subprocess.DEVNULL)
     simctl("status_bar", udid, "override", "--time", "9:41", "--dataNetwork", "wifi",
            "--wifiMode", "active", "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
@@ -144,7 +208,7 @@ def main():
     parser.add_argument("--ids", type=Path, required=True, help="the JSON line scripts/app-store-content printed")
     parser.add_argument("--agent-device", required=True, help="agent-device command prefix pinned to the simulator")
     parser.add_argument("--screens", default=",".join(SCREENS))
-    parser.add_argument("--reveal-delay", type=float, default=1.0,
+    parser.add_argument("--reveal-delay", type=float, default=3.0,
                         help="seconds from sending Hjalmar's answer to capturing the reveal")
     parser.add_argument("--simulator", default="Paeonia Screenshots")
     parser.add_argument("--output", type=Path, default=ROOT / "ios/ASConnectScreenshots/trial-1/raw")
@@ -180,6 +244,13 @@ def main():
                 run(*agent_device[:1], "click", f'label="{OPEN_BUTTON[args.locale]}"', *agent_device[1:],
                     stdout=subprocess.DEVNULL)
         time.sleep(wait)
+        if screen == "01-widget":
+            # The second press goes to the first page, where the widgets are. Apps installed
+            # since the layout, such as agent-device's runner, land on a later page.
+            for _ in range(2):
+                run(*agent_device[:1], "home", *agent_device[1:], stdout=subprocess.DEVNULL)
+                time.sleep(3)
+            time.sleep(3)
         if screen == "02-question":
             run(*agent_device[:1], "fill", 'role="text-view"', ids["own_answer"], *agent_device[1:],
                 stdout=subprocess.DEVNULL)
