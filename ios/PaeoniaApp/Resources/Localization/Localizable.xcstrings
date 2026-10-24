@@ -2583,6 +2583,24 @@
         }
       }
     },
+    "auth.onboarding.profilePhoto.addLabel" : {
+      "comment" : "Short label inside the empty round profile photo during profile setup, under a camera icon. Tapping the circle opens the photo picker. Keep it to two short words.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til bilde"
+          }
+        }
+      }
+    },
     "auth.onboarding.profilePhoto.change" : {
       "comment" : "Accessibility label for changing a selected profile photo during onboarding.",
       "extractionState" : "manual",
@@ -2602,19 +2620,19 @@
       }
     },
     "auth.onboarding.profilePhoto.required" : {
-      "comment" : "Shown under the empty profile photo when the user taps Continue during setup without adding a photo.",
+      "comment" : "Callout bubble under the empty profile photo during profile setup, shown when the user taps Continue without a photo. Tapping it opens the photo picker. Also read aloud by VoiceOver.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add a photo to continue."
+            "value" : "Add a photo so your partner knows it's you."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Legg til et bilde for å fortsette."
+            "value" : "Legg til et bilde, så partneren din ser at det er deg."
           }
         }
       }

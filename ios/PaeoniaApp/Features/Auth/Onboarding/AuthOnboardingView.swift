@@ -33,10 +33,11 @@ struct AuthOnboardingView: View {
     /// The user tapped Continue. The spinner shows only while that save runs,
     /// not while a sign-out from the menu is running.
     @State private var hasSubmitted = false
-    /// The user tapped Continue without a photo. The note under the photo stays
-    /// until a photo is picked.
-    @State private var triedWithoutPhoto = false
+    /// Continue was tapped without a photo. The photo nudges and a callout under it
+    /// says why, until a photo is picked.
+    @State private var photoNudge = AuthOnboardingPhotoNudge()
     @FocusState private var isNameFocused: Bool
+    @AccessibilityFocusState private var isPhotoFocused: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     /// Missing in previews and tests, which then skip the usage page.
     @Environment(UsageSharingModel.self) private var usageSharing: UsageSharingModel?
@@ -46,6 +47,8 @@ struct AuthOnboardingView: View {
         case profile
         case usage
     }
+
+    private static let photoFieldID = "auth.onboarding.photoField"
 
     init(
         session: AuthSession?,
@@ -110,10 +113,19 @@ struct AuthOnboardingView: View {
     }
 
     private var profilePage: some View {
-        PaeoniaScreenScroll {
-            onboardingContent
+        ScrollViewReader { proxy in
+            PaeoniaScreenScroll {
+                onboardingContent
+            }
+            .scrollDismissesKeyboard(.interactively)
+            // The photo can be scrolled off at large text sizes. Bring it back so the
+            // nudge and the callout are seen.
+            .onChange(of: photoNudge) { _, _ in
+                withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
+                    proxy.scrollTo(Self.photoFieldID, anchor: .top)
+                }
+            }
         }
-        .scrollDismissesKeyboard(.interactively)
         .paeoniaBottomBar(spacing: 0) {
             VStack(spacing: PaeoniaSpacing.space4) {
                 completeButton
@@ -126,8 +138,9 @@ struct AuthOnboardingView: View {
     }
 
     private var onboardingContent: some View {
-        VStack(spacing: PaeoniaSpacing.space20) {
-            profilePhotoSection
+        VStack(spacing: PaeoniaSpacing.space24) {
+            profilePhotoField
+                .id(Self.photoFieldID)
                 .screenEntrance(order: 1)
 
             VStack(spacing: PaeoniaSpacing.space8) {
@@ -173,10 +186,6 @@ struct AuthOnboardingView: View {
 
     private var hasPhoto: Bool {
         selectedProfilePhotoData != nil || savedPhotoAssetID != nil
-    }
-
-    private var showsPhotoRequiredHint: Bool {
-        triedWithoutPhoto && !hasPhoto
     }
 
     private var isSaving: Bool {
@@ -255,15 +264,23 @@ struct AuthOnboardingView: View {
         finishProfilePage()
     }
 
-    /// Points at what still blocks setup: a note and a stronger ring on the photo,
-    /// and the keyboard for a missing or too long name.
+    /// Points at what still blocks setup. A missing photo comes first: the keyboard
+    /// goes away, the photo nudges, a callout says why, and VoiceOver moves to the
+    /// photo. Only once there is a photo does a missing or too long name bring up the
+    /// keyboard, which would otherwise cover the callout.
     private func showMissingRequirements() {
         PaeoniaHaptics.validationError()
-        if !hasPhoto {
-            triedWithoutPhoto = true
+        guard hasPhoto else {
+            isNameFocused = false
+            // The content moves on this animation. The callout follows a beat later.
+            withAnimation(reduceMotion ? PaeoniaMotion.stateChange : PaeoniaMotion.cardReveal) {
+                photoNudge.replay()
+            }
             AccessibilityNotification.Announcement(
                 String(localized: .authOnboardingProfilePhotoRequired)
             ).post()
+            isPhotoFocused = true
+            return
         }
         if validatedName == nil {
             isNameFocused = true
@@ -309,46 +326,16 @@ extension AuthOnboardingView {
 // MARK: - Photo
 
 extension AuthOnboardingView {
-    private var profilePhotoSection: some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            profilePhotoPicker
-
-            if showsPhotoRequiredHint {
-                Text(.authOnboardingProfilePhotoRequired)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .animation(PaeoniaMotion.stateChange, value: showsPhotoRequiredHint)
-    }
-
-    private var profilePhotoPicker: some View {
-        // The picker's label closure is not on the main actor, so it gets a ready-made view.
-        let preview = AuthOnboardingPhotoPreview(
+    private var profilePhotoField: some View {
+        AuthOnboardingPhotoField(
+            selection: $selectedProfilePhotoItem,
             image: selectedProfilePhotoImage,
             savedPhotoAssetID: savedPhotoAssetID,
             name: displayName,
-            hasPhoto: hasPhoto,
-            showsPhotoRequiredHint: showsPhotoRequiredHint
+            nudge: photoNudge,
+            isDisabled: isWorking,
+            isFocused: $isPhotoFocused
         )
-        return PhotosPicker(
-            selection: $selectedProfilePhotoItem,
-            matching: .images,
-            photoLibrary: .shared()
-        ) {
-            preview
-        }
-        .disabled(isWorking)
-        .accessibilityLabel(
-            Text(
-                hasPhoto
-                    ? .authOnboardingProfilePhotoChange
-                    : .authOnboardingProfilePhotoAdd
-            )
-        )
-        .accessibilityIdentifier("auth.onboarding.profilePhoto")
     }
 
     /// Loads the picked photo and opens the crop sheet. The picker selection is
