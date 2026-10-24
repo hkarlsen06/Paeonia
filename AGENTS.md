@@ -143,7 +143,6 @@ The developer may run multiple agents in parallel in the same worktree.
 ### Git
 
 - Do not include `Co-Authored-By` lines in commit messages.
-- Commit on your own branch. When the task is done, push the branch and open a ready pull request with `gh`. Ask the developer before you merge a pull request or update `main`.
 - Commits must always be signed. Never disable commit signing.
 - If commit signing fails, stop and report the signing failure instead of creating an unsigned commit.
 - Before committing, inspect the full diff and write a commit message that describes the meaning of the change.
