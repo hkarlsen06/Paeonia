@@ -26,6 +26,7 @@ import type * as dataExportBuild from "../dataExportBuild.js";
 import type * as dataExportStatus from "../dataExportStatus.js";
 import type * as dateReminders from "../dateReminders.js";
 import type * as drawAndGuess from "../drawAndGuess.js";
+import type * as entitlementGrants from "../entitlementGrants.js";
 import type * as exquisiteCorpse from "../exquisiteCorpse.js";
 import type * as favorites from "../favorites.js";
 import type * as firstDay from "../firstDay.js";
@@ -180,6 +181,7 @@ declare const fullApi: ApiFromModules<{
   dataExportStatus: typeof dataExportStatus;
   dateReminders: typeof dateReminders;
   drawAndGuess: typeof drawAndGuess;
+  entitlementGrants: typeof entitlementGrants;
   exquisiteCorpse: typeof exquisiteCorpse;
   favorites: typeof favorites;
   firstDay: typeof firstDay;

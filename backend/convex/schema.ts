@@ -8,6 +8,7 @@ import {
   gameKind,
   gameLanguage,
   gamePlayStyle,
+  grantKind,
   literals,
   mediaBucket,
   mediaType,
@@ -149,17 +150,18 @@ export default defineSchema({
     .index("by_user_id_idempotency_scope_created_at", ["user_id", "idempotency_scope", "created_at"]),
 
   // FK: product_id -> subscription_products restrict; source_review_session_id -> review_access_sessions set null
+  // Written only by entitlementGrants.ts, the cron that expires grants, and account deletion.
   entitlement_grants: defineTable({
     id: uuid,
     user_id: uuid,
     product_id: optUuid,
-    grant_kind: literals("lifetime", "review", "test", "beta"),
+    grant_kind: grantKind,
     status: literals("active", "expired", "revoked"),
     scope: literals("user", "review"),
     environment: v.optional(storekitEnvironment),
     source_review_session_id: optUuid,
-    reason: optString,
-    granted_by: optString,
+    reason: v.string(),
+    granted_by: v.string(),
     granted_at: ts,
     expires_at: optTs,
     revoked_at: optTs,

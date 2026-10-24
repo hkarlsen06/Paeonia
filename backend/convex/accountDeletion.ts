@@ -10,6 +10,7 @@ import { getByUuid, withTouch, withUpdatedAt, type ReaderCtx } from "./lib/db";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
 import { deleteUserDataExports } from "./lib/dataExportFiles";
+import { revokeEntitlementGrant } from "./lib/entitlements";
 import { deleteFirstDayDraft } from "./lib/firstDay";
 import { queueOldMediaAssetIfOrphaned } from "./lib/mediaOrphans";
 import {
@@ -266,14 +267,7 @@ export async function requestAccountDeletion(
     .query("entitlement_grants")
     .withIndex("by_user_id_status_expires_at", (q) => q.eq("user_id", userId).eq("status", "active"))
     .collect()) {
-    await ctx.db.patch(
-      grant._id,
-      withUpdatedAt({
-        status: "revoked" as const,
-        revoked_at: grant.revoked_at ?? now,
-        revoked_reason: grant.revoked_reason ?? "account_deleted",
-      }),
-    );
+    await revokeEntitlementGrant(ctx, grant, "account_deleted");
   }
 
   const profile = await findProfile(ctx, userId);

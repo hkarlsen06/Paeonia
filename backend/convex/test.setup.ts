@@ -4,7 +4,7 @@ import presence from "@convex-dev/presence/test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import workpool from "@convex-dev/workpool/test";
 import { convexTest } from "convex-test";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { ensureCurrentUser } from "./lib/auth";
 import { newUuid } from "./lib/ids";
@@ -156,17 +156,10 @@ export async function createCouple(
 
 /** Creates an active lifetime entitlement grant for a user. */
 export async function grantLifetime(t: TestConvex, userId: string): Promise<void> {
-  await t.run(async (ctx) => {
-    const now = nowIso();
-    await ctx.db.insert("entitlement_grants", {
-      id: newUuid(),
-      user_id: userId,
-      grant_kind: "lifetime",
-      status: "active",
-      scope: "user",
-      granted_at: now,
-      created_at: now,
-      updated_at: now,
-    });
+  await t.mutation(internal.entitlementGrants.create_entitlement_grant, {
+    p_user_id: userId,
+    p_grant_kind: "lifetime",
+    p_reason: "test",
+    p_granted_by: "test.setup.ts",
   });
 }

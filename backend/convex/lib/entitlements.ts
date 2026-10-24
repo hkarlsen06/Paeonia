@@ -1,5 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
-import { getByUuid, type ReaderCtx } from "./db";
+import { getByUuid, withUpdatedAt, type ReaderCtx, type WriterCtx } from "./db";
 import { nowIso } from "./time";
 
 /** One row of the SQL `user_entitlements` view. */
@@ -196,4 +196,18 @@ export function accessEndsAt(entitlements: ResolvedEntitlement[]): string | null
 /** Port of `internal.user_has_direct_entitlement`. */
 export async function userHasDirectEntitlement(ctx: ReaderCtx, userId: string): Promise<boolean> {
   return (await resolveUserEntitlement(ctx, userId)).is_entitled;
+}
+
+/** Revokes a grant. Returns false when it was already revoked, so a repeated revoke keeps the first reason and time. */
+export async function revokeEntitlementGrant(
+  ctx: WriterCtx,
+  grant: Doc<"entitlement_grants">,
+  reason: string,
+): Promise<boolean> {
+  if (grant.status === "revoked") return false;
+  await ctx.db.patch(
+    grant._id,
+    withUpdatedAt({ status: "revoked" as const, revoked_at: nowIso(), revoked_reason: reason }),
+  );
+  return true;
 }

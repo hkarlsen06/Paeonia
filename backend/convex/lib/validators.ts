@@ -21,6 +21,7 @@ export const threadKind = literals("daily_question", "memory", "story");
 export const authProvider = literals("apple", "google", "unknown");
 export const apnsEnvironment = literals("sandbox", "production");
 export const storekitEnvironment = literals("xcode", "sandbox", "production");
+export const grantKind = literals("lifetime", "review", "test", "beta");
 export const mediaBucket = literals(
   "profile-photos",
   "couple-media",

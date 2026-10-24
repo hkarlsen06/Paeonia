@@ -423,6 +423,8 @@ describe("expire_stale_entitlements", () => {
         grant_kind: "test",
         status: "active",
         scope: "user",
+        reason: "test",
+        granted_by: "test",
         granted_at: NOW.toISOString(),
         expires_at: hoursFromNow(1),
         created_at: NOW.toISOString(),

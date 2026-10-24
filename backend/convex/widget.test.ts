@@ -340,7 +340,7 @@ describe("submit_widget_drawing_revision", () => {
     await t.run(async (ctx) => {
       const now = new Date().toISOString();
       await ctx.db.insert("entitlement_grants", {
-        id: newUuid(), user_id: couple.first.userId, grant_kind: "lifetime", status: "active", scope: "user", granted_at: now, created_at: now, updated_at: now,
+        id: newUuid(), user_id: couple.first.userId, grant_kind: "lifetime", status: "active", scope: "user", reason: "test", granted_by: "test", granted_at: now, created_at: now, updated_at: now,
       });
     });
     await endCouple(t, couple.coupleId, couple.first.userId);

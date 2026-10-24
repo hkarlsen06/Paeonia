@@ -138,7 +138,7 @@ describe("entitlements", () => {
     await grantLifetime(t, lifetime.userId);
     await t.run(async (ctx) => {
       const now = new Date().toISOString();
-      const base = { granted_at: now, created_at: now, updated_at: now, scope: "review" as const };
+      const base = { reason: "test", granted_by: "test", granted_at: now, created_at: now, updated_at: now, scope: "review" as const };
       await ctx.db.insert("entitlement_grants", {
         ...base, id: newUuid(), user_id: review.userId, grant_kind: "review", status: "active", expires_at: FUTURE,
       });
