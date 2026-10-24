@@ -446,7 +446,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [x] Location sharing copy is audited in English and Norwegian.
 - [ ] Daily answer reveal copy is audited in English and Norwegian. Needs a person.
 - [ ] Widget drawing save/clear copy is audited in English and Norwegian. Needs a person.
-- [ ] App Store metadata copy matches in-app language. Gap: see App Store Connect.
+- [x] App Store metadata copy matches in-app language. The listing uses the in-app game names in both languages (2026-10-24).
 
 ## Accessibility And Device QA
 
@@ -520,7 +520,7 @@ Run these on real devices where possible.
 The text metadata lives in `ios/Scripts/appstore-metadata-source.json`, and `ios/Scripts/generate-appstore-metadata.mjs` writes it to `ios/fastlane/metadata/`.
 
 - [x] App name: `Paeonia`.
-- [ ] Subtitle, promotional text, description and keywords describe the current app. Gap: they were written on 2026-06-25 and do not mention games, drawings, widgets or location.
+- [ ] Subtitle, promotional text, description and keywords describe the current app. Rewritten on 2026-10-24 from competitor and App Store search research, with a new en-GB locale for a second Norwegian keyword field. In App Store Connect: upload them with `fastlane metadata`.
 - [ ] Category selected.
 - [ ] Age rating questionnaire completed honestly. The terms say 16+.
 - [ ] Copyright filled.
