@@ -8,49 +8,91 @@ import { memoryDeepLink, storyDeepLink } from "./deepLinks";
 import { isJsonObject, jsonbByteLength } from "./json";
 import { newUuid } from "./ids";
 import { nameForViewer } from "./partnerNames";
-import {
-  notificationAlertBody,
-  notificationAlertTitle,
-  notificationLocaleLanguage,
-  notificationPayloadIsSafe,
-} from "./notificationCopy";
+import { notificationAlertBody, notificationAlertTitle, notificationLocaleLanguage } from "./notificationCopy";
 import { addMs, nowIso } from "./time";
 
 export * from "./notificationCopy";
 
-const NOTIFICATION_KINDS = [
-  "streak_reminder",
-  "daily_challenge_completed",
-  "partner_answered",
-  "widget_updated",
-  "location_updated",
-  "location_pause_ended",
-  "subscription_trial_reminder",
-  "subscription_payment_failed",
-  "subscription_ending",
-  "memory_created",
-  "story_posted",
-  "thread_message_sent",
-  "thread_message_deleted",
-  "game_turn_ready",
-  "game_result",
-  "game_invite",
-  "game_turn_reminder",
-  "question_time_reminder",
-  "date_reminder",
-  "partner_joined",
-  "pairing_invite_reminder",
-  "topics_waiting",
-  "reaction_added",
-  "badge_update",
-  "data_export_ready",
+const GAME_PUSH_FIELDS = [
+  "type", "couple_id", "actor_user_id", "route", "deeplink", "game_kind", "game_id", "round_id", "step",
 ] as const;
-export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+const DAILY_PARTNER_PUSH_FIELDS = [
+  "type", "couple_id", "actor_user_id", "route", "deeplink", "couple_day_id", "instance_ids",
+] as const;
 
-/** Port of `internal.assert_notification_payload_safe`. */
-export function assertNotificationPayloadSafe(payload: unknown): void {
-  if (!notificationPayloadIsSafe(payload)) {
-    fail("23514", "notification payload contains sensitive or unsupported fields");
+/**
+ * Every notification kind and the only payload fields it may carry. APNs delivers the payload
+ * whole, so a field missing here is refused instead of sent: answer or note text, media URLs,
+ * invite codes, locations and report details never reach a phone by accident. Values must be ids,
+ * dates, counts, flags or fixed tokens, never something a person wrote.
+ */
+const NOTIFICATION_PAYLOAD_FIELDS = {
+  streak_reminder: [
+    "type", "couple_id", "actor_user_id", "route", "deeplink", "partner_checked_in", "current_count",
+    "last_qualified_date", "next_activity_deadline_at", "contribution_needed",
+  ],
+  daily_challenge_completed: DAILY_PARTNER_PUSH_FIELDS,
+  partner_answered: [...DAILY_PARTNER_PUSH_FIELDS, "question_count"],
+  widget_updated: [
+    "type", "couple_id", "actor_user_id", "sender_user_id", "route", "deeplink", "canvas_id", "revision_id",
+  ],
+  location_updated: ["type", "couple_id", "actor_user_id", "route", "captured_at"],
+  location_pause_ended: ["type", "couple_id"],
+  subscription_trial_reminder: ["type", "route", "deeplink", "subscription_id", "trial_ends_at", "days_left"],
+  subscription_payment_failed: ["type", "route", "deeplink", "subscription_id"],
+  subscription_ending: ["type", "couple_id", "route", "deeplink", "ends_at", "days_left", "own_subscription"],
+  memory_created: ["type", "couple_id", "actor_user_id", "route", "deeplink", "memory_id"],
+  story_posted: ["type", "couple_id", "actor_user_id", "route", "deeplink", "story_id"],
+  thread_message_sent: [
+    "type", "couple_id", "actor_user_id", "route", "deeplink", "thread_id", "message_id", "question_id",
+    "memory_id", "story_id",
+  ],
+  thread_message_deleted: ["type", "couple_id", "actor_user_id", "thread_id", "message_id"],
+  game_turn_ready: GAME_PUSH_FIELDS,
+  game_result: GAME_PUSH_FIELDS,
+  game_invite: GAME_PUSH_FIELDS,
+  game_turn_reminder: GAME_PUSH_FIELDS,
+  question_time_reminder: ["type", "couple_id", "route", "deeplink", "expires_at"],
+  date_reminder: [
+    "type", "couple_id", "actor_user_id", "route", "deeplink", "reminder", "expires_at", "years", "days",
+    "milestone", "count",
+  ],
+  partner_joined: ["type", "couple_id", "actor_user_id", "route", "deeplink"],
+  pairing_invite_reminder: ["type", "route", "deeplink", "invite_id"],
+  topics_waiting: ["type", "couple_id", "actor_user_id", "route", "deeplink"],
+  reaction_added: [
+    "type", "couple_id", "actor_user_id", "route", "deeplink", "target_kind", "target_id", "emoji", "game_kind",
+  ],
+  badge_update: ["type"],
+  data_export_ready: ["type", "route", "deeplink", "export_id"],
+} as const satisfies Record<string, readonly string[]>;
+export type NotificationKind = keyof typeof NOTIFICATION_PAYLOAD_FIELDS;
+export const NOTIFICATION_KINDS = Object.keys(NOTIFICATION_PAYLOAD_FIELDS) as NotificationKind[];
+
+export function isNotificationKind(kind: string): kind is NotificationKind {
+  return Object.hasOwn(NOTIFICATION_PAYLOAD_FIELDS, kind);
+}
+
+const isPayloadValue = (value: unknown) =>
+  value === null ||
+  ["string", "number", "boolean"].includes(typeof value) ||
+  (Array.isArray(value) && value.every((item) => typeof item === "string"));
+
+/**
+ * True when `payload` is an object of at most 4 KB whose every field is one that `kind` may carry
+ * (`NOTIFICATION_PAYLOAD_FIELDS`), with a plain value or a list of ids.
+ */
+export function notificationPayloadIsSafe(kind: string, payload: unknown): boolean {
+  if (!isNotificationKind(kind) || !isJsonObject(payload) || jsonbByteLength(payload) > 4096) return false;
+  const allowed: readonly string[] = NOTIFICATION_PAYLOAD_FIELDS[kind];
+  return Object.entries(payload).every(([key, value]) => allowed.includes(key) && isPayloadValue(value));
+}
+
+export const UNSAFE_PAYLOAD_ERROR = "notification payload contains sensitive or unsupported fields";
+
+export function assertNotificationPayloadSafe(kind: string, payload: unknown): void {
+  if (!notificationPayloadIsSafe(kind, payload)) {
+    fail("23514", UNSAFE_PAYLOAD_ERROR);
   }
 }
 
@@ -108,7 +150,7 @@ export async function insertNotificationOutbox(
   ctx: WriterCtx,
   row: NotificationOutboxInsert,
 ): Promise<boolean> {
-  assertNotificationPayloadSafe(row.payload);
+  assertNotificationPayloadSafe(row.kind, row.payload);
   const table = "notification_outbox";
   if (row.dedupe_key != null) {
     const length = trimmedLength(row.dedupe_key);
@@ -252,17 +294,15 @@ export async function enqueueNotificationForUser(
   if (!args.recipient_user_id) {
     return fail("23514", "notification recipient is required");
   }
-  if (!(NOTIFICATION_KINDS as readonly string[]).includes(args.kind)) {
+  if (!isNotificationKind(args.kind)) {
     return fail("23514", "notification kind is not supported");
   }
-  const kind = args.kind as NotificationKind;
+  const kind = args.kind;
   const redactionLevel = args.redaction_level ?? "private";
   if (redactionLevel !== "private") {
     return fail("23514", "only private notification payloads are supported for MVP");
   }
-  if (!notificationPayloadIsSafe(args.payload)) {
-    return fail("23514", "notification payload contains sensitive or unsupported fields");
-  }
+  assertNotificationPayloadSafe(kind, args.payload);
   const pushType = args.apns_push_type ?? "alert";
 
   const preference = await ctx.db
@@ -351,7 +391,7 @@ export async function insertWidgetPushOutbox(
   },
 ): Promise<boolean> {
   const table = "widget_push_outbox";
-  if (!isJsonObject(row.payload) || jsonbByteLength(row.payload) > 2048) {
+  if (!notificationPayloadIsSafe("widget_updated", row.payload) || jsonbByteLength(row.payload) > 2048) {
     checkViolation(table, "widget_push_outbox_payload_check");
   }
   if (row.dedupe_key != null) {

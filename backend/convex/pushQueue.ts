@@ -12,7 +12,7 @@ import { notificationAlertTitle } from "./lib/notificationCopy";
 import { gamePushStillWanted } from "./lib/gameRegistry";
 import type { GamePushKind } from "./lib/games";
 import { uuidArg } from "./lib/ids";
-import { reactionPreferenceAllows } from "./lib/notifications";
+import { notificationPayloadIsSafe, reactionPreferenceAllows, UNSAFE_PAYLOAD_ERROR } from "./lib/notifications";
 import { pairingInviteStillWaiting } from "./lib/pairingInviteReminder";
 import { hasStartedToday } from "./lib/questionTimeStatus";
 import { accessEndingPushStillWanted, paymentProblemPushWanted } from "./lib/subscriptionNotices";
@@ -251,6 +251,8 @@ export const prepare_notification = internalMutation({
       await ctx.db.patch(row._id, resolved.push);
       sendable = { ...row, ...resolved.push };
     }
+    // The payload goes to APNs whole, and the daily lane rewrites it after the insert checked it.
+    if (!notificationPayloadIsSafe(sendable.kind, sendable.payload)) return await drop(ctx, row, UNSAFE_PAYLOAD_ERROR);
     if (!kindAllowed(sendable, preference)) return await drop(ctx, row, TARGET_INELIGIBLE);
     const still = await rowStillWanted(ctx, sendable, device.user_id);
     if (!still.wanted) return await drop(ctx, row, still.reason === "ineligible" ? TARGET_INELIGIBLE : OUT_OF_DATE);

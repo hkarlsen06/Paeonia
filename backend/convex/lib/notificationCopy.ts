@@ -1,6 +1,5 @@
 import type { ReaderCtx } from "./db";
 import type { GameKind } from "./games";
-import { isJsonObject, jsonbByteLength, jsonbText } from "./json";
 import { nameForViewer } from "./partnerNames";
 
 /** Port of `internal.notification_locale_language`: Norwegian locales map to 'nb', everything else to 'en'. */
@@ -212,18 +211,6 @@ function gamePushStep(payload: Record<string, unknown>, language: "en" | "nb") {
 }
 
 const GAME_PUSH_KINDS: readonly string[] = ["game_turn_ready", "game_result", "game_invite", "game_turn_reminder"];
-
-const SENSITIVE_PAYLOAD_KEYS =
-  /"(answer_body|note_body|message_body|body_text|voice_transcript|media_url|signed_url|latitude|longitude|coordinate|place|invite_code|report_detail|precise_location)"/i;
-
-/** Port of `internal.notification_payload_is_safe`. */
-export function notificationPayloadIsSafe(payload: unknown): boolean {
-  return (
-    isJsonObject(payload) &&
-    jsonbByteLength(payload) <= 4096 &&
-    !SENSITIVE_PAYLOAD_KEYS.test(jsonbText(payload))
-  );
-}
 
 /**
  * Port of `internal.notification_actor_display_name`. What `viewerUserId`, who receives the push,

@@ -121,7 +121,7 @@ describe("what the viewer is called", () => {
       enqueueNotificationForUser(ctx, {
         recipient_user_id: couple.second.userId,
         kind: "thread_message_sent",
-        payload: { type: "thread_message_sent", sender_user_id: couple.first.userId },
+        payload: { type: "thread_message_sent", actor_user_id: couple.first.userId },
       }),
     );
     await t.run((ctx) =>

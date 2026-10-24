@@ -8,9 +8,11 @@ import {
   enqueueWidgetPushForUser,
   enqueueWidgetUpdateAlert,
   notificationAlertBody,
+  NOTIFICATION_KINDS,
   notificationLocaleLanguage,
   notificationPayloadIsSafe,
 } from "./notifications";
+import { deliverDuePushes } from "../push.testing";
 import { enqueueDailyPartnerPush } from "./dailyPartnerPush";
 import { enqueueGamePush } from "./games";
 import { GAME_PUSH_COPY, notificationAlertTitle } from "./notificationCopy";
@@ -133,14 +135,40 @@ describe("notification copy", () => {
     });
   });
 
-  test("payload safety rejects sensitive keys, non-objects, and oversize payloads", () => {
-    expect(notificationPayloadIsSafe({ type: "memory_created", route: "memories" })).toBe(true);
-    expect(notificationPayloadIsSafe({ latitude: 1 })).toBe(false);
-    expect(notificationPayloadIsSafe({ place: { name: "Bryggen" } })).toBe(false);
-    expect(notificationPayloadIsSafe({ nested: { Message_Body: "x" } })).toBe(false);
-    expect(notificationPayloadIsSafe([])).toBe(false);
-    expect(notificationPayloadIsSafe(null)).toBe(false);
-    expect(notificationPayloadIsSafe({ pad: "x".repeat(5000) })).toBe(false);
+  test("no kind of push can carry answer or note text, media URLs, invite codes, locations or report details", () => {
+    const sensitive: Record<string, unknown>[] = [
+      { answer_text: "I miss you" },
+      { answer: "I miss you" },
+      { note: "Dinner at 8?" },
+      { note_text: "Dinner at 8?" },
+      { media_url: "https://actions.paeonia.no/media?asset=a&sig=b" },
+      { photo_url: "https://actions.paeonia.no/media?asset=a&sig=b" },
+      { invite_code: "PEONY-4821" },
+      { code: "PEONY-4821" },
+      { lat: 59.91, lng: 10.75 },
+      { location: { latitude: 59.91, longitude: 10.75 } },
+      { report_details: "They kept messaging me" },
+      { reason_text: "They kept messaging me" },
+    ];
+    for (const kind of NOTIFICATION_KINDS) {
+      expect(notificationPayloadIsSafe(kind, { type: kind }), kind).toBe(true);
+      for (const fields of sensitive) {
+        expect(notificationPayloadIsSafe(kind, { type: kind, ...fields }), `${kind} ${Object.keys(fields)}`).toBe(false);
+      }
+      // A field the kind may carry still cannot hold an object.
+      expect(notificationPayloadIsSafe(kind, { type: { answer_text: "I miss you" } })).toBe(false);
+    }
+  });
+
+  test("payload safety refuses unknown kinds, fields of another kind, non-objects, and oversize payloads", () => {
+    expect(notificationPayloadIsSafe("memory_created", { type: "memory_created", route: "memories" })).toBe(true);
+    expect(notificationPayloadIsSafe("partner_answered", { type: "partner_answered", instance_ids: [newUuid()] })).toBe(true);
+    expect(notificationPayloadIsSafe("partner_answered", { type: "partner_answered", instance_ids: [{ text: "x" }] })).toBe(false);
+    expect(notificationPayloadIsSafe("memory_created", { type: "memory_created", message_id: newUuid() })).toBe(false);
+    expect(notificationPayloadIsSafe("something_new", { type: "something_new" })).toBe(false);
+    expect(notificationPayloadIsSafe("memory_created", [])).toBe(false);
+    expect(notificationPayloadIsSafe("memory_created", null)).toBe(false);
+    expect(notificationPayloadIsSafe("memory_created", { type: "x".repeat(5000) })).toBe(false);
   });
 });
 
@@ -231,7 +259,7 @@ describe("enqueueNotificationForUser", () => {
       enqueueNotificationForUser(ctx, {
         recipient_user_id: couple.second.userId,
         kind: "thread_message_sent",
-        payload: { type: "thread_message_sent", sender_user_id: couple.first.userId },
+        payload: { type: "thread_message_sent", actor_user_id: couple.first.userId },
       }),
     );
     const [row] = await outbox(t);
@@ -256,6 +284,28 @@ describe("enqueueNotificationForUser", () => {
     await expect(t.run((ctx) => enqueueNotificationForUser(ctx, { ...base, payload: { longitude: 1 } }))).rejects.toThrow(
       /notification payload contains sensitive or unsupported fields/,
     );
+    await expect(
+      t.run((ctx) => enqueueNotificationForUser(ctx, { ...base, payload: { type: "memory_created", note: "Dinner at 8?" } })),
+    ).rejects.toThrow(/notification payload contains sensitive or unsupported fields/);
+  });
+
+  test("a payload changed after it was queued is checked again before it goes out", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    await addDevice(t, couple.second.userId);
+    const payload = { type: "memory_created", couple_id: couple.coupleId, actor_user_id: couple.first.userId };
+    await t.run((ctx) =>
+      enqueueNotificationForUser(ctx, { recipient_user_id: couple.second.userId, kind: "memory_created", payload }),
+    );
+    await t.run(async (ctx) => {
+      const row = (await ctx.db.query("notification_outbox").first())!;
+      await ctx.db.patch(row._id, { payload: { ...payload, note: "Dinner at 8?" } });
+    });
+    expect(await deliverDuePushes(t)).toEqual([]);
+    expect(await outbox(t)).toEqual([
+      expect.objectContaining({ last_error: "notification payload contains sensitive or unsupported fields" }),
+    ]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("partner notifications skip the actor", async () => {
@@ -412,7 +462,7 @@ describe("widget pushes", () => {
       await ctx.db.insert("widget_push_devices", device("PaeoniaWidget"));
       await ctx.db.insert("widget_push_devices", device("OtherWidget"));
     });
-    const args = { recipient_user_id: couple.second.userId, kind: "widget_updated", payload: { revision: 1 }, dedupe_key: "rev-1" };
+    const args = { recipient_user_id: couple.second.userId, kind: "widget_updated", payload: { type: "widget_updated", revision_id: newUuid() }, dedupe_key: "rev-1" };
     expect(await t.run((ctx) => enqueueWidgetPushForUser(ctx, args))).toBe(1);
     expect(await t.run((ctx) => enqueueWidgetPushForUser(ctx, args))).toBe(0);
     await expect(t.run((ctx) => enqueueWidgetPushForUser(ctx, { ...args, kind: "other" }))).rejects.toThrow(
