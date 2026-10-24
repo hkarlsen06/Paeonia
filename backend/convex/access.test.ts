@@ -435,7 +435,8 @@ describe("verify_purchase", () => {
 });
 
 describe("redeem_streak_restore", () => {
-  async function restoreSetup() {
+  /** A broken seven-day streak whose free save day ends `saveEndsIn` ms from now (passed by default). */
+  async function restoreSetup({ saveEndsIn = -3_600_000 } = {}) {
     const t = newTest();
     await seedProducts(t);
     const couple = await createCouple(t, { timeZones: ["Europe/Oslo", "Europe/Oslo"] });
@@ -446,6 +447,7 @@ describe("redeem_streak_restore", () => {
         longest_count: 7,
         restorable_count: 7,
         restorable_through_date: "2026-10-08",
+        save_deadline: new Date(NOW.getTime() + saveEndsIn).toISOString(),
         restore_deadline: new Date(NOW.getTime() + day).toISOString(),
         updated_at: NOW.toISOString(),
       });
@@ -515,5 +517,34 @@ describe("redeem_streak_restore", () => {
     await expect(
       couple.second.as.action(api.access.redeem_streak_restore, restoreBody(consumable(token))),
     ).rejects.toMatchObject({ data: { code: "invalid_transaction", message: "Apple transaction is not a streak restore" } });
+  });
+
+  test("refuses a purchase on the free save day", async () => {
+    const { t, couple, token } = await restoreSetup({ saveEndsIn: 3_600_000 });
+    const info = consumable(token);
+    appleReturns(info);
+    await expect(
+      couple.second.as.action(api.access.redeem_streak_restore, restoreBody(info)),
+    ).rejects.toMatchObject({ data: { code: "no_streak_to_restore", message: "No streak is available to restore" } });
+    expect(await t.run((ctx) => ctx.db.query("streak_restorations").collect())).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("streak_states").first())).toMatchObject({ current_count: 0, restorable_count: 7 });
+  });
+
+  test("refuses someone outside the couple and a couple without access", async () => {
+    const { t } = await restoreSetup();
+    const outsider = await createSignedInUser(t);
+    const outsiderInfo = consumable(await tokenFor(outsider), { transactionId: "3000000000002", originalTransactionId: "3000000000002" });
+    appleReturns(outsiderInfo);
+    await expect(
+      outsider.as.action(api.access.redeem_streak_restore, restoreBody(outsiderInfo)),
+    ).rejects.toMatchObject({ data: { code: "no_entitled_couple" } });
+
+    const unpaid = await createCouple(t, { entitled: false });
+    const unpaidInfo = consumable(await tokenFor(unpaid.first), { transactionId: "3000000000003", originalTransactionId: "3000000000003" });
+    appleReturns(unpaidInfo);
+    await expect(
+      unpaid.first.as.action(api.access.redeem_streak_restore, restoreBody(unpaidInfo)),
+    ).rejects.toMatchObject({ data: { code: "no_entitled_couple" } });
+    expect(await t.run((ctx) => ctx.db.query("streak_restorations").collect())).toEqual([]);
   });
 });

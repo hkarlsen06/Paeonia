@@ -138,10 +138,14 @@ extension DailyChallengeAnswerFlow {
         isComposerFocused = false
         // A slipped streak's completion offers to buy the streak back in place, so
         // build the purchase driver before the completion screen renders.
-        if restoreViewModel == nil, viewModel.streak.isRestorable {
+        let streak = viewModel.streak
+        if restoreViewModel == nil, streak.isRestorable {
             restoreViewModel = makeStreakRestoreViewModel()
         }
-        if !viewModel.streak.isRestorable {
+        if streak.isSavable, streak.partnerContributedToday, let today = viewModel.snapshot.currentDayLocalDate {
+            // The partner already showed up today, so this answer brings the broken streak back.
+            savedStreak = claimStreakSave(today, currentStreak)
+        } else if !streak.isRestorable {
             celebratedMilestone = claimStreakMilestone(currentStreak)
         }
         withAnimation(celebrateAnimation) { didCelebrate = true }

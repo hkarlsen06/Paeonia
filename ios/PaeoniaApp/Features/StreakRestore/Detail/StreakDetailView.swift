@@ -4,10 +4,12 @@ import SwiftUI
 /// day count, their longest run so far, a short, forgiving note on how it works,
 /// the next milestone, and whether their free streak freeze is ready.
 ///
-/// Opened by tapping the streak badge while the streak is healthy. A broken streak
-/// opens `StreakRestoreView` (the paid buy-it-back offer) instead, so this sheet stays
-/// purely informative and never sells anything. The restore flow also reuses this
-/// surface with celebratory copy once a purchase brings the streak back.
+/// Opened by tapping the streak badge while the streak is healthy, and on a broken
+/// streak's free save day, when it says how both partners bring it back today. A
+/// broken streak past its save day opens `StreakRestoreView` (the paid buy-it-back
+/// offer) instead, so this sheet stays purely informative and never sells anything.
+/// The restore flow also reuses this surface with celebratory copy once a purchase
+/// brings the streak back.
 struct StreakDetailView: View {
     let streak: CoupleStreak
     var title: LocalizedStringResource = .streakDetailTitle
@@ -25,13 +27,34 @@ struct StreakDetailView: View {
         !playsCelebration || showCelebrationDetails
     }
 
+    /// The streak broke and both partners can still bring it back for free today.
+    /// Custom copy, such as the restore celebration, is never about a save day.
+    private var isSaveDay: Bool {
+        message == nil && streak.isSavable
+    }
+
     private var hasNotStarted: Bool {
-        streak.currentCount == 0
+        streak.currentCount == 0 && !isSaveDay
+    }
+
+    private var titleText: LocalizedStringResource {
+        isSaveDay ? .streakSaveTitle : title
     }
 
     private var messageText: LocalizedStringResource {
         if let message { return message }
+        if isSaveDay { return .streakSaveMessage(streak.restorableCount) }
         return hasNotStarted ? .streakDetailEmptyMessage : .streakDetailMessage
+    }
+
+    /// Who still has to show up on the save day, or `nil` before either partner has.
+    private var saveProgressText: LocalizedStringResource? {
+        guard isSaveDay else { return nil }
+        switch (streak.currentUserContributedToday, streak.partnerContributedToday) {
+        case (true, false): return .streakSaveWaitingForPartner
+        case (false, true): return .streakSaveYourTurn
+        default: return nil
+        }
     }
 
     /// Custom copy, such as the restore celebration, replaces the whole note, freeze line included.
@@ -51,15 +74,20 @@ struct StreakDetailView: View {
         VStack(spacing: PaeoniaSpacing.space24) {
             Spacer()
 
-            PaeoniaStreakFlame(
-                count: streak.currentCount,
-                playsCelebration: playsCelebration,
-                ambientMotion: ambientMotion && !playsCelebration
-            )
-            // The flame has no empty level of its own, so a streak that has not started
-            // is dimmed here instead of showing a fully lit "0".
-            .saturation(hasNotStarted ? 0.15 : 1)
-            .opacity(hasNotStarted ? 0.8 : 1)
+            if isSaveDay {
+                // The cooled flame with the days that come back, as on the restore offer.
+                PaeoniaStreakFlame(count: streak.restorableCount, isBroken: true)
+            } else {
+                PaeoniaStreakFlame(
+                    count: streak.currentCount,
+                    playsCelebration: playsCelebration,
+                    ambientMotion: ambientMotion && !playsCelebration
+                )
+                // The flame has no empty level of its own, so a streak that has not started
+                // is dimmed here instead of showing a fully lit "0".
+                .saturation(hasNotStarted ? 0.15 : 1)
+                .opacity(hasNotStarted ? 0.8 : 1)
+            }
 
             heading
                 .modifier(StreakDetailReveal(shown: shouldShowDetails))
@@ -69,7 +97,7 @@ struct StreakDetailView: View {
 
             // Their record, shown only when it beats the current run so it adds
             // something the hero flame doesn't already say.
-            if streak.longestCount > streak.currentCount {
+            if !isSaveDay, streak.longestCount > streak.currentCount {
                 longestStat
                     .modifier(StreakDetailReveal(shown: shouldShowDetails))
             }
@@ -92,7 +120,7 @@ struct StreakDetailView: View {
 
     private var heading: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            Text(title)
+            Text(titleText)
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
 
@@ -121,10 +149,18 @@ struct StreakDetailView: View {
     }
 
     /// The next milestone and the freeze line. Custom copy, such as the restore
-    /// celebration, leaves both out.
+    /// celebration, leaves both out. A save day says who still has to show up instead.
     @ViewBuilder
     private var notes: some View {
-        if message == nil {
+        if isSaveDay {
+            if let saveProgressText {
+                Text(saveProgressText)
+                    .font(PaeoniaTypography.bodyEmphasis)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } else if message == nil {
             VStack(spacing: PaeoniaSpacing.space16) {
                 StreakMilestoneProgressView(currentCount: streak.currentCount, longestCount: streak.longestCount)
                 if let freezeNoteText {
@@ -260,6 +296,22 @@ private struct StreakDetailReveal: ViewModifier {
         message: .streakRestoreSuccessMessage,
         playsCelebration: true,
         ambientMotion: false
+    )
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Save day") {
+    StreakDetailView(
+        streak: CoupleStreak(
+            currentCount: 0,
+            longestCount: 18,
+            lastQualifiedDate: "2026-06-26",
+            restoreAvailable: false,
+            restorableCount: 18,
+            restoreDeadline: .now.addingTimeInterval(54 * 3_600),
+            currentUserContributedToday: true,
+            saveDeadline: .now.addingTimeInterval(6 * 3_600)
+        )
     )
     .preferredColorScheme(.dark)
 }

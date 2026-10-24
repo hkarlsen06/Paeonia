@@ -16,27 +16,42 @@
       )
     }
 
-    private var brokenStreak: CoupleStreak {
+    /// An 18-day streak that broke. `saveEndsIn` is how long its free save day still
+    /// runs (negative once it is over), and the two restore days follow it.
+    nonisolated static func brokenStreak(saveEndsIn: TimeInterval, userContributedToday: Bool = false) -> CoupleStreak {
       CoupleStreak(
         currentCount: 0,
         longestCount: 42,
         lastQualifiedDate: "2026-07-13",
-        restoreAvailable: true,
+        restoreAvailable: saveEndsIn <= 0,
         restorableCount: 18,
-        restoreDeadline: Date().addingTimeInterval(18 * 3_600)
+        restoreDeadline: Date().addingTimeInterval(saveEndsIn + 48 * 3_600),
+        currentUserContributedToday: userContributedToday,
+        saveDeadline: Date().addingTimeInterval(saveEndsIn)
+      )
+    }
+
+    private func restoreView(for streak: CoupleStreak) -> some View {
+      StreakRestoreView(
+        viewModel: StreakRestoreViewModel(
+          streak: streak,
+          userID: DeveloperScenarioFixture.currentUserID.uuidString,
+          storeKitService: DeveloperScenarioStoreKitService()
+        )
       )
     }
 
     var body: some View {
       switch scenario {
+      case .streakSaveDay:
+        StreakDetailView(streak: Self.brokenStreak(saveEndsIn: 6 * 3_600, userContributedToday: true))
+      case .streakSaved:
+        StreakMilestoneView(days: 19, isSave: true)
       case .streakBroken:
-        StreakRestoreView(
-          viewModel: StreakRestoreViewModel(
-            streak: brokenStreak,
-            userID: DeveloperScenarioFixture.currentUserID.uuidString,
-            storeKitService: DeveloperScenarioStoreKitService()
-          )
-        )
+        // The second day after the missed one: the save day ended 18 hours ago.
+        restoreView(for: Self.brokenStreak(saveEndsIn: -18 * 3_600))
+      case .streakRestoreExpired:
+        restoreView(for: Self.brokenStreak(saveEndsIn: -48 * 3_600 - 60))
       case .streakRestored:
         StreakDetailView(
           streak: healthyStreak,

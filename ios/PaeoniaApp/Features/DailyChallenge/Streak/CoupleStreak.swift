@@ -14,10 +14,10 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     /// just-sent answer has synced.
     var lastQualifiedDate: String?
     var restoreAvailable: Bool
-    /// The streak length a paid restore would bring back, or `0` when there is
-    /// nothing to restore. Shown to the user as "get your N-day streak back".
+    /// The length of a broken streak that can still come back, free on the save
+    /// day and by purchase on the two days after it, or `0` when nothing can.
     var restorableCount: Int
-    /// When the restore offer closes, or `nil` when nothing is restorable.
+    /// When the restore days end, or `nil` when nothing can come back.
     var restoreDeadline: Date?
     /// Used by the local-first completion UI. The server event can trail the
     /// just-finished local answer, so this says whether the current user's action
@@ -37,19 +37,41 @@ nonisolated struct CoupleStreak: Equatable, Sendable {
     /// When a live streak ends unless both partners show up first, or `nil` when
     /// there is no live streak.
     var endsAt: Date?
+    /// When the free save day of a broken streak ends, or `nil` when nothing can
+    /// come back. If both partners do one small thing before then, the server
+    /// brings the streak back on its own.
+    var saveDeadline: Date?
+    /// The couple's local date (`yyyy-MM-dd`) on which both partners last brought
+    /// a broken streak back for free, or `nil` if they never have.
+    var savedOn: String?
 
-    /// True while a broken streak can still be bought back. Recomputed from the
-    /// deadline (not just the server flag) so the offer disappears the moment it
-    /// lapses, even while the app stays open.
-    var isRestorable: Bool {
-        restorableCount > 0 && (restoreDeadline.map { $0 > .now } ?? false)
+    /// True while both partners can still bring a broken streak back for free by
+    /// doing one small thing today. Recomputed from the deadline, so it ends the
+    /// moment the save day does, even while the app stays open.
+    var isSavable: Bool {
+        restorableCount > 0 && (saveDeadline.map { $0 > .now } ?? false)
     }
 
-    /// The single surface a streak entry point should open. Broken streaks go
-    /// straight to the purchase offer, a streak sitting on a milestone replays
-    /// its celebration, and other streaks open the informative sheet. Keeping this
-    /// decision shared prevents a notification or toolbar entry from inserting a
-    /// duplicate detail screen before purchase.
+    /// True while a broken streak can be bought back: after its free save day and
+    /// before the restore days end. Recomputed from the deadlines (not just the
+    /// server flag) so the offer opens and closes on time while the app stays open.
+    var isRestorable: Bool {
+        restorableCount > 0 && !isSavable && (restoreDeadline.map { $0 > .now } ?? false)
+    }
+
+    /// The save day to celebrate: the day both partners brought the streak back
+    /// for free, while it is still the streak's newest day.
+    var freshSaveDay: String? {
+        guard currentCount > 0, let savedOn, savedOn == lastQualifiedDate else { return nil }
+        return savedOn
+    }
+
+    /// The single surface a streak entry point should open. A broken streak that
+    /// can be bought back goes straight to the purchase offer, a streak sitting on
+    /// a milestone replays its celebration, and other streaks, one waiting on its
+    /// free save day included, open the informative sheet. Keeping this decision
+    /// shared prevents a notification or toolbar entry from inserting a duplicate
+    /// detail screen before purchase.
     var entryDestination: StreakEntryDestination {
         if isRestorable { return .restore }
         if StreakMilestones.isMilestone(currentCount) { return .milestone(currentCount) }
@@ -106,11 +128,13 @@ enum StreakCelebration {
     ///
     /// - `serverCurrentCount`: the stored `current_count` (through `lastQualifiedDate`).
     /// - `lastQualifiedDate` / `todayLocalDate`: couple-local dates as `yyyy-MM-dd`.
+    /// - `savableCount`: the broken streak's length while today is its free save day, otherwise `0`.
     static func celebratedCount(
         serverCurrentCount: Int,
         lastQualifiedDate: String?,
         todayLocalDate: String?,
-        partnerContributedToday: Bool
+        partnerContributedToday: Bool,
+        savableCount: Int = 0
     ) -> Int {
         guard let todayLocalDate else {
             return max(serverCurrentCount, 0)
@@ -127,6 +151,12 @@ enum StreakCelebration {
 
         guard partnerContributedToday else {
             return max(serverCurrentCount, 0)
+        }
+
+        // Both showing up on the save day brings the broken streak back, and today
+        // counts on top of it. The missed day does not count.
+        if savableCount > 0 {
+            return savableCount + 1
         }
 
         // A different couple day extends a live count once both people have

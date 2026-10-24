@@ -12,7 +12,7 @@ import {
   zonedLocalToUtcMs,
 } from "./time";
 
-/** Streaks shorter than this restart when they break: no freeze and no restore offer. */
+/** Streaks shorter than this restart when they break: no freeze, no free save and no restore offer. */
 export const MIN_PROTECTED_STREAK = 3;
 /** Days between the couple's free streak freezes. */
 export const FREEZE_COOLDOWN_DAYS = 30;
@@ -129,6 +129,21 @@ export function freezeCoversGap(state: Pick<Doc<"streak_states">, "freeze_used_a
 /** The deadline after a freeze adds one day: the next local midnight in each partner's zone. */
 export function frozenDeadlineAt(ctx: ReaderCtx, coupleId: string, deadline: string): Promise<string> {
   return resolveStreakDeadlineAt(ctx, coupleId, deadline, 1);
+}
+
+/**
+ * When a streak that broke at `breakDeadline` can come back. It is free until the end of the next
+ * couple day (`saveDeadline`), when both partners show up on it, and by purchase until the end of
+ * the two days after that (`restoreDeadline`). Each end is local midnight in every partner's zone,
+ * and the latest one wins, like every other streak deadline.
+ */
+export async function brokenStreakDeadlines(
+  ctx: ReaderCtx,
+  coupleId: string,
+  breakDeadline: string,
+): Promise<{ saveDeadline: string; restoreDeadline: string }> {
+  const saveDeadline = await resolveStreakDeadlineAt(ctx, coupleId, breakDeadline, 1);
+  return { saveDeadline, restoreDeadline: await resolveStreakDeadlineAt(ctx, coupleId, saveDeadline, 2) };
 }
 
 /** Port of `internal.resolve_next_activity_deadline_at`. */

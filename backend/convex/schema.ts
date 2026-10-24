@@ -1340,9 +1340,15 @@ export default defineSchema({
     last_qualified_couple_day_id: optUuid,
     next_activity_deadline_at: optTs,
     updated_at: ts,
+    // A broken streak of MIN_PROTECTED_STREAK or more keeps its count here while it can come back:
+    // free until save_deadline (the first couple day after the missed one), then by purchase until
+    // restore_deadline (the second and third). restorable_through_date is its last qualified date.
     restorable_count: v.number(),
     restorable_through_date: v.optional(date),
+    save_deadline: optTs,
     restore_deadline: optTs,
+    // The couple day on which both partners last won a broken streak back for free.
+    saved_on: v.optional(date),
     restored_at: optTs,
     last_restore_transaction_id: optString,
     // The deadline the couple's last free freeze covered. A new freeze is ready FREEZE_COOLDOWN_DAYS later.

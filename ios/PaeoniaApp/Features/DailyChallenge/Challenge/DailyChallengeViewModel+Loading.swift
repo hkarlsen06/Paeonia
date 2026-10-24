@@ -118,6 +118,7 @@ extension DailyChallengeViewModel {
         streak.longestCount = max(streak.longestCount, count)
         streak.restoreAvailable = false
         streak.restorableCount = 0
+        streak.saveDeadline = nil
         streak.restoreDeadline = nil
     }
 

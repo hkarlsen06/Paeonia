@@ -31,6 +31,7 @@ extension MainTabView {
                     onClose: closeAnswerFlow,
                     makeStreakRestoreViewModel: makeStreakRestoreViewModel,
                     claimStreakMilestone: claimStreakMilestone,
+                    claimStreakSave: claimStreakSave,
                     onOpenQuestionChat: openQuestionChatFromAnswerFlow
                 )
                 .analyticsScreen("daily_answer")
@@ -91,6 +92,7 @@ extension MainTabView {
                     onClose: closePartnerAnswerFlow,
                     makeStreakRestoreViewModel: makeStreakRestoreViewModel,
                     claimStreakMilestone: claimStreakMilestone,
+                    claimStreakSave: claimStreakSave,
                     onOpenQuestionChat: openQuestionChatFromRowFlow
                 )
                 .analyticsScreen("daily_answer")
@@ -113,7 +115,7 @@ extension MainTabView {
     private func presentingStreakMilestones(on content: some View) -> some View {
         content
             .sheet(item: $streakMilestone) { moment in
-                StreakMilestoneView(days: moment.days, onClose: { streakMilestone = nil })
+                StreakMilestoneView(days: moment.days, isSave: moment.isSave, onClose: { streakMilestone = nil })
                     .analyticsScreen("streak_milestone")
                     .presentationDetents([.large])
                     .presentationBackground(.paeoniaSurfacePrimary)
@@ -130,6 +132,7 @@ extension MainTabView {
     private var streakMilestoneCheck: StreakMilestoneCheck {
         StreakMilestoneCheck(
             count: dailyChallengeViewModel.streak.currentCount,
+            savedOn: dailyChallengeViewModel.streak.savedOn,
             userID: identity.currentUserID,
             isScreenBusy: scenePhase != .active
                 || !launchIntroComplete
@@ -141,21 +144,31 @@ extension MainTabView {
         )
     }
 
-    /// Shows the milestone moment when the streak reaches a milestone this phone has
-    /// not celebrated. Waits while the app is in the background, the launch intro is
-    /// playing, or another flow or sheet is open. The answer flow claims the milestone
-    /// itself on its completion screen.
+    /// Shows the moment a free save brought the streak back, or the milestone moment
+    /// when the streak reaches a milestone, if this phone has not celebrated it. Waits
+    /// while the app is in the background, the launch intro is playing, or another flow
+    /// or sheet is open. The answer flow claims both itself on its completion screen.
     private func celebrateStreakMilestoneIfDue() {
         let check = streakMilestoneCheck
-        guard !check.isScreenBusy, !dailyChallengeViewModel.streak.isRestorable,
-              let days = claimStreakMilestone(check.count)
-        else { return }
+        let streak = dailyChallengeViewModel.streak
+        guard !check.isScreenBusy, !streak.isRestorable else { return }
+        if let saveDay = streak.freshSaveDay, claimStreakSave(saveDay, streak.currentCount) {
+            streakMilestone = StreakMilestoneMoment(days: streak.currentCount, isSave: true)
+            return
+        }
+        guard let days = claimStreakMilestone(check.count) else { return }
         streakMilestone = StreakMilestoneMoment(days: days)
     }
 
     private func claimStreakMilestone(_ count: Int) -> Int? {
         guard let userID = identity.currentUserID else { return nil }
         return streakMilestoneStore.claim(count: count, userID: userID)
+    }
+
+    /// Claims the moment for the free save made on `day`, which brought the streak to `count`.
+    private func claimStreakSave(_ day: String, _ count: Int) -> Bool {
+        guard let userID = identity.currentUserID else { return false }
+        return streakMilestoneStore.claimSave(on: day, count: count, userID: userID)
     }
 
     /// Keep full-screen cover insertion in the same transaction as the native zoom.

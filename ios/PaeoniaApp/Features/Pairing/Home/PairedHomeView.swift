@@ -133,10 +133,7 @@ struct PairedHomeView: View {
             // The header with the partners' story avatars sits above every card, also on a wide iPad.
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 homeHeader
-                if let accessNotice {
-                    HomeAccessNoticeCard(notice: accessNotice)
-                        .transition(.opacity)
-                }
+                notices
                 cardsLayout {
                     partnerGameCard
                     dailyPromptCard
@@ -157,6 +154,7 @@ struct PairedHomeView: View {
             )
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: accessNotice)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isSavable)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
             // The daily card is tall until today's question is answered, then a short row.
@@ -241,6 +239,19 @@ struct PairedHomeView: View {
 
 /// The cards `body` lays out.
 extension PairedHomeView {
+    /// The notices above the cards: access ending (`AccessNotice`), and a broken
+    /// streak's free save day.
+    @ViewBuilder
+    private var notices: some View {
+        if let accessNotice {
+            HomeAccessNoticeCard(notice: accessNotice)
+                .transition(.opacity)
+        }
+        if dailyChallengeStreak.isSavable {
+            HomeStreakSaveCard(streak: dailyChallengeStreak, onTap: onTapStreak)
+        }
+    }
+
     /// The brand mark and the streak at the corners, and both partners with their stories
     /// in the middle. The note bubbles over the avatars rise up beside the mark and the
     /// streak, so the row uses the space a navigation bar would leave empty.

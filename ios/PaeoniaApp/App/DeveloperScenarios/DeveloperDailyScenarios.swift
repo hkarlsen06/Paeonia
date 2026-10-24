@@ -13,8 +13,14 @@
       /// Like `unanswered`, but the partner answers today's question just as the user's
       /// answer lands, so the phone hears of both at once.
       case partnerAnswersMeanwhile
+      /// Like `unanswered`, but the streak broke yesterday and today is its free save day.
+      case streakSaveDay
 
       static func mode(for scenario: DeveloperScenario) -> Mode {
+        scenario == .streakSaveHome ? .streakSaveDay : questionsMode(for: scenario)
+      }
+
+      private static func questionsMode(for scenario: DeveloperScenario) -> Mode {
         switch scenario {
         case .questionPartnerAnswersMeanwhile: .partnerAnswersMeanwhile
         case .questionsPartial: .partial
@@ -52,6 +58,9 @@
         )
       case .unanswered, .partnerAnswersMeanwhile:
         return try await todayLandingQueuedAnswers(currentUserID: currentUserID)
+      case .streakSaveDay:
+        let loaded = try await todayLandingQueuedAnswers(currentUserID: currentUserID)
+        return DailyChallengeLoadResult(snapshot: loaded.snapshot, streak: loadStreak())
       case .offline:
         return offlineResult(currentUserID: currentUserID)
       case .partial:
@@ -168,7 +177,9 @@
       try await base.loadHistory(currentUserID: currentUserID)
     }
 
-    func loadStreak() throws -> CoupleStreak { healthyStreak }
+    func loadStreak() -> CoupleStreak {
+      mode == .streakSaveDay ? DeveloperStreakScenarioView.brokenStreak(saveEndsIn: 6 * 3_600) : healthyStreak
+    }
 
     func submitAnswer(
       instanceID _: UUID, answerID _: UUID, payload _: DailyAnswerPayload,

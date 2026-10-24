@@ -318,6 +318,8 @@ describe("streak restore recording", () => {
         longest_count: 5,
         restorable_count: 5,
         restorable_through_date: "2026-10-08",
+        // The free save day is over, so the paid restore is open.
+        save_deadline: hoursFromNow(-1),
         restore_deadline: hoursFromNow(24),
         updated_at: NOW.toISOString(),
       });

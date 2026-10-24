@@ -14,7 +14,7 @@
       paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallLoading,
       pairedHome, questions, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
-      streakHealthy, streakBroken, streakRestored,
+      streakHealthy, streakSaveHome, streakSaveDay, streakSaved, streakBroken, streakRestoreExpired, streakRestored,
       memoriesEmpty, memoriesPopulated, memoryEditor, memoryDetail,
       countdownMissing, countdownUpcoming, countdownToday,
       locationNotSharing, locationCurrentMissing, locationLive, locationStale,
@@ -181,8 +181,21 @@
     static let streakHealthy = streak(
       "streak-healthy", "Streak · healthy", "Current and longest streak detail"
     )
+    static let streakSaveHome = pairedApp(
+      "streak-save-home", "Streak · free save on Home", "Home card and paused pill the day after a missed day",
+      .streak
+    )
+    static let streakSaveDay = streak(
+      "streak-save-day", "Streak · free save day", "Streak sheet the day after a missed day, partner still to come"
+    )
+    static let streakSaved = streak(
+      "streak-saved", "Streak · saved", "Both showed up on the free save day"
+    )
     static let streakBroken = streak(
-      "streak-broken", "Streak · restore offer", "Time-limited streak restore offer"
+      "streak-broken", "Streak · restore offer", "Paid restore on the second or third day after the missed one"
+    )
+    static let streakRestoreExpired = streak(
+      "streak-restore-expired", "Streak · gone for good", "The restore offer once the third day is over"
     )
     static let streakRestored = streak(
       "streak-restored", "Streak · restored", "Successful restore celebration"

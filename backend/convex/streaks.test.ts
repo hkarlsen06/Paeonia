@@ -50,9 +50,12 @@ describe("get_couple_streak", () => {
         current_count: 0,
         longest_count: 0,
         last_qualified_date: null,
+        save_available: false,
         restore_available: false,
         restorable_count: 0,
+        save_deadline: null,
         restore_deadline: null,
+        saved_on: null,
         freeze_available: false,
         freeze_ready_at: null,
         freeze_saved_streak: false,
@@ -145,14 +148,17 @@ describe("streak break without a write", () => {
 
   test("the query reports the break virtually, then the cron stores the same state", async () => {
     const { t, a, state } = await bothQualified();
-    // The deadline is 2026-10-11T22:00Z, so the restore offer runs to 2026-10-12T22:00Z.
+    // The deadline is the end of 2026-10-11 in Oslo, 2026-10-11T22:00Z. 2026-10-12 is the free save
+    // day, and 2026-10-13 and 2026-10-14 are the restore days.
     vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
     const virtual = await a.as.query(api.streaks.get_couple_streak, {});
     expect(virtual[0]).toMatchObject({
       current_count: 0,
       restorable_count: 3,
-      restore_available: true,
-      restore_deadline: "2026-10-12T22:00:00.000Z",
+      save_available: true,
+      restore_available: false,
+      save_deadline: "2026-10-12T22:00:00.000Z",
+      restore_deadline: "2026-10-14T22:00:00.000Z",
       freeze_saved_streak: false,
       freeze_ready_at: "2026-10-30T22:00:00.000Z",
     });
@@ -163,7 +169,8 @@ describe("streak break without a write", () => {
     expect(await state()).toMatchObject({
       current_count: 3,
       restorable_count: 3,
-      restore_deadline: "2026-10-12T22:00:00.000Z",
+      save_deadline: "2026-10-12T22:00:00.000Z",
+      restore_deadline: "2026-10-14T22:00:00.000Z",
     });
     expect(await a.as.query(api.streaks.get_couple_streak, {})).toEqual(virtual);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -171,9 +178,15 @@ describe("streak break without a write", () => {
 
   test("an expired offer agrees too", async () => {
     const { t, a } = await bothQualified();
-    vi.setSystemTime(new Date("2026-10-13T00:00:00.000Z"));
+    vi.setSystemTime(new Date("2026-10-15T00:00:00.000Z"));
     const virtual = await a.as.query(api.streaks.get_couple_streak, {});
-    expect(virtual[0]).toMatchObject({ current_count: 0, restorable_count: 3, restore_available: false });
+    expect(virtual[0]).toMatchObject({
+      current_count: 0,
+      restorable_count: 0,
+      save_available: false,
+      restore_available: false,
+      restore_deadline: null,
+    });
     await t.run(async (ctx) => {
       const row = (await ctx.db.query("streak_states").first())!;
       await detectStreakBreak(ctx, row.couple_id);
@@ -245,7 +258,8 @@ describe("streak break without a write", () => {
 
   test("a restore works when only the deadline passed and the cron has not run", async () => {
     const { t, couple, state } = await bothQualified();
-    vi.setSystemTime(new Date("2026-10-12T00:00:00.000Z"));
+    // The first restore day, 2026-10-13 in Oslo.
+    vi.setSystemTime(new Date("2026-10-13T00:00:00.000Z"));
     expect(await state()).toMatchObject({ restorable_count: 0 });
     const result = await t.run((ctx) =>
       applyStreakRestore(ctx, {
@@ -257,13 +271,19 @@ describe("streak break without a write", () => {
       }),
     );
     expect(result).toEqual({ ok: true, restoredCount: 3, replayed: false });
-    expect(await state()).toMatchObject({ current_count: 3, restorable_count: 0 });
+    // The streak goes on from yesterday, so the couple has all of 2026-10-13 to show up.
+    expect(await state()).toMatchObject({
+      current_count: 3,
+      restorable_count: 0,
+      last_qualified_date: "2026-10-12",
+      next_activity_deadline_at: "2026-10-13T22:00:00.000Z",
+    });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
   test("a restore after the offer expired is refused", async () => {
     const { t, couple } = await bothQualified();
-    vi.setSystemTime(new Date("2026-10-13T00:00:00.000Z"));
+    vi.setSystemTime(new Date("2026-10-14T22:00:00.000Z"));
     const result = await t.run((ctx) =>
       applyStreakRestore(ctx, {
         couple_id: couple.coupleId,
@@ -274,6 +294,42 @@ describe("streak break without a write", () => {
       }),
     );
     expect(result).toEqual({ ok: false, error: "No streak is available to restore", status: 409 });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("free save day", () => {
+  test("both partners answering on the day after the missed one bring the streak back", async () => {
+    const { t, a, b, state } = await bothQualified();
+    // 2026-10-11 is missed. 2026-10-12 in Oslo is the free save day.
+    vi.setSystemTime(new Date("2026-10-12T09:00:00.000Z"));
+    await t.mutation(internal.streaks.detect_streak_breaks, {});
+    expect((await a.as.query(api.streaks.get_couple_streak, {}))[0]).toMatchObject({
+      current_count: 0,
+      save_available: true,
+      restorable_count: 3,
+    });
+    await a.as.mutation(api.daily.start_daily_challenge_snapshot, op());
+    await answerAll(t, a);
+    expect((await a.as.query(api.streaks.get_couple_streak, {}))[0]).toMatchObject({ current_count: 0, save_available: true });
+    vi.setSystemTime(new Date("2026-10-12T21:30:00.000Z"));
+    await answerAll(t, b);
+    // The missed day does not count, and the save day does.
+    expect(await state()).toMatchObject({
+      current_count: 4,
+      longest_count: 4,
+      last_qualified_date: "2026-10-12",
+      restorable_count: 0,
+      saved_on: "2026-10-12",
+    });
+    expect((await b.as.query(api.streaks.get_couple_streak, {}))[0]).toMatchObject({
+      current_count: 4,
+      save_available: false,
+      restore_available: false,
+      restorable_count: 0,
+      saved_on: "2026-10-12",
+      next_activity_deadline_at: "2026-10-13T22:00:00.000Z",
+    });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });
@@ -311,12 +367,13 @@ describe("streak freeze", () => {
     });
     expect(await a.as.query(api.streaks.get_couple_streak, {})).toEqual(virtual);
 
-    // A second missed day breaks the streak. The restore offer runs from the moved deadline.
+    // A second missed day breaks the streak. The save day and restore days follow the moved deadline.
     vi.setSystemTime(new Date("2026-10-12T23:00:00.000Z"));
     await t.mutation(internal.streaks.detect_streak_breaks, {});
     expect(await state()).toMatchObject({
       restorable_count: 3,
-      restore_deadline: "2026-10-13T22:00:00.000Z",
+      save_deadline: "2026-10-13T22:00:00.000Z",
+      restore_deadline: "2026-10-15T22:00:00.000Z",
       freeze_used_at: "2026-10-11T22:00:00.000Z",
     });
     await t.finishAllScheduledFunctions(vi.runAllTimers);

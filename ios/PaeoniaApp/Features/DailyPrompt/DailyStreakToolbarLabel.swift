@@ -1,11 +1,17 @@
 import SwiftUI
 
 /// What the streak indicator should show: the live count normally, or a tappable
-/// "broken" look advertising the lost streak you can buy back.
+/// paused look with the broken streak that can still come back, free on its save
+/// day and by purchase on the two days after it.
 struct StreakPillState: Equatable {
     var count: Int
     var isRestorable: Bool
     var restorableCount: Int
+    /// Both partners can still bring the broken streak back for free today.
+    var isSavable: Bool
+    /// When the free save day ends. The label re-checks at this moment and turns to
+    /// the restore offer.
+    var saveDeadline: Date?
     /// When the restore offer closes. The label re-checks at this moment so the pill
     /// stops advertising a restore the second it lapses, without waiting for new data.
     var restoreDeadline: Date?
@@ -29,6 +35,8 @@ struct StreakPillState: Equatable {
         count: Int,
         isRestorable: Bool,
         restorableCount: Int,
+        isSavable: Bool = false,
+        saveDeadline: Date? = nil,
         restoreDeadline: Date? = nil,
         endsAt: Date? = nil,
         isAvailable: Bool = true
@@ -36,6 +44,8 @@ struct StreakPillState: Equatable {
         self.count = count
         self.isRestorable = isRestorable
         self.restorableCount = restorableCount
+        self.isSavable = isSavable
+        self.saveDeadline = saveDeadline
         self.restoreDeadline = restoreDeadline
         self.endsAt = endsAt
         self.isAvailable = isAvailable
@@ -45,57 +55,67 @@ struct StreakPillState: Equatable {
         count = streak.currentCount
         isRestorable = streak.isRestorable
         restorableCount = streak.restorableCount
+        isSavable = streak.isSavable
+        saveDeadline = streak.saveDeadline
         restoreDeadline = streak.restoreDeadline
         endsAt = streak.endsAt
         isAvailable = true
     }
 
-    /// The pill as it should look at `now`: an offer whose deadline has been reached
-    /// (or passed) is no longer restorable and falls back to the live count, and a
-    /// live streak close to its end shows the hourglass.
+    /// The pill as it should look at `now`: at the end of the save day the streak can
+    /// only be bought back, an offer whose deadline has been reached (or passed) is no
+    /// longer restorable and falls back to the live count, and a live streak close to
+    /// its end shows the hourglass.
     func resolved(at now: Date) -> StreakPillState {
         var resolved = self
-        if isRestorable, let restoreDeadline, restoreDeadline <= now {
+        if isSavable, let saveDeadline, saveDeadline <= now {
+            resolved.isSavable = false
+            resolved.isRestorable = restorableCount > 0 && (restoreDeadline.map { $0 > now } ?? false)
+        }
+        if resolved.isRestorable, let restoreDeadline, restoreDeadline <= now {
             resolved.isRestorable = false
         }
         resolved.isAtRisk = resolved.atRiskFrom.map { $0 <= now } ?? false
         return resolved
     }
 
+    /// A broken streak that can still come back, free today or by purchase.
+    var isPaused: Bool { isSavable || isRestorable }
+
     /// When the hourglass appears, or `nil` when there is no live streak to lose.
     /// A paused streak already shows the muted flame, so it never gets the hourglass.
     private var atRiskFrom: Date? {
-        guard count >= 1, !isRestorable, let endsAt else { return nil }
+        guard count >= 1, !isPaused, let endsAt else { return nil }
         return endsAt.addingTimeInterval(-Self.atRiskLeadTime)
     }
 
     /// The moments the pill looks different without new data.
     var changeDates: [Date] {
-        [restoreDeadline, atRiskFrom].compactMap(\.self).sorted()
+        [isSavable ? saveDeadline : nil, restoreDeadline, atRiskFrom].compactMap(\.self).sorted()
     }
 
-    /// The number shown: the lost streak while a restore is offered (so it advertises
+    /// The number shown: the broken streak while it can still come back (so it shows
     /// what you'd get back), otherwise the live count.
-    var displayCount: Int { isRestorable ? restorableCount : count }
+    var displayCount: Int { isPaused ? restorableCount : count }
 
     /// A paired surface keeps the streak discoverable even before the first day.
     /// `.hidden` remains available for previews and surfaces without streak data.
     var isVisible: Bool { isAvailable }
 
-    /// Zero is a cooled-down streak, while a restorable streak is broken. Both use
-    /// the same muted flame treatment.
-    var usesMutedFlame: Bool { displayCount == 0 || isRestorable }
+    /// Zero is a cooled-down streak, while a paused streak is broken. Both use the
+    /// same muted flame treatment.
+    var usesMutedFlame: Bool { displayCount == 0 || isPaused }
 
     /// The live count sits on a milestone, which lasts until the couple's next day
     /// counts. The pill shows a small gold dot, and tapping it replays the moment.
-    var isMilestone: Bool { !isRestorable && StreakMilestones.isMilestone(count) }
+    var isMilestone: Bool { !isPaused && StreakMilestones.isMilestone(count) }
 }
 
 /// The couple's streak as a navigation-bar element: the brand flame and the day
 /// count, sized to match the brand mark on the bar. Uses the same flame as the
 /// completion celebration so the two read as one idea at different sizes. Tapping it
-/// opens an informative streak sheet; a slipped streak dims and opens the restore
-/// offer instead. The healthy-vs-broken routing lives in the `onTap` handler.
+/// opens an informative streak sheet; a slipped streak dims, and opens the restore
+/// offer once its free save day is over. The routing lives in the `onTap` handler.
 struct DailyStreakToolbarLabel: View {
     let state: StreakPillState
     var onTap: (() -> Void)?
@@ -106,7 +126,7 @@ struct DailyStreakToolbarLabel: View {
     @ScaledMetric(relativeTo: .subheadline) private var flameHeight: CGFloat = 22
 
     var body: some View {
-        // Draws again when a restore offer lapses or the streak gets close to its end,
+        // Draws again when the save day ends, a restore offer lapses, or the streak gets close to its end,
         // so the pill changes while the screen stays open.
         TimelineView(.explicit(state.changeDates)) { _ in
             tappable(state.resolved(at: .now))
@@ -116,8 +136,8 @@ struct DailyStreakToolbarLabel: View {
     @ViewBuilder
     private func tappable(_ state: StreakPillState) -> some View {
         // Always tappable when a handler is wired: a healthy streak opens its
-        // informative sheet, a broken one opens the restore offer (decided by the
-        // handler). Falls back to a plain label only when no tap is provided.
+        // informative sheet, a broken one its save day or restore offer (decided by
+        // the handler). Falls back to a plain label only when no tap is provided.
         if let onTap {
             Button(action: onTap) { label(for: state) }
                 .buttonStyle(.plain)
@@ -158,7 +178,7 @@ struct DailyStreakToolbarLabel: View {
         .font(.system(.subheadline, design: .rounded).weight(.bold))
         // A slipped streak is dimmed, not crossed out. It is a streak waiting to be
         // lit again, not a failure.
-        .foregroundStyle(state.isRestorable ? .paeoniaTextSecondary : .paeoniaTextPrimary)
+        .foregroundStyle(state.isPaused ? .paeoniaTextSecondary : .paeoniaTextPrimary)
         // Breathing room so the toolbar's glass capsule doesn't crowd the flame and count.
         .padding(.horizontal, PaeoniaSpacing.space8)
         .padding(.vertical, PaeoniaSpacing.space4)
@@ -167,7 +187,13 @@ struct DailyStreakToolbarLabel: View {
         .contentShape(Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: accessibilityLabel(for: state)))
-        .accessibilityHint(Text(verbatim: state.isRestorable ? String(localized: .streakRestoreBrokenAction) : ""))
+        .accessibilityHint(Text(verbatim: accessibilityHint(for: state)))
+    }
+
+    private func accessibilityHint(for state: StreakPillState) -> String {
+        if state.isSavable { return String(localized: .streakSaveAction) }
+        if state.isRestorable { return String(localized: .streakRestoreBrokenAction) }
+        return ""
     }
 
     private func flameStyle(for state: StreakPillState) -> LinearGradient {
@@ -191,6 +217,7 @@ struct DailyStreakToolbarLabel: View {
         let streakText = "\(state.displayCount) \(String(localized: .homeStreakLabel))"
         if state.isAtRisk { return String(localized: .streakAtRiskPillAccessibility(streakText)) }
         if state.isMilestone { return String(localized: .streakMilestonePillAccessibility(streakText)) }
+        if state.isSavable { return String(localized: .streakSavePillAccessibilityLabel(streakText)) }
         guard state.isRestorable else { return streakText }
         return String(localized: .streakRestorePillAccessibilityLabel(streakText))
     }

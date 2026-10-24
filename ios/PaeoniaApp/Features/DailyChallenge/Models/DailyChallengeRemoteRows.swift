@@ -128,6 +128,8 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
     let freezeReadyAt: Date?
     let freezeSavedStreak: Bool
     let nextActivityDeadlineAt: Date?
+    let saveDeadline: Date?
+    let savedOn: String?
 
     init(
         currentCount: Int,
@@ -141,7 +143,9 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         freezeAvailable: Bool = false,
         freezeReadyAt: Date? = nil,
         freezeSavedStreak: Bool = false,
-        nextActivityDeadlineAt: Date? = nil
+        nextActivityDeadlineAt: Date? = nil,
+        saveDeadline: Date? = nil,
+        savedOn: String? = nil
     ) {
         self.currentCount = currentCount
         self.longestCount = longestCount
@@ -155,6 +159,8 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         self.freezeReadyAt = freezeReadyAt
         self.freezeSavedStreak = freezeSavedStreak
         self.nextActivityDeadlineAt = nextActivityDeadlineAt
+        self.saveDeadline = saveDeadline
+        self.savedOn = savedOn
     }
 
     enum CodingKeys: String, CodingKey {
@@ -170,6 +176,8 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
         case freezeReadyAt = "freeze_ready_at"
         case freezeSavedStreak = "freeze_saved_streak"
         case nextActivityDeadlineAt = "next_activity_deadline_at"
+        case saveDeadline = "save_deadline"
+        case savedOn = "saved_on"
     }
 
     var streak: CoupleStreak {
@@ -185,7 +193,9 @@ nonisolated struct CoupleStreakRow: Codable, Equatable, Sendable {
             freezeAvailable: freezeAvailable,
             freezeReadyAt: freezeReadyAt,
             freezeSavedStreak: freezeSavedStreak,
-            endsAt: nextActivityDeadlineAt
+            endsAt: nextActivityDeadlineAt,
+            saveDeadline: saveDeadline,
+            savedOn: savedOn
         )
     }
 }

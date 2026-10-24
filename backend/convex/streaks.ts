@@ -14,13 +14,20 @@ import {
   lastHourReminderAllowed,
   resolveMemberStreakTimeZone,
 } from "./lib/streakDeadlines";
-import { detectStreakBreak, getCoupleStreakParticipationForUser, readCoupleStreak } from "./lib/streaks";
+import {
+  detectStreakBreak,
+  getCoupleStreakParticipationForUser,
+  isStoredBreak,
+  readCoupleStreak,
+} from "./lib/streaks";
 import { addHours, nowIso } from "./lib/time";
 
 /**
- * The streak card: counts, restore offer, and who has contributed today. Returns one row, like the SQL function.
- * A query cannot store the restore offer. It reports a just-broken streak from the clock and the stored deadline,
- * and `detect_streak_breaks` persists the same state within one cron interval.
+ * The streak card: counts, the free save or paid restore of a broken streak, and who has contributed today.
+ * Returns one row, like the SQL function. A query cannot store a break. It reports a just-broken streak from the
+ * clock and the stored deadline, and `detect_streak_breaks` persists the same state within one cron interval.
+ * Nothing is stored when the free save day ends or the restore days run out, so the app moves on at
+ * `save_deadline` and `restore_deadline` by its own clock.
  * The result depends on the clock, and Convex reruns a query only when data it read changes. `p_day_key` is
  * ignored. A one-shot caller passes a fresh value so a result cached before midnight is never served.
  */
@@ -35,8 +42,11 @@ export const get_couple_streak = query({
   },
 });
 
-/** Streaks whose deadline passed longer ago than this have an expired restore offer, so the cron skips them. */
-const BREAK_LOOKBACK_HOURS = 48;
+/**
+ * Streaks whose deadline passed longer ago than this can no longer come back (one free save day and two
+ * restore days, each at most 25 hours long), so the cron skips them.
+ */
+const BREAK_LOOKBACK_HOURS = 75;
 /**
  * Streaks one cron mutation handles. Each streak costs about 15 database calls, and a mutation
  * may make 4096. A page that is not the last schedules the next one as its own mutation, so
@@ -51,7 +61,7 @@ const cronArgs = {
 
 /**
  * Stores what happened to streaks whose deadline just passed: a used freeze, a restarted short
- * streak, or an open restore offer. `get_couple_streak` is a query and cannot write, so this run
+ * streak, or an open save and restore offer. `get_couple_streak` is a query and cannot write, so this run
  * is what makes a subscribed streak card flip. Returns how many streaks it inspected on this page.
  */
 export const detect_streak_breaks = internalMutation({
@@ -68,7 +78,7 @@ export const detect_streak_breaks = internalMutation({
       .paginate({ numItems: STREAK_PAGE_SIZE, cursor: args.cursor ?? null });
     let broken = 0;
     for (const state of page.page) {
-      if (state.current_count <= 0 || state.restorable_count !== 0) continue;
+      if (state.current_count <= 0 || isStoredBreak(state)) continue;
       const couple = await getByUuid(ctx, "couples", state.couple_id);
       if (couple?.status !== "active") continue;
       broken += 1;

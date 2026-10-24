@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The streak screen the answer flow turns over to once the user has answered and the
 /// partner's answer is still to come. A slipped streak's version offers to buy the
-/// streak back in place.
+/// streak back in place, and on its free save day it says the partner's part brings
+/// it back.
 struct DailyChallengeCompletionView: View {
     let streak: Int
     /// The partner's display name, so the finish copy and CTA name them.
@@ -22,6 +23,13 @@ struct DailyChallengeCompletionView: View {
     /// The streak milestone this finish reaches, when this phone has not celebrated
     /// it yet. The screen then shows the milestone moment instead of the usual copy.
     var milestone: Int?
+    /// The broken streak's length on its free save day while the partner has not
+    /// shown up yet. The flame reads "slipped", and the copy says the streak comes
+    /// back if the partner does one small thing today too.
+    var savableCount: Int?
+    /// This finish brought the broken streak back for free. The screen shows the
+    /// save moment instead of the usual copy.
+    var savedStreak = false
     let onDone: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -64,7 +72,13 @@ struct DailyChallengeCompletionView: View {
                 .transition(.opacity)
 
             VStack(spacing: PaeoniaSpacing.space8) {
-                if showsMilestone(now: now) {
+                if showsSave {
+                    Text(.streakSavedEyebrow)
+                        .font(PaeoniaTypography.caption.weight(.bold))
+                        .textCase(.uppercase)
+                        .tracking(1.4)
+                        .foregroundStyle(Color.paeoniaInkGold)
+                } else if showsMilestone(now: now) {
                     Text(.streakMilestoneEyebrow)
                         .font(PaeoniaTypography.caption.weight(.bold))
                         .textCase(.uppercase)
@@ -106,20 +120,29 @@ struct DailyChallengeCompletionView: View {
         } else if let restorableCount, isRestorable(now: now) {
             PaeoniaStreakFlame(count: restorableCount, isBroken: true)
                 .id("streak-broken")
+        } else if let savableCount {
+            PaeoniaStreakFlame(count: savableCount, isBroken: true)
+                .id("streak-save-waiting")
         } else {
             PaeoniaStreakFlame(count: streak, playsCelebration: true)
                 .id("streak-earned")
         }
     }
 
-    /// A restore, or a restore still on offer, has its own copy, so the milestone
-    /// moment shows only on an ordinary finish.
+    /// The save moment, unless a purchase brought the streak back first.
+    private var showsSave: Bool {
+        savedStreak && !isRestored
+    }
+
+    /// A restore, a restore still on offer, or a save has its own copy, so the
+    /// milestone moment shows only on an ordinary finish.
     private func showsMilestone(now: Date) -> Bool {
-        milestone != nil && !isRestored && !isRestorable(now: now)
+        milestone != nil && !isRestored && !isRestorable(now: now) && !showsSave
     }
 
     private func titleText(now: Date) -> LocalizedStringResource {
         if isRestored { return .streakRestoreSuccessTitle }
+        if showsSave { return .streakSavedTitle }
         if let milestone, showsMilestone(now: now) { return StreakMilestoneCopy.title(days: milestone) }
         return .dailyChallengeFlowAllDoneTitle
     }
@@ -127,6 +150,8 @@ struct DailyChallengeCompletionView: View {
     private func messageText(now: Date) -> LocalizedStringResource {
         if isRestored { return .streakRestoreSuccessMessage }
         if isRestorable(now: now) { return .streakRestoreMessage }
+        if showsSave { return .streakSavedMessage }
+        if savableCount != nil { return .streakSaveWaitingMessage(partnerName) }
         if let milestone, showsMilestone(now: now) { return StreakMilestoneCopy.message(days: milestone) }
         return .dailyChallengeFlowAllDoneMessage(partnerName)
     }

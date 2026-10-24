@@ -249,20 +249,165 @@ describe("mutual participation", () => {
     expect(state!.restore_deadline).toBeUndefined();
   });
 
-  test("a three-day streak without a freeze restarts at one and offers a restore", async () => {
+  test("a three-day streak without a freeze comes back for free when both show up the day after the missed one", async () => {
     const ctx = await setup();
     const { t, couple, activity } = ctx;
     await threeDayStreak(ctx, "2026-10-01T00:00:00.000Z");
-    const late = await insertDay(t, couple.coupleId, "2026-10-11", "2026-10-11T00:00:00.000Z", "2026-10-12T00:00:00.000Z");
-    await activity(couple.first.userId, late, "memory_created", "2026-10-11T09:00:00.000Z", "a3");
-    await activity(couple.second.userId, late, "memory_created", "2026-10-11T10:00:00.000Z", "b3");
-    expect(await streakState(t, couple.coupleId)).toMatchObject({
-      current_count: 1,
-      longest_count: 3,
-      restorable_count: 3,
-      restorable_through_date: "2026-10-09",
-      restore_deadline: "2026-10-12T00:00:00.000Z",
+    // 2026-10-10 is missed, and the cron has not stored the break. 2026-10-11 is the free save day.
+    const saveDay = await insertDay(t, couple.coupleId, "2026-10-11", "2026-10-11T00:00:00.000Z", "2026-10-12T00:00:00.000Z");
+    await activity(couple.first.userId, saveDay, "memory_created", "2026-10-11T09:00:00.000Z", "a3");
+    await activity(couple.second.userId, saveDay, "memory_created", "2026-10-11T23:59:00.000Z", "b3");
+    const state = await streakState(t, couple.coupleId);
+    expect(state).toMatchObject({
+      current_count: 4,
+      longest_count: 4,
+      last_qualified_date: "2026-10-11",
+      restorable_count: 0,
+      saved_on: "2026-10-11",
       freeze_used_at: "2026-10-01T00:00:00.000Z",
+    });
+    expect(state!.save_deadline).toBeUndefined();
+    expect(state!.restore_deadline).toBeUndefined();
+  });
+
+  describe("after a break: one free save day, then two restore days", () => {
+    // The streak ran through 2026-10-09 and 2026-10-10 is missed. In UTC, 2026-10-11 is the free
+    // save day, 2026-10-12 and 2026-10-13 are the restore days, and the streak is gone on 2026-10-14.
+    async function broken() {
+      const ctx = await setup();
+      await threeDayStreak(ctx, "2026-10-01T00:00:00.000Z");
+      const { t, couple, activity } = ctx;
+      const day = (date: string) =>
+        insertDay(t, couple.coupleId, date, `${date}T00:00:00.000Z`, `${addDay(date)}T00:00:00.000Z`);
+      const both = async (date: string, at = "12:00") => {
+        const dayId = await day(date);
+        await activity(couple.first.userId, dayId, "memory_created", `${date}T${at}:00.000Z`, `a-${date}`);
+        await activity(couple.second.userId, dayId, "memory_created", `${date}T${at}:00.000Z`, `b-${date}`);
+      };
+      const restore = (transactionId: string) =>
+        t.run((db) =>
+          applyStreakRestore(db, {
+            couple_id: couple.coupleId,
+            purchaser_user_id: couple.first.userId,
+            product_id: newUuid(),
+            environment: "sandbox",
+            transaction_id: transactionId,
+          }),
+        );
+      const read = (now: string) => {
+        vi.setSystemTime(new Date(now));
+        return t.run((db) => getCoupleStreakForCouple(db, couple.coupleId));
+      };
+      return { ...ctx, day, both, restore, read, state: () => streakState(t, couple.coupleId) };
+    }
+    const addDay = (date: string) => new Date(Date.parse(`${date}T00:00:00.000Z`) + 86_400_000).toISOString().slice(0, 10);
+    const refused = { ok: false, error: "No streak is available to restore", status: 409 };
+
+    test("the cron stores the break with both windows, and the save day still brings it back", async () => {
+      const { both, read, state } = await broken();
+      expect(await read("2026-10-11T00:30:00.000Z")).toMatchObject({
+        current_count: 0,
+        save_available: true,
+        restore_available: false,
+        restorable_count: 3,
+        save_deadline: "2026-10-12T00:00:00.000Z",
+        restore_deadline: "2026-10-14T00:00:00.000Z",
+      });
+      expect(await state()).toMatchObject({ restorable_count: 3, restorable_through_date: "2026-10-09" });
+      await both("2026-10-11", "23:30");
+      expect(await state()).toMatchObject({ current_count: 4, restorable_count: 0, saved_on: "2026-10-11" });
+    });
+
+    test("one partner on the save day is not enough, and the next day starts a new streak while the restore stays open", async () => {
+      const { couple, day, both, activity, read, state } = await broken();
+      await activity(couple.first.userId, await day("2026-10-11"), "memory_created", "2026-10-11T09:00:00.000Z", "a-only");
+      await both("2026-10-12", "00:00");
+      expect(await state()).toMatchObject({
+        current_count: 1,
+        longest_count: 3,
+        last_qualified_date: "2026-10-12",
+        restorable_count: 3,
+        restorable_through_date: "2026-10-09",
+        restore_deadline: "2026-10-14T00:00:00.000Z",
+      });
+      expect((await state())!.saved_on).toBeUndefined();
+      expect(await read("2026-10-12T12:00:00.000Z")).toMatchObject({
+        current_count: 1,
+        save_available: false,
+        restore_available: true,
+        restorable_count: 3,
+      });
+    });
+
+    test.each([
+      ["on the free save day", "2026-10-11T12:00:00.000Z", null],
+      ["on the first restore day", "2026-10-12T00:00:00.000Z", ["2026-10-11", "2026-10-13T00:00:00.000Z"]],
+      ["in the last minute of the second restore day", "2026-10-13T23:59:00.000Z", ["2026-10-12", "2026-10-14T00:00:00.000Z"]],
+      ["on the day after", "2026-10-14T00:00:00.000Z", null],
+    ] as const)("a paid restore %s", async (_name, now, restoredFrom) => {
+      const { restore, state } = await broken();
+      vi.setSystemTime(new Date(now));
+      const result = await restore(`restore-${now}`);
+      if (restoredFrom === null) {
+        expect(result).toEqual(refused);
+        expect((await state())!.restored_at).toBeUndefined();
+        return;
+      }
+      expect(result).toEqual({ ok: true, restoredCount: 3, replayed: false });
+      // The streak goes on from yesterday, so the couple keeps all of today.
+      expect(await state()).toMatchObject({
+        current_count: 3,
+        last_qualified_date: restoredFrom[0],
+        next_activity_deadline_at: restoredFrom[1],
+        restorable_count: 0,
+        restored_at: now,
+      });
+    });
+
+    test("a restore counts the days of the new streak since the break on top of the old count", async () => {
+      const { both, restore, state } = await broken();
+      await both("2026-10-12");
+      vi.setSystemTime(new Date("2026-10-13T09:00:00.000Z"));
+      expect(await restore("restore-after-one-day")).toEqual({ ok: true, restoredCount: 4, replayed: false });
+      // Today is still open: the deadline stays at the end of 2026-10-13.
+      expect(await state()).toMatchObject({
+        current_count: 4,
+        longest_count: 4,
+        last_qualified_date: "2026-10-12",
+        next_activity_deadline_at: "2026-10-14T00:00:00.000Z",
+        restorable_count: 0,
+      });
+      await both("2026-10-13");
+      expect(await state()).toMatchObject({ current_count: 5, restorable_count: 0 });
+    });
+
+    test("a restore after both showed up on both restore days adds both days", async () => {
+      const { both, restore, state } = await broken();
+      await both("2026-10-12");
+      await both("2026-10-13");
+      expect(await state()).toMatchObject({ current_count: 2, restorable_count: 3 });
+      vi.setSystemTime(new Date("2026-10-13T15:00:00.000Z"));
+      expect(await restore("restore-after-two-days")).toEqual({ ok: true, restoredCount: 5, replayed: false });
+      expect(await state()).toMatchObject({ current_count: 5, last_qualified_date: "2026-10-13", restorable_count: 0 });
+    });
+
+    test("after the second restore day the old streak is gone for good, and a new one counts from one", async () => {
+      const { both, read, state } = await broken();
+      await read("2026-10-11T00:30:00.000Z");
+      expect(await read("2026-10-14T00:00:00.000Z")).toMatchObject({
+        current_count: 0,
+        save_available: false,
+        restore_available: false,
+        restorable_count: 0,
+        save_deadline: null,
+        restore_deadline: null,
+      });
+      await both("2026-10-14");
+      const state14 = await state();
+      expect(state14).toMatchObject({ current_count: 1, longest_count: 3, restorable_count: 0 });
+      expect(state14!.restore_deadline).toBeUndefined();
+      await both("2026-10-15");
+      expect(await state()).toMatchObject({ current_count: 2, restorable_count: 0 });
     });
   });
 
@@ -370,6 +515,7 @@ describe("mutual participation", () => {
         next_activity_deadline_at: "2026-10-10T11:00:00.000Z",
         restorable_count: 9,
         restorable_through_date: "2026-10-09",
+        save_deadline: "2026-10-10T00:00:00.000Z",
         restore_deadline: "2026-10-10T13:00:00.000Z",
       }),
     );
@@ -406,6 +552,7 @@ describe("mutual participation", () => {
         longest_count: 9,
         restorable_count: 9,
         restorable_through_date: "2026-10-08",
+        save_deadline: "2026-10-10T00:00:00.000Z",
         restore_deadline: "2026-10-10T13:00:00.000Z",
         updated_at: "2026-10-10T00:00:00.000Z",
       }),
@@ -446,9 +593,16 @@ describe("mutual participation", () => {
     await activity(couple.second.userId, yesterday, "memory_created", "2026-10-09T11:00:00.000Z", "b1");
     await activity(couple.first.userId, today, "memory_created", "2026-10-10T09:00:00.000Z", "a2");
     await activity(couple.second.userId, today, "memory_created", "2026-10-10T10:00:00.000Z", "b2");
+    // The four-day streak through 2026-10-08 broke, and today is the new streak's only day.
     const state = await streakState(t, couple.coupleId);
     await t.run((ctx) =>
-      ctx.db.patch(state!._id, { restorable_count: 4, restorable_through_date: "2026-10-08", restore_deadline: "2026-10-10T13:00:00.000Z" }),
+      ctx.db.patch(state!._id, {
+        current_count: 1,
+        restorable_count: 4,
+        restorable_through_date: "2026-10-08",
+        save_deadline: "2026-10-10T00:00:00.000Z",
+        restore_deadline: "2026-10-10T13:00:00.000Z",
+      }),
     );
     const result = await t.run((ctx) =>
       applyStreakRestore(ctx, {
@@ -480,6 +634,7 @@ describe("restore around daylight saving", () => {
         longest_count: 6,
         restorable_count: 6,
         restorable_through_date: "2026-01-01",
+        save_deadline: new Date(Date.parse(now) - 3_600_000).toISOString(),
         restore_deadline: new Date(Date.parse(now) + 3_600_000).toISOString(),
         updated_at: now,
       }),
@@ -499,6 +654,69 @@ describe("restore around daylight saving", () => {
       current_count: 6,
       last_qualified_date: yesterday,
       next_activity_deadline_at: deadline,
+    });
+  });
+});
+
+describe("save and restore days across time zones", () => {
+  /**
+   * A three-day streak whose last day qualified at `qualifiedAt`, with its freeze cooling down, so the
+   * next missed day breaks it. Returns helpers that act at an instant on the couple day running then.
+   */
+  async function brokenStreak(timeZones: [string, string], qualifiedAt: string) {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones });
+    const both = async (at: string, key: string) => {
+      const dayId = await t.run((ctx) => getOrCreateCoupleDayAt(ctx, couple.coupleId, at));
+      for (const user of [couple.first, couple.second]) {
+        await t.run((ctx) =>
+          applyCoupleActivity(ctx, {
+            couple_id: couple.coupleId,
+            user_id: user.userId,
+            couple_day_id: dayId,
+            activity_kind: "memory_created",
+            occurred_at: at,
+            dedupe_key: `${key}:${user.userId}`,
+          }),
+        );
+      }
+    };
+    await both(qualifiedAt, "qualify");
+    const state = () => streakState(t, couple.coupleId);
+    const row = (await state())!;
+    await t.run((ctx) =>
+      ctx.db.patch(row._id, { current_count: 3, longest_count: 3, freeze_used_at: qualifiedAt }),
+    );
+    return { t, couple, both, state };
+  }
+
+  // Each case: the partners' zones, when the last day qualified, the end of the free save day, the end of
+  // the restore days, and the last minute of the save day by the latest partner's clock.
+  test.each([
+    // Oslo's 2026-10-25 has 25 hours. It is the save day, so the save runs to 00:00 CET.
+    ["a save day that is 25 hours long", ["Europe/Oslo", "Europe/Oslo"], "2026-10-23T10:00:00.000Z", "2026-10-25T23:00:00.000Z", "2026-10-27T23:00:00.000Z", "2026-10-25T22:59:00.000Z"],
+    // Oslo's 2026-03-29 has 23 hours. It is the save day, so the save ends at 00:00 CEST.
+    ["a save day that is 23 hours long", ["Europe/Oslo", "Europe/Oslo"], "2026-03-27T10:00:00.000Z", "2026-03-29T22:00:00.000Z", "2026-03-31T22:00:00.000Z", "2026-03-29T21:59:00.000Z"],
+    // The partner in Los Angeles reaches midnight last, so each window waits for them.
+    ["partners in Oslo and Los Angeles", ["Europe/Oslo", "America/Los_Angeles"], "2026-07-13T12:00:00.000Z", "2026-07-16T07:00:00.000Z", "2026-07-18T07:00:00.000Z", "2026-07-16T06:59:00.000Z"],
+  ] as const)("%s", async (_name, zones, qualifiedAt, saveDeadline, restoreDeadline, lastSaveMinute) => {
+    const saved = await brokenStreak([...zones], qualifiedAt);
+    vi.setSystemTime(new Date(lastSaveMinute));
+    await saved.t.run((ctx) => detectStreakBreak(ctx, saved.couple.coupleId));
+    expect(await saved.state()).toMatchObject({ restorable_count: 3, save_deadline: saveDeadline, restore_deadline: restoreDeadline });
+    await saved.both(lastSaveMinute, "save");
+    const afterSave = await saved.state();
+    expect(afterSave).toMatchObject({ current_count: 4, restorable_count: 0 });
+    expect(afterSave!.saved_on).toBe(afterSave!.last_qualified_date);
+
+    // A minute later the save day is over: the same activity starts a new streak and the restore opens.
+    const late = await brokenStreak([...zones], qualifiedAt);
+    vi.setSystemTime(new Date(saveDeadline));
+    await late.both(saveDeadline, "late");
+    expect(await late.state()).toMatchObject({ current_count: 1, restorable_count: 3, restore_deadline: restoreDeadline });
+    expect(await late.t.run((ctx) => getCoupleStreakForCouple(ctx, late.couple.coupleId))).toMatchObject({
+      save_available: false,
+      restore_available: true,
     });
   });
 });
@@ -554,28 +772,41 @@ describe("streak read model", () => {
     expect(streak).toMatchObject({ current_count: 5, longest_count: 8, restore_available: false, restorable_count: 0 });
   });
 
-  test("a broken streak shows zero while its restore offer is open, then stops offering it", async () => {
+  test("a streak that broke more than three days ago reads as zero with nothing to win back", async () => {
     const { t, couple } = await setup();
-    await moveActivity(t, "2026-10-07T11:00:00.000Z");
-    // Latest event 2026-10-07 gives a deadline of 2026-10-09T00:00Z, so the restore offer runs to 2026-10-10T00:00Z... already past.
+    await moveActivity(t, "2026-10-05T11:00:00.000Z");
+    // Latest event 2026-10-05 gives a deadline of 2026-10-07T00:00Z. The freeze could only cover
+    // 2026-10-07, which was missed too. The save day was 2026-10-07 and the restore days ended 2026-10-10T00:00Z.
     const state = await streakState(t, couple.coupleId);
-    await t.run((ctx) => ctx.db.patch(state!._id, { next_activity_deadline_at: "2026-10-08T00:00:00.000Z" }));
+    await t.run((ctx) => ctx.db.patch(state!._id, { next_activity_deadline_at: "2026-10-07T00:00:00.000Z" }));
     const broken = await t.run((ctx) => getCoupleStreakForCouple(ctx, couple.coupleId));
-    expect(broken).toMatchObject({ current_count: 0, restorable_count: 5, restore_available: false });
-    expect(broken.restore_deadline).toBe("2026-10-10T00:00:00.000Z");
+    expect(broken).toMatchObject({
+      current_count: 0,
+      restorable_count: 0,
+      save_available: false,
+      restore_available: false,
+      save_deadline: null,
+      restore_deadline: null,
+    });
   });
 
-  test("a recent break keeps the restore offer open", async () => {
+  test("a recent break first offers the free save day", async () => {
     const { t, couple } = await setup();
-    // Deadline = 2026-10-10T00:00Z (events on 2026-10-08, +2 local days), restore until 2026-10-11T00:00Z.
+    // Deadline = 2026-10-10T00:00Z (events on 2026-10-08, +2 local days). 2026-10-10 is the save day.
     await moveActivity(t, "2026-10-08T11:00:00.000Z");
     await t.run(async (ctx) => {
       const row = await ctx.db.query("streak_states").first();
       await ctx.db.patch(row!._id, { freeze_used_at: "2026-10-01T00:00:00.000Z" });
     });
     const broken = await t.run((ctx) => getCoupleStreakForCouple(ctx, couple.coupleId));
-    expect(broken).toMatchObject({ current_count: 0, restorable_count: 5, restore_available: true });
-    expect(broken.restore_deadline).toBe("2026-10-11T00:00:00.000Z");
+    expect(broken).toMatchObject({
+      current_count: 0,
+      restorable_count: 5,
+      save_available: true,
+      restore_available: false,
+      save_deadline: "2026-10-11T00:00:00.000Z",
+      restore_deadline: "2026-10-13T00:00:00.000Z",
+    });
   });
 
   test("a ready freeze keeps a recently missed streak alive and is stored once", async () => {

@@ -76,6 +76,28 @@ struct CoupleStreakTests {
         #expect(count == 9)
     }
 
+    @Test func showingUpOnTheSaveDayBringsTheBrokenStreakBackWithToday() {
+        // The server count is 0 after the break. The partner already showed up today,
+        // so this answer brings the 12 days back and today counts on top.
+        let count = StreakCelebration.celebratedCount(
+            serverCurrentCount: 0,
+            lastQualifiedDate: "2026-06-26",
+            todayLocalDate: "2026-06-28",
+            partnerContributedToday: true,
+            savableCount: 12
+        )
+        let alone = StreakCelebration.celebratedCount(
+            serverCurrentCount: 0,
+            lastQualifiedDate: "2026-06-26",
+            todayLocalDate: "2026-06-28",
+            partnerContributedToday: false,
+            savableCount: 12
+        )
+
+        #expect(count == 13)
+        #expect(alone == 0)
+    }
+
     @Test func decodesStreakFreezeFields() throws {
         let data = Data(
             """
@@ -136,7 +158,66 @@ struct CoupleStreakTests {
         #expect(!streak.isRestorable)
     }
 
+    @Test func theFreeSaveDayComesBeforeThePaidRestore() {
+        var streak = Self.streak(currentCount: 0, restorableCount: 12, deadline: .now.addingTimeInterval(50 * 3_600))
+        streak.saveDeadline = .now.addingTimeInterval(2 * 3_600)
+
+        #expect(streak.isSavable)
+        #expect(!streak.isRestorable)
+        // The save day opens the informative sheet, never the purchase.
+        #expect(streak.entryDestination == .detail)
+
+        streak.saveDeadline = .now.addingTimeInterval(-60)
+        #expect(!streak.isSavable)
+        #expect(streak.isRestorable)
+        #expect(streak.entryDestination == .restore)
+    }
+
+    @Test func decodesTheSaveDayAndTheLastSave() throws {
+        let data = Data(
+            """
+            {"current_count":0,"longest_count":12,"last_qualified_date":"2026-10-10",
+            "save_available":true,"restore_available":false,"restorable_count":12,
+            "save_deadline":"2026-11-10T22:00:00.000Z","restore_deadline":"2026-11-12T22:00:00.000Z",
+            "saved_on":"2026-09-01","current_user_contributed_today":false,"partner_contributed_today":false,
+            "freeze_available":false,"freeze_ready_at":null,"freeze_saved_streak":false,
+            "next_activity_deadline_at":null}
+            """.utf8
+        )
+
+        let streak = try PaeoniaConvexClient.decoder.decode(CoupleStreakRow.self, from: data).streak
+
+        #expect(streak.saveDeadline == Date(timeIntervalSince1970: 1_794_348_000))
+        #expect(streak.savedOn == "2026-09-01")
+        // The save is not the streak's newest day, so it is not celebrated again.
+        #expect(streak.freshSaveDay == nil)
+    }
+
     // MARK: - Toolbar restore state
+
+    @Test func pillTurnsFromTheSaveDayToTheRestoreOffer() {
+        let saveDeadline = Date.now.addingTimeInterval(3_600)
+        let restoreDeadline = saveDeadline.addingTimeInterval(48 * 3_600)
+        var streak = Self.streak(currentCount: 0, restorableCount: 12, deadline: restoreDeadline)
+        streak.saveDeadline = saveDeadline
+        let state = StreakPillState(streak)
+
+        let saveDay = state.resolved(at: saveDeadline.addingTimeInterval(-1))
+        #expect(saveDay.isSavable)
+        #expect(!saveDay.isRestorable)
+        #expect(saveDay.displayCount == 12)
+        #expect(saveDay.usesMutedFlame)
+        #expect(state.changeDates == [saveDeadline, restoreDeadline])
+
+        let restoreDays = state.resolved(at: saveDeadline)
+        #expect(!restoreDays.isSavable)
+        #expect(restoreDays.isRestorable)
+        #expect(restoreDays.displayCount == 12)
+
+        let gone = state.resolved(at: restoreDeadline)
+        #expect(!gone.isPaused)
+        #expect(gone.displayCount == 0)
+    }
 
     @Test func pillOfARestorableStreakAdvertisesTheLostCount() {
         let deadline = Date.now.addingTimeInterval(3_600)

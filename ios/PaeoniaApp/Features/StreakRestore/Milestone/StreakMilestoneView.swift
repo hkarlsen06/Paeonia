@@ -5,8 +5,10 @@ import SwiftUI
 /// time the app is in front after the couple reaches it, and again from the streak
 /// pill for the rest of that streak day. The daily questions completion screen
 /// shows the same moment in place when finishing them reaches the milestone.
+/// The free save of a broken streak (`isSave`) is the same moment with its own words.
 struct StreakMilestoneView: View {
     let days: Int
+    var isSave = false
     var onClose: () -> Void = {}
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -25,17 +27,17 @@ struct StreakMilestoneView: View {
             flame
 
             VStack(spacing: PaeoniaSpacing.space8) {
-                Text(.streakMilestoneEyebrow)
+                Text(isSave ? .streakSavedEyebrow : .streakMilestoneEyebrow)
                     .font(PaeoniaTypography.caption.weight(.bold))
                     .textCase(.uppercase)
                     .tracking(1.4)
                     .foregroundStyle(Color.paeoniaInkGold)
 
-                Text(StreakMilestoneCopy.title(days: days))
+                Text(isSave ? .streakSavedTitle : StreakMilestoneCopy.title(days: days))
                     .font(PaeoniaTypography.heroTitle)
                     .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(StreakMilestoneCopy.message(days: days))
+                Text(isSave ? .streakSavedMessage : StreakMilestoneCopy.message(days: days))
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -93,15 +95,17 @@ struct StreakMilestoneView: View {
     }
 }
 
-/// A milestone moment to present, identified by its number of days.
+/// A milestone moment to present, or the moment a free save brought the streak back.
 struct StreakMilestoneMoment: Identifiable, Equatable {
     let days: Int
-    var id: Int { days }
+    var isSave = false
+    var id: String { "\(isSave ? "save" : "milestone")-\(days)" }
 }
 
 /// What decides whether the milestone moment can show right now.
 struct StreakMilestoneCheck: Equatable {
     let count: Int
+    let savedOn: String?
     let userID: UUID?
     let isScreenBusy: Bool
 }

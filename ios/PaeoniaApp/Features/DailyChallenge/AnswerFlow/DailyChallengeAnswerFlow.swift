@@ -24,6 +24,10 @@ struct DailyChallengeAnswerFlow: View {
     /// Claims the streak milestone the finished day reaches, if this phone has not
     /// celebrated it yet. See `StreakMilestoneStore.claim`.
     var claimStreakMilestone: @MainActor (Int) -> Int? = { _ in nil }
+    /// Claims the moment for a free save made on a couple day (`yyyy-MM-dd`) that brings
+    /// the streak to a count, if this phone has not celebrated it yet. See
+    /// `StreakMilestoneStore.claimSave`.
+    var claimStreakSave: @MainActor (String, Int) -> Bool = { _, _ in false }
     /// Closes the flow and opens a question's chat: the reveal's Open chat, and the note
     /// about an earlier answer.
     var onOpenQuestionChat: (DailyChallengeQuestion) -> Void = { _ in }
@@ -32,6 +36,8 @@ struct DailyChallengeAnswerFlow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State var didCelebrate = false
     @State var celebratedMilestone: Int?
+    /// This finish brought a broken streak back on its free save day.
+    @State var savedStreak = false
     /// The in-place streak-restore purchase driver, created only when a slipped
     /// streak's completion appears. Drives the completion screen's buy button and the
     /// revive-and-refill celebration once a purchase lands.
@@ -85,7 +91,8 @@ struct DailyChallengeAnswerFlow: View {
             serverCurrentCount: viewModel.streak.currentCount,
             lastQualifiedDate: viewModel.streak.lastQualifiedDate,
             todayLocalDate: viewModel.snapshot.currentDayLocalDate,
-            partnerContributedToday: viewModel.streak.partnerContributedToday
+            partnerContributedToday: viewModel.streak.partnerContributedToday,
+            savableCount: viewModel.streak.isSavable ? viewModel.streak.restorableCount : 0
         )
     }
 

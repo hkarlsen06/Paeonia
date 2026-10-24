@@ -34,6 +34,10 @@ extension DailyChallengeAnswerFlow {
                 restoreDeadline: viewModel.streak.restoreDeadline,
                 restoreViewModel: restoreViewModel,
                 milestone: celebratedMilestone,
+                savableCount: viewModel.streak.isSavable && !viewModel.streak.partnerContributedToday
+                    ? viewModel.streak.restorableCount
+                    : nil,
+                savedStreak: savedStreak,
                 onDone: dismiss
             )
             .transition(completionTransition)

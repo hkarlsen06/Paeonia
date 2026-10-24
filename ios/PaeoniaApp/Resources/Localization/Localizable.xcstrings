@@ -19935,6 +19935,42 @@
         }
       }
     },
+    "home.streakSave.message" : {
+      "comment" : "Body of the Home card on the free save day of a broken streak. Both partners must each do something, such as answer a question, before the day ends.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do one small thing together today, and it comes back for free."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør én liten ting sammen i dag, så kommer den tilbake gratis."
+          }
+        }
+      }
+    },
+    "home.streakSave.title" : {
+      "comment" : "Title of the Home card on the day after a missed streak day, when both partners can still bring the streak back for free. %lld is the number of days in the broken streak, at least 3.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save your %lld-day streak today"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redd rekken på %lld dager i dag"
+          }
+        }
+      }
+    },
     "home.unreadChats.eyebrow" : {
       "comment" : "Heading of the Home card that lists chats with unread messages from the partner",
       "extractionState" : "manual",
@@ -36208,6 +36244,186 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Få tilbake rekken"
+          }
+        }
+      }
+    },
+    "streakSave.action" : {
+      "comment" : "VoiceOver hint on the streak pill on the free save day of a broken streak. Tapping opens the streak sheet that explains how to save it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save it for free"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redd den gratis"
+          }
+        }
+      }
+    },
+    "streakSave.message" : {
+      "comment" : "Body of the streak sheet on the free save day of a broken streak. %lld is the number of days in the broken streak, at least 3.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your %lld-day streak comes back for free if you both do one small thing today. Answer a question, send a drawing, add a memory, or write a message."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken på %lld dager kommer tilbake gratis hvis dere begge gjør én liten ting i dag. Svar på et spørsmål, send en tegning, legg til et minne eller skriv en melding."
+          }
+        }
+      }
+    },
+    "streakSave.pill.accessibilityLabel" : {
+      "comment" : "VoiceOver label for the toolbar streak pill on the free save day of a broken streak. The argument is for example 30 day streak.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak paused. Do one small thing together today to bring back your %@ for free."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken er på pause. Gjør én liten ting sammen i dag, så får dere tilbake %@ gratis."
+          }
+        }
+      }
+    },
+    "streakSave.title" : {
+      "comment" : "Title of the streak sheet on the day after a missed streak day, when both partners can still bring the streak back for free.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can still save it"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere kan fortsatt redde den"
+          }
+        }
+      }
+    },
+    "streakSave.waitingForPartner" : {
+      "comment" : "Streak sheet line on the free save day of a broken streak: the user did something today, the partner has not yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've done your part. Now it's your partner's turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du har gjort din del. Nå er det partnerens tur."
+          }
+        }
+      }
+    },
+    "streakSave.waitingMessage" : {
+      "comment" : "Shown after the user answers today's question on the free save day of a broken streak, before the partner has done anything today. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your part is done. If %@ does one small thing today too, your streak comes back for free."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din del er gjort. Hvis %@ også gjør én liten ting i dag, kommer rekken tilbake gratis."
+          }
+        }
+      }
+    },
+    "streakSave.yourTurn" : {
+      "comment" : "Streak sheet line on the free save day of a broken streak: the partner did something today, the user has not yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner has done their part. Now it's your turn."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din har gjort sin del. Nå er det din tur."
+          }
+        }
+      }
+    },
+    "streakSaved.eyebrow" : {
+      "comment" : "Small label above the title when both partners brought a broken streak back for free by showing up on the day after the missed day",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak saved"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekken er reddet"
+          }
+        }
+      }
+    },
+    "streakSaved.message" : {
+      "comment" : "Body of the celebration when both partners brought a broken streak back for free by both doing something today",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You both showed up today, so your streak keeps going."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere var begge med i dag, så rekken fortsetter."
+          }
+        }
+      }
+    },
+    "streakSaved.title" : {
+      "comment" : "Title of the celebration when both partners brought a broken streak back for free",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You brought it back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere fikk den tilbake"
           }
         }
       }
