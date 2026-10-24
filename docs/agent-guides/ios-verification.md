@@ -38,13 +38,13 @@ Both wrappers also hold a machine-wide lock, `/tmp/xcode-agent.lock`, while xcod
 
 ### Signing a simulator in
 
-The app offers only Apple and Google sign-in. To sign the Debug build on a simulator into one of the two test accounts on `api.paeonia.no`, install the app, then run:
+The app offers only Apple and Google sign-in. Simulator Debug builds sign in through the development Clerk instance, which `api.paeonia.no` also trusts, so a simulator can pair with a phone on production Clerk. To sign the Debug build on a simulator into one of the two test accounts on `api.paeonia.no`, install the app, then run:
 
 ```bash
 scripts/sim-sign-in "<simulator name or UDID>" <first|second>
 ```
 
-`first` is Shared and `second` is Panci, the test couple. The session stays in the simulator's keychain, so this is needed once per simulator. Add `--reset` to switch a simulator to the other account.
+`first` is Shared and `second` is Panci, the test couple. `scripts/test-couple` creates them, onboards them with a photo, gives Shared a test grant and pairs them. Run it again after the hosted data was wiped. The session stays in the simulator's keychain, so this is needed once per simulator. Add `--reset` to switch a simulator to the other account.
 
 ### Testing a branch's backend changes
 
