@@ -4,7 +4,7 @@ Plan date: 2026-07-01
 
 This is the agreed plan for Paeonia's first-run experience, split into pre-auth (the hook) and post-auth (setup + activation). It captures the current baseline as verified in code, the locked product decisions, the target flow for both partners, and the implementation slices in build order.
 
-The pre-auth carousel, first-class invite-code entry, anniversary refactor, paywall reframe, and permission priming are implemented. The optional waiting-room gift remains a fast-follow, not an MVP blocker. `docs/implementation-map.md` is the source of truth for the files that own landed behavior.
+First-class invite-code entry, the anniversary refactor, the paywall reframe, and permission priming are implemented. The pre-auth carousel was built and later replaced: the signed-out flow is now welcome, then for the person starting the couple the start date and a first drawing for the partner, then sign-in (`ios/PaeoniaApp/Features/Auth/Welcome/`). Sign-in then saves something they made, and the invite screen sends the drawing. The waiting-room gift became that first drawing plus the first questions on the invite screen. `docs/implementation-map.md` is the source of truth for the files that own landed behavior.
 
 ## Guiding Insight
 
@@ -17,7 +17,7 @@ Supporting research is summarized at the end.
 
 ## Current Baseline (verified in code)
 
-Cold-launch intro → `SignInView` (single screen) → `AuthOnboardingView` (photo + name, both required) → paywall at `limitedAuthenticated` (**before pairing**) → invite/join → `PairingCelebrationView` → `MainTabView`.
+Plan-date baseline: cold-launch intro → `SignInView` (single screen) → `AuthOnboardingView` (photo + name, both required) → paywall at `limitedAuthenticated` (**before pairing**) → invite/join → `PairingCelebrationView` → `MainTabView`.
 
 - Access states live in `ios/PaeoniaApp/Services/Access/AccessRoute.swift` (`AccessRouteResolver`). The paywall shows at `.limitedAuthenticated` and `.pairedPaywalled`.
 - The paywall already sells a **14-day free trial** (introductory offer live in App Store Connect) and embeds invite-code entry (`ios/PaeoniaApp/Features/Paywall/Components/PaywallInviteCodeView.swift`), so the joining partner pays nothing — one `coupleEntitlement` covers the couple.
@@ -91,7 +91,7 @@ Turns a faked value into an honest, contextual moment and unblocks accurate coun
 
 ### 2. Pre-auth hook + first-class code entry
 
-- [x] Add a 3-screen, swipeable, skippable value sequence before `SignInView` (daily-question reveal, home-screen doodle, countdown). Keep it copy-light and honor Reduce Motion, matching the launch-intro tone in `ios/PaeoniaApp/Features/Auth/`.
+- [x] Add a 3-screen, swipeable, skippable value sequence before `SignInView` (daily-question reveal, home-screen doodle, countdown). Keep it copy-light and honor Reduce Motion, matching the launch-intro tone in `ios/PaeoniaApp/Features/Auth/`. Later replaced by the hands-on flow in `Features/Auth/Welcome/`: the starter picks the date and draws the first drawing before sign-in.
 - [x] Surface "Joining a partner? Enter your code" as a first-class path at/near sign-in so joiners never route through the paywall to find the code field.
 - [x] Respect `PresentationReadinessProviding` for any launch-adjacent screen; do not dismiss the launch surface until the first surface is stable (AGENTS.md → Stable Presentation Readiness).
 - [x] Localize all copy with generated `LocalizedStringResource` symbols; add entries via `./scripts/xcstrings-set` (English + Norwegian Bokmal + translator comment).

@@ -36,6 +36,7 @@ extension RootViewModel {
         await performAuthAction(failureNotice: .signInFailed) {
             let session = try await signIn()
             PaeoniaHaptics.signedIn()
+            welcomeFlow.signedIn()
             await apply(AuthRoute(session: session))
             await startSyncIfNeeded()
         }
@@ -143,6 +144,8 @@ extension RootViewModel {
                 appleAuthorizationCode: appleAuthorizationCode
             )
             requiresManualAppleRevocation = outcome == .manualAppleRevocationRequired
+            // The account is gone, so the next person starts at welcome.
+            welcomeFlow.accountDeleted()
             await endSession(purgingLocalData: true)
         } catch {
             route = previousRoute
@@ -164,6 +167,7 @@ extension RootViewModel {
         stopObservingAccessChanges()
         invalidateAccessResolution()
         leaveRelationshipSurfaces()
+        welcomeFlow.sessionEnded()
         route = .signedOut
         await liveSync?.stop()
         if purgingLocalData {

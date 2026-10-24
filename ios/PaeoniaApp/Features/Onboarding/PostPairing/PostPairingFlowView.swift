@@ -83,7 +83,7 @@ struct PostPairingFlowView: View {
                 )
             }
         case .widgetNudge:
-            if let image = model.drawnBackImage {
+            if let image = model.nudgeDrawing {
                 WidgetNudgeStep(
                     drawing: image,
                     authorName: currentDisplayName,

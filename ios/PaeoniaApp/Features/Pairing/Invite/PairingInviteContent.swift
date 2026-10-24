@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 /// model lazily and hands it over.
 struct PairingInviteContent: View {
     let viewModel: PairingInviteViewModel
-    /// The "while you wait" items. Nil until the parent builds it.
+    /// The first questions. Nil until the parent builds it.
     let firstDay: InviterFirstDayModel?
     let onSubmitJoinCode: (String) async -> Bool
     let onRefreshAccess: () -> Void
@@ -110,7 +110,7 @@ struct PairingInviteContent: View {
                 PairingInviteWaitingLine(notifiesOnJoin: firstDay?.notificationsAllowed == true)
 
                 if let firstDay {
-                    InviterWhileYouWaitButton(model: firstDay)
+                    InviterQuestionsRow(model: firstDay)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

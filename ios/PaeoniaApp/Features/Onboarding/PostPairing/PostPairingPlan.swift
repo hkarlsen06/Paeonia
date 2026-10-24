@@ -5,6 +5,9 @@ import Foundation
 nonisolated enum PostPairingStep: String, Codable, CaseIterable, Sendable {
     /// Unwrap the drawing the partner made, then maybe draw one back.
     case gift
+    /// Add the widget, for the person who started the couple and drew the first
+    /// drawing before sign-in. Someone who draws back after the gift is asked there.
+    case widget
     /// Confirm or set the day the couple got together.
     case date
     /// Pick when the daily questions arrive.
@@ -33,6 +36,9 @@ nonisolated struct PostPairingFacts: Equatable, Sendable {
     /// This person joined with the partner's code. The partner set things up while
     /// waiting, so a date that is already set came from them.
     var acceptedInvite = false
+    /// This person's own drawing is on the couple's widget, and the widget is not on
+    /// their Home Screen.
+    var ownDrawingNeedsWidget = false
     var questionTimeIsOn: Bool?
     var partnerAnswersWaiting = false
 }
@@ -47,6 +53,9 @@ nonisolated enum PostPairingPlan {
         switch step {
         case .gift:
             facts.hasGift
+        case .widget:
+            // With a gift, drawing back asks for the widget there, and Later skips it.
+            !facts.hasGift && !facts.acceptedInvite && facts.ownDrawingNeedsWidget
         case .date:
             // The inviter set the date while waiting, so only the person who joined
             // confirms it. Anyone without a date is asked.

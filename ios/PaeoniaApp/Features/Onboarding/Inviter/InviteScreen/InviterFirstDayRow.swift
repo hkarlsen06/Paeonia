@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One "while you wait" item: a tool the inviter opens, so it is a pressable card. When
-/// it turns done the card pops and hearts rise from its trailing mark.
+/// The first questions on the invite screen: a tool the inviter opens, so it is a
+/// pressable card. When it turns done the card pops and hearts rise from its trailing mark.
 struct InviterFirstDayRow<Leading: View, Trailing: View>: View {
     let title: LocalizedStringResource
     let subtitle: LocalizedStringResource
@@ -103,29 +103,6 @@ struct InviterFirstDayRowIcon: View {
     }
 }
 
-/// The drawing, small, where the icon was.
-struct InviterDrawingThumbnail: View {
-    let image: UIImage
-
-    @ScaledMetric(relativeTo: .body) private var size: CGFloat = 44
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-
-        Image(uiImage: image)
-            .resizable()
-            .scaledToFit()
-            .frame(width: size, height: size)
-            .background(.paeoniaBackgroundPrimary, in: shape)
-            .clipShape(shape)
-            .overlay {
-                shape.strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeHairline)
-            }
-            .transition(.scale(scale: 0.6).combined(with: .opacity))
-            .accessibilityHidden(true)
-    }
-}
-
 /// A check once the item is done, and a chevron before.
 struct InviterFirstDayCheck: View {
     let isDone: Bool
@@ -141,14 +118,11 @@ struct InviterFirstDayCheck: View {
 }
 
 /// How many of the first questions are answered, as a ring that fills, then a check.
-/// The While you wait button counts its two things with it too.
 struct InviterQuestionsProgress: View {
     let answered: Int
     let total: Int
     /// The questions are loading because the row was tapped.
     var isLoading = false
-    /// What VoiceOver reads for the count.
-    var label: (Int, Int) -> LocalizedStringResource = { .inviterQuestionsRowProgress($0, $1) }
 
     @ScaledMetric(relativeTo: .body) private var size: CGFloat = 34
 
@@ -165,7 +139,7 @@ struct InviterQuestionsProgress: View {
         }
         .frame(minWidth: size, minHeight: size)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(total > 0 ? Text(label(answered, total)) : Text(verbatim: ""))
+        .accessibilityLabel(total > 0 ? Text(.inviterQuestionsRowProgress(answered, total)) : Text(verbatim: ""))
     }
 
     private var ring: some View {

@@ -11793,24 +11793,6 @@
         }
       }
     },
-    "firstDay.drawing.waiting.message" : {
-      "comment" : "Banner after sending the first drawing when it could not reach the server yet",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your drawing is saved on this phone. We'll keep trying to send it."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegningen din er lagret på denne telefonen. Vi prøver å sende den igjen."
-          }
-        }
-      }
-    },
     "firstDay.questions.done.message" : {
       "comment" : "First questions before the partner joins: message after both are answered",
       "extractionState" : "manual",
@@ -20133,78 +20115,6 @@
         }
       }
     },
-    "inviter.drawing.row.done" : {
-      "comment" : "Invite screen: line under 'Draw something for them' once a drawing is saved for the partner",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ready for their Home Screen. Tap to draw again."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klar for Hjem-skjermen. Trykk for å tegne på nytt."
-          }
-        }
-      }
-    },
-    "inviter.drawing.row.subtitle" : {
-      "comment" : "Invite screen: line under 'Draw something for them' before anything is drawn",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "It shows up on their Home Screen."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Det dukker opp på Hjem-skjermen når dere er koblet sammen."
-          }
-        }
-      }
-    },
-    "inviter.drawing.row.title" : {
-      "comment" : "Invite screen: row that opens the drawing canvas to draw something for the partner before they join",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Draw something for them"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tegn noe til partneren din"
-          }
-        }
-      }
-    },
-    "inviter.drawing.row.waiting" : {
-      "comment" : "Invite screen: line under 'Draw something for them' when the drawing is saved on the phone but has not reached the server yet",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved on this phone. We'll send it as soon as we can."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lagret på denne telefonen. Vi sender den så snart vi kan."
-          }
-        }
-      }
-    },
     "inviter.questions.loadFailed.offlineMessage" : {
       "comment" : "Banner message when the first questions could not be loaded because the phone is offline",
       "extractionState" : "manual",
@@ -20309,96 +20219,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Svar på de første spørsmålene"
-          }
-        }
-      }
-    },
-    "inviter.whileYouWait.button.done" : {
-      "comment" : "Invite screen: subtitle of the While you wait button once the answers and the drawing are both made.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Both are ready for your partner."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Begge deler ligger klart til partneren din."
-          }
-        }
-      }
-    },
-    "inviter.whileYouWait.button.subtitle" : {
-      "comment" : "Invite screen: subtitle of the While you wait button, before both things are made.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Make something for your partner to find."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lag noe partneren din finner når dere er koblet sammen."
-          }
-        }
-      }
-    },
-    "inviter.whileYouWait.message" : {
-      "comment" : "Invite screen: line under 'While you wait'. 'Them' is the partner who has not joined yet",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Make something for your partner. It'll be waiting for them when they join."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lag noe til partneren din. Det ligger klart når dere er koblet sammen."
-          }
-        }
-      }
-    },
-    "inviter.whileYouWait.progress" : {
-      "comment" : "Invite screen: VoiceOver label for the progress ring on the While you wait button. First number is how many are done, second is the total.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld of %2$lld done"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld av %2$lld gjort"
-          }
-        }
-      }
-    },
-    "inviter.whileYouWait.title" : {
-      "comment" : "Invite screen: small uppercase heading over things the person can make for their partner while waiting",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "While you wait"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mens du venter"
           }
         }
       }
@@ -25649,24 +25469,6 @@
         }
       }
     },
-    "onboarding.startDate.saveFailed.title" : {
-      "comment" : "Banner title when the date the couple got together could not be saved on the phone",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We couldn't save your date"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi fikk ikke lagret datoen"
-          }
-        }
-      }
-    },
     "onboarding.startDate.skip.button" : {
       "comment" : "Profile setup, second page: quiet button that moves on without picking the date the couple got together",
       "extractionState" : "manual",
@@ -27031,6 +26833,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ gratis, deretter %2$@."
+          }
+        }
+      }
+    },
+    "paywall.drawingReady.headline" : {
+      "comment" : "Paywall headline when the person's first drawing for their partner is saved on the phone and waits to be sent.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing is ready"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen din er klar"
+          }
+        }
+      }
+    },
+    "paywall.drawingReady.message" : {
+      "comment" : "Paywall message under 'Your drawing is ready'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It goes to your partner once you subscribe. One subscription covers both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den sendes til partneren din når du abonnerer. Ett abonnement gjelder for dere begge."
           }
         }
       }
@@ -37202,6 +37040,60 @@
         }
       }
     },
+    "welcome.drawing.landed.message" : {
+      "comment" : "First drawing before sign-in: under the Home Screen picture. The drawing appears on the partner's widget after they join.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner sees it on their Paeonia widget once you're connected."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din ser den på Paeonia-widgeten sin når dere er koblet sammen."
+          }
+        }
+      }
+    },
+    "welcome.drawing.landed.title" : {
+      "comment" : "First drawing before sign-in: title above a picture of a phone Home Screen showing the drawing on the widget. 'Their' is the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This will be waiting on their Home Screen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den venter på Hjem-skjermen til partneren din"
+          }
+        }
+      }
+    },
+    "welcome.drawing.skip.button" : {
+      "comment" : "First drawing before sign-in: toolbar button that moves on to sign-in without a drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hopp over"
+          }
+        }
+      }
+    },
     "welcome.feature.drawing.title" : {
       "comment" : "Welcome screen feature title: send drawings to the partner's Home Screen widget",
       "extractionState" : "manual",
@@ -37270,24 +37162,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spørsmål til dere to"
-          }
-        }
-      }
-    },
-    "welcome.haveInviteCode" : {
-      "comment" : "Welcome/sign-in: quiet button for a partner who was invited. Opens invite code entry so the app shows the joining onboarding after sign-in.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Have you been invited?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Har du blitt invitert?"
           }
         }
       }
@@ -37382,6 +37256,24 @@
         }
       }
     },
+    "welcome.invited.button" : {
+      "comment" : "Welcome screen: second button for a partner who got an invite code. Opens invite code entry.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I was invited"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeg ble invitert"
+          }
+        }
+      }
+    },
     "welcome.invitePaste.prompt" : {
       "comment" : "Welcome sign-in: shown beside the system Paste button when the clipboard holds a link, such as the invite link the join web page copied before the partner installed the app.",
       "extractionState" : "manual",
@@ -37396,6 +37288,222 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fikk du en invitasjonslenke?"
+          }
+        }
+      }
+    },
+    "welcome.privacy.line" : {
+      "comment" : "Welcome screen: small line under the summary. Must stay true: Paeonia has no ads and no public profiles.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No ads and no public profiles. Just the two of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen reklame og ingen offentlige profiler. Bare dere to."
+          }
+        }
+      }
+    },
+    "welcome.returning.button" : {
+      "comment" : "Welcome screen: quiet link for someone who already has an account. Goes straight to sign-in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I already have an account"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeg har allerede en konto"
+          }
+        }
+      }
+    },
+    "welcome.signIn.drawing.accessibility" : {
+      "comment" : "VoiceOver label for the picture of the drawing the person made before signing in, shown on a widget tile on the sign-in screen",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen din"
+          }
+        }
+      }
+    },
+    "welcome.signIn.drawing.message" : {
+      "comment" : "Sign-in step message under 'Keep your drawing for them'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in so it's saved and waiting when they join."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg inn, så er den lagret og venter når partneren din blir med."
+          }
+        }
+      }
+    },
+    "welcome.signIn.drawing.title" : {
+      "comment" : "Sign-in step title for someone who just made a first drawing for their partner. 'Them' is the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep your drawing for them"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ta vare på tegningen til partneren din"
+          }
+        }
+      }
+    },
+    "welcome.signIn.joining.message" : {
+      "comment" : "Sign-in step message under 'Join your partner'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to use your invite code."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg inn for å bruke invitasjonskoden."
+          }
+        }
+      }
+    },
+    "welcome.signIn.joining.title" : {
+      "comment" : "Sign-in step title for a partner who saved an invite code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Join your partner"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bli med partneren din"
+          }
+        }
+      }
+    },
+    "welcome.signIn.returning.message" : {
+      "comment" : "Sign-in step message under 'Welcome back'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to pick up where you left off."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg inn for å fortsette der du slapp."
+          }
+        }
+      }
+    },
+    "welcome.signIn.returning.title" : {
+      "comment" : "Sign-in step title for someone who already has an account, also shown after signing out.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome back"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velkommen tilbake"
+          }
+        }
+      }
+    },
+    "welcome.signIn.start.message" : {
+      "comment" : "Sign-in step message under 'Make your space'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to save it. Then you can invite your partner."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logg inn for å lagre det. Så kan du invitere partneren din."
+          }
+        }
+      }
+    },
+    "welcome.signIn.start.title" : {
+      "comment" : "Sign-in step title for someone starting a couple without a drawing. 'Space' is the couple's private place in the app.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make your space"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lag rommet deres"
+          }
+        }
+      }
+    },
+    "welcome.start.button" : {
+      "comment" : "Welcome screen: main button for the person who starts the couple. Leads to the start date and a first drawing, then sign-in.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start our space"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start rommet vårt"
           }
         }
       }

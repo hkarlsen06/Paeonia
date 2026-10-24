@@ -1,5 +1,6 @@
 import Foundation
 import PencilKit
+import UIKit
 
 /// The partner's widget drawing, ready to unwrap. The drawing is at the canonical
 /// game canvas size, which is what the replay plays at.
@@ -21,6 +22,9 @@ nonisolated enum PostPairingGiftLoad: Sendable {
 /// and never throws, so one failure only skips its own step.
 nonisolated protocol PostPairingDataLoading: Sendable {
     func partnerGift(partnerUserID: UUID) async -> PostPairingGiftLoad
+    /// This person's own drawing when it is the one on the couple's widget, as the
+    /// widget shows it. Nil otherwise, or when it did not load.
+    func ownDrawingImage(currentUserID: UUID) async -> UIImage?
     /// Nil when the preferences could not load.
     func questionTimeIsOn() async -> Bool?
     /// The partner answered questions today that this person can answer too.
@@ -58,6 +62,27 @@ nonisolated struct LivePostPairingDataLoader: PostPairingDataLoading {
             ))
         } catch {
             return .failed(PaeoniaFailure(error))
+        }
+    }
+
+    func ownDrawingImage(currentUserID: UUID) async -> UIImage? {
+        guard let state = try? await gateway.getCanvasState(),
+              state.activeRevisionAuthorUserID == currentUserID,
+              let mediaAssetID = state.payloadMediaAssetID,
+              let url = try? await gateway.signedPayloadURL(mediaAssetID: mediaAssetID),
+              let data = try? await downloader.download(from: url),
+              let drawing = try? PKDrawing(data: data)
+        else {
+            return nil
+        }
+        let side = state.bounds?.canvasSide ?? Double(WidgetDrawingViewModel.fallbackCanvasSide)
+        return await MainActor.run {
+            var image: UIImage?
+            // Light, like the widget's own previews, so the ink colors match.
+            UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+                image = drawing.image(from: CGRect(x: 0, y: 0, width: side, height: side), scale: 2)
+            }
+            return image
         }
     }
 

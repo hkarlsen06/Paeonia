@@ -9,6 +9,7 @@ final class AccountJourneyUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    /// Sign-in for someone returning, with a way back to the welcome screen.
     @MainActor
     func testLoggingOutReturnsToSignIn() throws {
         let app = openProfileInPairedApp()
@@ -16,6 +17,9 @@ final class AccountJourneyUITests: XCTestCase {
         confirm(app, row: "settings.account.logout", button: "settings.account.logout.confirm")
 
         XCTAssertTrue(app.buttons["auth.signIn.apple"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["welcome.signIn.title"].label, "Welcome back")
+        app.buttons["welcome.signIn.back"].tap()
+        XCTAssertTrue(app.buttons["welcome.start"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -28,19 +32,22 @@ final class AccountJourneyUITests: XCTestCase {
         XCTAssertFalse(app.tabBars.firstMatch.exists)
     }
 
+    /// The account is gone, so the phone starts over at the welcome screen.
     @MainActor
-    func testDeletingTheAccountReturnsToSignIn() throws {
+    func testDeletingTheAccountReturnsToWelcome() throws {
         let app = openProfileInPairedApp()
 
         confirm(app, row: "settings.account.delete", button: "settings.account.delete.confirm")
 
-        XCTAssertTrue(app.buttons["auth.signIn.apple"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["welcome.start"].waitForExistence(timeout: 10))
     }
 
     @MainActor
     private func openProfileInPairedApp() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-paired"
+        // English, so the headlines can be checked.
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
 
         // With five tabs the system tab bar drops the tabs' accessibility identifiers, so

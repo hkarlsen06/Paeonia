@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The screen an entitled but unpaired user sees. It shows their invite code, lets
-/// them enter a partner's code instead, and offers things to make for the partner
+/// them enter a partner's code instead, and offers their first questions to answer
 /// while they wait.
 ///
 /// The default view models are built once after the view appears. Building it in `init`

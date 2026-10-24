@@ -12,6 +12,9 @@ struct WidgetDrawingView: View {
     private let partnerName: String
     private let title: LocalizedStringResource
     private let showsHistory: Bool
+    private let showsShareButton: Bool
+    /// The "Not sent yet" pill above the canvas.
+    private let showsSendStatus: Bool
     private let emptyCanvasHint: LocalizedStringResource?
     @State private var isClearConfirmationPresented = false
     @State private var isHistoryPresented = false
@@ -29,6 +32,8 @@ struct WidgetDrawingView: View {
         historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)? = nil,
         title: LocalizedStringResource = .widgetDrawingTitle,
         showsHistory: Bool = true,
+        showsShareButton: Bool = true,
+        showsSendStatus: Bool = true,
         emptyCanvasHint: LocalizedStringResource? = nil
     ) {
         _viewModel = State(
@@ -43,6 +48,8 @@ struct WidgetDrawingView: View {
         self.historyThumbnailLoader = historyThumbnailLoader
         self.title = title
         self.showsHistory = showsHistory
+        self.showsShareButton = showsShareButton
+        self.showsSendStatus = showsSendStatus
         self.emptyCanvasHint = emptyCanvasHint
         partnerName = WidgetSyncIdentityStore.shared.load().partnerDisplayName?.trimmedNonEmpty
             ?? String(localized: .pairingCelebrationPartnerName)
@@ -50,7 +57,7 @@ struct WidgetDrawingView: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName)
+            WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName, showsSendStatus: showsSendStatus)
 
             drawingCanvas
 
@@ -75,7 +82,7 @@ struct WidgetDrawingView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
         .toolbar { toolbarButtons }
-        .paeoniaShareToolbar(viewModel.shareable, identifier: "widgetDrawing.share")
+        .paeoniaShareToolbar(showsShareButton ? viewModel.shareable : nil, identifier: "widgetDrawing.share")
         .sheet(isPresented: $isHistoryPresented) {
             if let historyViewModel, let historyThumbnailLoader {
                 WidgetDrawingHistoryView(
@@ -223,6 +230,7 @@ struct WidgetDrawingView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
+        .accessibilityIdentifier("widgetDrawing.canvas")
     }
 
     // MARK: - Actions
@@ -244,14 +252,17 @@ struct WidgetDrawingView: View {
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(!viewModel.canSave)
+            .accessibilityIdentifier("widgetDrawing.send")
             // The label crossfades between states instead of swapping in one frame.
             .animation(PaeoniaMotion.stateChange, value: viewModel.delivery)
             .animation(PaeoniaMotion.stateChange, value: viewModel.canSave)
         }
     }
+}
 
+private extension WidgetDrawingView {
     @ViewBuilder
-    private var sendButtonLabel: some View {
+    var sendButtonLabel: some View {
         // Unsent changes always offer Send, even while an older send is still
         // uploading; the newer drawing replaces it.
         if viewModel.canSave {
@@ -286,9 +297,7 @@ struct WidgetDrawingView: View {
             }
         }
     }
-}
 
-private extension WidgetDrawingView {
     /// The reaction target of the partner's drawing, when it is the one on screen.
     var partnersDrawingReaction: WidgetDrawingReactionTarget? {
         guard viewModel.isShowingSavedAttribution,

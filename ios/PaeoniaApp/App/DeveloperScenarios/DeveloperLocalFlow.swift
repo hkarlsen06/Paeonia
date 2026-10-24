@@ -50,7 +50,7 @@
     let rootViewModel: RootViewModel
     let locationViewModel: LocationMapViewModel
     let appleSignInProvider = DeveloperLocalFlowAppleSignInProvider()
-    let widgetCanvasService = DeveloperWidgetCanvasService()
+    let widgetCanvasService: DeveloperWidgetCanvasService
     let featureDependencies: RootFeatureDependencies
 
     // This is the single Debug composition boundary for the full local app graph.
@@ -65,6 +65,16 @@
       let pendingOperationStore = InMemoryPendingSyncOperationRepository()
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
       let storeKitService = DeveloperScenarioStoreKitService()
+      let widgetCanvasService = DeveloperWidgetCanvasService()
+      self.widgetCanvasService = widgetCanvasService
+      // The first drawing's "not sent yet" marker, made before sign-in and sent from the
+      // invite screen. Every local flow starts without one.
+      let pendingUploads = WidgetPendingUploadStore(defaults: DeveloperInviterFixture.defaults)
+      pendingUploads.clearAll()
+      let firstDayStartedOnQueue = FirstDayStartedOnQueue(
+        pendingOperationStore: pendingOperationStore,
+        operationProvider: operationProvider
+      )
 
       rootViewModel = RootViewModel(
         syncService: DeveloperLocalFlowSyncService(),
@@ -73,7 +83,15 @@
         accessSnapshotStore: accessSnapshotStore,
         inviteStore: inviteStore,
         pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(startsPastFirstDay: seed == .paired),
-        systemSideEffects: NoOpRootSystemSideEffects()
+        systemSideEffects: NoOpRootSystemSideEffects(),
+        welcomeFlow: WelcomeFlowModel(
+          store: InMemoryWelcomeFlowStore(),
+          funnel: NoOpWelcomeFunnelRecorder(),
+          canvas: widgetCanvasService,
+          pendingUploads: pendingUploads,
+          startDateQueue: firstDayStartedOnQueue,
+          phoneHasNoOtherAccount: { true }
+        )
       )
 
       locationViewModel = LocationMapViewModel(
@@ -152,12 +170,8 @@
         pairingInviteViewModel: pairingViewModel,
         inviterFirstDayModel: DeveloperInviterFixture.firstDayModel(
           answered: 0,
-          hasDrawing: false,
-          canvas: widgetCanvasService
-        ),
-        firstDayStartedOnQueue: FirstDayStartedOnQueue(
-          pendingOperationStore: pendingOperationStore,
-          operationProvider: operationProvider
+          canvas: widgetCanvasService,
+          pendingUploads: pendingUploads
         ),
         pairingJoinViewModel: PairingJoinViewModel(
           pairingService: pairingService,

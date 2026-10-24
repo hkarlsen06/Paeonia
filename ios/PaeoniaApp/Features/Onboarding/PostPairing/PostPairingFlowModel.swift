@@ -30,7 +30,8 @@ enum PostPairingOutcome: Equatable {
 final class PostPairingFlowModel {
     enum Screen: Equatable {
         case gift
-        /// After a drawing back, for someone without the widget.
+        /// For someone without the widget: after a drawing back, or the first drawing
+        /// the person made before sign-in.
         case widgetNudge
         case date
         case questionTime
@@ -42,8 +43,9 @@ final class PostPairingFlowModel {
     private(set) var gift: PostPairingGiftModel?
     /// The drawing screen opened from the gift, while it is open.
     private(set) var drawingViewModel: WidgetDrawingViewModel?
-    /// The drawing this person sent back, for the widget nudge.
-    private(set) var drawnBackImage: UIImage?
+    /// This person's drawing for the widget nudge: the one they sent back, or their
+    /// first drawing.
+    private(set) var nudgeDrawing: UIImage?
     /// The partner's drawing did not load. The view shows the banner and clears it.
     private(set) var giftFailure: PaeoniaFailure?
     private(set) var outcome: PostPairingOutcome?
@@ -128,7 +130,7 @@ final class PostPairingFlowModel {
         screen = nil
         gift = nil
         drawingViewModel = nil
-        drawnBackImage = nil
+        nudgeDrawing = nil
         giftFailure = nil
         outcome = nil
         facts = PostPairingFacts()
@@ -144,7 +146,8 @@ final class PostPairingFlowModel {
         async let giftLoaded: Void = loadGift(context)
         async let questionTimeLoaded: Void = loadQuestionTime(context)
         async let answersLoaded: Void = loadAnswersWaiting(context)
-        _ = await (giftLoaded, questionTimeLoaded, answersLoaded)
+        async let widgetLoaded: Void = loadOwnDrawingForWidget(context)
+        _ = await (giftLoaded, questionTimeLoaded, answersLoaded, widgetLoaded)
         guard isCurrent(context) else {
             return
         }
@@ -165,6 +168,22 @@ final class PostPairingFlowModel {
             return
         }
         facts.partnerAnswersWaiting = isWaiting
+    }
+
+    /// Only loads the drawing when the widget is missing.
+    private func loadOwnDrawingForWidget(_ context: PostPairingContext) async {
+        guard !(await WidgetNudgeModel.isWidgetInstalled(configurations: widgetConfigurations)) else {
+            return
+        }
+        let image = await loader.ownDrawingImage(currentUserID: context.currentUserID)
+        guard isCurrent(context), let image else {
+            return
+        }
+        // A drawing sent back after the gift replaces it.
+        if nudgeDrawing == nil {
+            nudgeDrawing = image
+        }
+        facts.ownDrawingNeedsWidget = true
     }
 
     /// The celebration names the gift as soon as it is here.
@@ -221,7 +240,11 @@ final class PostPairingFlowModel {
         }
     }
 
+    /// Shows the next planned step. A step finished since the plan was made, such as
+    /// the widget asked for after a drawing back, is passed over.
     private func advance() {
+        let finished = context.flatMap { store.postPairingProgress(forPairID: $0.pairID) }?.finishedSteps ?? []
+        queue.removeAll(where: finished.contains)
         guard !queue.isEmpty else {
             finish()
             return
@@ -268,6 +291,7 @@ final class PostPairingFlowModel {
     private static func screen(for step: PostPairingStep) -> Screen {
         switch step {
         case .gift: .gift
+        case .widget: .widgetNudge
         case .date: .date
         case .questionTime: .questionTime
         case .answerInvite: .answerInvite
@@ -323,13 +347,13 @@ extension PostPairingFlowModel {
         guard let sent = drawingViewModel else {
             return
         }
-        let image = Self.image(of: sent)
+        let image = sent.widgetImage
         let isInstalled = await WidgetNudgeModel.isWidgetInstalled(configurations: widgetConfigurations)
         guard drawingViewModel === sent, screen == .gift else {
             return
         }
         if let image, !isInstalled {
-            drawnBackImage = image
+            nudgeDrawing = image
             screen = .widgetNudge
         } else {
             advance()
@@ -351,24 +375,9 @@ extension PostPairingFlowModel {
     }
 
     func widgetNudgeFinished() {
-        drawnBackImage = nil
+        complete(.widget)
+        nudgeDrawing = nil
         advance()
-    }
-
-    /// The sent drawing as the widget shows it.
-    private static func image(of viewModel: WidgetDrawingViewModel) -> UIImage? {
-        let side = viewModel.drawingCanvasSide
-            ?? viewModel.laidOutCanvasSide
-            ?? WidgetDrawingViewModel.fallbackCanvasSide
-        guard side > 0, !viewModel.drawing.strokes.isEmpty else {
-            return nil
-        }
-        var image: UIImage?
-        // Light, like the widget's own previews, so the ink colors match.
-        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-            image = viewModel.drawing.image(from: CGRect(x: 0, y: 0, width: side, height: side), scale: 2)
-        }
-        return image
     }
 
     // MARK: Other steps

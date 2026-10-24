@@ -1,39 +1,33 @@
 #if DEBUG
-  import PencilKit
   import SwiftUI
 
-  /// The inviter's path before their partner joins: the start date page of profile
-  /// setup, and the invite screen's "while you wait" items with nothing, half, or
-  /// everything made. The rest of the path runs in `Local flow · onboarding`.
+  /// The inviter's path before their partner joins: the start date step before
+  /// sign-in, and the invite screen's first questions with one or both answered. The
+  /// rest of the path runs in `Local flow · fresh install` and `Local flow · onboarding`.
   nonisolated extension DeveloperScenario {
     static let inviter: [DeveloperScenario] = [
-      onboardingStartDate, pairingInviteFirstDayHalf, pairingInviteFirstDayDone,
+      welcomeStartDate, pairingInviteFirstDayHalf, pairingInviteFirstDayDone,
     ]
 
-    static let onboardingStartDate = DeveloperScenario(
-      "onboarding-start-date", "Onboarding · start date",
+    static let welcomeStartDate = DeveloperScenario(
+      "welcome-start-date", "Welcome · start date",
       "When did you get together, then the days count-up", .launchAndAuth
     ) { _ in DeveloperStartDateScenarioView() }
     static let pairingInviteFirstDayHalf = DeveloperScenario(
-      "pairing-invite-first-day-half", "Pairing invite · while you wait, half done",
-      "One of two first answers saved, no drawing yet", .pairing
-    ) { _ in DeveloperInviterScenarioView(answered: 1, hasDrawing: false) }
+      "pairing-invite-first-day-half", "Pairing invite · first questions, one answered",
+      "One of two first answers saved", .pairing
+    ) { _ in DeveloperInviterScenarioView(answered: 1) }
     static let pairingInviteFirstDayDone = DeveloperScenario(
-      "pairing-invite-first-day-done", "Pairing invite · while you wait, all done",
-      "Both first answers saved and a drawing on the widget", .pairing
-    ) { _ in DeveloperInviterScenarioView(answered: 2, hasDrawing: true) }
+      "pairing-invite-first-day-done", "Pairing invite · first questions, both answered",
+      "Both first answers saved", .pairing
+    ) { _ in DeveloperInviterScenarioView(answered: 2) }
   }
 
-  /// The start date page on its own. Continue plays the count-up, and the page stays.
+  /// The start date step on its own. Continue plays the count-up, and the step stays.
   private struct DeveloperStartDateScenarioView: View {
     var body: some View {
       RootBrandedFrame {
-        AuthOnboardingStartDatePage(
-          isSaving: false,
-          onBack: {},
-          onSaveDate: { _ in true },
-          onFinish: {}
-        )
+        WelcomeStartDateStep(onBack: {}, onSave: { _ in }, onSkip: {}, onFinish: {})
       }
     }
   }
@@ -41,7 +35,6 @@
   /// The invite screen with a local invite and a local first day draft.
   private struct DeveloperInviterScenarioView: View {
     let answered: Int
-    let hasDrawing: Bool
 
     var body: some View {
       RootBrandedFrame {
@@ -54,7 +47,7 @@
             inviteStore: DeveloperScenarioInviteStore(invite: nil),
             now: { DeveloperScenarioFixture.now }
           ),
-          firstDayModel: DeveloperInviterFixture.firstDayModel(answered: answered, hasDrawing: hasDrawing),
+          firstDayModel: DeveloperInviterFixture.firstDayModel(answered: answered),
           onSubmitJoinCode: { _ in true },
           onRefreshAccess: {}
         )
@@ -67,28 +60,26 @@
     static let defaults = UserDefaults(suiteName: "DeveloperInviterScenarios") ?? .standard
 
     /// A first day model that never leaves this phone. `canvas` stands in for the
-    /// widget, so a drawing made in the scenario stays local too.
+    /// widget, so a drawing made before sign-in in a local flow is sent locally too.
     @MainActor
     static func firstDayModel(
       answered: Int,
-      hasDrawing: Bool,
-      canvas: DeveloperWidgetCanvasService? = nil
+      canvas: DeveloperWidgetCanvasService = DeveloperWidgetCanvasService(),
+      pendingUploads: WidgetPendingUploadStore? = nil
     ) -> InviterFirstDayModel {
-      let drawing = DeveloperGamesFixture.umbrella().dataRepresentation()
-      WidgetPendingUploadStore(defaults: defaults).clearAll()
-      let canvas = canvas ?? DeveloperWidgetCanvasService(
-        snapshot: hasDrawing
-          ? WidgetCanvasSnapshot(drawingData: drawing, authorName: "Alex", createdAt: DeveloperScenarioFixture.now)
-          : nil
-      )
-      let gateway = DeveloperFirstDayGateway(answered: answered, hasDrawing: hasDrawing)
+      let pendingUploads = pendingUploads ?? {
+        let store = WidgetPendingUploadStore(defaults: defaults)
+        store.clearAll()
+        return store
+      }()
+      let gateway = DeveloperFirstDayGateway(answered: answered)
       return InviterFirstDayModel(
         ownerUserID: DeveloperScenarioFixture.currentUserID,
         authorName: "Alex",
         gateway: gateway,
         uploader: FirstDayDrawingUploadService(
           gateway: gateway,
-          pendingStore: WidgetPendingUploadStore(defaults: defaults),
+          pendingStore: pendingUploads,
           localStore: canvas
         ),
         canvas: canvas,
@@ -103,7 +94,7 @@
   actor DeveloperFirstDayGateway: FirstDayGateway {
     private var draft: FirstDayDraft
 
-    init(answered: Int, hasDrawing: Bool = false) {
+    init(answered: Int) {
       let questions = [
         FirstDayQuestion(
           slotNumber: 1,
@@ -123,7 +114,7 @@
       draft = FirstDayDraft(
         startedOn: nil,
         questions: questions,
-        drawing: hasDrawing ? FirstDayDrawingReference(mediaAssetID: UUID(), revisionID: UUID()) : nil
+        drawing: nil
       )
     }
 

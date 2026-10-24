@@ -1,5 +1,7 @@
 import Foundation
+import PencilKit
 import Testing
+import UIKit
 @testable import PaeoniaApp
 
 struct FirstDayDrawingUploadServiceTests {
@@ -108,32 +110,10 @@ struct InviterFirstDayModelTests {
                 localStore: canvas
             ),
             canvas: canvas,
-            downloader: FirstDayDownloaderFake(),
             pushAuthorization: push,
-            rasterizer: FirstDayRasterizerFake(),
             identityStore: WidgetSyncIdentityStore(defaults: defaults),
             questionPreferences: FirstDayPreferencesFake()
         )
-    }
-
-    private let drawingReference = FirstDayDrawingReference(
-        mediaAssetID: firstDayUUID(50),
-        revisionID: firstDayUUID(51)
-    )
-
-    @Test func afterAReinstallTheThumbnailComesFromTheServerAndTheWidgetIsLeftAlone() async throws {
-        let defaults = try firstDayTestDefaults()
-        let gateway = FirstDayGatewaySpy(draft: firstDayDraft(answered: 0, drawing: drawingReference))
-        let canvas = FirstDayCanvasFake()
-        let model = makeModel(gateway: gateway, canvas: canvas, defaults: defaults)
-
-        await model.load()
-
-        #expect(model.drawingThumbnail != nil)
-        #expect(await gateway.steps.contains("signedURL"))
-        // The widget extension puts the server's copy on the widget.
-        #expect(await canvas.drawingData == nil)
-        #expect(!WidgetPendingUploadStore(defaults: defaults).hasPending)
     }
 
     @Test func loadSavesTheNameTheWidgetShowsForTheFirstDrawing() async throws {
@@ -148,17 +128,50 @@ struct InviterFirstDayModelTests {
         #expect(identity.partnerDisplayName == nil)
     }
 
-    @Test func aDrawingLeftFromEarlierIsNotTheFirstDrawing() async throws {
-        let model = makeModel(
-            gateway: FirstDayGatewaySpy(),
-            canvas: FirstDayCanvasFake(drawingData: Data("old".utf8)),
-            defaults: try firstDayTestDefaults()
+    /// The drawing made on the welcome flow's drawing screen before there is an account
+    /// is sent to the first day draft when the invite screen loads after sign-in.
+    @Test func aDrawingMadeBeforeSignInGoesToTheDraftWhenTheInviteScreenLoads() async throws {
+        let defaults = try firstDayTestDefaults()
+        let canvas = FirstDayCanvasFake()
+        let pendingStore = WidgetPendingUploadStore(defaults: defaults)
+        let welcome = WelcomeFlowModel(
+            store: InMemoryWelcomeFlowStore(),
+            funnel: NoOpWelcomeFunnelRecorder(),
+            canvas: canvas,
+            pendingUploads: pendingStore,
+            drawingDrafts: InMemoryWidgetDrawingDraftStore(),
+            phoneHasNoOtherAccount: { true }
         )
+        let drawingViewModel = welcome.drawingViewModel()
+        drawingViewModel.updateDrawing(firstDayStroke())
+        await drawingViewModel.save()
 
-        await model.load()
+        #expect(drawingViewModel.delivery == .sent)
+        #expect(welcome.hasWaitingDrawing)
+        #expect(await canvas.loadSavedDrawing() != nil)
 
-        #expect(!model.hasDrawing)
+        let gateway = FirstDayGatewaySpy()
+        await makeModel(gateway: gateway, canvas: canvas, defaults: defaults).load()
+
+        #expect(await gateway.steps.suffix(4) == ["reserve", "upload", "finalize", "save"])
+        #expect(!pendingStore.hasPending)
     }
+}
+
+private func firstDayStroke() -> PKDrawing {
+    let points = [CGPoint(x: 40, y: 40), CGPoint(x: 80, y: 80)].enumerated().map { index, location in
+        PKStrokePoint(
+            location: location,
+            timeOffset: TimeInterval(index) * 0.01,
+            size: CGSize(width: 4, height: 4),
+            opacity: 1,
+            force: 1,
+            azimuth: 0,
+            altitude: 0
+        )
+    }
+    let path = PKStrokePath(controlPoints: points, creationDate: Date(timeIntervalSinceReferenceDate: 800_000_000))
+    return PKDrawing(strokes: [PKStroke(ink: PKInk(.pen, color: .black), path: path)])
 }
 
 struct FirstDayPurgeTests {
@@ -202,38 +215,5 @@ struct FirstDayPurgeTests {
             pending: firstDay,
             savedDrawing: Data("another drawing".utf8)
         ))
-    }
-}
-
-@MainActor
-struct FirstDayCanvasDraftAdoptionTests {
-    @Test func pairingMovesTheUnsentFirstDayStrokesToTheCouple() {
-        let store = InMemoryWidgetDrawingDraftStore()
-        let owner = firstDayUUID(100)
-        let couple = firstDayUUID(200)
-        let firstDayKey = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: owner)
-        store.setDraft(Data("strokes".utf8), for: firstDayKey)
-        store.setDraftBase("base", for: firstDayKey)
-
-        store.adoptFirstDayDraft(ownerUserID: owner, coupleID: couple)
-
-        let coupleKey = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: couple)
-        #expect(store.draft(for: coupleKey) == Data("strokes".utf8))
-        #expect(store.draftBase(for: coupleKey) == "base")
-        #expect(store.draft(for: firstDayKey) == nil)
-    }
-
-    @Test func aCoupleDraftIsNotReplaced() {
-        let store = InMemoryWidgetDrawingDraftStore()
-        let owner = firstDayUUID(100)
-        let coupleKey = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: firstDayUUID(200))
-        let firstDayKey = WidgetDrawingDraftKey(ownerUserID: owner, coupleID: owner)
-        store.setDraft(Data("couple".utf8), for: coupleKey)
-        store.setDraft(Data("first day".utf8), for: firstDayKey)
-
-        store.adoptFirstDayDraft(ownerUserID: owner, coupleID: firstDayUUID(200))
-
-        #expect(store.draft(for: coupleKey) == Data("couple".utf8))
-        #expect(store.draft(for: firstDayKey) == Data("first day".utf8))
     }
 }

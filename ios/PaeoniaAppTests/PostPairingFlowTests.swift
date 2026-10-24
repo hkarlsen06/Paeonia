@@ -1,6 +1,7 @@
 import Foundation
 import PencilKit
 import Testing
+import UIKit
 @testable import PaeoniaApp
 
 struct PostPairingPlanTests {
@@ -20,6 +21,35 @@ struct PostPairingPlanTests {
         let facts = PostPairingFacts(startedOn: "2024-03-03", acceptedInvite: false, questionTimeIsOn: true)
 
         #expect(PostPairingPlan.steps(for: facts, finished: []).isEmpty)
+    }
+
+    @Test func inviterWhoseFirstDrawingIsOnTheWidgetIsAskedToAddTheWidget() {
+        let inviter = PostPairingFacts(
+            startedOn: "2024-03-03",
+            acceptedInvite: false,
+            ownDrawingNeedsWidget: true,
+            questionTimeIsOn: true
+        )
+        var joiner = inviter
+        joiner.acceptedInvite = true
+
+        #expect(PostPairingPlan.steps(for: inviter, finished: []) == [.widget])
+        #expect(PostPairingPlan.steps(for: inviter, finished: [.widget]).isEmpty)
+        #expect(!PostPairingPlan.steps(for: joiner, finished: []).contains(.widget))
+    }
+
+    /// Drawing back from the gift asks for the widget there, so the plan never asks
+    /// again, even when the person's own drawing is on the widget by then.
+    @Test func inviterWithAGiftIsAskedForTheWidgetOnlyAfterDrawingBack() {
+        let facts = PostPairingFacts(
+            hasGift: true,
+            startedOn: "2024-03-03",
+            acceptedInvite: false,
+            ownDrawingNeedsWidget: true,
+            questionTimeIsOn: true
+        )
+
+        #expect(PostPairingPlan.steps(for: facts, finished: []) == [.gift])
     }
 
     @Test func anyoneWithoutADateIsAskedForIt() {
@@ -347,6 +377,10 @@ private struct PostPairingFakeLoader: PostPairingDataLoading {
     }
 
     // swiftlint:disable async_without_await
+    func ownDrawingImage(currentUserID _: UUID) async -> UIImage? {
+        nil
+    }
+
     func questionTimeIsOn() async -> Bool? {
         questionTimeIsOn
     }

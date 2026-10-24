@@ -42,28 +42,6 @@ protocol WidgetDrawingDraftStoring: AnyObject, Sendable {
     nonisolated func setDraft(_ data: Data, base fingerprint: String, for key: WidgetDrawingDraftKey)
 }
 
-extension WidgetDrawingDraftStoring {
-    /// Before pairing, the inviter's unsent strokes are kept under their own user ID in
-    /// place of a couple (`InviterFirstDayModel.makeDrawingViewModel`). Once paired, they
-    /// move to the couple's key, with the base they were made on, unless the couple
-    /// already has a draft. Nothing is sent.
-    func adoptFirstDayDraft(ownerUserID: UUID, coupleID: UUID) {
-        let firstDayKey = WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: ownerUserID)
-        let coupleKey = WidgetDrawingDraftKey(ownerUserID: ownerUserID, coupleID: coupleID)
-        guard coupleID != ownerUserID,
-              let data = draft(for: firstDayKey),
-              draft(for: coupleKey) == nil
-        else {
-            return
-        }
-        setDraft(data, for: coupleKey)
-        if let base = draftBase(for: firstDayKey) {
-            setDraftBase(base, for: coupleKey)
-        }
-        removeDraft(for: firstDayKey)
-    }
-}
-
 @MainActor
 final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     static let shared = FileWidgetDrawingDraftStore()

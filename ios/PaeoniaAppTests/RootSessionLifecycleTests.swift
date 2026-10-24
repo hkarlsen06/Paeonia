@@ -104,6 +104,79 @@ struct RootSessionLifecycleTests {
         #expect(ownerStore.ownerUserID == nil)
     }
 
+    /// The start date picked on the welcome flow goes into the outbox for the person who
+    /// signs in, once, and the next signed-out screen after a sign-out is sign-in for returning.
+    @Test func aStartDatePickedBeforeSignInIsQueuedForWhoeverSignsIn() async throws {
+        let pending = InMemoryPendingSyncOperationRepository()
+        let welcome = WelcomeFlowModel(
+            store: InMemoryWelcomeFlowStore(),
+            funnel: NoOpWelcomeFunnelRecorder(),
+            startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: pending),
+            phoneHasNoOtherAccount: { true }
+        )
+        welcome.saveStartDate(try #require(PairingStartDate(rawValue: "2024-02-29").date()))
+        let viewModel = RootViewModel(
+            syncService: TestPaeoniaSyncService(),
+            authService: FlowAuthService(restoredSession: completeSession),
+            accessRouteService: ScriptedAccessRouteService([.pairedForFlowTest(ownerUserID: userID)]),
+            accessSnapshotStore: InMemoryAccessSyncSnapshotRepository(),
+            systemSideEffects: NoOpRootSystemSideEffects(),
+            welcomeFlow: welcome
+        )
+
+        await viewModel.start()
+        await viewModel.refreshAuthRoute()
+
+        let queued = try await pending.inFlightOperations(ownerUserID: userID, kind: .setFirstDayStartedOn)
+        let payload = try JSONDecoder().decode(
+            SetFirstDayStartedOnPayload.self,
+            from: try #require(queued.first?.requestData)
+        )
+        #expect(queued.count == 1)
+        #expect(payload.startedOn == "2024-02-29")
+
+        await viewModel.signOut()
+        #expect(welcome.step == .signIn(.returning))
+    }
+
+    /// A start date that could not be queued for the person who signed in stays on the
+    /// phone. Signing out drops it, so the next account never gets it.
+    @Test func aStartDateThatFailedToQueueDoesNotReachTheNextAccount() async throws {
+        let nextUserID = UUID()
+        let pending = FailingFirstEnqueuePendingStore()
+        let welcome = WelcomeFlowModel(
+            store: InMemoryWelcomeFlowStore(),
+            funnel: NoOpWelcomeFunnelRecorder(),
+            startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: pending),
+            phoneHasNoOtherAccount: { true }
+        )
+        welcome.saveStartDate(try #require(PairingStartDate(rawValue: "2024-02-29").date()))
+        let viewModel = RootViewModel(
+            syncService: TestPaeoniaSyncService(),
+            authService: FlowAuthService(
+                restoredSession: completeSession,
+                signInSession: .test(id: nextUserID.uuidString, profileStatus: .complete)
+            ),
+            accessRouteService: ScriptedAccessRouteService([
+                .pairedForFlowTest(ownerUserID: userID),
+                .pairedForFlowTest(ownerUserID: nextUserID),
+            ]),
+            accessSnapshotStore: InMemoryAccessSyncSnapshotRepository(),
+            systemSideEffects: NoOpRootSystemSideEffects(),
+            welcomeFlow: welcome
+        )
+
+        await viewModel.start()
+        #expect(await pending.attemptedOwnerIDs == [userID])
+
+        await viewModel.signOut()
+        await viewModel.signInWithGoogle()
+
+        #expect(viewModel.currentSession?.id == nextUserID.uuidString)
+        #expect(await pending.attemptedOwnerIDs == [userID])
+        #expect(try await pending.inFlightOperations(ownerUserID: nextUserID, kind: .setFirstDayStartedOn).isEmpty)
+    }
+
     @Test func syncDoesNotStartForASessionThatEndedWhileSyncWasStarting() async {
         let syncService = GatedSyncService()
         let liveSync = RecordingLiveSync()
@@ -283,6 +356,51 @@ private actor GatedSyncService: PaeoniaSyncing {
     func purgeRelationshipAccess(ownerUserID _: UUID, permanently _: Bool) async -> LocalPrivacyPurgeResult {
         .completed
     }
+}
+
+/// Refuses the first write, as a full disk would, and keeps the ones after it.
+private actor FailingFirstEnqueuePendingStore: PendingSyncOperationPersisting {
+    private let kept = InMemoryPendingSyncOperationRepository()
+    private(set) var attemptedOwnerIDs: [UUID] = []
+
+    func enqueue(_ request: PendingSyncOperationRequest) async throws {
+        attemptedOwnerIDs.append(request.ownerUserID)
+        guard attemptedOwnerIDs.count > 1 else {
+            throw FlowTestError.unavailable
+        }
+        try await kept.enqueue(request)
+    }
+
+    func inFlightOperations(
+        ownerUserID: UUID,
+        kind: SyncPendingOperationKind
+    ) async throws -> [PendingSyncOperationSnapshot] {
+        try await kept.inFlightOperations(ownerUserID: ownerUserID, kind: kind)
+    }
+
+    func readyOperations(
+        ownerUserID _: UUID,
+        limit _: Int,
+        now _: Date
+    ) async throws -> [PendingSyncOperationSnapshot] {
+        []
+    }
+
+    func nextPendingOperationDate(ownerUserID _: UUID, now _: Date) async throws -> Date? {
+        nil
+    }
+
+    func markSending(clientOperationID _: UUID, at _: Date) async throws {}
+    func markSucceeded(clientOperationID _: UUID, at _: Date) async throws {}
+    func markRetryableFailure(
+        clientOperationID _: UUID,
+        errorDescription _: String,
+        nextRetryAt _: Date?,
+        at _: Date
+    ) async throws {}
+    func markTerminalFailure(clientOperationID _: UUID, errorDescription _: String, at _: Date) async throws {}
+    func deleteCompleted(ownerUserID _: UUID) async throws {}
+    func resetInFlight(ownerUserID _: UUID) async throws {}
 }
 
 // swiftlint:enable async_without_await

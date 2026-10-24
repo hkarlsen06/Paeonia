@@ -9,25 +9,19 @@ import UIKit
 /// with sign out and account deletion as quiet links under it. The keyboard covers them
 /// while the name is typed, and the keyboard's Continue key submits.
 ///
-/// The second page asks when the couple got together (`AuthOnboardingStartDatePage`).
-/// It comes before the profile is saved, because saving it moves the app on. Someone
-/// joining a partner's code skips it, since they confirm the date after joining.
+/// The start date is asked before sign-in (`WelcomeStartDateStep`).
 ///
-/// The last page asks whether to share usage statistics (`UsageSharingQuestionView`),
+/// The second page asks whether to share usage statistics (`UsageSharingQuestionView`),
 /// here rather than as a pop-up later. Answering saves the profile.
 struct AuthOnboardingView: View {
     let isWorking: Bool
     /// The photo already on the account, such as the imported Google photo.
     let savedPhotoAssetID: UUID?
-    let asksStartDate: Bool
     let onCompleteOnboarding: (String, Data?) -> Void
     let onSignOut: () -> Void
     let onDeleteAccount: () -> Void
-    private let ownerUserID: UUID?
     /// The signed-in user id as the session spells it, which keys the usage answer.
     private let sessionUserID: String?
-    /// Nil until needed, so a redraw of this view doesn't build a store.
-    private let startDateQueue: FirstDayStartedOnQueue?
 
     @State private var displayName: String
     @State private var selectedProfilePhotoItem: PhotosPickerItem?
@@ -50,28 +44,22 @@ struct AuthOnboardingView: View {
 
     private enum Page {
         case profile
-        case startDate
         case usage
     }
 
     init(
         session: AuthSession?,
         isWorking: Bool,
-        asksStartDate: Bool = true,
-        startDateQueue: FirstDayStartedOnQueue? = nil,
         onCompleteOnboarding: @escaping (String, Data?) -> Void,
         onSignOut: @escaping () -> Void,
         onDeleteAccount: @escaping () -> Void
     ) {
         self.isWorking = isWorking
         self.savedPhotoAssetID = session?.profilePhotoAssetID
-        self.asksStartDate = asksStartDate
         self.onCompleteOnboarding = onCompleteOnboarding
         self.onSignOut = onSignOut
         self.onDeleteAccount = onDeleteAccount
-        ownerUserID = session.flatMap { UUID(uuidString: $0.id) }
         sessionUserID = session?.id
-        self.startDateQueue = startDateQueue
         _displayName = State(initialValue: session?.displayName ?? "")
     }
 
@@ -81,14 +69,6 @@ struct AuthOnboardingView: View {
             case .profile:
                 profilePage
                     .transition(pageTransition(edge: .leading))
-            case .startDate:
-                AuthOnboardingStartDatePage(
-                    isSaving: isSaving,
-                    onBack: { page = .profile },
-                    onSaveDate: { await saveStartDate($0) },
-                    onFinish: { finishAfterStartDate() }
-                )
-                .transition(pageTransition(edge: .trailing))
             case .usage:
                 UsageSharingQuestionView(onAnswer: answerUsageQuestion)
                     .disabled(isSaving)
@@ -123,7 +103,7 @@ struct AuthOnboardingView: View {
         }
     }
 
-    /// Pages slide like a push: the date page comes in from the trailing edge and goes
+    /// Pages slide like a push: the usage page comes in from the trailing edge and goes
     /// back out there. Reduce Motion crossfades.
     private func pageTransition(edge: Edge) -> AnyTransition {
         reduceMotion ? .opacity : .move(edge: edge).combined(with: .opacity)
@@ -278,12 +258,7 @@ struct AuthOnboardingView: View {
         }
 
         isNameFocused = false
-        if asksStartDate {
-            PaeoniaHaptics.selection()
-            page = .startDate
-        } else {
-            finishAfterStartDate()
-        }
+        finishProfilePage()
     }
 
     /// Points at what still blocks setup: a note and a stronger ring on the photo,
@@ -307,7 +282,7 @@ struct AuthOnboardingView: View {
 extension AuthOnboardingView {
     /// Goes on to the usage question, or saves the profile in a build that
     /// sends no usage statistics.
-    private func finishAfterStartDate() {
+    private func finishProfilePage() {
         guard usageSharing != nil, sessionUserID != nil, PaeoniaAnalytics.isAvailable else {
             submit()
             return
@@ -334,24 +309,6 @@ extension AuthOnboardingView {
         hasSubmitted = true
         PaeoniaHaptics.profileSetupSent()
         onCompleteOnboarding(name, selectedProfilePhotoData)
-    }
-
-    /// Queues the date on this phone. The sync sends it once the profile is saved.
-    private func saveStartDate(_ date: Date) async -> Bool {
-        guard let ownerUserID else {
-            return false
-        }
-        do {
-            let queue = startDateQueue ?? FirstDayStartedOnQueue()
-            try await queue.save(PairingStartDate(date: date), ownerUserID: ownerUserID)
-            return true
-        } catch {
-            bannerCenter.show(.error(
-                title: String(localized: .onboardingStartDateSaveFailedTitle),
-                message: String(localized: .commonActionFailedMessage)
-            ))
-            return false
-        }
     }
 }
 

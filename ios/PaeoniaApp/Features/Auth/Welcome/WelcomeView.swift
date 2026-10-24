@@ -1,27 +1,31 @@
 import SwiftUI
+import UIKit
 
-/// The signed-out entry screen. The lockup, one picture, and one line say what
-/// Paeonia is, and the person can sign in right away. There is no carousel to
-/// page through first. It is the first surface the cold-launch intro uncovers,
-/// so its parts cascade in with `View.launchEntrance(order:)`.
+/// The first signed-out screen. The lockup, one picture and two lines say what Paeonia
+/// is, and three choices lead on: start a couple, join a partner who invited you, or
+/// sign back in. It is the first surface the cold-launch intro uncovers, so its parts
+/// cascade in with `View.launchEntrance(order:)`.
 ///
-/// "Have you been invited?" is for a partner who was sent a code. The code is
-/// saved before sign-in, then joined on the next screen. A partner who installed
-/// from the invite web page gets a Paste button for the link it copied instead.
+/// "I was invited" opens the code sheet. A partner who installed from the invite web
+/// page gets a Paste button for the link it copied instead. A saved code moves the flow
+/// on to sign-in (`WelcomeFlowModel.inviteCodeSaved`).
 struct WelcomeView: View {
-    let isWorking: Bool
-    let signingInWith: AuthProvider?
-    let pendingInviteCode: String?
-    let onAppleSignIn: () -> Void
-    let onGoogleSignIn: () -> Void
+    let model: WelcomeFlowModel
     let onSubmitInviteCode: (String) -> Void
 
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isInviteSheetPresented = false
+    /// Whether the clipboard holds something that looks like a link. The `/join` web
+    /// page copies the invite link when a partner without the app taps "Install",
+    /// because the link itself is lost on the way through the App Store. Checking the
+    /// pattern does not read the clipboard, so iOS shows no paste prompt. Only the
+    /// system paste button reads it.
+    @State private var clipboardHasLink = false
 
     var body: some View {
-        // The hero sits centered between the lockup and the buttons. When it
-        // does not fit, such as at large text sizes, the same content scrolls
-        // and the spacers shrink to their minimum.
+        // The hero sits centered between the lockup and the buttons. When it does not
+        // fit, such as at large text sizes, the same content scrolls and the spacers
+        // shrink to their minimum.
         ViewThatFits(in: .vertical) {
             content
 
@@ -32,33 +36,36 @@ struct WelcomeView: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            SignInView(
-                isWorking: isWorking,
-                signingInWith: signingInWith,
-                pendingInviteCode: pendingInviteCode,
-                onAppleSignIn: onAppleSignIn,
-                onGoogleSignIn: onGoogleSignIn,
-                onHaveInviteCode: { isInviteSheetPresented = true },
-                onPasteInviteCode: onSubmitInviteCode
-            )
-            .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            .padding(.top, PaeoniaSpacing.space12)
-            .background(alignment: .top) {
-                // Content scrolling under the buttons fades out instead of
-                // being cut off by a hard edge.
-                LinearGradient(
-                    colors: [.paeoniaBackgroundPrimary.opacity(0), .paeoniaBackgroundPrimary],
-                    startPoint: .top,
-                    endPoint: .init(x: 0.5, y: 0.12)
-                )
-                .ignoresSafeArea()
-                .accessibilityHidden(true)
-            }
-            .launchEntrance(order: 2)
+            choices
+                .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.top, PaeoniaSpacing.space12)
+                .padding(.bottom, PaeoniaSpacing.space8)
+                .background(alignment: .top) {
+                    // Content scrolling under the buttons fades out instead of being
+                    // cut off by a hard edge.
+                    LinearGradient(
+                        colors: [.paeoniaBackgroundPrimary.opacity(0), .paeoniaBackgroundPrimary],
+                        startPoint: .top,
+                        endPoint: .init(x: 0.5, y: 0.12)
+                    )
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
+                }
+                .launchEntrance(order: 2)
         }
         .background(PaeoniaGlowBackground())
+        .onAppear(perform: model.welcomeAppeared)
+        // Checked again on return to the app, since the link may be copied after the
+        // welcome screen first appeared.
+        .task(id: scenePhase) {
+            guard scenePhase == .active else {
+                return
+            }
+            let patterns = try? await UIPasteboard.general.detectedPatterns(for: [\.probableWebURL])
+            clipboardHasLink = patterns?.contains(\.probableWebURL) ?? false
+        }
         .sheet(isPresented: $isInviteSheetPresented) {
             PairingCodeEntrySheet(
                 title: .welcomeInviteCodeTitle,
@@ -73,8 +80,8 @@ struct WelcomeView: View {
 
     private var content: some View {
         VStack(spacing: 0) {
-            // Same size and place as the lockup in `RootBrandedFrame`, so the
-            // logo stays still while the screens after sign-in fade in under it.
+            // Same size and place as the lockup in `RootBrandedFrame`, so the logo stays
+            // still while the next steps fade in under it.
             PaeoniaBrandLockup(wordmarkSize: 36, taglineSize: 17)
                 .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .combine)
@@ -86,14 +93,20 @@ struct WelcomeView: View {
             VStack(spacing: PaeoniaSpacing.space16) {
                 WelcomeHero()
 
-                Text(.welcomeSummary)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    // Narrower than the column, so the two lines come out
-                    // close in length under the picture.
-                    .frame(maxWidth: 300)
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    Text(.welcomeSummary)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+
+                    Text(.welcomePrivacyLine)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextTertiary)
+                }
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                // Narrower than the column, so the lines come out close in length
+                // under the picture.
+                .frame(maxWidth: 300)
             }
             .launchEntrance(order: 1)
 
@@ -105,16 +118,91 @@ struct WelcomeView: View {
         .padding(.top, PaeoniaSpacing.screenTopSpacing)
         .padding(.bottom, PaeoniaSpacing.space24)
     }
+
+    // MARK: Choices
+
+    private var choices: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            Button(action: model.chooseStart) {
+                Text(.welcomeStartButton)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .accessibilityIdentifier("welcome.start")
+
+            invitedChoice
+
+            Button(action: model.chooseReturning) {
+                Text(.welcomeReturningButton)
+                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PaeoniaQuietButtonStyle())
+            .accessibilityIdentifier("welcome.returning")
+        }
+    }
+
+    @ViewBuilder
+    private var invitedChoice: some View {
+        if clipboardHasLink {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    invitePastePrompt
+                    invitePasteButton
+                }
+
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    invitePastePrompt
+                    invitePasteButton
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+        } else {
+            Button(action: openInviteSheet) {
+                Text(.welcomeInvitedButton)
+            }
+            .buttonStyle(PaeoniaSecondaryButtonStyle())
+            .accessibilityIdentifier("welcome.invited")
+        }
+    }
+
+    private var invitePastePrompt: some View {
+        Text(.welcomeInvitePastePrompt)
+            .font(PaeoniaTypography.bodyEmphasis)
+            .foregroundStyle(.paeoniaTextPrimary)
+            .multilineTextAlignment(.center)
+    }
+
+    /// The system paste button reads the clipboard without a permission prompt. Anything
+    /// other than a Paeonia join link opens the code sheet, so the partner can still
+    /// type the code.
+    private var invitePasteButton: some View {
+        PasteButton(payloadType: String.self) { strings in
+            model.chooseJoining()
+            if let code = PairingInviteCode.joinLinkCode(in: strings.joined(separator: " ")) {
+                onSubmitInviteCode(code)
+            } else {
+                isInviteSheetPresented = true
+            }
+        }
+        .labelStyle(.titleAndIcon)
+        .buttonBorderShape(.capsule)
+        .tint(.paeoniaAccentSecondary)
+    }
+
+    private func openInviteSheet() {
+        model.chooseJoining()
+        isInviteSheetPresented = true
+    }
 }
 
 #if DEBUG
 #Preview {
     WelcomeView(
-        isWorking: false,
-        signingInWith: nil,
-        pendingInviteCode: nil,
-        onAppleSignIn: {},
-        onGoogleSignIn: {},
+        model: WelcomeFlowModel(
+            store: InMemoryWelcomeFlowStore(),
+            funnel: NoOpWelcomeFunnelRecorder(),
+            phoneHasNoOtherAccount: { true }
+        ),
         onSubmitInviteCode: { _ in }
     )
     .environment(PaeoniaBannerCenter())

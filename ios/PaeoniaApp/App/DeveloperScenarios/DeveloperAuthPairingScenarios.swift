@@ -59,7 +59,7 @@
           PairingInviteView(
             session: DeveloperScenarioFixture.completeSession,
             viewModel: inviteViewModel,
-            firstDayModel: DeveloperInviterFixture.firstDayModel(answered: 0, hasDrawing: false),
+            firstDayModel: DeveloperInviterFixture.firstDayModel(answered: 0),
             onSubmitJoinCode: { _ in true },
             onRefreshAccess: {}
           )
@@ -131,9 +131,13 @@
   struct DeveloperPaywallScenarioView: View {
     let scenario: DeveloperScenario
 
-    private var hasTrial: Bool { scenario == .paywallTrial }
+    private var hasTrial: Bool { scenario == .paywallTrial || scenario == .paywallDrawing }
     private var audience: PaywallAudience {
-      scenario == .paywallPaired ? .paired(partnerName: "Robin") : .unpaired
+      switch scenario {
+      case .paywallPaired: .paired(partnerName: "Robin")
+      case .paywallDrawing: .unpairedWithDrawing
+      default: .unpaired
+      }
     }
     private var trial: PaeoniaFreeTrial? {
       hasTrial ? PaeoniaFreeTrial(value: 14, unit: .day) : nil

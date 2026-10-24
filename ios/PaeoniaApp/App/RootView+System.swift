@@ -168,9 +168,6 @@ extension RootView {
         // Persist so a silent-push-triggered background sync can label the
         // drawing with the right nickname even when no view is alive.
         WidgetSyncIdentityStore.shared.save(identity)
-        if let ownerUserID = identity.currentUserID, let coupleID = viewModel.currentActiveCoupleID {
-            FileWidgetDrawingDraftStore.shared.adoptFirstDayDraft(ownerUserID: ownerUserID, coupleID: coupleID)
-        }
         if syncsCanvas {
             await widgetCanvasSync.sync(identity: identity)
         }

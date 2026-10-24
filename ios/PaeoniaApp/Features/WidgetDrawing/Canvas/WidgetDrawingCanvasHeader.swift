@@ -7,6 +7,9 @@ import SwiftUI
 struct WidgetDrawingCanvasHeader: View {
     let viewModel: WidgetDrawingViewModel
     let partnerName: String
+    /// Whether the "Not sent yet" pill can show. Off before an account exists, when
+    /// there is no one to send to yet.
+    var showsSendStatus = true
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
@@ -71,7 +74,7 @@ struct WidgetDrawingCanvasHeader: View {
                 .padding(.horizontal, PaeoniaSpacing.space8)
                 .padding(.vertical, PaeoniaSpacing.space4)
                 .background(.paeoniaSurfacePrimary, in: Capsule(style: .continuous))
-                .opacity(isNotSentYet ? 1 : 0)
+                .opacity(showsSendStatus && isNotSentYet ? 1 : 0)
 
             if !isNotSentYet, viewModel.isShowingSavedAttribution, let createdAt = viewModel.savedDrawingCreatedAt {
                 Text(verbatim: Self.attributionTimestamp(createdAt))
@@ -117,10 +120,12 @@ struct WidgetDrawingCanvasHeader: View {
                 Self.attributionTimestamp(createdAt)
             )))
         }
-        if viewModel.delivery == .waiting {
-            parts.append(String(localized: .widgetDrawingWaitingMessage(partnerName)))
-        } else if isNotSentYet {
-            parts.append(String(localized: .widgetDrawingNotSent))
+        if showsSendStatus {
+            if viewModel.delivery == .waiting {
+                parts.append(String(localized: .widgetDrawingWaitingMessage(partnerName)))
+            } else if isNotSentYet {
+                parts.append(String(localized: .widgetDrawingNotSent))
+            }
         }
         // A line break makes VoiceOver pause between the parts.
         return Text(verbatim: parts.joined(separator: "\n"))

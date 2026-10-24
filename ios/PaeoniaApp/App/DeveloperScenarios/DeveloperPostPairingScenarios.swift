@@ -1,6 +1,7 @@
 #if DEBUG
   import PencilKit
   import SwiftUI
+  import UIKit
 
   /// The celebration and the first day sequence after it, with local data. Alex is
   /// the signed-in person and Robin the partner. As the person who joined, Alex
@@ -148,6 +149,11 @@
     func partnerGift(partnerUserID _: UUID) async -> PostPairingGiftLoad {
       try? await Task.sleep(for: .seconds(1.5))
       return gift.map { .ready(PostPairingGift(revisionID: UUID(), drawing: $0)) } ?? .none
+    }
+
+    // swiftlint:disable:next async_without_await
+    func ownDrawingImage(currentUserID _: UUID) async -> UIImage? {
+      nil
     }
 
     func questionTimeIsOn() async -> Bool? {

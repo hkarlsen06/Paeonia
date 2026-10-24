@@ -162,7 +162,7 @@ extension RootView {
         }
     }
 
-    /// The partner joined while the inviter is answering or drawing. The celebration
+    /// The partner joined while the inviter is answering. The celebration
     /// waits for the task to close, and this says why nothing else happened yet.
     private func showPartnerJoinedDuringTask() {
         bannerCenter.show(

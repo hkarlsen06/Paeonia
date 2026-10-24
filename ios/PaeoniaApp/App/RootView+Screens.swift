@@ -32,8 +32,8 @@ extension RootView {
     }
 
     private var framedScreen: RootFramedScreen? {
-        // The partner joined while the inviter was answering or drawing. The invite
-        // screen stays until that closes, so the task isn't cut off.
+        // The partner joined while the inviter was answering. The invite screen stays
+        // until the answers close, so they aren't cut off.
         if viewModel.state == .paired, inviterTaskIsOpen {
             return .pairing
         }
@@ -75,9 +75,6 @@ extension RootView {
             AuthOnboardingView(
                 session: viewModel.currentSession,
                 isWorking: viewModel.isWorking,
-                // Someone joining a partner's code confirms the date after joining.
-                asksStartDate: pendingJoinInviteCode == nil,
-                startDateQueue: featureDependencies.firstDayStartedOnQueue,
                 onCompleteOnboarding: completeOnboarding,
                 onSignOut: signOut,
                 onDeleteAccount: deleteAccount
@@ -119,13 +116,15 @@ extension RootView {
     }
 
     private var welcomeScreen: some View {
-        WelcomeView(
+        WelcomeFlowView(
+            model: viewModel.welcomeFlow,
             isWorking: viewModel.isWorking,
             signingInWith: viewModel.signingInWith,
             pendingInviteCode: pendingJoinInviteCode,
             onAppleSignIn: signInWithApple,
             onGoogleSignIn: signInWithGoogle,
-            onSubmitInviteCode: captureInviteCode
+            onSubmitInviteCode: captureInviteCode,
+            onForgetInviteCode: { pendingJoinInviteCode = nil }
         )
     }
 
@@ -146,13 +145,13 @@ extension RootView {
 
     /// A paired-but-unentitled couple gets the paired paywall (clear partner
     /// context plus an unpair action); everyone else on the paywall is a signed-in
-    /// user who is not paired yet.
+    /// user who is not paired yet, told so when their first drawing waits to send.
     private var paywallAudience: PaywallAudience {
         switch viewModel.state {
         case .pairedPaywalled:
             .paired(partnerName: viewModel.currentPartnerDisplayName)
         default:
-            .unpaired
+            viewModel.welcomeFlow.hasWaitingDrawing ? .unpairedWithDrawing : .unpaired
         }
     }
 
@@ -167,11 +166,6 @@ extension RootView {
         )
         .environment(\.inviterTaskOpenChanged, InviterTaskOpenAction { isOpen in
             inviterTaskIsOpen = isOpen
-            // A drawing sent after the partner joined was saved as waiting. The
-            // couple's widget sync sends it.
-            if !isOpen {
-                syncWidgetIfPaired(viewModel.state)
-            }
         })
     }
 

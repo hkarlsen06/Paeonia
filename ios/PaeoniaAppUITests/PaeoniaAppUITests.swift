@@ -32,15 +32,26 @@ final class PaeoniaAppUITests: XCTestCase {
         XCTAssertTrue(app.links["legal.terms"].exists)
     }
 
+    /// The person who starts the couple picks the date and makes the first drawing
+    /// before there is an account, then signs in, sets up the profile, sees that the
+    /// drawing is ready on the paywall, and reaches the invite screen.
     @MainActor
-    func testInteractiveLocalFlowContinuesFromSignInIntoPairing() throws {
+    func testInteractiveLocalFlowStartsACoupleFromWelcomeIntoPairing() throws {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
+        // English, so the headlines can be checked.
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
 
-        // Welcome and sign-in are one screen.
+        pickTheDateAndDrawBeforeSignIn(app)
+
+        let signInTitle = app.staticTexts["welcome.signIn.title"]
+        XCTAssertTrue(signInTitle.waitForExistence(timeout: 5))
+        XCTAssertEqual(signInTitle.label, "Keep your drawing for them")
+        XCTAssertTrue(app.buttons["welcome.signIn.back"].exists)
+
         let appleSignInButton = app.buttons["auth.signIn.apple"]
-        XCTAssertTrue(appleSignInButton.waitForExistence(timeout: 8))
+        XCTAssertTrue(appleSignInButton.waitForExistence(timeout: 5))
         appleSignInButton.tap()
 
         // Setup needs a photo. The system photo picker runs out of process, but its
@@ -63,15 +74,42 @@ final class PaeoniaAppUITests: XCTestCase {
         // The keyboard covers the complete button. Its continue key does the same.
         nameField.typeText("Alex\n")
 
-        let skipStartDate = app.buttons["auth.onboarding.startDate.skip"]
-        XCTAssertTrue(skipStartDate.waitForExistence(timeout: 5))
-        skipStartDate.tap()
-
         let purchaseButton = app.buttons["paywall.primaryAction"]
         XCTAssertTrue(purchaseButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Your drawing is ready"].exists)
         purchaseButton.tap()
 
         XCTAssertTrue(app.buttons["pairing.share"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["inviter.questions"].waitForExistence(timeout: 5))
+    }
+
+    /// Welcome, Start our space, the date with its days count, then a drawing that lands
+    /// on a picture of a Home Screen.
+    @MainActor
+    private func pickTheDateAndDrawBeforeSignIn(_ app: XCUIApplication) {
+        let startButton = app.buttons["welcome.start"]
+        XCTAssertTrue(startButton.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["welcome.invited"].exists)
+        XCTAssertTrue(app.buttons["welcome.returning"].exists)
+        startButton.tap()
+
+        // Continue saves the date and plays the days count, which moves on by itself.
+        let continueDate = app.buttons["welcome.startDate.continue"]
+        XCTAssertTrue(continueDate.waitForExistence(timeout: 5))
+        continueDate.tap()
+
+        // PencilKit's canvas is a scroll view.
+        let canvas = app.scrollViews["widgetDrawing.canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 10))
+        canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.3))
+            .press(forDuration: 0.05, thenDragTo: canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.6)))
+        let send = app.buttons["widgetDrawing.send"]
+        XCTAssertTrue(send.waitForExistence(timeout: 5))
+        send.tap()
+
+        let landedContinue = app.buttons["Continue"].firstMatch
+        XCTAssertTrue(landedContinue.waitForExistence(timeout: 5))
+        landedContinue.tap()
     }
 
     @MainActor

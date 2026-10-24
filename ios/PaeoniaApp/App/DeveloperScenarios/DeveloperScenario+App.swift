@@ -10,7 +10,7 @@
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
-      paywallTrial, paywallStandard, paywallPaired, paywallLoading,
+      paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallLoading,
       pairedHome, questions, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow,
       streakHealthy, streakBroken, streakRestored,
@@ -28,17 +28,17 @@
     static let launchLoading = DeveloperScenario(
       "launch-loading", "Launch loading", "Copy-free launch surface", .launchAndAuth
     ) { _ in AuthLaunchingView() }
-    // Welcome and sign-in are one screen.
     static let welcome = DeveloperScenario(
-      "welcome", "Welcome", "Fresh install before authentication", .launchAndAuth
-    ) { _ in welcomeView(pendingInviteCode: nil) }
-    static let signIn = DeveloperScenario(
-      "sign-in", "Sign in", "Visual provider state; use Local flow · fresh install for functional sign-in",
+      "welcome", "Welcome", "Fresh install before authentication; Start our space walks the date and drawing",
       .launchAndAuth
-    ) { _ in welcomeView(pendingInviteCode: nil) }
+    ) { _ in DeveloperWelcomeScenarioView(entry: .welcome) }
+    static let signIn = DeveloperScenario(
+      "sign-in", "Sign in · returning", "Visual provider state; use Local flow · fresh install for functional sign-in",
+      .launchAndAuth
+    ) { _ in DeveloperWelcomeScenarioView(entry: .returning) }
     static let signInInvite = DeveloperScenario(
       "sign-in-invite", "Sign in · invite saved", "Sign-in with a retained partner code", .launchAndAuth
-    ) { _ in welcomeView(pendingInviteCode: "LOVE26") }
+    ) { _ in DeveloperWelcomeScenarioView(entry: .joining) }
     static let onboardingEmpty = DeveloperScenario(
       "onboarding-empty", "Onboarding · empty", "New profile with no display name", .launchAndAuth
     ) { _ in DeveloperOnboardingScenarioView(prefilled: false) }
@@ -111,6 +111,9 @@
     )
     static let paywallStandard = paywall(
       "paywall-standard", "Paywall · standard", "Unpaired offer without a trial"
+    )
+    static let paywallDrawing = paywall(
+      "paywall-drawing", "Paywall · drawing ready", "Unpaired offer while the first drawing waits to send"
     )
     static let paywallPaired = paywall(
       "paywall-paired", "Paywall · paired", "Couple remains linked but access expired"
@@ -285,17 +288,6 @@
 
     // MARK: Screens
 
-    @MainActor private static func welcomeView(pendingInviteCode: String?) -> some View {
-      WelcomeView(
-        isWorking: false,
-        signingInWith: nil,
-        pendingInviteCode: pendingInviteCode,
-        onAppleSignIn: {},
-        onGoogleSignIn: {},
-        onSubmitInviteCode: { _ in }
-      )
-    }
-
     private static func localFlow(
       _ id: String, _ title: String, _ detail: String, seed: DeveloperLocalFlowSeed
     ) -> DeveloperScenario {
@@ -331,6 +323,47 @@
 
     private static func settingsScreen(_ id: String, _ title: String, _ detail: String) -> DeveloperScenario {
       DeveloperScenario(id, title, detail, .settings) { DeveloperSettingsScenarioView(scenario: $0) }
+    }
+  }
+
+  /// The signed-out flow with local stores that count nothing and keep the drawing in
+  /// memory, opened at welcome or at sign-in.
+  private struct DeveloperWelcomeScenarioView: View {
+    enum Entry {
+      case welcome
+      case returning
+      case joining
+    }
+
+    @State private var model: WelcomeFlowModel
+    @State private var pendingInviteCode: String?
+
+    init(entry: Entry) {
+      let model = WelcomeFlowModel(
+        store: InMemoryWelcomeFlowStore(),
+        funnel: NoOpWelcomeFunnelRecorder(),
+        canvas: DeveloperWidgetCanvasService(),
+        pendingUploads: WidgetPendingUploadStore(defaults: DeveloperInviterFixture.defaults),
+        phoneHasNoOtherAccount: { true }
+      )
+      if entry == .returning {
+        model.chooseReturning()
+      }
+      _model = State(initialValue: model)
+      _pendingInviteCode = State(initialValue: entry == .joining ? "LOVE26" : nil)
+    }
+
+    var body: some View {
+      WelcomeFlowView(
+        model: model,
+        isWorking: false,
+        signingInWith: nil,
+        pendingInviteCode: pendingInviteCode,
+        onAppleSignIn: {},
+        onGoogleSignIn: {},
+        onSubmitInviteCode: { pendingInviteCode = $0 },
+        onForgetInviteCode: { pendingInviteCode = nil }
+      )
     }
   }
 #endif

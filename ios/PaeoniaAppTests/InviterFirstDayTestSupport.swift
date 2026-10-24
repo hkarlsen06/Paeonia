@@ -136,20 +136,6 @@ nonisolated struct FirstDayPushFake: PushAuthorizationProviding {
     func isDenied() async -> Bool { denied }
 }
 
-/// Serves an empty drawing for any URL.
-nonisolated struct FirstDayDownloaderFake: WidgetPayloadDownloading {
-    func download(from _: URL) async throws -> Data {
-        PKDrawing().dataRepresentation()
-    }
-}
-
-nonisolated struct FirstDayRasterizerFake: WidgetDrawingRasterizing {
-    @MainActor
-    func renderPNG(fromDrawingData _: Data, canvasSide _: CGFloat, pixelWidth _: CGFloat) async -> Data? {
-        UIGraphicsImageRenderer(size: CGSize(width: 2, height: 2)).pngData { _ in }
-    }
-}
-
 nonisolated struct FirstDayPreferencesFake: NotificationPreferencesProviding {
     var questionTimeEnabled = false
 

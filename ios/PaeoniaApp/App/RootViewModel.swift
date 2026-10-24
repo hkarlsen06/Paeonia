@@ -29,6 +29,8 @@ final class RootViewModel {
     let inviteStore: any PairingInviteStoring
     let systemSideEffects: any RootSystemSideEffecting
     let deviceOwnerStore: any RootDeviceOwnerStoring
+    /// The signed-out flow from welcome to sign-in.
+    let welcomeFlow: WelcomeFlowModel
     /// Whether the auth provider still has an active session right now, read
     /// without a network call. `nil` from the closure means it is still
     /// loading. Without a closure (tests, development sign-in) nothing is watched.
@@ -122,6 +124,7 @@ final class RootViewModel {
         systemSideEffects: (any RootSystemSideEffecting)? = nil,
         liveSync: (any LiveSyncCoordinating)? = nil,
         deviceOwnerStore: (any RootDeviceOwnerStoring)? = nil,
+        welcomeFlow: WelcomeFlowModel? = nil,
         authProviderSessionIsActive: (@MainActor () -> Bool?)? = nil,
         appleIsLinked: (@MainActor () async -> Bool)? = nil,
         savedAccessGracePeriod: Duration = .seconds(1)
@@ -143,8 +146,19 @@ final class RootViewModel {
         self.systemSideEffects = systemSideEffects ?? LiveRootSystemSideEffects()
         // Tests and developer scenarios inject a sync service and get a private
         // in-memory owner, so they never read or clear the real phone's marker.
-        self.deviceOwnerStore = deviceOwnerStore
+        let resolvedOwnerStore = deviceOwnerStore
             ?? (syncService == nil ? UserDefaultsRootDeviceOwnerStore() : InMemoryRootDeviceOwnerStore())
+        self.deviceOwnerStore = resolvedOwnerStore
+        // The same split for the signed-out flow: tests and scenarios keep its notes
+        // in memory and count nothing.
+        self.welcomeFlow = welcomeFlow ?? (syncService == nil
+            ? WelcomeFlowModel(phoneHasNoOtherAccount: { resolvedOwnerStore.ownerUserID == nil })
+            : WelcomeFlowModel(
+                store: InMemoryWelcomeFlowStore(),
+                funnel: NoOpWelcomeFunnelRecorder(),
+                startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: InMemoryPendingSyncOperationRepository()),
+                phoneHasNoOtherAccount: { resolvedOwnerStore.ownerUserID == nil }
+            ))
         self.savedAccessGracePeriod = savedAccessGracePeriod
     }
 
@@ -283,12 +297,14 @@ final class RootViewModel {
             route = .signedOut
         case let .onboarding(session):
             await clearDataFromAnotherAccount(before: session)
+            await welcomeFlow.sessionStarted(ownerUserID: session.id)
             stopObservingAccessChanges()
             invalidateAccessResolution()
             leaveRelationshipSurfaces()
             route = .onboarding(session)
         case let .limitedAuthenticated(session):
             await clearDataFromAnotherAccount(before: session)
+            await welcomeFlow.sessionStarted(ownerUserID: session.id)
             await resolveAccessRoute(for: session, launchAccess: launchAccess)
         }
     }
