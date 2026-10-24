@@ -131,6 +131,7 @@ extension MainTabView {
             currentProfilePhotoAssetID: identity.currentProfilePhotoAssetID,
             partnerDisplayName: identity.partnerDisplayName,
             partnerProfilePhotoAssetID: identity.partnerProfilePhotoAssetID,
+            accessNotice: identity.accessNotice,
             relationshipStartedOn: milestoneViewModel.startedOn,
             milestoneIsSaving: milestoneViewModel.isSaving,
             onSaveRelationshipStartedOn: { date in

@@ -7,6 +7,8 @@ struct PairedHomeView: View {
     let currentProfilePhotoAssetID: UUID?
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
+    /// Shown above the cards before access ends (`AccessNotice`). Nil hides it.
+    let accessNotice: AccessNotice?
     /// The day the relationship started (`yyyy-MM-dd`), driving the milestone countdown.
     let relationshipStartedOn: String?
     let milestoneIsSaving: Bool
@@ -59,6 +61,7 @@ struct PairedHomeView: View {
         currentProfilePhotoAssetID: UUID? = nil,
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID? = nil,
+        accessNotice: AccessNotice? = nil,
         relationshipStartedOn: String? = nil,
         milestoneIsSaving: Bool = false,
         onSaveRelationshipStartedOn: @escaping (Date) async -> Bool = { _ in false },
@@ -95,6 +98,7 @@ struct PairedHomeView: View {
         self.currentProfilePhotoAssetID = currentProfilePhotoAssetID
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
+        self.accessNotice = accessNotice
         self.relationshipStartedOn = relationshipStartedOn
         self.milestoneIsSaving = milestoneIsSaving
         self.onSaveRelationshipStartedOn = onSaveRelationshipStartedOn
@@ -133,6 +137,10 @@ struct PairedHomeView: View {
             // The header with the partners' story avatars sits above every card, also on a wide iPad.
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
                 homeHeader
+                if let accessNotice {
+                    HomeAccessNoticeCard(notice: accessNotice)
+                        .transition(.opacity)
+                }
                 cardsLayout {
                     partnerGameCard
                     dailyPromptCard
@@ -152,6 +160,7 @@ struct PairedHomeView: View {
                 isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
             )
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: accessNotice)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
             // The daily card is tall until today's questions are done, then a short row.

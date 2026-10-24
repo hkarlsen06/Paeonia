@@ -20,6 +20,8 @@ struct MainTabIdentity: Equatable {
     /// What this person has without their partner's subscription. The leave
     /// confirmation says what happens to it.
     var ownAccess: OwnAccess = .nothing
+    /// The notice Home shows before access ends. Display-only.
+    var accessNotice: AccessNotice?
 
     /// The partner's name as this person sees it: their nickname, otherwise the partner's own name.
     var partnerDisplayName: String? {

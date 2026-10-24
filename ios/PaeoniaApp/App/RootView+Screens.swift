@@ -62,10 +62,6 @@ extension RootView {
             .onboarding
         case .limitedAuthenticated, .pairedPaywalled:
             .paywall
-        case .entitlementLost, .entitlementRestored:
-            // The access resolver does not produce these today. The paywall is
-            // the screen that can recover access if it ever does.
-            .paywall
         case .unpaired, .invitePending:
             .pairing
         case .relationshipEndedNotice:
@@ -296,7 +292,8 @@ extension RootView {
             partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
             coupleID: viewModel.currentActiveCoupleID,
             relationshipStartedOn: viewModel.currentRelationshipStartedOn,
-            ownAccess: viewModel.currentOwnAccess
+            ownAccess: viewModel.currentOwnAccess,
+            accessNotice: viewModel.currentAccessNotice
         )
     }
 

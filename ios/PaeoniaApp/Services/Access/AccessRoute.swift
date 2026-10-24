@@ -181,8 +181,6 @@ nonisolated struct PendingJoinInviteFlowResolver: Sendable {
              .onboarding,
              .paired,
              .pairedPaywalled,
-             .entitlementLost,
-             .entitlementRestored,
              .relationshipEndedNotice,
              .accountClosed,
              .deletingAccount:

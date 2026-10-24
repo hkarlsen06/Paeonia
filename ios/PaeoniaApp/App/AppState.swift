@@ -7,8 +7,6 @@ nonisolated enum AppState: CaseIterable, Equatable {
     case invitePending
     case paired
     case pairedPaywalled
-    case entitlementLost
-    case entitlementRestored
     case relationshipEndedNotice
     case accountClosed
     case deletingAccount

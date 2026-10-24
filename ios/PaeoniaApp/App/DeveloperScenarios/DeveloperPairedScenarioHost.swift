@@ -131,7 +131,8 @@
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
             partnerName: PartnerName(accountName: "Robin", nickname: nil),
             coupleID: DeveloperScenarioFixture.coupleID,
-            relationshipStartedOn: "2025-09-14"
+            relationshipStartedOn: "2025-09-14",
+            accessNotice: scenario.accessNotice
           ),
           locationMapState: .partnerUnknown(.notSharing),
           locationViewModel: locationViewModel,

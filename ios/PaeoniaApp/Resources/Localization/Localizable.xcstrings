@@ -18243,6 +18243,114 @@
         }
       }
     },
+    "home.accessNotice.ending.button" : {
+      "comment" : "Button on the ending Home notice for the person who pays. Opens the App Store page where they can turn their subscription back on",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Paeonia"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Behold Paeonia"
+          }
+        }
+      }
+    },
+    "home.accessNotice.ending.payerMessage" : {
+      "comment" : "Second line of the ending Home notice, shown only to the person who pays and turned off renewal",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn your subscription back on in the App Store to keep it for you both."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå på abonnementet igjen i App Store for å beholde det for dere begge."
+          }
+        }
+      }
+    },
+    "home.accessNotice.ending.title" : {
+      "comment" : "Home notice shown to both partners a few days before the app stops working because the subscription will not renew. The argument is a short date, like 12 Nov. Must not say who pays",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia ends on %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paeonia avsluttes %@"
+          }
+        }
+      }
+    },
+    "home.accessNotice.payment.button" : {
+      "comment" : "Button on the failed payment Home notice. Opens the App Store page where the person manages their subscription",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update payment"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppdater betaling"
+          }
+        }
+      }
+    },
+    "home.accessNotice.payment.message" : {
+      "comment" : "Home notice text under the failed payment title. 'Paeonia for you both' means the couple keeps using the app",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update your payment details in the App Store to keep Paeonia for you both."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppdater betalingsinformasjonen i App Store for å beholde Paeonia for dere begge."
+          }
+        }
+      }
+    },
+    "home.accessNotice.payment.title" : {
+      "comment" : "Home notice title shown only to the person who pays, when Apple could not take their subscription payment",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your payment didn't go through"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Betalingen din gikk ikke gjennom"
+          }
+        }
+      }
+    },
     "home.dailyPrompt.eyebrow" : {
       "comment" : "Small overline above today's shared questions on the Home tab; the couple answers three each day",
       "extractionState" : "manual",

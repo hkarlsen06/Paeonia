@@ -62,4 +62,10 @@ extension RootViewModel {
     var currentPartnerProfilePhotoAssetID: UUID? {
         route.accessResolution?.partnerProfilePhotoAssetID
     }
+
+    /// Read on each render, so the ending notice appears on its day without a server change.
+    var currentAccessNotice: AccessNotice? {
+        guard let snapshot = route.accessResolution?.snapshot else { return nil }
+        return AccessNotice(user: snapshot.userEntitlement, couple: snapshot.coupleEntitlement, now: .now)
+    }
 }

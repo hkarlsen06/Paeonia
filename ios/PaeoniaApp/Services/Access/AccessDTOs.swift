@@ -58,6 +58,8 @@ nonisolated struct RemoteCoupleEntitlement: Codable, Equatable, Sendable {
     let billingPeriod: String?
     let currentPeriodEnd: Date?
     let updatedAt: Date?
+    /// When the couple's access ends because nobody's subscription renews. Nil while it renews.
+    var accessEndsAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case coupleID = "couple_id"
@@ -69,6 +71,7 @@ nonisolated struct RemoteCoupleEntitlement: Codable, Equatable, Sendable {
         case billingPeriod = "billing_period"
         case currentPeriodEnd = "current_period_end"
         case updatedAt = "updated_at"
+        case accessEndsAt = "access_ends_at"
     }
 }
 
