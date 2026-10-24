@@ -3,7 +3,7 @@ import UIKit
 
 /// The picture on the sign-in step, sized to the space it gets: the first drawing on a
 /// widget tile when one waits to be kept, otherwise the welcome peonies. Neither grows
-/// past its natural size.
+/// past its natural size, and the view never takes more height than that.
 struct WelcomeSignInPicture: View {
     /// What the picture shows.
     enum Content {
@@ -24,6 +24,16 @@ struct WelcomeSignInPicture: View {
         GeometryReader { proxy in
             picture(in: proxy.size)
                 .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+        .frame(maxHeight: naturalHeight)
+    }
+
+    /// The tallest the picture grows. A drawing that is still loading keeps the tile's
+    /// height, so nothing moves when it shows.
+    private var naturalHeight: CGFloat {
+        switch content {
+        case .loadingDrawing, .drawing: Self.maxTileSide
+        case .hero: Self.heroSize.height
         }
     }
 

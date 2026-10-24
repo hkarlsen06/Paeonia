@@ -26,9 +26,10 @@ struct WelcomeSignInStep: View {
     @State private var hasLoadedDrawing = false
 
     var body: some View {
-        // The picture takes the height between the back button and the headline. When
-        // the step does not fit, such as at large text sizes, the content scrolls with
-        // the headline first and a smaller picture under it.
+        // The picture and the headline sit together in the middle of the height under
+        // Back, with the picture as large as fits. When the step does not fit, such as
+        // at large text sizes, the content scrolls with the headline first and a smaller
+        // picture under it.
         ViewThatFits(in: .vertical) {
             content(fillsHeight: true)
 
@@ -71,44 +72,60 @@ struct WelcomeSignInStep: View {
         }
     }
 
-    /// `fillsHeight` puts the picture above the headline in all the free height, down to
-    /// a minimum. Otherwise the picture has a fixed height under the headline.
+    /// `fillsHeight` puts the picture above the headline, grown into the free height up
+    /// to its natural size. Otherwise the picture has a fixed height under the headline.
     private func content(fillsHeight: Bool) -> some View {
-        VStack(spacing: PaeoniaSpacing.space20) {
+        VStack(spacing: 0) {
             WelcomeBackButton(action: onBack)
                 .disabled(isWorking)
                 .accessibilityIdentifier("welcome.signIn.back")
                 .screenEntrance(order: 0)
 
             if fillsHeight {
-                picture
-                    .frame(minHeight: 180, idealHeight: 180, maxHeight: .infinity)
-                    .screenEntrance(order: 1, isReady: !isLoadingDrawing)
-            }
+                Spacer(minLength: PaeoniaSpacing.space24)
 
-            VStack(spacing: PaeoniaSpacing.space8) {
-                Text(title)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("welcome.signIn.title")
+                VStack(spacing: PaeoniaSpacing.space32) {
+                    picture
+                        .frame(minHeight: 180)
+                        .screenEntrance(order: 1, isReady: !isLoadingDrawing)
 
-                Text(message)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-            }
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-            .screenEntrance(order: fillsHeight ? 2 : 1)
+                    heading
+                        .screenEntrance(order: 2)
+                }
+                // The picture takes the free height before the spacers do.
+                .layoutPriority(1)
 
-            if !fillsHeight {
-                picture
-                    .frame(height: 200)
-                    .screenEntrance(order: 2, isReady: !isLoadingDrawing)
+                Spacer(minLength: PaeoniaSpacing.space24)
+            } else {
+                VStack(spacing: PaeoniaSpacing.space32) {
+                    heading
+                        .screenEntrance(order: 1)
+
+                    picture
+                        .frame(height: 200)
+                        .screenEntrance(order: 2, isReady: !isLoadingDrawing)
+                }
+                .padding(.top, PaeoniaSpacing.space24)
+                .padding(.bottom, PaeoniaSpacing.space24)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.bottom, PaeoniaSpacing.space24)
+    }
+
+    private var heading: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            Text(title)
+                .font(PaeoniaTypography.title)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("welcome.signIn.title")
+
+            Text(message)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+        }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var picture: some View {
@@ -341,7 +358,7 @@ private struct SafariView: UIViewControllerRepresentable {
 
 #if DEBUG
 #Preview {
-    RootBrandedFrame {
+    WelcomeStepFrame {
         WelcomeSignInStep(
             mode: .start(hasDrawing: true),
             isWorking: false,

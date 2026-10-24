@@ -80,8 +80,7 @@ struct WelcomeView: View {
 
     private var content: some View {
         VStack(spacing: 0) {
-            // Same size and place as the lockup in `RootBrandedFrame`, so the logo stays
-            // still while the next steps fade in under it.
+            // The only lockup in the signed-out flow. Later steps leave it out.
             PaeoniaBrandLockup(wordmarkSize: 36, taglineSize: 17)
                 .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .combine)

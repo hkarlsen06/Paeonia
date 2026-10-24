@@ -29,7 +29,7 @@ struct RootBrandedFrame<Content: View>: View {
             )
             .frame(maxWidth: .infinity)
             // Drops in only as the cold-launch intro uncovers it. Mid-session it
-            // is already where the welcome screen's lockup was.
+            // fades in with the first framed screen.
             .launchEntrance(order: 0)
 
             ZStack(alignment: .top) {

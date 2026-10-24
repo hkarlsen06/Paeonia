@@ -1,10 +1,9 @@
 import SwiftUI
 
 /// The signed-out flow: welcome, then the start date and the first drawing for someone
-/// starting a couple, then sign-in. Steps crossfade, and every step after welcome sits in
-/// `RootBrandedFrame`, with the lockup where the welcome screen draws its own, so the logo
-/// stays still. The drawing screen fills the screen. A fade only, so Reduce Motion needs
-/// no branch.
+/// starting a couple, then sign-in. Steps crossfade. Only the welcome screen shows the
+/// lockup, and every later step sits in `WelcomeStepFrame`, which leaves it out. The
+/// drawing screen fills the screen. A fade only, so Reduce Motion needs no branch.
 struct WelcomeFlowView: View {
     let model: WelcomeFlowModel
     let isWorking: Bool
@@ -41,7 +40,7 @@ struct WelcomeFlowView: View {
             WelcomeView(model: model, onSubmitInviteCode: onSubmitInviteCode)
                 .transition(.opacity)
         case .startDate:
-            RootBrandedFrame {
+            WelcomeStepFrame {
                 WelcomeStartDateStep(
                     onBack: back,
                     onSave: model.saveStartDate,
@@ -54,7 +53,7 @@ struct WelcomeFlowView: View {
             WelcomeDrawingStep(model: model)
                 .transition(.opacity)
         case let .signIn(mode):
-            RootBrandedFrame {
+            WelcomeStepFrame {
                 WelcomeSignInStep(
                     mode: mode,
                     isWorking: isWorking,

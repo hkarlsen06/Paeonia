@@ -32,34 +32,18 @@ struct WelcomeStartDateStep: View {
     // MARK: Picking
 
     private var pickingPage: some View {
-        ScrollView {
-            VStack(spacing: PaeoniaSpacing.space20) {
-                WelcomeBackButton(action: onBack)
-                    .accessibilityIdentifier("welcome.startDate.back")
-                    .screenEntrance(order: 0)
+        // The question and the calendar sit in the middle of the height under Back.
+        // When they do not fit, such as at large text sizes, the same content scrolls
+        // and the spacers shrink to their minimum.
+        ViewThatFits(in: .vertical) {
+            pickingContent
 
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Text(.homeMilestoneEditorSetupTitle)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .accessibilityAddTraits(.isHeader)
-
-                    Text(.onboardingStartDateMessage)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .screenEntrance(order: 1)
-
-                datePicker
-                    .screenEntrance(order: 2)
+            ScrollView {
+                pickingContent
             }
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, PaeoniaSpacing.space24)
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .scrollIndicators(.hidden)
-        .scrollBounceBehavior(.basedOnSize)
         .paeoniaBottomBar(spacing: 0) {
             VStack(spacing: PaeoniaSpacing.space4) {
                 Button(action: saveDate) {
@@ -79,6 +63,38 @@ struct WelcomeStartDateStep: View {
             .screenEntrance(order: 3)
             .onboardingBottomBarFade()
         }
+    }
+
+    private var pickingContent: some View {
+        VStack(spacing: 0) {
+            WelcomeBackButton(action: onBack)
+                .accessibilityIdentifier("welcome.startDate.back")
+                .screenEntrance(order: 0)
+
+            Spacer(minLength: PaeoniaSpacing.space24)
+
+            VStack(spacing: PaeoniaSpacing.space32) {
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    Text(.homeMilestoneEditorSetupTitle)
+                        .font(PaeoniaTypography.title)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .accessibilityAddTraits(.isHeader)
+
+                    Text(.onboardingStartDateMessage)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .screenEntrance(order: 1)
+
+                datePicker
+                    .screenEntrance(order: 2)
+            }
+
+            Spacer(minLength: PaeoniaSpacing.space24)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var datePicker: some View {
@@ -112,6 +128,8 @@ struct WelcomeStartDateStep: View {
             RelationshipDaysReveal(startedOn: startedOn, onFinished: onFinish)
             Spacer(minLength: 0)
         }
+        // A little above the middle of the screen, where the eye puts the center.
+        .padding(.bottom, PaeoniaSpacing.space40 * 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -145,7 +163,7 @@ struct WelcomeBackButton: View {
 
 #if DEBUG
 #Preview {
-    RootBrandedFrame {
+    WelcomeStepFrame {
         WelcomeStartDateStep(onBack: {}, onSave: { _ in }, onSkip: {}, onFinish: {})
     }
     .preferredColorScheme(.dark)

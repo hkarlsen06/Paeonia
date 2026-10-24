@@ -21,7 +21,7 @@ struct WelcomeDrawingStep: View {
     var body: some View {
         ZStack {
             if let landedDrawing {
-                RootBrandedFrame {
+                WelcomeStepFrame {
                     landedStep(landedDrawing)
                 }
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .trailing)))
@@ -73,16 +73,59 @@ struct WelcomeDrawingStep: View {
         }
     }
 
+    /// The Home Screen picture and its two lines sit together in the middle of the
+    /// height, with the picture as large as fits. When they do not fit, such as at large
+    /// text sizes, the content scrolls with a smaller picture.
     private func landedStep(_ drawing: UIImage) -> some View {
-        OnboardingStepScaffold(
-            title: .welcomeDrawingLandedTitle,
-            message: .welcomeDrawingLandedMessage,
-            primary: OnboardingStepAction(title: .authOnboardingCompleteButton, action: model.finishDrawing)
-        ) {
-            WidgetHomeScreenMock(drawing: drawing)
-                .frame(maxWidth: 230)
-        } content: {
-            EmptyView()
+        ViewThatFits(in: .vertical) {
+            landedContent(drawing, fillsHeight: true)
+
+            ScrollView {
+                landedContent(drawing, fillsHeight: false)
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
         }
+        .paeoniaBottomBar(spacing: 0) {
+            Button(action: model.finishDrawing) {
+                Text(.authOnboardingCompleteButton)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            .padding(.top, PaeoniaSpacing.space12)
+            .screenEntrance(order: 3)
+            .onboardingBottomBarFade()
+        }
+    }
+
+    private func landedContent(_ drawing: UIImage, fillsHeight: Bool) -> some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: PaeoniaSpacing.space24)
+
+            VStack(spacing: PaeoniaSpacing.space32) {
+                WidgetHomeScreenMock(drawing: drawing)
+                    .frame(maxWidth: fillsHeight ? 260 : 200)
+                    .frame(minHeight: fillsHeight ? 320 : nil)
+                    .screenEntrance(order: 1)
+
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    Text(.welcomeDrawingLandedTitle)
+                        .font(PaeoniaTypography.title)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .accessibilityAddTraits(.isHeader)
+
+                    Text(.welcomeDrawingLandedMessage)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .screenEntrance(order: 2)
+            }
+            // The picture takes the free height before the spacers do.
+            .layoutPriority(1)
+
+            Spacer(minLength: PaeoniaSpacing.space24)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
