@@ -66,7 +66,7 @@ struct RootViewModelFlowTests {
         await viewModel.signInWithGoogle()
 
         #expect(viewModel.signingInWith == nil)
-        #expect(viewModel.notice == .signInFailed)
+        #expect(viewModel.notice == .signInFailed(.other))
         #expect(viewModel.state == .unauthenticated)
     }
 

@@ -122,7 +122,7 @@ struct PaeoniaAppTests {
         await viewModel.acknowledgeRelationshipEnded()
 
         #expect(viewModel.state == .relationshipEndedNotice)
-        #expect(viewModel.notice == .relationshipEndedAcknowledgeFailed)
+        #expect(viewModel.notice == .relationshipEndedAcknowledgeFailed(.other))
         #expect(viewModel.isWorking == false)
     }
 
@@ -372,7 +372,7 @@ struct PaeoniaAppTests {
 
         #expect(viewModel.state == .limitedAuthenticated)
         #expect(viewModel.currentSession?.profileStatus == .complete)
-        #expect(viewModel.notice == .deleteAccountFailed)
+        #expect(viewModel.notice == .deleteAccountFailed(.other))
         #expect(await syncService.resetCallCount == 0)
     }
 

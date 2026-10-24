@@ -33,7 +33,7 @@ extension RootViewModel {
 
         signingInWith = provider
         defer { signingInWith = nil }
-        await performAuthAction(failureNotice: .signInFailed) {
+        await performAuthAction(failureNotice: RootNotice.signInFailed) {
             let session = try await signIn()
             PaeoniaHaptics.signedIn()
             welcomeFlow.signedIn()
@@ -43,7 +43,7 @@ extension RootViewModel {
     }
 
     func signInForDevelopment() async {
-        await performAuthAction(failureNotice: .signInFailed) {
+        await performAuthAction(failureNotice: RootNotice.signInFailed) {
             let session = try await authService.signInForDevelopment()
             await apply(AuthRoute(session: session))
         }
@@ -54,7 +54,7 @@ extension RootViewModel {
         timeZoneID: String,
         profilePhotoData: Data?
     ) async {
-        await performAuthAction(failureNotice: .onboardingFailed) {
+        await performAuthAction(failureNotice: { _ in .onboardingFailed }) {
             let session = try await authService.completeOnboarding(
                 displayName: displayName,
                 timeZoneID: timeZoneID,
@@ -66,7 +66,7 @@ extension RootViewModel {
     }
 
     func signOut() async {
-        await performAuthAction(failureNotice: .signOutFailed) {
+        await performAuthAction(failureNotice: { _ in .signOutFailed }) {
             // Send what still can go while requests carry the account's token.
             // The purge below removes whatever is left, as the log-out alert says.
             await syncService.flushPendingWrites(timeout: .seconds(4))
@@ -149,7 +149,7 @@ extension RootViewModel {
             await endSession(purgingLocalData: true)
         } catch {
             route = previousRoute
-            notice = .deleteAccountFailed
+            notice = .deleteAccountFailed(PaeoniaFailure(error))
         }
 
         isWorking = false
@@ -260,7 +260,7 @@ extension RootViewModel {
     }
 
     private func performAuthAction(
-        failureNotice: RootNotice,
+        failureNotice: (PaeoniaFailure) -> RootNotice,
         action: () async throws -> Void
     ) async {
         guard !isWorking else {
@@ -275,6 +275,7 @@ extension RootViewModel {
         } catch where Self.isUserCancelledAuthError(error) {
             logAuthError(error, notice: nil)
         } catch {
+            let failureNotice = failureNotice(PaeoniaFailure(error))
             logAuthError(error, notice: failureNotice)
             notice = failureNotice
         }

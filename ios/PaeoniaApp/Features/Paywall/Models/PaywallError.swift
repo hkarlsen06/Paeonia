@@ -4,7 +4,7 @@ enum PaywallError: Equatable {
     case productsUnavailable
     case purchaseNotConfirmed
     /// Apple took the payment, but the server has not confirmed it yet.
-    case purchaseNotFinished
+    case purchaseNotFinished(PaeoniaFailure)
     /// Ask to Buy or another approval step. Not a failure for the user.
     case purchasePendingApproval
     case purchaseLinkedToAnotherAccount
@@ -26,7 +26,12 @@ enum PaywallError: Equatable {
     /// The payment went through but did not open Paeonia, or the fix is with
     /// support. The person needs the steps after the banner would have gone.
     private var staysUntilDismissed: Bool {
-        self == .purchaseNotFinished || self == .purchaseLinkedToAnotherAccount
+        switch self {
+        case .purchaseNotFinished, .purchaseLinkedToAnotherAccount:
+            true
+        default:
+            false
+        }
     }
 
     var title: String? {
@@ -46,8 +51,13 @@ enum PaywallError: Equatable {
             String(localized: .paywallErrorProductsUnavailable)
         case .purchaseNotConfirmed:
             String(localized: .paywallErrorPurchaseNotConfirmed)
-        case .purchaseNotFinished:
-            String(localized: .paywallErrorPurchaseNotFinishedMessage)
+        case let .purchaseNotFinished(failure):
+            // Only a phone without a connection is told to check it.
+            String(
+                localized: failure == .offline
+                    ? .paywallErrorPurchaseNotFinishedMessage
+                    : .paywallErrorPurchaseNotFinishedRetryMessage
+            )
         case .purchasePendingApproval:
             String(localized: .paywallPurchasePendingMessage)
         case .purchaseLinkedToAnotherAccount:

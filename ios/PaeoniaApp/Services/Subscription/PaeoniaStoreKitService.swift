@@ -353,7 +353,7 @@ extension PaeoniaStoreKitService {
         } catch let error as PaeoniaPurchaseError {
             throw error
         } catch {
-            throw PaeoniaPurchaseError.serverConfirmationFailed(nil)
+            throw PaeoniaPurchaseError.serverConfirmationFailed(nil, failure: PaeoniaFailure(error))
         }
     }
 
@@ -446,7 +446,9 @@ extension PaeoniaStoreKitService {
     /// instead of offering to buy again.
     static func streakRestoreConfirmationError(from error: any Error) -> PaeoniaPurchaseError {
         if let error = error as? PaeoniaPurchaseError { return error }
-        guard let error = error as? PaeoniaConvexError else { return .serverConfirmationFailed(nil) }
+        guard let error = error as? PaeoniaConvexError else {
+            return .serverConfirmationFailed(nil, failure: PaeoniaFailure(error))
+        }
         return streakRestoreError(from: error)
     }
 

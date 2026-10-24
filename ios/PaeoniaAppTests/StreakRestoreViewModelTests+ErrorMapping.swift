@@ -12,7 +12,7 @@ extension StreakRestoreViewModelTests {
     @Test func lostConnectionAfterPaymentCountsAsPaidButNotConfirmed() {
         let mapped = PaeoniaStoreKitService.streakRestoreConfirmationError(from: URLError(.networkConnectionLost))
 
-        #expect(mapped == .serverConfirmationFailed(nil))
+        #expect(mapped == .serverConfirmationFailed(nil, failure: .offline))
         #expect(
             PaeoniaStoreKitService.streakRestoreConfirmationError(from: PaeoniaPurchaseError.streakNotRestorable)
                 == .streakNotRestorable

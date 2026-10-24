@@ -109,7 +109,9 @@ nonisolated enum PaeoniaPurchaseError: Error, Equatable {
     case userNotConfigured
     case invalidUserID
     case verificationFailed
-    case serverConfirmationFailed(String?)
+    /// Apple charged, but the server did not confirm the purchase. `failure` is
+    /// `.offline` only when the phone had no connection to reach the server.
+    case serverConfirmationFailed(String?, failure: PaeoniaFailure = .other)
     case purchaseLinkedToAnotherAccount
     case purchaseFailed
     case restoreFailed

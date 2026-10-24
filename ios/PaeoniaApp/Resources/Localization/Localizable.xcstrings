@@ -2188,7 +2188,7 @@
       }
     },
     "auth.notice.deleteAccountFailed.message" : {
-      "comment" : "Alert message shown when account deletion fails.",
+      "comment" : "Alert message shown when account deletion fails because the phone is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2260,7 +2260,7 @@
       }
     },
     "auth.notice.relationshipEndedAcknowledgeFailed.message" : {
-      "comment" : "Alert message shown when confirming the relationship-ended notice fails.",
+      "comment" : "Alert message shown when confirming the relationship-ended notice fails because the phone is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -2368,7 +2368,7 @@
       }
     },
     "auth.notice.signInFailed.message" : {
-      "comment" : "Banner message when sign-in fails",
+      "comment" : "Banner message when sign-in fails because the phone is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -27072,7 +27072,7 @@
       }
     },
     "paywall.error.purchaseNotFinished.message" : {
-      "comment" : "Banner message when the payment worked but Paeonia could not finish unlocking. Tells the user what to do.",
+      "comment" : "Banner message when the payment worked but Paeonia could not finish unlocking because the phone is offline. Tells the user what to do.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -27085,6 +27085,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi klarte ikke å åpne Paeonia helt. Sjekk tilkoblingen, og trykk deretter på Gjenopprett kjøp. Du blir ikke belastet på nytt."
+          }
+        }
+      }
+    },
+    "paywall.error.purchaseNotFinished.retryMessage" : {
+      "comment" : "Banner message when the payment worked but Paeonia could not finish unlocking, and the phone is online. Tells the user to tap Restore purchases later.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong while opening Paeonia. Tap Restore purchases in a little while. You won't be charged again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noe gikk galt da Paeonia skulle åpnes. Trykk på Gjenopprett kjøp om litt. Du blir ikke belastet på nytt."
           }
         }
       }

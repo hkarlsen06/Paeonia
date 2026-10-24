@@ -6,7 +6,12 @@ import Foundation
 extension RootNotice {
     /// Being signed out and an account that was not deleted are worth reading in full.
     var bannerTiming: PaeoniaBannerTiming {
-        self == .sessionEnded || self == .deleteAccountFailed ? .untilDismissed : .standard
+        switch self {
+        case .sessionEnded, .deleteAccountFailed:
+            .untilDismissed
+        default:
+            .standard
+        }
     }
 
     var title: LocalizedStringResource {
@@ -34,16 +39,16 @@ extension RootNotice {
             .authNoticeSessionLoadFailedMessage
         case .sessionEnded:
             .authNoticeSessionEndedMessage
-        case .signInFailed:
-            .authNoticeSignInFailedMessage
+        case let .signInFailed(failure):
+            failure == .offline ? .authNoticeSignInFailedMessage : .commonActionFailedMessage
         case .onboardingFailed:
             .authNoticeOnboardingFailedMessage
         case .signOutFailed:
             .authNoticeSignOutFailedMessage
-        case .deleteAccountFailed:
-            .authNoticeDeleteAccountFailedMessage
-        case .relationshipEndedAcknowledgeFailed:
-            .authNoticeRelationshipEndedAcknowledgeFailedMessage
+        case let .deleteAccountFailed(failure):
+            failure == .offline ? .authNoticeDeleteAccountFailedMessage : .commonActionFailedMessage
+        case let .relationshipEndedAcknowledgeFailed(failure):
+            failure == .offline ? .authNoticeRelationshipEndedAcknowledgeFailedMessage : .commonActionFailedMessage
         }
     }
 }

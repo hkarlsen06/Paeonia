@@ -204,10 +204,10 @@ final class PaywallViewModel: PresentationReadinessProviding {
             return .purchasePendingApproval
         case .purchaseLinkedToAnotherAccount:
             return .purchaseLinkedToAnotherAccount
-        case .serverConfirmationFailed:
+        case let .serverConfirmationFailed(_, failure):
             // Apple charged the user and only our confirmation failed. The
             // transaction stays unfinished, and Restore sends it again.
-            return .purchaseNotFinished
+            return .purchaseNotFinished(failure)
         default:
             return .purchaseNotConfirmed
         }

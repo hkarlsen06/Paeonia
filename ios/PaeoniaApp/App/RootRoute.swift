@@ -4,11 +4,11 @@ enum RootNotice: Equatable {
     case sessionLoadFailed
     /// The sign-in expired or was ended on another device while the app ran.
     case sessionEnded
-    case signInFailed
+    case signInFailed(PaeoniaFailure)
     case onboardingFailed
     case signOutFailed
-    case deleteAccountFailed
-    case relationshipEndedAcknowledgeFailed
+    case deleteAccountFailed(PaeoniaFailure)
+    case relationshipEndedAcknowledgeFailed(PaeoniaFailure)
 }
 
 enum RootPresentedDestination: Equatable {

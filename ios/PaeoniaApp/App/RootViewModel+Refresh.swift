@@ -45,7 +45,7 @@ extension RootViewModel {
             await resolveAccessRoute(for: session)
             await startSyncIfNeeded()
         } catch {
-            notice = .relationshipEndedAcknowledgeFailed
+            notice = .relationshipEndedAcknowledgeFailed(PaeoniaFailure(error))
         }
 
         isWorking = false
