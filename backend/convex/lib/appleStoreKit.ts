@@ -271,28 +271,33 @@ export async function verifyTransactionWithApple(
   throw new ClientFacingError("Apple could not verify this purchase", "apple_verification_failed");
 }
 
-/** Subscription status from the transaction and renewal info. `notificationType` REFUND and REVOKE win. */
-export function determineSubscriptionStatus(
+/**
+ * Subscription status from the transaction and renewal info, and when its access ends.
+ * `notificationType` REFUND and REVOKE win. During billing grace the transaction's
+ * `expiresDate` has already passed, and access runs until the grace period ends.
+ */
+export function determineSubscription(
   transactionInfo: AppleTransactionInfo,
   renewalInfo?: AppleRenewalInfo | null,
   notificationType?: string,
   now: number = Date.now(),
-): StoreKitStatus {
-  if (notificationType === "REFUND") return "refunded";
-  if (notificationType === "REVOKE") return "revoked";
+): { status: StoreKitStatus; expiresAt: number | undefined } {
+  const atTransactionExpiry = (status: StoreKitStatus) => ({ status, expiresAt: transactionInfo.expiresDate });
+  if (notificationType === "REFUND") return atTransactionExpiry("refunded");
+  if (notificationType === "REVOKE") return atTransactionExpiry("revoked");
   if (transactionInfo.revocationDate) {
-    return transactionInfo.revocationReason === 1 ? "refunded" : "revoked";
+    return atTransactionExpiry(transactionInfo.revocationReason === 1 ? "refunded" : "revoked");
   }
   if (renewalInfo?.gracePeriodExpiresDate && renewalInfo.gracePeriodExpiresDate > now) {
-    return "grace";
+    return { status: "grace", expiresAt: renewalInfo.gracePeriodExpiresDate };
   }
   if (transactionInfo.expiresDate && transactionInfo.expiresDate > now) {
-    return "active";
+    return atTransactionExpiry("active");
   }
   if (renewalInfo?.isInBillingRetryPeriod) {
-    return "billing_retry";
+    return atTransactionExpiry("billing_retry");
   }
-  return "expired";
+  return atTransactionExpiry("expired");
 }
 
 export function revocationReason(transactionInfo: AppleTransactionInfo): string | null {

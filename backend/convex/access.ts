@@ -8,7 +8,7 @@ import {
   appleBundleId,
   assertAppleEnvironmentConfigured,
   decodeAppleJWS,
-  determineSubscriptionStatus,
+  determineSubscription,
   failWithClientSafeError,
   millisToIsoOrNull,
   revocationReason,
@@ -168,7 +168,7 @@ function assertValidSubscription(
   if (transactionInfo.type !== "Auto-Renewable Subscription") {
     fail("invalid_transaction", "Apple transaction is not a subscription");
   }
-  const status = determineSubscriptionStatus(transactionInfo, renewalInfo);
+  const { status } = determineSubscription(transactionInfo, renewalInfo);
   if ((status === "active" || status === "grace") && !transactionInfo.expiresDate) {
     fail("invalid_transaction", "Apple subscription is missing an expiry date");
   }
@@ -197,7 +197,7 @@ async function runVerifyPurchase(ctx: ActionCtx, args: PurchaseArgs): Promise<Su
   const { transactionInfo, renewalInfo } = verified;
   assertValidSubscription(transactionInfo, renewalInfo, uploaded, args);
 
-  const status = determineSubscriptionStatus(transactionInfo, renewalInfo);
+  const { status, expiresAt } = determineSubscription(transactionInfo, renewalInfo);
   let result: Record<string, unknown>;
   try {
     result = await ctx.runMutation(internal.storekit.record_verified_storekit_transaction, {
@@ -210,7 +210,7 @@ async function runVerifyPurchase(ctx: ActionCtx, args: PurchaseArgs): Promise<Su
       p_web_order_line_item_id: transactionInfo.webOrderLineItemId ?? null,
       p_status: status,
       p_purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
-      p_expires_at: millisToIsoOrNull(transactionInfo.expiresDate),
+      p_expires_at: millisToIsoOrNull(expiresAt),
       p_revoked_at: millisToIsoOrNull(transactionInfo.revocationDate),
       p_revocation_reason: revocationReason(transactionInfo),
       p_signed_payload: verified.signedTransactionInfo,
@@ -236,7 +236,7 @@ async function runVerifyPurchase(ctx: ActionCtx, args: PurchaseArgs): Promise<Su
     subscription: {
       status,
       productId: transactionInfo.productId,
-      expiresAt: millisToIsoOrNull(transactionInfo.expiresDate),
+      expiresAt: millisToIsoOrNull(expiresAt),
       environment: toDatabaseEnvironment(transactionInfo.environment),
       originalTransactionId: transactionInfo.originalTransactionId,
       transactionId: transactionInfo.transactionId,

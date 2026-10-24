@@ -140,7 +140,7 @@ Record any skipped command with the reason.
 - [ ] Backend records verified StoreKit transactions. Re-verify on Convex.
 - [ ] StoreKit server notifications endpoint is deployed and configured. App Store Connect must point at `https://actions.paeonia.no/apple/server-notifications`.
 - [ ] Apple server notification and in-app purchase key configuration is correct (`APPLE_IAP_*` and `APPLE_BUNDLE_ID` Convex environment variables).
-- [ ] Grace period behavior preserves access when Apple reports grace state.
+- [ ] Billing Grace Period is turned on in App Store Connect, and a subscription in grace keeps access for both partners until the grace period ends. The backend stores the grace end as the access end and a convex-test covers it. Re-verify on Convex.
 - [ ] Expired subscription removes entitlement when neither partner has active access. Re-verify on Convex.
 - [ ] Lifetime/test/review grants are scoped, auditable, revocable, and intentional.
 - [ ] App checks whether the current couple already has active entitlement before starting purchase.

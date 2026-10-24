@@ -10,7 +10,7 @@ import {
   requireString,
   revocationReason,
   stringOrNull,
-  determineSubscriptionStatus,
+  determineSubscription,
   toDatabaseEnvironment,
 } from "./lib/appleStoreKit";
 import { getByUuid, withUpdatedAt } from "./lib/db";
@@ -241,18 +241,13 @@ export const queue_subscription_trial_reminders = internalMutation({
     // tx.expires_at - 2 days <= now + 1 hour
     const horizon = addMs(now, reminderMs + 3_600_000);
 
-    const candidates: Doc<"storekit_transactions">[] = [];
-    for (const status of ["active", "grace"] as const) {
-      candidates.push(
-        ...(await ctx.db
-          .query("storekit_transactions")
-          .withIndex("by_is_free_trial_status_expires_at", (q) =>
-            q.eq("is_free_trial", true).eq("status", status).gt("expires_at", now).lte("expires_at", horizon),
-          )
-          .collect()),
-      );
-    }
-    candidates.sort((a, b) => compareNullsFirst(a.expires_at, b.expires_at));
+    // A grace row's expires_at is the end of the grace period, not of the trial.
+    const candidates = await ctx.db
+      .query("storekit_transactions")
+      .withIndex("by_is_free_trial_status_expires_at", (q) =>
+        q.eq("is_free_trial", true).eq("status", "active").gt("expires_at", now).lte("expires_at", horizon),
+      )
+      .collect();
 
     let queued = 0;
     let picked = 0;
@@ -400,7 +395,7 @@ export const apple_server_notifications = httpAction(async (ctx, request) => {
     }
 
     const environment = toDatabaseEnvironment(transactionInfo?.environment ?? notification.data?.environment);
-    const status = transactionInfo ? determineSubscriptionStatus(transactionInfo, renewalInfo, notificationType) : null;
+    const subscription = transactionInfo ? determineSubscription(transactionInfo, renewalInfo, notificationType) : null;
     const revocation = transactionInfo
       ? revocationState(notificationType, transactionInfo)
       : { revokedAt: null, reason: null };
@@ -417,9 +412,9 @@ export const apple_server_notifications = httpAction(async (ctx, request) => {
         p_app_account_token: uuidOrNull(transactionInfo?.appAccountToken),
         p_apple_product_id: transactionInfo?.productId ?? null,
         p_web_order_line_item_id: transactionInfo?.webOrderLineItemId ?? null,
-        p_status: status,
+        p_status: subscription?.status ?? null,
         p_purchased_at: millisToIsoOrNull(transactionInfo?.purchaseDate),
-        p_expires_at: millisToIsoOrNull(transactionInfo?.expiresDate),
+        p_expires_at: millisToIsoOrNull(subscription?.expiresAt),
         p_revoked_at: revocation.revokedAt,
         p_revocation_reason: revocation.reason,
         p_signed_notification_payload: signedPayload,
