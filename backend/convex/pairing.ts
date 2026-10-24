@@ -73,9 +73,17 @@ async function hasActiveCouple(ctx: ReaderCtx, userId: string): Promise<boolean>
   return (await findCurrentCouple(ctx, userId)) !== null;
 }
 
+/** How long an invite lasts. The app asks for this, and it is the default when the app names no expiry. */
+const INVITE_DAYS = 30;
+/**
+ * The latest expiry the server accepts. The extra day leaves room for a phone clock that runs ahead
+ * and for a daylight saving change inside the app's 30 calendar days.
+ */
+const MAX_INVITE_DAYS = INVITE_DAYS + 1;
+
 function checkExpiry(expiresAt: string): void {
   const now = nowIso();
-  if (expiresAt <= now || expiresAt > addDaysToInstant(now, 30)) {
+  if (expiresAt <= now || expiresAt > addDaysToInstant(now, MAX_INVITE_DAYS)) {
     fail("23514", "invite expiration is out of range");
   }
 }
@@ -110,7 +118,7 @@ async function insertInvite(
 const expiresAtArg = v.optional(v.union(v.null(), v.string()));
 
 function expiresAtOrDefault(value: string | null | undefined): string {
-  return value === null || value === undefined ? addDaysToInstant(nowIso(), 7) : timestampArg(value);
+  return value === null || value === undefined ? addDaysToInstant(nowIso(), INVITE_DAYS) : timestampArg(value);
 }
 
 export const create_pairing_invite = mutation({
@@ -122,7 +130,7 @@ export const create_pairing_invite = mutation({
     const input = toClientOperation(args, {
       kind: "create_pairing_invite",
       scope: "pairing_invites",
-      // A missing expiry defaults to now + 7 days, which differs per call. Hash a marker so a retry matches.
+      // A missing expiry defaults to now + 30 days, which differs per call. Hash a marker so a retry matches.
       request: { kind: "create_pairing_invite", code_hash: codeHash, expires_at: args.p_expires_at ?? "default" },
     });
     const outcome = await runClientOperation(ctx, userId, input, async () => {

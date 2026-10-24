@@ -82,7 +82,7 @@ describe("create_pairing_invite", () => {
     expect(JSON.stringify(rows)).not.toContain("ABC123");
   });
 
-  test("a missing expiry defaults to seven days and survives a retry", async () => {
+  test("a missing expiry defaults to thirty days and survives a retry", async () => {
     const t = newTest();
     const user = await inviter(t);
     const args = { p_invite_code: "ABC123", ...operation() };
@@ -90,15 +90,18 @@ describe("create_pairing_invite", () => {
     vi.setSystemTime(new Date("2026-10-10T12:00:05.000Z"));
     expect(await user.as.mutation(api.pairing.create_pairing_invite, args)).toBe(id);
     const invite = await t.run((ctx) => ctx.db.query("pairing_invites").first());
-    expect(invite?.expires_at).toBe(inDays(7));
+    expect(invite?.expires_at).toBe(inDays(30));
   });
 
   test("rejects out of range expiry, bad codes, missing entitlement, and users who are already paired", async () => {
     const t = newTest();
     const user = await inviter(t);
     await expectFail(createInvite(user, "ABC123", NOW), "23514", "invite expiration is out of range");
-    await expectFail(createInvite(user, "ABC123", inDays(31)), "23514", "invite expiration is out of range");
+    await expectFail(createInvite(user, "ABC123", inDays(32)), "23514", "invite expiration is out of range");
     await expectFail(createInvite(user, "abc123"), "23514", "invalid invite code");
+    // The app asks for 30 calendar days, which is an hour longer across the end of summer time.
+    const thirtyCalendarDays = new Date(Date.parse(inDays(30)) + 3_600_000).toISOString();
+    expect(await createInvite(user, "K7M2PQ", thirtyCalendarDays)).toMatch(/^[0-9a-f-]{36}$/);
 
     const unentitled = await createSignedInUser(t, {});
     await expectFail(createInvite(unentitled), "42501", "direct entitlement is required to create an invite");

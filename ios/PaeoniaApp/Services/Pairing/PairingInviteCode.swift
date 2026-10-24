@@ -9,6 +9,9 @@ nonisolated enum PairingInviteCodeError: Error, Equatable {
 
 nonisolated enum PairingInviteCode {
     static let length = 6
+    /// How many days an invite works. The server accepts up to this plus one day
+    /// (`backend/convex/pairing.ts`).
+    static let lifetimeDays = 30
 
     private static let alphabet = Array("0123456789ABCDEFGHJKMNPQRSTVWXYZ")
     private static let allowedCharacters = Set(alphabet)

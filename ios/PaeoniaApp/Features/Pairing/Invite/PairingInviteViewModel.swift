@@ -141,7 +141,7 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
         }
     }
 
-    /// Swaps in a fresh code when the shown one passed its 7 days while the app was away.
+    /// Swaps in a fresh code when the shown one passed its 30 days while the app was away.
     /// Returns false only when a swap was needed and failed.
     func replaceInviteIfExpired() async -> Bool {
         guard let invite, invite.expiresAt <= now() else {
@@ -173,8 +173,8 @@ final class PairingInviteViewModel: PresentationReadinessProviding {
     // MARK: - Invite helpers
 
     private func inviteExpiryDate() -> Date {
-        Calendar.current.date(byAdding: .day, value: 7, to: now())
-            ?? now().addingTimeInterval(7 * 24 * 60 * 60)
+        Calendar.current.date(byAdding: .day, value: PairingInviteCode.lifetimeDays, to: now())
+            ?? now().addingTimeInterval(TimeInterval(PairingInviteCode.lifetimeDays) * 24 * 60 * 60)
     }
 
     private func validateCachedInvite(_ cachedInvite: PairingInvite) async {

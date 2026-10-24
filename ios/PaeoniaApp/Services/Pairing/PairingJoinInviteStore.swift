@@ -9,8 +9,9 @@ protocol PairingJoinInviteStoring: AnyObject {
 final class UserDefaultsPairingJoinInviteStore: PairingJoinInviteStoring {
     static let shared = UserDefaultsPairingJoinInviteStore()
 
-    /// Invites last 7 days, so a saved code older than that cannot work anymore.
-    nonisolated static let maximumAge: TimeInterval = 7 * 24 * 60 * 60
+    /// A saved code can be no older than the invite it came from, so an older one cannot
+    /// work anymore.
+    nonisolated static let maximumAge = TimeInterval(PairingInviteCode.lifetimeDays) * 24 * 60 * 60
 
     private let defaults: UserDefaults
     private let now: () -> Date
