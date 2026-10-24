@@ -232,7 +232,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [ ] Broken streak state is understandable. Needs a device.
 - [x] Streak restore flow works.
 - [x] Streak restore purchase cannot be confused with subscription entitlement.
-- [x] Streak restore window is intentional and tested. 24 hours.
+- [x] Streak restore window is intentional and tested. A streak of 3 or more that breaks comes back for free when both partners show up on the next couple day. The paid restore is offered only on the second and third couple days after the missed one, and after that the streak is gone. `lib/streaks.test.ts` "after a break: one free save day, then two restore days" and "save and restore days across time zones".
 
 ## Memories
 
