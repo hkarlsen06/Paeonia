@@ -119,7 +119,7 @@ struct AdminUserDetailViewModelTests {
         let didBan = await model.ban(reason: "Spam")
 
         #expect(!didBan)
-        #expect(model.notice == .banFailed)
+        #expect(model.notice == .banFailed(.other))
         #expect(model.user?.isBanned == false)
         #expect(counter.calls == 0)
         #expect(!model.isWorking)

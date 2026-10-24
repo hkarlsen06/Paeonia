@@ -8,7 +8,7 @@ final class PrivacySafetyViewModel {
         case loadFailed
         case requestSubmitted(PrivacyRequestKind)
         case requestAlreadyActive(PrivacyRequestKind)
-        case requestFailed
+        case requestFailed(PaeoniaFailure)
         case correctionDetailsRequired
     }
 
@@ -74,7 +74,7 @@ final class PrivacySafetyViewModel {
 
         guard !submittingRequestKinds.contains(kind), let service else {
             if service == nil {
-                notice = .requestFailed
+                notice = .requestFailed(.other)
             }
             return false
         }
@@ -99,7 +99,7 @@ final class PrivacySafetyViewModel {
         } catch is CancellationError {
             return false
         } catch {
-            notice = .requestFailed
+            notice = .requestFailed(PaeoniaFailure(error))
             return false
         }
     }

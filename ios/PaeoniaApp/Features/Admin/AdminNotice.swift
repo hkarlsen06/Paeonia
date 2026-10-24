@@ -39,8 +39,8 @@ nonisolated enum AdminFailure: Equatable, Sendable {
 nonisolated enum AdminNotice: Equatable, Sendable {
     case loadFailed
     case notAdmin
-    case banFailed
-    case unbanFailed
+    case banFailed(PaeoniaFailure)
+    case unbanFailed(PaeoniaFailure)
     case cannotBan
     case reasonInvalid
     case userNotFound
@@ -64,7 +64,7 @@ nonisolated enum AdminNotice: Equatable, Sendable {
         case .cannotBan: self = .cannotBan
         case .reasonInvalid: self = .reasonInvalid
         case .userNotFound: self = .userNotFound
-        case .other: self = .banFailed
+        case .other: self = .banFailed(PaeoniaFailure(error))
         }
     }
 
@@ -73,7 +73,7 @@ nonisolated enum AdminNotice: Equatable, Sendable {
         case .cancelled: return nil
         case .notAdmin: self = .notAdmin
         case .userNotFound: self = .userNotFound
-        case .cannotBan, .reasonInvalid, .other: self = .unbanFailed
+        case .cannotBan, .reasonInvalid, .other: self = .unbanFailed(PaeoniaFailure(error))
         }
     }
 }
@@ -83,8 +83,10 @@ extension AdminNotice {
         switch self {
         case .loadFailed: .error(message: String(localized: .adminErrorLoadFailed))
         case .notAdmin: .error(message: String(localized: .adminErrorNotAdmin))
-        case .banFailed: .error(message: String(localized: .adminErrorBanFailed))
-        case .unbanFailed: .error(message: String(localized: .adminErrorUnbanFailed))
+        // Only a phone without a connection is told to check it.
+        case .banFailed(.offline): .error(message: String(localized: .adminErrorBanFailed))
+        case .unbanFailed(.offline): .error(message: String(localized: .adminErrorUnbanFailed))
+        case .banFailed(.other), .unbanFailed(.other): .error(message: String(localized: .commonActionFailedMessage))
         case .cannotBan: .error(message: String(localized: .adminErrorCannotBan))
         case .reasonInvalid: .error(message: String(localized: .adminErrorReasonInvalid))
         case .userNotFound: .error(message: String(localized: .adminErrorUserNotFound))

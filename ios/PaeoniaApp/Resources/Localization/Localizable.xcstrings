@@ -839,7 +839,7 @@
       }
     },
     "admin.error.banFailed" : {
-      "comment" : "Banner when banning a user failed.",
+      "comment" : "Banner when banning a user failed because the phone is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -929,7 +929,7 @@
       }
     },
     "admin.error.unbanFailed" : {
-      "comment" : "Banner when lifting a ban failed.",
+      "comment" : "Banner when lifting a ban failed because the phone is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -28530,7 +28530,7 @@
       }
     },
     "privacySafety.request.failed.message" : {
-      "comment" : "Banner message when a privacy request cannot be submitted",
+      "comment" : "Banner message when a privacy request cannot be submitted because the phone is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -29106,7 +29106,7 @@
       }
     },
     "reportAndLeave.failed.message" : {
-      "comment" : "Banner message when report-and-leave fails",
+      "comment" : "Banner message when report-and-leave fails because the phone is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -36015,7 +36015,7 @@
       }
     },
     "streakRestore.error.priceUnavailable" : {
-      "comment" : "Shown when the streak restore price cannot be loaded.",
+      "comment" : "Shown when the streak restore price cannot be loaded because the phone is offline.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

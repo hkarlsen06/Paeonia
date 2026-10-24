@@ -180,11 +180,13 @@ struct PrivacySafetyView: View {
                     message: String(localized: .privacySafetyRequestActiveMessage)
                 )
             )
-        case .requestFailed:
+        case let .requestFailed(failure):
+            // Only a phone without a connection is told to check it.
             bannerCenter.show(
                 .error(
                     title: String(localized: .privacySafetyRequestFailedTitle),
-                    message: String(localized: .privacySafetyRequestFailedMessage),
+                    message: String(localized: failure == .offline
+                        ? .privacySafetyRequestFailedMessage : .commonActionFailedMessage),
                     timing: .untilDismissed
                 )
             )

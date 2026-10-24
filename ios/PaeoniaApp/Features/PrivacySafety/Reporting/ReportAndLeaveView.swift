@@ -200,11 +200,16 @@ struct ReportAndLeaveView: View {
                     message: String(localized: .reportAndLeaveReasonRequiredMessage)
                 )
             )
-        case .submitFailed:
+        case let .submitFailed(failure):
+            // Only a phone without a connection is told to check it.
             bannerCenter.show(
                 .error(
                     title: String(localized: .reportAndLeaveFailedTitle),
-                    message: String(localized: .reportAndLeaveFailedMessage),
+                    message: String(
+                        localized: failure == .offline
+                            ? .reportAndLeaveFailedMessage
+                            : .commonActionFailedMessage
+                    ),
                     timing: .untilDismissed
                 )
             )

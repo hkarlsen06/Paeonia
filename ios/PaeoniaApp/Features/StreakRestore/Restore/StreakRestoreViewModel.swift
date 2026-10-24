@@ -83,13 +83,12 @@ final class StreakRestoreViewModel {
         }
 
         guard !isLoading else { return }
-        if error == .productsUnavailable {
+        if case .productsUnavailable = error {
             error = nil
         }
 
-        let didLoad = await loadProductIfNeeded()
-        if !didLoad {
-            error = .productsUnavailable
+        if let failure = await loadProductIfNeeded() {
+            error = .productsUnavailable(failure)
         }
     }
 
@@ -132,8 +131,8 @@ final class StreakRestoreViewModel {
         }
 
         // Normally loaded already. If the first load failed, one more try here.
-        guard await loadProductIfNeeded() else {
-            record(.productsUnavailable)
+        if let failure = await loadProductIfNeeded() {
+            record(.productsUnavailable(failure))
             return nil
         }
 
@@ -180,14 +179,15 @@ final class StreakRestoreViewModel {
         await onRestored(count)
     }
 
-    /// Loads the price once if it is missing. Returns false only when loading failed.
-    private func loadProductIfNeeded() async -> Bool {
+    /// Loads the price once if it is missing. Returns why loading failed, or nil
+    /// when the price is there or another load is running.
+    private func loadProductIfNeeded() async -> PaeoniaFailure? {
         if hasLoadedProduct {
             didPriceLoadFail = false
             hasFinishedLoadingProducts = true
-            return true
+            return nil
         }
-        guard !isLoading else { return true }
+        guard !isLoading else { return nil }
 
         isLoading = true
         defer {
@@ -197,10 +197,10 @@ final class StreakRestoreViewModel {
         do {
             try await storeKitService.loadProducts()
             didPriceLoadFail = false
-            return true
+            return nil
         } catch {
             didPriceLoadFail = true
-            return false
+            return PaeoniaFailure(error)
         }
     }
 
@@ -235,7 +235,7 @@ final class StreakRestoreViewModel {
         case .streakNotRestorable:
             .streakNotRestorable
         case .productUnavailable:
-            .productsUnavailable
+            .productsUnavailable(.other)
         case .serverConfirmationFailed:
             // Apple already charged; only the server step failed. The unfinished
             // purchase is retried on the next launch and the next time this opens.
@@ -249,7 +249,7 @@ final class StreakRestoreViewModel {
 }
 
 enum StreakRestoreError: Equatable {
-    case productsUnavailable
+    case productsUnavailable(PaeoniaFailure)
     /// The purchase did not go through and nothing was charged.
     case purchaseNotConfirmed
     case purchaseLinkedToAnotherAccount
@@ -266,8 +266,9 @@ enum StreakRestoreError: Equatable {
 
     var message: String {
         switch self {
-        case .productsUnavailable:
-            String(localized: .streakRestoreErrorPriceUnavailable)
+        case let .productsUnavailable(failure):
+            // Only a phone without a connection is told to check it.
+            String(localized: failure == .offline ? .streakRestoreErrorPriceUnavailable : .commonLoadFailedMessage)
         case .purchaseNotConfirmed:
             String(localized: .streakRestoreErrorPurchaseNotCompleted)
         case .purchaseLinkedToAnotherAccount:

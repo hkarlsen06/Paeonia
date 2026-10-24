@@ -6,7 +6,7 @@ import Observation
 final class ReportAndLeaveViewModel {
     enum Notice: Equatable {
         case reasonRequired
-        case submitFailed
+        case submitFailed(PaeoniaFailure)
     }
 
     private let service: (any PrivacySafetyServicing)?
@@ -58,7 +58,7 @@ final class ReportAndLeaveViewModel {
             return false
         }
         guard let service else {
-            notice = .submitFailed
+            notice = .submitFailed(.other)
             return false
         }
         guard let selectedReason else {
@@ -88,7 +88,7 @@ final class ReportAndLeaveViewModel {
         } catch is CancellationError {
             return false
         } catch {
-            notice = .submitFailed
+            notice = .submitFailed(PaeoniaFailure(error))
             return false
         }
     }
