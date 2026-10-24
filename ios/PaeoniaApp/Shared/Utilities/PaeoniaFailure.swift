@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 
 /// What a failed server call means for the person, so a screen tells them the
 /// truth. Only a phone without a connection is told it is offline. Everything
@@ -11,6 +12,11 @@ nonisolated enum PaeoniaFailure: Equatable, Sendable {
     case other
 
     init(_ error: any Error) {
+        // StoreKit keeps the network error in its own case, out of `userInfo`.
+        if case let .networkError(urlError)? = error as? StoreKitError {
+            self.init(urlError)
+            return
+        }
         guard let urlError = error as? URLError else {
             // Frameworks such as MapKit wrap the network error in their own.
             if let underlying = (error as NSError).userInfo[NSUnderlyingErrorKey] as? any Error {

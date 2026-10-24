@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 import Testing
 @testable import PaeoniaApp
 
@@ -35,5 +36,8 @@ struct PaeoniaFailureTests {
         #expect(PaeoniaFailure(offline) == .offline)
         let throttled = NSError(domain: "MKErrorDomain", code: 3)
         #expect(PaeoniaFailure(throttled) == .other)
+        // StoreKit keeps the network error in its own case instead.
+        #expect(PaeoniaFailure(StoreKitError.networkError(URLError(.notConnectedToInternet))) == .offline)
+        #expect(PaeoniaFailure(StoreKitError.networkError(URLError(.timedOut))) == .other)
     }
 }
