@@ -32,6 +32,8 @@ esac
 copy_vars=(CLERK_JWT_ISSUER_DOMAIN CLERK_SECRET_KEY INVITE_CODE_PEPPER
   PAEONIA_MEDIA_URL_SECRET PAEONIA_LIVE_RELAY_URL PAEONIA_LIVE_RELAY_SECRET
   POSTHOG_PERSONAL_API_KEY)
+# Set on api.paeonia.no only while it trusts simulator builds on development Clerk.
+optional_vars=(CLERK_DEV_JWT_ISSUER_DOMAIN CLERK_DEV_SECRET_KEY)
 
 root=$(git rev-parse --show-toplevel)
 cd "$root/backend"
@@ -95,6 +97,11 @@ wait_for curl -fs -o /dev/null "http://127.0.0.1:$port/instance_name"
 # convex dev retries on its own once the env vars change.
 for name in "${copy_vars[@]}"; do
   hosted env get "$name" | npx convex env set "$name" >/dev/null 2>&1 ||
+    { echo "Could not copy $name from api.paeonia.no" >&2; exit 1; }
+done
+for name in "${optional_vars[@]}"; do
+  value=$(hosted env get "$name")
+  [[ -z $value ]] || printf '%s' "$value" | npx convex env set "$name" >/dev/null 2>&1 ||
     { echo "Could not copy $name from api.paeonia.no" >&2; exit 1; }
 done
 wait_for grep -q "Convex functions ready" "$log"

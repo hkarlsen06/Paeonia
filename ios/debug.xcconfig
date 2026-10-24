@@ -6,10 +6,13 @@
 // Convex deployment. `https:/$()/` keeps xcconfig from reading `//` as a comment.
 PAEONIA_CONVEX_URL = https:/$()/api.paeonia.no
 
-// Clerk publishable key of the production instance (clerk.paeonia.no). It must
-// match the instance that api.paeonia.no trusts (CLERK_JWT_ISSUER_DOMAIN), so
-// Debug builds use it too. An empty key disables sign-in.
+// Clerk publishable key of the production instance (clerk.paeonia.no). An empty
+// key disables sign-in. Simulator builds use the development instance instead,
+// so the test couple from scripts/test-couple can sign in there and a simulator
+// can pair with a phone on production Clerk. api.paeonia.no trusts both
+// (CLERK_JWT_ISSUER_DOMAIN and CLERK_DEV_JWT_ISSUER_DOMAIN).
 PAEONIA_CLERK_PUBLISHABLE_KEY = pk_live_Y2xlcmsucGFlb25pYS5ubyQ
+PAEONIA_CLERK_PUBLISHABLE_KEY[sdk=iphonesimulator*] = pk_test_dmVyaWZpZWQtYmFkZ2VyLTEwLmNsZXJrLmFjY291bnRzLmRldiQ
 
 // PostHog project key (phc_...) for usage statistics, session replay and crash
 // reports. It can only send events, so it is safe in the app. The project is on
