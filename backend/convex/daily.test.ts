@@ -47,6 +47,9 @@ async function readyCouple(options: { timeZones?: [string, string]; questions?: 
   return { t, couple, a: couple.first, b: couple.second, question };
 }
 
+/** The row of the day's own question in a snapshot. */
+const currentOf = <Row extends { is_current_day: boolean }>(rows: Row[]) => rows.find((row) => row.is_current_day)!;
+
 /** Moves the clock to 10:00 UTC on a day in October 2026 and starts that day. */
 async function nextDay(user: TestUser, day: string) {
   vi.setSystemTime(new Date(`2026-10-${day}T10:00:00.000Z`));
@@ -349,6 +352,35 @@ describe("partner pushes", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  test("someone who turned off partner answers gets no 'answered too' push", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await addDevice(t, a.userId);
+    await addDevice(t, b.userId);
+    await a.as.mutation(api.identity.set_notification_preference, { p_column: "partner_answered_enabled", p_enabled: false });
+    await submit(a, question.id, { text: "hello" });
+    vi.setSystemTime(new Date("2026-10-10T10:00:30.000Z"));
+    await submit(b, question.id, { text: "hi" });
+    // b answered second and has the setting on, so b still hears that a's answer is ready.
+    const delivered = await pushesDue(t);
+    expect(delivered.map((push) => [push.target_device_id, push.payload.type])).toEqual([
+      [(await outboxFor(t, b))[0].target_device_id, "partner_answered"],
+    ]);
+    expect(await outboxFor(t, a)).toEqual([]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("turning off partner answers after the push was queued stops it when it is due", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await addDevice(t, a.userId);
+    await submit(a, question.id, { text: "hello" });
+    await submit(b, question.id, { text: "hi" });
+    expect((await outboxFor(t, a)).map((row) => row.kind)).toEqual(["partner_answered"]);
+    await a.as.mutation(api.identity.set_notification_preference, { p_column: "partner_answered_enabled", p_enabled: false });
+    expect(await pushesDue(t)).toEqual([]);
+    expect(await outboxFor(t, a)).toEqual([expect.objectContaining({ kind: "partner_answered", failed_at: expect.any(String) })]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("answering back and seeing the reveal before the push goes out drops it", async () => {
     const { t, a, b, question } = await readyCouple();
     await addDevice(t, b.userId);
@@ -516,6 +548,18 @@ describe("shuffle", () => {
     await expect(shuffle(a)).rejects.toThrow(/22023.*no eligible daily questions are available/);
     await expect(shuffle(b)).rejects.toThrow(/22023.*no eligible daily questions are available/);
   });
+
+  test("a skipped question stays away on later days and comes back once 14 days have passed", async () => {
+    // Two questions. While the skipped one is out, the couple gets the other one again every day.
+    const { a, b, question: skipped } = await readyCouple({ questions: textQuestions(2) });
+    const other = currentOf(await shuffle(a)).question_id;
+    expect(other).not.toBe(skipped.question_id);
+    expect(currentOf(await nextDay(b, "11")).question_id).toBe(other);
+    expect(currentOf(await nextDay(a, "23")).question_id).toBe(other);
+    // The skip was at 10:00 on 10 October.
+    vi.setSystemTime(new Date("2026-10-24T12:00:00.000Z"));
+    expect(currentOf(await start(b)).question_id).toBe(skipped.question_id);
+  });
 });
 
 describe("time zones and day boundaries", () => {
@@ -535,6 +579,23 @@ describe("time zones and day boundaries", () => {
       /23514.*daily answer timestamp is outside the question day/,
     );
     await expect(submit(couple.first, question, { text: "x" }, "2026-10-11T06:59:59.000Z")).resolves.toEqual(expect.any(String));
+  });
+
+  test("a partner who changes time zone mid-day does not move the day that already started", async () => {
+    const { t, a, b, question } = await readyCouple();
+    const started = { local_date: "2026-10-10", starts_at: "2026-10-09T22:00:00.000Z", ends_at: "2026-10-10T22:00:00.000Z" };
+    expect(currentOf(await today(a))).toMatchObject(started);
+    // Los Angeles is now the westmost zone. Its 10 October runs until 07:00 UTC on the 11th.
+    vi.setSystemTime(new Date("2026-10-10T15:00:00.000Z"));
+    await setTimeZone(t, b.userId, "America/Los_Angeles");
+    expect(currentOf(await start(b))).toMatchObject({ ...started, instance_id: question.id });
+    expect(currentOf(await today(a))).toMatchObject({ ...started, instance_id: question.id });
+    // The day still ends at midnight in Oslo. An answer written before then, sent later, still counts.
+    vi.setSystemTime(new Date("2026-10-10T22:30:00.000Z"));
+    await expect(submit(a, question.id, { text: "late" })).rejects.toThrow(
+      /23514.*daily answer timestamp is outside the question day/,
+    );
+    await expect(submit(a, question.id, { text: "in time" }, "2026-10-10T21:59:00.000Z")).resolves.toEqual(expect.any(String));
   });
 
   test("a start at the same instant lands on different couple days for different zones", async () => {
@@ -623,18 +684,42 @@ describe("questions the couple had before", () => {
     expect((await currentQuestionFor(t, a.userId)).question_id).toBe(first.question_id);
   });
 
-  test("a question that can resurface comes back after its window", async () => {
-    const { t, a } = await readyCouple({
-      questions: [{ key: "again", months: 1 }, { key: "once_a", resurfaceable: false }, { key: "once_b", resurfaceable: false }],
+  test("a question that can resurface stays away for its months, then comes back with the day it was answered", async () => {
+    // The couple gets "first", "second" and "again" on 10, 11 and 12 October. Only "again" may come
+    // back, after a month. Once all three were used, a question that cannot come back yet loses to
+    // the one the couple had longest ago, so "again" shows up only when its month has passed.
+    const t = newTest();
+    const seeded = await seedCatalog(t, [
+      { key: "first", resurfaceable: false },
+      { key: "second", resurfaceable: false },
+      { key: "again", months: 1 },
+    ]);
+    const activate = (keys: string[]) =>
+      t.run(async (ctx) => {
+        for (const question of seeded) {
+          const row = await ctx.db.query("questions").withIndex("by_uuid", (q) => q.eq("id", question.id)).unique();
+          await ctx.db.patch(row!._id, { status: keys.includes(question.key) ? "active" : "draft" });
+        }
+      });
+    await activate(["first"]);
+    const { first: a, second: b } = await createCouple(t, { timeZones: OSLO });
+    expect(currentOf(await start(a)).question_key).toBe("first");
+    await activate(["first", "second"]);
+    expect(currentOf(await nextDay(a, "11")).question_key).toBe("second");
+    await activate(["first", "second", "again"]);
+    const again = currentOf(await nextDay(a, "12"));
+    expect(again.question_key).toBe("again");
+    await submit(a, again.instance_id, { text: "one" });
+    await submit(b, again.instance_id, { text: "two" });
+
+    vi.setSystemTime(new Date("2026-11-11T10:00:00.000Z"));
+    expect(currentOf(await start(a)).question_key).toBe("first");
+    vi.setSystemTime(new Date("2026-11-12T12:00:00.000Z"));
+    expect(currentOf(await start(a))).toMatchObject({
+      question_key: "again",
+      earlier_round_count: 1,
+      latest_earlier_round_local_date: "2026-10-12",
     });
-    await nextDay(a, "11");
-    await nextDay(a, "12");
-    expect(await dailyQuestionsFor(t, a.userId)).toHaveLength(3);
-    // A month later only "again" may come back, whatever order the three came in.
-    vi.setSystemTime(new Date("2026-11-13T10:00:00.000Z"));
-    await start(a);
-    const [snapshot] = await a.as.query(api.daily.get_today_daily_challenge_snapshot, {});
-    expect(snapshot.questions.find((row) => row.is_current_day)?.question_key).toBe("again");
   });
 });
 
