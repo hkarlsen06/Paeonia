@@ -1,0 +1,536 @@
+#!/usr/bin/env python3
+# Fills the test couple's account on this worktree's local backend with made-up
+# content for App Store screenshots, in English or Norwegian.
+#
+#   scripts/app-store-content --locale en|nb [--drawing <file.pkdrawing>]
+#       [--drawing-canvas-side 320] [--drawing-strokes N --drawing-points N
+#        --drawing-bounds x,y,width,height] [--for-reveal | --chat-only]
+#
+# --for-reveal has only Elena answer today's question and leaves the chat out, so
+# Hjalmar can answer in the app and see Elena's answer revealed. A later run
+# with --chat-only answers for Hjalmar if he has not, and adds the chat.
+#
+# Run it on a backend that holds only the paired test couple from
+# scripts/test-couple. The first account becomes Hjalmar and the second Elena.
+# Screenshots are taken as Hjalmar. Every write goes through the app's own
+# Convex functions, called as one of the two accounts, so the server's rules
+# apply. Steps that already ran are skipped, so it is safe to run again.
+#
+# It seeds names and profile photos, the start date (504 days ago, past the
+# 500-day mark), a countdown 12 days out, today's question answered by Hjalmar
+# and then Elena with a chat about it, three memories with photos, a Ludo game
+# waiting for Hjalmar's move, a note on Home from each, both locations on the
+# Home map, and with --drawing a widget drawing from Elena.
+#
+# The server picks a day's question at random, and each partner can skip it 30
+# times a day. The script skips until today's question is QUESTION_KEY. When the
+# skips run out, it runs the operator mutation daily:reset_daily_challenge_for_testing
+# with `npx convex run`, which clears today's question and skips, and tries again.
+# That is the one step that does not run as an account. It refuses to run unless
+# backend/.env.local names the same local backend as ios/local.xcconfig.
+#
+# The drawing is PKDrawing.dataRepresentation() bytes. Without the stroke count,
+# point count and bounds it reads them from the file with a small PencilKit
+# program it compiles with swiftc. The last stdout line is a JSON object with the
+# ids the screenshot deep links need, Hjalmar's answer for the reveal, and
+# Elena's Clerk subject, which scripts/capture-app-store-screenshots.py uses to
+# show Elena at the Ludo table.
+#
+# It reads CLERK_DEV_SECRET_KEY and CLERK_DEV_JWT_ISSUER_DOMAIN from the
+# api.paeonia.no env the way scripts/test-couple does. Tokens are never printed.
+import argparse
+import hashlib
+import json
+import os
+import re
+import subprocess
+import tempfile
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
+HOSTED_URL = "https://api.paeonia.no"
+NODE_PATH = "/opt/homebrew/opt/node@22/bin"  # The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
+PHOTOS = ROOT / "scripts/assets/app-store/photos"
+USER_AGENT = {"User-Agent": "paeonia-app-store-content"}
+TIME_ZONE = ZoneInfo("Europe/Oslo")  # scripts/test-couple onboards both accounts in Oslo time.
+# Fixed ids for rows the script creates, so a second run finds them.
+ID_NAMESPACE = uuid.UUID("5d0f5c2e-8a43-4d55-9a5f-4f1c2b7a9e10")
+
+DAYS_TOGETHER = 504  # Past the 500-day mark and far from the next milestone.
+VISIT_IN_DAYS = 12
+DAILY_SHUFFLE_LIMIT = 30  # DAILY_SHUFFLE_LIMIT in backend/convex/daily.ts, per person per day.
+# A round of 60 skips sees 61 of the 156 questions, so 25 rounds all miss about once in 200,000 runs.
+DAILY_RESET_LIMIT = 25
+QUESTION_KEY = "future_first_meal_together"
+# (mover, die, pawn): both of each player's pawns end up out, and Hjalmar moves next.
+# See backend/convex/lib/ludo.ts. A 6 brings a pawn out and gives another roll.
+LUDO_MOVES = [
+    ("first", 6, 0), ("first", 4, 0),
+    ("second", 6, 0), ("second", 3, 0),
+    ("first", 6, 1), ("first", 5, 0),
+    ("second", 6, 1), ("second", 5, 0),
+    ("first", 3, 1),
+    ("second", 4, 1),
+    ("first", 2, 0),
+    ("second", 2, 0),
+]
+OSLO = (59.9133, 10.7389)
+COPENHAGEN = (55.6761, 12.5683)
+
+ACCOUNTS = {"first": {"external_id": "paeonia-test-first", "name": "Hjalmar", "photo": "marketing/static/art/hjalmar.webp"},
+            "second": {"external_id": "paeonia-test-second", "name": "Elena", "photo": "scripts/assets/app-store/photos/elena-portrait.jpg"}}
+
+CONTENT = {
+    "en": {
+        "countdown": "Elena lands in Oslo",
+        # Answers to QUESTION_KEY, Hjalmar's first.
+        "answers": {"first": "Pancakes at the little café by the station. You get the blueberry ones and I steal half.",
+                    "second": "Your homemade pizza, eaten on the floor because we never clear the table in time."},
+        "chat": [("second", "Pancakes for breakfast, pizza for dinner. Deal?"),
+                 ("first", "Deal. I'll buy extra blueberries."),
+                 ("second", "12 days. I'm counting."),
+                 ("first", "Me too ❤️")],
+        "notes": {"first": "Coffee call? ☕", "second": "Miss you 🫶"},
+        "memories": {
+            "cabin": ("Cabin weekend", "You beat me at cards every single night. I want a rematch at Christmas."),
+            "copenhagen": ("A day in Copenhagen",
+                           "You showed me your favorite bakery, and now I get why you go every Sunday."),
+            "beach": ("Beach day", "Windy, sandy and perfect. The ice cream melted faster than we could eat it."),
+        },
+    },
+    "nb": {
+        "countdown": "Elena lander i Oslo",
+        "answers": {"first": "Pannekaker på den lille kafeen ved stasjonen. Du tar de med blåbær, og jeg stjeler halvparten.",
+                    "second": "Hjemmelaget pizza hos deg, spist på gulvet fordi vi aldri rekker å rydde bordet."},
+        "chat": [("second", "Pannekaker til frokost og pizza til middag. Avtale?"),
+                 ("first", "Avtale. Jeg kjøper ekstra blåbær."),
+                 ("second", "12 dager igjen. Jeg teller."),
+                 ("first", "Jeg også ❤️")],
+        "notes": {"first": "Kaffe? ☕", "second": "Savner deg 🫶"},
+        "memories": {
+            "cabin": ("Hyttehelg", "Du slo meg i kort hver eneste kveld. Jeg vil ha revansj til jul."),
+            "copenhagen": ("En dag i København",
+                           "Du viste meg favorittbakeriet ditt, og nå skjønner jeg hvorfor du går dit hver søndag."),
+            "beach": ("Stranddag", "Vind, sand og helt perfekt. Isen smeltet fortere enn vi rakk å spise den."),
+        },
+    },
+}
+
+# Oldest first, so the newest memory is created last. Each is (key, author, days ago, place, photos).
+MEMORIES = [
+    ("beach", "second", 103, {"name": "Søndervig Strand", "latitude": 56.1189, "longitude": 8.1129,
+                               "city": "Ringkøbing", "country_code": "DK"},
+     ["beach-dunes.jpg", "beach-ice-cream.jpg"]),
+    ("copenhagen", "first", 58, {"name": "Nyhavn", "latitude": 55.6798, "longitude": 12.5907,
+                                 "city": "København", "country_code": "DK"},
+     ["copenhagen-nyhavn.jpg", "copenhagen-cafe.jpg"]),
+    ("cabin", "second", 19, {"name": "Norefjell", "latitude": 60.2106, "longitude": 9.5562,
+                             "city": "Krødsherad", "country_code": "NO"},
+     ["cabin-lake.jpg", "cabin-living-room.jpg", "cabin-cocoa.jpg"]),
+]
+
+DRAWING_COUNTER = r"""
+import Foundation
+import PencilKit
+let drawing = try PKDrawing(data: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
+let b = drawing.bounds
+print(drawing.strokes.count, drawing.strokes.reduce(0) { $0 + $1.path.count }, b.minX, b.minY, b.width, b.height)
+"""
+# PencilKit crashes in a program without a bundle id, so the counter gets one.
+DRAWING_COUNTER_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict><key>CFBundleIdentifier</key><string>no.paeonia.app-store-content</string></dict></plist>
+"""
+
+
+def iso(moment: datetime) -> str:
+    return moment.isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def now_iso() -> str:
+    return iso(datetime.now(timezone.utc))
+
+
+def today() -> date:
+    return datetime.now(TIME_ZONE).date()
+
+
+def fixed_id(couple_id: str, name: str) -> str:
+    return str(uuid.uuid5(ID_NAMESPACE, f"{couple_id}:{name}"))
+
+
+def hosted_env_get(name: str) -> str:
+    admin_key = os.environ.get("CONVEX_SELF_HOSTED_ADMIN_KEY") or subprocess.check_output(
+        ["ssh", "one-s", "cat", "/srv/paeonia/convex/admin-key"], text=True).strip()
+    env = {**os.environ, "CONVEX_DEPLOYMENT": "", "CONVEX_SELF_HOSTED_URL": HOSTED_URL,
+           "CONVEX_SELF_HOSTED_ADMIN_KEY": admin_key, "PATH": f"{NODE_PATH}:{os.environ['PATH']}"}
+    return subprocess.check_output(["npx", "convex", "env", "get", name], cwd=ROOT / "backend", env=env, text=True).strip()
+
+
+def http_json(url: str, *, method: str = "GET", headers: dict | None = None, data: bytes | None = None):
+    request = urllib.request.Request(url, data=data, method=method, headers={**USER_AGENT, **(headers or {})})
+    try:
+        with urllib.request.urlopen(request) as response:
+            return json.load(response), response.headers
+    except urllib.error.HTTPError as error:
+        raise SystemExit(f"{method} {url.split('?')[0]} failed with {error.code}: {error.read()[:300]!r}")
+
+
+class ConvexError(Exception):
+    pass
+
+
+class Convex:
+    """This worktree's local backend, which scripts/local-backend runs and names in ios/local.xcconfig."""
+
+    def __init__(self) -> None:
+        config = ROOT / "ios/local.xcconfig"
+        port = re.search(r"127\.0\.0\.1:(\d+)", config.read_text()) if config.exists() else None
+        if not port:
+            raise SystemExit("No local backend for this worktree. Start scripts/local-backend first.")
+        self.url = f"http://127.0.0.1:{port.group(1)}"
+        # The CLI reaches the local backend through backend/.env.local, never api.paeonia.no.
+        self.env = {key: value for key, value in os.environ.items()
+                    if key not in ("CONVEX_SELF_HOSTED_URL", "CONVEX_SELF_HOSTED_ADMIN_KEY", "CONVEX_DEPLOYMENT")}
+        self.env["PATH"] = f"{NODE_PATH}:{os.environ['PATH']}"
+
+    def cli(self, *args: str) -> str:
+        env_local = ROOT / "backend/.env.local"
+        target = re.search(r"^CONVEX_URL=(\S+)", env_local.read_text(), re.M) if env_local.exists() else None
+        if not target or target.group(1).rstrip("/") != self.url:
+            raise SystemExit(f"backend/.env.local does not name {self.url}, so the Convex CLI could reach another "
+                             "deployment. Start scripts/local-backend in this worktree first.")
+        return subprocess.check_output(["npx", "convex", *args], cwd=ROOT / "backend", env=self.env, text=True)
+
+    def call(self, token: str, kind: str, path: str, args: dict):
+        body = json.dumps({"path": path, "args": args, "format": "json"}).encode()
+        request = urllib.request.Request(f"{self.url}/api/{kind}", data=body, method="POST", headers={
+            **USER_AGENT, "Content-Type": "application/json", "Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(request) as response:
+            result = json.load(response)
+        if result.get("status") != "success":
+            raise ConvexError(f"{path} failed: {result.get('errorMessage') or result}")
+        return result["value"]
+
+
+class Clerk:
+    def __init__(self, secret: str, frontend_api: str) -> None:
+        self.secret = secret
+        self.frontend_api = frontend_api
+
+    def api(self, method: str, path: str, payload: dict | None = None):
+        data = json.dumps(payload).encode() if payload is not None else None
+        return http_json(f"https://api.clerk.com/v1{path}", method=method, data=data, headers={
+            "Authorization": f"Bearer {self.secret}", "Content-Type": "application/json"})[0]
+
+    def user_id(self, external_id: str) -> str:
+        found = self.api("GET", f"/users?{urllib.parse.urlencode({'external_id': external_id})}")
+        if not found:
+            raise SystemExit(f"No Clerk user {external_id}. Run scripts/test-couple first.")
+        return found[0]["id"]
+
+    def convex_token(self, user_id: str) -> str:
+        ticket = self.api("POST", "/sign_in_tokens", {"user_id": user_id, "expires_in_seconds": 300})["token"]
+        form = urllib.parse.urlencode({"strategy": "ticket", "ticket": ticket}).encode()
+        body, headers = http_json(f"{self.frontend_api}/v1/client/sign_ins?_is_native=1", method="POST", data=form,
+                                  headers={"Content-Type": "application/x-www-form-urlencoded"})
+        session_id = body["response"]["created_session_id"]
+        token, _ = http_json(f"{self.frontend_api}/v1/client/sessions/{session_id}/tokens/convex?_is_native=1",
+                             method="POST", headers={"Authorization": headers["Authorization"]})
+        return token["jwt"]
+
+
+def operation() -> dict:
+    return {"p_client_operation_id": str(uuid.uuid4()), "p_client_id": str(uuid.uuid4()),
+            "p_client_sequence": 1, "p_local_created_at": now_iso()}
+
+
+class Person:
+    def __init__(self, convex: Convex, role: str, token: str, user_id: str) -> None:
+        self.convex = convex
+        self.name = ACCOUNTS[role]["name"]
+        self.token = token
+        self.user_id = user_id
+
+    def query(self, path: str, args: dict | None = None):
+        return self.convex.call(self.token, "query", path, args or {})
+
+    def mutation(self, path: str, args: dict | None = None):
+        return self.convex.call(self.token, "mutation", path, args or {})
+
+    def upload(self, data: bytes, mime: str, reservation: dict, details: dict | None = None) -> str:
+        """Reserves, uploads and finalizes one file the way the app does. Returns the media asset id."""
+        reserve = {**operation(), **reservation}
+        [row] = self.mutation("media:create_pending_media_upload", reserve)
+        stored, _ = http_json(row["upload_url"], method="POST", data=data, headers={"Content-Type": mime})
+        self.mutation("media:finalize_media_upload", {
+            **operation(), "p_media_asset_id": row["media_asset_id"],
+            "p_reserved_by_client_operation_id": reserve["p_client_operation_id"], "p_bucket": row["bucket"],
+            "p_storage_path": row["storage_path"], "p_storage_id": stored["storageId"],
+            **{key: reservation[key] for key in
+               ("p_reserved_parent_kind", "p_reserved_parent_id", "p_upload_purpose", "p_media_type")},
+            "p_mime_type": mime, "p_byte_size": len(data), "p_sha256_hex": hashlib.sha256(data).hexdigest(),
+            **(details or {})})
+        return row["media_asset_id"]
+
+    def upload_image(self, path: Path, reservation: dict) -> str:
+        """Uploads an image as a JPEG, converted with sips like scripts/test-couple's profile photo."""
+        with tempfile.TemporaryDirectory() as scratch:
+            jpeg = path
+            if path.suffix.lower() not in (".jpg", ".jpeg"):
+                jpeg = Path(scratch) / "photo.jpg"
+                subprocess.run(["sips", "-s", "format", "jpeg", str(path), "--out", str(jpeg)],
+                               check=True, capture_output=True)
+            width, height = (int(value) for value in subprocess.check_output(
+                ["sips", "-g", "pixelWidth", "-g", "pixelHeight", str(jpeg)], text=True).split()[-3::2])
+            return self.upload(jpeg.read_bytes(), "image/jpeg", {**reservation, "p_file_extension": "jpg"},
+                               {"p_width": width, "p_height": height})
+
+
+def seed_profiles(people: dict) -> None:
+    for role, person in people.items():
+        launch = person.mutation("identity:launch")
+        if launch["profile"].get("display_name") == person.name:
+            print(f"{person.name}: name and photo already set")
+            continue
+        photo_id = person.upload_image(ROOT / ACCOUNTS[role]["photo"], {
+            "p_reserved_parent_kind": "profile_photo", "p_reserved_parent_id": person.user_id,
+            "p_upload_purpose": "profile_photo", "p_media_type": "image"})
+        person.mutation("identity:update_own_profile",
+                        {"p_display_name": person.name, "p_profile_photo_asset_id": photo_id})
+        print(f"{person.name}: renamed and given a new photo")
+
+
+def seed_dates(first: Person, locale: str, couple_id: str) -> None:
+    started_on = (today() - timedelta(days=DAYS_TOGETHER)).isoformat()
+    first.mutation("relationship:set_couple_started_on", {"p_started_on": started_on, **operation()})
+    target = (today() + timedelta(days=VISIT_IN_DAYS)).isoformat()
+    first.mutation("countdowns:save_countdown", {
+        "p_countdown_id": fixed_id(couple_id, "visit-countdown"), "p_title": CONTENT[locale]["countdown"],
+        "p_target_date": target, "p_repeats_yearly": False, **operation()})
+    print(f"Together since {started_on}, countdown to {target}")
+
+
+def todays_question(snapshot: list) -> dict:
+    return next(row for row in snapshot[0]["questions"] if row["is_current_day"])
+
+
+def skip_to_question(first: Person, second: Person) -> dict | None:
+    """Skips today's question as Hjalmar, then Elena, until it is QUESTION_KEY. Returns the snapshot, or None."""
+    snapshot = first.mutation("daily:start_daily_challenge_snapshot", operation())
+    for person in [first] * DAILY_SHUFFLE_LIMIT + [second] * DAILY_SHUFFLE_LIMIT:
+        question = todays_question(snapshot)
+        if question["question_key"] == QUESTION_KEY:
+            return snapshot
+        # An answered question can't be skipped, so only the reset can replace it.
+        if question["own_answer_id"] or question["partner_answer_id"]:
+            return None
+        try:
+            snapshot = person.mutation("daily:shuffle_daily_question_snapshot", operation())
+        except ConvexError as error:
+            if "daily shuffle limit reached" not in str(error):
+                raise
+    return snapshot if todays_question(snapshot)["question_key"] == QUESTION_KEY else None
+
+
+def seed_daily_question(convex: Convex, people: dict, couple_id: str, locale: str,
+                        roles: tuple[str, ...] = ("first", "second")) -> tuple[dict, str]:
+    """Makes QUESTION_KEY today's question and answers it as each role in order. Returns the question row and the day id."""
+    first, second = people["first"], people["second"]
+    for resets in range(DAILY_RESET_LIMIT):
+        snapshot = skip_to_question(first, second)
+        if snapshot:
+            break
+        convex.cli("run", "daily:reset_daily_challenge_for_testing", json.dumps({"p_couple_id": couple_id}))
+    else:
+        raise SystemExit(f"Today's question never became {QUESTION_KEY} in {DAILY_RESET_LIMIT} rounds of skips.")
+    question = todays_question(snapshot)
+    day_id = snapshot[0]["couple_day_id"]
+    for role in roles:
+        person = people[role]
+        [mine] = [row for row in person.query("daily:get_daily_challenge_snapshot", {"p_couple_day_id": day_id})[0]
+                  ["questions"] if row["instance_id"] == question["instance_id"]]
+        if mine["own_answer_id"]:
+            continue
+        person.mutation("daily:submit_daily_answer", {
+            "p_instance_id": question["instance_id"],
+            "p_payload": {"answer_id": str(uuid.uuid4()), "text": CONTENT[locale]["answers"][role]}, **operation()})
+    print(f"Question {QUESTION_KEY} ({question['question_id']}) answered by {', '.join(roles)} after {resets} resets")
+    return question, day_id
+
+
+def seed_chat(people: dict, couple_id: str, question_id: str, locale: str) -> None:
+    lines = CONTENT[locale]["chat"]
+    chat = people["first"].query("dailyQuestionChat:get_daily_question_chat",
+                                 {"p_couple_id": couple_id, "p_question_id": question_id})
+    if chat.get("thread_id"):
+        print("Question chat already exists")
+        return
+    role, body = lines[0]
+    started = people[role].mutation("threads:create_daily_question_thread_with_message", {
+        "p_couple_id": couple_id, "p_question_id": question_id, "p_body": body, **operation()})
+    thread_id = started[0]["thread_id"]
+    message_id = None
+    for role, body in lines[1:]:
+        sent = people[role].mutation("threads:send_thread_message",
+                                     {"p_thread_id": thread_id, "p_body": body, **operation()})
+        message_id = sent[0]["message_id"]
+    for person in people.values():
+        person.mutation("chatPresence:mark_thread_read", {"p_thread_id": thread_id, "p_message_id": message_id})
+    print(f"Chat {thread_id} with {len(lines)} messages")
+
+
+def seed_memories(people: dict, couple_id: str, locale: str) -> list[str]:
+    existing = {row["memory_id"] for row in people["first"].query("memories:get_memories", {"p_limit": 200})}
+    ids = []
+    for key, role, days_ago, place, photos in MEMORIES:
+        memory_id = fixed_id(couple_id, f"memory-{key}")
+        ids.append(memory_id)
+        if memory_id in existing:
+            print(f"Memory {key} already exists")
+            continue
+        author = people[role]
+        asset_ids = [author.upload_image(PHOTOS / photo, {
+            "p_reserved_parent_kind": "memory_media", "p_reserved_parent_id": str(uuid.uuid4()),
+            "p_couple_id": couple_id, "p_upload_purpose": "memory_photo", "p_media_type": "image"})
+            for photo in photos]
+        title, note = CONTENT[locale]["memories"][key]
+        author.mutation("memories:create_memory", {
+            "p_memory_id": memory_id, "p_title": title,
+            "p_memory_date": (today() - timedelta(days=days_ago)).isoformat(), "p_note_body": note,
+            "p_media_asset_ids": asset_ids, "p_place": place, **operation()})
+        print(f"Memory {title!r} by {author.name} with {len(photos)} photos")
+    return list(reversed(ids))
+
+
+def seed_ludo(people: dict, locale: str) -> str:
+    first = people["first"]
+    overview = first.query("games:get_games_overview")
+    if not overview.get("settings"):
+        first.mutation("games:set_game_settings", {"p_play_style": "against", "p_language": locale})
+    first.mutation("boardGames:ensure_board_game", {"p_kind": "ludo"})
+    game = next(game for game in first.query("boardGames:get_board_games")["games"] if game["kind"] == "ludo")
+    if game["moves"]:
+        print(f"Ludo already has {len(game['moves'])} moves")
+        return game["id"]
+    for role, die, pawn in LUDO_MOVES:
+        game = people[role].mutation("boardGames:make_move", {
+            "p_game_id": game["id"], "p_expected_version": game["version"], "p_move": (die - 1) * 3 + pawn,
+            **operation()})
+    print(f"Ludo {game['id']}: {len(LUDO_MOVES)} moves, Hjalmar to move")
+    return game["id"]
+
+
+def seed_home(people: dict, couple_id: str, locale: str) -> None:
+    for role, person in people.items():
+        person.mutation("stories:set_note", {"p_text": CONTENT[locale]["notes"][role], **operation()})
+    for person, (latitude, longitude) in ((people["first"], OSLO), (people["second"], COPENHAGEN)):
+        person.mutation("location:update_location_sharing_preference", {
+            "p_couple_id": couple_id, "p_is_enabled": True, "p_consent_version": "location-sharing-v1",
+            "p_source": "settings_toggle", **operation()})
+        person.mutation("location:update_latest_partner_location", {
+            "p_couple_id": couple_id, "p_latitude": latitude, "p_longitude": longitude, "p_accuracy_m": 20,
+            "p_captured_at": now_iso(), "p_source": "foreground_open", **operation()})
+    print("Home notes and both locations set")
+
+
+def drawing_shape(path: Path) -> tuple[int, int, list[float]]:
+    with tempfile.TemporaryDirectory() as scratch:
+        source, plist, program = (Path(scratch) / name for name in ("count.swift", "Info.plist", "count"))
+        source.write_text(DRAWING_COUNTER)
+        plist.write_text(DRAWING_COUNTER_PLIST)
+        subprocess.run(["xcrun", "swiftc", str(source), "-o", str(program), "-Xlinker", "-sectcreate",
+                        "-Xlinker", "__TEXT", "-Xlinker", "__info_plist", "-Xlinker", str(plist)],
+                       check=True, capture_output=True)
+        strokes, points, *bounds = subprocess.check_output([str(program), str(path)], text=True).split()
+    return int(strokes), int(points), [float(value) for value in bounds]
+
+
+def seed_widget_drawing(second: Person, path: Path, args: argparse.Namespace) -> str:
+    data = path.read_bytes()
+    if args.drawing_strokes is None or args.drawing_points is None or args.drawing_bounds is None:
+        strokes, points, bounds = drawing_shape(path)
+    else:
+        strokes, points = args.drawing_strokes, args.drawing_points
+        bounds = [float(value) for value in args.drawing_bounds.split(",")]
+    [canvas] = second.mutation("widget:get_or_create_widget_canvas")
+    sha = hashlib.sha256(data).hexdigest()
+    revision_id = str(uuid.uuid4())
+    asset_id = second.upload(data, "application/octet-stream", {
+        "p_reserved_parent_kind": "widget_drawing_revision", "p_reserved_parent_id": revision_id,
+        "p_upload_purpose": "widget_drawing_payload", "p_media_type": "drawing_payload",
+        "p_file_extension": "pkdrawing", "p_couple_id": canvas["couple_id"],
+        "p_path_context": {"canvas_id": canvas["canvas_id"]}})
+    x, y, width, height = bounds
+    [result] = second.mutation("widget:submit_widget_drawing_revision", {
+        "p_canvas_id": canvas["canvas_id"], "p_payload_media_asset_id": asset_id,
+        "p_parent_revision_id": canvas["active_revision_id"], "p_payload_bytes": len(data),
+        "p_uncompressed_bytes": len(data), "p_compression": "none", "p_stroke_count": strokes,
+        "p_point_count": points,
+        "p_bounds": {"x": x, "y": y, "width": width, "height": height, "canvasSide": args.drawing_canvas_side},
+        "p_sha256_hex": sha, "p_client_decode_validated_at": now_iso(),
+        "p_client_renderer_version": "1", "p_client_validation_version": "1", **operation()})
+    print(f"Widget drawing {result['revision_id']} from Elena: {strokes} strokes, {points} points")
+    return result["revision_id"]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Seed App Store screenshot content on the local backend.")
+    parser.add_argument("--locale", choices=["en", "nb"], required=True)
+    parser.add_argument("--drawing", type=Path, help="a PKDrawing file Elena sends to the widget")
+    parser.add_argument("--drawing-canvas-side", type=float, default=320.0,
+                        help="the side in points of the square canvas the drawing was made on (default 320)")
+    parser.add_argument("--drawing-strokes", type=int)
+    parser.add_argument("--drawing-points", type=int)
+    parser.add_argument("--drawing-bounds", help="x,y,width,height of PKDrawing.bounds in points")
+    stage = parser.add_mutually_exclusive_group()
+    stage.add_argument("--for-reveal", action="store_true",
+                       help="only Elena answers today's question, so Hjalmar can answer in the app and see the reveal")
+    stage.add_argument("--chat-only", action="store_true", help="only add the question's chat to an earlier run")
+    args = parser.parse_args()
+    locale = args.locale
+
+    convex = Convex()
+    clerk = Clerk(hosted_env_get("CLERK_DEV_SECRET_KEY"), hosted_env_get("CLERK_DEV_JWT_ISSUER_DOMAIN"))
+    people = {}
+    subjects = {}
+    for role, account in ACCOUNTS.items():
+        subjects[role] = clerk.user_id(account["external_id"])
+        token = clerk.convex_token(subjects[role])
+        user_id = convex.call(token, "mutation", "identity:launch", {})["profile"]["user_id"]
+        people[role] = Person(convex, role, token, user_id)
+    first, second = people["first"], people["second"]
+    [access] = first.query("access:get_access_snapshot")
+    couple = access.get("couple_entitlement") or {}
+    if not couple.get("is_entitled"):
+        raise SystemExit("The test couple is not paired with access. Run scripts/test-couple first.")
+    couple_id = couple["couple_id"]
+
+    if args.chat_only:
+        question, _ = seed_daily_question(convex, people, couple_id, locale)
+        seed_chat(people, couple_id, question["question_id"], locale)
+        return
+    seed_profiles(people)
+    seed_dates(first, locale, couple_id)
+    question, day_id = seed_daily_question(convex, people, couple_id, locale,
+                                           ("second",) if args.for_reveal else ("first", "second"))
+    if not args.for_reveal:
+        seed_chat(people, couple_id, question["question_id"], locale)
+    memory_ids = seed_memories(people, couple_id, locale)
+    ludo_id = seed_ludo(people, locale)
+    seed_home(people, couple_id, locale)
+    if args.drawing:
+        seed_widget_drawing(second, args.drawing, args)
+    print(json.dumps({"couple_day_id": day_id, "instance_id": question["instance_id"],
+                      "question_id": question["question_id"], "memory_ids": memory_ids, "ludo_game_id": ludo_id,
+                      "partner_clerk_subject": subjects["second"],
+                      "own_answer": CONTENT[locale]["answers"]["first"]}, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()
