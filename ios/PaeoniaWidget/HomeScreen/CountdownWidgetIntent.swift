@@ -3,8 +3,9 @@ import AppIntents
 import Foundation
 import WidgetKit
 
-// The explicit keys below are on purpose. App Intents metadata is built from
-// the source text, like `PaeoniaWidgetRefreshIntent.title`.
+// The App Intents metadata below spells out its keys. The build reads that
+// metadata from the source text and rejects a generated String Catalog symbol
+// there. See docs/agent-guides/ios-localization.md.
 
 /// What the person sets up when they edit the Home Screen countdown widget:
 /// one countdown or birthday, or "Next one", which always shows the soonest.
@@ -61,13 +62,7 @@ struct CountdownChoice: AppEntity, Identifiable {
     /// The choice that always shows the soonest date.
     static let next = CountdownChoice(
         id: LockScreenDates.nextID,
-        title: String(
-            localized: LocalizedStringResource(
-                "widget.home.countdown.choice.next",
-                table: "Localizable",
-                comment: "The choice in the countdown widget's settings that always shows the soonest date."
-            )
-        ),
+        title: String(localized: .widgetHomeCountdownChoiceNext),
         subtitle: nil,
         symbol: "sparkles"
     )

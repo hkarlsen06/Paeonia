@@ -11487,42 +11487,6 @@
         }
       }
     },
-    "favorites.load.failed" : {
-      "comment" : "Shown under the starred list in Search when it could not be loaded.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your starred items couldn't be loaded right now."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vi kunne ikke hente de stjernemerkede tingene akkurat nå."
-          }
-        }
-      }
-    },
-    "favorites.load.offline" : {
-      "comment" : "Shown under the starred list in Search when the phone is offline.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You're offline, so your starred items aren't shown."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du er ikke på nett, så de stjernemerkede tingene vises ikke."
-          }
-        }
-      }
-    },
     "favorites.notice.couldNotSave" : {
       "comment" : "Banner when a star could not be saved on the phone. The star goes back to how it was.",
       "extractionState" : "manual",
@@ -33698,24 +33662,6 @@
         }
       }
     },
-    "stories.viewer.replies.open" : {
-      "comment" : "Button on a story that opens the replies to it",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replies"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Svar"
-          }
-        }
-      }
-    },
     "stories.viewer.replies.openAccessibility" : {
       "comment" : "VoiceOver label of the button on a story that opens its replies",
       "extractionState" : "manual",
@@ -38137,9 +38083,6 @@
           }
         }
       }
-    },
-    "widget.refresh" : {
-      "comment" : "Accessibility label and title for the widget refresh button."
     },
     "widgetDrawing.canvas.label" : {
       "comment" : "Accessibility label for the widget drawing canvas.",

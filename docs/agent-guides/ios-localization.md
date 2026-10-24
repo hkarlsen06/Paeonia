@@ -15,6 +15,7 @@ Start with English and Norwegian Bokmal. The setup must make later languages str
   - `LocalizedStringResource("settings.saveButton", table: "Localizable")`
   - `NSLocalizedString("settings.saveButton", ...)`
 - If a key has no generated symbol, add or rename the catalog entry so a symbol is generated.
+- App Intents metadata is the one exception. The build reads an intent's `title`, its `IntentDescription`, its `@Parameter` titles and an entity's `TypeDisplayRepresentation` from the source text, and it fails on a generated symbol there ("'LocalizedStringResource' must be initialized with a call to its initializer or a string literal"). Write those as `LocalizedStringResource("key", table: "Localizable", comment: "...")`, and keep the key as a manual entry in the catalog. Strings an intent builds while it runs, such as an entity's display title, use generated symbols.
 - Prefer `FormatStyle` for dates, numbers, percentages, and countdowns.
 - Use the system locale. Do not override locale globally unless there is a specific product requirement.
 - Keep source copy simple enough to translate naturally. Avoid idioms, jokes, technical shorthand, and nested clauses.
