@@ -42,7 +42,7 @@ export const marketingEn = {
       },
       {
         src: 'connect-four',
-        alt: 'A game of Connect Four where one player\'s discs have a hand-drawn star and the other\'s a heart.',
+        alt: 'A game of Four in a Row where one player\'s discs have a hand-drawn star and the other\'s a heart.',
       },
       {
         src: 'mind-meld',
@@ -67,7 +67,7 @@ export const marketingEn = {
     list: [
       { name: 'Ludo', art: 'ludo', description: 'Roll the die and race all your pieces home.' },
       { name: 'Draw & Guess', art: 'draw-and-guess', description: 'Take turns drawing a word. The other one guesses it.' },
-      { name: 'Connect Four', art: 'connect-four', description: 'Drop discs and get four in a row first.' },
+      { name: 'Four in a Row', art: 'connect-four', description: 'Drop discs and line up four first.' },
       { name: 'Mind Meld', art: 'mind-meld', description: 'Write a word at the same time, then find the word that links them.' },
       { name: 'Dots and Boxes', art: 'dots-and-boxes', description: 'Take turns drawing lines. Close the most boxes to win.' },
       { name: 'Ultimate Tic-Tac-Toe', art: 'ultimate-tic-tac-toe', description: 'Tic-tac-toe inside tic-tac-toe. Win three boards in a row.' },

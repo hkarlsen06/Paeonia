@@ -1197,7 +1197,7 @@ describe("pushes", () => {
     expect(row).toMatchObject({
       recipient_user_id: s.b.userId,
       apns_push_type: "alert",
-      title: "Your turn in Connect Four",
+      title: "Your turn in Four in a Row",
       body: "Make your move.",
     });
     expect(row.payload).toEqual({
@@ -1243,7 +1243,7 @@ describe("pushes", () => {
   });
 
   test.each([
-    ["connect_four", CONNECT_FOUR_WIN, "Connect Four"],
+    ["connect_four", CONNECT_FOUR_WIN, "Four in a Row"],
     ["dots_and_boxes", DOTS_AND_BOXES_WIN, "Dots and Boxes"],
     ["ultimate_tic_tac_toe", ULTIMATE_WIN, "Ultimate Tic-Tac-Toe"],
     ["ludo", LUDO_WIN, "Ludo"],
@@ -1364,7 +1364,7 @@ describe("pushes", () => {
       await rematch(s.a, done);
       const rows = (await pushesOf(s.t, "game_turn_ready")).slice(before);
       expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ recipient_user_id: s.b.userId, title: "Your turn in Connect Four", body: "Make your move." });
+      expect(rows[0]).toMatchObject({ recipient_user_id: s.b.userId, title: "Your turn in Four in a Row", body: "Make your move." });
       expect(rows[0].payload).toMatchObject({ game_id: done.id, round_id: "2:0", actor_user_id: s.a.userId, deeplink: "paeonia://games/connect-four" });
       await s.t.finishAllScheduledFunctions(vi.runAllTimers);
     });
@@ -1482,7 +1482,7 @@ describe("turn reminder", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       recipient_user_id: s.a.userId,
-      title: "Your turn in Connect Four",
+      title: "Your turn in Four in a Row",
       body: "Pick up where you left off.",
     });
     expect(rows[0].payload).toEqual({
@@ -1666,7 +1666,7 @@ describe("relationship end", () => {
 
 describe("push copy", () => {
   const NAMES = {
-    connect_four: { en: "Connect Four", nb: "Fire på rad" },
+    connect_four: { en: "Four in a Row", nb: "Fire på rad" },
     dots_and_boxes: { en: "Dots and Boxes", nb: "Prikker og streker" },
     ultimate_tic_tac_toe: { en: "Ultimate Tic-Tac-Toe", nb: "Ultimat bondesjakk" },
     ludo: { en: "Ludo", nb: "Ludo" },

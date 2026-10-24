@@ -177,7 +177,7 @@ function boardGame(row: Row): Row {
 }
 
 const BOARD_GAME_SHARED_ABOUT: Text = {
-  en: "Your Connect Four, Dots and Boxes, Ultimate Tic-Tac-Toe and Ludo games with your partner: the current game, the score and the last finished game.",
+  en: "Your Four in a Row, Dots and Boxes, Ultimate Tic-Tac-Toe and Ludo games with your partner: the current game, the score and the last finished game.",
   nb: "Spillene dere har spilt sammen, som Fire på rad, Prikker og streker, Ultimat bondesjakk og Ludo: spillet som pågår, stillingen og siste ferdige spill.",
 };
 

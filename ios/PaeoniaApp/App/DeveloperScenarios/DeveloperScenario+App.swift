@@ -274,7 +274,7 @@
     )
     static let gamesHubBoardGames = pairedApp(
       "games-hub-board-games", "Games · hub with the board games",
-      "All four cards: Connect Four on your move, Dots and Boxes with Robin in it, "
+      "All four cards: Four in a Row on your move, Dots and Boxes with Robin in it, "
         + "Ultimate Tic-Tac-Toe won by Robin",
       .games
     )

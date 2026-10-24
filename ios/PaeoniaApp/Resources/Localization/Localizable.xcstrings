@@ -4408,7 +4408,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connect Four board"
+            "value" : "Four in a Row board"
           }
         },
         "nb" : {
@@ -4570,31 +4570,31 @@
       }
     },
     "connectFour.hub.subtitle" : {
-      "comment" : "Connect Four card on the Games tab before the couple has played it: what the game is.",
+      "comment" : "Four in a Row card on the Games tab before the couple has played it: what the game is.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drop discs and get four in a row first."
+            "value" : "Drop discs and line up four first."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Slipp brikker og få fire på rad først."
+            "value" : "Slipp brikker og få fire på linje først."
           }
         }
       }
     },
     "connectFour.name" : {
-      "comment" : "Name of the Connect Four board game, on its card and as the screen title.",
+      "comment" : "Name of the Four in a Row board game, on its card and as the screen title.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connect Four"
+            "value" : "Four in a Row"
           }
         },
         "nb" : {

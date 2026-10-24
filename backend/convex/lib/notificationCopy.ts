@@ -99,9 +99,9 @@ export const GAME_PUSH_COPY: { [Kind in GameKind]?: Record<"en" | "nb", GamePush
   },
   connect_four: {
     en: {
-      name: "Connect Four",
+      name: "Four in a Row",
       turnReadyBody: "Make your move.",
-      resultTitle: (actor) => `${actor} finished your game of Connect Four`,
+      resultTitle: (actor) => `${actor} finished your game of Four in a Row`,
       resultBody: "See how it ended.",
     },
     nb: {

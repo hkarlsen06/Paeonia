@@ -1,7 +1,7 @@
 #if DEBUG
   import SwiftUI
 
-  /// Connect Four, Dots and Boxes, Ultimate Tic-Tac-Toe and Ludo scenarios. Each one
+  /// Four in a Row, Dots and Boxes, Ultimate Tic-Tac-Toe and Ludo scenarios. Each one
   /// opens its game in `DeveloperBoardGamesScenarioView`. The hub with all the
   /// board game cards is `gamesHubBoardGames` in `DeveloperScenario+App.swift`.
   nonisolated extension DeveloperScenario {
@@ -15,31 +15,31 @@
     ]
 
     static let connectFourYourTurn = boardGameScreen(
-      "connect-four-your-turn", "Connect Four · your turn",
+      "connect-four-your-turn", "Four in a Row · your turn",
       "Ten discs in, Robin in the game, a stake above the board, and both marks are initials"
     )
     static let connectFourPartnerTurn = boardGameScreen(
-      "connect-four-partner-turn", "Connect Four · Robin's turn",
+      "connect-four-partner-turn", "Four in a Row · Robin's turn",
       "Robin is away, so Tell Robin you want to play shows under the board"
     )
     static let connectFourPartnerMove = boardGameScreen(
-      "connect-four-partner-move", "Connect Four · Robin's disc arrives",
+      "connect-four-partner-move", "Four in a Row · Robin's disc arrives",
       "Opens one disc behind: Robin's last disc hovers over its column, then drops"
     )
     static let connectFourWon = boardGameScreen(
-      "connect-four-won", "Connect Four · you win",
+      "connect-four-won", "Four in a Row · you win",
       "Your last disc makes four on a diagonal: the line, the petals and the result with your stake"
     )
     static let connectFourFirstMove = boardGameScreen(
-      "connect-four-first-move", "Connect Four · first move",
+      "connect-four-first-move", "Four in a Row · first move",
       "A new game you start, with Add a bet under the board"
     )
     static let connectFourMissedEnding = boardGameScreen(
-      "connect-four-missed-ending", "Connect Four · missed ending",
+      "connect-four-missed-ending", "Four in a Row · missed ending",
       "Robin won and started the next game before you looked: the ending plays first, then Continue"
     )
     static let connectFourOffline = boardGameScreen(
-      "connect-four-offline", "Connect Four · move saved offline",
+      "connect-four-offline", "Four in a Row · move saved offline",
       "Your move is on the board and waits on this phone: Saved on this phone"
     )
     static let dotsAndBoxesPhoto = boardGameScreen(
@@ -91,7 +91,7 @@
     )
     static let boardGameMarkEditor = boardGameScreen(
       "board-game-mark-editor", "Board games · your mark",
-      "The Your mark sheet over Connect Four. Saving takes about a second, then the mark shows on your discs"
+      "The Your mark sheet over Four in a Row. Saving takes about a second, then the mark shows on your discs"
     )
 
     private static func boardGameScreen(_ id: String, _ title: String, _ detail: String) -> DeveloperScenario {

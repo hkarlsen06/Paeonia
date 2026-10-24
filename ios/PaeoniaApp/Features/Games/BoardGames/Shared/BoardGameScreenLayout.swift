@@ -400,7 +400,7 @@ private struct BoardGameLayoutPreview: View {
     NavigationStack {
         BoardGameLayoutPreview(shell: BoardGamePreviewData.shell(partnerStatus: .away))
             .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("Connect Four")
+            .navigationTitle("Four in a Row")
     }
 }
 
@@ -408,7 +408,7 @@ private struct BoardGameLayoutPreview: View {
     NavigationStack {
         BoardGameLayoutPreview(shell: BoardGamePreviewData.shell(stake: .writable))
             .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("Connect Four")
+            .navigationTitle("Four in a Row")
     }
 }
 
@@ -436,7 +436,7 @@ private struct BoardGameLayoutPreview: View {
             showsResult: true
         )
         .navigationBarTitleDisplayMode(.inline)
-        .navigationTitle("Connect Four")
+        .navigationTitle("Four in a Row")
     }
 }
 
@@ -444,7 +444,7 @@ private struct BoardGameLayoutPreview: View {
     NavigationStack {
         BoardGameLayoutPreview(shell: BoardGamePreviewData.shell(turn: .partnerTurn))
             .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("Connect Four")
+            .navigationTitle("Four in a Row")
     }
     .environment(\.dynamicTypeSize, .accessibility2)
 }
@@ -453,7 +453,7 @@ private struct BoardGameLayoutPreview: View {
     NavigationStack {
         BoardGameLayoutPreview(shell: BoardGamePreviewData.shell(), showsResult: true)
             .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("Connect Four")
+            .navigationTitle("Four in a Row")
     }
 }
 #endif

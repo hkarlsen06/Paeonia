@@ -67,7 +67,7 @@ export const marketingNo = {
     list: [
       { name: 'Ludo', art: 'ludo', description: 'Kast terningen og få alle brikkene dine hjem først.' },
       { name: 'Tegn og gjett', art: 'draw-and-guess', description: 'Bytt på å tegne et ord. Den andre gjetter hva det er.' },
-      { name: 'Fire på rad', art: 'connect-four', description: 'Slipp brikker og få fire på rad først.' },
+      { name: 'Fire på rad', art: 'connect-four', description: 'Slipp brikker og få fire på linje først.' },
       { name: 'Tenk likt', art: 'mind-meld', description: 'Skriv et ord samtidig, og finn ordet som binder dem sammen.' },
       { name: 'Prikker og streker', art: 'dots-and-boxes', description: 'Tegn streker på tur. Den som lukker flest ruter, vinner.' },
       { name: 'Ultimat bondesjakk', art: 'ultimate-tic-tac-toe', description: 'Bondesjakk inni bondesjakk. Vinn tre brett på rad.' },
