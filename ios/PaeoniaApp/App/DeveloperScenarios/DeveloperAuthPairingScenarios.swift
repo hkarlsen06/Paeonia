@@ -5,7 +5,7 @@
     let prefilled: Bool
 
     var body: some View {
-      RootBrandedFrame {
+      PaeoniaScreenFrame {
         onboarding
       }
     }
@@ -25,6 +25,26 @@
         onSignOut: {},
         onDeleteAccount: {}
       )
+    }
+  }
+
+  /// The single-purpose screens after sign-in, in the root's frame.
+  struct DeveloperSignedInNoticeScenarioView: View {
+    let scenario: DeveloperScenario
+
+    var body: some View {
+      PaeoniaScreenFrame {
+        switch scenario {
+        case .onboardingUsage:
+          UsageSharingQuestionView { _ in }
+        case .relationshipEnded:
+          RelationshipEndedNoticeView(isWorking: false, onAcknowledge: {})
+        case .accountClosed:
+          AccountClosedView(isWorking: false, onSignOut: {}, onDeleteAccount: {})
+        default:
+          AuthDeletingAccountView()
+        }
+      }
     }
   }
 
@@ -55,7 +75,7 @@
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaBackgroundPrimary)
       default:
-        RootBrandedFrame {
+        PaeoniaScreenFrame {
           PairingInviteView(
             session: DeveloperScenarioFixture.completeSession,
             viewModel: inviteViewModel,
@@ -112,7 +132,7 @@
     }
 
     var body: some View {
-      RootBrandedFrame {
+      PaeoniaScreenFrame {
         PairingJoinView(
           viewModel: viewModel,
           code: "LOVE26",
@@ -143,7 +163,7 @@
       hasTrial ? PaeoniaFreeTrial(value: 14, unit: .day) : nil
     }
     var body: some View {
-      RootBrandedFrame {
+      PaeoniaScreenFrame {
         PaywallView(
           session: DeveloperScenarioFixture.completeSession,
           audience: audience,

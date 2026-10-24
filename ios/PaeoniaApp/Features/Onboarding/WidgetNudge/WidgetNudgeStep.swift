@@ -27,7 +27,7 @@ struct WidgetNudgeStep: View {
     init(
         drawing: UIImage,
         authorName: String? = nil,
-        placement: OnboardingStepPlacement = .brandedFrame,
+        placement: OnboardingStepPlacement = .screenFrame,
         model: WidgetNudgeModel = WidgetNudgeModel(),
         onFinish: @escaping (_ added: Bool) -> Void
     ) {
@@ -153,8 +153,8 @@ nonisolated private struct PreviewWidgetConfigurations: WidgetConfigurationProvi
     .preferredColorScheme(.dark)
 }
 
-#Preview("In the branded frame") {
-    RootBrandedFrame {
+#Preview("In the screen frame") {
+    PaeoniaScreenFrame {
         WidgetNudgeStep(
             drawing: UIImage(resource: .placeholderSketch),
             authorName: "Elena",

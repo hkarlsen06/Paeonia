@@ -358,7 +358,7 @@ private struct SafariView: UIViewControllerRepresentable {
 
 #if DEBUG
 #Preview {
-    WelcomeStepFrame {
+    PaeoniaScreenFrame {
         WelcomeSignInStep(
             mode: .start(hasDrawing: true),
             isWorking: false,

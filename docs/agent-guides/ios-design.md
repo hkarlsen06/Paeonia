@@ -34,7 +34,7 @@ Use cards only when the framed surface has product meaning, such as a distinct r
 The app runs on iPhone and iPad, and on iPad it can be any width from a narrow Split View column to full landscape. Build one adaptive layout, not a separate iPad design.
 
 - Put `.paeoniaReadableWidth()` on a screen's content inside its scroll view, so content stops at `PaeoniaSpacing.readableContentWidth` and the background still reaches the screen edges. Bottom button bars get the same cap.
-- The welcome, onboarding, paywall, pairing, and pairing celebration screens use the narrower `PaeoniaSpacing.focusedContentWidth`. `RootBrandedFrame` already applies it.
+- The welcome, onboarding, paywall, pairing, and pairing celebration screens use the narrower `PaeoniaSpacing.focusedContentWidth`. `PaeoniaScreenFrame` already applies it.
 - Size from the space the view is given, not from `UIScreen` or the device type. Check new screens on an iPad simulator in portrait and landscape.
 
 ### Brand Wordmark

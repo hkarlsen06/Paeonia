@@ -33,13 +33,10 @@ nonisolated enum PaywallAudience: Equatable, Sendable {
         }
     }
 
-    /// The plain unpaired offer has no headline. The logo above already says what
-    /// Paeonia is, and a shorter header keeps the plans and the trial reminder
-    /// above the buy button.
-    var headline: LocalizedStringResource? {
+    var headline: LocalizedStringResource {
         switch self {
         case .unpaired:
-            nil
+            .paywallHeadline
         case .unpairedWithDrawing:
             .paywallDrawingReadyHeadline
         case .paired:

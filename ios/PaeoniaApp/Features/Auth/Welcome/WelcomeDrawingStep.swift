@@ -21,7 +21,7 @@ struct WelcomeDrawingStep: View {
     var body: some View {
         ZStack {
             if let landedDrawing {
-                WelcomeStepFrame {
+                PaeoniaScreenFrame {
                     landedStep(landedDrawing)
                 }
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .trailing)))

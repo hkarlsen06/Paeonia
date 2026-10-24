@@ -110,13 +110,9 @@ struct AuthOnboardingView: View {
     }
 
     private var profilePage: some View {
-        ScrollView {
+        PaeoniaScreenScroll {
             onboardingContent
-                .padding(.top, PaeoniaSpacing.space16)
-                .padding(.bottom, PaeoniaSpacing.space24)
         }
-        .scrollIndicators(.hidden)
-        .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
         .paeoniaBottomBar(spacing: 0) {
             VStack(spacing: PaeoniaSpacing.space4) {
@@ -218,9 +214,7 @@ struct AuthOnboardingView: View {
         .accessibilityIdentifier("auth.onboarding.complete")
     }
 
-    /// Quiet links under Continue, like the paywall's footer. They sit here rather
-    /// than in a navigation bar, so the logo above stays at the same height from
-    /// this screen to the next.
+    /// Quiet links under Continue, like the paywall's footer.
     private var accountActions: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             Button(action: onSignOut) {

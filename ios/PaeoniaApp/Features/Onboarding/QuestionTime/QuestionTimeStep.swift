@@ -22,7 +22,7 @@ struct QuestionTimeStep: View {
 
     init(
         context: QuestionTimeStepContext,
-        placement: OnboardingStepPlacement = .brandedFrame,
+        placement: OnboardingStepPlacement = .screenFrame,
         model: QuestionTimeModel = QuestionTimeModel(),
         onFinish: @escaping (_ chosenMinutes: Int?) -> Void
     ) {

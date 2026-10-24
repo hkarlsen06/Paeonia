@@ -5,7 +5,8 @@
   /// and hub. Each game's own scenarios are in `DeveloperScenario+<Game>.swift`.
   nonisolated extension DeveloperScenario {
     static let app: [DeveloperScenario] = [
-      launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled,
+      launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled, onboardingUsage,
+      relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,
@@ -45,6 +46,21 @@
     static let onboardingPrefilled = DeveloperScenario(
       "onboarding-prefilled", "Onboarding · name filled", "Profile setup with a suggested name", .launchAndAuth
     ) { _ in DeveloperOnboardingScenarioView(prefilled: true) }
+    static let onboardingUsage = DeveloperScenario(
+      "onboarding-usage", "Onboarding · usage question", "Second setup page: share usage statistics or not",
+      .launchAndAuth
+    ) { DeveloperSignedInNoticeScenarioView(scenario: $0) }
+    static let relationshipEnded = DeveloperScenario(
+      "relationship-ended", "Relationship ended", "The partner left; acknowledge to go back to pairing",
+      .launchAndAuth
+    ) { DeveloperSignedInNoticeScenarioView(scenario: $0) }
+    static let accountClosed = DeveloperScenario(
+      "account-closed", "Account closed", "Banned account with support, subscription and account actions",
+      .launchAndAuth
+    ) { DeveloperSignedInNoticeScenarioView(scenario: $0) }
+    static let deletingAccount = DeveloperScenario(
+      "deleting-account", "Deleting account", "Progress while the account is deleted", .launchAndAuth
+    ) { DeveloperSignedInNoticeScenarioView(scenario: $0) }
 
     // MARK: Interactive local flows
 

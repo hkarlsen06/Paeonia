@@ -16,13 +16,9 @@ struct AccountClosedView: View {
     private static let supportEmail = URL(string: "mailto:support@paeonia.no")
 
     var body: some View {
-        ScrollView {
+        PaeoniaScreenScroll {
             notice
-                .padding(.top, PaeoniaSpacing.space40)
-                .padding(.bottom, PaeoniaSpacing.space24)
         }
-        .scrollBounceBehavior(.basedOnSize)
-        .scrollIndicators(.hidden)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             actions
                 .padding(.top, PaeoniaSpacing.space12)
@@ -110,7 +106,7 @@ struct AccountClosedView: View {
 }
 
 #Preview {
-    RootBrandedFrame {
+    PaeoniaScreenFrame {
         AccountClosedView(isWorking: false, onSignOut: {}, onDeleteAccount: {})
     }
     .preferredColorScheme(.dark)

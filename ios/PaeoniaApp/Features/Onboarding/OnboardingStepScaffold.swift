@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Where an onboarding step is shown. Before pairing, `RootBrandedFrame` already
-/// draws the logo, the background, the side margins and the column width, so the
-/// step adds none of them. After pairing the step stands alone and draws them itself.
+/// Where an onboarding step is shown. Inside `PaeoniaScreenFrame` the frame already
+/// draws the background, the side margins and the column width, so the step adds none
+/// of them. After pairing the step stands alone and draws them itself.
 enum OnboardingStepPlacement {
-    case brandedFrame
+    case screenFrame
     case standalone
 }
 
@@ -46,7 +46,7 @@ struct OnboardingStepScaffold<Art: View, Content: View>: View {
     init(
         title: LocalizedStringResource,
         message: LocalizedStringResource? = nil,
-        placement: OnboardingStepPlacement = .brandedFrame,
+        placement: OnboardingStepPlacement = .screenFrame,
         primary: OnboardingStepAction? = nil,
         secondary: OnboardingStepAction? = nil,
         isReady: Bool = true,
@@ -94,7 +94,7 @@ struct OnboardingStepScaffold<Art: View, Content: View>: View {
                     .screenEntrance(order: 3, isReady: isReady)
             }
             .frame(maxWidth: .infinity)
-            .padding(.top, placement == .standalone ? PaeoniaSpacing.screenTopSpacing : PaeoniaSpacing.space16)
+            .padding(.top, PaeoniaSpacing.screenTopSpacing)
             .padding(.bottom, PaeoniaSpacing.space24)
             // An iPad screen leaves most of the height empty, so the step sits in
             // the middle of it instead of at the top.
@@ -182,7 +182,7 @@ extension OnboardingStepScaffold where Art == EmptyView {
     init(
         title: LocalizedStringResource,
         message: LocalizedStringResource? = nil,
-        placement: OnboardingStepPlacement = .brandedFrame,
+        placement: OnboardingStepPlacement = .screenFrame,
         primary: OnboardingStepAction? = nil,
         secondary: OnboardingStepAction? = nil,
         isReady: Bool = true,
@@ -201,14 +201,14 @@ extension OnboardingStepScaffold where Art == EmptyView {
     }
 }
 
-/// The margins and column width `RootBrandedFrame` gives its content, for a step
+/// The margins and column width `PaeoniaScreenFrame` gives its content, for a step
 /// that stands alone.
 private struct OnboardingStepColumn: ViewModifier {
     let placement: OnboardingStepPlacement
 
     func body(content: Content) -> some View {
         switch placement {
-        case .brandedFrame:
+        case .screenFrame:
             content
         case .standalone:
             content
@@ -237,8 +237,8 @@ private struct OnboardingStepColumn: ViewModifier {
     .preferredColorScheme(.dark)
 }
 
-#Preview("In the branded frame") {
-    RootBrandedFrame {
+#Preview("In the screen frame") {
+    PaeoniaScreenFrame {
         OnboardingStepScaffold(
             title: .onboardingWidgetNudgeTitle,
             message: .onboardingWidgetNudgeMessage,

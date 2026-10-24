@@ -17,11 +17,14 @@ struct AuthLaunchingView: View {
     }
 }
 
+/// Shown while the account is being deleted. Like the other notices, a spinner and
+/// the text sit a little above the middle of the screen.
 struct AuthDeletingAccountView: View {
     var body: some View {
-        PaeoniaCard {
-            VStack(spacing: PaeoniaSpacing.space16) {
+        PaeoniaScreenScroll {
+            VStack(spacing: PaeoniaSpacing.space20) {
                 ProgressView()
+                    .controlSize(.large)
                     .tint(.paeoniaAccentPrimary)
 
                 VStack(spacing: PaeoniaSpacing.space8) {
@@ -34,11 +37,11 @@ struct AuthDeletingAccountView: View {
                         .foregroundStyle(.paeoniaTextSecondary)
                 }
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, PaeoniaSpacing.space8)
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -49,13 +52,9 @@ struct RelationshipEndedNoticeView: View {
     @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 48
 
     var body: some View {
-        ScrollView {
+        PaeoniaScreenScroll {
             notice
-                .padding(.top, PaeoniaSpacing.space40)
-                .padding(.bottom, PaeoniaSpacing.space24)
         }
-        .scrollBounceBehavior(.basedOnSize)
-        .scrollIndicators(.hidden)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Button(action: onAcknowledge) {
                 Text(.authRelationshipEndedAcknowledgeButton)

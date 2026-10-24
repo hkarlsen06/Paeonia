@@ -1,17 +1,28 @@
 import SwiftUI
 
+/// The screens between sign-in and the paired app.
+enum RootFramedScreen: Hashable {
+    case onboarding
+    case paywall
+    case pairing
+    /// Joining a partner through their code, in place of the paywall or pairing.
+    case join
+    case relationshipEnded
+    case accountClosed
+    case deletingAccount
+}
+
 /// The routed screens. Each `AppState` maps to one screen, except that a saved
 /// partner code shows the join screen in place of the paywall or pairing.
 extension RootView {
     /// The routed surfaces crossfade into each other instead of swapping in one
     /// frame. The screens between sign-in and the paired app share one frame, so
-    /// from profile setup through the paywall to pairing the logo stays in place
-    /// and only the content under it changes. A fade only, so Reduce Motion needs
-    /// no branch.
+    /// from profile setup through the paywall to pairing the background stays and
+    /// only the content changes. A fade only, so Reduce Motion needs no branch.
     var routedRootContent: some View {
         ZStack {
             if let framedScreen {
-                RootBrandedFrame {
+                PaeoniaScreenFrame {
                     framedContent(framedScreen)
                         .id(framedScreen)
                         .transition(.opacity)

@@ -26,7 +26,7 @@
   /// The start date step on its own. Continue plays the count-up, and the step stays.
   private struct DeveloperStartDateScenarioView: View {
     var body: some View {
-      RootBrandedFrame {
+      PaeoniaScreenFrame {
         WelcomeStartDateStep(onBack: {}, onSave: { _ in }, onSkip: {}, onFinish: {})
       }
     }
@@ -37,7 +37,7 @@
     let answered: Int
 
     var body: some View {
-      RootBrandedFrame {
+      PaeoniaScreenFrame {
         PairingInviteView(
           session: DeveloperScenarioFixture.completeSession,
           viewModel: PairingInviteViewModel(

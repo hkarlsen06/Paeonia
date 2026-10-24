@@ -58,10 +58,9 @@ struct PairingInviteContent: View {
     private var content: some View {
         ZStack {
             if !viewModel.isPresentationReady {
-                // A quiet spinner under the logo, which stays in place from the
-                // paywall. It fades out on top while the invite content (and its
-                // code tiles' own entrance) starts underneath. A fade only, so
-                // Reduce Motion needs no branch.
+                // A quiet spinner. It fades out on top while the invite content
+                // (and its code tiles' own entrance) starts underneath. A fade
+                // only, so Reduce Motion needs no branch.
                 ProgressView()
                     .tint(.paeoniaAccentPrimary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -91,7 +90,7 @@ struct PairingInviteContent: View {
     }
 
     private func readyContent(_ invite: PairingInvite) -> some View {
-        ScrollView {
+        PaeoniaScreenScroll {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                     Text(.pairingInviteTitle)
@@ -114,9 +113,7 @@ struct PairingInviteContent: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, PaeoniaSpacing.space16)
         }
-        .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             PairingInviteActionCluster(
                 invite: invite,

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-/// The subscription offer, shown in the root's branded frame between profile setup
+/// The subscription offer, shown in the root's screen frame between profile setup
 /// and pairing. It shows right away; only the prices wait for the App Store, as
 /// placeholders, so nothing jumps when they arrive.
 struct PaywallView: View {
@@ -28,7 +28,7 @@ struct PaywallView: View {
     /// way. The buttons wait instead of offering to buy again. If the access check
     /// ends with the paywall still up, they come back.
     @State private var isOpening = false
-    /// The scroll view's height between the logo and the buy button.
+    /// The scroll view's height above the buy button.
     @State private var visibleHeight: CGFloat = 0
     /// The offer drops in once the prices are in, so they don't swap in halfway
     /// through the drop. A slow App Store only holds it for a moment.
@@ -74,14 +74,14 @@ struct PaywallView: View {
                     isEntranceReady: isEntranceReady,
                     billingPeriod: $viewModel.billingPeriod
                 )
+                .padding(.vertical, PaeoniaSpacing.space24)
                 // The offer fills the first screen, so restore, legal links and
                 // account actions only show once someone scrolls to them.
-                .frame(minHeight: visibleHeight, alignment: .top)
+                .paeoniaOpticallyCentered(in: visibleHeight)
 
                 footerActions
-                    .padding(.top, PaeoniaSpacing.space40)
+                    .padding(.top, PaeoniaSpacing.space16)
             }
-            .padding(.top, PaeoniaSpacing.space16)
             .padding(.bottom, PaeoniaSpacing.space16)
         }
         .scrollIndicators(.hidden)

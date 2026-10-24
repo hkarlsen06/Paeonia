@@ -163,7 +163,7 @@ struct WelcomeBackButton: View {
 
 #if DEBUG
 #Preview {
-    WelcomeStepFrame {
+    PaeoniaScreenFrame {
         WelcomeStartDateStep(onBack: {}, onSave: { _ in }, onSkip: {}, onFinish: {})
     }
     .preferredColorScheme(.dark)

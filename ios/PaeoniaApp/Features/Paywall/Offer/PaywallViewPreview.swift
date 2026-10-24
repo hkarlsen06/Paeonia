@@ -1,7 +1,7 @@
 import SwiftUI
 
 #Preview {
-    RootBrandedFrame {
+    PaeoniaScreenFrame {
         PaywallView(
             session: AuthSession(
                 id: UUID().uuidString,

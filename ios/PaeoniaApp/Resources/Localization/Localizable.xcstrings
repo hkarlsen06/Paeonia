@@ -26999,6 +26999,24 @@
         }
       }
     },
+    "paywall.headline" : {
+      "comment" : "Headline at the top of the subscription offer for someone who is not paired yet. 'Space' is the private shared place the couple gets in the app, as in 'Start our space'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open your space for two"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne rommet for dere to"
+          }
+        }
+      }
+    },
     "paywall.invite.entry" : {
       "comment" : "Paywall link for someone whose partner already subscribes. Opens the code entry sheet. Joining is free.",
       "extractionState" : "manual",

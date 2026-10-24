@@ -34,13 +34,9 @@ struct PairingJoinView: View {
 
     var body: some View {
         ZStack {
-            ScrollView {
+            PaeoniaScreenScroll {
                 PairingJoinInviterContent(preview: shownPreview, showsCoverage: replacesPaywall)
-                    .padding(.top, PaeoniaSpacing.space16)
-                    .padding(.bottom, PaeoniaSpacing.space24)
             }
-            .scrollIndicators(.hidden)
-            .scrollBounceBehavior(.basedOnSize)
 
             if shownPreview == nil {
                 loadingOrFailure

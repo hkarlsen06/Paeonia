@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The scrolling part of the paywall: what Paeonia is, what you get, and the plans.
-/// It cascades in under the logo like the profile screen before it, once
+/// It cascades in like the profile screen before it, once
 /// `isEntranceReady` says the prices are in or have taken too long.
 struct PaywallContentView: View {
     let audience: PaywallAudience
@@ -36,12 +36,10 @@ struct PaywallContentView: View {
 
     private var header: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            if let headline = audience.headline {
-                Text(headline)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .accessibilityAddTraits(.isHeader)
-            }
+            Text(audience.headline)
+                .font(PaeoniaTypography.title)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityAddTraits(.isHeader)
 
             Text(audience.message)
                 .font(PaeoniaTypography.body)
