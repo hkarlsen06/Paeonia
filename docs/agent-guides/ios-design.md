@@ -37,6 +37,10 @@ The app runs on iPhone and iPad, and on iPad it can be any width from a narrow S
 - The welcome, onboarding, paywall, pairing, and pairing celebration screens use the narrower `PaeoniaSpacing.focusedContentWidth`. `PaeoniaScreenFrame` already applies it.
 - Size from the space the view is given, not from `UIScreen` or the device type. Check new screens on an iPad simulator in portrait and landscape.
 
+### List Rows
+
+Every row in a list or settings screen uses a plum (`paeoniaAccentPrimary`) icon and primary text. Only irreversible destructive actions, such as leaving the relationship or deleting the account, are red. Do not use system blue, warning colours or per-row accents. `paeoniaGroupedList()` sets the plum tint for native `List` and `Form` screens.
+
 ### Brand Wordmark
 
 - When `Paeonia` is shown as a standalone single-word app name in the iOS app or widget surfaces, use the shared `PaeoniaWordmark` logo lockup in the app target, or the same mark-left, serif, semibold wordmark treatment in targets that cannot import it.

@@ -11,6 +11,20 @@ The root [AGENTS.md](../../AGENTS.md#testing) says when a change needs a test. A
 
 Prefer the UI test when the bug would show on screen, and the integration test when it would show in what is stored or sent. A unit test of a view model's loading flag, banner text or animation timing catches nothing that the device check misses.
 
+XCUITest on iOS 27 has two quirks:
+
+- With five tabs, the system tab bar drops every tab button's accessibility identifier, whichever tab API sets it. Find a tab by position: `app.tabBars.firstMatch.buttons.element(boundBy:)`.
+- An alert action is a button inside a button with the same identifier, so `app.alerts.buttons[id]` matches two elements and the tap fails. Use `.matching(identifier:).firstMatch`.
+
+### Dead ends in test speed
+
+Each of these cost a 3 to 10 minute test run to learn. Don't retry them.
+
+- `-parallel-testing-enabled YES` clones `Shared iPhone`, even with one worker, and was slower anyway, because almost every unit test is `@MainActor`. The test wrapper passes `-parallel-testing-enabled NO`, so never run `xcodebuild test` without it.
+- The 2 ms `Task.sleep` in the game simulations' `pump()` is needed. With `Task.yield()` the seeds fail at once.
+- Simulation seeds run 4 at a time (`SimReport.play`). With 10 or more at once the main actor starves and Draw & Guess seeds fail falsely.
+- If xcodebuild hangs after "Executed N tests", `Shared iPhone` is in a bad state. Under the simulator lock, `xcrun simctl shutdown` and then `boot` it.
+
 ## iOS Build And Test Commands
 
 Agents build, run tests and drive the app themselves to prove a change works. Work in your own git worktree off `main`, and run every build and test through the wrappers below.
@@ -31,6 +45,8 @@ Run these wrappers from the repository root:
 `xcode-test-agent.sh` runs only the unit tests. Add `--ui` to run the UI tests too, or pick tests with `-- -only-testing:<target>/<suite>`.
 
 `XCODE_BUILD_AGENT_ACTION=build-for-testing ./scripts/xcode-build-agent.sh` also compiles the test targets. The pre-push hook runs it when Swift files change. CI runs it with `XCODE_BUILD_AGENT_FAIL_ON_WARNINGS=1`, so any compiler warning fails the iOS job.
+
+The project compiles with `MemberImportVisibility`, so a file that uses a member from PencilKit, StoreKit, SwiftData or a similar module must import that module itself. `@testable import PaeoniaApp` does not bring it in. After a bulk trim of Swift files, put back any import removed from a file that still exists, look for orphaned attributes such as a `@Test(arguments:)` with no function under it, and run `build-for-testing`. SwiftLint catches neither. When you pipe a wrapper's output, use `set -o pipefail`: the wrapper prints `STATUS: FAILURE`, but the pipe still exits 0.
 
 Agents in every worktree and every repo on this Mac share the `Shared iPhone` simulator, so the `simulator` lock from `scripts/lock` is machine-wide, in `/tmp/agent-locks`. Tidex's `scripts/lock` takes the same lock. `xcode-test-agent.sh` holds it while it runs, and takes it before the xcodebuild lock. It waits while any other run holds it, including one from the same worktree, since several agents can share a worktree. Before you drive a simulator by hand, such as with the T3 Device panel (`device_open`), `agent-device`, `xcrun simctl install`, `launch` or `uninstall`, `sim-sign-in` or end-to-end play, take the lock with `scripts/lock acquire simulator`. Start every simulator command with `scripts/lock acquire simulator &&`. Each one counts as a use, and a session nobody has used for 10 minutes goes stale, so a lock you forget to release frees itself 10 minutes after your last command. Release it with `scripts/lock release simulator` when you're done, and see who holds what with `scripts/lock status`. Never close or take over another agent's device session, and do not hold the xcodebuild lock to drive a simulator.
 
@@ -57,6 +73,21 @@ A deploy replaces every function on `api.paeonia.no`, so a deploy from one branc
 The simulator reaches the Mac's `127.0.0.1` directly, and App Transport Security allows plain `http` to it, so the app needs no exception. Delete `ios/local.xcconfig` and rebuild to point the worktree's Debug builds back at `api.paeonia.no`.
 
 Only `main` is deployed to `api.paeonia.no`, with `scripts/deploy-backend`, after the branch is merged.
+
+### Checking short animations
+
+Reading the code does not show how a motion under two seconds looks. Record it on the simulator and read the frames:
+
+1. Build into a scratch `-derivedDataPath` under `/tmp` without the lock. Then take the simulator lock, install, and start `xcrun simctl io "Shared iPhone" recordVideo <file>.mp4`.
+2. Launch the developer scenario with `-paeonia-scenario <id> -paeonia-scenario-hide-controls YES`. Scenario screens fade in, which hides the first 0.3 s. To tap through a flow while recording, drive the app with `agent-device` (`open no.paeonia.app --relaunch --launch-args -paeonia-scenario --launch-args <id>`, `click 'label="..."'`, `press x y`). A tap can land 1 to 3 s after the command, so record for at least 6 s. `@e` refs go stale after a relaunch, so use `press` or `click 'label="..."'`.
+3. `recordVideo` writes a frame only when the screen changes, so `fps=` resampling invents timing. List the real frames with `ffprobe -show_entries frame=pts_time`, find the action in a 4 fps overview, then tile the real frames with `ffmpeg -vf "select='between(t,a,b)',crop=...,tile=8x5" -fps_mode passthrough` and read the sheets. Measure positions numerically, for example bright-row runs per frame in Python, instead of judging by eye. Grey rectangles on a static view are recorder artifacts.
+4. Release the lock and delete the scratch folder.
+
+### Launch performance and colour
+
+- Simulator launch traces overstate CPU cost. dyld_sim adds about 1.5 s, and Swift conformance scans look expensive. On the developer's iPhone the launch waited on the network with the main thread nearly idle. Judge launch speed only from a device run the developer asked for: a Release build, temporary `os_signpost` points of interest that you don't commit, and `xcrun xctrace record --template "App Launch" --instrument "Points of Interest" --device <udid> --launch -- no.paeonia.app`. Adding the HTTP Traffic instrument hangs the recording. For CPU, read the time-profile table with `@record-waiting-threads='0'`, since the other one counts blocked time. Space runs 70 s apart so the Clerk token expires.
+- On the simulator, the first 1 to 3 s of a cold launch show a SplashBoard snapshot from the app container. It holds sRGB pixels tagged as Display P3, so the plum and petals look more saturated until `LaunchExperienceView` draws. The `LaunchBackground` asset is not what you see, so don't fix that colour jump in the assets.
+- On a device, widget pushes reload widgets only with Settings > Developer > WidgetKit Developer Mode on. Ask the developer to turn it on before blaming code. `log collect` from the phone fails over the CoreDevice tunnel, but `xcrun devicectl device copy from --domain-type appGroupDataContainer --domain-identifier group.no.paeonia.app` reads `Library/Preferences/group.no.paeonia.app.plist`.
 
 ### Refreshing the launch order file
 
