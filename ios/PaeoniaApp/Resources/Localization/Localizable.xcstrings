@@ -11812,19 +11812,19 @@
       }
     },
     "firstDay.questions.done.message" : {
-      "comment" : "First questions before the partner joins: message after both are answered",
+      "comment" : "First questions before the partner joins: message after both are answered. The partner sees these answers only after answering the same questions",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When your partner joins, they get the same questions. Once you've both answered, you'll see each other's answers."
+            "value" : "Once you're connected, your partner sees your answers after answering these questions too."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partneren din får de samme spørsmålene når dere er koblet sammen. Når dere begge har svart, ser dere svarene til hverandre."
+            "value" : "Når dere er koblet sammen, ser partneren din svarene dine etter å ha svart på de samme spørsmålene."
           }
         }
       }
@@ -20206,19 +20206,19 @@
       }
     },
     "inviter.questions.row.subtitle" : {
-      "comment" : "Invite screen: line under 'Answer your first questions' before they are answered",
+      "comment" : "Invite screen: line under 'Answer your first questions' before they are answered. The partner gets their own questions, and sees these answers only after answering them too",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your partner gets the same ones when they join."
+            "value" : "Your partner sees your answers after answering them too."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partneren din får de samme spørsmålene når dere er koblet sammen."
+            "value" : "Partneren din ser svarene dine etter å ha svart på dem selv."
           }
         }
       }
