@@ -7,7 +7,7 @@ Every game card on the Games tab, and on the Home tab while the partner is in a 
 The cards are one series, so the hub reads as one place:
 
 - **One place.** The backdrop (`GameHubBackdrop`) is a room at night, so the objects stand somewhere real. Its left wall is lit pink and its right wall lavender, the two partners' worlds, and the corner where they meet is right behind the game's main object. The objects stand on the floor in front. The walls are bare, since a lone detail such as a window pulls the eye from the game. The room is clean and calm: no haze, no light rays, no bokeh, no sparkles and no mirror floor. That calm is what keeps the cards from looking like generated pictures.
-- **Objects from one sticker set.** Every object is a separate image in the house 3D style, on a transparent background. Boards and paper lie under the same camera, three-quarter from the front and about 40 degrees above. Things that stand upright, like the Connect Four board and the Mind Meld cards, are seen from the front. The light comes from the upper right.
+- **Objects from one sticker set.** Every object is a separate image in the house 3D style, on a transparent background. Boards and paper lie under the same camera, three-quarter from the front and about 40 degrees above. Things that stand upright, like the Four in a Row board and the Mind Meld cards, are seen from the front. The light comes from the upper right.
 - **Few objects.** The main object and at most two props that belong to the game. No sparkles, stars, glitter or floating dots.
 - **The same place for everything.** The main object stands at the same spot on every card, so the cards line up as you scroll.
 
@@ -45,7 +45,7 @@ The scene is the final frame of the game's moment, with one element left out. Th
 | Draw & Guess | Paper with a pink heart doodle, a pencil | The letter tiles of the word pop in to the right of the paper |
 | Mind Meld | Two blank word cards leaning together | A peony opens where their tops meet |
 | Story Chain | A notebook page with lines, the pen, an ink bottle | A peony bud pops up after the last line |
-| Connect Four | The board with every disc but the last, and the fifth column empty | The last pink disc drops down that column, and the row glows gold |
+| Four in a Row | The board with every disc but the last, and the fifth column empty | The last pink disc drops down that column, and the row glows gold |
 | Dots and Boxes | The board with its sunset boxes | A gold glow swells over the board |
 | Ultimate Tic-Tac-Toe | The tray of boards with hearts and rings | A gold line strikes through three hearts |
 | Odd Creatures | The folded strip with its creature, two crayons | A pink glow swells over the sweater's heart |

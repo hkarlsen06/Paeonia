@@ -1,6 +1,6 @@
 # Board games
 
-Design for Connect Four, Dots and Boxes and Ultimate Tic-Tac-Toe. The three games share one turn engine, one table, one screen shell and one twist. Shared rules for all games (transports, notifications, play style, game language, the streak) live in `docs/games-plan.md`. This file covers only what is specific to the board games.
+Design for Four in a Row, Dots and Boxes and Ultimate Tic-Tac-Toe. The three games share one turn engine, one table, one screen shell and one twist. Shared rules for all games (transports, notifications, play style, game language, the streak) live in `docs/games-plan.md`. This file covers only what is specific to the board games.
 
 Ludo runs on this engine too, with its own design in `docs/games/ludo.md`.
 
@@ -10,7 +10,7 @@ Keep this file current. When a decision lands or the design changes, update it i
 
 Decided on 2026-10-13.
 
-- **Your own mark.** Each partner draws a mark once on the Paeonia canvas. It is printed on every Connect Four disc they drop, fills every box they close in Dots and Boxes, and replaces X and O in Ultimate Tic-Tac-Toe. Until a partner draws one, their initial is their mark, so the first game starts at once. Either partner can redraw their own mark at any time.
+- **Your own mark.** Each partner draws a mark once on the Paeonia canvas. It is printed on every Four in a Row disc they drop, fills every box they close in Dots and Boxes, and replaces X and O in Ultimate Tic-Tac-Toe. Until a partner draws one, their initial is their mark, so the first game starts at once. Either partner can redraw their own mark at any time.
 - **A bet.** The partner who starts a game can write a small bet, such as "Loser makes coffee". It sits under the board while they play, and the result says who claimed it.
 - **A hidden photo under Dots and Boxes.** The board sits over a random photo from the couple's Memories. Each closed box uncovers its piece of the photo, tinted in the color of the partner who closed it, and the last box shows the whole picture. A couple with no photos gets plain boxes.
 - **Play style changes only the score.** The board is always head to head. "Against each other" shows each partner's wins, which grow forever. "Together" hides the tally and shows how many games the couple has finished together, and the result says who won this one without keeping score.
@@ -35,7 +35,7 @@ Made on 2026-10-14 while the developer was away. Each is the option that was rec
 - **Turn pushes carry a turn token.** `round_id` holds `<game number>:<move count>`, so the drain can tell whether the push is still wanted. It never holds the move.
 - **The petal bloom comes from the board.** The result panel draws none, so a win blooms once, from the winning line.
 - **Ultimate Tic-Tac-Toe never zooms by itself** (decided on 2026-10-23). The whole board stays in view, so the player keeps the overview. Zooming into a small board is a pinch, for looking closely, and there is no "Whole board" button.
-- **A Connect Four draw** dims the discs to 60% and brings them back.
+- **A Four in a Row draw** dims the discs to 60% and brings them back.
 - **Marks are drawn in blush** on boxes and cells, so both partners' marks read the same on their colors.
 - **The partner's pieces are lavender.** Draw & Guess's second partner color is a pink close to the first, and on a full board the two sides were hard to tell apart, so the partner's pieces, glow and badge use `.paeoniaInkLavender`.
 
@@ -47,7 +47,7 @@ GamePigeon already has all three inside iMessage. They earn a place here only wi
 
 Player one started the game and always moves first. Each game has a pure rules function on the server (`backend/convex/lib/<camelKind>.ts`) and the same rules on the phone (`Features/Games/BoardGames/<Folder>/<Game>Board.swift`). The server stores only the list of moves. The board, whose turn it is and the outcome come from replaying them. Both sides have tests for wins, draws and illegal moves.
 
-### Connect Four
+### Four in a Row
 
 - 7 columns and 6 rows. A move is a column. The disc falls to the lowest empty cell.
 - Four or more in a row, horizontally, vertically or diagonally, wins. Every cell of every winning run through the last disc lights up.
@@ -115,10 +115,10 @@ Player one started the game and always moves first. Each game has a pure rules f
 - **The partner's moves arrive animated.** A move that arrives while the board is open plays its animation. When the board opens after the partner moved, it first shows the board as this phone left it for 0.6 seconds, so the person sees where things stood. Then the moves since this phone last showed the board play in order, each one after the last one's animation. A tap on the board skips to the end.
 - **Offline.** A move made offline shows on the board at once and is saved on the phone as a pending operation. The screen says "Saved on this phone. We'll send it when you're online." Moves leave in order. A move the server refuses as stale or illegal is dropped with "Your move wasn't sent", and the board shows the server's state again.
 - **Notifications.**
-  - "Your turn in Connect Four" when the turn passes to you, skipped while you have that game open.
-  - "[Name] finished your game of Connect Four" when the partner's move ends the game, skipped while you have it open.
-  - "[Name] wants to play Connect Four with you" for an invite.
-  - One reminder, "Your turn in Connect Four", when a turn has waited 72 hours. A turn never gets a second one, and a finished game gets none.
+  - "Your turn in Four in a Row" when the turn passes to you, skipped while you have that game open.
+  - "[Name] finished your game of Four in a Row" when the partner's move ends the game, skipped while you have it open.
+  - "[Name] wants to play Four in a Row with you" for an invite.
+  - One reminder, "Your turn in Four in a Row", when a turn has waited 72 hours. A turn never gets a second one, and a finished game gets none.
   - Pushes name only the game. They never show the move, the stake or the result.
 
 ## Scoring
@@ -168,7 +168,7 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 - Look. The Draw & Guess shell: `.paeoniaBackgroundSecondary`, dark color scheme, inline title with the game's name, no tab bar on iPhone.
 - **Players row.** My avatar on the leading side and my partner's on the trailing side, 44 pt, each with its mark in a small badge. Each column sits on a small card of plum-tinted Liquid Glass that hugs the avatar and name, the same glass as a hub card's badge, so they stay readable over Ludo's board. Whoever's turn it is gets glass in their piece color instead of plum (mixed 45 percent with the plum so white text stays readable), an avatar 10 percent larger, and a bold white name. There is no glow, because it looked muddy on the dark backing. On a finished game the winner stays marked, and a draw marks neither. A green dot at the top of my partner's avatar shows they have the game open. VoiceOver reads "Your turn", "[Name]'s turn", "You won" or "[Name] won" on the active avatar, and "[Name] is here" as my partner's name while they are.
 - **Stake row.** Under the status row, above the pinned bottom. The stake capsule, or the "Add a bet" button for the starter before the first move. Hidden otherwise, without leaving a gap. In the wide layout it sits under the players row.
-- **Board.** Square for Dots and Boxes and Ultimate Tic-Tac-Toe, 7 by 6 for Connect Four. It takes the width up to 560 pt and never scrolls on a phone in portrait.
+- **Board.** Square for Dots and Boxes and Ultimate Tic-Tac-Toe, 7 by 6 for Four in a Row. It takes the width up to 560 pt and never scrolls on a phone in portrait.
 - **Color row.** Ludo only. Four round color circles under the status row and above the stake row, until the player's first move of the game (see "Your color" in `docs/games/ludo.md`). In the wide layout it sits under the players row, above the stake.
 - **Your turn.** When the partner's move hands me the turn, `gameYourTurn()` and `nudge` play once the board has finished showing that move (`GameAttentionCue`). A Dots and Boxes box or a Ludo 6 keeps my turn and plays nothing. A rematch counts as a handover only when the partner started it.
 - **Status row.** Under the board. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there, as Ludo does ("Roll again"). VoiceOver announces when the partner comes and goes.
@@ -183,7 +183,7 @@ The moment the last move lands.
 | Time | What happens |
 |---|---|
 | 0.00 | The last move's own animation finishes, whether the move was made on this phone or arrived. Input locks. |
-| 0.15 | The winning pieces light up one after another, starting from the piece that won, and the rest of the board dims to 40%. A glowing line draws from that piece through the winning run (Connect Four and Ultimate Tic-Tac-Toe). In Dots and Boxes the tints lift off the photo and it shows whole. |
+| 0.15 | The winning pieces light up one after another, starting from the piece that won, and the rest of the board dims to 40%. A glowing line draws from that piece through the winning run (Four in a Row and Ultimate Tic-Tac-Toe). In Dots and Boxes the tints lift off the photo and it shows whole. |
 | 0.70 | `answerRevealed()` and the petal bloom from the middle of the winning line, as in Draw & Guess. A draw gets one soft `partnerDrawingReceived()` and no bloom. |
 | 1.10 | The result panel rises from the bottom: the title, the stake line, the score and "Play again". The board glides smaller and up to make room for it, and the bet moves up with it (`meaningfulMoment`). |
 
@@ -193,7 +193,7 @@ The moment the last move lands.
 - A tap jumps to the settled state. Reduce Motion shows the settled state at once with only the haptic.
 - "Play again" is the primary action. The board stays visible above the panel, and the panel can be collapsed to look at the board.
 
-### Connect Four
+### Four in a Row
 
 - The board face is a rounded plum frame with 42 round holes. The discs sit behind the face, so a falling disc shows through the holes.
 - Playing. Tap a column, or drag across the board. A hovering disc with my mark follows the finger above the columns and snaps to each column with `selection()`. Releasing, or tapping, drops it. A full column makes the hovering disc shake with `gameWrongGuess()` and nothing is sent.
@@ -233,14 +233,14 @@ The moment the last move lands.
 ### Mark editor
 
 - A sheet with the title "Your mark" and the line "Draw your mark. It shows on your pieces in every board game."
-- A square canvas with the PencilKit pen in one color and one width, plus Undo and Clear. Under it, a live preview of the mark on a Connect Four disc, a Dots and Boxes box and an Ultimate Tic-Tac-Toe cell, in my color.
+- A square canvas with the PencilKit pen in one color and one width, plus Undo and Clear. Under it, a live preview of the mark on a Four in a Row disc, a Dots and Boxes box and an Ultimate Tic-Tac-Toe cell, in my color.
 - Save is the primary action. "Use my initial" removes the drawn mark.
 
 ### Hub cards
 
 Each game has its own card on the Games tab, with its own objects on the shared backdrop, made to `docs/games/hub-artwork.md`.
 
-- Connect Four. A cream board with both partners' discs. The last pink disc drops into its hole and the row glows gold.
+- Four in a Row. A cream board with both partners' discs. The last pink disc drops into its hole and the row glows gold.
 - Dots and Boxes. A board of pearls whose closed boxes show a sunset photo. A warm light swells behind it.
 - Ultimate Tic-Tac-Toe. Nine small boards of hearts and rings. A gold line strikes through three hearts.
 - The card shows "Your turn", "[Name]'s turn", "You won", "[Name] won", "It's a draw" or "Start a game", with "Play", "Look at the board", "Play again" or "Start". The partner-here chip and the score capsule match Draw & Guess.

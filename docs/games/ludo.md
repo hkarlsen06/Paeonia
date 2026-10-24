@@ -30,7 +30,7 @@ Made on 2026-10-14. Each can change.
 
 ## Why Ludo
 
-Ludo is the board game most couples already know, and it is the one board game here built on luck, so a partner who loses at Connect Four can still win it. It earns its place in Paeonia the same way the other board games do: each partner's drawn mark is printed on top of their pawns, the starter can play for something, and the pawns are in the couple's own colors.
+Ludo is the board game most couples already know, and it is the one board game here built on luck, so a partner who loses at Four in a Row can still win it. It earns its place in Paeonia the same way the other board games do: each partner's drawn mark is printed on top of their pawns, the starter can play for something, and the pawns are in the couple's own colors.
 
 ## Rules
 
@@ -233,7 +233,7 @@ The mark fills 86 percent of the flat top. A pawn is the player's color all over
 
 ### The die
 
-- The die is blush white with rounded edges (corner radius 0.23 of a 1.3 die) and pips shaped as small plum hearts. Hearts match the heart discs of Connect Four and Ultimate Tic-Tac-Toe, and six hearts still count at a glance.
+- The die is blush white with rounded edges (corner radius 0.23 of a 1.3 die) and pips shaped as small plum hearts. Hearts match the heart discs of Four in a Row and Ultimate Tic-Tac-Toe, and six hearts still count at a glance.
 - A heart pip is 0.27 cells wide, raised 0.04 cells, with rounded edges. Its point faces the face's `down` direction, so on the top face it points toward the viewer and reads upright. Pip places stay as they are.
 - There are no trays. The die rests in the base yard of whoever rolls: my corner on my roll, my partner's corner on theirs. It starts in the free space of the yard beside the two pawn spots, which sit in the yard's outer row. A throw can take it anywhere inside the base's carved panel, and it stays where it lands. A die that changes player hops from one yard to the other once every pawn has landed. It used to hop the moment I picked a pawn, so it flew across the board while my pawn hopped and pulled the eye away from it.
 

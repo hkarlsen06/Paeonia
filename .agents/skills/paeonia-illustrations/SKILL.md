@@ -96,7 +96,7 @@ Image generation never hits exact geometry. Asked for 4:3, the paper came out 1.
 
 - Frame the image at its measured aspect ratio.
 - Give anchor points as fractions of the image, measured from the pixels.
-- Place a hub card object with `GameHubPlacement`, and its beat with `point(_:_:)` at fractions of the object. Codex reports the beat's position, but check it: draw a marker there on a crop of the object, and zoom in with a pixel grid for anything that must line up exactly, like the Connect Four holes or the strike line through three hearts. Then check it lands on the device.
+- Place a hub card object with `GameHubPlacement`, and its beat with `point(_:_:)` at fractions of the object. Codex reports the beat's position, but check it: draw a marker there on a crop of the object, and zoom in with a pixel grid for anything that must line up exactly, like the Four in a Row holes or the strike line through three hearts. Then check it lands on the device.
 - Every `Image` of an asset gets `.accessibilityHidden(true)` right after `.resizable()`, since the picture around it is already hidden from VoiceOver.
 
 Done when the code uses measured numbers and SwiftLint is clean on the touched files.
