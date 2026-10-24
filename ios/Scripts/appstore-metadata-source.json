@@ -3,19 +3,22 @@
   "$comment": "Source of truth for App Store metadata. The generator creates Fastlane .txt files from this.",
   "metadata": {
     "en": {
-      "name": "Paeonia",
-      "subtitle": "A private space for couples",
-      "promotional_text": "Feel close, even when life keeps you apart.",
-      "description": "Paeonia gives couples a calm, private place to stay close through distance.\n\nShare small daily rituals, save memories, count down to the moments you are waiting for, and keep your relationship feeling present in everyday life.\n\nBuilt for privacy, reliability, and the quiet moments that matter.",
-      "keywords": "couples,relationship,love,partner,distance,memories,countdown,prompts,private,rituals",
+      "name": "Paeonia: For Couples",
+      "subtitle": "Questions, drawings and games",
+      "promotional_text": "Answer today's question together and see what your partner said. Send a drawing to their Lock Screen, or take your turn in a game whenever it suits you.",
+      "description": "Paeonia is a private app for the two of you. Answer the same question each day, send a drawing to your partner's Lock Screen, and play games at your own pace.\n\nOne question a day\nYou both get the same question. Your partner's answer stays hidden until you've answered too.\n\nDrawings on their screen\nDraw something, and it shows up in the widgets on your partner's Home Screen and Lock Screen.\n\nGames made for two\nLudo, Four in a Row, Mind Meld, Draw & Guess, Story Chain, Guess my spot and more. Play live when you're both here, or take your turn and let your partner reply when they can.\n\nYour story together\nSave memories with photos, count down to your next visit, and see your next anniversary coming.\n\nWhere your partner is, if you want\nShare your latest location with your partner. Paeonia keeps no location history, and you can pause sharing at any time.\n\nJust for the two of you\nNothing you share is public. Only your partner sees it. Paeonia has no ads, and it only counts how you use the app if you say yes.\n\nOne subscription for both of you\nPaeonia needs an active subscription. One of you subscribes, and the other joins with the invite code at no extra cost. The subscription renews automatically until you cancel it in your Apple Account settings. Restoring a lost streak is an optional extra purchase.\n\nTerms of Use: https://paeonia.no/en/terms/\nPrivacy Policy: https://paeonia.no/en/privacy/",
+      "keywords": "relationship,love,partner,distance,boyfriend,girlfriend,memory,countdown,widget,ldr,daily",
       "release_notes": "Bug fixes and performance improvements."
     },
+    "en-GB": {
+      "keywords": "long,together,anniversary,diary,date,board,word,sketch,quiz,wife,husband,ludo,ritual"
+    },
     "nb": {
-      "name": "Paeonia",
-      "subtitle": "Et privat sted for par",
-      "promotional_text": "Føl dere nære, selv når livet holder dere fra hverandre.",
-      "description": "Paeonia gir par et rolig og privat sted for å føle seg nære, også på avstand.\n\nDel små daglige ritualer, ta vare på minner, tell ned til øyeblikkene dere gleder dere til, og la forholdet føles nært i hverdagen.\n\nLaget for personvern, pålitelighet og de stille øyeblikkene som betyr noe.",
-      "keywords": "par,forhold,kjaerlighet,partner,avstand,minner,nedtelling,sporsmal,privat,ritualer",
+      "name": "Paeonia: For par",
+      "subtitle": "Spørsmål, tegninger og spill",
+      "promotional_text": "Svar på dagens spørsmål sammen og se hva partneren din svarte. Send en tegning til låseskjermen til kjæresten din, eller ta din tur i et spill når det passer deg.",
+      "description": "Paeonia er en privat app for dere to. Svar på det samme spørsmålet hver dag, send en tegning til låseskjermen til partneren din, og spill spill i deres eget tempo.\n\nEtt spørsmål om dagen\nDere får det samme spørsmålet. Svaret til partneren din er skjult til du har svart selv.\n\nTegninger på skjermen\nTegn noe, så dukker det opp i widgetene på hjemskjermen og låseskjermen til partneren din.\n\nSpill laget for to\nLudo, Fire på rad, Tenk likt, Tegn og gjett, Skrivestafett, Gjett hvor og flere. Spill sammen når dere begge er inne, eller ta din tur og la partneren din svare når det passer.\n\nHistorien deres\nTa vare på minner med bilder, tell ned til neste gang dere ses, og se når neste merkedag kommer.\n\nHvor partneren din er, hvis du vil\nDel den siste posisjonen din med partneren din. Paeonia lagrer ingen posisjonshistorikk, og du kan sette delingen på pause når du vil.\n\nBare for dere to\nIngenting dere deler, er offentlig. Bare partneren din ser det. Paeonia har ingen reklame, og teller bare hvordan du bruker appen hvis du sier ja.\n\nEtt abonnement for dere begge\nPaeonia krever et aktivt abonnement. Den ene av dere abonnerer, og den andre blir med gratis med invitasjonskoden. Abonnementet fornyes automatisk til du sier det opp i innstillingene for Apple-kontoen. Å få tilbake en tapt rekke er et valgfritt ekstrakjøp.\n\nVilkår for bruk: https://paeonia.no/no/terms/\nPersonvernerklæring: https://paeonia.no/no/privacy/",
+      "keywords": "kjæreste,forhold,kjærlighet,avstand,langdistanse,minner,nedtelling,sammen,widget,ludo,samboer",
       "release_notes": "Feilrettinger og ytelsesforbedringer."
     }
   }

@@ -19,7 +19,10 @@ const validateOnly = args.includes("--validate-only");
 const sourceOnly = args.includes("--source-only");
 const forceRegenerate = args.includes("--force");
 
-const SOURCE_LOCALES = ["en", "nb"];
+// en-GB lists only its own keywords and takes every other field from en. Norway's
+// storefront searches Norwegian and British English, so en-GB adds a second keyword
+// field there, and Apple does not combine words across locales.
+const SOURCE_LOCALES = ["en", "en-GB", "nb"];
 const PRIMARY_LOCALE = "en";
 
 const ASC_FOLDER_MAP = {
@@ -159,12 +162,29 @@ function validateMetadata(metadata, locale, fields = FIELDS) {
       continue;
     }
 
-    if (value.length > limit) {
-      errors.push(`[${locale}] ${field} exceeds limit: ${value.length}/${limit} characters`);
+    // Apple counts the keyword field in bytes, so æ, ø and å cost two each.
+    const size = field === "keywords" ? Buffer.byteLength(value, "utf8") : value.length;
+    if (size > limit) {
+      const unit = field === "keywords" ? "bytes" : "characters";
+      errors.push(`[${locale}] ${field} exceeds limit: ${size}/${limit} ${unit}`);
+    }
+  }
+
+  // Apple already searches the words in the name and subtitle, so a keyword that repeats one is wasted.
+  if (metadata.keywords && metadata.name && metadata.subtitle) {
+    const shown = new Set(`${metadata.name} ${metadata.subtitle}`.toLowerCase().match(/[\p{L}\p{N}]+/gu));
+    const repeated = metadata.keywords.split(",").filter((keyword) => shown.has(keyword.trim().toLowerCase()));
+    if (repeated.length > 0) {
+      errors.push(`[${locale}] keywords repeat words from the name or subtitle: ${repeated.join(", ")}`);
     }
   }
 
   return errors;
+}
+
+function keywordOverlap(first, second) {
+  const words = new Set(first.split(","));
+  return second.split(",").filter((keyword) => words.has(keyword));
 }
 
 async function readExistingFields(folderName, fields) {
@@ -375,7 +395,10 @@ async function main() {
   console.log(`Found Xcode locales: ${projectLocales.join(", ")}\n`);
 
   const sourceData = JSON.parse(await fs.readFile(METADATA_SOURCE_PATH, "utf-8"));
-  const { metadata } = sourceData;
+  const metadata = {
+    ...sourceData.metadata,
+    "en-GB": { ...sourceData.metadata.en, ...sourceData.metadata["en-GB"] }
+  };
   const validationErrors = [];
 
   for (const locale of SOURCE_LOCALES) {
@@ -384,6 +407,10 @@ async function main() {
       continue;
     }
     validationErrors.push(...validateMetadata(metadata[locale], locale));
+  }
+  const sharedKeywords = keywordOverlap(metadata.en.keywords, metadata["en-GB"].keywords);
+  if (sharedKeywords.length > 0) {
+    validationErrors.push(`[en-GB] keywords repeat en keywords: ${sharedKeywords.join(", ")}`);
   }
 
   if (validationErrors.length > 0) {
