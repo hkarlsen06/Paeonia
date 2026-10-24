@@ -6,7 +6,7 @@
   /// rest of the path runs in `Local flow · fresh install` and `Local flow · onboarding`.
   nonisolated extension DeveloperScenario {
     static let inviter: [DeveloperScenario] = [
-      welcomeStartDate, pairingInviteFirstDayHalf, pairingInviteFirstDayDone,
+      welcomeStartDate, pairingInviteFirstDayHalf, pairingInviteFirstDayDone, pairingInviteFirstDrawing,
     ]
 
     static let welcomeStartDate = DeveloperScenario(
@@ -21,6 +21,10 @@
       "pairing-invite-first-day-done", "Pairing invite · first questions, both answered",
       "Both first answers saved", .pairing
     ) { _ in DeveloperInviterScenarioView(answered: 2) }
+    static let pairingInviteFirstDrawing = DeveloperScenario(
+      "pairing-invite-first-drawing", "Pairing invite · first drawing made",
+      "The first drawing is saved, so the share text names a gift", .pairing
+    ) { _ in DeveloperInviterScenarioView(answered: 0, drawing: true) }
   }
 
   /// The start date step on its own. Continue plays the count-up, and the step stays.
@@ -35,6 +39,7 @@
   /// The invite screen with a local invite and a local first day draft.
   private struct DeveloperInviterScenarioView: View {
     let answered: Int
+    var drawing = false
 
     var body: some View {
       PaeoniaScreenFrame {
@@ -47,7 +52,7 @@
             inviteStore: DeveloperScenarioInviteStore(invite: nil),
             now: { DeveloperScenarioFixture.now }
           ),
-          firstDayModel: DeveloperInviterFixture.firstDayModel(answered: answered),
+          firstDayModel: DeveloperInviterFixture.firstDayModel(answered: answered, drawing: drawing),
           showsManageSubscription: true,
           onSubmitJoinCode: { _ in true },
           onRefreshAccess: {}
@@ -65,6 +70,7 @@
     @MainActor
     static func firstDayModel(
       answered: Int,
+      drawing: Bool = false,
       canvas: DeveloperWidgetCanvasService = DeveloperWidgetCanvasService(),
       pendingUploads: WidgetPendingUploadStore? = nil
     ) -> InviterFirstDayModel {
@@ -73,7 +79,7 @@
         store.clearAll()
         return store
       }()
-      let gateway = DeveloperFirstDayGateway(answered: answered)
+      let gateway = DeveloperFirstDayGateway(answered: answered, drawing: drawing)
       return InviterFirstDayModel(
         ownerUserID: DeveloperScenarioFixture.currentUserID,
         authorName: "Alex",
@@ -95,7 +101,7 @@
   actor DeveloperFirstDayGateway: FirstDayGateway {
     private var draft: FirstDayDraft
 
-    init(answered: Int) {
+    init(answered: Int, drawing: Bool = false) {
       let questions = [
         FirstDayQuestion(
           slotNumber: 1,
@@ -115,7 +121,7 @@
       draft = FirstDayDraft(
         startedOn: nil,
         questions: questions,
-        drawing: nil
+        drawing: drawing ? FirstDayDrawingReference(mediaAssetID: UUID(), revisionID: UUID()) : nil
       )
     }
 
@@ -147,7 +153,13 @@
 
     func finalizeDrawingUpload(_: WidgetDrawingFinalizeInput, operation _: SyncClientOperation) {}
 
-    func saveDrawing(_: WidgetDrawingUploadPayload, mediaAssetID _: UUID, operation _: SyncClientOperation) {}
+    func saveDrawing(_: WidgetDrawingUploadPayload, mediaAssetID: UUID, operation _: SyncClientOperation) {
+      draft = FirstDayDraft(
+        startedOn: draft.startedOn,
+        questions: draft.questions,
+        drawing: FirstDayDrawingReference(mediaAssetID: mediaAssetID, revisionID: UUID())
+      )
+    }
 
     func signedDrawingURL(mediaAssetID _: UUID) -> URL? {
       nil

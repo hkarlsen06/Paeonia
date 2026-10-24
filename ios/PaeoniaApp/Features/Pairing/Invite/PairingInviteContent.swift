@@ -117,6 +117,7 @@ struct PairingInviteContent: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             PairingInviteActionCluster(
                 invite: invite,
+                shareMessage: firstDay?.shareMessage ?? .pairingInviteShareMessage,
                 didCopyCode: viewModel.didCopyCode,
                 isBusy: viewModel.isBusy,
                 onCopy: { copyInviteCode(invite.code) },

@@ -153,7 +153,8 @@ struct InviterFirstDayModelTests {
         let gateway = FirstDayGatewaySpy()
         await makeModel(gateway: gateway, canvas: canvas, defaults: defaults).load()
 
-        #expect(await gateway.steps.suffix(4) == ["reserve", "upload", "finalize", "save"])
+        // The draft is read again after the save, so the share text can name the drawing.
+        #expect(await gateway.steps.suffix(5) == ["reserve", "upload", "finalize", "save", "start"])
         #expect(!pendingStore.hasPending)
     }
 }

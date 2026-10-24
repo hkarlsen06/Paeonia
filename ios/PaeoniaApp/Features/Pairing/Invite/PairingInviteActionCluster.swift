@@ -7,6 +7,8 @@ struct PairingInviteActionCluster: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let invite: PairingInvite
+    /// The line the share sheet sends with the link (`InviterFirstDayModel.shareMessage`).
+    let shareMessage: LocalizedStringResource
     let didCopyCode: Bool
     let isBusy: Bool
     let onCopy: () -> Void
@@ -47,7 +49,7 @@ struct PairingInviteActionCluster: View {
         ShareLink(
             item: invite.joinURL,
             subject: Text(.pairingInviteShareSubject),
-            message: Text(.pairingInviteShareMessage)
+            message: Text(shareMessage)
         ) {
             Label {
                 Text(.pairingInviteShareButton)

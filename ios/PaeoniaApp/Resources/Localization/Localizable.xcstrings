@@ -26190,19 +26190,55 @@
       }
     },
     "pairing.invite.share.message" : {
-      "comment" : "Share sheet message for partner invite links.",
+      "comment" : "Share sheet message sent with the partner invite link when the inviter has not made a drawing or answered their first questions yet. Spoken by the inviter to their partner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use this link to join our space on Paeonia."
+            "value" : "Open this link to join me on Paeonia."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bruk denne lenken for å bli med i rommet vårt på Paeonia."
+            "value" : "Åpne lenken for å bli med meg på Paeonia."
+          }
+        }
+      }
+    },
+    "pairing.invite.share.message.answers" : {
+      "comment" : "Share sheet message sent with the partner invite link when the inviter answered their first two questions but made no drawing. Spoken by the inviter to their partner, who answers the same questions after joining.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I answered our first questions on Paeonia. Open this link to answer them too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeg har svart på de første spørsmålene våre på Paeonia. Åpne lenken og svar du også."
+          }
+        }
+      }
+    },
+    "pairing.invite.share.message.drawing" : {
+      "comment" : "Share sheet message sent with the partner invite link when the inviter made a first drawing for their partner. Spoken by the inviter to their partner. 'Something' keeps the drawing a surprise.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I made you something on Paeonia. Open this link to see it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeg har laget noe til deg på Paeonia. Åpne lenken for å se det."
           }
         }
       }

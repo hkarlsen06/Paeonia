@@ -62,6 +62,19 @@ final class InviterFirstDayModel {
         draft?.hasAnsweredAll ?? false
     }
 
+    /// What the share sheet says next to the invite link. It names the gift waiting for
+    /// the partner, and only one the server already holds, so the line is true when
+    /// they open it.
+    var shareMessage: LocalizedStringResource {
+        if draft?.drawing != nil {
+            .pairingInviteShareMessageDrawing
+        } else if hasAnsweredQuestions {
+            .pairingInviteShareMessageAnswers
+        } else {
+            .pairingInviteShareMessage
+        }
+    }
+
     // MARK: Loading
 
     func load() async {
@@ -149,10 +162,13 @@ final class InviterFirstDayModel {
 
     // MARK: Drawing
 
+    /// Reads the draft again once the drawing is out, so `shareMessage` can name it.
     private func retryDrawingUpload() async {
         guard let uploader, await uploader.hasPendingUpload else {
             return
         }
-        await uploader.retryPending()
+        if await uploader.retryPending() {
+            await loadDraft()
+        }
     }
 }
