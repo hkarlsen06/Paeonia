@@ -8,6 +8,8 @@ struct PairingInviteContent: View {
     let viewModel: PairingInviteViewModel
     /// The first questions. Nil until the parent builds it.
     let firstDay: InviterFirstDayModel?
+    /// Adds the button that opens Apple's subscription sheet, below the first screen.
+    let showsManageSubscription: Bool
     let onSubmitJoinCode: (String) async -> Bool
     let onRefreshAccess: () -> Void
 
@@ -15,6 +17,8 @@ struct PairingInviteContent: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @State private var isConfirmingNewCode = false
     @State private var isEnteringCode = false
+    /// The scroll view's height above the action buttons.
+    @State private var visibleHeight: CGFloat = 0
 
     var body: some View {
         content
@@ -91,28 +95,24 @@ struct PairingInviteContent: View {
 
     private func readyContent(_ invite: PairingInvite) -> some View {
         PaeoniaScreenScroll {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                    Text(.pairingInviteTitle)
-                        .font(PaeoniaTypography.title)
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) {
+                if showsManageSubscription {
+                    // The invite fills the first screen, so the subscription button
+                    // only shows once someone scrolls to it.
+                    inviteDetails(invite)
+                        .frame(minHeight: max(visibleHeight - 2 * PaeoniaSpacing.space24, 0))
 
-                    Text(.pairingInviteMessage)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                PairingInviteCodeBlock(invite: invite)
-
-                PairingInviteWaitingLine(notifiesOnJoin: firstDay?.notificationsAllowed == true)
-
-                if let firstDay {
-                    InviterQuestionsRow(model: firstDay)
+                    PairingInviteManageSubscriptionButton()
+                        .padding(.top, PaeoniaSpacing.space24)
+                } else {
+                    inviteDetails(invite)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.containerSize.height
+        } action: { _, height in
+            visibleHeight = height
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             PairingInviteActionCluster(
@@ -125,6 +125,35 @@ struct PairingInviteContent: View {
             )
         }
         .animation(PaeoniaMotion.stateChange, value: invite.id)
+    }
+
+    private func inviteDetails(_ invite: PairingInvite) -> some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
+            header
+
+            PairingInviteCodeBlock(invite: invite)
+
+            PairingInviteWaitingLine(notifiesOnJoin: firstDay?.notificationsAllowed == true)
+
+            if let firstDay {
+                InviterQuestionsRow(model: firstDay)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            Text(.pairingInviteTitle)
+                .font(PaeoniaTypography.title)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityAddTraits(.isHeader)
+
+            Text(.pairingInviteMessage)
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var errorContent: some View {

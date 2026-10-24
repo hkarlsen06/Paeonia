@@ -112,12 +112,14 @@
       )
     }
 
+    /// The simulated purchase stands in for an App Store subscription, so the
+    /// screens that depend on one (leaving, managing it) behave as they would.
     private var userEntitlement: RemoteUserEntitlement? {
       guard isEntitled else { return nil }
       return RemoteUserEntitlement(
         userID: DeveloperScenarioFixture.currentUserID,
         isEntitled: true,
-        source: "developer_local_flow",
+        source: "storekit",
         status: "active",
         productID: nil,
         billingPeriod: "monthly",
@@ -132,7 +134,7 @@
         coupleID: DeveloperScenarioFixture.coupleID,
         isEntitled: true,
         coveringUserID: DeveloperScenarioFixture.currentUserID,
-        source: "developer_local_flow",
+        source: "storekit",
         status: "active",
         productID: nil,
         billingPeriod: "monthly",

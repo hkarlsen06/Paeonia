@@ -236,6 +236,7 @@ extension MainTabView {
             coupleDates: coupleDatesViewModel,
             locationViewModel: locationViewModel,
             partnerName: dailyChallengeParticipants.partnerName,
+            ownAccess: identity.ownAccess,
             onLeftRelationship: actions.leftRelationship,
             onLogout: actions.logOut,
             onDeleteAccount: actions.deleteAccount,

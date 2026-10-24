@@ -9,6 +9,8 @@ struct SettingsAccountSection: View {
     let viewModel: SettingsViewModel
     /// Names the partner in the leave confirmation instead of saying "your partner".
     let partnerName: String
+    /// Says in the leave confirmation what happens to the subscription.
+    let ownAccess: OwnAccess
     let onLeftRelationship: () -> Void
     let onLogout: () -> Void
     let onDeleteAccount: () -> Void
@@ -75,7 +77,7 @@ struct SettingsAccountSection: View {
                 Text(.pairingUnpairConfirmCancel)
             }
         } message: {
-            Text(.pairingUnpairConfirmMessage(partnerName))
+            Text(leaveMessage)
         }
     }
 
@@ -99,6 +101,19 @@ struct SettingsAccountSection: View {
             }
         } message: {
             Text(.authDeleteAccountConfirmMessage)
+        }
+    }
+
+    /// Someone who pays keeps paying after leaving, and someone covered by the
+    /// partner's subscription loses it, so each is told before they confirm.
+    private var leaveMessage: LocalizedStringResource {
+        switch ownAccess {
+        case .appStoreSubscription:
+            .pairingUnpairConfirmMessagePayer(partnerName)
+        case .nothing:
+            .pairingUnpairConfirmMessageCovered(partnerName)
+        case .grant:
+            .pairingUnpairConfirmMessage(partnerName)
         }
     }
 

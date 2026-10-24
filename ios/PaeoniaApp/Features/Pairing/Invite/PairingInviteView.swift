@@ -12,6 +12,7 @@ struct PairingInviteView: View {
 
     private let userID: String?
     private let displayName: String?
+    private let showsManageSubscription: Bool
     private let onSubmitJoinCode: (String) async -> Bool
     private let onRefreshAccess: () -> Void
 
@@ -19,16 +20,20 @@ struct PairingInviteView: View {
     ///   - onSubmitJoinCode: Checks a partner's code typed in the code sheet. If it
     ///     works the root saves it and shows the join screen. Returns false to keep
     ///     the sheet open.
+    ///   - showsManageSubscription: The person pays through the App Store, so a
+    ///     button below the first screen opens Apple's subscription sheet.
     ///   - onRefreshAccess: Called when access should be checked again.
     init(
         session: AuthSession?,
         viewModel: PairingInviteViewModel? = nil,
         firstDayModel: InviterFirstDayModel? = nil,
+        showsManageSubscription: Bool,
         onSubmitJoinCode: @escaping (String) async -> Bool,
         onRefreshAccess: @escaping () -> Void
     ) {
         userID = session?.id
         displayName = session?.displayName
+        self.showsManageSubscription = showsManageSubscription
         _viewModel = State(initialValue: viewModel)
         _firstDayModel = State(initialValue: firstDayModel)
         self.onSubmitJoinCode = onSubmitJoinCode
@@ -41,6 +46,7 @@ struct PairingInviteView: View {
                 PairingInviteContent(
                     viewModel: viewModel,
                     firstDay: firstDayModel,
+                    showsManageSubscription: showsManageSubscription,
                     onSubmitJoinCode: { await onSubmitJoinCode($0) },
                     onRefreshAccess: onRefreshAccess
                 )
@@ -74,6 +80,7 @@ struct PairingInviteView: View {
             profilePhotoAssetID: nil,
             profileStatus: .complete
         ),
+        showsManageSubscription: true,
         onSubmitJoinCode: { _ in false },
         onRefreshAccess: {}
     )

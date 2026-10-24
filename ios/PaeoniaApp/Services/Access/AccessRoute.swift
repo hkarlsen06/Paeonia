@@ -98,6 +98,11 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
         snapshot.relationshipState?.startedOn
     }
 
+    /// What this person has without their partner's subscription.
+    var ownAccess: OwnAccess {
+        OwnAccess(snapshot.userEntitlement)
+    }
+
     /// This person joined with the partner's invite code.
     var acceptedInvite: Bool {
         snapshot.relationshipState?.acceptedInvite ?? false

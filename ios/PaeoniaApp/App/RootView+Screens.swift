@@ -172,6 +172,7 @@ extension RootView {
             session: viewModel.currentSession,
             viewModel: featureDependencies.pairingInviteViewModel,
             firstDayModel: featureDependencies.inviterFirstDayModel,
+            showsManageSubscription: viewModel.currentOwnAccess == .appStoreSubscription,
             onSubmitJoinCode: submitJoinCode,
             onRefreshAccess: refreshPairing
         )
@@ -294,7 +295,8 @@ extension RootView {
             partnerName: viewModel.currentPartnerName,
             partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
             coupleID: viewModel.currentActiveCoupleID,
-            relationshipStartedOn: viewModel.currentRelationshipStartedOn
+            relationshipStartedOn: viewModel.currentRelationshipStartedOn,
+            ownAccess: viewModel.currentOwnAccess
         )
     }
 

@@ -20,7 +20,7 @@
       locationNotSharing, locationCurrentMissing, locationLive, locationStale,
       widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated,
       gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubPartnerHere, gamesHubBoardGames,
-      notificationPrimer, settings, settingsNotificationsDenied, privacySafety, reportAndLeave,
+      notificationPrimer, settings, settingsPartnerPays, settingsNotificationsDenied, privacySafety, reportAndLeave,
       deepLinkDailyToday, deepLinkDailyReveal, deepLinkWidget, deepLinkStreak, deepLinkSubscription,
     ]
 
@@ -268,7 +268,10 @@
       "notification-primer", "Notifications · primer", "Pre-permission notification explanation"
     )
     static let settings = settingsScreen(
-      "settings", "Settings", "Paired settings with local preferences"
+      "settings", "Settings", "Paired settings; Alex pays and is in the free trial"
+    )
+    static let settingsPartnerPays = settingsScreen(
+      "settings-partner-pays", "Settings · partner pays", "Paired settings while Robin's subscription covers Alex"
     )
     static let settingsNotificationsDenied = settingsScreen(
       "settings-notifications-denied", "Settings · notifications denied",

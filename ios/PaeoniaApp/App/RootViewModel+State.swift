@@ -35,6 +35,10 @@ extension RootViewModel {
         route.accessResolution?.relationshipStartedOn
     }
 
+    var currentOwnAccess: OwnAccess {
+        route.accessResolution?.ownAccess ?? .nothing
+    }
+
     var currentRelationshipAcceptedInvite: Bool {
         route.accessResolution?.acceptedInvite ?? false
     }

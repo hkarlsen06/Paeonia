@@ -138,6 +138,7 @@ private struct SavedProfile: Equatable {
             accountSection: SettingsAccountSection(
                 viewModel: SettingsViewModel(),
                 partnerName: "Oda",
+                ownAccess: .appStoreSubscription,
                 onLeftRelationship: {},
                 onLogout: {},
                 onDeleteAccount: {}

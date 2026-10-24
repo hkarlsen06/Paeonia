@@ -26657,6 +26657,42 @@
         }
       }
     },
+    "pairing.unpair.confirm.message.covered" : {
+      "comment" : "Message in the leave relationship confirmation for someone whose access comes from the partner's subscription. %@ is the partner's name. The last sentence says they need to buy their own subscription before they can pair with anyone again. Keep in line with pairing.unpair.confirm.message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. To pair with someone again, you'll need your own subscription."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. For å koble deg til noen igjen trenger du ditt eget abonnement."
+          }
+        }
+      }
+    },
+    "pairing.unpair.confirm.message.payer" : {
+      "comment" : "Message in the leave relationship confirmation for someone who pays for Paeonia through the App Store. %@ is the partner's name. The last sentence says leaving does not stop their subscription and where to cancel it. Keep in line with pairing.unpair.confirm.message.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll leave your shared space and %@ will be told. You'll both stop seeing your shared questions, memories, and widget. You can pair again later. Your subscription keeps running, and you can cancel it in the App Store."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du forlater det felles rommet deres, og %@ får beskjed. Dere slutter begge å se de felles spørsmålene, minnene og widgeten. Du kan koble deg til noen igjen senere. Abonnementet ditt fortsetter, og du kan si det opp i App Store."
+          }
+        }
+      }
+    },
     "pairing.unpair.confirm.title" : {
       "comment" : "Title of the confirmation alert for ending the pairing. %@ is the partner's name. Shared by the paywall footer and the You-tab leave action.",
       "extractionState" : "manual",

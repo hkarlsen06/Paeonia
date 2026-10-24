@@ -48,6 +48,7 @@
             now: { DeveloperScenarioFixture.now }
           ),
           firstDayModel: DeveloperInviterFixture.firstDayModel(answered: answered),
+          showsManageSubscription: true,
           onSubmitJoinCode: { _ in true },
           onRefreshAccess: {}
         )

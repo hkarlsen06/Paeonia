@@ -17,6 +17,9 @@ struct MainTabIdentity: Equatable {
     /// The day the relationship started (`yyyy-MM-dd`), used by the Home tab milestone
     /// countdown. Display-only, so it never keys a load.
     var relationshipStartedOn: String?
+    /// What this person has without their partner's subscription. The leave
+    /// confirmation says what happens to it.
+    var ownAccess: OwnAccess = .nothing
 
     /// The partner's name as this person sees it: their nickname, otherwise the partner's own name.
     var partnerDisplayName: String? {

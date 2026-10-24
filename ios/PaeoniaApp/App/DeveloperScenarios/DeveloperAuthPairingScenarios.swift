@@ -80,6 +80,7 @@
             session: DeveloperScenarioFixture.completeSession,
             viewModel: inviteViewModel,
             firstDayModel: DeveloperInviterFixture.firstDayModel(answered: 0),
+            showsManageSubscription: true,
             onSubmitJoinCode: { _ in true },
             onRefreshAccess: {}
           )

@@ -25,6 +25,9 @@ struct SettingsView: View {
     /// The partner's display name, so location/notification copy names the partner
     /// instead of saying "your partner".
     let partnerName: String
+    /// What this person has without their partner's subscription, for the leave
+    /// confirmation.
+    let ownAccess: OwnAccess
     /// Called after the couple is successfully unpaired, so the root can re-resolve
     /// access and move the user back to the unpaired flow.
     let onLeftRelationship: () -> Void
@@ -76,6 +79,7 @@ struct SettingsView: View {
         coupleDates: CoupleDatesViewModel? = nil,
         locationViewModel: LocationMapViewModel,
         partnerName: String,
+        ownAccess: OwnAccess,
         onLeftRelationship: @escaping () -> Void = {},
         onLogout: @escaping () -> Void = {},
         onDeleteAccount: @escaping () -> Void = {},
@@ -103,6 +107,7 @@ struct SettingsView: View {
         self.coupleDates = coupleDates
         self.locationViewModel = locationViewModel
         self.partnerName = partnerName
+        self.ownAccess = ownAccess
         self.onLeftRelationship = onLeftRelationship
         self.onLogout = onLogout
         self.onDeleteAccount = onDeleteAccount
@@ -220,6 +225,7 @@ extension SettingsView {
                 accountSection: SettingsAccountSection(
                     viewModel: viewModel,
                     partnerName: partnerName,
+                    ownAccess: ownAccess,
                     onLeftRelationship: onLeftRelationship,
                     onLogout: onLogout,
                     onDeleteAccount: onDeleteAccount,
@@ -439,7 +445,7 @@ extension SettingsView {
 
 #Preview {
     NavigationStack {
-        SettingsView(locationViewModel: LocationMapViewModel(), partnerName: "Oda")
+        SettingsView(locationViewModel: LocationMapViewModel(), partnerName: "Oda", ownAccess: .appStoreSubscription)
     }
     .environment(PaeoniaBannerCenter())
     .preferredColorScheme(.dark)

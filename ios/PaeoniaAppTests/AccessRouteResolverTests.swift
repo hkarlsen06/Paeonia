@@ -169,6 +169,24 @@ struct AccessRouteResolverTests {
         #expect(route == .relationshipEndedNotice)
         #expect(route.appState == .relationshipEndedNotice)
     }
+
+    @Test func ownAccessSeparatesAnAppStoreSubscriptionFromAGrantAndFromNothing() {
+        let review = RemoteUserEntitlement(
+            userID: UUID(),
+            isEntitled: true,
+            source: "review_grant",
+            status: "active",
+            productID: nil,
+            billingPeriod: nil,
+            currentPeriodEnd: nil,
+            updatedAt: nil
+        )
+
+        #expect(OwnAccess(.entitled()) == .appStoreSubscription)
+        #expect(OwnAccess(review) == .grant)
+        #expect(OwnAccess(.notEntitled()) == .nothing)
+        #expect(OwnAccess(nil) == .nothing)
+    }
 }
 
 private extension AccessRouteSnapshot {

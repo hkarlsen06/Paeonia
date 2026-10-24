@@ -43,6 +43,7 @@
             relationshipStartedOn: "2025-09-14",
             locationViewModel: locationViewModel,
             partnerName: "Robin",
+            ownAccess: partnerPays ? .nothing : .appStoreSubscription,
             privacySafetyService: nil,
             privacyOperationProvider: DeveloperScenarioOperationProvider()
           )
@@ -59,9 +60,33 @@
         pairingService: DeveloperScenarioPairingService(mode: .failing),
         operationProvider: DeveloperScenarioOperationProvider(),
         userID: DeveloperScenarioFixture.currentUserID.uuidString,
-        storeKitService: DeveloperScenarioStoreKitService(),
-        loadAccessSnapshot: { DeveloperScenarioFixture.subscriptionSnapshot }
+        storeKitService: DeveloperScenarioStoreKitService(isInFreeTrial: !partnerPays),
+        loadAccessSnapshot: { [partnerPays] in
+          partnerPays ? Self.partnerPaysSnapshot : DeveloperScenarioFixture.subscriptionSnapshot
+        }
       )
+    }
+
+    /// Robin's yearly subscription, so Alex has nothing of their own.
+    private nonisolated static let partnerPaysSnapshot = RemoteAccessSnapshot(
+      userEntitlement: nil,
+      coupleEntitlement: RemoteCoupleEntitlement(
+        coupleID: DeveloperScenarioFixture.coupleID,
+        isEntitled: true,
+        coveringUserID: DeveloperScenarioFixture.partnerUserID,
+        source: "storekit",
+        status: "active",
+        productID: nil,
+        billingPeriod: "yearly",
+        currentPeriodEnd: DeveloperScenarioFixture.now.addingTimeInterval(200 * 86_400),
+        updatedAt: DeveloperScenarioFixture.now
+      ),
+      relationshipState: nil
+    )
+
+    /// Robin's subscription covers Alex, who has none of their own.
+    private var partnerPays: Bool {
+      scenario == .settingsPartnerPays
     }
 
     private var locationViewModel: LocationMapViewModel {
