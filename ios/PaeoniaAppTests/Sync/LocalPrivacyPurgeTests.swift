@@ -1,6 +1,8 @@
 import Foundation
+import PencilKit
 import SwiftData
 import Testing
+import UIKit
 @testable import PaeoniaApp
 
 struct LocalPrivacyPurgeTests {
@@ -228,6 +230,94 @@ struct LocalPrivacyPurgeTests {
         )
         #expect(await purger.retryPendingPurges() == .recordsPendingRetry)
         #expect(await recordStore.calls == [.departingUser, .departingUser])
+    }
+
+    /// Sign-out and account deletion purge as `.departingUser`. Losing the
+    /// relationship purges with one of the other three scopes.
+    static let everyPurgeScope: [LocalPrivacyPurgeScope] = [
+        .departingUser,
+        .relationshipContentPurged(clearAccessSnapshot: true),
+        .relationshipContentPurged(clearAccessSnapshot: false),
+        .relationshipAccessHidden,
+    ]
+
+    @Test(arguments: everyPurgeScope)
+    func everyPurgeRemovesCachedMemoryPhotos(scope: LocalPrivacyPurgeScope) async throws {
+        let memoryMediaURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("LocalPrivacyPurgeTests-\(UUID().uuidString)", isDirectory: true)
+        let diskCache = MemoryMediaImageDiskCache(directoryURL: memoryMediaURL)
+        let photoID = UUID()
+        await diskCache.store(Data([0xFF, 0xD8, 0xFF]), for: photoID)
+        let photoURL = await diskCache.fileURL(for: photoID)
+        try #require(FileManager.default.fileExists(atPath: photoURL.path))
+        let widgets = WidgetCanvasTestEnvironment()
+        let fixture = try LivePurgeFixture(widgetCanvas: widgets.makeService(), memoryMediaURL: memoryMediaURL)
+
+        #expect(await fixture.purger.purge(ownerUserID: UUID(), scope: scope) == .completed)
+
+        #expect(!FileManager.default.fileExists(atPath: photoURL.path))
+    }
+
+    @Test(arguments: everyPurgeScope)
+    func everyPurgeRemovesWhatTheLockScreenAndHomeScreenWidgetsShow(
+        scope: LocalPrivacyPurgeScope
+    ) async throws {
+        let widgets = WidgetCanvasTestEnvironment()
+        let widgetCanvas = widgets.makeService()
+        try await widgetCanvas.saveDrawing(
+            makeNonEmptyDrawing().dataRepresentation(),
+            canvasSize: CGSize(width: 300, height: 300),
+            authorName: "Hjalmar",
+            createdAt: Date()
+        )
+        // The Lock Screen widgets and the Home Screen widgets other than the drawing read this file.
+        let lockScreenURL = widgets.url(relativePath: LockScreenCache.relativePath)
+        try Data(#"{"snapshot":"names, dates and countdown titles"}"#.utf8).write(to: lockScreenURL)
+        try #require(FileManager.default.fileExists(atPath: widgets.payloadURL.path))
+        try #require(!widgets.previewFiles.isEmpty)
+        let fixture = try LivePurgeFixture(
+            widgetCanvas: widgetCanvas,
+            memoryMediaURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("LocalPrivacyPurgeTests-\(UUID().uuidString)", isDirectory: true)
+        )
+        let reloadsBeforePurge = widgets.reloader.reloadCount
+
+        #expect(await fixture.purger.purge(ownerUserID: UUID(), scope: scope) == .completed)
+
+        #expect(!FileManager.default.fileExists(atPath: lockScreenURL.path))
+        #expect(!FileManager.default.fileExists(atPath: widgets.payloadURL.path))
+        #expect(widgets.previewFiles.isEmpty)
+        // Widgets keep showing their last timeline until they reload.
+        #expect(widgets.reloader.reloadCount > reloadsBeforePurge)
+    }
+}
+
+/// The real purge service and file purger, with the widget files and memory photos
+/// in temporary directories. The other caches are the app's own, as at sign-out.
+private struct LivePurgeFixture {
+    let localStore: PaeoniaLocalStore
+    let purger: LocalPrivacyPurgeService
+
+    init(widgetCanvas: WidgetCanvasService, memoryMediaURL: URL) throws {
+        let client = PaeoniaConvexClient(
+            deploymentURL: try #require(URL(string: "https://privacy-purge.invalid")),
+            session: URLSession(configuration: .ephemeral),
+            tokenProvider: { nil }
+        )
+        localStore = try PaeoniaLocalStore(inMemory: true)
+        purger = LocalPrivacyPurgeService(
+            recordStore: SwiftDataLocalPrivacyRecordStore(container: localStore.container),
+            privateContentPurger: LiveLocalPrivateContentPurger(
+                widgetSync: NoOpWidgetCanvasSync(),
+                widgetCanvas: widgetCanvas,
+                partnerAvatar: nil,
+                dailyAnswerMediaCache: nil,
+                memoryMediaCache: MemoryMediaImageService(client: client, directoryURL: memoryMediaURL),
+                profilePhotoCache: nil
+            ),
+            retryStore: InMemoryLocalPrivacyPurgeRetryStore(),
+            automaticallyRetry: false
+        )
     }
 }
 
