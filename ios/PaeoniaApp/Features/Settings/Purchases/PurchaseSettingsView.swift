@@ -110,7 +110,7 @@ struct PurchaseSettingsView: View {
             LabeledContent {
                 Text(periodEnd, format: .dateTime.day().month(.wide).year())
             } label: {
-                Text(periodEnd > .now ? .settingsPurchasesDetailsAccessUntil : .settingsPurchasesDetailsEndedOn)
+                Text(periodEndLabel(status: details.status, periodEnd: periodEnd))
             }
         }
 
@@ -130,10 +130,19 @@ struct PurchaseSettingsView: View {
         }
     }
 
+    private func periodEndLabel(status: SubscriptionDetails.Status, periodEnd: Date) -> LocalizedStringResource {
+        if status == .freeTrial {
+            return .settingsPurchasesDetailsTrialEnds
+        }
+        return periodEnd > .now ? .settingsPurchasesDetailsAccessUntil : .settingsPurchasesDetailsEndedOn
+    }
+
     private func statusText(_ status: SubscriptionDetails.Status) -> LocalizedStringResource {
         switch status {
         case .active:
             .settingsPurchasesDetailsStatusActive
+        case .freeTrial:
+            .settingsPurchasesDetailsStatusFreeTrial
         case .paymentProblem:
             .settingsPurchasesDetailsStatusPaymentProblem
         case .ended:

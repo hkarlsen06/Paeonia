@@ -118,6 +118,7 @@ private final class PaywallTestStoreKit: PaeoniaStoreKitServicing {
     func product(for productID: PaeoniaConsumableProductID) -> Product? { nil }
     func purchase(_ product: Product) async throws -> Bool { false }
     func restorePurchases() async throws -> Bool { try restoreResult.get() }
+    func hasActiveFreeTrial() async -> Bool { false }
     func redeemStreakRestore() async throws -> Int? { nil }
     func recoverPendingStreakRestores() async -> Int? { nil }
 }

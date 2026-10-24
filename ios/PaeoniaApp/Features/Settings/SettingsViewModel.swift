@@ -300,23 +300,6 @@ final class SettingsViewModel {
         }
     }
 
-    /// Reads the server's record fresh each time the screen opens, because the
-    /// screen exists so people can compare it with what Apple shows.
-    func loadSubscriptionDetails() async {
-        guard let loadAccessSnapshot else {
-            subscriptionDetailsState = .failed(.other)
-            return
-        }
-        do {
-            subscriptionDetailsState = .loaded(SubscriptionDetails(snapshot: try await loadAccessSnapshot()))
-        } catch {
-            if case .loaded = subscriptionDetailsState {
-                return
-            }
-            subscriptionDetailsState = .failed(PaeoniaFailure(error))
-        }
-    }
-
     func dismissNotice() {
         notice = nil
     }
@@ -337,5 +320,29 @@ final class SettingsViewModel {
             notificationPreferences.questionTime = values.questionTime
         }
         notificationLoadState = .loaded
+    }
+}
+
+extension SettingsViewModel {
+    /// Reads the server's record fresh each time the screen opens, because the
+    /// screen exists so people can compare it with what Apple shows. Whether the
+    /// subscription is in its free trial comes from this phone's App Store.
+    func loadSubscriptionDetails() async {
+        guard let loadAccessSnapshot else {
+            subscriptionDetailsState = .failed(.other)
+            return
+        }
+        do {
+            let snapshot = try await loadAccessSnapshot()
+            let hasFreeTrial = await storeKitService.hasActiveFreeTrial()
+            subscriptionDetailsState = .loaded(
+                SubscriptionDetails(snapshot: snapshot, hasAppStoreFreeTrial: hasFreeTrial)
+            )
+        } catch {
+            if case .loaded = subscriptionDetailsState {
+                return
+            }
+            subscriptionDetailsState = .failed(PaeoniaFailure(error))
+        }
     }
 }

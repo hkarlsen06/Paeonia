@@ -18,6 +18,9 @@ protocol PaeoniaStoreKitServicing: AnyObject {
     /// `true` when a subscription for this account was confirmed. Throws
     /// `PaeoniaPurchaseError.cancelled` when the user closes the App Store sheet.
     func restorePurchases() async throws -> Bool
+    /// `true` when this Apple ID's current Paeonia subscription is still in its
+    /// free trial, as the App Store transaction's offer says.
+    func hasActiveFreeTrial() async -> Bool
     /// Buys the streak-restore consumable and asks the server to bring the streak
     /// back. Returns the restored streak length, or `nil` if the user cancelled.
     func redeemStreakRestore() async throws -> Int?

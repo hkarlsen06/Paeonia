@@ -102,6 +102,20 @@ final class PaeoniaStoreKitService: PaeoniaStoreKitServicing {
         }
     }
 
+    func hasActiveFreeTrial() async -> Bool {
+        for await result in Transaction.currentEntitlements {
+            guard case let .verified(transaction) = result,
+                  PaeoniaSubscriptionProductID(rawValue: transaction.productID) != nil
+            else {
+                continue
+            }
+            if transaction.offer?.paymentMode == .freeTrial {
+                return true
+            }
+        }
+        return false
+    }
+
     /// Asks the App Store for this Apple ID's subscriptions and sends each one to
     /// the server. A subscription bought with another Paeonia account is sent too,
     /// because the server moves it here when that account was deleted. Returns

@@ -31,6 +31,35 @@ struct SubscriptionDetailsTests {
         #expect(details.payer == .partner(name: "Sam"))
     }
 
+    @Test func anAppStoreFreeTrialShowsOnlyOnTheSubscriptionThisPersonPays() {
+        let mine = SubscriptionDetails(
+            snapshot: snapshot(
+                own: own(isEntitled: true, source: "storekit", status: "active", billingPeriod: "yearly"),
+                couple: couple(coveringUserID: me, source: "storekit", status: "active", billingPeriod: "yearly")
+            ),
+            hasAppStoreFreeTrial: true
+        )
+        let partners = SubscriptionDetails(
+            snapshot: snapshot(
+                own: own(isEntitled: false, source: nil, status: nil, billingPeriod: nil),
+                couple: couple(coveringUserID: partner, source: "storekit", status: "active", billingPeriod: "yearly")
+            ),
+            hasAppStoreFreeTrial: true
+        )
+        let paymentProblem = SubscriptionDetails(
+            snapshot: snapshot(
+                own: own(isEntitled: true, source: "storekit", status: "grace", billingPeriod: "monthly"),
+                couple: nil
+            ),
+            hasAppStoreFreeTrial: true
+        )
+
+        #expect(mine.status == .freeTrial)
+        #expect(mine.periodEnd == periodEnd)
+        #expect(partners.status == .active)
+        #expect(paymentProblem.status == .paymentProblem)
+    }
+
     @Test func withoutCoupleAccessTheOwnRecordExplainsWhy() {
         let refunded = SubscriptionDetails(snapshot: snapshot(
             own: own(isEntitled: false, source: "storekit", status: "refunded", billingPeriod: "monthly"),

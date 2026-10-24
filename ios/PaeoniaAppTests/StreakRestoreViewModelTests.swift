@@ -292,6 +292,7 @@ final class FakeStreakRestoreStoreKit: PaeoniaStoreKitServicing {
     func product(for productID: PaeoniaConsumableProductID) -> Product? { nil }
     func purchase(_ product: Product) async throws -> Bool { false }
     func restorePurchases() async throws -> Bool { false }
+    func hasActiveFreeTrial() async -> Bool { false }
 
     func redeemStreakRestore() async throws -> Int? {
         redeemCallCount += 1

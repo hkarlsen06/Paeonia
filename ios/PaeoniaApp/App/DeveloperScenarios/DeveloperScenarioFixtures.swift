@@ -13,7 +13,16 @@
 
     /// A yearly subscription Alex pays for, for the Subscription settings screen.
     nonisolated static let subscriptionSnapshot = RemoteAccessSnapshot(
-      userEntitlement: nil,
+      userEntitlement: RemoteUserEntitlement(
+        userID: currentUserID,
+        isEntitled: true,
+        source: "storekit",
+        status: "active",
+        productID: nil,
+        billingPeriod: "yearly",
+        currentPeriodEnd: now.addingTimeInterval(200 * 86_400),
+        updatedAt: now
+      ),
       coupleEntitlement: RemoteCoupleEntitlement(
         coupleID: coupleID,
         isEntitled: true,
@@ -392,11 +401,13 @@
   @MainActor
   final class DeveloperScenarioStoreKitService: PaeoniaStoreKitServicing {
     private let blocksProductLoad: Bool
+    private let isInFreeTrial: Bool
     var products: [Product] = []
     var restoredStreakCount: Int?
 
-    init(blocksProductLoad: Bool = false) {
+    init(blocksProductLoad: Bool = false, isInFreeTrial: Bool = false) {
       self.blocksProductLoad = blocksProductLoad
+      self.isInFreeTrial = isInFreeTrial
     }
 
     func configure(userID _: String) {}
@@ -410,6 +421,7 @@
     func product(for _: PaeoniaConsumableProductID) -> Product? { nil }
     func purchase(_: Product) throws -> Bool { false }
     func restorePurchases() throws -> Bool { false }
+    func hasActiveFreeTrial() -> Bool { isInFreeTrial }
     func redeemStreakRestore() throws -> Int? { restoredStreakCount }
     func recoverPendingStreakRestores() -> Int? { restoredStreakCount }
   }

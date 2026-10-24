@@ -31786,6 +31786,24 @@
         }
       }
     },
+    "settings.purchases.details.status.freeTrial" : {
+      "comment" : "Subscription status value: the subscription this person pays for is in its free trial, and nothing has been charged yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free trial"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis prøveperiode"
+          }
+        }
+      }
+    },
     "settings.purchases.details.status.lifetime" : {
       "comment" : "Subscription status value: access that never ends.",
       "extractionState" : "manual",
@@ -31854,6 +31872,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Refundert"
+          }
+        }
+      }
+    },
+    "settings.purchases.details.trialEnds" : {
+      "comment" : "Row label on the Subscription screen for the day the free trial ends. The first payment comes after that day unless the subscription is cancelled.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trial ends"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøveperioden slutter"
           }
         }
       }
