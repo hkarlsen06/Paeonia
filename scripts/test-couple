@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
-# Creates the test couple on api.paeonia.no, or finishes it when part of it is
-# missing, so it is safe to run again after the hosted data was wiped.
+# Creates the test couple on this worktree's local backend, or finishes it when
+# part of it is missing, so it is safe to run again. scripts/local-backend runs
+# it after it starts; run it by hand while that backend is up.
 #
 #   scripts/test-couple
 #
-# The two accounts are users of the development Clerk instance, which simulator
-# builds sign in through and api.paeonia.no also trusts. They are found by
-# external id (paeonia-test-first is Shared, paeonia-test-second is Panci) and
-# are linked to no Apple or Google account. Their email addresses are made up and
-# marked verified, because a sign-in ticket needs an identifier. Each account
-# signs in with a ticket, finishes onboarding with a photo, and Shared gets an
-# active test grant so the couple has access without a purchase. Then Shared
-# invites Panci.
+# The two accounts are users of the development Clerk instance, which local
+# backends trust and api.paeonia.no does not. They are found by external id
+# (paeonia-test-first is Shared, paeonia-test-second is Panci) and are linked to
+# no Apple or Google account. Their email addresses are made up and marked
+# verified, because a sign-in ticket needs an identifier. Each account signs in
+# with a ticket, finishes onboarding with a photo, and Shared gets an active test
+# grant so the couple has access without a purchase. Then Shared invites Panci.
 #
-# It reads CLERK_DEV_SECRET_KEY and CLERK_DEV_JWT_ISSUER_DOMAIN from the hosted
-# Convex env with the admin key (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s
-# over ssh). Secrets and tokens stay in memory and are never printed.
-# scripts/sim-sign-in signs the simulator into these accounts.
+# It reads CLERK_DEV_SECRET_KEY and CLERK_DEV_JWT_ISSUER_DOMAIN from the
+# api.paeonia.no env, which stores them for local backends, with the admin key
+# (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s over ssh). Secrets and tokens
+# stay in memory and are never printed. scripts/sim-sign-in signs the simulator
+# into these accounts.
 import hashlib
 import json
 import os
+import re
 import secrets
 import subprocess
 import tempfile
@@ -32,6 +34,7 @@ from pathlib import Path
 
 ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
 HOSTED_URL = "https://api.paeonia.no"
+NODE_PATH = "/opt/homebrew/opt/node@22/bin"  # The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
 PHOTOS = ROOT / "ios/PaeoniaApp/App/DeveloperScenarios/MemoriesMapPhotos"
 ACCOUNTS = [
     {"external_id": "paeonia-test-first", "name": "Shared", "email": "test-shared@paeonia.no",
@@ -41,31 +44,43 @@ ACCOUNTS = [
 ]
 # PairingInviteCode's alphabet: Crockford base32 without I, L and O.
 CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+# Cloudflare, in front of Clerk, refuses Python's default user agent.
+USER_AGENT = {"User-Agent": "paeonia-test-couple"}
 
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
+def hosted_env_get(name: str) -> str:
+    admin_key = os.environ.get("CONVEX_SELF_HOSTED_ADMIN_KEY") or subprocess.check_output(
+        ["ssh", "one-s", "cat", "/srv/paeonia/convex/admin-key"], text=True).strip()
+    env = {**os.environ, "CONVEX_DEPLOYMENT": "", "CONVEX_SELF_HOSTED_URL": HOSTED_URL,
+           "CONVEX_SELF_HOSTED_ADMIN_KEY": admin_key, "PATH": f"{NODE_PATH}:{os.environ['PATH']}"}
+    return subprocess.check_output(["npx", "convex", "env", "get", name], cwd=ROOT / "backend", env=env, text=True).strip()
+
+
 class Convex:
+    """This worktree's local backend, which scripts/local-backend runs and names in ios/local.xcconfig."""
+
     def __init__(self) -> None:
-        self.admin_key = os.environ.get("CONVEX_SELF_HOSTED_ADMIN_KEY") or subprocess.check_output(
-            ["ssh", "one-s", "cat", "/srv/paeonia/convex/admin-key"], text=True).strip()
-        self.env = {**os.environ, "CONVEX_DEPLOYMENT": "", "CONVEX_SELF_HOSTED_URL": HOSTED_URL,
-                    "CONVEX_SELF_HOSTED_ADMIN_KEY": self.admin_key,
-                    # The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
-                    "PATH": "/opt/homebrew/opt/node@22/bin:" + os.environ["PATH"]}
+        config = ROOT / "ios/local.xcconfig"
+        port = re.search(r"127\.0\.0\.1:(\d+)", config.read_text()) if config.exists() else None
+        if not port:
+            raise SystemExit("No local backend for this worktree. Start scripts/local-backend first.")
+        self.url = f"http://127.0.0.1:{port.group(1)}"
+        # The CLI reaches the local backend through backend/.env.local, never api.paeonia.no.
+        self.env = {key: value for key, value in os.environ.items()
+                    if key not in ("CONVEX_SELF_HOSTED_URL", "CONVEX_SELF_HOSTED_ADMIN_KEY", "CONVEX_DEPLOYMENT")}
+        self.env["PATH"] = f"{NODE_PATH}:{os.environ['PATH']}"
 
     def cli(self, *args: str) -> str:
         return subprocess.check_output(["npx", "convex", *args], cwd=ROOT / "backend", env=self.env, text=True)
 
-    def env_get(self, name: str) -> str:
-        return self.cli("env", "get", name).strip()
-
     def call(self, token: str, kind: str, path: str, args: dict):
         body = json.dumps({"path": path, "args": args, "format": "json"}).encode()
-        request = urllib.request.Request(f"{HOSTED_URL}/api/{kind}", data=body, method="POST", headers={
-            "Content-Type": "application/json", "Authorization": f"Bearer {token}"})
+        request = urllib.request.Request(f"{self.url}/api/{kind}", data=body, method="POST", headers={
+            **USER_AGENT, "Content-Type": "application/json", "Authorization": f"Bearer {token}"})
         with urllib.request.urlopen(request) as response:
             result = json.load(response)
         if result.get("status") != "success":
@@ -74,7 +89,7 @@ class Convex:
 
 
 def http_json(url: str, *, method: str = "GET", headers: dict | None = None, data: bytes | None = None):
-    request = urllib.request.Request(url, data=data, method=method, headers=headers or {})
+    request = urllib.request.Request(url, data=data, method=method, headers={**USER_AGENT, **(headers or {})})
     try:
         with urllib.request.urlopen(request) as response:
             return json.load(response), response.headers
@@ -161,7 +176,7 @@ def ensure_test_grant(convex: Convex, user_id: str) -> None:
 
 def main() -> None:
     convex = Convex()
-    clerk = Clerk(convex.env_get("CLERK_DEV_SECRET_KEY"), convex.env_get("CLERK_DEV_JWT_ISSUER_DOMAIN"))
+    clerk = Clerk(hosted_env_get("CLERK_DEV_SECRET_KEY"), hosted_env_get("CLERK_DEV_JWT_ISSUER_DOMAIN"))
     people = []
     for account in ACCOUNTS:
         clerk_id = clerk.ensure_user(account)
@@ -178,13 +193,13 @@ def main() -> None:
 
     first, second = people
     ensure_test_grant(convex, first["user_id"])
-    access = convex.call(first["token"], "query", "access:get_access_snapshot", {})
+    [access] = convex.call(first["token"], "query", "access:get_access_snapshot", {})
     if access["relationship_state"] is None:
         code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(6))
         convex.call(first["token"], "mutation", "pairing:create_pairing_invite", {"p_invite_code": code, **operation(3)})
         convex.call(second["token"], "mutation", "pairing:accept_pairing_invite", {"p_invite_code": code, **operation(4)})
     for person in people:
-        access = convex.call(person["token"], "query", "access:get_access_snapshot", {})
+        [access] = convex.call(person["token"], "query", "access:get_access_snapshot", {})
         couple = access["couple_entitlement"] or {}
         print(f"{person['name']}: couple {couple.get('couple_id')}, entitled {couple.get('is_entitled')}")
 

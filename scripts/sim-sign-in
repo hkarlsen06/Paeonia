@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
 # Signs the Debug build of Paeonia on a simulator into one of the two test
-# accounts on api.paeonia.no, without Apple or Google.
+# accounts on this worktree's local backend, without Apple or Google.
 #
 #   scripts/sim-sign-in "<simulator name or UDID>" <first|second> [--reset]
 #
 # first is Shared and second is Panci, the test couple that scripts/test-couple
-# creates. The app must already be installed on the simulator. The script mints a Clerk sign-in token that lasts
-# five minutes and launches the app with it. The Debug build signs in with it
-# when the app is signed out (DebugSignInTicket.swift), and the session then stays
-# in the simulator's keychain. --reset clears that keychain first, to switch the
-# simulator to the other account.
+# creates on the development Clerk instance. Only a worktree running
+# scripts/local-backend can use them, because api.paeonia.no trusts production
+# Clerk only. Build and install the app from that worktree first. The script
+# mints a Clerk sign-in token that lasts five minutes and launches the app with
+# it. The Debug build signs in with it when the app is signed out
+# (DebugSignInTicket.swift), and the session then stays in the simulator's
+# keychain. --reset clears that keychain first, to switch the simulator to the
+# other account.
 #
-# It reads CLERK_DEV_SECRET_KEY (simulator builds sign in through the development
-# Clerk instance) from the hosted Convex env with the admin key
-# (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s over ssh). The secret stays in
-# memory and is never printed.
+# It reads CLERK_DEV_SECRET_KEY from the api.paeonia.no env, which stores it for
+# local backends, with the admin key (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from
+# one-s over ssh). The secret stays in memory and is never printed.
 #
-# After the launch it reads the account's access on the backend, as that
-# account, and warns when the couple has no active subscription, because the
-# app then stops at the paywall. The check only reads.
+# After the launch it reads the account's access on the local backend, as that
+# account, and warns when the couple is not paired or has no access. The check
+# only reads.
 set -euo pipefail
 
 usage() {
@@ -38,14 +40,8 @@ reset=${3:-}
 
 bundle_id=no.paeonia.app
 root=$(git rev-parse --show-toplevel)
-hosted_url=https://api.paeonia.no
-# The backend the Debug app talks to. A worktree running scripts/local-backend
-# points its Debug builds at a local backend through ios/local.xcconfig.
-convex_url=$hosted_url
-if [[ -f $root/ios/local.xcconfig ]]; then
-  local_port=$(sed -n 's#^PAEONIA_CONVEX_URL = .*127\.0\.0\.1:\([0-9]*\)$#\1#p' "$root/ios/local.xcconfig")
-  [[ -n $local_port ]] && convex_url=http://127.0.0.1:$local_port
-fi
+local_port=$(sed -n 's#^PAEONIA_CONVEX_URL = .*127\.0\.0\.1:\([0-9]*\)$#\1#p' "$root/ios/local.xcconfig" 2>/dev/null || true)
+[[ -n $local_port ]] || { echo "No local backend for this worktree. Start scripts/local-backend first." >&2; exit 1; }
 # The Convex CLI needs Node 20 to 24 (backend/AGENTS.md).
 export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
 
@@ -53,9 +49,9 @@ if [[ ! -d $root/backend/node_modules ]]; then
   (cd "$root/backend" && npm ci --silent)
 fi
 admin_key=${CONVEX_SELF_HOSTED_ADMIN_KEY:-$(ssh one-s cat /srv/paeonia/convex/admin-key)}
-secret=$(cd "$root/backend" && CONVEX_DEPLOYMENT= CONVEX_SELF_HOSTED_URL=$hosted_url \
+secret=$(cd "$root/backend" && CONVEX_DEPLOYMENT= CONVEX_SELF_HOSTED_URL=https://api.paeonia.no \
   CONVEX_SELF_HOSTED_ADMIN_KEY=$admin_key npx convex env get CLERK_DEV_SECRET_KEY)
-[[ -n $secret ]] || { echo "CLERK_DEV_SECRET_KEY is not set on the hosted deployment" >&2; exit 1; }
+[[ -n $secret ]] || { echo "CLERK_DEV_SECRET_KEY is not set on api.paeonia.no" >&2; exit 1; }
 
 # The header comes from stdin, so the secret never shows in the process list.
 subject=$(curl -fsS "https://api.clerk.com/v1/users?external_id=$external_id" \
@@ -77,59 +73,23 @@ fi
 SIMCTL_CHILD_PAEONIA_DEBUG_SIGN_IN_TICKET=$ticket xcrun simctl launch "$simulator" "$bundle_id" >/dev/null
 echo "Launched $bundle_id on $simulator as the $2 test account."
 
-# The app's own access query, run as the signed-in account. It prints
-# "entitled", "no-couple", or "lapsed <user id>".
-# The CLI reaches a local backend through backend/.env.local, which
-# scripts/local-backend sets up, and the hosted one through the self-hosted vars.
-if [[ $convex_url == "$hosted_url" ]]; then
-  convex_cli=(env CONVEX_DEPLOYMENT= CONVEX_SELF_HOSTED_URL=$hosted_url CONVEX_SELF_HOSTED_ADMIN_KEY=$admin_key npx convex)
-else
-  convex_cli=(env -u CONVEX_SELF_HOSTED_URL -u CONVEX_SELF_HOSTED_ADMIN_KEY npx convex)
-fi
-access=$(cd "$root/backend" && "${convex_cli[@]}" run access:get_access_snapshot '{}' \
+# The app's own access query, run as the signed-in account on the local backend,
+# which the CLI reaches through backend/.env.local.
+access=$(cd "$root/backend" && env -u CONVEX_SELF_HOSTED_URL -u CONVEX_SELF_HOSTED_ADMIN_KEY \
+  npx convex run access:get_access_snapshot '{}' \
   --identity "{\"subject\":\"$subject\"}" --codegen disable --typecheck disable 2>/dev/null |
   python3 -c '
 import json, sys
-row = json.load(sys.stdin)[0]
-couple = row["couple_entitlement"]
-if couple is None:
-    print("no-couple")
-elif couple["is_entitled"]:
-    print("entitled")
-else:
-    print("lapsed", row["user_entitlement"]["user_id"])
+couple = json.load(sys.stdin)[0]["couple_entitlement"]
+print("no-couple" if couple is None else "entitled" if couple["is_entitled"] else "lapsed")
 ' 2>/dev/null) || access=unknown
 
 case $access in
   entitled) ;;
-  no-couple)
-    echo "warning: the $2 test account is not in a couple on $convex_url, so the app opens pairing." >&2
-    ;;
-  lapsed*)
-    now=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
-    grant=$(printf '{"id": "%s", "user_id": "%s", "grant_kind": "test", "status": "active", "scope": "user", "reason": "Testing on simulators", "granted_at": "%s", "created_at": "%s", "updated_at": "%s", "expires_at": "%s"}' \
-      "$(uuidgen | tr '[:upper:]' '[:lower:]')" "${access#lapsed }" "$now" "$now" "$now" \
-      "$(date -u -v+30d +%Y-%m-%dT%H:%M:%S.000Z)")
-    cat >&2 <<EOF
-warning: the test couple has no active subscription on $convex_url, so the app
-stops at the paywall. No backend function grants access, so add a 30-day test
-grant to the entitlement_grants table by hand (backend/AGENTS.md describes the
-export and import):
-
-  cd backend
-$(if [[ $convex_url == "$hosted_url" ]]; then
-  echo "  export CONVEX_DEPLOYMENT= CONVEX_SELF_HOSTED_URL=$hosted_url"
-  echo '  export CONVEX_SELF_HOSTED_ADMIN_KEY="$(ssh one-s cat /srv/paeonia/convex/admin-key)"'
-else
-  echo "  unset CONVEX_SELF_HOSTED_URL CONVEX_SELF_HOSTED_ADMIN_KEY"
-fi)
-  npx convex data entitlement_grants --format jsonLines > /tmp/entitlement_grants.jsonl
-  cp /tmp/entitlement_grants.jsonl /tmp/entitlement_grants.backup.jsonl
-  echo '$grant' >> /tmp/entitlement_grants.jsonl
-  npx convex import --table entitlement_grants --replace -y /tmp/entitlement_grants.jsonl
-EOF
+  no-couple | lapsed)
+    echo "warning: the test couple is not paired or has no access ($access), so the app opens pairing or the paywall. Run scripts/test-couple." >&2
     ;;
   *)
-    echo "warning: could not read the test couple's subscription from $convex_url." >&2
+    echo "warning: could not read the test couple's access from the local backend." >&2
     ;;
 esac

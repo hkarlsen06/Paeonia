@@ -11,15 +11,20 @@
 # Each worktree gets its own pair of ports, picked from a hash of the worktree
 # path, so the URL stays the same across restarts. The script writes the
 # untracked ios/local.xcconfig, which points Debug builds of this worktree at
-# the local backend. Delete that file to use api.paeonia.no again.
+# the local backend and at the development Clerk instance. Delete that file to
+# use api.paeonia.no and production Clerk again.
 #
-# Every run copies the env vars in copy_vars from api.paeonia.no. The values go
-# through pipes, so they never show in the process list or land in a file. APNs
-# and Apple keys are left out, so a local backend sends no pushes and never
-# talks to Apple. On the first run, or with --reseed, it also replaces all local
-# data with a snapshot of api.paeonia.no (every table and stored file), so the
-# two test accounts are paired and entitled. Reading the hosted deployment needs
-# the admin key (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s over ssh).
+# A local backend trusts the development Clerk instance, never production. Every
+# run copies the env vars in copy_vars from api.paeonia.no, and the development
+# Clerk issuer and secret key from CLERK_DEV_JWT_ISSUER_DOMAIN and
+# CLERK_DEV_SECRET_KEY there (api.paeonia.no itself ignores those two). The
+# values go through pipes, so they never show in the process list or land in a
+# file. APNs and Apple keys are left out, so a local backend sends no pushes and
+# never talks to Apple. On the first run, or with --reseed, it also replaces all
+# local data with a snapshot of api.paeonia.no (every table and stored file).
+# Then it runs scripts/test-couple, so the test couple Shared and Panci exist,
+# paired and entitled. Reading the hosted deployment needs the admin key
+# (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s over ssh).
 set -euo pipefail
 
 reseed=false
@@ -29,11 +34,8 @@ case ${1:-} in
   *) echo "usage: scripts/local-backend [--reseed]" >&2; exit 64 ;;
 esac
 
-copy_vars=(CLERK_JWT_ISSUER_DOMAIN CLERK_SECRET_KEY INVITE_CODE_PEPPER
-  PAEONIA_MEDIA_URL_SECRET PAEONIA_LIVE_RELAY_URL PAEONIA_LIVE_RELAY_SECRET
-  POSTHOG_PERSONAL_API_KEY)
-# Set on api.paeonia.no only while it trusts simulator builds on development Clerk.
-optional_vars=(CLERK_DEV_JWT_ISSUER_DOMAIN CLERK_DEV_SECRET_KEY)
+copy_vars=(INVITE_CODE_PEPPER PAEONIA_MEDIA_URL_SECRET PAEONIA_LIVE_RELAY_URL
+  PAEONIA_LIVE_RELAY_SECRET POSTHOG_PERSONAL_API_KEY)
 
 root=$(git rev-parse --show-toplevel)
 cd "$root/backend"
@@ -62,10 +64,17 @@ fi
 
 [[ -f .convex/local/default/config.json ]] || reseed=true
 
+dev_issuer=$(hosted env get CLERK_DEV_JWT_ISSUER_DOMAIN)
+[[ -n $dev_issuer ]] || { echo "CLERK_DEV_JWT_ISSUER_DOMAIN is not set on api.paeonia.no" >&2; exit 1; }
+# A Clerk publishable key is the Frontend API host and a dollar sign, in base64 without padding.
+dev_publishable_key=pk_test_$(printf '%s$' "${dev_issuer#https://}" | base64 | tr -d '=')
+
 cat >"$root/ios/local.xcconfig" <<EOF
 // Written by scripts/local-backend. Debug builds of this worktree use its local
-// Convex backend. Delete this file to use api.paeonia.no again.
+// Convex backend and the development Clerk instance it trusts. Delete this file
+// to use api.paeonia.no and production Clerk again.
 PAEONIA_CONVEX_URL = http:/\$()/127.0.0.1:$port
+PAEONIA_CLERK_PUBLISHABLE_KEY = $dev_publishable_key
 EOF
 
 work=$(mktemp -d)
@@ -99,11 +108,9 @@ for name in "${copy_vars[@]}"; do
   hosted env get "$name" | npx convex env set "$name" >/dev/null 2>&1 ||
     { echo "Could not copy $name from api.paeonia.no" >&2; exit 1; }
 done
-for name in "${optional_vars[@]}"; do
-  value=$(hosted env get "$name")
-  [[ -z $value ]] || printf '%s' "$value" | npx convex env set "$name" >/dev/null 2>&1 ||
-    { echo "Could not copy $name from api.paeonia.no" >&2; exit 1; }
-done
+printf '%s' "$dev_issuer" | npx convex env set CLERK_JWT_ISSUER_DOMAIN >/dev/null 2>&1 &&
+  hosted env get CLERK_DEV_SECRET_KEY | npx convex env set CLERK_SECRET_KEY >/dev/null 2>&1 ||
+  { echo "Could not set the development Clerk instance on the local backend" >&2; exit 1; }
 wait_for grep -q "Convex functions ready" "$log"
 
 if $reseed; then
@@ -115,13 +122,15 @@ if $reseed; then
   fi
   rm -f "$work/hosted.zip"
 fi
+"$root/scripts/test-couple"
 
 cat <<EOF
 
 Local backend for $root
   Client API:   http://127.0.0.1:$port
   HTTP actions: http://127.0.0.1:$site_port
-ios/local.xcconfig points Debug builds of this worktree here. Build and install
-the app from this worktree, then sign in with scripts/sim-sign-in.
+ios/local.xcconfig points Debug builds of this worktree here, with the
+development Clerk key. Build and install the app from this worktree, then sign
+in as the test couple with scripts/sim-sign-in.
 EOF
 wait "$dev_pid"
