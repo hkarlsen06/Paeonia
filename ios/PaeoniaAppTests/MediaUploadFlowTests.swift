@@ -98,6 +98,35 @@ struct MediaUploadFlowTests {
         #expect(stub.requestLabels == ["mutation media:get_media_signed_url"])
     }
 
+    /// The connection drops during the upload of a daily voice answer. The answer
+    /// stays queued with its recording on the phone, and the next try sends it.
+    @Test func aDailyVoiceAnswerWhoseUploadFailsStaysQueuedAndSendsOnTheRetry() async throws {
+        let answer = try await QueuedDailyVoiceAnswer.queued()
+        answer.stub.failsUploads = true
+
+        try await answer.push(.localChange)
+
+        #expect(answer.stub.requestLabels == ["mutation media:create_pending_media_upload", "upload"])
+        #expect(answer.stagedRecording == answer.recording)
+        let queued = try await answer.outboxRows()
+        #expect(queued.map(\.operation.id) == [answer.operation.id])
+        #expect(queued.first?.status == .failedRetryable)
+        #expect(queued.first?.requestData == answer.requestData)
+
+        answer.stub.failsUploads = false
+        // Pull to refresh tries a write that is waiting out its retry delay.
+        try await answer.push(.manualRefresh)
+
+        #expect(answer.stub.uploadedBody == answer.recording)
+        #expect(answer.stub.requestLabels.suffix(3) == [
+            "upload",
+            "mutation media:finalize_media_upload",
+            "mutation daily:submit_daily_answer",
+        ])
+        #expect(try await answer.outboxRows().isEmpty)
+        #expect(answer.stagedRecording == nil)
+    }
+
     private static func operation(sequence: Int64) -> SyncClientOperation {
         SyncClientOperation(
             id: UUID(),
@@ -105,6 +134,91 @@ struct MediaUploadFlowTests {
             clientSequence: sequence,
             localCreatedAt: Date(timeIntervalSince1970: 1_710_000_000)
         )
+    }
+}
+
+/// A daily voice answer queued the way the answer composer queues it: the
+/// recording staged on disk, a copy in the payload, and a row in the real outbox.
+/// It sends through the real handler and upload service to `MediaUploadStub`.
+private struct QueuedDailyVoiceAnswer {
+    let stub = MediaUploadStub()
+    let recording = Data([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70])
+    let instanceID = UUID()
+    let ownerUserID = UUID()
+    let operation = QueuedDailyVoiceAnswer.clientOperation(sequence: 1)
+    let requestData: Data
+    private let localStore: PaeoniaLocalStore
+    private let outbox: SwiftDataPendingSyncOperationRepository
+    private let mediaStore: FileDailyAnswerMediaDraftStore
+    private let drain: PendingSyncOperationDrainStream
+
+    private init() throws {
+        mediaStore = FileDailyAnswerMediaDraftStore(
+            directoryURL: FileManager.default.temporaryDirectory
+                .appendingPathComponent("MediaUploadFlowTests-\(UUID().uuidString)", isDirectory: true)
+        )
+        try mediaStore.writeStagedMedia(recording, instanceID: instanceID)
+        let media = DailySubmitAnswerOperationPayload.Media(
+            draft: DailyAnswerMediaDraft(
+                purpose: .voice,
+                mimeType: "audio/mp4",
+                fileExtension: "m4a",
+                width: nil,
+                height: nil,
+                durationMs: 1_200
+            ),
+            coupleID: UUID(),
+            reserveOperation: Self.clientOperation(sequence: 2),
+            finalizeOperation: Self.clientOperation(sequence: 3),
+            stagedData: recording
+        )
+        requestData = try JSONEncoder().encode(
+            DailySubmitAnswerOperationPayload(instanceID: instanceID, answerID: UUID(), content: .media(media))
+        )
+        localStore = try PaeoniaLocalStore(inMemory: true)
+        outbox = SwiftDataPendingSyncOperationRepository(container: localStore.container)
+        let client = try stub.makeClient()
+        drain = PendingSyncOperationDrainStream(handlers: [
+            DailySubmitAnswerPendingOperationHandler(
+                mediaUploadService: LiveDailyAnswerMediaUploadService(client: client),
+                gateway: LiveDailyChallengeGateway(client: client),
+                mediaDraftStore: mediaStore,
+                restoreDraft: { _, _, _ in Issue.record("A dropped connection must not end the answer") }
+            ),
+        ])
+    }
+
+    var stagedRecording: Data? {
+        mediaStore.stagedMediaData(instanceID: instanceID)
+    }
+
+    static func queued() async throws -> QueuedDailyVoiceAnswer {
+        let answer = try QueuedDailyVoiceAnswer()
+        try await answer.outbox.enqueue(PendingSyncOperationRequest(
+            ownerUserID: answer.ownerUserID,
+            operation: answer.operation,
+            operationKind: .submitDailyAnswer,
+            idempotencyScope: "daily-answer:\(answer.instanceID.uuidString.lowercased())",
+            requestData: answer.requestData
+        ))
+        return answer
+    }
+
+    func push(_ reason: SyncRequestReason) async throws {
+        try await drain.push(context: SyncContext(
+            session: SyncSession(userID: ownerUserID),
+            reason: reason,
+            stateStore: InMemorySyncStateRepository(),
+            pendingOperationStore: outbox
+        ))
+    }
+
+    func outboxRows() async throws -> [PendingSyncOperationSnapshot] {
+        try await outbox.inFlightOperations(ownerUserID: ownerUserID, kind: .submitDailyAnswer)
+    }
+
+    private static func clientOperation(sequence: Int64) -> SyncClientOperation {
+        SyncClientOperation(id: UUID(), clientID: UUID(), clientSequence: sequence, localCreatedAt: Date())
     }
 }
 
@@ -118,6 +232,13 @@ private final class MediaUploadStub: @unchecked Sendable {
     private var uploaded: Data?
     private var uploadType: String?
     private var finalize: [String: Any] = [:]
+    private var uploadsFail = false
+
+    /// While set, every upload fails as if the connection dropped.
+    var failsUploads: Bool {
+        get { lock.withLock { uploadsFail } }
+        set { lock.withLock { uploadsFail = newValue } }
+    }
 
     func makeClient() throws -> PaeoniaConvexClient {
         let baseURL = try #require(URL(string: "https://\(host)"))
@@ -136,14 +257,16 @@ private final class MediaUploadStub: @unchecked Sendable {
     var uploadContentType: String? { lock.withLock { uploadType } }
     var finalizeArgs: [String: Any] { lock.withLock { finalize } }
 
-    private func respond(to request: StubRequest) -> Data {
+    private func respond(to request: StubRequest) -> Data? {
         if request.path.hasPrefix("/upload") {
-            lock.withLock {
+            let fails = lock.withLock {
                 labels.append("upload")
+                guard !uploadsFail else { return true }
                 uploaded = request.body
                 uploadType = request.contentType
+                return false
             }
-            return Data(#"{"storageId":"kg2storage-id"}"#.utf8)
+            return fails ? nil : Data(#"{"storageId":"kg2storage-id"}"#.utf8)
         }
 
         let body = (try? JSONSerialization.jsonObject(with: request.body)) as? [String: Any] ?? [:]
@@ -161,6 +284,8 @@ private final class MediaUploadStub: @unchecked Sendable {
         case "media:finalize_media_upload":
             lock.withLock { finalize = args }
             value = #"[{"media_asset_id":"\#(mediaAssetID.uuidString)","upload_status":"finalized"}]"#
+        case "daily:submit_daily_answer":
+            value = #""\#(UUID().uuidString)""#
         default:
             value = #"[{"signed_url":"https://media.paeonia.test/media?asset=1&exp=2&sig=3"}]"#
         }
@@ -176,9 +301,10 @@ private struct StubRequest {
 
 private final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     private static let lock = NSLock()
-    nonisolated(unsafe) private static var handlers: [String: @Sendable (StubRequest) -> Data] = [:]
+    nonisolated(unsafe) private static var handlers: [String: @Sendable (StubRequest) -> Data?] = [:]
 
-    static func register(host: String, handler: @escaping @Sendable (StubRequest) -> Data) {
+    /// A handler that returns nil drops the connection.
+    static func register(host: String, handler: @escaping @Sendable (StubRequest) -> Data?) {
         lock.withLock { handlers[host] = handler }
     }
 
@@ -200,7 +326,10 @@ private final class StubURLProtocol: URLProtocol, @unchecked Sendable {
             contentType: request.value(forHTTPHeaderField: "Content-Type"),
             body: Self.readBody(of: request)
         )
-        let data = handler(stubRequest)
+        guard let data = handler(stubRequest) else {
+            client?.urlProtocol(self, didFailWithError: URLError(.networkConnectionLost))
+            return
+        }
         guard let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
