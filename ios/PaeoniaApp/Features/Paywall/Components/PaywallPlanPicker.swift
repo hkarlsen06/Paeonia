@@ -75,11 +75,9 @@ private struct PaywallPlanCard: View {
                     }
                 }
 
-                if let detail {
-                    Text(detail)
-                        .font(.subheadline)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
+                Text(detail)
+                    .font(.subheadline)
+                    .foregroundStyle(.paeoniaTextSecondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -104,16 +102,16 @@ private struct PaywallPlanCard: View {
         .opacity(plan.price == nil && !isLoading ? 0 : 1)
     }
 
-    /// "14 days free" and, for the year, what it works out to per month.
-    private var detail: String? {
-        let trial = plan.freeTrial.map {
-            "\($0.localizedDurationText) \(String(localized: .paywallTrialFreeWord))"
+    /// That one plan covers both partners and, for the year, what it works out to
+    /// per month. The trial is left out because the button and the terms under it
+    /// already say it. The per-month figure stays smaller than the billed price,
+    /// as App Store review requires.
+    private var detail: String {
+        guard let perMonth = plan.monthlyEquivalent else {
+            return String(localized: .paywallPlanDetailBothOfYou)
         }
-        let perMonth = plan.monthlyEquivalent.map {
-            "\($0.text)\(String(localized: .paywallPeriodMonthlyCompact))"
-        }
-        let parts = [trial, perMonth].compactMap(\.self)
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        let perMonthText = "\(perMonth.text)\(String(localized: .paywallPeriodMonthlyCompact))"
+        return String(localized: .paywallPlanDetailPerMonth(perMonthText))
     }
 
     private func savingsBadge(_ percent: Int) -> some View {

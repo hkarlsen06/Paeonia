@@ -26820,37 +26820,37 @@
       }
     },
     "paywall.disclosure.subscription" : {
-      "comment" : "Billing terms under the paywall purchase button without a free trial. %@ is the price and period, for example 'kr 99 per month'.",
+      "comment" : "Billing terms under the paywall purchase button without a free trial. %@ is the price and period, for example '99 kr per month'. The last sentence says the subscription keeps renewing until the person cancels, which App Store review requires.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@."
+            "value" : "%@. Renews until you cancel."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@."
+            "value" : "%@. Fornyes til du sier opp."
           }
         }
       }
     },
     "paywall.disclosure.trial" : {
-      "comment" : "Billing terms under the paywall purchase button when a free trial applies. %1$@ is the trial length, for example '14 days'. %2$@ is the price and period, for example 'kr 99 per month'.",
+      "comment" : "Billing terms under the paywall purchase button when a free trial applies. %1$@ is the trial length, for example '14 days'. %2$@ is the price and period, for example '99 kr per month'. The last sentence says the subscription keeps renewing until the person cancels, which App Store review requires.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ free, then %2$@."
+            "value" : "%1$@ free, then %2$@. Renews until you cancel."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ gratis, deretter %2$@."
+            "value" : "%1$@ gratis, deretter %2$@. Fornyes til du sier opp."
           }
         }
       }
@@ -27215,6 +27215,42 @@
         }
       }
     },
+    "paywall.plan.detail.bothOfYou" : {
+      "comment" : "Detail line on the monthly plan card on the paywall. Says one subscription covers both partners.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For both of you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For dere begge"
+          }
+        }
+      }
+    },
+    "paywall.plan.detail.perMonth" : {
+      "comment" : "Detail line on the yearly plan card on the paywall. %@ is what the year works out to per month, for example '49 kr/mo'. Must stay short. The billed yearly price shows bigger beside it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, for both of you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, for dere begge"
+          }
+        }
+      }
+    },
     "paywall.plan.save" : {
       "comment" : "Badge on the yearly plan card. %@ is a percentage such as 32 %.",
       "extractionState" : "manual",
@@ -27323,26 +27359,8 @@
         }
       }
     },
-    "paywall.trial.freeWord" : {
-      "comment" : "Word used after a trial duration to say the trial is free.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "free"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "gratis"
-          }
-        }
-      }
-    },
     "paywall.trial.reminder" : {
-      "comment" : "Paywall note shown when the plan has a free trial. The server sends this reminder 2 days before the trial ends.",
+      "comment" : "Paywall note shown when the selected plan has a free trial but no exact dates can be named, because the trial is counted in months or years or is 2 days or shorter. The server sends the reminder 2 days before the trial ends.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -27355,6 +27373,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi minner deg på det 2 dager før prøveperioden slutter, hvis varsler er på."
+          }
+        }
+      }
+    },
+    "paywall.trial.reminder.dated" : {
+      "comment" : "Paywall note shown when the selected plan has a free trial. %1$@ is the day the free trial ends and %2$@ is the day the reminder notification comes, both written as day and month, for example '7 November'.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free until %1$@. We'll remind you on %2$@, if notifications are on."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis til %1$@. Vi minner deg på det %2$@, hvis varsler er på."
           }
         }
       }

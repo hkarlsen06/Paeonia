@@ -7,7 +7,7 @@ struct PaywallContentView: View {
     let audience: PaywallAudience
     let plans: [PaywallPlanOption]
     let isLoadingPlans: Bool
-    let showsTrialReminder: Bool
+    let trialReminder: PaywallTrialReminder?
     let isEntranceReady: Bool
     @Binding var billingPeriod: PaeoniaBillingPeriod
 
@@ -24,8 +24,8 @@ struct PaywallContentView: View {
             VStack(spacing: PaeoniaSpacing.space12) {
                 PaywallPlanPicker(plans: plans, isLoading: isLoadingPlans, selection: $billingPeriod)
 
-                if showsTrialReminder {
-                    trialReminder
+                if let trialReminder {
+                    trialReminderLine(trialReminder)
                 }
             }
             // Prices that come in after the drop grow the cards instead of jumping.
@@ -50,9 +50,14 @@ struct PaywallContentView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var trialReminder: some View {
+    private func trialReminderLine(_ reminder: PaywallTrialReminder) -> some View {
         Label {
-            Text(.paywallTrialReminder)
+            switch reminder {
+            case let .dated(trialEnd, reminderDay):
+                Text(.paywallTrialReminderDated(Self.dayText(trialEnd), Self.dayText(reminderDay)))
+            case .undated:
+                Text(.paywallTrialReminder)
+            }
         } icon: {
             Image(systemName: "bell.fill")
                 .foregroundStyle(.paeoniaAccentPrimary)
@@ -61,6 +66,11 @@ struct PaywallContentView: View {
         .foregroundStyle(.paeoniaTextSecondary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, PaeoniaSpacing.space4)
+    }
+
+    /// "7 November", or "7. november" in Norwegian.
+    private static func dayText(_ date: Date) -> String {
+        date.formatted(.dateTime.day().month(.wide))
     }
 }
 

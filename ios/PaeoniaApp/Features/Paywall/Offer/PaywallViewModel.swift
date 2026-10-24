@@ -15,7 +15,8 @@ final class PaywallViewModel: PresentationReadinessProviding {
     )
     #endif
 
-    var billingPeriod: PaeoniaBillingPeriod = .monthly
+    /// The year starts selected. Its card comes first and costs less per month.
+    var billingPeriod: PaeoniaBillingPeriod = .yearly
     private(set) var isLoading = false
     private(set) var hasFinishedLoadingProducts = false
     private(set) var isPurchasing = false

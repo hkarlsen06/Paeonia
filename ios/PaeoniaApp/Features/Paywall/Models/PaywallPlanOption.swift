@@ -5,7 +5,6 @@ struct PaywallPlanOption: Identifiable, Equatable {
     let period: PaeoniaBillingPeriod
     /// `nil` until the App Store has answered.
     let price: PaywallPrice?
-    let freeTrial: PaeoniaFreeTrial?
     /// Yearly only: what the year works out to per month.
     let monthlyEquivalent: PaywallPrice?
     /// Yearly only: how much less a year costs than twelve monthly payments.
@@ -19,7 +18,6 @@ struct PaywallPlanOption: Identifiable, Equatable {
             PaywallPlanOption(
                 period: .yearly,
                 price: yearly.price,
-                freeTrial: yearly.freeTrial,
                 monthlyEquivalent: yearly.price.map {
                     PaywallPrice(amount: $0.amount / 12, format: $0.format)
                 },
@@ -28,7 +26,6 @@ struct PaywallPlanOption: Identifiable, Equatable {
             PaywallPlanOption(
                 period: .monthly,
                 price: monthly.price,
-                freeTrial: monthly.freeTrial,
                 monthlyEquivalent: nil,
                 savingsPercent: nil
             ),

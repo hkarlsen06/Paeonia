@@ -70,7 +70,7 @@ struct PaywallView: View {
                     audience: audience,
                     plans: plans,
                     isLoadingPlans: selectedPresentation.isLoading,
-                    showsTrialReminder: selectedPresentation.hasFreeTrial,
+                    trialReminder: selectedPresentation.trialReminder(startingAt: .now, calendar: .current),
                     isEntranceReady: isEntranceReady,
                     billingPeriod: $viewModel.billingPeriod
                 )

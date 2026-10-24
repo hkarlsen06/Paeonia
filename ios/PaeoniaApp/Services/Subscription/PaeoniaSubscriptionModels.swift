@@ -54,8 +54,25 @@ nonisolated struct PaeoniaFreeTrial: Equatable, Sendable {
         )
     }
 
+    /// How many days before the trial ends the server sends its reminder push.
+    /// Must match `TRIAL_REMINDER_DAYS_BEFORE_END` in `backend/convex/storekit.ts`.
+    static let reminderDaysBeforeEnd = 2
+
     var localizedDurationText: String {
         "\(value) \(String(localized: unitLabel))"
+    }
+
+    /// The trial's length in days, or nil when it is counted in months or years,
+    /// whose length depends on the start date.
+    var wholeDays: Int? {
+        switch unit {
+        case .day:
+            value
+        case .week:
+            value * 7
+        case .month, .year:
+            nil
+        }
     }
 
     private var unitLabel: LocalizedStringResource {

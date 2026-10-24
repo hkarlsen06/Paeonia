@@ -26,6 +26,14 @@ nonisolated struct PaywallPrice: Equatable, Sendable {
     }
 }
 
+/// When a free trial ends and when the server reminds the person about it.
+nonisolated enum PaywallTrialReminder: Equatable, Sendable {
+    /// A trial counted in days that lasts longer than the reminder's lead time.
+    case dated(trialEnd: Date, reminder: Date)
+    /// A trial counted in months or years, or one too short to name a reminder day.
+    case undated
+}
+
 struct PaywallPresentation {
     let billingPeriod: PaeoniaBillingPeriod
     let product: Product?
@@ -56,8 +64,20 @@ struct PaywallPresentation {
         product != nil && !isPurchasing && !isLoading
     }
 
-    var hasFreeTrial: Bool {
-        freeTrial != nil
+    /// The note under the plans when this plan starts free. Nil without a trial.
+    func trialReminder(startingAt start: Date, calendar: Calendar) -> PaywallTrialReminder? {
+        guard let freeTrial else {
+            return nil
+        }
+        let reminderDays = PaeoniaFreeTrial.reminderDaysBeforeEnd
+        guard let days = freeTrial.wholeDays,
+              days > reminderDays,
+              let trialEnd = calendar.date(byAdding: .day, value: days, to: start),
+              let reminder = calendar.date(byAdding: .day, value: -reminderDays, to: trialEnd)
+        else {
+            return .undated
+        }
+        return .dated(trialEnd: trialEnd, reminder: reminder)
     }
 
     var primaryButtonTitle: LocalizedStringResource {
@@ -72,8 +92,8 @@ struct PaywallPresentation {
         return .paywallCtaSubscribe
     }
 
-    /// Price, period, and trial in one sentence under the purchase button, as App
-    /// Store review expects next to the button that buys.
+    /// Price, period, trial, and that it renews, right under the purchase button,
+    /// as App Store review expects next to the button that buys.
     var billingDisclosure: String? {
         guard let renewalPrice else {
             return nil
