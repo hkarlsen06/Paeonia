@@ -47,7 +47,7 @@ These block TestFlight/App Review until resolved.
 - [x] `docs/implementation-map.md` accurately reflects the current feature ownership.
 - [x] No reachable app screen says "test account", "not ready", "still building", or similar placeholder copy.
 - [x] App and widget privacy manifests declare their required-reason API usage.
-- [ ] Public privacy policy is final and live at `https://paeonia.no/privacy`. Gap: the location pause paragraph (`marketing/src/lib/i18n/dictionaries/legal.en.ts:119` and `legal.no.ts:119`) says a pause deletes the latest location and tells the partner. Since 2026-10-22 a pause keeps the location and the partner is not told.
+- [x] Public privacy policy is final and live at `https://paeonia.no/privacy`. The location pause paragraph was fixed on 2026-10-24. It is live once `main` is pushed.
 - [x] Public terms are final and live at `https://paeonia.no/terms`.
 - [x] Support page is final and live at `https://paeonia.no/support`.
 - [x] In-app legal/support links open the production URLs.
@@ -336,7 +336,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Disabling sharing deletes/hides latest location as documented.
 - [x] Relationship end/account deletion removes location visibility.
 - [x] App Store privacy labels include precise location.
-- [ ] Privacy policy explains opt-in latest-location sharing, no history, stale timestamps, and deletion behavior clearly. Gap: the pause paragraph is wrong (see Release Blockers).
+- [x] Privacy policy explains opt-in latest-location sharing, no history, stale timestamps, pausing, and deletion behavior clearly.
 
 ## Notifications
 

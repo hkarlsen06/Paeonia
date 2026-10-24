@@ -116,7 +116,7 @@ export const legalEn = {
         paragraphs: [
           'Location sharing is optional and works only when both partners turn it on. Paeonia updates your latest location when you open the app, each time you move about 250 meters or more while it is open, and when you ask it to refresh. Your partner sees the location and when it was recorded, including when it may be old.',
           'You can also choose to share while Paeonia is closed. This is a separate setting on each phone, it is off by default, and it needs location access set to Always. When it is on, iOS wakes Paeonia after you move a good distance, usually 500 meters or more, and Paeonia sends that one latest location. It does not track your route or keep a history. Turning location sharing off, or changing location access away from Always, stops it.',
-          'You can pause location sharing for 1 hour, 4 hours, or until morning. While it is paused, nothing is sent, your latest shared location is deleted, and you and your partner cannot see each other on the map. Your partner sees that sharing is paused, but not when it ends. Sharing starts again by itself when the pause ends.',
+          'You can pause location sharing for 1 hour, 4 hours, or until morning. While it is paused, Paeonia sends nothing, and you cannot see your partner on the map. Your latest shared location is kept, so your partner still sees where you last were and when it was recorded. Paeonia does not tell your partner that you paused. Sharing starts again by itself when the pause ends.',
           'Turning location sharing off deletes your latest shared location. The latest locations are also removed when the relationship ends or account deletion begins.',
         ],
       },
