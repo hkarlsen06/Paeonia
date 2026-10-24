@@ -1,9 +1,9 @@
 import SwiftUI
 
 // Coordination between the cold-launch intro (`LaunchExperienceView`, mounted in
-// `RootView`) and the first app surface it uncovers. The intro exits by dropping its
-// backdrop and drifting the logo away while the surface's content cascades in, rather
-// than masking — so these are the cues the content reads to animate itself in.
+// `RootView`) and the first app surface it uncovers. The intro exits by opening a
+// circular hole through its canvas while the surface's content cascades in. These are
+// the cues the content reads to animate itself in.
 
 private struct LaunchContentRevealedKey: EnvironmentKey {
     static let defaultValue = true
