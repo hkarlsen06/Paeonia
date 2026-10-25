@@ -259,8 +259,8 @@ const TRIAL_REMINDER_DAYS_BEFORE_END = 2;
  * `queue-subscription-trial-reminders`, `15 * * * *`). Queues one reminder per
  * device for verified initial free trials that end within the next two days and
  * an hour, unless renewal is off. `prepare_notification` writes the body at the send, and it
- * tells a payer in no couple that their partner has not joined yet. Returns the number of outbox
- * rows queued.
+ * tells a payer in no couple with a pending invite that their partner has not joined yet. Returns
+ * the number of outbox rows queued.
  */
 export const queue_subscription_trial_reminders = internalMutation({
   args: { p_batch_size: v.optional(v.union(v.null(), v.number())) },

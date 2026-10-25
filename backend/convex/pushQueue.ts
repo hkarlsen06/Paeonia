@@ -231,8 +231,9 @@ async function freshTitle(
 
 /**
  * The body an alert goes out with. Most rows keep the body written when they were queued. The
- * trial reminder says whether the payer's partner has joined, so it is written again from the
- * payer's couple now, and a partner who joined after the row was queued gets the ordinary body.
+ * trial reminder tells a payer who still waits for their partner that the partner hasn't joined,
+ * so it is written again now. Waiting means in no couple and with an unexpired pending invite. A
+ * partner who joined after the row was queued, or one who joined and later left, gets the ordinary body.
  */
 async function freshBody(
   ctx: WriterCtx,
@@ -240,8 +241,16 @@ async function freshBody(
   device: Doc<"user_devices">,
 ): Promise<string | null> {
   if (row.kind !== "subscription_trial_reminder") return row.body ?? null;
-  const partnerJoined = (await findCurrentCouple(ctx, device.user_id)) !== null;
-  return subscriptionTrialReminderBody(row.payload, device.locale, partnerJoined);
+  const now = nowIso();
+  const waitingForPartner =
+    (await findCurrentCouple(ctx, device.user_id)) === null &&
+    (await ctx.db
+      .query("pairing_invites")
+      .withIndex("by_created_by_user_id_status_expires_at", (q) =>
+        q.eq("created_by_user_id", device.user_id).eq("status", "pending").gt("expires_at", now),
+      )
+      .first()) !== null;
+  return subscriptionTrialReminderBody(row.payload, device.locale, waitingForPartner);
 }
 
 /**

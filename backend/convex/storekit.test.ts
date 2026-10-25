@@ -699,7 +699,7 @@ describe("queue_subscription_trial_reminders", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
-  test("tells a payer whose partner has not joined yet, as it stands when the push goes out", async () => {
+  test("tells a payer who still waits for their partner, as it stands when the push goes out", async () => {
     vi.stubEnv("INVITE_CODE_PEPPER", "test-pepper-value-for-pairing-invite-hashes");
     const t = newTest();
     await seedProducts(t);
@@ -710,43 +710,54 @@ describe("queue_subscription_trial_reminders", () => {
       p_client_sequence: ++sequence,
       p_local_created_at: new Date().toISOString(),
     });
-    const partnerJoins = async (payer: Seed, code: string) => {
+    const invite = async (payer: Seed, code: string) => {
       await payer.user.as.mutation(api.pairing.create_pairing_invite, {
         p_invite_code: code,
         ...operation(),
         p_expires_at: hoursFromNow(24 * 30),
       });
+    };
+    const partnerJoins = async (payer: Seed, code: string) => {
+      await invite(payer, code);
       const partner = await createSignedInUser(t, { name: "Partner" });
       await partner.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: code, ...operation() });
     };
-    const alone = await trial(t, "alone", { expiresInHours: 10, devices: ["en", "nb-NO"] });
+    const invited = await trial(t, "invited", { expiresInHours: 10, devices: ["en", "nb-NO"] });
+    const noInvite = await trial(t, "no-invite", { expiresInHours: 48.5 });
     const paired = await trial(t, "paired", { expiresInHours: 48.5 });
     const joinsLater = await trial(t, "joins-later", { expiresInHours: 48.5 });
+    const left = await trial(t, "left", { expiresInHours: 48.5 });
+    await invite(invited, "W4X9RT");
     await partnerJoins(paired, "ABC123");
-    expect(await t.mutation(internal.storekit.queue_subscription_trial_reminders, {})).toBe(4);
+    await partnerJoins(left, "H3N8VC");
+    expect(await t.mutation(internal.storekit.queue_subscription_trial_reminders, {})).toBe(6);
     // This partner joins after the reminder was queued, before it goes out.
     await partnerJoins(joinsLater, "K7M2PQ");
+    // This payer's partner joined, and then the payer left. Nobody is on the way.
+    await left.user.as.mutation(api.relationship.leave_relationship, operation());
 
     vi.setSystemTime(new Date(hoursFromNow(1)));
     const recipientOf = new Map((await reminders(t)).map((row) => [row.target_device_id, row.recipient_user_id]));
     const sent = (await deliverDuePushes(t))
       .filter((push) => push.payload.type === "subscription_trial_reminder")
       .map((push) => [recipientOf.get(push.target_device_id), push.title, push.body]);
-    expect(sent).toHaveLength(4);
+    expect(sent).toHaveLength(6);
     expect(sent).toEqual(
       expect.arrayContaining([
         [
-          alone.userId,
+          invited.userId,
           "Your free trial ends soon",
           "1 day left, and your partner hasn't joined yet. Review your subscription in the App Store.",
         ],
         [
-          alone.userId,
+          invited.userId,
           "Prøveperioden avsluttes snart",
           "1 dag igjen, og partneren din har ikke blitt med ennå. Se over abonnementet ditt i App Store.",
         ],
         [paired.userId, "Your free trial ends soon", "2 days left. Review your subscription in the App Store."],
         [joinsLater.userId, "Your free trial ends soon", "2 days left. Review your subscription in the App Store."],
+        [noInvite.userId, "Your free trial ends soon", "2 days left. Review your subscription in the App Store."],
+        [left.userId, "Your free trial ends soon", "2 days left. Review your subscription in the App Store."],
       ]),
     );
     await t.finishAllScheduledFunctions(vi.runAllTimers);
