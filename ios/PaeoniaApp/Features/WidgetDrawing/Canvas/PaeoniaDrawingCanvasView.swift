@@ -80,6 +80,12 @@ class OverscanCanvasView: PKCanvasView {
 /// shape (`InkStroke.resizeSnapToFinger`), and lift adds the resized shape as
 /// one undo step.
 ///
+/// Until the stroke snaps, `StrokeStabilizer` smooths the touches before
+/// they join it, so the wet ink, the partner's preview and the finished
+/// stroke are all smooth. The hold check watches the finger itself. When the
+/// stroke snaps or ends, it catches up to the finger, so it ends where the
+/// finger lifted and a resize starts from the finger.
+///
 /// The wet canvas on top and this canvas draw the stroke from the same
 /// `PKStroke`, so nothing moves at lift. The wet canvas hides in the same
 /// frame this canvas first shows the stroke. Hiding it later, when
@@ -132,6 +138,9 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
     /// The stroke under the finger.
     private var stroke: InkStroke?
     private var strokeStartTimestamp: TimeInterval = 0
+    private var stabilizer = StrokeStabilizer(start: .zero)
+    /// The last touch, before smoothing.
+    private var finger: InkSample?
     private var hold = HoldDetector()
     private var holdLink: CADisplayLink?
 
@@ -189,8 +198,11 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
     private func inkBegan(_ touch: UITouch, event _: UIEvent) {
         guard case let .ink(style) = canvasTool else { return }
         strokeStartTimestamp = touch.timestamp
-        let newStroke = InkStroke(style: style, first: sample(touch))
+        let first = sample(touch)
+        let newStroke = InkStroke(style: style, first: first)
         stroke = newStroke
+        stabilizer = StrokeStabilizer(start: first.location)
+        finger = first
         startHoldCheck(at: newStroke.samples[0].location, time: touch.timestamp)
         // Shown and drawn in one go, so the last stroke never shows again here.
         wetCanvas.isHidden = false
@@ -202,14 +214,20 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
 
     private func inkMoved(_ touch: UITouch, event: UIEvent) {
         guard var current = stroke else { return }
-        let added = newSamples(touch, event: event, after: current)
-        for sample in added {
-            hold.add(sample.location, at: strokeStartTimestamp + sample.timeOffset)
+        let touches = coalescedSamples(touch, event: event)
+        for raw in touches {
+            hold.add(raw.location, at: strokeStartTimestamp + raw.timeOffset)
         }
-        current.append(added)
+        current.append(newSamples(touches, after: current))
         current.resizeSnapToFinger()
         stroke = current
-        let predicted = (event.predictedTouches(for: touch) ?? []).map(sample)
+        // From the smoothed head, without moving it.
+        var preview = stabilizer
+        let predicted = (event.predictedTouches(for: touch) ?? []).map { touch in
+            var predictedSample = sample(touch)
+            predictedSample.location = preview.follow(predictedSample.location)
+            return predictedSample
+        }
         wetCanvas.drawing = PKDrawing(strokes: [current.pencilKitStroke(predicted: predicted)])
         notify(.changed(current))
     }
@@ -220,9 +238,10 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
         guard var finished = stroke else { return }
         stopHoldCheck()
         if let touch, let event {
-            finished.append(newSamples(touch, event: event, after: finished))
-            finished.resizeSnapToFinger()
+            finished.append(newSamples(coalescedSamples(touch, event: event), after: finished))
         }
+        catchUpToFinger(&finished)
+        finished.resizeSnapToFinger()
         stroke = nil
         notify(.ended(finished))
         drawing.strokes.append(finished.pencilKitStroke())
@@ -267,6 +286,7 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
             return
         }
         stopHoldCheck()
+        catchUpToFinger(&current)
         current.snap(to: shape, at: CACurrentMediaTime() - strokeStartTimestamp)
         stroke = current
         wetCanvas.drawing = PKDrawing(strokes: [current.pencilKitStroke()])
@@ -274,19 +294,36 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
         notify(.snapChanged(current))
     }
 
-    /// The touch's coalesced samples that moved far enough to matter. Closer
-    /// samples add nothing visible and only make the stroke bigger.
-    private func newSamples(_ touch: UITouch, event: UIEvent, after stroke: InkStroke) -> [InkSample] {
+    /// The touches, smoothed until the stroke snaps, that moved far enough to
+    /// matter. Closer samples add nothing visible and only make the stroke
+    /// bigger. A snapped stroke takes the touches as they are, because they
+    /// resize the shape and draw no ink. Remembers the last touch as `finger`.
+    private func newSamples(_ touches: [InkSample], after stroke: InkStroke) -> [InkSample] {
         var last = stroke.samples[stroke.samples.count - 1].location
         var kept: [InkSample] = []
-        for coalesced in event.coalescedTouches(for: touch) ?? [touch] {
-            let next = sample(coalesced)
+        for touch in touches {
+            var next = touch
+            if stroke.snap == nil {
+                next.location = stabilizer.follow(touch.location)
+            }
             if hypot(next.location.x - last.x, next.location.y - last.y) >= Self.minimumSampleSpacing {
                 kept.append(next)
                 last = next.location
             }
         }
+        finger = touches.last ?? finger
         return kept
+    }
+
+    /// Adds the finger's own position, which the smoothed stroke trails.
+    private func catchUpToFinger(_ stroke: inout InkStroke) {
+        if let finger, finger.location != stroke.samples[stroke.samples.count - 1].location {
+            stroke.append([finger])
+        }
+    }
+
+    private func coalescedSamples(_ touch: UITouch, event: UIEvent) -> [InkSample] {
+        (event.coalescedTouches(for: touch) ?? [touch]).map(sample)
     }
 
     private func sample(_ touch: UITouch) -> InkSample {
