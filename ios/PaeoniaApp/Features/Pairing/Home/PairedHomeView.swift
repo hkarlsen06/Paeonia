@@ -297,12 +297,17 @@ extension PairedHomeView {
             }
         }
         .frame(height: Self.headerBarHeight)
+        // The cards' screen padding is wider than a navigation bar's edge inset.
+        .padding(.horizontal, Self.barEdgeInset - PaeoniaSpacing.screenHorizontalPadding)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isVisible)
     }
 
     /// The height of a navigation bar's row, so the mark and the streak sit where a bar
     /// would put them.
     private static let headerBarHeight = PaeoniaSpacing.compactButtonHeight
+    /// How far a navigation bar keeps its items from the screen edge, so the streak
+    /// doesn't shift when the user switches from a tab that has a bar.
+    private static let barEdgeInset: CGFloat = 16
     /// The mark's frame in the navigation bar, which draws it a little smaller.
     private static let barMarkHeight: CGFloat = 28
     /// The size the navigation bar drew the mark at, for the header Home draws itself.
