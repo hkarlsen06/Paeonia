@@ -35,25 +35,30 @@ enum InkEvent {
 
 /// A PencilKit canvas whose drawing starts `overscanTop` points below its top
 /// edge. Strokes drawn above that have a negative y.
+///
+/// PencilKit draws no ink above its content's y 0, so the canvas holds the
+/// drawing moved down by `overscanTop`. `drawing` and `drawingLocation(of:)`
+/// move it back, so callers only ever see the drawing's own coordinates.
 class OverscanCanvasView: PKCanvasView {
-    /// The canvas is scrolled up by this much, so the drawing's y 0 sits this
-    /// far below the view's top edge.
     var overscanTop: CGFloat = 0 {
         didSet {
             guard overscanTop != oldValue else { return }
-            contentInsetAdjustmentBehavior = .never
-            contentInset.top = overscanTop
-            contentOffset = CGPoint(x: 0, y: -overscanTop)
+            super.drawing = Self.moved(super.drawing, down: overscanTop - oldValue)
         }
     }
 
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        // A layout pass may move the offset back to the content's top.
-        let pinned = CGPoint(x: 0, y: -overscanTop)
-        if overscanTop > 0, contentOffset != pinned {
-            contentOffset = pinned
-        }
+    override var drawing: PKDrawing {
+        get { Self.moved(super.drawing, down: -overscanTop) }
+        set { super.drawing = Self.moved(newValue, down: overscanTop) }
+    }
+
+    /// A point in the view, in the drawing's coordinates.
+    func drawingLocation(of point: CGPoint) -> CGPoint {
+        CGPoint(x: point.x, y: point.y - overscanTop)
+    }
+
+    private static func moved(_ drawing: PKDrawing, down distance: CGFloat) -> PKDrawing {
+        distance == 0 ? drawing : drawing.transformed(using: CGAffineTransform(translationX: 0, y: distance))
     }
 }
 
@@ -175,7 +180,7 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
 
     @objc private func fillTapped(_ recognizer: UITapGestureRecognizer) {
         guard recognizer.state == .ended else { return }
-        onFill(recognizer.location(in: self))
+        onFill(drawingLocation(of: recognizer.location(in: self)))
     }
 
     // MARK: Ink
@@ -185,7 +190,7 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
         strokeStartTimestamp = touch.timestamp
         let newStroke = InkStroke(style: style, first: sample(touch))
         stroke = newStroke
-        startHoldCheck(at: touch.preciseLocation(in: self), time: touch.timestamp)
+        startHoldCheck(at: newStroke.samples[0].location, time: touch.timestamp)
         // Shown and drawn in one go, so the last stroke never shows again here.
         wetCanvas.isHidden = false
         wetCanvas.drawing = PKDrawing(strokes: [newStroke.pencilKitStroke()])
@@ -283,7 +288,7 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
 
     private func sample(_ touch: UITouch) -> InkSample {
         InkSample(
-            location: touch.preciseLocation(in: self),
+            location: drawingLocation(of: touch.preciseLocation(in: self)),
             timeOffset: touch.timestamp - strokeStartTimestamp,
             force: touch.type == .pencil ? touch.force : nil,
             azimuth: touch.azimuthAngle(in: self),

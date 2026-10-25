@@ -88,12 +88,16 @@ extension ExquisiteCorpseViewModel {
         recognizer.onBegan = { [weak self, weak canvasView] touch, _ in
             guard let self, let canvasView else { return }
             let side = canvasView.bounds.width
-            penMoved(to: touch.location(in: canvasView), in: CGSize(width: side, height: side))
+            let point = touch.location(in: canvasView)
+            let drawingPoint = (canvasView as? OverscanCanvasView)?.drawingLocation(of: point) ?? point
+            penMoved(to: drawingPoint, in: CGSize(width: side, height: side))
         }
         recognizer.onMoved = { [weak self, weak canvasView] touch, _ in
             guard let self, let canvasView else { return }
             let side = canvasView.bounds.width
-            penMoved(to: touch.location(in: canvasView), in: CGSize(width: side, height: side))
+            let point = touch.location(in: canvasView)
+            let drawingPoint = (canvasView as? OverscanCanvasView)?.drawingLocation(of: point) ?? point
+            penMoved(to: drawingPoint, in: CGSize(width: side, height: side))
         }
         recognizer.onEnded = { [weak self] _ in
             self?.penLifted()
