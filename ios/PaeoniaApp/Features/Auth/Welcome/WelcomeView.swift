@@ -1,10 +1,11 @@
 import SwiftUI
 import UIKit
 
-/// The first signed-out screen. The lockup, one picture and one line say what Paeonia
-/// is, and three choices lead on: start a couple, join a partner who invited you, or
-/// sign back in. It is the first surface the cold-launch intro uncovers, so its parts
-/// cascade in with `View.launchEntrance(order:)`.
+/// The first signed-out screen. Under the wordmark, a partner's doodle draws itself
+/// onto a Home Screen widget (`WelcomeWidgetDoodle`), and one line says that is what
+/// the app does. Three choices lead on: start a couple, join a partner who invited
+/// you, or sign back in. It is the first surface the cold-launch intro uncovers, so
+/// its parts cascade in with `View.launchEntrance(order:)`.
 ///
 /// "I was invited" opens the code sheet. A partner who installed from the invite web
 /// page gets a Paste button for the link it copied instead. A saved code moves the flow
@@ -23,9 +24,10 @@ struct WelcomeView: View {
     @State private var clipboardHasLink = false
 
     var body: some View {
-        // The summary sits just above the buttons, and the picture is centered between
-        // the lockup and the summary. When it does not fit, such as at large text sizes,
-        // the same content scrolls and the spacers shrink to their minimum.
+        // The summary sits just above the buttons, and the widget is centered between
+        // the wordmark and the summary. On a short screen the widget shrinks. When even
+        // its smallest size does not fit, such as at large text sizes, the same content
+        // scrolls and the spacers shrink to their minimum.
         ViewThatFits(in: .vertical) {
             content
 
@@ -80,16 +82,17 @@ struct WelcomeView: View {
 
     private var content: some View {
         VStack(spacing: 0) {
-            // The only lockup in the signed-out flow. Later steps leave it out.
-            PaeoniaBrandLockup(wordmarkSize: 36, taglineSize: 17)
+            // The only logo in the signed-out flow. Later steps leave it out.
+            PaeoniaWordmark(size: 28)
                 .frame(maxWidth: .infinity)
-                .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isHeader)
                 .launchEntrance(order: 0)
 
             Spacer(minLength: PaeoniaSpacing.space24)
 
-            WelcomeHero()
+            WelcomeWidgetDoodle()
+                // Takes the free height before the spacers, up to its own size.
+                .layoutPriority(1)
                 .launchEntrance(order: 1)
 
             Spacer(minLength: PaeoniaSpacing.space24)

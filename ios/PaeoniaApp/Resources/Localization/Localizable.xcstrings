@@ -37472,6 +37472,42 @@
         }
       }
     },
+    "welcome.doodle.accessibility" : {
+      "comment" : "VoiceOver label for the picture on the welcome screen, before sign-in: a Home Screen widget showing a drawing a partner made.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A drawing from your partner on a Home Screen widget"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En tegning fra kjæresten din i en widget på hjemskjermen"
+          }
+        }
+      }
+    },
+    "welcome.doodle.author" : {
+      "comment" : "A made-up first name under the sample drawing on the welcome screen's Home Screen widget, where the real widget shows the partner who drew it. Use a short, common first name that fits any gender in your language. Not a word for partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alex"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kim"
+          }
+        }
+      }
+    },
     "welcome.drawing.landed.message" : {
       "comment" : "First drawing before sign-in: under the Home Screen picture. The drawing appears on the partner's widget after they join.",
       "extractionState" : "manual",
@@ -37923,19 +37959,19 @@
       }
     },
     "welcome.summary" : {
-      "comment" : "One line under the picture on the welcome screen, before sign-in. Says what couples do in the app.",
+      "comment" : "Headline under the widget picture on the welcome screen, before sign-in. Says what the app does: a drawing you make shows up on your partner's Home Screen widget. \"Their\" means the partner's.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send drawings, answer questions together and keep your memories in one place."
+            "value" : "Draw something. It shows up on their Home Screen."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send tegninger, svar på spørsmål sammen og samle minnene deres på ett sted."
+            "value" : "Tegn noe. Det dukker opp på hjemskjermen deres."
           }
         }
       }

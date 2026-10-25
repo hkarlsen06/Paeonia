@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The signed-out flow: welcome, then the start date and the first drawing for someone
 /// starting a couple, then sign-in. Steps crossfade. Only the welcome screen shows the
-/// lockup, and every later step sits in `PaeoniaScreenFrame`, which has no logo. The
+/// logo, and every later step sits in `PaeoniaScreenFrame`, which has none. The
 /// drawing screen fills the screen. A fade only, so Reduce Motion needs no branch.
 struct WelcomeFlowView: View {
     let model: WelcomeFlowModel
