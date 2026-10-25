@@ -114,7 +114,7 @@ describe("POST /apple/server-notifications", () => {
     expect((await user.as.query(api.access.get_access_snapshot, {}))[0].user_entitlement?.is_entitled).toBe(false);
   });
 
-  test("a billing grace period keeps both partners in until the grace period ends", async () => {
+  test("a billing grace period keeps both partners in until the grace period ends, then Apple keeps retrying", async () => {
     const t = newTest();
     await seedProducts(t);
     const { first, second } = await createCouple(t, { entitled: false });
@@ -148,11 +148,24 @@ describe("POST /apple/server-notifications", () => {
 
     const expire = (now: number) =>
       t.mutation(internal.storekit.expire_stale_entitlements, { p_now: new Date(now).toISOString() });
-    expect(await expire(Date.now())).toEqual([{ storekit_transactions_expired: 0, entitlement_grants_expired: 0 }]);
+    expect(await expire(Date.now())).toEqual([
+      { storekit_transactions_expired: 0, storekit_transactions_in_billing_retry: 0, entitlement_grants_expired: 0 },
+    ]);
     expect(await coupleEntitled()).toEqual([true, true]);
 
-    expect(await expire(graceEndsAt + 1)).toEqual([{ storekit_transactions_expired: 1, entitlement_grants_expired: 0 }]);
+    expect(await expire(graceEndsAt + 1)).toEqual([
+      { storekit_transactions_expired: 0, storekit_transactions_in_billing_retry: 1, entitlement_grants_expired: 0 },
+    ]);
     expect(await coupleEntitled()).toEqual([false, false]);
+    const [row] = await t.run((ctx) => ctx.db.query("storekit_transactions").collect());
+    expect(row.status).toBe("billing_retry");
+    const events = await t.run((ctx) => ctx.db.query("relationship_sync_events").collect());
+    expect(events.map((event) => [event.user_id, event.event_kind]).sort()).toEqual(
+      [
+        [first.userId, "entitlement_lost"],
+        [second.userId, "entitlement_lost"],
+      ].sort(),
+    );
   });
 
   test("a streak restore refund is logged on the restore ledger", async () => {

@@ -115,7 +115,24 @@ export const mark_streak_restore_refunded = internalMutation({
 
 // ---- Expiry ----
 
-const ACTIVE_STATUSES = ["active", "grace", "billing_retry"] as const;
+/**
+ * Apple retries a failed renewal for up to 60 days after the period ends, then sends EXPIRED
+ * (or DID_RENEW when a payment goes through). A `billing_retry` row stays until that notification,
+ * and the cron expires it this long after its `expires_at` in case the notification never came.
+ */
+const BILLING_RETRY_DAYS = 60;
+
+/**
+ * What the cron does to a transaction whose `expires_at` is at least `afterMs` in the past.
+ * An active subscription ends. A grace period ends while Apple still retries the payment, so it
+ * becomes `billing_retry`. Both end access at that moment, so their members may need an
+ * `entitlement_lost` event. A `billing_retry` row granted nothing already.
+ */
+const LAPSES = [
+  { status: "active", next: "expired", afterMs: 0, endsAccess: true },
+  { status: "grace", next: "billing_retry", afterMs: 0, endsAccess: true },
+  { status: "billing_retry", next: "expired", afterMs: BILLING_RETRY_DAYS * 86_400_000, endsAccess: false },
+] as const;
 
 function compareNullsFirst(a: string | undefined, b: string | undefined): number {
   if (a === b) return 0;
@@ -125,13 +142,12 @@ function compareNullsFirst(a: string | undefined, b: string | undefined): number
 }
 
 /**
- * Port of `internal.expire_stale_entitlements`. Marks lapsed StoreKit
- * transactions and grants as expired and tells the members of a couple that
- * lost its last entitlement. The SQL schedule never ran it. In Convex the
- * `expire-stale-entitlements` cron runs it, because queries cannot write and
- * would otherwise report a lapsed row as entitled until the next write.
- * Each run handles at most `p_limit` rows (default 500) and expired rows no
- * longer match, so a backlog drains over several runs.
+ * Port of `internal.expire_stale_entitlements`. Moves lapsed StoreKit transactions on (`LAPSES`),
+ * expires lapsed grants, and tells the members of a couple that lost its last entitlement. The SQL
+ * schedule never ran it. In Convex the `expire-stale-entitlements` cron runs it, because queries
+ * cannot write and would otherwise report a lapsed row as entitled until the next write.
+ * Each run handles at most `p_limit` rows (default 500) and handled rows no longer match,
+ * so a backlog drains over several runs.
  */
 export const expire_stale_entitlements = internalMutation({
   args: { p_now: nullableString, p_limit: v.optional(v.union(v.null(), v.number())) },
@@ -145,23 +161,26 @@ export const expire_stale_entitlements = internalMutation({
       return fail("23514", "entitlement expiry limit is out of range");
     }
 
-    const expiredTransactions: Doc<"storekit_transactions">[] = [];
-    for (const status of ACTIVE_STATUSES) {
-      expiredTransactions.push(
-        ...(await ctx.db
-          .query("storekit_transactions")
-          .withIndex("by_status_expires_at", (q) =>
-            q.eq("status", status).gt("expires_at", "").lte("expires_at", now),
-          )
-          .take(limit)),
-      );
+    const lapsedTransactions: { tx: Doc<"storekit_transactions">; lapse: (typeof LAPSES)[number] }[] = [];
+    for (const lapse of LAPSES) {
+      const cutoff = addMs(now, -lapse.afterMs);
+      const rows = await ctx.db
+        .query("storekit_transactions")
+        .withIndex("by_status_expires_at", (q) => q.eq("status", lapse.status).gt("expires_at", "").lte("expires_at", cutoff))
+        .take(limit);
+      lapsedTransactions.push(...rows.map((tx) => ({ tx, lapse })));
     }
-    expiredTransactions.sort((a, b) => compareNullsFirst(a.expires_at, b.expires_at) || compareNullsFirst(a.id, b.id));
+    lapsedTransactions.sort(
+      (a, b) => compareNullsFirst(a.tx.expires_at, b.tx.expires_at) || compareNullsFirst(a.tx.id, b.tx.id),
+    );
     const affectedUserIds = new Set<string>();
-    const transactionsToExpire = expiredTransactions.slice(0, limit);
-    for (const tx of transactionsToExpire) {
-      await patchStorekitTransaction(ctx, tx, { status: "expired" });
-      affectedUserIds.add(tx.user_id);
+    let transactionsExpired = 0;
+    let transactionsInBillingRetry = 0;
+    for (const { tx, lapse } of lapsedTransactions.slice(0, limit)) {
+      await patchStorekitTransaction(ctx, tx, { status: lapse.next });
+      if (lapse.next === "expired") transactionsExpired += 1;
+      else transactionsInBillingRetry += 1;
+      if (lapse.endsAccess) affectedUserIds.add(tx.user_id);
     }
 
     const expiredGrants = (
@@ -222,7 +241,11 @@ export const expire_stale_entitlements = internalMutation({
     }
 
     return [
-      { storekit_transactions_expired: transactionsToExpire.length, entitlement_grants_expired: expiredGrants.length },
+      {
+        storekit_transactions_expired: transactionsExpired,
+        storekit_transactions_in_billing_retry: transactionsInBillingRetry,
+        entitlement_grants_expired: expiredGrants.length,
+      },
     ];
   },
 });

@@ -5,7 +5,8 @@ import { enqueueNotificationForUser } from "./notifications";
 import { addMs } from "./time";
 
 // The pushes that warn before access ends. Access itself ends where it always did, when the
-// expiry cron marks the last entitlement expired (storekit.ts `expire_stale_entitlements`).
+// last entitlement's `expires_at` passes. The expiry cron then stores the lapsed status
+// (storekit.ts `expire_stale_entitlements`).
 
 const DAY_MS = 86_400_000;
 

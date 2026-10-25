@@ -436,12 +436,12 @@ describe("expire_stale_entitlements", () => {
 
     // Nothing is stale yet.
     expect(await t.mutation(internal.storekit.expire_stale_entitlements, {})).toEqual([
-      { storekit_transactions_expired: 0, entitlement_grants_expired: 0 },
+      { storekit_transactions_expired: 0, storekit_transactions_in_billing_retry: 0, entitlement_grants_expired: 0 },
     ]);
 
     vi.setSystemTime(new Date(NOW.getTime() + 2 * 3_600_000));
     expect(await t.mutation(internal.storekit.expire_stale_entitlements, {})).toEqual([
-      { storekit_transactions_expired: 1, entitlement_grants_expired: 1 },
+      { storekit_transactions_expired: 1, storekit_transactions_in_billing_retry: 0, entitlement_grants_expired: 1 },
     ]);
     expect((await transactions(t))[0].status).toBe("expired");
     const events = await t.run((ctx) => ctx.db.query("relationship_sync_events").collect());
@@ -485,6 +485,45 @@ describe("expire_stale_entitlements", () => {
     expect((await transactions(t))[0].status).not.toBe("expired");
     await t.mutation(internal.storekit.expire_stale_entitlements, {});
     expect((await transactions(t))[0].status).toBe("expired");
+  });
+
+  test("leaves a failed renewal to Apple for 60 days, then expires it", async () => {
+    const t = newTest();
+    await seedProducts(t);
+    const user = await createSignedInUser(t);
+    const token = await tokenFor(user);
+    const record = (transactionId: string, status: string, expiresInHours: number) =>
+      t.mutation(
+        internal.storekit.record_verified_storekit_transaction,
+        storekitArgs({ userId: user.userId, token, transactionId, status, expiresAt: hoursFromNow(expiresInHours) }),
+      );
+    await record("ended", "active", -1);
+    await record("retrying", "billing_retry", -24);
+    await record("given-up", "billing_retry", -61 * 24);
+
+    expect(await t.mutation(internal.storekit.expire_stale_entitlements, {})).toEqual([
+      { storekit_transactions_expired: 2, storekit_transactions_in_billing_retry: 0, entitlement_grants_expired: 0 },
+    ]);
+    const statuses = Object.fromEntries((await transactions(t)).map((row) => [row.transaction_id, row.status]));
+    expect(statuses).toEqual({ ended: "expired", retrying: "billing_retry", "given-up": "expired" });
+  });
+
+  test("an old failed renewal that expires sends no entitlement_lost event", async () => {
+    const t = newTest();
+    await seedProducts(t);
+    const couple = await createCouple(t, { entitled: false });
+    await t.mutation(
+      internal.storekit.record_verified_storekit_transaction,
+      storekitArgs({
+        userId: couple.first.userId,
+        token: await tokenFor(couple.first),
+        status: "billing_retry",
+        expiresAt: hoursFromNow(-61 * 24),
+      }),
+    );
+    await t.mutation(internal.storekit.expire_stale_entitlements, {});
+    expect((await transactions(t))[0].status).toBe("expired");
+    expect(await t.run((ctx) => ctx.db.query("relationship_sync_events").collect())).toHaveLength(0);
   });
 
   test("validates its limits", async () => {
