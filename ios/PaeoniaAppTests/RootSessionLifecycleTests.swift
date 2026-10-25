@@ -111,8 +111,7 @@ struct RootSessionLifecycleTests {
         let welcome = WelcomeFlowModel(
             store: InMemoryWelcomeFlowStore(),
             funnel: NoOpWelcomeFunnelRecorder(),
-            startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: pending),
-            phoneHasNoOtherAccount: { true }
+            startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: pending)
         )
         welcome.saveStartDate(try #require(PairingStartDate(rawValue: "2024-02-29").date()))
         let viewModel = RootViewModel(
@@ -147,8 +146,7 @@ struct RootSessionLifecycleTests {
         let welcome = WelcomeFlowModel(
             store: InMemoryWelcomeFlowStore(),
             funnel: NoOpWelcomeFunnelRecorder(),
-            startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: pending),
-            phoneHasNoOtherAccount: { true }
+            startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: pending)
         )
         welcome.saveStartDate(try #require(PairingStartDate(rawValue: "2024-02-29").date()))
         let viewModel = RootViewModel(
@@ -251,6 +249,101 @@ struct RootSessionLifecycleTests {
             accessSnapshotStore: InMemoryAccessSyncSnapshotRepository(),
             systemSideEffects: NoOpRootSystemSideEffects(),
             deviceOwnerStore: ownerStore
+        )
+    }
+}
+
+/// The first drawing made before sign-in, when someone else's data is still on the phone.
+@MainActor
+struct RootAccountSwitchFirstDrawingTests {
+    private let userID = UUID()
+    private let previousOwner = UUID()
+    private let previousDrawing = Data("previous person's drawing".utf8)
+
+    /// The phone still holds the data of someone whose session ended without a sign-out.
+    /// A new person starts a couple, makes the first drawing and signs in. The previous
+    /// person's widget drawing and its "not sent yet" marker are cleared, and the new
+    /// person's first drawing is what waits on the widget for their invite screen to send.
+    @Test func aFirstDrawingMadeBeforeSignInOutlivesTheClearingOfAnotherAccountsData() async throws {
+        let phone = try PhoneWithAnotherAccount(previousDrawing: previousDrawing)
+        let welcome = phone.makeWelcomeFlow()
+        let (widgetCanvas, widgetPending) = (phone.widgetCanvas, phone.widgetPending)
+        let syncService = TestPaeoniaSyncService(purgeLocalData: {
+            await widgetCanvas.clearForPrivacy()
+            widgetPending.clearAll()
+        })
+        let viewModel = RootViewModel(
+            syncService: syncService,
+            authService: FlowAuthService(signInSession: .test(id: userID.uuidString, profileStatus: .complete)),
+            accessRouteService: ScriptedAccessRouteService([.pairedForFlowTest(ownerUserID: userID)]),
+            accessSnapshotStore: InMemoryAccessSyncSnapshotRepository(),
+            systemSideEffects: NoOpRootSystemSideEffects(),
+            deviceOwnerStore: InMemoryRootDeviceOwnerStore(ownerUserID: previousOwner.uuidString),
+            welcomeFlow: welcome
+        )
+        await viewModel.start()
+
+        let firstDrawing = try await makeFirstDrawing(in: welcome, phone: phone)
+        await viewModel.signInWithGoogle()
+
+        let purgedSession = await syncService.configuredSessions.first.flatMap { $0 }
+        #expect(await syncService.resetCallCount == 1)
+        #expect(purgedSession?.userID == previousOwner)
+        #expect(await phone.widgetCanvas.loadSavedDrawing() == firstDrawing)
+        let waiting = try #require(phone.widgetPending.pendingSnapshot)
+        #expect(waiting.isFirstDay)
+        #expect(waiting.contentHash == WidgetCanvasUploadService.sha256Hex(of: firstDrawing))
+        #expect(welcome.hasWaitingDrawing)
+        #expect(await phone.welcomeCanvas.loadSavedDrawing() == nil)
+        #expect(!phone.welcomePending.hasPending)
+    }
+
+    /// Start our space, skip the date, draw and send. Returns the drawing as saved.
+    private func makeFirstDrawing(in welcome: WelcomeFlowModel, phone: PhoneWithAnotherAccount) async throws -> Data {
+        welcome.chooseStart(carrying: nil)
+        welcome.skipStartDate()
+        #expect(welcome.step == .drawing)
+        let drawingScreen = welcome.drawingViewModel()
+        drawingScreen.updateDrawing(firstDayStroke())
+        await drawingScreen.save()
+        welcome.finishDrawing()
+        #expect(welcome.step == .signIn(.start(hasDrawing: true)))
+        // Nothing of the previous person's changed before sign-in.
+        #expect(await phone.widgetCanvas.loadSavedDrawing() == previousDrawing)
+        return try #require(await phone.welcomeCanvas.loadSavedDrawing())
+    }
+}
+
+/// The widget's canvas and marker still hold the previous person's unsent drawing, and
+/// the welcome flow has a canvas and marker of its own.
+@MainActor
+private struct PhoneWithAnotherAccount {
+    let widgetCanvas: FirstDayCanvasFake
+    let widgetPending: WidgetPendingUploadStore
+    let welcomeCanvas = FirstDayCanvasFake()
+    let welcomePending: WidgetPendingUploadStore
+
+    init(previousDrawing: Data) throws {
+        let defaults = try firstDayTestDefaults()
+        widgetCanvas = FirstDayCanvasFake(drawingData: previousDrawing)
+        widgetPending = WidgetPendingUploadStore(defaults: defaults)
+        widgetPending.markPending(
+            firstDayPayload("previous person's drawing"),
+            contentHash: WidgetCanvasUploadService.sha256Hex(of: previousDrawing)
+        )
+        welcomePending = WidgetPendingUploadStore(defaults: defaults, key: WelcomeDrawingStorage.pendingUploadKey)
+    }
+
+    func makeWelcomeFlow() -> WelcomeFlowModel {
+        WelcomeFlowModel(
+            store: InMemoryWelcomeFlowStore(),
+            funnel: NoOpWelcomeFunnelRecorder(),
+            canvas: welcomeCanvas,
+            pendingUploads: welcomePending,
+            widgetCanvas: widgetCanvas,
+            widgetPendingUploads: widgetPending,
+            startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: InMemoryPendingSyncOperationRepository()),
+            drawingDrafts: InMemoryWidgetDrawingDraftStore()
         )
     }
 }

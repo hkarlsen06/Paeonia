@@ -186,3 +186,19 @@ func firstDayPayload(_ text: String = "drawing") -> WidgetDrawingUploadPayload {
         bounds: CGRect(x: 10, y: 20, width: 30, height: 40)
     )
 }
+
+func firstDayStroke() -> PKDrawing {
+    let points = [CGPoint(x: 40, y: 40), CGPoint(x: 80, y: 80)].enumerated().map { index, location in
+        PKStrokePoint(
+            location: location,
+            timeOffset: TimeInterval(index) * 0.01,
+            size: CGSize(width: 4, height: 4),
+            opacity: 1,
+            force: 1,
+            azimuth: 0,
+            altitude: 0
+        )
+    }
+    let path = PKStrokePath(controlPoints: points, creationDate: Date(timeIntervalSinceReferenceDate: 800_000_000))
+    return PKDrawing(strokes: [PKStroke(ink: PKInk(.pen, color: .black), path: path)])
+}

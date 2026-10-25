@@ -129,7 +129,8 @@ struct InviterFirstDayModelTests {
     }
 
     /// The drawing made on the welcome flow's drawing screen before there is an account
-    /// is sent to the first day draft when the invite screen loads after sign-in.
+    /// moves to the widget's canvas at sign-in, and is sent to the first day draft when
+    /// the invite screen loads.
     @Test func aDrawingMadeBeforeSignInGoesToTheDraftWhenTheInviteScreenLoads() async throws {
         let defaults = try firstDayTestDefaults()
         let canvas = FirstDayCanvasFake()
@@ -137,16 +138,23 @@ struct InviterFirstDayModelTests {
         let welcome = WelcomeFlowModel(
             store: InMemoryWelcomeFlowStore(),
             funnel: NoOpWelcomeFunnelRecorder(),
-            canvas: canvas,
-            pendingUploads: pendingStore,
-            drawingDrafts: InMemoryWidgetDrawingDraftStore(),
-            phoneHasNoOtherAccount: { true }
+            canvas: FirstDayCanvasFake(),
+            pendingUploads: WidgetPendingUploadStore(defaults: defaults, key: WelcomeDrawingStorage.pendingUploadKey),
+            widgetCanvas: canvas,
+            widgetPendingUploads: pendingStore,
+            drawingDrafts: InMemoryWidgetDrawingDraftStore()
         )
         let drawingViewModel = welcome.drawingViewModel()
         drawingViewModel.updateDrawing(firstDayStroke())
         await drawingViewModel.save()
+        welcome.finishDrawing()
 
         #expect(drawingViewModel.delivery == .sent)
+        #expect(welcome.step == .signIn(.start(hasDrawing: true)))
+        #expect(await canvas.loadSavedDrawing() == nil)
+
+        await welcome.sessionStarted(ownerUserID: firstDayUUID(100).uuidString)
+
         #expect(welcome.hasWaitingDrawing)
         #expect(await canvas.loadSavedDrawing() != nil)
 
@@ -157,22 +165,6 @@ struct InviterFirstDayModelTests {
         #expect(await gateway.steps.suffix(5) == ["reserve", "upload", "finalize", "save", "start"])
         #expect(!pendingStore.hasPending)
     }
-}
-
-private func firstDayStroke() -> PKDrawing {
-    let points = [CGPoint(x: 40, y: 40), CGPoint(x: 80, y: 80)].enumerated().map { index, location in
-        PKStrokePoint(
-            location: location,
-            timeOffset: TimeInterval(index) * 0.01,
-            size: CGSize(width: 4, height: 4),
-            opacity: 1,
-            force: 1,
-            azimuth: 0,
-            altitude: 0
-        )
-    }
-    let path = PKStrokePath(controlPoints: points, creationDate: Date(timeIntervalSinceReferenceDate: 800_000_000))
-    return PKDrawing(strokes: [PKStroke(ink: PKInk(.pen, color: .black), path: path)])
 }
 
 struct FirstDayPurgeTests {

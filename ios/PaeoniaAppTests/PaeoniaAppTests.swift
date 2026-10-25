@@ -567,13 +567,17 @@ actor TestPaeoniaSyncService {
     private(set) var signOutSteps: [String] = []
     private var privacyRetryResults: [LocalPrivacyPurgeRetryResult]
     private let isSignedIn: (@Sendable () async -> Bool)?
+    /// Stands in for what the purge deletes from the phone.
+    private let purgeLocalData: (@Sendable () async -> Void)?
 
     init(
         privacyRetryResults: [LocalPrivacyPurgeRetryResult] = [],
-        isSignedIn: (@Sendable () async -> Bool)? = nil
+        isSignedIn: (@Sendable () async -> Bool)? = nil,
+        purgeLocalData: (@Sendable () async -> Void)? = nil
     ) {
         self.privacyRetryResults = privacyRetryResults
         self.isSignedIn = isSignedIn
+        self.purgeLocalData = purgeLocalData
     }
 
     func flushPendingWrites(timeout _: Duration) async {
@@ -609,6 +613,7 @@ actor TestPaeoniaSyncService {
     func resetForUserChange() async {
         resetCallCount += 1
         signOutSteps.append("purge")
+        await purgeLocalData?()
     }
 
     func retryPendingPrivacyPurges() async -> LocalPrivacyPurgeRetryResult {
