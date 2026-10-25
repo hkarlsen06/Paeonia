@@ -76,21 +76,26 @@ platform :ios do
     UI.success("Metadata validation passed.")
   end
 
-  desc "Replace App Store screenshots with ASConnectScreenshots/<version>/3d (no metadata)"
+  desc "Replace App Store iPhone and iPad screenshots with ASConnectScreenshots/<version>/3d (no metadata)"
   lane :upload_screenshots do
     version = paeonia_release_version
     screenshots_path = File.expand_path("../ASConnectScreenshots/#{version}/3d", __dir__)
     UI.user_error!("No screenshots at #{screenshots_path}") unless Dir.exist?(screenshots_path)
 
     # Deliver rejects unknown files such as the preview strips, so stage one folder per locale
-    # with only the iPhone renders. Deliver replaces every screenshot in each locale it uploads.
+    # with only the iPhone and iPad renders. Deliver replaces every screenshot in each locale it
+    # uploads, iPad included, so a locale without iPad renders would lose its iPad set.
     require "tmpdir"
     Dir.mktmpdir("paeonia-screenshots") do |staging|
       locales = Dir.children(screenshots_path).select { |name| File.directory?(File.join(screenshots_path, name)) }
       UI.user_error!("No locale folders in #{screenshots_path}") if locales.empty?
       locales.each do |locale|
+        iphone = Dir.glob(File.join(screenshots_path, locale, "iPhone-*.png"))
+        ipad = Dir.glob(File.join(screenshots_path, locale, "iPad-*.png"))
+        UI.user_error!("Missing iPad screenshots for #{locale} in #{screenshots_path}/#{locale}") if iphone.any? && ipad.empty?
+
         FileUtils.mkdir_p(File.join(staging, locale))
-        FileUtils.cp(Dir.glob(File.join(screenshots_path, locale, "iPhone-*.png")), File.join(staging, locale))
+        FileUtils.cp(iphone + ipad, File.join(staging, locale))
       end
 
       deliver(

@@ -53,7 +53,7 @@ Validate App Store metadata source and generated files
 [bundle exec] fastlane ios upload_screenshots
 ```
 
-Replace App Store screenshots with ASConnectScreenshots/<version>/3d (no metadata)
+Replace App Store iPhone and iPad screenshots with ASConnectScreenshots/<version>/3d (no metadata)
 
 ----
 
