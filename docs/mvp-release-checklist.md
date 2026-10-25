@@ -544,13 +544,13 @@ The text metadata lives in `ios/Scripts/appstore-metadata-source.json`, and `ios
 
 ## App Store Screenshots
 
-The proposed v1 iPhone set is in `ios/ASConnectScreenshots/1.0.0/3d/` (git-ignored), in English and Norwegian. It was uploaded to version 1.0.0 in App Store Connect on 2026-10-25 with `bundle exec fastlane ios upload_screenshots`. The scripts that make it are listed in `marketing/AGENTS.md`.
+The proposed v1 iPhone and iPad sets are in `ios/ASConnectScreenshots/1.0.0/3d/` (git-ignored), in English and Norwegian. They were uploaded to version 1.0.0 in App Store Connect on 2026-10-25 with `bundle exec fastlane ios upload_screenshots`. The scripts that make it are listed in `marketing/AGENTS.md`.
 
 - [x] Screenshots use realistic fake couple content, not real private content. The test couple has fictional content seeded by `scripts/app-store-content`, with Unsplash photos listed in `scripts/assets/app-store/photos/SOURCES.md`.
 - [x] Screenshots show Home, a game such as Ludo or Draw & Guess, the daily questions and chat, Memories, and the drawing widget or distance. The six panels are the drawing widget, the question chat, Ludo, Home with the countdown, Memories and Draw & Guess.
 - [x] Screenshots do not imply unshipped features. Every panel is a real capture of the current app.
 - [ ] Screenshots match final app icon, colors, and layout. Recapture before submission if the UI changes. The scripts rerun the whole set.
-- [ ] Required device sizes are generated, iPad included. Gap: only the 6.9" iPhone set exists. The app runs on iPad, so App Store Connect needs iPad screenshots before submission.
+- [x] Required device sizes are generated, iPad included. The set has 6.9" iPhone (1320x2868) and 13" iPad (2064x2752) screenshots.
 
 ## TestFlight
 
