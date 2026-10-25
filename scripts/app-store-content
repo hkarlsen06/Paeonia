@@ -38,9 +38,10 @@
 # The drawing is PKDrawing.dataRepresentation() bytes. Without the stroke count,
 # point count and bounds it reads them from the file with a small PencilKit
 # program it compiles with swiftc. The last stdout line is a JSON object with the
-# ids the screenshot deep links need, Hjalmar's answer for the reveal, and
-# Elena's Clerk subject, which scripts/capture-app-store-screenshots.py uses to
-# show Elena at the Ludo table.
+# ids the screenshot deep links need, Hjalmar's answer for the reveal, the
+# countdown's title, which the capture script finds the Home countdown card by,
+# and Elena's Clerk subject, which scripts/capture-app-store-screenshots.py uses
+# to show Elena at the Ludo table.
 #
 # It reads CLERK_DEV_SECRET_KEY and CLERK_DEV_JWT_ISSUER_DOMAIN from the
 # api.paeonia.no env the way scripts/test-couple does. Tokens are never printed.
@@ -581,7 +582,8 @@ def main() -> None:
     print(json.dumps({"couple_day_id": day_id, "instance_id": question["instance_id"],
                       "question_id": question["question_id"], "memory_ids": memory_ids, "ludo_game_id": ludo_id,
                       "partner_clerk_subject": subjects["second"],
-                      "own_answer": CONTENT[locale]["answers"]["first"]}, ensure_ascii=False))
+                      "own_answer": CONTENT[locale]["answers"]["first"],
+                      "countdown_title": CONTENT[locale]["countdown"]}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

@@ -20,14 +20,21 @@ first run reboots the simulator. Set the dark plum Home Screen wallpaper by hand
 once per simulator: add the image from scripts/app-store-wallpaper.mjs with
 `xcrun simctl addmedia`, then in Photos use Share > Use as Wallpaper > Customize
 Home Screen > Gradient. A photo wallpaper renders black on the simulator, so the
-gradient picks up its plum colour instead.
+gradient picks up its plum colour instead. Before the capture, the script turns
+on large app icons, which hide the labels under the widgets, through SpringBoard's
+edit mode (Edit > Customize > Large app icons). iOS keeps the icon size with the
+wallpaper, so set the wallpaper first. It also turns off the Search button above
+the dock, which is Settings > Home Screen & App Library > Search > Show on Home
+Screen, by writing SBHomeScreenShowsSearchAffordance in com.apple.springboard.
 
 The screens are captured in the order of SCREENS, all from one seeding, so the
 drawing's time and the streak match everywhere. Seed with
 `scripts/app-store-content --for-reveal`, so only Elena has answered today's
 question. Home is captured while today's question still waits for Hjalmar.
-Then 02-question opens today's question, types Hjalmar's answer from --ids,
-sends it, and captures the moment Elena's answer is revealed. Then add the chat
+Then 02-question opens today's question, types Hjalmar's answer from --ids and
+sends it. The cover turns into the question's chat, where Elena's answer plays
+its reveal, and the capture is the end of that reveal: the question and both
+answers at the start of the chat. Then add the chat
 with `scripts/app-store-content --chat-only` and capture 06-chat and 03-ludo:
 
     ... --screens 01-widget,04-home,05-memories,02-question
@@ -36,7 +43,10 @@ with `scripts/app-store-content --chat-only` and capture 06-chat and 03-ludo:
 
 The script sets the simulator's language for the locale (rebooting when it
 changes it) and the status bar to 9:41 with full bars and battery, and checks
-that every capture is 1320 x 2868, the 6.9-inch App Store size.
+that every capture is 1320 x 2868, the 6.9-inch App Store size. For the screens
+in SPOTLIGHTS it saves the spotlit element's accessibility frame next to the
+capture, as <capture>.spotlight.json, which scripts/render-3d-screenshots.mjs
+reads for a phone with a spotlight.
 """
 
 import argparse
@@ -59,6 +69,12 @@ SIZE = (1320, 2868)
 LANGUAGES = {"en-US": ("en-US", "en_US"), "no": ("nb-NO", "nb_NO")}
 # The button of the system "Open in Paeonia?" prompt, which a new simulator shows for deep links.
 OPEN_BUTTON = {"en-US": "Open", "no": "Åpne"}
+# SpringBoard's labels on the way to the icon size: the Edit button of the Home Screen's edit mode,
+# its Customize item, and the size button, which names the size it switches to.
+EDIT_BUTTON = {"en-US": "Edit", "no": "Rediger"}
+CUSTOMIZE_ITEM = {"en-US": "Customize", "no": "Tilpass"}
+LARGE_ICONS_BUTTON = {"en-US": "Large app icons", "no": "Store appsymboler"}
+REGULAR_ICONS_BUTTON = {"en-US": "Regular app icons", "no": "Vanlige appsymboler"}
 # Seconds for a cold launch to reach Home with the live data loaded.
 LAUNCH_SECONDS = 12
 # Mean difference per colour channel, out of 255, below which two captures count as the same screen.
@@ -76,6 +92,9 @@ SCREENS = {
     "06-chat": ("paeonia://daily/chat?questionId={question_id}", 8),
     "03-ludo": ("paeonia://games/ludo", 25),
 }
+# Screens whose capture gets a spotlight in the render, and the --ids key of the text that the
+# spotlit element's accessibility label contains. The countdown card's label holds its title.
+SPOTLIGHTS = {"04-home": "countdown_title"}
 # The Home Screen of 01-widget, in grid order: (widget kind, size). The large drawing fills
 # the top four rows and the two small widgets the last two.
 HOME_SCREEN = [("PaeoniaWidget", "large"), ("PaeoniaHomeStreakWidget", "small"),
@@ -152,11 +171,42 @@ def prepare(udid, locale):
         simctl("spawn", udid, "defaults", "write", "-g", "AppleLocale", region)
         shut_down(udid)
         simctl("bootstatus", udid, "-b", stdout=subprocess.DEVNULL)
+    # Settings > Home Screen & App Library > Search > Show on Home Screen. SpringBoard applies it at once.
+    simctl("spawn", udid, "defaults", "write", "com.apple.springboard", "SBHomeScreenShowsSearchAffordance",
+           "-bool", "NO")
     simctl("status_bar", udid, "override", "--time", "9:41", "--dataNetwork", "wifi",
            "--wifiMode", "active", "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
            "--batteryState", "discharging", "--batteryLevel", "100")
     # The Ludo board shows how to zoom until this phone has zoomed it once.
     simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "paeonia.games.ludo.hasZoomedBoard.v2", "-bool", "YES")
+
+
+def use_large_icons(agent_device, locale):
+    """Gives the Home Screen large app icons, which drop the labels under the widgets.
+
+    iOS keeps the icon size with the wallpaper, not in a defaults key, so this goes through
+    SpringBoard: edit mode, Edit > Customize, then the size button, unless it already offers
+    regular icons. A long press on the dock beside Paeonia starts edit mode, because the
+    widgets fill the page. A tap above the Customize sheet closes it and ends edit mode.
+    """
+    def device(*args, **kwargs):
+        return run(*agent_device[:1], *args, *agent_device[1:], **kwargs)
+
+    device("open", "com.apple.springboard", stdout=subprocess.DEVNULL)
+    device("longpress", "80", "905", "1500", stdout=subprocess.DEVNULL)
+    time.sleep(2)
+    device("press", f'label="{EDIT_BUTTON[locale]}"', stdout=subprocess.DEVNULL)
+    time.sleep(1.5)
+    device("press", f'label="{CUSTOMIZE_ITEM[locale]}"', stdout=subprocess.DEVNULL)
+    time.sleep(1.5)
+    tree = device("snapshot", "-i", capture_output=True).stdout
+    if f'"{LARGE_ICONS_BUTTON[locale]}"' in tree:
+        device("press", f'label="{LARGE_ICONS_BUTTON[locale]}"', stdout=subprocess.DEVNULL)
+        time.sleep(1.5)
+    elif f'"{REGULAR_ICONS_BUTTON[locale]}"' not in tree:
+        raise SystemExit("The Home Screen's Customize sheet did not open, so the icons may still be small.")
+    device("press", "220", "450", stdout=subprocess.DEVNULL)
+    time.sleep(1.5)
 
 
 def show_partner_at_table(subject):
@@ -202,6 +252,21 @@ def capture(udid, path):
     assert_distinct(path)
 
 
+def save_spotlight(agent_device, text, path):
+    """Saves the frame of the one element whose label contains text, in capture pixels, next to the capture.
+
+    The renderer reads it from <capture>.spotlight.json, so the spotlight follows the app's layout.
+    """
+    tree = run(*agent_device[:1], "snapshot", "-i", "--json", *agent_device[1:], capture_output=True).stdout
+    nodes = json.loads(tree)["data"]["nodes"]
+    matches = [node for node in nodes if text in (node.get("label") or "")]
+    if len(matches) != 1:
+        raise SystemExit(f"Found {len(matches)} elements labelled with {text!r} on {path.name}, not 1.")
+    scale = SIZE[0] / nodes[0]["rect"]["width"]  # The first node is the app, as wide as the screen.
+    frame = {key: round(matches[0]["rect"][key] * scale) for key in ("x", "y", "width", "height")}
+    path.with_suffix(".spotlight.json").write_text(json.dumps(frame) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--locale", choices=LANGUAGES, required=True)
@@ -209,7 +274,7 @@ def main():
     parser.add_argument("--agent-device", required=True, help="agent-device command prefix pinned to the simulator")
     parser.add_argument("--screens", default=",".join(SCREENS))
     parser.add_argument("--reveal-delay", type=float, default=3.0,
-                        help="seconds from sending Hjalmar's answer to capturing the reveal")
+                        help="seconds from the chat opening to capturing the end of the reveal")
     parser.add_argument("--simulator", default="Paeonia Screenshots")
     parser.add_argument("--output", type=Path, default=ROOT / "ios/ASConnectScreenshots/trial-1/raw")
     args = parser.parse_args()
@@ -224,6 +289,8 @@ def main():
     folder = args.output / args.locale
     folder.mkdir(parents=True, exist_ok=True)
     agent_device = shlex.split(args.agent_device)
+    if "01-widget" in screens:
+        use_large_icons(agent_device, args.locale)
     for screen in screens:
         url, wait = SCREENS[screen]
         # Every screen starts from a fresh launch. A deep link opens beneath a full-screen
@@ -255,8 +322,13 @@ def main():
             run(*agent_device[:1], "fill", 'role="text-view"', ids["own_answer"], *agent_device[1:],
                 stdout=subprocess.DEVNULL)
             run(*agent_device[:1], "click", 'id="daily.flow.primary"', *agent_device[1:], stdout=subprocess.DEVNULL)
+            # The cover turns into the question's chat, where Elena's answer plays its reveal.
+            run(*agent_device[:1], "wait", 'id="chat.composer.field"', "20000", *agent_device[1:],
+                stdout=subprocess.DEVNULL)
             time.sleep(args.reveal_delay)
         capture(udid, folder / f"iPhone-{screen}.png")
+        if screen in SPOTLIGHTS:
+            save_spotlight(agent_device, ids[SPOTLIGHTS[screen]], folder / f"iPhone-{screen}.png")
         print(f"Captured {args.locale}/iPhone-{screen}.png", flush=True)
 
 
