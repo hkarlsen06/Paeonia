@@ -8,30 +8,30 @@
   "finish": "#c9c4c8",
   "capture": "{locale}/iPhone-{screen}.png",
   "phones": [
-    { "screen": "01-widget", "x": 0.5, "height": 0.7, "rotate": [3, 18, 5] },
-    { "screen": "02-question", "x": 1.5, "height": 0.66, "rotate": [0, -16, -4] },
-    { "screen": "03-ludo", "x": 2.5, "height": 0.66, "rotate": [2, 16, 4] },
-    { "screen": "06-chat", "x": 5.45, "height": 0.68, "rotate": [0, -14, -7] },
-    { "screen": "04-home", "x": 3.55, "height": 0.68, "rotate": [0, 14, 7],
-      "spotlight": { "dim": 0.42, "padding": 21, "radius": 90, "feather": 24, "outline": "#ffffff59" } },
-    { "screen": "05-memories", "x": 4.5, "height": 0.7, "rotate": [0, 0, 0] }
+    { "screen": "01-widget", "x": 0.5, "height": 0.72, "rotate": [0, 14, 0] },
+    { "screen": "02-chat", "x": 1.5, "height": 0.66, "rotate": [0, -12, -3] },
+    { "screen": "03-ludo", "x": 2.5, "height": 0.66, "rotate": [0, 16, 4] },
+    { "screen": "04-home", "x": 3.5, "height": 0.66, "rotate": [0, 0, 0],
+      "spotlight": { "dim": 0.6, "padding": 21, "radius": 90, "feather": 24, "lift": 1.04, "glow": "#ef5094" } },
+    { "screen": "05-memories", "x": 4.5, "height": 0.66, "rotate": [0, -16, -4] },
+    { "screen": "06-draw", "x": 5.5, "height": 0.66, "rotate": [0, 0, 0] }
   ],
   "panels": {
     "en-US": [
       ["Wake up to <em>a little drawing</em>", "Your partner draws right onto your Home Screen."],
-      ["One question <em>for the two of you</em>", "Answer today's question, then see what your partner said."],
+      ["One question <em>for the two of you</em>", "Answer, see what your partner said, then talk it through."],
       ["Play together, <em>even far apart</em>", "Ludo and more games to play in turns, whenever you have a minute."],
       ["Count down to <em>the next visit</em>", "See how many days are left until you meet again."],
       ["Keep your <em>best moments</em>", "Save photos from your days together in one shared place."],
-      ["Talk about <em>what you answered</em>", "Every question gets its own chat, so one answer can start a real talk."]
+      ["A quick laugh, <em>drawn just for you</em>", "Guess the word your partner drew, then draw one back."]
     ],
     "no": [
       ["Våkn opp til <em>en liten tegning</em>", "Partneren din tegner rett på Hjem-skjermen din."],
-      ["Ett spørsmål om dagen<br><em>til dere to</em>", "Svar på dagens spørsmål, og se hva partneren din svarte."],
+      ["Ett spørsmål om dagen<br><em>til dere to</em>", "Svar, se hva partneren din svarte, og snakk om det sammen."],
       ["Spill sammen, <em>selv på avstand</em>", "Ludo og flere spill dere tar på tur, når dere har et minutt."],
       ["Tell ned til <em>neste gang dere ses</em>", "Se hvor mange dager det er til dere møtes igjen."],
       ["Ta vare på <em>de fine øyeblikkene</em>", "Samle bilder fra dagene sammen på ett sted dere deler."],
-      ["Snakk om <em>det dere svarte</em>", "Hvert spørsmål får sin egen prat, så ett svar kan bli en hel samtale."]
+      ["En liten latter, <em>tegnet bare til deg</em>", "Gjett ordet partneren din tegnet, og tegn et tilbake."]
     ]
   }
 }

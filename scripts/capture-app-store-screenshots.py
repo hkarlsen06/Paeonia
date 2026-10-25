@@ -28,18 +28,26 @@ the dock, which is Settings > Home Screen & App Library > Search > Show on Home
 Screen, by writing SBHomeScreenShowsSearchAffordance in com.apple.springboard.
 
 The screens are captured in the order of SCREENS, all from one seeding, so the
-drawing's time and the streak match everywhere. Seed with
-`scripts/app-store-content --for-reveal`, so only Elena has answered today's
-question. Home is captured while today's question still waits for Hjalmar.
-Then 02-question opens today's question, types Hjalmar's answer from --ids and
-sends it. The cover turns into the question's chat, where Elena's answer plays
-its reveal, and the capture is the end of that reveal: the question and both
-answers at the start of the chat. Then add the chat
-with `scripts/app-store-content --chat-only` and capture 06-chat and 03-ludo:
+drawing's time and the streak match everywhere. Each locale needs a fresh local
+backend (`scripts/local-backend --reseed`), since today's answers can't change.
+Seed with `scripts/app-store-content --partner-answer-only`, so only Elena has
+answered today's question, and sign in after seeding: an app that saw the
+drawing before the seeding moved its time keeps the old time. On the first
+launch, open Elena's gift and tap Later and Not now through the welcome. Leave
+notifications off, because an app allowed to show badges puts a number on its
+Home Screen icon. Home is captured while today's question still waits for
+Hjalmar. Then add Hjalmar's answer and the chat with `scripts/app-store-content
+--chat-only` and capture the rest:
 
-    ... --screens 01-widget,04-home,05-memories,02-question
+    ... --screens 01-widget,04-home,05-memories
     scripts/app-store-content --locale <en|nb> --chat-only
-    ... --screens 06-chat,03-ludo
+    ... --screens 02-chat,03-ludo,06-draw
+
+06-draw is Draw & Guess, where Hjalmar guesses the drawing Elena sent. The
+capture waits until the drawing has played back in full and the 30-second
+speed bonus line has gone, so every locale shows the same screen. Then it taps
+the first GUESS_LETTERS letters of the word from --ids, so the shot shows a
+guess under way.
 
 The script sets the simulator's language for the locale (rebooting when it
 changes it) and the status bar to 9:41 with full bars and battery, and checks
@@ -80,18 +88,21 @@ LAUNCH_SECONDS = 12
 # Mean difference per colour channel, out of 255, below which two captures count as the same screen.
 DUPLICATE_THRESHOLD = 6
 # Each screen's deep link and the seconds to wait for its live data, or the Ludo
-# table, to load. They are captured in this order. Home comes before the
-# question, so it still invites Hjalmar to answer. Ludo comes last, because
-# Elena's presence at the table puts a "here now" card at the top of Home.
+# table, to load, or the Draw & Guess drawing to play back. They are captured in
+# this order. Home comes before the chat, so it still invites Hjalmar to answer.
+# Ludo comes after Home, because Elena's presence at the table puts a "here now"
+# card at the top of Home.
 # 01-widget opens the app so it syncs the widgets, then goes to the Home Screen.
 SCREENS = {
     "01-widget": ("paeonia://home", 10),
     "04-home": ("paeonia://home", 10),
     "05-memories": ("paeonia://memories", 8),
-    "02-question": ("paeonia://daily/today", 4),
-    "06-chat": ("paeonia://daily/chat?questionId={question_id}", 8),
+    "02-chat": ("paeonia://daily/chat?questionId={question_id}", 8),
     "03-ludo": ("paeonia://games/ludo", 25),
+    "06-draw": ("paeonia://games/draw-and-guess", 35),
 }
+# How many letters of the Draw & Guess word 06-draw types before the capture.
+GUESS_LETTERS = 2
 # Screens whose capture gets a spotlight in the render, and the --ids key of the text that the
 # spotlit element's accessibility label contains. The countdown card's label holds its title.
 SPOTLIGHTS = {"04-home": "countdown_title"}
@@ -177,8 +188,12 @@ def prepare(udid, locale):
     simctl("status_bar", udid, "override", "--time", "9:41", "--dataNetwork", "wifi",
            "--wifiMode", "active", "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
            "--batteryState", "discharging", "--batteryLevel", "100")
-    # The Ludo board shows how to zoom until this phone has zoomed it once.
+    # Location stays off, so iOS shows no prompt and no location arrow in the status bar.
+    simctl("privacy", udid, "revoke", "location", BUNDLE_ID)
+    # The Ludo board shows how to zoom until this phone has zoomed it once, and the first
+    # Draw & Guess replay shows how to speed it up.
     simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "paeonia.games.ludo.hasZoomedBoard.v2", "-bool", "YES")
+    simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "games.drawAndGuess.holdHintShown", "-bool", "YES")
 
 
 def use_large_icons(agent_device, locale):
@@ -252,13 +267,40 @@ def capture(udid, path):
     assert_distinct(path)
 
 
+def snapshot_nodes(agent_device):
+    """The accessibility tree as a list of nodes, the app first, with frames in points."""
+    tree = run(*agent_device[:1], "snapshot", "-i", "--json", *agent_device[1:], capture_output=True).stdout
+    return json.loads(tree)["data"]["nodes"]
+
+
+def start_guess(agent_device, word):
+    """Taps letter tiles until the answer starts with the first GUESS_LETTERS letters of word.
+
+    An answer slot is labelled "<Letter> <n>, <letter or empty>" and a tile "<Letter> <letter>", in
+    the app's language. A rerun finds the letters already typed and only adds the missing ones.
+    """
+    while True:
+        nodes = snapshot_nodes(agent_device)
+        labels = [node.get("label") or "" for node in nodes]
+        typed = sum(1 for label in labels if re.fullmatch(r"\S+ \d+, \S", label))
+        if typed >= GUESS_LETTERS:
+            return
+        letter = word[typed].upper()
+        tiles = [node for node in nodes if re.fullmatch(rf"\S+ {re.escape(letter)}", node.get("label") or "")]
+        if not tiles:
+            raise SystemExit(f"No letter tile {letter} on the Draw & Guess screen.")
+        rect = tiles[0]["rect"]
+        run(*agent_device[:1], "press", str(round(rect["x"] + rect["width"] / 2)),
+            str(round(rect["y"] + rect["height"] / 2)), *agent_device[1:], stdout=subprocess.DEVNULL)
+        time.sleep(1.5)
+
+
 def save_spotlight(agent_device, text, path):
     """Saves the frame of the one element whose label contains text, in capture pixels, next to the capture.
 
     The renderer reads it from <capture>.spotlight.json, so the spotlight follows the app's layout.
     """
-    tree = run(*agent_device[:1], "snapshot", "-i", "--json", *agent_device[1:], capture_output=True).stdout
-    nodes = json.loads(tree)["data"]["nodes"]
+    nodes = snapshot_nodes(agent_device)
     matches = [node for node in nodes if text in (node.get("label") or "")]
     if len(matches) != 1:
         raise SystemExit(f"Found {len(matches)} elements labelled with {text!r} on {path.name}, not 1.")
@@ -273,8 +315,6 @@ def main():
     parser.add_argument("--ids", type=Path, required=True, help="the JSON line scripts/app-store-content printed")
     parser.add_argument("--agent-device", required=True, help="agent-device command prefix pinned to the simulator")
     parser.add_argument("--screens", default=",".join(SCREENS))
-    parser.add_argument("--reveal-delay", type=float, default=3.0,
-                        help="seconds from the chat opening to capturing the end of the reveal")
     parser.add_argument("--simulator", default="Paeonia Screenshots")
     parser.add_argument("--output", type=Path, default=ROOT / "ios/ASConnectScreenshots/trial-1/raw")
     args = parser.parse_args()
@@ -318,14 +358,8 @@ def main():
                 run(*agent_device[:1], "home", *agent_device[1:], stdout=subprocess.DEVNULL)
                 time.sleep(3)
             time.sleep(3)
-        if screen == "02-question":
-            run(*agent_device[:1], "fill", 'role="text-view"', ids["own_answer"], *agent_device[1:],
-                stdout=subprocess.DEVNULL)
-            run(*agent_device[:1], "click", 'id="daily.flow.primary"', *agent_device[1:], stdout=subprocess.DEVNULL)
-            # The cover turns into the question's chat, where Elena's answer plays its reveal.
-            run(*agent_device[:1], "wait", 'id="chat.composer.field"', "20000", *agent_device[1:],
-                stdout=subprocess.DEVNULL)
-            time.sleep(args.reveal_delay)
+        if screen == "06-draw":
+            start_guess(agent_device, ids["guess_word"])
         capture(udid, folder / f"iPhone-{screen}.png")
         if screen in SPOTLIGHTS:
             save_spotlight(agent_device, ids[SPOTLIGHTS[screen]], folder / f"iPhone-{screen}.png")

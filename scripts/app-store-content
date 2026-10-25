@@ -4,11 +4,11 @@
 #
 #   scripts/app-store-content --locale en|nb [--drawing <file.pkdrawing>]
 #       [--drawing-canvas-side 320] [--drawing-strokes N --drawing-points N
-#        --drawing-bounds x,y,width,height] [--for-reveal | --chat-only]
+#        --drawing-bounds x,y,width,height] [--partner-answer-only | --chat-only]
 #
-# --for-reveal has only Elena answer today's question and leaves the chat out, so
-# Hjalmar can answer in the app and see Elena's answer revealed. A later run
-# with --chat-only answers for Hjalmar if he has not, and adds the chat.
+# --partner-answer-only has only Elena answer today's question and leaves the
+# chat out, so Home still invites Hjalmar to answer. A later run with
+# --chat-only answers for Hjalmar if he has not, and adds the chat.
 #
 # Run it on a backend that holds only the paired test couple from
 # scripts/test-couple. The first account becomes Hjalmar and the second Elena.
@@ -19,8 +19,9 @@
 # It seeds names and profile photos, the start date (504 days ago, past the
 # 500-day mark), a countdown 12 days out, today's question answered by Hjalmar
 # and then Elena with a chat about it, three memories with photos, a Ludo game
-# waiting for Hjalmar's move, a note on Home from each, both locations on the
-# Home map, and with --drawing a widget drawing from Elena.
+# waiting for Hjalmar's move, a Draw & Guess round where Elena drew GUESS_DRAWING
+# for Hjalmar to guess, a note on Home from each, both locations on the Home
+# map, and with --drawing a widget drawing from Elena.
 #
 # The server picks a day's question at random, and each partner can skip it 30
 # times a day. The script skips until today's question is QUESTION_KEY. When the
@@ -38,10 +39,10 @@
 # The drawing is PKDrawing.dataRepresentation() bytes. Without the stroke count,
 # point count and bounds it reads them from the file with a small PencilKit
 # program it compiles with swiftc. The last stdout line is a JSON object with the
-# ids the screenshot deep links need, Hjalmar's answer for the reveal, the
-# countdown's title, which the capture script finds the Home countdown card by,
-# and Elena's Clerk subject, which scripts/capture-app-store-screenshots.py uses
-# to show Elena at the Ludo table.
+# ids the screenshot deep links need, the Draw & Guess word, the countdown's
+# title, which the capture script finds the Home countdown card by, and Elena's
+# Clerk subject, which scripts/capture-app-store-screenshots.py uses to show
+# Elena at the Ludo table.
 #
 # It reads CLERK_DEV_SECRET_KEY and CLERK_DEV_JWT_ISSUER_DOMAIN from the
 # api.paeonia.no env the way scripts/test-couple does. Tokens are never printed.
@@ -90,6 +91,8 @@ LUDO_MOVES = [
     ("first", 2, 0),
     ("second", 2, 0),
 ]
+# Elena's Draw & Guess drawing, from scripts/app-store-drawing.swift. Its word is CONTENT's guess_word.
+GUESS_DRAWING = ROOT / "scripts/assets/app-store/game-drawing-snail.pkdrawing"
 OSLO = (59.9133, 10.7389)
 COPENHAGEN = (55.6761, 12.5683)
 
@@ -99,11 +102,14 @@ ACCOUNTS = {"first": {"external_id": "paeonia-test-first", "name": "Hjalmar", "p
 CONTENT = {
     "en": {
         "countdown": "Elena lands in Oslo",
+        "guess_word": "snail",
         # Answers to QUESTION_KEY, Hjalmar's first.
         "answers": {"first": "Pancakes at the little café by the station. You get the blueberry ones and I steal half.",
                     "second": "Your homemade pizza, eaten on the floor because we never clear the table in time."},
         "chat": [("second", "Pancakes for breakfast, pizza for dinner. Deal?"),
                  ("first", "Deal. I'll buy extra blueberries."),
+                 ("second", "And the pizza goes on the floor again 😄"),
+                 ("first", "It's a tradition now"),
                  ("second", "12 days. I'm counting."),
                  ("first", "Me too ❤️")],
         "notes": {"first": "Coffee call? ☕", "second": "Miss you 🫶"},
@@ -116,10 +122,13 @@ CONTENT = {
     },
     "nb": {
         "countdown": "Elena lander i Oslo",
+        "guess_word": "snegle",
         "answers": {"first": "Pannekaker på den lille kafeen ved stasjonen. Du tar de med blåbær, og jeg stjeler halvparten.",
                     "second": "Hjemmelaget pizza hos deg, spist på gulvet fordi vi aldri rekker å rydde bordet."},
         "chat": [("second", "Pannekaker til frokost og pizza til middag. Avtale?"),
                  ("first", "Avtale. Jeg kjøper ekstra blåbær."),
+                 ("second", "Og pizzaen spiser vi på gulvet igjen 😄"),
+                 ("first", "Det er jo tradisjon nå"),
                  ("second", "12 dager igjen. Jeg teller."),
                  ("first", "Jeg også ❤️")],
         "notes": {"first": "Kaffe? ☕", "second": "Savner deg 🫶"},
@@ -436,6 +445,32 @@ def seed_ludo(people: dict, locale: str) -> str:
     return game["id"]
 
 
+def seed_draw_and_guess(people: dict, couple_id: str, locale: str) -> str:
+    """Has Elena pick her own word and draw GUESS_DRAWING for it, so Hjalmar has a drawing to guess. Returns the round id."""
+    second = people["second"]
+    game_id = second.mutation("drawAndGuess:ensure_draw_and_guess_game")["game_id"]
+    state = second.query("drawAndGuess:get_draw_and_guess")
+    game, round_ = state["game"], state["current_round"]
+    if round_ and round_["drawer_user_id"] == second.user_id and round_["drawing_media_asset_id"]:
+        print(f"Draw & Guess round {round_['id']} already waits for Hjalmar's guess")
+        return round_["id"]
+    if game["state"] == "choosing_word" and game["turn_user_id"] == second.user_id:
+        round_ = second.mutation("drawAndGuess:pick_draw_word", {
+            "p_game_id": game_id, "p_round_id": fixed_id(couple_id, f"draw-round-{game['turn_number']}"),
+            "p_choice": "custom", "p_custom_word": CONTENT[locale]["guess_word"], "p_word_id": None, **operation()})
+        round_["id"] = round_["round_id"]
+    elif not (game["state"] == "drawing" and round_ and round_["drawer_user_id"] == second.user_id):
+        raise SystemExit(f"Draw & Guess is in {game['state']} for the other player. Start from a fresh backend.")
+    asset_id = second.upload(GUESS_DRAWING.read_bytes(), "application/octet-stream", {
+        "p_reserved_parent_kind": "game_move", "p_reserved_parent_id": round_["id"],
+        "p_upload_purpose": "game_drawing_payload", "p_media_type": "drawing_payload",
+        "p_file_extension": "pkdrawing", "p_couple_id": couple_id, "p_path_context": {"game_id": game_id}})
+    second.mutation("drawAndGuess:submit_drawing",
+                    {"p_round_id": round_["id"], "p_media_asset_id": asset_id, **operation()})
+    print(f"Draw & Guess round {round_['id']}: Elena drew {CONTENT[locale]['guess_word']!r} for Hjalmar")
+    return round_["id"]
+
+
 def seed_home(people: dict, couple_id: str, locale: str) -> None:
     for role, person in people.items():
         person.mutation("stories:set_note", {"p_text": CONTENT[locale]["notes"][role], **operation()})
@@ -541,8 +576,8 @@ def main() -> None:
     parser.add_argument("--drawing-time", default="07:24",
                         help="the time today, HH:MM in Oslo, that the drawing shows (default 07:24)")
     stage = parser.add_mutually_exclusive_group()
-    stage.add_argument("--for-reveal", action="store_true",
-                       help="only Elena answers today's question, so Hjalmar can answer in the app and see the reveal")
+    stage.add_argument("--partner-answer-only", action="store_true",
+                       help="only Elena answers today's question, so Home still invites Hjalmar to answer")
     stage.add_argument("--chat-only", action="store_true", help="only add the question's chat to an earlier run")
     args = parser.parse_args()
     locale = args.locale
@@ -570,19 +605,20 @@ def main() -> None:
     seed_profiles(people)
     seed_dates(first, locale, couple_id)
     question, day_id = seed_daily_question(convex, people, couple_id, locale,
-                                           ("second",) if args.for_reveal else ("first", "second"))
-    if not args.for_reveal:
+                                           ("second",) if args.partner_answer_only else ("first", "second"))
+    if not args.partner_answer_only:
         seed_chat(people, couple_id, question["question_id"], locale)
     memory_ids = seed_memories(people, couple_id, locale)
     ludo_id = seed_ludo(people, locale)
+    draw_round_id = seed_draw_and_guess(people, couple_id, locale)
     seed_home(people, couple_id, locale)
     seed_streak(convex, couple_id, day_id)
     if args.drawing:
         set_drawing_time(convex, seed_widget_drawing(second, args.drawing, args), args.drawing_time)
     print(json.dumps({"couple_day_id": day_id, "instance_id": question["instance_id"],
                       "question_id": question["question_id"], "memory_ids": memory_ids, "ludo_game_id": ludo_id,
+                      "draw_round_id": draw_round_id, "guess_word": CONTENT[locale]["guess_word"],
                       "partner_clerk_subject": subjects["second"],
-                      "own_answer": CONTENT[locale]["answers"]["first"],
                       "countdown_title": CONTENT[locale]["countdown"]}, ensure_ascii=False))
 
 

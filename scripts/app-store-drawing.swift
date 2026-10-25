@@ -1,17 +1,19 @@
-// Builds the widget drawing for the first App Store screenshot, one per locale:
-// a little plane on a looping dotted route that ends in a heart, with the days
-// left until the seeded countdown ("Elena lands in Oslo") scribbled beside it.
-// Each is a real `PKDrawing.dataRepresentation()` payload made only of what the
-// app's drawing screen makes: thick monoline pen strokes at widths the size
-// slider allows, and bucket fills made the way `DrawingFloodFill` makes them,
-// all in the palette inks.
+// Builds the drawings for the App Store screenshots. The widget drawing of the
+// first screenshot, one per locale, is a little plane on a looping dotted route
+// that ends in a heart, with the days left until the seeded countdown ("Elena
+// lands in Oslo") scribbled beside it. The Draw & Guess drawing has no words, so
+// one file serves both locales: a smiling snail, the word Elena draws for
+// Hjalmar to guess. Each is a real `PKDrawing.dataRepresentation()` payload made
+// only of what the app's drawing screen makes: thick monoline pen strokes at
+// widths the size slider allows, and bucket fills made the way
+// `DrawingFloodFill` makes them, all in the palette inks.
 //
 //   swift scripts/app-store-drawing.swift scripts/assets/app-store
 //
-// Writes widget-drawing-plane-<locale>.pkdrawing and its -preview.png (rendered
-// like `WidgetDrawingRasterizer`, over the widget's plum) for each locale, and
-// prints the inks and widths in each payload, the counts, and the bounds JSON
-// the app sends with it.
+// Writes widget-drawing-plane-<locale>.pkdrawing and game-drawing-snail.pkdrawing,
+// each with a -preview.png (rendered like `WidgetDrawingRasterizer`, over the
+// widget's plum), and prints the inks and widths in each payload, the counts,
+// and the bounds JSON the app sends with it.
 
 import AppKit
 import PencilKit
@@ -96,6 +98,8 @@ struct Shape {
 enum Mark {
     case trace(Trace)
     case shape(Shape)
+    /// A paint-bucket tap at a point, filling the area the strokes so far enclose.
+    case bucket(CGPoint, Ink)
 }
 
 // MARK: - Geometry
@@ -223,6 +227,10 @@ struct StrokeBuilder {
                let mask = maskPath(bucketArea(outlines: [outline], seed: seed)) {
                 strokes.append(fillStroke(mask: mask, ink: shape.fill))
             }
+        case let .bucket(point, ink):
+            let seed = Int(point.y * maskScale) * maskSize + Int(point.x * maskScale)
+            let mask = required(maskPath(bucketArea(outlines: strokes, seed: seed)), "a fill")
+            strokes.append(fillStroke(mask: mask, ink: ink))
         }
     }
 
@@ -665,6 +673,7 @@ extension Mark {
         switch self {
         case let .trace(trace): trace.points
         case let .shape(shape): shape.outline
+        case let .bucket(point, _): [point]
         }
     }
 
@@ -676,6 +685,8 @@ extension Mark {
         case var .shape(shape):
             shape.outline = shape.outline.map(transform)
             return .shape(shape)
+        case let .bucket(point, ink):
+            return .bucket(transform(point), ink)
         }
     }
 }
@@ -774,6 +785,49 @@ func drawing(word: String, seed: UInt64) -> [Mark] {
     return marks
 }
 
+// MARK: - The snail
+
+/// The word Elena draws in the Draw & Guess screenshot.
+let guessWord = "snail"
+
+/// A smiling snail heading right, drawn the way a finger does it in about 20
+/// seconds: a pink shell, a gold body traced from the shell and filled with one
+/// bucket tap, a spiral, two eye stalks, a smile, a strip of grass and a heart.
+func snail() -> [Mark] {
+    var random = Seeded(state: 7)
+    let shellCenter = pt(130, 150), shellRadius: CGFloat = 62
+    let shell = (0...12).map { shellCenter + polar(degrees(CGFloat($0) * 30 - 90), shellRadius) }
+    var marks = [filled(shell, Pen(ink: .pink, width: 3.5), shake: 2, random: &random)]
+
+    let gold = Pen(ink: .gold, width: 3.5)
+    // From the shell's lower left, along the ground, up and over the head, back into the shell.
+    marks.append(touch([
+        pt(87, 194), pt(76, 215), pt(90, 234), pt(150, 240), pt(225, 236), pt(262, 222), pt(276, 195),
+        pt(272, 163), pt(255, 141), pt(234, 136), pt(215, 148), pt(205, 168), pt(182, 184),
+    ], gold, shake: 1.5, random: &random))
+    marks.append(.bucket(pt(240, 190), .gold))
+
+    let spiral = (0...44).map { step -> CGPoint in
+        let turn = CGFloat(step) / 44
+        return shellCenter + pt(-2, 2) + polar(degrees(200 + 810 * turn), 4 + 40 * turn)
+    }
+    marks.append(touch(spiral, Pen(ink: .blush, width: 3), shake: 1, random: &random))
+
+    for (base, tip) in [(pt(230, 140), pt(214, 94)), (pt(250, 142), pt(266, 98))] {
+        marks.append(touch([base, (base + tip) * 0.5 + pt(-3, 0), tip], gold, shake: 1, random: &random))
+        marks.append(touch([tip, tip + pt(1.5, 0.5)], Pen(ink: .gold, width: 7), shake: 0, random: &random))
+    }
+    marks.append(touch([pt(240, 172), pt(250, 180), pt(262, 174)], Pen(ink: .pink, width: 2.5), shake: 0.6,
+                       random: &random))
+    marks.append(touch([pt(266, 162), pt(267, 163)], Pen(ink: .petal, width: 5), shake: 0, random: &random))
+
+    marks.append(touch([pt(36, 256), pt(90, 251), pt(150, 255), pt(210, 250), pt(286, 254)],
+                       Pen(ink: .green, width: 3), shake: 1.5, random: &random))
+    let heart = heartPoints.map { pt(282, 70) + $0.rotated(0.2) * 26 }
+    marks.append(filled(heart, Pen(ink: .petal, width: 3), shake: 0.8, random: &random))
+    return marks
+}
+
 // MARK: - Main
 
 /// PencilKit keeps per-app state in preferences and crashes in a process with
@@ -824,8 +878,9 @@ func describeInks(_ drawing: PKDrawing) {
     }
 }
 
-/// Builds, checks, and writes one locale's payload and preview.
-func publish(_ marks: [Mark], locale: String, to directory: URL) throws {
+/// Builds, checks, and writes one payload and its preview as `<name>.pkdrawing`
+/// and `<name>-preview.png`. A widget drawing keeps out of `labelCorner`.
+func publish(_ marks: [Mark], name: String, isWidget: Bool, to directory: URL) throws {
     var builder = StrokeBuilder()
     for mark in marks { builder.add(mark) }
     let built = PKDrawing(strokes: builder.strokes)
@@ -845,15 +900,15 @@ func publish(_ marks: [Mark], locale: String, to directory: URL) throws {
         "past the server's limits"
     )
     precondition(
-        drawing.strokes.allSatisfy { !$0.renderBounds.intersects(labelCorner) },
+        !isWidget || drawing.strokes.allSatisfy { !$0.renderBounds.intersects(labelCorner) },
         "a stroke reaches into the corner under the widget's label"
     )
-    try data.write(to: directory.appendingPathComponent("widget-drawing-plane-\(locale).pkdrawing"))
-    let preview = directory.appendingPathComponent("widget-drawing-plane-\(locale)-preview.png")
+    try data.write(to: directory.appendingPathComponent("\(name).pkdrawing"))
+    let preview = directory.appendingPathComponent("\(name)-preview.png")
     writePNG(onPlum(render(drawing, pixelWidth: 1_080), side: 1_080), to: preview)
 
     let bounds = drawing.bounds
-    say("\(locale): strokes \(drawing.strokes.count), points \(pointCount), bytes \(data.count)")
+    say("\(name): strokes \(drawing.strokes.count), points \(pointCount), bytes \(data.count)")
     say(String(
         format: #"  bounds {"x":%g,"y":%g,"width":%g,"height":%g,"canvasSide":%g}"#,
         bounds.minX, bounds.minY, bounds.width, bounds.height, canvasSide
@@ -871,5 +926,6 @@ let outDirectory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: t
 try FileManager.default.createDirectory(at: outDirectory, withIntermediateDirectories: true)
 for (index, countdown) in countdowns.enumerated() {
     let marks = drawing(word: countdown.word, seed: UInt64(41 + index))
-    try publish(marks, locale: countdown.locale, to: outDirectory)
+    try publish(marks, name: "widget-drawing-plane-\(countdown.locale)", isWidget: true, to: outDirectory)
 }
+try publish(snail(), name: "game-drawing-\(guessWord)", isWidget: false, to: outDirectory)
