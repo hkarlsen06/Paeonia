@@ -11,6 +11,10 @@ extension WidgetDrawingViewModel {
             return
         }
         hasLoadedSavedDrawing = true
+        defer {
+            hasFinishedLoading = true
+            addWaitingStrokes()
+        }
         setAsideDrawing = setAsideKey
             .flatMap { draftStore.draft(for: $0) }
             .flatMap { try? PKDrawing(data: $0) }
@@ -44,6 +48,37 @@ extension WidgetDrawingViewModel {
         restoreDraftOrBaseline()
         drawingCanvasSide = targetSide
         fitDrawingToCanvas()
+    }
+
+    /// Strokes waiting for the canvas to load, in a square `side` points wide.
+    struct StrokesToAdd {
+        let drawing: PKDrawing
+        let side: CGFloat
+        let onAdded: @MainActor () -> Void
+    }
+
+    /// Puts strokes drawn on another screen on this canvas, scaled from a square
+    /// `side` points wide to this one, on top of the draft or the saved drawing.
+    /// They wait until the canvas has loaded, because a canvas that already has
+    /// strokes skips its draft. Each stroke is its own undo step, like one drawn
+    /// here. The draft is written at once, then `onAdded` runs, so the strokes are
+    /// never in both places after a relaunch.
+    func addStrokesOnceLoaded(_ drawing: PKDrawing, side: CGFloat, onAdded: @escaping @MainActor () -> Void) {
+        strokesToAdd = StrokesToAdd(drawing: drawing, side: side, onAdded: onAdded)
+        addWaitingStrokes()
+    }
+
+    private func addWaitingStrokes() {
+        guard hasFinishedLoading, let strokesToAdd else {
+            return
+        }
+        self.strokesToAdd = nil
+        let scaled = strokesToAdd.drawing.scaled(fromSide: strokesToAdd.side, toSide: currentCanvasSide())
+        for stroke in scaled.strokes {
+            applyEdit(PKDrawing(strokes: drawing.strokes + [stroke]))
+        }
+        persistDraftImmediatelyIfNeeded()
+        strokesToAdd.onAdded()
     }
 
     /// Puts an unsent draft on the canvas, or the drawing on the widgets.

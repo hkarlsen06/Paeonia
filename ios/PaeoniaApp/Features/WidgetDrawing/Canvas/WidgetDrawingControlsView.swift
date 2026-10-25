@@ -230,23 +230,30 @@ struct WidgetDrawingToolControlsView: View {
 
             toolControlSeparator
 
-            undoRedoButton(
-                systemImageName: "arrow.uturn.backward",
-                accessibilityLabel: .widgetDrawingUndoButton,
-                isEnabled: viewModel.canUndoDrawing,
-                action: viewModel.undoDrawing
-            )
-
-            undoRedoButton(
-                systemImageName: "arrow.uturn.forward",
-                accessibilityLabel: .widgetDrawingRedoButton,
-                isEnabled: viewModel.canRedoDrawing,
-                action: viewModel.redoDrawing
-            )
+            undoRedoButtons
         }
         .padding(PaeoniaSpacing.space4)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(Capsule(style: .continuous))
+    }
+
+    @ViewBuilder
+    private var undoRedoButtons: some View {
+        undoRedoButton(
+            systemImageName: "arrow.uturn.backward",
+            accessibilityLabel: .widgetDrawingUndoButton,
+            accessibilityIdentifier: "widgetDrawing.undo",
+            isEnabled: viewModel.canUndoDrawing,
+            action: viewModel.undoDrawing
+        )
+
+        undoRedoButton(
+            systemImageName: "arrow.uturn.forward",
+            accessibilityLabel: .widgetDrawingRedoButton,
+            accessibilityIdentifier: "widgetDrawing.redo",
+            isEnabled: viewModel.canRedoDrawing,
+            action: viewModel.redoDrawing
+        )
     }
 
     private var toolControlSeparator: some View {
@@ -260,6 +267,7 @@ struct WidgetDrawingToolControlsView: View {
     private func undoRedoButton(
         systemImageName: String,
         accessibilityLabel: LocalizedStringResource,
+        accessibilityIdentifier: String,
         isEnabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
@@ -275,6 +283,7 @@ struct WidgetDrawingToolControlsView: View {
         .buttonStyle(.plain)
         .disabled(!isEnabled)
         .accessibilityLabel(Text(accessibilityLabel))
+        .accessibilityIdentifier(accessibilityIdentifier)
     }
 
     private func toolForeground(for tool: WidgetDrawingTool) -> Color {

@@ -112,6 +112,11 @@ final class WidgetDrawingViewModel {
     /// Drawing together while the partner has the canvas open. Nil without a couple.
     let live: WidgetLiveDrawing?
     @ObservationIgnored var hasLoadedSavedDrawing = false
+    /// The first load is done, so strokes added from code land on top of it.
+    @ObservationIgnored var hasFinishedLoading = false
+    /// Strokes from another screen that join the canvas once it has loaded
+    /// (`addStrokesOnceLoaded`).
+    @ObservationIgnored var strokesToAdd: StrokesToAdd?
     @ObservationIgnored private var sentConfirmationTask: Task<Void, Never>?
     @ObservationIgnored var draftPersistenceTask: Task<Void, Never>?
     @ObservationIgnored let draftOrder = DraftWriteOrder()
