@@ -8,6 +8,9 @@ struct PaywallFooterActionsView: View {
     let showsUnpair: Bool
     let isLeavingRelationship: Bool
     let onRestorePurchases: () -> Void
+    /// Opens Apple's subscription sheet. Only someone whose own subscription
+    /// ended gets it, so nil hides the link.
+    let onManageSubscription: (() -> Void)?
     let onSignOut: () -> Void
     let onRequestUnpair: () -> Void
     /// Opens "Download my data". Everyone has the right to their data, so it sits
@@ -21,6 +24,9 @@ struct PaywallFooterActionsView: View {
                 .background(.paeoniaSurfacePressed)
                 .padding(.bottom, PaeoniaSpacing.space4)
             restoreButton
+            if let onManageSubscription {
+                manageSubscriptionButton(onManageSubscription)
+            }
             PaeoniaLegalLinksView()
             accountActions
         }
@@ -44,6 +50,19 @@ struct PaywallFooterActionsView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.paeoniaAccentPrimary)
+        .disabled(isBusyWithStore)
+    }
+
+    private func manageSubscriptionButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(.paywallManageSubscription)
+                .font(PaeoniaTypography.bodyEmphasis)
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.paeoniaAccentPrimary)
+        .accessibilityIdentifier("paywall.manageSubscription")
         .disabled(isBusyWithStore)
     }
 

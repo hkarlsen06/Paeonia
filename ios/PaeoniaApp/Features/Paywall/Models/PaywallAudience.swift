@@ -10,10 +10,12 @@ import Foundation
 /// - `.paired`: in an active relationship, but the couple has no active
 ///   subscription. The copy makes it clear they are still paired, and the footer
 ///   offers to unpair. Invite entry is hidden because they already have a partner.
+///   `lapsedAccess` says whether this person paid, and the header and actions
+///   follow it.
 nonisolated enum PaywallAudience: Equatable, Sendable {
     case unpaired
     case unpairedWithDrawing
-    case paired(partnerName: String?)
+    case paired(partnerName: String?, lapsedAccess: LapsedAccess)
 
     var allowsInviteEntry: Bool {
         switch self {
@@ -33,14 +35,30 @@ nonisolated enum PaywallAudience: Equatable, Sendable {
         }
     }
 
+    /// Apple is still retrying this person's payment. The paywall sends them to
+    /// the App Store to fix it instead of offering plans to buy again.
+    var asksToUpdatePayment: Bool {
+        if case .paired(_, .paymentFailed) = self { true } else { false }
+    }
+
+    /// This person's own App Store subscription ended, so Apple's subscription
+    /// sheet has something of theirs to show.
+    var offersManageSubscription: Bool {
+        if case .paired(_, .subscriptionEnded) = self { true } else { false }
+    }
+
     var headline: LocalizedStringResource {
         switch self {
         case .unpaired:
             .paywallHeadline
         case .unpairedWithDrawing:
             .paywallDrawingReadyHeadline
-        case .paired:
+        case .paired(_, .partnerCovered):
             .paywallPairedHeadline
+        case .paired(_, .subscriptionEnded):
+            .paywallPairedSubscriptionEndedHeadline
+        case .paired(_, .paymentFailed):
+            .paywallPairedPaymentFailedHeadline
         }
     }
 
@@ -50,8 +68,12 @@ nonisolated enum PaywallAudience: Equatable, Sendable {
             .paywallSubtitle
         case .unpairedWithDrawing:
             .paywallDrawingReadyMessage
-        case .paired:
+        case .paired(_, .partnerCovered):
             .paywallPairedMessage(partnerNameForCopy)
+        case .paired(_, .subscriptionEnded):
+            .paywallPairedSubscriptionEndedMessage(partnerNameForCopy)
+        case .paired(_, .paymentFailed):
+            .paywallPairedPaymentFailedMessage(partnerNameForCopy)
         }
     }
 
@@ -61,7 +83,7 @@ nonisolated enum PaywallAudience: Equatable, Sendable {
         switch self {
         case .unpaired, .unpairedWithDrawing:
             return String(localized: .paywallPairedPartnerFallback)
-        case let .paired(partnerName):
+        case let .paired(partnerName, _):
             return partnerName?.trimmedNonEmpty ?? String(localized: .paywallPairedPartnerFallback)
         }
     }

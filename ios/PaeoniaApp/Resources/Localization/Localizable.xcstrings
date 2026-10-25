@@ -27233,6 +27233,96 @@
         }
       }
     },
+    "paywall.paired.paymentFailed.button" : {
+      "comment" : "Main paywall button for the person whose subscription payment failed. Opens the App Store page where they manage their subscription.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update payment"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppdater betaling"
+          }
+        }
+      }
+    },
+    "paywall.paired.paymentFailed.headline" : {
+      "comment" : "Paywall headline for the person whose App Store subscription payment failed while Apple keeps retrying it. Same wording as the Home notice title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your payment didn't go through"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Betalingen din gikk ikke gjennom"
+          }
+        }
+      }
+    },
+    "paywall.paired.paymentFailed.message" : {
+      "comment" : "Paywall line for the person whose App Store subscription payment failed. %@ is the partner's name. 'Update your payment' means fixing the payment method in the App Store.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything you and %@ saved is safe. Update your payment in the App Store to open Paeonia again for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt du og %@ har lagret, er trygt. Oppdater betalingen din i App Store for å åpne Paeonia igjen for dere begge."
+          }
+        }
+      }
+    },
+    "paywall.paired.subscriptionEnded.headline" : {
+      "comment" : "Paywall headline for the person whose own App Store subscription ended. They are still paired with their partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your subscription ended"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abonnementet ditt er avsluttet"
+          }
+        }
+      }
+    },
+    "paywall.paired.subscriptionEnded.message" : {
+      "comment" : "Paywall line for the person whose own App Store subscription ended. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything you and %@ saved is safe. Subscribe again to open Paeonia for both of you."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt du og %@ har lagret, er trygt. Abonner igjen for å åpne Paeonia for dere begge."
+          }
+        }
+      }
+    },
     "paywall.period.monthly" : {
       "comment" : "Full monthly billing period label.",
       "extractionState" : "manual",

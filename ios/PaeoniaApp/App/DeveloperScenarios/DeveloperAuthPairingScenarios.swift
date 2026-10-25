@@ -155,7 +155,9 @@
     private var hasTrial: Bool { scenario == .paywallTrial || scenario == .paywallDrawing }
     private var audience: PaywallAudience {
       switch scenario {
-      case .paywallPaired: .paired(partnerName: "Robin")
+      case .paywallPaired: .paired(partnerName: "Robin", lapsedAccess: .partnerCovered)
+      case .paywallPairedEnded: .paired(partnerName: "Robin", lapsedAccess: .subscriptionEnded)
+      case .paywallPairedPaymentFailed: .paired(partnerName: "Robin", lapsedAccess: .paymentFailed)
       case .paywallDrawing: .unpairedWithDrawing
       default: .unpaired
       }

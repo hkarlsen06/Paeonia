@@ -21,17 +21,25 @@ struct PaywallContentView: View {
             PaywallFeatureList()
                 .screenEntrance(order: 2, isReady: isEntranceReady)
 
-            VStack(spacing: PaeoniaSpacing.space12) {
-                PaywallPlanPicker(plans: plans, isLoading: isLoadingPlans, selection: $billingPeriod)
-
-                if let trialReminder {
-                    trialReminderLine(trialReminder)
-                }
+            // Someone whose payment Apple is still retrying fixes it in the App
+            // Store, so there is nothing here to buy.
+            if !audience.asksToUpdatePayment {
+                plansSection
+                    .screenEntrance(order: 3, isReady: isEntranceReady)
             }
-            // Prices that come in after the drop grow the cards instead of jumping.
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isLoadingPlans)
-            .screenEntrance(order: 3, isReady: isEntranceReady)
         }
+    }
+
+    private var plansSection: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            PaywallPlanPicker(plans: plans, isLoading: isLoadingPlans, selection: $billingPeriod)
+
+            if let trialReminder {
+                trialReminderLine(trialReminder)
+            }
+        }
+        // Prices that come in after the drop grow the cards instead of jumping.
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isLoadingPlans)
     }
 
     private var header: some View {

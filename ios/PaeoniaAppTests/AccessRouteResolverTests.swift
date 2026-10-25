@@ -187,6 +187,31 @@ struct AccessRouteResolverTests {
         #expect(OwnAccess(.notEntitled()) == .nothing)
         #expect(OwnAccess(nil) == .nothing)
     }
+
+    @Test func lapsedAccessTellsThePayerFromThePartnerTheyCovered() {
+        func entitlement(source: String, status: String, isEntitled: Bool = false) -> RemoteUserEntitlement {
+            RemoteUserEntitlement(
+                userID: UUID(),
+                isEntitled: isEntitled,
+                source: source,
+                status: status,
+                productID: nil,
+                billingPeriod: nil,
+                currentPeriodEnd: Date(timeIntervalSince1970: 1_700_000_000),
+                updatedAt: nil
+            )
+        }
+
+        #expect(LapsedAccess(nil) == .partnerCovered)
+        #expect(LapsedAccess(.notEntitled()) == .partnerCovered)
+        #expect(LapsedAccess(entitlement(source: "review_grant", status: "expired")) == .partnerCovered)
+        #expect(LapsedAccess(entitlement(source: "storekit", status: "expired")) == .subscriptionEnded)
+        #expect(LapsedAccess(entitlement(source: "storekit", status: "refunded")) == .subscriptionEnded)
+        #expect(LapsedAccess(entitlement(source: "storekit", status: "revoked")) == .subscriptionEnded)
+        #expect(LapsedAccess(entitlement(source: "storekit", status: "billing_retry")) == .paymentFailed)
+        // An App Store row still counts as their own subscription while it is active.
+        #expect(LapsedAccess(.entitled()) == .subscriptionEnded)
+    }
 }
 
 private extension AccessRouteSnapshot {

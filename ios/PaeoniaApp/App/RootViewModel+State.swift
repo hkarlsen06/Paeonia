@@ -39,6 +39,10 @@ extension RootViewModel {
         route.accessResolution?.ownAccess ?? .nothing
     }
 
+    var currentLapsedAccess: LapsedAccess {
+        route.accessResolution?.lapsedAccess ?? .partnerCovered
+    }
+
     var currentRelationshipAcceptedInvite: Bool {
         route.accessResolution?.acceptedInvite ?? false
     }

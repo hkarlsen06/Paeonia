@@ -1,4 +1,5 @@
 import Foundation
+import StoreKit
 import SwiftUI
 
 /// The subscription offer, shown in the root's screen frame between profile setup
@@ -24,6 +25,7 @@ struct PaywallView: View {
     @State private var isConfirmingUnpair = false
     @State private var isShowingDataExport = false
     @State private var isEnteringInviteCode = false
+    @State private var isManagingSubscription = false
     /// A purchase or restore went through and the next screen is on its
     /// way. The buttons wait instead of offering to buy again. If the access check
     /// ends with the paywall still up, they come back.
@@ -96,8 +98,10 @@ struct PaywallView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomBar
         }
-        .task {
-            guard presentationOverride == nil else {
+        // Someone asked to update their payment sees no prices, so they load
+        // only if the paywall turns into an offer.
+        .task(id: audience.asksToUpdatePayment) {
+            guard presentationOverride == nil, !audience.asksToUpdatePayment else {
                 return
             }
             await viewModel.loadProducts()
@@ -107,7 +111,7 @@ struct PaywallView: View {
             isEntranceReady = true
         }
         .onChange(of: selectedPresentation.isLoading, initial: true) { _, isLoading in
-            if !isLoading {
+            if !isLoading || audience.asksToUpdatePayment {
                 isEntranceReady = true
             }
         }
@@ -133,6 +137,7 @@ struct PaywallView: View {
         .sheet(isPresented: $isShowingDataExport) {
             DataExportScreen()
         }
+        .manageSubscriptionsSheet(isPresented: $isManagingSubscription)
         .modifier(
             PaywallConfirmationAlerts(
                 isConfirmingDelete: $isConfirmingDelete,
@@ -179,6 +184,10 @@ private extension PaywallView {
     // MARK: - Bottom bar
 
     var bottomBar: some View {
+        if audience.asksToUpdatePayment {
+            return updatePaymentBar
+        }
+
         let selected = selectedPresentation
         let hasOffer = presentationOverride != nil || selected.product != nil
         let canRetry = !hasOffer && !selected.isLoading
@@ -207,6 +216,21 @@ private extension PaywallView {
         )
     }
 
+    /// Apple is still retrying the payment, so the button opens Apple's
+    /// subscription sheet instead of buying. When the payment goes through, the
+    /// live access feed takes the couple into the app.
+    var updatePaymentBar: PaywallBottomCTAView {
+        PaywallBottomCTAView(
+            title: .paywallPairedPaymentFailedButton,
+            caption: nil,
+            isEnabled: !viewModel.isBusyWithStore,
+            isBusy: false,
+            isDone: isOpening,
+            onPrimaryAction: { isManagingSubscription = true },
+            onHaveInviteCode: nil
+        )
+    }
+
     var footerActions: some View {
         PaywallFooterActionsView(
             isBusyWithStore: viewModel.isBusyWithStore || isOpening,
@@ -214,6 +238,7 @@ private extension PaywallView {
             showsUnpair: audience.isPaired,
             isLeavingRelationship: viewModel.isLeavingRelationship,
             onRestorePurchases: restorePurchases,
+            onManageSubscription: audience.offersManageSubscription ? { isManagingSubscription = true } : nil,
             onSignOut: onSignOut,
             onRequestUnpair: {
                 isConfirmingUnpair = true

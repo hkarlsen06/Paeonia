@@ -11,7 +11,8 @@
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
-      paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallLoading,
+      paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallPairedEnded, paywallPairedPaymentFailed,
+      paywallLoading,
       pairedHome, questions, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
       streakHealthy, streakSaveHome, streakSaveDay, streakSaved, streakBroken, streakRestoreExpired, streakRestored,
@@ -132,7 +133,14 @@
       "paywall-drawing", "Paywall · drawing ready", "Unpaired offer while the first drawing waits to send"
     )
     static let paywallPaired = paywall(
-      "paywall-paired", "Paywall · paired", "Couple remains linked but access expired"
+      "paywall-paired", "Paywall · paired", "Couple remains linked but access expired; the partner paid"
+    )
+    static let paywallPairedEnded = paywall(
+      "paywall-paired-ended", "Paywall · paired, payer", "This person's own subscription ended; Manage subscription"
+    )
+    static let paywallPairedPaymentFailed = paywall(
+      "paywall-paired-payment-failed", "Paywall · paired, payment failed",
+      "Apple is still retrying this person's payment; Update payment instead of plans"
     )
     static let paywallLoading = paywall(
       "paywall-loading", "Paywall · loading", "Stable blank surface while products settle"

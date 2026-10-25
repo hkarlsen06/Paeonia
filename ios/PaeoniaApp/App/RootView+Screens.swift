@@ -151,12 +151,13 @@ extension RootView {
     }
 
     /// A paired-but-unentitled couple gets the paired paywall (clear partner
-    /// context plus an unpair action); everyone else on the paywall is a signed-in
-    /// user who is not paired yet, told so when their first drawing waits to send.
+    /// context plus an unpair action), worded for whether this person paid;
+    /// everyone else on the paywall is a signed-in user who is not paired yet,
+    /// told so when their first drawing waits to send.
     private var paywallAudience: PaywallAudience {
         switch viewModel.state {
         case .pairedPaywalled:
-            .paired(partnerName: viewModel.currentPartnerDisplayName)
+            .paired(partnerName: viewModel.currentPartnerDisplayName, lapsedAccess: viewModel.currentLapsedAccess)
         default:
             viewModel.welcomeFlow.hasWaitingDrawing ? .unpairedWithDrawing : .unpaired
         }

@@ -103,6 +103,11 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
         OwnAccess(snapshot.userEntitlement)
     }
 
+    /// Whether this person paid, for the paywall after the couple's access lapsed.
+    var lapsedAccess: LapsedAccess {
+        LapsedAccess(snapshot.userEntitlement)
+    }
+
     /// This person joined with the partner's invite code.
     var acceptedInvite: Bool {
         snapshot.relationshipState?.acceptedInvite ?? false
