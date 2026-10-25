@@ -27114,13 +27114,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Got a code? Join for free"
+            "value" : "Were you invited? Join for free"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Har du en kode? Bli med gratis"
+            "value" : "Ble du invitert? Bli med gratis"
           }
         }
       }
