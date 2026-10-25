@@ -6,6 +6,9 @@ import Foundation
 nonisolated struct SnappedShape: Equatable, Codable, Sendable {
     nonisolated enum Kind: Equatable, Codable, Sendable {
         case line(from: CGPoint, to: CGPoint)
+        /// A curve from `from` to `to` that bends toward `control`, a
+        /// quadratic Bézier curve. Its ends never meet.
+        case arc(from: CGPoint, control: CGPoint, to: CGPoint)
         /// A circle has equal radii.
         case ellipse(center: CGPoint, radii: CGSize, rotation: CGFloat)
         /// The corners of a triangle (3) or a rectangle (4).
@@ -49,10 +52,10 @@ nonisolated struct SnappedShape: Equatable, Codable, Sendable {
 
     var kind: Kind
     /// Where a closed outline starts, as a fraction of the way around the
-    /// kind's contour. A line starts at one of its ends.
+    /// kind's contour. A line or an arc starts at one of its ends.
     var start: CGFloat = 0
-    /// The outline runs against the kind's contour. A reversed line runs from
-    /// `to` to `from`.
+    /// The outline runs against the kind's contour. A reversed line or arc
+    /// runs from `to` to `from`.
     var isReversed = false
 
     var isClosed: Bool { kind.isClosed }
@@ -95,9 +98,10 @@ nonisolated extension SnappedShape {
 
     /// The shape after the finger that held at `grab` when it snapped moved
     /// to `finger`. A closed shape scales about its center (a polygon's is
-    /// its corners' mean) by how much farther from the center the finger is. A line keeps its start, and its
-    /// far end follows the finger. The outline keeps its start and direction,
-    /// so dashes stay where they were.
+    /// its corners' mean) by how much farther from the center the finger is.
+    /// A line or an arc keeps its start, and its far end moves as the finger
+    /// does. An arc turns and scales about its start to keep its bend. The
+    /// outline keeps its start and direction, so dashes stay where they were.
     func resized(grabbedAt grab: CGPoint, draggedTo finger: CGPoint) -> SnappedShape {
         func factor(about center: CGPoint) -> CGFloat {
             let grabDistance = grab.distance(to: center)
@@ -108,18 +112,29 @@ nonisolated extension SnappedShape {
             return max(finger.distance(to: center) / grabDistance, smallest)
         }
 
-        var shape = self
-        switch kind {
-        case let .line(from, to):
-            let (start, end) = isReversed ? (to, from) : (from, to)
-            var reach = finger - start
+        func farEnd(from start: CGPoint, to end: CGPoint) -> CGPoint {
+            var reach = end + (finger - grab) - start
             let length = hypot(reach.x, reach.y)
             if length < Self.minimumSize {
                 let direction = length > 0 ? reach : end - start
                 reach = direction * (Self.minimumSize / max(hypot(direction.x, direction.y), .ulpOfOne))
             }
-            let newEnd = start + reach
+            return start + reach
+        }
+
+        var shape = self
+        switch kind {
+        case let .line(from, to):
+            let (start, end) = isReversed ? (to, from) : (from, to)
+            let newEnd = farEnd(from: start, to: end)
             shape.kind = isReversed ? .line(from: newEnd, to: start) : .line(from: start, to: newEnd)
+        case let .arc(from, control, to):
+            let (start, end) = isReversed ? (to, from) : (from, to)
+            let newEnd = farEnd(from: start, to: end)
+            let newControl = Self.turned(control, about: start, carrying: end, to: newEnd)
+            shape.kind = isReversed
+                ? .arc(from: newEnd, control: newControl, to: start)
+                : .arc(from: start, control: newControl, to: newEnd)
         case let .ellipse(center, radii, rotation):
             shape.kind = .ellipse(center: center, radii: radii * factor(about: center), rotation: rotation)
         case let .heart(center, size, rotation, heart):
@@ -130,6 +145,22 @@ nonisolated extension SnappedShape {
             shape.kind = .polygon(corners.map { center + ($0 - center) * scale })
         }
         return shape
+    }
+}
+
+private nonisolated extension SnappedShape {
+    /// `point` after the turn and scale about `start` that carry `old` to
+    /// `new`, as complex numbers: start + (point - start) * (new - start) / (old - start).
+    static func turned(_ point: CGPoint, about start: CGPoint, carrying old: CGPoint, to new: CGPoint) -> CGPoint {
+        let from = old - start
+        let to = new - start
+        let lengthSquared = from.x * from.x + from.y * from.y
+        let turn = CGPoint(
+            x: (to.x * from.x + to.y * from.y) / lengthSquared,
+            y: (to.y * from.x - to.x * from.y) / lengthSquared
+        )
+        let offset = point - start
+        return start + CGPoint(x: offset.x * turn.x - offset.y * turn.y, y: offset.x * turn.y + offset.y * turn.x)
     }
 }
 
@@ -241,6 +272,10 @@ nonisolated extension SnappedShape.Kind {
         case let .line(from, to):
             numbers = [from.x, from.y, to.x, to.y]
             isWellFormed = true
+        case let .arc(from, control, to):
+            numbers = [from.x, from.y, control.x, control.y, to.x, to.y]
+            // Resizing turns the arc about its start by where its end goes.
+            isWellFormed = from != to
         case let .ellipse(center, radii, rotation):
             numbers = [center.x, center.y, radii.width, radii.height, rotation]
             isWellFormed = radii.width > 0 && radii.height > 0
@@ -255,16 +290,25 @@ nonisolated extension SnappedShape.Kind {
     }
 
     var isClosed: Bool {
-        if case .line = self {
-            return false
+        switch self {
+        case .line, .arc: false
+        case .ellipse, .polygon, .heart: true
         }
-        return true
     }
 
     var contour: SnappedShape.Contour {
         switch self {
         case let .line(from, to):
             return .init(points: [from, to], corners: [], isClosed: false)
+        case let .arc(from, control, to):
+            let count = SnappedShape.curveCount / 2
+            let points = (0...count).map { index in
+                let along = CGFloat(index) / CGFloat(count)
+                let before: CGFloat = 1 - along
+                let pull: CGPoint = control * (2 * along * before)
+                return from * (before * before) + pull + to * (along * along)
+            }
+            return .init(points: points, corners: [], isClosed: false)
         case let .ellipse(center, radii, rotation):
             let count = SnappedShape.curveCount
             let points = (0..<count).map { index in

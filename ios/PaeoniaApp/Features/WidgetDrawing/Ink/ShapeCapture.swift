@@ -36,7 +36,7 @@ nonisolated enum ShapeCapture {
                 "shape": name(of: fit.kind),
                 "residual": Double(fit.residual),
                 "score": Double(fit.score),
-                "limit": Double(limit(of: fit.kind, tuning)),
+                "limit": Double(fit.limit),
                 "accepted": fit.isAccepted,
             ]
             if case .ellipse = fit.kind {
@@ -54,18 +54,10 @@ nonisolated enum ShapeCapture {
     private static func name(of kind: SnappedShape.Kind) -> String {
         switch kind {
         case .line: "line"
+        case .arc: "arc"
         case let .ellipse(_, radii, _): radii.width == radii.height ? "circle" : "ellipse"
         case let .polygon(corners): corners.count == 3 ? "triangle" : "rectangle"
         case .heart: "heart"
-        }
-    }
-
-    private static func limit(of kind: SnappedShape.Kind, _ tuning: ShapeRecognizer.Tuning) -> CGFloat {
-        switch kind {
-        case .line: tuning.lineLimit
-        case .ellipse: tuning.ellipseLimit
-        case let .polygon(corners): corners.count == 3 ? tuning.triangleLimit : tuning.rectangleLimit
-        case .heart: tuning.heartLimit
         }
     }
 

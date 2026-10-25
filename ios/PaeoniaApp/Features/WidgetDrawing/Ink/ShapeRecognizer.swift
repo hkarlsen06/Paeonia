@@ -18,6 +18,16 @@ nonisolated enum ShapeRecognizer {
         /// The last share of a stroke searched for where it passes its start
         /// again, so an overshoot of up to 40 percent is trimmed off.
         var overshootSearch: CGFloat = 0.3
+        /// How much of an open stroke, from either end, is searched for a
+        /// flick where the finger touched down or lifted off.
+        var hookShare: CGFloat = 0.15
+        /// A turn this sharp near an end of an open stroke is such a flick,
+        /// and the stroke is judged without it.
+        var hookTurn: CGFloat = 30 * .pi / 180
+        /// An arc that bends less than this share of its length, at its
+        /// farthest from the straight line between its ends, becomes that
+        /// line. A finger drawing a straight line bends it up to about 0.08.
+        var lineBend: CGFloat = 0.1
         /// Angles this close to level or upright become exact. A finger rarely
         /// draws a level side, and a nearly level one was meant to be.
         var axisSnap: CGFloat = 6 * .pi / 180
@@ -56,6 +66,7 @@ nonisolated enum ShapeRecognizer {
         /// value that kept false snaps on scribbles, letters and arcs under
         /// 0.4 percent on a synthetic corpus of rough strokes.
         var lineLimit: CGFloat = 0.033
+        var arcLimit: CGFloat = 0.022
         var ellipseLimit: CGFloat = 0.024
         var rectangleLimit: CGFloat = 0.024
         /// Looser, because a rounded sharp corner leaves the fitted corner well
@@ -77,6 +88,7 @@ nonisolated enum ShapeRecognizer {
         /// costs, but the short gap people leave when closing a shape does
         /// not. The larger of the two counts.
         var residual: CGFloat
+        var limit: CGFloat
         var isAccepted: Bool
         var score: CGFloat
     }
@@ -103,6 +115,7 @@ nonisolated private extension ShapeRecognizer {
     /// Simplest first, because a near tie goes to the earlier row.
     static let candidates: [Candidate] = [
         Candidate(isClosed: false, limit: { $0.lineLimit }, fit: fitLine),
+        Candidate(isClosed: false, limit: { $0.arcLimit }, fit: fitArc),
         Candidate(isClosed: true, limit: { $0.ellipseLimit }, fit: fitEllipse),
         Candidate(isClosed: true, limit: { $0.rectangleLimit }, fit: fitRectangle),
         Candidate(isClosed: true, limit: { $0.triangleLimit }, fit: fitTriangle),
@@ -112,7 +125,7 @@ nonisolated private extension ShapeRecognizer {
 
 nonisolated extension ShapeRecognizer {
     /// The rough stroke respaced evenly, with any overshoot past its start
-    /// trimmed off.
+    /// trimmed off, and an open one without the flicks at its ends.
     struct Stroke {
         let points: [CGPoint]
         let isClosed: Bool
@@ -132,7 +145,10 @@ nonisolated extension ShapeRecognizer {
             }
             let closing = Self.closing(kept, tuning: tuning)
             isClosed = closing.isClosed
-            points = Polyline.resampled(Array(kept[...closing.end]), count: tuning.sampleCount)
+            let resampled = Polyline.resampled(Array(kept[...closing.end]), count: tuning.sampleCount)
+            points = isClosed
+                ? resampled
+                : Polyline.resampled(Self.withoutHooks(resampled, tuning: tuning), count: tuning.sampleCount)
             diagonal = boundingDiagonal(points)
         }
 
@@ -143,6 +159,7 @@ nonisolated extension ShapeRecognizer {
             var untidied = tuning
             untidied.axisSnap = 0
             untidied.circleRatio = .infinity
+            untidied.lineBend = 0
             return candidates.enumerated().compactMap { rank, candidate in
                 guard candidate.isClosed == isClosed,
                       let kind = candidate.fit(self, tuning),
@@ -151,10 +168,12 @@ nonisolated extension ShapeRecognizer {
                     return nil
                 }
                 let residual = min(residual(of: kind, tuning), residual(of: matched, tuning))
+                let limit = candidate.limit(tuning)
                 return Fit(
                     kind: kind,
                     residual: residual,
-                    isAccepted: residual <= candidate.limit(tuning),
+                    limit: limit,
+                    isAccepted: residual <= limit,
                     score: residual + CGFloat(rank) * tuning.simplerShapeMargin
                 )
             }
@@ -191,6 +210,28 @@ nonisolated extension ShapeRecognizer {
             let start = nearestFraction(of: first, aroundLoop: contour.points)
             let isReversed = (signedArea(points) < 0) != (signedArea(contour.points) < 0)
             return SnappedShape(kind: kind, start: start, isReversed: isReversed)
+        }
+
+        /// The open stroke cut at the sharpest turn near each end, when that
+        /// turn is sharp enough to be a flick of the finger. A gently bent
+        /// line turns a few degrees there.
+        private static func withoutHooks(_ points: [CGPoint], tuning: Tuning) -> [CGPoint] {
+            let reach = 2
+            let span = Int(tuning.hookShare * CGFloat(points.count - 1))
+            guard span > reach else {
+                return points
+            }
+            func turn(at index: Int) -> CGFloat {
+                let before = points[index] - points[index - reach]
+                let after = points[index + reach] - points[index]
+                return abs(atan2(before.cross(after), before.dot(after)))
+            }
+            func sharpest(_ indices: ClosedRange<Int>) -> Int? {
+                indices.filter { turn(at: $0) >= tuning.hookTurn }.max { turn(at: $0) < turn(at: $1) }
+            }
+            let start = sharpest(reach...span) ?? 0
+            let end = sharpest((points.count - 1 - span)...(points.count - 1 - reach)) ?? points.count - 1
+            return Array(points[start...end])
         }
 
         /// Where the stroke comes back nearest its start, searched near its

@@ -16,6 +16,52 @@ nonisolated extension ShapeRecognizer {
         return .line(from: middle - offset, to: middle + offset)
     }
 
+    /// The curve from the stroke's first point to its last that bends toward
+    /// one control point, by least squares, or the line between them when it
+    /// bends less than `lineBend`. Nil when the stroke has a corner, since an
+    /// L or a V fits such a curve closely.
+    static func fitArc(_ stroke: Stroke, _ tuning: Tuning) -> SnappedShape.Kind? {
+        let points = stroke.points
+        let from = points[0]
+        let to = points[points.count - 1]
+        let chord = from.distance(to: to)
+        guard chord > 0, !hasCorner(points, tuning) else {
+            return nil
+        }
+        // Each point starts at its share of the stroke's length along the
+        // curve, then moves to where the last fit passes nearest it.
+        var alongs = points.indices.map { CGFloat($0) / CGFloat(points.count - 1) }
+        var control = from.interpolated(to: to, by: 0.5)
+        for round in 0..<4 {
+            var sum = CGPoint.zero
+            var weights: CGFloat = 0
+            for (point, along) in zip(points, alongs) {
+                let before = 1 - along
+                let weight = 2 * along * before
+                let rest = point - from * (before * before) - to * (along * along)
+                sum.x += rest.x * weight
+                sum.y += rest.y * weight
+                weights += weight * weight
+            }
+            guard weights > 0 else {
+                return nil
+            }
+            control = sum * (1 / weights)
+            guard round < 3 else {
+                break
+            }
+            let curve = SnappedShape.Kind.arc(from: from, control: control, to: to).contour.points
+            alongs = points.map { CGFloat(nearestIndex(to: $0, in: curve)) / CGFloat(curve.count - 1) }
+        }
+        // The curve's farthest point from the line between its ends is half
+        // as far as the control point.
+        let bend = abs((to - from).cross(control - from)) / (2 * chord * chord)
+        guard bend >= tuning.lineBend else {
+            return fitLine(stroke, tuning)
+        }
+        return .arc(from: from, control: control, to: to)
+    }
+
     static func fitEllipse(_ stroke: Stroke, _ tuning: Tuning) -> SnappedShape.Kind? {
         // Leaves, eyes and hexagons sit close to an ellipse but turn sharply in places.
         guard !hasCorner(stroke.points, tuning), let conic = Conic(stroke.points, scale: stroke.diagonal) else {

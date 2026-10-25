@@ -297,10 +297,24 @@ struct WidgetLivePlaybackTests {
         #expect(abs(masks[0].bounds.width - masks[1].bounds.width) < 0.01)
     }
 
-    @Test func refusesAShapeThatCannotBeDrawn() throws {
+    @Test func aSnappedArcCrossesTheWire() throws {
         var message = liveMessage(id: "a", points: [livePoint])
-        let flat = SnappedShape(kind: .ellipse(center: .zero, radii: CGSize(width: 0, height: 10), rotation: 0))
-        message.snap = InkStroke.Snap(shape: flat, time: 0.5)
+        let arc = SnappedShape(
+            kind: .arc(from: CGPoint(x: 10, y: 10), control: CGPoint(x: 60, y: -20), to: CGPoint(x: 110, y: 30)),
+            isReversed: true
+        )
+        message.snap = InkStroke.Snap(shape: arc, time: 0.5)
+        #expect(try overTheWire(message).snap?.shape == arc)
+    }
+
+    @Test(arguments: [
+        SnappedShape.Kind.ellipse(center: .zero, radii: CGSize(width: 0, height: 10), rotation: 0),
+        .arc(from: CGPoint(x: 10, y: 10), control: CGPoint(x: 60, y: -20), to: CGPoint(x: 10, y: 10)),
+        .arc(from: CGPoint(x: 10, y: 10), control: CGPoint(x: 60, y: 20_000), to: CGPoint(x: 110, y: 30)),
+    ])
+    func refusesAShapeThatCannotBeDrawn(_ kind: SnappedShape.Kind) throws {
+        var message = liveMessage(id: "a", points: [livePoint])
+        message.snap = InkStroke.Snap(shape: SnappedShape(kind: kind), time: 0.5)
         let data = try JSONEncoder().encode(message)
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(WidgetLiveMessage.self, from: data)
