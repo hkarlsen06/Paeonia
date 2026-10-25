@@ -89,12 +89,23 @@ nonisolated extension ShapeRecognizer {
         return .polygon(levelled(corners, tuning))
     }
 
+    /// The heart template, shallow or deep notched, that lies closest to the stroke.
     static func fitHeart(_ stroke: Stroke, _ tuning: Tuning) -> SnappedShape.Kind? {
-        guard let placement = HeartPlacement(stroke.points, tuning: tuning) else {
+        SnappedShape.HeartNotch.allCases
+            .compactMap { fitHeart(stroke, notch: $0, tuning) }
+            .min { stroke.residual(of: $0) < stroke.residual(of: $1) }
+    }
+
+    private static func fitHeart(
+        _ stroke: Stroke,
+        notch: SnappedShape.HeartNotch,
+        _ tuning: Tuning
+    ) -> SnappedShape.Kind? {
+        let template = notch.template
+        guard let placement = HeartPlacement(stroke.points, template: template, tuning: tuning) else {
             return nil
         }
         // Width and height scale apart, since hand-drawn hearts run wide or tall.
-        let template = SnappedShape.heartTemplate
         let angle = axisSnapped(placement.angle, tuning)
         let local = stroke.points.map { $0.rotated(by: -angle) }
         var size = CGSize(width: placement.scale, height: placement.scale)
@@ -113,7 +124,7 @@ nonisolated extension ShapeRecognizer {
             size = CGSize(width: fitX.slope, height: fitY.slope)
             center = CGPoint(x: fitX.intercept, y: fitY.intercept)
         }
-        return .heart(center: center.rotated(by: angle), size: size, rotation: angle)
+        return .heart(center: center.rotated(by: angle), size: size, rotation: angle, notch: notch)
     }
 }
 
@@ -126,9 +137,9 @@ nonisolated private struct HeartPlacement {
     var scale: CGFloat
     var offset: CGPoint
 
-    init?(_ points: [CGPoint], tuning: ShapeRecognizer.Tuning) {
+    init?(_ points: [CGPoint], template: [CGPoint], tuning: ShapeRecognizer.Tuning) {
         let count = points.count
-        let anchors = Polyline.resampled(SnappedShape.heartTemplate, count: count, isClosed: true)
+        let anchors = Polyline.resampled(template, count: count, isClosed: true)
         let anchorMean = ShapeRecognizer.mean(anchors)
         let pointMean = ShapeRecognizer.mean(points)
         let centeredAnchors = anchors.map { $0 - anchorMean }
@@ -206,8 +217,9 @@ nonisolated private struct Conic {
 
 nonisolated private extension ShapeRecognizer {
     /// Whether the stroke turns sharply over a short stretch and then stops
-    /// turning. The end of a thin ellipse turns as sharply, but keeps turning
-    /// over a longer stretch.
+    /// turning, in two places or once very sharply. The end of a thin ellipse
+    /// turns as sharply, but keeps turning over a longer stretch. One milder
+    /// kink is a finger slipping on a round shape.
     static func hasCorner(_ points: [CGPoint], _ tuning: Tuning) -> Bool {
         func turn(at index: Int, reach: Int) -> CGFloat {
             let before = points[index] - points[index - reach]
@@ -220,10 +232,14 @@ nonisolated private extension ShapeRecognizer {
         guard points.count > 2 * wideReach else {
             return false
         }
-        return (wideReach..<(points.count - wideReach)).contains { index in
+        let corners = (wideReach..<(points.count - wideReach)).filter { index in
             let sharp = turn(at: index, reach: reach)
             return sharp >= tuning.cornerTurn && sharp >= tuning.cornerShare * turn(at: index, reach: wideReach)
         }
+        guard let first = corners.first, let last = corners.last else {
+            return false
+        }
+        return last - first > reach || corners.contains { turn(at: $0, reach: reach) >= tuning.sharpCornerTurn }
     }
 
     static func median(_ values: [CGFloat]) -> CGFloat? {

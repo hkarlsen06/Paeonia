@@ -31,17 +31,21 @@ nonisolated enum ShapeRecognizer {
         /// The short stretch spans at least this many points, so touch jitter
         /// on a small shape does not read as a corner.
         var cornerReach: CGFloat = 10
+        /// One corner alone rules out an ellipse only when it turns this
+        /// sharply. A finger drawing a small circle kinks it by about 50 degrees.
+        var sharpCornerTurn: CGFloat = 60 * .pi / 180
         /// An ellipse whose short radius is at least this share of its long
-        /// one becomes a circle. Circles drawn by hand come out a little squashed.
-        var circleRatio: CGFloat = 0.85
+        /// one becomes a circle. Circles drawn with a finger come out at 0.85
+        /// to 0.95, and ovals at 0.69 to 0.74.
+        var circleRatio: CGFloat = 0.82
         /// A heart tilted further than this is some other closed shape.
         var heartTilt: CGFloat = 30 * .pi / 180
         /// Residual added per row down the candidate table, so a near tie goes
         /// to the simpler shape.
-        var simplerShapeMargin: CGFloat = 0.004
+        var simplerShapeMargin: CGFloat = 0.0015
         /// The highest residual each shape accepts. Each is about the loosest
         /// value that kept false snaps on scribbles, letters and arcs under
-        /// 0.25 percent on a synthetic corpus of rough strokes.
+        /// 0.4 percent on a synthetic corpus of rough strokes.
         var lineLimit: CGFloat = 0.033
         var ellipseLimit: CGFloat = 0.024
         var rectangleLimit: CGFloat = 0.024
@@ -123,13 +127,21 @@ nonisolated extension ShapeRecognizer {
             diagonal = boundingDiagonal(points)
         }
 
-        /// Every candidate that fits, accepted or not.
+        /// Every candidate that fits, accepted or not. Turning a shape level or
+        /// upright and rounding an ellipse to a circle tidy it after the stroke
+        /// matched it, so they never count against the match.
         func fits(_ tuning: Tuning) -> [Fit] {
-            candidates.enumerated().compactMap { rank, candidate in
-                guard candidate.isClosed == isClosed, let kind = candidate.fit(self, tuning) else {
+            var untidied = tuning
+            untidied.axisSnap = 0
+            untidied.circleRatio = .infinity
+            return candidates.enumerated().compactMap { rank, candidate in
+                guard candidate.isClosed == isClosed,
+                      let kind = candidate.fit(self, tuning),
+                      let matched = candidate.fit(self, untidied)
+                else {
                     return nil
                 }
-                let residual = residual(of: kind)
+                let residual = min(residual(of: kind), residual(of: matched))
                 return Fit(
                     kind: kind,
                     residual: residual,

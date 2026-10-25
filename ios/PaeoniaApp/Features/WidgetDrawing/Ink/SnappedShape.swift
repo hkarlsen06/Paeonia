@@ -10,8 +10,26 @@ nonisolated struct SnappedShape: Equatable, Codable, Sendable {
         case ellipse(center: CGPoint, radii: CGSize, rotation: CGFloat)
         /// The corners of a triangle (3) or a rectangle (4).
         case polygon([CGPoint])
+        // swiftlint:disable enum_case_associated_values_count
         /// Upright, the notch is at the top (small y) and the tip at the bottom.
-        case heart(center: CGPoint, size: CGSize, rotation: CGFloat)
+        case heart(center: CGPoint, size: CGSize, rotation: CGFloat, notch: HeartNotch)
+        // swiftlint:enable enum_case_associated_values_count
+    }
+
+    /// How far down a heart's two lobes meet. People draw both.
+    nonisolated enum HeartNotch: String, Codable, Sendable, CaseIterable {
+        /// Round lobes that meet just below the top, as emoji show.
+        case shallow
+        /// Lobes that meet about a quarter of the way down, with long
+        /// straight sides to the tip.
+        case deep
+
+        var template: [CGPoint] {
+            switch self {
+            case .shallow: SnappedShape.shallowHeart
+            case .deep: SnappedShape.deepHeart
+            }
+        }
     }
 
     var kind: Kind
@@ -89,8 +107,8 @@ nonisolated extension SnappedShape {
             shape.kind = isReversed ? .line(from: newEnd, to: start) : .line(from: start, to: newEnd)
         case let .ellipse(center, radii, rotation):
             shape.kind = .ellipse(center: center, radii: radii * factor(about: center), rotation: rotation)
-        case let .heart(center, size, rotation):
-            shape.kind = .heart(center: center, size: size * factor(about: center), rotation: rotation)
+        case let .heart(center, size, rotation, notch):
+            shape.kind = .heart(center: center, size: size * factor(about: center), rotation: rotation, notch: notch)
         case let .polygon(corners):
             let center = corners.reduce(.zero, +) * (1 / CGFloat(corners.count))
             let scale = factor(about: center)
@@ -172,27 +190,35 @@ nonisolated extension SnappedShape {
     /// Points on a curved contour. Even, so the heart's tip lands on a point.
     static let curveCount = 256
 
-    /// A square turned 45 degrees with half circles on its two upper sides,
-    /// the heart people draw and emoji show. Spread evenly along its length
-    /// and fitted to the unit square around the origin, it starts at the
-    /// notch, runs over the right lobe and down to the tip at its middle
-    /// point, and comes back up the left side.
-    static let heartTemplate: [CGPoint] = {
-        let half = CGFloat(2).squareRoot() / 2
-        let lobeCenter = CGPoint(x: half / 2, y: -half / 2)
+    static let shallowHeart = heartTemplate(spread: CGFloat(2).squareRoot() / 2, tipDepth: CGFloat(4.5).squareRoot())
+    /// Fitted to hearts drawn with a finger on an iPhone, whose lobes meet
+    /// about a quarter of the way down.
+    static let deepHeart = heartTemplate(spread: 0.99, tipDepth: 3.8)
+
+    /// Two circles of radius 1, centered `spread` either side of the middle,
+    /// with straight sides from the tip `tipDepth` below their centers that
+    /// meet the circles at a tangent. Spread evenly along its length and fitted
+    /// to the unit square around the origin, it starts at the notch, runs over
+    /// the right lobe and down to the tip at its middle point, and comes back
+    /// up the left side. A spread of 0.71 and a depth of 2.1 make a square
+    /// turned 45 degrees with half circles on its two upper sides.
+    static func heartTemplate(spread: CGFloat, tipDepth: CGFloat) -> [CGPoint] {
+        let lobeCenter = CGPoint(x: spread, y: 0)
+        let tip = CGPoint(x: 0, y: tipDepth)
+        let toTip = tip - lobeCenter
+        let tangent = atan2(toTip.y, toTip.x) - acos(1 / hypot(toTip.x, toTip.y))
+        let notch = -acos(-spread)
         var rightSide = (0...512).map { step in
-            let angle = -0.75 * CGFloat.pi + CGFloat.pi * CGFloat(step) / 512
-            return lobeCenter + CGPoint(x: cos(angle) / 2, y: sin(angle) / 2)
+            let angle = notch + (tangent - notch) * CGFloat(step) / 512
+            return lobeCenter + CGPoint(x: cos(angle), y: sin(angle))
         }
-        rightSide.append(CGPoint(x: 0, y: half))
+        rightSide.append(tip)
         let right = Polyline.resampled(rightSide, count: curveCount / 2 + 1)
         let left = right.dropFirst().dropLast().reversed().map { CGPoint(x: -$0.x, y: $0.y) }
-        let heart = right + left
-        let top = lobeCenter.y - 0.5
-        let width = 2 * (lobeCenter.x + 0.5)
-        let height = half - top
-        return heart.map { CGPoint(x: $0.x / width, y: ($0.y - (top + half) / 2) / height) }
-    }()
+        let width = 2 * (spread + 1)
+        let height = tipDepth + 1
+        return (right + left).map { CGPoint(x: $0.x / width, y: ($0.y - (tipDepth - 1) / 2) / height) }
+    }
 }
 
 nonisolated extension SnappedShape.Kind {
@@ -205,7 +231,7 @@ nonisolated extension SnappedShape.Kind {
         case let .line(from, to):
             numbers = [from.x, from.y, to.x, to.y]
             isWellFormed = true
-        case let .ellipse(center, radii, rotation), let .heart(center, radii, rotation):
+        case let .ellipse(center, radii, rotation), let .heart(center, radii, rotation, _):
             numbers = [center.x, center.y, radii.width, radii.height, rotation]
             isWellFormed = radii.width > 0 && radii.height > 0
         case let .polygon(corners):
@@ -235,8 +261,8 @@ nonisolated extension SnappedShape.Kind {
             return .init(points: points, corners: [], isClosed: true)
         case let .polygon(corners):
             return .init(points: corners, corners: Set(corners.indices), isClosed: true)
-        case let .heart(center, size, rotation):
-            let points = SnappedShape.heartTemplate.map {
+        case let .heart(center, size, rotation, notch):
+            let points = notch.template.map {
                 center + CGPoint(x: $0.x * size.width, y: $0.y * size.height).rotated(by: rotation)
             }
             return .init(points: points, corners: [0, points.count / 2], isClosed: true)
