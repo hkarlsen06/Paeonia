@@ -112,7 +112,7 @@ struct RootView: View {
     }
 
     var body: some View {
-        rootContent
+        presentingWhileClosedQuestion(on: rootContent)
             .environment(bannerCenter)
             // Developer flows skip the usage question and switch.
             .environment(allowsSystemIntegrations ? usageSharing : nil)

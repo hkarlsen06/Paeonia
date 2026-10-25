@@ -152,6 +152,7 @@ extension RootView {
 
     /// Turns sharing on, asking iOS for While Using first. Once that is
     /// allowed, iOS asks right away whether Paeonia may also share while closed.
+    /// When iOS already allows Always, the app asks that itself.
     /// A plain retry, with sharing and access already on, asks nothing.
     func shareLocation() async {
         let wasAlreadyAllowed = locationViewModel.sharingEnabled
@@ -164,6 +165,27 @@ extension RootView {
             return
         }
         LocationUpdateController.shared.offerUpdatesWhileClosed()
+    }
+
+    /// The app's own question about sharing while closed, for when iOS already
+    /// allows Always and so asks nothing.
+    func presentingWhileClosedQuestion(on content: some View) -> some View {
+        @Bindable var updates = LocationUpdateController.shared
+        return content.alert(
+            Text(.locationWhileClosedQuestionTitle),
+            isPresented: $updates.asksAboutUpdatesWhileClosed
+        ) {
+            Button {
+                updates.setUpdatesWhileClosed(true)
+            } label: {
+                Text(.commonShare)
+            }
+            Button(role: .cancel) {} label: {
+                Text(.locationPermissionPrimerNotNow)
+            }
+        } message: {
+            Text(.settingsLocationWhileClosedSubtitle(partnerNameForCopy))
+        }
     }
 
     private func dismissLocationSharingPrimer() {

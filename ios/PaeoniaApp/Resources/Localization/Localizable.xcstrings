@@ -20295,6 +20295,24 @@
         }
       }
     },
+    "location.whileClosedQuestion.title" : {
+      "comment" : "Alert title after turning on location sharing when iOS already allows Always access. Asks whether to also share while the app is closed",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share while Paeonia is closed too?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dele også når Paeonia er lukket?"
+          }
+        }
+      }
+    },
     "ludo.announce.partnerMoved" : {
       "comment" : "VoiceOver announcement when the partner's Ludo move arrives. %1$@ is the partner's name, %2$lld is the number they rolled, 1 to 6.",
       "extractionState" : "manual",

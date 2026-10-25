@@ -96,6 +96,9 @@ final class LocationUpdateController: NSObject {
     private(set) var authorization: CLAuthorizationStatus
     /// The person's choice on this phone. It only takes effect with Always access.
     private(set) var prefersUpdatesWhileClosed: Bool
+    /// The root shows the app's own question about updates while closed.
+    /// See `offerUpdatesWhileClosed`.
+    var asksAboutUpdatesWhileClosed = false
 
     @ObservationIgnored private var sharingEnabled: Bool?
     @ObservationIgnored private var isSharingPaused = false
@@ -195,9 +198,17 @@ final class LocationUpdateController: NSObject {
     /// Called right after someone turns sharing on from the map card or the
     /// primer. While Paeonia has While Using access, iOS asks straight away
     /// whether to change it to Always, so the person decides on the spot.
+    /// When iOS already allows Always, as after an earlier relationship on
+    /// this phone, iOS asks nothing, so the app asks instead.
     func offerUpdatesWhileClosed() {
-        guard manager.authorizationStatus == .authorizedWhenInUse else { return }
-        setUpdatesWhileClosed(true)
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse:
+            setUpdatesWhileClosed(true)
+        case .authorizedAlways:
+            asksAboutUpdatesWhileClosed = !prefersUpdatesWhileClosed
+        default:
+            break
+        }
     }
 
     /// Stops updates while closed and forgets the choice. Used when local
@@ -205,6 +216,7 @@ final class LocationUpdateController: NSObject {
     /// relationship ending.
     func resetUpdatesWhileClosed() {
         setPrefersUpdatesWhileClosed(false)
+        asksAboutUpdatesWhileClosed = false
         defaults.removeObject(forKey: Key.userID)
         defaults.removeObject(forKey: Key.coupleID)
         defaults.removeObject(forKey: Key.accountID)
