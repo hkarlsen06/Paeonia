@@ -98,21 +98,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                         partner: MapScreenPoint.point(partnerCoordinate, in: context.rect, box: metrics.framedBox)
                     )
                 }
-                .mask {
-                    LinearGradient(
-                        stops: [
-                            .init(color: .black, location: 0),
-                            .init(color: .black, location: metrics.fadeStart),
-                            .init(color: .clear, location: 1),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-
-            Color.clear
-                .contentShape(Rectangle())
-                .contextMenu { prototypeMenu }
+                .mask { fadeMask(metrics) }
 
             avatars
 
@@ -121,6 +107,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 .padding(.top, metrics.topInset)
 
             HomeMapDistanceLine(current: current, partner: partner, partnerCoordinate: partnerCoordinate)
+                .contextMenu { prototypeMenu }
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.trailing, PaeoniaSpacing.space16)
                 .padding(.top, metrics.lineTop)
@@ -130,6 +117,25 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         .visualEffect { content, proxy in
             content.offset(y: min(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY))
         }
+    }
+
+    /// Eases out over a long stretch, so the map runs into the cards instead of ending.
+    private func fadeMask(_ metrics: Metrics) -> some View {
+        let start = metrics.fadeStart
+        let length = 1 - start
+        return LinearGradient(
+            stops: [
+                .init(color: .black, location: 0),
+                .init(color: .black, location: start),
+                .init(color: .black.opacity(0.75), location: start + length * 0.15),
+                .init(color: .black.opacity(0.45), location: start + length * 0.35),
+                .init(color: .black.opacity(0.2), location: start + length * 0.6),
+                .init(color: .black.opacity(0.06), location: start + length * 0.82),
+                .init(color: .clear, location: 1),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
     }
 
     @ViewBuilder
@@ -206,16 +212,17 @@ private struct Metrics {
     let framedBottom: CGFloat
     /// The top of the line with the mark and the distance.
     let lineTop: CGFloat
-    let cardsOverlap: CGFloat = 40
+    /// The cards start just under the line with the mark, and the fade carries on behind them.
 
     init(geo: GeometryProxy, isNear: Bool) {
         width = geo.size.width
         topInset = geo.safeAreaInsets.top
-        fadeHeight = 96
+        fadeHeight = 260
         // Apart, the avatars sit wherever the two places are, so the map gets more height.
         bandHeight = topInset + 236 + fadeHeight - PaeoniaSpacing.space24 + (isNear ? 0 : 48)
         framedBottom = bandHeight - fadeHeight
-        lineTop = framedBottom - PaeoniaSpacing.space24
+        // Sits on the map's last fully visible row, level with the Apple Maps mark.
+        lineTop = framedBottom - PaeoniaSpacing.space20
         framedTop = if isNear {
             // Puts the middle of the framed area halfway between the Dynamic Island and the
             // line with the mark, where the avatars land when the couple is close.
@@ -229,6 +236,7 @@ private struct Metrics {
     var framedHeight: CGFloat { framedBottom - framedTop }
     var framedBox: CGRect { CGRect(x: 0, y: framedTop, width: width, height: framedHeight) }
     var fadeStart: CGFloat { framedBottom / bandHeight }
+    var cardsOverlap: CGFloat { fadeHeight - PaeoniaSpacing.space16 }
 }
 
 /// Where a coordinate lands on a map view. The camera's visible rect covers the map's
