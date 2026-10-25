@@ -4,11 +4,17 @@ import Foundation
 
 /// Appends one JSON line to `Documents/shape-captures.jsonl` each time the
 /// hold check runs the recognizer, with the stroke and every candidate's fit,
-/// for tuning `ShapeRecognizer` on real strokes. Debug builds only.
+/// for tuning `ShapeRecognizer` on real strokes. Debug builds only, and off
+/// unless the app launches with `-PaeoniaShapeCapture YES` (add it under the
+/// scheme's Run arguments). Pull the file from a phone with
+/// `xcrun devicectl device copy from --device <udid> --domain-type appDataContainer
+/// --domain-identifier no.paeonia.app --source Documents/shape-captures.jsonl --destination <file>`.
 nonisolated enum ShapeCapture {
     private static let queue = DispatchQueue(label: "no.paeonia.shape-capture", qos: .utility)
+    private static let isEnabled = UserDefaults.standard.bool(forKey: "PaeoniaShapeCapture")
 
     static func record(_ samples: [InkSample], canvasSide: CGFloat, result: SnappedShape?) {
+        guard isEnabled else { return }
         let time = Date()
         queue.async {
             let tuning = ShapeRecognizer.Tuning.standard
