@@ -59,13 +59,17 @@ nonisolated struct WidgetLiveMessage: Codable, Equatable, Sendable {
     var seed: UInt32?
     /// In `live`: `InkLineStyle` raw value.
     var lineStyle: String?
+    /// In `live`: the clean shape the stroke is drawn as, or nil while it is
+    /// drawn as the touches. Every message carries it, so the partner's copy
+    /// follows a snap and its undoing.
+    var snap: InkStroke.Snap?
     /// `upserts` decoded, set by the connection off the main actor. It is not
     /// part of the wire format. A message built in code leaves it nil.
     var preparedUpserts: PKDrawing?
 
     private enum CodingKeys: String, CodingKey {
         case type, id, ink, color, side, points, upserts, removals, ended, snapshot
-        case peers, needsCanvas, from, role, width, seed, lineStyle
+        case peers, needsCanvas, from, role, width, seed, lineStyle, snap
     }
 
     /// The strokes in `upserts`, decoded from base64 and PencilKit data.

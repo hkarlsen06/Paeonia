@@ -116,6 +116,12 @@ extension ExquisiteCorpseViewModel {
             else { return }
             liveStrokeSentAt = monotonicNow()
             sendStripIfChanged(including: stroke.pencilKitStroke())
+        case let .snapChanged(stroke):
+            // Always, even when the stroke stays above the fold, so the strip
+            // drops any rough piece the shape no longer reaches, or gets it
+            // back when the shape turns back into the drawn line.
+            liveStrokeSentAt = monotonicNow()
+            sendStripIfChanged(including: stroke.pencilKitStroke())
         case .ended:
             liveStrokeSentAt = 0
         }

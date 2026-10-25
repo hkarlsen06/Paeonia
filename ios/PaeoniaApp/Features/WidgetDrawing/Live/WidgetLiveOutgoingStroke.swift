@@ -7,19 +7,22 @@ nonisolated struct WidgetLiveOutgoingStroke {
     let id = UUID().uuidString
     let side: CGFloat
     private var sentCount = 0
+    private var sentSnap: InkStroke.Snap?
     private(set) var lastSentAt: TimeInterval = 0
 
     init(side: CGFloat) {
         self.side = side
     }
 
-    /// The samples of `stroke` not sent yet, as a `live` message.
+    /// The samples of `stroke` not sent yet, with its snap as it is now, as a
+    /// `live` message. Nil when neither changed since the last message.
     mutating func takeMessage(from stroke: InkStroke, now: TimeInterval) -> WidgetLiveMessage? {
         let fresh = stroke.samples.dropFirst(sentCount)
-        guard !fresh.isEmpty else {
+        guard !fresh.isEmpty || stroke.snap != sentSnap else {
             return nil
         }
         sentCount = stroke.samples.count
+        sentSnap = stroke.snap
         lastSentAt = now
         return WidgetLiveMessage(
             type: .live,
@@ -30,7 +33,8 @@ nonisolated struct WidgetLiveOutgoingStroke {
             points: fresh.map(\.liveValues),
             width: Double(stroke.style.width),
             seed: stroke.seed,
-            lineStyle: stroke.style.lineStyle.rawValue
+            lineStyle: stroke.style.lineStyle.rawValue,
+            snap: stroke.snap
         )
     }
 }

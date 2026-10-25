@@ -32,19 +32,25 @@ nonisolated struct WidgetLivePlayback {
         let samples = rawPoints.compactMap(InkSample.init(liveValues:))
         if strokes[id] != nil {
             strokes[id]?.ink.append(samples)
-            return
+        } else {
+            guard let first = samples.first,
+                  let style = Self.style(of: message),
+                  let seed = message.seed,
+                  let side = message.side, side.isFinite, side > 0
+            else {
+                return
+            }
+            var ink = InkStroke(style: style, first: first, seed: seed)
+            ink.append(Array(samples.dropFirst()))
+            strokes[id] = Stroke(ink: ink, side: side, origin: now + Self.delay - first.timeOffset)
+            order.append(id)
         }
-        guard let first = samples.first,
-              let style = Self.style(of: message),
-              let seed = message.seed,
-              let side = message.side, side.isFinite, side > 0
-        else {
-            return
+        // `SnappedShape` refuses an undrawable shape when the message decodes.
+        if let snap = message.snap, snap.time.isFinite {
+            strokes[id]?.ink.snap(to: snap.shape, at: snap.time)
+        } else {
+            strokes[id]?.ink.unsnap()
         }
-        var ink = InkStroke(style: style, first: first, seed: seed)
-        ink.append(Array(samples.dropFirst()))
-        strokes[id] = Stroke(ink: ink, side: side, origin: now + Self.delay - first.timeOffset)
-        order.append(id)
     }
 
     /// The stroke's look, or nil when the message does not describe one.

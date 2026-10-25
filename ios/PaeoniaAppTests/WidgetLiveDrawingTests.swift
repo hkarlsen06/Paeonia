@@ -192,6 +192,99 @@ struct WidgetLivePlaybackTests {
             #expect(shown.opacity == real.opacity)
         }
     }
+
+    /// A held stroke sends its shape once. The partner swaps the rough stroke
+    /// for the same clean shape when playback reaches the moment it snapped.
+    @Test func thePartnerSeesTheStrokeSnapWhenPlaybackReachesIt() throws {
+        let style = InkStyle(kind: .pen, color: .red, width: 4, lineStyle: .dashed)
+        let samples = roughCircle(step: 0.016)
+        var stroke = InkStroke(style: style, first: samples[0], seed: 42)
+        stroke.append(Array(samples.dropFirst()))
+        var outgoing = WidgetLiveOutgoingStroke(side: 320)
+        let firstMessage = outgoing.takeMessage(from: stroke, now: 0)
+        let drawn = try #require(firstMessage)
+        stroke.snap(to: snappedCircle, at: 0.9)
+        let snapMessage = outgoing.takeMessage(from: stroke, now: 1)
+        let snapped = try #require(snapMessage)
+        #expect(snapped.points == [])
+        let nothingNew = outgoing.takeMessage(from: stroke, now: 2)
+        #expect(nothingNew == nil)
+
+        var playback = WidgetLivePlayback()
+        for message in [drawn, snapped] {
+            try playback.receive(overTheWire(message), now: 0)
+        }
+        let rough = try #require(playback.pencilKitStrokes(at: WidgetLivePlayback.delay + 0.8, side: 320).first)
+        #expect(rough.path.count == samples.count)
+        let shape = try #require(playback.pencilKitStrokes(at: WidgetLivePlayback.delay + 0.9, side: 320).first)
+        let finished = stroke.pencilKitStroke()
+        #expect(shape.path.count == finished.path.count)
+        for (shown, real) in zip(shape.path, finished.path) {
+            #expect(abs(shown.location.x - real.location.x) < 0.001)
+            #expect(abs(shown.location.y - real.location.y) < 0.001)
+        }
+        let shapeMask = try #require(shape.mask)
+        let finishedMask = try #require(finished.mask)
+        #expect(abs(shapeMask.bounds.width - finishedMask.bounds.width) < 0.01)
+    }
+
+    /// Slow drawing can read as a hold. Drawing on from the snap turns the
+    /// stroke back into every touch, here and on the partner's phone, while
+    /// a finger still resting where it held keeps the shape.
+    @Test func drawingOnAfterASnapKeepsEveryTouchOnBothPhones() throws {
+        let style = InkStyle(kind: .pen, color: .red, width: 4, lineStyle: .solid)
+        let arc = roughCircle(step: 0.05)
+        var stroke = InkStroke(style: style, first: arc[0], seed: 7)
+        stroke.append(Array(arc.dropFirst()))
+        var outgoing = WidgetLiveOutgoingStroke(side: 320)
+        let drawnMessage = outgoing.takeMessage(from: stroke, now: 0)
+        var messages = try [#require(drawnMessage)]
+        stroke.snap(to: snappedCircle, at: 1.2)
+        let shapePointCount = stroke.pencilKitStroke().path.count
+        let snapMessage = outgoing.takeMessage(from: stroke, now: 1.2)
+        try messages.append(#require(snapMessage))
+
+        let held = arc[arc.count - 1].location
+        func sample(dx: CGFloat, at time: TimeInterval) -> InkSample {
+            let location = CGPoint(x: held.x + dx, y: held.y)
+            return InkSample(location: location, timeOffset: time, force: nil, azimuth: 0, altitude: 1)
+        }
+        stroke.append([sample(dx: 3, at: 1.3), sample(dx: -4, at: 1.4)])
+        let unsnappedWhileResting = stroke.unsnapIfMovedAway()
+        #expect(!unsnappedWhileResting)
+        let drawnOn = (1...8).map { sample(dx: CGFloat($0) * 5, at: 1.4 + Double($0) * 0.05) }
+        stroke.append(drawnOn)
+        let unsnappedWhenDrawnOn = stroke.unsnapIfMovedAway()
+        #expect(unsnappedWhenDrawnOn)
+        #expect(stroke.snap == nil)
+        #expect(stroke.pencilKitStroke().path.count == arc.count + 2 + drawnOn.count)
+
+        let drawnOnMessage = outgoing.takeMessage(from: stroke, now: 1.8)
+        let unsnapMessage = try #require(drawnOnMessage)
+        #expect(unsnapMessage.snap == nil)
+        messages.append(unsnapMessage)
+        var playback = WidgetLivePlayback()
+        for (index, message) in messages.enumerated() {
+            try playback.receive(overTheWire(message), now: 0)
+            let shown = try #require(playback.pencilKitStrokes(at: WidgetLivePlayback.delay + 1.3, side: 320).first)
+            #expect(index != 1 || shown.path.count == shapePointCount)
+        }
+        let reverted = try #require(playback.pencilKitStrokes(at: WidgetLivePlayback.delay + 2, side: 320).first)
+        #expect(reverted.path.count == stroke.samples.count)
+        for (shown, real) in zip(reverted.path, stroke.pencilKitStroke().path) {
+            #expect(abs(shown.location.x - real.location.x) < 0.001)
+        }
+    }
+
+    @Test func refusesAShapeThatCannotBeDrawn() throws {
+        var message = liveMessage(id: "a", points: [livePoint])
+        let flat = SnappedShape(kind: .ellipse(center: .zero, radii: CGSize(width: 0, height: 10), rotation: 0))
+        message.snap = InkStroke.Snap(shape: flat, time: 0.5)
+        let data = try JSONEncoder().encode(message)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(WidgetLiveMessage.self, from: data)
+        }
+    }
 }
 
 struct WidgetLiveMessageTests {
@@ -221,6 +314,24 @@ private func makeStroke(x: CGFloat, createdAt: Date, pointCount: Int = 3) -> PKS
 }
 
 /// `[x, y, timeOffset, azimuth, altitude]`.
+/// 24 touches around a slightly flat circle of radius 50 at (100, 100),
+/// `step` seconds apart.
+private func roughCircle(step: TimeInterval) -> [InkSample] {
+    (0..<24).map { index in
+        let angle = Double(index) / 24 * 2 * .pi
+        let location = CGPoint(x: 100 + 50 * cos(angle), y: 100 + 48 * sin(angle))
+        return InkSample(location: location, timeOffset: Double(index) * step, force: nil, azimuth: 0, altitude: 1)
+    }
+}
+
+private let snappedCircle = SnappedShape(
+    kind: .ellipse(center: CGPoint(x: 100, y: 100), radii: CGSize(width: 49, height: 49), rotation: 0)
+)
+
+private func overTheWire(_ message: WidgetLiveMessage) throws -> WidgetLiveMessage {
+    try JSONDecoder().decode(WidgetLiveMessage.self, from: JSONEncoder().encode(message))
+}
+
 private let livePoint: [Double] = [10, 10, 0, 0, 1.571]
 
 private func liveMessage(id: String, points: [[Double]]) -> WidgetLiveMessage {

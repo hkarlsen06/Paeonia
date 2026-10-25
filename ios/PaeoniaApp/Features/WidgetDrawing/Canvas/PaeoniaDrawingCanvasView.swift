@@ -26,6 +26,9 @@ enum CanvasTool: Equatable {
 enum InkEvent {
     case began(InkStroke)
     case changed(InkStroke)
+    /// The finger held still and the stroke turned into a clean shape, or it
+    /// moved on and the shape turned back into what was drawn.
+    case snapChanged(InkStroke)
     /// The stroke is finished. Sent just before it is added to the drawing.
     case ended(InkStroke)
 }
@@ -63,6 +66,13 @@ class OverscanCanvasView: PKCanvasView {
 /// the finger is down, and adds the finished stroke to `drawing` on lift. That
 /// fires `canvasViewDrawingDidChange` like a PencilKit stroke, so the host
 /// records it as one undo step. The eraser stays PencilKit's.
+///
+/// When the finger holds still at the end of a stroke, the stroke turns into
+/// the clean shape it looks like (`ShapeRecognizer`) while the finger is still
+/// down. A still finger sends no touches, so a display link checks the hold,
+/// and only while a stroke is open. Slow drawing can read as a hold, so the
+/// stroke keeps every touch after a snap and turns back into them when the
+/// finger moves on (`InkStroke.unsnapIfMovedAway`).
 ///
 /// The wet canvas on top and this canvas draw the stroke from the same
 /// `PKStroke`, so nothing moves at lift. The wet canvas hides in the same
@@ -116,6 +126,8 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
     /// The stroke under the finger.
     private var stroke: InkStroke?
     private var strokeStartTimestamp: TimeInterval = 0
+    private var hold = HoldDetector()
+    private var holdLink: CADisplayLink?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -173,6 +185,7 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
         strokeStartTimestamp = touch.timestamp
         let newStroke = InkStroke(style: style, first: sample(touch))
         stroke = newStroke
+        startHoldCheck(at: touch.preciseLocation(in: self), time: touch.timestamp)
         // Shown and drawn in one go, so the last stroke never shows again here.
         wetCanvas.isHidden = false
         wetCanvas.drawing = PKDrawing(strokes: [newStroke.pencilKitStroke()])
@@ -183,19 +196,29 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
 
     private func inkMoved(_ touch: UITouch, event: UIEvent) {
         guard var current = stroke else { return }
-        current.append(newSamples(touch, event: event, after: current))
+        let added = newSamples(touch, event: event, after: current)
+        for sample in added {
+            hold.add(sample.location, at: strokeStartTimestamp + sample.timeOffset)
+        }
+        current.append(added)
+        let didUnsnap = current.unsnapIfMovedAway()
         stroke = current
+        if didUnsnap, let last = current.samples.last {
+            startHoldCheck(at: last.location, time: strokeStartTimestamp + last.timeOffset)
+        }
         let predicted = (event.predictedTouches(for: touch) ?? []).map(sample)
         wetCanvas.drawing = PKDrawing(strokes: [current.pencilKitStroke(predicted: predicted)])
-        notify(.changed(current))
+        notify(didUnsnap ? .snapChanged(current) : .changed(current))
     }
 
     /// Lift or cancel. A cancelled stroke (the system took the touch, or an
     /// Apple Pencil double tap switched tools) keeps what was drawn so far.
     private func inkEnded(_ touch: UITouch?, event: UIEvent?) {
         guard var finished = stroke else { return }
+        stopHoldCheck()
         if let touch, let event {
             finished.append(newSamples(touch, event: event, after: finished))
+            _ = finished.unsnapIfMovedAway()
         }
         stroke = nil
         notify(.ended(finished))
@@ -205,6 +228,42 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
         wetCanvas.isHidden = true
         wetCanvas.drawing = PKDrawing()
         onInkStrokeInProgressChange(false)
+    }
+
+    // MARK: Snap to shape
+
+    private func startHoldCheck(at location: CGPoint, time: TimeInterval) {
+        stopHoldCheck()
+        hold = HoldDetector()
+        hold.add(location, at: time)
+        let link = CADisplayLink(target: self, selector: #selector(checkHold))
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 10, maximum: 30, preferred: 30)
+        link.add(to: .main, forMode: .common)
+        holdLink = link
+    }
+
+    private func stopHoldCheck() {
+        holdLink?.invalidate()
+        holdLink = nil
+    }
+
+    /// Snaps the stroke once the finger has held still long enough. A stroke
+    /// that looks like no shape stays as drawn, and the same hold is not
+    /// tried again.
+    @objc private func checkHold() {
+        guard var current = stroke, let deadline = hold.deadline, CACurrentMediaTime() >= deadline else {
+            return
+        }
+        guard let shape = ShapeRecognizer.recognize(current.samples.map(\.location)) else {
+            hold.disarmUntilMoved()
+            return
+        }
+        stopHoldCheck()
+        current.snap(to: shape, at: CACurrentMediaTime() - strokeStartTimestamp)
+        stroke = current
+        wetCanvas.drawing = PKDrawing(strokes: [current.pencilKitStroke()])
+        PaeoniaHaptics.shapeSnapped()
+        notify(.snapChanged(current))
     }
 
     /// The touch's coalesced samples that moved far enough to matter. Closer

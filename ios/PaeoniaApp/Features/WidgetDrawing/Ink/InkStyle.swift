@@ -42,6 +42,19 @@ nonisolated enum InkKind: String, Codable, Sendable {
         }
     }
 
+    /// How wide each dot of a dotted line is for `width`. A pen dot is as
+    /// wide as the line. Pencil ink thins out toward its edges, so a dot as
+    /// wide as the line came out flat at the top and bottom. Rendered at
+    /// width 16, dots were still flat at 0.85 of the width and round at 0.8.
+    func dotDiameter(_ width: CGFloat) -> CGFloat {
+        switch self {
+        case .pen:
+            drawnWidth(width)
+        case .pencil:
+            width * 0.8
+        }
+    }
+
     /// How far the middle of the line sits from its points, toward each
     /// point's azimuth. Rendering pencil strokes of widths 2.4 to 16 gave ink
     /// from about a quarter of the width behind the points to three quarters
@@ -71,9 +84,10 @@ nonisolated struct InkStyle: Equatable, Sendable {
     }
 
     /// The ink a dashed or dotted line keeps along `path`, in the path's own
-    /// space, or nil for a solid line.
-    func dashMask(along path: PKStrokePath) -> UIBezierPath? {
-        let lineWidth = kind.drawnWidth(width)
+    /// space, or nil for a solid line. `isClosed` is for a snapped shape
+    /// that ends where it starts.
+    func dashMask(along path: PKStrokePath, isClosed: Bool) -> UIBezierPath? {
+        let lineWidth = lineStyle == .dotted ? kind.dotDiameter(width) : kind.drawnWidth(width)
         guard let pattern = lineStyle.pattern(lineWidth: lineWidth) else {
             return nil
         }
@@ -84,7 +98,12 @@ nonisolated struct InkStyle: Equatable, Sendable {
                 y: point.location.y + offset * sin(point.azimuth)
             )
         }
-        return UIBezierPath(cgPath: InkDashMask.path(centerline: centerline, pattern: pattern, width: lineWidth))
+        return UIBezierPath(cgPath: InkDashMask.path(
+            centerline: centerline,
+            pattern: pattern,
+            width: lineWidth,
+            isClosed: isClosed
+        ))
     }
 
     /// The PencilKit point for one sample.

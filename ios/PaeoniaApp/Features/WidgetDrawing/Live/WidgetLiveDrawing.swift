@@ -437,6 +437,10 @@ extension WidgetLiveDrawing {
             if CACurrentMediaTime() - (outgoing?.lastSentAt ?? 0) >= Self.sendInterval {
                 flushOutgoing(stroke)
             }
+        case let .snapChanged(stroke):
+            // Right away, so the partner sees the shape tidy up, or turn back
+            // into the drawn line, while the finger is still down.
+            flushOutgoing(stroke)
         case let .ended(stroke):
             // Sent before the canvas adds the stroke, so the `ops` that
             // carries it names this live stroke in `ended`.

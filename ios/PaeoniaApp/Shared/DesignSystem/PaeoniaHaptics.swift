@@ -130,6 +130,11 @@ enum PaeoniaHaptics {
         notify(.warning)
     }
 
+    /// A rough stroke held still turned into a clean shape under the finger.
+    static func shapeSnapped() {
+        impact(.light)
+    }
+
     static func streakContinued() {
         impact(.light)
     }

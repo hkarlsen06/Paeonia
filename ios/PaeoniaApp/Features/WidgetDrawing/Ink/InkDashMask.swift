@@ -10,24 +10,36 @@ nonisolated enum InkDashMask {
     static let sampleSpacing: CGFloat = 1
 
     /// Where each run of ink starts and ends, as distances along a line
-    /// `length` long. The last run may be cut short by the end of the line.
-    static func runs(length: CGFloat, pattern: InkDashPattern) -> [ClosedRange<CGFloat>] {
-        stride(from: 0, through: max(length, 0), by: pattern.period).map { start in
+    /// `length` long. The first run starts `phase` in, so the round end or
+    /// dot drawn around it lies on the line. The last run may be cut short by
+    /// the end of the line.
+    static func runs(length: CGFloat, pattern: InkDashPattern, phase: CGFloat) -> [ClosedRange<CGFloat>] {
+        stride(from: phase, through: length, by: pattern.period).map { start in
             start...min(start + pattern.on, length)
         }
     }
 
     /// The mask for a line through `centerline`, in the stroke's own space.
     /// A dash is its run of the line, `width` wide with round ends. A dot is
-    /// a circle `width` across at the start of its run.
-    static func path(centerline: [CGPoint], pattern: InkDashPattern, width: CGFloat) -> CGPath {
+    /// a circle `width` across at the start of its run. A closed line, a
+    /// snapped shape that ends where it starts, stretches the pattern a
+    /// little so it meets itself where the line closes.
+    static func path(centerline: [CGPoint], pattern: InkDashPattern, width: CGFloat, isClosed: Bool) -> CGPath {
         let distances = cumulativeDistances(centerline)
         let pieces = CGMutablePath()
         guard let length = distances.last else {
             return pieces
         }
+        var pattern = pattern
+        if isClosed, length > 0 {
+            let stretch = length / (max(1, (length / pattern.period).rounded()) * pattern.period)
+            pattern = InkDashPattern(on: pattern.on * stretch, period: pattern.period * stretch)
+        }
+        // Half a width in, the first round end or dot starts where the line
+        // does. A line shorter than that keeps its one dot or dash.
+        let phase = min(width / 2, length)
         var index = 0
-        for run in runs(length: length, pattern: pattern) {
+        for run in runs(length: length, pattern: pattern, phase: phase) {
             while index + 1 < distances.count, distances[index + 1] < run.lowerBound {
                 index += 1
             }
