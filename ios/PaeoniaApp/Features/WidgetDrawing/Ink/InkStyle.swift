@@ -92,7 +92,8 @@ nonisolated struct InkStyle: Equatable, Sendable {
             return nil
         }
         let offset = kind.inkOffset(width)
-        let centerline = path.interpolatedPoints(by: .distance(InkDashMask.sampleSpacing)).map { point in
+        let spacing = InkDashMask.spacing(along: path.map(\.location))
+        let centerline = path.interpolatedPoints(by: .distance(spacing)).map { point in
             CGPoint(
                 x: point.location.x + offset * cos(point.azimuth),
                 y: point.location.y + offset * sin(point.azimuth)

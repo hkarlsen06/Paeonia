@@ -10,6 +10,11 @@ nonisolated struct WidgetLivePlayback {
     static let delay: TimeInterval = 0.1
     /// A finished stroke that never arrived as a real stroke is dropped after this.
     static let endedLifetime: TimeInterval = 3
+    /// Limits on what a partner's message may describe. A finger stays far
+    /// inside them. Past them, one small message could make this phone build
+    /// millions of points.
+    static let maxSide: CGFloat = 4_096
+    static let maxSamplesPerStroke = 20_000
 
     struct Stroke {
         var ink: InkStroke
@@ -29,15 +34,15 @@ nonisolated struct WidgetLivePlayback {
         guard let id = message.id, let rawPoints = message.points else {
             return
         }
-        let samples = rawPoints.compactMap(InkSample.init(liveValues:))
-        if strokes[id] != nil {
-            strokes[id]?.ink.append(samples)
+        if let stroke = strokes[id] {
+            let room = Self.maxSamplesPerStroke - stroke.ink.samples.count
+            strokes[id]?.ink.append(Array(Self.samples(rawPoints, side: stroke.side).prefix(max(0, room))))
         } else {
-            guard let first = samples.first,
-                  let style = Self.style(of: message),
-                  let seed = message.seed,
-                  let side = message.side, side.isFinite, side > 0
-            else {
+            guard let side = message.side.map({ CGFloat($0) }), (1...Self.maxSide).contains(side) else {
+                return
+            }
+            let samples = Self.samples(rawPoints, side: side).prefix(Self.maxSamplesPerStroke)
+            guard let first = samples.first, let style = Self.style(of: message), let seed = message.seed else {
                 return
             }
             var ink = InkStroke(style: style, first: first, seed: seed)
@@ -50,6 +55,16 @@ nonisolated struct WidgetLivePlayback {
             strokes[id]?.ink.snap(to: snap.shape, at: snap.time)
         } else {
             strokes[id]?.ink.unsnap()
+        }
+    }
+
+    /// The points of a message that lie on or near the sender's canvas of
+    /// `side` points. Exquisite Corpse draws a little above the canvas, so
+    /// points up to one side outside it count.
+    private static func samples(_ rawPoints: [[Double]], side: CGFloat) -> [InkSample] {
+        let reach = -side...(2 * side)
+        return rawPoints.compactMap(InkSample.init(liveValues:)).filter { sample in
+            reach.contains(sample.location.x) && reach.contains(sample.location.y)
         }
     }
 

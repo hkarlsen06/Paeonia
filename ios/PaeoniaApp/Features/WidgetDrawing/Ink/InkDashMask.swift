@@ -8,6 +8,19 @@ import CoreGraphics
 nonisolated enum InkDashMask {
     /// How far apart the centerline samples are, in path points.
     static let sampleSpacing: CGFloat = 1
+    /// The most centerline samples one mask is built from. A longer line is
+    /// sampled further apart, so a huge stroke from the partner cannot stall
+    /// the main thread. A finger stroke stays far below it.
+    static let maxSamples: CGFloat = 50_000
+
+    /// The sample spacing for a line through `points`, the path's control
+    /// points, which are about as long as the line PencilKit draws.
+    static func spacing(along points: [CGPoint]) -> CGFloat {
+        let length = zip(points, points.dropFirst()).reduce(0) { total, pair in
+            total + hypot(pair.1.x - pair.0.x, pair.1.y - pair.0.y)
+        }
+        return max(sampleSpacing, length / maxSamples)
+    }
 
     /// Where each run of ink starts and ends, as distances along a line
     /// `length` long. The first run starts `phase` in, so the round end or

@@ -149,7 +149,27 @@ struct WidgetLivePlaybackTests {
         unknownLineStyle.lineStyle = "wavy"
         playback.receive(unknownLineStyle, now: 0)
         playback.receive(liveMessage(id: "b", points: [[10, 10, 0]]), now: 0)
+        var hugeCanvas = liveMessage(id: "g", points: [livePoint])
+        hugeCanvas.side = 1e9
+        playback.receive(hugeCanvas, now: 0)
         #expect(playback.isEmpty)
+    }
+
+    /// One small message must not make this phone build a line millions of
+    /// points long.
+    @Test func keepsAPartnersStrokeNearTheirCanvas() {
+        var playback = WidgetLivePlayback()
+        var farAway = liveMessage(id: "a", points: [livePoint, [100_000_000, 10, 0.01, 0, 1.571]])
+        farAway.lineStyle = InkLineStyle.dashed.rawValue
+        playback.receive(farAway, now: 0)
+        #expect(playback.strokes["a"]?.ink.samples.count == 1)
+
+        let tooMany = (0...WidgetLivePlayback.maxSamplesPerStroke).map { index in
+            [10, 10 + Double(index % 100), Double(index) / 1_000, 0, 1.571]
+        }
+        playback.receive(liveMessage(id: "b", points: tooMany), now: 0)
+        playback.receive(liveMessage(id: "b", points: [livePoint]), now: 0)
+        #expect(playback.strokes["b"]?.ink.samples.count == WidgetLivePlayback.maxSamplesPerStroke)
     }
 
     /// The partner's preview is built from the same recipe as the stroke that
