@@ -38066,6 +38066,9 @@
         }
       }
     },
+    "widget.refresh" : {
+      "comment" : "Accessibility label and title for the widget refresh button."
+    },
     "widgetDrawing.canvas.label" : {
       "comment" : "Accessibility label for the widget drawing canvas.",
       "extractionState" : "manual",

@@ -2,6 +2,9 @@
 
 default_platform(:ios)
 
+# The update notice prints last and pushes a lane's result out of `| tail`.
+ENV["FASTLANE_SKIP_UPDATE_CHECK"] = "1"
+
 def metadata_script
   "../Scripts/generate-appstore-metadata.mjs"
 end
@@ -32,6 +35,34 @@ def require_app_store_connect_api_key!
     key_filepath: key_path,
     in_house: false
   )
+end
+
+# Fails unless App Store Connect holds exactly the staged screenshots for each locale and device,
+# all processed. expected maps a locale to { "iPhone" => count, "iPad" => count }.
+def verify_uploaded_screenshots(api_key, version, expected)
+  Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.from(hash: api_key)
+  app = Spaceship::ConnectAPI::App.find(CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier))
+  app_version = app.get_app_store_versions(filter: { versionString: version, platform: "IOS" }).first
+  UI.user_error!("Version #{version} is missing from App Store Connect") unless app_version
+
+  uploaded = app_version.get_app_store_version_localizations.to_h do |localization|
+    shots = localization.get_app_screenshot_sets.flat_map do |set|
+      device = set.screenshot_display_type.start_with?("APP_IPAD") ? "iPad" : "iPhone"
+      set.app_screenshots.map { |shot| [device, shot.asset_delivery_state&.dig("state")] }
+    end
+    [localization.locale, shots]
+  end
+
+  expected.each do |locale, counts|
+    shots = uploaded.fetch(locale, [])
+    counts.each do |device, count|
+      states = shots.select { |d, _| d == device }.map(&:last)
+      UI.message("#{locale} #{device}: #{states.size} uploaded, #{states.tally}")
+      unless states.size == count && states.all?("COMPLETE")
+        UI.user_error!("#{locale} #{device} expected #{count} processed screenshots, App Store Connect has #{states.tally}")
+      end
+    end
+  end
 end
 
 def upload_metadata_files(api_key)
@@ -86,6 +117,7 @@ platform :ios do
     # with only the iPhone and iPad renders. Deliver replaces every screenshot in each locale it
     # uploads, iPad included, so a locale without iPad renders would lose its iPad set.
     require "tmpdir"
+    expected = {}
     Dir.mktmpdir("paeonia-screenshots") do |staging|
       locales = Dir.children(screenshots_path).select { |name| File.directory?(File.join(screenshots_path, name)) }
       UI.user_error!("No locale folders in #{screenshots_path}") if locales.empty?
@@ -96,6 +128,7 @@ platform :ios do
 
         FileUtils.mkdir_p(File.join(staging, locale))
         FileUtils.cp(iphone + ipad, File.join(staging, locale))
+        expected[locale] = { "iPhone" => iphone.size, "iPad" => ipad.size }
       end
 
       deliver(
@@ -112,6 +145,7 @@ platform :ios do
       )
     end
 
+    verify_uploaded_screenshots(require_app_store_connect_api_key!, version, expected)
     UI.success("Screenshots uploaded successfully.")
   end
 end

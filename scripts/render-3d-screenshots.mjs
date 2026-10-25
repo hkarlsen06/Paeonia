@@ -2,8 +2,8 @@
 // Render App Store screenshots with 3D iPhone 17 Pro Max and iPad Pro 13-inch models around
 // unmodified simulator captures. Every panel of a device is cut from one wide canvas. Each device is
 // centred in the space between its caption and the bottom of the panel. The render fails when a
-// device crosses a panel edge or does not fit under its caption, or a headline does not take exactly
-// two lines. The models are in lib/device3d.mjs.
+// device crosses a panel edge or does not fit under its caption, a headline does not take exactly
+// two lines, or a caption uses a gendered pronoun. The models are in lib/device3d.mjs.
 //
 // Usage: node scripts/render-3d-screenshots.mjs [config.json] [captures-dir] [output-dir] [devices]
 // Defaults render every device in the config, Paeonia from ios/ASConnectScreenshots/trial-1/raw into
@@ -22,6 +22,14 @@ const config = JSON.parse(await readFile(configPath, 'utf8'));
 const devices = process.argv[5]?.split(',') ?? Object.keys(config.devices);
 for (const name of devices) {
   if (!config.devices[name] || !MODELS[name]) throw new Error(`No device ${name} in the config and lib/device3d.mjs`);
+}
+// Captions say "your partner", never a gendered pronoun, in English or Norwegian.
+const gendered = /\b(he|him|his|she|her|hers|han|ham|hans|hun|henne|hennes)\b/i;
+for (const [locale, panels] of Object.entries(config.panels)) {
+  for (const text of panels.flat()) {
+    const match = text.replace(/<[^>]+>/g, ' ').match(gendered);
+    if (match) throw new Error(`Gendered pronoun "${match[0]}" in a ${locale} caption. Say "your partner": ${text}`);
+  }
 }
 
 // A soft light behind every device, at the centre renderDevices placed it.
