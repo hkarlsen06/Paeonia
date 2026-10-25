@@ -8,24 +8,31 @@ and scripts/sim-sign-in, with the simulator signed in as Hjalmar:
         --agent-device "<agent-device command with its --platform, --udid, --config and --session flags>" \\
         [--screens 01-widget,02-question,...] [--simulator "Paeonia Screenshots"] [--output DIR]
 
+The simulator is an iPhone 17 Pro Max or an iPad Pro 13-inch, and FAMILIES says
+what differs between the two. Captures are named <family>-<screen>.png, such as
+iPad-04-home.png.
+
 --ids is the JSON line scripts/app-store-content prints last. The screens open
 through Paeonia's deep links. simctl openurl asks "Open in Paeonia?" first, so
 the links go through agent-device's `open <app> <url>`, which does not.
 
 01-widget is the Home Screen. The script lays it out with Paeonia only: the
-large drawing widget on top, the streak and countdown widgets below it, and the
-Paeonia app alone in the dock. Every other app moves to the App Library. It
+large drawing widget on top, the other widgets of the family's home_screen
+beside and below it, and the Paeonia app alone in the dock. Every other app
+moves to the App Library. It
 writes SpringBoard's IconState.plist while the simulator is shut down, so the
 first run reboots the simulator. Set the dark plum Home Screen wallpaper by hand
 once per simulator: add the image from scripts/app-store-wallpaper.mjs with
 `xcrun simctl addmedia`, then in Photos use Share > Use as Wallpaper > Customize
 Home Screen > Gradient. A photo wallpaper renders black on the simulator, so the
 gradient picks up its plum colour instead. Before the capture, the script turns
-on large app icons, which hide the labels under the widgets, through SpringBoard's
-edit mode (Edit > Customize > Large app icons). iOS keeps the icon size with the
-wallpaper, so set the wallpaper first. It also turns off the Search button above
-the dock, which is Settings > Home Screen & App Library > Search > Show on Home
-Screen, by writing SBHomeScreenShowsSearchAffordance in com.apple.springboard.
+on large app icons, which hide the labels under the widgets. On an iPhone it goes
+through SpringBoard's edit mode (Edit > Customize > Large app icons), and iOS keeps
+the icon size with the wallpaper, so set the wallpaper first. On an iPad it writes
+the default behind Settings > Home Screen & App Library > Use Large App Icons, and
+turns off the App Library and the recent apps in the dock the same way. It also
+turns off the Search button above the dock, which is Settings > Home Screen & App
+Library > Search > Show on Home Screen.
 
 The screens are captured in the order of SCREENS, all from one seeding, so the
 drawing's time and the streak match everywhere. Each locale needs a fresh local
@@ -51,10 +58,12 @@ guess under way.
 
 The script sets the simulator's language for the locale (rebooting when it
 changes it) and the status bar to 9:41 with full bars and battery, and checks
-that every capture is 1320 x 2868, the 6.9-inch App Store size. For the screens
+that every capture has the family's size: 1320 x 2868, the 6.9-inch App Store
+size, or 2064 x 2752, the 13-inch iPad size. An iPad shows today's date beside
+the time. For the screens
 in SPOTLIGHTS it saves the spotlit element's accessibility frame next to the
 capture, as <capture>.spotlight.json, which scripts/render-3d-screenshots.mjs
-reads for a phone with a spotlight.
+reads for a device with a spotlight.
 """
 
 import argparse
@@ -68,12 +77,12 @@ import struct
 import subprocess
 import tempfile
 import time
+from typing import NamedTuple
 import uuid
 
 
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLE_ID = "no.paeonia.app"
-SIZE = (1320, 2868)
 LANGUAGES = {"en-US": ("en-US", "en_US"), "no": ("nb-NO", "nb_NO")}
 # The button of the system "Open in Paeonia?" prompt, which a new simulator shows for deep links.
 OPEN_BUTTON = {"en-US": "Open", "no": "Åpne"}
@@ -106,11 +115,41 @@ GUESS_LETTERS = 2
 # Screens whose capture gets a spotlight in the render, and the --ids key of the text that the
 # spotlit element's accessibility label contains. The countdown card's label holds its title.
 SPOTLIGHTS = {"04-home": "countdown_title"}
-# The Home Screen of 01-widget, in grid order: (widget kind, size). The large drawing fills
-# the top four rows and the two small widgets the last two.
-HOME_SCREEN = [("PaeoniaWidget", "large"), ("PaeoniaHomeStreakWidget", "small"),
-               ("PaeoniaHomeCountdownWidget", "small")]
 WIDGET_EXTENSION = "no.paeonia.app.widget"
+
+
+class Family(NamedTuple):
+    """What differs between an iPhone and an iPad simulator.
+
+    size is the capture size, which is also the App Store size. home_screen is the Home Screen
+    of 01-widget in grid order, as (widget kind, size). springboard holds the SpringBoard defaults
+    prepare() writes, which SpringBoard applies at once. edit_mode is where an iPhone gets large
+    icons, which iOS keeps with the wallpaper rather than in a default: the point of the long press
+    on the dock beside Paeonia that starts edit mode, since the widgets fill the page, and the tap
+    above the Customize sheet that closes it. An iPad has a default for it instead.
+    """
+    size: tuple
+    home_screen: list
+    springboard: dict
+    edit_mode: tuple | None
+
+
+# Settings > Home Screen & App Library > Search > Show on Home Screen.
+NO_SEARCH = {"SBHomeScreenShowsSearchAffordance": False}
+FAMILIES = {
+    # The large drawing fills the top four rows and the two small widgets the last two.
+    "iPhone": Family((1320, 2868), [("PaeoniaWidget", "large"), ("PaeoniaHomeStreakWidget", "small"),
+                                    ("PaeoniaHomeCountdownWidget", "small")],
+                     NO_SEARCH, ((80, 905), (220, 450))),
+    # Each of Paeonia's five Home Screen widgets once. They fill the top two rows and half the third;
+    # filling more of a 13-inch page would repeat a widget. The defaults are Use Large App Icons and
+    # the two Dock switches in Settings > Home Screen & App Library, so Paeonia is alone in the dock.
+    "iPad": Family((2064, 2752), [("PaeoniaWidget", "large"), ("PaeoniaHomeStreakWidget", "small"),
+                                  ("PaeoniaHomeCountdownWidget", "small"), ("PaeoniaHomeDaysTogetherWidget", "medium"),
+                                  ("PaeoniaHomeDailyQuestionWidget", "medium")],
+                   {**NO_SEARCH, "SBHomeLargeIcons": True, "SBAppLibraryInDockEnabled": False,
+                    "SBRecentsEnabled": False}, None),
+}
 
 
 def run(*args, **kwargs):
@@ -153,11 +192,11 @@ def apps_in(icons):
     return apps_in(icons.get("iconLists", []))
 
 
-def lay_out_home_screen(udid):
+def lay_out_home_screen(udid, home_screen):
     """Gives the Home Screen one page of Paeonia widgets and Paeonia alone in the dock. Reboots when it changes it."""
     path = Path.home() / f"Library/Developer/CoreSimulator/Devices/{udid}/data/Library/SpringBoard/IconState.plist"
     state = plistlib.loads(path.read_bytes())
-    page = [home_screen_widget(kind, size) for kind, size in HOME_SCREEN]
+    page = [home_screen_widget(kind, size) for kind, size in home_screen]
     if state["iconLists"] == [page] and state["buttonBar"] == [BUNDLE_ID]:
         return
     shut_down(udid)
@@ -171,20 +210,22 @@ def lay_out_home_screen(udid):
     simctl("bootstatus", udid, "-b", stdout=subprocess.DEVNULL)
 
 
-def prepare(udid, locale):
+def prepare(udid, locale, family):
     """Boots the simulator in the locale's language with the App Store status bar and Home Screen."""
     languages, region = LANGUAGES[locale]
     simctl("bootstatus", udid, "-b", stdout=subprocess.DEVNULL)
-    lay_out_home_screen(udid)
+    lay_out_home_screen(udid, family.home_screen)
     current = simctl("spawn", udid, "defaults", "read", "-g", "AppleLanguages", capture_output=True).stdout
     if f'"{languages}"' not in current and languages not in current.split():
         simctl("spawn", udid, "defaults", "write", "-g", "AppleLanguages", "-array", languages)
         simctl("spawn", udid, "defaults", "write", "-g", "AppleLocale", region)
         shut_down(udid)
         simctl("bootstatus", udid, "-b", stdout=subprocess.DEVNULL)
-    # Settings > Home Screen & App Library > Search > Show on Home Screen. SpringBoard applies it at once.
-    simctl("spawn", udid, "defaults", "write", "com.apple.springboard", "SBHomeScreenShowsSearchAffordance",
-           "-bool", "NO")
+    for key, value in family.springboard.items():
+        simctl("spawn", udid, "defaults", "write", "com.apple.springboard", key, "-bool", "YES" if value else "NO")
+    # An iPad shows the date beside the time. An ISO --time from an earlier override would keep its own
+    # date, with a wrong weekday, until the override is cleared.
+    simctl("status_bar", udid, "clear")
     simctl("status_bar", udid, "override", "--time", "9:41", "--dataNetwork", "wifi",
            "--wifiMode", "active", "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
            "--batteryState", "discharging", "--batteryLevel", "100")
@@ -196,19 +237,20 @@ def prepare(udid, locale):
     simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "games.drawAndGuess.holdHintShown", "-bool", "YES")
 
 
-def use_large_icons(agent_device, locale):
-    """Gives the Home Screen large app icons, which drop the labels under the widgets.
+def use_large_icons(agent_device, locale, edit_mode):
+    """Gives an iPhone Home Screen large app icons, which drop the labels under the widgets.
 
     iOS keeps the icon size with the wallpaper, not in a defaults key, so this goes through
     SpringBoard: edit mode, Edit > Customize, then the size button, unless it already offers
-    regular icons. A long press on the dock beside Paeonia starts edit mode, because the
-    widgets fill the page. A tap above the Customize sheet closes it and ends edit mode.
+    regular icons. edit_mode is the point of the long press that starts edit mode and the tap
+    that closes the Customize sheet and ends it.
     """
     def device(*args, **kwargs):
         return run(*agent_device[:1], *args, *agent_device[1:], **kwargs)
 
+    press, dismiss = edit_mode
     device("open", "com.apple.springboard", stdout=subprocess.DEVNULL)
-    device("longpress", "80", "905", "1500", stdout=subprocess.DEVNULL)
+    device("longpress", *map(str, press), "1500", stdout=subprocess.DEVNULL)
     time.sleep(2)
     device("press", f'label="{EDIT_BUTTON[locale]}"', stdout=subprocess.DEVNULL)
     time.sleep(1.5)
@@ -220,7 +262,7 @@ def use_large_icons(agent_device, locale):
         time.sleep(1.5)
     elif f'"{REGULAR_ICONS_BUTTON[locale]}"' not in tree:
         raise SystemExit("The Home Screen's Customize sheet did not open, so the icons may still be small.")
-    device("press", "220", "450", stdout=subprocess.DEVNULL)
+    device("press", *map(str, dismiss), stdout=subprocess.DEVNULL)
     time.sleep(1.5)
 
 
@@ -247,9 +289,10 @@ def thumbnail(path):
 
 
 def assert_distinct(path):
-    """Fails when the capture looks like another capture of the same locale, such as a screen that never opened."""
+    """Fails when the capture looks like another capture of the same locale and device, such as a screen that never opened."""
     mine = thumbnail(path)
-    for other in sorted(path.parent.glob("iPhone-*.png")):
+    device_family = path.name.split("-")[0]
+    for other in sorted(path.parent.glob(f"{device_family}-*.png")):
         if other == path:
             continue
         difference = sum(abs(a - b) for a, b in zip(mine, thumbnail(other))) / len(mine)
@@ -258,12 +301,12 @@ def assert_distinct(path):
                              "so the screen probably did not open. Check the simulator and capture it again.")
 
 
-def capture(udid, path):
+def capture(udid, path, size):
     simctl("io", udid, "screenshot", "--type", "png", str(path), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     header = path.read_bytes()[:24]
-    size = struct.unpack(">II", header[16:24])
-    if header[:8] != b"\x89PNG\r\n\x1a\n" or size != SIZE:
-        raise SystemExit(f"{path.name} is {size}, not a {SIZE[0]} x {SIZE[1]} PNG")
+    actual = struct.unpack(">II", header[16:24])
+    if header[:8] != b"\x89PNG\r\n\x1a\n" or actual != size:
+        raise SystemExit(f"{path.name} is {actual}, not a {size[0]} x {size[1]} PNG")
     assert_distinct(path)
 
 
@@ -295,7 +338,7 @@ def start_guess(agent_device, word):
         time.sleep(1.5)
 
 
-def save_spotlight(agent_device, text, path):
+def save_spotlight(agent_device, text, path, size):
     """Saves the frame of the one element whose label contains text, in capture pixels, next to the capture.
 
     The renderer reads it from <capture>.spotlight.json, so the spotlight follows the app's layout.
@@ -304,7 +347,7 @@ def save_spotlight(agent_device, text, path):
     matches = [node for node in nodes if text in (node.get("label") or "")]
     if len(matches) != 1:
         raise SystemExit(f"Found {len(matches)} elements labelled with {text!r} on {path.name}, not 1.")
-    scale = SIZE[0] / nodes[0]["rect"]["width"]  # The first node is the app, as wide as the screen.
+    scale = size[0] / nodes[0]["rect"]["width"]  # The first node is the app, as wide as the screen.
     frame = {key: round(matches[0]["rect"][key] * scale) for key in ("x", "y", "width", "height")}
     path.with_suffix(".spotlight.json").write_text(json.dumps(frame) + "\n")
 
@@ -324,13 +367,16 @@ def main():
         raise SystemExit(f"Unknown screens: {', '.join(sorted(unknown))}")
     screens = [screen for screen in SCREENS if screen in requested]
 
-    udid = device(args.simulator)["udid"]
-    prepare(udid, args.locale)
+    simulator = device(args.simulator)
+    udid = simulator["udid"]
+    name = "iPad" if "iPad" in simulator["deviceTypeIdentifier"] else "iPhone"
+    family = FAMILIES[name]
+    prepare(udid, args.locale, family)
     folder = args.output / args.locale
     folder.mkdir(parents=True, exist_ok=True)
     agent_device = shlex.split(args.agent_device)
-    if "01-widget" in screens:
-        use_large_icons(agent_device, args.locale)
+    if "01-widget" in screens and family.edit_mode:
+        use_large_icons(agent_device, args.locale, family.edit_mode)
     for screen in screens:
         url, wait = SCREENS[screen]
         # Every screen starts from a fresh launch. A deep link opens beneath a full-screen
@@ -360,10 +406,11 @@ def main():
             time.sleep(3)
         if screen == "06-draw":
             start_guess(agent_device, ids["guess_word"])
-        capture(udid, folder / f"iPhone-{screen}.png")
+        path = folder / f"{name}-{screen}.png"
+        capture(udid, path, family.size)
         if screen in SPOTLIGHTS:
-            save_spotlight(agent_device, ids[SPOTLIGHTS[screen]], folder / f"iPhone-{screen}.png")
-        print(f"Captured {args.locale}/iPhone-{screen}.png", flush=True)
+            save_spotlight(agent_device, ids[SPOTLIGHTS[screen]], path, family.size)
+        print(f"Captured {args.locale}/{path.name}", flush=True)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-// 3D iPhone 17 Pro Max model for the App Store screenshot renderer.
+// 3D iPhone and iPad models for the App Store screenshot renderer.
 // WebGL runs on SwiftShader, so reruns match to within a few levels per channel.
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -7,10 +7,33 @@ import path from 'node:path';
 const threeDir = path.resolve(createRequire(import.meta.url).resolve('three'), '../..');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png', '.ttf': 'font/ttf', '.otf': 'font/otf' };
 
+// Each device in millimetres. capture is the simulator screenshot size, which is also the App Store
+// panel size, and ppi makes that capture fill the display exactly. bevel is the radius of the rounded
+// frame edge. screenRadius is the display's corner in capture pixels. island is the Dynamic Island
+// in capture pixels, and camera the diameter of a front camera centred in the right-hand bezel.
+// buttons are [edge, centre from the top (left and right edges) or from the right (top edge),
+// length, sapphire].
+export const MODELS = {
+  iPhone: { // iPhone 17 Pro Max
+    capture: [1320, 2868], ppi: 460,
+    width: 78, height: 163.4, depth: 8.75, radius: 13.5, bevel: 1.4, screenRadius: 186,
+    island: { width: 378, height: 111, top: 33 },
+    button: { width: 1.4, depth: 2.6, radius: 0.6 },
+    buttons: [['left', 31, 7], ['left', 46, 13], ['left', 62, 13], ['right', 50, 19], ['right', 112, 17, true]],
+  },
+  iPad: { // iPad Pro 13-inch (M5). The corners and buttons follow Simulator's tablet5 device chrome.
+    capture: [2064, 2752], ppi: 264,
+    width: 215.5, height: 281.6, depth: 5.1, radius: 14.4, bevel: 1, screenRadius: 62,
+    camera: 2.2,
+    button: { width: 1.1, depth: 2, radius: 0.5 },
+    buttons: [['right', 22.5, 10], ['right', 34.6, 10], ['top', 18.4, 12]],
+  },
+};
+
 export const launch = chromium =>
   chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 
-// Put this in the page's HTML so renderPhones can reach three.js.
+// Put this in the page's HTML so renderDevices can reach three.js.
 export const threeImports = `
     <script type="importmap">{"imports":{"three":"/three/build/three.module.js","three/addons/":"/three/examples/jsm/"}}</script>
     <script type="module">
@@ -38,21 +61,22 @@ export async function openPage(browser, { width, height, html, captures, font })
   return tab;
 }
 
-// Runs in the page. Fits each panel's caption, then builds one phone model, renders each capture on
-// it into its own transparent canvas and places that canvas on the strip. W and H are the size of
-// one panel; spec.x and spec.height are fractions of it. A phone's visual centre, the middle of its
-// outline on screen, sits halfway between the bottom of its panel's caption and the bottom of the
-// panel. A spec with spotlight dims the screen around spotlights[spec.screen], an element's frame
-// in capture pixels. Its { dim, padding, radius, feather, lift, glow } are the darkening (0 to 1),
-// the room left around the element, the corner radius and the soft edge in pixels, how much larger
-// the lit element is drawn, and the colour of its glowing outline and sparkles. Returns the centres
-// in pixels; throws if the layout is broken.
-export async function renderPhones({ phones, finish, W, H, captures, spotlights }) {
+// Runs in the page. Fits each panel's caption, then builds the model, one of MODELS, renders each
+// capture on it into its own transparent canvas and places that canvas on the strip. A panel is the
+// model's capture size; spec.x and spec.height are fractions of it. A device's visual centre, the
+// middle of its outline on screen, sits halfway between the bottom of its panel's caption and the
+// bottom of the panel. A spec with spotlight dims the screen around spotlights[spec.screen], an
+// element's frame in capture pixels. Its { dim, padding, radius, feather, lift, glow, scale } are the
+// darkening (0 to 1), the room left around the element, the corner radius and the soft edge in
+// pixels, how much larger the lit element is drawn, the colour of its glowing outline and sparkles,
+// and an optional size factor for the outline, shadow and sparkles. Returns the centres in pixels;
+// throws if the layout is broken.
+export async function renderDevices({ model, layout, finish, captures, spotlights }) {
   const { THREE, RoomEnvironment, RoundedBoxGeometry, mergeVertices } = window.lib;
-  // iPhone 17 Pro Max in millimetres. B is the radius of the rounded frame edge.
-  const width = 78, height = 163.4, depth = 8.75, radius = 13.5, B = 1.4;
+  const { width, height, depth, radius, bevel: B } = model;
+  const [W, H] = model.capture;
   const glassW = width - 2 * B, glassH = height - 2 * B;
-  const pxPerMm = 460 / 25.4; // 460 ppi, so a 1320 x 2868 capture fills the display exactly.
+  const pxPerMm = model.ppi / 25.4;
   const outline = (w, h, r) => {
     const s = new THREE.Shape(), x = w / 2, y = h / 2;
     s.moveTo(-x + r, -y);
@@ -77,8 +101,8 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
   key.position.set(-1.5, 2, 3);
   scene.add(key);
 
-  const phone = new THREE.Group();
-  scene.add(phone);
+  const device = new THREE.Group();
+  scene.add(device);
   const metal = new THREE.MeshPhysicalMaterial({ color: finish, metalness: 1, roughness: 0.32, clearcoat: 0.4 });
   let frame = new THREE.ExtrudeGeometry(outline(glassW, glassH, radius - B), {
     depth: depth - 2 * B, bevelEnabled: true, bevelSize: B, bevelThickness: B, bevelSegments: 12, curveSegments: 32,
@@ -89,16 +113,19 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
   frame = mergeVertices(frame);
   frame.computeVertexNormals();
   frame.translate(0, 0, -(depth - 2 * B) / 2);
-  phone.add(new THREE.Mesh(frame, metal));
+  device.add(new THREE.Mesh(frame, metal));
 
-  // Side buttons: [side, centre from the top, length, material].
   const sapphire = new THREE.MeshPhysicalMaterial({ color: '#111318', metalness: 0.2, roughness: 0.1, clearcoat: 1 });
-  for (const [side, fromTop, length, material] of [
-    [-1, 31, 7, metal], [-1, 46, 13, metal], [-1, 62, 13, metal], [1, 50, 19, metal], [1, 112, 17, sapphire],
-  ]) {
-    const button = new THREE.Mesh(new RoundedBoxGeometry(1.4, length, 2.6, 4, 0.6), material);
-    button.position.set(side * (width / 2 - 0.1 - (material === sapphire ? 0.4 : 0)), height / 2 - fromTop, 0);
-    phone.add(button);
+  const { width: bw, depth: bd, radius: br } = model.button;
+  for (const [edge, offset, length, isSapphire] of model.buttons) {
+    const inset = 0.1 + (isSapphire ? 0.4 : 0);
+    const material = isSapphire ? sapphire : metal;
+    const button = edge === 'top'
+      ? new THREE.Mesh(new RoundedBoxGeometry(length, bw, bd, 4, br), material)
+      : new THREE.Mesh(new RoundedBoxGeometry(bw, length, bd, 4, br), material);
+    if (edge === 'top') button.position.set(width / 2 - offset, height / 2 - inset, 0);
+    else button.position.set((edge === 'left' ? -1 : 1) * (width / 2 - inset), height / 2 - offset, 0);
+    device.add(button);
   }
 
   const glassGeometry = new THREE.ShapeGeometry(outline(glassW, glassH, radius - B), 32);
@@ -107,13 +134,13 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
   const glassMaterial = new THREE.MeshBasicMaterial({ toneMapped: false });
   const glass = new THREE.Mesh(glassGeometry, glassMaterial);
   glass.position.z = depth / 2 + 0.01;
-  phone.add(glass);
+  device.add(glass);
 
   // Darkens the screen around element, an element's frame in capture pixels, so the element is the
   // first thing the eye finds even in the small preview strip. The element is drawn again a little
   // larger with a soft shadow under it, so it lifts off the dimmed screen, and gets a glowing
   // outline with a few sparkles on it. The capture sits at x0, y0 on the screen canvas.
-  function spotlight(c, capture, x0, y0, element, { dim, padding, radius, feather, lift, glow }) {
+  function spotlight(c, capture, x0, y0, element, { dim, padding, radius, feather, lift, glow, scale: k = 1 }) {
     const { width: w, height: h } = c.canvas;
     const lit = { x: x0 + element.x - padding, y: y0 + element.y - padding,
       width: element.width + 2 * padding, height: element.height + 2 * padding };
@@ -141,8 +168,8 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
     card.roundRect(scaled.x, scaled.y, scaled.width, scaled.height, radius * lift);
     c.save();
     c.shadowColor = '#12030cb3';
-    c.shadowBlur = 60;
-    c.shadowOffsetY = 24;
+    c.shadowBlur = 60 * k;
+    c.shadowOffsetY = 24 * k;
     c.fillStyle = '#2a0b1d';
     c.fill(card);
     c.restore();
@@ -156,8 +183,8 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
     c.strokeStyle = glow;
     c.shadowColor = glow;
     for (const [lineWidth, blur] of [[14, 70], [8, 36], [5, 12]]) {
-      c.lineWidth = lineWidth;
-      c.shadowBlur = blur;
+      c.lineWidth = lineWidth * k;
+      c.shadowBlur = blur * k;
       c.stroke(card);
     }
     c.restore();
@@ -179,10 +206,10 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
       c.restore();
     };
     const corner = radius * lift * (1 - Math.SQRT1_2);
-    sparkle(scaled.x + scaled.width - corner, scaled.y + corner, 34);
-    sparkle(scaled.x, scaled.y + scaled.height * 0.62, 22);
-    sparkle(scaled.x + scaled.width * 0.3, scaled.y + scaled.height, 26);
-    sparkle(scaled.x + scaled.width + 10, scaled.y + scaled.height * 0.4, 14);
+    sparkle(scaled.x + scaled.width - corner, scaled.y + corner, 34 * k);
+    sparkle(scaled.x, scaled.y + scaled.height * 0.62, 22 * k);
+    sparkle(scaled.x + scaled.width * 0.3, scaled.y + scaled.height, 26 * k);
+    sparkle(scaled.x + scaled.width + 10 * k, scaled.y + scaled.height * 0.4, 14 * k);
   }
 
   // Shrink long translations until they fit their panel and break no word.
@@ -195,9 +222,13 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
       return text.left < slot * W || text.right > (slot + 1) * W
         || [...section.children].some(line => line.scrollWidth > line.clientWidth);
     };
-    let size = 104;
+    // The page sets the full size. Shrink in steps of 4/104 of it, down to 76/104.
+    const full = parseFloat(getComputedStyle(section).fontSize);
+    let size = full;
     while (leaves()) {
-      if ((size -= 4) < 72) throw new Error(`Panel ${index + 1} text leaves its screenshot even at 76px`);
+      if ((size -= full * 4 / 104) < full * 72 / 104) {
+        throw new Error(`Panel ${index + 1} text leaves its screenshot even at ${Math.round(full * 76 / 104)}px`);
+      }
       section.style.fontSize = `${size}px`;
     }
     const headline = section.querySelector('h1');
@@ -211,7 +242,7 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
   const layer = document.createElement('div');
   document.body.append(layer);
   const centres = [];
-  for (const spec of phones) {
+  for (const spec of layout) {
     const capture = new Image();
     capture.src = `/capture/${captures[spec.screen]}`;
     await capture.decode();
@@ -225,15 +256,32 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
     c.fillRect(0, 0, canvas.width, canvas.height);
     c.save();
     c.beginPath();
-    c.roundRect(x0, y0, cw, ch, 186);
+    c.roundRect(x0, y0, cw, ch, model.screenRadius);
     c.clip();
     c.drawImage(capture, x0, y0);
     if (spec.spotlight) spotlight(c, capture, x0, y0, spotlights[spec.screen], spec.spotlight);
     c.restore();
-    c.fillStyle = '#000';
-    c.beginPath();
-    c.roundRect(canvas.width / 2 - 189, y0 + 33, 378, 111, 55.5); // Dynamic Island
-    c.fill();
+    if (model.island) {
+      const { width: iw, height: ih, top } = model.island;
+      c.fillStyle = '#000';
+      c.beginPath();
+      c.roundRect(canvas.width / 2 - iw / 2, y0 + top, iw, ih, ih / 2);
+      c.fill();
+    }
+    if (model.camera) {
+      const r = model.camera / 2 * pxPerMm;
+      const lens = c.createRadialGradient(0, 0, 0, 0, 0, r);
+      lens.addColorStop(0, '#1b2236');
+      lens.addColorStop(0.5, '#07080c');
+      lens.addColorStop(1, '#0b0b0e');
+      c.save();
+      c.translate((canvas.width + x0 + cw) / 2, canvas.height / 2);
+      c.fillStyle = lens;
+      c.beginPath();
+      c.arc(0, 0, r, 0, 2 * Math.PI);
+      c.fill();
+      c.restore();
+    }
     const glare = c.createLinearGradient(0, 0, canvas.width, canvas.height * 0.6);
     glare.addColorStop(0, '#ffffff14');
     glare.addColorStop(0.46, '#ffffff05');
@@ -246,20 +294,23 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
     glassMaterial.map.anisotropy = renderer.capabilities.getMaxAnisotropy();
     glassMaterial.needsUpdate = true;
 
-    // Frame the camera so the phone is spec.height of the panel tall, with room for any rotation.
-    const phonePx = spec.height * H, size = Math.ceil(phonePx * 1.35);
-    const camera = new THREE.PerspectiveCamera(fov, 1, 10, 10000);
-    camera.position.z = (height * size / phonePx) / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
-    phone.rotation.set(...spec.rotate.map(THREE.MathUtils.degToRad), 'ZYX');
-    phone.updateMatrixWorld();
+    // Frame the camera so the device is spec.height of the panel tall, with room for any rotation.
+    const devicePx = spec.height * H, size = Math.ceil(devicePx * 1.35);
+    const distance = (height * size / devicePx) / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+    // Near and far hug the device. The glass sits 0.01 mm above the frame, and a near plane far in
+    // front of a large device leaves too little depth precision to keep the frame behind it.
+    const camera = new THREE.PerspectiveCamera(fov, 1, distance - height, distance + height);
+    camera.position.z = distance;
+    device.rotation.set(...spec.rotate.map(THREE.MathUtils.degToRad), 'ZYX');
+    device.updateMatrixWorld();
     renderer.setSize(size, size, false);
     renderer.render(scene, camera);
 
-    // Where the phone's outline falls in the rendered square. A tilt moves it off the square's centre.
+    // Where the device's outline falls in the rendered square. A tilt moves it off the square's centre.
     const extent = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
     const positions = frame.attributes.position;
     for (let i = 0; i < positions.count; i++) {
-      vertex.fromBufferAttribute(positions, i).applyMatrix4(phone.matrixWorld).project(camera);
+      vertex.fromBufferAttribute(positions, i).applyMatrix4(device.matrixWorld).project(camera);
       const x = (vertex.x + 1) / 2 * size, y = (1 - vertex.y) / 2 * size;
       extent.left = Math.min(extent.left, x); extent.right = Math.max(extent.right, x);
       extent.top = Math.min(extent.top, y); extent.bottom = Math.max(extent.bottom, y);
@@ -269,13 +320,13 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
     const left = centre.x - (extent.left + extent.right) / 2, top = centre.y - (extent.top + extent.bottom) / 2;
     const box = { left: left + extent.left, right: left + extent.right, top: top + extent.top, bottom: top + extent.bottom };
 
-    // Every phone stays inside its own panel, clear of the caption, so no screenshot cuts off part of a phone.
+    // Every device stays inside its own panel, clear of the caption, so no screenshot cuts off part of it.
     const margin = 0.02 * W;
     if (box.left < panel * W + margin || box.right > (panel + 1) * W - margin) {
-      throw new Error(`The ${spec.screen} phone is cut off at the edge of panel ${panel + 1}`);
+      throw new Error(`The ${spec.screen} device is cut off at the edge of panel ${panel + 1}`);
     }
     if (box.top < captionBottom + margin) {
-      throw new Error(`The ${spec.screen} phone is too tall for the space under the panel ${panel + 1} caption`);
+      throw new Error(`The ${spec.screen} device is too tall for the space under the panel ${panel + 1} caption`);
     }
     centres.push(centre);
 
