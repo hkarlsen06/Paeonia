@@ -68,8 +68,8 @@ final class BoardMarkEditorModel {
     /// One ink in one width. White, because the boards tint the mark and only
     /// its shape matters. It uses the app's pen, which draws exactly the width it
     /// is given. PencilKit's own pen sizes finger strokes by speed.
-    var tool: any PKTool {
-        WidgetDrawingTool.pen.pencilKitTool(color: .white, width: Self.inkWidth)
+    var tool: CanvasTool {
+        WidgetDrawingTool.pen.canvasTool(color: .white, width: Self.inkWidth)
     }
 
     // MARK: Canvas

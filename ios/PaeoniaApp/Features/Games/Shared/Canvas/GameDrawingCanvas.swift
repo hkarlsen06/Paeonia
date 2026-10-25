@@ -16,12 +16,10 @@ struct GameDrawingCanvas: View {
             PencilKitCanvasView(
                 drawing: board.drawing,
                 drawingRevision: board.drawingRevision,
-                tool: board.pencilKitTool,
-                toolConfigurationRevision: board.toolConfigurationRevision,
+                tool: board.canvasTool,
                 onCanvasReady: onCanvasReady,
                 onDrawingChange: board.updateDrawing,
                 onStrokeInProgressChange: board.setStrokeInProgress,
-                isFillToolSelected: board.selectedTool.isFill,
                 onFill: board.fill,
                 onDrawingApplied: board.canvasDidApplyDrawing,
                 onFinishRendering: board.canvasDidFinishRendering

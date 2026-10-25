@@ -316,12 +316,10 @@ private extension WidgetDrawingView {
         PencilKitCanvasView(
             drawing: viewModel.drawing,
             drawingRevision: viewModel.drawingRevision,
-            tool: viewModel.pencilKitTool,
-            toolConfigurationRevision: viewModel.toolConfigurationRevision,
+            tool: viewModel.canvasTool,
             onCanvasReady: viewModel.bindCanvasView,
             onDrawingChange: viewModel.updateDrawing,
             onStrokeInProgressChange: viewModel.setDrawingStrokeInProgress,
-            isFillToolSelected: viewModel.selectedTool.isFill,
             onFill: viewModel.fill,
             onDrawingApplied: viewModel.canvasDidApplyDrawing,
             onFinishRendering: viewModel.refreshDrawingFromCanvas

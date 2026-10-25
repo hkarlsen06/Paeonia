@@ -108,7 +108,7 @@ extension ExquisiteCorpseViewModel {
         channel = nil
         penCanvas = nil
         penSampler = ExquisiteCorpsePenSampler()
-        liveStroke = nil
+        liveStrokeSentAt = 0
         sentStrip = nil
         doneSentPartID = nil
         watchedPartID = nil

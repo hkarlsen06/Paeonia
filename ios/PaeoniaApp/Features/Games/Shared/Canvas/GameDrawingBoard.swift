@@ -18,7 +18,6 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     private(set) var selectedCGColor: CGColor = WidgetDrawingColorChoice.palette[0].uiColor.cgColor
     private(set) var toolWidthFraction: CGFloat = 0.4
     private(set) var isAdjustingToolWidth = false
-    private(set) var toolConfigurationRevision = 0
     /// The side of the square canvas on screen, in points. Zero until laid out.
     private(set) var canvasSide: CGFloat = 0
     private var history = DrawingEditHistory()
@@ -49,8 +48,8 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
         selectedTool.width(forFraction: toolWidthFraction)
     }
 
-    var pencilKitTool: any PKTool {
-        selectedTool.pencilKitTool(color: selectedUIColor, width: toolWidth)
+    var canvasTool: CanvasTool {
+        selectedTool.canvasTool(color: selectedUIColor, width: toolWidth)
     }
 
     /// The drawing at the size every phone exchanges.
@@ -73,7 +72,6 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
             lastDrawingTool = selectedTool
         }
         selectedTool = tool
-        toolConfigurationRevision += 1
     }
 
     func selectColorChoice(_ choice: WidgetDrawingColorChoice) {
@@ -81,7 +79,6 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
         selectedCGColor = choice.uiColor.cgColor
         selectedUIColor = choice.uiColor
         selectedColorChoiceID = choice.id
-        toolConfigurationRevision += 1
     }
 
     func selectCustomColor(_ color: CGColor) {
@@ -90,14 +87,12 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
         selectedCGColor = uiColor.cgColor
         selectedUIColor = uiColor
         selectedColorChoiceID = nil
-        toolConfigurationRevision += 1
     }
 
     func updateToolWidthFraction(_ fraction: CGFloat) {
         let clamped = min(max(0, fraction), 1)
         guard toolWidthFraction != clamped else { return }
         toolWidthFraction = clamped
-        toolConfigurationRevision += 1
     }
 
     func setAdjustingToolWidth(_ isAdjusting: Bool) {

@@ -98,8 +98,7 @@ final class PaeoniaAppUITests: XCTestCase {
         XCTAssertTrue(continueDate.waitForExistence(timeout: 5))
         continueDate.tap()
 
-        // PencilKit's canvas is a scroll view.
-        let canvas = app.scrollViews["widgetDrawing.canvas"]
+        let canvas = app.otherElements["widgetDrawing.canvas"].firstMatch
         XCTAssertTrue(canvas.waitForExistence(timeout: 10))
         canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.3))
             .press(forDuration: 0.05, thenDragTo: canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.6)))

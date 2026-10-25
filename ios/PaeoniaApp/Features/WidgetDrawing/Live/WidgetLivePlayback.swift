@@ -4,36 +4,20 @@ import UIKit
 /// The partner's strokes while they are still drawing them. Each point is shown
 /// `delay` after its stroke started arriving, at the pace it was drawn, so the
 /// line grows smoothly instead of jumping each time a batch of points lands.
+/// A stroke is rebuilt from the same recipe the sender draws with, so it looks
+/// like the finished stroke that replaces it.
 nonisolated struct WidgetLivePlayback {
     static let delay: TimeInterval = 0.1
     /// A finished stroke that never arrived as a real stroke is dropped after this.
     static let endedLifetime: TimeInterval = 3
 
-    struct Point: Equatable {
-        var location: CGPoint
-        var timeOffset: TimeInterval
-        var azimuth: CGFloat
-
-        /// `[x, y, timeOffset, azimuth]`.
-        init?(_ values: [Double]) {
-            guard values.count == 4, values.allSatisfy(\.isFinite) else {
-                return nil
-            }
-            location = CGPoint(x: values[0], y: values[1])
-            timeOffset = values[2]
-            azimuth = values[3]
-        }
-    }
-
     struct Stroke {
-        var ink: PKInk
-        var style: WidgetLiveInkCalibration.Style
+        var ink: InkStroke
+        /// The side of the sender's square canvas.
         var side: CGFloat
-        var points: [Point]
         /// Local time that matches the stroke's time offset 0.
         var origin: TimeInterval
         var endedAt: TimeInterval?
-        let creationDate: Date
     }
 
     private(set) var strokes: [String: Stroke] = [:]
@@ -45,28 +29,34 @@ nonisolated struct WidgetLivePlayback {
         guard let id = message.id, let rawPoints = message.points else {
             return
         }
-        let points = rawPoints.compactMap(Point.init)
+        let samples = rawPoints.compactMap(InkSample.init(liveValues:))
         if strokes[id] != nil {
-            strokes[id]?.points.append(contentsOf: points)
+            strokes[id]?.ink.append(samples)
             return
         }
-        guard let first = points.first,
-              let side = message.side, side > 0,
-              let style = message.pointStyle, style.size.isFinite, style.size > 0,
-              let inkName = message.ink,
-              let color = message.color.flatMap(UIColor.init(liveComponents:))
+        guard let first = samples.first,
+              let style = Self.style(of: message),
+              let seed = message.seed,
+              let side = message.side, side.isFinite, side > 0
         else {
             return
         }
-        strokes[id] = Stroke(
-            ink: PKInk(PKInk.InkType(rawValue: inkName) ?? .pen, color: color),
-            style: style,
-            side: side,
-            points: points,
-            origin: now + Self.delay - first.timeOffset,
-            creationDate: Date()
-        )
+        var ink = InkStroke(style: style, first: first, seed: seed)
+        ink.append(Array(samples.dropFirst()))
+        strokes[id] = Stroke(ink: ink, side: side, origin: now + Self.delay - first.timeOffset)
         order.append(id)
+    }
+
+    /// The stroke's look, or nil when the message does not describe one.
+    private static func style(of message: WidgetLiveMessage) -> InkStyle? {
+        guard let kind = message.ink.flatMap(InkKind.init(rawValue:)),
+              let color = message.color.flatMap(UIColor.init(liveComponents:)),
+              let width = message.width.map({ CGFloat($0) }),
+              kind.validWidthRange.contains(width)
+        else {
+            return nil
+        }
+        return InkStyle(kind: kind, color: color, width: width)
     }
 
     mutating func end(_ id: String, now: TimeInterval) {
@@ -93,30 +83,16 @@ nonisolated struct WidgetLivePlayback {
         remove(Array(expired.keys))
     }
 
-    /// The points shown at `now`, as PencilKit strokes on a canvas of `side` points.
+    /// The strokes as far as they are shown at `now`, on a canvas of `side`
+    /// points. They are scaled the way `PKDrawing.scaled` scales the finished
+    /// strokes, so the finished stroke lands exactly on its preview.
     func pencilKitStrokes(at now: TimeInterval, side: CGFloat) -> [PKStroke] {
         order.compactMap { id in
-            guard let stroke = strokes[id] else {
-                return nil
-            }
-            let elapsed = now - stroke.origin
-            let shown = stroke.points.prefix { $0.timeOffset <= elapsed }
-            guard !shown.isEmpty else {
+            guard let stroke = strokes[id], let shown = stroke.ink.prefix(through: now - stroke.origin) else {
                 return nil
             }
             let scale = side / stroke.side
-            let controlPoints = shown.map { point in
-                stroke.style.point(
-                    at: CGPoint(x: point.location.x * scale, y: point.location.y * scale),
-                    timeOffset: point.timeOffset,
-                    azimuth: point.azimuth,
-                    scale: scale
-                )
-            }
-            return PKStroke(
-                ink: stroke.ink,
-                path: PKStrokePath(controlPoints: controlPoints, creationDate: stroke.creationDate)
-            )
+            return shown.pencilKitStroke(transform: CGAffineTransform(scaleX: scale, y: scale))
         }
     }
 }

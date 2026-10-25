@@ -106,7 +106,6 @@ struct BoardMarkEditorView: View {
                     drawing: model.drawing,
                     drawingRevision: model.drawingRevision,
                     tool: model.tool,
-                    toolConfigurationRevision: 0,
                     onCanvasReady: { _ in },
                     onDrawingChange: model.drawingChanged,
                     onStrokeInProgressChange: { _ in }

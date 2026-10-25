@@ -110,21 +110,19 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         }
     }
 
-    func pencilKitTool(color: UIColor, width: CGFloat) -> any PKTool {
+    /// What a touch on the canvas does with this tool.
+    func canvasTool(color: UIColor, width: CGFloat) -> CanvasTool {
         let clampedWidth = clampedWidth(width)
-
         return switch self {
-        // The canvas takes no strokes while the bucket is picked. The fill
-        // itself is made in `DrawingFloodFill` on a tap.
-        case .pen, .fill:
-            // PencilKit's `.pen` ink sizes finger strokes by speed and mostly
-            // ignores the width, so the size slider barely changed it. Monoline
-            // keeps a steady width, twice the one it is given (see `drawnWidth`).
-            PKInkingTool(.monoline, color: color, width: clampedWidth)
+        case .pen:
+            .ink(InkStyle(kind: .pen, color: color, width: clampedWidth))
         case .pencil:
-            PKInkingTool(.pencil, color: color, width: clampedWidth)
+            .ink(InkStyle(kind: .pencil, color: color, width: clampedWidth))
+        // The fill itself is made in `DrawingFloodFill` on a tap.
+        case .fill:
+            .fill
         case .eraser:
-            PKEraserTool(.fixedWidthBitmap, width: clampedWidth)
+            .eraser(width: clampedWidth)
         }
     }
 
@@ -154,14 +152,13 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
     }
 
     /// Each tool has its own width range, which is why a single fixed slider
-    /// range cannot be shared. Monoline reports `0.5...4`, too thin to be
-    /// useful, but it takes wider widths too, so the pen sets its own.
+    /// range cannot be shared.
     var validWidthRange: ClosedRange<CGFloat> {
         switch self {
         case .pen, .fill:
-            1...12
+            InkKind.pen.validWidthRange
         case .pencil:
-            PKInkingTool.InkType.pencil.validWidthRange
+            InkKind.pencil.validWidthRange
         case .eraser:
             PKEraserTool.EraserType.fixedWidthBitmap.validWidthRange
         }

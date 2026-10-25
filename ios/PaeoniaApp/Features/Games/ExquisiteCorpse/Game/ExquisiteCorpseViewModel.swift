@@ -165,8 +165,8 @@ final class ExquisiteCorpseViewModel {
     @ObservationIgnored var channel: GameLiveChannel<ExquisiteCorpseLiveMessage>?
     @ObservationIgnored var penSampler = ExquisiteCorpsePenSampler()
     @ObservationIgnored weak var penCanvas: PKCanvasView?
-    /// The stroke being drawn now, so the strip can show it before the pen lifts.
-    @ObservationIgnored var liveStroke: ExquisiteCorpseLiveStroke?
+    /// When the strip last went out with the stroke still being drawn.
+    @ObservationIgnored var liveStrokeSentAt: TimeInterval = 0
     /// The strip last sent to the watching partner, so only a change goes out.
     @ObservationIgnored var sentStrip: (partID: UUID, signature: Int)?
     /// The strip of each stroke on the canvas, so a send only cuts the stroke being drawn.

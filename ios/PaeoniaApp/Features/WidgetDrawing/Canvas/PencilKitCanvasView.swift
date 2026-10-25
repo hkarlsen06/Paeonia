@@ -6,13 +6,10 @@ struct PencilKitCanvasView: UIViewRepresentable {
     /// Changes only when the view model replaced the drawing from code. Strokes
     /// drawn on the canvas never change it, so they are not pushed back in.
     let drawingRevision: Int
-    let tool: any PKTool
-    let toolConfigurationRevision: Int
+    let tool: CanvasTool
     let onCanvasReady: (PKCanvasView) -> Void
     let onDrawingChange: (PKDrawing) -> Void
     let onStrokeInProgressChange: (Bool) -> Void
-    /// The paint bucket is picked: a tap fills instead of drawing.
-    var isFillToolSelected = false
     /// A tap with the paint bucket, in canvas points.
     var onFill: (CGPoint) -> Void = { _ in }
     /// The canvas now shows the drawing of this `drawingRevision`.
@@ -24,39 +21,34 @@ struct PencilKitCanvasView: UIViewRepresentable {
     /// than the drawing area, and strokes drawn there have a negative y.
     var overscanTop: CGFloat = 0
 
-    func makeUIView(context: Context) -> PKCanvasView {
-        let canvasView = PaeoniaDrawingCanvasView()
-        canvasView.configureForPaeoniaDrawingCanvas()
+    func makeUIView(context: Context) -> PaeoniaDrawingCanvasContainer {
+        let container = PaeoniaDrawingCanvasContainer()
+        let canvasView = container.canvas
         canvasView.overscanTop = overscanTop
-        let fillTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.fillTapped))
-        canvasView.addGestureRecognizer(fillTap)
-        context.coordinator.fillTap = fillTap
-        context.coordinator.applyFillMode(isFillToolSelected, to: canvasView)
+        canvasView.canvasTool = tool
+        let coordinator = context.coordinator
+        canvasView.onFill = { [weak coordinator] point in
+            coordinator?.parent.onFill(point)
+        }
+        canvasView.onInkStrokeInProgressChange = { [weak coordinator] inProgress in
+            coordinator?.parent.onStrokeInProgressChange(inProgress)
+        }
         // Assign the initial drawing before wiring the delegate so this
         // programmatic assignment can't bounce back through
         // `canvasViewDrawingDidChange` while SwiftUI is still building the view.
         canvasView.drawing = drawing
-        context.coordinator.appliedDrawingRevision = drawingRevision
+        coordinator.appliedDrawingRevision = drawingRevision
         onDrawingApplied(drawingRevision)
-        canvasView.delegate = context.coordinator
-        context.coordinator.applyToolIfNeeded(
-            tool,
-            to: canvasView,
-            revision: toolConfigurationRevision
-        )
-        context.coordinator.bind(canvasView)
-        return canvasView
+        canvasView.delegate = coordinator
+        onCanvasReady(canvasView)
+        return container
     }
 
-    func updateUIView(_ canvasView: PKCanvasView, context: Context) {
+    func updateUIView(_ container: PaeoniaDrawingCanvasContainer, context: Context) {
+        let canvasView = container.canvas
         context.coordinator.parent = self
-        (canvasView as? PaeoniaDrawingCanvasView)?.overscanTop = overscanTop
-        context.coordinator.applyToolIfNeeded(
-            tool,
-            to: canvasView,
-            revision: toolConfigurationRevision
-        )
-        context.coordinator.applyFillMode(isFillToolSelected, to: canvasView)
+        canvasView.overscanTop = overscanTop
+        canvasView.canvasTool = tool
 
         // Comparing revisions is cheap. Comparing `dataRepresentation()` on
         // every SwiftUI update serialized the whole drawing twice per slider
@@ -73,50 +65,10 @@ struct PencilKitCanvasView: UIViewRepresentable {
     }
 }
 
-/// A canvas without PencilKit's undo stack. The view models keep their own
-/// (`DrawingEditHistory`), and PencilKit's would undo to drawings that are gone.
-final class PaeoniaDrawingCanvasView: PKCanvasView {
-    override var undoManager: UndoManager? { nil }
-
-    /// See `PencilKitCanvasView.overscanTop`. The canvas is scrolled up by this
-    /// much, so the drawing's y 0 sits this far below the view's top edge.
-    var overscanTop: CGFloat = 0 {
-        didSet {
-            guard overscanTop != oldValue else { return }
-            contentInsetAdjustmentBehavior = .never
-            contentInset.top = overscanTop
-            contentOffset = CGPoint(x: 0, y: -overscanTop)
-        }
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        // A layout pass may move the offset back to the content's top.
-        let pinned = CGPoint(x: 0, y: -overscanTop)
-        if overscanTop > 0, contentOffset != pinned {
-            contentOffset = pinned
-        }
-    }
-}
-
-extension PKCanvasView {
-    func configureForPaeoniaDrawingCanvas() {
-        backgroundColor = .clear
-        drawingPolicy = .anyInput
-        isOpaque = false
-        isScrollEnabled = false
-        overrideUserInterfaceStyle = .light
-        showsHorizontalScrollIndicator = false
-        showsVerticalScrollIndicator = false
-    }
-}
-
 extension PencilKitCanvasView {
     final class Coordinator: NSObject, PKCanvasViewDelegate {
         var parent: PencilKitCanvasView
         var appliedDrawingRevision = 0
-        weak var fillTap: UITapGestureRecognizer?
-        private var appliedToolConfigurationRevision: Int?
         /// True while we push a drawing into the canvas ourselves, so the
         /// resulting delegate callback doesn't feed that programmatic change back
         /// into the view model (which would mutate observed state mid-update).
@@ -124,38 +76,6 @@ extension PencilKitCanvasView {
 
         init(parent: PencilKitCanvasView) {
             self.parent = parent
-        }
-
-        func applyToolIfNeeded(
-            _ tool: any PKTool,
-            to canvasView: PKCanvasView,
-            revision: Int
-        ) {
-            guard appliedToolConfigurationRevision != revision else {
-                return
-            }
-
-            canvasView.tool = tool
-            appliedToolConfigurationRevision = revision
-        }
-
-        /// Turns off the drawing gesture, not `isDrawingEnabled`. With
-        /// `isDrawingEnabled` off, the canvas did not redraw the filled drawing
-        /// until much later.
-        func applyFillMode(_ isFillToolSelected: Bool, to canvasView: PKCanvasView) {
-            canvasView.drawingGestureRecognizer.isEnabled = !isFillToolSelected
-            fillTap?.isEnabled = isFillToolSelected
-        }
-
-        @objc func fillTapped(_ recognizer: UITapGestureRecognizer) {
-            guard recognizer.state == .ended, let view = recognizer.view else {
-                return
-            }
-            parent.onFill(recognizer.location(in: view))
-        }
-
-        func bind(_ canvasView: PKCanvasView) {
-            parent.onCanvasReady(canvasView)
         }
 
         /// Pushes a drawing into the canvas while suppressing the delegate
@@ -167,6 +87,8 @@ extension PencilKitCanvasView {
             canvasView.drawing = drawing
         }
 
+        /// Called for an eraser change and for a finished pen or pencil stroke,
+        /// which the canvas adds to its drawing itself.
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
             guard !isApplyingDrawingProgrammatically else {
                 return
@@ -178,6 +100,8 @@ extension PencilKitCanvasView {
             parent.onFinishRendering()
         }
 
+        /// PencilKit's drawing gesture only erases. Pen and pencil strokes
+        /// report through `PaeoniaDrawingCanvasView.onInkStrokeInProgressChange`.
         func canvasViewDidBeginUsingTool(_: PKCanvasView) {
             parent.onStrokeInProgressChange(true)
         }

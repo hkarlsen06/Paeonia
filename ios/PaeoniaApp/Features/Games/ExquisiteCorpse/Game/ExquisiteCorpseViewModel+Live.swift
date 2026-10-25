@@ -69,73 +69,55 @@ extension ExquisiteCorpseViewModel {
 
     // MARK: - Sending
 
-    /// The drawer's canvas appeared. Binds the board and listens to the pen. The
-    /// room itself is never attached to this canvas.
+    /// The drawer's canvas appeared. Binds the board and listens to the pen and
+    /// the strokes. The room itself is never attached to this canvas.
     func canvasReady(_ canvasView: PKCanvasView) {
         board.bindCanvasView(canvasView)
+        guard penCanvas !== canvasView else { return }
+        penCanvas = canvasView
         addPenRecognizer(to: canvasView)
+        (canvasView as? PaeoniaDrawingCanvasView)?.addInkObserver { [weak self] event in
+            self?.liveInkEvent(event)
+        }
     }
 
     private func addPenRecognizer(to canvasView: PKCanvasView) {
-        guard penCanvas !== canvasView else { return }
-        penCanvas = canvasView
         let recognizer = WidgetLiveTouchRecognizer()
         // The canvas view also covers the strip above the part, so its width is
         // the part's side and not its height.
-        recognizer.onBegan = { [weak self, weak canvasView] touch, event in
+        recognizer.onBegan = { [weak self, weak canvasView] touch, _ in
             guard let self, let canvasView else { return }
             let side = canvasView.bounds.width
             penMoved(to: touch.location(in: canvasView), in: CGSize(width: side, height: side))
-            beginLiveStroke(touch)
-            extendLiveStroke(touch, event: event, in: canvasView)
         }
-        recognizer.onMoved = { [weak self, weak canvasView] touch, event in
+        recognizer.onMoved = { [weak self, weak canvasView] touch, _ in
             guard let self, let canvasView else { return }
             let side = canvasView.bounds.width
             penMoved(to: touch.location(in: canvasView), in: CGSize(width: side, height: side))
-            extendLiveStroke(touch, event: event, in: canvasView)
         }
-        recognizer.onEnded = { [weak self] cancelled in
+        recognizer.onEnded = { [weak self] _ in
             self?.penLifted()
-            self?.endLiveStroke(cancelled: cancelled)
         }
         canvasView.addGestureRecognizer(recognizer)
     }
 
     // MARK: - The stroke being drawn
 
-    /// PencilKit hands over a stroke only when the pen lifts. This builds the
-    /// stroke from the touches, so the partner sees it reach the strip while it
-    /// is drawn. Only the strip of it ever leaves the phone.
-    private func beginLiveStroke(_ touch: UITouch) {
-        guard let tool = board.pencilKitTool as? PKInkingTool, !board.selectedTool.isFill else {
-            liveStroke = nil
-            return
-        }
-        let key = WidgetLiveInkCalibration.key(ink: tool.ink.inkType.rawValue, isPencil: touch.type == .pencil)
-        let style = WidgetLiveInkCalibration.load().style(ink: key, width: tool.width) ?? .fallback(width: tool.width)
-        liveStroke = ExquisiteCorpseLiveStroke(ink: tool.ink, style: style, startTime: touch.timestamp)
-    }
-
-    private func extendLiveStroke(_ touch: UITouch, event: UIEvent, in view: UIView) {
-        guard liveStroke != nil else { return }
-        for sample in event.coalescedTouches(for: touch) ?? [touch] {
-            liveStroke?.append(sample, in: view)
-        }
-        guard let liveStroke, monotonicNow() - liveStroke.lastSentAt >= Self.liveStrokeInterval,
-              board.canvasSide > 0,
-              liveStroke.points.contains(where: { $0.location.y >= ExquisiteCorpseFold.foldY(side: board.canvasSide) })
-        else { return }
-        self.liveStroke?.lastSentAt = monotonicNow()
-        sendStripIfChanged(including: liveStroke.stroke)
-    }
-
-    /// A finished stroke reaches the board, which sends the strip. A cancelled
-    /// one never does, so the strip goes out again without it.
-    private func endLiveStroke(cancelled: Bool) {
-        liveStroke = nil
-        if cancelled {
-            sendStripIfChanged()
+    /// The canvas hands a stroke to the board only when the pen lifts. This
+    /// sends the strip with the stroke so far, so the partner sees it reach the
+    /// strip while it is drawn. Only the strip of it ever leaves the phone. The
+    /// finished stroke reaches the board, which sends the strip again.
+    private func liveInkEvent(_ event: InkEvent) {
+        switch event {
+        case let .began(stroke), let .changed(stroke):
+            guard monotonicNow() - liveStrokeSentAt >= Self.liveStrokeInterval,
+                  board.canvasSide > 0,
+                  stroke.samples.contains(where: { $0.location.y >= ExquisiteCorpseFold.foldY(side: board.canvasSide) })
+            else { return }
+            liveStrokeSentAt = monotonicNow()
+            sendStripIfChanged(including: stroke.pencilKitStroke())
+        case .ended:
+            liveStrokeSentAt = 0
         }
     }
 
@@ -309,34 +291,5 @@ extension ExquisiteCorpseViewModel {
         if partnerFinishedPart != finishedPart {
             partnerFinishedPart = finishedPart
         }
-    }
-}
-
-/// The stroke the drawer is drawing now, from the pen's touches, in canvas points.
-/// Every point gets the typical size for the tool, as the relay's live strokes do.
-struct ExquisiteCorpseLiveStroke {
-    let ink: PKInk
-    let style: WidgetLiveInkCalibration.Style
-    let startTime: TimeInterval
-    private(set) var points: [PKStrokePoint] = []
-    var lastSentAt: TimeInterval = 0
-
-    init(ink: PKInk, style: WidgetLiveInkCalibration.Style, startTime: TimeInterval) {
-        self.ink = ink
-        self.style = style
-        self.startTime = startTime
-    }
-
-    mutating func append(_ touch: UITouch, in view: UIView) {
-        points.append(style.point(
-            at: touch.preciseLocation(in: view),
-            timeOffset: touch.timestamp - startTime,
-            azimuth: touch.azimuthAngle(in: view),
-            scale: 1
-        ))
-    }
-
-    var stroke: PKStroke {
-        PKStroke(ink: ink, path: PKStrokePath(controlPoints: points, creationDate: Date()))
     }
 }

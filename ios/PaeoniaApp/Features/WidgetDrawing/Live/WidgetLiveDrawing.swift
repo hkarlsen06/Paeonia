@@ -14,8 +14,8 @@ final class WidgetLiveDrawing {
     /// How long to wait before trying again to apply the partner's strokes while
     /// a stroke is still in progress here.
     nonisolated private static let busyRetryDelay: Duration = .milliseconds(50)
-    /// After a touch ends, PencilKit can still be finishing the stroke or the
-    /// erase. The partner's strokes wait this long so they never replace it.
+    /// After an erase ends, PencilKit can still be finishing it. The partner's
+    /// strokes that arrived during a stroke wait this long after it.
     private static let afterTouchDelay: Duration = .milliseconds(150)
 
     /// What the partner is doing right now.
@@ -67,10 +67,9 @@ final class WidgetLiveDrawing {
     @ObservationIgnored private var pendingRemote: [WidgetLiveMessage] = []
     @ObservationIgnored private var retryTask: Task<Void, Never>?
     @ObservationIgnored private var outgoing: WidgetLiveOutgoingStroke?
-    @ObservationIgnored private var calibration = WidgetLiveInkCalibration.load()
-    /// Ink and width of the stroke being drawn here. Its real stroke teaches
-    /// `calibration` once PencilKit commits it.
-    @ObservationIgnored private var strokeToCalibrate: (key: String, width: CGFloat)?
+    /// The partner's strokes waited for a stroke here, so they wait a little
+    /// longer once it ends.
+    @ObservationIgnored private var heldForStroke = false
     /// Live strokes that finished here and are waiting for the `ops` message
     /// that carries their real strokes.
     @ObservationIgnored private var endedLiveIDs: [String] = []
@@ -141,17 +140,9 @@ final class WidgetLiveDrawing {
             return
         }
         self.canvasView = canvasView
-        let recognizer = WidgetLiveTouchRecognizer()
-        recognizer.onBegan = { [weak self] touch, event in
-            self?.touchBegan(touch, event: event)
+        (canvasView as? PaeoniaDrawingCanvasView)?.addInkObserver { [weak self] event in
+            self?.inkEvent(event)
         }
-        recognizer.onMoved = { [weak self] touch, event in
-            self?.touchMoved(touch, event: event)
-        }
-        recognizer.onEnded = { [weak self] cancelled in
-            self?.touchEnded(cancelled: cancelled)
-        }
-        canvasView.addGestureRecognizer(recognizer)
         if isSnapshotOwed, role == .drawing, isConnected, presence.peerCount > 0 {
             sendSnapshot()
         }
@@ -166,31 +157,12 @@ final class WidgetLiveDrawing {
         drawnHereKeys.formUnion(upsertKeys)
         removedHereKeys.subtract(upsertKeys)
         removedHereKeys.formUnion(changes.removals)
-        calibrate(from: changes.upserts)
         guard isConnected, presence.peerCount > 0, !changes.isEmpty else {
             return
         }
-        var ended = endedLiveIDs
+        let ended = endedLiveIDs
         endedLiveIDs = []
-        // PencilKit can commit the stroke before the touch-ended callback runs.
-        if let id = outgoing?.id {
-            ended.append(id)
-            outgoing?.isPartOfOps = true
-        }
         send(ops: changes.upserts, removals: changes.removals, side: side, ended: ended)
-    }
-
-    /// Learns from the stroke that was just drawn here, also while the partner
-    /// is away, so the first live stroke they see already has the right size.
-    private func calibrate(from upserts: [PKStroke]) {
-        guard let (key, width) = strokeToCalibrate,
-              let stroke = upserts.max(by: { $0.path.creationDate < $1.path.creationDate })
-        else {
-            return
-        }
-        strokeToCalibrate = nil
-        calibration.record(ink: key, width: width, stroke: stroke)
-        calibration.save()
     }
 
     /// The drawing changed from code (a load, a resize, or the partner's
@@ -374,7 +346,13 @@ extension WidgetLiveDrawing {
             return
         }
         guard !Self.isStrokeInProgress(on: canvasView) else {
+            heldForStroke = true
             applyPendingRemoteSoon()
+            return
+        }
+        if heldForStroke {
+            heldForStroke = false
+            applyPendingRemoteSoon(after: Self.afterTouchDelay)
             return
         }
 
@@ -427,8 +405,8 @@ extension WidgetLiveDrawing {
         return (joined.drawing, joined.ownUnsent)
     }
 
-    /// PencilKit may commit a lifted stroke a moment after the touch ends, and
-    /// the drawing must not be replaced before that.
+    /// The drawing must not be replaced while a stroke is drawn here, or while
+    /// PencilKit is still finishing an erase.
     private func applyPendingRemoteSoon(after delay: Duration = busyRetryDelay) {
         retryTask?.cancel()
         retryTask = Task { [weak self] in
@@ -441,58 +419,39 @@ extension WidgetLiveDrawing {
     }
 }
 
-// MARK: - Touches and helpers
+// MARK: - Ink and helpers
 
 extension WidgetLiveDrawing {
-    private func touchBegan(_ touch: UITouch, event: UIEvent) {
-        outgoing = nil
-        // A tap with the paint bucket draws no stroke to show live.
-        guard let canvasView,
-              canvasView.drawingGestureRecognizer.isEnabled,
-              let tool = canvasView.tool as? PKInkingTool
-        else {
-            strokeToCalibrate = nil
-            return
-        }
-        let key = WidgetLiveInkCalibration.key(ink: tool.ink.inkType.rawValue, isPencil: touch.type == .pencil)
-        strokeToCalibrate = (key, tool.width)
-        guard isConnected, presence.peerCount > 0 else {
-            return
-        }
-        outgoing = WidgetLiveOutgoingStroke(
-            touch: touch,
-            tool: tool,
-            side: Self.side(of: canvasView),
-            style: calibration.style(ink: key, width: tool.width)
-        )
-        outgoing?.append(touch, event: event, in: canvasView)
-        flushOutgoing()
-    }
-
-    private func touchMoved(_ touch: UITouch, event: UIEvent) {
-        guard let canvasView, outgoing != nil else {
-            return
-        }
-        outgoing?.append(touch, event: event, in: canvasView)
-        if CACurrentMediaTime() - (outgoing?.lastSentAt ?? 0) >= Self.sendInterval {
-            flushOutgoing()
-        }
-    }
-
-    private func touchEnded(cancelled: Bool) {
-        if let stroke = outgoing {
-            flushOutgoing()
-            connection.send(WidgetLiveMessage(type: .liveEnd, id: stroke.id))
-            if !cancelled, !stroke.isPartOfOps {
-                endedLiveIDs.append(stroke.id)
+    /// A pen or pencil stroke on this canvas. The partner sees it while it is
+    /// drawn, and its finished stroke follows in the next `ops`.
+    private func inkEvent(_ event: InkEvent) {
+        switch event {
+        case let .began(stroke):
+            outgoing = nil
+            guard isConnected, presence.peerCount > 0, let canvasView else {
+                return
             }
+            outgoing = WidgetLiveOutgoingStroke(side: Self.side(of: canvasView))
+            flushOutgoing(stroke)
+        case let .changed(stroke):
+            if CACurrentMediaTime() - (outgoing?.lastSentAt ?? 0) >= Self.sendInterval {
+                flushOutgoing(stroke)
+            }
+        case let .ended(stroke):
+            // Sent before the canvas adds the stroke, so the `ops` that
+            // carries it names this live stroke in `ended`.
+            guard let id = outgoing?.id else {
+                return
+            }
+            flushOutgoing(stroke)
+            connection.send(WidgetLiveMessage(type: .liveEnd, id: id))
+            endedLiveIDs.append(id)
             outgoing = nil
         }
-        applyPendingRemoteSoon(after: Self.afterTouchDelay)
     }
 
-    private func flushOutgoing() {
-        if let message = outgoing?.takeMessage(now: CACurrentMediaTime()) {
+    private func flushOutgoing(_ stroke: InkStroke) {
+        if let message = outgoing?.takeMessage(from: stroke, now: CACurrentMediaTime()) {
             connection.send(message)
         }
     }
@@ -510,11 +469,6 @@ extension WidgetLiveDrawing {
     }
 
     private static func isStrokeInProgress(on canvasView: PKCanvasView) -> Bool {
-        switch canvasView.drawingGestureRecognizer.state {
-        case .began, .changed:
-            true
-        default:
-            false
-        }
+        (canvasView as? PaeoniaDrawingCanvasView)?.isStrokeInProgress ?? false
     }
 }

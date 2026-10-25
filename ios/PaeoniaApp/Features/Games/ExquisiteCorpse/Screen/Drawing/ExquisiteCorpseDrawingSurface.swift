@@ -118,12 +118,10 @@ struct ExquisiteCorpseDrawingSurface: View {
         PencilKitCanvasView(
             drawing: board.drawing,
             drawingRevision: board.drawingRevision,
-            tool: board.pencilKitTool,
-            toolConfigurationRevision: board.toolConfigurationRevision,
+            tool: board.canvasTool,
             onCanvasReady: onCanvasReady,
             onDrawingChange: board.updateDrawing,
             onStrokeInProgressChange: board.setStrokeInProgress,
-            isFillToolSelected: board.selectedTool.isFill,
             // The paint bucket fills inside the square only.
             onFill: { point in
                 if point.y >= 0 { board.fill(at: point) }

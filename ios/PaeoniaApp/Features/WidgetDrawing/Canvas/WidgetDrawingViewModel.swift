@@ -61,7 +61,6 @@ final class WidgetDrawingViewModel {
     var history = DrawingEditHistory()
     var canUndoDrawing: Bool { history.canUndo }
     var canRedoDrawing: Bool { history.canRedo }
-    private(set) var toolConfigurationRevision = 0
     private(set) var selectedColorChoiceID: String? = "blush"
     @ObservationIgnored weak var canvasView: PKCanvasView?
 
@@ -197,11 +196,8 @@ final class WidgetDrawingViewModel {
         !isPublishing && savedBaseline != nil && hasUnsavedEdits
     }
 
-    var pencilKitTool: any PKTool {
-        selectedTool.pencilKitTool(
-            color: selectedUIColor,
-            width: toolWidth
-        )
+    var canvasTool: CanvasTool {
+        selectedTool.canvasTool(color: selectedUIColor, width: toolWidth)
     }
 
     // MARK: - Tools
@@ -218,7 +214,6 @@ final class WidgetDrawingViewModel {
         // The width re-derives from the same fraction against the new tool's
         // range, so the slider keeps its relative position across tools.
         selectedTool = tool
-        toolConfigurationRevision += 1
     }
 
     /// Apple Pencil double tap, following the choice in Settings > Apple
@@ -244,7 +239,6 @@ final class WidgetDrawingViewModel {
         selectedCGColor = choice.uiColor.cgColor
         selectedUIColor = choice.uiColor
         selectedColorChoiceID = choice.id
-        toolConfigurationRevision += 1
     }
 
     func selectCustomColor(_ color: CGColor) {
@@ -258,7 +252,6 @@ final class WidgetDrawingViewModel {
         selectedCGColor = uiColor.cgColor
         selectedUIColor = uiColor
         selectedColorChoiceID = nil
-        toolConfigurationRevision += 1
     }
 
     func updateToolWidthFraction(_ fraction: CGFloat) {
@@ -269,7 +262,6 @@ final class WidgetDrawingViewModel {
         }
 
         toolWidthFraction = clampedFraction
-        toolConfigurationRevision += 1
     }
 
     func setAdjustingToolWidth(_ isAdjusting: Bool) {

@@ -1,59 +1,60 @@
-import PencilKit
 import UIKit
 
-/// A stroke being drawn here, collected from touches and sent in small batches.
-struct WidgetLiveOutgoingStroke {
+/// A stroke being drawn here, sent to the partner in small batches. Every
+/// message carries the stroke's recipe, so the partner builds the same
+/// `InkStroke` and its preview looks like the finished stroke.
+nonisolated struct WidgetLiveOutgoingStroke {
     let id = UUID().uuidString
-    let startTimestamp: TimeInterval
-    let ink: String
-    let color: [Double]
-    /// How the real stroke's points will look, learned on this phone.
-    let style: WidgetLiveInkCalibration.Style
     let side: CGFloat
-    private var buffer: [[Double]] = []
+    private var sentCount = 0
     private(set) var lastSentAt: TimeInterval = 0
-    /// An `ops` message already named this stroke in `ended`.
-    var isPartOfOps = false
 
-    init(touch: UITouch, tool: PKInkingTool, side: CGFloat, style: WidgetLiveInkCalibration.Style?) {
-        startTimestamp = touch.timestamp
-        ink = tool.ink.inkType.rawValue
-        color = tool.ink.color.liveComponents
-        self.style = style ?? .fallback(width: tool.width)
+    init(side: CGFloat) {
         self.side = side
     }
 
-    mutating func append(_ touch: UITouch, event: UIEvent, in view: UIView) {
-        for sample in event.coalescedTouches(for: touch) ?? [touch] {
-            let location = sample.preciseLocation(in: view)
-            // ponytail: every point gets the typical width, so a fast part of the
-            // line is not thicker until the real stroke replaces this one.
-            buffer.append([
-                location.x,
-                location.y,
-                sample.timestamp - startTimestamp,
-                sample.azimuthAngle(in: view),
-            ].map { (Double($0) * 1_000).rounded() / 1_000 })
-        }
-    }
-
-    /// The points collected since the last call, as a `live` message.
-    mutating func takeMessage(now: TimeInterval) -> WidgetLiveMessage? {
-        guard !buffer.isEmpty else {
+    /// The samples of `stroke` not sent yet, as a `live` message.
+    mutating func takeMessage(from stroke: InkStroke, now: TimeInterval) -> WidgetLiveMessage? {
+        let fresh = stroke.samples.dropFirst(sentCount)
+        guard !fresh.isEmpty else {
             return nil
         }
-        defer {
-            buffer = []
-            lastSentAt = now
-        }
+        sentCount = stroke.samples.count
+        lastSentAt = now
         return WidgetLiveMessage(
             type: .live,
             id: id,
-            ink: ink,
-            color: color,
+            ink: stroke.style.kind.rawValue,
+            color: stroke.style.color.liveComponents,
             side: Double(side),
-            points: buffer,
-            pointStyle: style
+            points: fresh.map(\.liveValues),
+            width: Double(stroke.style.width),
+            seed: stroke.seed
+        )
+    }
+}
+
+extension InkSample {
+    /// `[x, y, timeOffset, azimuth, altitude]`, then `force` for Apple Pencil,
+    /// as sent in `WidgetLiveMessage.points`.
+    nonisolated var liveValues: [Double] {
+        var values = [location.x, location.y, timeOffset, azimuth, altitude]
+        if let force {
+            values.append(force)
+        }
+        return values.map { (Double($0) * 1_000).rounded() / 1_000 }
+    }
+
+    nonisolated init?(liveValues values: [Double]) {
+        guard (5...6).contains(values.count), values.allSatisfy(\.isFinite) else {
+            return nil
+        }
+        self.init(
+            location: CGPoint(x: values[0], y: values[1]),
+            timeOffset: values[2],
+            force: values.count == 6 ? values[5] : nil,
+            azimuth: values[3],
+            altitude: values[4]
         )
     }
 }

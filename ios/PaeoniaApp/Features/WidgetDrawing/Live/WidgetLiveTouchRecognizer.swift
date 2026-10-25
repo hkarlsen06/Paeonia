@@ -1,8 +1,7 @@
 import UIKit
 
-/// Watches the touches PencilKit draws with, without taking part in them.
-/// PencilKit reports a stroke only after the finger lifts, so this is how the
-/// partner can see a stroke while it is being drawn.
+/// Watches the touches on a canvas without taking part in them. Exquisite
+/// Corpse uses it to show the partner where the pen is.
 final class WidgetLiveTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelegate {
     var onBegan: ((UITouch, UIEvent) -> Void)?
     var onMoved: ((UITouch, UIEvent) -> Void)?
@@ -53,7 +52,7 @@ final class WidgetLiveTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerD
         }
         self.trackedTouch = nil
         onEnded?(cancelled)
-        // Never recognizes, so it never takes the touches from PencilKit.
+        // Never recognizes, so it never takes the touches from the canvas.
         state = .failed
     }
 

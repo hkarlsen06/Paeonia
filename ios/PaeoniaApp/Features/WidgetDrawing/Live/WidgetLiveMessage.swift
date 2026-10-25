@@ -28,13 +28,14 @@ nonisolated struct WidgetLiveMessage: Codable, Equatable, Sendable {
     /// The live stroke a `live` or `liveEnd` message belongs to, or the socket
     /// in `welcome`, `joined`, and `left`.
     var id: String?
-    /// `PKInk.InkType` raw value.
+    /// In `live`: `InkKind` raw value.
     var ink: String?
     /// RGBA components in `0...1`.
     var color: [Double]?
     /// The side of the sender's square canvas, so the receiver can scale to its own.
     var side: Double?
-    /// `[x, y, timeOffset, azimuth]` per point, in the sender's canvas points.
+    /// In `live`: `[x, y, timeOffset, azimuth, altitude]` per point, in the
+    /// sender's canvas points, then `force` for Apple Pencil.
     var points: [[Double]]?
     /// Base64 `PKDrawing` with the strokes that were added or changed.
     var upserts: String?
@@ -52,16 +53,17 @@ nonisolated struct WidgetLiveMessage: Codable, Equatable, Sendable {
     var from: String?
     /// In `hello`: `WidgetLivePresence.Role` raw value.
     var role: String?
-    /// In `live`: how every point looks, learned from real strokes on the
-    /// sender's phone. Sizes are in the sender's canvas points.
-    var pointStyle: WidgetLiveInkCalibration.Style?
+    /// In `live`: the tool width, in the sender's canvas points.
+    var width: Double?
+    /// In `live`: the stroke's `PKStroke.randomSeed`.
+    var seed: UInt32?
     /// `upserts` decoded, set by the connection off the main actor. It is not
     /// part of the wire format. A message built in code leaves it nil.
     var preparedUpserts: PKDrawing?
 
     private enum CodingKeys: String, CodingKey {
         case type, id, ink, color, side, points, upserts, removals, ended, snapshot
-        case peers, needsCanvas, from, role, pointStyle
+        case peers, needsCanvas, from, role, width, seed
     }
 
     /// The strokes in `upserts`, decoded from base64 and PencilKit data.

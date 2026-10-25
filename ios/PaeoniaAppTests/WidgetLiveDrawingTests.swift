@@ -120,8 +120,8 @@ struct WidgetLiveStrokeSyncTests {
 struct WidgetLivePlaybackTests {
     @Test func dropsFinishedStrokesThatNeverArrived() {
         var playback = WidgetLivePlayback()
-        playback.receive(liveMessage(id: "a", points: [[10, 10, 0, 0]]), now: 0)
-        playback.receive(liveMessage(id: "b", points: [[10, 10, 0, 0]]), now: 0)
+        playback.receive(liveMessage(id: "a", points: [livePoint]), now: 0)
+        playback.receive(liveMessage(id: "b", points: [livePoint]), now: 0)
         playback.end("a", now: 1)
 
         playback.prune(now: 1 + WidgetLivePlayback.endedLifetime + 0.1)
@@ -133,14 +133,57 @@ struct WidgetLivePlaybackTests {
 
     @Test func ignoresMalformedStrokes() {
         var playback = WidgetLivePlayback()
-        var noColor = liveMessage(id: "a", points: [[10, 10, 0, 0]])
+        var noColor = liveMessage(id: "a", points: [livePoint])
         noColor.color = nil
         playback.receive(noColor, now: 0)
-        var noStyle = liveMessage(id: "c", points: [[10, 10, 0, 0]])
-        noStyle.pointStyle = nil
-        playback.receive(noStyle, now: 0)
+        var pencilKitInk = liveMessage(id: "c", points: [livePoint])
+        pencilKitInk.ink = PKInk.InkType.pen.rawValue
+        playback.receive(pencilKitInk, now: 0)
+        var tooWide = liveMessage(id: "d", points: [livePoint])
+        tooWide.width = 1_000
+        playback.receive(tooWide, now: 0)
+        var noSeed = liveMessage(id: "e", points: [livePoint])
+        noSeed.seed = nil
+        playback.receive(noSeed, now: 0)
         playback.receive(liveMessage(id: "b", points: [[10, 10, 0]]), now: 0)
         #expect(playback.isEmpty)
+    }
+
+    /// The partner's preview is built from the same recipe as the stroke that
+    /// lands on the sender's canvas, so nothing moves when the real one arrives.
+    @Test func thePartnersPreviewIsTheSendersStrokeScaledToTheirCanvas() throws {
+        let style = InkStyle(kind: .pencil, color: .red, width: 9)
+        let samples = (0..<12).map { index in
+            InkSample(
+                location: CGPoint(x: 20 + Double(index) * 7, y: 40 + Double(index % 3) * 5),
+                timeOffset: Double(index) * 0.016,
+                force: nil,
+                azimuth: 0,
+                altitude: .pi / 2
+            )
+        }
+        var stroke = InkStroke(style: style, first: samples[0], seed: 42)
+        stroke.append(Array(samples.dropFirst()))
+        var outgoing = WidgetLiveOutgoingStroke(side: 320)
+        let taken = outgoing.takeMessage(from: stroke, now: 0)
+        let message = try #require(taken)
+        let wire = try JSONDecoder().decode(WidgetLiveMessage.self, from: JSONEncoder().encode(message))
+
+        var playback = WidgetLivePlayback()
+        playback.receive(wire, now: 0)
+        let preview = try #require(playback.pencilKitStrokes(at: 10, side: 640).first)
+        let finished = PKDrawing(strokes: [stroke.pencilKitStroke()]).scaled(fromSide: 320, toSide: 640).strokes[0]
+
+        #expect(preview.randomSeed == finished.randomSeed)
+        #expect(preview.ink.inkType == finished.ink.inkType)
+        #expect(preview.transform == finished.transform)
+        #expect(preview.path.count == finished.path.count)
+        for (shown, real) in zip(preview.path, finished.path) {
+            #expect(abs(shown.location.x - real.location.x) < 0.001)
+            #expect(abs(shown.location.y - real.location.y) < 0.001)
+            #expect(shown.size == real.size)
+            #expect(shown.opacity == real.opacity)
+        }
     }
 }
 
@@ -170,15 +213,19 @@ private func makeStroke(x: CGFloat, createdAt: Date, pointCount: Int = 3) -> PKS
     return PKStroke(ink: PKInk(.pen, color: .red), path: PKStrokePath(controlPoints: points, creationDate: createdAt))
 }
 
+/// `[x, y, timeOffset, azimuth, altitude]`.
+private let livePoint: [Double] = [10, 10, 0, 0, 1.571]
+
 private func liveMessage(id: String, points: [[Double]]) -> WidgetLiveMessage {
     WidgetLiveMessage(
         type: .live,
         id: id,
-        ink: PKInk.InkType.pen.rawValue,
+        ink: InkKind.pen.rawValue,
         color: [1, 0, 0, 1],
         side: 320,
         points: points,
-        pointStyle: WidgetLiveInkCalibration.Style(width: 10, size: 4)
+        width: 5,
+        seed: 7
     )
 }
 
