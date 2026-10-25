@@ -25,18 +25,21 @@ struct PaeoniaStreakFlame: View {
     /// `count` is then the lost streak length the restore would bring back. The
     /// "get it back" action lives in the surrounding surface, not here.
     var isBroken: Bool = false
-    /// Keeps the flame gently "alive" at rest with a breathing liquid level and
-    /// the living flicker, without the count-up celebration or its haptics. For
-    /// surfaces that show the streak on its own (e.g. the streak detail sheet),
-    /// not the earn-it moment. Ignored while celebrating, broken, or Reduce Motion.
+    /// Tops the flame up to full with a pop, then keeps the living flicker, without
+    /// the count-up or its rising ticks. A firm haptic lands with the pop the first
+    /// time each day. For surfaces that show the streak on its own (e.g. the streak
+    /// detail sheet), not the earn-it moment. Ignored while celebrating or broken.
+    /// With Reduce Motion the flame shows full and only the haptic plays.
     var ambientMotion: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var isAnimating = false
-    /// True while running the calm continuous motion (vs. the count-up celebration),
-    /// so the timeline keeps the level high and breathing instead of filling from zero.
+    /// True while running the calm top-up (vs. the count-up celebration), so the
+    /// timeline fills from part way up and leaves the number alone.
     @State private var isAmbient = false
+    /// True once the top-up has reached full, so the flicker can drop to a calmer frame rate.
+    @State private var isToppedUp = false
     /// True while running the one-shot drain that turns a full flame into the cold,
     /// frozen broken pool when a slipped streak first appears.
     @State private var isBreaking = false
@@ -64,7 +67,7 @@ struct PaeoniaStreakFlame: View {
     /// accessibility2 size) the flame and number stay put so they don't crowd out
     /// the rest of the screen. The caption under the number keeps scaling.
     private static let maxTextScale: CGFloat = 1.4
-    /// Frame spacing for the ambient breathing. It moves slowly, so 30 fps reads as smooth.
+    /// Frame spacing for the flicker once the top-up is full. It moves slowly, so 30 fps reads as smooth.
     private static let ambientFrameInterval: TimeInterval = 1.0 / 30
     /// How long the payoff pop and glow get to finish before the embers fade.
     private static let afterglowDuration: Double = 1.0
@@ -98,7 +101,7 @@ struct PaeoniaStreakFlame: View {
     private var content: some View {
         if isAnimating {
             TimelineView(
-                .animation(minimumInterval: isAmbient ? Self.ambientFrameInterval : nil, paused: isSettled)
+                .animation(minimumInterval: isToppedUp ? Self.ambientFrameInterval : nil, paused: isSettled)
             ) { timeline in
                 let elapsed = timeline.date.timeIntervalSince(animationStart)
                 layout(isBreaking ? breakingFrame(elapsed: elapsed) : playingFrame(elapsed: elapsed))
@@ -120,12 +123,12 @@ struct PaeoniaStreakFlame: View {
         )
     }
 
-    /// One frame of the celebration or the ambient loop. Ambient stays high and
-    /// breathing with the number settled. The celebration fills from empty while the
+    /// One frame of the celebration or the ambient top-up. The top-up fills from part
+    /// way up with the number settled. The celebration fills from empty while the
     /// number climbs.
     private func playingFrame(elapsed: TimeInterval) -> Frame {
         let level = isAmbient
-            ? StreakFlameMotion.ambientLevel(at: elapsed)
+            ? StreakFlameMotion.topUpLevel(at: elapsed)
             : StreakFlameMotion.fillLevel(at: elapsed)
         return Frame(
             level: level,
@@ -219,8 +222,11 @@ struct PaeoniaStreakFlame: View {
 
         return "\(count) \(String(localized: .homeStreakLabel))"
     }
+}
 
-    // MARK: - Sequence
+// MARK: - Sequence
+
+extension PaeoniaStreakFlame {
 
     private func start() {
         guard !hasStarted else { return }
@@ -250,19 +256,24 @@ struct PaeoniaStreakFlame: View {
             return
         }
 
-        // A calm, continuously "alive" flame for at-rest surfaces: no count-up and
-        // no haptics, just the breathing liquid and the living flicker.
-        let ambient = ambientMotion && !reduceMotion && !isBroken && count >= 1
-        if ambient {
+        // A calm flame for at-rest surfaces: no count-up, just a top-up to full with
+        // a firm haptic the first time each day, then the living flicker.
+        let ambient = ambientMotion && !isBroken && count >= 1
+        if ambient, !reduceMotion {
             animationStart = Date()
             isAmbient = true
             isAnimating = true
+            driver = Task { @MainActor in
+                await runTopUp()
+            }
             return
         }
 
         isAnimating = false
         // A broken streak is not a celebration, so it stays silent.
-        if playsCelebration, !isBroken {
+        if ambient {
+            playFilledHapticOncePerDay()
+        } else if playsCelebration, !isBroken {
             PaeoniaHaptics.streakContinued()
         }
     }
@@ -279,6 +290,7 @@ struct PaeoniaStreakFlame: View {
         isAnimating = false
         isBreaking = false
         isSettled = false
+        isToppedUp = false
         flameScale = 1
         glowFlare = 0
         emberOpacity = 1
@@ -306,6 +318,38 @@ struct PaeoniaStreakFlame: View {
         if remainder > 0, await sleep(remainder) == false { return }
 
         PaeoniaHaptics.streakCelebrated()
+        pop()
+
+        await windDown()
+    }
+
+    /// Waits for the top-up to reach full, then pops the flame and leaves the
+    /// flicker running at a calmer frame rate.
+    @MainActor
+    private func runTopUp() async {
+        guard await sleep(StreakFlameMotion.topUpDuration) else { return }
+        playFilledHapticOncePerDay()
+        pop()
+        isToppedUp = true
+        driver = nil
+    }
+
+    private static let filledHapticDateKey = "paeonia.streak.filledHapticDate"
+
+    /// Plays the filled haptic only on the first top-up of the day, so opening the
+    /// sheet again later that day stays quiet.
+    private func playFilledHapticOncePerDay() {
+        let defaults = UserDefaults.standard
+        if let last = defaults.object(forKey: Self.filledHapticDateKey) as? Date,
+           Calendar.current.isDateInToday(last) {
+            return
+        }
+        defaults.set(Date(), forKey: Self.filledHapticDateKey)
+        PaeoniaHaptics.streakFilled()
+    }
+
+    /// The quick swell and glow flare the instant the flame fills.
+    private func pop() {
         withAnimation(.spring(response: 0.34, dampingFraction: 0.45)) {
             flameScale = 1.14
             glowFlare = 1
@@ -316,8 +360,6 @@ struct PaeoniaStreakFlame: View {
         withAnimation(.easeOut(duration: 0.9).delay(0.12)) {
             glowFlare = 0
         }
-
-        await windDown()
     }
 
     /// Once the pop and glow have finished, fades the embers and pauses the

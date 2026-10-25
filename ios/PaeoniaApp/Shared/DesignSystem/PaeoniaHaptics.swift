@@ -152,6 +152,21 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// The flame on the streak sheet tops up to full: a firm hit with a soft tail,
+    /// without the success chime that marks earning a streak.
+    static func streakFilled() {
+        impact(.heavy, intensity: 0.9)
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(80))
+            guard !Task.isCancelled else {
+                return
+            }
+
+            impact(.soft, intensity: 0.5)
+        }
+    }
+
     static func drawingSaved() {
         impact(.rigid, intensity: 0.78)
 

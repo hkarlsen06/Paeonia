@@ -9,11 +9,10 @@ enum StreakFlameMotion {
     static let fillDuration: Double = 1.3
     /// How quickly the liquid surface ripples, in wave cycles per second.
     static let waveSpeed: Double = 0.85
-    /// At-rest motion: a high liquid level that breathes a little, so the flame keeps
-    /// moving without reading as "filling up" again.
-    static let ambientBaseLevel: CGFloat = 0.9
-    static let ambientBreath: CGFloat = 0.06
-    static let ambientBreathSpeed: Double = 0.8
+    /// At-rest surfaces top the flame up from this level to full over `topUpDuration`,
+    /// then pop, so opening the streak still ends on a full flame.
+    static let topUpStartLevel: CGFloat = 0.25
+    static let topUpDuration: Double = 1.2
     /// A slipped streak doesn't start broken. When the restore surface opens it
     /// drains from a full, warm flame down to the cold pool over this long.
     static let breakDuration: Double = 1.6
@@ -32,10 +31,8 @@ enum StreakFlameMotion {
         CGFloat(smoothstep(min(elapsed / fillDuration, 1)))
     }
 
-    /// The at-rest liquid level: high, with a slow gentle breath so the flame stays
-    /// alive without re-filling.
-    static func ambientLevel(at elapsed: TimeInterval) -> CGFloat {
-        ambientBaseLevel + ambientBreath * CGFloat(sin(elapsed * ambientBreathSpeed))
+    static func topUpLevel(at elapsed: TimeInterval) -> CGFloat {
+        topUpStartLevel + (1 - topUpStartLevel) * CGFloat(smoothstep(min(elapsed / topUpDuration, 1)))
     }
 
     /// The faint living flicker, a slightly wider and shorter flame then back.
@@ -171,7 +168,7 @@ nonisolated struct FlameShape: Shape {
 
 /// The liquid inside the flame: everything below a sine-wave surface sitting at
 /// `level` (0 empty, 1 full). The surface ripples with `phase` and flattens as it
-/// fills, so a full flame reads as settled rather than sloshing.
+/// fills, going still at full so the liquid reaches the very tip.
 nonisolated struct StreakLiquidShape: Shape {
     var level: CGFloat
     var phase: CGFloat
@@ -184,7 +181,7 @@ nonisolated struct StreakLiquidShape: Shape {
     func path(in rect: CGRect) -> Path {
         let clampedLevel = min(max(level, 0), 1)
         let surfaceY = rect.maxY - rect.height * clampedLevel
-        let amplitude = rect.height * 0.03 * (1 - clampedLevel * 0.7)
+        let amplitude = rect.height * 0.03 * (1 - clampedLevel * 0.7) * min(1, (1 - clampedLevel) * 8)
         let steps = 26
 
         var path = Path()
