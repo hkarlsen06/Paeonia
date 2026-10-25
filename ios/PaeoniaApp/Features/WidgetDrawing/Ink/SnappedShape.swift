@@ -56,6 +56,51 @@ nonisolated struct SnappedShape: Equatable, Codable, Sendable {
 }
 
 nonisolated extension SnappedShape {
+    /// A resize never makes a shape smaller than the recognizer needs to see
+    /// one at all.
+    static let minimumSize = ShapeRecognizer.Tuning.standard.minimumSize
+
+    /// The shape after the finger that held at `grab` when it snapped moved
+    /// to `finger`. A closed shape scales about its center (a polygon's is
+    /// its corners' mean) by how much farther from the center the finger is. A line keeps its start, and its
+    /// far end follows the finger. The outline keeps its start and direction,
+    /// so dashes stay where they were.
+    func resized(grabbedAt grab: CGPoint, draggedTo finger: CGPoint) -> SnappedShape {
+        func factor(about center: CGPoint) -> CGFloat {
+            let grabDistance = grab.distance(to: center)
+            guard grabDistance >= 1 else {
+                return 1
+            }
+            let smallest = min(1, Self.minimumSize / ShapeRecognizer.boundingDiagonal(kind.contour.points))
+            return max(finger.distance(to: center) / grabDistance, smallest)
+        }
+
+        var shape = self
+        switch kind {
+        case let .line(from, to):
+            let (start, end) = isReversed ? (to, from) : (from, to)
+            var reach = finger - start
+            let length = hypot(reach.x, reach.y)
+            if length < Self.minimumSize {
+                let direction = length > 0 ? reach : end - start
+                reach = direction * (Self.minimumSize / max(hypot(direction.x, direction.y), .ulpOfOne))
+            }
+            let newEnd = start + reach
+            shape.kind = isReversed ? .line(from: newEnd, to: start) : .line(from: start, to: newEnd)
+        case let .ellipse(center, radii, rotation):
+            shape.kind = .ellipse(center: center, radii: radii * factor(about: center), rotation: rotation)
+        case let .heart(center, size, rotation):
+            shape.kind = .heart(center: center, size: size * factor(about: center), rotation: rotation)
+        case let .polygon(corners):
+            let center = corners.reduce(.zero, +) * (1 / CGFloat(corners.count))
+            let scale = factor(about: center)
+            shape.kind = .polygon(corners.map { center + ($0 - center) * scale })
+        }
+        return shape
+    }
+}
+
+nonisolated extension SnappedShape {
     /// Refuses a shape that cannot be drawn, so a bad message from the
     /// partner's phone fails to decode instead of crashing the outline.
     init(from decoder: any Decoder) throws {
@@ -251,6 +296,10 @@ fileprivate nonisolated extension CGPoint {
         CGPoint(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
     }
 
+    static func - (lhs: CGPoint, rhs: CGPoint) -> CGPoint {
+        CGPoint(x: lhs.x - rhs.x, y: lhs.y - rhs.y)
+    }
+
     static func * (lhs: CGPoint, rhs: CGFloat) -> CGPoint {
         CGPoint(x: lhs.x * rhs, y: lhs.y * rhs)
     }
@@ -265,5 +314,11 @@ fileprivate nonisolated extension CGPoint {
 
     func rotated(by angle: CGFloat) -> CGPoint {
         CGPoint(x: x * cos(angle) - y * sin(angle), y: x * sin(angle) + y * cos(angle))
+    }
+}
+
+fileprivate nonisolated extension CGSize {
+    static func * (lhs: CGSize, rhs: CGFloat) -> CGSize {
+        CGSize(width: lhs.width * rhs, height: lhs.height * rhs)
     }
 }

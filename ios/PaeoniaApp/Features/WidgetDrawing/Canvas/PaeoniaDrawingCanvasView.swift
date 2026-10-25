@@ -26,8 +26,9 @@ enum CanvasTool: Equatable {
 enum InkEvent {
     case began(InkStroke)
     case changed(InkStroke)
-    /// The finger held still and the stroke turned into a clean shape, or it
-    /// moved on and the shape turned back into what was drawn.
+    /// The finger held still and the stroke turned into a clean shape. While
+    /// the finger stays down, dragging resizes the shape, which arrives as
+    /// `changed`.
     case snapChanged(InkStroke)
     /// The stroke is finished. Sent just before it is added to the drawing.
     case ended(InkStroke)
@@ -75,9 +76,9 @@ class OverscanCanvasView: PKCanvasView {
 /// When the finger holds still at the end of a stroke, the stroke turns into
 /// the clean shape it looks like (`ShapeRecognizer`) while the finger is still
 /// down. A still finger sends no touches, so a display link checks the hold,
-/// and only while a stroke is open. Slow drawing can read as a hold, so the
-/// stroke keeps every touch after a snap and turns back into them when the
-/// finger moves on (`InkStroke.unsnapIfMovedAway`).
+/// and only until the stroke snaps. Dragging on after the snap resizes the
+/// shape (`InkStroke.resizeSnapToFinger`), and lift adds the resized shape as
+/// one undo step.
 ///
 /// The wet canvas on top and this canvas draw the stroke from the same
 /// `PKStroke`, so nothing moves at lift. The wet canvas hides in the same
@@ -206,14 +207,11 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
             hold.add(sample.location, at: strokeStartTimestamp + sample.timeOffset)
         }
         current.append(added)
-        let didUnsnap = current.unsnapIfMovedAway()
+        current.resizeSnapToFinger()
         stroke = current
-        if didUnsnap, let last = current.samples.last {
-            startHoldCheck(at: last.location, time: strokeStartTimestamp + last.timeOffset)
-        }
         let predicted = (event.predictedTouches(for: touch) ?? []).map(sample)
         wetCanvas.drawing = PKDrawing(strokes: [current.pencilKitStroke(predicted: predicted)])
-        notify(didUnsnap ? .snapChanged(current) : .changed(current))
+        notify(.changed(current))
     }
 
     /// Lift or cancel. A cancelled stroke (the system took the touch, or an
@@ -223,7 +221,7 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
         stopHoldCheck()
         if let touch, let event {
             finished.append(newSamples(touch, event: event, after: finished))
-            _ = finished.unsnapIfMovedAway()
+            finished.resizeSnapToFinger()
         }
         stroke = nil
         notify(.ended(finished))

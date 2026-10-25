@@ -248,52 +248,53 @@ struct WidgetLivePlaybackTests {
         #expect(abs(shapeMask.bounds.width - finishedMask.bounds.width) < 0.01)
     }
 
-    /// Slow drawing can read as a hold. Drawing on from the snap turns the
-    /// stroke back into every touch, here and on the partner's phone, while
-    /// a finger still resting where it held keeps the shape.
-    @Test func drawingOnAfterASnapKeepsEveryTouchOnBothPhones() throws {
-        let style = InkStyle(kind: .pen, color: .red, width: 4, lineStyle: .solid)
+    /// Dragging on after a snap resizes the shape about its center. The
+    /// partner gets every touch and the resized shape, and draws the same
+    /// outline as the finished stroke, dashes included.
+    @Test func draggingAfterASnapResizesTheShapeOnBothPhones() throws {
         let arc = roughCircle(step: 0.05)
-        var stroke = InkStroke(style: style, first: arc[0], seed: 7)
+        var stroke = InkStroke(style: InkStyle(kind: .pen, color: .red, width: 4, lineStyle: .dashed), first: arc[0])
         stroke.append(Array(arc.dropFirst()))
         var outgoing = WidgetLiveOutgoingStroke(side: 320)
         let drawnMessage = outgoing.takeMessage(from: stroke, now: 0)
-        var messages = try [#require(drawnMessage)]
         stroke.snap(to: snappedCircle, at: 1.2)
-        let shapePointCount = stroke.pencilKitStroke().path.count
         let snapMessage = outgoing.takeMessage(from: stroke, now: 1.2)
-        try messages.append(#require(snapMessage))
 
+        // Out along the line from the center through the held finger, to
+        // twice as far from the center.
         let held = arc[arc.count - 1].location
-        func sample(dx: CGFloat, at time: TimeInterval) -> InkSample {
-            let location = CGPoint(x: held.x + dx, y: held.y)
+        let drag = (1...10).map { step in
+            let scale = 1 + CGFloat(step) / 10
+            let location = CGPoint(x: 100 + (held.x - 100) * scale, y: 100 + (held.y - 100) * scale)
+            let time = 1.2 + Double(step) * 0.05
             return InkSample(location: location, timeOffset: time, force: nil, azimuth: 0, altitude: 1)
         }
-        stroke.append([sample(dx: 3, at: 1.3), sample(dx: -4, at: 1.4)])
-        let unsnappedWhileResting = stroke.unsnapIfMovedAway()
-        #expect(!unsnappedWhileResting)
-        let drawnOn = (1...8).map { sample(dx: CGFloat($0) * 5, at: 1.4 + Double($0) * 0.05) }
-        stroke.append(drawnOn)
-        let unsnappedWhenDrawnOn = stroke.unsnapIfMovedAway()
-        #expect(unsnappedWhenDrawnOn)
-        #expect(stroke.snap == nil)
-        #expect(stroke.pencilKitStroke().path.count == arc.count + 2 + drawnOn.count)
+        stroke.append(drag)
+        stroke.resizeSnapToFinger()
+        let resized = try #require(stroke.snap?.shape)
+        #expect(resized.start == snappedCircle.start && resized.isReversed == snappedCircle.isReversed)
+        guard case let .ellipse(center, radii, _) = resized.kind else {
+            Issue.record("The circle stopped being a circle: \(resized.kind)")
+            return
+        }
+        #expect(center == CGPoint(x: 100, y: 100) && abs(radii.width - 98) < 0.001 && radii.width == radii.height)
 
-        let drawnOnMessage = outgoing.takeMessage(from: stroke, now: 1.8)
-        let unsnapMessage = try #require(drawnOnMessage)
-        #expect(unsnapMessage.snap == nil)
-        messages.append(unsnapMessage)
+        let dragMessage = outgoing.takeMessage(from: stroke, now: 1.7)
+        let messages = try [drawnMessage, snapMessage, dragMessage].map { try #require($0) }
+        #expect(messages[2].points?.count == drag.count && messages[2].snap?.shape == resized)
         var playback = WidgetLivePlayback()
-        for (index, message) in messages.enumerated() {
+        for message in messages {
             try playback.receive(overTheWire(message), now: 0)
-            let shown = try #require(playback.pencilKitStrokes(at: WidgetLivePlayback.delay + 1.3, side: 320).first)
-            #expect(index != 1 || shown.path.count == shapePointCount)
         }
-        let reverted = try #require(playback.pencilKitStrokes(at: WidgetLivePlayback.delay + 2, side: 320).first)
-        #expect(reverted.path.count == stroke.samples.count)
-        for (shown, real) in zip(reverted.path, stroke.pencilKitStroke().path) {
-            #expect(abs(shown.location.x - real.location.x) < 0.001)
+        let shown = try #require(playback.pencilKitStrokes(at: WidgetLivePlayback.delay + 2, side: 320).first)
+        let finished = stroke.pencilKitStroke()
+        #expect(shown.path.count == finished.path.count)
+        for (shownPoint, real) in zip(shown.path, finished.path) {
+            #expect(abs(shownPoint.location.x - real.location.x) < 0.001)
+            #expect(abs(shownPoint.location.y - real.location.y) < 0.001)
         }
+        let masks = try [shown.mask, finished.mask].map { try #require($0) }
+        #expect(abs(masks[0].bounds.width - masks[1].bounds.width) < 0.01)
     }
 
     @Test func refusesAShapeThatCannotBeDrawn() throws {

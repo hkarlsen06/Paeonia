@@ -5,8 +5,10 @@ import Foundation
 /// times, asked for the deadline.
 nonisolated struct HoldDetector: Sendable {
     /// Wider than a resting finger's jitter. Drawing slower than
-    /// radius / duration (16 points a second) also reads as holding.
-    var radius: CGFloat = 8
+    /// radius / duration (10 points a second) also reads as holding. Kept
+    /// tight because a drag after a snap resizes the shape instead of
+    /// drawing on, so slow drawing that reads as a hold cannot be undone.
+    var radius: CGFloat = 5
     var duration: TimeInterval = 0.5
 
     private var anchor: CGPoint?

@@ -114,16 +114,19 @@ extension ExquisiteCorpseViewModel {
     private func liveInkEvent(_ event: InkEvent) {
         switch event {
         case let .began(stroke), let .changed(stroke):
+            // A snapped shape that is being resized can grow into the strip or
+            // shrink out of it, so it always counts.
             guard monotonicNow() - liveStrokeSentAt >= Self.liveStrokeInterval,
                   board.canvasSide > 0,
-                  stroke.samples.contains(where: { $0.location.y >= ExquisiteCorpseFold.foldY(side: board.canvasSide) })
+                  stroke.snap != nil || stroke.samples.contains(where: {
+                      $0.location.y >= ExquisiteCorpseFold.foldY(side: board.canvasSide)
+                  })
             else { return }
             liveStrokeSentAt = monotonicNow()
             sendStripIfChanged(including: stroke.pencilKitStroke())
         case let .snapChanged(stroke):
             // Always, even when the stroke stays above the fold, so the strip
-            // drops any rough piece the shape no longer reaches, or gets it
-            // back when the shape turns back into the drawn line.
+            // drops any rough piece the shape no longer reaches.
             liveStrokeSentAt = monotonicNow()
             sendStripIfChanged(including: stroke.pencilKitStroke())
         case .ended:

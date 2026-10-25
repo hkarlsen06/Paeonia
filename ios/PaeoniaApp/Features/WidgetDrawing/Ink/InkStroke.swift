@@ -24,13 +24,15 @@ nonisolated struct InkStroke: Equatable, Sendable {
         var time: TimeInterval
     }
 
+    /// The shape as it snapped and where the finger was then. Dragging on
+    /// resizes from these, so the shape never drifts from rounding.
+    private nonisolated struct Grab: Equatable, Sendable {
+        var shape: SnappedShape
+        var finger: CGPoint
+    }
+
     /// How far apart the points of a snapped outline are, in canvas points.
     private static let outlineSpacing: CGFloat = 3
-    /// How far the finger moves from where it held before a snapped stroke
-    /// goes back to the touches. Two and a half times the hold radius, so a
-    /// finger that keeps resting after the snap never undoes it, and about a
-    /// fingertip, so drawing on undoes it before the shape looks stuck.
-    static let unsnapDistance: CGFloat = 20
 
     let style: InkStyle
     /// The pencil texture's seed. Fixed per stroke, so the texture holds still
@@ -42,6 +44,7 @@ nonisolated struct InkStroke: Equatable, Sendable {
     /// The touches, all of them, also after a snap.
     private(set) var samples: [InkSample]
     private(set) var snap: Snap?
+    private var grab: Grab?
 
     init(
         style: InkStyle,
@@ -61,27 +64,21 @@ nonisolated struct InkStroke: Equatable, Sendable {
 
     mutating func snap(to shape: SnappedShape, at time: TimeInterval) {
         snap = Snap(shape: shape, time: time)
+        grab = Grab(shape: shape, finger: samples[samples.count - 1].location)
     }
 
     mutating func unsnap() {
         snap = nil
+        grab = nil
     }
 
-    /// Turns a snapped stroke back into its touches once one of them is
-    /// `unsnapDistance` from where the finger was when it snapped, so slow
-    /// drawing that read as a hold keeps everything drawn after it. Returns
-    /// true when it did.
-    mutating func unsnapIfMovedAway() -> Bool {
-        guard let snap, let held = samples.last(where: { $0.timeOffset <= snap.time })?.location else {
-            return false
+    /// Resizes a snapped shape to follow the finger, the last touch, the way
+    /// it moved since the snap (`SnappedShape.resized`).
+    mutating func resizeSnapToFinger() {
+        guard let grab else {
+            return
         }
-        let movedAway = samples.reversed().prefix { $0.timeOffset > snap.time }.contains { sample in
-            hypot(sample.location.x - held.x, sample.location.y - held.y) >= Self.unsnapDistance
-        }
-        if movedAway {
-            unsnap()
-        }
-        return movedAway
+        snap?.shape = grab.shape.resized(grabbedAt: grab.finger, draggedTo: samples[samples.count - 1].location)
     }
 
     /// What the stroke is drawn through: the touches, or once snapped, the
@@ -118,7 +115,7 @@ nonisolated struct InkStroke: Equatable, Sendable {
         var stroke = self
         stroke.samples = Array(shown)
         if let snap, elapsed < snap.time {
-            stroke.snap = nil
+            stroke.unsnap()
         }
         return stroke
     }
