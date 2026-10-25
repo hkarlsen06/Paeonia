@@ -16,7 +16,6 @@ struct WidgetDrawingView: View {
     /// The "Not sent yet" pill above the canvas.
     private let showsSendStatus: Bool
     private let emptyCanvasHint: LocalizedStringResource?
-    @State private var isClearConfirmationPresented = false
     @State private var isHistoryPresented = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
@@ -156,23 +155,6 @@ struct WidgetDrawingView: View {
             }
             showBanner(for: failure)
         }
-        .alert(
-            Text(.widgetDrawingClearConfirmTitle),
-            isPresented: $isClearConfirmationPresented
-        ) {
-            Button(role: .destructive) {
-                viewModel.clearCanvas()
-                PaeoniaHaptics.destructiveActionConfirmed()
-            } label: {
-                Text(.widgetDrawingClearConfirmAction)
-            }
-
-            Button(role: .cancel) {} label: {
-                Text(.widgetDrawingClearCancel)
-            }
-        } message: {
-            Text(.widgetDrawingClearConfirmMessage)
-        }
     }
 
     private func showBanner(for failure: WidgetDrawingSaveFailure) {
@@ -238,7 +220,9 @@ struct WidgetDrawingView: View {
     private var bottomActions: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
             Button {
-                isClearConfirmationPresented = true
+                // No confirmation: undo takes a clear back.
+                viewModel.clearCanvas()
+                PaeoniaHaptics.destructiveActionConfirmed()
             } label: {
                 Text(.widgetDrawingClearButton)
             }
