@@ -6,9 +6,15 @@ import SwiftUI
 /// a heart. On launch the pen writes it once, stroke by stroke, then it holds still.
 /// Under Reduce Motion it shows finished.
 ///
+/// Touching the canvas clears the note and lets the person draw on it instead
+/// (`WelcomeFingerDoodle`), into `doodle`. The note does not come back while the
+/// screen shows.
+///
 /// The tile grows to the size of a large widget and shrinks on short screens. The
 /// whole tile is one image to VoiceOver.
 struct WelcomeWidgetDoodle: View {
+    @Binding var doodle: WelcomeCarriedDoodle?
+
     /// The tile's side when the screen has room for it.
     private static let maxSide: CGFloat = 280
     /// The smallest it gets before the welcome screen scrolls instead.
@@ -24,14 +30,26 @@ struct WelcomeWidgetDoodle: View {
     /// When the pen lands. Nil until the screen is revealed.
     @State private var writingStart: Date?
     @State private var isWritten = false
+    /// The person has touched the canvas, so the note is gone.
+    @State private var isDoodling = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             GeometryReader { proxy in
                 let side = min(proxy.size.width, proxy.size.height)
 
-                note
-                    .frame(width: side, height: side)
+                ZStack {
+                    note
+                        .opacity(isDoodling ? 0 : 1)
+
+                    WelcomeFingerDoodle(doodle: $doodle) {
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            isDoodling = true
+                        }
+                    }
+                }
+                .clipShape(DrawingCanvasShape())
+                .frame(width: side, height: side)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
@@ -45,6 +63,7 @@ struct WelcomeWidgetDoodle: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(.welcomeDoodleAccessibility))
         .accessibilityAddTraits(.isImage)
+        .accessibilityIdentifier("welcome.doodle")
         .task(id: revealed) {
             guard revealed, writingStart == nil, !reduceMotion else {
                 return
@@ -57,12 +76,11 @@ struct WelcomeWidgetDoodle: View {
 
     /// Redrawn every frame only while the pen is moving.
     private var note: some View {
-        TimelineView(.animation(paused: writingStart == nil || isWritten || reduceMotion)) { timeline in
+        TimelineView(.animation(paused: writingStart == nil || isWritten || isDoodling || reduceMotion)) { timeline in
             Canvas { context, size in
                 draw(in: &context, side: size.width, elapsed: elapsed(at: timeline.date))
             }
         }
-        .clipShape(DrawingCanvasShape())
         .accessibilityHidden(true)
     }
 
@@ -139,7 +157,7 @@ struct WelcomeWidgetDoodle: View {
 
 #if DEBUG
 #Preview {
-    WelcomeWidgetDoodle()
+    WelcomeWidgetDoodle(doodle: .constant(nil))
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(PaeoniaGlowBackground())

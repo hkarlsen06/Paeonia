@@ -32,6 +32,11 @@ enum WelcomeSignInMode: Equatable {
 /// first-day drawing that waits, and the invite screen sends it after sign-in
 /// (`InviterFirstDayModel.load`). Strokes not sent yet are a draft under a made-up ID
 /// from `store`, so they survive Back and a relaunch, and go away at sign-in.
+///
+/// A doodle on the welcome widget comes along on the start path. It waits in `store`
+/// until the drawing screen has loaded, which adds it to the draft one stroke at a time,
+/// so undo takes it off like strokes drawn there. Every other way out of welcome drops
+/// it, and so does a phone that skips the drawing step.
 @MainActor
 @Observable
 final class WelcomeFlowModel {
@@ -81,9 +86,14 @@ final class WelcomeFlowModel {
         funnel.record(.welcomeShown)
     }
 
-    func chooseStart() {
+    /// `doodle` is what the person drew on the welcome widget, if anything. It goes on
+    /// top of a doodle still waiting from an earlier visit.
+    func chooseStart(carrying doodle: WelcomeCarriedDoodle?) {
         funnel.record(.startChosen)
         PaeoniaHaptics.selection()
+        if let doodle, phoneHasNoOtherAccount() {
+            store.carriedDoodle = store.carriedDoodle?.adding(doodle) ?? doodle
+        }
         step = .startDate
     }
 
@@ -95,12 +105,14 @@ final class WelcomeFlowModel {
     func chooseReturning() {
         funnel.record(.returningChosen)
         store.startDate = nil
+        store.carriedDoodle = nil
         step = .signIn(.returning)
     }
 
     /// A partner's code was saved, from the welcome step, the sign-in step or a link.
     func inviteCodeSaved() {
         store.startDate = nil
+        store.carriedDoodle = nil
         step = .signIn(.joining)
     }
 
@@ -119,7 +131,12 @@ final class WelcomeFlowModel {
 
     /// The days count landed, or the date was skipped.
     func finishStartDate() {
-        step = phoneHasNoOtherAccount() ? .drawing : .signIn(.start(hasDrawing: hasWaitingDrawing))
+        guard phoneHasNoOtherAccount() else {
+            store.carriedDoodle = nil
+            step = .signIn(.start(hasDrawing: hasWaitingDrawing))
+            return
+        }
+        step = .drawing
     }
 
     // MARK: Drawing
@@ -127,11 +144,19 @@ final class WelcomeFlowModel {
     /// The real drawing screen's view model, the same one each time the step shows.
     /// There is no account, couple or partner yet, so it draws without the live relay,
     /// and keeps its draft under `store.drawingDraftID`. The view model reads that ID
-    /// only for the draft key and the purge count.
+    /// only for the draft key and the purge count. A waiting welcome doodle goes on
+    /// its canvas once it has loaded.
     func drawingViewModel() -> WidgetDrawingViewModel {
-        if let drawingScreen {
-            return drawingScreen
+        let viewModel = drawingScreen ?? makeDrawingViewModel()
+        if let doodle = store.carriedDoodle {
+            viewModel.addStrokesOnceLoaded(doodle.drawing, side: doodle.canvasSide) { [weak self] in
+                self?.store.carriedDoodle = nil
+            }
         }
+        return viewModel
+    }
+
+    private func makeDrawingViewModel() -> WidgetDrawingViewModel {
         let draftID = store.drawingDraftID ?? UUID()
         store.drawingDraftID = draftID
         let viewModel = WidgetDrawingViewModel(
@@ -243,11 +268,13 @@ final class WelcomeFlowModel {
     /// signs in next.
     func sessionEnded() {
         store.startDate = nil
+        store.carriedDoodle = nil
         step = store.hasSignedInBefore ? .signIn(.returning) : .welcome
     }
 
     /// Clearing by owner also stops an open drawing screen from writing the draft back.
     private func forgetUnsentDrawing() {
+        store.carriedDoodle = nil
         guard let draftID = store.drawingDraftID else {
             return
         }

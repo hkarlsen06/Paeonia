@@ -22,6 +22,10 @@ struct WelcomeView: View {
     /// pattern does not read the clipboard, so iOS shows no paste prompt. Only the
     /// system paste button reads it.
     @State private var clipboardHasLink = false
+    /// What the person drew on the widget. Start our space takes it to the first
+    /// drawing. Coming back to this screen starts a fresh widget, since the doodle
+    /// is on the drawing by then.
+    @State private var doodle: WelcomeCarriedDoodle?
 
     var body: some View {
         // The summary sits just above the buttons, and the widget is centered between
@@ -90,7 +94,7 @@ struct WelcomeView: View {
 
             Spacer(minLength: PaeoniaSpacing.space24)
 
-            WelcomeWidgetDoodle()
+            WelcomeWidgetDoodle(doodle: $doodle)
                 // Takes the free height before the spacers, up to its own size.
                 .layoutPriority(1)
                 .launchEntrance(order: 1)
@@ -117,7 +121,9 @@ struct WelcomeView: View {
 
     private var choices: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            Button(action: model.chooseStart) {
+            Button {
+                model.chooseStart(carrying: doodle)
+            } label: {
                 Text(.welcomeStartButton)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
