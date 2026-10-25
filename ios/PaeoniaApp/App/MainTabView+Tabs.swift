@@ -204,6 +204,9 @@ extension MainTabView {
                     hook: topicsHook,
                     isShown: topicsViewModel.hasLoadedOverview && !topicsViewModel.overview.isEmpty,
                     onOpen: openTopics,
+                    shelfTopics: topicsViewModel.overview,
+                    newQuestionCount: topicsViewModel.newQuestionCount(for:),
+                    onOpenTopic: { questionsPath.append(.topic($0)) },
                     waitingQuestions: topicsViewModel.waitingQuestions,
                     topicTitles: topicsViewModel.titlesByKey
                 )

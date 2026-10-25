@@ -110,14 +110,22 @@ struct TopicsCard: View {
     }
 }
 
-/// What the Questions tab needs from the topics: the Topics card, and the topic
-/// questions waiting for this person, which its list shows with the daily ones.
-/// `isShown == false` leaves the card out, such as before the topics have loaded once.
+/// What the Questions tab needs from the topics: the Topics card, the shelf's grid it
+/// shows instead while the tab is calm, and the topic questions waiting for this
+/// person, which its list shows with the daily ones. `isShown == false` leaves the
+/// topics out, such as before they have loaded once.
 struct TopicsCardContent {
+    /// The few topics the compact card shows.
     let topics: [TopicSummary]
     let hook: TopicsHook?
     let isShown: Bool
+    /// Opens the Topics shelf.
     let onOpen: () -> Void
+    /// Every topic in the shelf's order, for the grid.
+    let shelfTopics: [TopicSummary]
+    let newQuestionCount: (String) -> Int
+    /// Opens one topic, by key.
+    let onOpenTopic: (String) -> Void
     var waitingQuestions: [DailyChallengeQuestion] = []
     /// Every topic's name by key, for the waiting questions' rows.
     var topicTitles: [String: String] = [:]

@@ -11,6 +11,8 @@ import SwiftUI
 /// into the answer flow, where the reply is revealed on send. Topic questions waiting
 /// for the user join the list until they are answered and seen, and then show only in
 /// their topic. Earlier days follow under today's list, with a date divider per day.
+/// The Topics card sits under the hero card. Once the tab is calm (`isCalm`), every
+/// topic shows between today's list and the earlier days instead.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     /// Namespace for the daily question zoom transition. The hero card and each
@@ -57,10 +59,13 @@ struct DailyChallengeScreen: View {
 
                     todayList
 
+                    topicsShelf
+
                     earlierDays
                 }
                 // The hero shrinking to one row moves everything under it with a glide.
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isDayComplete)
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: isCalm)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, PaeoniaSpacing.space16)
                 // The same gap above the tab bar as between the sections.
@@ -342,10 +347,27 @@ extension DailyChallengeScreen {
         }
     }
 
-    /// The Topics card. Always under the daily card, so the daily question comes first.
+    /// The tab is calm when the user has answered today's question and nothing in the
+    /// topics or the list waits for them or holds something they haven't seen. Waiting
+    /// on the partner is calm. A calm tab shows every topic instead of the Topics card.
+    private var isCalm: Bool {
+        guard isDayComplete,
+              let topicsCard,
+              topicsCard.hook == nil,
+              topicsCard.waitingQuestions.isEmpty
+        else { return false }
+        return !readQuestions.contains { question in
+            question.isAwaitingCurrentUserAnswer
+                || viewModel.hasNewPartnerAnswer(question)
+                || viewModel.hasUnreadChat(for: question.questionID)
+        }
+    }
+
+    /// The Topics card while the tab is not calm. Always under the daily card, so the
+    /// daily question comes first.
     @ViewBuilder
     var topicsEntry: some View {
-        if let topicsCard, topicsCard.isShown {
+        if let topicsCard, topicsCard.isShown, !isCalm {
             TopicsCard(
                 topics: topicsCard.topics,
                 hook: topicsCard.hook,
@@ -353,6 +375,16 @@ extension DailyChallengeScreen {
                 partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
                 onOpen: topicsCard.onOpen
             )
+            .transition(.opacity)
+        }
+    }
+
+    /// Every topic under today's list while the tab is calm.
+    @ViewBuilder
+    var topicsShelf: some View {
+        if let topicsCard, topicsCard.isShown, isCalm {
+            TopicsShelfSection(content: topicsCard)
+                .transition(.opacity)
         }
     }
 }

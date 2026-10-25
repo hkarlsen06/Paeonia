@@ -9,21 +9,13 @@ struct TopicsShelfView: View {
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
-    private let columns = [GridItem(.adaptive(minimum: 158), spacing: PaeoniaSpacing.space12)]
-
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: PaeoniaSpacing.space12) {
-                ForEach(viewModel.overview) { topic in
-                    Button {
-                        onOpenTopic(topic.id)
-                    } label: {
-                        TopicShelfCard(topic: topic, newCount: viewModel.newQuestionCount(for: topic.id))
-                    }
-                    .buttonStyle(.paeoniaPressableCard)
-                    .accessibilityIdentifier("topics.card.\(topic.id)")
-                }
-            }
+            TopicShelfGrid(
+                topics: viewModel.overview,
+                newQuestionCount: viewModel.newQuestionCount(for:),
+                onOpenTopic: onOpenTopic
+            )
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.vertical, PaeoniaSpacing.space16)
             .paeoniaReadableWidth()
