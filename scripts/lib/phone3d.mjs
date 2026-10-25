@@ -38,10 +38,15 @@ export async function openPage(browser, { width, height, html, captures, font })
   return tab;
 }
 
-// Runs in the page. Builds one phone model, renders each capture on it into its own transparent
-// canvas and places that canvas on the strip. W and H are the size of one panel; spec.x, spec.y and
-// spec.height are fractions of it. Returns nothing; throws if the layout is broken.
-export async function renderPhones({ phones, finish, W, H, captures }) {
+// Runs in the page. Fits each panel's caption, then builds one phone model, renders each capture on
+// it into its own transparent canvas and places that canvas on the strip. W and H are the size of
+// one panel; spec.x and spec.height are fractions of it. A phone's visual centre, the middle of its
+// outline on screen, sits halfway between the bottom of its panel's caption and the bottom of the
+// panel. A spec with spotlight dims the screen around spotlights[spec.screen], an element's frame
+// in capture pixels. Its { dim, padding, radius, feather, outline } are the darkening (0 to 1), the
+// room left around the element, the corner radius and the soft edge in pixels, and the colour of a
+// thin line around the lit area. Returns the centres in pixels; throws if the layout is broken.
+export async function renderPhones({ phones, finish, W, H, captures, spotlights }) {
   const { THREE, RoomEnvironment, RoundedBoxGeometry, mergeVertices } = window.lib;
   // iPhone 17 Pro Max in millimetres. B is the radius of the rounded frame edge.
   const width = 78, height = 163.4, depth = 8.75, radius = 13.5, B = 1.4;
@@ -103,11 +108,32 @@ export async function renderPhones({ phones, finish, W, H, captures }) {
   glass.position.z = depth / 2 + 0.01;
   phone.add(glass);
 
+  // Shrink long translations until they fit their panel and break no word.
+  await document.fonts.ready;
+  const captionBottoms = [];
+  for (const [index, section] of [...document.querySelectorAll('section')].entries()) {
+    const slot = Number(section.dataset.slot);
+    const leaves = () => {
+      const text = section.getBoundingClientRect();
+      return text.left < slot * W || text.right > (slot + 1) * W
+        || [...section.children].some(line => line.scrollWidth > line.clientWidth);
+    };
+    let size = 104;
+    while (leaves()) {
+      if ((size -= 4) < 72) throw new Error(`Panel ${index + 1} text leaves its screenshot even at 76px`);
+      section.style.fontSize = `${size}px`;
+    }
+    const headline = section.querySelector('h1');
+    const lines = Math.round(headline.getBoundingClientRect().height / parseFloat(getComputedStyle(headline).lineHeight));
+    if (lines !== 2) throw new Error(`Panel ${index + 1} headline wraps to ${lines} line(s), not 2: ${headline.textContent}`);
+    captionBottoms[slot] = section.getBoundingClientRect().bottom;
+  }
+
   const fov = 16;
   const vertex = new THREE.Vector3();
   const layer = document.createElement('div');
   document.body.append(layer);
-  const bounds = [];
+  const centres = [];
   for (const spec of phones) {
     const capture = new Image();
     capture.src = `/capture/${captures[spec.screen]}`;
@@ -125,6 +151,31 @@ export async function renderPhones({ phones, finish, W, H, captures }) {
     c.roundRect(x0, y0, cw, ch, 186);
     c.clip();
     c.drawImage(capture, x0, y0);
+    if (spec.spotlight) {
+      const { dim, padding, radius, feather, outline: line } = spec.spotlight, element = spotlights[spec.screen];
+      const lit = { x: x0 + element.x - padding, y: y0 + element.y - padding,
+        width: element.width + 2 * padding, height: element.height + 2 * padding };
+      // The shade is cut out with a blurred shape that ends a feather beyond the lit area, so the
+      // lit area stays at full brightness and the darkening fades in outside it.
+      const shade = document.createElement('canvas');
+      shade.width = canvas.width; shade.height = canvas.height;
+      const s = shade.getContext('2d');
+      s.fillStyle = `rgba(0, 0, 0, ${dim})`;
+      s.fillRect(0, 0, canvas.width, canvas.height);
+      s.globalCompositeOperation = 'destination-out';
+      s.filter = `blur(${feather / 2}px)`;
+      s.beginPath();
+      s.roundRect(lit.x - feather, lit.y - feather, lit.width + 2 * feather, lit.height + 2 * feather, radius + feather);
+      s.fill();
+      c.drawImage(shade, 0, 0);
+      if (line) {
+        c.strokeStyle = line;
+        c.lineWidth = 3;
+        c.beginPath();
+        c.roundRect(lit.x, lit.y, lit.width, lit.height, radius);
+        c.stroke();
+      }
+    }
     c.restore();
     c.fillStyle = '#000';
     c.beginPath();
@@ -151,16 +202,30 @@ export async function renderPhones({ phones, finish, W, H, captures }) {
     renderer.setSize(size, size, false);
     renderer.render(scene, camera);
 
-    const left = spec.x * W - size / 2, top = spec.y * H - size / 2;
-    const box = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity, screen: spec.screen };
+    // Where the phone's outline falls in the rendered square. A tilt moves it off the square's centre.
+    const extent = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
     const positions = frame.attributes.position;
     for (let i = 0; i < positions.count; i++) {
       vertex.fromBufferAttribute(positions, i).applyMatrix4(phone.matrixWorld).project(camera);
-      const x = left + (vertex.x + 1) / 2 * size, y = top + (1 - vertex.y) / 2 * size;
-      box.left = Math.min(box.left, x); box.right = Math.max(box.right, x);
-      box.top = Math.min(box.top, y); box.bottom = Math.max(box.bottom, y);
+      const x = (vertex.x + 1) / 2 * size, y = (1 - vertex.y) / 2 * size;
+      extent.left = Math.min(extent.left, x); extent.right = Math.max(extent.right, x);
+      extent.top = Math.min(extent.top, y); extent.bottom = Math.max(extent.bottom, y);
     }
-    bounds.push(box);
+    const panel = Math.floor(spec.x), captionBottom = captionBottoms[panel];
+    const centre = { x: spec.x * W, y: (captionBottom + H) / 2 };
+    const left = centre.x - (extent.left + extent.right) / 2, top = centre.y - (extent.top + extent.bottom) / 2;
+    const box = { left: left + extent.left, right: left + extent.right, top: top + extent.top, bottom: top + extent.bottom };
+
+    // Every phone stays inside its own panel, clear of the caption, so no screenshot cuts off part of a phone.
+    const margin = 0.02 * W;
+    if (box.left < panel * W + margin || box.right > (panel + 1) * W - margin) {
+      throw new Error(`The ${spec.screen} phone is cut off at the edge of panel ${panel + 1}`);
+    }
+    if (box.top < captionBottom + margin) {
+      throw new Error(`The ${spec.screen} phone is too tall for the space under the panel ${panel + 1} caption`);
+    }
+    centres.push(centre);
+
     const image = new Image();
     image.src = renderer.domElement.toDataURL('image/png');
     await image.decode();
@@ -169,33 +234,5 @@ export async function renderPhones({ phones, finish, W, H, captures }) {
     layer.append(image);
   }
   renderer.dispose();
-
-  // Every phone stays inside the panel its centre is in, so no screenshot cuts off part of a phone.
-  for (const [i, spec] of phones.entries()) {
-    const box = bounds[i], panel = Math.floor((box.left + box.right) / 2 / W), margin = 0.02 * W;
-    if (box.left < panel * W + margin || box.right > (panel + 1) * W - margin) {
-      throw new Error(`The ${spec.screen} phone is cut off at the edge of panel ${panel + 1}`);
-    }
-  }
-
-  // Shrink long translations until they fit their panel, clear the phones and break no word.
-  await document.fonts.ready;
-  for (const [index, section] of [...document.querySelectorAll('section')].entries()) {
-    const slot = Number(section.dataset.slot);
-    const problem = () => {
-      const text = section.getBoundingClientRect();
-      if (text.left < slot * W || text.right > (slot + 1) * W || text.bottom > H
-          || [...section.children].some(line => line.scrollWidth > line.clientWidth)) return 'leaves its screenshot';
-      const hit = bounds.find(b => b.left < text.right && b.right > text.left && b.top < text.bottom && b.bottom > text.top);
-      return hit && `overlaps the ${hit.screen} phone`;
-    };
-    let size = 104;
-    while (problem()) {
-      if ((size -= 4) < 72) throw new Error(`Panel ${index + 1} text ${problem()} even at 76px`);
-      section.style.fontSize = `${size}px`;
-    }
-    const headline = section.querySelector('h1');
-    const lines = Math.round(headline.getBoundingClientRect().height / parseFloat(getComputedStyle(headline).lineHeight));
-    if (lines !== 2) throw new Error(`Panel ${index + 1} headline wraps to ${lines} line(s), not 2: ${headline.textContent}`);
-  }
+  return centres;
 }

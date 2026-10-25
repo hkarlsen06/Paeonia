@@ -8,12 +8,13 @@
   "finish": "#c9c4c8",
   "capture": "{locale}/iPhone-{screen}.png",
   "phones": [
-    { "screen": "01-widget", "x": 0.5, "y": 0.645, "height": 0.7, "rotate": [3, 18, 5] },
-    { "screen": "02-question", "x": 1.5, "y": 0.65, "height": 0.66, "rotate": [0, -16, -4] },
-    { "screen": "03-ludo", "x": 2.5, "y": 0.65, "height": 0.66, "rotate": [2, 16, 4] },
-    { "screen": "06-chat", "x": 5.45, "y": 0.665, "height": 0.68, "rotate": [0, -14, -7] },
-    { "screen": "04-home", "x": 3.55, "y": 0.665, "height": 0.68, "rotate": [0, 14, 7] },
-    { "screen": "05-memories", "x": 4.5, "y": 0.645, "height": 0.7, "rotate": [0, 0, 0] }
+    { "screen": "01-widget", "x": 0.5, "height": 0.7, "rotate": [3, 18, 5] },
+    { "screen": "02-question", "x": 1.5, "height": 0.66, "rotate": [0, -16, -4] },
+    { "screen": "03-ludo", "x": 2.5, "height": 0.66, "rotate": [2, 16, 4] },
+    { "screen": "06-chat", "x": 5.45, "height": 0.68, "rotate": [0, -14, -7] },
+    { "screen": "04-home", "x": 3.55, "height": 0.68, "rotate": [0, 14, 7],
+      "spotlight": { "dim": 0.42, "padding": 21, "radius": 90, "feather": 24, "outline": "#ffffff59" } },
+    { "screen": "05-memories", "x": 4.5, "height": 0.7, "rotate": [0, 0, 0] }
   ],
   "panels": {
     "en-US": [
