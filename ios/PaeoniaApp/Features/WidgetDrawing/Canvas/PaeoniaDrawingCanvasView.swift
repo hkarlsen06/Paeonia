@@ -257,7 +257,12 @@ final class PaeoniaDrawingCanvasView: OverscanCanvasView {
         guard var current = stroke, let deadline = hold.deadline, CACurrentMediaTime() >= deadline else {
             return
         }
-        guard let shape = ShapeRecognizer.recognize(current.samples.map(\.location)) else {
+        let recognized = ShapeRecognizer.recognize(current.samples.map(\.location))
+        #if DEBUG
+        let side = WidgetDrawingViewModel.canvasSide(for: bounds.size)
+        ShapeCapture.record(current.samples, canvasSide: side, result: recognized)
+        #endif
+        guard let shape = recognized else {
             hold.disarmUntilMoved()
             return
         }
