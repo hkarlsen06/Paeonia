@@ -7,8 +7,9 @@
 //   3. Resets each demo partner's world (deletes their prior demo couple and all
 //      couple-owned data, plus the seeded expired subscription) so every review
 //      cycle starts clean.
-//   4. Issues three fresh 6-char codes and prints them to paste into App Review
-//      notes. Only the code hashes are stored in the database.
+//   4. Issues three fresh 6-char codes and prints the full App Review notes from
+//      app-review-notes.txt with the codes filled in, ready to paste. Only the
+//      code hashes are stored in the database, and the codes are never committed.
 //
 // Because this deletes the previous cycle's demo couples, only run it when you
 // are starting a new review cycle (not while a review is mid-flight).
@@ -32,7 +33,11 @@
 //   (or: bun ios/Scripts/mint-review-codes.mjs)
 
 import { randomInt } from "node:crypto";
+import fs from "node:fs";
 import { convexTargetUrl, runConvex } from "./convex-operator.mjs";
+
+const REVIEW_NOTES_PATH = new URL("./app-review-notes.txt", import.meta.url);
+const REVIEW_CODES_MARKER = "{{REVIEW_CODES}}";
 
 const SLOT_COUNT = 3;
 // Neutral, non-partner-sounding demo names (the copy must never read like it came
@@ -57,6 +62,10 @@ try {
 
 function main() {
   const requested = parsePartnerFlags(process.argv.slice(2));
+  const notesTemplate = fs.readFileSync(REVIEW_NOTES_PATH, "utf8");
+  if (!notesTemplate.includes(REVIEW_CODES_MARKER)) {
+    throw new Error(`app-review-notes.txt has no ${REVIEW_CODES_MARKER} line for the codes.`);
+  }
   console.log(`Minting App Review demo codes on ${convexTargetUrl()}...\n`);
 
   // 1. Resolve a user for every demo slot before changing anything.
@@ -114,7 +123,7 @@ function main() {
     issued.push({ ...partner, code });
   }
 
-  printResult(issued, expiresAt);
+  printResult(issued, expiresAt, notesTemplate);
 }
 
 function parsePartnerFlags(argv) {
@@ -136,14 +145,15 @@ function parsePartnerFlags(argv) {
   return requested;
 }
 
-function printResult(issued, expiresAt) {
-  console.log("✓ Review codes ready. Paste these into App Review notes:\n");
-  for (const { code, name } of issued) {
-    console.log(`    ${code}   (pairs with demo partner "${name}")`);
-  }
-  console.log(
-    `\n  Valid until ${expiresAt}. Give each reviewer a different code. One code pairs one reviewer with one demo partner.`,
-  );
+function printResult(issued, expiresAt, notesTemplate) {
+  const codeLines = issued.map(({ code, name }) => `${code} (demo partner "${name}")`).join("\n");
+  const notes = notesTemplate.replace(REVIEW_CODES_MARKER, codeLines);
+  console.log("✓ Review codes ready. Paste everything between the lines into App Review notes:\n");
+  console.log("-".repeat(72));
+  console.log(notes.trimEnd());
+  console.log("-".repeat(72));
+  console.log(`\n  ${notes.length} of App Store Connect's 4000 characters.`);
+  console.log(`  Codes are valid until ${expiresAt}.`);
   console.log("  After the app is approved, run: bun ios/Scripts/revoke-review-codes.mjs\n");
 }
 

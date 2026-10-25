@@ -323,7 +323,7 @@ Prefer these tokens and components over local hardcoded colors, fonts, button sh
 - `backend/questions/README.md`: question catalog file structure.
 - `backend/questions/system/*`: source-controlled system question content. `scripts/sync-question-catalog` uploads it.
 - `ios/PaeoniaShared/PaeoniaConvexClient.swift` and `ios/PaeoniaShared/PaeoniaClerk.swift`: the iOS Convex HTTP client and Clerk configuration. Queries and mutations time out after 20 seconds without a response. Actions and storage uploads keep the 60-second system default.
-- `ios/Scripts/mint-review-codes.mjs` and `revoke-review-codes.mjs`: App Review demo-pair access lifecycle, run against the hosted deployment with the admin key. Codes are operational output and must never be committed.
+- `ios/Scripts/mint-review-codes.mjs` and `revoke-review-codes.mjs`: App Review demo-pair access lifecycle, run against the hosted deployment with the admin key. Minting prints the App Review notes from `ios/Scripts/app-review-notes.txt` with the new codes filled in. Codes are operational output and must never be committed.
 
 Most backend changes should start by reading `backend/AGENTS.md` and the module that owns the behavior.
 

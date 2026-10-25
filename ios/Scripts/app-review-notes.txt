@@ -1,0 +1,29 @@
+Paeonia is a private app for two people in a relationship, often living apart. Each day they answer a shared question, draw on each other's Home Screen widget, keep memories, count down to dates and play small games together.
+
+WHY SIGN-IN IS NEEDED
+Everything a couple makes is shared between two accounts, so each person signs in with Apple or Google. There is no other way to create an account. Accounts can be deleted in the app, from Settings and from the subscription screen.
+
+HOW TO REVIEW WITHOUT A SECOND DEVICE
+Each code below pairs one reviewer with a demo partner account, so you do not need a second phone. Please use a different code on each device.
+
+{{REVIEW_CODES}}
+
+1. Open Paeonia and tap "I was invited".
+2. Type one code, then sign in with Apple or Google.
+3. Add your name and a profile photo.
+4. Tap Join. You are now paired with the demo partner.
+5. The demo couple's subscription has ended on purpose, so the subscription screen appears. Subscribe with your sandbox account to test the in-app purchase. The app then opens for you and for the demo partner.
+
+The demo partner does not reply in real time. The couple starts with a broken streak, so the optional streak restore purchase is offered while its window is open.
+
+HOW THE SUBSCRIPTION WORKS
+Paeonia has no free tier. One auto-renewing subscription, monthly or yearly in one subscription group, unlocks every feature for both partners. Either partner can buy it, and the other partner never pays. The subscription is bought only with Apple in-app purchase. The streak restore is the only other purchase. It is optional and consumable.
+
+HOW PAIRING NORMALLY WORKS
+The person who starts subscribes, then sends their partner a 6-character invite code or link. The partner installs Paeonia, enters the code and signs in. The code only links two Paeonia accounts. It does not unlock anything by itself. If neither partner has an active subscription, both see the subscription screen again, and everything they saved stays safe until one of them subscribes.
+
+WIDGETS
+Paeonia has Home Screen and Lock Screen widgets. The main widget shows the latest drawing from your partner, and they can draw on it from the app. Other widgets show days together, countdowns, the streak, today's question, your partner's local time and the distance between you.
+
+LOCATION
+Location is optional and off until the person turns it on. Paeonia then shares only the person's latest location with their partner and never keeps a location history. Right after sharing is turned on, the app asks whether it may also update while Paeonia is closed. That needs Always permission and is the person's choice. While the app is closed, it sends a new location only after a significant move. Sharing can be turned off at any time in Settings.

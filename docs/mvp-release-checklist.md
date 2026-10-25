@@ -528,14 +528,14 @@ The text metadata lives in `ios/Scripts/appstore-metadata-source.json`, and `ios
 - [ ] Privacy Policy URL set.
 - [ ] Marketing URL set if desired.
 - [ ] App Review contact information filled.
-- [ ] App Review notes explain:
-  - [ ] what Paeonia does
-  - [ ] why login is required
-  - [ ] how to use demo/review access
-  - [ ] how subscription sharing works
-  - [ ] how pairing normally works
-  - [ ] widget behavior
-  - [ ] location behavior, including that sharing while closed is optional, asked about right after sharing is turned on, needs Always, and sends the latest location only after a significant move
+- [ ] App Review notes are pasted into App Store Connect. `ios/Scripts/mint-review-codes.mjs` prints them from `ios/Scripts/app-review-notes.txt` with fresh review codes. They explain:
+  - [x] what Paeonia does
+  - [x] why login is required
+  - [x] how to use demo/review access
+  - [x] how subscription sharing works, and that the invite code only links two accounts and unlocks nothing by itself
+  - [x] how pairing normally works
+  - [x] widget behavior
+  - [x] location behavior, including that sharing while closed is optional, asked about right after sharing is turned on, needs Always, and sends the latest location only after a significant move
 - [ ] In-app purchases submitted with the build.
 - [ ] Subscription screenshot/metadata completed.
 - [x] Privacy Nutrition Labels completed.
