@@ -8,6 +8,10 @@ import SwiftUI
 struct HomeStoriesStrip: View {
     let viewModel: StoriesViewModel
     let people: StoryPeople
+    var avatarSize: CGFloat = 72
+    /// Places the two avatars itself, as the map does on Home. Nil lays them out in a row.
+    /// Placed avatars leave out the reserved bubble room and the names.
+    var arrange: ((_ own: AnyView, _ partner: AnyView) -> AnyView)?
 
     @State private var viewer: StoryViewerContent?
     @State private var isComposing = false
@@ -18,12 +22,11 @@ struct HomeStoriesStrip: View {
     /// The viewer's Add button closes it first, then the composer opens.
     @State private var composesAfterViewer = false
 
-    private static let avatarSize: CGFloat = 72
     /// The plus on your avatar that adds a story.
     private static let plusBadgeSize: CGFloat = 22
     /// Center to center, wide enough that the two bubbles never touch, and narrow enough
     /// that the partner's bubble stays clear of the streak in the corner.
-    private static let avatarSpacing: CGFloat = StoryNoteBubble.maxWidth - avatarSize + PaeoniaSpacing.space8
+    private var avatarSpacing: CGFloat { StoryNoteBubble.maxWidth - avatarSize + PaeoniaSpacing.space8 }
 
     var body: some View {
         // Stories leave Home a day after they were posted, so the rings follow the clock.
@@ -113,18 +116,30 @@ struct HomeStoriesStrip: View {
         let partner = StoryTimeline.onHome(viewModel.stories, author: people.partnerUserID, at: now)
         let partnerRing = StoryTimeline.partnerRing(viewModel.stories, partner: people.partnerUserID, at: now)
         let snapshot = StoriesSnapshot(stories: viewModel.stories, notes: viewModel.notes)
-        return HStack(alignment: .top, spacing: Self.avatarSpacing) {
-            ownAvatar(own, note: snapshot.note(of: people.currentUserID, at: now))
-            partnerAvatar(partner, ring: partnerRing, note: snapshot.note(of: people.partnerUserID, at: now))
+        let ownView = ownAvatar(own, note: snapshot.note(of: people.currentUserID, at: now))
+        let partnerView = partnerAvatar(
+            partner, ring: partnerRing, note: snapshot.note(of: people.partnerUserID, at: now)
+        )
+        return Group {
+            if let arrange {
+                arrange(AnyView(ownView), AnyView(partnerView))
+            } else {
+                HStack(alignment: .top, spacing: avatarSpacing) {
+                    ownView
+                    partnerView
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
-        .frame(maxWidth: .infinity)
     }
 
     private func ownAvatar(_ stories: [Story], note: StoryNote?) -> some View {
         VStack(spacing: 0) {
             // Room for the tallest note above the avatar, so the row's top is the top of
             // a full bubble, whoever has a note.
-            StoryNoteBubble.tallestBody
+            if arrange == nil {
+                StoryNoteBubble.tallestBody
+            }
             ownAvatarButton(stories)
                 .overlay(alignment: .bottomTrailing) { addButton }
                 .accessibilityLabel(Text(stories.isEmpty ? .storiesHomeAddAccessibility : .storiesHomeYourStory))
@@ -139,8 +154,10 @@ struct HomeStoriesStrip: View {
                     .accessibilityLabel(Text(ownNoteLabel(note)))
                 }
 
-            name(Text(.storiesHomeYourStory))
-                .padding(.top, PaeoniaSpacing.space4)
+            if arrange == nil {
+                name(Text(.storiesHomeYourStory))
+                    .padding(.top, PaeoniaSpacing.space4)
+            }
         }
     }
 
@@ -158,7 +175,7 @@ struct HomeStoriesStrip: View {
                 name: people.currentName,
                 tint: .paeoniaPartnerOne,
                 ring: stories.isEmpty ? .noStory : .unseen,
-                size: Self.avatarSize
+                size: avatarSize
             )
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { ownAvatarFrame = $0 }
         }
@@ -190,7 +207,9 @@ struct HomeStoriesStrip: View {
         VStack(spacing: 0) {
             // Room for the tallest note above the avatar, so the row's top is the top of
             // a full bubble, whoever has a note.
-            StoryNoteBubble.tallestBody
+            if arrange == nil {
+                StoryNoteBubble.tallestBody
+            }
             partnerAvatarButton(stories, ring: ring)
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { partnerAvatarFrame = $0 }
                 .storyNoteBubble {
@@ -205,8 +224,10 @@ struct HomeStoriesStrip: View {
                         .accessibilityLabel(Text(.storiesNotePartnerAccessibility(people.partnerName, note.text)))
                     }
                 }
-            name(Text(people.partnerName))
-                .padding(.top, PaeoniaSpacing.space4)
+            if arrange == nil {
+                name(Text(people.partnerName))
+                    .padding(.top, PaeoniaSpacing.space4)
+            }
         }
     }
 
@@ -218,7 +239,7 @@ struct HomeStoriesStrip: View {
             name: people.partnerName,
             tint: .paeoniaPartnerTwo,
             ring: ring,
-            size: Self.avatarSize
+            size: avatarSize
         )
         if stories.isEmpty {
             avatar
@@ -257,7 +278,7 @@ struct HomeStoriesStrip: View {
             .font(PaeoniaTypography.caption)
             .foregroundStyle(.paeoniaTextSecondary)
             .lineLimit(1)
-            .frame(maxWidth: Self.avatarSize + PaeoniaSpacing.space24)
+            .frame(maxWidth: avatarSize + PaeoniaSpacing.space24)
             .accessibilityHidden(true)
     }
 

@@ -133,6 +133,75 @@ struct PairedHomeView: View {
     }
 
     var body: some View {
+        homeContent
+            .paeoniaWideLayout($isWideLayout)
+            .heartsLifecycle(hearts, ownerUserID: currentUserID, partnerName: partnerName)
+            .lookBackRefresh(lookBack, userID: currentUserID, coupleID: coupleID)
+            // Home shows the couple's current drawing, the streak, the story ring and the next
+            // date, so seeing it means the user has noticed a new drawing, a check-in reminder,
+            // a story or a date reminder.
+            .task {
+                await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    Task {
+                        await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Let the scroll view reach the bottom edge so the tab bar's automatic
+            // content inset applies and cards scroll behind the floating glass bar,
+            // instead of a flat background panel filling the space above it. The light
+            // stays put while the cards scroll over it, so a pull to refresh never
+            // reveals a plain strip above it.
+            .paeoniaTabBackdrop()
+            // In compact width Home draws its own header instead of a navigation bar. The bar
+            // took every tap in its band, so the note bubbles that rise into that space
+            // couldn't be tapped. In regular width the tab bar sits at the top, in the bar's
+            // row, so the bar stays there with the mark and the streak beside the tabs.
+            .toolbarVisibility(drawsOwnHeader ? .hidden : .automatic, for: .navigationBar)
+            .toolbar {
+                if !drawsOwnHeader {
+                    barItems
+                }
+            }
+    }
+
+    /// PROTOTYPE: the map layout on iPhone while there is a map to show.
+    @ViewBuilder
+    private var homeContent: some View {
+        if drawsOwnHeader, case let .ready(current, partner, _) = locationMapState {
+            HomeMapLayout(
+                current: current,
+                partner: partner,
+                partnerName: partnerName,
+                stories: stories,
+                storyPeople: storyPeople
+            ) {
+                markAndStreakRow
+            } sheet: {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                    notices
+                    partnerGameCard
+                    dailyPromptCard
+                    firstStepsCard
+                    unreadChatsCard
+                    milestoneAndWidget
+                    lookBackCard
+                }
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                .padding(.bottom, PaeoniaSpacing.space16)
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
+                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
+            }
+        } else {
+            classicContent
+        }
+    }
+
+    private var classicContent: some View {
         ScrollView {
             // One layout for phone and wide iPad keeps the cards' identity, so turning
             // the iPad doesn't reset them or close the milestone sheet. The spacing
@@ -172,42 +241,9 @@ struct PairedHomeView: View {
             // The daily card is tall until today's question is answered, then a short row.
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
         }
-        .paeoniaWideLayout($isWideLayout)
-        .heartsLifecycle(hearts, ownerUserID: currentUserID, partnerName: partnerName)
         .scrollIndicators(.hidden)
-        .lookBackRefresh(lookBack, userID: currentUserID, coupleID: coupleID)
         .refreshable {
             await onRefresh()
-        }
-        // Home shows the couple's current drawing, the streak, the story ring and the next
-        // date, so seeing it means the user has noticed a new drawing, a check-in reminder,
-        // a story or a date reminder.
-        .task {
-            await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                Task {
-                    await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Let the scroll view reach the bottom edge so the tab bar's automatic
-        // content inset applies and cards scroll behind the floating glass bar,
-        // instead of a flat background panel filling the space above it. The light
-        // stays put while the cards scroll over it, so a pull to refresh never
-        // reveals a plain strip above it.
-        .paeoniaTabBackdrop()
-        // In compact width Home draws its own header instead of a navigation bar. The bar
-        // took every tap in its band, so the note bubbles that rise into that space
-        // couldn't be tapped. In regular width the tab bar sits at the top, in the bar's
-        // row, so the bar stays there with the mark and the streak beside the tabs.
-        .toolbarVisibility(drawsOwnHeader ? .hidden : .automatic, for: .navigationBar)
-        .toolbar {
-            if !drawsOwnHeader {
-                barItems
-            }
         }
     }
 
