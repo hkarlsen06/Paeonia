@@ -57,13 +57,15 @@ nonisolated struct WidgetLiveMessage: Codable, Equatable, Sendable {
     var width: Double?
     /// In `live`: the stroke's `PKStroke.randomSeed`.
     var seed: UInt32?
+    /// In `live`: `InkLineStyle` raw value.
+    var lineStyle: String?
     /// `upserts` decoded, set by the connection off the main actor. It is not
     /// part of the wire format. A message built in code leaves it nil.
     var preparedUpserts: PKDrawing?
 
     private enum CodingKeys: String, CodingKey {
         case type, id, ink, color, side, points, upserts, removals, ended, snapshot
-        case peers, needsCanvas, from, role, width, seed
+        case peers, needsCanvas, from, role, width, seed, lineStyle
     }
 
     /// The strokes in `upserts`, decoded from base64 and PencilKit data.

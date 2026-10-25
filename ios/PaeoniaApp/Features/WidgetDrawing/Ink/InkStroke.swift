@@ -59,12 +59,19 @@ nonisolated struct InkStroke: Equatable, Sendable {
     /// partner's stroke to this canvas, as `PKDrawing.scaled` does to the
     /// finished one.
     func pencilKitStroke(predicted: [InkSample] = [], transform: CGAffineTransform = .identity) -> PKStroke {
-        let points = (samples + predicted).map(style.point(for:))
+        var points = (samples + predicted).map(style.point(for:))
+        // A masked stroke of one or two points is how a paint bucket fill
+        // looks (`ExquisiteCorpseFold`), so a dashed or dotted tap repeats
+        // its point.
+        if style.lineStyle != .solid, points.count < 3 {
+            points += repeatElement(points[points.count - 1], count: 3 - points.count)
+        }
+        let path = PKStrokePath(controlPoints: points, creationDate: creationDate)
         return PKStroke(
             ink: style.ink,
-            path: PKStrokePath(controlPoints: points, creationDate: creationDate),
+            path: path,
             transform: transform,
-            mask: nil,
+            mask: style.dashMask(along: path),
             randomSeed: seed
         )
     }

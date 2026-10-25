@@ -11,6 +11,9 @@ protocol WidgetDrawingToolControlling: AnyObject {
     var selectedColorChoiceID: String? { get }
     var selectedCGColor: CGColor { get }
     var isColorSelectionEnabled: Bool { get }
+    var selectedLineStyle: InkLineStyle { get }
+    /// The pen and the pencil draw lines. The paint bucket and the eraser do not.
+    var isLineStyleSelectionEnabled: Bool { get }
     var toolWidthFraction: CGFloat { get }
     /// The width the selected tool draws, in canvas points.
     var toolWidth: CGFloat { get }
@@ -24,6 +27,7 @@ protocol WidgetDrawingToolControlling: AnyObject {
     func selectCustomColor(_ color: CGColor)
     func updateToolWidthFraction(_ fraction: CGFloat)
     func setAdjustingToolWidth(_ isAdjusting: Bool)
+    func selectLineStyle(_ style: InkLineStyle)
     func undoDrawing()
     func redoDrawing()
     func handlePencilDoubleTap(_ action: PencilPreferredAction)
@@ -101,10 +105,21 @@ struct WidgetDrawingColorControlsView: View {
     }
 }
 
+/// The size slider, then the line style button.
 struct WidgetDrawingSizeControlsView: View {
     let viewModel: any WidgetDrawingToolControlling
 
     var body: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            slider
+            WidgetDrawingLineStyleMenu(viewModel: viewModel)
+        }
+        .padding(.leading, PaeoniaSpacing.space16)
+        .padding(.trailing, PaeoniaSpacing.space8)
+        .frame(maxWidth: 412)
+    }
+
+    private var slider: some View {
         Slider(
             value: Binding(
                 get: { viewModel.toolWidthFraction },
@@ -128,8 +143,6 @@ struct WidgetDrawingSizeControlsView: View {
         )
         .tint(isSizeEnabled ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
         .disabled(viewModel.selectedTool.isFill)
-        .padding(.horizontal, PaeoniaSpacing.space16)
-        .frame(maxWidth: 360)
     }
 
     /// The eraser has a size but no color. The paint bucket has neither.

@@ -84,6 +84,11 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         self == .fill
     }
 
+    /// The pen and the pencil draw lines, which can be dashed or dotted.
+    var drawsLines: Bool {
+        self == .pen || self == .pencil
+    }
+
     var systemImageName: String {
         switch self {
         case .pen:
@@ -111,13 +116,13 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
     }
 
     /// What a touch on the canvas does with this tool.
-    func canvasTool(color: UIColor, width: CGFloat) -> CanvasTool {
+    func canvasTool(color: UIColor, width: CGFloat, lineStyle: InkLineStyle) -> CanvasTool {
         let clampedWidth = clampedWidth(width)
         return switch self {
         case .pen:
-            .ink(InkStyle(kind: .pen, color: color, width: clampedWidth))
+            .ink(InkStyle(kind: .pen, color: color, width: clampedWidth, lineStyle: lineStyle))
         case .pencil:
-            .ink(InkStyle(kind: .pencil, color: color, width: clampedWidth))
+            .ink(InkStyle(kind: .pencil, color: color, width: clampedWidth, lineStyle: lineStyle))
         // The fill itself is made in `DrawingFloodFill` on a tap.
         case .fill:
             .fill
@@ -138,15 +143,15 @@ enum WidgetDrawingTool: CaseIterable, Equatable, Identifiable {
         return range.lowerBound + (range.upperBound - range.lowerBound) * clampedFraction
     }
 
-    /// How thick the line on the canvas is when PencilKit is given `width`.
-    /// Monoline draws twice the width. Rendering the points of real finger
-    /// strokes gave lines of 2, 11 and 24 points for widths 1, 5.4 and 12. The
-    /// pencil and the eraser draw about the width they are given.
+    /// How thick the line on the canvas is for `width`. The eraser erases
+    /// about the width it is given.
     func drawnWidth(_ width: CGFloat) -> CGFloat {
         switch self {
         case .pen, .fill:
-            width * 2
-        case .pencil, .eraser:
+            InkKind.pen.drawnWidth(width)
+        case .pencil:
+            InkKind.pencil.drawnWidth(width)
+        case .eraser:
             width
         }
     }

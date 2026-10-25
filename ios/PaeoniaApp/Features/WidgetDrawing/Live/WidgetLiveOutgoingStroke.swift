@@ -29,7 +29,8 @@ nonisolated struct WidgetLiveOutgoingStroke {
             side: Double(side),
             points: fresh.map(\.liveValues),
             width: Double(stroke.style.width),
-            seed: stroke.seed
+            seed: stroke.seed,
+            lineStyle: stroke.style.lineStyle.rawValue
         )
     }
 }

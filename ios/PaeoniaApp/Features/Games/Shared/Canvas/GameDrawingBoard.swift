@@ -14,6 +14,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     /// new round), so strokes drawn on the canvas are never pushed back into it.
     private(set) var drawingRevision = 0
     private(set) var selectedTool: WidgetDrawingTool = .pen
+    private(set) var selectedLineStyle: InkLineStyle = .solid
     private(set) var selectedColorChoiceID: String? = WidgetDrawingColorChoice.palette[0].id
     private(set) var selectedCGColor: CGColor = WidgetDrawingColorChoice.palette[0].uiColor.cgColor
     private(set) var toolWidthFraction: CGFloat = 0.4
@@ -49,7 +50,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     }
 
     var canvasTool: CanvasTool {
-        selectedTool.canvasTool(color: selectedUIColor, width: toolWidth)
+        selectedTool.canvasTool(color: selectedUIColor, width: toolWidth, lineStyle: selectedLineStyle)
     }
 
     /// The drawing at the size every phone exchanges.
@@ -63,6 +64,10 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
 
     var isColorSelectionEnabled: Bool {
         !selectedTool.isEraser
+    }
+
+    var isLineStyleSelectionEnabled: Bool {
+        selectedTool.drawsLines
     }
 
     func selectTool(_ tool: WidgetDrawingTool) {
@@ -97,6 +102,11 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
 
     func setAdjustingToolWidth(_ isAdjusting: Bool) {
         isAdjustingToolWidth = isAdjusting
+    }
+
+    func selectLineStyle(_ style: InkLineStyle) {
+        guard isLineStyleSelectionEnabled else { return }
+        selectedLineStyle = style
     }
 
     /// Apple Pencil double tap. It switches between the drawing tool and the

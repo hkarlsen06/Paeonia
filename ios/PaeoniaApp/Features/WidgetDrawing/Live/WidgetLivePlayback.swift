@@ -52,11 +52,12 @@ nonisolated struct WidgetLivePlayback {
         guard let kind = message.ink.flatMap(InkKind.init(rawValue:)),
               let color = message.color.flatMap(UIColor.init(liveComponents:)),
               let width = message.width.map({ CGFloat($0) }),
-              kind.validWidthRange.contains(width)
+              kind.validWidthRange.contains(width),
+              let lineStyle = message.lineStyle.flatMap(InkLineStyle.init(rawValue:))
         else {
             return nil
         }
-        return InkStyle(kind: kind, color: color, width: width)
+        return InkStyle(kind: kind, color: color, width: width, lineStyle: lineStyle)
     }
 
     mutating func end(_ id: String, now: TimeInterval) {

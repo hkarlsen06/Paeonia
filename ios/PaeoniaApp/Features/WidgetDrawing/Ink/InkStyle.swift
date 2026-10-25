@@ -28,6 +28,33 @@ nonisolated enum InkKind: String, Codable, Sendable {
             PKInkingTool.InkType.pencil.validWidthRange
         }
     }
+
+    /// How thick the line on the canvas is for `width`. Monoline draws twice
+    /// the width. Rendering the points of real finger strokes gave lines of
+    /// 2, 11 and 24 points for widths 1, 5.4 and 12. The pencil draws about
+    /// the width it is given.
+    func drawnWidth(_ width: CGFloat) -> CGFloat {
+        switch self {
+        case .pen:
+            width * 2
+        case .pencil:
+            width
+        }
+    }
+
+    /// How far the middle of the line sits from its points, toward each
+    /// point's azimuth. Rendering pencil strokes of widths 2.4 to 16 gave ink
+    /// from about a quarter of the width behind the points to three quarters
+    /// of it ahead, less a point. A finger's azimuth points down the screen,
+    /// so its pencil line sits below the finger.
+    func inkOffset(_ width: CGFloat) -> CGFloat {
+        switch self {
+        case .pen:
+            0
+        case .pencil:
+            max(0, width / 4 - 0.5)
+        }
+    }
 }
 
 /// Everything that decides how an ink stroke looks. It is taken when the
@@ -37,9 +64,27 @@ nonisolated struct InkStyle: Equatable, Sendable {
     var color: UIColor
     /// The width the size slider gives, in canvas points.
     var width: CGFloat
+    var lineStyle: InkLineStyle
 
     var ink: PKInk {
         PKInk(kind.inkType, color: color)
+    }
+
+    /// The ink a dashed or dotted line keeps along `path`, in the path's own
+    /// space, or nil for a solid line.
+    func dashMask(along path: PKStrokePath) -> UIBezierPath? {
+        let lineWidth = kind.drawnWidth(width)
+        guard let pattern = lineStyle.pattern(lineWidth: lineWidth) else {
+            return nil
+        }
+        let offset = kind.inkOffset(width)
+        let centerline = path.interpolatedPoints(by: .distance(InkDashMask.sampleSpacing)).map { point in
+            CGPoint(
+                x: point.location.x + offset * cos(point.azimuth),
+                y: point.location.y + offset * sin(point.azimuth)
+            )
+        }
+        return UIBezierPath(cgPath: InkDashMask.path(centerline: centerline, pattern: pattern, width: lineWidth))
     }
 
     /// The PencilKit point for one sample.

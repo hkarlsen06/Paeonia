@@ -145,6 +145,9 @@ struct WidgetLivePlaybackTests {
         var noSeed = liveMessage(id: "e", points: [livePoint])
         noSeed.seed = nil
         playback.receive(noSeed, now: 0)
+        var unknownLineStyle = liveMessage(id: "f", points: [livePoint])
+        unknownLineStyle.lineStyle = "wavy"
+        playback.receive(unknownLineStyle, now: 0)
         playback.receive(liveMessage(id: "b", points: [[10, 10, 0]]), now: 0)
         #expect(playback.isEmpty)
     }
@@ -152,7 +155,7 @@ struct WidgetLivePlaybackTests {
     /// The partner's preview is built from the same recipe as the stroke that
     /// lands on the sender's canvas, so nothing moves when the real one arrives.
     @Test func thePartnersPreviewIsTheSendersStrokeScaledToTheirCanvas() throws {
-        let style = InkStyle(kind: .pencil, color: .red, width: 9)
+        let style = InkStyle(kind: .pencil, color: .red, width: 9, lineStyle: .dashed)
         let samples = (0..<12).map { index in
             InkSample(
                 location: CGPoint(x: 20 + Double(index) * 7, y: 40 + Double(index % 3) * 5),
@@ -178,6 +181,10 @@ struct WidgetLivePlaybackTests {
         #expect(preview.ink.inkType == finished.ink.inkType)
         #expect(preview.transform == finished.transform)
         #expect(preview.path.count == finished.path.count)
+        let previewMask = try #require(preview.mask)
+        let finishedMask = try #require(finished.mask)
+        #expect(abs(previewMask.bounds.width - finishedMask.bounds.width) < 0.01)
+        #expect(abs(previewMask.bounds.minX - finishedMask.bounds.minX) < 0.01)
         for (shown, real) in zip(preview.path, finished.path) {
             #expect(abs(shown.location.x - real.location.x) < 0.001)
             #expect(abs(shown.location.y - real.location.y) < 0.001)
@@ -225,7 +232,8 @@ private func liveMessage(id: String, points: [[Double]]) -> WidgetLiveMessage {
         side: 320,
         points: points,
         width: 5,
-        seed: 7
+        seed: 7,
+        lineStyle: InkLineStyle.solid.rawValue
     )
 }
 

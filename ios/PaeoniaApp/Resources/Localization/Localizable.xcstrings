@@ -38336,6 +38336,78 @@
         }
       }
     },
+    "widgetDrawing.lineStyle.button" : {
+      "comment" : "Accessibility label for the button in the drawing screens that opens a menu of line styles (solid, dashed, dotted) for the pen and pencil.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Line style"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linjestil"
+          }
+        }
+      }
+    },
+    "widgetDrawing.lineStyle.dashed" : {
+      "comment" : "Menu option in the drawing screens: the pen or pencil draws a line of short dashes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dashed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stiplet"
+          }
+        }
+      }
+    },
+    "widgetDrawing.lineStyle.dotted" : {
+      "comment" : "Menu option in the drawing screens: the pen or pencil draws a line of dots.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dotted"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prikket"
+          }
+        }
+      }
+    },
+    "widgetDrawing.lineStyle.solid" : {
+      "comment" : "Menu option in the drawing screens: the pen or pencil draws an unbroken line.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solid"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heltrukken"
+          }
+        }
+      }
+    },
     "widgetDrawing.live.together" : {
       "comment" : "Short line above the drawing canvas while the partner has the same canvas open and both can see each other draw. %@ is the partner's name.",
       "extractionState" : "manual",

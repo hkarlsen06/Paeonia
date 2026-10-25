@@ -51,6 +51,7 @@ final class WidgetDrawingViewModel {
     /// bytes on every SwiftUI update.
     var drawingRevision = 0
     var selectedTool: WidgetDrawingTool = .pen
+    private(set) var selectedLineStyle: InkLineStyle = .solid
     var selectedColor: Color = .paeoniaWidgetDrawing
     private(set) var selectedCGColor: CGColor = UIColor.paeoniaWidgetDrawing.cgColor
     /// The tool before the current one, for Apple Pencil's "last used" double tap.
@@ -168,6 +169,10 @@ final class WidgetDrawingViewModel {
         !selectedTool.isEraser
     }
 
+    var isLineStyleSelectionEnabled: Bool {
+        selectedTool.drawsLines
+    }
+
     /// True when the canvas differs from the drawing on the widgets. Returns
     /// false again once edits are undone back to that drawing.
     var hasUnsavedEdits: Bool {
@@ -197,7 +202,7 @@ final class WidgetDrawingViewModel {
     }
 
     var canvasTool: CanvasTool {
-        selectedTool.canvasTool(color: selectedUIColor, width: toolWidth)
+        selectedTool.canvasTool(color: selectedUIColor, width: toolWidth, lineStyle: selectedLineStyle)
     }
 
     // MARK: - Tools
@@ -266,6 +271,13 @@ final class WidgetDrawingViewModel {
 
     func setAdjustingToolWidth(_ isAdjusting: Bool) {
         isAdjustingToolWidth = isAdjusting
+    }
+
+    func selectLineStyle(_ style: InkLineStyle) {
+        guard isLineStyleSelectionEnabled else {
+            return
+        }
+        selectedLineStyle = style
     }
 }
 

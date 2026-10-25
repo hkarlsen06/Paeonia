@@ -69,7 +69,7 @@ final class BoardMarkEditorModel {
     /// its shape matters. It uses the app's pen, which draws exactly the width it
     /// is given. PencilKit's own pen sizes finger strokes by speed.
     var tool: CanvasTool {
-        WidgetDrawingTool.pen.canvasTool(color: .white, width: Self.inkWidth)
+        WidgetDrawingTool.pen.canvasTool(color: .white, width: Self.inkWidth, lineStyle: .solid)
     }
 
     // MARK: Canvas
