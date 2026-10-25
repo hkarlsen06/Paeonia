@@ -43,9 +43,10 @@ export async function openPage(browser, { width, height, html, captures, font })
 // one panel; spec.x and spec.height are fractions of it. A phone's visual centre, the middle of its
 // outline on screen, sits halfway between the bottom of its panel's caption and the bottom of the
 // panel. A spec with spotlight dims the screen around spotlights[spec.screen], an element's frame
-// in capture pixels. Its { dim, padding, radius, feather, outline } are the darkening (0 to 1), the
-// room left around the element, the corner radius and the soft edge in pixels, and the colour of a
-// thin line around the lit area. Returns the centres in pixels; throws if the layout is broken.
+// in capture pixels. Its { dim, padding, radius, feather, lift, glow } are the darkening (0 to 1),
+// the room left around the element, the corner radius and the soft edge in pixels, how much larger
+// the lit element is drawn, and the colour of its glowing outline and sparkles. Returns the centres
+// in pixels; throws if the layout is broken.
 export async function renderPhones({ phones, finish, W, H, captures, spotlights }) {
   const { THREE, RoomEnvironment, RoundedBoxGeometry, mergeVertices } = window.lib;
   // iPhone 17 Pro Max in millimetres. B is the radius of the rounded frame edge.
@@ -108,6 +109,82 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
   glass.position.z = depth / 2 + 0.01;
   phone.add(glass);
 
+  // Darkens the screen around element, an element's frame in capture pixels, so the element is the
+  // first thing the eye finds even in the small preview strip. The element is drawn again a little
+  // larger with a soft shadow under it, so it lifts off the dimmed screen, and gets a glowing
+  // outline with a few sparkles on it. The capture sits at x0, y0 on the screen canvas.
+  function spotlight(c, capture, x0, y0, element, { dim, padding, radius, feather, lift, glow }) {
+    const { width: w, height: h } = c.canvas;
+    const lit = { x: x0 + element.x - padding, y: y0 + element.y - padding,
+      width: element.width + 2 * padding, height: element.height + 2 * padding };
+    const cx = lit.x + lit.width / 2, cy = lit.y + lit.height / 2;
+    const scaled = { width: lit.width * lift, height: lit.height * lift };
+    scaled.x = cx - scaled.width / 2;
+    scaled.y = cy - scaled.height / 2;
+    // The shade is cut out with an opaque blurred shape that ends a feather beyond the lit area.
+    // The fill is opaque, because destination-out removes only as much shade as the fill's alpha.
+    const shade = document.createElement('canvas');
+    shade.width = w; shade.height = h;
+    const s = shade.getContext('2d');
+    s.fillStyle = `rgba(0, 0, 0, ${dim})`;
+    s.fillRect(0, 0, w, h);
+    s.globalCompositeOperation = 'destination-out';
+    s.filter = `blur(${feather / 2}px)`;
+    s.fillStyle = '#000';
+    s.beginPath();
+    s.roundRect(scaled.x - feather, scaled.y - feather, scaled.width + 2 * feather, scaled.height + 2 * feather,
+      radius + feather);
+    s.fill();
+    c.drawImage(shade, 0, 0);
+
+    const card = new Path2D();
+    card.roundRect(scaled.x, scaled.y, scaled.width, scaled.height, radius * lift);
+    c.save();
+    c.shadowColor = '#12030cb3';
+    c.shadowBlur = 60;
+    c.shadowOffsetY = 24;
+    c.fillStyle = '#2a0b1d';
+    c.fill(card);
+    c.restore();
+    c.save();
+    c.clip(card);
+    c.drawImage(capture, lit.x - x0, lit.y - y0, lit.width, lit.height,
+      scaled.x, scaled.y, scaled.width, scaled.height);
+    c.restore();
+
+    c.save();
+    c.strokeStyle = glow;
+    c.shadowColor = glow;
+    for (const [lineWidth, blur] of [[14, 70], [8, 36], [5, 12]]) {
+      c.lineWidth = lineWidth;
+      c.shadowBlur = blur;
+      c.stroke(card);
+    }
+    c.restore();
+
+    // Four-pointed sparkles on the outline, where a corner rounds off and midway along two sides.
+    const sparkle = (x, y, size) => {
+      c.save();
+      c.translate(x, y);
+      c.shadowColor = glow;
+      c.shadowBlur = size * 0.9;
+      c.fillStyle = '#fff6fa';
+      c.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2;
+        c.lineTo(Math.cos(a) * size, Math.sin(a) * size);
+        c.quadraticCurveTo(0, 0, Math.cos(a + Math.PI / 2) * size, Math.sin(a + Math.PI / 2) * size);
+      }
+      c.fill();
+      c.restore();
+    };
+    const corner = radius * lift * (1 - Math.SQRT1_2);
+    sparkle(scaled.x + scaled.width - corner, scaled.y + corner, 34);
+    sparkle(scaled.x, scaled.y + scaled.height * 0.62, 22);
+    sparkle(scaled.x + scaled.width * 0.3, scaled.y + scaled.height, 26);
+    sparkle(scaled.x + scaled.width + 10, scaled.y + scaled.height * 0.4, 14);
+  }
+
   // Shrink long translations until they fit their panel and break no word.
   await document.fonts.ready;
   const captionBottoms = [];
@@ -151,31 +228,7 @@ export async function renderPhones({ phones, finish, W, H, captures, spotlights 
     c.roundRect(x0, y0, cw, ch, 186);
     c.clip();
     c.drawImage(capture, x0, y0);
-    if (spec.spotlight) {
-      const { dim, padding, radius, feather, outline: line } = spec.spotlight, element = spotlights[spec.screen];
-      const lit = { x: x0 + element.x - padding, y: y0 + element.y - padding,
-        width: element.width + 2 * padding, height: element.height + 2 * padding };
-      // The shade is cut out with a blurred shape that ends a feather beyond the lit area, so the
-      // lit area stays at full brightness and the darkening fades in outside it.
-      const shade = document.createElement('canvas');
-      shade.width = canvas.width; shade.height = canvas.height;
-      const s = shade.getContext('2d');
-      s.fillStyle = `rgba(0, 0, 0, ${dim})`;
-      s.fillRect(0, 0, canvas.width, canvas.height);
-      s.globalCompositeOperation = 'destination-out';
-      s.filter = `blur(${feather / 2}px)`;
-      s.beginPath();
-      s.roundRect(lit.x - feather, lit.y - feather, lit.width + 2 * feather, lit.height + 2 * feather, radius + feather);
-      s.fill();
-      c.drawImage(shade, 0, 0);
-      if (line) {
-        c.strokeStyle = line;
-        c.lineWidth = 3;
-        c.beginPath();
-        c.roundRect(lit.x, lit.y, lit.width, lit.height, radius);
-        c.stroke();
-      }
-    }
+    if (spec.spotlight) spotlight(c, capture, x0, y0, spotlights[spec.screen], spec.spotlight);
     c.restore();
     c.fillStyle = '#000';
     c.beginPath();
