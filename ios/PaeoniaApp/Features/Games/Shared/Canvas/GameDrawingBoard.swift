@@ -17,7 +17,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     private(set) var selectedLineStyle: InkLineStyle = .solid
     private(set) var selectedColorChoiceID: String? = WidgetDrawingColorChoice.palette[0].id
     private(set) var selectedCGColor: CGColor = WidgetDrawingColorChoice.palette[0].uiColor.cgColor
-    private(set) var toolWidthFraction: CGFloat = 0.4
+    private(set) var toolWidthFraction = DrawingToolSizes.fraction(for: .pen)
     private(set) var isAdjustingToolWidth = false
     /// The side of the square canvas on screen, in points. Zero until laid out.
     private(set) var canvasSide: CGFloat = 0
@@ -77,6 +77,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
             lastDrawingTool = selectedTool
         }
         selectedTool = tool
+        toolWidthFraction = DrawingToolSizes.fraction(for: tool)
     }
 
     func selectColorChoice(_ choice: WidgetDrawingColorChoice) {
@@ -98,6 +99,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
         let clamped = min(max(0, fraction), 1)
         guard toolWidthFraction != clamped else { return }
         toolWidthFraction = clamped
+        DrawingToolSizes.save(clamped, for: selectedTool)
     }
 
     func setAdjustingToolWidth(_ isAdjusting: Bool) {

@@ -66,8 +66,9 @@ final class WidgetDrawingViewModel {
     @ObservationIgnored weak var canvasView: PKCanvasView?
 
     /// Slider position in `0...1`. The actual PencilKit width is derived per tool
-    /// so the slider always spans the selected tool's full width range.
-    private(set) var toolWidthFraction: CGFloat = 0.4
+    /// so the slider always spans the selected tool's full width range. Each
+    /// tool keeps its own (`DrawingToolSizes`).
+    private(set) var toolWidthFraction = DrawingToolSizes.fraction(for: .pen)
     private(set) var isAdjustingToolWidth = false
 
     var toolWidth: CGFloat {
@@ -221,9 +222,8 @@ final class WidgetDrawingViewModel {
         if !selectedTool.isEraser {
             lastDrawingTool = selectedTool
         }
-        // The width re-derives from the same fraction against the new tool's
-        // range, so the slider keeps its relative position across tools.
         selectedTool = tool
+        toolWidthFraction = DrawingToolSizes.fraction(for: tool)
     }
 
     /// Apple Pencil double tap, following the choice in Settings > Apple
@@ -272,6 +272,7 @@ final class WidgetDrawingViewModel {
         }
 
         toolWidthFraction = clampedFraction
+        DrawingToolSizes.save(clampedFraction, for: selectedTool)
     }
 
     func setAdjustingToolWidth(_ isAdjusting: Bool) {
