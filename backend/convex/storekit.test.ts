@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import crons from "./crons";
 import { newUuid } from "./lib/ids";
 import { isFreeTrialPayload } from "./lib/storekit";
+import { deliverDuePushes } from "./push.testing";
 import { seedProducts, storekitArgs } from "./storekit.testHelpers";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
 
@@ -16,6 +17,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
 });
 
 async function tokenFor(user: TestUser): Promise<string> {
@@ -497,7 +499,7 @@ describe("expire_stale_entitlements", () => {
 });
 
 describe("queue_subscription_trial_reminders", () => {
-  type Seed = { id: string; userId: string };
+  type Seed = { id: string; userId: string; user: TestUser };
 
   async function trial(
     t: TestConvex,
@@ -513,7 +515,7 @@ describe("queue_subscription_trial_reminders", () => {
     for (const locale of options.devices ?? ["en"]) {
       await addDevice(t, user.userId, { locale, token: `${name}-${locale}` });
     }
-    return await t.run(async (ctx) => {
+    const id = await t.run(async (ctx) => {
       const product = await ctx.db
         .query("subscription_products")
         .withIndex("by_apple_product_id", (q) => q.eq("apple_product_id", "no.paeonia.couple.year"))
@@ -546,8 +548,9 @@ describe("queue_subscription_trial_reminders", () => {
         created_at: now,
         updated_at: now,
       });
-      return { id, userId: user.userId };
+      return id;
     });
+    return { id, userId: user.userId, user };
   }
 
   async function reminders(t: TestConvex): Promise<Doc<"notification_outbox">[]> {
@@ -620,6 +623,93 @@ describe("queue_subscription_trial_reminders", () => {
     expect(row.body).toBe("1 day left. Review your subscription in the App Store.");
     expect(row.payload).toMatchObject({ days_left: 1 });
     expect(row.scheduled_for).toBe(NOW.toISOString());
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("skips a trial whose renewal is off, and drops a queued reminder when renewal turns off", async () => {
+    const t = newTest();
+    await seedProducts(t);
+    const { patchStorekitTransaction } = await import("./lib/storekit");
+    const setRenewalOff = (seed: Seed, value: true | undefined) =>
+      t.run(async (ctx) => {
+        const tx = await ctx.db.query("storekit_transactions").withIndex("by_uuid", (q) => q.eq("id", seed.id)).unique();
+        await patchStorekitTransaction(ctx, tx!, { auto_renew_off: value });
+      });
+    const queue = () => t.mutation(internal.storekit.queue_subscription_trial_reminders, {});
+    const off = await trial(t, "renewal-off", { expiresInHours: 48.5 });
+    const on = await trial(t, "renewal-on", { expiresInHours: 48.5 });
+    await setRenewalOff(off, true);
+    expect(await queue()).toBe(1);
+    expect((await reminders(t)).map((row) => row.recipient_user_id)).toEqual([on.userId]);
+
+    // Turned off after it was queued: the write removes it, and turning renewal back on queues it again.
+    await setRenewalOff(on, true);
+    expect(await reminders(t)).toEqual([]);
+    expect(await queue()).toBe(0);
+    await setRenewalOff(on, undefined);
+    expect(await queue()).toBe(1);
+
+    // A queued reminder whose renewal is off by the send is dropped there too.
+    await t.run(async (ctx) => {
+      const tx = await ctx.db.query("storekit_transactions").withIndex("by_uuid", (q) => q.eq("id", on.id)).unique();
+      await ctx.db.patch(tx!._id, { auto_renew_off: true });
+    });
+    vi.setSystemTime(new Date(hoursFromNow(1)));
+    expect(await deliverDuePushes(t)).toEqual([]);
+    expect((await reminders(t)).map((row) => row.last_error)).toEqual(["notification is out of date"]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("tells a payer whose partner has not joined yet, as it stands when the push goes out", async () => {
+    vi.stubEnv("INVITE_CODE_PEPPER", "test-pepper-value-for-pairing-invite-hashes");
+    const t = newTest();
+    await seedProducts(t);
+    let sequence = 0;
+    const operation = () => ({
+      p_client_operation_id: newUuid(),
+      p_client_id: newUuid(),
+      p_client_sequence: ++sequence,
+      p_local_created_at: new Date().toISOString(),
+    });
+    const partnerJoins = async (payer: Seed, code: string) => {
+      await payer.user.as.mutation(api.pairing.create_pairing_invite, {
+        p_invite_code: code,
+        ...operation(),
+        p_expires_at: hoursFromNow(24 * 30),
+      });
+      const partner = await createSignedInUser(t, { name: "Partner" });
+      await partner.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: code, ...operation() });
+    };
+    const alone = await trial(t, "alone", { expiresInHours: 10, devices: ["en", "nb-NO"] });
+    const paired = await trial(t, "paired", { expiresInHours: 48.5 });
+    const joinsLater = await trial(t, "joins-later", { expiresInHours: 48.5 });
+    await partnerJoins(paired, "ABC123");
+    expect(await t.mutation(internal.storekit.queue_subscription_trial_reminders, {})).toBe(4);
+    // This partner joins after the reminder was queued, before it goes out.
+    await partnerJoins(joinsLater, "K7M2PQ");
+
+    vi.setSystemTime(new Date(hoursFromNow(1)));
+    const recipientOf = new Map((await reminders(t)).map((row) => [row.target_device_id, row.recipient_user_id]));
+    const sent = (await deliverDuePushes(t))
+      .filter((push) => push.payload.type === "subscription_trial_reminder")
+      .map((push) => [recipientOf.get(push.target_device_id), push.title, push.body]);
+    expect(sent).toHaveLength(4);
+    expect(sent).toEqual(
+      expect.arrayContaining([
+        [
+          alone.userId,
+          "Your free trial ends soon",
+          "1 day left, and your partner hasn't joined yet. Review your subscription in the App Store.",
+        ],
+        [
+          alone.userId,
+          "Prøveperioden avsluttes snart",
+          "1 dag igjen, og partneren din har ikke blitt med ennå. Se over abonnementet ditt i App Store.",
+        ],
+        [paired.userId, "Your free trial ends soon", "2 days left. Review your subscription in the App Store."],
+        [joinsLater.userId, "Your free trial ends soon", "2 days left. Review your subscription in the App Store."],
+      ]),
+    );
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

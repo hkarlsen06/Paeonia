@@ -235,7 +235,9 @@ const TRIAL_REMINDER_DAYS_BEFORE_END = 2;
  * Port of `internal.queue_subscription_trial_reminders` (pg_cron job
  * `queue-subscription-trial-reminders`, `15 * * * *`). Queues one reminder per
  * device for verified initial free trials that end within the next two days and
- * an hour. Returns the number of outbox rows queued.
+ * an hour, unless renewal is off. `prepare_notification` writes the body at the send, and it
+ * tells a payer in no couple that their partner has not joined yet. Returns the number of outbox
+ * rows queued.
  */
 export const queue_subscription_trial_reminders = internalMutation({
   args: { p_batch_size: v.optional(v.union(v.null(), v.number())) },
@@ -259,6 +261,9 @@ export const queue_subscription_trial_reminders = internalMutation({
     for (const tx of candidates) {
       if (picked >= batchSize) break;
       if (tx.transaction_id !== tx.original_transaction_id || !tx.expires_at) continue;
+      // With renewal off the trial ends without a charge, and the payer hears of the end from the
+      // ending push (`queue_subscription_ending_reminders`) instead.
+      if (tx.auto_renew_off === true) continue;
       const product = await getByUuid(ctx, "subscription_products", tx.product_id);
       if (!product || !product.is_active || product.kind !== "couple_subscription") continue;
 

@@ -147,7 +147,8 @@ export async function patchStorekitTransaction(
   const expiryChanged = "expires_at" in patch && patch.expires_at !== tx.expires_at;
   const renewalChanged = "auto_renew_off" in patch && patch.auto_renew_off !== tx.auto_renew_off;
   await ctx.db.patch(tx._id, withUpdatedAt(patch));
-  if (statusChanged || expiryChanged) {
+  // A renewal change also drops the trial reminder, so the next cron run queues it only while renewal is on.
+  if (statusChanged || expiryChanged || renewalChanged) {
     await invalidateSubscriptionTrialReminder(ctx, tx.id);
   }
   if (renewalChanged || statusChanged || expiryChanged) {

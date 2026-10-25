@@ -4,11 +4,11 @@ import type { Doc } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
 import { isQuietNight, notificationStaleAt, type PreparedNotification, type PreparedWidgetPush } from "./lib/apns";
 import type { WriterCtx } from "./lib/db";
-import { isActiveCoupleMember } from "./lib/access";
+import { findCurrentCouple, isActiveCoupleMember } from "./lib/access";
 import { badgeCountForUser } from "./lib/badges";
 import { getByUuid, withTouch } from "./lib/db";
 import { isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPartnerPush";
-import { notificationAlertTitle } from "./lib/notificationCopy";
+import { notificationAlertTitle, subscriptionTrialReminderBody } from "./lib/notificationCopy";
 import { gamePushStillWanted } from "./lib/gameRegistry";
 import type { GamePushKind } from "./lib/games";
 import { uuidArg } from "./lib/ids";
@@ -167,6 +167,14 @@ async function rowStillWanted(
   if (row.kind === "subscription_ending" && !(await accessEndingPushStillWanted(ctx, recipientUserId, payload))) {
     return { wanted: false, reason: "out_of_date" };
   }
+  // Renewal turned off since the trial reminder was queued: the ending push tells of the same end.
+  if (row.kind === "subscription_trial_reminder") {
+    const tx =
+      typeof payload.subscription_id === "string"
+        ? await getByUuid(ctx, "storekit_transactions", payload.subscription_id)
+        : null;
+    if (tx?.auto_renew_off === true) return { wanted: false, reason: "out_of_date" };
+  }
   return { wanted: true };
 }
 
@@ -222,6 +230,21 @@ async function freshTitle(
 }
 
 /**
+ * The body an alert goes out with. Most rows keep the body written when they were queued. The
+ * trial reminder says whether the payer's partner has joined, so it is written again from the
+ * payer's couple now, and a partner who joined after the row was queued gets the ordinary body.
+ */
+async function freshBody(
+  ctx: WriterCtx,
+  row: Doc<"notification_outbox">,
+  device: Doc<"user_devices">,
+): Promise<string | null> {
+  if (row.kind !== "subscription_trial_reminder") return row.body ?? null;
+  const partnerJoined = (await findCurrentCouple(ctx, device.user_id)) !== null;
+  return subscriptionTrialReminderBody(row.payload, device.locale, partnerJoined);
+}
+
+/**
  * Runs right before each send, so a row queued for later is checked when it is due. Fails the row
  * when its device is gone or disabled, the user turned its kind off, its couple or game turn no
  * longer needs it, or its reminder passed. A partner's daily answer push decides here what it says.
@@ -266,7 +289,7 @@ export const prepare_notification = internalMutation({
       apns_push_type: row.apns_push_type,
       apns_collapse_id: row.apns_collapse_id ?? null,
       title: await freshTitle(ctx, sendable, device),
-      body: sendable.body ?? null,
+      body: await freshBody(ctx, sendable, device),
       payload: sendable.payload,
       deliver_quietly: await deliverQuietly(ctx, sendable, device),
       badge: await sendBadge(ctx, sendable, device.user_id),

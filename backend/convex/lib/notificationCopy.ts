@@ -286,8 +286,6 @@ export function notificationAlertBody(
   locale: string | null | undefined,
 ): string | null {
   const language = notificationLocaleLanguage(locale);
-  const rawDaysLeft = payload.days_left === undefined || payload.days_left === null ? null : String(payload.days_left);
-  const daysLeft = Math.max(rawDaysLeft !== null && /^[0-9]+$/.test(rawDaysLeft) ? Number(rawDaysLeft) : 2, 1);
   const nb = language === "nb";
   const step = GAME_PUSH_KINDS.includes(kind) ? gamePushStep(payload, language) : null;
   if (step) return step.body;
@@ -379,9 +377,8 @@ export function notificationAlertBody(
           return nb ? "Noe lite holder, som en melding eller en tegning." : "Anything small counts, like a message or a drawing.";
       }
     case "subscription_trial_reminder":
-      return nb
-        ? `${daysLeft}${daysLeft === 1 ? " dag igjen. " : " dager igjen. "}Se over abonnementet ditt i App Store.`
-        : `${daysLeft}${daysLeft === 1 ? " day left. " : " days left. "}Review your subscription in the App Store.`;
+      // The queued copy. `prepare_notification` writes it again with the payer's couple at the send.
+      return subscriptionTrialReminderBody(payload, locale, true);
     case "subscription_payment_failed":
       return nb
         ? "Oppdater betalingsinformasjonen i App Store for å beholde Paeonia for dere begge."
@@ -398,6 +395,29 @@ export function notificationAlertBody(
     default:
       return null;
   }
+}
+
+/**
+ * The trial reminder body. `partnerJoined` is whether the payer is in a couple when the push goes
+ * out, so a payer whose partner never joined is told so, and one whose partner joined is not.
+ */
+export function subscriptionTrialReminderBody(
+  payload: Record<string, unknown>,
+  locale: string | null | undefined,
+  partnerJoined: boolean,
+): string {
+  const rawDaysLeft = payload.days_left === undefined || payload.days_left === null ? null : String(payload.days_left);
+  const daysLeft = Math.max(rawDaysLeft !== null && /^[0-9]+$/.test(rawDaysLeft) ? Number(rawDaysLeft) : 2, 1);
+  if (notificationLocaleLanguage(locale) === "nb") {
+    const left = `${daysLeft} ${daysLeft === 1 ? "dag" : "dager"} igjen`;
+    return partnerJoined
+      ? `${left}. Se over abonnementet ditt i App Store.`
+      : `${left}, og partneren din har ikke blitt med ennå. Se over abonnementet ditt i App Store.`;
+  }
+  const left = `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`;
+  return partnerJoined
+    ? `${left}. Review your subscription in the App Store.`
+    : `${left}, and your partner hasn't joined yet. Review your subscription in the App Store.`;
 }
 
 /**
