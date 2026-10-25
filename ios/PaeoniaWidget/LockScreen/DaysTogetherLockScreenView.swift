@@ -36,7 +36,7 @@ struct DaysTogetherLockScreenView: View {
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
-                    Text(.widgetLockScreenDaysTogetherUnit)
+                    Text(.widgetLockScreenDaysTogetherUnit(count: model.days))
                         .font(.system(size: 9, weight: .medium, design: .rounded))
                 }
             }

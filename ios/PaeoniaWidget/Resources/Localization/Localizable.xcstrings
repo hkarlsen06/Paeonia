@@ -665,19 +665,63 @@
       }
     },
     "widget.lockScreen.daysTogether.unit" : {
-      "comment" : "Tiny label under the day count in the round days together widget. Space is very tight.",
+      "comment" : "Tiny label under the day count in the round days together widget. The count itself shows above, so this is only the word. Space is very tight.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "days"
+            "value" : "%#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "day"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "days"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "dager"
+            "value" : "%#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "dag"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "dager"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
