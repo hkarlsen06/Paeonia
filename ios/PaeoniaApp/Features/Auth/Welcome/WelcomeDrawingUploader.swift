@@ -1,16 +1,17 @@
 import Foundation
 
 /// The drawing screen's uploader before sign-in. There is no account to send to, so a
-/// send only marks the drawing as the first-day drawing that waits, the same marker
-/// `FirstDayDrawingUploadService` writes. After sign-in the invite screen finds it and
-/// sends the drawing saved on this phone to the first day draft.
+/// send only marks the drawing as the first-day drawing that waits, in the welcome
+/// flow's own marker (`WelcomeDrawingStorage`). At sign-in `WelcomeFlowModel` moves it
+/// to the marker `FirstDayDrawingUploadService` reads, and the invite screen sends the
+/// drawing to the first day draft.
 ///
 /// To the drawing screen a send is done, and nothing is pending. Its waiting state says
 /// the drawing goes out once the phone is online, which is not true before sign-in.
 actor WelcomeDrawingUploader: WidgetCanvasUploading {
     private let pendingStore: WidgetPendingUploadStore
 
-    init(pendingStore: WidgetPendingUploadStore = .shared) {
+    init(pendingStore: WidgetPendingUploadStore = WelcomeDrawingStorage.pendingUploads) {
         self.pendingStore = pendingStore
     }
 

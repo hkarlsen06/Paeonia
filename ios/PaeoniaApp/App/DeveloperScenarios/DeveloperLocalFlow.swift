@@ -67,8 +67,14 @@
       let storeKitService = DeveloperScenarioStoreKitService()
       let widgetCanvasService = DeveloperWidgetCanvasService()
       self.widgetCanvasService = widgetCanvasService
-      // The first drawing's "not sent yet" marker, made before sign-in and sent from the
-      // invite screen. Every local flow starts without one.
+      // The first drawing's "not sent yet" markers: the welcome flow's before sign-in,
+      // and the widget's, which the invite screen sends from. Every local flow starts
+      // without them.
+      let welcomePendingUploads = WidgetPendingUploadStore(
+        defaults: DeveloperInviterFixture.defaults,
+        key: WelcomeDrawingStorage.pendingUploadKey
+      )
+      welcomePendingUploads.clearAll()
       let pendingUploads = WidgetPendingUploadStore(defaults: DeveloperInviterFixture.defaults)
       pendingUploads.clearAll()
       let firstDayStartedOnQueue = FirstDayStartedOnQueue(
@@ -87,10 +93,11 @@
         welcomeFlow: WelcomeFlowModel(
           store: InMemoryWelcomeFlowStore(),
           funnel: NoOpWelcomeFunnelRecorder(),
-          canvas: widgetCanvasService,
-          pendingUploads: pendingUploads,
-          startDateQueue: firstDayStartedOnQueue,
-          phoneHasNoOtherAccount: { true }
+          canvas: DeveloperWidgetCanvasService(),
+          pendingUploads: welcomePendingUploads,
+          widgetCanvas: widgetCanvasService,
+          widgetPendingUploads: pendingUploads,
+          startDateQueue: firstDayStartedOnQueue
         )
       )
 

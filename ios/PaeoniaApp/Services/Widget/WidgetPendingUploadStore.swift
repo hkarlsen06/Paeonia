@@ -65,17 +65,19 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
     nonisolated static let shared = WidgetPendingUploadStore()
 
     private let defaults: UserDefaults
-    private let key = "paeonia.widgetCanvas.pendingUpload"
+    private let key: String
     private let retryDelay: TimeInterval
 
     init(
         defaults: UserDefaults? = nil,
+        key: String = "paeonia.widgetCanvas.pendingUpload",
         // Short enough that a reconnect soon after a failed send retries it.
         retryDelay: TimeInterval = 20
     ) {
         self.defaults = defaults
             ?? UserDefaults(suiteName: PaeoniaAppGroup.identifier)
             ?? .standard
+        self.key = key
         self.retryDelay = retryDelay
     }
 

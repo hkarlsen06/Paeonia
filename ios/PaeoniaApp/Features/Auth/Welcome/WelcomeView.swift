@@ -200,8 +200,7 @@ struct WelcomeView: View {
     WelcomeView(
         model: WelcomeFlowModel(
             store: InMemoryWelcomeFlowStore(),
-            funnel: NoOpWelcomeFunnelRecorder(),
-            phoneHasNoOtherAccount: { true }
+            funnel: NoOpWelcomeFunnelRecorder()
         ),
         onSubmitInviteCode: { _ in }
     )

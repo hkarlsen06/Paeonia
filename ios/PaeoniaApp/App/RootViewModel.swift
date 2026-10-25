@@ -152,12 +152,11 @@ final class RootViewModel {
         // The same split for the signed-out flow: tests and scenarios keep its notes
         // in memory and count nothing.
         self.welcomeFlow = welcomeFlow ?? (syncService == nil
-            ? WelcomeFlowModel(phoneHasNoOtherAccount: { resolvedOwnerStore.ownerUserID == nil })
+            ? WelcomeFlowModel()
             : WelcomeFlowModel(
                 store: InMemoryWelcomeFlowStore(),
                 funnel: NoOpWelcomeFunnelRecorder(),
-                startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: InMemoryPendingSyncOperationRepository()),
-                phoneHasNoOtherAccount: { resolvedOwnerStore.ownerUserID == nil }
+                startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: InMemoryPendingSyncOperationRepository())
             ))
         self.savedAccessGracePeriod = savedAccessGracePeriod
     }

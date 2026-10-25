@@ -7,8 +7,7 @@ enum WelcomeStep: Equatable {
     case welcome
     /// When the couple got together. Only on the start path.
     case startDate
-    /// The first drawing for the partner's Home Screen. Only on the start path, and
-    /// only when the phone holds no other account's data.
+    /// The first drawing for the partner's Home Screen. Only on the start path.
     case drawing
     case signIn(WelcomeSignInMode)
 }
@@ -27,16 +26,18 @@ enum WelcomeSignInMode: Equatable {
 /// something they made.
 ///
 /// The start date waits in `store` until there is a session (`sessionStarted`), then
-/// goes into the pending sync operations. A sent drawing needs no carryover of its own:
-/// the canvas service saves it on the phone, `WelcomeDrawingUploader` marks it as the
-/// first-day drawing that waits, and the invite screen sends it after sign-in
+/// goes into the pending sync operations. A sent drawing waits in the welcome flow's own
+/// canvas and "not sent yet" marker (`WelcomeDrawingStorage`), which another account's
+/// data on this phone never mixes with. Once there is a session, and another account's
+/// data has been cleared, `sessionStarted` moves it to the widget's canvas and marks it
+/// as the first-day drawing that waits, and the invite screen sends it
 /// (`InviterFirstDayModel.load`). Strokes not sent yet are a draft under a made-up ID
 /// from `store`, so they survive Back and a relaunch, and go away at sign-in.
 ///
 /// A doodle on the welcome widget comes along on the start path. It waits in `store`
 /// until the drawing screen has loaded, which adds it to the draft one stroke at a time,
-/// so undo takes it off like strokes drawn there. Every other way out of welcome drops
-/// it, and so does a phone that skips the drawing step.
+/// so undo takes it off like strokes drawn there. Choosing to join or to sign in to an
+/// existing account drops it with the first drawing.
 @MainActor
 @Observable
 final class WelcomeFlowModel {
@@ -44,37 +45,39 @@ final class WelcomeFlowModel {
 
     @ObservationIgnored private let store: any WelcomeFlowStoring
     @ObservationIgnored private let funnel: any WelcomeFunnelRecording
+    /// The first drawing's canvas and marker before sign-in.
     @ObservationIgnored private let canvas: any WidgetCanvasManaging
-    @ObservationIgnored private let rasterizer: any WidgetDrawingRasterizing
     @ObservationIgnored private let pendingUploads: WidgetPendingUploadStore
+    /// The widget's canvas and marker, where the first drawing goes at sign-in.
+    @ObservationIgnored private let widgetCanvas: any WidgetCanvasManaging
+    @ObservationIgnored private let widgetPendingUploads: WidgetPendingUploadStore
+    @ObservationIgnored private let rasterizer: any WidgetDrawingRasterizing
     @ObservationIgnored private let startDateQueue: FirstDayStartedOnQueue
     @ObservationIgnored private let drawingDrafts: any WidgetDrawingDraftStoring
     /// The drawing screen's view model, kept while the flow runs so Back and Continue
     /// return to the same canvas.
     @ObservationIgnored private var drawingScreen: WidgetDrawingViewModel?
-    /// False while the phone still holds data of an account whose session ended
-    /// without a sign-out. That data shows on the canvas, and signing in as someone
-    /// else clears it, so the drawing step is left out then.
-    @ObservationIgnored private let phoneHasNoOtherAccount: @MainActor () -> Bool
 
     init(
         store: any WelcomeFlowStoring = UserDefaultsWelcomeFlowStore(),
         funnel: any WelcomeFunnelRecording = WelcomeFunnelRecorder.shared,
-        canvas: any WidgetCanvasManaging = WidgetCanvasService.shared,
+        canvas: any WidgetCanvasManaging = WelcomeDrawingStorage.canvas,
+        pendingUploads: WidgetPendingUploadStore = WelcomeDrawingStorage.pendingUploads,
+        widgetCanvas: any WidgetCanvasManaging = WidgetCanvasService.shared,
+        widgetPendingUploads: WidgetPendingUploadStore = .shared,
         rasterizer: any WidgetDrawingRasterizing = WidgetDrawingRasterizer(),
-        pendingUploads: WidgetPendingUploadStore = .shared,
         startDateQueue: FirstDayStartedOnQueue = FirstDayStartedOnQueue(),
-        drawingDrafts: any WidgetDrawingDraftStoring = FileWidgetDrawingDraftStore.shared,
-        phoneHasNoOtherAccount: @escaping @MainActor () -> Bool
+        drawingDrafts: any WidgetDrawingDraftStoring = FileWidgetDrawingDraftStore.shared
     ) {
         self.store = store
         self.funnel = funnel
         self.canvas = canvas
-        self.rasterizer = rasterizer
         self.pendingUploads = pendingUploads
+        self.widgetCanvas = widgetCanvas
+        self.widgetPendingUploads = widgetPendingUploads
+        self.rasterizer = rasterizer
         self.startDateQueue = startDateQueue
         self.drawingDrafts = drawingDrafts
-        self.phoneHasNoOtherAccount = phoneHasNoOtherAccount
         // Someone who signed in on this phone before gets sign-in for returning. A saved
         // invite code moves on to sign-in for joining (`inviteCodeSaved`).
         step = store.hasSignedInBefore ? .signIn(.returning) : .welcome
@@ -91,7 +94,7 @@ final class WelcomeFlowModel {
     func chooseStart(carrying doodle: WelcomeCarriedDoodle?) {
         funnel.record(.startChosen)
         PaeoniaHaptics.selection()
-        if let doodle, phoneHasNoOtherAccount() {
+        if let doodle {
             store.carriedDoodle = store.carriedDoodle?.adding(doodle) ?? doodle
         }
         step = .startDate
@@ -105,14 +108,14 @@ final class WelcomeFlowModel {
     func chooseReturning() {
         funnel.record(.returningChosen)
         store.startDate = nil
-        store.carriedDoodle = nil
+        forgetDrawing()
         step = .signIn(.returning)
     }
 
     /// A partner's code was saved, from the welcome step, the sign-in step or a link.
     func inviteCodeSaved() {
         store.startDate = nil
-        store.carriedDoodle = nil
+        forgetDrawing()
         step = .signIn(.joining)
     }
 
@@ -131,11 +134,6 @@ final class WelcomeFlowModel {
 
     /// The days count landed, or the date was skipped.
     func finishStartDate() {
-        guard phoneHasNoOtherAccount() else {
-            store.carriedDoodle = nil
-            step = .signIn(.start(hasDrawing: hasWaitingDrawing))
-            return
-        }
         step = .drawing
     }
 
@@ -182,19 +180,24 @@ final class WelcomeFlowModel {
     }
 
     func finishDrawing() {
-        step = .signIn(.start(hasDrawing: hasWaitingDrawing))
+        step = .signIn(.start(hasDrawing: drawingWaitsForAccount))
     }
 
-    /// A first drawing made on this phone waits to be sent. Before sign-in it waits for
-    /// an account, after it for the invite screen to send it.
-    var hasWaitingDrawing: Bool {
+    /// A first drawing sent on the drawing step waits for an account.
+    private var drawingWaitsForAccount: Bool {
         pendingUploads.pendingSnapshot?.isFirstDay == true
+    }
+
+    /// After sign-in: the first drawing made before it has not reached the server yet.
+    /// The invite screen sends it.
+    var hasWaitingDrawing: Bool {
+        widgetPendingUploads.pendingSnapshot?.isFirstDay == true
     }
 
     /// The waiting first drawing as the widget shows it, for the sign-in step. Nil when
     /// no first drawing waits or it no longer decodes.
     func waitingDrawingImage() async -> UIImage? {
-        guard hasWaitingDrawing, let snapshot = await canvas.loadSavedSnapshot() else {
+        guard drawingWaitsForAccount, let snapshot = await canvas.loadSavedSnapshot() else {
             return nil
         }
         return await rasterizer.renderPNG(
@@ -217,7 +220,7 @@ final class WelcomeFlowModel {
         case .drawing:
             step = .startDate
         case .signIn(.start):
-            step = phoneHasNoOtherAccount() ? .drawing : .startDate
+            step = .drawing
         case .signIn(.joining):
             onForgetInviteCode()
             step = .welcome
@@ -238,13 +241,14 @@ final class WelcomeFlowModel {
     /// A session is about to be used, after a sign-in or at launch, and after another
     /// account's data was cleared from the phone. Hands a start date picked before
     /// sign-in to the pending sync operations, which send it to the first day draft, or
-    /// to the couple when the partner joined first.
+    /// to the couple when the partner joined first. Moves a sent first drawing to the
+    /// widget's canvas, marked as the first-day drawing that waits.
     ///
     /// Also removes the unsent welcome drawing, which no screen can reach once someone
-    /// is signed in. A sent one is not a draft: it stays with the canvas service and
-    /// its waiting mark.
+    /// is signed in.
     func sessionStarted(ownerUserID: String) async {
         store.hasSignedInBefore = true
+        await handOverSentDrawing()
         forgetUnsentDrawing()
         guard let startDate = store.startDate, let ownerUserID = UUID(uuidString: ownerUserID) else {
             return
@@ -263,13 +267,61 @@ final class WelcomeFlowModel {
     }
 
     /// The session ended, just before the signed-out flow shows again: sign-in for
-    /// returning after a sign-out, welcome after an account deletion. A start date that
-    /// could not be queued for that account is dropped, so it never reaches whoever
-    /// signs in next.
+    /// returning after a sign-out, welcome after an account deletion. A start date or
+    /// first drawing that could not be handed to that account is dropped, so it never
+    /// reaches whoever signs in next.
     func sessionEnded() {
         store.startDate = nil
-        store.carriedDoodle = nil
+        forgetDrawing()
         step = store.hasSignedInBefore ? .signIn(.returning) : .welcome
+    }
+
+    /// Puts the sent first drawing on the widget's canvas with the first-day marker, so
+    /// the invite screen sends it for this account. Kept for the next session start if
+    /// the widget's canvas cannot save it.
+    private func handOverSentDrawing() async {
+        guard let pending = pendingUploads.pendingSnapshot else {
+            return
+        }
+        guard pending.isFirstDay,
+              let snapshot = await canvas.loadSavedSnapshot(),
+              WidgetCanvasUploadService.sha256Hex(of: snapshot.drawingData) == pending.contentHash
+        else {
+            // The marker describes a drawing that is no longer saved.
+            await clearSentDrawing()
+            return
+        }
+        let side = snapshot.canvasSide ?? CGFloat(pending.canvasSide)
+        do {
+            try await widgetCanvas.saveDrawing(
+                snapshot.drawingData,
+                canvasSize: CGSize(width: side, height: side),
+                authorName: snapshot.authorName,
+                createdAt: snapshot.createdAt ?? pending.markedAt
+            )
+        } catch {
+            return
+        }
+        widgetPendingUploads.markPending(
+            pending.uploadPayload(with: snapshot.drawingData),
+            contentHash: pending.contentHash,
+            isFirstDay: true
+        )
+        await clearSentDrawing()
+    }
+
+    private func clearSentDrawing() async {
+        pendingUploads.clearAll()
+        await canvas.clearForPrivacy()
+    }
+
+    /// Drops the first drawing, sent or not, and a welcome doodle still waiting.
+    private func forgetDrawing() {
+        forgetUnsentDrawing()
+        pendingUploads.clearAll()
+        Task { [canvas] in
+            await canvas.clearForPrivacy()
+        }
     }
 
     /// Clearing by owner also stops an open drawing screen from writing the draft back.

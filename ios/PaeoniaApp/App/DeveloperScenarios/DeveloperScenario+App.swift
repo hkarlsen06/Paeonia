@@ -387,8 +387,10 @@
         store: InMemoryWelcomeFlowStore(),
         funnel: NoOpWelcomeFunnelRecorder(),
         canvas: DeveloperWidgetCanvasService(),
-        pendingUploads: WidgetPendingUploadStore(defaults: DeveloperInviterFixture.defaults),
-        phoneHasNoOtherAccount: { true }
+        pendingUploads: WidgetPendingUploadStore(
+          defaults: DeveloperInviterFixture.defaults,
+          key: WelcomeDrawingStorage.pendingUploadKey
+        )
       )
       if entry == .returning {
         model.chooseReturning()
