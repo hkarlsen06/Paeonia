@@ -37473,25 +37473,25 @@
       }
     },
     "welcome.doodle.accessibility" : {
-      "comment" : "VoiceOver label for the picture on the welcome screen, before sign-in: a Home Screen widget showing a drawing a partner made.",
+      "comment" : "VoiceOver label for the picture on the welcome screen, before sign-in: a Home Screen widget showing a handwritten note a partner drew. Quote the same words the note shows in this language.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A drawing from your partner on a Home Screen widget"
+            "value" : "A note from your partner on a Home Screen widget that says \"miss you\""
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En tegning fra kjæresten din i en widget på hjemskjermen"
+            "value" : "En lapp fra kjæresten din i en widget på hjemskjermen der det står «savner deg»"
           }
         }
       }
     },
     "welcome.doodle.author" : {
-      "comment" : "A made-up first name under the sample drawing on the welcome screen's Home Screen widget, where the real widget shows the partner who drew it. Use a short, common first name that fits any gender in your language. Not a word for partner.",
+      "comment" : "A made-up first name under the sample note on the welcome screen's Home Screen widget, where the real widget shows the partner who drew it. Use a short, common first name that fits any gender in your language. Not a word for partner.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -37971,7 +37971,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegn noe. Det dukker opp på hjemskjermen deres."
+            "value" : "Tegn noe. Det dukker opp på hjemskjermen til kjæresten din."
           }
         }
       }
