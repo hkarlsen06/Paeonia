@@ -58,19 +58,20 @@ const assetOf = (t: TestConvex, assetId: string) =>
   t.run((ctx) => ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", assetId)).unique());
 
 describe("start_first_day_draft", () => {
-  test("picks one written question without partner choice, once", async () => {
+  test("picks one question answered only in writing, once", async () => {
     const t = newTest();
     await seedCatalog(t, [
       { key: "choice", kinds: ["text", "partner_choice"] },
       { key: "photo_only", kinds: ["photo"] },
       { key: "written" },
       { key: "written_or_photo", kinds: ["text", "photo"] },
+      { key: "written_or_voice", kinds: ["text", "voice"] },
     ]);
     const user = await inviter(t, { entitled: false });
     expect(await draftOf(user)).toBeNull();
 
     const draft = await user.as.mutation(api.firstDay.start_first_day_draft, {});
-    expect(["written", "written_or_photo"]).toContain(draft.question?.question_key);
+    expect(draft.question?.question_key).toBe("written");
     expect(draft.question).toMatchObject({ answer_text: null, answered_at: null, prompt_nb: expect.stringContaining("prompt nb") });
     expect(draft).toMatchObject({ started_on: null, drawing: null, updated_at: NOW });
 

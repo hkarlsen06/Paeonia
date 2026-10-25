@@ -87,8 +87,9 @@ export async function ensureFirstDayDraft(ctx: WriterCtx, userId: string): Promi
 }
 
 /** Before pairing there is no partner to pick, and the first day offers written answers only. */
+/** The first day page has only a text field, so its question must not invite a photo, voice note or pick. */
 function firstDayAnswerKinds(kinds: string[]): boolean {
-  return kinds.includes("text") && !kinds.includes("partner_choice");
+  return kinds.length === 1 && kinds[0] === "text";
 }
 
 /** The couple's first question, by the daily selection rules. A new couple has no history yet. */
