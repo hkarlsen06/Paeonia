@@ -37724,24 +37724,6 @@
         }
       }
     },
-    "welcome.privacy.line" : {
-      "comment" : "Welcome screen: small line under the summary. Must stay true: Paeonia has no ads and no public profiles.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No ads and no public profiles. Just the two of you."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingen reklame og ingen offentlige profiler. Bare dere to."
-          }
-        }
-      }
-    },
     "welcome.returning.button" : {
       "comment" : "Welcome screen: quiet link for someone who already has an account. Goes straight to sign-in.",
       "extractionState" : "manual",

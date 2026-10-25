@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// The first signed-out screen. The lockup, one picture and two lines say what Paeonia
+/// The first signed-out screen. The lockup, one picture and one line say what Paeonia
 /// is, and three choices lead on: start a couple, join a partner who invited you, or
 /// sign back in. It is the first surface the cold-launch intro uncovers, so its parts
 /// cascade in with `View.launchEntrance(order:)`.
@@ -23,9 +23,9 @@ struct WelcomeView: View {
     @State private var clipboardHasLink = false
 
     var body: some View {
-        // The hero sits centered between the lockup and the buttons. When it does not
-        // fit, such as at large text sizes, the same content scrolls and the spacers
-        // shrink to their minimum.
+        // The summary sits just above the buttons, and the picture is centered between
+        // the lockup and the summary. When it does not fit, such as at large text sizes,
+        // the same content scrolls and the spacers shrink to their minimum.
         ViewThatFits(in: .vertical) {
             content
 
@@ -89,27 +89,19 @@ struct WelcomeView: View {
 
             Spacer(minLength: PaeoniaSpacing.space24)
 
-            VStack(spacing: PaeoniaSpacing.space16) {
-                WelcomeHero()
-
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Text(.welcomeSummary)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-
-                    Text(.welcomePrivacyLine)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextTertiary)
-                }
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                // Narrower than the column, so the lines come out close in length
-                // under the picture.
-                .frame(maxWidth: 300)
-            }
-            .launchEntrance(order: 1)
+            WelcomeHero()
+                .launchEntrance(order: 1)
 
             Spacer(minLength: PaeoniaSpacing.space24)
+
+            Text(.welcomeSummary)
+                .font(PaeoniaTypography.welcomeSummary)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                // Narrower than the column, so the lines come out close in length.
+                .frame(maxWidth: 300)
+                .launchEntrance(order: 1)
         }
         .frame(maxWidth: PaeoniaSpacing.focusedContentWidth)
         .frame(maxWidth: .infinity)

@@ -18,6 +18,9 @@ nonisolated enum PaeoniaTypography {
     /// The large heading of a collection's own screen.
     static let collectionHeroTitle = Font.system(.title, design: .serif).weight(.semibold)
 
+    /// The one line under the welcome picture that says what Paeonia is for.
+    static let welcomeSummary = Font.system(.title3, design: .serif).weight(.medium)
+
     static func wordmark(size: CGFloat) -> Font {
         Font.system(size: size, weight: .semibold, design: .serif)
     }
