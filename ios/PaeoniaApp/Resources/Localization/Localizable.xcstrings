@@ -37491,19 +37491,19 @@
       }
     },
     "welcome.doodle.author" : {
-      "comment" : "A made-up first name under the sample note on the welcome screen's Home Screen widget, where the real widget shows the partner who drew it. Use a short, common first name that fits any gender in your language. Not a word for partner.",
+      "comment" : "The pet name under the sample note on the welcome screen's Home Screen widget, where the real widget shows the name a person saved for their partner. Keep the English word Babe, which couples use in Norwegian too.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alex"
+            "value" : "Babe"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kim"
+            "value" : "Babe"
           }
         }
       }
