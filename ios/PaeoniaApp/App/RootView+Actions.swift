@@ -94,10 +94,10 @@ extension RootView {
     }
 
     /// The first day sequence ended. "Answer now" goes on to the answer flow,
-    /// which `MainTabView` opens for the deep link.
+    /// which `MainTabView` opens over Home for the deep link.
     func finishFirstDay(_ outcome: PostPairingOutcome) {
         if outcome == .answerQuestions {
-            deepLink = .dailyToday(coupleDayID: nil)
+            deepLink = .firstDayAnswer
         }
         withAnimation(pairedScreenAnimation) {
             viewModel.finishFirstDay()

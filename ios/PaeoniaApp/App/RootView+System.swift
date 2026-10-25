@@ -96,7 +96,7 @@ extension RootView {
             selectTabForDeepLink(.memories)
         case .game:
             selectTabForDeepLink(.games)
-        case .streak, .stories, .story, .home, .dates:
+        case .streak, .stories, .story, .home, .dates, .firstDayAnswer:
             selectTabForDeepLink(.home)
         case .subscription:
             openURL(PaeoniaDeepLink.appStoreSubscriptionsURL)

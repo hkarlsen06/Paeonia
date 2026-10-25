@@ -316,17 +316,25 @@ extension MainTabView {
             await openGame(kind, for: deepLink)
         case .streak:
             await openStreak(for: deepLink)
-        case .stories, .home, .dates, .story:
+        case .stories, .home, .dates, .story, .firstDayAnswer:
             await openHome(for: deepLink)
         }
     }
 
     /// Opens Home. A link to one story also opens it in the viewer, once the stories are read.
-    /// The dates timeline opens on top for a date reminder.
+    /// The dates timeline opens on top for a date reminder. "Answer now" after the first day
+    /// opens today's question over Home, after the same refresh as a question link, so
+    /// closing it shows the things to try on Home.
     private func openHome(for deepLink: PaeoniaDeepLink) async {
         selection.wrappedValue = .home
         if deepLink == .dates {
             coupleDatesViewModel.requestTimeline()
+        }
+        if deepLink == .firstDayAnswer {
+            guard await refreshStillCurrent(for: deepLink) else { return }
+            if dailyChallengeViewModel.homeCardState.kind != .complete {
+                openAnswerFlow(source: .home)
+            }
         }
         if case let .story(storyID, showsReplies) = deepLink {
             await storiesViewModel.reload()

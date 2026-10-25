@@ -6,6 +6,9 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     /// A question's chat. A couple has one chat per question.
     case dailyChat(questionID: UUID)
     case dailyToday(coupleDayID: UUID?)
+    /// "Answer now" at the end of the first day sequence. Opens today's question over Home,
+    /// so closing it lands on Home with the things to try. No URL opens it.
+    case firstDayAnswer
     /// `paeonia://topics`: the partner answered topic questions. Opens the Topics shelf.
     case topics
     case memories
