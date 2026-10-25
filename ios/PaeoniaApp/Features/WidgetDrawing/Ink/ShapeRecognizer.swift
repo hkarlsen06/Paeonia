@@ -46,6 +46,9 @@ nonisolated enum ShapeRecognizer {
         /// How far from a heart's notch toward its tip the stroke may run
         /// inside the heart without counting against the fit.
         var notchStem: CGFloat = 0.3
+        /// How far, in heart heights, the stroke must dip at a heart's notch.
+        /// Circles, gems and octagons fit a heart closely but have no notch.
+        var notchDip: CGFloat = 0.01
         /// Residual added per row down the candidate table, so a near tie goes
         /// to the simpler shape.
         var simplerShapeMargin: CGFloat = 0.0015

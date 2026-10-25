@@ -6,9 +6,52 @@ nonisolated extension ShapeRecognizer {
     /// The heart, among proportions from a shallow to a deep notch, that lies
     /// closest to the stroke, leaned to follow where the stroke put its tip.
     static func fitHeart(_ stroke: Stroke, _ tuning: Tuning) -> SnappedShape.Kind? {
-        heartStarts
+        let best = heartStarts
             .compactMap { fitHeart(stroke, start: $0, tuning) }
             .min { stroke.residual(of: $0, tuning) < stroke.residual(of: $1, tuning) }
+        guard let best, (notchDip(of: stroke.points, under: best) ?? .infinity) >= tuning.notchDip else {
+            return nil
+        }
+        return best
+    }
+
+    /// How far the top edge of the stroke dips near the heart's notch, below
+    /// the lower of its highest points either side, in heart heights. Nil
+    /// when the stroke leaves its closing gap over the notch, as a heart
+    /// started and ended there can. The edge is measured in columns 0.02
+    /// heart widths wide, and the notch spans 0.12 widths either side.
+    private static func notchDip(of points: [CGPoint], under kind: SnappedShape.Kind) -> CGFloat? {
+        guard case let .heart(center, size, rotation, shape) = kind, let first = points.first, let last = points.last
+        else {
+            return nil
+        }
+        let columnWidth: CGFloat = 0.02
+        let notchColumns = -6...6
+        let upperPart = shape.template[0].y + 0.25
+        func upright(_ point: CGPoint) -> (column: Int, depth: CGFloat) {
+            let turned = (point - center).rotated(by: -rotation)
+            let depth = turned.y / size.height
+            return (Int(((turned.x / size.width - shape.lean * depth) / columnWidth).rounded()), depth)
+        }
+        let ends = [upright(first), upright(last)]
+        let gap = ends.map(\.column).sorted()
+        if gap[1] - gap[0] > 2, (gap[0]...gap[1]).overlaps(notchColumns), ends.allSatisfy({ $0.depth < upperPart }) {
+            return nil
+        }
+        var topEdge: [Int: CGFloat] = [:]
+        for point in Polyline.resampled(points, count: 4 * points.count, isClosed: true) {
+            let (column, depth) = upright(point)
+            if depth < upperPart {
+                topEdge[column] = min(topEdge[column] ?? .infinity, depth)
+            }
+        }
+        guard let atNotch = topEdge.filter({ notchColumns.contains($0.key) }).values.max(),
+              let left = topEdge.filter({ $0.key < notchColumns.lowerBound }).values.min(),
+              let right = topEdge.filter({ $0.key > notchColumns.upperBound }).values.min()
+        else {
+            return 0
+        }
+        return atNotch - max(left, right)
     }
 
     /// Proportions the heart fit starts from: lobes that meet just below the
