@@ -40,6 +40,12 @@ nonisolated enum ShapeRecognizer {
         var circleRatio: CGFloat = 0.82
         /// A heart tilted further than this is some other closed shape.
         var heartTilt: CGFloat = 30 * .pi / 180
+        /// A heart's height over its width. Hearts drawn with a finger come
+        /// out at 0.88 to 1.23, and a flatter fit is a D or a letter e.
+        var heartAspect: ClosedRange<CGFloat> = 0.7...1.5
+        /// How far from a heart's notch toward its tip the stroke may run
+        /// inside the heart without counting against the fit.
+        var notchStem: CGFloat = 0.3
         /// Residual added per row down the candidate table, so a near tie goes
         /// to the simpler shape.
         var simplerShapeMargin: CGFloat = 0.0015
@@ -52,7 +58,7 @@ nonisolated enum ShapeRecognizer {
         /// Looser, because a rounded sharp corner leaves the fitted corner well
         /// outside the stroke.
         var triangleLimit: CGFloat = 0.031
-        var heartLimit: CGFloat = 0.028
+        var heartLimit: CGFloat = 0.030
 
         static let standard = Tuning()
     }
@@ -141,7 +147,7 @@ nonisolated extension ShapeRecognizer {
                 else {
                     return nil
                 }
-                let residual = min(residual(of: kind), residual(of: matched))
+                let residual = min(residual(of: kind, tuning), residual(of: matched, tuning))
                 return Fit(
                     kind: kind,
                     residual: residual,
@@ -151,11 +157,21 @@ nonisolated extension ShapeRecognizer {
             }
         }
 
-        func residual(of kind: SnappedShape.Kind) -> CGFloat {
+        func residual(of kind: SnappedShape.Kind, _ tuning: Tuning) -> CGFloat {
             let contour = kind.contour
             let count = CGFloat(points.count)
-            let toOutline = points.reduce(0) {
-                $0 + pow(distance(from: $1, to: contour.points, isClosed: contour.isClosed), 2)
+            // Fingers start and end a heart in its notch and often pull down
+            // into it, so stroke along a line from the notch toward the tip
+            // counts as on the outline.
+            var stem: (from: CGPoint, to: CGPoint)?
+            if case .heart = kind {
+                let notch = contour.points[0]
+                stem = (notch, notch.interpolated(to: contour.points[contour.points.count / 2], by: tuning.notchStem))
+            }
+            let toOutline = points.reduce(0) { sum, point in
+                let onOutline = distance(from: point, to: contour.points, isClosed: contour.isClosed)
+                let onStem = stem.map { sqrt(segmentDistanceSquared(point, $0.from, $0.to)) } ?? .infinity
+                return sum + pow(min(onOutline, onStem), 2)
             }
             let samples = Polyline.resampled(contour.points, count: points.count, isClosed: contour.isClosed)
             let toStroke = samples.reduce(0) { $0 + distance(from: $1, to: points, isClosed: false) }
@@ -286,5 +302,9 @@ fileprivate nonisolated extension CGPoint {
 
     func distance(to other: CGPoint) -> CGFloat {
         hypot(other.x - x, other.y - y)
+    }
+
+    func interpolated(to other: CGPoint, by fraction: CGFloat) -> CGPoint {
+        CGPoint(x: x + (other.x - x) * fraction, y: y + (other.y - y) * fraction)
     }
 }

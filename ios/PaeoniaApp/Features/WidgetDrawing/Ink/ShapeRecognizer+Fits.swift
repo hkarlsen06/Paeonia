@@ -88,85 +88,6 @@ nonisolated extension ShapeRecognizer {
         }
         return .polygon(levelled(corners, tuning))
     }
-
-    /// The heart template, shallow or deep notched, that lies closest to the stroke.
-    static func fitHeart(_ stroke: Stroke, _ tuning: Tuning) -> SnappedShape.Kind? {
-        SnappedShape.HeartNotch.allCases
-            .compactMap { fitHeart(stroke, notch: $0, tuning) }
-            .min { stroke.residual(of: $0) < stroke.residual(of: $1) }
-    }
-
-    private static func fitHeart(
-        _ stroke: Stroke,
-        notch: SnappedShape.HeartNotch,
-        _ tuning: Tuning
-    ) -> SnappedShape.Kind? {
-        let template = notch.template
-        guard let placement = HeartPlacement(stroke.points, template: template, tuning: tuning) else {
-            return nil
-        }
-        // Width and height scale apart, since hand-drawn hearts run wide or tall.
-        let angle = axisSnapped(placement.angle, tuning)
-        let local = stroke.points.map { $0.rotated(by: -angle) }
-        var size = CGSize(width: placement.scale, height: placement.scale)
-        var center = placement.offset.rotated(by: -angle)
-        for _ in 0..<2 {
-            let matches = local.map { point in
-                let unit = CGPoint(x: (point.x - center.x) / size.width, y: (point.y - center.y) / size.height)
-                return template[nearestIndex(to: unit, in: template)]
-            }
-            guard let fitX = lineFit(matches.map(\.x), local.map(\.x)),
-                  let fitY = lineFit(matches.map(\.y), local.map(\.y)),
-                  fitX.slope > 0, fitY.slope > 0
-            else {
-                return nil
-            }
-            size = CGSize(width: fitX.slope, height: fitY.slope)
-            center = CGPoint(x: fitX.intercept, y: fitY.intercept)
-        }
-        return .heart(center: center.rotated(by: angle), size: size, rotation: angle, notch: notch)
-    }
-}
-
-/// The best near-upright rotation, scale and offset of the heart template onto
-/// a stroke, pairing them point for point from every start and in both
-/// directions, since people start a heart at the notch, the tip, or anywhere.
-/// This is Umeyama's similarity fit in the plane.
-nonisolated private struct HeartPlacement {
-    var angle: CGFloat
-    var scale: CGFloat
-    var offset: CGPoint
-
-    init?(_ points: [CGPoint], template: [CGPoint], tuning: ShapeRecognizer.Tuning) {
-        let count = points.count
-        let anchors = Polyline.resampled(template, count: count, isClosed: true)
-        let anchorMean = ShapeRecognizer.mean(anchors)
-        let pointMean = ShapeRecognizer.mean(points)
-        let centeredAnchors = anchors.map { $0 - anchorMean }
-        let centeredPoints = points.map { $0 - pointMean }
-        var best: (dot: CGFloat, cross: CGFloat)?
-        for ordered in [centeredPoints, centeredPoints.reversed()] {
-            for shift in 0..<count {
-                var dot: CGFloat = 0
-                var cross: CGFloat = 0
-                for index in 0..<count {
-                    let anchor = centeredAnchors[(index + shift) % count]
-                    dot += anchor.dot(ordered[index])
-                    cross += anchor.cross(ordered[index])
-                }
-                let isStronger = hypot(dot, cross) > (best.map { hypot($0.dot, $0.cross) } ?? 0)
-                if isStronger, abs(atan2(cross, dot)) <= tuning.heartTilt {
-                    best = (dot, cross)
-                }
-            }
-        }
-        guard let best else {
-            return nil
-        }
-        angle = atan2(best.cross, best.dot)
-        scale = hypot(best.dot, best.cross) / centeredAnchors.reduce(0) { $0 + $1.dot($1) }
-        offset = pointMean - (anchorMean * scale).rotated(by: angle)
-    }
 }
 
 /// The ellipse that best fits points by least squares. Around `center` it is
@@ -248,17 +169,6 @@ nonisolated private extension ShapeRecognizer {
         }
         let sorted = values.sorted()
         return (sorted[(sorted.count - 1) / 2] + sorted[sorted.count / 2]) / 2
-    }
-
-    static func nearestIndex(to point: CGPoint, in points: [CGPoint]) -> Int {
-        var best = (index: 0, distance: CGFloat.infinity)
-        for (index, candidate) in points.enumerated() {
-            let gap = candidate - point
-            if gap.dot(gap) < best.distance {
-                best = (index, gap.dot(gap))
-            }
-        }
-        return best.index
     }
 
     static func convexHull(_ points: [CGPoint]) -> [CGPoint] {
@@ -366,6 +276,19 @@ nonisolated private extension ShapeRecognizer {
         let center = mean(corners)
         return corners.map { center + ($0 - center).rotated(by: turn) }
     }
+}
+
+nonisolated extension ShapeRecognizer {
+    static func nearestIndex(to point: CGPoint, in points: [CGPoint]) -> Int {
+        var best = (index: 0, distance: CGFloat.infinity)
+        for (index, candidate) in points.enumerated() {
+            let gap = candidate - point
+            if gap.dot(gap) < best.distance {
+                best = (index, gap.dot(gap))
+            }
+        }
+        return best.index
+    }
 
     /// Least squares for `target = slope * source + intercept`.
     static func lineFit(_ source: [CGFloat], _ target: [CGFloat]) -> (slope: CGFloat, intercept: CGFloat)? {
@@ -384,9 +307,7 @@ nonisolated private extension ShapeRecognizer {
         let slope = covariance / variance
         return (slope, targetMean - slope * sourceMean)
     }
-}
 
-nonisolated extension ShapeRecognizer {
     /// Gaussian elimination with partial pivoting. Nil when the system is singular.
     static func solve(_ matrix: [[Double]], _ values: [Double]) -> [Double]? {
         var rows = zip(matrix, values).map { $0 + [$1] }

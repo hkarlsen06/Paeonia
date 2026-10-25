@@ -12,22 +12,37 @@ nonisolated struct SnappedShape: Equatable, Codable, Sendable {
         case polygon([CGPoint])
         // swiftlint:disable enum_case_associated_values_count
         /// Upright, the notch is at the top (small y) and the tip at the bottom.
-        case heart(center: CGPoint, size: CGSize, rotation: CGFloat, notch: HeartNotch)
+        case heart(center: CGPoint, size: CGSize, rotation: CGFloat, shape: HeartShape)
         // swiftlint:enable enum_case_associated_values_count
     }
 
-    /// How far down a heart's two lobes meet. People draw both.
-    nonisolated enum HeartNotch: String, Codable, Sendable, CaseIterable {
-        /// Round lobes that meet just below the top, as emoji show.
-        case shallow
-        /// Lobes that meet about a quarter of the way down, with long
-        /// straight sides to the tip.
-        case deep
+    /// A heart's proportions, fitted to each stroke, since people draw the
+    /// notch shallow or deep, the sides short or long, and the tip off to one
+    /// side.
+    nonisolated struct HeartShape: Equatable, Codable, Sendable {
+        /// How far each lobe's center sits from the middle, in lobe radii.
+        /// The lobes meet lower as it grows: at 0.71 just below the top, as
+        /// emoji show, and at 0.99 almost as low as the lobe centers.
+        var spread: CGFloat
+        /// How far the tip sits below the lobe centers, in lobe radii.
+        var tipDepth: CGFloat
+        /// How far the outline shifts sideways per unit down, which moves the
+        /// tip off the line below the notch.
+        var lean: CGFloat = 0
 
+        static let spreads: ClosedRange<CGFloat> = 0.5...0.99
+        static let tipDepths: ClosedRange<CGFloat> = 1.8...5
+        static let leans: ClosedRange<CGFloat> = -0.25...0.25
+
+        var isValid: Bool {
+            Self.spreads.contains(spread) && Self.tipDepths.contains(tipDepth) && Self.leans.contains(lean)
+        }
+
+        /// The outline in the unit square around the origin, before it is
+        /// sized and turned.
         var template: [CGPoint] {
-            switch self {
-            case .shallow: SnappedShape.shallowHeart
-            case .deep: SnappedShape.deepHeart
+            SnappedShape.heartTemplate(spread: spread, tipDepth: tipDepth).map {
+                CGPoint(x: $0.x + lean * $0.y, y: $0.y)
             }
         }
     }
@@ -107,8 +122,8 @@ nonisolated extension SnappedShape {
             shape.kind = isReversed ? .line(from: newEnd, to: start) : .line(from: start, to: newEnd)
         case let .ellipse(center, radii, rotation):
             shape.kind = .ellipse(center: center, radii: radii * factor(about: center), rotation: rotation)
-        case let .heart(center, size, rotation, notch):
-            shape.kind = .heart(center: center, size: size * factor(about: center), rotation: rotation, notch: notch)
+        case let .heart(center, size, rotation, heart):
+            shape.kind = .heart(center: center, size: size * factor(about: center), rotation: rotation, shape: heart)
         case let .polygon(corners):
             let center = corners.reduce(.zero, +) * (1 / CGFloat(corners.count))
             let scale = factor(about: center)
@@ -190,11 +205,6 @@ nonisolated extension SnappedShape {
     /// Points on a curved contour. Even, so the heart's tip lands on a point.
     static let curveCount = 256
 
-    static let shallowHeart = heartTemplate(spread: CGFloat(2).squareRoot() / 2, tipDepth: CGFloat(4.5).squareRoot())
-    /// Fitted to hearts drawn with a finger on an iPhone, whose lobes meet
-    /// about a quarter of the way down.
-    static let deepHeart = heartTemplate(spread: 0.99, tipDepth: 3.8)
-
     /// Two circles of radius 1, centered `spread` either side of the middle,
     /// with straight sides from the tip `tipDepth` below their centers that
     /// meet the circles at a tangent. Spread evenly along its length and fitted
@@ -231,9 +241,12 @@ nonisolated extension SnappedShape.Kind {
         case let .line(from, to):
             numbers = [from.x, from.y, to.x, to.y]
             isWellFormed = true
-        case let .ellipse(center, radii, rotation), let .heart(center, radii, rotation, _):
+        case let .ellipse(center, radii, rotation):
             numbers = [center.x, center.y, radii.width, radii.height, rotation]
             isWellFormed = radii.width > 0 && radii.height > 0
+        case let .heart(center, size, rotation, shape):
+            numbers = [center.x, center.y, size.width, size.height, rotation]
+            isWellFormed = size.width > 0 && size.height > 0 && shape.isValid
         case let .polygon(corners):
             numbers = corners.flatMap { [$0.x, $0.y] }
             isWellFormed = (3...4).contains(corners.count)
@@ -261,8 +274,8 @@ nonisolated extension SnappedShape.Kind {
             return .init(points: points, corners: [], isClosed: true)
         case let .polygon(corners):
             return .init(points: corners, corners: Set(corners.indices), isClosed: true)
-        case let .heart(center, size, rotation, notch):
-            let points = notch.template.map {
+        case let .heart(center, size, rotation, shape):
+            let points = shape.template.map {
                 center + CGPoint(x: $0.x * size.width, y: $0.y * size.height).rotated(by: rotation)
             }
             return .init(points: points, corners: [0, points.count / 2], isClosed: true)
