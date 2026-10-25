@@ -21,8 +21,8 @@ struct OnboardingStepAction {
 /// short message, the step's own content, and a bottom bar with a primary button and
 /// a quiet second choice under it. Everything drops in with the screen entrance
 /// cascade (art, text, content, then the bar). Either button can come and go, for a
-/// step whose choices change, and the bar animates the change. On an iPad the step
-/// sits in the middle of the screen, above the bar.
+/// step whose choices change, and the bar animates the change. A step shorter than
+/// the screen sits in the middle of the space above the bar.
 struct OnboardingStepScaffold<Art: View, Content: View>: View {
     let title: LocalizedStringResource
     let message: LocalizedStringResource?
@@ -39,7 +39,6 @@ struct OnboardingStepScaffold<Art: View, Content: View>: View {
     private let content: Content
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     /// The scroll view's height above the bottom bar.
     @State private var visibleHeight: CGFloat = 0
 
@@ -96,9 +95,9 @@ struct OnboardingStepScaffold<Art: View, Content: View>: View {
             .frame(maxWidth: .infinity)
             .padding(.top, PaeoniaSpacing.screenTopSpacing)
             .padding(.bottom, PaeoniaSpacing.space24)
-            // An iPad screen leaves most of the height empty, so the step sits in
-            // the middle of it instead of at the top.
-            .frame(minHeight: isWide ? visibleHeight : nil)
+            // A short step sits in the middle of the space above the bar instead
+            // of at the top.
+            .frame(minHeight: visibleHeight)
             .modifier(OnboardingStepColumn(placement: placement))
         }
         .scrollIndicators(.hidden)
@@ -121,11 +120,6 @@ struct OnboardingStepScaffold<Art: View, Content: View>: View {
                 PaeoniaGlowBackground()
             }
         }
-    }
-
-    /// An iPad width.
-    private var isWide: Bool {
-        horizontalSizeClass == .regular
     }
 
     private var header: some View {
