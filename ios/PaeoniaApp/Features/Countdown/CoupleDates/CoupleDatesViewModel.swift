@@ -13,6 +13,8 @@ final class CoupleDatesViewModel {
     private(set) var error: RelationshipMilestoneError?
     /// A tapped date reminder asks Home to open the timeline. The Home tile reads this and clears it.
     private(set) var isTimelineRequested = false
+    /// `dates` holds this person's cached dates, so no countdowns means there are none.
+    private(set) var hasLoaded = false
 
     @ObservationIgnored private let cache: any CoupleDatesCaching
     @ObservationIgnored private let pendingOperationStore: any PendingSyncOperationPersisting
@@ -35,6 +37,7 @@ final class CoupleDatesViewModel {
     func configure(ownerUserID: UUID?) async {
         if self.ownerUserID != ownerUserID {
             dates = CoupleDates()
+            hasLoaded = false
         }
         self.ownerUserID = ownerUserID
         await reload()
@@ -72,6 +75,7 @@ final class CoupleDatesViewModel {
             .sorted { $0.operation.clientSequence < $1.operation.clientSequence }
             .compactMap(CoupleDatesWrite.init)
         dates = server.applying(writes)
+        hasLoaded = true
     }
 
     /// Adds a countdown when `id` is nil, otherwise edits that one.

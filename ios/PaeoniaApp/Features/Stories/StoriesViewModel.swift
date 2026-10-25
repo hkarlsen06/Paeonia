@@ -31,6 +31,11 @@ final class StoriesViewModel {
     /// A story push asks Home to open this story. The Home strip clears it once it has opened the
     /// story or found that it is gone.
     private(set) var openRequest: StoryOpenRequest?
+    /// Home asks the strip to open the composer, as if the plus on your avatar was tapped.
+    /// The strip clears it once the composer is open.
+    private(set) var isComposerRequested = false
+    /// `stories` holds this person's cached stories, so an empty list means there are none.
+    private(set) var hasLoaded = false
 
     @ObservationIgnored private let cache: any StoriesCaching
     /// Nil when the server client can't be set up (previews), so posting reports a failure.
@@ -74,6 +79,14 @@ final class StoriesViewModel {
         openRequest = nil
     }
 
+    func requestComposer() {
+        isComposerRequested = true
+    }
+
+    func consumeComposerRequest() {
+        isComposerRequested = false
+    }
+
     /// False until this person has shared a story, so the composer explains how stories work once.
     var hasPostedBefore: Bool {
         defaults.bool(forKey: Self.hasPostedKey)
@@ -84,6 +97,7 @@ final class StoriesViewModel {
             stories = []
             notes = []
             failedPost = nil
+            hasLoaded = false
         }
         self.ownerUserID = ownerUserID
         self.coupleID = coupleID
@@ -114,6 +128,7 @@ final class StoriesViewModel {
         guard generation == reloadGeneration, self.ownerUserID == ownerUserID else { return }
         stories = cached.stories
         notes = cached.notes
+        hasLoaded = true
     }
 
     /// Shares `photo` with an optional caption. Returns false and sets `error` when it

@@ -176,7 +176,7 @@
     }
   }
 
-  private nonisolated enum DeveloperLocalFlowIDs {
+  nonisolated enum DeveloperLocalFlowIDs {
     static let pairID = UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID()
   }
 
@@ -320,10 +320,13 @@
     private var seenPairIDs = Set<UUID>()
 
     /// The paired local flow starts in the tabs, past the celebration and the first day.
+    /// The local flow has no games or topics to read, so those rows of Home's "Things to
+    /// try together" card start ticked, and the card can show.
     init(startsPastFirstDay: Bool = false) {
       guard startsPastFirstDay else { return }
       seenPairIDs.insert(DeveloperLocalFlowIDs.pairID)
       progressByPairID[DeveloperLocalFlowIDs.pairID] = PostPairingProgress(isFinished: true)
+      firstStepsByPairID[DeveloperLocalFlowIDs.pairID] = HomeFirstStepsProgress(doneSteps: [.game, .topic])
     }
 
     func hasSeenCelebration(forPairID pairID: UUID) -> Bool { seenPairIDs.contains(pairID) }
@@ -332,6 +335,13 @@
     func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress? { progressByPairID[pairID] }
     func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID) {
       progressByPairID[pairID] = progress
+    }
+    private var firstStepsByPairID: [UUID: HomeFirstStepsProgress] = [:]
+    func homeFirstSteps(forPairID pairID: UUID) -> HomeFirstStepsProgress {
+      firstStepsByPairID[pairID] ?? HomeFirstStepsProgress()
+    }
+    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forPairID pairID: UUID) {
+      firstStepsByPairID[pairID] = progress
     }
   }
 

@@ -46,6 +46,12 @@ struct HomeStoriesStrip: View {
         .onChange(of: viewModel.openRequest, initial: true) { _, request in
             openRequestedStory(request)
         }
+        // The "Post a story" row on Home's things to try.
+        .onChange(of: viewModel.isComposerRequested, initial: true) { _, isRequested in
+            guard isRequested else { return }
+            viewModel.consumeComposerRequest()
+            isComposing = true
+        }
         .sheet(isPresented: $isComposing) {
             StoryComposerView(viewModel: viewModel, partnerName: people.partnerName)
                 .analyticsScreen("story_composer")

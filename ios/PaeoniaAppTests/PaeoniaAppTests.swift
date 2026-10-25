@@ -968,6 +968,16 @@ final class TestPairingCelebrationStore: PairingCelebrationStoring {
     func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID) {
         progressByPairID[pairID] = progress
     }
+
+    private var firstStepsByPairID: [UUID: HomeFirstStepsProgress] = [:]
+
+    func homeFirstSteps(forPairID pairID: UUID) -> HomeFirstStepsProgress {
+        firstStepsByPairID[pairID] ?? HomeFirstStepsProgress()
+    }
+
+    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forPairID pairID: UUID) {
+        firstStepsByPairID[pairID] = progress
+    }
 }
 
 @MainActor

@@ -11,6 +11,8 @@ struct MainTabIdentity: Equatable {
     /// What this person calls their partner. Show `partnerDisplayName`, never the partner's own name.
     var partnerName: PartnerName?
     var partnerProfilePhotoAssetID: UUID?
+    /// The pair this phone celebrated, which keys Home's "Things to try together" card.
+    var pairID: UUID?
     /// The active couple, needed to create new memories. Cosmetic for the rest of the
     /// tabs, so it must not be part of any load-bearing `.task(id:)` key.
     var coupleID: UUID?
@@ -71,9 +73,11 @@ struct MainTabActions {
 @MainActor
 final class MainTabModels {
     private let dependencies: RootFeatureDependencies
+    private let pairingCelebrationStore: any PairingCelebrationStoring
 
-    init(dependencies: RootFeatureDependencies) {
+    init(dependencies: RootFeatureDependencies, pairingCelebrationStore: any PairingCelebrationStoring) {
         self.dependencies = dependencies
+        self.pairingCelebrationStore = pairingCelebrationStore
     }
 
     lazy var dailyChallenge: DailyChallengeViewModel =
@@ -92,6 +96,7 @@ final class MainTabModels {
     lazy var chatSummaries = ThreadChatSummaries(service: dailyChallenge.chatService)
     lazy var reactions = ReactionStore()
     lazy var topics = TopicsViewModel()
+    lazy var firstSteps = HomeFirstStepsModel(store: pairingCelebrationStore, memoryService: memories.memoryService)
     lazy var lookBack = LookBackViewModel.live(
         thumbnailLoader: dependencies.widgetHistoryThumbnailLoader
             ?? WidgetRevisionThumbnailLoader(gateway: WidgetDrawingHistoryFactory.makeGateway())
@@ -183,7 +188,8 @@ struct MainTabView: View {
         widgetDrawingPresented: Binding<Bool>,
         deepLink: Binding<PaeoniaDeepLink?> = .constant(nil),
         actions: MainTabActions = MainTabActions(),
-        dependencies: RootFeatureDependencies? = nil
+        dependencies: RootFeatureDependencies? = nil,
+        pairingCelebrationStore: (any PairingCelebrationStoring)? = nil
     ) {
         let dependencies = dependencies ?? RootFeatureDependencies()
         self.tabs = tabs
@@ -195,7 +201,12 @@ struct MainTabView: View {
         self.deepLink = deepLink
         self.actions = actions
         self.dependencies = dependencies
-        _models = State(initialValue: MainTabModels(dependencies: dependencies))
+        _models = State(
+            initialValue: MainTabModels(
+                dependencies: dependencies,
+                pairingCelebrationStore: pairingCelebrationStore ?? UserDefaultsPairingCelebrationStore.shared
+            )
+        )
     }
 
     var dailyChallengeViewModel: DailyChallengeViewModel { models.dailyChallenge }
@@ -211,9 +222,10 @@ struct MainTabView: View {
     var chatSummaries: ThreadChatSummaries { models.chatSummaries }
     var reactionStore: ReactionStore { models.reactions }
     var topicsViewModel: TopicsViewModel { models.topics }
+    var firstStepsModel: HomeFirstStepsModel { models.firstSteps }
 
     var body: some View {
-        presentingSearch(on: presentingDailyFlows(on: tabContent))
+        presentingSearch(on: presentingDailyFlows(on: followingFirstSteps(on: tabContent)))
             // Outside the covers and sheets, so the Home drawing, the story viewer and every game
             // screen can show and take reactions.
             .environment(reactionStore)

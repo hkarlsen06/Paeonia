@@ -136,6 +136,7 @@
             currentDisplayName: "Alex",
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
             partnerName: PartnerName(accountName: "Robin", nickname: nil),
+            pairID: scenario == .homeFirstSteps ? DeveloperLocalFlowIDs.pairID : nil,
             coupleID: DeveloperScenarioFixture.coupleID,
             relationshipStartedOn: "2025-09-14",
             accessNotice: scenario.accessNotice
@@ -150,7 +151,9 @@
             milestoneViewModel: milestoneViewModel,
             memoriesViewModel: memoriesViewModel,
             gamesViewModel: gamesViewModel
-          )
+          ),
+          // Past the first day, with the game and topic rows ticked, for `home-first-steps`.
+          pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(startsPastFirstDay: scenario == .homeFirstSteps)
         )
       }
     }

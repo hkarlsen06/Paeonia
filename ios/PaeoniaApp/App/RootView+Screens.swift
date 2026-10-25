@@ -277,7 +277,8 @@ extension RootView {
             widgetDrawingPresented: widgetDrawingPresented,
             deepLink: deepLinkForTabs,
             actions: mainTabActions,
-            dependencies: featureDependencies
+            dependencies: featureDependencies,
+            pairingCelebrationStore: viewModel.pairingCelebrationStore
         )
     }
 
@@ -291,6 +292,7 @@ extension RootView {
             partnerUserID: viewModel.currentPartnerUserID,
             partnerName: viewModel.currentPartnerName,
             partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
+            pairID: viewModel.currentPairID,
             coupleID: viewModel.currentActiveCoupleID,
             relationshipStartedOn: viewModel.currentRelationshipStartedOn,
             ownAccess: viewModel.currentOwnAccess,

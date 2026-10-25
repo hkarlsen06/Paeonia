@@ -154,12 +154,14 @@ struct PairingInviteCodeTests {
         let store = UserDefaultsPairingCelebrationStore(defaults: defaults)
         store.markCelebrationSeen(forPairID: firstPairID)
         store.markCelebrationSeen(forPairID: secondPairID)
+        store.saveHomeFirstSteps(HomeFirstStepsProgress(doneSteps: [.memory], isClosed: true), forPairID: firstPairID)
         defaults.set(true, forKey: unrelatedKey)
 
         store.clearAll()
 
         #expect(!store.hasSeenCelebration(forPairID: firstPairID))
         #expect(!store.hasSeenCelebration(forPairID: secondPairID))
+        #expect(store.homeFirstSteps(forPairID: firstPairID) == HomeFirstStepsProgress())
         #expect(defaults.bool(forKey: unrelatedKey))
     }
 }

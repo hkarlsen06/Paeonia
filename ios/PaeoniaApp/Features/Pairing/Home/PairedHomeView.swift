@@ -33,6 +33,10 @@ struct PairedHomeView: View {
     var onOpenDailyChallenge: () -> Void = {}
     /// Opens the answer flow of an earlier question shown as a locked row on the daily card.
     var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
+    /// "Things to try together" after the first day. Nil hides the card.
+    var firstSteps: HomeFirstSteps?
+    var onOpenFirstStep: (HomeFirstStep) -> Void = { _ in }
+    var onCloseFirstSteps: () -> Void = {}
     var onOpenWidgetDrawing: () -> Void = {}
     /// The old question, drawing or memory shown under the daily card. Hidden when there is none.
     var lookBack: LookBackViewModel?
@@ -81,6 +85,9 @@ struct PairedHomeView: View {
         onTapStreak: (() -> Void)? = nil,
         onOpenDailyChallenge: @escaping () -> Void = {},
         onOpenPartnerQuestion: @escaping (UUID) -> Void = { _ in },
+        firstSteps: HomeFirstSteps? = nil,
+        onOpenFirstStep: @escaping (HomeFirstStep) -> Void = { _ in },
+        onCloseFirstSteps: @escaping () -> Void = {},
         onOpenWidgetDrawing: @escaping () -> Void = {},
         lookBack: LookBackViewModel? = nil,
         onOpenLookBack: @escaping (LookBackItem) -> Void = { _ in },
@@ -114,6 +121,9 @@ struct PairedHomeView: View {
         self.onTapStreak = onTapStreak
         self.onOpenDailyChallenge = onOpenDailyChallenge
         self.onOpenPartnerQuestion = onOpenPartnerQuestion
+        self.firstSteps = firstSteps
+        self.onOpenFirstStep = onOpenFirstStep
+        self.onCloseFirstSteps = onCloseFirstSteps
         self.onOpenWidgetDrawing = onOpenWidgetDrawing
         self.lookBack = lookBack
         self.onOpenLookBack = onOpenLookBack
@@ -137,6 +147,7 @@ struct PairedHomeView: View {
                 cardsLayout {
                     partnerGameCard
                     dailyPromptCard
+                    firstStepsCard
                     unreadChatsCard
                     milestoneAndWidget
                         .layoutValue(key: HomeWideRole.self, value: .tiles)
@@ -157,6 +168,7 @@ struct PairedHomeView: View {
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isSavable)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: firstSteps)
             // The daily card is tall until today's question is answered, then a short row.
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
         }
@@ -344,6 +356,19 @@ extension PairedHomeView {
                 partnerName: partnerName,
                 thumbnailLoader: lookBack.thumbnailLoader,
                 onOpen: { onOpenLookBack(item) }
+            )
+            .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var firstStepsCard: some View {
+        if let firstSteps {
+            HomeFirstStepsCard(
+                steps: firstSteps,
+                partnerName: partnerName,
+                onOpen: onOpenFirstStep,
+                onClose: onCloseFirstSteps
             )
             .transition(.opacity)
         }

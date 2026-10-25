@@ -18225,6 +18225,186 @@
         }
       }
     },
+    "home.firstSteps.close" : {
+      "comment" : "VoiceOver label for the X button that hides the Home card with things to try together for good.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide things to try"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skjul ting å prøve"
+          }
+        }
+      }
+    },
+    "home.firstSteps.countdown" : {
+      "comment" : "Row on the Home card with things to try together. Opens the couple's dates, where they can add a countdown to something they look forward to.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a countdown"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til en nedtelling"
+          }
+        }
+      }
+    },
+    "home.firstSteps.done" : {
+      "comment" : "VoiceOver value of a row on the Home card with things to try together, once the person has done it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjort"
+          }
+        }
+      }
+    },
+    "home.firstSteps.game" : {
+      "comment" : "Row on the Home card with things to try together. Opens the Games tab. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Challenge %@ to a game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utfordre %@ til et spill"
+          }
+        }
+      }
+    },
+    "home.firstSteps.memory" : {
+      "comment" : "Row on the Home card with things to try together. Opens the Memories tab.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save your first memory"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre ditt første minne"
+          }
+        }
+      }
+    },
+    "home.firstSteps.notDone" : {
+      "comment" : "VoiceOver value of a row on the Home card with things to try together, before the person has done it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not done yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke gjort ennå"
+          }
+        }
+      }
+    },
+    "home.firstSteps.progress" : {
+      "comment" : "Under the title of the Home card with things to try together. The first %lld is how many rows are done, the second is how many rows there are.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld done"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld av %2$lld gjort"
+          }
+        }
+      }
+    },
+    "home.firstSteps.story" : {
+      "comment" : "Row on the Home card with things to try together. Opens the screen for posting a story, a photo the partner sees on Home for 24 hours.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Post a story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg ut en story"
+          }
+        }
+      }
+    },
+    "home.firstSteps.title" : {
+      "comment" : "Title of the Home card shown after the couple's first day, listing a few things to do in the app. Each row ticks itself off once done.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Things to try together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ting å prøve sammen"
+          }
+        }
+      }
+    },
+    "home.firstSteps.topic" : {
+      "comment" : "Row on the Home card with things to try together. Opens Topics, the extra questions sorted by theme.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer a question from a topic"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svar på et spørsmål fra et tema"
+          }
+        }
+      }
+    },
     "home.lookBack.drawing.partners" : {
       "comment" : "Title on the Home look-back card for a widget drawing the partner made. %@ is the partner's name.",
       "extractionState" : "manual",
