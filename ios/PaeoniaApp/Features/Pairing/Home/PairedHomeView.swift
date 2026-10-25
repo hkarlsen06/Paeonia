@@ -176,7 +176,10 @@ struct PairedHomeView: View {
             HomeMapLayout(
                 current: current,
                 partner: partner,
+                currentName: currentName,
+                currentPhotoAssetID: currentProfilePhotoAssetID,
                 partnerName: partnerName,
+                partnerPhotoAssetID: partnerProfilePhotoAssetID,
                 stories: stories,
                 storyPeople: storyPeople
             ) {

@@ -3,12 +3,14 @@ import SwiftUI
 
 /// PROTOTYPE. Home with the couple's live map behind everything. Both avatars sit on the
 /// map with their stories and notes, and the rest of Home is one surface that scrolls up
-/// over the map. Pulling down past the top opens the map full screen, and a tap on the
-/// surface's edge closes it again.
+/// over the map. A tap on the map, or a pull down past the top, opens the map full screen.
 struct HomeMapLayout<Header: View, Sheet: View>: View {
     let current: LocationPoint
     let partner: LocationPoint
+    let currentName: String
+    let currentPhotoAssetID: UUID?
     let partnerName: String
+    let partnerPhotoAssetID: UUID?
     let stories: StoriesViewModel?
     let storyPeople: StoryPeople?
     @ViewBuilder let header: Header
@@ -16,16 +18,18 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 
     @AppStorage("proto.home.avatarSize") private var avatarSize: Double = 72
     @AppStorage("proto.home.fakePartner") private var fakePartner: FakePartnerPlace = .real
-    @State private var isExpanded = UserDefaults.standard.bool(forKey: "proto.home.startExpanded")
     @State private var camera: MapCameraPosition = .automatic
     @State private var avatarPoints: AvatarPoints?
-    @State private var pull: CGFloat = 0
+    @State private var scroll = ScrollState()
+    @State private var isMapOpen = UserDefaults.standard.bool(forKey: "proto.home.startExpanded")
+    /// Only a drag that starts with Home at the top opens the map, so scrolling back up
+    /// past the top doesn't.
+    @State private var dragStartedAtTop = false
+    @Namespace private var zoom
 
-    private static var expandPull: CGFloat { 90 }
-    private static var mapSpace: String { "homeMap" }
+    private static var openPull: CGFloat { 100 }
     private static var sheetCorner: CGFloat { 32 }
-    /// The mark and streak row under the status bar.
-    private static var headerHeight: CGFloat { PaeoniaSpacing.compactButtonHeight }
+    private static var zoomID: String { "homeMap" }
 
     private var partnerCoordinate: CLLocationCoordinate2D {
         fakePartner.coordinate ?? partner.coordinate
@@ -40,39 +44,58 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 
     var body: some View {
         GeometryReader { geo in
-            let metrics = Metrics(geo: geo, isExpanded: isExpanded, isNear: isNear)
+            let metrics = Metrics(geo: geo, isNear: isNear)
             ScrollView {
                 VStack(spacing: 0) {
                     mapLayer(metrics)
                         .frame(height: metrics.sheetTop, alignment: .top)
-                        .zIndex(0)
                     sheetSurface(metrics)
-                        .zIndex(1)
                 }
             }
             .scrollIndicators(.hidden)
-            .scrollDisabled(isExpanded)
+            .scrollEdgeEffectHidden(true, for: .top)
             .ignoresSafeArea(edges: .top)
-            .onScrollGeometryChange(for: CGFloat.self) { scroll in
-                -(scroll.contentOffset.y + scroll.contentInsets.top)
-            } action: { _, value in
-                pull = value
+            .onScrollGeometryChange(for: ScrollState.self) { geometry in
+                ScrollState(
+                    offset: geometry.contentOffset.y + geometry.contentInsets.top,
+                    visibleHeight: geometry.containerSize.height
+                        - geometry.contentInsets.top - geometry.contentInsets.bottom
+                )
+            } action: { _, state in
+                scroll = state
             }
-            .onScrollPhaseChange { old, _ in
-                if old == .interacting, pull > Self.expandPull {
-                    setExpanded(true)
+            .onScrollPhaseChange { old, new in
+                if new == .interacting, old != .interacting {
+                    dragStartedAtTop = scroll.offset <= 1
+                }
+                if old == .interacting, dragStartedAtTop, -scroll.offset > Self.openPull {
+                    isMapOpen = true
                 }
             }
+            // Backs the status bar once the surface reaches it, so cards never run under the clock.
+            .overlay(alignment: .top) {
+                Color.paeoniaBackgroundPrimary
+                    .frame(height: metrics.topInset)
+                    .opacity(scroll.offset >= metrics.sheetTop - metrics.topInset ? 1 : 0)
+                    .ignoresSafeArea(edges: .top)
+                    .allowsHitTesting(false)
+            }
             .onChange(of: geo.size, initial: true) { frame(metrics) }
-            .onChange(of: isExpanded) { frame(metrics) }
             .onChange(of: fakePartner) { frame(metrics) }
             .onChange(of: current) { frame(metrics) }
             .onChange(of: partner) { frame(metrics) }
+            .fullScreenCover(isPresented: $isMapOpen) {
+                HomeMapFullScreen(
+                    current: current,
+                    partner: partner,
+                    currentName: currentName,
+                    currentPhotoAssetID: currentPhotoAssetID,
+                    partnerName: partnerName,
+                    partnerPhotoAssetID: partnerPhotoAssetID
+                )
+                .navigationTransition(.zoom(sourceID: Self.zoomID, in: zoom))
+            }
         }
-    }
-
-    private func setExpanded(_ expanded: Bool) {
-        withAnimation(.snappy(duration: 0.4)) { isExpanded = expanded }
     }
 
     private func frame(_ metrics: Metrics) {
@@ -80,82 +103,66 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         let region = CoupleMapFraming.region(
             current: current.coordinate,
             partner: partnerCoordinate,
-            aspectRatio: metrics.width / max(metrics.framedHeight, 1)
+            aspectRatio: metrics.width / metrics.framedHeight
         )
-        withAnimation(.snappy(duration: 0.4)) { camera = .region(region) }
+        camera = .region(region)
     }
 
     // MARK: Map
 
     private func mapLayer(_ metrics: Metrics) -> some View {
         ZStack(alignment: .top) {
-            MapReader { proxy in
-                Map(position: $camera, interactionModes: isExpanded ? .all : []) {}
+            ZStack {
+                Map(position: $camera, interactionModes: []) {}
                     .mapStyle(.standard(elevation: .flat, emphasis: .muted, pointsOfInterest: .excludingAll))
                     .environment(\.colorScheme, .dark)
                     .grayscale(1)
                     .colorMultiply(.paeoniaAccentPrimary)
-                    .safeAreaPadding(.top, metrics.framedTop)
-                    // Lifts the Apple Maps mark to just above the surface's top edge.
-                    .safeAreaPadding(.bottom, metrics.fullHeight - metrics.framedBottom)
-                    .onMapCameraChange(frequency: .continuous) { _ in
-                        updateAvatarPoints(proxy, topPadding: metrics.framedTop)
+                    .safeAreaPadding(.top, max(metrics.framedTop, 0))
+                    // Also places the Apple Maps mark, on the line above the surface.
+                    .safeAreaPadding(.bottom, max(metrics.fullHeight - metrics.framedBottom, 0))
+                    .onMapCameraChange(frequency: .continuous) { context in
+                        guard MapScreenPoint.isUsable(context.rect) else { return }
+                        avatarPoints = AvatarPoints(
+                            own: MapScreenPoint.point(current.coordinate, in: context.rect, box: metrics.framedBox),
+                            partner: MapScreenPoint.point(partnerCoordinate, in: context.rect, box: metrics.framedBox)
+                        )
                     }
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { isMapOpen = true }
+                    .accessibilityAddTraits(.isButton)
+                avatars
             }
             .frame(height: metrics.fullHeight)
-            .overlay { avatars }
-            .coordinateSpace(.named(Self.mapSpace))
+            .matchedTransitionSource(id: Self.zoomID, in: zoom)
             .pinnedInScroll()
 
             header
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.top, metrics.topInset)
                 .pinnedInScroll()
-
-            if isExpanded {
-                prototypeMenu
-                    .padding(.top, metrics.topInset + Self.headerHeight + PaeoniaSpacing.space12)
-                    .padding(.trailing, PaeoniaSpacing.screenHorizontalPadding)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .pinnedInScroll()
-                    .transition(.opacity)
-            }
         }
     }
 
     @ViewBuilder
     private var avatars: some View {
         if let stories, let storyPeople, let raw = avatarPoints {
-            let avatarPoints = separated(raw)
+            let points = separated(raw)
             HomeStoriesStrip(
                 viewModel: stories,
                 people: storyPeople,
                 avatarSize: avatarSize,
                 arrange: { own, partner in
                     AnyView(
-                        GeometryReader { geo in
-                            let origin = geo.frame(in: .named(Self.mapSpace)).origin
-                            ZStack {
-                                own.position(avatarPoints.own - origin)
-                                partner.position(avatarPoints.partner - origin)
-                            }
+                        ZStack {
+                            own.position(points.own)
+                            partner.position(points.partner)
                         }
                     )
                 }
             )
         }
-    }
-
-    /// MapProxy measures from inside the map's top safe-area padding, so the points are
-    /// shifted down by it to land in the map's own space.
-    private func updateAvatarPoints(_ proxy: MapProxy, topPadding: CGFloat) {
-        guard let own = proxy.convert(current.coordinate, to: .named(Self.mapSpace)),
-              let partner = proxy.convert(partnerCoordinate, to: .named(Self.mapSpace))
-        else { return }
-        avatarPoints = AvatarPoints(
-            own: CGPoint(x: own.x, y: own.y + topPadding),
-            partner: CGPoint(x: partner.x, y: partner.y + topPadding)
-        )
     }
 
     private func separated(_ points: AvatarPoints) -> AvatarPoints {
@@ -182,84 +189,28 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 .padding(.bottom, PaeoniaSpacing.space16)
             sheet
         }
-        .frame(maxWidth: .infinity, minHeight: metrics.fullHeight, alignment: .top)
-        .background(
-            Color.paeoniaBackgroundPrimary,
-            in: UnevenRoundedRectangle(topLeadingRadius: Self.sheetCorner, topTrailingRadius: Self.sheetCorner)
-        )
-        .shadow(color: .black.opacity(0.35), radius: 18, y: -6)
+        // Fills the screen below the map when there are few cards, and no more, so the
+        // scroll stops once the last card is in view.
+        .frame(maxWidth: .infinity, minHeight: max(scroll.visibleHeight - metrics.sheetTop, 0), alignment: .top)
+        // The surface's color runs on past its end, behind the tab bar and the scroll's
+        // bottom bounce, so the map never shows below it.
+        .background(alignment: .top) {
+            UnevenRoundedRectangle(topLeadingRadius: Self.sheetCorner, topTrailingRadius: Self.sheetCorner)
+                .fill(Color.paeoniaBackgroundPrimary)
+                .padding(.bottom, -metrics.fullHeight)
+                .shadow(color: .black.opacity(0.35), radius: 18, y: -6)
+        }
         .overlay(alignment: .topTrailing) {
-            distanceLine
+            HomeMapDistanceLine(current: current, partner: partner, partnerCoordinate: partnerCoordinate)
                 .padding(.trailing, PaeoniaSpacing.space16)
                 .offset(y: -PaeoniaSpacing.space32)
-        }
-        .overlay {
-            if isExpanded {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture { setExpanded(false) }
-                    .gesture(DragGesture(minimumDistance: 12).onEnded { drag in
-                        if drag.translation.height < -24 { setExpanded(false) }
-                    })
-            }
-        }
-    }
-
-    private var distanceLine: some View {
-        let isTogether = CoupleMapFraming.areTogether(
-            current: current.coordinate,
-            partner: partnerCoordinate,
-            partnerIsStale: false
-        )
-        return TimelineView(.everyMinute) { context in
-            HStack(spacing: PaeoniaSpacing.space4) {
-                Image(systemName: isTogether ? "person.2.fill" : "location.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .accessibilityHidden(true)
-                Text(isTogether
-                    ? String(localized: .homeMapTogether)
-                    : CoupleMapSnapshot.formattedDistance(from: current.coordinate, to: partnerCoordinate))
-                Text(verbatim: "· " + PartnerLocationRecordedStatus.shortAge(
-                    capturedAt: partner.capturedAt, now: context.date
-                ))
-            }
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(.paeoniaAccentPrimary)
-            .shadow(color: .black.opacity(0.6), radius: 3, y: 1)
-        }
-    }
-
-    // MARK: Prototype controls
-
-    private var prototypeMenu: some View {
-        Menu {
-            Picker(selection: $avatarSize) {
-                Text(verbatim: "64").tag(64.0)
-                Text(verbatim: "72 (today's size)").tag(72.0)
-                Text(verbatim: "84").tag(84.0)
-            } label: {
-                Text(verbatim: "Avatar size")
-            }
-            Picker(selection: $fakePartner) {
-                ForEach(FakePartnerPlace.allCases, id: \.self) { place in
-                    Text(verbatim: place.label).tag(place)
-                }
-            } label: {
-                Text(verbatim: "Partner location")
-            }
-        } label: {
-            Image(systemName: "slider.horizontal.3")
-                .font(.body.weight(.semibold))
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: Circle())
         }
     }
 }
 
-private extension CGPoint {
-    static func - (lhs: CGPoint, rhs: CGPoint) -> CGPoint {
-        CGPoint(x: lhs.x - rhs.x, y: lhs.y - rhs.y)
-    }
+private struct ScrollState: Equatable {
+    var offset: CGFloat = 0
+    var visibleHeight: CGFloat = 0
 }
 
 private struct AvatarPoints: Equatable {
@@ -277,13 +228,11 @@ private struct Metrics {
     let framedTop: CGFloat
     let framedBottom: CGFloat
 
-    init(geo: GeometryProxy, isExpanded: Bool, isNear: Bool) {
+    init(geo: GeometryProxy, isNear: Bool) {
         width = geo.size.width
         topInset = geo.safeAreaInsets.top
         fullHeight = geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom
-        let collapsed = topInset + 236
-        let expanded = fullHeight - geo.safeAreaInsets.bottom - 96
-        sheetTop = isExpanded ? expanded : collapsed
+        sheetTop = topInset + 236
         framedBottom = sheetTop - PaeoniaSpacing.space8
         // The distance line's top, above the surface.
         let footerTop = sheetTop - PaeoniaSpacing.space32
@@ -298,6 +247,8 @@ private struct Metrics {
     }
 
     var framedHeight: CGFloat { framedBottom - framedTop }
+    /// Where the map's visible rect sits on screen: inside its safe-area padding.
+    var framedBox: CGRect { CGRect(x: 0, y: framedTop, width: width, height: framedHeight) }
 }
 
 /// Keeps a view still on screen while the scroll view's content moves under it.
@@ -305,6 +256,54 @@ private extension View {
     func pinnedInScroll() -> some View {
         visualEffect { content, proxy in
             content.offset(y: -proxy.frame(in: .scrollView(axis: .vertical)).minY)
+        }
+    }
+}
+
+/// Where a coordinate lands on a map view. The camera's visible rect covers the map's
+/// safe area, which is `box` on screen.
+enum MapScreenPoint {
+    /// The first camera update can come before the map has a size.
+    static func isUsable(_ rect: MKMapRect) -> Bool {
+        rect.width > 0 && rect.height > 0 && rect.width.isFinite && rect.height.isFinite
+    }
+
+    static func point(_ coordinate: CLLocationCoordinate2D, in rect: MKMapRect, box: CGRect) -> CGPoint {
+        let point = MKMapPoint(coordinate)
+        return CGPoint(
+            x: box.minX + (point.x - rect.minX) / rect.width * box.width,
+            y: box.minY + (point.y - rect.minY) / rect.height * box.height
+        )
+    }
+}
+
+/// "Sammen · 2 t" or "306 km · 2 t", on the line above the surface.
+struct HomeMapDistanceLine: View {
+    let current: LocationPoint
+    let partner: LocationPoint
+    let partnerCoordinate: CLLocationCoordinate2D
+
+    var body: some View {
+        let isTogether = CoupleMapFraming.areTogether(
+            current: current.coordinate,
+            partner: partnerCoordinate,
+            partnerIsStale: false
+        )
+        TimelineView(.everyMinute) { context in
+            HStack(spacing: PaeoniaSpacing.space4) {
+                Image(systemName: isTogether ? "person.2.fill" : "location.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .accessibilityHidden(true)
+                Text(isTogether
+                    ? String(localized: .homeMapTogether)
+                    : CoupleMapSnapshot.formattedDistance(from: current.coordinate, to: partnerCoordinate))
+                Text(verbatim: "· " + PartnerLocationRecordedStatus.shortAge(
+                    capturedAt: partner.capturedAt, now: context.date
+                ))
+            }
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaAccentPrimary)
+            .shadow(color: .black.opacity(0.6), radius: 3, y: 1)
         }
     }
 }
