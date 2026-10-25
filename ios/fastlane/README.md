@@ -47,6 +47,14 @@ Upload existing App Store metadata files without regenerating
 
 Validate App Store metadata source and generated files
 
+### ios upload_screenshots
+
+```sh
+[bundle exec] fastlane ios upload_screenshots
+```
+
+Replace App Store screenshots with ASConnectScreenshots/<version>/3d (no metadata)
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

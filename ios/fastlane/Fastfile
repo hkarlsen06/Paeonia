@@ -6,6 +6,12 @@ def metadata_script
   "../Scripts/generate-appstore-metadata.mjs"
 end
 
+def paeonia_release_version
+  version = File.read(File.expand_path("../Version.xcconfig", __dir__))[/^MARKETING_VERSION\s*=\s*(\S+)/, 1]
+  UI.user_error!("MARKETING_VERSION is missing from Version.xcconfig") unless version
+  version
+end
+
 def require_app_store_connect_api_key!
   required_env_vars = %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH]
   missing_vars = required_env_vars.reject { |var| ENV[var] && !ENV[var].empty? }
@@ -68,5 +74,39 @@ platform :ios do
     UI.message("Validating metadata...")
     sh("bun", metadata_script, "--validate-only")
     UI.success("Metadata validation passed.")
+  end
+
+  desc "Replace App Store screenshots with ASConnectScreenshots/<version>/3d (no metadata)"
+  lane :upload_screenshots do
+    version = paeonia_release_version
+    screenshots_path = File.expand_path("../ASConnectScreenshots/#{version}/3d", __dir__)
+    UI.user_error!("No screenshots at #{screenshots_path}") unless Dir.exist?(screenshots_path)
+
+    # Deliver rejects unknown files such as the preview strips, so stage one folder per locale
+    # with only the iPhone renders. Deliver replaces every screenshot in each locale it uploads.
+    require "tmpdir"
+    Dir.mktmpdir("paeonia-screenshots") do |staging|
+      locales = Dir.children(screenshots_path).select { |name| File.directory?(File.join(screenshots_path, name)) }
+      UI.user_error!("No locale folders in #{screenshots_path}") if locales.empty?
+      locales.each do |locale|
+        FileUtils.mkdir_p(File.join(staging, locale))
+        FileUtils.cp(Dir.glob(File.join(screenshots_path, locale, "iPhone-*.png")), File.join(staging, locale))
+      end
+
+      deliver(
+        api_key: require_app_store_connect_api_key!,
+        app_version: version,
+        submit_for_review: false,
+        skip_binary_upload: true,
+        skip_metadata: true,
+        skip_screenshots: false,
+        overwrite_screenshots: true,
+        screenshots_path: staging,
+        force: true,
+        precheck_include_in_app_purchases: false
+      )
+    end
+
+    UI.success("Screenshots uploaded successfully.")
   end
 end
