@@ -50,7 +50,7 @@ struct MemoryCommentsSection: View {
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .frame(width: PaeoniaSpacing.space24)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(.memoriesCommentsTitle)
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
@@ -72,7 +72,7 @@ struct MemoryCommentsSection: View {
                 .accessibilityHidden(true)
         }
         .padding(.horizontal, PaeoniaSpacing.space16)
-        .padding(.vertical, PaeoniaSpacing.space12)
+        .padding(.vertical, PaeoniaSpacing.space8)
         .contentShape(Rectangle())
     }
 
