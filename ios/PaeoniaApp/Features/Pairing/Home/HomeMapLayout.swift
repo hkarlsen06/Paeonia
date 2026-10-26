@@ -187,9 +187,10 @@ private struct Metrics {
         bandHeight = framedBottom + fadeHeight
         let barBottom = topInset + PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space12
         let cardsTop = framedBottom + PaeoniaSpacing.space16
-        // Together: the note bubble and the avatar under it, as one group, centered between
-        // the bar and the first card. The avatar sits below the group's middle by half a bubble.
-        let avatarCenter = (barBottom + cardsTop) / 2 + 22
+        // Together: the avatars centered in the open map between the streak pill and the
+        // first card. The bar's glass is off at rest, so the pill is where the space starts.
+        let pillBottom = topInset + PaeoniaSpacing.compactButtonHeight
+        let avatarCenter = (pillBottom + cardsTop) / 2
         framedBox = isNear
             ? CGRect(x: 0, y: avatarCenter - 65, width: width, height: 130)
             : CGRect(x: 0, y: barBottom, width: width, height: cardsTop - PaeoniaSpacing.space8 - barBottom)
