@@ -1,10 +1,10 @@
-import MapKit
+import CoreLocation
 import SwiftUI
 
-/// PROTOTYPE. Home with the couple's live map as its header. The map fades into the
-/// background at the bottom, both avatars sit on it with their stories and notes, and the
-/// cards follow in one plain scroll view. The map's safe area ends above the fade, which
-/// keeps the Apple Maps mark on fully visible map.
+/// PROTOTYPE. Home with the couple's map as its header. The map fades on behind the cards,
+/// both avatars sit on it with their stories and notes, and the cards follow in one plain
+/// scroll view. The mark and the streak stay at the top in a bar that turns to glass once
+/// the cards scroll under it, like a navigation bar.
 struct HomeMapLayout<Header: View, Sheet: View>: View {
     let current: LocationPoint
     let partner: LocationPoint
@@ -15,7 +15,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 
     @AppStorage("proto.home.avatarSize") private var avatarSize: Double = 72
     @AppStorage("proto.home.fakePartner") private var fakePartner: FakePartnerPlace = .real
-    @State private var camera: MapCameraPosition = .automatic
     @State private var avatarPoints: AvatarPoints?
     @State private var scrollOffset: CGFloat = 0
 
@@ -23,7 +22,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         fakePartner.coordinate ?? partner.coordinate
     }
 
-    /// Close enough that the map shows its smallest area, so both avatars sit in the middle.
+    /// Close enough that the map shows one city, so both avatars sit side by side in the middle.
     private var isNear: Bool {
         CLLocation(latitude: current.latitude, longitude: current.longitude)
             .distance(from: CLLocation(latitude: partnerCoordinate.latitude, longitude: partnerCoordinate.longitude))
@@ -37,74 +36,44 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 VStack(spacing: 0) {
                     mapHeader(metrics)
                     sheet
-                        // The cards start inside the fade, so the map runs into them.
+                        // The cards start just under the distance line, and the map fades on behind them.
                         .padding(.top, -metrics.cardsOverlap)
                 }
             }
             .scrollIndicators(.hidden)
-            .scrollEdgeEffectHidden(true, for: .top)
-            .ignoresSafeArea(edges: .top)
             .onScrollGeometryChange(for: CGFloat.self) { geometry in
                 geometry.contentOffset.y + geometry.contentInsets.top
             } action: { _, offset in
                 scrollOffset = offset
             }
-            // Backs the status bar once the map has scrolled away, so cards never run under the clock.
-            .overlay(alignment: .top) {
-                Color.paeoniaBackgroundPrimary
-                    .frame(height: metrics.topInset)
-                    .opacity(scrollOffset >= metrics.bandHeight - metrics.topInset ? 1 : 0)
-                    .ignoresSafeArea(edges: .top)
-                    .allowsHitTesting(false)
+            .ignoresSafeArea(edges: .top)
+            // Like a navigation bar: no glass at rest over the map, glass as soon as Home scrolls.
+            .scrollEdgeEffectHidden(scrollOffset <= 1, for: .top)
+            .safeAreaBar(edge: .top) {
+                header
+                    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                    // A navigation bar is 54 points tall, so its glass reaches past the 44 point pill.
+                    .padding(.bottom, PaeoniaSpacing.space12)
             }
-            .onChange(of: geo.size, initial: true) { frame(metrics) }
-            .onChange(of: fakePartner) { frame(metrics) }
-            .onChange(of: current) { frame(metrics) }
-            .onChange(of: partner) { frame(metrics) }
         }
-    }
-
-    private func frame(_ metrics: Metrics) {
-        guard metrics.width > 0, metrics.framedHeight > 40 else { return }
-        var region = CoupleMapFraming.region(
-            current: current.coordinate,
-            partner: partnerCoordinate,
-            aspectRatio: metrics.width / metrics.framedHeight
-        )
-        if !isNear {
-            // Apart, the avatars keep clear of the edges and of the distance line.
-            region.span.latitudeDelta = min(region.span.latitudeDelta * 1.5, 170)
-            region.span.longitudeDelta = min(region.span.longitudeDelta * 1.5, 350)
-        }
-        camera = .region(region)
     }
 
     // MARK: Map
 
     private func mapHeader(_ metrics: Metrics) -> some View {
         ZStack(alignment: .top) {
-            Map(position: $camera, interactionModes: []) {}
-                .mapStyle(.standard(elevation: .flat, emphasis: .muted, pointsOfInterest: .excludingAll))
-                .environment(\.colorScheme, .dark)
-                .grayscale(1)
-                .colorMultiply(.paeoniaAccentPrimary)
-                .safeAreaPadding(.top, max(metrics.framedTop, 0))
-                // Ends the safe area above the fade, which is also where MapKit puts its mark.
-                .safeAreaPadding(.bottom, metrics.fadeHeight)
-                .onMapCameraChange(frequency: .continuous) { context in
-                    guard MapScreenPoint.isUsable(context.rect) else { return }
-                    avatarPoints = AvatarPoints(
-                        own: MapScreenPoint.point(current.coordinate, in: context.rect, box: metrics.framedBox),
-                        partner: MapScreenPoint.point(partnerCoordinate, in: context.rect, box: metrics.framedBox)
-                    )
-                }
-                .mask { fadeMask(metrics) }
+            HomeMapLibreView(
+                current: current.coordinate,
+                partner: partnerCoordinate,
+                isNear: isNear,
+                framedBox: metrics.framedBox,
+                avatarSize: avatarSize
+            ) { own, partner in
+                avatarPoints = AvatarPoints(own: own, partner: partner)
+            }
+            .mask { fadeMask(metrics) }
 
             avatars
-
-            header
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, metrics.topInset)
 
             HomeMapDistanceLine(current: current, partner: partner, partnerCoordinate: partnerCoordinate)
                 .contextMenu { prototypeMenu }
@@ -163,8 +132,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         let minimum = max(StoryNoteBubble.maxWidth + PaeoniaSpacing.space8, avatarSize + PaeoniaSpacing.space16)
         guard isNear else {
             // Apart: pushed away from each other along the line between the two places,
-            // so north stays north.
-            // Room for a note bubble between them when one sits above the other.
+            // so north stays north, with room for a note bubble when one sits above the other.
             let apart = max(minimum, avatarSize + 56)
             let (own, partner) = CoupleMapFraming.separated(points.own, points.partner, minimumDistance: apart)
             return AvatarPoints(own: own, partner: partner)
@@ -193,6 +161,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         } label: {
             Text(verbatim: "Partner location")
         }
+        Section(HomeMapLibreView.credit) {}
     }
 }
 
@@ -205,58 +174,35 @@ private struct Metrics {
     let width: CGFloat
     let topInset: CGFloat
     let bandHeight: CGFloat
-    let fadeHeight: CGFloat
-    /// The area the camera frames, as the map's safe area. Its bottom is the top of the
-    /// fade, where the Apple Maps mark sits.
-    let framedTop: CGFloat
+    let fadeHeight: CGFloat = 260
+    /// The bottom of the last row where the map is fully shown.
     let framedBottom: CGFloat
-    /// The top of the line with the mark and the distance.
+    /// Where the camera puts the couple, in the map's coordinates.
+    let framedBox: CGRect
+    /// The top of the distance line.
     let lineTop: CGFloat
-    /// The cards start just under the line with the mark, and the fade carries on behind them.
 
     init(geo: GeometryProxy, isNear: Bool) {
         width = geo.size.width
         topInset = geo.safeAreaInsets.top
-        fadeHeight = 260
         // Apart, the avatars sit wherever the two places are, so the map gets more height.
-        bandHeight = topInset + 236 + fadeHeight - PaeoniaSpacing.space24 + (isNear ? 0 : 48)
-        framedBottom = bandHeight - fadeHeight
-        // Sits on the map's last fully visible row, level with the Apple Maps mark.
+        framedBottom = topInset + 212 + (isNear ? 0 : 48)
+        bandHeight = framedBottom + fadeHeight
         lineTop = framedBottom - PaeoniaSpacing.space20
-        framedTop = if isNear {
-            // Puts the middle of the framed area halfway between the Dynamic Island and the
-            // line with the mark, where the avatars land when the couple is close.
-            topInset + lineTop - framedBottom
+        framedBox = if isNear {
+            // Centered halfway between the Dynamic Island and the distance line.
+            CGRect(x: 0, y: topInset - 24, width: width, height: lineTop - topInset + 24 + 24)
         } else {
-            // Room above the higher avatar for its note bubble.
-            topInset + 56
+            CGRect(x: 0, y: topInset, width: width, height: lineTop - PaeoniaSpacing.space4 - topInset)
         }
     }
 
-    var framedHeight: CGFloat { framedBottom - framedTop }
-    var framedBox: CGRect { CGRect(x: 0, y: framedTop, width: width, height: framedHeight) }
-    var fadeStart: CGFloat { framedBottom / bandHeight }
     var cardsOverlap: CGFloat { fadeHeight - PaeoniaSpacing.space16 }
+    /// The fade starts a little above the distance line, so the line already sits in it.
+    var fadeStart: CGFloat { (framedBottom - 50) / bandHeight }
 }
 
-/// Where a coordinate lands on a map view. The camera's visible rect covers the map's
-/// safe area, which is `box` on screen.
-enum MapScreenPoint {
-    /// The first camera update can come before the map has a size.
-    static func isUsable(_ rect: MKMapRect) -> Bool {
-        rect.width > 0 && rect.height > 0 && rect.width.isFinite && rect.height.isFinite
-    }
-
-    static func point(_ coordinate: CLLocationCoordinate2D, in rect: MKMapRect, box: CGRect) -> CGPoint {
-        let point = MKMapPoint(coordinate)
-        return CGPoint(
-            x: box.minX + (point.x - rect.minX) / rect.width * box.width,
-            y: box.minY + (point.y - rect.minY) / rect.height * box.height
-        )
-    }
-}
-
-/// "Sammen · 2 t" or "306 km · 2 t", on the line with the Apple Maps mark.
+/// "Sammen · 2 t" or "306 km · 2 t", just above the cards.
 struct HomeMapDistanceLine: View {
     let current: LocationPoint
     let partner: LocationPoint
