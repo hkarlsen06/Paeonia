@@ -4,11 +4,11 @@ import Observation
 /// `badges:get_badges`: what waits for this person, by the tab that shows it, and
 /// the number on the app icon (`backend/convex/lib/badges.ts`).
 nonisolated struct AppBadgeCounts: Decodable, Equatable, Sendable {
-    /// Unread question chats, today's answers to open, and Topics questions that wait.
+    /// Unread question and story chats, today's answers to open, and Topics questions that wait.
     var questions: Int
     /// Games that wait on this person, and open invites.
     var games: Int
-    /// The partner's stories still on Home that this person has not opened, and unread story replies.
+    /// The partner's stories still on Home that this person has not opened.
     var home: Int
     /// Memories whose comments the partner wrote in and this person has not read.
     var memories: Int

@@ -46,8 +46,8 @@ struct DailyChallengeHistoryTests {
         let days = DailyChallengeHistory.grouped(questions)
 
         #expect(days.map(\.localDate) == [Self.day3, Self.day2, Self.day1])
-        #expect(days.first(where: { $0.localDate == Self.day2 })?.questions.count == 2)
-        #expect(days.first(where: { $0.localDate == Self.day3 })?.questions.count == 1)
+        #expect(days.first(where: { $0.localDate == Self.day2 })?.rows.count == 2)
+        #expect(days.first(where: { $0.localDate == Self.day3 })?.rows.count == 1)
     }
 
     @Test func ordersQuestionsWithinADayByLatestAnswerFirst() {
@@ -63,7 +63,7 @@ struct DailyChallengeHistoryTests {
         let days = DailyChallengeHistory.grouped(questions)
 
         #expect(days.count == 1)
-        #expect(days[0].questions.map(\.id) == [lateRow.instanceID, earlyRow.instanceID])
+        #expect(days[0].rows.map(\.id) == [lateRow.instanceID, earlyRow.instanceID])
     }
 
     @Test func usesLatestOfOwnAndPartnerAnswerAsSortKey() {
@@ -88,7 +88,7 @@ struct DailyChallengeHistoryTests {
         let days = DailyChallengeHistory.grouped(historyQuestions([questionB, questionA]))
 
         #expect(days.count == 1)
-        #expect(days[0].questions.map(\.id) == [questionA.instanceID, questionB.instanceID])
+        #expect(days[0].rows.map(\.id) == [questionA.instanceID, questionB.instanceID])
     }
 
     @Test func placesQuestionInLatestAnswerDayNotInstanceDay() {
@@ -112,7 +112,29 @@ struct DailyChallengeHistoryTests {
         let days = DailyChallengeHistory.grouped(historyQuestions([carried]))
 
         #expect(days.map(\.localDate) == [Self.day3])
-        #expect(days.first?.questions.count == 1)
+        #expect(days.first?.rows.count == 1)
+    }
+
+    @Test func storyChatsGoUnderTheDayTheirStoryWasPosted() {
+        let posted = TestDailyChallengeIDs.answerDate
+        let storyDay = MemoryTimeline.localDateString(for: posted)
+        let question = answeredOwnRow(localDate: storyDay, answeredAt: posted.addingTimeInterval(-3_600))
+        let sameDay = storyConversation(postedAt: posted)
+        let olderDay = storyConversation(postedAt: posted.addingTimeInterval(-3 * 86_400))
+        let fromToday = storyConversation(postedAt: posted.addingTimeInterval(2 * 86_400))
+        let today = MemoryTimeline.localDateString(for: fromToday.story.createdAt)
+
+        let days = DailyChallengeHistory.adding(
+            [sameDay, olderDay, fromToday],
+            before: today,
+            to: DailyChallengeHistory.grouped(historyQuestions([question]))
+        )
+
+        // The story from today stays out, the one posted on a day without questions gets
+        // that day, and the other sorts by time with its day's question.
+        #expect(days.map(\.localDate) == [storyDay, olderDay.localDate])
+        #expect(days[0].rows.map(\.id) == [sameDay.id, question.instanceID])
+        #expect(days[1].rows.map(\.id) == [olderDay.id])
     }
 
     @Test func parsesLocalDateToUTCMidnight() {

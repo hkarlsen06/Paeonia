@@ -1,15 +1,16 @@
 import Foundation
 
-/// One day's worth of answered questions in the earlier-days list. Identified by the
-/// couple's local date string so it stays stable across reloads, and carrying a
-/// parsed `date` purely so the divider can format it in the reader's locale.
+/// One day in the earlier-days list: its answered questions and the chats about stories
+/// posted that day. Identified by the couple's local date string so it stays stable
+/// across reloads, and carrying a parsed `date` purely so the divider can format it in
+/// the reader's locale.
 nonisolated struct DailyChallengeHistoryDay: Identifiable, Equatable, Sendable {
     /// The couple's local date as `yyyy-MM-dd`, e.g. "2026-06-27". Stable identity.
     let localDate: String
     /// Midnight of `localDate` in UTC, for locale-aware formatting in the divider.
     /// Formatting must pin the time zone to UTC so the displayed day never shifts.
     let date: Date
-    let questions: [DailyChallengeQuestion]
+    let rows: [QuestionsTabRow]
 
     var id: String { localDate }
 }
@@ -32,23 +33,44 @@ nonisolated enum DailyChallengeHistory {
                 DailyChallengeHistoryDay(
                     localDate: effectiveLocalDate,
                     date: parseLocalDate(effectiveLocalDate) ?? dayQuestions.first?.startsAt ?? .distantPast,
-                    // Most-recently-answered first within a day — the same ordering the
-                    // Questions tab's single list uses (`DailyChallengeQuestion`'s
-                    // `latestAnswerDate` is the shared sort key).
-                    questions: dayQuestions.sorted(by: DailyChallengeSnapshot.readOverviewOrder)
+                    // Most-recently-answered first within a day, the same ordering the
+                    // Questions tab's single list uses within a tier.
+                    rows: dayQuestions.map(QuestionsTabRow.question).sorted(by: QuestionsTabRow.timelineOrder)
                 )
             }
             .sorted { $0.localDate > $1.localDate }
     }
 
-    /// The days without the questions in `ids`. A day left with no questions is dropped,
-    /// so the earlier-days list never shows a divider with nothing under it.
+    /// The days with the chats about stories posted before `today` added under the day
+    /// each story was posted. A day with only story chats gets its own entry.
+    static func adding(
+        _ storyChats: [StoryConversation],
+        before today: String,
+        to days: [DailyChallengeHistoryDay]
+    ) -> [DailyChallengeHistoryDay] {
+        let earlier = Dictionary(grouping: storyChats.filter { !$0.isToday(today) }, by: \.localDate)
+        guard !earlier.isEmpty else { return days }
+        var daysByDate = Dictionary(uniqueKeysWithValues: days.map { ($0.localDate, $0) })
+        for (localDate, chats) in earlier {
+            let day = daysByDate[localDate]
+            let rows = (day?.rows ?? []) + chats.map(QuestionsTabRow.storyChat)
+            daysByDate[localDate] = DailyChallengeHistoryDay(
+                localDate: localDate,
+                date: day?.date ?? parseLocalDate(localDate) ?? chats[0].story.createdAt,
+                rows: rows.sorted(by: QuestionsTabRow.timelineOrder)
+            )
+        }
+        return daysByDate.values.sorted { $0.localDate > $1.localDate }
+    }
+
+    /// The days without the rows in `ids`. A day left with no rows is dropped, so the
+    /// earlier-days list never shows a divider with nothing under it.
     static func removing(_ ids: Set<UUID>, from days: [DailyChallengeHistoryDay]) -> [DailyChallengeHistoryDay] {
         guard !ids.isEmpty else { return days }
         return days.compactMap { day in
-            let remaining = day.questions.filter { !ids.contains($0.id) }
+            let remaining = day.rows.filter { !ids.contains($0.id) }
             guard !remaining.isEmpty else { return nil }
-            return DailyChallengeHistoryDay(localDate: day.localDate, date: day.date, questions: remaining)
+            return DailyChallengeHistoryDay(localDate: day.localDate, date: day.date, rows: remaining)
         }
     }
 

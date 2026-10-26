@@ -47,3 +47,17 @@ final class StoryReplies {
         return true
     }
 }
+
+extension ThreadChatHeader {
+    /// The card at the top of a story's replies, so the conversation shows which story it is about.
+    static func story(_ story: Story, people: StoryPeople) -> ThreadChatHeader {
+        ThreadChatHeader(
+            eyebrow: people.isOwn(story)
+                ? String(localized: .chatHeaderYourStory)
+                : String(localized: .chatHeaderStory(people.partnerName)),
+            title: story.caption ?? "",
+            detail: story.createdAt.formatted(date: .abbreviated, time: .shortened),
+            photoAssetID: story.mediaAssetID
+        )
+    }
+}

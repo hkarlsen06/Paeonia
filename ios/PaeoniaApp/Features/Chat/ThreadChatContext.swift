@@ -2,8 +2,9 @@ import SwiftUI
 
 /// What a memory's comments or a story's replies need to open as a chat: the couple, both
 /// partners' names, the chat service, the sync that sends queued messages, and the report
-/// flow. The Questions tab builds its chats from the daily view model instead. The tab view
-/// sets this once, so the Memories and Stories screens need none of it passed down.
+/// flow. The Questions tab opens story chats with it too, and builds its question chats
+/// from the daily view model. The tab view sets this once, so the Memories, Stories and
+/// Questions screens need none of it passed down.
 struct ThreadChatContext {
     var coupleID: UUID?
     var participants = DailyChallengeParticipants()

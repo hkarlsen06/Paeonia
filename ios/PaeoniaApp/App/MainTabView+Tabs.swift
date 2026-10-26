@@ -20,15 +20,14 @@ extension MainTabView {
 
     func badgeCount(for tab: MainTab) -> Int {
         switch tab {
-        // The server's counts, the same ones the app icon adds up. Home counts the
-        // stories from this phone's own list, so opening one clears it at once, plus
-        // the story replies the partner wrote that this person has not read.
+        // The server's counts, the same ones the app icon adds up. Questions includes
+        // the unread story replies, since its list shows the story chats. Home counts
+        // the stories from this phone's own list, so opening one clears it at once.
         case .questions: AppBadges.shared.counts.questions
         case .games: AppBadges.shared.counts.games
         case .memories: AppBadges.shared.counts.memories
         case .home:
             StoryTimeline.unseenCount(storiesViewModel.stories, partner: identity.partnerUserID, at: storyBadgeDate)
-                + chatSummaries.unreadCount(of: .story)
         case .us: 0
         }
     }
@@ -199,22 +198,29 @@ extension MainTabView {
                 privacySafetyService: dependencies.settingsPrivacyService,
                 privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
                 onReportedAndLeft: actions.leftRelationship,
-                topicsCard: TopicsCardContent(
-                    topics: topicsViewModel.cardTopics,
-                    hook: topicsHook,
-                    isShown: topicsViewModel.hasLoadedOverview && !topicsViewModel.overview.isEmpty,
-                    onOpen: openTopics,
-                    shelfTopics: topicsViewModel.overview,
-                    newQuestionCount: topicsViewModel.newQuestionCount(for:),
-                    onOpenTopic: { questionsPath.append(.topic($0)) },
-                    waitingQuestions: topicsViewModel.waitingQuestions,
-                    topicTitles: topicsViewModel.titlesByKey
-                )
+                storyChats: chatSummaries.storyConversations(for: storiesViewModel.stories),
+                storyPeople: storyPeople,
+                topicsCard: questionsTopicsCard
             )
             .searchToolbarButton(action: openSearch)
             .analyticsScreen("questions")
             .navigationDestination(for: QuestionsDestination.self, destination: questionsDestination)
         }
+    }
+
+    /// The Topics card on the Questions tab, and the topic questions that join its list.
+    private var questionsTopicsCard: TopicsCardContent {
+        TopicsCardContent(
+            topics: topicsViewModel.cardTopics,
+            hook: topicsHook,
+            isShown: topicsViewModel.hasLoadedOverview && !topicsViewModel.overview.isEmpty,
+            onOpen: openTopics,
+            shelfTopics: topicsViewModel.overview,
+            newQuestionCount: topicsViewModel.newQuestionCount(for:),
+            onOpenTopic: { questionsPath.append(.topic($0)) },
+            waitingQuestions: topicsViewModel.waitingQuestions,
+            topicTitles: topicsViewModel.titlesByKey
+        )
     }
 
     private var usTab: some View {

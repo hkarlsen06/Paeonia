@@ -71,47 +71,27 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         }
     }
 
-    /// Questions tab order: anything with something to do or see sits above the recency
-    /// timeline. First a question the partner answered and the user can still answer,
-    /// then a card with something new from the partner (an answer or a chat message the
-    /// user hasn't seen). Within each tier the shared `readOverviewOrder` applies. Once
-    /// the user answers or opens a card it drops into the timeline, so the next new card
-    /// is on top.
+    /// Questions tab order for questions alone (`QuestionsTabRow.questionsTabOrder`).
+    /// Once the user answers or opens a card it drops into the timeline, so the next new
+    /// card is on top.
     static func questionsTabOrder(
         _ lhs: DailyChallengeQuestion,
         _ rhs: DailyChallengeQuestion,
         isNew: (DailyChallengeQuestion) -> Bool = { _ in false }
     ) -> Bool {
-        func tier(_ question: DailyChallengeQuestion) -> Int {
-            if question.isAwaitingCurrentUserAnswer { return 0 }
-            if isNew(question) { return 1 }
-            return 2
-        }
-        let lhsTier = tier(lhs)
-        let rhsTier = tier(rhs)
-        if lhsTier != rhsTier {
-            return lhsTier < rhsTier
-        }
-        return readOverviewOrder(lhs, rhs)
-    }
-
-    /// Orders read-overview questions by most recent answer first, then a stable id
-    /// tiebreak. Shared by the Questions tab's list (as the within-tier order) and the
-    /// history's within-day order so both read the same way.
-    static func readOverviewOrder(
-        _ lhs: DailyChallengeQuestion,
-        _ rhs: DailyChallengeQuestion
-    ) -> Bool {
-        if lhs.latestAnswerDate != rhs.latestAnswerDate {
-            return lhs.latestAnswerDate > rhs.latestAnswerDate
-        }
-        return lhs.id.uuidString < rhs.id.uuidString
+        QuestionsTabRow.questionsTabOrder(.question(lhs), .question(rhs), isNew: isNew)
     }
 
     /// The couple-local date (`yyyy-MM-dd`) of the active day. Nil before today's
     /// question exists.
     var currentDayLocalDate: String? {
         todayQuestion?.localDate
+    }
+
+    /// The date today's list stands for: the active day, or before today's day has
+    /// started, the phone's date when this snapshot was read.
+    var todayLocalDate: String {
+        currentDayLocalDate ?? MemoryTimeline.localDateString(for: refreshedAt)
     }
 
     /// When the active couple day ends. Nil when no day is active.
@@ -149,13 +129,11 @@ nonisolated struct DailyChallengeSnapshot: Equatable, Sendable {
         return cardState(.active(prompt: prompt))
     }
 
-    /// Whole days from a couple-local date to the active day. Before today's day has
-    /// started, the phone's date when this snapshot was read stands in for it.
+    /// Whole days from a couple-local date to `todayLocalDate`.
     private func daysBeforeToday(_ localDate: String) -> Int {
-        let today = currentDayLocalDate ?? MemoryTimeline.localDateString(for: refreshedAt)
         guard
             let start = DailyChallengeHistory.parseLocalDate(localDate),
-            let end = DailyChallengeHistory.parseLocalDate(today)
+            let end = DailyChallengeHistory.parseLocalDate(todayLocalDate)
         else { return 0 }
         return max(0, Int((end.timeIntervalSince(start) / 86_400).rounded()))
     }

@@ -1,9 +1,10 @@
 import Foundation
 import Observation
 
-/// What the screens outside the Questions tab know about the couple's chats: whether a
-/// memory or a story has a conversation yet, its last message, and whether the partner
-/// wrote something the user has not read. It re-reads this phone's copy of the chat
+/// What the screens know about the couple's memory and story chats: whether a memory or
+/// a story has a conversation yet, its last message, and whether the partner wrote
+/// something the user has not read. The Questions tab lists the story chats with its
+/// question chats (`storyConversations(for:)`). It re-reads this phone's copy of the chat
 /// summaries each time the chat cache changes. `ThreadChatLiveFeed` keeps that
 /// copy current.
 @MainActor
@@ -59,8 +60,12 @@ final class ThreadChatSummaries {
         return summary.isUnread(by: currentUserID, readThrough: readMarks[summary.threadID])
     }
 
-    /// How many chats about this kind of subject the partner wrote in and the user has not read.
-    func unreadCount(of kind: ThreadChatSubject.Kind) -> Int {
-        summaries.keys.filter { $0.kind == kind && isUnread($0) }.count
+    /// The stories in `stories` that someone has written about, each with its chat.
+    func storyConversations(for stories: [Story]) -> [StoryConversation] {
+        stories.compactMap { story in
+            summaries[.story(story.id)].map { summary in
+                StoryConversation(story: story, summary: summary, isUnread: isUnread(summary.subject))
+            }
+        }
     }
 }

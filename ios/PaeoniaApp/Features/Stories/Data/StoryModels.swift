@@ -112,7 +112,7 @@ nonisolated enum StoryTimeline {
     }
 
     /// How many of the partner's stories on Home this person has not opened, for the
-    /// Home tab badge. Matches the stories in `home` in `badges:get_badges`, which also counts unread story replies.
+    /// Home tab badge. Matches `home` in `badges:get_badges`.
     static func unseenCount(_ stories: [Story], partner: UUID?, at now: Date) -> Int {
         onHome(stories, author: partner, at: now).count(where: { $0.seenAt == nil })
     }

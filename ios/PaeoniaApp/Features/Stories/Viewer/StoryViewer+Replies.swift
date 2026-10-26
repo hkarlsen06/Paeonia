@@ -25,22 +25,10 @@ extension StoryViewer {
         chatContext.summaries?.isUnread(.story(story.id)) ?? false
     }
 
-    /// The card at the top of the replies, so the conversation shows which story it is about.
-    private func header(for story: Story) -> ThreadChatHeader {
-        ThreadChatHeader(
-            eyebrow: people.isOwn(story)
-                ? String(localized: .chatHeaderYourStory)
-                : String(localized: .chatHeaderStory(people.partnerName)),
-            title: story.caption ?? "",
-            detail: story.createdAt.formatted(date: .abbreviated, time: .shortened),
-            photoAssetID: story.mediaAssetID
-        )
-    }
-
     /// Opens the chat of the story on screen. The first story of a push about a reply opens
     /// its replies too.
     func loadReplies(for story: Story) async {
-        await replies.load(for: story, header: header(for: story), context: chatContext)
+        await replies.load(for: story, header: .story(story, people: people), context: chatContext)
         if content.showsReplies, !didOpenRequestedReplies, replies.chat != nil {
             didOpenRequestedReplies = true
             isShowingReplies = true

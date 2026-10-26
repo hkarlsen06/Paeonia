@@ -10,7 +10,9 @@ import SwiftUI
 /// start the chat. A question the partner answered that the user can still answer zooms
 /// into the answer flow, where the reply is revealed on send. Topic questions waiting
 /// for the user join the list until they are answered and seen, and then show only in
-/// their topic. Earlier days follow under today's list, with a date divider per day.
+/// their topic. A story someone wrote about joins the list as a row for its chat, on the
+/// day it was posted: today's list for a story from today, otherwise under its earlier
+/// day. Earlier days follow under today's list, with a date divider per day.
 /// The Topics card sits under the hero card. Once the tab is calm (`isCalm`), every
 /// topic shows between today's list and the earlier days instead.
 struct DailyChallengeScreen: View {
@@ -29,11 +31,15 @@ struct DailyChallengeScreen: View {
     var privacySafetyService: (any PrivacySafetyServicing)?
     var privacyOperationProvider: (any SyncClientOperationProviding)?
     var onReportedAndLeft: () -> Void = {}
+    /// The stories someone wrote about, each listed as a row for its chat.
+    var storyChats: [StoryConversation] = []
+    var storyPeople = StoryPeople(currentName: "", partnerName: "")
     /// The Topics card under the daily question, which opens the extra questions.
     var topicsCard: TopicsCardContent?
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.threadChatContext) private var chatContext
 
     /// The earlier days under today's list. Built once the signed-in user is known, and
     /// kept while a chat is open on top of this screen.
@@ -44,9 +50,15 @@ struct DailyChallengeScreen: View {
     /// it from the pushed chat instead would bring it back only after the back swipe
     /// ends. Same approach as Tidex's chat.
     @State private var isOpeningChat = false
+    /// The story chat pushed on top of this screen.
+    @State private var storyChat: StoryChatDestination?
+
+    private var isChatOpen: Bool {
+        chatQuestion.wrappedValue != nil || storyChat != nil
+    }
 
     private var hidesTabBar: Bool {
-        chatQuestion.wrappedValue != nil || isOpeningChat
+        isChatOpen || isOpeningChat
     }
 
     var body: some View {
@@ -93,8 +105,8 @@ struct DailyChallengeScreen: View {
         .clearsDeliveredQuestionTimeReminders()
         .navigationTitle(Text(.mainTabQuestions))
         .toolbar(hidesTabBar ? .hidden : .visible, for: .tabBar)
-        .onChange(of: chatQuestion.wrappedValue == nil) { _, isClosed in
-            if isClosed { isOpeningChat = false }
+        .onChange(of: isChatOpen) { _, isOpen in
+            if !isOpen { isOpeningChat = false }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -128,59 +140,13 @@ struct DailyChallengeScreen: View {
             .analyticsScreen("daily_chat")
             .id(question.id)
         }
+        .navigationDestination(item: $storyChat) { destination in
+            ThreadChatScreen(viewModel: destination.viewModel)
+                .analyticsScreen("story_replies")
+                .id(destination.id)
+        }
         .onChange(of: viewModel.notice) { _, notice in
             showBanner(for: notice)
-        }
-    }
-
-    /// Today's questions in one list.
-    @ViewBuilder
-    private var todayList: some View {
-        if !readQuestions.isEmpty {
-            // One list for everything. Questions still waiting for you are pinned
-            // on top, then cards with a partner answer or message you haven't seen
-            // (so nothing new is buried); everything else follows by most recent
-            // answer. A question you can still answer opens its flow. A row you
-            // have answered opens the question's page with the answers and the
-            // chat. Answering reveals the reply in the flow itself, so it's fine
-            // that the row then re-sorts down here.
-            VStack(spacing: PaeoniaSpacing.space12) {
-                ForEach(readQuestions) { question in
-                    DailyChallengeReadCard(
-                        question: question,
-                        participants: viewModel.participants,
-                        sending: viewModel.sendingPreview(for: question),
-                        zoomNamespace: zoomNamespace,
-                        isHighlighted: highlightedQuestionIDs.contains(question.id),
-                        onAnswer: { onAnswerPartnerQuestion(question) },
-                        lastMessagePreview: viewModel.threadPreview(for: question.questionID),
-                        hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
-                        hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
-                        onOpen: { openChat(question) },
-                        topicTitle: topicsCard?.title(of: question)
-                    )
-                    .id(question.id)
-                }
-            }
-            // A refreshed snapshot re-sorts, adds, or removes cards with
-            // a glide instead of reflowing the list in one frame — e.g.
-            // an answered question settling down into the
-            // timeline, or a new card arriving mid-session.
-            .animation(PaeoniaMotion.stateChange, value: readQuestions.map(\.id))
-        }
-    }
-
-    /// Earlier days, minus the questions today's list already shows.
-    @ViewBuilder
-    private var earlierDays: some View {
-        if let historyViewModel {
-            DailyChallengeEarlierDaysView(
-                history: historyViewModel,
-                viewModel: viewModel,
-                shownQuestionIDs: Set(readQuestions.map(\.id)),
-                onOpenChat: openChat,
-                onRetry: { Task { await historyViewModel.load() } }
-            )
         }
     }
 
@@ -329,6 +295,92 @@ struct DailyChallengeScreen: View {
 }
 
 extension DailyChallengeScreen {
+    /// Today's questions and story chats in one list.
+    @ViewBuilder
+    private var todayList: some View {
+        let rows = todayRows
+        if !rows.isEmpty {
+            // One list for everything. Questions still waiting for you are pinned
+            // on top, then cards with a partner answer or message you haven't seen
+            // (so nothing new is buried); everything else follows by most recent
+            // answer. A question you can still answer opens its flow. A row you
+            // have answered opens the question's page with the answers and the
+            // chat. Answering reveals the reply in the flow itself, so it's fine
+            // that the row then re-sorts down here.
+            VStack(spacing: PaeoniaSpacing.space12) {
+                ForEach(rows) { row in
+                    todayRow(row)
+                }
+            }
+            // A refreshed snapshot re-sorts, adds, or removes cards with
+            // a glide instead of reflowing the list in one frame — e.g.
+            // an answered question settling down into the
+            // timeline, or a new card arriving mid-session.
+            .animation(PaeoniaMotion.stateChange, value: rows.map(\.id))
+        }
+    }
+
+    @ViewBuilder
+    private func todayRow(_ row: QuestionsTabRow) -> some View {
+        switch row {
+        case .question(let question):
+            DailyChallengeReadCard(
+                question: question,
+                participants: viewModel.participants,
+                sending: viewModel.sendingPreview(for: question),
+                zoomNamespace: zoomNamespace,
+                isHighlighted: highlightedQuestionIDs.contains(question.id),
+                onAnswer: { onAnswerPartnerQuestion(question) },
+                lastMessagePreview: viewModel.threadPreview(for: question.questionID),
+                hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
+                hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
+                onOpen: { openChat(question) },
+                topicTitle: topicsCard?.title(of: question)
+            )
+            .id(question.id)
+        case .storyChat(let conversation):
+            StoryConversationCard(conversation: conversation, people: storyPeople) {
+                openStoryChat(conversation)
+            }
+        }
+    }
+
+    /// Earlier days, minus the questions today's list already shows.
+    @ViewBuilder
+    private var earlierDays: some View {
+        if let historyViewModel {
+            DailyChallengeEarlierDaysView(
+                history: historyViewModel,
+                viewModel: viewModel,
+                storyChats: storyChats,
+                today: viewModel.snapshot.todayLocalDate,
+                storyPeople: storyPeople,
+                shownQuestionIDs: Set(readQuestions.map(\.id)),
+                onOpenChat: openChat,
+                onOpenStoryChat: openStoryChat,
+                onRetry: { Task { await historyViewModel.load() } }
+            )
+        }
+    }
+
+    /// Opens a story's chat the same way: read from the phone first, then pushed.
+    private func openStoryChat(_ conversation: StoryConversation) {
+        guard !isOpeningChat else { return }
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { isOpeningChat = true }
+        let story = conversation.story
+        Task {
+            guard let chat = await chatContext.makeViewModel(
+                subject: .story(story.id),
+                header: .story(story, people: storyPeople)
+            ) else {
+                isOpeningChat = false
+                return
+            }
+            await Task.yield()
+            storyChat = StoryChatDestination(id: story.id, viewModel: chat)
+        }
+    }
+
     /// Every read card in one list: questions the user answered (or whose answer still
     /// sends), questions from earlier days the partner answered, and the topic questions
     /// waiting for the user. Before the user answers, today's question is the hero card.
@@ -347,14 +399,26 @@ extension DailyChallengeScreen {
         }
     }
 
+    /// Today's list: `readQuestions` and the chats about today's stories.
+    private var todayRows: [QuestionsTabRow] {
+        QuestionsTabRow.todayRows(
+            questions: readQuestions,
+            storyChats: storyChats,
+            today: viewModel.snapshot.todayLocalDate,
+            isNew: viewModel.hasNewFromPartner
+        )
+    }
+
     /// The tab is calm when the user has answered today's question and nothing in the
-    /// topics or the list waits for them or holds something they haven't seen. Waiting
-    /// on the partner is calm. A calm tab shows every topic instead of the Topics card.
+    /// topics or the list waits for them or holds something they haven't seen, such as
+    /// a story chat with an unread reply. Waiting on the partner is calm. A calm tab
+    /// shows every topic instead of the Topics card.
     private var isCalm: Bool {
         guard isDayComplete,
               let topicsCard,
               topicsCard.hook == nil,
-              topicsCard.waitingQuestions.isEmpty
+              topicsCard.waitingQuestions.isEmpty,
+              !storyChats.contains(where: \.isUnread)
         else { return false }
         return !readQuestions.contains { question in
             question.isAwaitingCurrentUserAnswer
@@ -409,6 +473,15 @@ private struct DailyChallengeScreenPreviewHost: View {
     }
 }
 #endif
+
+/// A story's chat, read from the phone before it is pushed.
+private struct StoryChatDestination: Hashable, Identifiable {
+    let id: UUID
+    let viewModel: ThreadChatViewModel
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
 
 /// Keeps a tab's scroll view at its bottom inset with the tab bar showing, while the
 /// bar is hidden. Otherwise the shorter safe area pulls a list scrolled to the end

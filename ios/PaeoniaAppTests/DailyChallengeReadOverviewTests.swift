@@ -56,6 +56,43 @@ struct DailyChallengeReadOverviewTests {
         )
     }
 
+    @Test func todaysStoryChatsJoinTodaysListAndAnUnreadOneRanksWithTheNew() {
+        let t0 = TestDailyChallengeIDs.answerDate
+        let t1 = t0.addingTimeInterval(600)
+        let t2 = t1.addingTimeInterval(600)
+        let t3 = t2.addingTimeInterval(600)
+        let awaiting = UUID()
+        let newAnswer = UUID()
+        let recent = UUID()
+        let snapshot = makeDailySnapshot(rows: [
+            dailyQuestionRow(
+                coupleDayID: TestDailyChallengeIDs.previousCoupleDay, localDate: "2026-06-26",
+                instanceID: awaiting,
+                partnerAnswerID: UUID(), partnerAnsweredAt: t0.addingTimeInterval(-3_600), isCurrentDay: false
+            ),
+            dailyQuestionRow(instanceID: newAnswer, ownAnswerID: UUID(), ownAnsweredAt: t1),
+            dailyQuestionRow(
+                coupleDayID: UUID(), localDate: "2026-06-25",
+                instanceID: recent,
+                ownAnswerID: UUID(), ownAnsweredAt: t3, isCurrentDay: false
+            ),
+        ])
+        let unreadStory = storyConversation(postedAt: t0, isUnread: true)
+        let readStory = storyConversation(postedAt: t2)
+        let earlierStory = storyConversation(postedAt: t0.addingTimeInterval(-2 * 86_400), isUnread: true)
+
+        let rows = QuestionsTabRow.todayRows(
+            questions: snapshot.questions,
+            storyChats: [readStory, earlierStory, unreadStory],
+            today: MemoryTimeline.localDateString(for: t0),
+            isNew: { $0.id == newAnswer }
+        )
+
+        // The unread story sits with the new question, by time, under the to-do. The read
+        // one sorts by time with the rest. The story from an earlier day is not here.
+        #expect(rows.map(\.id) == [awaiting, newAnswer, unreadStory.id, recent, readStory.id])
+    }
+
     @Test func aPartnerAnswerIsNewUntilYouHaveSeenIt() throws {
         let t1 = TestDailyChallengeIDs.answerDate
         let t2 = t1.addingTimeInterval(3_600)

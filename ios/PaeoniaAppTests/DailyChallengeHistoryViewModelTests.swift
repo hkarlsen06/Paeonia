@@ -128,13 +128,14 @@ struct DailyChallengeHistoryViewModelTests {
 
         await viewModel.load()
 
-        #expect(viewModel.days(excluding: []).map(\.localDate) == [Self.day2, Self.day1])
+        let allDays = viewModel.days(adding: [], before: "2026-06-28", excluding: [])
+        #expect(allDays.map(\.localDate) == [Self.day2, Self.day1])
 
         // A question shown in today's list drops out of its day, and a day left with
         // nothing under it loses its divider.
-        let days = viewModel.days(excluding: [shown.id, onlyShown.id])
+        let days = viewModel.days(adding: [], before: "2026-06-28", excluding: [shown.id, onlyShown.id])
         #expect(days.map(\.localDate) == [Self.day2])
-        #expect(days.first?.questions.map(\.id) == [kept.id])
+        #expect(days.first?.rows.map(\.id) == [kept.id])
         #expect(await service.loadHistoryCount == 1)
     }
 }

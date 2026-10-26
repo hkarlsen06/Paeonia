@@ -22,6 +22,29 @@ enum TestDailyChallengeIDs {
     static let answerDate = Date(timeIntervalSince1970: 1_782_450_000)
 }
 
+/// The chat about a partner's story posted at `postedAt`, with one message from the partner.
+func storyConversation(postedAt: Date, isUnread: Bool = false) -> StoryConversation {
+    let story = Story(
+        id: UUID(),
+        authorUserID: TestDailyChallengeIDs.partnerUser,
+        mediaAssetID: UUID(),
+        caption: nil,
+        createdAt: postedAt
+    )
+    let summary = ThreadChatSummary(
+        threadID: UUID(),
+        coupleID: TestDailyChallengeIDs.couple,
+        subject: .story(story.id),
+        createdAt: postedAt,
+        updatedAt: postedAt,
+        lastMessageID: UUID(),
+        lastMessageAt: postedAt,
+        lastMessageSenderUserID: TestDailyChallengeIDs.partnerUser,
+        lastMessageBody: "Lovely"
+    )
+    return StoryConversation(story: story, summary: summary, isUnread: isUnread)
+}
+
 func makeDailySnapshot(
     rows: [DailyQuestionRow],
     details: [DailyAnswerDetailRow] = []
