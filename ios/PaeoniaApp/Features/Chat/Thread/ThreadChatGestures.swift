@@ -314,12 +314,29 @@ struct ThreadChatHorizontalPanSurface: UIViewRepresentable {
             )
         }
 
+        func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            !touch.threadChatStartsOnSlider
+        }
+
         func gestureRecognizer(
             _: UIGestureRecognizer,
             shouldRecognizeSimultaneouslyWith _: UIGestureRecognizer
         ) -> Bool {
             true
         }
+    }
+}
+
+extension UITouch {
+    /// A drag on a slider, such as a voice message's scrubber, only moves the slider,
+    /// so no chat swipe takes it.
+    var threadChatStartsOnSlider: Bool {
+        var current = view
+        while let view = current {
+            if view is UISlider { return true }
+            current = view.superview
+        }
+        return false
     }
 }
 

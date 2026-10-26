@@ -118,6 +118,12 @@ struct ThreadChatNavigationGestureBridge: UIViewRepresentable {
             return !startsInNavigationBackExcludedTarget(gestureRecognizer)
         }
 
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            if touch.threadChatStartsOnSlider { return false }
+            guard gestureRecognizer === contentPopGestureRecognizer else { return true }
+            return originalDelegate?.gestureRecognizer?(gestureRecognizer, shouldReceive: touch) ?? true
+        }
+
         func gestureRecognizer(
             _ gestureRecognizer: UIGestureRecognizer,
             shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
