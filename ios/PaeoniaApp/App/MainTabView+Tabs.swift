@@ -200,6 +200,7 @@ extension MainTabView {
                     stories: storiesViewModel.stories
                 ),
                 storyPeople: storyPeople,
+                stories: storiesViewModel,
                 topicsCard: questionsTopicsCard
             )
             .searchToolbarButton(action: openSearch)

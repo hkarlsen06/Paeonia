@@ -35,6 +35,8 @@ struct DailyChallengeScreen: View {
     /// The memories and stories someone wrote about, each listed as a row for its chat.
     var conversations: [SubjectConversation] = []
     var storyPeople = StoryPeople(currentName: "", partnerName: "")
+    /// Shows a story from its chat's header card. Nil leaves the card without a tap.
+    var stories: StoriesViewModel?
     /// The Topics card under the daily question, which opens the extra questions.
     var topicsCard: TopicsCardContent?
 
@@ -53,6 +55,8 @@ struct DailyChallengeScreen: View {
     @State private var isOpeningChat = false
     /// The memory's or story's chat pushed on top of this screen.
     @State private var conversationChat: ConversationChatDestination?
+    /// The story opened from its chat's header card, over the chat.
+    @State private var storyViewer: StoryViewerContent?
 
     private var isChatOpen: Bool {
         chatQuestion.wrappedValue != nil || conversationChat != nil
@@ -142,9 +146,15 @@ struct DailyChallengeScreen: View {
             .id(question.id)
         }
         .navigationDestination(item: $conversationChat) { destination in
-            ThreadChatScreen(viewModel: destination.viewModel)
+            ThreadChatScreen(viewModel: destination.viewModel, onOpenHeader: openStoryAction(destination.story))
                 .analyticsScreen(destination.viewModel.subject.kind == .memory ? "memory_comments" : "story_replies")
                 .id(destination.id)
+                .fullScreenCover(item: $storyViewer) { content in
+                    if let stories {
+                        StoryViewer(content: content, people: storyPeople, viewModel: stories)
+                            .analyticsScreen("story_viewer")
+                    }
+                }
         }
         .onChange(of: viewModel.notice) { _, notice in
             showBanner(for: notice)
@@ -377,8 +387,13 @@ extension DailyChallengeScreen {
                 return
             }
             await Task.yield()
-            conversationChat = ConversationChatDestination(id: conversation.id, viewModel: chat)
+            conversationChat = ConversationChatDestination(conversation: conversation, viewModel: chat)
         }
+    }
+
+    private func openStoryAction(_ story: Story?) -> (() -> Void)? {
+        guard let story, stories != nil else { return nil }
+        return { storyViewer = StoryViewerContent(stories: [story], startIndex: 0, mode: .archive) }
     }
 
     /// Every read card in one list: questions the user answered (or whose answer still
@@ -473,15 +488,6 @@ private struct DailyChallengeScreenPreviewHost: View {
     }
 }
 #endif
-
-/// A memory's or a story's chat, read from the phone before it is pushed.
-private struct ConversationChatDestination: Hashable, Identifiable {
-    let id: UUID
-    let viewModel: ThreadChatViewModel
-
-    static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
-    func hash(into hasher: inout Hasher) { hasher.combine(id) }
-}
 
 /// Keeps a tab's scroll view at its bottom inset with the tab bar showing, while the
 /// bar is hidden. Otherwise the shorter safe area pulls a list scrolled to the end

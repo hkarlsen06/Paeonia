@@ -32,6 +32,8 @@ struct ThreadChatView: View {
     var sendingAnswer: DailySendingPreview?
     /// Swiping right calls this instead of `dismiss`, for a page that owns its cover.
     var onClose: (() -> Void)?
+    /// Opens the memory or story the header card shows. Nil leaves the card without a tap.
+    var onOpenHeader: (() -> Void)?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -54,7 +56,8 @@ struct ThreadChatView: View {
         participants: DailyChallengeParticipants,
         onReport: ((PrivacyReportTarget) -> Void)? = nil,
         sendingAnswer: DailySendingPreview? = nil,
-        onClose: (() -> Void)? = nil
+        onClose: (() -> Void)? = nil,
+        onOpenHeader: (() -> Void)? = nil
     ) {
         _viewModel = State(initialValue: viewModel)
         self.question = question
@@ -62,6 +65,7 @@ struct ThreadChatView: View {
         self.onReport = onReport
         self.sendingAnswer = sendingAnswer
         self.onClose = onClose
+        self.onOpenHeader = onOpenHeader
     }
 
     var body: some View {
@@ -224,6 +228,7 @@ struct ThreadChatView: View {
             onRetry: { retry(row.message) },
             onTapQuoted: jumpToMessage,
             onOpenPhoto: openPhoto,
+            onOpenHeader: onOpenHeader,
             timestampReveal: timestampReveal,
             messageFrame: messageFrame
         )

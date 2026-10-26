@@ -28,11 +28,27 @@ nonisolated struct ThreadChatNote: Hashable, Sendable {
 /// chat, so it scrolls away with the conversation.
 struct ThreadChatHeaderCard: View {
     let header: ThreadChatHeader
+    /// Opens what the chat is about. Nil leaves the card as it is, with no tap.
+    var onOpen: (() -> Void)?
 
     private static let photoSize: CGFloat = 64
     private static let maximumWidth: CGFloat = 360
 
     var body: some View {
+        Group {
+            if let onOpen {
+                Button(action: onOpen) { card }
+                    .buttonStyle(.plain)
+            } else {
+                card
+            }
+        }
+        .padding(.horizontal, PaeoniaSpacing.space12)
+        .padding(.vertical, PaeoniaSpacing.space8)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var card: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             if header.photoAssetID != nil {
                 MemoryMediaImageView(
@@ -69,9 +85,7 @@ struct ThreadChatHeaderCard: View {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
                 .fill(.paeoniaSurfaceSecondary)
         )
-        .padding(.horizontal, PaeoniaSpacing.space12)
-        .padding(.vertical, PaeoniaSpacing.space8)
-        .frame(maxWidth: .infinity)
+        .contentShape(.rect(cornerRadius: PaeoniaRadius.radius16))
         .accessibilityElement(children: .combine)
     }
 }

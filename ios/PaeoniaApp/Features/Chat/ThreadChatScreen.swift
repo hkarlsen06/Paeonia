@@ -7,6 +7,8 @@ import SwiftUI
 struct ThreadChatScreen: View {
     let viewModel: ThreadChatViewModel
     var embedsNavigationStack = false
+    /// Opens the memory or story the chat is about from its header card.
+    var onOpenHeader: (() -> Void)?
     var onClose: (() -> Void)?
 
     @Environment(\.threadChatContext) private var context
@@ -40,7 +42,8 @@ struct ThreadChatScreen: View {
             viewModel: viewModel,
             participants: context.participants,
             onReport: { reportTarget = $0 },
-            onClose: onClose
+            onClose: onClose,
+            onOpenHeader: onOpenHeader
         )
         // Here and not on the screen under the chat, which SwiftUI does not update while covered.
         .onChange(of: memoryHeader) { _, header in

@@ -56,9 +56,13 @@ extension StoryViewer {
     @ViewBuilder
     var repliesSheet: some View {
         if let chat = replies.chat {
-            ThreadChatScreen(viewModel: chat, embedsNavigationStack: true) {
-                isShowingReplies = false
-            }
+            // The story is under the sheet, so its header card closes the sheet.
+            ThreadChatScreen(
+                viewModel: chat,
+                embedsNavigationStack: true,
+                onOpenHeader: { isShowingReplies = false },
+                onClose: { isShowingReplies = false }
+            )
             .analyticsScreen("story_replies")
         }
     }

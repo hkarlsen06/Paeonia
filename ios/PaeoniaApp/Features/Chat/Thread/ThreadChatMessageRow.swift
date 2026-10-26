@@ -29,6 +29,8 @@ struct ThreadChatMessageRow: View {
     let onRetry: () -> Void
     let onTapQuoted: (ThreadChatItemID) -> Void
     var onOpenPhoto: (ThreadChatPhoto) -> Void = { _ in }
+    /// Opens the memory or story a header row shows. Nil leaves the header without a tap.
+    var onOpenHeader: (() -> Void)?
     /// Read only by the row views, so a swipe redraws them and not the page around them.
     let timestampReveal: ThreadChatTimestampReveal
     /// Set while ExyteChat shows this row above its long-press menu.
@@ -55,7 +57,7 @@ struct ThreadChatMessageRow: View {
         case let .waiting(waiting):
             DailyChatWaitingNote(waiting: waiting, partnerName: participants.partnerName)
         case let .subjectHeader(header):
-            ThreadChatHeaderCard(header: header)
+            ThreadChatHeaderCard(header: header, onOpen: onOpenHeader)
         default:
             bubbleRow
         }
