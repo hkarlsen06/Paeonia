@@ -75,7 +75,7 @@ final class GamesViewModel {
     private(set) var lastPlayed: [GameKind: Date] = [:]
     /// The games this person put aside with "Not now", from the overview and from taps
     /// still on their way to the server. They stay out of "Right now" while it is their turn.
-    private(set) var hiddenKinds: Set<GameKind> = []
+    private var hiddenKinds: Set<GameKind> = []
 
     // MARK: - Built games
 

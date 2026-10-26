@@ -87,8 +87,10 @@ struct GamesHubView: View {
                 }
             }
         }
-        // "Not now" moves the card down into the grid, and it moves back up when something new arrives.
-        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.hiddenKinds)
+        // A card moves between "Right now" and the grid when the partner comes or goes, a turn
+        // changes, or "Not now" is tapped. These arrive in separate updates, so the animation
+        // follows the cards that end up under "Right now" rather than any one of them.
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: viewModel.hubFeaturedGames.map(\.kind))
     }
 
     /// One card per row, two on a wide iPad. A `Grid` rather than a lazy grid, so the
