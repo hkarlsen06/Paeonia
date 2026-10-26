@@ -83,7 +83,7 @@ struct LudoScreen: View {
     private func startLive(coupleID: UUID?) {
         live?.stop()
         live = coupleID
-            .flatMap { viewModel.dependencies.makeLudoLive($0) }
+            .flatMap { viewModel.dependencies.makeBoardGameLive(.ludo, $0) }
             .map { LudoLiveLink(room: $0, roll: roll) }
     }
 }
