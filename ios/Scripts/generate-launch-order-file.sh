@@ -45,7 +45,7 @@ restore() {
     xcrun simctl install "$simulator" "$original_app" || echo "could not reinstall the original app from $original_app" >&2
   fi
   if [[ $lock_held == 1 ]]; then
-    scripts/lock release simulator || true
+    scripts/lock release "$simulator" || true
   fi
 }
 cleanup() {
@@ -83,9 +83,8 @@ xcodebuild \
 instrumented_app="$work/derived/Build/Products/Release-iphonesimulator/PaeoniaApp.app"
 [[ -d $instrumented_app ]] || { echo "no instrumented app at $instrumented_app" >&2; exit 1; }
 
-scripts/lock acquire simulator
+scripts/lock acquire "$simulator" >/dev/null
 lock_held=1
-xcrun simctl bootstatus "$simulator" -b >/dev/null
 
 if installed=$(xcrun simctl get_app_container "$simulator" "$bundle_id" app 2>/dev/null); then
   rm -rf "$work/original"
