@@ -1,8 +1,8 @@
 import ExyteChat
 import SwiftUI
 
-/// One row of a chat: Paeonia's question, an answer, a message, or a memory's or story's
-/// header. Ported from Tidex's chat row, so it has the same gestures. Swipe a message or an answer
+/// One row of a chat: Paeonia's question, an answer, a message, a memory's or story's
+/// header, or a memory's note. Ported from Tidex's chat row, so it has the same gestures. Swipe a message or an answer
 /// toward the middle to reply, swipe left anywhere to slide the bubbles over and show
 /// their times, and the row's corners join with the messages around it. Reactions sit
 /// on the bubble's top corner.
@@ -97,6 +97,22 @@ struct ThreadChatMessageRow: View {
                         .font(PaeoniaTypography.body)
                         .foregroundStyle(.paeoniaTextPrimary)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .accessibilityElement(children: .combine)
+        case let .note(note):
+            bubble(fill: bubbleFill) {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                    Label {
+                        Text(note.isOwn ? .chatNoteYourTitle : .chatNotePartnerTitle(participants.partnerName))
+                    } icon: {
+                        Image(systemName: "note.text")
+                    }
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(
+                        isCurrentUser ? Color.paeoniaTextPrimary.opacity(0.72) : Color.paeoniaAccentPrimary
+                    )
+                    messageText(note.body)
                 }
             }
             .accessibilityElement(children: .combine)

@@ -114,6 +114,8 @@ struct ThreadChatRow {
         case message(ThreadChatMessage)
         /// The card that opens a memory's or a story's chat.
         case subjectHeader(ThreadChatHeader)
+        /// A partner's note on the memory, under the card. Read-only.
+        case note(ThreadChatNote)
         /// The partner's typing dots, after the newest message.
         case typing
     }
@@ -166,6 +168,7 @@ struct ThreadChatProjection {
     static let waitingRowPrefix = "waiting-"
     static let typingRowID = "typing-indicator"
     static let headerRowID = "subject-header"
+    static let noteRowPrefix = "note-"
     /// A message its sender took back. The long-press menu has nothing to offer on it.
     static let deletedRowPrefix = "deleted-"
 
@@ -176,7 +179,8 @@ struct ThreadChatProjection {
 
     /// Rows with nothing to reply to, report, or edit: no long-press menu.
     static func isDecorationRowID(_ id: String) -> Bool {
-        id == typingRowID || id == headerRowID || id.hasPrefix(matchRowPrefix) || id.hasPrefix(waitingRowPrefix)
+        id == typingRowID || id == headerRowID
+            || id.hasPrefix(matchRowPrefix) || id.hasPrefix(waitingRowPrefix) || id.hasPrefix(noteRowPrefix)
     }
 
     let exyteMessages: [ExyteChat.Message]

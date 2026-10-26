@@ -246,8 +246,7 @@ struct MemoryDetailView: View {
     }
 
     private func visibleBody(of note: MemoryNoteSnapshot?) -> String? {
-        guard let note, note.isVisible, let body = note.body, !body.isEmpty else { return nil }
-        return body
+        note?.visibleBody
     }
 
     private func dayStartUTC(for record: MemoryRecord) -> Date {

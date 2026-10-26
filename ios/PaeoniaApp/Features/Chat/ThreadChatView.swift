@@ -343,7 +343,7 @@ extension ThreadChatView {
             onReport?(.dailyAnswer(answerID: answer.answerID))
         case let .message(target):
             onReport?(.threadMessage(messageID: target.id))
-        case .question, .partnerChoiceMatch, .waiting, .subjectHeader, .typing:
+        case .question, .partnerChoiceMatch, .waiting, .subjectHeader, .note, .typing:
             break
         }
     }

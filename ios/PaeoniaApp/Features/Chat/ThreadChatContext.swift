@@ -9,6 +9,8 @@ struct ThreadChatContext {
     var coupleID: UUID?
     var participants = DailyChallengeParticipants()
     var summaries: ThreadChatSummaries?
+    /// The couple's memories, so an open memory's chat shows a note the moment it changes.
+    var memories: MemoriesViewModel?
     var service: (any ThreadChatServicing)?
     var operationProvider: (any SyncClientOperationProviding)?
     var syncAfterLocalChange: (@MainActor () async -> Void)?

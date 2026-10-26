@@ -58,6 +58,40 @@ extension DailyChatRoundsTests {
         ])
     }
 
+    @Test func aMemorysChatOpensWithItsCardThenBothNotesBeforeTheMessages() {
+        let first = message(at: 500)
+        let second = message(at: 600)
+        let header = ThreadChatHeader(
+            eyebrow: "Memory",
+            title: "Cabin weekend",
+            detail: nil,
+            photoAssetID: nil,
+            notes: [ThreadChatNote(isOwn: true, body: "Mine"), ThreadChatNote(isOwn: false, body: "Theirs")]
+        )
+        var input = input(rounds: [], messages: [first, second])
+        input.header = header
+
+        let projection = ThreadChatProjection.make(input: input)
+
+        let rows = projection.exyteMessages.compactMap { projection.rowsByID[$0.id] }
+        let notes = rows.compactMap { row -> (body: String, isOwn: Bool)? in
+            guard case let .note(note) = row.kind else { return nil }
+            return (note.body, row.isCurrentUser)
+        }
+        #expect(rows.map(\.id).first == ThreadChatProjection.headerRowID)
+        // Each note is from the person who wrote it, right after the card.
+        #expect(notes.map(\.body) == ["Mine", "Theirs"])
+        #expect(notes.map(\.isOwn) == [true, false])
+        #expect(rows.dropFirst(3).map(\.id) == [
+            ThreadChatProjection.rowID(for: first),
+            ThreadChatProjection.rowID(for: second),
+        ])
+        // A note takes no reply, reaction or report.
+        #expect(rows.dropFirst().prefix(2).allSatisfy { ThreadChatProjection.isDecorationRowID($0.id) })
+        let times = projection.exyteMessages.map(\.createdAt)
+        #expect(times == times.sorted())
+    }
+
     @Test func aLateAnswerToAnOldDayStaysWithThatDay() throws {
         let march = day(startsAt: 100, ownAt: 110, partnerAt: 1_000, sharedRound: true)
         let october = day(startsAt: 900, ownAt: 910, partnerAt: 920, sharedRound: true)

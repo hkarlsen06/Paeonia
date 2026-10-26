@@ -46,7 +46,7 @@ extension ThreadChatProjection {
         )
         var placed = arranged(sections: sections, messages: messages)
         if let header = input.header {
-            placed.insert(headerRow(header, before: placed, input: input), at: 0)
+            placed.insert(contentsOf: subjectRows(header, before: placed, input: input), at: 0)
         }
         if input.partnerIsTyping {
             placed.append(typingRow(after: placed, joinsPrevious: typingJoinsPrevious, input: input))
@@ -270,15 +270,35 @@ extension ThreadChatProjection {
         }
     }
 
-    /// The card that opens a memory's or a story's chat, dated just before the first row so it
-    /// stays on top and in that row's day.
-    private static func headerRow(_ header: ThreadChatHeader, before rows: [PlacedRow], input: Input) -> PlacedRow {
-        let row = decoration(
-            headerRowID,
-            .subjectHeader(header),
-            at: (rows.map(\.row.createdAt).min() ?? .now).addingTimeInterval(-step)
+    /// The card that opens a memory's or a story's chat, then a memory's notes, each from the
+    /// person who wrote it. They are dated just before the first row, so they stay on top and
+    /// in that row's day.
+    private static func subjectRows(_ header: ThreadChatHeader, before rows: [PlacedRow], input: Input) -> [PlacedRow] {
+        let firstAt = rows.map(\.row.createdAt).min() ?? .now
+        let headerAt = firstAt.addingTimeInterval(-Double(header.notes.count + 1) * step)
+        let card = placedRow(
+            decoration(headerRowID, .subjectHeader(header), at: headerAt),
+            user: chatUser(nil, isCurrentUser: false, input: input),
+            redrawKey: header
         )
-        return placedRow(row, user: chatUser(nil, isCurrentUser: false, input: input), redrawKey: header)
+        let notes = header.notes.enumerated().map { index, note in
+            let row = ThreadChatRow(
+                id: noteRowPrefix + (note.isOwn ? "own" : "partner"),
+                kind: .note(note),
+                isCurrentUser: note.isOwn,
+                createdAt: headerAt.addingTimeInterval(Double(index + 1) * step),
+                groupContext: .standalone(isCurrentUser: note.isOwn),
+                status: nil,
+                quotedPreview: nil
+            )
+            return placedRow(
+                row,
+                user: chatUser(note.isOwn ? input.currentUserID : nil, isCurrentUser: note.isOwn, input: input),
+                redrawKey: NoteRedrawKey(note: note, partnerName: input.partnerName),
+                text: note.body
+            )
+        }
+        return [card] + notes
     }
 
     private static func typingRow(after rows: [PlacedRow], joinsPrevious: Bool, input: Input) -> PlacedRow {
@@ -382,6 +402,11 @@ extension ThreadChatProjection {
     private struct MatchRedrawKey: Hashable {
         let match: PartnerChoiceMatch
         let celebrates: Bool
+        let partnerName: String
+    }
+
+    private struct NoteRedrawKey: Hashable {
+        let note: ThreadChatNote
         let partnerName: String
     }
 

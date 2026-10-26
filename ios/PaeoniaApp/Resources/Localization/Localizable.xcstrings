@@ -4185,6 +4185,42 @@
         }
       }
     },
+    "chat.note.partnerTitle" : {
+      "comment" : "Label on the partner's note about a memory, shown at the top of the memory's chat. %@ is the partner's name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet til %@"
+          }
+        }
+      }
+    },
+    "chat.note.yourTitle" : {
+      "comment" : "Label on the user's own note about a memory, shown at the top of the memory's chat",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your note"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notatet ditt"
+          }
+        }
+      }
+    },
     "common.actionFailed.message" : {
       "comment" : "Message of a banner when an action, such as starting a game or sending an invite, failed. Shown when the phone is online but the server failed, so it must not blame the connection.",
       "extractionState" : "manual",
@@ -21094,25 +21130,25 @@
       }
     },
     "memories.comments.row.empty" : {
-      "comment" : "Row on a memory that opens its comments when nobody has written one yet",
+      "comment" : "Card on a memory that opens its chat when nobody has written in it yet",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Write the first comment"
+            "value" : "Start the chat"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skriv den første kommentaren"
+            "value" : "Start samtalen"
           }
         }
       }
     },
     "memories.comments.row.preview" : {
-      "comment" : "Row on a memory that opens its comments. %1$@ is who wrote the newest comment, %2$@ is the comment",
+      "comment" : "Card on a memory that opens its chat. %1$@ is who wrote the newest message, %2$@ is the message",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21130,7 +21166,7 @@
       }
     },
     "memories.comments.row.you" : {
-      "comment" : "Name used for the user's own comment in the preview on a memory",
+      "comment" : "Name used for the user's own message in the preview on a memory's chat card",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
@@ -21148,19 +21184,19 @@
       }
     },
     "memories.comments.title" : {
-      "comment" : "Title of the screen with the comments on one memory, and the row that opens it",
+      "comment" : "Title of the chat about one memory, and of the card on the memory that opens it",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comments"
+            "value" : "Chat"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kommentarer"
+            "value" : "Samtale"
           }
         }
       }

@@ -11,6 +11,17 @@ nonisolated struct ThreadChatHeader: Hashable, Sendable {
     let detail: String?
     /// The photo to show: the memory's first photo or the story's photo.
     let photoAssetID: UUID?
+    /// A memory's notes, shown under the card from the person who wrote each, the way a
+    /// question's chat opens with the answers. They are not messages: they take no reply or
+    /// reaction, and they never count as unread.
+    var notes: [ThreadChatNote] = []
+}
+
+/// One partner's note on a memory, as its chat shows it.
+nonisolated struct ThreadChatNote: Hashable, Sendable {
+    /// The user wrote it, not the partner.
+    let isOwn: Bool
+    let body: String
 }
 
 /// The header as a small card. It sits in the chat list like the question does in a question's

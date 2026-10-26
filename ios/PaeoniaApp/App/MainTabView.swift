@@ -398,6 +398,7 @@ struct MainTabView: View {
             coupleID: identity.coupleID,
             participants: dailyChallengeParticipants,
             summaries: chatSummaries,
+            memories: memoriesViewModel,
             service: dailyChallengeViewModel.chatService,
             operationProvider: dailyChallengeViewModel.operationProvider,
             syncAfterLocalChange: actions.syncAfterLocalChange,

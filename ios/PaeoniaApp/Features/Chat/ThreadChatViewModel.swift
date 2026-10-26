@@ -34,8 +34,8 @@ final class ThreadChatViewModel {
     let subject: ThreadChatSubject
     let coupleID: UUID
     /// The card that opens a memory's or a story's chat. Nil in a question's chat, which opens
-    /// with its question.
-    let header: ThreadChatHeader?
+    /// with its question. `ThreadChatScreen` replaces it when a memory's note changes.
+    var header: ThreadChatHeader?
     /// The day the page was opened from. The page shows every day of this question. Nil in a
     /// memory's or a story's chat, which has no days and no answers.
     private(set) var question: DailyChallengeQuestion?

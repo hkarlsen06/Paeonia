@@ -82,6 +82,12 @@ nonisolated struct MemoryNoteSnapshot: Codable, Equatable, Sendable {
     var isVisible: Bool {
         deletedAt == nil && moderationStatus == .visible
     }
+
+    /// The text to show, or nil when the note is gone, hidden or empty.
+    var visibleBody: String? {
+        guard isVisible, let body, !body.isEmpty else { return nil }
+        return body
+    }
 }
 
 nonisolated struct MemoryMediaSnapshot: Codable, Equatable, Sendable {

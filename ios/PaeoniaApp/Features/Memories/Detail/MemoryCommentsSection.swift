@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The way into a memory's comments, under its photos: a card that shows the newest comment,
-/// and the comments themselves as the shared chat, pushed on top of the memory. Either partner
-/// can comment. A comment push opens the chat at once (`MemoriesViewModel.commentsRequestedMemoryID`).
+/// The way into a memory's chat, under its photos: a card that shows the newest message, and
+/// the chat itself, pushed on top of the memory. Either partner can write. The chat opens with
+/// both partners' notes. A message push opens the chat at once
+/// (`MemoriesViewModel.commentsRequestedMemoryID`).
 struct MemoryCommentsSection: View {
     let record: MemoryRecord
     let viewModel: MemoriesViewModel
@@ -84,7 +85,7 @@ struct MemoryCommentsSection: View {
         }
     }
 
-    /// "Robin: Miss this day", for the newest comment.
+    /// "Robin: Miss this day", for the newest message.
     private var previewLine: String? {
         guard let summary = context.summaries?.summary(for: subject),
               let text = summary.lastMessagePreview
@@ -98,7 +99,7 @@ struct MemoryCommentsSection: View {
     private func open() {
         guard !isShowingChat else { return }
         Task {
-            // Read before the push, so the chat's first frame already has its comments.
+            // Read before the push, so the chat's first frame already has its messages.
             chat = await context.makeViewModel(subject: subject, header: ThreadChatHeader(memory: record))
             isShowingChat = chat != nil
         }
@@ -106,14 +107,19 @@ struct MemoryCommentsSection: View {
 }
 
 extension ThreadChatHeader {
-    /// The card at the top of a memory's comments: its photo, title and date.
+    /// The card at the top of a memory's chat: its photo, title and date, then both partners'
+    /// notes in the order the memory page shows them.
     init(memory record: MemoryRecord) {
-        let date = MemoryTimeline.parseLocalDate(record.snapshot.memoryDate) ?? record.snapshot.createdAt
+        let snapshot = record.snapshot
+        let date = MemoryTimeline.parseLocalDate(snapshot.memoryDate) ?? snapshot.createdAt
+        let own = snapshot.ownNote?.visibleBody.map { ThreadChatNote(isOwn: true, body: $0) }
+        let partner = snapshot.partnerNote?.visibleBody.map { ThreadChatNote(isOwn: false, body: $0) }
         self.init(
             eyebrow: String(localized: .chatHeaderMemory),
-            title: record.snapshot.title ?? "",
+            title: snapshot.title ?? "",
             detail: date.formatted(MemoryDateStyle.long),
-            photoAssetID: record.snapshot.media.filter(\.isVisible).sortedForMemoryDisplay().first?.mediaAssetID
+            photoAssetID: snapshot.media.filter(\.isVisible).sortedForMemoryDisplay().first?.mediaAssetID,
+            notes: [own, partner].compactMap(\.self)
         )
     }
 }
