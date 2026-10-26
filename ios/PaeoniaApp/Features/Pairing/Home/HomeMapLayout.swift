@@ -17,6 +17,9 @@ struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
     @AppStorage("proto.home.fakePartner") private var fakePartner: FakePartnerPlace = .real
     @State private var avatarPoints: AvatarPoints?
     @State private var scrollOffset: CGFloat = 0
+    /// How tall the cards are, and where the screen ends above the tab bar. When the cards
+    /// fit, the map takes the rest of the screen and the page doesn't scroll.
+    @State private var sheetHeight: CGFloat = 0
 
     private var partnerCoordinate: CLLocationCoordinate2D {
         fakePartner.coordinate ?? partner.coordinate
@@ -31,12 +34,13 @@ struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
 
     var body: some View {
         GeometryReader { geo in
-            let metrics = Metrics(geo: geo, isNear: isNear)
+            let metrics = Metrics(geo: geo, sheetHeight: sheetHeight)
             ScrollView {
                 VStack(spacing: 0) {
                     mapHeader(metrics)
                     sheet
-                        // The cards start just under the distance line, and the map fades on behind them.
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { sheetHeight = $0 }
+                        // The cards start just under the map's last full row, and the map fades on behind them.
                         .padding(.top, -metrics.cardsOverlap)
                 }
             }
@@ -46,6 +50,8 @@ struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
             } action: { _, offset in
                 scrollOffset = offset
             }
+            // When everything fits, there is nothing to scroll to, so the page stays still.
+            .scrollBounceBehavior(.basedOnSize)
             .ignoresSafeArea(edges: .top)
             // Like a navigation bar: no glass at rest over the map, glass as soon as Home scrolls.
             .scrollEdgeEffectHidden(scrollOffset <= 1, for: .top)
@@ -184,10 +190,17 @@ private struct Metrics {
     /// Where the camera puts the couple, in the map's coordinates.
     let framedBox: CGRect
 
-    init(geo: GeometryProxy, isNear: Bool) {
+    init(geo: GeometryProxy, sheetHeight: CGFloat) {
         width = geo.size.width
         topInset = geo.safeAreaInsets.top
-        framedBottom = topInset + 212
+        // The safe area ends at the top of the tab bar, in the scroll content's coordinates,
+        // which start at the top of the screen.
+        let visibleBottom = topInset + geo.size.height
+        // At least room for the avatars. When the cards are short, the map grows until the
+        // last card sits just above the tab bar.
+        let shortest = topInset + 212
+        let fitting = visibleBottom - PaeoniaSpacing.space8 - sheetHeight - PaeoniaSpacing.space16
+        framedBottom = sheetHeight > 0 ? max(shortest, fitting) : shortest
         bandHeight = framedBottom + fadeHeight
         let cardsTop = framedBottom + PaeoniaSpacing.space16
         // The avatars centered in the open map between the streak pill and the first card.
@@ -239,29 +252,33 @@ struct HomeMapDistanceLine: View {
 
 /// PROTOTYPE. Moves the partner's pin, to see how the map looks when the couple is apart.
 enum FakePartnerPlace: String, CaseIterable {
-    case real, drammen, bergen, trondheim, tromso, copenhagen, newYork
+    case real, nearby, drammen, bergen, trondheim, tromso, copenhagen, newYork, sydney
 
     var label: String {
         switch self {
         case .real: "Real location"
+        case .nearby: "Across town (1.5 km)"
         case .drammen: "Drammen (40 km)"
         case .bergen: "Bergen"
         case .trondheim: "Trondheim"
         case .tromso: "Tromsø"
         case .copenhagen: "Copenhagen"
         case .newYork: "New York"
+        case .sydney: "Sydney"
         }
     }
 
     var coordinate: CLLocationCoordinate2D? {
         switch self {
         case .real: nil
+        case .nearby: CLLocationCoordinate2D(latitude: 59.9270, longitude: 10.7600)
         case .drammen: CLLocationCoordinate2D(latitude: 59.7439, longitude: 10.2045)
         case .bergen: CLLocationCoordinate2D(latitude: 60.3913, longitude: 5.3221)
         case .trondheim: CLLocationCoordinate2D(latitude: 63.4305, longitude: 10.3951)
         case .tromso: CLLocationCoordinate2D(latitude: 69.6492, longitude: 18.9553)
         case .copenhagen: CLLocationCoordinate2D(latitude: 55.6761, longitude: 12.5683)
         case .newYork: CLLocationCoordinate2D(latitude: 40.7128, longitude: -74.0060)
+        case .sydney: CLLocationCoordinate2D(latitude: -33.8688, longitude: 151.2093)
         }
     }
 }

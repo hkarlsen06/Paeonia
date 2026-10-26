@@ -102,6 +102,23 @@
       }
     }
 
+    /// PROTOTYPE: the Home map's other states, by name, for screenshots.
+    private static var protoMapState: CoupleMapState? {
+      switch UserDefaults.standard.string(forKey: "proto.home.mapState") {
+      case "loading": .loading
+      case "currentUnknown": .currentUnknown
+      case "locatingCurrent": .locatingCurrent
+      case "currentLocationMissing": .currentLocationMissing
+      case "sharingPaused": .sharingPaused(until: .now.addingTimeInterval(3 * 3_600))
+      case "locationAccessOff": .locationAccessOff
+      case "waitingForPartnerLocation": .waitingForPartnerLocation
+      case "partnerNotSharing": .partnerUnknown(.notSharing)
+      case "relationshipEnded": .partnerUnknown(.relationshipEnded)
+      case "unavailable": .partnerUnknown(.unknown("prototype"))
+      default: nil
+      }
+    }
+
     private static func makeLocationViewModel(
       operationProvider: DeveloperScenarioOperationProvider
     ) -> LocationMapViewModel {
@@ -141,9 +158,9 @@
             relationshipStartedOn: "2025-09-14",
             accessNotice: scenario.accessNotice
           ),
-          // PROTOTYPE: a live map for the Home map layout, or no location with
-          // `-proto.home.noLocation YES`.
-          locationMapState: UserDefaults.standard.bool(forKey: "proto.home.noLocation") ? .currentUnknown : .ready(
+          // PROTOTYPE: a live map for the Home map layout, or the state named by
+          // `-proto.home.mapState`.
+          locationMapState: Self.protoMapState ?? .ready(
             current: LocationPoint(latitude: 59.9139, longitude: 10.7522, capturedAt: .now.addingTimeInterval(-60)),
             partner: LocationPoint(latitude: 59.9142, longitude: 10.7530, capturedAt: .now.addingTimeInterval(-7_200)),
             partnerWasStaleAtLastRefresh: false

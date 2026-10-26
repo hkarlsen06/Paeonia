@@ -417,9 +417,35 @@ extension PairedHomeView {
         }
     }
 
+    /// PROTOTYPE: today's question in the state named by `-proto.home.daily`, for screenshots.
+    private var protoDailyState: DailyChallengeCardState? {
+        let prompt = "Hva er et lite øyeblikk med oss du tenker tilbake på?"
+        let locked = [
+            DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "En favorittminne", daysAgo: 1),
+            DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "Drømmeturen deres", daysAgo: 2),
+        ]
+        return switch UserDefaults.standard.string(forKey: "proto.home.daily") {
+        case "loading": DailyChallengeCardState(kind: .loading)
+        case "noChallenge": DailyChallengeCardState(kind: .noChallenge)
+        case "active": DailyChallengeCardState(kind: .active(prompt: prompt))
+        case "activePartnerAnswered": DailyChallengeCardState(kind: .active(prompt: prompt), hasPartnerAnsweredToday: true)
+        case "activeEarlier": DailyChallengeCardState(
+            kind: .active(prompt: prompt), hasEarlierQuestionsToAnswer: true,
+            lockedPartnerQuestions: locked, moreLockedPartnerQuestionCount: 3
+        )
+        case "completeWaiting": DailyChallengeCardState(kind: .complete)
+        case "completeBoth": DailyChallengeCardState(kind: .complete, hasPartnerAnsweredToday: true)
+        case "completeEarlier": DailyChallengeCardState(
+            kind: .complete, hasPartnerAnsweredToday: true, hasEarlierQuestionsToAnswer: true,
+            lockedPartnerQuestions: locked, moreLockedPartnerQuestionCount: 0
+        )
+        default: nil
+        }
+    }
+
     private var dailyPromptCard: some View {
         DailyPromptCard(
-            state: dailyChallengeCardState,
+            state: protoDailyState ?? dailyChallengeCardState,
             partnerName: partnerName,
             partnerPhotoAssetID: partnerProfilePhotoAssetID,
             prefersPartnerAnswersWhenComplete: true,
