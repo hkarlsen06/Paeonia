@@ -34,7 +34,7 @@ struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
 
     var body: some View {
         GeometryReader { geo in
-            let metrics = Metrics(geo: geo, sheetHeight: sheetHeight)
+            let metrics = Metrics(geo: geo, sheetHeight: sheetHeight, avatarSize: avatarSize, isNear: isNear)
             ScrollView {
                 VStack(spacing: 0) {
                     mapHeader(metrics)
@@ -63,7 +63,13 @@ struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
                             current: current,
                             partner: partner,
                             partnerCoordinate: partnerCoordinate,
-                            mapDirection: isNear ? 0 : HomeMapLibreView.direction(from: current.coordinate, to: partnerCoordinate)
+                            mapDirection: HomeMapLibreView.camera(
+                                current: current.coordinate,
+                                partner: partnerCoordinate,
+                                isNear: isNear,
+                                area: metrics.framedBox,
+                                viewSize: CGSize(width: metrics.width, height: metrics.bandHeight)
+                            ).direction
                         )
                         .contextMenu { prototypeMenu }
                     }
@@ -89,7 +95,7 @@ struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
             }
             .mask { fadeMask(metrics) }
 
-            avatars
+            avatars(metrics)
         }
         .frame(height: metrics.bandHeight)
         // A pull down keeps the map against the top of the screen.
@@ -118,9 +124,9 @@ struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
     }
 
     @ViewBuilder
-    private var avatars: some View {
+    private func avatars(_ metrics: Metrics) -> some View {
         if let stories, let storyPeople, let raw = avatarPoints {
-            let points = separated(raw)
+            let points = kept(separated(raw), inside: metrics.avatarBounds)
             HomeStoriesStrip(
                 viewModel: stories,
                 people: storyPeople,
@@ -135,6 +141,16 @@ struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
                 }
             )
         }
+    }
+
+    /// Holds each avatar inside the open map. Only a couple on opposite sides of the world
+    /// can be too far apart for the widest zoom, and then an avatar waits at the edge, on
+    /// the side its partner is.
+    private func kept(_ points: AvatarPoints, inside bounds: CGRect) -> AvatarPoints {
+        func keep(_ p: CGPoint) -> CGPoint {
+            CGPoint(x: min(max(p.x, bounds.minX), bounds.maxX), y: min(max(p.y, bounds.minY), bounds.maxY))
+        }
+        return AvatarPoints(own: keep(points.own), partner: keep(points.partner))
     }
 
     private func separated(_ points: AvatarPoints) -> AvatarPoints {
@@ -187,10 +203,13 @@ private struct Metrics {
     let fadeHeight: CGFloat = 260
     /// The bottom of the last row where the map is fully shown.
     let framedBottom: CGFloat
-    /// Where the camera puts the couple, in the map's coordinates.
+    /// Where the avatars' centers may go, in the map's coordinates.
     let framedBox: CGRect
+    /// The open map, less half an avatar, so a held avatar stays whole and clear of the
+    /// bar and the first card.
+    let avatarBounds: CGRect
 
-    init(geo: GeometryProxy, sheetHeight: CGFloat) {
+    init(geo: GeometryProxy, sheetHeight: CGFloat, avatarSize: CGFloat, isNear: Bool) {
         width = geo.size.width
         topInset = geo.safeAreaInsets.top
         // The safe area ends at the top of the tab bar, in the scroll content's coordinates,
@@ -203,12 +222,30 @@ private struct Metrics {
         framedBottom = sheetHeight > 0 ? max(shortest, fitting) : shortest
         bandHeight = framedBottom + fadeHeight
         let cardsTop = framedBottom + PaeoniaSpacing.space16
-        // The avatars centered in the open map between the streak pill and the first card.
-        // The bar's glass is off at rest, so the pill is where the space starts. Apart, the
-        // map turns so the two sit on this same level line.
+        // The avatars are centered in the open map between the streak pill and the first
+        // card. The bar's glass is off at rest, so the pill is where the space starts.
+        // Together they sit side by side in the middle. Apart, they may go anywhere in that
+        // space with the same margin above and below, room for a note bubble each way, so
+        // the pair always stays centered.
         let pillBottom = topInset + PaeoniaSpacing.compactButtonHeight
-        let avatarCenter = (pillBottom + cardsTop) / 2
-        framedBox = CGRect(x: 0, y: avatarCenter - 65, width: width, height: 130)
+        let half = avatarSize / 2
+        // An avatar's edge never comes closer to the screen's sides than the cards do.
+        let sideMargin = PaeoniaSpacing.screenHorizontalPadding
+        avatarBounds = CGRect(
+            x: half + sideMargin,
+            y: pillBottom + PaeoniaSpacing.space8 + half,
+            width: max(width - avatarSize - 2 * sideMargin, 1),
+            height: max(cardsTop - pillBottom - avatarSize - 2 * PaeoniaSpacing.space8, 1)
+        )
+        if isNear {
+            framedBox = CGRect(x: 0, y: (pillBottom + cardsTop) / 2 - 1, width: width, height: 2)
+        } else {
+            let margin = PaeoniaSpacing.space8 + 44 + half
+            let top = pillBottom + margin
+            let bottom = cardsTop - margin
+            let side = half + sideMargin
+            framedBox = CGRect(x: side, y: top, width: width - 2 * side, height: max(bottom - top, 1))
+        }
     }
 
     var cardsOverlap: CGFloat { fadeHeight - PaeoniaSpacing.space16 }
