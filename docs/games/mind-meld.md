@@ -69,7 +69,7 @@ Two words **match** when their keys are equal.
 
 Two words are a **near miss** when they don't match and either of these holds:
 
-- They have the same stem. The stem drops one ending from the key, the first of `ene`, `ane`, `ies` (which becomes `y`), `es`, `er`, `en`, `et`, `s`, `a`, `e` that leaves at least 3 letters. "dog" and "dogs", "hund" and "hunden", "hest" and "hestene" are near misses.
+- They have the same stem. The stem drops one ending from the key, the first of `ingen`, `inger`, `ings`, `ing`, `ende`, `ene`, `ane`, `ers`, `ies` (which becomes `y`), `es`, `er`, `en`, `et`, `ed`, `s`, `a`, `e` that leaves at least 3 letters. When the stem then ends in a doubled letter, one of the two goes, as long as 3 letters stay. "dog" and "dogs", "hund" and "hunden", "hest" and "hestene", "kidnapping" and "kidnapper", "løper" and "løping" are near misses. The word-forming endings also pair a few unrelated words, such as "number" and "numbing". The couple decides with "Count it".
 - Both keys have 5 or more letters and differ by one letter (one added, removed or changed). This catches a typo, and sometimes "house" and "horse". The couple decides with "Count it".
 
 A near miss shows "So close!" on the reveal. Either partner can tap "Count it". The round then counts as a match, the game is won, and both phones celebrate. Nobody has to agree first, because both partners win together.

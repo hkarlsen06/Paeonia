@@ -137,26 +137,35 @@ export function matchKey(word: string): string {
 }
 
 const STEM_ENDINGS: readonly (readonly [string, string])[] = [
+  ["ingen", ""],
+  ["inger", ""],
+  ["ings", ""],
+  ["ing", ""],
+  ["ende", ""],
   ["ene", ""],
   ["ane", ""],
+  ["ers", ""],
   ["ies", "y"],
   ["es", ""],
   ["er", ""],
   ["en", ""],
   ["et", ""],
+  ["ed", ""],
   ["s", ""],
   ["a", ""],
   ["e", ""],
 ];
 
-/** Drops the first matching ending that leaves at least 3 characters, so "dogs" and "dog" share a stem. */
+/**
+ * Drops the first matching ending that leaves at least 3 characters, then one letter of a doubled
+ * last letter, so "dogs" and "dog" share a stem, and so do "kidnapper", "kidnapping" and "kidnap".
+ */
 export function stemKey(key: string): string {
-  for (const [ending, replacement] of STEM_ENDINGS) {
-    if (key.endsWith(ending) && charLength(key) - ending.length >= 3) {
-      return key.slice(0, key.length - ending.length) + replacement;
-    }
-  }
-  return key;
+  const ending = STEM_ENDINGS.find(([end]) => key.endsWith(end) && charLength(key) - end.length >= 3);
+  const stem = ending ? key.slice(0, key.length - ending[0].length) + ending[1] : key;
+  const letters = Array.from(stem);
+  const last = letters.length - 1;
+  return letters.length > 3 && letters[last] === letters[last - 1] ? letters.slice(0, last).join("") : stem;
 }
 
 /** True when `a` and `b` are equal or differ by one added, removed, or changed character. */

@@ -127,7 +127,19 @@ describe("stemKey", () => {
     expect(stemKey("lamper")).toBe("lamp");
     expect(stemKey("huset")).toBe("hus");
     expect(stemKey("bluse")).toBe("blus");
-    expect(stemKey("katta")).toBe("katt");
+    expect(stemKey("katta")).toBe("kat");
+  });
+
+  test("drops word-forming endings and one letter of a doubled last letter", () => {
+    expect(stemKey("kidnapping")).toBe("kidnap");
+    expect(stemKey("kidnapper")).toBe("kidnap");
+    expect(stemKey("kidnappers")).toBe("kidnap");
+    expect(stemKey("kidnapped")).toBe("kidnap");
+    expect(stemKey("kidnappingen")).toBe("kidnap");
+    expect(stemKey("teaching")).toBe("teach");
+    expect(stemKey("feelings")).toBe("feel");
+    expect(stemKey("spennende")).toBe("spen");
+    expect(stemKey("svoemminger")).toBe("svoem");
   });
 
   test("keeps at least 3 characters and moves on to a shorter ending", () => {
@@ -180,6 +192,13 @@ describe("roundOutcome", () => {
     expect(roundOutcome("hund", "hunden")).toBe("near");
     expect(roundOutcome("hest", "hestene")).toBe("near");
     expect(roundOutcome("puppies", "puppy")).toBe("near");
+    expect(roundOutcome("KIDNAPPING", "KIDNAPPER")).toBe("near");
+    expect(roundOutcome("kidnap", "kidnapped")).toBe("near");
+    expect(roundOutcome("teacher", "teaching")).toBe("near");
+    expect(roundOutcome("runner", "running")).toBe("near");
+    expect(roundOutcome("dance", "dancing")).toBe("near");
+    expect(roundOutcome("løper", "løping")).toBe("near");
+    expect(roundOutcome("spennende", "spenning")).toBe("near");
   });
 
   test("one letter apart is a near miss when both keys have 5 letters or more", () => {
