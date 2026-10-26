@@ -91,9 +91,9 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                     .padding(.bottom, PaeoniaSpacing.space12)
             }
             .onChange(of: hearts?.incomingBurst) { _, burst in
-                // Hearts fly only between avatars on the map. Without one, the line in the
-                // bar tells the person, and the heart button takes them.
-                if let burst, couple != nil {
+                // Hearts fly between the avatars wherever they can be sent. Otherwise only the
+                // line in the bar tells the person.
+                if let burst, couple != nil || canSendHearts {
                     flights.receive(count: burst.flyingCount)
                 }
             }
@@ -193,7 +193,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             HomeStoriesStrip(
                 viewModel: stories,
                 people: storyPeople,
-                avatarSize: couple == nil ? 72 : avatarSize,
+                avatarSize: couple == nil ? Self.rowAvatarSize : avatarSize,
                 arrange: couple.map { couple in
                     { own, partner in
                         AnyView(
@@ -204,9 +204,26 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                             }
                         )
                     }
-                }
+                },
+                middle: couple == nil && hearts != nil && canSendHearts ? AnyView(rowHeart) : nil,
+                middleOverlap: Self.heartOverlap
             )
         }
+    }
+
+    /// The heart between the avatars in the row, with the hearts flying from one to the other.
+    private var rowHeart: some View {
+        let reach = (Self.rowAvatarSize + Self.heartWidth) / 2 - Self.heartOverlap
+        return togetherHeart
+            .overlay {
+                KissLayer(
+                    start: CGPoint(x: Self.rowAvatarSize / 2, y: Self.rowAvatarSize / 2),
+                    end: CGPoint(x: Self.rowAvatarSize / 2 + 2 * reach, y: Self.rowAvatarSize / 2),
+                    tapKisses: flights.kisses
+                )
+                .frame(width: Self.rowAvatarSize + 2 * reach, height: Self.rowAvatarSize)
+                .allowsHitTesting(false)
+            }
     }
 
     private func metrics(_ couple: Couple, _ screen: Screen, bandHeight: CGFloat) -> Metrics {
@@ -241,8 +258,10 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         .accessibilityHint(Text(.heartsSendHint(partnerName)))
     }
 
-    /// Overlaps both avatars a little, as on the heart row.
     private static var heartWidth: CGFloat { 44 }
+    /// How far the heart reaches over each avatar.
+    private static var heartOverlap: CGFloat { 4 }
+    private static var rowAvatarSize: CGFloat { 72 }
 
     private func framing(_ couple: Couple, _ metrics: Metrics) -> HomeMapLibreView.Framing {
         HomeMapLibreView.camera(
@@ -255,7 +274,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     }
 
     private func sendHeart() {
-        guard let hearts, couple != nil else { return }
+        guard let hearts else { return }
         flights.send()
         hearts.tap()
     }
@@ -283,21 +302,9 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 
     // MARK: No map
 
-    /// The heart button, then why there is no map and what to do about it, with a line
-    /// between it and the cards.
+    /// Why there is no map and what to do about it, with a line between it and the cards.
     @ViewBuilder
     private var noMapNotice: some View {
-        if let hearts, let storyPeople, canSendHearts {
-            MapHeartsButton(
-                currentName: storyPeople.currentName,
-                currentProfilePhotoAssetID: storyPeople.currentPhotoAssetID,
-                partnerName: storyPeople.partnerName,
-                partnerProfilePhotoAssetID: storyPeople.partnerPhotoAssetID,
-                incomingBurst: hearts.incomingBurst,
-                onSend: { hearts.tap() }
-            )
-            .padding(.top, PaeoniaSpacing.space24)
-        }
         if let notice = HomeMapNotice(
             state: mapState, partnerName: partnerName, onPromptCurrentLocation: onPromptCurrentLocation
         ), notice.id != dismissedNotice {
@@ -349,7 +356,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             return AvatarPoints(own: own, partner: partner)
         }
         // Together: side by side around the midpoint, you on the left, with room for the heart between.
-        let together = max(minimum, avatarSize + Self.heartWidth - 8)
+        let together = max(minimum, avatarSize + Self.heartWidth - 2 * Self.heartOverlap)
         let mid = CGPoint(x: (points.own.x + points.partner.x) / 2, y: (points.own.y + points.partner.y) / 2)
         return AvatarPoints(
             own: CGPoint(x: mid.x - together / 2, y: mid.y),

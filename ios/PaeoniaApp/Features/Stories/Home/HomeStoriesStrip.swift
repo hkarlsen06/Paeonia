@@ -12,6 +12,10 @@ struct HomeStoriesStrip: View {
     /// Places the two avatars itself, as the map does on Home. Nil lays them out in a row.
     /// Placed avatars leave out the reserved bubble room and the names.
     var arrange: ((_ own: AnyView, _ partner: AnyView) -> AnyView)?
+    /// In the row, a view between the two avatars, centered on them, such as the heart.
+    /// It overlaps each avatar by `middleOverlap`.
+    var middle: AnyView?
+    var middleOverlap: CGFloat = 0
 
     @State private var viewer: StoryViewerContent?
     @State private var isComposing = false
@@ -124,8 +128,11 @@ struct HomeStoriesStrip: View {
             if let arrange {
                 arrange(AnyView(ownView), AnyView(partnerView))
             } else {
-                HStack(alignment: .top, spacing: avatarSpacing) {
+                HStack(alignment: .storyAvatarMiddle, spacing: middle == nil ? avatarSpacing : -middleOverlap) {
                     ownView
+                    if let middle {
+                        middle
+                    }
                     partnerView
                 }
                 .frame(maxWidth: .infinity)
@@ -141,6 +148,7 @@ struct HomeStoriesStrip: View {
                 StoryNoteBubble.tallestBody
             }
             ownAvatarButton(stories)
+                .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
                 .overlay(alignment: .bottomTrailing) { addButton }
                 .accessibilityLabel(Text(stories.isEmpty ? .storiesHomeAddAccessibility : .storiesHomeYourStory))
                 .accessibilityAction(named: Text(.storiesHomeAddAccessibility)) { isComposing = true }
@@ -211,6 +219,7 @@ struct HomeStoriesStrip: View {
                 StoryNoteBubble.tallestBody
             }
             partnerAvatarButton(stories, ring: ring)
+                .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { partnerAvatarFrame = $0 }
                 .storyNoteBubble {
                     if let note {
@@ -287,4 +296,13 @@ struct HomeStoriesStrip: View {
         composesAfterViewer = false
         isComposing = true
     }
+}
+
+extension VerticalAlignment {
+    private enum StoryAvatarMiddle: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat { context[VerticalAlignment.center] }
+    }
+
+    /// The middle of the avatars in the stories row, below the room kept for note bubbles.
+    static let storyAvatarMiddle = VerticalAlignment(StoryAvatarMiddle.self)
 }
