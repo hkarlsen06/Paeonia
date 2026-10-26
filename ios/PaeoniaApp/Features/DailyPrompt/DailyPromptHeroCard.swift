@@ -17,7 +17,27 @@ struct DailyPromptHeroCard: View {
     var onAnswer: () -> Void
     var onOpenPartnerQuestion: (UUID) -> Void
 
+    @Environment(\.dailyPromptIsInline) private var isInline
+
     var body: some View {
+        if isInline {
+            DailyPromptInlineHero(
+                state: state,
+                art: art,
+                copy: copy,
+                partnerPhotoAssetID: partnerPhotoAssetID,
+                sealBreak: sealBreak,
+                envelopeOpening: envelopeOpening,
+                zoomNamespace: zoomNamespace,
+                onAnswer: onAnswer,
+                onOpenPartnerQuestion: onOpenPartnerQuestion
+            )
+        } else {
+            card
+        }
+    }
+
+    private var card: some View {
         GameHubCardFrame(
             name: copy.title,
             status: status,

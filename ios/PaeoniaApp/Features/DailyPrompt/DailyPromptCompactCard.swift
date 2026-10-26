@@ -20,21 +20,30 @@ struct DailyPromptCompactCard: View {
 
     private static let envelopeSize: CGFloat = 68
 
+    @Environment(\.dailyPromptIsInline) private var isInline
+
     var body: some View {
-        PaeoniaCard {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                headline
+        if isInline {
+            // PROTOTYPE: on Home's map layout the row sits on the page, with no card.
+            content
+        } else {
+            PaeoniaCard { content }
+        }
+    }
 
-                actionButton
+    private var content: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+            headline
 
-                LockedPartnerQuestionRows(
-                    state: state,
-                    partnerName: copy.partnerName,
-                    partnerPhotoAssetID: partnerPhotoAssetID,
-                    zoomNamespace: zoomNamespace,
-                    onOpen: onOpenPartnerQuestion
-                )
-            }
+            actionButton
+
+            LockedPartnerQuestionRows(
+                state: state,
+                partnerName: copy.partnerName,
+                partnerPhotoAssetID: partnerPhotoAssetID,
+                zoomNamespace: zoomNamespace,
+                onOpen: onOpenPartnerQuestion
+            )
         }
     }
 

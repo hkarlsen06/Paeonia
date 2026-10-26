@@ -172,12 +172,13 @@ struct PairedHomeView: View {
     /// PROTOTYPE: the map layout on iPhone while there is a map to show.
     @ViewBuilder
     private var homeContent: some View {
-        if drawsOwnHeader, case let .ready(current, partner, _) = locationMapState {
+        if drawsOwnHeader {
             HomeMapLayout(
-                current: current,
-                partner: partner,
+                mapState: locationMapState,
+                partnerName: partnerName,
                 stories: stories,
-                storyPeople: storyPeople
+                storyPeople: storyPeople,
+                onPromptCurrentLocation: onPromptCurrentLocation
             ) {
                 markAndStreakRow
             } sheet: {
@@ -190,6 +191,8 @@ struct PairedHomeView: View {
                     milestoneAndWidget
                     lookBackCard
                 }
+                // On the map layout today's question sits on the page, with no card.
+                .environment(\.dailyPromptIsInline, true)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.bottom, PaeoniaSpacing.space16)
                 .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)

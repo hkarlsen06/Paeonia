@@ -5,7 +5,7 @@ import SwiftUI
 /// both avatars sit on it with their stories and notes, and the cards follow in one plain
 /// scroll view. The mark and the streak stay at the top in a bar that turns to glass once
 /// the cards scroll under it, like a navigation bar.
-struct HomeMapLayout<Header: View, Sheet: View>: View {
+struct HomeMapReadyLayout<Header: View, Sheet: View>: View {
     let current: LocationPoint
     let partner: LocationPoint
     let stories: StoriesViewModel?
@@ -53,8 +53,13 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 header
                     // Sits where a navigation bar puts its title, under the Dynamic Island.
                     .overlay {
-                        HomeMapDistanceLine(current: current, partner: partner, partnerCoordinate: partnerCoordinate)
-                            .contextMenu { prototypeMenu }
+                        HomeMapDistanceLine(
+                            current: current,
+                            partner: partner,
+                            partnerCoordinate: partnerCoordinate,
+                            mapDirection: isNear ? 0 : HomeMapLibreView.direction(from: current.coordinate, to: partnerCoordinate)
+                        )
+                        .contextMenu { prototypeMenu }
                     }
                     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                     // A navigation bar is 54 points tall, so its glass reaches past the 44 point pill.
@@ -182,18 +187,15 @@ private struct Metrics {
     init(geo: GeometryProxy, isNear: Bool) {
         width = geo.size.width
         topInset = geo.safeAreaInsets.top
-        // Apart, the avatars sit wherever the two places are, so the map gets more height.
-        framedBottom = topInset + 212 + (isNear ? 0 : 48)
+        framedBottom = topInset + 212
         bandHeight = framedBottom + fadeHeight
-        let barBottom = topInset + PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space12
         let cardsTop = framedBottom + PaeoniaSpacing.space16
-        // Together: the avatars centered in the open map between the streak pill and the
-        // first card. The bar's glass is off at rest, so the pill is where the space starts.
+        // The avatars centered in the open map between the streak pill and the first card.
+        // The bar's glass is off at rest, so the pill is where the space starts. Apart, the
+        // map turns so the two sit on this same level line.
         let pillBottom = topInset + PaeoniaSpacing.compactButtonHeight
         let avatarCenter = (pillBottom + cardsTop) / 2
-        framedBox = isNear
-            ? CGRect(x: 0, y: avatarCenter - 65, width: width, height: 130)
-            : CGRect(x: 0, y: barBottom, width: width, height: cardsTop - PaeoniaSpacing.space8 - barBottom)
+        framedBox = CGRect(x: 0, y: avatarCenter - 65, width: width, height: 130)
     }
 
     var cardsOverlap: CGFloat { fadeHeight - PaeoniaSpacing.space16 }
@@ -205,6 +207,8 @@ struct HomeMapDistanceLine: View {
     let current: LocationPoint
     let partner: LocationPoint
     let partnerCoordinate: CLLocationCoordinate2D
+    /// How far the map is turned. The arrow turns back by as much, so it points north.
+    var mapDirection: Double = 0
 
     var body: some View {
         let isTogether = CoupleMapFraming.areTogether(
@@ -214,9 +218,10 @@ struct HomeMapDistanceLine: View {
         )
         TimelineView(.everyMinute) { context in
             HStack(spacing: PaeoniaSpacing.space4) {
-                Image(systemName: isTogether ? "person.2.fill" : "location.fill")
+                Image(systemName: isTogether ? "person.2.fill" : "location.north.fill")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.paeoniaAccentPrimary)
+                    .rotationEffect(.degrees(isTogether ? 0 : -mapDirection))
                     .accessibilityHidden(true)
                 Text(isTogether
                     ? String(localized: .homeMapTogether)

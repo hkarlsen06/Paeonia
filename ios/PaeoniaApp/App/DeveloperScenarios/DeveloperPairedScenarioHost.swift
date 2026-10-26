@@ -141,8 +141,9 @@
             relationshipStartedOn: "2025-09-14",
             accessNotice: scenario.accessNotice
           ),
-          // PROTOTYPE: a live map for the Home map layout.
-          locationMapState: .ready(
+          // PROTOTYPE: a live map for the Home map layout, or no location with
+          // `-proto.home.noLocation YES`.
+          locationMapState: UserDefaults.standard.bool(forKey: "proto.home.noLocation") ? .currentUnknown : .ready(
             current: LocationPoint(latitude: 59.9139, longitude: 10.7522, capturedAt: .now.addingTimeInterval(-60)),
             partner: LocationPoint(latitude: 59.9142, longitude: 10.7530, capturedAt: .now.addingTimeInterval(-7_200)),
             partnerWasStaleAtLastRefresh: false

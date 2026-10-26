@@ -57,28 +57,39 @@ struct HomeMapLibreView: UIViewRepresentable {
                 latitude: (current.latitude + partner.latitude) / 2,
                 longitude: (current.longitude + partner.longitude) / 2
             )
-            map.setCenter(mid, zoomLevel: Self.nearZoom, animated: false)
+            map.setCenter(mid, zoomLevel: Self.nearZoom, direction: 0, animated: false)
         } else {
-            let bounds = MLNCoordinateBounds(
-                sw: CLLocationCoordinate2D(
-                    latitude: min(current.latitude, partner.latitude),
-                    longitude: min(current.longitude, partner.longitude)
-                ),
-                ne: CLLocationCoordinate2D(
-                    latitude: max(current.latitude, partner.latitude),
-                    longitude: max(current.longitude, partner.longitude)
-                )
+            // Turned so the two sit on one level line, which fits the map's fixed height.
+            // Each whole avatar stays inside the box's sides.
+            var coordinates = [current, partner]
+            let line = MLNPolyline(coordinates: &coordinates, count: 2)
+            let side = avatarSize / 2 + 28
+            let camera = map.cameraThatFitsShape(
+                line,
+                direction: Self.direction(from: current, to: partner),
+                edgePadding: UIEdgeInsets(top: 0, left: side, bottom: 0, right: side)
             )
-            // Keeps each whole avatar, and the note bubble over it, inside the box.
-            let half = avatarSize / 2
-            map.setVisibleCoordinateBounds(
-                bounds,
-                edgePadding: UIEdgeInsets(top: half + 44, left: half + 28, bottom: half + 4, right: half + 28),
-                animated: false,
-                completionHandler: nil
-            )
+            map.setCamera(camera, animated: false)
         }
         report(map)
+    }
+
+    /// The map rotation, in degrees clockwise from north, that lays the line between the
+    /// two places out level on screen. The angle is measured on the flat Mercator map the
+    /// view draws, so it holds far north too. It turns at most a quarter turn either way,
+    /// so north is never below the middle, and whoever is further west stays on the left.
+    static func direction(from a: CLLocationCoordinate2D, to b: CLLocationCoordinate2D) -> CLLocationDirection {
+        var dx = b.longitude - a.longitude
+        if dx > 180 { dx -= 360 } else if dx < -180 { dx += 360 }
+        func mercatorY(_ latitude: Double) -> Double {
+            log(tan(.pi / 4 + latitude * .pi / 360)) * 180 / .pi
+        }
+        let dy = mercatorY(b.latitude) - mercatorY(a.latitude)
+        guard dx != 0 || dy != 0 else { return 0 }
+        var direction = atan2(dx, dy) * 180 / .pi - 90
+        while direction > 90 { direction -= 180 }
+        while direction <= -90 { direction += 180 }
+        return direction
     }
 
     fileprivate func report(_ map: MLNMapView) {
@@ -129,6 +140,7 @@ struct HomeMapLibreView: UIViewRepresentable {
         let green = UIColor(red: 0.30, green: 0.11, blue: 0.22, alpha: 1)
         let building = UIColor(red: 0.33, green: 0.13, blue: 0.24, alpha: 1)
         let mainRoad = UIColor(red: 0.42, green: 0.17, blue: 0.30, alpha: 1)
+        let farWater = UIColor(red: 0.22, green: 0.07, blue: 0.15, alpha: 1)
 
         for layer in style.layers {
             let id = layer.identifier
@@ -139,14 +151,17 @@ struct HomeMapLibreView: UIViewRepresentable {
                 if id.hasPrefix("aeroway") || id.hasPrefix("road") {
                     layer.isVisible = false
                 } else if id.hasPrefix("water") {
-                    layer.fillColor = constant(water)
+                    // Zoomed out, the tiles carry simplified coastlines, so water fades
+                    // toward the land color there and only reads as a hint.
+                    layer.fillColor = byZoom([4: farWater, 8: water])
                     layer.fillOpacity = constant(1)
                 } else if id.hasPrefix("building") {
                     layer.fillColor = constant(building)
                     layer.fillOpacity = constant(0.6)
                 } else {
+                    // Forest, park and ice patches are coarse blocks until about zoom 8.
                     layer.fillColor = constant(green)
-                    layer.fillOpacity = constant(0.55)
+                    layer.fillOpacity = byZoom([7: 0, 9: 0.55])
                 }
             case let layer as MLNLineStyleLayer:
                 let isMainRoad = (id.hasPrefix("highway_motorway") || id.hasPrefix("highway_major"))
@@ -170,5 +185,13 @@ struct HomeMapLibreView: UIViewRepresentable {
 
     private static func constant(_ value: Any) -> NSExpression {
         NSExpression(forConstantValue: value)
+    }
+
+    /// A value that changes smoothly with the zoom level, between the given stops.
+    private static func byZoom(_ stops: [Double: Any]) -> NSExpression {
+        NSExpression(
+            format: "mgl_interpolate:withCurveType:parameters:stops:($zoomLevel, 'linear', nil, %@)",
+            stops as NSDictionary
+        )
     }
 }
