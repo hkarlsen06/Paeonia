@@ -51,6 +51,11 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             .scrollEdgeEffectHidden(scrollOffset <= 1, for: .top)
             .safeAreaBar(edge: .top) {
                 header
+                    // Sits where a navigation bar puts its title, under the Dynamic Island.
+                    .overlay {
+                        HomeMapDistanceLine(current: current, partner: partner, partnerCoordinate: partnerCoordinate)
+                            .contextMenu { prototypeMenu }
+                    }
                     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                     // A navigation bar is 54 points tall, so its glass reaches past the 44 point pill.
                     .padding(.bottom, PaeoniaSpacing.space12)
@@ -74,12 +79,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             .mask { fadeMask(metrics) }
 
             avatars
-
-            HomeMapDistanceLine(current: current, partner: partner, partnerCoordinate: partnerCoordinate)
-                .contextMenu { prototypeMenu }
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.trailing, PaeoniaSpacing.space16)
-                .padding(.top, metrics.lineTop)
         }
         .frame(height: metrics.bandHeight)
         // A pull down keeps the map against the top of the screen.
@@ -179,8 +178,6 @@ private struct Metrics {
     let framedBottom: CGFloat
     /// Where the camera puts the couple, in the map's coordinates.
     let framedBox: CGRect
-    /// The top of the distance line.
-    let lineTop: CGFloat
 
     init(geo: GeometryProxy, isNear: Bool) {
         width = geo.size.width
@@ -188,21 +185,21 @@ private struct Metrics {
         // Apart, the avatars sit wherever the two places are, so the map gets more height.
         framedBottom = topInset + 212 + (isNear ? 0 : 48)
         bandHeight = framedBottom + fadeHeight
-        lineTop = framedBottom - PaeoniaSpacing.space20
-        framedBox = if isNear {
-            // Centered halfway between the Dynamic Island and the distance line.
-            CGRect(x: 0, y: topInset - 24, width: width, height: lineTop - topInset + 24 + 24)
-        } else {
-            CGRect(x: 0, y: topInset, width: width, height: lineTop - PaeoniaSpacing.space4 - topInset)
-        }
+        let barBottom = topInset + PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space12
+        let cardsTop = framedBottom + PaeoniaSpacing.space16
+        // Together: the note bubble and the avatar under it, as one group, centered between
+        // the bar and the first card. The avatar sits below the group's middle by half a bubble.
+        let avatarCenter = (barBottom + cardsTop) / 2 + 22
+        framedBox = isNear
+            ? CGRect(x: 0, y: avatarCenter - 65, width: width, height: 130)
+            : CGRect(x: 0, y: barBottom, width: width, height: cardsTop - PaeoniaSpacing.space8 - barBottom)
     }
 
     var cardsOverlap: CGFloat { fadeHeight - PaeoniaSpacing.space16 }
-    /// The fade starts a little above the distance line, so the line already sits in it.
-    var fadeStart: CGFloat { (framedBottom - 50) / bandHeight }
+    var fadeStart: CGFloat { (framedBottom - 20) / bandHeight }
 }
 
-/// "Sammen · 2 t" or "306 km · 2 t", just above the cards.
+/// "Sammen · 2 t" or "306 km · 2 t", in the bar's title position.
 struct HomeMapDistanceLine: View {
     let current: LocationPoint
     let partner: LocationPoint
@@ -217,7 +214,8 @@ struct HomeMapDistanceLine: View {
         TimelineView(.everyMinute) { context in
             HStack(spacing: PaeoniaSpacing.space4) {
                 Image(systemName: isTogether ? "person.2.fill" : "location.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.paeoniaAccentPrimary)
                     .accessibilityHidden(true)
                 Text(isTogether
                     ? String(localized: .homeMapTogether)
@@ -226,9 +224,9 @@ struct HomeMapDistanceLine: View {
                     capturedAt: partner.capturedAt, now: context.date
                 ))
             }
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .foregroundStyle(.paeoniaAccentPrimary)
-            .shadow(color: .black.opacity(0.6), radius: 3, y: 1)
+            .font(PaeoniaTypography.bodyEmphasis)
+            .foregroundStyle(.paeoniaTextPrimary)
+            .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
         }
     }
 }
