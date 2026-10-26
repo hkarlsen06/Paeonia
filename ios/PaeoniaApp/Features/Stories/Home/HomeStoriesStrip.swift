@@ -77,6 +77,7 @@ struct HomeStoriesStrip: View {
             .analyticsScreen("story_note")
             .presentationBackground(.clear)
         }
+        .preference(key: HomeIsCoveredKey.self, value: viewer != nil || isComposing || openNote != nil)
     }
 
     /// Opens the story a push named. A story that left Home opens alone in the archive style.

@@ -53,6 +53,13 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// The big check lands on Home's "Things to try together" card once every row is
+    /// done.
+    static func firstStepsFinished() {
+        impact(.medium, intensity: 0.9)
+        notify(.success)
+    }
+
     static func answerRevealed() {
         notify(.success)
     }

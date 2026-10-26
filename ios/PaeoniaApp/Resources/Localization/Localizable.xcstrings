@@ -18279,6 +18279,24 @@
         }
       }
     },
+    "home.firstSteps.finished" : {
+      "comment" : "Shown under a big check mark on the Home card with things to try together, once the couple has done every row. The card then goes away for good.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You tried them all together!"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere har prøvd alt sammen!"
+          }
+        }
+      }
+    },
     "home.firstSteps.game" : {
       "comment" : "Row on the Home card with things to try together. Opens the Games tab. %@ is the partner's name.",
       "extractionState" : "manual",

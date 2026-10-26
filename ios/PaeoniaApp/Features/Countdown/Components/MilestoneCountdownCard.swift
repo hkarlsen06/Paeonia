@@ -100,6 +100,7 @@ struct MilestoneCountdownCard: View {
             )
             .analyticsScreen("relationship_timeline")
         }
+        .preference(key: HomeIsCoveredKey.self, value: isEditorPresented || isTimelinePresented)
     }
 
     private func card(for milestone: CoupleDateEvent) -> some View {

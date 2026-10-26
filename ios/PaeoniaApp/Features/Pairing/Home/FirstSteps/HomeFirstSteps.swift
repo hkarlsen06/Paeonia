@@ -19,7 +19,8 @@ nonisolated enum HomeFirstStep: String, Codable, CaseIterable, Sendable {
 /// done, so deleting the memory or skipping the topic question later does not untick it.
 nonisolated struct HomeFirstStepsProgress: Codable, Equatable, Sendable {
     var doneSteps: Set<HomeFirstStep> = []
-    /// The person closed the card. It never shows again for this pair.
+    /// The person closed the card, or the moment for finishing every row played. It
+    /// never shows again for this pair.
     var isClosed = false
 }
 
@@ -30,12 +31,16 @@ nonisolated struct HomeFirstSteps: Equatable, Sendable {
     var doneCount: Int { doneSteps.count }
     var totalCount: Int { HomeFirstStep.allCases.count }
 
+    /// Every row is done. The card plays its finish moment, then closes itself.
+    var isComplete: Bool { doneCount == totalCount }
+
     func isDone(_ step: HomeFirstStep) -> Bool {
         doneSteps.contains(step)
     }
 
     /// The card for a pair, or nil when Home hides it: no saved progress (the first day is
-    /// not over), closed, every row done, or a row whose state has not loaded yet.
+    /// not over), closed, or a row whose state has not loaded yet. A card with every row
+    /// done still shows, so its finish moment can play.
     /// `observed` holds a row once the app has loaded what it needs to know, true when done.
     /// Waiting for every row keeps a done row from showing as not done first.
     static func card(progress: HomeFirstStepsProgress?, observed: [HomeFirstStep: Bool]) -> HomeFirstSteps? {
@@ -45,7 +50,6 @@ nonisolated struct HomeFirstSteps: Equatable, Sendable {
             guard let isDone = observed[step] else { return nil }
             if isDone { done.insert(step) }
         }
-        guard done.count < HomeFirstStep.allCases.count else { return nil }
         return HomeFirstSteps(doneSteps: done)
     }
 }

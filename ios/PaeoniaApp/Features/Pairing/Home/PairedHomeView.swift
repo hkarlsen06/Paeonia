@@ -53,6 +53,8 @@ struct PairedHomeView: View {
     /// iPad landscape: three columns that the cards fill left to right and then down,
     /// with a square map (`HomeWideLayout`).
     @State private var isWideLayout = false
+    /// A sheet from one of the cards is up (`HomeIsCoveredKey`).
+    @State private var isCovered = false
 
     private static let alertTypesSeenOnHome: Set<String> = [
         "widget_updated", "streak_reminder", "story_posted", "date_reminder",
@@ -133,40 +135,44 @@ struct PairedHomeView: View {
     }
 
     var body: some View {
-        homeContent
-            .paeoniaWideLayout($isWideLayout)
-            .heartsLifecycle(hearts, ownerUserID: currentUserID, partnerName: partnerName)
-            .lookBackRefresh(lookBack, userID: currentUserID, coupleID: coupleID)
-            // Home shows the couple's current drawing, the streak, the story ring and the next
-            // date, so seeing it means the user has noticed a new drawing, a check-in reminder,
-            // a story or a date reminder.
-            .task {
-                await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
-            }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active {
-                    Task {
-                        await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
-                    }
+        ScrollViewReader { proxy in
+            homeContent
+                .environment(\.homeScrollProxy, proxy)
+        }
+        .onPreferenceChange(HomeIsCoveredKey.self) { isCovered = $0 }
+        .paeoniaWideLayout($isWideLayout)
+        .heartsLifecycle(hearts, ownerUserID: currentUserID, partnerName: partnerName)
+        .lookBackRefresh(lookBack, userID: currentUserID, coupleID: coupleID)
+        // Home shows the couple's current drawing, the streak, the story ring and the next
+        // date, so seeing it means the user has noticed a new drawing, a check-in reminder,
+        // a story or a date reminder.
+        .task {
+            await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task {
+                    await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // Let the scroll view reach the bottom edge so the tab bar's automatic
-            // content inset applies and cards scroll behind the floating glass bar,
-            // instead of a flat background panel filling the space above it. The light
-            // stays put while the cards scroll over it, so a pull to refresh never
-            // reveals a plain strip above it.
-            .paeoniaTabBackdrop()
-            // In compact width Home draws its own header instead of a navigation bar. The bar
-            // took every tap in its band, so the note bubbles that rise into that space
-            // couldn't be tapped. In regular width the tab bar sits at the top, in the bar's
-            // row, so the bar stays there with the mark and the streak beside the tabs.
-            .toolbarVisibility(drawsOwnHeader ? .hidden : .automatic, for: .navigationBar)
-            .toolbar {
-                if !drawsOwnHeader {
-                    barItems
-                }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Let the scroll view reach the bottom edge so the tab bar's automatic
+        // content inset applies and cards scroll behind the floating glass bar,
+        // instead of a flat background panel filling the space above it. The light
+        // stays put while the cards scroll over it, so a pull to refresh never
+        // reveals a plain strip above it.
+        .paeoniaTabBackdrop()
+        // In compact width Home draws its own header instead of a navigation bar. The bar
+        // took every tap in its band, so the note bubbles that rise into that space
+        // couldn't be tapped. In regular width the tab bar sits at the top, in the bar's
+        // row, so the bar stays there with the mark and the streak beside the tabs.
+        .toolbarVisibility(drawsOwnHeader ? .hidden : .automatic, for: .navigationBar)
+        .toolbar {
+            if !drawsOwnHeader {
+                barItems
             }
+        }
     }
 
     /// PROTOTYPE: the map layout on iPhone.
@@ -418,10 +424,14 @@ extension PairedHomeView {
             HomeFirstStepsCard(
                 steps: firstSteps,
                 partnerName: partnerName,
+                isCovered: isCovered,
                 onOpen: onOpenFirstStep,
-                onClose: onCloseFirstSteps
+                onClose: onCloseFirstSteps,
+                onFinished: onCloseFirstSteps
             )
-            .transition(.opacity)
+            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
+            // In front of the cards around it, so they don't hide the petals of its finish moment.
+            .zIndex(1)
         }
     }
 

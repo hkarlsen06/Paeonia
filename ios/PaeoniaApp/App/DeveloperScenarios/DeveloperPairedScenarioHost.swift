@@ -153,7 +153,7 @@
             currentDisplayName: "Alex",
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
             partnerName: PartnerName(accountName: "Robin", nickname: nil),
-            pairID: scenario == .homeFirstSteps ? DeveloperLocalFlowIDs.pairID : nil,
+            pairID: scenario.firstStepsProgress == nil ? nil : DeveloperLocalFlowIDs.pairID,
             coupleID: DeveloperScenarioFixture.coupleID,
             relationshipStartedOn: "2025-09-14",
             accessNotice: scenario.accessNotice
@@ -175,8 +175,8 @@
             memoriesViewModel: memoriesViewModel,
             gamesViewModel: gamesViewModel
           ),
-          // Past the first day, with the game and topic rows ticked, for `home-first-steps`.
-          pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(startsPastFirstDay: scenario == .homeFirstSteps)
+          // Past the first day with a saved card, for the `home-first-steps` scenarios.
+          pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(firstSteps: scenario.firstStepsProgress)
         )
       }
     }

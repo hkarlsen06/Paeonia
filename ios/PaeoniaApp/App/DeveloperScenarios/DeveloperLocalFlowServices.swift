@@ -319,14 +319,14 @@
   final class DeveloperLocalFlowCelebrationStore: PairingCelebrationStoring {
     private var seenPairIDs = Set<UUID>()
 
-    /// The paired local flow starts in the tabs, past the celebration and the first day.
-    /// The local flow has no games or topics to read, so those rows of Home's "Things to
-    /// try together" card start ticked, and the card can show.
-    init(startsPastFirstDay: Bool = false) {
-      guard startsPastFirstDay else { return }
+    /// With `firstSteps`, the pair starts in the tabs, past the celebration and the first
+    /// day, with that saved "Things to try together" card. The local flow has no games or
+    /// topics to read, so the card shows only when `firstSteps` has those rows ticked.
+    init(firstSteps: HomeFirstStepsProgress? = nil) {
+      guard let firstSteps else { return }
       seenPairIDs.insert(DeveloperLocalFlowIDs.pairID)
       progressByPairID[DeveloperLocalFlowIDs.pairID] = PostPairingProgress(isFinished: true)
-      firstStepsByPairID[DeveloperLocalFlowIDs.pairID] = HomeFirstStepsProgress(doneSteps: [.game, .topic])
+      firstStepsByPairID[DeveloperLocalFlowIDs.pairID] = firstSteps
     }
 
     func hasSeenCelebration(forPairID pairID: UUID) -> Bool { seenPairIDs.contains(pairID) }

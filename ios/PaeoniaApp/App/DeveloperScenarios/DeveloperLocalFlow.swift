@@ -88,7 +88,9 @@
         accessRouteService: accessService,
         accessSnapshotStore: accessSnapshotStore,
         inviteStore: inviteStore,
-        pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(startsPastFirstDay: seed == .paired),
+        pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(
+          firstSteps: seed == .paired ? HomeFirstStepsProgress(doneSteps: [.game, .topic]) : nil
+        ),
         systemSideEffects: NoOpRootSystemSideEffects(),
         welcomeFlow: WelcomeFlowModel(
           store: InMemoryWelcomeFlowStore(),
