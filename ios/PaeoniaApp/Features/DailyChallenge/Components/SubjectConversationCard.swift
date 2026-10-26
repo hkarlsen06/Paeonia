@@ -1,15 +1,16 @@
 import SwiftUI
 
-/// A row for the chat about a story, in the same list as the question rows: the story's
-/// photo, whose story it is, its caption, and the newest message. Tapping it opens the chat.
-struct StoryConversationCard: View {
-    let conversation: StoryConversation
+/// A row for the chat about a memory or a story, in the same list as the question rows:
+/// the photo, what it is ("Memory", "Robin's story"), its title or caption, and the newest
+/// message. Tapping it opens the chat.
+struct SubjectConversationCard: View {
+    let conversation: SubjectConversation
     let people: StoryPeople
     let onOpen: () -> Void
 
     private static let photoSize: CGFloat = 56
 
-    private var story: Story { conversation.story }
+    private var header: ThreadChatHeader { conversation.header(people: people) }
 
     var body: some View {
         Button(action: onOpen) { card }
@@ -25,14 +26,9 @@ struct StoryConversationCard: View {
     private var card: some View {
         PaeoniaCard {
             HStack(spacing: PaeoniaSpacing.space12) {
-                MemoryMediaImageView(
-                    mediaAssetID: story.mediaAssetID,
-                    height: Self.photoSize,
-                    cornerRadius: PaeoniaRadius.radius12,
-                    allowsViewing: false
-                )
-                .frame(width: Self.photoSize)
-                .accessibilityHidden(true)
+                thumbnail
+                    .frame(width: Self.photoSize, height: Self.photoSize)
+                    .accessibilityHidden(true)
 
                 labels
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -43,9 +39,31 @@ struct StoryConversationCard: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// The photo, or for a memory with only notes, the Memories tab's mark.
+    @ViewBuilder
+    private var thumbnail: some View {
+        if let photoAssetID = header.photoAssetID {
+            MemoryMediaImageView(
+                mediaAssetID: photoAssetID,
+                height: Self.photoSize,
+                cornerRadius: PaeoniaRadius.radius12,
+                allowsViewing: false
+            )
+        } else {
+            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
+                .fill(.paeoniaSurfaceSecondary)
+                .overlay {
+                    Image(systemName: MainTab.memories.systemImage)
+                        .font(PaeoniaTypography.bodyEmphasis)
+                        .foregroundStyle(.paeoniaMemory)
+                        .accessibilityHidden(true)
+                }
+        }
+    }
+
     private var labels: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
-            Text(people.isOwn(story) ? .chatHeaderYourStory : .chatHeaderStory(people.partnerName))
+            Text(verbatim: header.eyebrow)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaAccentPrimary)
             title
@@ -66,12 +84,18 @@ struct StoryConversationCard: View {
         }
     }
 
+    /// The memory's title or the story's caption, else what it is and when.
     private var title: Text {
-        if let caption = story.caption?.trimmedNonEmpty {
-            return Text(verbatim: caption)
+        if let title = header.title.trimmedNonEmpty {
+            return Text(verbatim: title)
         }
-        let posted = story.createdAt.formatted(.dateTime.day().month(.abbreviated).hour().minute())
-        return Text(.questionsStoryChatUntitled(posted))
+        switch conversation.subject {
+        case .memory:
+            return Text(.questionsMemoryChatUntitled(header.detail ?? ""))
+        case .story(let story):
+            let posted = story.createdAt.formatted(.dateTime.day().month(.abbreviated).hour().minute())
+            return Text(.questionsStoryChatUntitled(posted))
+        }
     }
 
     private var accessory: some View {

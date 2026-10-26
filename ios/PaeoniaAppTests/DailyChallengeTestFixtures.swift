@@ -23,7 +23,7 @@ enum TestDailyChallengeIDs {
 }
 
 /// The chat about a partner's story posted at `postedAt`, with one message from the partner.
-func storyConversation(postedAt: Date, isUnread: Bool = false) -> StoryConversation {
+func storyConversation(postedAt: Date, isUnread: Bool = false) -> SubjectConversation {
     let story = Story(
         id: UUID(),
         authorUserID: TestDailyChallengeIDs.partnerUser,
@@ -31,18 +31,58 @@ func storyConversation(postedAt: Date, isUnread: Bool = false) -> StoryConversat
         caption: nil,
         createdAt: postedAt
     )
-    let summary = ThreadChatSummary(
+    return SubjectConversation(
+        subject: .story(story),
+        summary: chatSummary(.story(story.id), at: postedAt),
+        isUnread: isUnread
+    )
+}
+
+/// The chat about a memory the partner added at `addedAt`, dated `memoryDate`, with one
+/// message from the partner.
+func memoryConversation(addedAt: Date, memoryDate: String, isUnread: Bool = false) -> SubjectConversation {
+    let memoryID = UUID()
+    let snapshot = MemorySnapshot(
+        ownerUserID: TestDailyChallengeIDs.currentUser,
+        memoryID: memoryID,
+        coupleID: TestDailyChallengeIDs.couple,
+        title: "Cabin weekend",
+        memoryDate: memoryDate,
+        place: nil,
+        createdByUserID: TestDailyChallengeIDs.partnerUser,
+        lastEditedByUserID: TestDailyChallengeIDs.partnerUser,
+        revision: 1,
+        moderationStatus: .visible,
+        deletedAt: nil,
+        createdAt: addedAt,
+        updatedAt: addedAt,
+        syncUpdatedAt: addedAt,
+        ownNote: nil,
+        partnerNote: nil,
+        visibleMemoryMediaIDs: [],
+        visibleMediaAssetIDs: [],
+        media: [],
+        threadID: UUID()
+    )
+    return SubjectConversation(
+        subject: .memory(MemoryRecord(snapshot: snapshot)),
+        summary: chatSummary(.memory(memoryID), at: addedAt),
+        isUnread: isUnread
+    )
+}
+
+private func chatSummary(_ subject: ThreadChatSubject, at date: Date) -> ThreadChatSummary {
+    ThreadChatSummary(
         threadID: UUID(),
         coupleID: TestDailyChallengeIDs.couple,
-        subject: .story(story.id),
-        createdAt: postedAt,
-        updatedAt: postedAt,
+        subject: subject,
+        createdAt: date,
+        updatedAt: date,
         lastMessageID: UUID(),
-        lastMessageAt: postedAt,
+        lastMessageAt: date,
         lastMessageSenderUserID: TestDailyChallengeIDs.partnerUser,
         lastMessageBody: "Lovely"
     )
-    return StoryConversation(story: story, summary: summary, isUnread: isUnread)
 }
 
 func makeDailySnapshot(

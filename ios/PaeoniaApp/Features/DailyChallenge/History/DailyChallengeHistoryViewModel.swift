@@ -54,12 +54,12 @@ final class DailyChallengeHistoryViewModel {
         }
     }
 
-    /// The loaded days with the chats about stories posted before `today`, without the
+    /// The loaded days with the memory and story chats from before `today`, without the
     /// questions in `shownIDs`, newest day first. The Questions tab lists today's
     /// questions above, so a question that is there never shows again under an earlier
     /// day. A day left with nothing in it is dropped.
     func days(
-        adding storyChats: [StoryConversation],
+        adding conversations: [SubjectConversation],
         before today: String,
         excluding shownIDs: Set<UUID>
     ) -> [DailyChallengeHistoryDay] {
@@ -69,7 +69,7 @@ final class DailyChallengeHistoryViewModel {
         case .empty: loaded = []
         case .loading, .failed: return []
         }
-        let days = DailyChallengeHistory.adding(storyChats, before: today, to: loaded)
+        let days = DailyChallengeHistory.adding(conversations, before: today, to: loaded)
         return DailyChallengeHistory.removing(shownIDs, from: days)
     }
 

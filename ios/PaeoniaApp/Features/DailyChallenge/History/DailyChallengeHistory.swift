@@ -1,7 +1,7 @@
 import Foundation
 
-/// One day in the earlier-days list: its answered questions and the chats about stories
-/// posted that day. Identified by the couple's local date string so it stays stable
+/// One day in the earlier-days list: its answered questions and the chats about memories
+/// added or stories posted that day. Identified by the couple's local date string so it stays stable
 /// across reloads, and carrying a parsed `date` purely so the divider can format it in
 /// the reader's locale.
 nonisolated struct DailyChallengeHistoryDay: Identifiable, Equatable, Sendable {
@@ -41,22 +41,23 @@ nonisolated enum DailyChallengeHistory {
             .sorted { $0.localDate > $1.localDate }
     }
 
-    /// The days with the chats about stories posted before `today` added under the day
-    /// each story was posted. A day with only story chats gets its own entry.
+    /// The days with the chats about memories and stories from before `today` added under
+    /// the day each memory was added or story posted. A day with only those chats gets its
+    /// own entry.
     static func adding(
-        _ storyChats: [StoryConversation],
+        _ conversations: [SubjectConversation],
         before today: String,
         to days: [DailyChallengeHistoryDay]
     ) -> [DailyChallengeHistoryDay] {
-        let earlier = Dictionary(grouping: storyChats.filter { !$0.isToday(today) }, by: \.localDate)
+        let earlier = Dictionary(grouping: conversations.filter { !$0.isToday(today) }, by: \.localDate)
         guard !earlier.isEmpty else { return days }
         var daysByDate = Dictionary(uniqueKeysWithValues: days.map { ($0.localDate, $0) })
         for (localDate, chats) in earlier {
             let day = daysByDate[localDate]
-            let rows = (day?.rows ?? []) + chats.map(QuestionsTabRow.storyChat)
+            let rows = (day?.rows ?? []) + chats.map(QuestionsTabRow.conversation)
             daysByDate[localDate] = DailyChallengeHistoryDay(
                 localDate: localDate,
-                date: day?.date ?? parseLocalDate(localDate) ?? chats[0].story.createdAt,
+                date: day?.date ?? parseLocalDate(localDate) ?? chats[0].startedAt,
                 rows: rows.sorted(by: QuestionsTabRow.timelineOrder)
             )
         }

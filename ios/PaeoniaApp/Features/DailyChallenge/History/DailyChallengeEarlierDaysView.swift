@@ -1,22 +1,23 @@
 import SwiftUI
 
 /// The earlier days under today's list on the Questions tab: a centered date divider per
-/// day, then the day's question rows and story chats, newest day first. A row the user has
-/// answered opens the question's page, and a story chat opens the chat. Questions that
+/// day, then the day's question rows and memory and story chats, newest day first. A row the
+/// user has answered opens the question's page, and a memory or story chat opens the chat. Questions that
 /// today's list already shows are left out, so each one appears once. The first load shows
 /// a spinner, and a failed first load shows a retry button. A failed reload keeps the days
 /// and raises a banner instead.
 struct DailyChallengeEarlierDaysView: View {
     let history: DailyChallengeHistoryViewModel
     let viewModel: DailyChallengeViewModel
-    /// Every story chat. Those from before `today` go under the day of their story.
-    let storyChats: [StoryConversation]
+    /// Every memory and story chat. Those from before `today` go under the day the memory
+    /// was added or the story posted.
+    let conversations: [SubjectConversation]
     let today: String
     let storyPeople: StoryPeople
     /// The questions today's list shows. They are not repeated here.
     let shownQuestionIDs: Set<UUID>
     var onOpenChat: (DailyChallengeQuestion) -> Void = { _ in }
-    var onOpenStoryChat: (StoryConversation) -> Void = { _ in }
+    var onOpenConversation: (SubjectConversation) -> Void = { _ in }
     var onRetry: () -> Void = {}
 
     var body: some View {
@@ -32,7 +33,7 @@ struct DailyChallengeEarlierDaysView: View {
             case .empty, .content:
                 // Nothing left once today's list shows every question. Leaving the
                 // stack out keeps the Questions list from adding a gap for it.
-                let days = history.days(adding: storyChats, before: today, excluding: shownQuestionIDs)
+                let days = history.days(adding: conversations, before: today, excluding: shownQuestionIDs)
                 if !days.isEmpty {
                     dayList(days)
                 }
@@ -58,9 +59,9 @@ struct DailyChallengeEarlierDaysView: View {
                                 hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
                                 onOpen: { onOpenChat(question) }
                             )
-                        case .storyChat(let conversation):
-                            StoryConversationCard(conversation: conversation, people: storyPeople) {
-                                onOpenStoryChat(conversation)
+                        case .conversation(let conversation):
+                            SubjectConversationCard(conversation: conversation, people: storyPeople) {
+                                onOpenConversation(conversation)
                             }
                         }
                     }

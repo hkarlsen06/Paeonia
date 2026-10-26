@@ -56,7 +56,7 @@ struct DailyChallengeReadOverviewTests {
         )
     }
 
-    @Test func todaysStoryChatsJoinTodaysListAndAnUnreadOneRanksWithTheNew() {
+    @Test func todaysMemoryAndStoryChatsJoinTodaysListAndAnUnreadOneRanksWithTheNew() {
         let t0 = TestDailyChallengeIDs.answerDate
         let t1 = t0.addingTimeInterval(600)
         let t2 = t1.addingTimeInterval(600)
@@ -80,17 +80,29 @@ struct DailyChallengeReadOverviewTests {
         let unreadStory = storyConversation(postedAt: t0, isUnread: true)
         let readStory = storyConversation(postedAt: t2)
         let earlierStory = storyConversation(postedAt: t0.addingTimeInterval(-2 * 86_400), isUnread: true)
+        // Added today, so on today's list even though the memory is dated years back.
+        let unreadMemory = memoryConversation(addedAt: t2, memoryDate: "2019-07-14", isUnread: true)
+        let readMemory = memoryConversation(addedAt: t0.addingTimeInterval(-600), memoryDate: "2019-07-14")
+        let earlierMemory = memoryConversation(
+            addedAt: t0.addingTimeInterval(-3 * 86_400),
+            memoryDate: MemoryTimeline.localDateString(for: t0),
+            isUnread: true
+        )
 
         let rows = QuestionsTabRow.todayRows(
             questions: snapshot.questions,
-            storyChats: [readStory, earlierStory, unreadStory],
+            conversations: [readStory, earlierStory, unreadStory, readMemory, unreadMemory, earlierMemory],
             today: MemoryTimeline.localDateString(for: t0),
             isNew: { $0.id == newAnswer }
         )
 
-        // The unread story sits with the new question, by time, under the to-do. The read
-        // one sorts by time with the rest. The story from an earlier day is not here.
-        #expect(rows.map(\.id) == [awaiting, newAnswer, unreadStory.id, recent, readStory.id])
+        // The unread memory and story sit with the new question, by time, under the to-do.
+        // The read ones sort by time with the rest. Chats from an earlier day are not here,
+        // even a memory dated today.
+        #expect(
+            rows.map(\.id)
+                == [awaiting, unreadMemory.id, newAnswer, unreadStory.id, recent, readStory.id, readMemory.id]
+        )
     }
 
     @Test func aPartnerAnswerIsNewUntilYouHaveSeenIt() throws {

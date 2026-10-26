@@ -3,9 +3,9 @@ import Observation
 
 /// What the screens know about the couple's memory and story chats: whether a memory or
 /// a story has a conversation yet, its last message, and whether the partner wrote
-/// something the user has not read. The Questions tab lists the story chats with its
-/// question chats (`storyConversations(for:)`). It re-reads this phone's copy of the chat
-/// summaries each time the chat cache changes. `ThreadChatLiveFeed` keeps that
+/// something the user has not read. The Questions tab lists the memory and story chats with
+/// its question chats (`conversations(memories:stories:)`). It re-reads this phone's copy of
+/// the chat summaries each time the chat cache changes. `ThreadChatLiveFeed` keeps that
 /// copy current.
 @MainActor
 @Observable
@@ -60,12 +60,17 @@ final class ThreadChatSummaries {
         return summary.isUnread(by: currentUserID, readThrough: readMarks[summary.threadID])
     }
 
-    /// The stories in `stories` that someone has written about, each with its chat.
-    func storyConversations(for stories: [Story]) -> [StoryConversation] {
-        stories.compactMap { story in
-            summaries[.story(story.id)].map { summary in
-                StoryConversation(story: story, summary: summary, isUnread: isUnread(summary.subject))
-            }
-        }
+    /// The memories and stories that someone has written about, each with its chat. A memory's
+    /// notes are not messages, so a memory with notes and no messages has none.
+    func conversations(memories: [MemoryRecord], stories: [Story]) -> [SubjectConversation] {
+        memories.compactMap { conversation(about: .memory($0), chat: .memory($0.snapshot.memoryID)) }
+            + stories.compactMap { conversation(about: .story($0), chat: .story($0.id)) }
+    }
+
+    private func conversation(
+        about subject: SubjectConversation.Subject,
+        chat: ThreadChatSubject
+    ) -> SubjectConversation? {
+        summaries[chat].map { SubjectConversation(subject: subject, summary: $0, isUnread: isUnread(chat)) }
     }
 }

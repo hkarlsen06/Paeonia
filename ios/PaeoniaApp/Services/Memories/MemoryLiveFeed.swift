@@ -12,9 +12,10 @@ import Foundation
 nonisolated struct MemoryLiveFeed: LiveFeed {
     let name = "memories"
 
-    /// Only the Memories tab reads the store. The feed starts at the stored cursor, so a visit catches up.
+    /// The Memories tab reads the store, and the Questions tab lists the memory chats. The feed
+    /// starts at the stored cursor, so a visit catches up.
     var activation: LiveFeedActivation {
-        .whileNeeded([.memoriesTab])
+        .whileNeeded([.memoriesTab, .questionsTab])
     }
 
     private let memoryStore: any MemoryRecordPersisting

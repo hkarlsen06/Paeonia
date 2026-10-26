@@ -10,9 +10,10 @@ import SwiftUI
 /// start the chat. A question the partner answered that the user can still answer zooms
 /// into the answer flow, where the reply is revealed on send. Topic questions waiting
 /// for the user join the list until they are answered and seen, and then show only in
-/// their topic. A story someone wrote about joins the list as a row for its chat, on the
-/// day it was posted: today's list for a story from today, otherwise under its earlier
-/// day. Earlier days follow under today's list, with a date divider per day.
+/// their topic. A memory or a story someone wrote about joins the list as a row for its
+/// chat, on the day the memory was added or the story posted: today's list for one from
+/// today, otherwise under its earlier day. Earlier days follow under today's list, with a
+/// date divider per day.
 /// The Topics card sits under the hero card. Once the tab is calm (`isCalm`), every
 /// topic shows between today's list and the earlier days instead.
 struct DailyChallengeScreen: View {
@@ -31,8 +32,8 @@ struct DailyChallengeScreen: View {
     var privacySafetyService: (any PrivacySafetyServicing)?
     var privacyOperationProvider: (any SyncClientOperationProviding)?
     var onReportedAndLeft: () -> Void = {}
-    /// The stories someone wrote about, each listed as a row for its chat.
-    var storyChats: [StoryConversation] = []
+    /// The memories and stories someone wrote about, each listed as a row for its chat.
+    var conversations: [SubjectConversation] = []
     var storyPeople = StoryPeople(currentName: "", partnerName: "")
     /// The Topics card under the daily question, which opens the extra questions.
     var topicsCard: TopicsCardContent?
@@ -50,11 +51,11 @@ struct DailyChallengeScreen: View {
     /// it from the pushed chat instead would bring it back only after the back swipe
     /// ends. Same approach as Tidex's chat.
     @State private var isOpeningChat = false
-    /// The story chat pushed on top of this screen.
-    @State private var storyChat: StoryChatDestination?
+    /// The memory's or story's chat pushed on top of this screen.
+    @State private var conversationChat: ConversationChatDestination?
 
     private var isChatOpen: Bool {
-        chatQuestion.wrappedValue != nil || storyChat != nil
+        chatQuestion.wrappedValue != nil || conversationChat != nil
     }
 
     private var hidesTabBar: Bool {
@@ -140,9 +141,9 @@ struct DailyChallengeScreen: View {
             .analyticsScreen("daily_chat")
             .id(question.id)
         }
-        .navigationDestination(item: $storyChat) { destination in
+        .navigationDestination(item: $conversationChat) { destination in
             ThreadChatScreen(viewModel: destination.viewModel)
-                .analyticsScreen("story_replies")
+                .analyticsScreen(destination.viewModel.subject.kind == .memory ? "memory_comments" : "story_replies")
                 .id(destination.id)
         }
         .onChange(of: viewModel.notice) { _, notice in
@@ -338,9 +339,9 @@ extension DailyChallengeScreen {
                 topicTitle: topicsCard?.title(of: question)
             )
             .id(question.id)
-        case .storyChat(let conversation):
-            StoryConversationCard(conversation: conversation, people: storyPeople) {
-                openStoryChat(conversation)
+        case .conversation(let conversation):
+            SubjectConversationCard(conversation: conversation, people: storyPeople) {
+                openConversation(conversation)
             }
         }
     }
@@ -352,32 +353,31 @@ extension DailyChallengeScreen {
             DailyChallengeEarlierDaysView(
                 history: historyViewModel,
                 viewModel: viewModel,
-                storyChats: storyChats,
+                conversations: conversations,
                 today: viewModel.snapshot.todayLocalDate,
                 storyPeople: storyPeople,
                 shownQuestionIDs: Set(readQuestions.map(\.id)),
                 onOpenChat: openChat,
-                onOpenStoryChat: openStoryChat,
+                onOpenConversation: openConversation,
                 onRetry: { Task { await historyViewModel.load() } }
             )
         }
     }
 
-    /// Opens a story's chat the same way: read from the phone first, then pushed.
-    private func openStoryChat(_ conversation: StoryConversation) {
+    /// Opens a memory's or a story's chat the same way: read from the phone first, then pushed.
+    private func openConversation(_ conversation: SubjectConversation) {
         guard !isOpeningChat else { return }
         withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { isOpeningChat = true }
-        let story = conversation.story
         Task {
             guard let chat = await chatContext.makeViewModel(
-                subject: .story(story.id),
-                header: .story(story, people: storyPeople)
+                subject: conversation.summary.subject,
+                header: conversation.header(people: storyPeople)
             ) else {
                 isOpeningChat = false
                 return
             }
             await Task.yield()
-            storyChat = StoryChatDestination(id: story.id, viewModel: chat)
+            conversationChat = ConversationChatDestination(id: conversation.id, viewModel: chat)
         }
     }
 
@@ -399,11 +399,11 @@ extension DailyChallengeScreen {
         }
     }
 
-    /// Today's list: `readQuestions` and the chats about today's stories.
+    /// Today's list: `readQuestions` and the chats about today's memories and stories.
     private var todayRows: [QuestionsTabRow] {
         QuestionsTabRow.todayRows(
             questions: readQuestions,
-            storyChats: storyChats,
+            conversations: conversations,
             today: viewModel.snapshot.todayLocalDate,
             isNew: viewModel.hasNewFromPartner
         )
@@ -411,14 +411,14 @@ extension DailyChallengeScreen {
 
     /// The tab is calm when the user has answered today's question and nothing in the
     /// topics or the list waits for them or holds something they haven't seen, such as
-    /// a story chat with an unread reply. Waiting on the partner is calm. A calm tab
-    /// shows every topic instead of the Topics card.
+    /// a memory or story chat with an unread message. Waiting on the partner is calm. A
+    /// calm tab shows every topic instead of the Topics card.
     private var isCalm: Bool {
         guard isDayComplete,
               let topicsCard,
               topicsCard.hook == nil,
               topicsCard.waitingQuestions.isEmpty,
-              !storyChats.contains(where: \.isUnread)
+              !conversations.contains(where: \.isUnread)
         else { return false }
         return !readQuestions.contains { question in
             question.isAwaitingCurrentUserAnswer
@@ -474,8 +474,8 @@ private struct DailyChallengeScreenPreviewHost: View {
 }
 #endif
 
-/// A story's chat, read from the phone before it is pushed.
-private struct StoryChatDestination: Hashable, Identifiable {
+/// A memory's or a story's chat, read from the phone before it is pushed.
+private struct ConversationChatDestination: Hashable, Identifiable {
     let id: UUID
     let viewModel: ThreadChatViewModel
 

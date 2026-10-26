@@ -21004,19 +21004,19 @@
       }
     },
     "mainTab.questions" : {
-      "comment" : "Title for the Questions tab in the main tab bar, where answered daily questions are kept",
+      "comment" : "Title for the Chats tab in the main tab bar and of its screen, where the daily questions and the chats about questions, memories and stories are kept",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Questions"
+            "value" : "Chats"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spørsmål"
+            "value" : "Samtaler"
           }
         }
       }
@@ -29123,8 +29123,26 @@
         }
       }
     },
+    "questions.memoryChat.untitled" : {
+      "comment" : "Title of a row on the Chats tab for a conversation about a memory that has no title. %@ is the memory's date, such as 26 October 2026",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memory · %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minne · %@"
+          }
+        }
+      }
+    },
     "questions.storyChat.untitled" : {
-      "comment" : "Title of a row on the Questions tab for a conversation about a story that has no caption. %@ is the date and time the story was shared, such as 26 Oct, 14:05",
+      "comment" : "Title of a row on the Chats tab for a conversation about a story that has no caption. %@ is the date and time the story was shared, such as 26 Oct, 14:05",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

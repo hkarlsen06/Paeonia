@@ -3,13 +3,10 @@ import SwiftUI
 /// The Memories tab: a calm timeline of the couple's saved moments, newest first. Each
 /// memory opens its full detail; the toolbar's plus opens the new-memory form. The list
 /// is local-first, so cached memories show immediately and the partner's changes
-/// arrive live. Recoverable errors route into the shared top banner.
+/// arrive live. The tab bar loads the view model, since the Questions tab lists the
+/// memory chats too. Recoverable errors route into the shared top banner.
 struct MemoriesScreen: View {
     let currentUserID: UUID?
-    let coupleID: UUID?
-    /// Flushes pending local memory writes to the backend (wired to the app's sync
-    /// engine by the host). Called after each local change and on pull-to-refresh.
-    let onLocalChange: @MainActor @Sendable () async -> Void
     /// The couple's stories, shown as a row that opens the Stories archive. Nil hides it.
     let stories: StoriesViewModel?
     let storyPeople: StoryPeople
@@ -28,20 +25,16 @@ struct MemoriesScreen: View {
 
     init(
         currentUserID: UUID?,
-        coupleID: UUID?,
         viewModel: MemoriesViewModel? = nil,
         stories: StoriesViewModel? = nil,
         storyPeople: StoryPeople = StoryPeople(currentName: "", partnerName: ""),
-        gameRounds: GuessMySpotHistoryViewModel? = nil,
-        onLocalChange: @escaping @MainActor @Sendable () async -> Void = {}
+        gameRounds: GuessMySpotHistoryViewModel? = nil
     ) {
         self.gameRounds = gameRounds
         self.currentUserID = currentUserID
-        self.coupleID = coupleID
         _viewModel = State(initialValue: viewModel ?? MemoriesViewModel())
         self.stories = stories
         self.storyPeople = storyPeople
-        self.onLocalChange = onLocalChange
     }
 
     var body: some View {
@@ -105,19 +98,9 @@ struct MemoriesScreen: View {
                     await viewModel.createMemory(title: title, date: date, note: note, photos: photos, place: place)
                 }
             }
-            .task(id: currentUserID) {
-                viewModel.setLocalChangeSyncHandler(onLocalChange)
-                await viewModel.configure(currentUserID: currentUserID, coupleID: coupleID)
-            }
-            .task(id: currentUserID) {
-                await viewModel.observeStoreChanges()
-            }
             // New-memory alerts are seen once their memory is on the timeline.
             .task(id: shownMemoryIDs) {
                 await DeliveredNotifications.clearMemories(shownMemoryIDs: shownMemoryIDs)
-            }
-            .onChange(of: coupleID) { _, newCoupleID in
-                viewModel.updateContext(coupleID: newCoupleID)
             }
             .onChange(of: viewModel.notice) { _, notice in
                 showBanner(for: notice)

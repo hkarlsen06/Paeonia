@@ -80,12 +80,10 @@ extension MainTabView {
         NavigationStack(path: $memoriesPath) {
             MemoriesScreen(
                 currentUserID: identity.currentUserID,
-                coupleID: identity.coupleID,
                 viewModel: memoriesViewModel,
                 stories: storiesViewModel,
                 storyPeople: storyPeople,
-                gameRounds: gamesViewModel.guessMySpot.history,
-                onLocalChange: actions.syncAfterLocalChange
+                gameRounds: gamesViewModel.guessMySpot.history
             )
             .searchToolbarButton(action: openSearch)
             .analyticsScreen("memories")
@@ -197,7 +195,10 @@ extension MainTabView {
                 privacySafetyService: dependencies.settingsPrivacyService,
                 privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
                 onReportedAndLeft: actions.leftRelationship,
-                storyChats: chatSummaries.storyConversations(for: storiesViewModel.stories),
+                conversations: chatSummaries.conversations(
+                    memories: memoriesViewModel.timeline.flatMap(\.memories),
+                    stories: storiesViewModel.stories
+                ),
                 storyPeople: storyPeople,
                 topicsCard: questionsTopicsCard
             )

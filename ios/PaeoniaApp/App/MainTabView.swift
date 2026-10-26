@@ -333,12 +333,19 @@ struct MainTabView: View {
             bannerCenter.show(notice.banner)
             favoritesStore.clearNotice()
         }
+        // The Memories tab and the memory chats on the Questions tab both read the memories.
+        .task(id: identity.currentUserID) {
+            memoriesViewModel.setLocalChangeSyncHandler(actions.syncAfterLocalChange)
+            await memoriesViewModel.configure(currentUserID: identity.currentUserID, coupleID: identity.coupleID)
+            await memoriesViewModel.observeStoreChanges()
+        }
         .task(id: identity.currentUserID) {
             await storiesViewModel.configure(ownerUserID: identity.currentUserID, coupleID: identity.coupleID)
             await storiesViewModel.observeStoreChanges()
         }
         .onChange(of: identity.coupleID) { _, coupleID in
             storiesViewModel.updateCoupleID(coupleID)
+            memoriesViewModel.updateContext(coupleID: coupleID)
         }
         .task(id: introGatedLoadKey) {
             guard introGatedLoadKey.introComplete else { return }
