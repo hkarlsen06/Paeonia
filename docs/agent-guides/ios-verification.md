@@ -93,28 +93,8 @@ Reading the code does not show how a motion under two seconds looks. Record it o
 
 The Release app links with `ios/Scripts/launch.order`, which lists the functions a cold launch runs so the linker places them together and the device loads fewer pages at launch. The list goes stale as code changes. A symbol that no longer exists is ignored without a warning, and a new launch function only loses the benefit. Refresh it after large launch-path changes with `ios/Scripts/generate-launch-order-file.sh`. It builds an instrumented Release copy, runs it on `Shared iPhone` while holding that simulator's lock, and puts the previously installed app back. The simulator must be signed in to a paired account. The script takes several minutes and needs no test run.
 
-### Toolchain Requirement
+### Toolchain
 
-Build with Xcode 27.0 beta by setting `DEVELOPER_DIR` for the command or by selecting the beta globally with `xcode-select`. On macOS 27 beta, GM Xcode 26.5's `actool` crashes when compiling the app's Icon Composer icon at `ios/PaeoniaApp/Resources/AppIcon/paeonia_app.icon`.
-
-Known bad pairing:
-
-```bash
-/Applications/Xcode.app
-```
-
-Known working beta toolchain:
-
-```bash
-DEVELOPER_DIR="/Applications/Xcode-beta.app/Contents/Developer" ./scripts/xcode-build-agent.sh
-```
-
-Failure symptom:
-
-```text
-Exception while running actool: *** -[__NSPlaceholderArray initWithObjects:count:]: attempt to insert nil object from objects[0]
-```
-
-This is a toolchain bug, not a project icon bug. Do not replace the layered `.icon` with a flat `AppIcon.appiconset` PNG workaround; a prior flat PNG workaround had a transparent background and rendered incorrectly against black in iOS 26/27 dark mode. `ASSETCATALOG_COMPILER_APPICON_NAME` must remain `paeonia_app` so the layered icon keeps the correct plum dark-mode background.
+Build with the selected Xcode, `/Applications/Xcode.app` (Xcode 27.1). The wrappers need no `DEVELOPER_DIR`. Xcode 26.5's `actool` crashed while compiling the Icon Composer icon at `ios/PaeoniaApp/Resources/AppIcon/paeonia_app.icon` with `attempt to insert nil object from objects[0]`. If that error comes back, the toolchain is too old. Do not replace the layered `.icon` with a flat `AppIcon.appiconset` PNG. A flat PNG once had a transparent background and showed black in dark mode. `ASSETCATALOG_COMPILER_APPICON_NAME` stays `paeonia_app`.
 
 Use `swiftlint --quiet` for focused Swift lint checks. Lint does not establish compilation or runtime correctness. Preserve useful wrapper diagnostics and report the actual verification result.
