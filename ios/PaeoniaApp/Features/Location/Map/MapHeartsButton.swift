@@ -51,17 +51,56 @@ struct MapHeartsButton: View {
         }
     }
 
+    private var label: some View {
+        HStack(spacing: Self.heartGap) {
+            PaeoniaProfilePhotoAvatar(
+                mediaAssetID: currentProfilePhotoAssetID,
+                name: currentName,
+                tint: .paeoniaPartnerOne,
+                size: Self.avatarDiameter
+            )
+            PaeoniaProfilePhotoAvatar(
+                mediaAssetID: partnerProfilePhotoAssetID,
+                name: partnerName,
+                tint: .paeoniaPartnerTwo,
+                size: Self.avatarDiameter
+            )
+        }
+        .overlay { GlossyHeart(width: Self.heartWidth, tapCount: tapCount, beatCount: beatCount) }
+        .frame(width: Self.width, height: PaeoniaSpacing.compactButtonHeight)
+        .contentShape(Rectangle())
+        // Hearts fly over the whole button, and past its edge on a wide arc.
+        .overlay {
+            KissLayer(
+                start: CGPoint(x: Self.avatarDiameter / 2, y: PaeoniaSpacing.compactButtonHeight / 2),
+                end: CGPoint(x: Self.width - Self.avatarDiameter / 2, y: PaeoniaSpacing.compactButtonHeight / 2),
+                tapKisses: flights.kisses,
+                showsAmbient: false
+            )
+        }
+    }
+}
+
+/// The glossy heart that sends hearts. It squishes on each new `tapCount` and beats once
+/// on each new `beatCount`.
+struct GlossyHeart: View {
+    let width: CGFloat
+    var tapCount = 0
+    var beatCount = 0
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     /// Squashes flat and wide, then stretches tall, then settles. Used for each tap.
     private struct Squish {
         var x = 1.0
         var y = 1.0
     }
 
-    private var heart: some View {
+    var body: some View {
         Image(.homeHeart)
             .resizable()
             .scaledToFit()
-            .frame(width: Self.heartWidth)
+            .frame(width: width)
             .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
             .keyframeAnimator(initialValue: Squish(), trigger: reduceMotion ? 0 : tapCount) { view, squish in
                 view.scaleEffect(x: squish.x, y: squish.y)
@@ -89,35 +128,6 @@ struct MapHeartsButton: View {
                 }
             }
             .accessibilityHidden(true)
-    }
-
-    private var label: some View {
-        HStack(spacing: Self.heartGap) {
-            PaeoniaProfilePhotoAvatar(
-                mediaAssetID: currentProfilePhotoAssetID,
-                name: currentName,
-                tint: .paeoniaPartnerOne,
-                size: Self.avatarDiameter
-            )
-            PaeoniaProfilePhotoAvatar(
-                mediaAssetID: partnerProfilePhotoAssetID,
-                name: partnerName,
-                tint: .paeoniaPartnerTwo,
-                size: Self.avatarDiameter
-            )
-        }
-        .overlay { heart }
-        .frame(width: Self.width, height: PaeoniaSpacing.compactButtonHeight)
-        .contentShape(Rectangle())
-        // Hearts fly over the whole button, and past its edge on a wide arc.
-        .overlay {
-            KissLayer(
-                start: CGPoint(x: Self.avatarDiameter / 2, y: PaeoniaSpacing.compactButtonHeight / 2),
-                end: CGPoint(x: Self.width - Self.avatarDiameter / 2, y: PaeoniaSpacing.compactButtonHeight / 2),
-                tapKisses: flights.kisses,
-                showsAmbient: false
-            )
-        }
     }
 }
 

@@ -169,7 +169,7 @@ struct PairedHomeView: View {
             }
     }
 
-    /// PROTOTYPE: the map layout on iPhone while there is a map to show.
+    /// PROTOTYPE: the map layout on iPhone.
     @ViewBuilder
     private var homeContent: some View {
         if drawsOwnHeader {
@@ -178,7 +178,9 @@ struct PairedHomeView: View {
                 partnerName: partnerName,
                 stories: stories,
                 storyPeople: storyPeople,
-                onPromptCurrentLocation: onPromptCurrentLocation
+                hearts: hearts,
+                onPromptCurrentLocation: onPromptCurrentLocation,
+                onRefresh: onRefresh
             ) {
                 markAndStreakRow
             } sheet: {
@@ -195,9 +197,15 @@ struct PairedHomeView: View {
                 .environment(\.dailyPromptIsInline, true)
                 .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                 .padding(.bottom, PaeoniaSpacing.space16)
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
-                .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
             }
+            // On the whole page, so the map and the avatars move with a card that changes height.
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: accessNotice)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isSavable)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: firstSteps)
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
         } else {
             classicContent
         }

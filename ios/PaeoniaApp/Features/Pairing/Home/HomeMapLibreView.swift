@@ -3,8 +3,9 @@ import SwiftUI
 import UIKit
 
 /// PROTOTYPE. A still MapLibre map of OpenStreetMap data from OpenFreeMap, recolored to
-/// Paeonia's plum. It frames both partners' centers inside `framedBox` and reports where each one
-/// lands, so SwiftUI can draw the avatars on top. The data credit lives off the map.
+/// Paeonia's plum. It frames both partners' centers inside `framedBox`, with the camera from
+/// `camera(current:partner:isNear:area:viewSize:)`, which also says where each one lands, so
+/// SwiftUI draws the avatars on top in its own layout. The data credit lives off the map.
 struct HomeMapLibreView: UIViewRepresentable {
     let current: CLLocationCoordinate2D
     let partner: CLLocationCoordinate2D
@@ -12,7 +13,6 @@ struct HomeMapLibreView: UIViewRepresentable {
     /// Where the couple should sit, in the map view's own coordinates.
     let framedBox: CGRect
     let avatarSize: CGFloat
-    let onPoints: (_ own: CGPoint, _ partner: CGPoint) -> Void
 
     static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
     /// Shown wherever the app credits its map data.
@@ -46,7 +46,9 @@ struct HomeMapLibreView: UIViewRepresentable {
         context.coordinator.frameIfNeeded(map)
     }
 
-    fileprivate func frame(_ map: MLNMapView) {
+    /// `animated` pans on Paeonia's standard curve and timing, so the map moves with the
+    /// cards when the box changes.
+    fileprivate func frame(_ map: MLNMapView, animated: Bool, isCurrent: @escaping () -> Bool) {
         let camera = Self.camera(
             current: current, partner: partner, isNear: isNear, area: framedBox, viewSize: map.bounds.size
         )
@@ -54,25 +56,53 @@ struct HomeMapLibreView: UIViewRepresentable {
         // MapLibre reads a negative direction as "keep the current one", so the same turn
         // goes in as 0 to 360 degrees.
         let heading = camera.direction < 0 ? camera.direction + 360 : camera.direction
-        map.setCenter(camera.center, zoomLevel: camera.zoom, direction: heading, animated: false)
         // Zoomed far out, the tiles for that zoom carry only very simplified coastlines.
         // Loading tiles up to three levels more detailed keeps them sharp. A city needs none.
         map.tileLodZoomShift = min(max(6 - camera.zoom, 0), 3)
-        report(map)
+        guard animated else {
+            map.setCenter(camera.center, zoomLevel: camera.zoom, direction: heading, animated: false)
+            return
+        }
+        // A timed camera move takes an altitude, not a zoom. At the same view size and no
+        // tilt, the altitude halves with each zoom level and follows the ground's scale at
+        // the latitude.
+        let now = map.camera
+        let altitude = now.altitude * pow(2, map.zoomLevel - camera.zoom)
+            * cos(camera.center.latitude * .pi / 180) / cos(now.centerCoordinate.latitude * .pi / 180)
+        map.setCamera(
+            MLNMapCamera(lookingAtCenter: camera.center, altitude: altitude, pitch: 0, heading: heading),
+            withDuration: PaeoniaMotion.motionDefault,
+            animationTimingFunction: CAMediaTimingFunction(controlPoints: 0.65, 0, 0.35, 1)
+        ) { [weak map] in
+            // A newer framing may have cut this move short, and then it lands instead.
+            guard let map, isCurrent() else { return }
+            // Lands exactly on the worked-out zoom.
+            map.setCenter(camera.center, zoomLevel: camera.zoom, direction: heading, animated: false)
+        }
     }
 
-    /// Where the camera looks, how close, and how far it turns, worked out on the Web
-    /// Mercator map MapLibre draws (512 point tiles). `area` is where the two avatars'
-    /// centers may go, in the view's points. Apart, the map stays north up when both fit
-    /// there, and otherwise turns only as far as it must to fit them. The zoom is as close
-    /// as still fits both, and the midpoint between them lands in the middle of `area`.
+    /// Where the camera looks, how close, how far it turns, and where each partner lands.
+    struct Framing {
+        let center: CLLocationCoordinate2D
+        let zoom: Double
+        let direction: Double
+        /// In the view's points.
+        let own: CGPoint
+        let partner: CGPoint
+    }
+
+    /// The framing, worked out on the Web Mercator map MapLibre draws (512 point tiles).
+    /// `area` is where the two avatars' centers may go, in the view's points. Apart, the map
+    /// stays north up when both fit there, and otherwise turns only as far as it must to fit
+    /// them. The zoom is as close as still fits both, and the midpoint between them lands in
+    /// the middle of `area`.
     static func camera(
         current: CLLocationCoordinate2D,
         partner: CLLocationCoordinate2D,
         isNear: Bool,
         area: CGRect,
         viewSize: CGSize
-    ) -> (center: CLLocationCoordinate2D, zoom: Double, direction: Double) {
+    ) -> Framing {
         var a = mercator(current)
         var b = mercator(partner)
         // The short way round, across the date line if need be.
@@ -112,11 +142,26 @@ struct HomeMapLibreView: UIViewRepresentable {
         let right = (Double(viewSize.width) / 2 - Double(area.midX)) / worldSize
         let below = (Double(viewSize.height) / 2 - Double(area.midY)) / worldSize
         let turn = direction * .pi / 180
-        let center = CGPoint(
+        var center = CGPoint(
             x: (a.x + b.x) / 2 + right * cos(turn) - below * sin(turn),
             y: (a.y + b.y) / 2 + right * sin(turn) + below * cos(turn)
         )
-        return (coordinate(center), zoom, direction)
+        // MapLibre keeps the poles out of sight, measured on the view's height, and moves
+        // the camera to do so. The same limit here keeps the avatars on their places.
+        let reach = max(0, (worldSize - Double(viewSize.height)) / 2) / worldSize
+        center.y = min(max(center.y, 0.5 - reach), 0.5 + reach)
+        // Back from the map to the view: the same turn, the other way.
+        func point(_ m: CGPoint) -> CGPoint {
+            let x = (m.x - center.x) * worldSize
+            let y = (m.y - center.y) * worldSize
+            return CGPoint(
+                x: Double(viewSize.width) / 2 + x * cos(turn) + y * sin(turn),
+                y: Double(viewSize.height) / 2 - x * sin(turn) + y * cos(turn)
+            )
+        }
+        return Framing(
+            center: coordinate(center), zoom: zoom, direction: direction, own: point(a), partner: point(b)
+        )
     }
 
     /// From latitude and longitude to the Web Mercator square, 0 to 1 across and down.
@@ -135,16 +180,11 @@ struct HomeMapLibreView: UIViewRepresentable {
         return CLLocationCoordinate2D(latitude: latitude, longitude: Double(x) * 360 - 180)
     }
 
-    fileprivate func report(_ map: MLNMapView) {
-        let own = map.convert(current, toPointTo: map)
-        let other = map.convert(partner, toPointTo: map)
-        // Off the SwiftUI update pass, which this can run inside.
-        DispatchQueue.main.async { onPoints(own, other) }
-    }
-
     final class Coordinator: NSObject, MLNMapViewDelegate {
         var parent: HomeMapLibreView?
         var lastFraming: FramingKey?
+        /// MapLibre drops timed camera moves until the map has loaded.
+        var isLoaded = false
 
         /// Frames the map again when the couple, the box or the view's real size changed.
         /// The box must fit inside the view, or the fit has no room and zooms out to the world.
@@ -155,21 +195,21 @@ struct HomeMapLibreView: UIViewRepresentable {
                 size: map.bounds.size, avatarSize: parent.avatarSize
             )
             guard key != lastFraming else { return }
+            // A new place or box after the first framing moves the map. A new size jumps,
+            // since the old view's camera doesn't fit it.
+            let animated = lastFraming?.size == key.size && isLoaded && !UIAccessibility.isReduceMotionEnabled
             lastFraming = key
-            parent.frame(map)
+            parent.frame(map, animated: animated) { [weak self] in self?.lastFraming == key }
+        }
+
+        func mapViewDidFinishLoadingMap(_ mapView: MLNMapView) {
+            isLoaded = true
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             HomeMapLibreView.recolor(style)
         }
 
-        func mapView(_ mapView: MLNMapView, regionDidChangeAnimated animated: Bool) {
-            parent?.report(mapView)
-        }
-
-        func mapViewDidFinishLoadingMap(_ mapView: MLNMapView) {
-            parent?.report(mapView)
-        }
     }
 
     /// Tells its owner when its size changes, after layout.
