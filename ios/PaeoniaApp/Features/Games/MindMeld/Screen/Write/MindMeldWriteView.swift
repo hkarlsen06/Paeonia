@@ -13,6 +13,9 @@ struct MindMeldWriteView: View {
     let canShowKeyboard: Bool
 
     @FocusState private var isFieldFocused: Bool
+    /// Set once the screen has opened the keyboard by itself, so coming back from "Our
+    /// melds" leaves it closed. Opened during the back animation, it covers Lock in.
+    @State private var hasOpenedKeyboard = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// How long the screen waits before it opens the keyboard, so the phase change finishes first.
@@ -44,10 +47,13 @@ struct MindMeldWriteView: View {
         .task(id: canShowKeyboard) {
             guard canShowKeyboard else {
                 isFieldFocused = false
+                hasOpenedKeyboard = false
                 return
             }
+            guard !hasOpenedKeyboard else { return }
             try? await Task.sleep(for: Self.focusDelay)
             guard !Task.isCancelled else { return }
+            hasOpenedKeyboard = true
             isFieldFocused = true
         }
         .onChange(of: viewModel.draftIssue) { _, issue in

@@ -287,6 +287,7 @@
     let scenario: DeveloperScenario
     @State private var hub: MindMeldHubModel
     @State private var isReady = false
+    @State private var path: [GamesDestination] = []
 
     init(scenario: DeveloperScenario) {
       self.scenario = scenario
@@ -298,7 +299,7 @@
     }
 
     var body: some View {
-      NavigationStack {
+      NavigationStack(path: $path) {
         if isReady {
           root
             .navigationDestination(for: GamesDestination.self) { destination in
@@ -310,6 +311,7 @@
           Color.paeoniaBackgroundPrimary
         }
       }
+      .dismissesKeyboardOnPush(path)
       .task {
         await seed()
         isReady = true

@@ -26,6 +26,7 @@ struct GamesRootView: View {
                         .analyticsScreen(destination.analyticsName)
                 }
         }
+        .dismissesKeyboardOnPush(path)
         .onChange(of: viewModel.notice) { _, notice in
             guard let notice else { return }
             bannerCenter.show(notice.banner)

@@ -62,6 +62,17 @@ extension View {
 }
 
 extension View {
+    /// Puts the keyboard away as soon as a screen is pushed onto `path`. Otherwise
+    /// UIKit refocuses the covered screen's field during the pop, and a bar in a
+    /// `safeAreaInset` stays under the keyboard it brings back.
+    func dismissesKeyboardOnPush<Element>(_ path: [Element]) -> some View {
+        onChange(of: path.count) { oldCount, newCount in
+            if newCount > oldCount { PaeoniaKeyboard.dismiss() }
+        }
+    }
+}
+
+extension View {
     /// Pins a bar of buttons to the bottom of the screen. It stays there when the
     /// keyboard opens: the keyboard covers it instead of pushing it up, and it comes
     /// back when the keyboard closes. The content above still makes room for the
