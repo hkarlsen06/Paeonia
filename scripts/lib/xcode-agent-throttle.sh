@@ -5,8 +5,7 @@
 #   - one wrapper-driven xcodebuild at a time across every repo on this
 #     machine (shared lock in /tmp), so parallel agents queue instead of
 #     competing for cores
-#   - lower CPU priority (nice) and half the CPUs for compile jobs, so the
-#     desktop and Xcode stay responsive
+#   - lower CPU priority (nice), so the desktop and Xcode stay responsive
 #
 # Ported from Tidex (scripts/lib/xcode-agent-throttle.sh). Tidex, Kvil and
 # Notex agents take the same lock, so the lock directory, the owner line and
@@ -18,26 +17,17 @@
 #   XCODE_AGENT_LOCK_DIR               lock path (default /tmp/xcode-agent.lock)
 #   XCODE_AGENT_NO_LOCK=1              skip the machine-wide lock
 #   XCODE_AGENT_NICE=N                 nice level, 0 disables (default 10)
-#   XCODE_AGENT_JOBS=N                 xcodebuild -jobs (default: half the logical CPUs)
+#   XCODE_AGENT_JOBS=N                 xcodebuild -jobs (default: xcodebuild's own)
 
 XA_LOCK_DIR="${XCODE_AGENT_LOCK_DIR:-/tmp/xcode-agent.lock}"
 XA_LOCK_HELD=0
 XA_NICE="${XCODE_AGENT_NICE:-10}"
 XA_PREFIX=()
+XA_ARGS=()
 
-xa_default_jobs() {
-  local n
-  n="$(sysctl -n hw.logicalcpu 2>/dev/null || echo 8)"
-  # Half the logical CPUs (at least 2): builds take longer, but the rest
-  # of the Mac stays usable while agents keep the build queue busy.
-  if [ "$n" -ge 4 ]; then
-    echo $((n / 2))
-  else
-    echo 2
-  fi
-}
-XA_JOBS="${XCODE_AGENT_JOBS:-$(xa_default_jobs)}"
-XA_ARGS=(-jobs "$XA_JOBS")
+if [ -n "${XCODE_AGENT_JOBS:-}" ]; then
+  XA_ARGS=(-jobs "$XCODE_AGENT_JOBS")
+fi
 
 if [ "$XA_NICE" != "0" ]; then
   XA_PREFIX=(nice -n "$XA_NICE")
