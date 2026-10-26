@@ -54,6 +54,10 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                         noMapNotice
                     }
                     sheet
+                        // The cards keep their own height, so only the map takes up the rest of the
+                        // screen. A square tile sizes itself from the room it is offered, and would
+                        // otherwise split that room with the map and overflow under the tab bar.
+                        .fixedSize(horizontal: false, vertical: true)
                         // The cards start just under the map's last full row, and the map fades on behind them.
                         .padding(.top, couple == nil ? PaeoniaSpacing.space24 : -Metrics.cardsOverlap)
                 }
