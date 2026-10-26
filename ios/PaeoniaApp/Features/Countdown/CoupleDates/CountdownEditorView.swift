@@ -42,6 +42,7 @@ struct CountdownEditorView: View {
                 editorContent
             }
             .scrollDismissesKeyboard(.interactively)
+            .keyboardDoneToolbar()
             .background(.paeoniaSurfacePrimary)
             .navigationTitle(
                 Text(countdown == nil ? .homeMilestoneCountdownNewTitle : .homeMilestoneCountdownEditTitle)
@@ -88,6 +89,9 @@ struct CountdownEditorView: View {
             }
             .datePickerStyle(.graphical)
             .tint(.paeoniaAccentPrimary)
+            // A tap-to-dismiss gesture on the screen would swallow the calendar's taps,
+            // so picking a day puts the keyboard away instead.
+            .onChange(of: day) { PaeoniaKeyboard.dismiss() }
 
             repeatsYearlyToggle
 
