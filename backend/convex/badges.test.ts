@@ -81,7 +81,7 @@ describe("get_badges", () => {
     expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ memories: 0, icon: 0 });
   });
 
-  test("counts a story reply on Home for the story's author, not on Questions, until it is read", async () => {
+  test("counts a story reply on Questions for the story's author, not on Home, until it is read", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     const storyId = await postStory(t, couple);
@@ -90,11 +90,10 @@ describe("get_badges", () => {
       p_story_id: storyId,
       p_body: "Lovely",
     });
-    // The author has no unseen story of their own, so the reply is the whole Home count.
     expect(await couple.first.as.query(api.badges.get_badges, {})).toEqual({
-      questions: 0,
+      questions: 1,
       games: 0,
-      home: 1,
+      home: 0,
       memories: 0,
       icon: 1,
     });
@@ -102,7 +101,7 @@ describe("get_badges", () => {
       p_thread_id: row.thread_id,
       p_message_id: row.message_id,
     });
-    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ home: 0, icon: 0 });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
   });
 
   test("follows the Messages switch for memory comments and story replies on the icon only", async () => {

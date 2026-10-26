@@ -29,11 +29,11 @@ const BADGE_UPDATE_LOOKBACK_MS = 10 * 60 * 1000;
 
 /** What waits for one person, by the tab that shows it, and the number on the app icon. */
 export type BadgeCounts = {
-  /** Unread question chats, today's answers to open, and Topics questions that wait. */
+  /** Unread question and story chats, today's answers to open, and Topics questions that wait. */
   questions: number;
   /** Games that wait on this person, and open invites. */
   games: number;
-  /** The partner's stories still on Home that this person has not opened, and unread story replies. */
+  /** The partner's stories still on Home that this person has not opened. */
   home: number;
   /** Memories whose comments the partner wrote in and this person has not read. */
   memories: number;
@@ -65,9 +65,10 @@ export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: st
     (allows("story_posted") ? stories : 0) +
     (allows("game_turn_ready") ? games : 0);
   return {
-    questions: chats.questions + answers,
+    // The Questions tab lists a story's chat with the question chats, so its unread replies count there.
+    questions: chats.questions + chats.stories + answers,
     games,
-    home: stories + chats.stories,
+    home: stories,
     memories: chats.memories,
     icon,
   };
