@@ -148,7 +148,7 @@ struct BoardGameHubCard: View {
                 Label {
                     Text(.boardGamesHistoryTitle)
                 } icon: {
-                    Image(systemName: "clock.arrow.circlepath")
+                    Image(systemName: "clock")
                 }
             }
             .buttonStyle(PaeoniaQuietButtonStyle())

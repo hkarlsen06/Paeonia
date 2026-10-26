@@ -42,7 +42,7 @@ struct BoardGameHistoryScreen<Board: BoardGameRules>: View {
             PaeoniaEmptyStateView(
                 title: .boardGamesHistoryEmptyTitle,
                 message: .boardGamesHistoryEmptyMessage,
-                systemImage: "clock.arrow.circlepath"
+                systemImage: "clock"
             )
         }
     }
