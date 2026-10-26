@@ -1,7 +1,7 @@
 import CoreGraphics
 
 /// What I have picked on my turn, before I lock it in.
-nonisolated enum UltimateTicTacToePick: Equatable {
+nonisolated enum UltimateTicTacToePick: Equatable, Codable {
     case none
     /// Free choice: a board is picked, no cell yet.
     case board(Int)

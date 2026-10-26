@@ -53,22 +53,34 @@ struct UltimateTicTacToePulse: ViewModifier {
     }
 }
 
-/// My mark in the cell I picked, faint until I lock it in. It breathes slowly,
-/// except with Reduce Motion.
+/// A mark in a picked cell, faint until it is locked in. Mine breathes slowly,
+/// except with Reduce Motion. My partner's is fainter and holds still, so it
+/// never reads as my own pick.
 struct UltimateTicTacToePendingMark: View {
     let style: BoardPieceStyle
+    let isMine: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isDim = false
 
+    private var breathes: Bool {
+        isMine && !reduceMotion
+    }
+
+    private var opacity: Double {
+        guard isMine else { return 0.25 }
+        guard breathes else { return 0.45 }
+        return isDim ? 0.32 : 0.55
+    }
+
     var body: some View {
         BoardMarkView(style: style, tint: style.color)
-            .opacity(reduceMotion ? 0.45 : (isDim ? 0.32 : 0.55))
+            .opacity(opacity)
             .animation(
-                reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: 1.1).repeatForever(autoreverses: true),
+                breathes ? PaeoniaMotion.standardCurve(duration: 1.1).repeatForever(autoreverses: true) : nil,
                 value: isDim
             )
-            .onAppear { isDim = !reduceMotion }
+            .onAppear { isDim = breathes }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
     }

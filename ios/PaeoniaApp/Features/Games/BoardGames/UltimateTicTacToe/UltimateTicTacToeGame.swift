@@ -30,11 +30,15 @@ enum UltimateTicTacToeGame {
 }
 
 /// The game screen. It holds what I picked on my turn, which the board shows
-/// and "Lock in" under it plays.
+/// and "Lock in" under it plays. While both partners have the game open, each
+/// pick also shows faintly on the other phone (`UltimateTicTacToeLiveLink`).
 struct UltimateTicTacToeScreen: View {
     let viewModel: BoardGameViewModel<UltimateTicTacToeBoard>
 
     @State private var pick = UltimateTicTacToePick.none
+    /// What my partner last picked, as their phone sent it.
+    @State private var partnerPick: UltimateTicTacToeLiveMessage?
+    @State private var live: UltimateTicTacToeLiveLink?
 
     var body: some View {
         BoardGameScreen(
@@ -52,6 +56,7 @@ struct UltimateTicTacToeScreen: View {
                 me: viewModel.me,
                 canPlay: viewModel.canPlay,
                 pick: $pick,
+                partnerPick: partnerPickOnBoard,
                 showsOutcome: viewModel.showsOutcome,
                 bloomSeed: viewModel.bloomSeed,
                 partnerName: viewModel.partnerName
@@ -59,6 +64,58 @@ struct UltimateTicTacToeScreen: View {
             .onChange(of: viewModel.board) { pick = .none }
             .onChange(of: viewModel.canPlay) { pick = .none }
         }
+        .onChange(of: myPick) { _, message in
+            live?.send(message)
+        }
+        .task(id: viewModel.participants.coupleID) {
+            startLive(coupleID: viewModel.participants.coupleID)
+        }
+        .onDisappear {
+            live?.stop()
+            live = nil
+        }
+    }
+
+    /// My pick for my partner's board. It is nothing on their turn, so a new
+    /// position clears what they last saw from me.
+    private var myPick: UltimateTicTacToeLiveMessage {
+        UltimateTicTacToeLiveMessage(
+            gameNumber: viewModel.displayedGameNumber,
+            moveCount: viewModel.displayedMoves.count,
+            pick: viewModel.canPlay ? pick : .none
+        )
+    }
+
+    /// My partner's pick while it is their turn on the board I see. It waits
+    /// while moves still replay, so it never lands over their animation.
+    private var partnerPickOnBoard: UltimateTicTacToePick {
+        let board = viewModel.board
+        guard let partnerPick,
+              live?.isPartnerHere == true,
+              !viewModel.isReplaying,
+              board.outcome == nil,
+              board.next != viewModel.me
+        else {
+            return .none
+        }
+        return partnerPick.pick(
+            on: board,
+            gameNumber: viewModel.displayedGameNumber,
+            moveCount: viewModel.displayedMoves.count
+        )
+    }
+
+    private func startLive(coupleID: UUID?) {
+        live?.stop()
+        partnerPick = nil
+        live = coupleID
+            .flatMap { viewModel.dependencies.makeBoardGameLive(.ultimateTicTacToe, $0) }
+            .map { room in
+                UltimateTicTacToeLiveLink(room: room) { message in
+                    withAnimation(PaeoniaMotion.stateChange) { partnerPick = message }
+                }
+            }
+        live?.send(myPick)
     }
 
     /// "Lock in" keeps its space until the game ends, so the board never moves.

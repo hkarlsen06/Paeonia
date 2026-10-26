@@ -10,6 +10,8 @@ import SwiftUI
 ///   on a cell of the picked board picks the cell.
 /// - A picked cell shows my mark faintly. "Lock in" under the board plays it.
 ///   The screen owns the pick and the button.
+/// - On my partner's turn, what they picked shows the same way, fainter and
+///   still, so I see where they are about to play.
 /// - A move draws in on the whole board. Then a spark flies from its cell to
 ///   the small board the next player is sent to, which lights up and pulses
 ///   once. When the next player may choose, every open board lights up instead.
@@ -48,6 +50,9 @@ struct UltimateTicTacToeBoardView: View {
     /// What I picked on this turn. The screen resets it when the board or the
     /// turn changes.
     @Binding var pick: UltimateTicTacToePick
+    /// What my partner picked on their turn and has not locked in yet. The
+    /// screen keeps it at `.none` on my turn.
+    let partnerPick: UltimateTicTacToePick
     /// Turns true 0.15 s after the last move landed on a finished game. Then
     /// the outcome highlight plays.
     let showsOutcome: Bool
@@ -68,6 +73,7 @@ struct UltimateTicTacToeBoardView: View {
         me: BoardPlayer,
         canPlay: Bool,
         pick: Binding<UltimateTicTacToePick>,
+        partnerPick: UltimateTicTacToePick = .none,
         showsOutcome: Bool,
         bloomSeed: String,
         partnerName: String = "",
@@ -79,6 +85,7 @@ struct UltimateTicTacToeBoardView: View {
         self.me = me
         self.canPlay = canPlay
         _pick = pick
+        self.partnerPick = partnerPick
         self.showsOutcome = showsOutcome
         self.bloomSeed = bloomSeed
         self.partnerName = partnerName
@@ -162,7 +169,7 @@ struct UltimateTicTacToeBoardView: View {
             board: board,
             hold: pending ?? playback.hold,
             focus: playback.focus,
-            playingBoard: pick.playingBoard(on: board),
+            playingBoard: (canPlay ? pick : partnerPick).playingBoard(on: board),
             glowHeld: playback.glowHeld || pending != nil,
             outcome: playback.outcome
         )
@@ -220,12 +227,14 @@ struct UltimateTicTacToeBoardView: View {
         }
     }
 
-    /// My mark, faint, in the cell I picked. A new pick fades it in afresh.
+    /// The mark of the player whose turn it is, faint, in the cell they
+    /// picked. A new pick fades it in afresh.
     @ViewBuilder
     private func pendingMark(_ geometry: UltimateTicTacToeBoardGeometry) -> some View {
-        if canPlay, let move = pick.move(on: board) {
+        let isMine = canPlay
+        if let move = (isMine ? pick : partnerPick).move(on: board) {
             let rect = geometry.cellRect(board: move / 9, cell: move % 9)
-            UltimateTicTacToePendingMark(style: styles[me])
+            UltimateTicTacToePendingMark(style: styles[board.next], isMine: isMine)
                 .frame(width: rect.width * 0.62, height: rect.height * 0.62)
                 .position(x: rect.midX, y: rect.midY)
                 .id(move)
