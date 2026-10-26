@@ -21,14 +21,13 @@ extension MainTabView {
     func badgeCount(for tab: MainTab) -> Int {
         switch tab {
         // The server's counts, the same ones the app icon adds up. Questions includes
-        // the unread story replies, since its list shows the story chats. Home counts
+        // the unread memory and story chats, since its list shows them. Home counts
         // the stories from this phone's own list, so opening one clears it at once.
         case .questions: AppBadges.shared.counts.questions
         case .games: AppBadges.shared.counts.games
-        case .memories: AppBadges.shared.counts.memories
         case .home:
             StoryTimeline.unseenCount(storiesViewModel.stories, partner: identity.partnerUserID, at: storyBadgeDate)
-        case .us: 0
+        case .memories, .us: 0
         }
     }
 

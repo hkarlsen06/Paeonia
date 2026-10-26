@@ -29,19 +29,17 @@ const BADGE_UPDATE_LOOKBACK_MS = 10 * 60 * 1000;
 
 /** What waits for one person, by the tab that shows it, and the number on the app icon. */
 export type BadgeCounts = {
-  /** Unread question and story chats, today's answers to open, and Topics questions that wait. */
+  /** Unread chats (questions, memories and stories), today's answers to open, and Topics questions that wait. */
   questions: number;
   /** Games that wait on this person, and open invites. */
   games: number;
   /** The partner's stories still on Home that this person has not opened. */
   home: number;
-  /** Memories whose comments the partner wrote in and this person has not read. */
-  memories: number;
   /** The tabs' items of the kinds whose alerts are on in Notifications. */
   icon: number;
 };
 
-const NO_BADGES: BadgeCounts = { questions: 0, games: 0, home: 0, memories: 0, icon: 0 };
+const NO_BADGES: BadgeCounts = { questions: 0, games: 0, home: 0, icon: 0 };
 
 /** What waits for `userId`. All zero without an entitled couple. */
 export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: string = nowIso()): Promise<BadgeCounts> {
@@ -60,16 +58,15 @@ export async function badgeCountsForUser(ctx: ReaderCtx, userId: string, now: st
     preference !== null && preferenceAllows(kind, "alert", preference);
   const icon =
     // Every chat push, whatever the chat is about, follows the Messages switch.
-    (allows("thread_message_sent") ? chats.questions + chats.memories + chats.stories : 0) +
+    (allows("thread_message_sent") ? chats : 0) +
     (allows("partner_answered") ? answers : 0) +
     (allows("story_posted") ? stories : 0) +
     (allows("game_turn_ready") ? games : 0);
   return {
-    // The Questions tab lists a story's chat with the question chats, so its unread replies count there.
-    questions: chats.questions + chats.stories + answers,
+    // The Questions tab lists every chat: a question's, a memory's and a story's.
+    questions: chats + answers,
     games,
     home: stories,
-    memories: chats.memories,
     icon,
   };
 }
@@ -79,19 +76,17 @@ export async function badgeCountForUser(ctx: ReaderCtx, userId: string, now: str
   return (await badgeCountsForUser(ctx, userId, now)).icon;
 }
 
-/** Unread chats by what they are about: a question, a memory (its comments) or a story (its replies). */
-type UnreadChats = { questions: number; memories: number; stories: number };
-
 /**
  * Chats whose newest message is from the partner and newer than what this person read on any
- * phone. A question chat counts only while it can be opened, like `get_conversation_threads`.
+ * phone, whatever they are about. A question chat counts only while it can be opened, like
+ * `get_conversation_threads`.
  */
-async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Promise<UnreadChats> {
+async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Promise<number> {
   const threads = await ctx.db
     .query("conversation_threads")
     .withIndex("by_couple_id_created_at", (q) => q.eq("couple_id", coupleId))
     .collect();
-  const count: UnreadChats = { questions: 0, memories: 0, stories: 0 };
+  let count = 0;
   for (const thread of threads) {
     if (thread.deleted_at !== undefined || thread.moderation_status !== "visible") continue;
     const last = await ctx.db
@@ -113,12 +108,8 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
         .withIndex("by_thread_id", (q) => q.eq("thread_id", thread.id))
         .unique();
       if (daily && !(await loadQuestionRounds(ctx, coupleId, daily.question_id)).some(isSharedRound)) continue;
-      count.questions += 1;
-    } else if (thread.kind === "memory") {
-      count.memories += 1;
-    } else {
-      count.stories += 1;
     }
+    count += 1;
   }
   return count;
 }

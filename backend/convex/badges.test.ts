@@ -52,7 +52,7 @@ describe("get_badges", () => {
   test("is zero for someone without a couple", async () => {
     const t = newTest();
     const user = await createSignedInUser(t, {});
-    expect(await user.as.query(api.badges.get_badges, {})).toEqual({ questions: 0, games: 0, home: 0, memories: 0, icon: 0 });
+    expect(await user.as.query(api.badges.get_badges, {})).toEqual({ questions: 0, games: 0, home: 0, icon: 0 });
   });
 
   test("counts the partner's unseen story for the partner only, until it is opened", async () => {
@@ -65,20 +65,19 @@ describe("get_badges", () => {
     expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ home: 0, icon: 0 });
   });
 
-  test("counts a memory comment on the Memories tab, not on Questions, until it is read", async () => {
+  test("counts a memory comment on Questions until it is read", async () => {
     const t = newTest();
     const couple = await createCouple(t);
     const { threadId, messageId } = await commentOnMemory(couple);
     expect(await couple.first.as.query(api.badges.get_badges, {})).toEqual({
-      questions: 0,
+      questions: 1,
       games: 0,
       home: 0,
-      memories: 1,
       icon: 1,
     });
-    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ memories: 0, icon: 0 });
+    expect(await couple.second.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
     await couple.first.as.mutation(api.chatPresence.mark_thread_read, { p_thread_id: threadId, p_message_id: messageId });
-    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ memories: 0, icon: 0 });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 0, icon: 0 });
   });
 
   test("counts a story reply on Questions for the story's author, not on Home, until it is read", async () => {
@@ -94,7 +93,6 @@ describe("get_badges", () => {
       questions: 1,
       games: 0,
       home: 0,
-      memories: 0,
       icon: 1,
     });
     await couple.first.as.mutation(api.chatPresence.mark_thread_read, {
@@ -112,7 +110,7 @@ describe("get_badges", () => {
       p_column: "messages_enabled",
       p_enabled: false,
     });
-    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ memories: 1, icon: 0 });
+    expect(await couple.first.as.query(api.badges.get_badges, {})).toMatchObject({ questions: 1, icon: 0 });
   });
 
   test("leaves a kind the person switched off out of the icon, but not out of its tab", async () => {
