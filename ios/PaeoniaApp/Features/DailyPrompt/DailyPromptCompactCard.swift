@@ -34,6 +34,9 @@ struct DailyPromptCompactCard: View {
     private var content: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
             headline
+                // Without a card, the envelope and words still line up with the content of
+                // the cards around the row.
+                .padding(.horizontal, isInline ? PaeoniaSpacing.cardContentPadding : 0)
 
             actionButton
 
@@ -71,10 +74,15 @@ struct DailyPromptCompactCard: View {
         }
     }
 
+    /// The envelope sits at the bottom of a square, leaving room above for the letter to
+    /// rise. The words center on the envelope itself, not on the empty room above it.
     private var envelope: some View {
         DailyPromptEnvelope(width: Self.envelopeSize, opening: opening)
             .overlay { waxSeal }
             .frame(width: Self.envelopeSize, height: Self.envelopeSize, alignment: .bottom)
+            .alignmentGuide(VerticalAlignment.center) { dimensions in
+                dimensions.height - Self.envelopeSize / PaeoniaEnvelopeLayer.aspect / 2
+            }
     }
 
     /// On the tip of the closed flap, sized like the picture card's. When it breaks it
