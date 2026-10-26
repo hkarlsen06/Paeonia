@@ -332,7 +332,7 @@ private extension WidgetDrawingView {
                 Button {
                     isHistoryPresented = true
                 } label: {
-                    Image(systemName: "clock.arrow.circlepath")
+                    Image(systemName: "photo.on.rectangle.angled")
                 }
                 .accessibilityLabel(Text(.widgetHistoryOpenButton))
             }
