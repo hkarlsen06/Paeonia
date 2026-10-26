@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 /// PROTOTYPE. A still MapLibre map of OpenStreetMap data from OpenFreeMap, recolored to
-/// Paeonia's plum. It frames both partners' centers inside `framedBox`, with the camera from
+/// Paeonia's plum. It places both partners' centers inside `framedBox`, with the camera from
 /// `camera(current:partner:isNear:area:viewSize:)`, which also says where each one lands, so
 /// SwiftUI draws the avatars on top in its own layout. The data credit lives off the map.
 struct HomeMapLibreView: UIViewRepresentable {
@@ -19,6 +19,10 @@ struct HomeMapLibreView: UIViewRepresentable {
     static let credit = "Kartdata © OpenStreetMap-bidragsytere · OpenFreeMap · OpenMapTiles"
     /// About 10 km across a phone screen: the city, not its streets.
     private static let nearZoom: Double = 11
+    /// How far apart the two avatars' centers sit when the couple is apart, in points. Close
+    /// enough that the map shows the places around them, not the empty land between. Only
+    /// when the world is too small to bring them this close do they sit further apart.
+    private static let apartSpacing: Double = 160
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -92,10 +96,10 @@ struct HomeMapLibreView: UIViewRepresentable {
     }
 
     /// The framing, worked out on the Web Mercator map MapLibre draws (512 point tiles).
-    /// `area` is where the two avatars' centers may go, in the view's points. Apart, the map
-    /// stays north up when both fit there, and otherwise turns only as far as it must to fit
-    /// them. The zoom is as close as still fits both, and the midpoint between them lands in
-    /// the middle of `area`.
+    /// `area` is where the two avatars' centers may go, in the view's points. Apart, the zoom
+    /// puts them `apartSpacing` apart, never closer in than together, and north up. When the
+    /// world is too small for that, they spread further, and the map turns only as far as it
+    /// must to fit them in `area`. The midpoint between them lands in the middle of `area`.
     static func camera(
         current: CLLocationCoordinate2D,
         partner: CLLocationCoordinate2D,
@@ -112,29 +116,35 @@ struct HomeMapLibreView: UIViewRepresentable {
         if !isNear {
             let dx = Double(b.x - a.x)
             let dy = Double(b.y - a.y)
-            // How far the line between them leans from level, north up, from -90 to 90.
-            var lean = atan2(dx, -dy) * 180 / .pi - 90
-            while lean > 90 { lean -= 180 }
-            while lean <= -90 { lean += 180 }
-            // The most lean that still fits the area's height at the level zoom.
-            let mostLean = asin(min(1, Double(area.height) / max(Double(area.width), 1))) * 180 / .pi
-            if abs(lean) > mostLean {
-                direction = lean - (lean > 0 ? mostLean : -mostLean)
-            }
             func worldSize(turnedBy degrees: Double) -> Double {
                 let turn = degrees * .pi / 180
                 let across = abs(dx * cos(turn) + dy * sin(turn))
                 let down = abs(-dx * sin(turn) + dy * cos(turn))
                 return min(Double(area.width) / max(across, 1e-12), Double(area.height) / max(down, 1e-12))
             }
-            // MapLibre never shows past the poles, so the world is at least as tall as the
-            // view. Very far apart, the small turn can need a wider zoom than that. Lying
-            // level uses the full width, so turn all the way instead.
+            // MapLibre never shows past the poles, so the world is at least as tall as the view.
             let widest = max(512, Double(viewSize.height))
-            if worldSize(turnedBy: direction) < widest {
-                direction = lean
+            // `apartSpacing` apart, never closer in than together and never wider than the world.
+            zoom = max(min(log2(apartSpacing / hypot(dx, dy) / 512), nearZoom), log2(widest / 512))
+            if log2(worldSize(turnedBy: 0) / 512) < zoom {
+                // They don't fit north up, mostly because the world can't get any smaller, so
+                // the map turns only as far as it must. How far the line between them leans
+                // from level, north up, from -90 to 90.
+                var lean = atan2(dx, -dy) * 180 / .pi - 90
+                while lean > 90 { lean -= 180 }
+                while lean <= -90 { lean += 180 }
+                // The most lean that still fits the area's height at the level zoom.
+                let mostLean = asin(min(1, Double(area.height) / max(Double(area.width), 1))) * 180 / .pi
+                if abs(lean) > mostLean {
+                    direction = lean - (lean > 0 ? mostLean : -mostLean)
+                }
+                // Very far apart, the small turn can need a wider zoom than the world allows.
+                // Lying level uses the full width, so turn all the way instead.
+                if worldSize(turnedBy: direction) < widest {
+                    direction = lean
+                }
+                zoom = min(zoom, max(log2(worldSize(turnedBy: direction) / 512), log2(widest / 512)))
             }
-            zoom = min(max(log2(worldSize(turnedBy: direction) / 512), log2(widest / 512)), nearZoom + 1)
         }
         let worldSize = 512 * pow(2, zoom)
         // From the area's middle to the view's middle, in points, turned into the map's

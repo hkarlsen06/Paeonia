@@ -520,12 +520,13 @@ struct HomeMapDistanceLine: View {
 
 /// PROTOTYPE. Moves the partner's pin, to see how the map looks when the couple is apart.
 enum FakePartnerPlace: String, CaseIterable {
-    case real, nearby, drammen, bergen, trondheim, tromso, copenhagen, newYork, sydney
+    case real, nearby, acrossTown, drammen, bergen, trondheim, tromso, copenhagen, newYork, sydney
 
     var label: String {
         switch self {
         case .real: "Real location"
         case .nearby: "Across town (1.5 km)"
+        case .acrossTown: "Across town (3 km)"
         case .drammen: "Drammen (40 km)"
         case .bergen: "Bergen"
         case .trondheim: "Trondheim"
@@ -540,6 +541,7 @@ enum FakePartnerPlace: String, CaseIterable {
         switch self {
         case .real: nil
         case .nearby: CLLocationCoordinate2D(latitude: 59.9270, longitude: 10.7600)
+        case .acrossTown: CLLocationCoordinate2D(latitude: 59.9380, longitude: 10.7800)
         case .drammen: CLLocationCoordinate2D(latitude: 59.7439, longitude: 10.2045)
         case .bergen: CLLocationCoordinate2D(latitude: 60.3913, longitude: 5.3221)
         case .trondheim: CLLocationCoordinate2D(latitude: 63.4305, longitude: 10.3951)
