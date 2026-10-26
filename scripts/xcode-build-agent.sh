@@ -73,8 +73,10 @@ git config core.hooksPath >/dev/null || ./scripts/install-git-hooks.sh >&2
 ./scripts/generate-ios-build-number.sh >&2
 
 set +e
+QUEUE_START="$(date +%s)"
 xa_acquire_lock
-${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild "${XA_ARGS[@]}" \
+COMPILE_START="$(date +%s)"
+${XA_PREFIX[@]+"${XA_PREFIX[@]}"} xcodebuild ${XA_ARGS[@]+"${XA_ARGS[@]}"} \
   -quiet \
   -resultBundlePath "$RESULT_BUNDLE" \
   -project ios/Paeonia.xcodeproj \
@@ -88,6 +90,8 @@ wait "$XCODEBUILD_PID"
 EXIT_CODE=$?
 stop_heartbeat
 xa_release_lock
+QUEUED=$((COMPILE_START - QUEUE_START))
+COMPILED=$(($(date +%s) - COMPILE_START))
 set -e
 
 STATUS="SUCCESS"
@@ -106,13 +110,14 @@ if [ -d "$RESULT_BUNDLE" ]; then
   fi
 fi
 
-python3 - "$MODE" "$STATUS" "$JSON_FILE" "$PARSED_FILE" "$LOG_FILE" "$XCRESULT_OK" <<'PY'
+python3 - "$MODE" "$STATUS" "$JSON_FILE" "$PARSED_FILE" "$LOG_FILE" "$XCRESULT_OK" \
+  "$QUEUED" "$COMPILED" <<'PY'
 import json
 import re
 import sys
 from pathlib import Path
 
-mode, status, json_path, parsed_path, log_path, xcresult_ok = sys.argv[1:7]
+mode, status, json_path, parsed_path, log_path, xcresult_ok, queued, compiled = sys.argv[1:9]
 xcresult_ok = xcresult_ok == "1"
 
 warnings = []
@@ -175,6 +180,8 @@ if not warnings and not errors:
 
 payload = {
     "status": status,
+    "queued": int(queued),
+    "compiled": int(compiled),
     "warnings": warnings,
     "errors": errors,
 }
@@ -202,6 +209,15 @@ if [ "${XCODE_BUILD_AGENT_FAIL_ON_WARNINGS:-0}" = "1" ] && [ "$EXIT_CODE" -eq 0 
   python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1]))["warnings"] else 1)' "$PARSED_FILE"; then
   echo "[xcode-build-agent] failing: the build has warnings" >&2
   EXIT_CODE=1
+fi
+
+# The last line, so `| tail -1` keeps it. queued is the time spent waiting for
+# the xcodebuild lock.
+if [ "$MODE" = text ]; then
+  SUMMARY_STATUS="SUCCESS"
+  [ "$EXIT_CODE" -eq 0 ] || SUMMARY_STATUS="FAILURE"
+  echo
+  echo "SUMMARY: $SUMMARY_STATUS queued=${QUEUED}s compiled=${COMPILED}s"
 fi
 
 exit "$EXIT_CODE"
