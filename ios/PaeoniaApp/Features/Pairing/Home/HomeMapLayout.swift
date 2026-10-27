@@ -164,6 +164,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 
             if let couple {
                 heartLayer(couple, screen)
+                showBothButton(couple, screen)
             }
         }
         .frame(
@@ -213,21 +214,19 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 .homeMapArea("map", explorer)
                 // VoiceOver sends hearts from the distance line in the bar.
                 .accessibilityHidden(true)
-
-            HomeMapShowBothButton(explorer: explorer, mapBottom: metrics.framedBottom)
         }
     }
 
     /// The heart between the avatars when they sit together, and the hearts flying between them.
     private func heartLayer(_ couple: HomeMapCouple, _ screen: HomeMapScreen) -> some View {
         GeometryReader { band in
-            let points = points(couple, metrics(couple, screen, bandHeight: band.size.height))
+            let metrics = metrics(couple, screen, bandHeight: band.size.height)
+            let points = points(couple, metrics)
             if couple.isNear, hearts != nil {
+                let middle = CGPoint(x: (points.own.x + points.partner.x) / 2, y: (points.own.y + points.partner.y) / 2)
                 togetherHeart
-                    .position(
-                        x: (points.own.x + points.partner.x) / 2,
-                        y: (points.own.y + points.partner.y) / 2
-                    )
+                    .opacity(metrics.avatarOpacity(at: middle))
+                    .position(middle)
             }
             KissLayer(start: points.own, end: points.partner, tapKisses: flights.kisses)
                 .allowsHitTesting(false)
@@ -246,9 +245,10 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 arrange: reservesMapSpace ? { own, partner in
                     AnyView(
                         GeometryReader { band in
-                            let points = points(couple, metrics(couple, screen, bandHeight: band.size.height))
-                            own.position(points.own)
-                            partner.position(points.partner)
+                            let metrics = metrics(couple, screen, bandHeight: band.size.height)
+                            let points = points(couple, metrics)
+                            own.opacity(metrics.avatarOpacity(at: points.own)).position(points.own)
+                            partner.opacity(metrics.avatarOpacity(at: points.partner)).position(points.partner)
                         }
                         .transaction { $0.animation = nil }
                     )
@@ -398,6 +398,16 @@ extension HomeMapLayout {
 
     // MARK: Avatars
 
+    /// Over the avatars, which may sit under it while the person looks around.
+    private func showBothButton(_ couple: HomeMapCouple, _ screen: HomeMapScreen) -> some View {
+        GeometryReader { band in
+            HomeMapShowBothButton(
+                explorer: explorer,
+                mapBottom: metrics(couple, screen, bandHeight: band.size.height).framedBottom
+            )
+        }
+    }
+
     /// Follow the camera's current projection instead of animating to its destination.
     /// Without the intro, before the map's first frame, use the same math that places the map.
     private func points(_ couple: HomeMapCouple?, _ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
@@ -410,7 +420,9 @@ extension HomeMapLayout {
         }
         let raw = HomeMapAvatarPoints(own: mapProjection.own, partner: mapProjection.partner)
         guard mapProjection.introProgress < 1 else {
-            return separated(raw, isNear: couple.isNear).kept(inside: metrics.avatarBounds)
+            let placed = separated(raw, isNear: couple.isNear)
+            // While the person looks around, the avatars stay on their places, off the map too.
+            return explorer.isExploring ? placed : placed.kept(inside: metrics.avatarBounds)
         }
         return introPoints(raw, couple, metrics, mapProjection)
     }

@@ -141,6 +141,9 @@ struct HomeMapMetrics {
     /// The open map, less half an avatar, so a held avatar stays whole and clear of the
     /// bar and the first card.
     let avatarBounds: CGRect
+    /// How far past `avatarBounds` an avatar fades out while the person looks around. It is
+    /// gone by the time its middle reaches the screen's side.
+    let avatarFade: CGFloat
 
     var width: CGFloat { screen.width }
     /// The fade starts a little above the cards and runs to the bottom of the band.
@@ -161,6 +164,7 @@ struct HomeMapMetrics {
         let width = screen.width
         // An avatar's edge never comes closer to the screen's sides than the cards do.
         let sideMargin = PaeoniaSpacing.screenHorizontalPadding
+        avatarFade = half + sideMargin
         avatarBounds = CGRect(
             x: half + sideMargin,
             y: pillBottom + PaeoniaSpacing.space8 + half,
@@ -176,5 +180,14 @@ struct HomeMapMetrics {
             let side = half + sideMargin
             framedBox = CGRect(x: side, y: top, width: width - 2 * side, height: max(bottom - top, 1))
         }
+    }
+
+    /// 1 while an avatar centered at `point` is on the open map, down to 0 as it leaves.
+    func avatarOpacity(at point: CGPoint) -> Double {
+        let outside = max(
+            avatarBounds.minX - point.x, point.x - avatarBounds.maxX,
+            avatarBounds.minY - point.y, point.y - avatarBounds.maxY, 0
+        )
+        return max(0, 1 - outside / avatarFade)
     }
 }

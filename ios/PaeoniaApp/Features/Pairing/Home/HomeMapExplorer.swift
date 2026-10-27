@@ -26,13 +26,15 @@ final class HomeMapExplorer {
         isExploring = false
     }
 
-    /// Keeps the place under the fingers' last midpoint under their new one, and zooms
-    /// around it by how much the fingers spread or close.
-    func move(from previous: CGPoint, to point: CGPoint, scale: CGFloat) {
+    /// Keeps the place under the fingers' last midpoint under their new one, and zooms and
+    /// turns the map around it as the fingers spread, close or twist. `turn` is in radians,
+    /// clockwise on screen.
+    func move(from previous: CGPoint, to point: CGPoint, scale: CGFloat, turn: CGFloat) {
         guard let map, scale > 0 else { return }
         let widest = log2(max(512, Double(map.bounds.height)) / 512)
         let zoom = min(max(map.zoomLevel + log2(Double(scale)), widest), Self.closestZoom)
-        place(map.convert(previous, toCoordinateFrom: map), at: point, zoom: zoom, on: map)
+        let direction = map.direction - Double(turn) * 180 / .pi
+        place(map.convert(previous, toCoordinateFrom: map), at: point, zoom: zoom, direction: direction, on: map)
     }
 
     /// Glides on in the direction of a fast release, slowing to a stop.
@@ -65,17 +67,22 @@ final class HomeMapExplorer {
         reframe()
     }
 
-    private func place(_ coordinate: CLLocationCoordinate2D, at point: CGPoint, zoom: Double, on map: MLNMapView) {
+    private func place(
+        _ coordinate: CLLocationCoordinate2D, at point: CGPoint, zoom: Double, direction: Double, on map: MLNMapView
+    ) {
         isExploring = true
         let center = HomeMapLibreView.mapCenter(
             putting: HomeMapLibreView.mercator(coordinate),
             at: point,
             worldSize: 512 * pow(2, zoom),
-            turn: map.direction * .pi / 180,
+            turn: direction * .pi / 180,
             viewSize: map.bounds.size
         )
         map.setCenter(
-            HomeMapLibreView.coordinate(center), zoomLevel: zoom, direction: map.direction, animated: false
+            HomeMapLibreView.coordinate(center),
+            zoomLevel: zoom,
+            direction: HomeMapLibreView.heading(direction),
+            animated: false
         )
     }
 }
@@ -101,7 +108,8 @@ extension View {
     }
 }
 
-/// One finger drags the map. Two drag it by their midpoint and zoom it by their spread.
+/// One finger drags the map. Two drag it by their midpoint, zoom it by their spread and
+/// turn it by their twist.
 private struct HomeMapGesture: UIGestureRecognizerRepresentable {
     let explorer: HomeMapExplorer
 
@@ -120,22 +128,17 @@ private struct HomeMapGesture: UIGestureRecognizerRepresentable {
         guard let map = explorer.map else { return }
         let tracker = context.coordinator
         let point = pan.location(in: map)
-        let spread = pan.spread
+        let fingers = pan.fingers
         switch pan.state {
         case .began:
-            // The finger has already moved a little before the drag is recognized.
+            // The fingers have already moved a little before the drag is recognized, so the
+            // first step catches up from where they went down.
             let moved = pan.translation(in: map)
-            tracker.start(at: CGPoint(x: point.x - moved.x, y: point.y - moved.y), spread: spread)
+            tracker.begin(at: CGPoint(x: point.x - moved.x, y: point.y - moved.y), fingers: pan.firstFingers ?? fingers)
         case .changed:
-            // A finger landing or lifting moves the midpoint without moving the map.
-            guard (spread == nil) == (tracker.spread == nil) else {
-                tracker.start(at: point, spread: spread)
-                return
-            }
-            let scale = spread.flatMap { now in tracker.spread.map { now / max($0, 1) } } ?? 1
-            explorer.move(from: tracker.point, to: point, scale: scale)
-            tracker.start(at: point, spread: spread)
-        case .ended where tracker.spread == nil:
+            guard let step = tracker.step(to: point, fingers: fingers) else { return }
+            explorer.move(from: step.from, to: point, scale: step.scale, turn: step.turn)
+        case .ended where !tracker.hadTwoFingers:
             explorer.fling(velocity: pan.velocity(in: map))
         default:
             break
@@ -143,56 +146,96 @@ private struct HomeMapGesture: UIGestureRecognizerRepresentable {
     }
 }
 
-/// A pan that also starts when two fingers spread or close with their midpoint still,
-/// which a plain pan never notices.
+/// How two fingers sit: how far apart, in points, and the angle of the line between them.
+struct HomeMapFingers {
+    let spread: CGFloat
+    let angle: CGFloat
+
+    /// How far the line between the fingers has turned since `earlier`, clockwise on
+    /// screen. The line has no direction, so the turn is under a quarter turn either way,
+    /// and the two fingers swapping places does not count.
+    func twist(since earlier: Self) -> CGFloat {
+        var twist = (angle - earlier.angle).truncatingRemainder(dividingBy: .pi)
+        if twist > .pi / 2 { twist -= .pi }
+        if twist < -.pi / 2 { twist += .pi }
+        return twist
+    }
+}
+
+/// A pan that also starts when two fingers spread, close or twist with their midpoint
+/// still, which a plain pan never notices.
 final class HomeMapPanRecognizer: UIPanGestureRecognizer {
     private static let pinchStart: CGFloat = 10
-    private var firstSpread: CGFloat?
+    /// Where two fingers were as they went down.
+    private(set) var firstFingers: HomeMapFingers?
+    /// Whether a finger of this gesture landed on the map.
+    var touchedMap = false
 
-    /// How far apart two fingers are, in points. Nil for one finger.
-    var spread: CGFloat? {
+    /// Nil for one finger.
+    var fingers: HomeMapFingers? {
         guard numberOfTouches == 2 else { return nil }
         let first = location(ofTouch: 0, in: view)
         let second = location(ofTouch: 1, in: view)
-        return hypot(first.x - second.x, first.y - second.y)
+        return HomeMapFingers(
+            spread: hypot(first.x - second.x, first.y - second.y),
+            angle: atan2(second.y - first.y, second.x - first.x)
+        )
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesBegan(touches, with: event)
+        if state == .possible, firstFingers == nil { firstFingers = fingers }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesMoved(touches, with: event)
-        guard state == .possible, let spread else { return }
-        guard let firstSpread else {
-            firstSpread = spread
+        guard state == .possible, let fingers else { return }
+        guard let firstFingers else {
+            firstFingers = fingers
             return
         }
-        if abs(spread - firstSpread) > Self.pinchStart {
+        if abs(fingers.spread - firstFingers.spread) > Self.pinchStart
+            || abs(fingers.twist(since: firstFingers)) > HomeMapGestureTracker.turnStart {
             state = .began
         }
     }
 
     override func reset() {
         super.reset()
-        firstSpread = nil
+        firstFingers = nil
+        touchedMap = false
     }
 }
 
-/// The last midpoint and spread of the fingers. Takes only fingers that land on the map,
-/// and Home's scroll view waits until they stop moving it.
+/// Follows the fingers from one moment to the next. Sees every finger on the page, so a
+/// pinch whose first finger lands on the cards still zooms, and starts only when one of
+/// them landed on the map. Home's scroll view waits until they stop moving the map.
 final class HomeMapGestureTracker: NSObject, UIGestureRecognizerDelegate {
+    /// How far two fingers twist before the map turns, so a pinch does not turn it.
+    static let turnStart: CGFloat = 0.15
+
     private let explorer: HomeMapExplorer
-    private(set) var point = CGPoint.zero
-    private(set) var spread: CGFloat?
+    private var point = CGPoint.zero
+    private var fingers: HomeMapFingers?
+    /// How far the fingers have twisted since they went down, until the map starts turning.
+    private var twist: CGFloat = 0
+    private var turns = false
+    /// A pinch ends with the fingers lifting one by one, which must not fling the map.
+    private(set) var hadTwoFingers = false
 
     init(explorer: HomeMapExplorer) {
         self.explorer = explorer
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        explorer.isOverMap(touch.location(in: nil))
+        if explorer.isOverMap(touch.location(in: nil)) {
+            (gestureRecognizer as? HomeMapPanRecognizer)?.touchedMap = true
+        }
+        return true
     }
 
-    func start(at point: CGPoint, spread: CGFloat?) {
-        self.point = point
-        self.spread = spread
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        (gestureRecognizer as? HomeMapPanRecognizer)?.touchedMap == true
     }
 
     func gestureRecognizer(
@@ -200,6 +243,48 @@ final class HomeMapGestureTracker: NSObject, UIGestureRecognizerDelegate {
         shouldBeRequiredToFailBy other: UIGestureRecognizer
     ) -> Bool {
         (other.view as? UIScrollView)?.panGestureRecognizer === other
+    }
+
+    func begin(at point: CGPoint, fingers: HomeMapFingers?) {
+        hadTwoFingers = false
+        regrip(at: point, fingers: fingers)
+    }
+
+    struct Step {
+        let from: CGPoint
+        let scale: CGFloat
+        let turn: CGFloat
+    }
+
+    /// Where the map should move from, and how much it should zoom and turn, as the fingers
+    /// move to `point`. Nil when a finger lands or lifts, which moves the midpoint without
+    /// moving the map.
+    func step(to point: CGPoint, fingers: HomeMapFingers?) -> Step? {
+        guard let fingers, let last = self.fingers else {
+            let lastPoint = self.point
+            let sameGrip = (fingers == nil) == (self.fingers == nil)
+            regrip(at: point, fingers: fingers)
+            return sameGrip ? Step(from: lastPoint, scale: 1, turn: 0) : nil
+        }
+        defer {
+            self.point = point
+            self.fingers = fingers
+        }
+        var turn = fingers.twist(since: last)
+        if !turns {
+            twist += turn
+            turns = abs(twist) > Self.turnStart
+            turn = 0
+        }
+        return Step(from: self.point, scale: fingers.spread / max(last.spread, 1), turn: turn)
+    }
+
+    private func regrip(at point: CGPoint, fingers: HomeMapFingers?) {
+        self.point = point
+        self.fingers = fingers
+        twist = 0
+        turns = false
+        if fingers != nil { hadTwoFingers = true }
     }
 }
 
