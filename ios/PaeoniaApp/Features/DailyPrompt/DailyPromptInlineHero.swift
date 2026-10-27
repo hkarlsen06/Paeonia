@@ -41,7 +41,7 @@ struct DailyPromptInlineHero: View {
 
             Button(action: onAnswer) {
                 Text(copy.actionTitle)
-                    .redacted(reason: copy.isLoading ? .placeholder : [])
+                    .paeoniaLoadingReveal(copy.isLoading, delay: 0.16)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(copy.isLoading)
@@ -64,9 +64,11 @@ struct DailyPromptInlineHero: View {
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .accessibilityAddTraits(.isHeader)
+                .paeoniaLoadingReveal(copy.isLoading)
             ZStack(alignment: .top) {
                 Text(verbatim: copy.messageOrPlaceholder)
                     .foregroundStyle(.paeoniaTextSecondary)
+                    .paeoniaLoadingReveal(copy.isLoading, delay: 0.08)
                 if copy.isLoading {
                     // Keep the loading height so the card still glides down as it fills.
                     Text(verbatim: copy.messageOrPlaceholder)
@@ -82,7 +84,6 @@ struct DailyPromptInlineHero: View {
         // Full width, so the lines stay centered in the geometry group while the shorter
         // question replaces the placeholder.
         .frame(maxWidth: .infinity)
-        .redacted(reason: copy.isLoading ? .placeholder : [])
         .overlay {
             if copy.isLoading {
                 Color.clear

@@ -113,7 +113,7 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
                 }
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
-                .redacted(reason: isLoading ? .placeholder : [])
+                .paeoniaLoadingReveal(isLoading)
                 .padding([.horizontal, .bottom], PaeoniaSpacing.space12)
                 .padding(.top, PaeoniaSpacing.space4)
                 .background(alignment: .top) { textScrim }
@@ -134,35 +134,49 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
         GameHubCardFraming(shape: shape, isYourTurn: isYourTurn, artwork: artwork)
     }
 
+    /// The partner chip, the name and the status. While loading they hide, and the loading
+    /// label stands in for them in VoiceOver.
+    private var nameAndStatus: some View {
+        VStack(spacing: PaeoniaSpacing.space4) {
+            if let context, context.partnerIsHere {
+                partnerHereChip(context)
+                    .padding(.bottom, PaeoniaSpacing.space4)
+            }
+            Text(name)
+                .font(PaeoniaTypography.heroTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .multilineTextAlignment(.center)
+                .contentTransition(.opacity)
+                .accessibilityLabel(loadingLabel.map { Text($0) } ?? Text(name))
+                .accessibilityAddTraits(.isHeader)
+            statusLine
+                .accessibilityHidden(isLoading)
+        }
+        .frame(maxWidth: .infinity)
+        .paeoniaLoadingReveal(isLoading)
+        .overlay {
+            if let loadingLabel {
+                Color.clear
+                    .accessibilityElement()
+                    .accessibilityLabel(Text(loadingLabel))
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
+    }
+
     /// The partner chip, the name, the status, the button and the extras, centered under
     /// the picture's centered scene.
     private var textBlock: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            VStack(spacing: PaeoniaSpacing.space4) {
-                if let context, context.partnerIsHere {
-                    partnerHereChip(context)
-                        .padding(.bottom, PaeoniaSpacing.space4)
-                }
-                Text(name)
-                    .font(PaeoniaTypography.heroTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .multilineTextAlignment(.center)
-                    .contentTransition(.opacity)
-                    .accessibilityLabel(loadingLabel.map { Text($0) } ?? Text(name))
-                    .accessibilityAddTraits(.isHeader)
-                statusLine
-                    .accessibilityHidden(isLoading)
-            }
-            .frame(maxWidth: .infinity)
-            .redacted(reason: isLoading ? .placeholder : [])
+            nameAndStatus
 
             Button {
                 PaeoniaHaptics.gameContinued()
                 open()
             } label: {
-                // Redacted like the name and status, since the loading title is a guess.
+                // Hidden like the name and status, since the loading title is a guess.
                 Text(actionTitle)
-                    .redacted(reason: isLoading ? .placeholder : [])
+                    .paeoniaLoadingReveal(isLoading, delay: 0.16)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(isLoading)

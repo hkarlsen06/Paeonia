@@ -63,9 +63,7 @@ struct CountdownCalendarView: View {
         ZStack {
             switch face {
             case .loading:
-                Text(verbatim: "0")
-                    .font(.system(size: rect.height * 0.74, weight: .heavy, design: .rounded))
-                    .redacted(reason: .placeholder)
+                Color.clear
             case .empty:
                 Text(verbatim: "?")
                     .font(.system(size: rect.height * 0.74, weight: .heavy, design: .rounded))
@@ -79,6 +77,9 @@ struct CountdownCalendarView: View {
                     .font(.system(size: rect.height * 0.4, weight: .heavy, design: .rounded))
             }
         }
+        // The page stays blank while the count loads, then the number comes into focus as
+        // it rolls up.
+        .paeoniaLoadingReveal(face == .loading)
         .foregroundStyle(.paeoniaTextInverse)
         .lineLimit(1)
         .minimumScaleFactor(0.3)

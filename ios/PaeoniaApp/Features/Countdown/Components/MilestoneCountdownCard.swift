@@ -162,8 +162,8 @@ struct MilestoneCountdownCard: View {
             line
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
-                .redacted(reason: isLoading ? .placeholder : [])
                 .contentTransition(.opacity)
+                .paeoniaLoadingReveal(isLoading, delay: 0.1)
                 .multilineTextAlignment(.center)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 2)
                 .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.85)

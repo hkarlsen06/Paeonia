@@ -27,6 +27,8 @@ enum PaeoniaMotion {
     static let keyboard = Animation.spring(duration: 0.3, bounce: 0)
     static let cardReveal = Animation.spring(duration: motionDefault, bounce: 0.18)
     static let meaningfulMoment = standardCurve(duration: motionSlow)
+    /// Text and numbers coming into focus once their data loads (`paeoniaLoadingReveal`).
+    static let loadingReveal = Animation.spring(duration: 0.7, bounce: 0)
     static let pairedScreenTransition = Animation.spring(duration: motionCelebration, bounce: 0.16)
 
     /// Blooms a celebratory reward surface — the daily-challenge streak screen — into

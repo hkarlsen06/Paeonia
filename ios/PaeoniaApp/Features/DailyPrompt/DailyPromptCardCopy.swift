@@ -45,7 +45,7 @@ struct DailyPromptCardCopy {
         }
     }
 
-    /// During loading, the localized loading label sizes the redacted placeholder.
+    /// During loading, the localized loading label sizes the hidden placeholder.
     var messageOrPlaceholder: String {
         message ?? String(localized: .dailyChallengeHomeLoadingTitle)
     }
