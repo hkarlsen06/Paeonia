@@ -12,9 +12,9 @@
     @State private var pendingInviteCode: String?
     @State private var environment: DeveloperLocalFlowEnvironment
 
-    init(seed: DeveloperLocalFlowSeed) {
+    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil) {
       self.seed = seed
-      _environment = State(initialValue: DeveloperLocalFlowEnvironment(seed: seed))
+      _environment = State(initialValue: DeveloperLocalFlowEnvironment(seed: seed, homeLaunch: homeLaunch))
     }
 
     var body: some View {
@@ -34,6 +34,10 @@
         featureDependencies: environment.featureDependencies,
         allowsSystemIntegrations: false
       )
+      .task(id: environment.rootViewModel.state) {
+        guard environment.rootViewModel.state == .paired else { return }
+        await environment.prepareHomeLaunch()
+      }
     }
   }
 
@@ -52,10 +56,14 @@
     let appleSignInProvider = DeveloperLocalFlowAppleSignInProvider()
     let widgetCanvasService: DeveloperWidgetCanvasService
     let featureDependencies: RootFeatureDependencies
+    private let homeLaunch: DeveloperHomeLaunchTiming?
+    private let visibilityStore = InMemoryLocationVisibilityRepository()
+    private let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
 
     // This is the single Debug composition boundary for the full local app graph.
     // swiftlint:disable:next function_body_length
-    init(seed: DeveloperLocalFlowSeed) {
+    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?) {
+      self.homeLaunch = homeLaunch
       let store = DeveloperLocalFlowStore(seed: seed)
       let authService = DeveloperLocalFlowAuthService(store: store)
       let accessService = DeveloperLocalFlowAccessService(store: store)
@@ -89,7 +97,8 @@
         accessSnapshotStore: accessSnapshotStore,
         inviteStore: inviteStore,
         pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(
-          firstSteps: seed == .paired ? HomeFirstStepsProgress(doneSteps: [.game, .topic]) : nil
+          firstSteps: homeLaunch != nil ? HomeFirstStepsProgress(isClosed: true)
+            : seed == .paired ? HomeFirstStepsProgress(doneSteps: [.game, .topic]) : nil
         ),
         systemSideEffects: NoOpRootSystemSideEffects(),
         welcomeFlow: WelcomeFlowModel(
@@ -104,8 +113,8 @@
       )
 
       locationViewModel = LocationMapViewModel(
-        visibilityStore: InMemoryLocationVisibilityRepository(),
-        ownLocationStore: InMemoryOwnLocationSnapshotRepository(),
+        visibilityStore: visibilityStore,
+        ownLocationStore: ownLocationStore,
         pendingOperationStore: pendingOperationStore,
         operationProvider: operationProvider,
         locationCapture: DeveloperLocalFlowLocationCapture()
@@ -126,8 +135,9 @@
       )
       let dailyViewModel = DailyChallengeViewModel(
         service: DeveloperDailyChallengeService(
-          mode: .unanswered,
-          pendingOperationStore: pendingOperationStore
+          mode: homeLaunch == nil ? .unanswered : .homeLaunch,
+          pendingOperationStore: pendingOperationStore,
+          initialLoadDelay: homeLaunch?.question ?? .zero
         ),
         operationProvider: operationProvider,
         draftStore: DeveloperLocalFlowDailyDraftStore(),
@@ -137,9 +147,12 @@
         now: { DeveloperScenarioFixture.now }
       )
       let milestoneViewModel = RelationshipMilestoneViewModel(
-        dataService: RelationshipStartedOnDataService(
-          accessSnapshotStore: accessSnapshotStore,
-          pendingOperationStore: pendingOperationStore
+        dataService: DeveloperDelayedStartedOnService(
+          base: RelationshipStartedOnDataService(
+            accessSnapshotStore: accessSnapshotStore,
+            pendingOperationStore: pendingOperationStore
+          ),
+          delay: homeLaunch?.calendar ?? .zero
         ),
         operationProvider: operationProvider
       )
@@ -196,6 +209,14 @@
         widgetHistoryViewModel: widgetHistoryViewModel,
         widgetHistoryThumbnailLoader: NoOpWidgetRevisionThumbnailLoader()
       )
+    }
+
+    func prepareHomeLaunch() async {
+      guard let homeLaunch else { return }
+      do {
+        try await Task.sleep(for: homeLaunch.location)
+        try await homeLaunch.seedMap(visibility: visibilityStore, ownLocation: ownLocationStore)
+      } catch { }
     }
 
     private static func paywallOverride(

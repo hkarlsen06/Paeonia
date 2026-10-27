@@ -8,6 +8,7 @@
       launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled, onboardingUsage,
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
+      homeLaunchLocationFirst, homeLaunchCalendarFirst,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
@@ -26,6 +27,16 @@
     ]
 
     // MARK: Launch and authentication
+
+    static let homeLaunchLocationFirst = DeveloperScenario(
+      "home-launch-location-first", "Home launch, location first",
+      "Cold launch through the real root with delayed question and calendar reads", .launchAndAuth
+    ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .locationFirst) }
+
+    static let homeLaunchCalendarFirst = DeveloperScenario(
+      "home-launch-calendar-first", "Home launch, calendar first",
+      "Cold launch through the real root with delayed question and location reads", .launchAndAuth
+    ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .calendarFirst) }
 
     static let launchLoading = DeveloperScenario(
       "launch-loading", "Launch loading", "Copy-free launch surface", .launchAndAuth

@@ -4,6 +4,7 @@
   actor DeveloperDailyChallengeService: DailyChallengeServicing {
     enum Mode {
       case unanswered
+      case homeLaunch
       case partial
       case revealed
       case empty
@@ -38,13 +39,18 @@
     private let base = PreviewDailyChallengeService()
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private var today: DailyChallengeLoadResult?
+    private var initialLoadDelay: Duration
 
-    init(mode: Mode, pendingOperationStore: any PendingSyncOperationPersisting) {
+    init(mode: Mode, pendingOperationStore: any PendingSyncOperationPersisting, initialLoadDelay: Duration = .zero) {
       self.mode = mode
       self.pendingOperationStore = pendingOperationStore
+      self.initialLoadDelay = initialLoadDelay
     }
 
     func loadToday(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+      let delay = initialLoadDelay
+      initialLoadDelay = .zero
+      try await Task.sleep(for: delay)
       switch mode {
       case .loading:
         try await Task.sleep(for: .seconds(3_600))
@@ -56,7 +62,7 @@
           snapshot: .empty(currentUserID: currentUserID),
           streak: .none
         )
-      case .unanswered, .partnerAnswersMeanwhile:
+      case .unanswered, .homeLaunch, .partnerAnswersMeanwhile:
         return try await todayLandingQueuedAnswers(currentUserID: currentUserID)
       case .streakSaveDay:
         let loaded = try await todayLandingQueuedAnswers(currentUserID: currentUserID)
@@ -78,6 +84,8 @@
       let loaded: DailyChallengeLoadResult
       if let today {
         loaded = today
+      } else if mode == .homeLaunch {
+        loaded = offlineResult(currentUserID: currentUserID)
       } else {
         loaded = try await base.loadToday(currentUserID: currentUserID)
       }
