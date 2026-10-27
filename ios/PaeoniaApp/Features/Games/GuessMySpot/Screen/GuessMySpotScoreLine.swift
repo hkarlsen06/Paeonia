@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The score counting up on the reveal. Together: both avatars and the shared total.
 /// Against each other: each partner's own total, with the guesser's counting up.
-/// This round's points stand beside the total that grows.
+/// This round's points sit above the total that grows.
 struct GuessMySpotScoreLine: View {
     let me: GamePlayer
     let partner: GamePlayer
@@ -12,6 +12,8 @@ struct GuessMySpotScoreLine: View {
     let points: Int
     /// How many of this round's points have counted up so far.
     let countedPoints: Int
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var shown: GuessMySpotScore {
         score.counting(points: points, counted: countedPoints, guesserIsMe: guesserIsMe)
@@ -34,7 +36,10 @@ struct GuessMySpotScoreLine: View {
                     }
                 }
             case let .against(mine, theirs):
-                HStack(spacing: PaeoniaSpacing.space24) {
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space12))
+                    : AnyLayout(HStackLayout(alignment: .bottom, spacing: PaeoniaSpacing.space24))
+                layout {
                     column(me, tint: .paeoniaPartnerOne, total: mine, grows: guesserIsMe)
                     column(partner, tint: .paeoniaPartnerTwo, total: theirs, grows: !guesserIsMe)
                 }
@@ -46,24 +51,26 @@ struct GuessMySpotScoreLine: View {
     }
 
     private func column(_ player: GamePlayer, tint: Color, total: Int, grows: Bool) -> some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
+        HStack(alignment: .bottom, spacing: PaeoniaSpacing.space8) {
             avatar(player, tint: tint)
             totalLine(total, grows: grows)
         }
     }
 
     private func totalLine(_ total: Int, grows: Bool) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
-            Text(verbatim: GuessMySpotText.number(total))
-                .font(PaeoniaTypography.title.monospacedDigit())
-                .foregroundStyle(.paeoniaTextPrimary)
-                .contentTransition(.numericText(value: Double(total)))
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
             if grows, points > 0 {
                 Text(.guessMySpotRevealPoints(GuessMySpotText.number(points)))
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaAccentPrimary)
                     .opacity(countedPoints > 0 ? 1 : 0)
             }
+            Text(verbatim: GuessMySpotText.number(total))
+                .font(PaeoniaTypography.title.monospacedDigit())
+                .foregroundStyle(.paeoniaTextPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .contentTransition(.numericText(value: Double(total)))
         }
     }
 

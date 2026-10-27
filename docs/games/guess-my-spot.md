@@ -341,7 +341,7 @@ Beats, in seconds after the reveal starts.
 | 3.35 | The camera flies down to the real spot over 1.8 s and lands centered on it, at most 2.4 km across, close enough to see the streets. The flight is done with most of the zoom by its middle and slows into the streets, because the map loads the closest views last. A guess within 1 km stays in view, inside the middle 85 percent of it. The view's width and height each fit the guess on their own, down to 150 m, so a close guess fills the view. The line runs off the screen toward a farther guess. The distance capsule appears at the top and counts up from 0 over 1.35 s in 10 steps while the camera travels, with plain digits and the width of the final number. |
 | 4.95 | The verdict, as the flight settles. Both heads glow gold over 0.3 s (0.8 for So close and Close, 1 for Spot on), a 4 pt gold ring widens from the real pin's head from 36 to 72 pt and fades over 0.4 s, and the distance capsule pulses 1 to 1.1 and back. Far has no glow or ring. See below. |
 | 5.25 | The photo comes back: the result card rises 120 pt on a spring (0.3 s, bounce 0.1) with a 0.2 s fade, with the photo, the place name and date on it, the verdict title and line. |
-| 5.55 | The shared total counts up over 0.7 s in 10 steps, with "+3,215" beside it. |
+| 5.55 | The shared total counts up over 0.7 s in 10 steps, with "+3,215" above it. |
 | 6.25 | The button appears. |
 
 Verdict.
@@ -352,7 +352,7 @@ Verdict.
 
 The sender already knows the spot, so their card speaks from the partner's side. A far guess has the title "Now [Name] knows where", and every line but spot on names the partner: "[Name]'s guess was 2,310 km off."
 
-The result card. A `.paeoniaSurfaceSecondary` card on `radius28` over the bottom of the map. The photo fills its top, 180 pt tall (aspect fill, rounded `radius16`), with the place name in `bodyEmphasis` and the date in `caption` over a dark gradient at its bottom. Under the photo: the verdict title (`largeTitle`), the line (`body`, `.paeoniaTextSecondary`), and the score line. Together: both avatars, the counting total, "+points" and "points together". Against each other: each partner's avatar and own total, with "+points" beside the guesser's as it counts up.
+The result card. A `.paeoniaSurfaceSecondary` card on `radius28` over the bottom of the map. The photo fills its top, 180 pt tall (aspect fill, rounded `radius16`), with the place name in `bodyEmphasis` and the date in `caption` over a dark gradient at its bottom. Under the photo: the verdict title (`largeTitle`), the line (`body`, `.paeoniaTextSecondary`), and the score line. Together: both avatars, the counting total, "+points" and "points together". Against each other: each partner's avatar and own total, with "+points" above the guesser's total as it counts up. Totals stay on one line. At accessibility text sizes, the partners stack vertically.
 
 Once the reveal settles, the card can collapse to the score line alone, so the map has nearly the whole screen, such as to see the whole globe. A glass chevron on the photo's top corner collapses it (VoiceOver "Show more of the map"), and a tap anywhere on the collapsed card expands it again. The collapsed card has a small chevron over the score line. The expanded card still has nothing else to tap, so a pan or pinch on it moves the map. When the card changes height, the camera frames the pin or pins the buttons last showed again, in the room the card leaves.
 
@@ -522,7 +522,7 @@ Errors follow Consensio: `42501` for access, `23514` for rules ("this round alre
 | `guess-my-spot-reveal-spot-on` | Reveal, about 460 m off, guesser side, from the guess screen |
 | `guess-my-spot-reveal-close` | Reveal, about 110 km off, guesser side, from the guess screen |
 | `guess-my-spot-reveal-far` | Reveal, Rome guessed for Bergen (about 2,100 km), guesser side, from the guess screen |
-| `guess-my-spot-reveal-sender` | Reveal, about 9 km off, sender side |
+| `guess-my-spot-reveal-sender` | Reveal, about 9 km off, sender side, with six-digit scores |
 | `guess-my-spot-reveal-held` | Reveal held: the guess is only on the phone and a send failed |
 | `guess-my-spot-history` | Our guesses with 12 rounds, clustered |
 | `memories-map-with-game` | The Memories tab's "Our places" with the memory fixtures and the 12 rounds |

@@ -122,12 +122,16 @@
     }
 
     /// A reveal: the round is guessed, and the points are in the total already.
-    private static func reveal(_ round: RemoteGuessMySpotRound) -> RemoteGuessMySpotState {
+    private static func reveal(
+      _ round: RemoteGuessMySpotRound,
+      sharedPoints: Int = 28_640,
+      myPoints: Int = 15_210
+    ) -> RemoteGuessMySpotState {
       let nextSender = round.guesserUserID
       // Only the guesser scores, so the round's points go to their own total.
       let points = round.knownPoints ?? 0
-      let mine = round.guesserUserID == Fixture.me ? 15_210 + points : 15_210
-      return state(game: game(turn: nextSender, points: 28_640 + points, mine: mine), current: round)
+      let mine = round.guesserUserID == Fixture.me ? myPoints + points : myPoints
+      return state(game: game(turn: nextSender, points: sharedPoints + points, mine: mine), current: round)
     }
 
     static func state(for scenario: DeveloperScenario) -> RemoteGuessMySpotState? {
@@ -183,7 +187,11 @@
       case .guessMySpotRevealWorld:
         reveal(harbor(sender: Fixture.partner, guess: Spot(latitude: -33.8688, longitude: 151.2093)))
       case .guessMySpotRevealSender:
-        reveal(harbor(sender: Fixture.me, guess: Spot(latitude: 60.3400, longitude: 5.2200)))
+        reveal(
+          harbor(sender: Fixture.me, guess: Spot(latitude: 60.3400, longitude: 5.2200)),
+          sharedPoints: 238_606,
+          myPoints: 106_122
+        )
       default:
         nil
       }
