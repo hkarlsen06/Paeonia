@@ -164,7 +164,7 @@ describe("the round", () => {
     expect(result).toMatchObject({ id: roundId, spot_latitude: BERGEN.latitude, place_name: "Bergen, Norway", guess_latitude: OSLO.latitude });
     expect(result.distance_m).toBeGreaterThan(300_000);
     expect(result.distance_m).toBeLessThan(310_000);
-    expect(result.points).toBe(Math.round(5000 * 0.5 ** (result.distance_m! / 1_500_000)));
+    expect(result.points).toBe(pointsFor(result.distance_m!));
     expect((await view(s.a)).game).toMatchObject({ turn_user_id: s.b.userId, shared_points: result.points });
 
     const next = await send(s, s.b, OSLO);

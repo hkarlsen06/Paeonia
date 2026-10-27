@@ -15,7 +15,7 @@ Decided by the developer on 2026-10-18 (the "Guess my spot" bullets in `docs/gam
 - **The picker stays open until sending.** The sender can swap the photo as often as they like until the round is sent. There is no skip.
 - **The photo is stripped.** The phone removes the photo's metadata (camera, time, location) before uploading. The spot travels on its own and stays hidden from the guesser until they guess, as Consensio's spot does.
 - **Turns like Consensio.** The partners take turns, one photo each. It plays async with pushes, and live when both are in the game.
-- **Scoring by kilometres on a world scale.** Up to 5000 points, halving about every 1,500 km, as in GeoGuessr.
+- **Scoring on a log scale.** Up to 5000 points, and every 10 times closer adds the same points. GeoGuessr's world scale (halving every 1,500 km) gave nearly every guess near home 4,950 or more, and most photos come from near home, so the street, the neighbourhood and the town now decide the round. (2026-10-27)
 - **The guess screen.** A small photo on top that fills its frame, tap to see it full screen. The map under it takes most of the screen to drop the pin. Apple's standard map in Paeonia's dark look, with a button for satellite.
 - **The reveal.** The map zooms out from the guess, a gold line draws to the real spot, the camera flies down close to it, and the distance counts up on the way. The guesser's reveal ends on the streets around the spot, however far the guess was, because the place is the sender's memory. The sender's reveal runs the other way, from their spot to the partner's guess, and ends on the streets around the guess, so it is a moment for both of them. Then the photo comes back with the place name and date. Only "where" is guessed, not "when".
 - **History.** "A map of our places": one shared map with a pin per round. Each pin opens its photo and both spots.
@@ -93,17 +93,20 @@ The distance is the great-circle distance between the guess and the spot, on a s
 
 ## Scoring
 
-Points are `round(5000 × 0.5^(km / 1500))`, so every 1,500 km halves them.
+Points are `round(5000 × log10(20,000 km / d) / log10(20,000 km / 25 m))`, with the distance `d` held between 25 m and 20,000 km. Every 10 times closer adds about 850 points. A guess within 25 m scores all of them, because a photo's own location is only good to a few metres.
 
 | Distance | Points |
 |---|---|
-| 0 to 200 m | 5000 |
-| 10 km | 4977 |
-| 100 km | 4774 |
-| 500 km | 3969 |
-| 1,500 km | 2500 |
-| 5,000 km | 496 |
-| 20,000 km | 0 |
+| 0 to 25 m | 5000 |
+| 100 m | 4490 |
+| 1 km | 3643 |
+| 10 km | 2796 |
+| 25 km | 2459 |
+| 100 km | 1949 |
+| 300 km | 1545 |
+| 1,000 km | 1102 |
+| 5,000 km | 510 |
+| 20,000 km or more | 0 |
 
 The verdict comes from the distance:
 
@@ -164,7 +167,7 @@ Sending a photo counts toward the couple's streak through `game_turn_completed`.
 - **Pins.** Each pin is the sender's pin (their color and drawn mark, as everywhere in the game). Tapping one opens the round.
 - **Clusters.** Pins closer than about a ninth of the visible height and a sixth of the width join into one pin with a count, at the newest round's spot (`GuessMySpotClustering`). Tapping a cluster zooms in on its rounds. The zoom may go as close as 500 m across, so it always splits rounds more than 300 m apart. A cluster whose rounds are all within 300 m of each other opens a list sheet instead, because zooming would never split it.
 - **Header.** A glass card over the top of the map: "12 places", then the score as the play style shows it. Together: the shared total, then each partner's closest guess and average. Against each other: each partner's own points with their closest guess and average ("Closest 120 m · On average 340 km").
-- **Detail.** Tapping a pin opens a sheet with the photo (tap to see it full screen), the place name and date, a small map with both pins and the line between them, "You sent this one" or "[Name] sent this one", and "[Name] guessed 3.2 km off · 4,993 points".
+- **Detail.** Tapping a pin opens a sheet with the photo (tap to see it full screen), the place name and date, a small map with both pins and the line between them, "You sent this one" or "[Name] sent this one", and "[Name] guessed 3.2 km off · 3,215 points".
 - **Delete.** The sender's detail has "Delete this photo" once both partners saw the reveal (`can_delete`). A confirmation says the partner won't see it anymore and the points stay. The round leaves the map at once and the delete goes through the pending operations. A refusal drops it with the shared banner, and the next read puts the round back.
 - The map opens framing every pin. Only guessed rounds are listed, so an open round's spot never leaves the server. The server returns the newest 500.
 
@@ -335,7 +338,7 @@ Beats, in seconds after the reveal starts.
 | 3.35 | The camera flies down to the real spot over 1.8 s and lands centered on it, at most 2.4 km across, close enough to see the streets. The flight is done with most of the zoom by its middle and slows into the streets, because the map loads the closest views last. A guess within 1 km stays in view, inside the middle 85 percent of it. The view's width and height each fit the guess on their own, down to 150 m, so a close guess fills the view. The line runs off the screen toward a farther guess. The distance capsule appears at the top and counts up from 0 over 1.35 s in 10 steps while the camera travels, with plain digits and the width of the final number. |
 | 4.95 | The verdict, as the flight settles. Both heads glow gold over 0.3 s (0.8 for So close and Close, 1 for Spot on), a 4 pt gold ring widens from the real pin's head from 36 to 72 pt and fades over 0.4 s, and the distance capsule pulses 1 to 1.1 and back. Far has no glow or ring. See below. |
 | 5.25 | The photo comes back: the result card rises 120 pt on a spring (0.3 s, bounce 0.1) with a 0.2 s fade, with the photo, the place name and date on it, the verdict title and line. |
-| 5.55 | The shared total counts up over 0.7 s in 10 steps, with "+4,993" beside it. |
+| 5.55 | The shared total counts up over 0.7 s in 10 steps, with "+3,215" beside it. |
 | 6.25 | The button appears. |
 
 Verdict.
@@ -358,7 +361,7 @@ Buttons. The guesser gets the primary "Your turn to send a photo". The sender ge
 
 Held reveal. While the guess is on its way, the reveal holds at 0.00 with only the guess pin on the map. Once a send of the guess has failed, the line "Saved on this phone. We'll show where it was when you're online." shows (or, after a failure on a working connection, "We couldn't send your move yet" with Try again), with "Your turn to send a photo" under it. Stepping past a held reveal does not mark it seen. If the server refuses the guess because the round already has one, the screen plays the reveal of the guess the server has.
 
-VoiceOver. On the verdict, one announcement: "Taken in Bergen, Norway. Your guess was 3.2 km off. So close. Points: 4,993." On the sender's phone: "Robin's guess was 3.2 km off. ..." Focus moves to the title. The bloom and line are hidden.
+VoiceOver. On the verdict, one announcement: "Taken in Bergen, Norway. Your guess was 3.2 km off. So close. Points: 3,215." On the sender's phone: "Robin's guess was 3.2 km off. ..." Focus moves to the title. The bloom and line are hidden.
 
 | Key | English | Norwegian |
 |---|---|---|

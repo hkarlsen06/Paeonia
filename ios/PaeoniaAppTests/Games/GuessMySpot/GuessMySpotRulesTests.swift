@@ -5,15 +5,16 @@ import Testing
 /// The scoring, the distance and the place and day text rules. The server has the
 /// same numbers in `backend/convex/lib/guessMySpot.ts`.
 struct GuessMySpotRulesTests {
-    @Test func pointsHalveEvery1500Kilometres() {
+    @Test func everyTenTimesCloserAddsTheSamePoints() {
         #expect(GuessMySpotRules.points(distanceMeters: 0) == 5_000)
-        #expect(GuessMySpotRules.points(distanceMeters: 200) == 5_000)
-        #expect(GuessMySpotRules.points(distanceMeters: 10_000) == 4_977)
-        #expect(GuessMySpotRules.points(distanceMeters: 100_000) == 4_774)
-        #expect(GuessMySpotRules.points(distanceMeters: 500_000) == 3_969)
-        #expect(GuessMySpotRules.points(distanceMeters: 1_500_000) == 2_500)
-        #expect(GuessMySpotRules.points(distanceMeters: 5_000_000) == 496)
+        #expect(GuessMySpotRules.points(distanceMeters: 25) == 5_000)
+        #expect(GuessMySpotRules.points(distanceMeters: 100) == 4_490)
+        #expect(GuessMySpotRules.points(distanceMeters: 1_000) == 3_643)
+        #expect(GuessMySpotRules.points(distanceMeters: 10_000) == 2_796)
+        #expect(GuessMySpotRules.points(distanceMeters: 100_000) == 1_949)
+        #expect(GuessMySpotRules.points(distanceMeters: 1_000_000) == 1_102)
         #expect(GuessMySpotRules.points(distanceMeters: 20_000_000) == 0)
+        #expect(GuessMySpotRules.points(distanceMeters: 25_000_000) == 0)
     }
 
     @Test func theVerdictFollowsTheDistance() {

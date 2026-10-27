@@ -15,15 +15,18 @@ nonisolated enum GuessMySpotVerdict: Equatable, Sendable {
 /// The rules the phone and the server share (`backend/convex/lib/guessMySpot.ts`).
 nonisolated enum GuessMySpotRules {
     static let maxPoints = 5_000
-    /// Every this many kilometres halves the points.
-    static let halvingKilometers = 1_500.0
+    /// A guess this close scores all the points.
+    static let fullPointsMeters = 25.0
+    /// A guess this far off scores none.
+    static let zeroPointsMeters = 20_000_000.0
     static let earthRadiusMeters = 6_371_008.8
     static let placeNameMaxLength = 120
 
-    /// `round(5000 × 0.5^(km / 1500))`.
+    /// `round(5000 × log10(20,000 km / d) / log10(20,000 km / 25 m))`, with `d` held between 25 m and 20,000 km.
     static func points(distanceMeters: Int) -> Int {
-        let kilometers = Double(max(0, distanceMeters)) / 1_000
-        return Int((Double(maxPoints) * pow(0.5, kilometers / halvingKilometers)).rounded())
+        let distance = min(zeroPointsMeters, max(fullPointsMeters, Double(distanceMeters)))
+        let share = log10(zeroPointsMeters / distance) / log10(zeroPointsMeters / fullPointsMeters)
+        return Int((Double(maxPoints) * share).rounded())
     }
 
     static func verdict(distanceMeters: Int) -> GuessMySpotVerdict {

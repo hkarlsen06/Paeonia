@@ -2,8 +2,8 @@ import { describe, expect, test } from "vitest";
 import { coordinateArg, haversineMeters, isTakenOn, placeNameArg, pointsFor } from "./guessMySpot";
 
 describe("scoring", () => {
-  test("halves every 1,500 km from 5000", () => {
-    const cases: [number, number][] = [[200, 5000], [10_000, 4977], [100_000, 4774], [500_000, 3969], [1_500_000, 2500], [5_000_000, 496], [20_000_000, 0]];
+  test("adds the same points for every 10 times closer, from 0 at 20,000 km to 5000 at 25 m", () => {
+    const cases: [number, number][] = [[0, 5000], [25, 5000], [100, 4490], [1_000, 3643], [10_000, 2796], [100_000, 1949], [1_000_000, 1102], [20_000_000, 0], [25_000_000, 0]];
     for (const [meters, points] of cases) expect(pointsFor(meters), `${meters} m`).toBe(points);
   });
 

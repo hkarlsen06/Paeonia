@@ -15,8 +15,10 @@ import { addMs } from "./time";
 // The rules and decisions are in docs/games/guess-my-spot.md.
 
 export const MAX_POINTS = 5000;
-/** Every this many kilometres halves the points. */
-export const HALVING_KM = 1500;
+/** A guess this close scores all the points, since a photo's own location is only good to a few metres. */
+export const FULL_POINTS_METERS = 25;
+/** A guess this far off scores none, about half the way around the earth. */
+export const ZERO_POINTS_METERS = 20_000_000;
 export const EARTH_RADIUS_KM = 6371.0088;
 /** The verdicts, by the most metres each allows. Further than `CLOSE_METERS` is "now you know where". */
 export const SPOT_ON_METERS = 1000;
@@ -108,9 +110,13 @@ export function haversineMeters(a: Coordinate, b: Coordinate): number {
   return Math.round(2 * EARTH_RADIUS_KM * 1000 * Math.asin(Math.min(1, Math.sqrt(h))));
 }
 
-/** Up to 5000, halving every 1,500 km. */
+/**
+ * Up to 5000, on a log scale: every 10 times closer adds the same points (about 850), so the street
+ * beats the town as much as the town beats the country. Most photos come from near home.
+ */
 export function pointsFor(distanceM: number): number {
-  return Math.round(MAX_POINTS * 0.5 ** (distanceM / 1000 / HALVING_KM));
+  const d = Math.min(ZERO_POINTS_METERS, Math.max(FULL_POINTS_METERS, distanceM));
+  return Math.round((MAX_POINTS * Math.log10(ZERO_POINTS_METERS / d)) / Math.log10(ZERO_POINTS_METERS / FULL_POINTS_METERS));
 }
 
 // --- Input rules ------------------------------------------------------------
