@@ -29,8 +29,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # The same Xcode as the developer's Mac. See "Toolchain Requirement" in
-      # docs/agent-guides/ios-verification.md.
+      # Use the Xcode 27.0 installation supplied by the hosted runner image.
       - name: Select Xcode 27.0
         run: |
           sudo xcode-select -s /Applications/Xcode_27.app/Contents/Developer
@@ -43,6 +42,23 @@ jobs:
 
       - name: Build the app and the test targets
         run: XCODE_BUILD_AGENT_ACTION=build-for-testing XCODE_BUILD_AGENT_FAIL_ON_WARNINGS=1 ./scripts/xcode-build-agent.sh
+
+      # Shared iPhone belongs to the developer's Mac. Hosted runners have
+      # their own preinstalled simulators, which need no shared simulator lock.
+      - name: Select an installed iOS 27 simulator
+        run: |
+          destination="$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          for runtime, devices in json.load(sys.stdin)["devices"].items():
+              if not runtime.startswith("com.apple.CoreSimulator.SimRuntime.iOS-27-"):
+                  continue
+              for device in devices:
+                  if device["deviceTypeIdentifier"].startswith("com.apple.CoreSimulator.SimDeviceType.iPhone-"):
+                      print("platform=iOS Simulator,id=" + device["udid"])
+                      sys.exit(0)
+          sys.exit("No installed iOS 27 iPhone simulator is available.")
+          ')"
+          echo "XCODE_TEST_AGENT_DESTINATION=$destination" >> "$GITHUB_ENV"
 
       # The wrapper prints only a summary. It keeps the xcodebuild log and the
       # result bundle (test durations, crash reports) when KEEP_ARTIFACTS is set.
