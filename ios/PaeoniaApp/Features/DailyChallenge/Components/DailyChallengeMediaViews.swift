@@ -78,14 +78,12 @@ struct DailySendingAnswerView: View {
                 Text(partnerChoiceName)
                     .font(PaeoniaTypography.body.weight(.semibold))
                     .foregroundStyle(.paeoniaTextPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if let text, !text.isEmpty {
                 Text(text)
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
