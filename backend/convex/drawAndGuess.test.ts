@@ -547,6 +547,43 @@ describe("guessing", () => {
   });
 });
 
+describe("reactions to live results", () => {
+  test.each(["solved", "missed"] as const)("both partners can react to a %s round while its drawing uploads and the next round starts", async (state) => {
+    const s = await startGame();
+    const picked = await pick(s.a, s.gameId, "easy");
+    if (state === "solved") {
+      await guess(s.b, picked.round_id, picked.word);
+    } else {
+      await s.b.as.mutation(api.drawAndGuess.give_up_round, { ...op(), p_round_id: picked.round_id });
+    }
+    const next = await pick(s.b, s.gameId, "easy");
+    expect((await view(s.a)).recent_rounds[0]).toMatchObject({
+      id: picked.round_id,
+      state,
+      drawing_media_asset_id: null,
+    });
+
+    const reaction = { p_kind: "draw_and_guess_round", p_target_id: picked.round_id, p_emoji: "❤️" } as const;
+    const stranger = await createSignedInUser(s.t);
+    expect((await failure(stranger.as.mutation(api.reactions.set_reaction, reaction))).code).toBe("42501");
+    for (const user of [s.a, s.b]) {
+      await user.as.mutation(api.reactions.set_reaction, reaction);
+    }
+    const expected = [s.a, s.b].map((user) => ({
+      target_kind: "draw_and_guess_round",
+      target_id: picked.round_id,
+      user_id: user.userId,
+      emoji: "❤️",
+    }));
+    expect((await s.b.as.query(api.reactions.get_reactions, {})).reactions).toEqual(expect.arrayContaining(expected));
+
+    await sendDrawing(s, s.a, picked.round_id);
+    expect((await view(s.a)).current_round).toMatchObject({ id: next.round_id, state: "drawing" });
+    expect((await s.a.as.query(api.reactions.get_reactions, {})).reactions).toEqual(expect.arrayContaining(expected));
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
 describe("give_up_round", () => {
   test("counts as missed, scores nothing, and the guesser draws next", async () => {
     const s = await startGame();

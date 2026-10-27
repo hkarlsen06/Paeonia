@@ -142,12 +142,12 @@ const REACTION_TARGETS: Record<ReactionTargetKind, ReactionTargetSpec> = {
       return { coupleId, notify: { to: "author", authorUserId: revision.author_user_id } };
     },
   },
-  /** A finished Draw & Guess round that holds a drawing. Both partners can react. */
+  /** A finished Draw & Guess round. A live result can arrive before its drawing upload. */
   draw_and_guess_round: {
     resolve: async (ctx, userId, targetId) => {
       const move = await getByUuid(ctx, "game_moves", targetId);
       const coupleId = await requireAccess(ctx, userId, move?.couple_id);
-      if (!move || (move.state !== "solved" && move.state !== "missed") || move.drawing_media_asset_id === undefined) {
+      if (!move || (move.state !== "solved" && move.state !== "missed")) {
         fail("23514", UNAVAILABLE);
       }
       return { coupleId, notify: { to: "partner", gameKind: "draw_and_guess" } };
