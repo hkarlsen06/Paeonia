@@ -46,6 +46,11 @@ struct DataExportSection: View {
         .task {
             await viewModel.observe()
         }
+        .task(id: viewModel.phase) {
+            if case .ready = viewModel.phase {
+                await DeliveredNotifications.clear(types: ["data_export_ready"])
+            }
+        }
         .onChange(of: viewModel.notice) { _, notice in
             guard let notice else {
                 return

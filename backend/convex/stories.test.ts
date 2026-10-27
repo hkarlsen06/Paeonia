@@ -336,6 +336,7 @@ describe("story_posted push", () => {
     expect(rows.map((row) => row.body).sort()).toEqual(["Den ligger på Hjem i 24 timer.", "It's on Home for 24 hours."]);
     expect(rows[0].payload).toEqual({
       type: "story_posted",
+      expires_at: "2026-10-11T12:00:00.000Z",
       couple_id: couple.coupleId,
       story_id: story.storyId,
       actor_user_id: couple.first.userId,

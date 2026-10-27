@@ -85,6 +85,8 @@ describe("payload builders", () => {
       route: "memories",
       deeplink: "paeonia://memories",
       sender_name: "Alex",
+      notification_id: "o1",
+      notification_expires_at: undefined,
     });
   });
 
@@ -116,7 +118,7 @@ describe("payload builders", () => {
 
   test("a badge-only push sets the number, zero too, shows nothing, and goes out at low priority", () => {
     const badgeOnly = { ...alert, title: null, body: null, payload: { type: "badge_update" }, badge: 0 };
-    expect(buildAppApsPayload(badgeOnly)).toEqual({ aps: { badge: 0 } });
+    expect(buildAppApsPayload(badgeOnly)).toEqual({ aps: { badge: 0, "content-available": 1 }, type: "badge_update" });
     expect(buildAppRequest(badgeOnly, "no.paeonia.app")).toMatchObject({ pushType: "alert", priority: "5" });
   });
 
@@ -223,6 +225,10 @@ describe("request builders", () => {
       payload: { type: "streak_reminder", next_activity_deadline_at: "2026-10-11T22:00:00.000Z" },
     };
     expect(buildAppRequest(reminder, "no.paeonia.app").expiration).toBe(String(Date.parse("2026-10-11T22:00:00Z") / 1000));
+    const invite = { ...alert, payload: { type: "game_invite", invite_sent_at: "2026-10-10T12:00:00.000Z" } };
+    expect(buildAppRequest(invite, "no.paeonia.app").expiration).toBe(String(Date.parse("2026-10-10T12:15:00Z") / 1000));
+    const story = { ...alert, payload: { type: "story_posted", expires_at: "2026-10-11T12:00:00.000Z" } };
+    expect(buildAppRequest(story, "no.paeonia.app").expiration).toBe(String(Date.parse("2026-10-11T12:00:00Z") / 1000));
     const trial = { ...alert, payload: { type: "subscription_trial_reminder", trial_ends_at: "not a date" } };
     expect(buildAppRequest(trial, "no.paeonia.app").expiration).toBeUndefined();
   });

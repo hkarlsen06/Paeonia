@@ -39,6 +39,7 @@ nonisolated enum LiveFeedRegistry {
             TopicsLiveFeed(cache: FileTopicsCache.shared),
             FavoritesLiveFeed(cache: FileFavoritesCache.shared),
             AppBadgeLiveFeed(),
+            DeliveredNotificationsLiveFeed(),
         ]
     }
 }

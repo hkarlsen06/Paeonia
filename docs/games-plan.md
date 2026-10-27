@@ -130,6 +130,7 @@ Reaction games compare reaction times, not arrival order. Each phone measures fr
 ### Notifications
 
 - Turn notifications go through `pushQueue` and `lib/notificationCopy.ts`.
+- Alerts collapse per game kind and couple. Opening a game clears its delivered alerts. Queued invites send only while the same invite is unanswered and less than 15 minutes old.
 - Lock-screen text names the game and that it is your turn. It never shows the move, a drawing, or written content.
 - After a few days without a move, send at most one gentle reminder, then stay quiet.
 - A "Your move" widget fits the existing widget target. It is optional for the first release.

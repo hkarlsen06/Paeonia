@@ -146,6 +146,7 @@ export async function enqueueGamePush(
     kind: args.kind,
     payload: {
       type: args.kind,
+      ...(args.kind === "game_invite" ? { invite_sent_at: nowIso() } : {}),
       game_kind: args.game_kind,
       couple_id: args.couple_id,
       ...(args.game_id ? { game_id: args.game_id } : {}),
@@ -158,7 +159,7 @@ export async function enqueueGamePush(
     dedupe_key: args.dedupe_key,
     redaction_level: "private",
     apns_push_type: "alert",
-    apns_collapse_id: `${args.kind}:${args.couple_id}`,
+    apns_collapse_id: `game:${args.game_kind}:${args.couple_id}`,
     scheduled_for: args.delay_ms ? addMs(nowIso(), args.delay_ms) : nowIso(),
   });
 }

@@ -14,7 +14,7 @@ import { addMs, nowIso } from "./time";
 export * from "./notificationCopy";
 
 const GAME_PUSH_FIELDS = [
-  "type", "couple_id", "actor_user_id", "route", "deeplink", "game_kind", "game_id", "round_id", "step",
+  "type", "couple_id", "actor_user_id", "route", "deeplink", "game_kind", "game_id", "round_id", "step", "invite_sent_at",
 ] as const;
 const DAILY_PARTNER_PUSH_FIELDS = [
   "type", "couple_id", "actor_user_id", "route", "deeplink", "couple_day_id", "instance_ids",
@@ -42,7 +42,7 @@ const NOTIFICATION_PAYLOAD_FIELDS = {
   subscription_payment_failed: ["type", "route", "deeplink", "subscription_id"],
   subscription_ending: ["type", "couple_id", "route", "deeplink", "ends_at", "days_left", "own_subscription"],
   memory_created: ["type", "couple_id", "actor_user_id", "route", "deeplink", "memory_id"],
-  story_posted: ["type", "couple_id", "actor_user_id", "route", "deeplink", "story_id"],
+  story_posted: ["type", "couple_id", "actor_user_id", "route", "deeplink", "story_id", "expires_at"],
   thread_message_sent: [
     "type", "couple_id", "actor_user_id", "route", "deeplink", "thread_id", "message_id", "question_id",
     "memory_id", "story_id", "game_chat_id", "game_source",
@@ -571,6 +571,7 @@ export async function enqueueStoryPostedNotification(ctx: WriterCtx, story: Doc<
       type: "story_posted",
       couple_id: story.couple_id,
       story_id: story.id,
+      expires_at: addMs(story.created_at, 86_400_000),
       actor_user_id: story.author_user_id,
       route: "home",
       deeplink: storyDeepLink(story.id),

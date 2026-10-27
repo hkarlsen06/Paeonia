@@ -58,7 +58,7 @@ struct PairedHomeView: View {
     @State private var isCovered = false
 
     private static let alertTypesSeenOnHome: Set<String> = [
-        "widget_updated", "streak_reminder", "story_posted", "date_reminder",
+        "widget_updated", "streak_reminder", "story_posted", "date_reminder", "partner_joined",
     ]
 
     init(

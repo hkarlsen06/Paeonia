@@ -24,6 +24,9 @@ extension RootViewModel {
             await resolveAccessRoute(for: session)
         }
         await runSync(reason: .foreground)
+        if currentSession != nil {
+            await DeliveredNotifications.reconcile()
+        }
     }
 
     func syncAfterLocalLocationChange() async {

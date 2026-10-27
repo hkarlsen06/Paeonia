@@ -17,6 +17,7 @@ struct PartnerReactionLine: View {
                 .padding(.vertical, PaeoniaSpacing.space8)
                 .glassEffect(.regular, in: Capsule())
                 .animation(PaeoniaMotion.cardReveal, value: emoji)
+                .clearsDeliveredReactions(on: target)
         }
     }
 }

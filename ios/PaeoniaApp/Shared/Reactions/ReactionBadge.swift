@@ -61,6 +61,7 @@ struct StoredReactionBadge: View {
             let reactions = store.reactions(on: target)
             if !reactions.isEmpty {
                 ReactionBadge(reactions: reactions, participants: store.participants)
+                    .clearsDeliveredReactions(on: store.partnerReaction(on: target) == nil ? nil : target)
             }
         }
     }

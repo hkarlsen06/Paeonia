@@ -372,7 +372,7 @@ describe("registry", () => {
     expect(Object.keys(GAME_BACKENDS)).toEqual([...GAME_KINDS]);
   });
 
-  test("a game without a backend has out-of-date turn, result, and reminder pushes, and its invites stay wanted", async () => {
+  test("a game without a backend has out-of-date game pushes, and only open invites stay wanted", async () => {
     const s = await startCouple();
     const wanted = (kind: Parameters<typeof gamePushStillWanted>[1], data: Record<string, unknown>) =>
       s.t.run((ctx) => gamePushStillWanted(ctx, kind, data, s.b.userId));
@@ -380,7 +380,11 @@ describe("registry", () => {
     for (const kind of ["game_turn_ready", "game_result", "game_turn_reminder"] as const) {
       expect(await wanted(kind, mindMeld)).toEqual({ wanted: false, reason: "out_of_date" });
     }
-    expect(await wanted("game_invite", mindMeld)).toEqual({ wanted: true });
+    expect(await wanted("game_invite", mindMeld)).toEqual({ wanted: false, reason: "out_of_date" });
+    const invite = await s.a.as.mutation(api.games.send_game_invite, { p_kind: "mind_meld" });
+    expect(await wanted("game_invite", {
+      ...mindMeld, actor_user_id: s.a.userId, invite_sent_at: invite.sent_at,
+    })).toEqual({ wanted: true });
     // A push that names no known game has nothing to wait for either.
     expect(await wanted("game_turn_ready", { ...mindMeld, game_kind: "chess" })).toEqual({ wanted: false, reason: "out_of_date" });
     expect(await wanted("game_turn_ready", { couple_id: s.couple.coupleId })).toEqual({ wanted: false, reason: "out_of_date" });

@@ -1,7 +1,7 @@
 // Pure APNs helpers: request builders, provider JWT, and the sandbox/production
 // fallback. The HTTP/2 transport lives in push.ts ("use node").
 
-import { localWallClockMs } from "./time";
+import { addMs, localWallClockMs } from "./time";
 import type { NotificationKind } from "./notifications";
 
 export type ApnsEnvironment = "sandbox" | "production";
@@ -106,7 +106,9 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
   if (notification.apns_push_type === "background") {
     return { aps: { "content-available": 1 }, ...notification.payload };
   }
-  if (isBadgeUpdate(notification)) return { aps: { badge: notification.badge ?? 0 } };
+  if (isBadgeUpdate(notification)) {
+    return { aps: { badge: notification.badge ?? 0, "content-available": 1 }, type: "badge_update" };
+  }
   // A row without a body shows its title alone, never an empty line.
   const alert: Record<string, string> = {};
   if (notification.title) alert.title = notification.title;
@@ -128,6 +130,8 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
     },
     ...notification.payload,
     sender_name: notification.title ?? undefined,
+    notification_id: notification.outbox_id,
+    notification_expires_at: notificationStaleAt(notification.payload) ?? undefined,
   };
 }
 
@@ -235,10 +239,13 @@ function notificationGrouping(
  * When a reminder stops being true: a streak reminder at its deadline, a trial
  * reminder when the trial ends, an ending reminder when access ends, a question time or date
  * reminder at the end of the user's local day.
- * `prepare_notification` drops a row past this time, and APNs drops it on a phone that stays
- * offline past it. Null for everything else.
+ * The send drops expired rows. APNs uses the deadline for queued delivery; the app also uses it
+ * to remove already delivered alerts. Stories expire after 24 hours and game invites after 15 minutes.
+ * Null for kinds without a deadline.
  */
 export function notificationStaleAt(payload: Record<string, unknown>): string | null {
+  if (payload.type === "game_invite" && typeof payload.invite_sent_at === "string" &&
+      !Number.isNaN(Date.parse(payload.invite_sent_at))) return addMs(payload.invite_sent_at, 15 * 60_000);
   const value =
     payload.type === "streak_reminder"
       ? payload.next_activity_deadline_at
@@ -246,7 +253,7 @@ export function notificationStaleAt(payload: Record<string, unknown>): string | 
         ? payload.trial_ends_at
         : payload.type === "subscription_ending"
           ? payload.ends_at
-          : payload.type === "question_time_reminder" || payload.type === "date_reminder"
+          : payload.type === "question_time_reminder" || payload.type === "date_reminder" || payload.type === "story_posted"
             ? payload.expires_at
             : null;
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) ? value : null;

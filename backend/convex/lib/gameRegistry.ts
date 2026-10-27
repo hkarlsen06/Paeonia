@@ -8,8 +8,8 @@ import { guessMySpotBackend } from "./guessMySpot";
 import { mindMeldBackend } from "./mindMeld";
 import { storyChainBackend } from "./storyChain";
 import type { GameLanguage } from "./gameWords";
-import { openGameInvitesFor, type GameKind, type GamePushKind, type GameWait } from "./games";
-import { nowIso } from "./time";
+import { INVITE_INTERVAL_MS, openGameInvitesFor, type GameKind, type GamePushKind, type GameWait } from "./games";
+import { addMs, nowIso } from "./time";
 import { GAME_KINDS } from "./validators";
 
 // The one place a game registers its backend hooks. The shared games code (games.ts, pushQueue.ts,
@@ -60,7 +60,8 @@ const registered = (): GameBackend[] => GAME_KINDS.flatMap((kind) => GAME_BACKEN
 
 /**
  * Whether a queued game push still has a reason to go out to `recipientUserId`, checked when the
- * push drain claims it. The recipient must still have couple access. An invite is wanted after that.
+ * push drain claims it. The recipient must still have couple access. An invite must still be open
+ * and match the queued invitation.
  * Any other push belongs to the game named in `payload.game_kind`, which decides. A kind without an
  * entry in `GAME_BACKENDS` has nothing to wait for, so its pushes are out of date.
  */
@@ -69,10 +70,20 @@ export async function gamePushStillWanted(
   push: GamePushKind,
   payload: Record<string, unknown>,
   recipientUserId: string,
+  now = nowIso(),
 ): Promise<{ wanted: true } | { wanted: false; reason: "ineligible" | "out_of_date" }> {
   const coupleId = typeof payload.couple_id === "string" ? payload.couple_id : null;
   if (!coupleId || !(await canAccessCoupleContent(ctx, recipientUserId, coupleId))) return { wanted: false, reason: "ineligible" };
-  if (push === "game_invite") return { wanted: true };
+  if (push === "game_invite") {
+    const kind = GAME_KINDS.find(item => item === payload.game_kind);
+    const sender = typeof payload.actor_user_id === "string" ? payload.actor_user_id : null;
+    const invite = kind && sender ? await ctx.db.query("game_invites")
+      .withIndex("by_couple_id_kind_sender_user_id", q =>
+        q.eq("couple_id", coupleId).eq("kind", kind).eq("sender_user_id", sender)).unique() : null;
+    return invite && invite.sender_user_id !== recipientUserId && invite.answered_at === undefined &&
+      invite.sent_at > addMs(now, -INVITE_INTERVAL_MS) && invite.sent_at === payload.invite_sent_at
+      ? { wanted: true } : { wanted: false, reason: "out_of_date" };
+  }
   const kind = GAME_KINDS.find((item) => item === payload.game_kind);
   const backend = kind ? GAME_BACKENDS[kind] : null;
   let wanted = backend ? await backend.pushStillWanted(ctx, push, payload, recipientUserId) : false;

@@ -79,9 +79,14 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
             }
             return .newData
         }
+        if (userInfo["type"] as? String) == "badge_update" {
+            await DeliveredNotifications.reconcile()
+            return .newData
+        }
         // The canvas service reloads the widget when it writes new files. An
         // extra reload here would spend the widget's daily budget on every push.
         await widgetSync.sync(identity: identityStore.load())
+        await DeliveredNotifications.reconcile()
         return .newData
     }
 

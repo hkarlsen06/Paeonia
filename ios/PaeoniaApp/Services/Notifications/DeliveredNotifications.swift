@@ -72,6 +72,23 @@ nonisolated enum DeliveredNotifications {
         }
     }
 
+    /// The person opened the game that its invites, turns and results point to.
+    static func clearGame(_ kind: GameKind) async {
+        await remove { info in
+            guard (info["game_kind"] as? String) == kind.rawValue else { return false }
+            return (info["type"] as? String)?.hasPrefix("game_") == true
+        }
+    }
+
+    /// A reaction alert is read only when its target is on screen.
+    static func clearReactions(targetKind: String, targetIDs: Set<UUID>) async {
+        guard !targetIDs.isEmpty else { return }
+        await remove { info in
+            (info["type"] as? String) == "reaction_added" && (info["target_kind"] as? String) == targetKind
+                && (uuid(info["target_id"]).map(targetIDs.contains) ?? false)
+        }
+    }
+
     /// Signing out or losing access to the relationship leaves nothing behind
     /// that names the partner.
     static func clearAll() {
@@ -114,5 +131,29 @@ private struct ClearQuestionTimeRemindersModifier: ViewModifier {
                 guard phase == .active else { return }
                 Task { await DeliveredNotifications.clearQuestionTimeReminders() }
             }
+    }
+}
+
+private struct ClearDeliveredReactionModifier: ViewModifier {
+    let target: ReactionTarget?
+    @Environment(\.scenePhase) private var scenePhase
+
+    func body(content: Content) -> some View {
+        content
+            .task(id: target) { await clear() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await clear() } }
+            }
+    }
+
+    private func clear() async {
+        guard let target else { return }
+        await DeliveredNotifications.clearReactions(targetKind: target.kind.rawValue, targetIDs: [target.id])
+    }
+}
+
+extension View {
+    func clearsDeliveredReactions(on target: ReactionTarget?) -> some View {
+        modifier(ClearDeliveredReactionModifier(target: target))
     }
 }
