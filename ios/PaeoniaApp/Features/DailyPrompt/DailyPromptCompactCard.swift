@@ -77,11 +77,12 @@ struct DailyPromptCompactCard: View {
     /// The envelope sits at the bottom of a square, leaving room above for the letter to
     /// rise. The words center on the envelope itself, not on the empty room above it.
     private var envelope: some View {
-        DailyPromptEnvelope(width: Self.envelopeSize, opening: opening)
+        let envelopeHeight = Self.envelopeSize / PaeoniaEnvelopeLayer.aspect
+        return DailyPromptEnvelope(width: Self.envelopeSize, opening: opening)
             .overlay { waxSeal }
             .frame(width: Self.envelopeSize, height: Self.envelopeSize, alignment: .bottom)
             .alignmentGuide(VerticalAlignment.center) { dimensions in
-                dimensions.height - Self.envelopeSize / PaeoniaEnvelopeLayer.aspect / 2
+                dimensions.height - envelopeHeight / 2
             }
     }
 
