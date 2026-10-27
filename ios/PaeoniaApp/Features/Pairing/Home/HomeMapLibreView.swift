@@ -3,9 +3,9 @@ import SwiftUI
 import UIKit
 
 /// PROTOTYPE. A still MapLibre map of OpenStreetMap data from OpenFreeMap, recolored to
-/// Paeonia's plum. It places both partners' centers inside `framedBox`, with the camera from
-/// `camera(current:partner:isNear:area:viewSize:)`, which also says where each one lands, so
-/// SwiftUI draws the avatars on top in its own layout. The data credit lives off the map.
+/// Paeonia's plum. Its camera fits both partners inside `framedBox`. The coordinator reports
+/// their projected positions as the camera moves, so SwiftUI's avatars follow the map.
+/// The data credit lives off the map.
 struct HomeMapLibreView: UIViewRepresentable {
     let current: CLLocationCoordinate2D
     let partner: CLLocationCoordinate2D
@@ -13,6 +13,7 @@ struct HomeMapLibreView: UIViewRepresentable {
     /// Where the couple should sit, in the map view's own coordinates.
     let framedBox: CGRect
     let avatarSize: CGFloat
+    var onProjection: (HomeMapProjection) -> Void
 
     static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
     /// Shown wherever the app credits its map data.
@@ -52,7 +53,7 @@ struct HomeMapLibreView: UIViewRepresentable {
 
     /// `animated` pans on Paeonia's standard curve and timing, so the map moves with the
     /// cards when the box changes.
-    fileprivate func frame(_ map: MLNMapView, animated: Bool, isCurrent: @escaping () -> Bool) {
+    func frame(_ map: MLNMapView, animated: Bool, isCurrent: @escaping () -> Bool) {
         let camera = Self.camera(
             current: current, partner: partner, isNear: isNear, area: framedBox, viewSize: map.bounds.size
         )
@@ -211,38 +212,6 @@ struct HomeMapLibreView: UIViewRepresentable {
         if x < 0 { x += 1 }
         let latitude = atan(sinh(.pi * (1 - 2 * Double(point.y)))) * 180 / .pi
         return CLLocationCoordinate2D(latitude: latitude, longitude: Double(x) * 360 - 180)
-    }
-
-    final class Coordinator: NSObject, MLNMapViewDelegate {
-        var parent: HomeMapLibreView?
-        var lastFraming: FramingKey?
-        /// MapLibre drops timed camera moves until the map has loaded.
-        var isLoaded = false
-
-        /// Frames the map again when the couple, the box or the view's real size changed.
-        /// The box must fit inside the view, or the fit has no room and zooms out to the world.
-        func frameIfNeeded(_ map: MLNMapView) {
-            guard let parent, map.bounds.width > 0, map.bounds.height >= parent.framedBox.maxY else { return }
-            let key = FramingKey(
-                current: parent.current, partner: parent.partner, box: parent.framedBox,
-                size: map.bounds.size, avatarSize: parent.avatarSize
-            )
-            guard key != lastFraming else { return }
-            // A new place or box after the first framing moves the map. A new size jumps,
-            // since the old view's camera doesn't fit it.
-            let animated = lastFraming?.size == key.size && isLoaded && !UIAccessibility.isReduceMotionEnabled
-            lastFraming = key
-            parent.frame(map, animated: animated) { [weak self] in self?.lastFraming == key }
-        }
-
-        func mapViewDidFinishLoadingMap(_ mapView: MLNMapView) {
-            isLoaded = true
-        }
-
-        func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
-            HomeMapLibreView.recolor(style)
-        }
-
     }
 
     /// Tells its owner when its size changes, after layout.
