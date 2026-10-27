@@ -359,7 +359,9 @@ extension HomeMapLayout {
             state: mapState, partnerName: partnerName, onPromptCurrentLocation: onPromptCurrentLocation
         ), notice.id != dismissedNotice {
             HomeMapNoticeView(notice: notice) {
-                withAnimation(PaeoniaMotion.stateChange) { dismissedNotice = notice.id }
+                withAnimation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange) {
+                    dismissedNotice = notice.id
+                }
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space24)

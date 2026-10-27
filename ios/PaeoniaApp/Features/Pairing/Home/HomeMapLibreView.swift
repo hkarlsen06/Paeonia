@@ -76,7 +76,7 @@ struct HomeMapLibreView: UIViewRepresentable {
             * cos(camera.center.latitude * .pi / 180) / cos(now.centerCoordinate.latitude * .pi / 180)
         map.setCamera(
             MLNMapCamera(lookingAtCenter: camera.center, altitude: altitude, pitch: 0, heading: heading),
-            withDuration: PaeoniaMotion.motionDefault,
+            withDuration: PaeoniaMotion.homeLayoutDuration,
             animationTimingFunction: CAMediaTimingFunction(controlPoints: 0.65, 0, 0.35, 1)
         ) { [weak map] in
             // A newer framing may have cut this move short, and then it lands instead.

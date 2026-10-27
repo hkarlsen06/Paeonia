@@ -205,13 +205,13 @@ struct PairedHomeView: View {
                 .padding(.bottom, PaeoniaSpacing.space16)
             }
             // On the whole page, so the map and the avatars move with a card that changes height.
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: accessNotice)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isSavable)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: firstSteps)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: accessNotice)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeStreak.isSavable)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: games?.partnerGame?.kind)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
         } else {
             classicContent
         }
@@ -248,14 +248,14 @@ struct PairedHomeView: View {
             .paeoniaReadableWidth(
                 isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
             )
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: unreadChats.isEmpty)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: accessNotice)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeStreak.isSavable)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: games?.partnerGame?.kind)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: lookBack?.item)
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: firstSteps)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: accessNotice)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeStreak.isSavable)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: games?.partnerGame?.kind)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
             // The daily card is tall until today's question is answered, then a short row.
-            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: dailyChallengeCardState.kind)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
         }
         .scrollIndicators(.hidden)
         .refreshable {

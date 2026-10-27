@@ -7,6 +7,7 @@ enum PaeoniaMotion {
     static let motionSlow: TimeInterval = 0.36
     static let motionMorph: TimeInterval = 0.5
     static let motionCelebration: TimeInterval = 0.55
+    static let homeLayoutDuration: TimeInterval = 0.65
 
     /// Paeonia's house easing: a symmetric cubic bezier (`cubic-bezier(0.65, 0, 0.35,
     /// 1)`). Every standard, non-spring animation eases in and out along this curve
@@ -20,6 +21,8 @@ enum PaeoniaMotion {
 
     static let buttonPress = standardCurve(duration: motionFast)
     static let stateChange = standardCurve(duration: motionDefault)
+    /// Home's cards and map camera share this timing when the page changes height.
+    static let homeLayoutChange = standardCurve(duration: homeLayoutDuration)
     /// Matches the keyboard's own slide, for layout that changes as it opens or closes.
     static let keyboard = Animation.spring(duration: 0.3, bounce: 0)
     static let cardReveal = Animation.spring(duration: motionDefault, bounce: 0.18)
