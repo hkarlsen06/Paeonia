@@ -42,6 +42,19 @@ struct DrawAndGuessHintTests {
 
     // MARK: Slots
 
+    @Test func receivedHintsOnlyMarkFilledCorrectLettersAndSkipGaps() {
+        let slots = DrawAndGuessSlots(
+            answer: "a bcd",
+            letters: ["A", " ", "X", nil, "D"],
+            hintedIndexes: [-1, 0, 1, 2, 3, 4, 99]
+        )
+
+        #expect(slots.hintedIndexes == [0, 4])
+        #expect(slots.slots[1].tile == nil)
+        #expect(slots.slots[2].tile?.letter == "X")
+        #expect(slots.slots[3].tile == nil)
+    }
+
     @Test func aHintLocksItsSlotAndSurvivesClearAndRemove() throws {
         var slots = DrawAndGuessSlots(answer: "hot dog")
         let hot = DrawAndGuessTile(id: 0, letter: "H")

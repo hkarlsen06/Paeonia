@@ -24,4 +24,6 @@ nonisolated struct DrawAndGuessLiveMessage: GameLiveMessage, Equatable {
     var isWrong: Bool
     /// Nil while the guesser looks at the live canvas, or the drawing is still loading.
     var replay: Replay?
+    /// The answer slot indexes filled by "Show a letter", including gaps in the indexing.
+    var hintedIndexes: [Int] = []
 }

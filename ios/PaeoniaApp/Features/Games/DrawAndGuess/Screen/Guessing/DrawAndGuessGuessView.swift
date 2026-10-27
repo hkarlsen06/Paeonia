@@ -160,26 +160,6 @@ struct DrawAndGuessGuessView: View {
         dynamicTypeSize.isAccessibilitySize && !isRevealed
     }
 
-    private var slots: some View {
-        DrawAndGuessAnswerSlots(
-            slots: viewModel.slots,
-            timeline: timeline,
-            namespace: tileNamespace,
-            isRevealed: isRevealed,
-            litsGreen: viewModel.reveal?.isSolved == true,
-            wrongGuessCount: landedWrongCount,
-            isShowingWrongGuess: viewModel.isShowingWrongGuess && landedWrongCount == viewModel.wrongGuessCount,
-            removeTile: { viewModel.removeTile(atSlot: $0) }
-        )
-        .overlay {
-            if let start = timeline.bloomStart {
-                GamePetalBloom(start: start, seed: viewModel.round?.id.uuidString ?? "")
-                    .frame(width: 560, height: 420)
-            }
-        }
-        .zIndex(1)
-    }
-
     @ViewBuilder
     private var revealSections: some View {
         if let reveal = viewModel.reveal {
@@ -289,6 +269,47 @@ struct DrawAndGuessGuessView: View {
                 String(localized: .gamesDrawAndGuessRevealA11Y(DrawAndGuessAnswer.display(reveal.word), points))
             ).post()
         }
+    }
+}
+
+// MARK: - Answer slots
+
+extension DrawAndGuessGuessView {
+    private var slots: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            if viewModel.round?.difficulty == .custom {
+                Label {
+                    Text(.gamesDrawAndGuessGuessCustomWord)
+                } icon: {
+                    Image(systemName: "pencil")
+                }
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .multilineTextAlignment(.center)
+                .accessibilityIdentifier("draw.guess.customWord")
+            }
+            answerSlots
+        }
+    }
+
+    private var answerSlots: some View {
+        DrawAndGuessAnswerSlots(
+            slots: viewModel.slots,
+            timeline: timeline,
+            namespace: tileNamespace,
+            isRevealed: isRevealed,
+            litsGreen: viewModel.reveal?.isSolved == true,
+            wrongGuessCount: landedWrongCount,
+            isShowingWrongGuess: viewModel.isShowingWrongGuess && landedWrongCount == viewModel.wrongGuessCount,
+            removeTile: { viewModel.removeTile(atSlot: $0) }
+        )
+        .overlay {
+            if let start = timeline.bloomStart {
+                GamePetalBloom(start: start, seed: viewModel.round?.id.uuidString ?? "")
+                    .frame(width: 560, height: 420)
+            }
+        }
+        .zIndex(1)
     }
 }
 

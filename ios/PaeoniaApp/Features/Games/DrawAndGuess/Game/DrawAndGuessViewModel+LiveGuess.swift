@@ -28,6 +28,7 @@ struct DrawAndGuessReceivedGuessScreen {
 struct DrawAndGuessSentGuessScreen: Equatable {
     let round: UUID
     let letters: [String?]
+    let hintedIndexes: [Int]
     let isWrong: Bool
     let clock: GameReplayClock?
 }
@@ -48,6 +49,7 @@ extension DrawAndGuessViewModel {
         let sent = DrawAndGuessSentGuessScreen(
             round: message.round,
             letters: message.letters,
+            hintedIndexes: message.hintedIndexes,
             isWrong: message.isWrong,
             clock: message.replay == nil ? nil : replayClock
         )
@@ -75,7 +77,8 @@ extension DrawAndGuessViewModel {
             round: round.id,
             letters: slots.slots.map { slot in slot.tile.map { String($0.letter) } },
             isWrong: isShowingWrongGuess,
-            replay: replay
+            replay: replay,
+            hintedIndexes: slots.hintedIndexes
         )
     }
 
@@ -121,7 +124,11 @@ extension DrawAndGuessViewModel {
         }
         let guess = DrawAndGuessPartnerGuess(
             roundID: round.id,
-            slots: DrawAndGuessSlots(answer: round.word, letters: message.letters.map { $0?.first }),
+            slots: DrawAndGuessSlots(
+                answer: round.word,
+                letters: message.letters.map { $0?.first },
+                hintedIndexes: message.hintedIndexes
+            ),
             isWrong: message.isWrong,
             wrongCount: received.wrongCount,
             replayClock: clock

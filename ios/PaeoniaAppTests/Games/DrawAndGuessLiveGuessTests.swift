@@ -106,6 +106,25 @@ struct DrawAndGuessLiveGuessTests {
         #expect(connection.sentGameData.count == count)
     }
 
+    @Test func theDrawerSeesHintsFromTheGuessersScreenIncludingAfterAResend() async throws {
+        let (guesser, sender) = await guessing()
+        let (drawer, receiver) = await waitingForGuess()
+
+        for _ in 0..<2 {
+            guesser.showLetter()
+            receiver.onGameData?(try #require(sender.sentGameData.last))
+
+            let shown = try #require(drawer.partnerGuess?.slots)
+            #expect(!guesser.slots.hintedIndexes.isEmpty)
+            #expect(shown.hintedIndexes == guesser.slots.hintedIndexes)
+            #expect(shown.slots.map { $0.tile?.letter } == guesser.slots.slots.map { $0.tile?.letter })
+        }
+
+        guesser.resendGuessScreen()
+        receiver.onGameData?(try #require(sender.sentGameData.last))
+        #expect(drawer.partnerGuess?.slots.hintedIndexes == guesser.slots.hintedIndexes)
+    }
+
     // MARK: Drawer
 
     private func waitingForGuess() async -> Setup {

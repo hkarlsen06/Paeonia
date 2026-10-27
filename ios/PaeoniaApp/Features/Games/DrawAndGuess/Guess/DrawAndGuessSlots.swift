@@ -36,10 +36,14 @@ nonisolated struct DrawAndGuessSlots: Equatable, Sendable {
 
     /// The partner's slots as their phone shows them. `letters` has one entry per
     /// slot, nil where it is empty. Each letter gets the slot's index as its tile id.
-    init(answer: String, letters: [Character?]) {
+    /// Only a filled slot holding the answer's letter can be marked as a hint.
+    init(answer: String, letters: [Character?], hintedIndexes: [Int] = []) {
         self.init(answer: answer)
+        let hints = Set(hintedIndexes)
+        let answerLetters = Array(self.answer)
         for index in slots.indices where !slots[index].isGap && letters.indices.contains(index) {
             slots[index].tile = letters[index].map { DrawAndGuessTile(id: index, letter: $0) }
+            slots[index].isHint = hints.contains(index) && slots[index].tile?.letter == answerLetters[index]
         }
     }
 

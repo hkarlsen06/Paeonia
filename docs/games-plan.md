@@ -17,6 +17,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-10-27.
 
+- **Draw & Guess shows letter hints to both partners.** The drawer sees the same pink outline around letters the guesser revealed with "Show a letter". A custom word has a "Custom word" cue above the guesser's answer slots.
+
 - **Finished games can start a conversation.** Every game's result and history have a conversation button. Either partner can write, and both open the same conversation from that game or from Chats. The complete result is above the messages: every revealed word pair in Mind Meld, the drawing and all guesses in Draw & Guess, the scale and both markers in Consensio, the photo and both places in Guess my spot, the whole creature or story, and a board replay with every move. Nothing creates a thread until someone sends the first message. Results already on the phone open offline, and messages use the existing send queue. Deleting a Guess my spot round removes its conversation too. All four board games expose their stored past games, including Ludo, Four in a Row and Dots and Boxes, whose history screens were previously unwired.
 
 Decided on 2026-10-24.

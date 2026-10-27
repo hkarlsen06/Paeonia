@@ -35,7 +35,7 @@
           game: Fixture.game(state: .choosingWord, turn: Fixture.me, roundID: nil),
           choices: Fixture.choices
         )
-      case .gamesHubWaiting, .drawWaitingForGuess, .gamesHubBoardGames:
+      case .gamesHubWaiting, .drawWaitingForGuess, .drawWatchingHints, .gamesHubBoardGames:
         return Fixture.state(
           settings: mine,
           game: Fixture.game(state: .guessing, turn: Fixture.partner),
@@ -72,6 +72,7 @@
             state: .guessing,
             drawer: Fixture.partner,
             word: "counterrevolutionary",
+            difficulty: .custom,
             hasDrawing: true
           )
         )
@@ -241,13 +242,17 @@
     static func gamesViewModel(for scenario: DeveloperScenario) -> GamesViewModel {
       GamesViewModel(dependencies: dependencies(for: scenario))
     }
+  }
 
+  extension DeveloperGamesScenarioFactory {
     /// The live room, with the partner already in it when the scenario calls for
     /// it. No relay is involved: the partner's messages are fed in directly.
     private static func makeLive(for scenario: DeveloperScenario, coupleID: UUID) -> WidgetLiveDrawing? {
       let connection = WidgetLiveConnection(coupleID: coupleID, ticketProvider: { _ in nil })
       let live = WidgetLiveDrawing(connection: connection, role: .watching)
       switch scenario {
+      case .drawWatchingHints:
+        showPartnerHints(in: live)
       case .drawDrawing, .drawSavedOffline:
         simulatePartner(on: connection, role: .watching, canvas: nil)
       case .drawWaitingForWord:
@@ -258,6 +263,23 @@
         break
       }
       return live
+    }
+
+    private static func showPartnerHints(in live: WidgetLiveDrawing) {
+      let message = DrawAndGuessLiveMessage(
+        round: DeveloperGamesFixture.roundID,
+        letters: ["U", nil, nil, nil, nil, "L", nil, nil],
+        isWrong: false,
+        hintedIndexes: [0, 5]
+      )
+      let data = try? JSONEncoder().encode(GameLiveEnvelope(game: DrawAndGuessLiveMessage.game, message: message))
+      Task { @MainActor [weak live] in
+        while let live {
+          simulatePartner(on: live.connection, role: .watching, canvas: nil)
+          if let data { live.connection.onGameData?(data) }
+          try? await Task.sleep(for: .seconds(2))
+        }
+      }
     }
 
     private static func simulatePartner(

@@ -12675,6 +12675,24 @@
         }
       }
     },
+    "games.drawAndGuess.guess.customWord" : {
+      "comment" : "Label above the answer slots when the drawer typed their own word instead of choosing a suggested word.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eget ord"
+          }
+        }
+      }
+    },
     "games.drawAndGuess.guess.drawnBy" : {
       "comment" : "Line above the drawing the player is about to guess. %@ is the partner's name.",
       "extractionState" : "manual",
