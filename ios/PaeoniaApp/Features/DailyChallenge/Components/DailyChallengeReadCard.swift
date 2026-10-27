@@ -34,6 +34,9 @@ struct DailyChallengeReadCard: View {
     var onOpen: (() -> Void)?
     /// The topic's name, for a topic question listed with the daily ones.
     var topicTitle: String?
+    /// Today's completed question stays at the top, with earlier unanswered questions below it.
+    var completionState: DailyChallengeCardState?
+    var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
 
     /// A question the partner answered that the user can still answer to reveal the
     /// reply. When sending, the row shows the "saved, sending" preview instead, so this
@@ -43,7 +46,7 @@ struct DailyChallengeReadCard: View {
     }
 
     private var opensPage: Bool {
-        sending == nil && question.hasOwnAnswer && onOpen != nil
+        (question.hasOwnAnswer || (completionState != nil && sending != nil)) && onOpen != nil
     }
 
     private var isUnread: Bool {
@@ -56,19 +59,21 @@ struct DailyChallengeReadCard: View {
     }
 
     var body: some View {
-        Group {
-            if isAnswerable {
-                Button(action: onAnswer) { card }
-                    .buttonStyle(.plain)
-            } else if opensPage, let onOpen {
-                Button(action: onOpen) { card }
-                    .buttonStyle(.plain)
-            } else {
-                card
+        PaeoniaCard(padding: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                cardAction
+                if let completionState, !completionState.lockedPartnerQuestions.isEmpty {
+                    LockedPartnerQuestionRows(
+                        state: completionState,
+                        partnerName: participants.partnerName,
+                        partnerPhotoAssetID: participants.partnerProfilePhotoAssetID,
+                        onOpen: onOpenPartnerQuestion
+                    )
+                    .padding(.horizontal, PaeoniaSpacing.cardContentPadding)
+                    .padding(.bottom, PaeoniaSpacing.cardContentPadding)
+                }
             }
         }
-        // Answerable rows are the source the answer flow zooms out of, so the tapped row
-        // appears to grow into the full-screen flow.
         .zoomSource(question.id, in: isAnswerable ? zoomNamespace : nil)
         .overlay {
             let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
@@ -80,42 +85,69 @@ struct DailyChallengeReadCard: View {
         }
     }
 
-    private var card: some View {
-        PaeoniaCard {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                if let topicTitle {
-                    Text(verbatim: topicTitle)
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
-                Text(question.prompt)
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .lineLimit(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                if let sending {
-                    // Still saving: shows whatever was saved (photo, pick, and/or
-                    // caption), so a status line would only repeat it.
-                    DailySendingAnswerView(
-                        mediaKind: sending.mediaKind,
-                        mediaData: sending.mediaData,
-                        voiceDurationMs: sending.voiceDurationMs,
-                        partnerChoiceName: sending.partnerChoiceName,
-                        text: sending.text,
-                        showsSendingStatus: sending.isHeldOnPhone
-                    )
-                } else {
-                    statusRow
-                }
+    private var cardAction: some View {
+        Group {
+            if isAnswerable {
+                Button(action: onAnswer) { card }
+                    .buttonStyle(.plain)
+            } else if opensPage, let onOpen {
+                Button(action: onOpen) { card }
+                    .buttonStyle(.plain)
+            } else {
+                card
             }
         }
+        .accessibilityIdentifier(completionState == nil
+            ? "daily.question.\(question.id.uuidString)" : "daily.done.openConversation")
+    }
+
+    private var card: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            if completionState != nil {
+                completionLabel
+            }
+            if let topicTitle {
+                Text(verbatim: topicTitle)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextSecondary)
+            }
+            Text(question.prompt)
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .lineLimit(3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let sending, completionState == nil {
+                DailySendingAnswerView(
+                    mediaKind: sending.mediaKind,
+                    mediaData: sending.mediaData,
+                    voiceDurationMs: sending.voiceDurationMs,
+                    partnerChoiceName: sending.partnerChoiceName,
+                    text: sending.text,
+                    showsSendingStatus: sending.isHeldOnPhone
+                )
+            } else {
+                statusRow
+            }
+        }
+        .padding(PaeoniaSpacing.cardContentPadding)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+    }
+
+    private var completionLabel: some View {
+        Label {
+            Text(.dailyChallengeHomeCompleteTitle)
+        } icon: {
+            Image(systemName: "checkmark.circle.fill")
+        }
+        .font(PaeoniaTypography.caption.weight(.semibold))
+        .foregroundStyle(.paeoniaAccentPrimary)
     }
 
     private var statusRow: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            DailyAnswerersView(question: question, participants: participants)
+            DailyAnswerersView(question: question, participants: participants, hasPendingOwnAnswer: sending != nil)
 
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 statusText
@@ -140,6 +172,11 @@ struct DailyChallengeReadCard: View {
     private var statusText: Text {
         if isAnswerable {
             return Text(.dailyChallengePartnerHiddenMessage(participants.partnerName))
+        }
+        if sending != nil {
+            return Text(question.hasPartnerAnswer
+                ? .dailyChallengePartnerHidden(participants.partnerName)
+                : .dailyChallengeRowWaiting(participants.partnerName))
         }
         guard question.hasOwnAnswer else { return Text(.dailyChallengeNotAnswered) }
         guard question.hasPartnerAnswer else { return Text(.dailyChallengeRowWaiting(participants.partnerName)) }
@@ -175,6 +212,7 @@ struct DailyChallengeReadCard: View {
 private struct DailyAnswerersView: View {
     let question: DailyChallengeQuestion
     let participants: DailyChallengeParticipants
+    var hasPendingOwnAnswer = false
 
     private let size: CGFloat = 28
 
@@ -184,7 +222,7 @@ private struct DailyAnswerersView: View {
                 photo: participants.currentProfilePhotoAssetID,
                 name: participants.currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
                 tint: .paeoniaPartnerOne,
-                answered: question.hasOwnAnswer
+                answered: question.hasOwnAnswer || hasPendingOwnAnswer
             )
             avatar(
                 photo: participants.partnerProfilePhotoAssetID,

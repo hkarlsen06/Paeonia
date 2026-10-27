@@ -1,21 +1,9 @@
 import SwiftUI
 
-/// The Questions tab: a calm overview of today's question. The hero card mirrors the
-/// Home tab prompt card and opens the focused answering flow (zooming into it). Once the
-/// user has answered today's question it shrinks to a one-row card. Below it, today's
-/// question (once the user answered it) and the open exchanges from earlier days sit in
-/// one list: questions still waiting for the user's answer are pinned on top so they're
-/// never buried, then everything else follows by most recent answer. The rows hold no
-/// answers. A row the user has answered opens the question's page, where the answers
-/// start the chat. A question the partner answered that the user can still answer zooms
-/// into the answer flow, where the reply is revealed on send. Topic questions waiting
-/// for the user join the list until they are answered and seen, and then show only in
-/// their topic. A memory or a story someone wrote about joins the list as a row for its
-/// chat, on the day the memory was added or the story posted: today's list for one from
-/// today, otherwise under its earlier day. Earlier days follow under today's list, with a
-/// date divider per day.
-/// The Topics card sits under the hero card. Once the tab is calm (`isCalm`), every
-/// topic shows between today's list and the earlier days instead.
+/// Today's question, topic questions and conversations. After answering, today's
+/// card shows its conversation status and opens the chat. Earlier questions waiting
+/// for the user stay inside that card as locked rows. Other question, memory and
+/// story conversations follow in today's list or under their earlier day.
 struct DailyChallengeScreen: View {
     let viewModel: DailyChallengeViewModel
     /// Namespace for the daily question zoom transition. The hero card and each
@@ -168,7 +156,7 @@ struct DailyChallengeScreen: View {
     }
 
     /// Whether the user has answered today's question. The big card then gives way to
-    /// the one-row card, which opens the question's conversation.
+    /// the conversation card for that question.
     private var isDayComplete: Bool {
         viewModel.homeCardState.kind == .complete
     }
@@ -176,16 +164,20 @@ struct DailyChallengeScreen: View {
     private var heroCard: some View {
         let state = viewModel.homeCardState
         return Group {
-            if state.kind == .complete {
-                DailyChallengeDoneCard(
-                    state: state,
-                    partnerName: viewModel.participants.partnerName,
-                    partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
-                    onOpen: {
-                        if let question = viewModel.snapshot.todayQuestion { openChat(question) }
-                    },
+            if state.kind == .complete, let question = viewModel.snapshot.todayQuestion {
+                DailyChallengeReadCard(
+                    question: question,
+                    participants: viewModel.participants,
+                    sending: viewModel.sendingPreview(for: question),
+                    isHighlighted: highlightedQuestionIDs.contains(question.id),
+                    lastMessagePreview: viewModel.threadPreview(for: question.questionID),
+                    hasUnreadChat: viewModel.hasUnreadChat(for: question.questionID),
+                    hasNewPartnerAnswer: viewModel.hasNewPartnerAnswer(question),
+                    onOpen: { openChat(question) },
+                    completionState: state,
                     onOpenPartnerQuestion: openLockedPartnerQuestion
                 )
+                .id(question.id)
                 .transition(.opacity)
             } else {
                 DailyPromptCard(
@@ -420,7 +412,7 @@ extension DailyChallengeScreen {
     /// Today's list: `readQuestions` and the chats about today's memories and stories.
     private var todayRows: [QuestionsTabRow] {
         QuestionsTabRow.todayRows(
-            questions: readQuestions,
+            questions: readQuestions.filter { !isDayComplete || $0.id != viewModel.snapshot.todayQuestion?.id },
             conversations: conversations,
             today: viewModel.snapshot.todayLocalDate,
             isNew: viewModel.hasNewFromPartner
@@ -470,27 +462,6 @@ extension DailyChallengeScreen {
         }
     }
 }
-
-#if DEBUG
-#Preview {
-    DailyChallengeScreenPreviewHost()
-}
-
-private struct DailyChallengeScreenPreviewHost: View {
-    @State private var viewModel = DailyChallengeViewModel(service: PreviewDailyChallengeService())
-
-    var body: some View {
-        NavigationStack {
-            DailyChallengeScreen(viewModel: viewModel)
-        }
-        .environment(PaeoniaBannerCenter())
-        .preferredColorScheme(.dark)
-        .task {
-            await viewModel.configure(currentUserID: PreviewDailyChallengeService.userID)
-        }
-    }
-}
-#endif
 
 /// Keeps a tab's scroll view at its bottom inset with the tab bar showing, while the
 /// bar is hidden. Otherwise the shorter safe area pulls a list scrolled to the end

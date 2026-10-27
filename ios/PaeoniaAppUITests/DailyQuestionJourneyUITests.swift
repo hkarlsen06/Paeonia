@@ -69,6 +69,7 @@ final class DailyQuestionJourneyUITests: XCTestCase {
         open.tap()
         let answer = app.descendants(matching: .any)["daily.answer.text"]
         XCTAssertTrue(answer.waitForExistence(timeout: 5))
+        let prompt = app.staticTexts["daily.answer.question"].label
         answer.tap()
         answer.typeText("The first coffee together")
         app.buttons["daily.flow.primary"].tap()
@@ -80,6 +81,9 @@ final class DailyQuestionJourneyUITests: XCTestCase {
 
         let ownAnswer = app.buttons["daily.done.openConversation"]
         XCTAssertTrue(ownAnswer.waitForExistence(timeout: 10))
+        XCTAssertTrue(ownAnswer.label.contains(prompt))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", prompt)).count, 1)
+        capture(app, named: "Completed daily question and conversation")
         ownAnswer.tap()
         XCTAssertTrue(app.staticTexts["The first coffee together"].waitForExistence(timeout: 5))
         XCTAssertFalse(answer.exists)
