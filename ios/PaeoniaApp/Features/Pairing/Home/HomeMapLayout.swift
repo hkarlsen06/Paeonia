@@ -48,24 +48,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             let couple = couple
             let screen = Screen(geo: geo)
             ScrollView {
-                VStack(spacing: 0) {
-                    top(couple, screen)
-                    if couple == nil {
-                        noMapNotice
-                    }
-                    sheet
-                        // The cards keep their own height, so only the map takes up the rest of the
-                        // screen. A square tile sizes itself from the room it is offered, and would
-                        // otherwise split that room with the map and overflow under the tab bar.
-                        .fixedSize(horizontal: false, vertical: true)
-                        // The cards start just under the map's last full row, and the map fades on behind them.
-                        .padding(.top, couple == nil ? PaeoniaSpacing.space24 : -Metrics.cardsOverlap)
-                }
-                .padding(.top, couple == nil ? PaeoniaSpacing.space8 : 0)
-                // With the map, the page fills the screen down to just above the tab bar, and
-                // the map takes whatever the cards leave. One layout pass sizes both, so they
-                // move together when a card changes height.
-                .frame(minHeight: couple == nil ? nil : screen.fillHeight, alignment: .top)
+                page(couple, screen)
             }
             .scrollIndicators(.hidden)
             .refreshable {
@@ -100,6 +83,28 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         }
     }
 
+    /// The top and the cards, in the one scroll view.
+    private func page(_ couple: Couple?, _ screen: Screen) -> some View {
+        VStack(spacing: 0) {
+            top(couple, screen)
+            if couple == nil {
+                noMapNotice
+            }
+            sheet
+                // The cards keep their own height, so only the map takes up the rest of the
+                // screen. A square tile sizes itself from the room it is offered, and would
+                // otherwise split that room with the map and overflow under the tab bar.
+                .fixedSize(horizontal: false, vertical: true)
+                // The cards start just under the map's last full row, and the map fades on behind them.
+                .padding(.top, couple == nil ? PaeoniaSpacing.space24 : -Metrics.cardsOverlap)
+        }
+        .padding(.top, couple == nil ? PaeoniaSpacing.space8 : 0)
+        // With the map, the page fills the screen down to just above the tab bar, and
+        // the map takes whatever the cards leave. One layout pass sizes both, so they
+        // move together when a card changes height.
+        .frame(minHeight: couple == nil ? nil : screen.fillHeight, alignment: .top)
+    }
+
     /// The partner's hearts while they play, otherwise how far apart the couple is.
     @ViewBuilder
     private func title(_ couple: Couple?, _ screen: Screen) -> some View {
@@ -132,46 +137,13 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     private func top(_ couple: Couple?, _ screen: Screen) -> some View {
         ZStack(alignment: .top) {
             if let couple {
-                GeometryReader { band in
-                    let metrics = metrics(couple, screen, bandHeight: band.size.height)
-                    HomeMapLibreView(
-                        current: couple.current.coordinate,
-                        partner: couple.partnerCoordinate,
-                        isNear: couple.isNear,
-                        framedBox: metrics.framedBox,
-                        avatarSize: avatarSize
-                    )
-                    // Always as tall as the map can get, so the map view never resizes while
-                    // the map grows or shrinks. Only the fade moves.
-                    .frame(height: screen.mapHeight)
-                    .mask(alignment: .top) { fadeMask(metrics) }
-
-                    // A tap on the open map sends a heart, as on the map card. Only down to the
-                    // cards, so a tap between two cards does nothing.
-                    Color.clear
-                        .frame(height: metrics.framedBottom)
-                        .contentShape(Rectangle())
-                        .onTapGesture { sendHeart() }
-                        // VoiceOver sends hearts from the distance line in the bar.
-                        .accessibilityHidden(true)
-                }
+                mapBand(couple, screen)
             }
 
             storiesStrip(couple, screen)
 
             if let couple {
-                GeometryReader { band in
-                    let points = points(couple, metrics(couple, screen, bandHeight: band.size.height))
-                    if couple.isNear, hearts != nil {
-                        togetherHeart
-                            .position(
-                                x: (points.own.x + points.partner.x) / 2,
-                                y: (points.own.y + points.partner.y) / 2
-                            )
-                    }
-                    KissLayer(start: points.own, end: points.partner, tapKisses: flights.kisses)
-                        .allowsHitTesting(false)
-                }
+                heartLayer(couple, screen)
             }
         }
         .frame(
@@ -183,6 +155,49 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         // A pull down keeps the map against the top of the screen.
         .visualEffect { [pinned = couple != nil] content, proxy in
             content.offset(y: pinned ? min(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY) : 0)
+        }
+    }
+
+    /// The map, faded into the cards, with the open map above them sending hearts.
+    private func mapBand(_ couple: Couple, _ screen: Screen) -> some View {
+        GeometryReader { band in
+            let metrics = metrics(couple, screen, bandHeight: band.size.height)
+            HomeMapLibreView(
+                current: couple.current.coordinate,
+                partner: couple.partnerCoordinate,
+                isNear: couple.isNear,
+                framedBox: metrics.framedBox,
+                avatarSize: avatarSize
+            )
+            // Always as tall as the map can get, so the map view never resizes while
+            // the map grows or shrinks. Only the fade moves.
+            .frame(height: screen.mapHeight)
+            .mask(alignment: .top) { fadeMask(metrics) }
+
+            // A tap on the open map sends a heart, as on the map card. Only down to the
+            // cards, so a tap between two cards does nothing.
+            Color.clear
+                .frame(height: metrics.framedBottom)
+                .contentShape(Rectangle())
+                .onTapGesture { sendHeart() }
+                // VoiceOver sends hearts from the distance line in the bar.
+                .accessibilityHidden(true)
+        }
+    }
+
+    /// The heart between the avatars when they sit together, and the hearts flying between them.
+    private func heartLayer(_ couple: Couple, _ screen: Screen) -> some View {
+        GeometryReader { band in
+            let points = points(couple, metrics(couple, screen, bandHeight: band.size.height))
+            if couple.isNear, hearts != nil {
+                togetherHeart
+                    .position(
+                        x: (points.own.x + points.partner.x) / 2,
+                        y: (points.own.y + points.partner.y) / 2
+                    )
+            }
+            KissLayer(start: points.own, end: points.partner, tapKisses: flights.kisses)
+                .allowsHitTesting(false)
         }
     }
 
@@ -299,7 +314,9 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         }
         .frame(height: metrics.bandHeight)
     }
+}
 
+extension HomeMapLayout {
     // MARK: No map
 
     /// Why there is no map and what to do about it, with a line between it and the cards.
@@ -339,8 +356,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     /// can be too far apart for the widest zoom, and then an avatar waits at the edge, on
     /// the side its partner is.
     private func kept(_ points: AvatarPoints, inside bounds: CGRect) -> AvatarPoints {
-        func keep(_ p: CGPoint) -> CGPoint {
-            CGPoint(x: min(max(p.x, bounds.minX), bounds.maxX), y: min(max(p.y, bounds.minY), bounds.maxY))
+        func keep(_ point: CGPoint) -> CGPoint {
+            CGPoint(x: min(max(point.x, bounds.minX), bounds.maxX), y: min(max(point.y, bounds.minY), bounds.maxY))
         }
         return AvatarPoints(own: keep(points.own), partner: keep(points.partner))
     }
@@ -473,82 +490,6 @@ private struct Metrics {
             let bottom = cardsTop - margin
             let side = half + sideMargin
             framedBox = CGRect(x: side, y: top, width: width - 2 * side, height: max(bottom - top, 1))
-        }
-    }
-}
-
-/// "Sammen · 2 t" or "306 km · 2 t", in the bar's title position.
-struct HomeMapDistanceLine: View {
-    let current: LocationPoint
-    let partner: LocationPoint
-    let partnerCoordinate: CLLocationCoordinate2D
-    let partnerWasStaleAtLastRefresh: Bool
-    /// How far the map is turned. The arrow turns back by as much, so it points north.
-    var mapDirection: Double = 0
-
-    var body: some View {
-        TimelineView(.everyMinute) { context in
-            // A place from a day ago or more says nothing about now, so it never reads as together.
-            let isTogether = CoupleMapFraming.areTogether(
-                current: current.coordinate,
-                partner: partnerCoordinate,
-                partnerIsStale: LocationDisplayRecency.resolve(
-                    capturedAt: partner.capturedAt,
-                    now: context.date,
-                    wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
-                ) == .stale
-            )
-            HStack(spacing: PaeoniaSpacing.space4) {
-                Image(systemName: isTogether ? "person.2.fill" : "location.north.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .rotationEffect(.degrees(isTogether ? 0 : -mapDirection))
-                    .accessibilityHidden(true)
-                Text(isTogether
-                    ? String(localized: .homeMapTogether)
-                    : CoupleMapSnapshot.formattedDistance(from: current.coordinate, to: partnerCoordinate))
-                Text(verbatim: "· " + PartnerLocationRecordedStatus.shortAge(
-                    capturedAt: partner.capturedAt, now: context.date
-                ))
-            }
-            .font(PaeoniaTypography.bodyEmphasis)
-            .foregroundStyle(.paeoniaTextPrimary)
-            .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
-        }
-    }
-}
-
-/// PROTOTYPE. Moves the partner's pin, to see how the map looks when the couple is apart.
-enum FakePartnerPlace: String, CaseIterable {
-    case real, nearby, acrossTown, drammen, bergen, trondheim, tromso, copenhagen, newYork, sydney
-
-    var label: String {
-        switch self {
-        case .real: "Real location"
-        case .nearby: "Across town (1.5 km)"
-        case .acrossTown: "Across town (3 km)"
-        case .drammen: "Drammen (40 km)"
-        case .bergen: "Bergen"
-        case .trondheim: "Trondheim"
-        case .tromso: "Tromsø"
-        case .copenhagen: "Copenhagen"
-        case .newYork: "New York"
-        case .sydney: "Sydney"
-        }
-    }
-
-    var coordinate: CLLocationCoordinate2D? {
-        switch self {
-        case .real: nil
-        case .nearby: CLLocationCoordinate2D(latitude: 59.9270, longitude: 10.7600)
-        case .acrossTown: CLLocationCoordinate2D(latitude: 59.9380, longitude: 10.7800)
-        case .drammen: CLLocationCoordinate2D(latitude: 59.7439, longitude: 10.2045)
-        case .bergen: CLLocationCoordinate2D(latitude: 60.3913, longitude: 5.3221)
-        case .trondheim: CLLocationCoordinate2D(latitude: 63.4305, longitude: 10.3951)
-        case .tromso: CLLocationCoordinate2D(latitude: 69.6492, longitude: 18.9553)
-        case .copenhagen: CLLocationCoordinate2D(latitude: 55.6761, longitude: 12.5683)
-        case .newYork: CLLocationCoordinate2D(latitude: 40.7128, longitude: -74.0060)
-        case .sydney: CLLocationCoordinate2D(latitude: -33.8688, longitude: 151.2093)
         }
     }
 }

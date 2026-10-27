@@ -23,6 +23,7 @@ struct HomeMapNotice {
         id = Self.id(for: state)
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private static func id(for state: CoupleMapState) -> String {
         switch state {
         case .loading: "loading"
@@ -37,6 +38,7 @@ struct HomeMapNotice {
         }
     }
 
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     private init?(matching state: CoupleMapState, partnerName: String, onPromptCurrentLocation: @escaping () -> Void) {
         switch state {
         case .loading, .ready:
@@ -147,31 +149,7 @@ struct HomeMapNoticeView: View {
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
                 .frame(maxWidth: 300)
-            if notice.showsProgress {
-                ProgressView()
-                    .tint(.paeoniaAccentPrimary)
-                    .padding(.top, PaeoniaSpacing.space4)
-            } else if let title = notice.actionTitle, let action = notice.action {
-                Button {
-                    perform(action)
-                } label: {
-                    Label {
-                        Text(title)
-                    } icon: {
-                        if let image = notice.actionSystemImage {
-                            Image(systemName: image)
-                                .accessibilityHidden(true)
-                        }
-                    }
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextInverse)
-                    .padding(.horizontal, PaeoniaSpacing.space16)
-                    .frame(minHeight: 40)
-                    .background(.paeoniaAccentPrimary, in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .padding(.top, PaeoniaSpacing.space8)
-            }
+            actionOrProgress
             Button(action: onDismiss) {
                 Text(.gamesHubNotNow)
                     .font(PaeoniaTypography.caption.weight(.semibold))
@@ -184,6 +162,34 @@ struct HomeMapNoticeView: View {
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder private var actionOrProgress: some View {
+        if notice.showsProgress {
+            ProgressView()
+                .tint(.paeoniaAccentPrimary)
+                .padding(.top, PaeoniaSpacing.space4)
+        } else if let title = notice.actionTitle, let action = notice.action {
+            Button {
+                perform(action)
+            } label: {
+                Label {
+                    Text(title)
+                } icon: {
+                    if let image = notice.actionSystemImage {
+                        Image(systemName: image)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextInverse)
+                .padding(.horizontal, PaeoniaSpacing.space16)
+                .frame(minHeight: 40)
+                .background(.paeoniaAccentPrimary, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, PaeoniaSpacing.space8)
+        }
     }
 
     private func perform(_ action: HomeMapNotice.Action) {

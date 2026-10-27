@@ -107,45 +107,22 @@ struct HomeMapLibreView: UIViewRepresentable {
         area: CGRect,
         viewSize: CGSize
     ) -> Framing {
-        var a = mercator(current)
-        var b = mercator(partner)
+        var ownPoint = mercator(current)
+        var partnerPoint = mercator(partner)
         // The short way round, across the date line if need be.
-        if b.x - a.x > 0.5 { b.x -= 1 } else if a.x - b.x > 0.5 { a.x -= 1 }
-        var direction = 0.0
-        var zoom = nearZoom
-        if !isNear {
-            let dx = Double(b.x - a.x)
-            let dy = Double(b.y - a.y)
-            func worldSize(turnedBy degrees: Double) -> Double {
-                let turn = degrees * .pi / 180
-                let across = abs(dx * cos(turn) + dy * sin(turn))
-                let down = abs(-dx * sin(turn) + dy * cos(turn))
-                return min(Double(area.width) / max(across, 1e-12), Double(area.height) / max(down, 1e-12))
-            }
-            // MapLibre never shows past the poles, so the world is at least as tall as the view.
-            let widest = max(512, Double(viewSize.height))
-            // `apartSpacing` apart, never closer in than together and never wider than the world.
-            zoom = max(min(log2(apartSpacing / hypot(dx, dy) / 512), nearZoom), log2(widest / 512))
-            if log2(worldSize(turnedBy: 0) / 512) < zoom {
-                // They don't fit north up, mostly because the world can't get any smaller, so
-                // the map turns only as far as it must. How far the line between them leans
-                // from level, north up, from -90 to 90.
-                var lean = atan2(dx, -dy) * 180 / .pi - 90
-                while lean > 90 { lean -= 180 }
-                while lean <= -90 { lean += 180 }
-                // The most lean that still fits the area's height at the level zoom.
-                let mostLean = asin(min(1, Double(area.height) / max(Double(area.width), 1))) * 180 / .pi
-                if abs(lean) > mostLean {
-                    direction = lean - (lean > 0 ? mostLean : -mostLean)
-                }
-                // Very far apart, the small turn can need a wider zoom than the world allows.
-                // Lying level uses the full width, so turn all the way instead.
-                if worldSize(turnedBy: direction) < widest {
-                    direction = lean
-                }
-                zoom = min(zoom, max(log2(worldSize(turnedBy: direction) / 512), log2(widest / 512)))
-            }
+        if partnerPoint.x - ownPoint.x > 0.5 {
+            partnerPoint.x -= 1
+        } else if ownPoint.x - partnerPoint.x > 0.5 {
+            ownPoint.x -= 1
         }
+        let (zoom, direction) = isNear
+            ? (nearZoom, 0.0)
+            : apartZoomAndDirection(
+                dx: Double(partnerPoint.x - ownPoint.x),
+                dy: Double(partnerPoint.y - ownPoint.y),
+                area: area,
+                viewSize: viewSize
+            )
         let worldSize = 512 * pow(2, zoom)
         // From the area's middle to the view's middle, in points, turned into the map's
         // own directions.
@@ -153,40 +130,86 @@ struct HomeMapLibreView: UIViewRepresentable {
         let below = (Double(viewSize.height) / 2 - Double(area.midY)) / worldSize
         let turn = direction * .pi / 180
         var center = CGPoint(
-            x: (a.x + b.x) / 2 + right * cos(turn) - below * sin(turn),
-            y: (a.y + b.y) / 2 + right * sin(turn) + below * cos(turn)
+            x: (ownPoint.x + partnerPoint.x) / 2 + right * cos(turn) - below * sin(turn),
+            y: (ownPoint.y + partnerPoint.y) / 2 + right * sin(turn) + below * cos(turn)
         )
         // MapLibre keeps the poles out of sight, measured on the view's height, and moves
         // the camera to do so. The same limit here keeps the avatars on their places.
         let reach = max(0, (worldSize - Double(viewSize.height)) / 2) / worldSize
         center.y = min(max(center.y, 0.5 - reach), 0.5 + reach)
         // Back from the map to the view: the same turn, the other way.
-        func point(_ m: CGPoint) -> CGPoint {
-            let x = (m.x - center.x) * worldSize
-            let y = (m.y - center.y) * worldSize
+        func point(_ mapPoint: CGPoint) -> CGPoint {
+            let x = (mapPoint.x - center.x) * worldSize
+            let y = (mapPoint.y - center.y) * worldSize
             return CGPoint(
                 x: Double(viewSize.width) / 2 + x * cos(turn) + y * sin(turn),
                 y: Double(viewSize.height) / 2 - x * sin(turn) + y * cos(turn)
             )
         }
         return Framing(
-            center: coordinate(center), zoom: zoom, direction: direction, own: point(a), partner: point(b)
+            center: coordinate(center),
+            zoom: zoom,
+            direction: direction,
+            own: point(ownPoint),
+            partner: point(partnerPoint)
         )
     }
 
+    /// Apart, the zoom and the turn that put the two places `apartSpacing` apart inside
+    /// `area`, or as close as the world allows. `dx` and `dy` run from one place to the
+    /// other on the Web Mercator square.
+    private static func apartZoomAndDirection(
+        dx: Double,
+        dy: Double,
+        area: CGRect,
+        viewSize: CGSize
+    ) -> (zoom: Double, direction: Double) {
+        func worldSize(turnedBy degrees: Double) -> Double {
+            let turn = degrees * .pi / 180
+            let across = abs(dx * cos(turn) + dy * sin(turn))
+            let down = abs(-dx * sin(turn) + dy * cos(turn))
+            return min(Double(area.width) / max(across, 1e-12), Double(area.height) / max(down, 1e-12))
+        }
+        var direction = 0.0
+        // MapLibre never shows past the poles, so the world is at least as tall as the view.
+        let widest = max(512, Double(viewSize.height))
+        // `apartSpacing` apart, never closer in than together and never wider than the world.
+        var zoom = max(min(log2(apartSpacing / hypot(dx, dy) / 512), nearZoom), log2(widest / 512))
+        if log2(worldSize(turnedBy: 0) / 512) < zoom {
+            // They don't fit north up, mostly because the world can't get any smaller, so
+            // the map turns only as far as it must. How far the line between them leans
+            // from level, north up, from -90 to 90.
+            var lean = atan2(dx, -dy) * 180 / .pi - 90
+            while lean > 90 { lean -= 180 }
+            while lean <= -90 { lean += 180 }
+            // The most lean that still fits the area's height at the level zoom.
+            let mostLean = asin(min(1, Double(area.height) / max(Double(area.width), 1))) * 180 / .pi
+            if abs(lean) > mostLean {
+                direction = lean - (lean > 0 ? mostLean : -mostLean)
+            }
+            // Very far apart, the small turn can need a wider zoom than the world allows.
+            // Lying level uses the full width, so turn all the way instead.
+            if worldSize(turnedBy: direction) < widest {
+                direction = lean
+            }
+            zoom = min(zoom, max(log2(worldSize(turnedBy: direction) / 512), log2(widest / 512)))
+        }
+        return (zoom, direction)
+    }
+
     /// From latitude and longitude to the Web Mercator square, 0 to 1 across and down.
-    private static func mercator(_ c: CLLocationCoordinate2D) -> CGPoint {
-        let latitude = min(max(c.latitude, -85.05), 85.05) * .pi / 180
+    private static func mercator(_ coordinate: CLLocationCoordinate2D) -> CGPoint {
+        let latitude = min(max(coordinate.latitude, -85.05), 85.05) * .pi / 180
         return CGPoint(
-            x: (c.longitude + 180) / 360,
+            x: (coordinate.longitude + 180) / 360,
             y: (1 - log(tan(latitude) + 1 / cos(latitude)) / .pi) / 2
         )
     }
 
-    private static func coordinate(_ p: CGPoint) -> CLLocationCoordinate2D {
-        var x = p.x.truncatingRemainder(dividingBy: 1)
+    private static func coordinate(_ point: CGPoint) -> CLLocationCoordinate2D {
+        var x = point.x.truncatingRemainder(dividingBy: 1)
         if x < 0 { x += 1 }
-        let latitude = atan(sinh(.pi * (1 - 2 * Double(p.y)))) * 180 / .pi
+        let latitude = atan(sinh(.pi * (1 - 2 * Double(point.y)))) * 180 / .pi
         return CLLocationCoordinate2D(latitude: latitude, longitude: Double(x) * 360 - 180)
     }
 
@@ -247,67 +270,5 @@ struct HomeMapLibreView: UIViewRepresentable {
                 && lhs.partner.latitude == rhs.partner.latitude && lhs.partner.longitude == rhs.partner.longitude
                 && lhs.box == rhs.box && lhs.size == rhs.size && lhs.avatarSize == rhs.avatarSize
         }
-    }
-
-    // MARK: Plum style
-
-    /// Paints OpenFreeMap's dark style in Paeonia's colors: plum land and deeper plum water,
-    /// no labels, and only the main roads, as hairlines.
-    static func recolor(_ style: MLNStyle) {
-        let land = UIColor(red: 0.27, green: 0.09, blue: 0.19, alpha: 1)
-        let water = UIColor(red: 0.13, green: 0.03, blue: 0.09, alpha: 1)
-        let green = UIColor(red: 0.30, green: 0.11, blue: 0.22, alpha: 1)
-        let building = UIColor(red: 0.33, green: 0.13, blue: 0.24, alpha: 1)
-        let mainRoad = UIColor(red: 0.42, green: 0.17, blue: 0.30, alpha: 1)
-
-        for layer in style.layers {
-            let id = layer.identifier
-            switch layer {
-            case let layer as MLNBackgroundStyleLayer:
-                layer.backgroundColor = constant(land)
-            case let layer as MLNFillStyleLayer:
-                if id.hasPrefix("aeroway") || id.hasPrefix("road") {
-                    layer.isVisible = false
-                } else if id.hasPrefix("water") {
-                    layer.fillColor = constant(water)
-                    layer.fillOpacity = constant(1)
-                } else if id.hasPrefix("building") {
-                    layer.fillColor = constant(building)
-                    layer.fillOpacity = constant(0.6)
-                } else {
-                    // Forest, park and ice patches are coarse blocks until about zoom 8.
-                    layer.fillColor = constant(green)
-                    layer.fillOpacity = byZoom([7: 0, 9: 0.55])
-                }
-            case let layer as MLNLineStyleLayer:
-                let isMainRoad = (id.hasPrefix("highway_motorway") || id.hasPrefix("highway_major"))
-                    && !id.hasSuffix("_casing")
-                if isMainRoad {
-                    layer.lineColor = constant(mainRoad)
-                    layer.lineOpacity = constant(1)
-                    layer.lineWidth = constant(0.6)
-                } else if id.hasPrefix("waterway") {
-                    layer.lineColor = constant(water)
-                } else {
-                    layer.isVisible = false
-                }
-            case is MLNSymbolStyleLayer:
-                layer.isVisible = false
-            default:
-                break
-            }
-        }
-    }
-
-    private static func constant(_ value: Any) -> NSExpression {
-        NSExpression(forConstantValue: value)
-    }
-
-    /// A value that changes smoothly with the zoom level, between the given stops.
-    private static func byZoom(_ stops: [Double: Any]) -> NSExpression {
-        NSExpression(
-            format: "mgl_interpolate:withCurveType:parameters:stops:($zoomLevel, 'linear', nil, %@)",
-            stops as NSDictionary
-        )
     }
 }
