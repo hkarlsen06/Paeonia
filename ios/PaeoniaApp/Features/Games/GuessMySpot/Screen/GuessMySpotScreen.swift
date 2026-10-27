@@ -20,9 +20,7 @@ struct GuessMySpotScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        // The bell and the score don't both fit beside the title, so the title gives way.
-        .navigationTitle(showsInviteBell ? Text(verbatim: "") : Text(.guessMySpotTitle))
-        .navigationBarTitleDisplayMode(.inline)
+        .paeoniaFittingNavigationTitle(Text(.guessMySpotTitle))
         .navigationBarBackButtonHidden(viewModel.showsCheck)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -102,15 +100,6 @@ struct GuessMySpotScreen: View {
     }
 
     // MARK: Toolbar
-
-    /// Matches where the phase views put `gameInviteToolbar`'s bell.
-    private var showsInviteBell: Bool {
-        guard viewModel.invite != .hidden, !viewModel.showsCheck else { return false }
-        switch viewModel.phase {
-        case .send, .guess, .waitingForGuess, .waitingForPhoto: return true
-        case .loading, .starting, .reveal: return false
-        }
-    }
 
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {

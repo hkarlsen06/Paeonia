@@ -75,8 +75,7 @@ struct WidgetDrawingView: View {
         // A canvas wider than this makes strokes look thin once they shrink onto the widget.
         .paeoniaReadableWidth()
         .background(.paeoniaBackgroundSecondary)
-        .navigationTitle(Text(title))
-        .navigationBarTitleDisplayMode(.inline)
+        .paeoniaFittingNavigationTitle(Text(title))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)

@@ -40,8 +40,7 @@ struct MemoryDetailView: View {
             }
         }
         .background(.paeoniaBackgroundPrimary)
-        .navigationTitle(Text(record?.snapshot.title ?? ""))
-        .navigationBarTitleDisplayMode(.inline)
+        .paeoniaFittingNavigationTitle(Text(record?.snapshot.title ?? ""))
         .toolbar { toolbarMenu }
         .onChange(of: record == nil) { _, isGone in
             guard isGone else { return }

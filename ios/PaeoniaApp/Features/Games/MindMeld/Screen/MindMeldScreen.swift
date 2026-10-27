@@ -21,8 +21,7 @@ struct MindMeldScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .navigationTitle(Text(.mindMeldTitle))
-        .navigationBarTitleDisplayMode(.inline)
+        .paeoniaFittingNavigationTitle(Text(.mindMeldTitle))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { toolbarItems }

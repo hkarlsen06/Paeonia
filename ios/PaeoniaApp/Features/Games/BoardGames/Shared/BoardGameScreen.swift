@@ -46,8 +46,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-            .navigationTitle(Text(title))
-            .navigationBarTitleDisplayMode(.inline)
+            .paeoniaFittingNavigationTitle(Text(title))
             .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
             // A board that bleeds shows its scene under the bar too.
             .toolbarBackgroundVisibility(boardBleeds ? .hidden : .automatic, for: .navigationBar)

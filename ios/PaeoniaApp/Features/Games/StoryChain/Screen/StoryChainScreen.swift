@@ -19,8 +19,7 @@ struct StoryChainScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .navigationTitle(Text(.storyChainName))
-        .navigationBarTitleDisplayMode(.inline)
+        .paeoniaFittingNavigationTitle(Text(.storyChainName))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { historyButton }

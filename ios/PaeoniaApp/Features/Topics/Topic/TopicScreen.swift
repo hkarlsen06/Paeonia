@@ -34,8 +34,7 @@ struct TopicScreen: View {
     var body: some View {
         content
             .paeoniaTabBackdrop()
-            .navigationTitle(Text(verbatim: topic?.title ?? ""))
-            .navigationBarTitleDisplayMode(.inline)
+            .paeoniaFittingNavigationTitle(Text(verbatim: topic?.title ?? ""))
             .safeAreaInset(edge: .bottom) { answerNextBar }
             .overlay {
                 if viewModel.celebratingTopicKey == topicKey, let topic {

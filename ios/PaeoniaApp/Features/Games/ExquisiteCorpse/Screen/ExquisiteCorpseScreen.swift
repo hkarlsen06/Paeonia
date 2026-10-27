@@ -24,8 +24,7 @@ struct ExquisiteCorpseScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .navigationTitle(Text(.exquisiteCorpseName))
-        .navigationBarTitleDisplayMode(.inline)
+        .paeoniaFittingNavigationTitle(Text(.exquisiteCorpseName))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { historyButton }
