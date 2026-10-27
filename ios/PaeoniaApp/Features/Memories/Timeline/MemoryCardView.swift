@@ -12,93 +12,139 @@ nonisolated enum MemoryDateStyle {
         .year()
 }
 
-/// A single memory in the timeline. One contained, private surface per moment: the
-/// date, a title, a short preview of the first note, a small photo strip, and a quiet
-/// "saved on this phone" line while the memory is still on its way to the partner.
 struct MemoryCardView: View {
     let record: MemoryRecord
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         PaeoniaCard {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                header
+                content
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: contentAccessibilityLabel))
 
-                if !photoAssetIDs.isEmpty {
-                    photoStrip
-                }
-
-                if let preview = notePreview {
-                    Text(preview)
-                        .font(PaeoniaTypography.body)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                        .lineLimit(2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                if let place = record.snapshot.place {
+                    Text(place.shortName)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaMemory)
                 }
 
                 if record.syncStatus == .dirty {
                     savedHint
                 }
+
+                StoredReactionBadge(target: .memory(record.snapshot.memoryID))
             }
             // In the iPad grid, cards in one row grow to the tallest card's height.
             .frame(maxHeight: .infinity, alignment: .top)
-        }
-        .overlay(alignment: .topTrailing) {
-            StoredReactionBadge(target: .memory(record.snapshot.memoryID))
-                .padding(PaeoniaSpacing.space12)
         }
         .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-            Group {
-                if let place = record.snapshot.place {
-                    Text(verbatim: "\(dayStartUTC.formatted(MemoryDateStyle.short)) · \(place.shortName)")
-                } else {
-                    Text(dayStartUTC, format: MemoryDateStyle.short)
+    @ViewBuilder
+    private var content: some View {
+        if !photoAssetIDs.isEmpty, !dynamicTypeSize.isAccessibilitySize {
+            MemoryCardPhotoLayout(hasNote: notePreview != nil) {
+                ForEach(MemoryCardPhotoLayout.TitleStyle.allCases, id: \.self) { style in
+                    title
+                        .font(style.font)
+                        .frame(
+                            minWidth: 0, maxWidth: .infinity,
+                            minHeight: 0, maxHeight: .infinity,
+                            alignment: .topLeading
+                        )
+                        .clipped()
+                }
+                note
+                    .frame(
+                        minWidth: 0, maxWidth: .infinity,
+                        minHeight: 0, maxHeight: .infinity,
+                        alignment: .topLeading
+                    )
+                    .clipped()
+                note
+                    .lineLimit(2, reservesSpace: true)
+                    .hidden()
+                note
+                    .lineLimit(3, reservesSpace: true)
+                    .hidden()
+                date
+                photo
+            }
+        } else {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                date
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                title
+                    .font(PaeoniaTypography.largeTitle)
+                    .fixedSize(horizontal: false, vertical: true)
+                if notePreview != nil {
+                    note
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
+                }
+                if !photoAssetIDs.isEmpty {
+                    photo
                 }
             }
-            .font(PaeoniaTypography.caption)
-            .foregroundStyle(.paeoniaMemory)
-            .lineLimit(1)
-
-            Text(record.snapshot.title ?? "")
-                .font(PaeoniaTypography.title)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private var photoStrip: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            ForEach(Array(visiblePhotoAssetIDs.enumerated()), id: \.offset) { index, assetID in
-                ZStack {
-                    MemoryMediaImageView(
-                        mediaAssetID: assetID,
-                        height: 96,
-                        cornerRadius: PaeoniaRadius.radius12,
-                        allowsViewing: false
-                    )
+    private var title: some View {
+        Text(record.snapshot.title ?? "")
+            .foregroundStyle(.paeoniaTextPrimary)
+            .multilineTextAlignment(.leading)
+    }
 
-                    if index == visiblePhotoAssetIDs.count - 1, overflowCount > 0 {
-                        RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                            .fill(.black.opacity(0.45))
-                        Text("+\(overflowCount)")
-                            .font(PaeoniaTypography.title)
-                            .foregroundStyle(.white)
-                    }
-                }
-                .frame(maxWidth: .infinity)
+    private var note: some View {
+        Text(notePreview ?? "")
+            .font(PaeoniaTypography.body)
+            .foregroundStyle(.paeoniaTextSecondary)
+            .multilineTextAlignment(.leading)
+    }
+
+    private var date: some View {
+        Text(dayStartUTC, format: MemoryDateStyle.short)
+            .font(PaeoniaTypography.caption)
+            .foregroundStyle(.paeoniaMemory)
+            .multilineTextAlignment(.trailing)
+    }
+
+    private var photo: some View {
+        GeometryReader { geometry in
+            MemoryMediaImageView(
+                mediaAssetID: photoAssetIDs.first,
+                height: geometry.size.width,
+                cornerRadius: PaeoniaRadius.radius12,
+                allowsViewing: false
+            )
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .overlay(alignment: .bottomTrailing) {
+            if photoAssetIDs.count > 1 {
+                Text("+\(photoAssetIDs.count - 1)")
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(PaeoniaSpacing.space8)
+                    .background(.black.opacity(0.6), in: Capsule())
+                    .padding(PaeoniaSpacing.space8)
             }
         }
-        // VoiceOver hears "3 photos" once instead of "Memory photo" per thumbnail.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-            photoAssetIDs.count == 1
-                ? Text(.memoriesCardPhotoCountOne)
-                : Text(.memoriesCardPhotoCount(photoAssetIDs.count.formatted()))
-        )
+        .accessibilityHidden(true)
+    }
+
+    private var contentAccessibilityLabel: String {
+        var parts = [record.snapshot.title ?? "", dayStartUTC.formatted(MemoryDateStyle.short)]
+        if let preview = notePreview {
+            parts.append(preview)
+        }
+        if !photoAssetIDs.isEmpty {
+            let count = photoAssetIDs.count == 1
+                ? String(localized: .memoriesCardPhotoCountOne)
+                : String(localized: .memoriesCardPhotoCount(photoAssetIDs.count.formatted()))
+            parts.append(count)
+        }
+        return parts.joined(separator: ", ")
     }
 
     private var savedHint: some View {
@@ -122,17 +168,6 @@ struct MemoryCardView: View {
         record.snapshot.visibleMediaAssetIDs
     }
 
-    /// At most three thumbnails; if there are more, the third shows a "+N" overlay.
-    private var visiblePhotoAssetIDs: [UUID] {
-        Array(photoAssetIDs.prefix(3))
-    }
-
-    private var overflowCount: Int {
-        max(0, photoAssetIDs.count - visiblePhotoAssetIDs.count)
-    }
-
-    /// The first available note body — the user's own if present, otherwise the
-    /// partner's — for a short preview on the card.
     private var notePreview: String? {
         if let own = record.snapshot.ownNote, own.isVisible, let body = own.body, !body.isEmpty {
             return body

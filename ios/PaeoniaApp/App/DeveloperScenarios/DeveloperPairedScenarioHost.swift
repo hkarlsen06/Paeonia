@@ -77,6 +77,8 @@
       switch scenario {
       case .memoriesPopulated:
         return DeveloperScenarioFixture.memoryRecords()
+      case .memoriesCards:
+        return DeveloperMemoryCardFixture.records()
       case .memoriesMapTab:
         DeveloperMemoriesMapFixture.seedPhotos()
         return DeveloperMemoriesMapFixture.records(withPlaces: true)
@@ -91,7 +93,7 @@
         .questionsLoading, .questionsError, .questionsHistory, .questionAnswerFlow,
         .questionPartnerAnswersMeanwhile:
         .questions
-      case .memoriesEmpty, .memoriesPopulated, .memoriesMapTab:
+      case .memoriesEmpty, .memoriesPopulated, .memoriesCards, .memoriesMapTab:
         .memories
       case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
         .gamesHubPartnerHere, .exquisiteCorpseHubYourTurn, .exquisiteCorpseHubPartnerDrawing,

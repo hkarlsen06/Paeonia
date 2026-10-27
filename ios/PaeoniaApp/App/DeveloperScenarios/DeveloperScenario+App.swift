@@ -17,7 +17,7 @@
       pairedHome, questions, questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
       streakHealthy, streakSaveHome, streakSaveDay, streakSaved, streakBroken, streakRestoreExpired, streakRestored,
-      memoriesEmpty, memoriesPopulated, memoryEditor, memoryDetail,
+      memoriesEmpty, memoriesPopulated, memoriesCards, memoryEditor, memoryDetail,
       countdownMissing, countdownUpcoming, countdownToday,
       locationNotSharing, locationCurrentMissing, locationLive, locationStale,
       widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated,
@@ -232,6 +232,10 @@
     )
     static let memoriesPopulated = pairedApp(
       "memories-populated", "Memories · populated", "Several local memories with both partners' notes", .memories
+    )
+    static let memoriesCards = pairedApp(
+      "memories-cards", "Memories · timeline cards",
+      "Short, long and extreme titles, square photos, notes, a place and a memory saved on this phone", .memories
     )
     static let memoryEditor = DeveloperScenario(
       "memory-editor", "Memory · editor", "New-memory form without opening the timeline first", .memories
