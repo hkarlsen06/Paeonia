@@ -77,7 +77,7 @@ struct HomeMapLibreView: UIViewRepresentable {
         map.setCamera(
             MLNMapCamera(lookingAtCenter: camera.center, altitude: altitude, pitch: 0, heading: heading),
             withDuration: PaeoniaMotion.homeLayoutDuration,
-            animationTimingFunction: CAMediaTimingFunction(controlPoints: 0.65, 0, 0.35, 1)
+            animationTimingFunction: HomeMapLibreTimingFunction(controlPoints: 0.65, 0, 0.35, 1)
         ) { [weak map] in
             // A newer framing may have cut this move short, and then it lands instead.
             guard let map, isCurrent() else { return }
@@ -239,5 +239,15 @@ struct HomeMapLibreView: UIViewRepresentable {
                 && lhs.partner.latitude == rhs.partner.latitude && lhs.partner.longitude == rhs.partner.longitude
                 && lhs.box == rhs.box && lhs.size == rhs.size && lhs.avatarSize == rhs.avatarSize
         }
+    }
+}
+
+/// MapLibre 6.31 reads handles at indices 0/1 instead of Core Animation's 1/2.
+/// Adapt only the timing function passed to that reader.
+/// https://github.com/maplibre/maplibre-native/blob/ios-v6.31.0/platform/ios/src/MLNMapView.mm#L335-L344
+private nonisolated final class HomeMapLibreTimingFunction: CAMediaTimingFunction {
+    override func getControlPoint(at index: Int, values: UnsafeMutablePointer<Float>) {
+        let handleIndex = index == 0 || index == 1 ? index + 1 : index
+        super.getControlPoint(at: handleIndex, values: values)
     }
 }
