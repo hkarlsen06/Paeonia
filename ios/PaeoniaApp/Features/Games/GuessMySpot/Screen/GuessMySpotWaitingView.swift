@@ -2,7 +2,7 @@ import MapKit
 import SwiftUI
 
 /// The partner's turn. While they guess this person's photo, the photo and its
-/// spot show to their owner, and live the partner's pin lands where they tap.
+/// spot show to their owner, and live the map shows what the partner's map shows.
 /// While they pick a photo, their avatar breathes. Either way the screen says what
 /// happens next.
 struct GuessMySpotWaitingView: View {
@@ -11,9 +11,6 @@ struct GuessMySpotWaitingView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var breathes = false
     @State private var camera = GuessMySpotCamera.world
-
-    /// The live pin is this close to the real spot, so the spot's pin glows gold.
-    private static let warmMeters = 25_000
 
     private var isWaitingForGuess: Bool {
         if case .waitingForGuess = viewModel.phase { return true }
@@ -56,7 +53,8 @@ struct GuessMySpotWaitingView: View {
     // MARK: Waiting for the guess
 
     private func waitingForGuess(_ round: RemoteGuessMySpotRound) -> some View {
-        GuessMySpotSplitLayout {
+        let partnerView = viewModel.partnerMapView
+        return GuessMySpotSplitLayout {
             EmptyView()
         } photo: {
             GuessMySpotPhotoPane(
@@ -65,11 +63,15 @@ struct GuessMySpotWaitingView: View {
                 retry: viewModel.retryRoundPhoto
             )
         } map: {
+            // Live, the map follows the partner's and can't be moved here.
             GuessMySpotMap(
                 position: $camera,
                 pins: pins(for: round),
-                accessibilityValue: viewModel.partnerPin == nil ? .guessMySpotWaitYourSpotA11Y
-                    : .guessMySpotWaitPartnerPinA11Y(viewModel.partnerName)
+                isInteractive: partnerView == nil,
+                showsSatelliteButton: partnerView == nil,
+                accessibilityValue: partnerView == nil ? .guessMySpotWaitYourSpotA11Y
+                    : .guessMySpotWaitPartnerMapA11Y(viewModel.partnerName),
+                satellite: partnerView.map { .constant($0.satellite) }
             )
         } footer: {
             VStack(spacing: PaeoniaSpacing.space12) {
@@ -82,36 +84,15 @@ struct GuessMySpotWaitingView: View {
         .onChange(of: round.id, initial: true) { _, _ in
             camera = round.spot.map { GuessMySpotCamera.around($0, meters: 4_000) } ?? GuessMySpotCamera.world
         }
-        .onChange(of: viewModel.partnerPin) { _, pin in
-            // Frame both pins as the partner's lands, so the sender sees how close it is.
-            guard let pin, let spot = round.spot else { return }
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.8)) {
-                camera = GuessMySpotCamera.framing(pin, spot)
-            }
+        .onChange(of: partnerView) { _, view in
+            guard let view else { return }
+            camera = .rect(view.rect)
         }
     }
 
     private func pins(for round: RemoteGuessMySpotRound) -> [GuessMySpotMap.Pin] {
-        var pins: [GuessMySpotMap.Pin] = []
-        if let spot = round.spot {
-            // It glows gold while the partner's live guess is near it.
-            pins.append(GuessMySpotMap.Pin(
-                id: "mine",
-                coordinate: spot,
-                style: viewModel.myStyle,
-                opacity: isWarm(round) ? 1 : 0.6,
-                glow: isWarm(round) ? 0.8 : 0
-            ))
-        }
-        if let guess = viewModel.partnerPin {
-            pins.append(GuessMySpotMap.Pin(id: "partner", coordinate: guess, style: viewModel.partnerStyle))
-        }
-        return pins
-    }
-
-    private func isWarm(_ round: RemoteGuessMySpotRound) -> Bool {
-        guard let spot = round.spot, let guess = viewModel.partnerPin else { return false }
-        return GuessMySpotRules.distanceMeters(guess, spot) <= Self.warmMeters
+        guard let spot = round.spot else { return [] }
+        return [GuessMySpotMap.Pin(id: "mine", coordinate: spot, style: viewModel.myStyle, opacity: 0.6)]
     }
 
     // MARK: Waiting for a photo

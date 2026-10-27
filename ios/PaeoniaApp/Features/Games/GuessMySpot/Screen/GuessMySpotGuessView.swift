@@ -8,6 +8,7 @@ struct GuessMySpotGuessView: View {
     @Bindable var viewModel: GuessMySpotViewModel
 
     @State private var camera = GuessMySpotCamera.world
+    @AppStorage(GuessMySpotMap.satelliteKey) private var satellite = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -28,7 +29,8 @@ struct GuessMySpotGuessView: View {
                         viewModel.dropGuess(at: spot)
                     }
                 },
-                onCameraChange: { viewModel.guessMapRect = $0.rect },
+                onCameraChange: { viewModel.guessMapMoved(to: $0.rect, settled: true) },
+                onCameraMove: { viewModel.guessMapMoved(to: $0.rect, settled: false) },
                 accessibilityValue: viewModel.guessPin == nil ? .guessMySpotMapNoPin : .guessMySpotMapPinDropped
             )
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewModel.guessMapFrame = $0 }
@@ -58,6 +60,9 @@ struct GuessMySpotGuessView: View {
             send: viewModel.sendInvite,
             identifier: "guessMySpot.invite"
         )
+        .onChange(of: satellite, initial: true) { _, satellite in
+            viewModel.guessMapSatelliteChanged(to: satellite)
+        }
         .accessibilityIdentifier("guessMySpot.guess")
     }
 

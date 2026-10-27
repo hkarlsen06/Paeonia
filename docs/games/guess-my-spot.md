@@ -121,10 +121,11 @@ Each guess adds its points to the couple's shared total and to the guesser's own
 Live runs whenever both partners have the game open. Without the partner there, everything works as async play.
 
 - **Presence and roles.** While the screen is open, the phone joins the `guess_my_spot` relay room and says `hello` with one of the shared roles: `choosing` while picking and checking a photo, `watching` while guessing, `result` on a reveal, and `present` anywhere else. The partner's phone reads them as "picking a photo", "guessing" and "looking at the result". The Convex presence heartbeat runs next to it for push suppression.
-- **The guess, live.** `GuessMySpotLiveMessage` has `roundID` and `guess`, a latitude and longitude, or none before the first tap. The guessing phone sends it on every tap and again when the sender arrives. The sender's waiting screen shows that pin on its map. Nothing in it is saved.
-- **The real spot never goes over the relay.** The message type has no field for it, and the sending phone sends no message at all. A test checks the message type.
+- **The guess map, live.** `GuessMySpotLiveMessage` has `roundID` and `view`, the map rect the guess map shows and whether it is the satellite map. The guessing phone sends it while the map moves, at most 30 times a second, always at the end of a move, when the satellite button switches, and when the sender arrives. The sender's waiting map shows that rect and that style, and can't be moved or switched while it follows. Nothing in it is saved. Decided by the developer on 2026-10-27.
+- **The guess pin never goes over the relay.** The sender sees where the partner looks, not where they tap. The locked guess reaches the sender through Convex, in the reveal.
+- **The real spot never goes over the relay.** The message type has no field for a pin or a spot, and the sending phone sends no message at all. A test checks the message type.
 - **The reveal.** The guess goes to Convex. The guesser's phone opens the reveal at once and plays it as soon as the server answers with the real spot. The sender's phone plays it when the live feed delivers the guessed round.
-- **Lost connection.** The relay reconnects as in Draw & Guess. The live pin fades out, and the status falls back to the async wording.
+- **Lost connection.** The relay reconnects as in Draw & Guess. The waiting map stays where the partner's map last was and can be moved again, and the status falls back to the async wording.
 - **Invite.** The bell at the leading edge of the toolbar, with the shared invite rules.
 
 ## Async
@@ -275,7 +276,7 @@ Layout.
 
 Two cases.
 
-- **Waiting for the guess.** The photo I sent on top and the map under it, as on the guess screen, with my pin at the spot at 0.6 opacity. Live, the partner's pin appears where they tap, and the camera frames both pins. While the partner's pin is within 25 km, my pin shows at full strength and glows gold. Title "[Name] is guessing" while live, "Waiting for [Name]" otherwise.
+- **Waiting for the guess.** The photo I sent on top and the map under it, as on the guess screen, with my pin at the spot at 0.6 opacity. Live, the map shows what the partner's guess map shows, as they pan and zoom, without their pin. It can't be moved and has no satellite button while it follows. Title "[Name] is guessing" while live, "Waiting for [Name]" otherwise.
 - **Waiting for a photo.** The partner's avatar, 96 pt, with a breathing ring while they are in the game. Title "[Name] is picking a photo" while their role is `choosing`, "Waiting for [Name]" otherwise.
 
 Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." Away: "We'll tell you when [Name] guesses." or "We'll tell you when it's your turn." When the send is still on the phone after a failed try, the shared offline line shows, or "We couldn't send your move yet" with Try again. When the partner's photo arrives, the guess opens, and the shared turn cue (`gameYourTurn()` and `nudge`) plays, also while the last reveal is still on screen.
@@ -287,7 +288,7 @@ Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." 
 | `wait.hintGuess` | We'll tell you when %@ guesses. | Vi sier fra når %@ har gjettet. |
 | `wait.hintLive` | You'll both see it the moment %@ locks in. | Dere ser det begge så snart %@ har låst gjetningen. |
 | `wait.hintTurn` | We'll tell you when it's your turn. | Vi sier fra når det er din tur. |
-| `wait.partnerPin.a11y` | %@'s guess is on the map | Gjetningen til %@ er på kartet |
+| `wait.partnerMap.a11y` | Showing what %@ sees | Viser det %@ ser |
 | `wait.title` | Waiting for %@ | Venter på %@ |
 | `wait.yourSpot.a11y` | Your spot. Only you can see it. | Stedet ditt. Bare du ser det. |
 
@@ -509,7 +510,7 @@ Errors follow Consensio: `42501` for access, `23514` for rules ("this round alre
 | `guess-my-spot-check-found` | The check, with a photo that had a spot |
 | `guess-my-spot-check-missing` | The check, with a photo that had none |
 | `guess-my-spot-wait-choosing` | Waiting while the partner picks a photo |
-| `guess-my-spot-wait-live` | Waiting for the guess, with the partner's pin moving |
+| `guess-my-spot-wait-live` | Waiting for the guess, following the partner's map as it moves |
 | `guess-my-spot-wait-later` | Waiting for the guess, partner away, invite bell |
 | `guess-my-spot-guess` | Guessing |
 | `guess-my-spot-reveal-spot-on` | Reveal, about 460 m off, guesser side, from the guess screen |

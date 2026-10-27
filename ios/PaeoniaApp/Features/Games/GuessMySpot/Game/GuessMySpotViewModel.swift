@@ -64,8 +64,9 @@ final class GuessMySpotViewModel {
     var draftStartArea: GuessMySpotArea?
     /// This person's guess pin while guessing.
     var guessPin: GuessMySpotCoordinate?
-    /// The partner's guess pin while they guess live.
-    var partnerPin: GuessMySpotCoordinate?
+    /// What the partner's guess map shows while they guess live. Their pin never
+    /// comes along, so the sender sees where they look, not where they tap.
+    var partnerMapView: GuessMySpotLiveMapView?
     var partnerStatus: GuessMySpotPartnerStatus = .away
     var invite: GameInviteState = .hidden
     var isStartingGame = false
@@ -129,6 +130,10 @@ final class GuessMySpotViewModel {
     /// it sat, so the reveal starts on the same view in the same place.
     @ObservationIgnored var guessMapRect: MKMapRect?
     @ObservationIgnored var guessMapFrame: CGRect?
+    /// Whether the guess map is the satellite map, for the live view.
+    @ObservationIgnored var guessMapSatellite = false
+    /// When the live view last went out, to send at most 30 a second.
+    @ObservationIgnored var liveMapViewSentAt: TimeInterval = 0
     /// The round the guess pin belongs to, so a new round starts with no pin.
     @ObservationIgnored var guessPinRoundID: UUID?
     /// The round `roundPhoto` belongs to, and its load.
@@ -258,7 +263,7 @@ final class GuessMySpotViewModel {
         namingTask?.cancel()
         guessPin = nil
         guessPinRoundID = nil
-        partnerPin = nil
+        partnerMapView = nil
         partnerStatus = .away
         invite = .hidden
         localInviteSentAt = nil

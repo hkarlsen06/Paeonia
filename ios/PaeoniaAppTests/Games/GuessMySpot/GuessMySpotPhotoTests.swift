@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import ImageIO
+import MapKit
 import Testing
 import UniformTypeIdentifiers
 @testable import PaeoniaApp
@@ -94,9 +95,12 @@ struct GuessMySpotPhotoTests {
         #expect(GuessMySpotPhotoReader.prepare(Data("not a photo".utf8)) == nil)
     }
 
-    @Test func theLiveMessageCannotCarryTheRealSpot() throws {
-        let message = GuessMySpotLiveMessage(roundID: UUID(), guess: GuessMySpotCoordinate(latitude: 1, longitude: 2))
+    @Test func theLiveMessageCannotCarryAPinOrTheRealSpot() throws {
+        let view = GuessMySpotLiveMapView(MKMapRect(x: 1, y: 2, width: 3, height: 4), satellite: false)
+        let message = GuessMySpotLiveMessage(roundID: UUID(), view: view)
         let json = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(message)) as? [String: Any])
-        #expect(Set(json.keys) == ["roundID", "guess"])
+        #expect(Set(json.keys) == ["roundID", "view"])
+        let viewJSON = try #require(json["view"] as? [String: Any])
+        #expect(Set(viewJSON.keys) == ["x", "y", "width", "height", "satellite"])
     }
 }

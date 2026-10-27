@@ -105,11 +105,10 @@ extension GuessMySpotViewModel {
 
     // MARK: - Guessing
 
-    /// A tap on the guess map. The sender sees the pin land when they are here.
+    /// A tap on the guess map. The pin stays on this phone: the sender sees it in the reveal.
     func dropGuess(at spot: GuessMySpotCoordinate) {
         guard phase == .guess, GuessMySpotRules.isValid(spot) else { return }
         guessPin = spot
-        sendLivePin()
     }
 
     /// "Lock in my guess". The reveal opens at once and plays when the server
@@ -120,7 +119,6 @@ extension GuessMySpotViewModel {
         let payload = GuessMySpotGuessPayload(roundID: round.id, guess: guess, createdAt: dependencies.now())
         let operation = dependencies.operationProvider.makeOperation()
         unsavedGuesses[round.id] = guess
-        sendLivePin()
         recompute()
         queueMove { [self] in
             let saved = await enqueue(

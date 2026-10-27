@@ -18039,20 +18039,20 @@
         }
       }
     },
-    "guessMySpot.wait.partnerPin.a11y" : {
-      "comment" : "VoiceOver value of the map when the partner's live guess pin is on it. %@ is the partner's name.",
+    "guessMySpot.wait.partnerMap.a11y" : {
+      "comment" : "VoiceOver value of the map while it follows the partner's map as they guess live. %@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@'s guess is on the map"
+            "value" : "Showing what %@ sees"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gjetningen til %@ er på kartet"
+            "value" : "Viser det %@ ser"
           }
         }
       }

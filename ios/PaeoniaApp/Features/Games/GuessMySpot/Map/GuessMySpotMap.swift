@@ -46,6 +46,8 @@ struct GuessMySpotMap: View {
     var onPinTap: ((String) -> Void)?
     /// Where the camera settled after each move.
     var onCameraChange: ((MapCameraUpdateContext) -> Void)?
+    /// Where the camera is on every frame of a move.
+    var onCameraMove: ((MapCameraUpdateContext) -> Void)?
     var accessibilityValue: LocalizedStringResource = .guessMySpotMapNoPin
     /// The satellite choice for this screen alone, as the reveal's landing sets it.
     /// Nil: the saved choice, which the button changes.
@@ -84,6 +86,9 @@ struct GuessMySpotMap: View {
             .onMapCameraChange(frequency: .onEnd) { context in
                 center = context.region.center
                 onCameraChange?(context)
+            }
+            .onMapCameraChange(frequency: .continuous) { context in
+                onCameraMove?(context)
             }
             .onTapGesture(coordinateSpace: .local) { point in
                 guard let onTap, let coordinate = proxy.convert(point, from: .local) else { return }

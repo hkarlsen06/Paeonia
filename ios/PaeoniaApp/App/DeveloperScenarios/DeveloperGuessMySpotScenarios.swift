@@ -1,5 +1,6 @@
 #if DEBUG
   import Foundation
+  import MapKit
   import SwiftUI
 
   /// Fixed Guess my spot states for the developer scenarios. The pending operations
@@ -266,13 +267,20 @@
       }
     }
 
-    /// Robin's guesses while Robin guesses live, from far off to close to Bergen.
-    private static let liveGuesses: [Spot] = [
-      Spot(latitude: 59.91, longitude: 10.75),
-      Spot(latitude: 61.2, longitude: 7.1),
-      Spot(latitude: 60.55, longitude: 5.6),
-      Spot(latitude: 60.41, longitude: 5.35),
-    ]
+    /// What Robin's map shows while Robin guesses live, from Oslo zooming in toward Bergen.
+    private static let liveViews: [GuessMySpotLiveMapView] = [
+      (Spot(latitude: 59.91, longitude: 10.75), 400_000.0),
+      (Spot(latitude: 61.2, longitude: 7.1), 250_000.0),
+      (Spot(latitude: 60.55, longitude: 5.6), 60_000.0),
+      (Spot(latitude: 60.41, longitude: 5.35), 8_000.0),
+    ].map { spot, meters in
+      let center = MKMapPoint(spot.location)
+      let side = meters * MKMapPointsPerMeterAtLatitude(spot.latitude)
+      return GuessMySpotLiveMapView(
+        MKMapRect(x: center.x - side / 2, y: center.y - side / 2, width: side, height: side),
+        satellite: false
+      )
+    }
 
     /// The live room, with Robin already in it when the scenario calls for it. No
     /// relay is involved: Robin's messages are fed in directly.
@@ -293,7 +301,7 @@
             connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: role.rawValue))
           }
           if taps {
-            let message = GuessMySpotLiveMessage(roundID: roundID, guess: liveGuesses[step % liveGuesses.count])
+            let message = GuessMySpotLiveMessage(roundID: roundID, view: liveViews[step % liveViews.count])
             let envelope = GameLiveEnvelope(game: GuessMySpotLiveMessage.game, message: message)
             if let data = try? JSONEncoder().encode(envelope) {
               live.connection.onGameData?(data)

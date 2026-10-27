@@ -1,8 +1,9 @@
 import Foundation
+import MapKit
 import Observation
 import UIKit
 
-// The partner: what they are doing, the invite, the live room with the guess pin,
+// The partner: what they are doing, the invite, the live room with the guess map,
 // the marks on the pins, and the screen opening and closing.
 extension GuessMySpotViewModel {
     // MARK: - Lifecycle
@@ -87,10 +88,10 @@ extension GuessMySpotViewModel {
         if partnerStatus != status {
             partnerStatus = status
         }
-        // The partner's live pin belongs to the round they guess while this person
+        // The partner's live map belongs to the round they guess while this person
         // waits. It goes when they leave or the round moves on.
-        if partnerPin != nil, status != .guessing || !isWaitingForGuess {
-            partnerPin = nil
+        if partnerMapView != nil, status != .guessing || !isWaitingForGuess {
+            partnerMapView = nil
         }
         let invite = GameInviteState.make(
             lastInviteAt: overview?.presence(for: .guessMySpot)?.lastInviteAt,
@@ -135,8 +136,11 @@ extension GuessMySpotViewModel {
 
     // MARK: - Live room
 
+    /// As often as Draw & Guess sends a stroke.
+    static let liveMapViewInterval: TimeInterval = 1.0 / 30
+
     func attach(_ room: WidgetLiveDrawing) {
-        room.onPartnerArrived = { [weak self] in self?.sendLivePin() }
+        room.onPartnerArrived = { [weak self] in self?.sendLiveMapView() }
         let channel = GameLiveChannel<GuessMySpotLiveMessage>(connection: room.connection)
         channel.onMessage = { [weak self] message in self?.receive(message) }
         liveChannel = channel
@@ -161,7 +165,7 @@ extension GuessMySpotViewModel {
         liveObservationTask?.cancel()
         liveObservationTask = nil
         live?.stop()
-        partnerPin = nil
+        partnerMapView = nil
     }
 
     /// Tells the partner's phone what this screen is doing.
@@ -176,18 +180,41 @@ extension GuessMySpotViewModel {
         live.switchRole(to: role)
     }
 
-    /// Sends where this person's guess pin is. Only the guesser sends, and never a
-    /// spot of a photo: the real spot never goes over the relay.
-    func sendLivePin() {
-        guard phase == .guess, let round else { return }
-        liveChannel?.send(GuessMySpotLiveMessage(roundID: round.id, guess: guessPin))
+    /// The guess map moved. `settled` is the end of a move, which always goes out, so
+    /// the sender ends on the same view however the sends were spaced.
+    func guessMapMoved(to rect: MKMapRect, settled: Bool) {
+        guessMapRect = rect
+        let now = CACurrentMediaTime()
+        guard settled || now - liveMapViewSentAt >= Self.liveMapViewInterval else { return }
+        liveMapViewSentAt = now
+        sendLiveMapView()
     }
 
-    /// The partner's guess pin, shown only while this person waits for that guess.
+    func guessMapSatelliteChanged(to satellite: Bool) {
+        guard guessMapSatellite != satellite else { return }
+        guessMapSatellite = satellite
+        sendLiveMapView()
+    }
+
+    /// Sends what this person's guess map shows. Only the guesser sends, never the
+    /// pin, and never a spot of a photo: the real spot never goes over the relay.
+    func sendLiveMapView() {
+        guard phase == .guess, let round, let rect = guessMapRect else { return }
+        liveChannel?.send(GuessMySpotLiveMessage(
+            roundID: round.id,
+            view: GuessMySpotLiveMapView(rect, satellite: guessMapSatellite)
+        ))
+    }
+
+    /// The partner's guess map, shown only while this person waits for that guess.
     func receive(_ message: GuessMySpotLiveMessage) {
-        guard isWaitingForGuess, message.roundID == round?.id else { return }
-        if partnerPin != message.guess {
-            partnerPin = message.guess
+        let rect = message.view.rect
+        guard isWaitingForGuess, message.roundID == round?.id,
+              [rect.origin.x, rect.origin.y, rect.size.width, rect.size.height].allSatisfy(\.isFinite),
+              rect.size.width > 0, rect.size.height > 0
+        else { return }
+        if partnerMapView != message.view {
+            partnerMapView = message.view
         }
     }
 
