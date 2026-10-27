@@ -35,6 +35,10 @@ struct DailyPromptInlineHero: View {
                 .buttonStyle(.plain)
                 .disabled(copy.isLoading)
                 .accessibilityHidden(true)
+                // Not part of the loading look, since the day may turn out done and swap to
+                // the short row. It fades in when a question to answer arrives.
+                .opacity(copy.isLoading ? 0 : 1)
+                .animation(PaeoniaMotion.loadingReveal, value: copy.isLoading)
 
                 titleAndMessage
             }
