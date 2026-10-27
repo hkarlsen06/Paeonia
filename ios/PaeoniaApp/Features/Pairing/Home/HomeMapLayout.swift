@@ -20,20 +20,20 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     @ViewBuilder let header: Header
     @ViewBuilder let sheet: Sheet
 
-    @AppStorage("proto.home.avatarSize") private var avatarSize: Double = 72
+    @AppStorage("proto.home.avatarSize") var avatarSize: Double = 72
     @AppStorage("proto.home.fakePartner") private var fakePartner: FakePartnerPlace = .real
     /// The kind of notice the person said "Not now" to. It shows again once the reason
     /// for having no map changes.
     @AppStorage("home.locationNotice.dismissed") private var dismissedNotice = ""
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.launchSidesUncovered) private var launchSidesUncovered
     @State private var scrollOffset: CGFloat = 0
     @State private var compass = PartnerCompass()
     @State private var flights = HeartFlights()
     @State private var heartTaps = 0
-    @State private var mapProjection: HomeMapProjection?
+    @State var mapProjection: HomeMapProjection?
     @State private var mapLocations: HomeMapLocations?
-    @State private var explorer = HomeMapExplorer()
+    @State var explorer = HomeMapExplorer()
 
     /// Both places, while there is a map to show.
     private var couple: HomeMapCouple? {
@@ -247,8 +247,11 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                         GeometryReader { band in
                             let metrics = metrics(couple, screen, bandHeight: band.size.height)
                             let points = points(couple, metrics)
-                            own.opacity(metrics.avatarOpacity(at: points.own)).position(points.own)
-                            partner.opacity(metrics.avatarOpacity(at: points.partner)).position(points.partner)
+                            let scale = avatarScale
+                            own.scaleEffect(scale).opacity(metrics.avatarOpacity(at: points.own))
+                                .position(points.own)
+                            partner.scaleEffect(scale).opacity(metrics.avatarOpacity(at: points.partner))
+                                .position(points.partner)
                         }
                         .transaction { $0.animation = nil }
                     )
@@ -259,7 +262,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         }
     }
 
-    private func metrics(_ couple: HomeMapCouple?, _ screen: HomeMapScreen, bandHeight: CGFloat) -> HomeMapMetrics {
+    func metrics(_ couple: HomeMapCouple?, _ screen: HomeMapScreen, bandHeight: CGFloat) -> HomeMapMetrics {
         HomeMapMetrics(
             screen: screen,
             bandHeight: max(bandHeight, screen.shortestBand),
@@ -268,7 +271,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         )
     }
 
-    private func framing(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapLibreView.Framing {
+    func framing(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapLibreView.Framing {
         HomeMapLibreView.camera(
             current: couple.currentCoordinate,
             partner: couple.partnerCoordinate,
@@ -296,7 +299,9 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         flights.send()
         hearts.tap()
     }
+}
 
+extension HomeMapLayout {
     /// Eases out over a long stretch, so the map runs into the cards instead of ending.
     private func fadeMask(_ metrics: HomeMapMetrics) -> some View {
         VStack(spacing: 0) {
@@ -317,9 +322,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         }
         .frame(height: metrics.bandHeight)
     }
-}
 
-extension HomeMapLayout {
     private var reservesMapSpace: Bool { mapState == .loading || couple != nil }
 
     private static var headerHeight: CGFloat {
@@ -356,9 +359,9 @@ extension HomeMapLayout {
         .accessibilityHint(Text(.heartsSendHint(partnerName)))
     }
 
-    private static var heartWidth: CGFloat { 44 }
+    static var heartWidth: CGFloat { 44 }
     /// How far the heart reaches over each avatar.
-    private static var heartOverlap: CGFloat { 4 }
+    static var heartOverlap: CGFloat { 4 }
     private static var rowAvatarSize: CGFloat { 72 }
 
     // MARK: No map
@@ -394,91 +397,6 @@ extension HomeMapLayout {
         case .loading, .partnerUnknown(.relationshipEnded): false
         default: true
         }
-    }
-
-    // MARK: Avatars
-
-    /// Over the avatars, which may sit under it while the person looks around.
-    private func showBothButton(_ couple: HomeMapCouple, _ screen: HomeMapScreen) -> some View {
-        GeometryReader { band in
-            HomeMapShowBothButton(
-                explorer: explorer,
-                mapBottom: metrics(couple, screen, bandHeight: band.size.height).framedBottom
-            )
-        }
-    }
-
-    /// Follow the camera's current projection instead of animating to its destination.
-    /// Without the intro, before the map's first frame, use the same math that places the map.
-    private func points(_ couple: HomeMapCouple?, _ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
-        guard let couple else { return waitingPoints(metrics) }
-        guard let mapProjection else {
-            if !reduceMotion { return waitingPoints(metrics) }
-            let framing = framing(couple, metrics)
-            let raw = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
-            return separated(raw, isNear: couple.isNear).kept(inside: metrics.avatarBounds)
-        }
-        let raw = HomeMapAvatarPoints(own: mapProjection.own, partner: mapProjection.partner)
-        guard mapProjection.introProgress < 1 else {
-            let placed = separated(raw, isNear: couple.isNear)
-            // While the person looks around, the avatars stay on their places, off the map too.
-            return explorer.isExploring ? placed : placed.kept(inside: metrics.avatarBounds)
-        }
-        return introPoints(raw, couple, metrics, mapProjection)
-    }
-
-    private func introPoints(
-        _ raw: HomeMapAvatarPoints,
-        _ couple: HomeMapCouple,
-        _ metrics: HomeMapMetrics,
-        _ projection: HomeMapProjection
-    ) -> HomeMapAvatarPoints {
-        let framing = framing(couple, metrics)
-        let rawEnd = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
-        return raw.duringIntro(
-            rawStart: projection.introStart,
-            waiting: waitingPoints(metrics),
-            rawEnd: rawEnd,
-            end: separated(rawEnd, isNear: couple.isNear).kept(inside: metrics.avatarBounds),
-            progress: projection.introProgress
-        )
-        .kept(inside: metrics.avatarBounds)
-    }
-
-    /// Side by side in the middle of the open map, where the avatars wait while it loads.
-    private func waitingPoints(_ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
-        let near = HomeMapMetrics(
-            screen: metrics.screen, bandHeight: metrics.bandHeight, avatarSize: avatarSize, isNear: true
-        )
-        let center = CGPoint(x: near.framedBox.midX, y: near.framedBox.midY)
-        let together = separated(HomeMapAvatarPoints(own: center, partner: center), isNear: true)
-        return together.kept(inside: near.avatarBounds)
-    }
-
-    /// The map fades in over the first half of the intro.
-    private var mapOpacity: Double {
-        guard !reduceMotion else { return 1 }
-        guard let mapProjection else { return 0 }
-        return min(1, mapProjection.introProgress * 2)
-    }
-
-    private func separated(_ points: HomeMapAvatarPoints, isNear: Bool) -> HomeMapAvatarPoints {
-        // Wide enough that the two note bubbles never touch.
-        let minimum = max(StoryNoteBubble.maxWidth + PaeoniaSpacing.space8, avatarSize + PaeoniaSpacing.space16)
-        guard isNear else {
-            // Apart: pushed away from each other along the line between the two places,
-            // so north stays north, with room for a note bubble when one sits above the other.
-            let apart = max(minimum, avatarSize + 56)
-            let (own, partner) = CoupleMapFraming.separated(points.own, points.partner, minimumDistance: apart)
-            return HomeMapAvatarPoints(own: own, partner: partner)
-        }
-        // Together: side by side around the midpoint, you on the left, with room for the heart between.
-        let together = max(minimum, avatarSize + Self.heartWidth - 2 * Self.heartOverlap)
-        let mid = CGPoint(x: (points.own.x + points.partner.x) / 2, y: (points.own.y + points.partner.y) / 2)
-        return HomeMapAvatarPoints(
-            own: CGPoint(x: mid.x - together / 2, y: mid.y),
-            partner: CGPoint(x: mid.x + together / 2, y: mid.y)
-        )
     }
 
     @ViewBuilder

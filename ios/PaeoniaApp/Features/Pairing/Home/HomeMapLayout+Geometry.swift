@@ -15,6 +15,28 @@ struct HomeMapAvatarPoints: Equatable {
         return Self(own: keep(own), partner: keep(partner))
     }
 
+    /// Where the avatars are while the person looks around, with these as their places
+    /// on the map now. Each keeps the spacing `spaced` gave it on the camera the person
+    /// started from, and that spacing turns with the map and shrinks with it as it zooms
+    /// out, so the avatars stay where they were on the map and come together when they
+    /// get small. `zoomChange` is the map's scale against that camera, and `turn` how far
+    /// it has turned on screen, clockwise in radians.
+    func pinned(zoomChange: CGFloat, turn: CGFloat, spaced: (Self) -> Self) -> Self {
+        let between = CGPoint(x: partner.x - own.x, y: partner.y - own.y).rotated(by: -turn)
+        let half = CGPoint(x: between.x / zoomChange / 2, y: between.y / zoomChange / 2)
+        let atStart = Self(own: CGPoint(x: -half.x, y: -half.y), partner: half)
+        let spacedAtStart = spaced(atStart)
+        let shrink = min(1, zoomChange)
+        func moved(_ point: CGPoint, from start: CGPoint, to spot: CGPoint) -> CGPoint {
+            let offset = CGPoint(x: spot.x - start.x, y: spot.y - start.y).rotated(by: turn)
+            return CGPoint(x: point.x + offset.x * shrink, y: point.y + offset.y * shrink)
+        }
+        return Self(
+            own: moved(own, from: atStart.own, to: spacedAtStart.own),
+            partner: moved(partner, from: atStart.partner, to: spacedAtStart.partner)
+        )
+    }
+
     /// Where the avatars are while the intro plays, with these as their places on the map
     /// now. They turn and zoom with the map. They start where they waited and end on their
     /// spaced-out spots, so the difference from their places on the map shifts from one to
@@ -189,5 +211,12 @@ struct HomeMapMetrics {
             avatarBounds.minY - point.y, point.y - avatarBounds.maxY, 0
         )
         return max(0, 1 - outside / avatarFade)
+    }
+}
+
+private extension CGPoint {
+    /// Turned about the origin, clockwise on screen.
+    func rotated(by angle: CGFloat) -> CGPoint {
+        CGPoint(x: x * cos(angle) - y * sin(angle), y: x * sin(angle) + y * cos(angle))
     }
 }

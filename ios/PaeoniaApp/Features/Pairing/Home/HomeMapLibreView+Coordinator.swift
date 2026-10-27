@@ -69,6 +69,7 @@ extension HomeMapLibreView {
                 own: mapView.convert(parent.current, toPointTo: mapView),
                 partner: mapView.convert(parent.partner, toPointTo: mapView),
                 direction: mapView.direction,
+                zoom: mapView.zoomLevel,
                 introProgress: introProgress,
                 introStart: introStartPoints
             ))
@@ -90,6 +91,7 @@ struct HomeMapProjection: Equatable {
     let own: CGPoint
     let partner: CGPoint
     let direction: Double
+    let zoom: Double
     /// From 0 to 1 while the intro plays (`HomeMapLibreView+Intro`), 1 after.
     let introProgress: Double
     /// The positions on the intro's first camera.

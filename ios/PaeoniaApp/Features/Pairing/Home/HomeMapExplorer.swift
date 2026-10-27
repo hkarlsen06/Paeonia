@@ -7,6 +7,8 @@ import UIKit.UIGestureRecognizerSubclass
 @MainActor @Observable
 final class HomeMapExplorer {
     private(set) var isExploring = false
+    /// The map's zoom and direction when the person started moving it.
+    @ObservationIgnored private(set) var start: (zoom: Double, direction: Double)?
     /// Set by the map once its intro has played. Gestures do nothing without it.
     @ObservationIgnored private(set) weak var map: MLNMapView?
     /// Moves the map back to the couple's framing.
@@ -24,6 +26,7 @@ final class HomeMapExplorer {
         self.map = map
         self.reframe = reframe
         isExploring = false
+        start = nil
     }
 
     /// Keeps the place under the fingers' last midpoint under their new one, and zooms and
@@ -64,13 +67,17 @@ final class HomeMapExplorer {
 
     func showBoth() {
         isExploring = false
+        start = nil
         reframe()
     }
 
     private func place(
         _ coordinate: CLLocationCoordinate2D, at point: CGPoint, zoom: Double, direction: Double, on map: MLNMapView
     ) {
-        isExploring = true
+        if !isExploring {
+            start = (map.zoomLevel, map.direction)
+            isExploring = true
+        }
         map.tileLodZoomShift = HomeMapLibreView.tileDetailShift(zoom: zoom)
         let center = HomeMapLibreView.mapCenter(
             putting: HomeMapLibreView.mercator(coordinate),
