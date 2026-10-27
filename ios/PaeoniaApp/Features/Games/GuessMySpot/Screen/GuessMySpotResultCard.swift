@@ -15,7 +15,10 @@ struct GuessMySpotResultCard: View {
     /// Collapses or expands the card. Nil: the card can't, as while the reveal plays.
     var onToggle: (() -> Void)?
 
+    @State private var viewer: PaeoniaImageViewerSelection?
+
     private var canToggle: Bool { onToggle != nil }
+    private static let photoHeight: CGFloat = 180
 
     var body: some View {
         // Collapsed, the card is a button. It has the trait then.
@@ -32,7 +35,7 @@ struct GuessMySpotResultCard: View {
                     image: image,
                     placeName: round?.placeName,
                     takenOn: round?.takenOn,
-                    height: 180
+                    height: Self.photoHeight
                 )
                 .transition(.opacity)
                 verdict
@@ -59,11 +62,17 @@ struct GuessMySpotResultCard: View {
         // Expanded, it has nothing to tap but its button, so a pan or pinch on it moves
         // the map under it. Collapsed, a tap anywhere on it expands it.
         .allowsHitTesting(isCollapsed && canToggle)
+        .overlay(alignment: .top) {
+            if !isCollapsed, canToggle, let image {
+                photoButton(image)
+            }
+        }
         .overlay(alignment: .topTrailing) {
             if !isCollapsed, canToggle {
                 collapseButton
             }
         }
+        .paeoniaImageViewer(selection: $viewer)
         .accessibilityElement(children: isCollapsed ? .combine : .contain)
         .accessibilityAddTraits(isCollapsed && canToggle ? .isButton : [])
         .accessibilityHint(isCollapsed && canToggle ? Text(.guessMySpotRevealCardExpand) : Text(verbatim: ""))
@@ -88,6 +97,25 @@ struct GuessMySpotResultCard: View {
         .accessibilityElement(children: .combine)
         .accessibilityFocused(isTitleFocused)
         .accessibilityIdentifier("guessMySpot.reveal.title")
+    }
+
+    /// Over the photo, so a tap opens it full screen to look closer or save it. The
+    /// rest of the expanded card lets touches through to the map.
+    private func photoButton(_ image: UIImage) -> some View {
+        Button {
+            viewer = PaeoniaImageViewerSelection(image: image)
+        } label: {
+            Color.clear
+                .frame(height: Self.photoHeight)
+                .frame(maxWidth: .infinity)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .padding(PaeoniaSpacing.space12)
+        .accessibilityLabel(Text(.guessMySpotPhotoA11Y))
+        .accessibilityAddTraits(.isImage)
+        .accessibilityIdentifier("guessMySpot.reveal.card.photo")
+        .transition(.opacity)
     }
 
     /// On the photo's top corner.
