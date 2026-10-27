@@ -132,8 +132,10 @@ final class GuessMySpotViewModel {
     @ObservationIgnored var guessMapFrame: CGRect?
     /// Whether the guess map is the satellite map, for the live view.
     @ObservationIgnored var guessMapSatellite = false
-    /// When the live view last went out, to send at most 30 a second.
+    /// When the live view last went out and what it showed, to send at most 30 a
+    /// second and never the same view twice in a row.
     @ObservationIgnored var liveMapViewSentAt: TimeInterval = 0
+    @ObservationIgnored var liveMapViewSent: GuessMySpotLiveMapView?
     /// The round the guess pin belongs to, so a new round starts with no pin.
     @ObservationIgnored var guessPinRoundID: UUID?
     /// The round `roundPhoto` belongs to, and its load.

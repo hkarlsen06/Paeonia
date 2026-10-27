@@ -180,12 +180,15 @@ extension GuessMySpotViewModel {
         live.switchRole(to: role)
     }
 
-    /// The guess map moved. `settled` is the end of a move, which always goes out, so
-    /// the sender ends on the same view however the sends were spaced.
+    /// The guess map moved. `settled` is the end of a move, which goes out unless the
+    /// last frame already sent it, so the sender ends on the same view however the
+    /// sends were spaced.
     func guessMapMoved(to rect: MKMapRect, settled: Bool) {
         guessMapRect = rect
         let now = CACurrentMediaTime()
-        guard settled || now - liveMapViewSentAt >= Self.liveMapViewInterval else { return }
+        guard GuessMySpotLiveMapView(rect, satellite: guessMapSatellite) != liveMapViewSent,
+              settled || now - liveMapViewSentAt >= Self.liveMapViewInterval
+        else { return }
         liveMapViewSentAt = now
         sendLiveMapView()
     }
@@ -200,10 +203,9 @@ extension GuessMySpotViewModel {
     /// pin, and never a spot of a photo: the real spot never goes over the relay.
     func sendLiveMapView() {
         guard phase == .guess, let round, let rect = guessMapRect else { return }
-        liveChannel?.send(GuessMySpotLiveMessage(
-            roundID: round.id,
-            view: GuessMySpotLiveMapView(rect, satellite: guessMapSatellite)
-        ))
+        let view = GuessMySpotLiveMapView(rect, satellite: guessMapSatellite)
+        liveMapViewSent = view
+        liveChannel?.send(GuessMySpotLiveMessage(roundID: round.id, view: view))
     }
 
     /// The partner's guess map, shown only while this person waits for that guess.
