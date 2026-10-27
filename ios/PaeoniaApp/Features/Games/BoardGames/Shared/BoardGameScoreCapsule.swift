@@ -45,6 +45,7 @@ struct BoardGameScoreCapsule: View {
         .padding(horizontalPadding)
         .padding(.vertical, PaeoniaSpacing.space4)
         .gameCapsuleStyle()
+        .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(score.spoken(partnerName: partner.name)))
         .accessibilityIdentifier("boardGames.score")
