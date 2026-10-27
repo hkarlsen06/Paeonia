@@ -239,20 +239,6 @@ struct MemoryDetailView: View {
         }
     }
 
-    // MARK: - Derived
-
-    private func visibleMedia(for record: MemoryRecord) -> [MemoryMediaSnapshot] {
-        record.snapshot.media.filter(\.isVisible).sortedForMemoryDisplay()
-    }
-
-    private func visibleBody(of note: MemoryNoteSnapshot?) -> String? {
-        note?.visibleBody
-    }
-
-    private func dayStartUTC(for record: MemoryRecord) -> Date {
-        MemoryTimeline.parseLocalDate(record.snapshot.memoryDate) ?? record.snapshot.createdAt
-    }
-
     // MARK: - Actions
 
     private func openMemoryEditor() {
@@ -301,5 +287,21 @@ struct MemoryDetailView: View {
             items: items,
             initialItemID: initialMediaAssetID.uuidString
         )
+    }
+}
+
+// MARK: - Derived
+
+extension MemoryDetailView {
+    private func visibleMedia(for record: MemoryRecord) -> [MemoryMediaSnapshot] {
+        record.snapshot.media.filter(\.isVisible).sortedForMemoryDisplay()
+    }
+
+    private func visibleBody(of note: MemoryNoteSnapshot?) -> String? {
+        note?.visibleBody
+    }
+
+    private func dayStartUTC(for record: MemoryRecord) -> Date {
+        MemoryTimeline.parseLocalDate(record.snapshot.memoryDate) ?? record.snapshot.createdAt
     }
 }

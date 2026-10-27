@@ -203,16 +203,7 @@ final class GuessMySpotRevealTimeline {
         case .zoomOut:
             camera = .overview
         case .line:
-            // Eases out: the line leaves the guess at once and slows into the spot. MapKit
-            // draws a line whose points change every frame only once they stop changing,
-            // so it showed nothing and then the whole line. The line grows in steps it
-            // holds for a few frames instead, which MapKit draws one by one.
-            let steps = (schedule.lineDuration / Self.lineStepDuration).rounded(.up)
-            tween(schedule.lineDuration) { [weak self] fraction in
-                let stepped = (fraction * steps).rounded(.down) / steps
-                let progress = 1 - pow(1 - stepped, 2)
-                if self?.lineProgress != progress { self?.lineProgress = progress }
-            }
+            growLine()
         case .drop:
             drop()
         case .land:
@@ -279,6 +270,19 @@ final class GuessMySpotRevealTimeline {
         pointStep = schedule.pointSteps
         actionsShown = true
         isSettled = true
+    }
+
+    /// Eases out: the line leaves the guess at once and slows into the spot. MapKit
+    /// draws a line whose points change every frame only once they stop changing,
+    /// so it showed nothing and then the whole line. The line grows in steps it
+    /// holds for a few frames instead, which MapKit draws one by one.
+    private func growLine() {
+        let steps = (schedule.lineDuration / Self.lineStepDuration).rounded(.up)
+        tween(schedule.lineDuration) { [weak self] fraction in
+            let stepped = (fraction * steps).rounded(.down) / steps
+            let progress = 1 - pow(1 - stepped, 2)
+            if self?.lineProgress != progress { self?.lineProgress = progress }
+        }
     }
 
     /// The real pin falls onto the end of the line, and the chime plays as it hits.

@@ -33,17 +33,7 @@ struct DailyPromptInlineHero: View {
             .disabled(copy.isLoading)
             .accessibilityHidden(true)
 
-            VStack(spacing: PaeoniaSpacing.space4) {
-                Text(copy.title)
-                    .font(PaeoniaTypography.heroTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .accessibilityAddTraits(.isHeader)
-                Text(verbatim: copy.message ?? "A small moment from today, just for the two of you")
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-            }
-            .multilineTextAlignment(.center)
-            .redacted(reason: copy.isLoading ? .placeholder : [])
+            titleAndMessage
 
             Button(action: onAnswer) {
                 Text(copy.actionTitle)
@@ -62,6 +52,20 @@ struct DailyPromptInlineHero: View {
             )
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var titleAndMessage: some View {
+        VStack(spacing: PaeoniaSpacing.space4) {
+            Text(copy.title)
+                .font(PaeoniaTypography.heroTitle)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .accessibilityAddTraits(.isHeader)
+            Text(verbatim: copy.message ?? "A small moment from today, just for the two of you")
+                .font(PaeoniaTypography.body)
+                .foregroundStyle(.paeoniaTextSecondary)
+        }
+        .multilineTextAlignment(.center)
+        .redacted(reason: copy.isLoading ? .placeholder : [])
     }
 }
 
