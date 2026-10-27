@@ -50,8 +50,6 @@ final class DailyChallengeViewModel {
     /// real, last-known state through later refreshes instead of dropping back to
     /// loading. Reset when the signed-in user changes.
     var hasResolvedTodayState = false
-    /// Callers of `awaitAnswerReveal`, signalled each time a snapshot is applied.
-    var snapshotWaiters: [UUID: AsyncStream<Void>.Continuation] = [:]
     var liveUpdatesTask: Task<Void, Never>?
     /// Wakes when the active couple day ends, so it stops showing as today even when
     /// no live update or reload arrives (for example offline at midnight).
@@ -340,7 +338,6 @@ final class DailyChallengeViewModel {
         }
         guard merged != topicQuestions else { return }
         topicQuestions = merged
-        snapshotWaiters.values.forEach { $0.yield() }
         uploadSeenPartnerAnswers()
     }
 
@@ -355,7 +352,6 @@ final class DailyChallengeViewModel {
         }
         streak = result.streak
         scheduleDayEnd()
-        snapshotWaiters.values.forEach { $0.yield() }
         uploadSeenPartnerAnswers()
     }
 

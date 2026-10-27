@@ -12,6 +12,7 @@ import SwiftUI
 struct DailyAnswerFlowChat: View {
     let chat: ThreadChatViewModel
     let viewModel: DailyChallengeViewModel
+    var submittedAnswer: DailySendingPreview?
     var privacySafetyService: (any PrivacySafetyServicing)?
     var privacyOperationProvider: (any SyncClientOperationProviding)?
     var onReportedAndLeft: () -> Void = {}
@@ -33,7 +34,7 @@ struct DailyAnswerFlowChat: View {
                 question: question,
                 participants: viewModel.participants,
                 onReport: { reportTarget = $0 },
-                sendingAnswer: question.flatMap { viewModel.sendingPreview(for: $0) },
+                sendingAnswer: question.flatMap { viewModel.sendingPreview(for: $0) } ?? submittedAnswer,
                 onClose: onClose
             )
             .analyticsScreen("daily_chat")

@@ -304,7 +304,7 @@ private struct DraftParts {
     /// why line is optional and the pick is the answer.
     func satisfiesCombined(_ secondaryKind: DailyChallengeAnswerKind?) -> Bool {
         switch secondaryKind {
-        case .photo: hasText || hasMedia
+        case .photo, .voice: hasText || hasMedia
         case .partnerChoice: hasText || hasChoice
         case .eitherOr: hasPick
         default: hasText

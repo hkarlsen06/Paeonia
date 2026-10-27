@@ -140,7 +140,8 @@ struct DailyChallengeScreen: View {
                 viewModel: viewModel.makeChatViewModel(question: question),
                 question: viewModel.latestQuestion(question),
                 participants: viewModel.participants,
-                onReport: { reportTarget = $0 }
+                onReport: { reportTarget = $0 },
+                sendingAnswer: viewModel.sendingPreview(for: viewModel.latestQuestion(question))
             )
             .analyticsScreen("daily_chat")
             .id(question.id)
@@ -167,7 +168,7 @@ struct DailyChallengeScreen: View {
     }
 
     /// Whether the user has answered today's question. The big card then gives way to
-    /// the one-row card, which opens the same flow to review the user's answer.
+    /// the one-row card, which opens the question's conversation.
     private var isDayComplete: Bool {
         viewModel.homeCardState.kind == .complete
     }
@@ -180,7 +181,9 @@ struct DailyChallengeScreen: View {
                     state: state,
                     partnerName: viewModel.participants.partnerName,
                     partnerPhotoAssetID: viewModel.participants.partnerProfilePhotoAssetID,
-                    onOpen: onOpenAnswerFlow,
+                    onOpen: {
+                        if let question = viewModel.snapshot.todayQuestion { openChat(question) }
+                    },
                     onOpenPartnerQuestion: openLockedPartnerQuestion
                 )
                 .transition(.opacity)

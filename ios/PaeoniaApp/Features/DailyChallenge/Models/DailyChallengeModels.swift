@@ -434,16 +434,15 @@ nonisolated struct DailyChallengeQuestion: Identifiable, Equatable, Hashable, Se
         return composableAnswerKinds.first
     }
 
-    /// Questions that let the user answer with text *and* a photo or partner-choice in
-    /// one go (both composers shown together, each optional) rather than picking a
-    /// single kind. The combo must be exactly text + photo or text + partner-choice;
-    /// voice and any other shape keep the single-kind picker. The backend already
-    /// stores text alongside media/choice on one answer.
+    /// Text can accompany one photo, recording or choice. A two-option answer still
+    /// requires its pick; the other combinations accept either part or both.
     var combinedSecondaryKind: DailyChallengeAnswerKind? {
         let kinds = Set(composableAnswerKinds)
         guard kinds.contains(.text) else { return nil }
         let others = kinds.subtracting([.text])
-        guard others == [.photo] || others == [.partnerChoice] || others == [.eitherOr] else { return nil }
+        guard others == [.photo] || others == [.voice]
+            || others == [.partnerChoice] || others == [.eitherOr]
+        else { return nil }
         return others.first
     }
 

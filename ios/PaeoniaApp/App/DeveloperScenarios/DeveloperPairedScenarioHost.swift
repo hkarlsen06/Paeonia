@@ -146,6 +146,14 @@
                 partnerDisplayName: "Robin"
               )
             )
+            if UserDefaults.standard.bool(forKey: "paeonia-answer-seeded"),
+              let question = dailyChallengeViewModel.snapshot.todayQuestion,
+              question.answerKinds.contains(.photo)
+            {
+              await dailyChallengeViewModel.stagePhoto(
+                DeveloperGuessMySpotScenarioFactory.photoData(.guessMySpotScenarioLake), for: question.id
+              )
+            }
           }
       } else {
         MainTabView(

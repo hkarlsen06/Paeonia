@@ -107,6 +107,7 @@ struct ThreadChatRow {
         /// An answer, with the kind of media this day's question takes, since a question
         /// that comes back can take another kind.
         case answer(DailyQuestionAnswerDetail, mediaKind: DailyChallengeAnswerKind)
+        case pendingAnswer(DailySendingPreview)
         /// How two partner-choice picks line up, above the day's answers.
         case partnerChoiceMatch(PartnerChoiceMatch, celebrationID: UUID?)
         /// What a day is still waiting for, under its answers.
@@ -147,6 +148,11 @@ struct ThreadChatRow {
 /// models the cells draw from. Built in one pass and cached until the data changes,
 /// so scrolling and unrelated redraws never redo it. Ported from Tidex's chat projection.
 struct ThreadChatProjection {
+    struct PendingAnswer: Equatable, Hashable {
+        let instanceID: UUID
+        let preview: DailySendingPreview
+    }
+
     struct Input: Equatable {
         /// Every day the question came up, oldest first. Empty outside a question's chat.
         let rounds: [DailyChatRound]
@@ -160,10 +166,12 @@ struct ThreadChatProjection {
         var reactions: [ThreadChatItemID: [EmojiReaction]] = [:]
         /// What a memory's or a story's chat is about, shown before the first message.
         var header: ThreadChatHeader?
+        var pendingAnswer: PendingAnswer?
     }
 
     static let questionRowPrefix = "question-"
     static let answerRowPrefix = "answer-"
+    static let pendingAnswerRowPrefix = "pending-answer-"
     static let matchRowPrefix = "match-"
     static let waitingRowPrefix = "waiting-"
     static let typingRowID = "typing-indicator"
@@ -181,6 +189,7 @@ struct ThreadChatProjection {
     static func isDecorationRowID(_ id: String) -> Bool {
         id == typingRowID || id == headerRowID
             || id.hasPrefix(matchRowPrefix) || id.hasPrefix(waitingRowPrefix) || id.hasPrefix(noteRowPrefix)
+            || id.hasPrefix(pendingAnswerRowPrefix)
     }
 
     let exyteMessages: [ExyteChat.Message]

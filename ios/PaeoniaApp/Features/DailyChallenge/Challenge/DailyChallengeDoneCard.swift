@@ -2,8 +2,7 @@ import SwiftUI
 
 /// The one-row card the Questions tab shows instead of the big prompt card once the
 /// user has answered today's question. It says the user is done and what happens next,
-/// and opens the answer flow to review the user's own answer. Like the prompt card, its
-/// parent marks it as the source the flow zooms out of. Questions from earlier days
+/// and opens the question's conversation. Questions from earlier days
 /// that wait for the user's answer show as locked rows under it.
 struct DailyChallengeDoneCard: View {
     let state: DailyChallengeCardState
@@ -21,6 +20,7 @@ struct DailyChallengeDoneCard: View {
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
                     .accessibilityHint(Text(.dailyChallengeSeeYourAnswersButton))
+                    .accessibilityIdentifier("daily.done.openConversation")
 
                 LockedPartnerQuestionRows(
                     state: state,

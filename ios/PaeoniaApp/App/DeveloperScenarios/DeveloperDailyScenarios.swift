@@ -37,6 +37,7 @@
 
     private let mode: Mode
     private let base = PreviewDailyChallengeService()
+    private let answerFormat = UserDefaults.standard.string(forKey: "paeonia-answer-format")
     private let pendingOperationStore: any PendingSyncOperationPersisting
     private var today: DailyChallengeLoadResult?
     private var initialLoadDelay: Duration
@@ -87,7 +88,7 @@
       } else if mode == .homeLaunch {
         loaded = offlineResult(currentUserID: currentUserID)
       } else {
-        loaded = try await base.loadToday(currentUserID: currentUserID)
+        loaded = try await initialQuestions(currentUserID: currentUserID)
       }
       var questions = loaded.snapshot.questions
       let operations = try await pendingOperationStore.inFlightOperations(
@@ -118,6 +119,22 @@
       )
       today = result
       return result
+    }
+
+    private func initialQuestions(currentUserID: UUID) async throws -> DailyChallengeLoadResult {
+      let loaded = try await base.loadToday(currentUserID: currentUserID)
+      guard let answerFormat,
+        let question = DeveloperDailyComposerFixture.question(
+          format: answerFormat, dayID: loaded.snapshot.coupleDayID ?? UUID()
+        )
+      else { return loaded }
+      return DailyChallengeLoadResult(
+        snapshot: DailyChallengeSnapshot(
+          currentUserID: currentUserID, coupleDayID: question.coupleDayID,
+          questions: [question], refreshedAt: loaded.snapshot.refreshedAt
+        ),
+        streak: loaded.streak
+      )
     }
 
     private func offlineResult(currentUserID: UUID) -> DailyChallengeLoadResult {

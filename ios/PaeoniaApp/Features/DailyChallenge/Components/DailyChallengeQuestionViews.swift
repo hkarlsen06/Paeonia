@@ -302,104 +302,6 @@ private struct DailyChosenPersonView: View {
     }
 }
 
-/// The text entry field used inside the answering flow. The Send action lives in
-/// the flow's fixed bottom bar (so it stays above the keyboard), so this view is
-/// just the labelled, bordered field with a placeholder and focus ring.
-///
-/// It starts compact and grows line by line with what's typed, up to a cap, after
-/// which it scrolls. It never greedily fills the screen, so the answering flow can
-/// keep the whole question-and-field cluster low, within thumb reach.
-struct DailyAnswerTextField: View {
-    @Binding var text: String
-    var isFocused: FocusState<Bool>.Binding
-    var label: LocalizedStringResource = .dailyChallengeTextAnswerLabel
-    var placeholder: LocalizedStringResource = .dailyChallengeTextAnswerPlaceholder
-    /// The longest answer the field accepts, in code points.
-    var limit = DailyAnswerDraft.maxTextLength
-
-    /// Mirrors the focus ring's color/width so they can be driven by an explicit
-    /// `withAnimation` mutation instead of an `.animation(_:value:)` modifier. The
-    /// ring is drawn in an `.overlay`, so its *frame* always matches the field's —
-    /// which keeps moving as the keyboard rises, via SwiftUI's automatic keyboard
-    /// avoidance. Any `.animation(_:value:)` modifier on that overlay, even scoped to
-    /// just the stroke shape, still re-times that frame's keyboard-driven movement
-    /// onto its own fixed curve, fighting the keyboard's real timing and bouncing —
-    /// scoping it to "just the shape" doesn't help, because the shape's frame is the
-    /// thing bouncing. Driving these two plain values from `withAnimation` instead
-    /// touches nothing but the values themselves, so the keyboard-driven frame is
-    /// never part of the animated transaction.
-    @State private var strokeColor = Color.paeoniaSurfacePressed
-    @State private var strokeWidth = PaeoniaRadius.strokeDefault
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(label)
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextSecondary)
-
-                Spacer(minLength: PaeoniaSpacing.space8)
-
-                characterCount
-            }
-
-            TextField(
-                text: $text,
-                prompt: Text(placeholder),
-                axis: .vertical
-            ) {
-                Text(label)
-            }
-            .lineLimit(3...8)
-            .font(PaeoniaTypography.body)
-            .foregroundStyle(.paeoniaTextPrimary)
-            .padding(PaeoniaSpacing.space12)
-            .focused(isFocused)
-            .accessibilityIdentifier("daily.answer.text")
-            .background(.paeoniaBackgroundSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                    .stroke(strokeColor, lineWidth: strokeWidth)
-            }
-        }
-        .onAppear { syncStroke(focused: isFocused.wrappedValue, animated: false) }
-        .onChange(of: isFocused.wrappedValue) { _, focused in
-            syncStroke(focused: focused, animated: true)
-        }
-    }
-
-    /// Shows how close the answer is to the length limit, only once it's near. It sits
-    /// in the label row so it never changes the field's height or position.
-    @ViewBuilder
-    private var characterCount: some View {
-        let length = DailyAnswerDraft.measuredLength(of: text)
-        // A short why line shows its counter sooner than a full answer does.
-        let threshold = min(Self.counterThreshold, limit / 4)
-        if length > limit - threshold {
-            Text(verbatim: "\(length.formatted()) / \(limit.formatted())")
-                .font(PaeoniaTypography.caption.monospacedDigit())
-                .foregroundStyle(length > limit ? Color.paeoniaError : Color.paeoniaTextTertiary)
-                .accessibilityLabel(Text(.dailyChallengeTextAnswerCharacterCount(length, limit)))
-        }
-    }
-
-    /// How many characters before the limit the counter appears.
-    private static let counterThreshold = 200
-
-    private func syncStroke(focused: Bool, animated: Bool) {
-        let apply = {
-            strokeColor = focused ? .paeoniaAccentPrimary : .paeoniaSurfacePressed
-            strokeWidth = focused ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
-        }
-        if animated {
-            withAnimation(PaeoniaMotion.stateChange, apply)
-        } else {
-            apply()
-        }
-    }
-}
-
 /// The two-person picker for a partner-choice question: tap your avatar or your
 /// partner's. The chosen person's photo (or initials) gets a green ring and a
 /// checkmark; exactly one is selected at a time. The Send/Save action lives in the
@@ -409,7 +311,8 @@ struct DailyPartnerChoicePicker: View {
     let selection: UUID?
     let onSelect: (UUID) -> Void
 
-    private let avatarSize: CGFloat = 104
+    @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 64
+    @Environment(\.dailyAnswerComposerColors) private var colors
 
     var body: some View {
         HStack(alignment: .top, spacing: PaeoniaSpacing.space24) {
@@ -438,7 +341,7 @@ struct DailyPartnerChoicePicker: View {
                     .overlay {
                         Circle()
                             .strokeBorder(
-                                isSelected ? Color.paeoniaSuccess : Color.clear,
+                                isSelected ? colors.accent : Color.clear,
                                 lineWidth: 3
                             )
                     }
@@ -450,12 +353,15 @@ struct DailyPartnerChoicePicker: View {
 
                 Text(option.label)
                     .font(isSelected ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.body)
-                    .foregroundStyle(isSelected ? Color.paeoniaTextPrimary : Color.paeoniaTextSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .foregroundStyle(isSelected ? colors.foreground : colors.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(PaeoniaSpacing.space8)
             .frame(maxWidth: .infinity)
-            .contentShape(Rectangle())
+            .background(
+                isSelected ? colors.selected : colors.control,
+                in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius12)
+            )
         }
         .buttonStyle(.plain)
         .animation(PaeoniaMotion.stateChange, value: isSelected)
@@ -467,7 +373,7 @@ struct DailyPartnerChoicePicker: View {
     /// a badge sitting on the selected avatar's top-right edge.
     private var selectedBadge: some View {
         Circle()
-            .fill(Color.paeoniaSuccess)
+            .fill(colors.accent)
             .frame(width: 28, height: 28)
             .overlay {
                 Image(systemName: "checkmark")
@@ -475,7 +381,7 @@ struct DailyPartnerChoicePicker: View {
                     .foregroundStyle(Color.paeoniaTextInverse)
             }
             .overlay {
-                Circle().strokeBorder(Color.paeoniaBackgroundPrimary, lineWidth: 2)
+                Circle().strokeBorder(colors.control, lineWidth: 2)
             }
             .offset(x: 4, y: -4)
             .accessibilityHidden(true)

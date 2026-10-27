@@ -73,7 +73,7 @@ struct DailyChallengePhotoAnswerTests {
         #expect(relaunched.sendingText(for: questionID) == nil)
     }
 
-    @Test func combinedComposeAppliesOnlyToTextWithPhotoOrPartnerChoice() {
+    @Test func combinedComposeAcceptsTextWithOneMediaOrChoice() {
         func secondaryKind(_ kinds: [DailyChallengeAnswerKind]) -> DailyChallengeAnswerKind? {
             makeDailySnapshot(rows: [
                 dailyQuestionRow(answerKinds: kinds)
@@ -85,7 +85,8 @@ struct DailyChallengePhotoAnswerTests {
         #expect(secondaryKind([.text, .partnerChoice]) == .partnerChoice)
         #expect(secondaryKind([.text]) == nil)
         #expect(secondaryKind([.photo]) == nil)
-        #expect(secondaryKind([.text, .voice]) == nil)
+        #expect(secondaryKind([.text, .voice]) == .voice)
+        #expect(secondaryKind([.text, .photo, .voice]) == nil)
     }
 
     @Test func combinedAnswersAreNotEditable() {

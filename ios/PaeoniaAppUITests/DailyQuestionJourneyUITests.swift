@@ -28,9 +28,12 @@ final class DailyQuestionJourneyUITests: XCTestCase {
         lockedRow.tap()
 
         let answerField = app.descendants(matching: .any)["daily.answer.text"]
-        XCTAssertTrue(answerField.waitForExistence(timeout: 5))
+        let fieldExists = answerField.waitForExistence(timeout: 5)
+        capture(app, named: "Daily answer composer")
+        XCTAssertTrue(fieldExists, app.debugDescription)
         answerField.tap()
         answerField.typeText("The lake walk")
+        capture(app, named: "Daily answer with keyboard")
 
         let send = app.buttons["daily.flow.primary"]
         XCTAssertTrue(send.waitForExistence(timeout: 5))
@@ -52,4 +55,64 @@ final class DailyQuestionJourneyUITests: XCTestCase {
         XCTAssertTrue(homeTab.waitForExistence(timeout: 5))
         XCTAssertTrue(homeTab.isSelected)
     }
+
+    @MainActor
+    func testFirstAnswerOpensConversationAndTheQuestionsCardReopensIt() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-paired"
+        app.launch()
+        let questions = app.tabBars.firstMatch.buttons.element(boundBy: 1)
+        XCTAssertTrue(questions.waitForExistence(timeout: 10))
+        questions.tap()
+        let open = app.buttons["home.dailyPrompt.action"]
+        XCTAssertTrue(open.waitForExistence(timeout: 5))
+        open.tap()
+        let answer = app.descendants(matching: .any)["daily.answer.text"]
+        XCTAssertTrue(answer.waitForExistence(timeout: 5))
+        answer.tap()
+        answer.typeText("The first coffee together")
+        app.buttons["daily.flow.primary"].tap()
+
+        XCTAssertTrue(app.buttons["daily.chat.close"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["The first coffee together"].waitForExistence(timeout: 5))
+        XCTAssertFalse(answer.exists)
+        app.buttons["daily.chat.close"].tap()
+
+        let ownAnswer = app.buttons["daily.done.openConversation"]
+        XCTAssertTrue(ownAnswer.waitForExistence(timeout: 10))
+        ownAnswer.tap()
+        XCTAssertTrue(app.staticTexts["The first coffee together"].waitForExistence(timeout: 5))
+        XCTAssertFalse(answer.exists)
+    }
+
+    @MainActor
+    func testPhotoAndCaptionOpenTheirConversationWithTheAttachmentKeptWhileTyping() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["PAEONIA_SCENARIO"] = "question-answer-flow"
+        app.launchArguments += ["-paeonia-answer-format", "photo-text", "-paeonia-answer-seeded", "YES"]
+        app.launch()
+        let photo = app.buttons["daily.answer.photo.remove"]
+        XCTAssertTrue(photo.waitForExistence(timeout: 10))
+        capture(app, named: "Photo and text before typing")
+        let answer = app.descendants(matching: .any)["daily.answer.text"]
+        XCTAssertTrue(answer.waitForExistence(timeout: 5))
+        answer.tap()
+        answer.typeText("Wish you were sitting here too")
+        XCTAssertTrue(photo.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["daily.answer.question"].exists)
+        capture(app, named: "Photo and text with keyboard")
+        app.buttons["daily.flow.primary"].tap()
+        XCTAssertTrue(app.buttons["daily.chat.close"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Wish you were sitting here too"].waitForExistence(timeout: 5))
+        capture(app, named: "Photo answer conversation")
+    }
+
+    @MainActor
+    private func capture(_ app: XCUIApplication, named name: String) {
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = name
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
 }

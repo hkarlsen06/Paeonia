@@ -13,8 +13,8 @@ extension DailyChallengeViewModel {
 
     /// Sends the user's answer for a question, resolving the kind(s) from the draft.
     /// Every kind is saved on the device first and sent in the background, so a
-    /// network blip never loses what the user wrote. Questions that allow a photo or
-    /// partner pick *alongside* text send whatever the user filled in, together.
+    /// network blip never loses what the user wrote. Combined questions send every
+    /// included part together.
     func submitAnswer(for question: DailyChallengeQuestion) async {
         guard submittingQuestionID == nil, let currentUserID else { return }
         // The composer's counter already shows this; the backend would reject it.
@@ -44,7 +44,7 @@ extension DailyChallengeViewModel {
 
     /// Resolves the draft into the answer to queue and its "saved, sending" preview,
     /// or nil when there's nothing to send. Combined questions fold text together with
-    /// a photo or partner pick; everything else stays single-kind.
+    /// media or a choice; everything else stays single-kind.
     private func resolveOutgoingAnswer(for question: DailyChallengeQuestion) -> OutgoingAnswer? {
         let text = nonEmptyDraftText(for: question.id)
         if question.usesCombinedCompose {
@@ -55,7 +55,7 @@ extension DailyChallengeViewModel {
 
     private func resolveCombinedAnswer(for question: DailyChallengeQuestion, text: String?) -> OutgoingAnswer? {
         switch question.combinedSecondaryKind {
-        case .photo:
+        case .photo, .voice:
             if let media = stagedMediaParts(for: question) {
                 if let text {
                     return (.textAndMedia(text, media.payload), SendingAnswer(text: text, media: media.sending))

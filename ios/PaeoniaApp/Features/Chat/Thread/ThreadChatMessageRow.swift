@@ -50,6 +50,8 @@ struct ThreadChatMessageRow: View {
 
     var body: some View {
         switch row.kind {
+        case let .pendingAnswer(answer):
+            DailyChatSendingAnswerRow(answer: answer)
         case let .partnerChoiceMatch(match, celebrationID):
             PartnerChoiceMatchBanner(match: match, participants: participants, celebrationID: celebrationID)
                 .padding(.horizontal, PaeoniaSpacing.space12)
@@ -178,7 +180,7 @@ struct ThreadChatMessageRow: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityActions { itemAccessibilityActions }
-        case .partnerChoiceMatch, .waiting, .subjectHeader:
+        case .partnerChoiceMatch, .waiting, .subjectHeader, .pendingAnswer:
             EmptyView()
         case .typing:
             bubble(fill: .paeoniaSurfacePrimary) {

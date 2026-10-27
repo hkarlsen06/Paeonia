@@ -123,7 +123,8 @@ struct ThreadChatView: View {
             partnerIsTyping: viewModel.presence.partnerIsTyping,
             partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID,
             reactions: viewModel.chatReactions,
-            header: viewModel.header
+            header: viewModel.header,
+            pendingAnswer: pendingAnswer
         )
     }
 
@@ -268,9 +269,6 @@ struct ThreadChatView: View {
                         messageRow(row, messageFrame: nil)
                     }
                 }
-                if viewModel.question?.ownAnswerDetail == nil, let sendingAnswer {
-                    DailyChatSendingAnswerRow(answer: sendingAnswer)
-                }
             }
             .padding(.vertical, PaeoniaSpacing.space12)
         }
@@ -348,7 +346,7 @@ extension ThreadChatView {
             onReport?(.dailyAnswer(answerID: answer.answerID))
         case let .message(target):
             onReport?(.threadMessage(messageID: target.id))
-        case .question, .partnerChoiceMatch, .waiting, .subjectHeader, .note, .typing:
+        case .question, .partnerChoiceMatch, .waiting, .subjectHeader, .note, .typing, .pendingAnswer:
             break
         }
     }

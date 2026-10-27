@@ -156,6 +156,7 @@ struct DailyVoicePlaybackView: View {
     var fallbackDurationMs: Int?
     var fetch: (UUID) async -> Data? = { await DailyAnswerMediaImageProviderFactory.shared?.imageData(for: $0) }
 
+    @Environment(\.dailyAnswerComposerColors) private var colors
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 40
     @State private var player = DailyVoicePlayer()
@@ -184,7 +185,7 @@ struct DailyVoicePlaybackView: View {
         }
         .padding(PaeoniaSpacing.space12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.paeoniaSurfaceSecondary)
+        .background(colors.control)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
         .task(id: LoadRequest(source: source, attempt: attempt)) { await load() }
         .onDisappear { player.stop() }
@@ -212,7 +213,7 @@ struct DailyVoicePlaybackView: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             Text(.dailyChallengeVoiceLoadFailed)
                 .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
+                .foregroundStyle(colors.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             Button {
@@ -220,7 +221,9 @@ struct DailyVoicePlaybackView: View {
             } label: {
                 Text(.dailyChallengeVoiceRetry)
             }
-            .buttonStyle(PaeoniaQuietButtonStyle())
+            .buttonStyle(.plain)
+            .foregroundStyle(colors.accent)
+            .frame(minHeight: 44)
         }
     }
 
@@ -228,7 +231,7 @@ struct DailyVoicePlaybackView: View {
         Button(action: player.togglePlay) {
             Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                 .font(.system(size: iconSize))
-                .foregroundStyle(.paeoniaAccentPrimary)
+                .foregroundStyle(colors.accent)
                 .opacity(isDownloading ? 0 : 1)
         }
         .buttonStyle(.plain)
@@ -248,7 +251,7 @@ struct DailyVoicePlaybackView: View {
                 set: { player.seek(to: $0) }
             )
         )
-        .tint(.paeoniaAccentPrimary)
+        .tint(colors.accent)
         .disabled(!player.isLoaded)
         .accessibilityLabel(Text(.dailyChallengeVoicePosition))
         .accessibilityValue(Text(.dailyChallengeVoiceTimeOfTotal(voiceClock(currentSeconds), voiceClock(totalSeconds))))
@@ -258,7 +261,7 @@ struct DailyVoicePlaybackView: View {
     private var timeText: some View {
         Text(verbatim: "\(voiceClock(currentSeconds)) / \(voiceClock(totalSeconds))")
             .font(PaeoniaTypography.caption.monospacedDigit())
-            .foregroundStyle(.paeoniaTextSecondary)
+            .foregroundStyle(colors.secondary)
             .accessibilityHidden(true)
     }
 
@@ -312,7 +315,12 @@ struct DailyVoicePlaybackView: View {
 /// hands over what was said so far.
 struct DailyVoiceRecorderView: View {
     let onRecorded: (URL, Int) -> Void
+    var isCompact = false
+    var onRecordingChange: (Bool) -> Void = { _ in }
 
+    @Environment(\.dailyAnswerComposerColors) private var colors
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
     @ScaledMetric(relativeTo: .largeTitle) private var buttonSize: CGFloat = 84
     @State private var recorder = DailyVoiceRecorder()
@@ -322,9 +330,16 @@ struct DailyVoiceRecorderView: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            recordButton
-
-            caption
+            if isCompact {
+                HStack(spacing: PaeoniaSpacing.space12) {
+                    recordButton
+                    caption
+                    Spacer(minLength: 0)
+                }
+            } else {
+                recordButton
+                caption
+            }
 
             if recorder.isTakeTooShort {
                 message(.dailyChallengeVoiceTooShort)
@@ -336,12 +351,15 @@ struct DailyVoiceRecorderView: View {
                 Button(action: openSettings) {
                     Text(.commonOpenSettings)
                 }
-                .buttonStyle(PaeoniaSecondaryButtonStyle())
+                .buttonStyle(.plain)
+                .foregroundStyle(colors.accent)
+                .frame(minHeight: 44)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, PaeoniaSpacing.space8)
         .onChange(of: recorder.phase) { _, phase in
+            onRecordingChange(phase == .starting || phase == .recording)
             if phase == .recorded {
                 deliverTake()
             }
@@ -356,6 +374,7 @@ struct DailyVoiceRecorderView: View {
             // `onChange` no longer fires once the view is gone, so hand the take over here.
             recorder.finishForDisappear()
             deliverTake()
+            onRecordingChange(false)
         }
     }
 
@@ -368,7 +387,7 @@ struct DailyVoiceRecorderView: View {
     }
 
     private var tint: Color {
-        isRecording ? .paeoniaError : .paeoniaAccentPrimary
+        isRecording ? .paeoniaError : colors.accent
     }
 
     /// A large round button: tap to start, tap again to stop. It breathes while the
@@ -376,11 +395,11 @@ struct DailyVoiceRecorderView: View {
     private var recordButton: some View {
         Button(action: toggle) {
             Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                .font(.system(size: min(buttonSize, 120)))
+                .font(.system(size: isCompact ? 44 : min(buttonSize, 120)))
                 .symbolRenderingMode(.palette)
-                .foregroundStyle(Color.paeoniaTextInverse, tint)
+                .foregroundStyle(colors.control, tint)
                 .contentTransition(.symbolEffect(.replace))
-                .symbolEffect(.breathe, isActive: isRecording)
+                .symbolEffect(.breathe, isActive: isRecording && !reduceMotion)
                 .shadow(color: tint.opacity(0.45), radius: 20)
         }
         .buttonStyle(.plain)
@@ -398,11 +417,11 @@ struct DailyVoiceRecorderView: View {
                     RecordingDot()
                     Text(recordingClock)
                         .monospacedDigit()
-                        .foregroundStyle(.paeoniaTextPrimary)
+                        .foregroundStyle(colors.foreground)
                 }
             } else {
                 Text(.dailyChallengeVoiceRecord)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                    .foregroundStyle(colors.secondary)
             }
         }
         .font(PaeoniaTypography.body)
@@ -412,17 +431,21 @@ struct DailyVoiceRecorderView: View {
     private func message(_ text: LocalizedStringResource) -> some View {
         Text(text)
             .font(PaeoniaTypography.caption)
-            .foregroundStyle(.paeoniaTextSecondary)
+            .foregroundStyle(colors.secondary)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     private func toggle() {
+        onRecordingChange(!isRecording)
         switch recorder.phase {
         case .recording:
             recorder.stopRecording()
         case .idle, .recorded:
-            Task { await recorder.startRecording() }
+            Task {
+                await recorder.startRecording()
+                onRecordingChange(recorder.phase == .starting || recorder.phase == .recording)
+            }
         case .starting:
             break
         }

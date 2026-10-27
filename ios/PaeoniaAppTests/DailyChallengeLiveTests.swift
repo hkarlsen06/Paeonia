@@ -97,25 +97,6 @@ struct DailyChallengeLiveTests {
         await task.value
     }
 
-    @Test func awaitAnswerRevealReturnsWhenTheLiveSnapshotRevealsThePartnerAnswer() async {
-        let cache = LockedSnapshotCache()
-        let initial = row(dayID: dayID, endsAt: .distantFuture, partnerAnswered: true)
-        cache.save(initial, ownerUserID: user)
-        let (viewModel, service) = makeViewModel(cache: cache, today: initial)
-        await viewModel.configure(currentUserID: user)
-        let instanceID = dailyFixedUUID("a1a1a1a1-0000-0000-0000-0000000000e1")
-        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == false)
-
-        let waiting = Task { await viewModel.awaitAnswerReveal(for: instanceID) }
-        try? await Task.sleep(for: .milliseconds(30))
-        cache.save(row(dayID: dayID, endsAt: .distantFuture, partnerAnswered: true, revealed: true), ownerUserID: user)
-        LocalStoreChanges.post(.dailyChallenge, ownerUserID: user)
-
-        #expect(await waiting.value)
-        #expect(viewModel.snapshot.questions.first?.canViewPartnerAnswer == true)
-        #expect(await service.loadCount == 1)
-    }
-
     @Test func partnerStartingTheDayMovesTheFeedFromTodayToThatDay() async throws {
         let endsAt = Date().addingTimeInterval(3_600)
         let cache = LockedSnapshotCache()

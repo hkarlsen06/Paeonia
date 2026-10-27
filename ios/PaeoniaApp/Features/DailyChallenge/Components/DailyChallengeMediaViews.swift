@@ -1,4 +1,3 @@
-import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -15,6 +14,8 @@ struct DailyAnswerKindPicker: View {
     let kinds: [DailyChallengeAnswerKind]
     let selection: DailyChallengeAnswerKind?
     let onSelect: (DailyChallengeAnswerKind) -> Void
+
+    @Environment(\.dailyAnswerComposerColors) private var colors
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
@@ -38,171 +39,14 @@ struct DailyAnswerKindPicker: View {
             .font(PaeoniaTypography.caption.weight(.semibold))
             .padding(.horizontal, PaeoniaSpacing.space12)
             .padding(.vertical, PaeoniaSpacing.space8)
-            .foregroundStyle(isSelected ? Color.paeoniaTextInverse : Color.paeoniaTextSecondary)
+            .foregroundStyle(isSelected ? colors.foreground : colors.secondary)
             // Unselected pills are darker than the question card they sit on.
-            .background(isSelected ? Color.paeoniaAccentPrimary : Color.paeoniaBackgroundSecondary.opacity(0.6))
+            .background(isSelected ? colors.selected : colors.control)
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
         .animation(PaeoniaMotion.stateChange, value: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
-/// Picks and previews a single photo answer from the library. The Send action lives
-/// in the flow's bottom bar, like the other composers.
-struct DailyPhotoAnswerComposer: View {
-    let imageData: Data?
-    /// The view model is still preparing a picked photo (compressing it).
-    var isPreparing = false
-    let onPick: (Data) -> Void
-    /// The picker couldn't hand over the chosen photo.
-    var onPickFailed: () -> Void = {}
-    let onRemove: () -> Void
-
-    @State private var selection: PhotosPickerItem?
-    @State private var isLoading = false
-
-    /// Busy from the moment a photo is picked until it's ready to send.
-    private var isBusy: Bool { isLoading || isPreparing }
-    @State private var isCameraPresented = false
-    @State private var imageViewerSelection: PaeoniaImageViewerSelection?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            Text(.dailyChallengePhotoLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextSecondary)
-
-            if let imageData {
-                DailyDecodedPhoto(data: imageData, reservedHeight: 160) { uiImage in
-                    pickedPhoto(uiImage)
-                } failure: {
-                    photoPlaceholderPicker
-                }
-            } else {
-                photoPlaceholderPicker
-            }
-        }
-        .onChange(of: selection) { _, item in
-            loadSelection(item)
-        }
-        .fullScreenCover(isPresented: $isCameraPresented) {
-            DailyCameraPicker(onCapture: onPick)
-                .ignoresSafeArea()
-        }
-        .paeoniaImageViewer(selection: $imageViewerSelection)
-    }
-
-    private func pickedPhoto(_ uiImage: UIImage) -> some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            ZStack(alignment: .topTrailing) {
-                // Flexible height: caps at 220 when there's room, but compresses toward
-                // 120 when the step is tight (a long question paired with a text field),
-                // so the whole question-photo-field cluster fits without a scroll view.
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 120, maxHeight: 220)
-                    .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-                    .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-                    .onTapGesture {
-                        imageViewerSelection = PaeoniaImageViewerSelection(image: uiImage)
-                    }
-                    .accessibilityLabel(Text(.dailyChallengePhotoAnswerAccessibility))
-                    .accessibilityAddTraits(.isButton)
-                    .overlay { preparingOverlay }
-
-                Button(role: .destructive, action: onRemove) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, .black.opacity(0.45))
-                }
-                .padding(PaeoniaSpacing.space8)
-                .accessibilityLabel(Text(.dailyChallengePhotoRemove))
-            }
-
-            photoPickerRow
-        }
-    }
-
-    private var photoPickerRow: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            PhotosPicker(selection: $selection, matching: .images) {
-                Label {
-                    Text(.dailyChallengePhotoChange)
-                } icon: {
-                    Image(systemName: "photo.on.rectangle").accessibilityHidden(true)
-                }
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .frame(maxWidth: .infinity)
-
-            cameraButton
-        }
-    }
-
-    /// Covers the current photo while a replacement is still being prepared.
-    @ViewBuilder
-    private var preparingOverlay: some View {
-        if isBusy {
-            ProgressView()
-                .controlSize(.large)
-                .tint(.paeoniaTextInverse)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(.black.opacity(0.35))
-                .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-        }
-    }
-
-    @ViewBuilder
-    private var cameraButton: some View {
-        if DailyCameraPicker.isAvailable {
-            Button {
-                isCameraPresented = true
-            } label: {
-                Label {
-                    Text(.dailyChallengePhotoTake)
-                } icon: {
-                    Image(systemName: "camera").accessibilityHidden(true)
-                }
-            }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    private var photoPlaceholderPicker: some View {
-        // The picker's label closure is not on the main actor, so it gets a ready-made view.
-        let label = DailyPhotoPlaceholderLabel(isBusy: isBusy)
-        return VStack(spacing: PaeoniaSpacing.space8) {
-            PhotosPicker(selection: $selection, matching: .images) {
-                label
-            }
-            .buttonStyle(.plain)
-            .disabled(isBusy)
-
-            cameraButton
-        }
-    }
-
-    private func loadSelection(_ item: PhotosPickerItem?) {
-        guard let item else { return }
-        isLoading = true
-        Task {
-            // A photo that only lives in iCloud can fail to download. Say so instead
-            // of quietly dropping the pick.
-            if let data = try? await item.loadTransferable(type: Data.self) {
-                onPick(data)
-            } else {
-                onPickFailed()
-            }
-            isLoading = false
-            selection = nil
-        }
     }
 }
 
@@ -450,33 +294,4 @@ struct DailyAnswerImageView: View {
     }
 
     private static let viewerPixelSize = 2_048
-}
-
-/// The empty photo slot: an add-photo prompt, or a spinner while a pick loads.
-private struct DailyPhotoPlaceholderLabel: View {
-    let isBusy: Bool
-
-    var body: some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            if isBusy {
-                ProgressView()
-            } else {
-                Image(systemName: "photo.badge.plus")
-                    .font(.largeTitle)
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .accessibilityHidden(true)
-                Text(.dailyChallengePhotoAdd)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 160)
-        .background(.paeoniaBackgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                .stroke(Color.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
-        }
-    }
 }

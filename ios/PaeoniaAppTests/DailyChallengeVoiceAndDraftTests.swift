@@ -50,6 +50,51 @@ struct DailyChallengeVoiceAndDraftTests {
         #expect(media.stagedData == Data([0x00, 0x01, 0x02, 0x03]))
     }
 
+    @MainActor
+    @Test(arguments: ["text", "voice", "both"])
+    func combinedVoiceAnswerKeepsEveryIncludedPart(parts: String) async throws {
+        let snapshot = makeDailySnapshot(rows: [dailyQuestionRow(answerKinds: [.text, .voice])])
+        let pending = InMemoryPendingSyncOperationRepository()
+        let viewModel = DailyChallengeViewModel(
+            service: RecordingDailyChallengeService(snapshots: [snapshot]),
+            operationProvider: FixedDailyChallengeOperationProvider(),
+            draftStore: InMemoryDailyChallengeDraftStore(),
+            mediaDraftStore: InMemoryDailyAnswerMediaDraftStore(),
+            pendingOperationStore: pending
+        )
+        await viewModel.configure(currentUserID: TestDailyChallengeIDs.currentUser)
+        let question = try #require(viewModel.snapshot.todayQuestion)
+        #expect(!viewModel.hasDraftToSubmit(for: question))
+        if parts != "voice" { viewModel.setDraftText("The rain on the roof", for: question.id) }
+        if parts != "text" {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            try Data([1, 2, 3, 4]).write(to: url)
+            viewModel.stageVoice(url: url, durationMs: 4_200, for: question.id)
+        }
+        await viewModel.submitAnswer(for: question)
+        let operations = try await pending.inFlightOperations(
+            ownerUserID: TestDailyChallengeIDs.currentUser, kind: .submitDailyAnswer
+        )
+        let data = try #require(operations.first?.requestData)
+        let payload = try JSONDecoder().decode(DailySubmitAnswerOperationPayload.self, from: data)
+        switch payload.content {
+        case let .text(text):
+            #expect(parts == "text")
+            #expect(text == "The rain on the roof")
+        case let .media(media):
+            #expect(parts == "voice")
+            #expect(media.draft.purpose == .voice)
+            #expect(media.stagedData == Data([1, 2, 3, 4]))
+        case let .textAndMedia(text, media):
+            #expect(parts == "both")
+            #expect(text == "The rain on the roof")
+            #expect(media.draft.purpose == .voice)
+            #expect(media.stagedData == Data([1, 2, 3, 4]))
+        default:
+            Issue.record("The queued answer lost its text or recording")
+        }
+    }
+
     @Test func stagedMediaDraftStoreRoundTripsAndClears() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("dailyChallengeMediaTest-\(UUID().uuidString)", isDirectory: true)

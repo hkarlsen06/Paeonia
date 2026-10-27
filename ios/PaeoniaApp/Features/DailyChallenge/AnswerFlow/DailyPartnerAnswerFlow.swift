@@ -7,8 +7,7 @@ import SwiftUI
 /// It is presented as a full-screen cover that zooms out of the tapped card, so the
 /// card appears to grow into the screen. It reuses the daily question's prompt and
 /// composer. Sending your answer unlocks your partner's reply when they have answered.
-/// The composer stays as it was until the reply loads, then the flow fades straight
-/// into the question's chat, where their answer plays its reveal. When the send is slow
+/// Once the answer is saved on this phone, the flow opens the question's chat. When the send is slow
 /// or offline, the chat's waiting page shows the user's answer and opens up once the
 /// reply arrives. Close ends the flow at any point.
 struct DailyPartnerAnswerFlow: View {
@@ -38,10 +37,11 @@ struct DailyPartnerAnswerFlow: View {
     /// copies until the chat takes over.
     @State private var heldQuestion: DailyChallengeQuestion?
     @State private var visualHold: DailyAnswerStepVisualHold?
+    @State private var submittedAnswer: DailySendingPreview?
     @FocusState private var isComposerFocused: Bool
 
-    /// `.sending` holds the composer as it was when Send was tapped while the answer
-    /// syncs and the partner's reply loads. The screen then turns straight over to
+    /// `.sending` holds the composer while the phone prepares the conversation.
+    /// The screen then turns straight over to
     /// `.revealed`, the chat. There is intentionally no separate "answered" screen.
     private enum Phase {
         case composing
@@ -55,6 +55,7 @@ struct DailyPartnerAnswerFlow: View {
                 DailyAnswerFlowChat(
                     chat: chat,
                     viewModel: viewModel,
+                    submittedAnswer: submittedAnswer,
                     privacySafetyService: privacySafetyService,
                     privacyOperationProvider: privacyOperationProvider,
                     onReportedAndLeft: onReportedAndLeft,
@@ -88,48 +89,33 @@ struct DailyPartnerAnswerFlow: View {
     /// The question and composer. After Send it stays exactly as it was, with Send
     /// busy, until the chat takes over, so nothing moves in between.
     private var answering: some View {
-        VStack(spacing: PaeoniaSpacing.space16) {
+        VStack(spacing: 0) {
+            DailyAnswerFlowHeader(
+                question: liveQuestion,
+                participants: viewModel.participants,
+                onClose: dismiss,
+                canSkip: onSkip != nil,
+                skipTitle: .dailyChallengeSkipButton,
+                isSkipDisabled: isSubmitting,
+                onSkip: { onSkip?() }
+            )
+
             DailyChallengeAnswerStep(
                 question: heldQuestion ?? liveQuestion,
                 viewModel: viewModel,
                 isFocused: $isComposerFocused,
                 visualHold: visualHold,
-                eyebrow: topicTitle
+                eyebrow: topicTitle,
+                isSubmitting: isSubmitting,
+                isSubmitDisabled: isPrimaryDisabled,
+                onSubmit: { Task { await submit() } }
             )
-            // The answer is on its way, so the held composer takes no more input.
             .allowsHitTesting(visualHold == nil)
-
-            actionBar
         }
         .padding(.top, PaeoniaSpacing.space8)
-        // No explicit animation on this stack: the composer is moved only by the
-        // keyboard, via SwiftUI's automatic keyboard-avoidance. Nothing here resizes on
-        // focus (the action bar is a constant-height row), so there's no second layout
-        // change to animate, and an explicit `.animation` would only re-time the
-        // keyboard's movement onto a fixed curve and make it bounce.
-        // Tap the question or any empty space to put the keyboard away.
-        .dismissesKeyboardOnTap { isComposerFocused = false }
         .paeoniaReadableWidth()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Let the plum bleed under the keyboard's safe-area region too, so the window's
-        // black doesn't show through the keyboard's rounded top corners.
         .background { PaeoniaGlowBackground() }
-    }
-
-    private var actionBar: some View {
-        DailyChallengeAnswerActionBar(
-            primaryTitle: .dailyChallengeSubmitButton,
-            isPrimaryBusy: isSubmitting,
-            isPrimaryDisabled: isPrimaryDisabled,
-            isComposing: isComposerFocused,
-            canSkip: onSkip != nil,
-            skipTitle: .dailyChallengeSkipButton,
-            isSkipDisabled: isSubmitting,
-            onPrimary: { Task { await submit() } },
-            onClose: dismiss,
-            onSkip: { onSkip?() },
-            onDone: { isComposerFocused = false }
-        )
     }
 
     // MARK: - State
@@ -173,12 +159,12 @@ struct DailyPartnerAnswerFlow: View {
             return
         }
 
+        submittedAnswer = viewModel.sendingPreview(for: question)
         isComposerFocused = false
 
-        // Hold the composer as it was (Send still busy) for a moment, so a quick reply
-        // turns over in one step. Capped, so a slow connection never holds it here.
+        // The answer is safe on this phone. Open its conversation without waiting
+        // for the upload or the partner's answer.
         phase = .sending
-        _ = await viewModel.awaitAnswerReveal(for: question.id)
         // Reads the chat from this phone first, so it opens complete. The chat plays
         // the reveal haptic when the partner's answer shows.
         await viewModel.prepareChat(for: liveQuestion)

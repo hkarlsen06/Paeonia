@@ -105,8 +105,15 @@ extension ThreadChatProjection {
             rows.append(answerRow(answer, in: round, lastSentOwnMessage: lastSentOwnMessage, input: input))
         }
 
-        if let waiting = round.waiting {
-            let at = (round.answers.last?.answeredAt ?? round.startsAt).addingTimeInterval(step)
+        if let row = pendingAnswerRow(in: round, input: input, after: rows.last?.row.createdAt) {
+            rows.append(placedRow(
+                row, user: chatUser(input.currentUserID, isCurrentUser: true, input: input),
+                redrawKey: input.pendingAnswer
+            ))
+        }
+
+        if let waiting = waiting(in: round, input: input) {
+            let at = (rows.last?.row.createdAt ?? round.startsAt).addingTimeInterval(step)
             let key = WaitingRedrawKey(waiting: waiting, partnerName: input.partnerName)
             rows.append(placedRow(
                 decoration(waitingRowPrefix + round.instanceID.uuidString, .waiting(waiting), at: at),

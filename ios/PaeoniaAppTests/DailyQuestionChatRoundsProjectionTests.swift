@@ -113,4 +113,51 @@ extension DailyChatRoundsTests {
         // The late answer keeps its real time for display.
         #expect(projection.rowsByID[lateAnswer]?.createdAt == Date(timeIntervalSince1970: 1_000))
     }
+
+    @Test(arguments: [false, true])
+    func aSavedAnswerStaysInItsRoundUntilTheConfirmedAnswerReplacesIt(confirmed: Bool) throws {
+        let earlier = day(startsAt: 100, ownAt: 110, partnerAt: 120, sharedRound: true)
+        let current = day(startsAt: 900, ownAt: confirmed ? 910 : nil, partnerAt: nil, sharedRound: true)
+        let preview = DailySendingPreview(mediaKind: .voice, mediaData: Data([1, 2]), text: "Rain on the roof")
+        var input = input(rounds: [round(earlier), round(current)])
+        input.pendingAnswer = .init(instanceID: current.id, preview: preview)
+        let projection = ThreadChatProjection.make(input: input)
+        let pendingID = ThreadChatProjection.pendingAnswerRowPrefix + current.id.uuidString
+        let ids = projection.exyteMessages.map(\.id)
+        #expect(ids == [
+            ThreadChatProjection.questionRowID(for: earlier.id),
+            try answerRowID(earlier, own: true),
+            try answerRowID(earlier, own: false),
+            ThreadChatProjection.questionRowID(for: current.id),
+            confirmed ? try answerRowID(current, own: true) : pendingID,
+            ThreadChatProjection.waitingRowPrefix + current.id.uuidString
+        ])
+        if confirmed {
+            #expect(projection.rowsByID[pendingID] == nil)
+        } else {
+            let row = try #require(projection.rowsByID[pendingID])
+            guard case let .pendingAnswer(saved) = row.kind else {
+                Issue.record("The saved answer must remain visible while uploading")
+                return
+            }
+            #expect(saved == preview)
+            #expect(row.isCurrentUser)
+            #expect(ThreadChatProjection.isDecorationRowID(row.id))
+        }
+    }
+
+    @Test func aLocallySavedAnswerWaitsForRevealInsteadOfAskingTheUserToAnswerAgain() {
+        let current = day(startsAt: 900, ownAt: nil, partnerAt: 920, partnerReadable: false)
+        var input = input(rounds: [round(current)])
+        input.pendingAnswer = .init(instanceID: current.id, preview: DailySendingPreview(text: "A saved answer"))
+        let projection = ThreadChatProjection.make(input: input)
+        let waitingID = ThreadChatProjection.waitingRowPrefix + current.id.uuidString
+        guard case let .waiting(waiting) = projection.rowsByID[waitingID]?.kind else {
+            Issue.record("The saved answer must wait for the partner's reveal")
+            return
+        }
+        #expect(waiting == .reveal)
+        #expect(projection.rowsByID.values.allSatisfy { $0.answer == nil })
+    }
+
 }

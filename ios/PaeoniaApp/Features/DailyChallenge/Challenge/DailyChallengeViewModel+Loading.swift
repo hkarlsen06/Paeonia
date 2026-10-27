@@ -1,48 +1,6 @@
 import Foundation
 
 extension DailyChallengeViewModel {
-    /// Best-effort wait for the snapshot that contains an unlocked partner reply after
-    /// a just-sent answer. The queued operation can disappear a beat before that
-    /// snapshot arrives, so sending state alone is not reveal readiness: returning in
-    /// that gap makes an answering cover close before it can turn over to the exchange.
-    ///
-    /// The reply arrives as the next applied snapshot, from the live feed or from the
-    /// reload after the send. The wait stays capped, so an offline answer never holds
-    /// the flow open indefinitely; the queued send still retries in the background.
-    @discardableResult
-    func awaitAnswerReveal(for instanceID: UUID) async -> Bool {
-        if hasRevealedPartnerAnswer(for: instanceID) { return true }
-
-        let waiterID = UUID()
-        let (applied, appliedContinuation) = AsyncStream.makeStream(
-            of: Void.self,
-            bufferingPolicy: .bufferingNewest(1)
-        )
-        snapshotWaiters[waiterID] = appliedContinuation
-        let timeout = Task {
-            try? await Task.sleep(for: .seconds(1.2))
-            appliedContinuation.finish()
-        }
-        defer {
-            timeout.cancel()
-            snapshotWaiters[waiterID] = nil
-            appliedContinuation.finish()
-        }
-
-        return await withTaskCancellationHandler {
-            for await _ in applied where hasRevealedPartnerAnswer(for: instanceID) {
-                return true
-            }
-            return hasRevealedPartnerAnswer(for: instanceID)
-        } onCancel: {
-            appliedContinuation.finish()
-        }
-    }
-
-    private func hasRevealedPartnerAnswer(for instanceID: UUID) -> Bool {
-        knownQuestion(instanceID)?.canViewPartnerAnswer == true
-    }
-
     /// Re-reads the local store when the live feeds write to it, so a partner's
     /// answer, shuffle, or new day and a new message preview appear without a reload.
     /// Outbox changes refresh the "saved, sending" state: an answer that finished

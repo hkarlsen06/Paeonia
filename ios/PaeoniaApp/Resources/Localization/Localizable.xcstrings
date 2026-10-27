@@ -6417,6 +6417,60 @@
         }
       }
     },
+    "dailyChallenge.composer.change" : {
+      "comment" : "Button that dismisses the keyboard to change the selected person or option.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre"
+          }
+        }
+      }
+    },
+    "dailyChallenge.composer.photoAdded" : {
+      "comment" : "Label beside the selected photo thumbnail while writing an answer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo added"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilde lagt til"
+          }
+        }
+      }
+    },
+    "dailyChallenge.composer.sharingNote" : {
+      "comment" : "Note below the answer composer explaining when partners can read both answers.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answer is shared when both have answered."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svaret deles når begge har svart."
+          }
+        }
+      }
+    },
     "dailyChallenge.dayEnded.message" : {
       "comment" : "Banner message after the couple's day ended while answering. Tells the user a new question is ready.",
       "extractionState" : "manual",

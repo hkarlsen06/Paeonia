@@ -3,7 +3,7 @@ import SwiftUI
 /// A "saved, sending" answer to keep visible in a read overview while it finishes
 /// sending: a photo/voice note plays from its staged bytes, a partner pick and/or text
 /// caption show what was chosen or written. Any combination can be present.
-struct DailySendingPreview {
+nonisolated struct DailySendingPreview: Equatable, Hashable, Sendable {
     var mediaKind: DailyChallengeAnswerKind = .photo
     var mediaData: Data?
     var voiceDurationMs: Int?

@@ -8,6 +8,7 @@ struct DailyOptionChoicePicker: View {
     let selection: DailyAnswerOption?
     let onSelect: (DailyAnswerOption) -> Void
 
+    @Environment(\.dailyAnswerComposerColors) private var colors
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -29,15 +30,15 @@ struct DailyOptionChoicePicker: View {
         } label: {
             Text(verbatim: options.label(for: option))
                 .font(PaeoniaTypography.sectionTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
+                .foregroundStyle(colors.foreground)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(PaeoniaSpacing.space16)
-                .frame(maxWidth: .infinity, minHeight: 104)
-                .background(isSelected ? Color.paeoniaSurfacePressed : Color.paeoniaSurfaceSecondary, in: shape)
+                .frame(maxWidth: .infinity, minHeight: 88)
+                .background(isSelected ? colors.selected : colors.control, in: shape)
                 .overlay {
                     shape.strokeBorder(
-                        isSelected ? Color.paeoniaAccentPrimary : Color.paeoniaSurfacePressed,
+                        isSelected ? colors.accent : colors.control,
                         lineWidth: isSelected ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeHairline
                     )
                 }
@@ -45,7 +46,7 @@ struct DailyOptionChoicePicker: View {
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
                             .font(PaeoniaTypography.sectionTitle)
-                            .foregroundStyle(.paeoniaAccentPrimary)
+                            .foregroundStyle(colors.accent)
                             .padding(PaeoniaSpacing.space8)
                             .transition(.scale.combined(with: .opacity))
                             .accessibilityHidden(true)

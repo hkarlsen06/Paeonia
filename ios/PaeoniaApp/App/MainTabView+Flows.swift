@@ -17,9 +17,7 @@ enum DailyFlowSource {
 extension MainTabView {
     /// The answer flow is a full-screen cover that zooms out of the card that opened
     /// it (covering the floating tab bar). Reduce Motion drops the zoom for the
-    /// cover's plain cross-fade. A slipped streak's completion screen buys the
-    /// streak back in place (see `makeStreakRestoreViewModel`), rather than opening a
-    /// second, near-identical restore screen over the cover. Each cover mounts the
+    /// cover's plain cross-fade. Each cover mounts the
     /// shared top banner, because the root's banner would sit behind it.
     func presentingDailyFlows(on content: some View) -> some View {
         presentingStreakMilestones(on: content)
@@ -94,9 +92,6 @@ extension MainTabView {
             viewModel: dailyChallengeViewModel,
             questionID: questionID,
             onClose: onClose,
-            makeStreakRestoreViewModel: makeStreakRestoreViewModel,
-            claimStreakMilestone: claimStreakMilestone,
-            claimStreakSave: claimStreakSave,
             privacySafetyService: dependencies.settingsPrivacyService,
             privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
             onReportedAndLeft: actions.leftRelationship
@@ -227,18 +222,16 @@ extension MainTabView {
     }
 
     /// Matches the Home card's label. "See partner's answers" goes straight to the
-    /// Questions tab, where the earlier questions waiting for the user are. Once both
-    /// have answered today, "Open chat" opens today's question's chat. Otherwise the card
-    /// opens today's question, to answer it or to look at the answer the user sent.
+    /// Questions tab, where earlier questions wait for the user. An answered question
+    /// opens its conversation, including while it waits for the partner.
     func openDailyChallengeFromHome() {
         let state = dailyChallengeViewModel.homeCardState
         if state.kind == .complete, state.hasEarlierQuestionsToAnswer {
             openPartnerQuestionsInQuestionsTab()
             return
         }
-        if state.kind == .complete, state.completeFollowUp == .bothAnswered,
-           let today = dailyChallengeViewModel.snapshot.todayQuestion {
-            startOpeningDailyChat(instanceID: today.id)
+        if state.kind == .complete, let today = dailyChallengeViewModel.snapshot.todayQuestion {
+            Task { await presentDailyChat(today, focusesNewest: false) }
             return
         }
 
