@@ -85,6 +85,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 }
             }
         }
+        // A note's keyboard belongs to its cover. Keep Home's map and cards in place behind it.
+        .ignoresSafeArea(.keyboard)
         .onChange(of: mapState, initial: true) { _, _ in retainMapLocations() }
         .onChange(of: fakePartner) { _, _ in
             mapLocations = nil
@@ -219,52 +221,53 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         .transaction { $0.animation = nil }
     }
 
-    /// On the map, the avatars sit where the map puts each partner. Without one, in a row.
+    /// Keep story controls available before location resolves, in the space reserved for the map.
     @ViewBuilder
     private func storiesStrip(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
-        if mapState != .loading, let stories, let storyPeople {
+        if let stories, let storyPeople {
             HomeStoriesStrip(
                 viewModel: stories,
                 people: storyPeople,
-                avatarSize: couple == nil ? Self.rowAvatarSize : avatarSize,
-                arrange: couple.map { couple in
-                    { own, partner in
-                        AnyView(
-                            GeometryReader { band in
-                                let points = points(couple, metrics(couple, screen, bandHeight: band.size.height))
-                                own.position(points.own)
-                                partner.position(points.partner)
-                            }
-                            .transaction { $0.animation = nil }
-                        )
-                    }
-                },
-                middle: couple == nil && hearts != nil && canSendHearts ? AnyView(rowHeart) : nil,
+                avatarSize: reservesMapSpace ? avatarSize : Self.rowAvatarSize,
+                arrange: reservesMapSpace ? { own, partner in
+                    AnyView(
+                        GeometryReader { band in
+                            let points = points(couple, metrics(couple, screen, bandHeight: band.size.height))
+                            own.position(points.own)
+                            partner.position(points.partner)
+                        }
+                        .transaction { $0.animation = nil }
+                    )
+                } : nil,
+                middle: !reservesMapSpace && hearts != nil && canSendHearts ? AnyView(rowHeart) : nil,
                 middleOverlap: Self.heartOverlap
             )
         }
     }
 
-    private func metrics(_ couple: HomeMapCouple, _ screen: HomeMapScreen, bandHeight: CGFloat) -> HomeMapMetrics {
+    private func metrics(_ couple: HomeMapCouple?, _ screen: HomeMapScreen, bandHeight: CGFloat) -> HomeMapMetrics {
         HomeMapMetrics(
             screen: screen,
             bandHeight: max(bandHeight, screen.shortestBand),
             avatarSize: avatarSize,
-            isNear: couple.isNear
+            isNear: couple?.isNear ?? true
         )
     }
 
     /// Follow the camera's current projection instead of animating to its destination.
     /// Before its first frame, use the same math that places the map.
-    private func points(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
+    private func points(_ couple: HomeMapCouple?, _ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
         let raw: HomeMapAvatarPoints
-        if let mapProjection {
+        if couple != nil, let mapProjection {
             raw = HomeMapAvatarPoints(own: mapProjection.own, partner: mapProjection.partner)
-        } else {
+        } else if let couple {
             let framing = framing(couple, metrics)
             raw = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
+        } else {
+            let center = CGPoint(x: metrics.framedBox.midX, y: metrics.framedBox.midY)
+            raw = HomeMapAvatarPoints(own: center, partner: center)
         }
-        return kept(separated(raw, isNear: couple.isNear), inside: metrics.avatarBounds)
+        return kept(separated(raw, isNear: couple?.isNear ?? true), inside: metrics.avatarBounds)
     }
 
     private func framing(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapLibreView.Framing {
