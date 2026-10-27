@@ -22,9 +22,6 @@ struct DailyPromptInlineHero: View {
 
     private static let envelopeWidth: CGFloat = 132
 
-    // Each part is a geometry group because the page moves while the question loads in.
-    // Without one, SwiftUI draws a part's new look (enabled, unredacted) at its final
-    // place at once, while only the old look slides down to it.
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             Button(action: onAnswer) {
@@ -35,10 +32,8 @@ struct DailyPromptInlineHero: View {
             .buttonStyle(.plain)
             .disabled(copy.isLoading)
             .accessibilityHidden(true)
-            .geometryGroup()
 
             titleAndMessage
-                .geometryGroup()
 
             Button(action: onAnswer) {
                 Text(copy.actionTitle)
@@ -47,7 +42,6 @@ struct DailyPromptInlineHero: View {
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(copy.isLoading)
             .accessibilityIdentifier("home.dailyPrompt.action")
-            .geometryGroup()
 
             LockedPartnerQuestionRows(
                 state: state,

@@ -12,6 +12,7 @@ struct PairedHomeView: View {
     /// The day the relationship started (`yyyy-MM-dd`), driving the milestone countdown.
     let relationshipStartedOn: String?
     let milestoneIsSaving: Bool
+    let milestoneIsLoading: Bool
     let onSaveRelationshipStartedOn: (Date) async -> Bool
     /// The couple's countdowns and birthdays, shown on the milestone tile and its timeline.
     var coupleDates: CoupleDatesViewModel?
@@ -47,12 +48,12 @@ struct PairedHomeView: View {
     var onRefresh: () async -> Void = {}
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     /// iPad landscape: three columns that the cards fill left to right and then down,
     /// with a square map (`HomeWideLayout`).
-    @State private var isWideLayout = false
+    @State var isWideLayout = false
     /// A sheet from one of the cards is up (`HomeIsCoveredKey`).
     @State private var isCovered = false
 
@@ -70,6 +71,7 @@ struct PairedHomeView: View {
         accessNotice: AccessNotice? = nil,
         relationshipStartedOn: String? = nil,
         milestoneIsSaving: Bool = false,
+        milestoneIsLoading: Bool = false,
         onSaveRelationshipStartedOn: @escaping (Date) async -> Bool = { _ in false },
         coupleDates: CoupleDatesViewModel? = nil,
         coupleDateNames: CoupleDateNames = CoupleDateNames(),
@@ -106,6 +108,7 @@ struct PairedHomeView: View {
         self.accessNotice = accessNotice
         self.relationshipStartedOn = relationshipStartedOn
         self.milestoneIsSaving = milestoneIsSaving
+        self.milestoneIsLoading = milestoneIsLoading
         self.onSaveRelationshipStartedOn = onSaveRelationshipStartedOn
         self.coupleDates = coupleDates
         self.coupleDateNames = coupleDateNames
@@ -212,6 +215,8 @@ struct PairedHomeView: View {
             .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
             .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
             .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: milestoneIsLoading)
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: relationshipStartedOn)
         } else {
             classicContent
         }
@@ -357,6 +362,8 @@ extension PairedHomeView {
 
     /// PROTOTYPE: today's question in the state named by `-proto.home.daily`, for screenshots.
     private var protoDailyState: DailyChallengeCardState? {
+        #if DEBUG
+        guard ProcessInfo.processInfo.arguments.contains("-proto.home.daily") else { return nil }
         let prompt = "Hva er et lite øyeblikk med oss du tenker tilbake på?"
         let locked = [
             DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "En favorittminne", daysAgo: 1),
@@ -381,6 +388,9 @@ extension PairedHomeView {
         )
         default: nil
         }
+        #else
+        nil
+        #endif
     }
 
     private var dailyPromptCard: some View {
@@ -400,50 +410,6 @@ extension PairedHomeView {
         isWideLayout
             ? AnyLayout(HomeWideLayout(spacing: PaeoniaSpacing.space16))
             : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
-    }
-
-    private var milestoneAndWidget: some View {
-        // One layout keeps the cards' identity, so a text size change doesn't
-        // reset them or close the milestone sheet. On a wide iPad each tile is a
-        // column wide, so they stay side by side at every text size.
-        let layout = if dynamicTypeSize.isAccessibilitySize && !isWideLayout {
-            AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
-        } else {
-            AnyLayout(HStackLayout(alignment: .top, spacing: PaeoniaSpacing.space16))
-        }
-        // On a wide iPad the pair usually sits under the header, so the drawing goes
-        // under the avatars and the calendar to the edge, where it doesn't compete with
-        // them. `ForEach` keeps each tile's identity when the order flips.
-        let tiles: [HomeTile] = isWideLayout ? [.drawing, .milestone] : [.milestone, .drawing]
-        return layout {
-            ForEach(tiles, id: \.self) { tile in
-                switch tile {
-                case .milestone:
-                    milestoneCard
-                case .drawing:
-                    HomeWidgetCard(
-                        coupleID: coupleID,
-                        partnerName: partnerDisplayName?.trimmedNonEmpty,
-                        onOpen: onOpenWidgetDrawing
-                    )
-                }
-            }
-        }
-    }
-
-    private enum HomeTile {
-        case milestone
-        case drawing
-    }
-
-    private var milestoneCard: some View {
-        MilestoneCountdownCard(
-            startedOn: relationshipStartedOn,
-            isSaving: milestoneIsSaving,
-            onSave: onSaveRelationshipStartedOn,
-            coupleDates: coupleDates,
-            names: coupleDateNames
-        )
     }
 
     private var currentName: String {

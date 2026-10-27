@@ -155,13 +155,33 @@ struct RelationshipMilestoneViewModelTests {
             await viewModel.configure(ownerUserID: ownerUserID, serverStartedOn: "2020-01-01")
         }
         await dataService.waitUntilLoadStarts()
+        #expect(!viewModel.isPresentationReady)
         viewModel.refreshServerStartedOn("2024-02-29")
+        #expect(!viewModel.isPresentationReady)
         await dataService.finishLoad(
             with: RelationshipStartedOnLocalState(startedOn: nil, hasPendingChange: false)
         )
         await configuration.value
 
         #expect(viewModel.startedOn == "2024-02-29")
+        #expect(viewModel.isPresentationReady)
+    }
+
+    @MainActor
+    @Test func failedLocalReadFinishesLoadingWithTheServerDate() async throws {
+        let dataService = SuspendedStartedOnDataService()
+        let viewModel = RelationshipMilestoneViewModel(dataService: dataService)
+        let configuration = Task {
+            await viewModel.configure(ownerUserID: UUID(), serverStartedOn: "2024-02-29")
+        }
+        await dataService.waitUntilLoadStarts()
+        #expect(!viewModel.isPresentationReady)
+        await dataService.failLoad()
+        await configuration.value
+        #expect(viewModel.isPresentationReady)
+        #expect(viewModel.startedOn == "2024-02-29")
+        viewModel.clearError()
+        #expect(viewModel.isPresentationReady)
     }
 
     @MainActor
@@ -181,6 +201,7 @@ struct RelationshipMilestoneViewModelTests {
 
         await viewModel.configure(ownerUserID: ownerUserID, serverStartedOn: nil)
         #expect(viewModel.startedOn == nil)
+        #expect(viewModel.isPresentationReady)
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
@@ -253,10 +274,10 @@ private actor RelationshipStartedOnDataServiceSpy: RelationshipStartedOnDataServ
 }
 
 private actor SuspendedStartedOnDataService: RelationshipStartedOnDataServicing {
-    private var loadContinuation: CheckedContinuation<RelationshipStartedOnLocalState, Never>?
+    private var loadContinuation: CheckedContinuation<RelationshipStartedOnLocalState, any Error>?
 
     func loadStartedOn(ownerUserID _: UUID) async throws -> RelationshipStartedOnLocalState {
-        await withCheckedContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             loadContinuation = continuation
         }
     }
@@ -275,6 +296,11 @@ private actor SuspendedStartedOnDataService: RelationshipStartedOnDataServicing 
 
     func finishLoad(with state: RelationshipStartedOnLocalState) {
         loadContinuation?.resume(returning: state)
+        loadContinuation = nil
+    }
+
+    func failLoad() {
+        loadContinuation?.resume(throwing: URLError(.cannotOpenFile))
         loadContinuation = nil
     }
 }

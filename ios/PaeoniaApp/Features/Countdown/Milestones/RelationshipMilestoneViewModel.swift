@@ -3,8 +3,9 @@ import Observation
 
 @MainActor
 @Observable
-final class RelationshipMilestoneViewModel {
+final class RelationshipMilestoneViewModel: PresentationReadinessProviding {
     private(set) var startedOn: String?
+    private(set) var isPresentationReady = false
     private(set) var isSaving = false
     private(set) var error: RelationshipMilestoneError?
 
@@ -29,17 +30,14 @@ final class RelationshipMilestoneViewModel {
     func configure(ownerUserID: UUID?, serverStartedOn: String?) async {
         configurationGeneration &+= 1
         let activeConfigurationGeneration = configurationGeneration
-        let priorOwnerUserID = self.ownerUserID
-        if priorOwnerUserID != ownerUserID {
-            // Invalidate any suspended save/configure work from the previous
-            // account before it can write presentation state for this identity.
-            localMutationGeneration &+= 1
-            reconciliationGeneration &+= 1
-            isSaving = false
-            hasPendingLocalChange = false
-        }
+        if self.ownerUserID != ownerUserID { resetForOwner() }
 
         self.ownerUserID = ownerUserID
+        defer {
+            if configurationGeneration == activeConfigurationGeneration, !Task.isCancelled {
+                isPresentationReady = true
+            }
+        }
         latestServerStartedOn = Self.validated(serverStartedOn)
         let initialLocalMutationGeneration = localMutationGeneration
 
@@ -74,6 +72,15 @@ final class RelationshipMilestoneViewModel {
             startedOn = latestServerStartedOn
             hasPendingLocalChange = false
         }
+    }
+
+    private func resetForOwner() {
+        // Invalidate suspended work before it can publish another account's date.
+        localMutationGeneration &+= 1
+        reconciliationGeneration &+= 1
+        isPresentationReady = false
+        isSaving = false
+        hasPendingLocalChange = false
     }
 
     /// Applies a server refresh without hiding a newer local choice that is still

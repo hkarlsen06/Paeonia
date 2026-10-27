@@ -22,6 +22,7 @@ struct MilestoneCountdownCard: View {
     /// The couple's start date as an `yyyy-MM-dd` string (`couples.started_on`).
     let startedOn: String?
     let isSaving: Bool
+    let isLoading: Bool
     let onSave: (Date) async -> Bool
     /// The couple's countdowns and birthdays. Nil shows milestones only.
     let coupleDates: CoupleDatesViewModel?
@@ -48,12 +49,14 @@ struct MilestoneCountdownCard: View {
     init(
         startedOn: String?,
         isSaving: Bool = false,
+        isLoading: Bool = false,
         onSave: @escaping (Date) async -> Bool = { _ in false },
         coupleDates: CoupleDatesViewModel? = nil,
         names: CoupleDateNames = CoupleDateNames()
     ) {
         self.startedOn = startedOn
         self.isSaving = isSaving
+        self.isLoading = isLoading
         self.onSave = onSave
         self.coupleDates = coupleDates
         self.names = names
@@ -66,13 +69,7 @@ struct MilestoneCountdownCard: View {
     }
 
     var body: some View {
-        Group {
-            if let milestone {
-                card(for: milestone)
-            } else {
-                setupCard
-            }
-        }
+        calendarButton
         .onCalendarDayChange { now = Date() }
         // A tapped date reminder opens the timeline. `initial` covers a cold launch, where the
         // request is set before this card exists.
@@ -103,41 +100,64 @@ struct MilestoneCountdownCard: View {
         .preference(key: HomeIsCoveredKey.self, value: isEditorPresented || isTimelinePresented)
     }
 
-    private func card(for milestone: CoupleDateEvent) -> some View {
-        let title = milestone.title(names: names)
-        let isToday = milestone.daysRemaining == 0
-        return Button(action: { isTimelinePresented = true }) {
-            tile(
-                face: isToday ? .today : .days(shownDays(milestone.daysRemaining)),
-                burstID: isCelebrating ? celebrationID : nil,
-                // On the day itself the page says "Today", so the line is just the event.
-                line: isToday ? Text(verbatim: title) : Text(untilLine(for: milestone, title: title))
-            )
+    private var calendarButton: some View {
+        let milestone = milestone
+        return Button {
+            if milestone == nil { presentEditor() } else { isTimelinePresented = true }
+        } label: {
+            calendarLabel(for: milestone)
+                .opacity(isLoading ? 0 : 1)
+                .overlay {
+                    if isLoading {
+                        calendarLabel(for: nil)
+                            .redacted(reason: .placeholder)
+                            .transition(.opacity)
+                    }
+                }
         }
         .buttonStyle(.paeoniaPressableCard)
-        .accessibilityLabel(accessibilityLabel(for: milestone, title: title))
-        .accessibilityHint(Text(.homeMilestoneTimelineAccessibilityHint))
+        .disabled(isLoading)
+        .accessibilityHidden(isLoading)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: isLoading)
+        .accessibilityLabel(milestone.map { accessibilityLabel(for: $0, title: $0.title(names: names)) }
+            ?? Text(.homeMilestoneSetupTitle))
+        .accessibilityHint(Text(milestone == nil
+            ? .homeMilestoneSetupAccessibilityHint : .homeMilestoneTimelineAccessibilityHint))
         // Home builds every card up front, so `onAppear` fires while the tile is still
         // below the fold. Wait until it is actually on screen.
         .onScrollVisibilityChange(threshold: 0.8) { isVisible in
             isOnScreen = isVisible
-            guard isVisible else { return }
+            guard isVisible, !isLoading, let milestone else { return }
             countUpOnce()
             celebrateIfMilestoneDay(milestone)
         }
         .onChange(of: milestone) { _, milestone in
-            if isOnScreen {
+            if isOnScreen, !isLoading, let milestone {
+                countUpOnce()
+                celebrateIfMilestoneDay(milestone)
+            }
+        }
+        .onChange(of: isLoading) { _, isLoading in
+            if !isLoading, isOnScreen, let milestone {
+                countUpOnce()
                 celebrateIfMilestoneDay(milestone)
             }
         }
     }
 
-    private var setupCard: some View {
-        Button(action: presentEditor) {
-            tile(face: .empty, burstID: nil, line: Text(.homeMilestoneSetupTitle))
+    private func calendarLabel(for milestone: CoupleDateEvent?) -> some View {
+        let face: CountdownCalendarView.Face
+        let line: Text
+        if let milestone, !isLoading {
+            let title = milestone.title(names: names)
+            let isToday = milestone.daysRemaining == 0
+            face = isToday ? .today : .days(shownDays(milestone.daysRemaining))
+            line = isToday ? Text(verbatim: title) : Text(untilLine(for: milestone, title: title))
+        } else {
+            face = .empty
+            line = Text(.homeMilestoneSetupTitle)
         }
-        .buttonStyle(.paeoniaPressableCard)
-        .accessibilityHint(Text(.homeMilestoneSetupAccessibilityHint))
+        return tile(face: face, burstID: isCelebrating ? celebrationID : nil, line: line)
     }
 
     /// The calendar with its one line underneath. The calendar takes the space the line

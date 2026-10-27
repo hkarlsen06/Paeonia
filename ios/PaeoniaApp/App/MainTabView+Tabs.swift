@@ -130,6 +130,7 @@ extension MainTabView {
             accessNotice: identity.accessNotice,
             relationshipStartedOn: milestoneViewModel.startedOn,
             milestoneIsSaving: milestoneViewModel.isSaving,
+            milestoneIsLoading: !milestoneViewModel.isPresentationReady || !coupleDatesViewModel.hasLoaded,
             onSaveRelationshipStartedOn: { date in
                 await milestoneViewModel.save(startedOn: date)
             },

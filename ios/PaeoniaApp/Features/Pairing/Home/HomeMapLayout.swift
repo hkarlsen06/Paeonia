@@ -96,7 +96,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     private func page(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
         VStack(spacing: 0) {
             top(couple, screen)
-            if couple == nil {
+            if !reservesMapSpace {
                 noMapNotice
             }
             sheet
@@ -104,18 +104,16 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 // screen. A square tile sizes itself from the room it is offered, and would
                 // otherwise split that room with the map and overflow under the tab bar.
                 .fixedSize(horizontal: false, vertical: true)
+                // Keep loading and loaded descendants in the same moving coordinate space.
+                .geometryGroup()
                 // The cards start just under the map's last full row, and the map fades on behind them.
-                .padding(.top, couple == nil ? PaeoniaSpacing.space24 : -HomeMapMetrics.cardsOverlap)
+                .padding(.top, reservesMapSpace ? -HomeMapMetrics.cardsOverlap : PaeoniaSpacing.space24)
         }
-        .padding(.top, couple == nil ? screen.topInset + Self.headerHeight + PaeoniaSpacing.space8 : 0)
+        .padding(.top, reservesMapSpace ? 0 : screen.topInset + Self.headerHeight + PaeoniaSpacing.space8)
         // With the map, the page fills the screen down to just above the tab bar, and
         // the map takes whatever the cards leave. One layout pass sizes both, so they
         // move together when a card changes height.
-        .frame(minHeight: couple == nil ? nil : screen.fillHeight, alignment: .top)
-    }
-
-    private static var headerHeight: CGFloat {
-        PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space12
+        .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
     }
 
     /// The partner's hearts while they play, otherwise how far apart the couple is.
@@ -160,12 +158,12 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             }
         }
         .frame(
-            minHeight: couple == nil ? nil : screen.shortestBand,
-            maxHeight: couple == nil ? nil : .infinity,
+            minHeight: reservesMapSpace ? screen.shortestBand : nil,
+            maxHeight: reservesMapSpace ? .infinity : nil,
             alignment: .top
         )
         // A pull down keeps the map against the top of the screen.
-        .visualEffect { [pinned = couple != nil] content, proxy in
+        .visualEffect { [pinned = reservesMapSpace] content, proxy in
             content.offset(y: pinned ? min(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY) : 0)
         }
     }
@@ -222,7 +220,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     /// On the map, the avatars sit where the map puts each partner. Without one, in a row.
     @ViewBuilder
     private func storiesStrip(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
-        if let stories, let storyPeople {
+        if mapState != .loading, let stories, let storyPeople {
             HomeStoriesStrip(
                 viewModel: stories,
                 people: storyPeople,
@@ -319,6 +317,12 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 }
 
 extension HomeMapLayout {
+    private var reservesMapSpace: Bool { mapState == .loading || couple != nil }
+
+    private static var headerHeight: CGFloat {
+        PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space12
+    }
+
     /// The heart between the avatars in the row, with the hearts flying from one to the other.
     private var rowHeart: some View {
         let reach = (Self.rowAvatarSize + Self.heartWidth) / 2 - Self.heartOverlap
