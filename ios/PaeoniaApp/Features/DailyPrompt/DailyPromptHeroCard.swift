@@ -62,10 +62,9 @@ struct DailyPromptHeroCard: View {
         }
     }
 
-    /// The question. While loading it is a stand-in that is never readable (redacted), so
-    /// it is not localized. It is two lines long, like most questions.
+    /// The question, or a localized stand-in sized for the loading placeholder.
     private var status: Text {
-        Text(verbatim: copy.message ?? "A small moment from today, just for the two of you")
+        Text(verbatim: copy.messageOrPlaceholder)
     }
 
 }

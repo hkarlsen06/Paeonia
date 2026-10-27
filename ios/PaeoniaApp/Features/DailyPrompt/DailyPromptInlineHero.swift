@@ -66,15 +66,33 @@ struct DailyPromptInlineHero: View {
                 .font(PaeoniaTypography.heroTitle)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .accessibilityAddTraits(.isHeader)
-            Text(verbatim: copy.message ?? "A small moment from today, just for the two of you")
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextSecondary)
+            ZStack(alignment: .top) {
+                Text(verbatim: copy.messageOrPlaceholder)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                if copy.isLoading {
+                    // Keep the loading height so the card still glides down as it fills.
+                    Text(verbatim: copy.messageOrPlaceholder)
+                        .lineLimit(2, reservesSpace: true)
+                        .hidden()
+                        .accessibilityHidden(true)
+                }
+            }
+            .font(PaeoniaTypography.body)
+            .accessibilityHidden(copy.isLoading)
         }
         .multilineTextAlignment(.center)
         // Full width, so the lines stay centered in the geometry group while the shorter
         // question replaces the placeholder.
         .frame(maxWidth: .infinity)
         .redacted(reason: copy.isLoading ? .placeholder : [])
+        .overlay {
+            if copy.isLoading {
+                Color.clear
+                    .accessibilityElement()
+                    .accessibilityLabel(Text(.dailyChallengeHomeLoadingTitle))
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
     }
 }
 

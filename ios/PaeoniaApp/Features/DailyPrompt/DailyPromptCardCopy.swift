@@ -13,10 +13,10 @@ struct DailyPromptCardCopy {
 
     var title: LocalizedStringResource {
         switch state.kind {
-        case .loading, .active:
-            .dailyChallengeHomeActiveTitle
-        case .noChallenge:
+        case .loading, .noChallenge:
             .dailyChallengeHomeNoChallengeTitle
+        case .active:
+            .dailyChallengeHomeActiveTitle
         case .complete:
             .dailyChallengeHomeCompleteTitle
         }
@@ -43,6 +43,11 @@ struct DailyPromptCardCopy {
                 String(localized: .dailyChallengeHomeCompleteMessage)
             }
         }
+    }
+
+    /// During loading, the localized loading label sizes the redacted placeholder.
+    var messageOrPlaceholder: String {
+        message ?? String(localized: .dailyChallengeHomeLoadingTitle)
     }
 
     var actionTitle: LocalizedStringResource {
