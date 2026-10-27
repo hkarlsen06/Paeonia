@@ -78,6 +78,7 @@ struct GuessMySpotGuessView: View {
             GamePresenceLabel(
                 player: viewModel.partner,
                 text: isHere ? .guessMySpotGuessWatching(name) : .guessMySpotGuessLater(name),
+                isHere: isHere,
                 showsRing: isHere
             )
             .animation(PaeoniaMotion.stateChange, value: isHere)

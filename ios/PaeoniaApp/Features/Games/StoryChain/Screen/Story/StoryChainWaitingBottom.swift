@@ -15,6 +15,7 @@ struct StoryChainWaitingBottom: View {
             StoryChainPartnerLine(
                 participants: viewModel.participants,
                 text: statusText,
+                isHere: presence.isHere,
                 showsRing: presence.isHere,
                 showsDots: showsDots,
                 font: PaeoniaTypography.body.weight(.semibold)

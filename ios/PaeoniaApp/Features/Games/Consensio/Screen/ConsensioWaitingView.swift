@@ -125,6 +125,7 @@ struct ConsensioWaitingView: View {
                 .padding(-6)
                 .opacity(partnerIsHere ? (reduceMotion ? 0.35 : (breathes ? 0.5 : 0.2)) : 0)
         }
+        .gamePresenceDot(partnerIsHere, size: 20)
         .onAppear {
             guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
@@ -138,10 +139,18 @@ struct ConsensioWaitingView: View {
 
     private var text: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            Text(title)
-                .font(PaeoniaTypography.title)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .contentTransition(.opacity)
+            HStack(spacing: PaeoniaSpacing.space8) {
+                // While the partner guesses there is no avatar on screen, so the dot
+                // sits by the title.
+                if partnerIsHere, isWaitingForGuess {
+                    GamePresenceDot(size: 12)
+                        .transition(.scale.combined(with: .opacity))
+                }
+                Text(title)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .contentTransition(.opacity)
+            }
             Text(hint)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextSecondary)

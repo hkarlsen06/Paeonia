@@ -123,29 +123,6 @@ struct BoardGameAwayLine: View {
     }
 }
 
-/// A small green dot that dims and brightens slowly. Reduce Motion keeps it still.
-struct BoardGamePresenceDot: View {
-    let size: CGFloat
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isDim = false
-
-    var body: some View {
-        Circle()
-            .fill(.paeoniaSuccess)
-            .frame(width: size, height: size)
-            .opacity(isDim ? 0.45 : 1)
-            .scaleEffect(isDim ? 0.85 : 1)
-            .animation(pulse, value: isDim)
-            .onAppear { isDim = !reduceMotion }
-            .accessibilityHidden(true)
-    }
-
-    private var pulse: Animation? {
-        reduceMotion ? nil : PaeoniaMotion.standardCurve(duration: 1.2).repeatForever(autoreverses: true)
-    }
-}
-
 #if DEBUG
 #Preview("Presence") {
     VStack(spacing: PaeoniaSpacing.space24) {

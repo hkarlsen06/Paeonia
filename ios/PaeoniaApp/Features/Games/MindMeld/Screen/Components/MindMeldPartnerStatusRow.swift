@@ -29,6 +29,7 @@ struct MindMeldPartnerStatusRow: View {
                     Circle().strokeBorder(.paeoniaAccentPrimary, lineWidth: 2).padding(-2)
                 }
             }
+            .gamePresenceDot(status != .away, size: 10)
             .scaleEffect(pulse)
             .accessibilityHidden(true)
             line

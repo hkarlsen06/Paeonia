@@ -110,6 +110,7 @@ struct ExquisiteCorpseDrawingView: View {
                 GamePresenceLabel(
                     player: viewModel.partner,
                     text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
+                    isHere: viewModel.partnerPresence.isHere,
                     showsRing: viewModel.partnerPresence == .watching,
                     scale: partnerPulse
                 )

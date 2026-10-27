@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The partner's avatar at 96 pt. A soft ring breathes around it while the
-/// partner is in the game. The ring stays in the layout and fades in and out, and
+/// The partner's avatar at 96 pt. A soft ring breathes around it and the green
+/// dot shows while the partner is in the game. The ring stays in the layout and fades in and out, and
 /// the breathing covers only its opacity, so it moves with the avatar when the
 /// layout changes.
 struct ExquisiteCorpsePartnerAvatar: View {
@@ -14,6 +14,7 @@ struct ExquisiteCorpsePartnerAvatar: View {
     var body: some View {
         GameAvatar(player: player, isMe: false, size: 96)
             .background { ring }
+            .gamePresenceDot(isPartnerHere, size: 20)
             .padding(PaeoniaSpacing.space8)
     }
 

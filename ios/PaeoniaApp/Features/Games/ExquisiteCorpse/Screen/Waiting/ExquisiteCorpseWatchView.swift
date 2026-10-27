@@ -59,7 +59,12 @@ struct ExquisiteCorpseWatchView: View {
 
     private var liveRow: some View {
         GameLiveRow {
-            GamePresenceLabel(player: viewModel.partner, text: title, showsRing: true)
+            GamePresenceLabel(
+                player: viewModel.partner,
+                text: title,
+                isHere: viewModel.partnerPresence.isHere,
+                showsRing: true
+            )
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("corpse.watching")
         } trailing: {

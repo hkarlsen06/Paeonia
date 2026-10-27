@@ -153,16 +153,7 @@ struct BoardGamePlayerAvatar: View {
             .overlay(alignment: .bottomTrailing) {
                 badge.offset(x: 4, y: 4)
             }
-            .overlay(alignment: .topTrailing) {
-                if isHere {
-                    BoardGamePresenceDot(size: 12)
-                        .overlay {
-                            Circle().strokeBorder(.paeoniaBackgroundSecondary, lineWidth: PaeoniaRadius.strokeEmphasis)
-                        }
-                        .offset(x: 2, y: -2)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
+            .gamePresenceDot(isHere, size: 12)
             .scaleEffect(isActive ? Self.activeScale : 1)
     }
 

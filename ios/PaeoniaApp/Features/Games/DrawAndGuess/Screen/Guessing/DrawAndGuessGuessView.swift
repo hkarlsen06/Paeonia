@@ -312,6 +312,7 @@ extension DrawAndGuessGuessView {
             GamePresenceLabel(
                 player: viewModel.partner,
                 text: liveRowText,
+                isHere: viewModel.partnerPresence.isHere,
                 showsRing: isLive || isWatchedGuessing
             )
         } trailing: {

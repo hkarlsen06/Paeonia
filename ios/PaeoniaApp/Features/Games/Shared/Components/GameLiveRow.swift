@@ -31,10 +31,12 @@ struct GameLiveRow<Leading: View, Trailing: View>: View {
     }
 }
 
-/// An avatar next to a short status line.
+/// An avatar next to a short status line. The green dot says the partner has the
+/// game open, and the ring that they are watching this screen.
 struct GamePresenceLabel: View {
     let player: GamePlayer
     let text: LocalizedStringResource
+    var isHere = false
     var showsRing = false
     var scale: CGFloat = 1
 
@@ -46,6 +48,7 @@ struct GamePresenceLabel: View {
                         Circle().strokeBorder(.paeoniaAccentPrimary, lineWidth: 2).padding(-2)
                     }
                 }
+                .gamePresenceDot(isHere, size: 10)
                 .scaleEffect(scale)
             Text(text)
                 .font(PaeoniaTypography.caption.weight(.semibold))

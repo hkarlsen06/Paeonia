@@ -6,6 +6,7 @@ import SwiftUI
 struct StoryChainPartnerLine: View {
     let participants: GameParticipants
     let text: LocalizedStringResource
+    var isHere = false
     var showsRing = false
     var showsDots = false
     var font = PaeoniaTypography.caption.weight(.semibold)
@@ -28,6 +29,7 @@ struct StoryChainPartnerLine: View {
                         trough: 0.4
                     )
                 }
+                .gamePresenceDot(isHere, size: 10)
                 .padding(.vertical, 3)
                 .padding(.leading, 3)
             Text(text)

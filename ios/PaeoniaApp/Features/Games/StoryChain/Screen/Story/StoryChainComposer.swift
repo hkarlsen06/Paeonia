@@ -22,6 +22,7 @@ struct StoryChainComposer: View {
             StoryChainPartnerLine(
                 participants: viewModel.participants,
                 text: liveText,
+                isHere: viewModel.partnerPresence.isHere,
                 showsRing: viewModel.partnerPresence == .reading
             )
             .animation(PaeoniaMotion.stateChange, value: viewModel.partnerPresence)
