@@ -33,6 +33,8 @@ import {
 } from "./lib/threadSubjects";
 import { topicOfQuestion } from "./lib/topics";
 
+import { finishedGameForChat, gameChatSource, gameChatSubjectId, normalizeGameChatSource } from "./lib/gameChatSubjects";
+
 const nullableMediaIds = v.optional(v.union(v.null(), v.array(v.string())));
 
 /** Port of `assert_conversation_thread_allowed`. */
@@ -141,6 +143,10 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
     actor_user_id: message.sender_user_id,
   };
   Object.assign(payload, threadPushRoute(subject));
+  if (subject.kind === "game") {
+    const link = await ctx.db.query("game_threads").withIndex("by_thread_id", q => q.eq("thread_id", thread.id)).unique();
+    if (link) payload.game_source = link.source;
+  }
   try {
     await enqueuePartnerNotification(ctx, {
       couple_id: thread.couple_id,
@@ -172,6 +178,8 @@ function threadPushRoute(subject: ThreadSubject): Record<string, string> {
       };
     case "memory":
       return { route: "memories", deeplink: memoryDeepLink(subject.id, { comments: true }), memory_id: subject.id };
+    case "game":
+      return { route: "daily", deeplink: `paeonia://daily/game-chat?gameId=${subject.id}`, game_chat_id: subject.id };
     case "story":
       return { route: "stories", deeplink: storyDeepLink(subject.id, { replies: true }), story_id: subject.id };
   }
@@ -662,6 +670,41 @@ export const create_story_thread_with_message = mutation({
   },
 });
 
+export const create_game_thread_with_message = mutation({
+  args: {
+    p_couple_id: v.string(),
+    p_source: gameChatSource,
+    p_body: v.optional(v.union(v.null(), v.string())),
+    p_media_asset_ids: nullableMediaIds,
+    ...clientOperationArgs,
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = uuidArg(args.p_couple_id);
+    const source = normalizeGameChatSource(args.p_source);
+    const subjectId = await gameChatSubjectId(source);
+    if (!(await canAccessCoupleContent(ctx, userId, coupleId)) || !(await finishedGameForChat(ctx, coupleId, source))) {
+      return fail("42501", "active entitled finished game access is required");
+    }
+    const stored = await runClientOperation(ctx, userId, toClientOperation(args, {
+      kind: "create_game_thread_with_message", scope: "conversation_threads",
+      request: ["create_game_thread_with_message", coupleId, source, ...mediaFingerprint(args.p_body, args.p_media_asset_ids)],
+    }), async () => {
+      await consumeRateLimit(ctx, "threadMessage", userId);
+      let threadId = await threadIdOfSubject(ctx, coupleId, { kind: "game", id: subjectId });
+      if (!threadId) {
+        threadId = await insertConversationThread(ctx, { couple_id: coupleId, kind: "game", created_by_user_id: userId });
+        await ctx.db.insert("game_threads", {
+          subject_id: subjectId, couple_id: coupleId, source, thread_id: threadId, created_at: nowIso(),
+        });
+      }
+      const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids);
+      return { thread_id: threadId, message_id: messageId };
+    });
+    return [stored];
+  },
+});
+
 export const get_conversation_threads = query({
   args: {},
   handler: async (ctx) => {
@@ -684,6 +727,10 @@ export const get_conversation_threads = query({
       if (daily) {
         if (!(await loadQuestionRounds(ctx, coupleId, daily.question_id)).some(isSharedRound)) continue;
       }
+      const game = thread.kind === "game"
+        ? await ctx.db.query("game_threads").withIndex("by_thread_id", q => q.eq("thread_id", thread.id)).unique()
+        : null;
+      if (thread.kind === "game" && (!game || !(await finishedGameForChat(ctx, coupleId, game.source)))) continue;
       // A topic question's chat says which topic it is in.
       const topic = daily ? await topicOfQuestion(ctx, daily.question_id) : null;
       const memory = await ctx.db
@@ -726,6 +773,7 @@ export const get_conversation_threads = query({
         daily_question_id: orNull(daily?.question_id),
         memory_id: orNull(memory?.memory_id),
         story_id: orNull(story?.story_id),
+        game_source: orNull(game?.source),
         created_by_user_id: thread.created_by_user_id,
         created_at: thread.created_at,
         updated_at: thread.updated_at,

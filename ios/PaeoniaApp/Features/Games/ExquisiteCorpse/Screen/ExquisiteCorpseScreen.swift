@@ -163,7 +163,7 @@ struct ExquisiteCorpseScreen: View {
                 .frame(maxWidth: .infinity)
             }
         } else if let content = viewModel.revealContent {
-            ExquisiteCorpseRevealView(content: content, reduceMotion: reduceMotion) {
+            ExquisiteCorpseRevealView(content: content, figure: viewModel.figure, reduceMotion: reduceMotion) {
                 Task { await viewModel.continueFromReveal() }
             }
             .id(content.figureID)

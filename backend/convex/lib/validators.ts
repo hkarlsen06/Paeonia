@@ -16,7 +16,7 @@ export const moderationStatus = literals(
 );
 
 /** What a chat thread is about: a daily question, a memory (comments) or a story (replies). */
-export const threadKind = literals("daily_question", "memory", "story");
+export const threadKind = literals("daily_question", "memory", "story", "game");
 
 export const authProvider = literals("apple", "google", "unknown");
 export const apnsEnvironment = literals("sandbox", "production");

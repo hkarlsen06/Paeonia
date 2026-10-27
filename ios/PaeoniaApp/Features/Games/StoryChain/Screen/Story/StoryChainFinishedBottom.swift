@@ -9,6 +9,7 @@ struct StoryChainFinishedBottom: View {
     /// The server knows the story is finished, so it takes a reaction. A title still queued on
     /// this phone leaves the story unfinished there.
     var canReact = true
+    var result: GameConversationResult?
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
@@ -16,6 +17,9 @@ struct StoryChainFinishedBottom: View {
             StoryChainStatsLine(lineCount: finished.lineCount, dareCount: finished.dareCount)
                 .opacity(reveal.statsShown ? 1 : 0)
                 .offset(y: reveal.statsShown ? 0 : PaeoniaSpacing.space8)
+            if reveal.actionsShown, canReact {
+                GameConversationButton(source: .storyChain(finished.storyID), result: result)
+            }
             if reveal.statsShown, canReact {
                 ReactionSection(target: .storyChainStory(finished.storyID), alignment: .center)
                     .transition(.opacity)

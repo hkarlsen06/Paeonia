@@ -115,6 +115,8 @@ struct DrawAndGuessHistoryDetailScreen: View {
         .paeoniaShareToolbar(viewModel.shareable, identifier: "draw.history.share")
         .task { await viewModel.load(showsAtOnce: reduceMotion) }
         .accessibilityIdentifier("draw.history.detail")
+        .gameConversationToolbar(
+            .drawAndGuess(viewModel.round.id), result: .drawAndGuess(viewModel.round, guesses: viewModel.round.guesses))
     }
 
     // MARK: - Drawing

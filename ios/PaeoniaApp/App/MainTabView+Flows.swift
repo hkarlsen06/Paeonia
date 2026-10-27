@@ -251,6 +251,11 @@ extension MainTabView {
         }
     }
 
+    private func openTodayAnswerIfNeeded(source: DailyFlowSource) {
+        guard dailyChallengeViewModel.homeCardState.kind != .complete else { return }
+        openAnswerFlow(source: source)
+    }
+
     /// Lands on the Questions tab with the waiting questions outlined, so the user can
     /// see which rows the button meant.
     private func openPartnerQuestionsInQuestionsTab() {
@@ -301,7 +306,7 @@ extension MainTabView {
             // data download screen, then consumes the link. Acting here as well would
             // race the root task.
             break
-        case .dailyReveal, .dailyChat, .dailyToday, .topics:
+        case .dailyReveal, .dailyChat, .dailyToday, .gameChat, .topics:
             await handleQuestionsDeepLink(deepLink)
         case .memories, .memory:
             await openMemories(for: deepLink)
@@ -325,9 +330,7 @@ extension MainTabView {
         }
         if deepLink == .firstDayAnswer {
             guard await refreshStillCurrent(for: deepLink) else { return }
-            if dailyChallengeViewModel.homeCardState.kind != .complete {
-                openAnswerFlow(source: .home)
-            }
+            openTodayAnswerIfNeeded(source: .home)
         }
         if case let .story(storyID, showsReplies) = deepLink {
             await storiesViewModel.reload()
@@ -422,17 +425,44 @@ extension MainTabView {
             focusedDailyQuestionIDs = [instanceID]
         case .dailyChat(let questionID):
             await openDailyChat(questionID: questionID)
-            guard isCurrent(deepLink) else { return }
+        case .gameChat(let subjectID):
+            await openGameConversation(subjectID: subjectID, for: deepLink)
         case .dailyToday:
-            if dailyChallengeViewModel.homeCardState.kind != .complete {
-                openAnswerFlow(source: .questions)
-            }
+            openTodayAnswerIfNeeded(source: .questions)
         case .topics:
             openTopics()
         default:
             return
         }
+        guard isCurrent(deepLink) else { return }
         self.deepLink.wrappedValue = nil
+    }
+
+    private func openGameConversation(subjectID: UUID, for deepLink: PaeoniaDeepLink) async {
+        guard let ownerID = identity.currentUserID else { return }
+        do {
+            let summaries = try await dailyChallengeViewModel.chatService.refreshThreadSummaries(ownerUserID: ownerID)
+            guard isCurrent(deepLink) else { return }
+            if summaries.contains(where: { $0.subject.kind == .game && $0.subject.id == subjectID }) {
+                requestedConversationID = subjectID
+            } else {
+                bannerCenter.show(
+                    .error(
+                        title: String(localized: .gamesConversationNavigationTitle),
+                        message: String(localized: .gamesConversationUnavailable)
+                    ))
+            }
+        } catch {
+            guard !error.isCancellation, isCurrent(deepLink) else { return }
+            let message: LocalizedStringResource =
+                PaeoniaFailure(error) == .offline
+                ? .gamesConversationOfflineMessage : .gamesConversationFailedMessage
+            bannerCenter.show(
+                .error(
+                    title: String(localized: .gamesConversationNavigationTitle),
+                    message: String(localized: message)
+                ))
+        }
     }
 
     /// Opens a question's chat on the Questions tab at its newest day, from a

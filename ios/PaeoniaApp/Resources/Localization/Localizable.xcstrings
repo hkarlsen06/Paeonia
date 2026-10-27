@@ -11865,6 +11865,258 @@
         }
       }
     },
+    "games.conversation.distance" : {
+      "comment" : "A photo guessing result. Arguments are the guesser name and the distance from the spot.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ guessed %2$@ away"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ gjettet %2$@ unna"
+          }
+        }
+      }
+    },
+    "games.conversation.drawing" : {
+      "comment" : "VoiceOver label for a finished drawing attached to a conversation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing from this game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegning fra dette spillet"
+          }
+        }
+      }
+    },
+    "games.conversation.failedMessage" : {
+      "comment" : "Explains a game result could not be loaded and offers a next step.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We could not load this game. Try again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke laste inn spillet. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "games.conversation.game" : {
+      "comment" : "Label for a conversation about a finished game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spill"
+          }
+        }
+      }
+    },
+    "games.conversation.guess" : {
+      "comment" : "A Consensio result. Arguments are the guesser name and the scale value.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ guessed %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ gjettet %2$@"
+          }
+        }
+      }
+    },
+    "games.conversation.guesses" : {
+      "comment" : "Heading for every guess in a finished drawing game. The argument is the guesser, You or the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ guessed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gjettet"
+          }
+        }
+      }
+    },
+    "games.conversation.navigationTitle" : {
+      "comment" : "Title of a conversation about a finished game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conversation"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samtale"
+          }
+        }
+      }
+    },
+    "games.conversation.offlineMessage" : {
+      "comment" : "Explains how to load a game result when offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the internet to see the game here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble til internett for å se spillet her."
+          }
+        }
+      }
+    },
+    "games.conversation.offlineTitle" : {
+      "comment" : "Title when a game result has not been downloaded and the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This game is not on your phone yet"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette spillet er ikke på telefonen ennå"
+          }
+        }
+      }
+    },
+    "games.conversation.open" : {
+      "comment" : "Button that reopens the conversation about this finished game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open conversation"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne samtalen"
+          }
+        }
+      }
+    },
+    "games.conversation.spot" : {
+      "comment" : "A Consensio result. Arguments are the placer name and the scale value.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ placed it at %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ plasserte den på %2$@"
+          }
+        }
+      }
+    },
+    "games.conversation.start" : {
+      "comment" : "Button that opens a conversation about a finished game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a conversation"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start en samtale"
+          }
+        }
+      }
+    },
+    "games.conversation.unavailable" : {
+      "comment" : "The game attached to a chat was removed. The composer is hidden.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This game is no longer available."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette spillet er ikke tilgjengelig lenger."
+          }
+        }
+      }
+    },
+    "games.conversation.winner" : {
+      "comment" : "Who won a board game. The argument is You or the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ won"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ vant"
+          }
+        }
+      }
+    },
     "games.drawAndGuess.choose.error.character" : {
       "comment" : "Shown under the own-word field when it has anything other than the letters A to Z, Æ, Ø and Å, such as a number, a symbol or an accented letter like é.",
       "extractionState" : "manual",

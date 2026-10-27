@@ -16,7 +16,8 @@ enum LudoGame {
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(LudoHubArtwork()) },
-            screen: { AnyView(LudoScreen(viewModel: $0)) }
+            screen: { AnyView(LudoScreen(viewModel: $0)) },
+            replayBoard: { AnyView(BoardGameReplayBoards.ludo($0)) }
         )
     }
 }

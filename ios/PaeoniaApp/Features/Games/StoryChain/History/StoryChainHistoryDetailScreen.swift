@@ -108,6 +108,7 @@ struct StoryChainHistoryDetailScreen: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .paeoniaShareToolbar(shareable, identifier: "storyChain.history.share")
+        .gameConversationToolbar(.storyChain(story.id), result: .storyChain(story))
     }
 
     private var content: StoryChainPageContent {

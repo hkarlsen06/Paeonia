@@ -346,6 +346,7 @@ struct ConsensioHistoryDetailScreen: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
         .accessibilityIdentifier("consensio.history.detail")
+        .gameConversationToolbar(.consensio(round.id), result: .consensio(round))
     }
 
     @ViewBuilder

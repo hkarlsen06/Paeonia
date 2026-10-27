@@ -90,7 +90,7 @@ extension RootView {
         case .widgetDrawing:
             viewModel.openWidgetDrawing()
             self.deepLink = nil
-        case .dailyReveal, .dailyToday, .dailyChat, .topics:
+        case .dailyReveal, .dailyToday, .dailyChat, .gameChat, .topics:
             selectTabForDeepLink(.questions)
         case .memories, .memory:
             selectTabForDeepLink(.memories)

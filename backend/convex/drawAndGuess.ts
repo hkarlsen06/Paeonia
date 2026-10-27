@@ -658,6 +658,7 @@ export const get_draw_and_guess_history_round = query({
 });
 
 async function historyRoundJson(ctx: ReaderCtx, move: GameMove) {
+  const guesses = await ctx.db.query("game_guesses").withIndex("by_move_id_created_at", q => q.eq("move_id", move.id)).collect();
   return {
     id: move.id,
     round_number: move.round_number,
@@ -669,7 +670,8 @@ async function historyRoundJson(ctx: ReaderCtx, move: GameMove) {
     state: move.state,
     drawing_media_asset_id: move.drawing_media_asset_id!,
     ...roundOutcomeJson(move),
-    attempt_count: (await listGuesses(ctx, move.id)).count,
+    attempt_count: guesses.length,
+    guesses: guesses.map(guess => guess.text),
     started_at: move.started_at,
     ended_at: orNull(move.ended_at),
   };

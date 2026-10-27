@@ -86,6 +86,10 @@ struct BoardGameReplayScreen<Board: BoardGameRules>: View {
         .onAppear { model.play() }
         .onDisappear { model.pause() }
         .accessibilityIdentifier("boardGames.replay")
+        .gameConversationToolbar(
+            players.participants.coupleID.flatMap {
+                .board(kind: players.kind, coupleID: $0, number: model.game.gameNumber)
+            }, result: .board(players.kind, model.game))
     }
 
     // MARK: Board

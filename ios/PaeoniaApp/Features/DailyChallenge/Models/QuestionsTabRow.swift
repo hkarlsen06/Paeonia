@@ -7,6 +7,7 @@ nonisolated struct SubjectConversation: Identifiable, Equatable, Sendable {
     enum Subject: Equatable, Sendable {
         case memory(MemoryRecord)
         case story(Story)
+        case game(GameConversationSource)
     }
 
     let subject: Subject
@@ -18,6 +19,7 @@ nonisolated struct SubjectConversation: Identifiable, Equatable, Sendable {
         switch subject {
         case .memory(let record): record.snapshot.memoryID
         case .story(let story): story.id
+        case .game(let source): source.id
         }
     }
 
@@ -26,6 +28,7 @@ nonisolated struct SubjectConversation: Identifiable, Equatable, Sendable {
         switch subject {
         case .memory(let record): record.snapshot.createdAt
         case .story(let story): story.createdAt
+        case .game: summary.createdAt
         }
     }
 
@@ -46,6 +49,7 @@ nonisolated struct SubjectConversation: Identifiable, Equatable, Sendable {
         switch subject {
         case .memory(let record): ThreadChatHeader(memory: record)
         case .story(let story): .story(story, people: people)
+        case .game(let source): .game(source)
         }
     }
 }

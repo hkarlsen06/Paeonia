@@ -15,6 +15,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-10-27.
+
+- **Finished games can start a conversation.** Every game's result and history have a conversation button. Either partner can write, and both open the same conversation from that game or from Chats. The complete result is above the messages: every revealed word pair in Mind Meld, the drawing and all guesses in Draw & Guess, the scale and both markers in Consensio, the photo and both places in Guess my spot, the whole creature or story, and a board replay with every move. Nothing creates a thread until someone sends the first message. Results already on the phone open offline, and messages use the existing send queue. Deleting a Guess my spot round removes its conversation too. All four board games expose their stored past games, including Ludo, Four in a Row and Dots and Boxes, whose history screens were previously unwired.
+
 Decided on 2026-10-24.
 
 - **The game is "Four in a Row", never "Connect Four".** Connect Four is a Hasbro trademark, so no text a user or App Review sees may use it: copy, VoiceOver labels, pushes, the data export, the website and App Store text. The Norwegian name stays "Fire på rad". Internal names keep `connect_four` (`GameKind.connectFour`, catalog keys such as `connectFour.name`, type, file and asset names, the relay channel and stored data), because nobody sees them.

@@ -1,5 +1,6 @@
+import { deleteThreadOfSubject } from "./lib/threadSubjects";
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
@@ -187,6 +188,17 @@ export const get_guess_my_spot_history = query({
         partner: records(partnerId),
       },
     };
+  },
+});
+
+/** A single result, including rounds older than the map's history limit. */
+export const get_finished_round_for_conversation = internalQuery({
+  args: { p_round_id: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const { round } = await requireRound(ctx, userId, uuidArg(args.p_round_id));
+    if (round.guessed_at === undefined || round.deleted_at !== undefined) return null;
+    return roundJson(round, userId);
   },
 });
 
@@ -493,6 +505,7 @@ export const delete_guess_my_spot_round = mutation({
         }
         const now = nowIso();
         await ctx.db.patch(round._id, withUpdatedAt({ deleted_at: now }));
+        await deleteThreadOfSubject(ctx, round.couple_id, { kind: "game", id: round.id });
         await patchGame(ctx, game);
         // After the round's last write, so the sweep sees it deleted.
         await queueOrphanedMediaAssetForDelete(ctx, round.photo_media_asset_id);

@@ -266,13 +266,18 @@ struct ConsensioRevealView: View {
     @ViewBuilder
     private var actions: some View {
         let isShown = (isHeld && viewModel.isHeldOnPhone) || timeline.actionsShown
-        Button {
-            PaeoniaHaptics.gameContinued()
-            viewModel.continueFromReveal()
-        } label: {
-            Text(isPlacer ? .consensioHandoffContinue : .consensioHandoffPlace)
+        VStack(spacing: PaeoniaSpacing.space12) {
+            Button {
+                PaeoniaHaptics.gameContinued()
+                viewModel.continueFromReveal()
+            } label: {
+                Text(isPlacer ? .consensioHandoffContinue : .consensioHandoffPlace)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            if let round, !isHeld {
+                GameConversationButton(source: .consensio(round.id), result: .consensio(round))
+            }
         }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
         .opacity(isShown ? 1 : 0)
         .offset(y: isShown || reduceMotion ? 0 : 12)
         .allowsHitTesting(isShown)

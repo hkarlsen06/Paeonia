@@ -149,35 +149,6 @@ final class ThreadChatViewModel {
         )
     }
 
-    /// Every day of the question, oldest first. The server's list decides what exists and
-    /// what is readable. The day the page was opened from fills in until it has answered.
-    /// Empty in a memory's or a story's chat.
-    var rounds: [DailyChallengeQuestion] {
-        guard let question else { return [] }
-        return DailyChatRounds.merged(loaded: loadedRounds, entry: question, serverConfirmed: roundsAreConfirmed)
-    }
-
-    /// A question's chat opens once any day of the question has both answers. A memory's or a
-    /// story's chat is open to both partners from the start.
-    var isChatAvailable: Bool {
-        guard participants.currentUserID != nil else { return false }
-        return question == nil || DailyChatRounds.isChatAvailable(rounds)
-    }
-
-    /// The days as the page draws them. `celebratingInstanceID` is the day whose
-    /// partner-choice match plays its small celebration.
-    func chatRounds(celebrating celebratingInstanceID: UUID? = nil) -> [DailyChatRound] {
-        let chatIsOpen = DailyChatRounds.isChatAvailable(rounds)
-        return rounds.map {
-            DailyChatRound(
-                question: $0,
-                participants: participants,
-                chatIsOpen: chatIsOpen,
-                celebratesMatch: $0.id == celebratingInstanceID
-            )
-        }
-    }
-
     /// Where the page opens: the newest message when people have written after the day
     /// it opens on, otherwise the start of that day.
     var openingScroll: DailyChatRounds.OpeningScroll {
@@ -212,6 +183,10 @@ final class ThreadChatViewModel {
     /// first frame already shows every message and nothing moves in after it appears.
     func prepare() async {
         guard let ownerUserID = participants.currentUserID, isChatAvailable else { return }
+        if case let .game(source) = subject, let result = header?.gameResult {
+            await service.keepGameResult(result, ownerUserID: ownerUserID, source: source)
+        }
+        await readGameResult(ownerUserID: ownerUserID)
         await readStore(ownerUserID: ownerUserID)
     }
 
@@ -222,7 +197,10 @@ final class ThreadChatViewModel {
             return
         }
 
+        await readGameResult(ownerUserID: ownerUserID)
         await readStore(ownerUserID: ownerUserID)
+
+        await loadGameResult(ownerUserID: ownerUserID)
 
         // The days come first, so an earlier day shows before the messages arrive. A failed
         // read keeps the days already on screen.
@@ -353,6 +331,40 @@ final class ThreadChatViewModel {
             // overwrite a newer live result with an older server read.
             guard let ownerUserID = participants.currentUserID else { return }
             await readStore(ownerUserID: ownerUserID)
+        }
+    }
+}
+
+extension ThreadChatViewModel {
+    private func loadGameResult(ownerUserID: UUID) async {
+        if case let .game(source) = subject {
+            header?.gameLoadState = .loading
+            do {
+                applyGameResult(
+                    try await service.refreshGameResult(ownerUserID: ownerUserID, coupleID: coupleID, source: source))
+            } catch {
+                if !error.isCancellation {
+                    let failure = PaeoniaFailure(error)
+                    header?.gameLoadState = failure == .offline ? .offline : .failed
+                    if header?.gameResult == nil { notice = .loadFailed(failure) }
+                }
+            }
+        }
+    }
+
+    private func readGameResult(ownerUserID: UUID) async {
+        if case let .game(source) = subject,
+            let result = await service.cachedGameResult(ownerUserID: ownerUserID, source: source)
+        {
+            header?.gameResult = result
+        }
+    }
+
+    func applyGameResult(_ result: GameConversationResult?) {
+        header?.gameResult = result
+        if result == nil {
+            header?.gameLoadState = .removed
+            messages = []
         }
     }
 }

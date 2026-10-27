@@ -12,9 +12,11 @@
     @State private var pendingInviteCode: String?
     @State private var environment: DeveloperLocalFlowEnvironment
 
-    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil) {
+    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil, gameConversation: Bool = false) {
       self.seed = seed
-      _environment = State(initialValue: DeveloperLocalFlowEnvironment(seed: seed, homeLaunch: homeLaunch))
+      _environment = State(
+        initialValue: DeveloperLocalFlowEnvironment(
+          seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation))
     }
 
     var body: some View {
@@ -62,7 +64,7 @@
 
     // This is the single Debug composition boundary for the full local app graph.
     // swiftlint:disable:next function_body_length
-    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?) {
+    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: Bool) {
       self.homeLaunch = homeLaunch
       let store = DeveloperLocalFlowStore(seed: seed)
       let authService = DeveloperLocalFlowAuthService(store: store)
@@ -71,6 +73,7 @@
       let operationProvider = DeveloperScenarioOperationProvider()
       let inviteStore = DeveloperScenarioInviteStore()
       let pendingOperationStore = InMemoryPendingSyncOperationRepository()
+      let gameFlow = gameConversation ? DeveloperGameConversationFlow(pending: pendingOperationStore) : nil
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
       let storeKitService = DeveloperScenarioStoreKitService()
       let widgetCanvasService = DeveloperWidgetCanvasService()
@@ -90,8 +93,10 @@
         operationProvider: operationProvider
       )
 
+      let syncService: any PaeoniaSyncing
+      if let gameFlow { syncService = gameFlow.sync } else { syncService = DeveloperLocalFlowSyncService() }
       rootViewModel = RootViewModel(
-        syncService: DeveloperLocalFlowSyncService(),
+        syncService: syncService,
         authService: authService,
         accessRouteService: accessService,
         accessSnapshotStore: accessSnapshotStore,
@@ -144,6 +149,7 @@
         mediaDraftStore: DeveloperLocalFlowMediaDraftStore(),
         pendingOperationStore: pendingOperationStore,
         snapshotCache: DeveloperLocalFlowSnapshotCache(),
+        chatService: gameFlow?.chat,
         now: { DeveloperScenarioFixture.now }
       )
       let milestoneViewModel = RelationshipMilestoneViewModel(
@@ -202,6 +208,7 @@
         dailyChallengeViewModel: dailyViewModel,
         milestoneViewModel: milestoneViewModel,
         memoriesViewModel: memoriesViewModel,
+        gamesViewModel: gameFlow?.games,
         settingsViewModel: settingsViewModel,
         settingsPrivacyService: nil,
         settingsPrivacyOperationProvider: operationProvider,

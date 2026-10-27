@@ -8,6 +8,7 @@
       launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled, onboardingUsage,
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
+      localFlowGameConversation,
       homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,
@@ -100,6 +101,11 @@
       "local-flow-paired", "Local flow · paired app",
       "Use the real tabs with local questions, memories, settings, and widget data", seed: .paired
     )
+
+    static let localFlowGameConversation = DeveloperScenario(
+      "local-flow-game-conversation", "Local flow · game conversation",
+      "Open a finished Mind Meld, write about it, and find the conversation in Chats", .localFlows
+    ) { _ in DeveloperLocalFlowHost(seed: .paired, gameConversation: true) }
 
     // MARK: Pairing
 

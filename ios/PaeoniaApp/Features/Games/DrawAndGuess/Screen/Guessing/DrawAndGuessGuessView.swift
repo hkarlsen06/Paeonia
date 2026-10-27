@@ -259,6 +259,9 @@ struct DrawAndGuessGuessView: View {
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12)))
             .accessibilityIdentifier("draw.reveal.continue")
+            if let round = viewModel.round {
+                GameConversationButton(source: .drawAndGuess(round.id), result: round.conversationResult)
+            }
         }
     }
 

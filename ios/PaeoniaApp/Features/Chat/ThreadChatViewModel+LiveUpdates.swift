@@ -11,9 +11,11 @@ extension ThreadChatViewModel {
         var followedThreadID: UUID?
         var messageUpdates: Task<Void, Never>?
         let roundUpdates = followRoundUpdates(ownerUserID: ownerUserID)
+        let gameUpdates = followGameUpdates(ownerUserID: ownerUserID)
         defer {
             messageUpdates?.cancel()
             roundUpdates?.cancel()
+            gameUpdates?.cancel()
         }
 
         // The queue changes too, so a message that failed to send says so.
@@ -39,8 +41,19 @@ extension ThreadChatViewModel {
         }
     }
 
+    private func followGameUpdates(ownerUserID: UUID) -> Task<Void, Never>? {
+        guard case let .game(source) = subject else { return nil }
+        let coupleID = coupleID
+        return Task { @MainActor [weak self, service] in
+            for await _ in service.liveGameUpdates(ownerUserID: ownerUserID, coupleID: coupleID, source: source) {
+                guard let self else { return }
+                self.applyGameResult(await service.cachedGameResult(ownerUserID: ownerUserID, source: source))
+            }
+        }
+    }
+
     /// The days follow the partner's answers and the chat's thread, so an answer that
-    /// opens a day shows without a reload. A memory's or a story's chat has no days.
+    /// opens a day shows without a reload. Other subjects have no days.
     private func followRoundUpdates(ownerUserID: UUID) -> Task<Void, Never>? {
         guard question != nil else { return nil }
         let questionID = subject.id

@@ -25,9 +25,11 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
     let personalBest: Bool
     let startedAt: Date
     let endedAt: Date?
+    var guesses: [String] = []
 
     enum CodingKeys: String, CodingKey {
         case id
+        case guesses
         case roundNumber = "round_number"
         case drawerUserID = "drawer_user_id"
         case guesserUserID = "guesser_user_id"

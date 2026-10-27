@@ -159,6 +159,7 @@ struct MainTabView: View {
     /// or a button that sends the user to the questions the partner answered.
     @State var focusedDailyQuestionIDs: [UUID] = []
     @State var dailyChatQuestion: DailyChallengeQuestion?
+    @State var requestedConversationID: UUID?
     /// What the Questions tab has pushed: the Topics shelf and a topic.
     @State var questionsPath: [QuestionsDestination] = []
     /// The Memories tab's stack, so the Home look-back card can open a memory in it.
@@ -399,6 +400,7 @@ struct MainTabView: View {
             participants: dailyChallengeParticipants,
             summaries: chatSummaries,
             memories: memoriesViewModel,
+            gameDrawings: gamesViewModel.historyDrawings,
             service: dailyChallengeViewModel.chatService,
             operationProvider: dailyChallengeViewModel.operationProvider,
             syncAfterLocalChange: actions.syncAfterLocalChange,

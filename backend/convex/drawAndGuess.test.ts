@@ -1156,7 +1156,7 @@ describe("history", () => {
     expect(Object.keys(item).sort()).toEqual(
       [
         "id", "round_number", "drawer_user_id", "guesser_user_id", "word", "difficulty", "points", "state", "drawing_media_asset_id",
-        "solve_ms", "speed_bonus", "first_try_bonus", "hints_used", "attempt_count", "personal_best",
+        "solve_ms", "speed_bonus", "first_try_bonus", "hints_used", "attempt_count", "guesses", "personal_best",
         "started_at", "ended_at",
       ].sort(),
     );

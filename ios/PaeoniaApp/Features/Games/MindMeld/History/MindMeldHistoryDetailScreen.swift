@@ -45,6 +45,7 @@ struct MindMeldHistoryDetailScreen: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
         .accessibilityIdentifier("mindMeld.history.detail")
+        .gameConversationToolbar(.mindMeld(game.id), result: .mindMeld(game))
     }
 
     /// "Melded in 4 rounds · Oct 12", "Got away · Oct 12" or "Started over · Oct 12".

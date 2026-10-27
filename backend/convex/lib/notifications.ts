@@ -45,7 +45,7 @@ const NOTIFICATION_PAYLOAD_FIELDS = {
   story_posted: ["type", "couple_id", "actor_user_id", "route", "deeplink", "story_id"],
   thread_message_sent: [
     "type", "couple_id", "actor_user_id", "route", "deeplink", "thread_id", "message_id", "question_id",
-    "memory_id", "story_id",
+    "memory_id", "story_id", "game_chat_id", "game_source",
   ],
   thread_message_deleted: ["type", "couple_id", "actor_user_id", "thread_id", "message_id"],
   game_turn_ready: GAME_PUSH_FIELDS,

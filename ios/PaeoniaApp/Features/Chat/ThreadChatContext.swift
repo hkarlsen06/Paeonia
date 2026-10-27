@@ -11,6 +11,7 @@ struct ThreadChatContext {
     var summaries: ThreadChatSummaries?
     /// The couple's memories, so an open memory's chat shows a note the moment it changes.
     var memories: MemoriesViewModel?
+    var gameDrawings: GameHistoryDrawings?
     var service: (any ThreadChatServicing)?
     var operationProvider: (any SyncClientOperationProviding)?
     var syncAfterLocalChange: (@MainActor () async -> Void)?

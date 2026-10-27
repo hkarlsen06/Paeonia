@@ -187,6 +187,7 @@ extension MainTabView {
                 zoomNamespace: zoomNamespace,
                 focusedQuestionIDs: $focusedDailyQuestionIDs,
                 chatQuestion: $dailyChatQuestion,
+                requestedConversationID: $requestedConversationID,
                 onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
                 onTapStreak: openStreakDetails,
                 onRefresh: {

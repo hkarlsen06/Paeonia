@@ -129,6 +129,7 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
         }
         .onDisappear { viewModel.stop() }
         .accessibilityIdentifier("corpse.history.detail")
+        .gameConversationToolbar(.exquisiteCorpse(viewModel.figure.id), result: .exquisiteCorpse(viewModel.figure))
     }
 
     // MARK: - Figure

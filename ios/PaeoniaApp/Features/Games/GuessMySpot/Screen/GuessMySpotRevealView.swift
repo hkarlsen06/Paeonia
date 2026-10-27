@@ -284,13 +284,18 @@ struct GuessMySpotRevealView: View {
     @ViewBuilder
     private var actions: some View {
         let isShown = (isHeld && viewModel.isHeldOnPhone) || timeline.actionsShown
-        Button {
-            PaeoniaHaptics.gameContinued()
-            viewModel.continueFromReveal()
-        } label: {
-            Text(isSender ? .guessMySpotHandoffContinue : .guessMySpotHandoffSend)
+        VStack(spacing: PaeoniaSpacing.space12) {
+            Button {
+                PaeoniaHaptics.gameContinued()
+                viewModel.continueFromReveal()
+            } label: {
+                Text(isSender ? .guessMySpotHandoffContinue : .guessMySpotHandoffSend)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle())
+            if let round, !isHeld {
+                GameConversationButton(source: .guessMySpot(round.id), result: .guessMySpot(round))
+            }
         }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
         .opacity(isShown ? 1 : 0)
         .offset(y: isShown || reduceMotion ? 0 : 12)
         .allowsHitTesting(isShown)

@@ -159,7 +159,11 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
                 content: result,
                 me: viewModel.meInfo,
                 partner: viewModel.partnerInfo,
-                isCollapsed: $viewModel.isResultCollapsed
+                isCollapsed: $viewModel.isResultCollapsed,
+                conversationSource: viewModel.participants.coupleID.flatMap {
+                    .board(kind: viewModel.kind, coupleID: $0, number: viewModel.displayedGameNumber)
+                },
+                conversationResult: viewModel.conversationResult
             ) {
                 if result.isMissedEnding {
                     viewModel.continueAfterMissedEnding()

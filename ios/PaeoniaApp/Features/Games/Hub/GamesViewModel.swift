@@ -99,6 +99,10 @@ final class GamesViewModel {
         ]
     }
 
+    var historyDrawings: GameHistoryDrawings {
+        GameHistoryDrawings(store: dependencies.drawingStore, transfer: dependencies.drawingTransfer)
+    }
+
     private let dependencies: GamesDependencies
     private var participants: GameParticipants
     private var overview: RemoteGamesOverview?

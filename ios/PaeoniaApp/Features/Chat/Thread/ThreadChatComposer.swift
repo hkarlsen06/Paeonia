@@ -303,6 +303,7 @@ extension ThreadChatComposer {
                     isBusy: isSubmitting || staging.isProcessing,
                     action: sendText
                 )
+                .accessibilityIdentifier("chat.composer.send")
                 .disabled(!canSend)
                 .transition(.opacity.combined(with: .scale(scale: 0.8)))
             }

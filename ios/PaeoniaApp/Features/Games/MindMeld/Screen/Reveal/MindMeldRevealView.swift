@@ -235,6 +235,9 @@ struct MindMeldRevealView: View {
                     playAgainButton
                     seeMeldsLink
                 }
+                if let game = viewModel.game, game.isFinished {
+                    GameConversationButton(source: .mindMeld(game.id), result: game.conversationResult)
+                }
             }
             .opacity(timeline.actionsShown ? 1 : 0)
             .offset(y: timeline.actionsShown || reduceMotion ? 0 : 12)

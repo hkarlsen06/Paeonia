@@ -121,6 +121,7 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
         case questionID = "p_question_id"
         case memoryID = "p_memory_id"
         case storyID = "p_story_id"
+        case gameSource = "p_source"
         case body = "p_body"
         case mediaAssetIDs = "p_media_asset_ids"
         case replyToAnswerID = "p_reply_to_answer_id"
@@ -132,7 +133,7 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
 
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        switch subject.kind {
+        switch subject {
         case .question:
             try container.encode(coupleID, forKey: .coupleID)
             try container.encode(subject.id, forKey: .questionID)
@@ -141,6 +142,9 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
             try container.encode(subject.id, forKey: .memoryID)
         case .story:
             try container.encode(subject.id, forKey: .storyID)
+        case let .game(source):
+            try container.encode(coupleID, forKey: .coupleID)
+            try container.encode(source, forKey: .gameSource)
         }
         try container.encode(body, forKey: .body)
         try container.encode(mediaAssetIDs, forKey: .mediaAssetIDs)

@@ -14,6 +14,7 @@ import SwiftUI
 /// per view.
 struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_length
     let content: ExquisiteCorpseRevealContent
+    let figure: RemoteExquisiteCorpseFigure?
     let reduceMotion: Bool
     let onContinue: () -> Void
     /// Called after the strokes start playing again. The view replays them itself.
@@ -33,6 +34,7 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
     /// `timeline` and `player` are for previews and tests, which want to step them.
     init(
         content: ExquisiteCorpseRevealContent,
+        figure: RemoteExquisiteCorpseFigure? = nil,
         reduceMotion: Bool,
         onContinue: @escaping () -> Void,
         onPlayAgain: (() -> Void)? = nil,
@@ -40,6 +42,7 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
         player: ExquisiteCorpseFigurePlayer? = nil
     ) {
         self.content = content
+        self.figure = figure
         self.reduceMotion = reduceMotion
         self.onContinue = onContinue
         self.onPlayAgain = onPlayAgain
@@ -221,6 +224,8 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .accessibilityIdentifier("corpse.reveal.continue")
+            GameConversationButton(
+                source: .exquisiteCorpse(content.figureID), result: figure.map(GameConversationResult.exquisiteCorpse))
             if reduceMotion {
                 Button { playAgain() } label: { Text(.exquisiteCorpseRevealReplay) }
                     .buttonStyle(PaeoniaQuietButtonStyle())

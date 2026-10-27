@@ -26,6 +26,7 @@ nonisolated struct NotificationQuickActionPush: Sendable, Equatable {
     let memoryID: UUID?
     let storyID: UUID?
     let revisionID: UUID?
+    let gameSource: GameConversationSource?
 
     init(userInfo: [AnyHashable: Any]) {
         func uuid(_ key: String) -> UUID? {
@@ -39,13 +40,21 @@ nonisolated struct NotificationQuickActionPush: Sendable, Equatable {
         memoryID = uuid("memory_id")
         storyID = uuid("story_id")
         revisionID = uuid("revision_id")
+        if let source = userInfo["game_source"], JSONSerialization.isValidJSONObject(source),
+            let data = try? JSONSerialization.data(withJSONObject: source)
+        {
+            gameSource = try? JSONDecoder().decode(GameConversationSource.self, from: data)
+        } else {
+            gameSource = nil
+        }
     }
 
-    /// What the chat of a message push is about: its question, memory or story.
+    /// The question, memory, story or game discussed in a message push.
     var chatSubject: ThreadChatSubject? {
         if let questionID { return .question(questionID) }
         if let memoryID { return .memory(memoryID) }
         if let storyID { return .story(storyID) }
+        if let gameSource { return .game(gameSource) }
         return nil
     }
 

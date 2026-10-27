@@ -65,6 +65,11 @@ final class ThreadChatSummaries {
     func conversations(memories: [MemoryRecord], stories: [Story]) -> [SubjectConversation] {
         memories.compactMap { conversation(about: .memory($0), chat: .memory($0.snapshot.memoryID)) }
             + stories.compactMap { conversation(about: .story($0), chat: .story($0.id)) }
+            + summaries.values.compactMap { summary in
+                guard case let .game(source) = summary.subject else { return nil }
+                return SubjectConversation(
+                    subject: .game(source), summary: summary, isUnread: isUnread(summary.subject))
+            }
     }
 
     private func conversation(

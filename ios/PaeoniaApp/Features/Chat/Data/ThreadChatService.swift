@@ -1,6 +1,13 @@
 import Foundation
 
 protocol ThreadChatServicing: Actor {
+    func keepGameResult(_ result: GameConversationResult, ownerUserID: UUID, source: GameConversationSource) async
+    nonisolated func liveGameUpdates(ownerUserID: UUID, coupleID: UUID, source: GameConversationSource) -> AsyncStream<
+        Void
+    >
+    func cachedGameResult(ownerUserID: UUID, source: GameConversationSource) async -> GameConversationResult?
+    func refreshGameResult(ownerUserID: UUID, coupleID: UUID, source: GameConversationSource) async throws
+        -> GameConversationResult?
     func cachedThreadSummaries(ownerUserID: UUID) async -> [ThreadChatSummary]
     func refreshThreadSummaries(ownerUserID: UUID) async throws -> [ThreadChatSummary]
     func cachedMessages(ownerUserID: UUID, subjectID: UUID) async -> [ThreadChatMessage]
@@ -114,6 +121,19 @@ nonisolated struct ThreadChatPresence: Equatable, Sendable {
 }
 
 extension ThreadChatServicing {
+    func keepGameResult(_: GameConversationResult, ownerUserID _: UUID, source _: GameConversationSource) {}
+    nonisolated func liveGameUpdates(ownerUserID _: UUID, coupleID _: UUID, source _: GameConversationSource)
+        -> AsyncStream<Void>
+    {
+        AsyncStream { $0.finish() }
+    }
+    func cachedGameResult(ownerUserID _: UUID, source _: GameConversationSource) -> GameConversationResult? { nil }
+    func refreshGameResult(ownerUserID _: UUID, coupleID _: UUID, source _: GameConversationSource) throws
+        -> GameConversationResult?
+    {
+        throw ThreadChatServiceError.unavailable
+    }
+
     func loadOlderMessages(ownerUserID _: UUID, subjectID _: UUID, threadID _: UUID) -> Bool { false }
     func cachedRounds(ownerUserID _: UUID, questionID _: UUID) -> DailyQuestionChatRoundsRow? { nil }
     func refreshRounds(

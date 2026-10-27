@@ -3,16 +3,16 @@ import type { Doc } from "../_generated/dataModel";
 import { dailyQuestionThreadLink } from "./dailyQuestionRounds";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
+import { finishedGameForChat } from "./gameChatSubjects";
 import { uuidArg } from "./ids";
 import { queueThreadMediaAssetsIfOrphaned } from "./mediaOrphans";
 import { deleteReactionsOfThread } from "./reactions";
 import { nowIso } from "./time";
 import { threadKind } from "./validators";
 
-// A chat thread is about one thing, its subject: a daily question, a memory (its comments) or a
-// story (its replies). The kind is the thread's `conversation_threads.kind`. Each kind has its
+// A chat thread is about a question, memory, story or finished game. The kind is the thread's `conversation_threads.kind`. Each kind has its
 // own link table from the subject to the thread: `daily_question_threads`, `memory_threads` and
-// `story_threads`. Everything that works for any chat (typing, creating the thread with its
+// `story_threads`, with finished games linked by `game_threads`. Everything that works for any chat (typing, creating the thread with its
 // first message, pushes) finds the thread and checks the subject here, so a new kind is one
 // more case in these functions.
 
@@ -37,6 +37,10 @@ export async function threadIdOfSubject(
   subject: ThreadSubject,
 ): Promise<string | null> {
   switch (subject.kind) {
+    case "game": {
+      const link = await ctx.db.query("game_threads").withIndex("by_subject_id", q => q.eq("subject_id", subject.id)).unique();
+      return await threadIdInCouple(ctx, coupleId, link?.thread_id);
+    }
     case "daily_question":
       return (await dailyQuestionThreadLink(ctx, coupleId, subject.id))?.thread_id ?? null;
     case "memory": {
@@ -67,6 +71,10 @@ export async function subjectOfThread(
   thread: Pick<Doc<"conversation_threads">, "id" | "kind">,
 ): Promise<ThreadSubject | null> {
   switch (thread.kind) {
+    case "game": {
+      const link = await ctx.db.query("game_threads").withIndex("by_thread_id", q => q.eq("thread_id", thread.id)).unique();
+      return link ? { kind: "game", id: link.subject_id } : null;
+    }
     case "daily_question": {
       const link = await ctx.db
         .query("daily_question_threads")
@@ -102,6 +110,10 @@ export async function isChatSubjectAvailable(
   subject: ThreadSubject,
 ): Promise<boolean> {
   switch (subject.kind) {
+    case "game": {
+      const link = await ctx.db.query("game_threads").withIndex("by_subject_id", q => q.eq("subject_id", subject.id)).unique();
+      return link?.couple_id === coupleId && (await finishedGameForChat(ctx, coupleId, link.source)) !== null;
+    }
     case "daily_question":
       return (await getByUuid(ctx, "questions", subject.id)) !== null;
     case "memory": {

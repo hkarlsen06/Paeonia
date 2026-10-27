@@ -15,6 +15,7 @@ struct SubjectConversationCard: View {
     var body: some View {
         Button(action: onOpen) { card }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("chat.conversation.\(conversation.id.uuidString.lowercased())")
             .overlay {
                 if conversation.isUnread {
                     RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
@@ -53,7 +54,9 @@ struct SubjectConversationCard: View {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
                 .fill(.paeoniaSurfaceSecondary)
                 .overlay {
-                    Image(systemName: MainTab.memories.systemImage)
+                    Image(
+                        systemName: header.gameSource == nil ? MainTab.memories.systemImage : MainTab.games.systemImage
+                    )
                         .font(PaeoniaTypography.bodyEmphasis)
                         .foregroundStyle(.paeoniaMemory)
                         .accessibilityHidden(true)
@@ -95,6 +98,8 @@ struct SubjectConversationCard: View {
         case .story(let story):
             let posted = story.createdAt.formatted(.dateTime.day().month(.abbreviated).hour().minute())
             return Text(.questionsStoryChatUntitled(posted))
+        case .game(let source):
+            return Text(source.kind.name)
         }
     }
 

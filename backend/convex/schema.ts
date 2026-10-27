@@ -25,6 +25,7 @@ import {
   wordDifficulty,
   welcomeStep,
 } from "./lib/validators";
+import { gameChatSource } from "./lib/gameChatSubjects";
 import { LUDO_COLORS } from "./lib/ludo";
 import { consensioTables } from "./lib/consensio";
 import { guessMySpotTables } from "./lib/guessMySpot";
@@ -1048,6 +1049,18 @@ export default defineSchema({
   })
     .index("by_story_id", ["story_id"])
     .index("by_thread_id", ["thread_id"]),
+
+  // One chat per finished game or round. The source stays in the game's own history.
+  game_threads: defineTable({
+    subject_id: uuid,
+    couple_id: uuid,
+    source: gameChatSource,
+    thread_id: uuid,
+    created_at: ts,
+  })
+    .index("by_subject_id", ["subject_id"])
+    .index("by_thread_id", ["thread_id"])
+    .index("by_couple_id", ["couple_id"]),
 
   // FK: user_id -> users cascade
   notification_preferences: defineTable({

@@ -379,6 +379,10 @@ export async function purgeCoupleContent(
       await remove(link);
     }
   }
+  for (const link of await ctx.db.query("game_threads").withIndex("by_couple_id", q => q.eq("couple_id", couple.id)).take(Math.max(budget.left, 1))) {
+    if (budget.left <= 0) return unfinished();
+    await remove(link);
+  }
   for (const thread of threads) {
     const messages = await ctx.db
       .query("thread_messages")

@@ -70,6 +70,12 @@ protocol ThreadChatCaching: Actor {
         ownerUserID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool
+    /// The finished game last saved on this phone.
+    func gameResult(ownerUserID: UUID, subjectID: UUID) -> GameConversationResult?
+    @discardableResult
+    func saveGameResult(
+        _ result: GameConversationResult?, ownerUserID: UUID, subjectID: UUID, unlessPurgedSince generation: Int
+    ) -> Bool
     /// The question's rounds as the server last sent them, so the page opens offline.
     func rounds(ownerUserID: UUID, subjectID: UUID) -> DailyQuestionChatRoundsRow?
     /// Keeps the question's rounds, unless `clearAll()` ran after `generation` was read.
@@ -131,6 +137,10 @@ extension ThreadChatCaching {
         return true
     }
 
+    func gameResult(ownerUserID _: UUID, subjectID _: UUID) -> GameConversationResult? { nil }
+    func saveGameResult(_: GameConversationResult?, ownerUserID _: UUID, subjectID _: UUID, unlessPurgedSince _: Int)
+        -> Bool
+    { false }
     func rounds(ownerUserID _: UUID, subjectID _: UUID) -> DailyQuestionChatRoundsRow? { nil }
     @discardableResult
     func saveRounds(
@@ -307,6 +317,19 @@ actor FileThreadChatCache: ThreadChatCaching {
     ) -> Bool {
         guard generation == self.generation else { return false }
         saveSummaries(summaries, ownerUserID: ownerUserID)
+        return true
+    }
+
+    func gameResult(ownerUserID: UUID, subjectID: UUID) -> GameConversationResult? {
+        subjectDocument(ownerUserID, subjectID.uuidString).gameResult
+    }
+
+    @discardableResult
+    func saveGameResult(
+        _ result: GameConversationResult?, ownerUserID: UUID, subjectID: UUID, unlessPurgedSince generation: Int
+    ) -> Bool {
+        guard generation == self.generation else { return false }
+        updateSubject(ownerUserID, subjectID.uuidString) { $0.gameResult = result }
         return true
     }
 

@@ -12,6 +12,7 @@ struct DailyChallengeScreen: View {
     var zoomNamespace: Namespace.ID?
     var focusedQuestionIDs: Binding<[UUID]> = .constant([])
     var chatQuestion: Binding<DailyChallengeQuestion?> = .constant(nil)
+    var requestedConversationID: Binding<UUID?> = .constant(nil)
     var onOpenAnswerFlow: () -> Void = {}
     var onTapStreak: () -> Void = {}
     var onRefresh: (() async -> Void)?
@@ -134,9 +135,16 @@ struct DailyChallengeScreen: View {
             .analyticsScreen("daily_chat")
             .id(question.id)
         }
+        .requestedConversation(
+            id: requestedConversationID, conversations: conversations, isOpening: isOpeningChat, open: openConversation
+        )
         .navigationDestination(item: $conversationChat) { destination in
             ThreadChatScreen(viewModel: destination.viewModel, onOpenHeader: openStoryAction(destination.story))
-                .analyticsScreen(destination.viewModel.subject.kind == .memory ? "memory_comments" : "story_replies")
+                .analyticsScreen(
+                    destination.viewModel.subject.kind == .game
+                        ? "game_conversation"
+                        : destination.viewModel.subject.kind == .memory ? "memory_comments" : "story_replies"
+                )
                 .id(destination.id)
                 .fullScreenCover(item: $storyViewer) { content in
                     if let stories {

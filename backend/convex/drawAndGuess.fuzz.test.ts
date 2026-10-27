@@ -1084,6 +1084,7 @@ class Fuzz {
       first_try_bonus: round.firstTryBonus,
       hints_used: round.hintsUsed,
       attempt_count: round.attempts.length,
+      guesses: round.attempts.map(attempt => attempt.text),
       personal_best: round.personalBest,
       ended_at: round.endedAt === undefined ? null : iso(round.endedAt),
     });

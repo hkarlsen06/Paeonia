@@ -69,6 +69,7 @@ struct GuessMySpotRoundDetail: View {
         .preferredColorScheme(.dark)
         .task { loadPhoto() }
         .accessibilityIdentifier("guessMySpot.history.detail")
+        .gameConversationToolbar(.guessMySpot(round.id), result: .guessMySpot(round))
     }
 
     private var heading: some View {

@@ -916,6 +916,7 @@ describe("reads", () => {
       daily_question_id: null,
       memory_id: memoryId,
       story_id: null,
+      game_source: null,
       created_by_user_id: couple.first.userId,
       created_at: expect.any(String),
       updated_at: expect.any(String),

@@ -5,6 +5,7 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
     case dailyReveal(instanceID: UUID, coupleDayID: UUID?)
     /// A question's chat. A couple has one chat per question.
     case dailyChat(questionID: UUID)
+    case gameChat(subjectID: UUID)
     case dailyToday(coupleDayID: UUID?)
     /// "Answer now" at the end of the first day sequence. Opens today's question over Home,
     /// so closing it lands on Home with the things to try. No URL opens it.
@@ -240,6 +241,8 @@ nonisolated enum PaeoniaDeepLink: Equatable, Sendable, Hashable {
             }
         case ["today"]:
             .dailyToday(coupleDayID: query.uuidValue(named: "coupleDayId"))
+        case ["game-chat"]:
+            query.uuidValue(named: "gameId").map { .gameChat(subjectID: $0) }
         case ["chat"]:
             query.uuidValue(named: "questionId").map { .dailyChat(questionID: $0) }
         default:

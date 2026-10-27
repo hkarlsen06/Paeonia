@@ -17,7 +17,8 @@ enum DotsAndBoxesGame {
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(DotsAndBoxesHubArtwork()) },
-            screen: { AnyView(DotsAndBoxesScreen(viewModel: $0)) }
+            screen: { AnyView(DotsAndBoxesScreen(viewModel: $0)) },
+            replayBoard: { AnyView(BoardGameReplayBoards.dotsAndBoxes($0)) }
         )
     }
 }

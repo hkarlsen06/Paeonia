@@ -20,7 +20,8 @@ enum ConnectFourGame {
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(ConnectFourHubArtwork()) },
-            screen: { AnyView(ConnectFourScreen(viewModel: $0)) }
+            screen: { AnyView(ConnectFourScreen(viewModel: $0)) },
+            replayBoard: { AnyView(BoardGameReplayBoards.connectFour($0)) }
         )
     }
 }

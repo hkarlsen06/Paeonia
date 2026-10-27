@@ -1,36 +1,60 @@
 import Foundation
 
-/// What a chat is about. A couple has one chat per question, one per memory (its comments)
-/// and one per story (its replies). The chat code is the same for all three: the cache,
-/// the send queue, the screen and the typing dots all work on a subject.
-///
-/// `id` is the question's, memory's or story's own id. No two subjects share one, so it
-/// keys the chat's cache file and its queued messages (`subjectID` in the chat's data
-/// layer). The kind decides which server function starts the
-/// chat's thread. The raw values are the server's thread kinds
-/// (`backend/convex/lib/threadSubjects.ts`).
-nonisolated struct ThreadChatSubject: Codable, Hashable, Sendable {
-    nonisolated enum Kind: String, Codable, Sendable {
+/// One conversation per question, memory, story or finished game.
+nonisolated enum ThreadChatSubject: Codable, Hashable, Sendable {
+    case question(UUID)
+    case memory(UUID)
+    case story(UUID)
+    case game(GameConversationSource)
+
+    enum Kind: String, Codable, Sendable {
         case question = "daily_question"
-        case memory
-        case story
+        case memory, story, game
     }
 
-    let kind: Kind
-    let id: UUID
+    enum CodingKeys: String, CodingKey { case kind, id, gameSource }
 
-    static func question(_ id: UUID) -> Self { Self(kind: .question, id: id) }
-    static func memory(_ id: UUID) -> Self { Self(kind: .memory, id: id) }
-    static func story(_ id: UUID) -> Self { Self(kind: .story, id: id) }
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .question: self = .question(try container.decode(UUID.self, forKey: .id))
+        case .memory: self = .memory(try container.decode(UUID.self, forKey: .id))
+        case .story: self = .story(try container.decode(UUID.self, forKey: .id))
+        case .game: self = .game(try container.decode(GameConversationSource.self, forKey: .gameSource))
+        }
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(kind, forKey: .kind)
+        try container.encode(id, forKey: .id)
+        if case let .game(source) = self { try container.encode(source, forKey: .gameSource) }
+    }
+
+    var kind: Kind {
+        switch self {
+        case .question: .question
+        case .memory: .memory
+        case .story: .story
+        case .game: .game
+        }
+    }
+
+    var id: UUID {
+        switch self {
+        case let .question(id), let .memory(id), let .story(id): id
+        case let .game(source): source.id
+        }
+    }
 }
 
 extension ThreadChatSubject.Kind {
-    /// The server function that starts a chat of this kind with its first message.
     nonisolated var createThreadFunction: String {
         switch self {
         case .question: "threads:create_daily_question_thread_with_message"
         case .memory: "threads:create_memory_thread_with_message"
         case .story: "threads:create_story_thread_with_message"
+        case .game: "threads:create_game_thread_with_message"
         }
     }
 }

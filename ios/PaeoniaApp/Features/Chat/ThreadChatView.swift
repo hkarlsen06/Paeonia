@@ -133,6 +133,7 @@ struct ThreadChatView: View {
         case .question: Text(.dailyChatNavigationTitle)
         case .memory: Text(.memoriesCommentsTitle)
         case .story: Text(.storiesRepliesTitle)
+        case .game: Text(.gamesConversationNavigationTitle)
         }
     }
 
@@ -230,6 +231,7 @@ struct ThreadChatView: View {
             onTapQuoted: jumpToMessage,
             onOpenPhoto: openPhoto,
             onOpenHeader: onOpenHeader,
+            onReloadGame: { Task { await viewModel.load() } },
             timestampReveal: timestampReveal,
             messageFrame: messageFrame
         )
