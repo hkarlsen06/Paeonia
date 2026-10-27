@@ -19,6 +19,8 @@ struct HomeMapLibreView: UIViewRepresentable {
     var introStart: HomeMapAvatarPoints?
     /// The intro waits for this, so it plays where the person can see it.
     var canStartIntro = true
+    /// Takes the map's drags and pinches once the intro has played.
+    var explorer: HomeMapExplorer?
     var onProjection: (HomeMapProjection) -> Void
 
     static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
@@ -244,7 +246,7 @@ struct HomeMapLibreView: UIViewRepresentable {
     }
 
     /// From latitude and longitude to the Web Mercator square, 0 to 1 across and down.
-    private static func mercator(_ coordinate: CLLocationCoordinate2D) -> CGPoint {
+    static func mercator(_ coordinate: CLLocationCoordinate2D) -> CGPoint {
         let latitude = min(max(coordinate.latitude, -85.05), 85.05) * .pi / 180
         return CGPoint(
             x: (coordinate.longitude + 180) / 360,
@@ -290,7 +292,7 @@ struct HomeMapLibreView: UIViewRepresentable {
 /// MapLibre 6.31 reads handles at indices 0/1 instead of Core Animation's 1/2.
 /// Adapt only the timing function passed to that reader.
 /// https://github.com/maplibre/maplibre-native/blob/ios-v6.31.0/platform/ios/src/MLNMapView.mm#L335-L344
-private nonisolated final class HomeMapLibreTimingFunction: CAMediaTimingFunction {
+nonisolated final class HomeMapLibreTimingFunction: CAMediaTimingFunction {
     override func getControlPoint(at index: Int, values: UnsafeMutablePointer<Float>) {
         let handleIndex = index == 0 || index == 1 ? index + 1 : index
         super.getControlPoint(at: handleIndex, values: values)

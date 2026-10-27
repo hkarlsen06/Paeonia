@@ -33,6 +33,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     @State private var heartTaps = 0
     @State private var mapProjection: HomeMapProjection?
     @State private var mapLocations: HomeMapLocations?
+    @State private var explorer = HomeMapExplorer()
 
     /// Both places, while there is a map to show.
     private var couple: HomeMapCouple? {
@@ -52,6 +53,9 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             let screen = HomeMapScreen(geo: geo)
             ScrollView {
                 page(couple, screen)
+                    // One gesture for the whole page, so a pinch whose fingers land on an
+                    // avatar and on the open map still zooms.
+                    .homeMapGestures(explorer)
             }
             .scrollIndicators(.hidden)
             .refreshable {
@@ -103,6 +107,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 noMapNotice
             }
             sheet
+                // A drag or a pinch on today's envelope moves the map behind it.
+                .environment(\.homeMapExplorer, couple == nil ? nil : explorer)
                 // The cards keep their own height, so only the map takes up the rest of the
                 // screen. A square tile sizes itself from the room it is offered, and would
                 // otherwise split that room with the map and overflow under the tab bar.
@@ -186,6 +192,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 compass: compass,
                 introStart: reduceMotion ? nil : waitingPoints(metrics),
                 canStartIntro: launchSidesUncovered,
+                explorer: explorer,
                 onProjection: { projection in
                     guard mapProjection != projection else { return }
                     mapProjection = projection
@@ -203,8 +210,11 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 .frame(height: metrics.framedBottom)
                 .contentShape(Rectangle())
                 .onTapGesture { sendHeart() }
+                .homeMapArea("map", explorer)
                 // VoiceOver sends hearts from the distance line in the bar.
                 .accessibilityHidden(true)
+
+            HomeMapShowBothButton(explorer: explorer, mapBottom: metrics.framedBottom)
         }
     }
 
@@ -396,19 +406,15 @@ extension HomeMapLayout {
             if !reduceMotion { return waitingPoints(metrics) }
             let framing = framing(couple, metrics)
             let raw = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
-            return kept(separated(raw, isNear: couple.isNear), inside: metrics.avatarBounds)
+            return separated(raw, isNear: couple.isNear).kept(inside: metrics.avatarBounds)
         }
         let raw = HomeMapAvatarPoints(own: mapProjection.own, partner: mapProjection.partner)
         guard mapProjection.introProgress < 1 else {
-            return kept(separated(raw, isNear: couple.isNear), inside: metrics.avatarBounds)
+            return separated(raw, isNear: couple.isNear).kept(inside: metrics.avatarBounds)
         }
         return introPoints(raw, couple, metrics, mapProjection)
     }
 
-    /// While the intro plays, the avatars turn and zoom with the map. They start where they
-    /// waited and end on their spaced-out spots, so the difference from their places on the
-    /// map shifts from one to the other as the intro plays. Their midpoint slides straight
-    /// across, since MapLibre keeps the poles out of sight by moving a far-out, turned camera.
     private func introPoints(
         _ raw: HomeMapAvatarPoints,
         _ couple: HomeMapCouple,
@@ -417,20 +423,14 @@ extension HomeMapLayout {
     ) -> HomeMapAvatarPoints {
         let framing = framing(couple, metrics)
         let rawEnd = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
-        let end = HomeMapPairShape(kept(separated(rawEnd, isNear: couple.isNear), inside: metrics.avatarBounds))
-        let waiting = HomeMapPairShape(waitingPoints(metrics))
-        let startFix = HomeMapPairShape(projection.introStart).change(to: waiting)
-        let endFix = HomeMapPairShape(rawEnd).change(to: end)
-        let progress = projection.introProgress
-        let shape = HomeMapPairShape(raw)
-            .applying(startFix, times: 1 - progress)
-            .applying(endFix, times: progress)
-        let slide = waiting.change(to: end).mid
-        let mid = CGPoint(x: waiting.mid.x + slide.x * progress, y: waiting.mid.y + slide.y * progress)
-        return kept(
-            HomeMapPairShape(mid: mid, logDistance: shape.logDistance, angle: shape.angle).points,
-            inside: metrics.avatarBounds
+        return raw.duringIntro(
+            rawStart: projection.introStart,
+            waiting: waitingPoints(metrics),
+            rawEnd: rawEnd,
+            end: separated(rawEnd, isNear: couple.isNear).kept(inside: metrics.avatarBounds),
+            progress: projection.introProgress
         )
+        .kept(inside: metrics.avatarBounds)
     }
 
     /// Side by side in the middle of the open map, where the avatars wait while it loads.
@@ -440,7 +440,7 @@ extension HomeMapLayout {
         )
         let center = CGPoint(x: near.framedBox.midX, y: near.framedBox.midY)
         let together = separated(HomeMapAvatarPoints(own: center, partner: center), isNear: true)
-        return kept(together, inside: near.avatarBounds)
+        return together.kept(inside: near.avatarBounds)
     }
 
     /// The map fades in over the first half of the intro.
@@ -448,16 +448,6 @@ extension HomeMapLayout {
         guard !reduceMotion else { return 1 }
         guard let mapProjection else { return 0 }
         return min(1, mapProjection.introProgress * 2)
-    }
-
-    /// Holds each avatar inside the open map. Only a couple on opposite sides of the world
-    /// can be too far apart for the widest zoom, and then an avatar waits at the edge, on
-    /// the side its partner is.
-    private func kept(_ points: HomeMapAvatarPoints, inside bounds: CGRect) -> HomeMapAvatarPoints {
-        func keep(_ point: CGPoint) -> CGPoint {
-            CGPoint(x: min(max(point.x, bounds.minX), bounds.maxX), y: min(max(point.y, bounds.minY), bounds.maxY))
-        }
-        return HomeMapAvatarPoints(own: keep(points.own), partner: keep(points.partner))
     }
 
     private func separated(_ points: HomeMapAvatarPoints, isNear: Bool) -> HomeMapAvatarPoints {

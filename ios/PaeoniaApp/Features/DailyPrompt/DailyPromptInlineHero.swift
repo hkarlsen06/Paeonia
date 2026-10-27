@@ -22,6 +22,8 @@ struct DailyPromptInlineHero: View {
 
     private static let envelopeWidth: CGFloat = 132
 
+    @Environment(\.homeMapExplorer) private var homeMapExplorer
+
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             Button(action: onAnswer) {
@@ -31,6 +33,8 @@ struct DailyPromptInlineHero: View {
             }
             .buttonStyle(.plain)
             .disabled(copy.isLoading)
+            // The envelope sits over Home's map, so a drag or a pinch on it moves the map.
+            .homeMapArea("envelope", homeMapExplorer)
             .accessibilityHidden(true)
 
             titleAndMessage

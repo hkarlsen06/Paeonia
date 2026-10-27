@@ -18,11 +18,9 @@ extension HomeMapLibreView {
         /// Frames the map again when the couple, the box or the view's real size changed.
         /// The box must fit inside the view, or the fit has no room and zooms out to the world.
         func frameIfNeeded(_ map: MLNMapView) {
-            guard let parent, map.bounds.width > 0, map.bounds.height >= parent.framedBox.maxY else { return }
-            let key = FramingKey(
-                current: parent.current, partner: parent.partner, box: parent.framedBox,
-                size: map.bounds.size, avatarSize: parent.avatarSize
-            )
+            guard let parent, map.bounds.width > 0, map.bounds.height >= parent.framedBox.maxY,
+                  parent.explorer?.isExploring != true else { return }
+            let key = framingKey(parent, map)
             guard key != lastFraming else { return }
             // A new place or box after the first framing moves the map. A new size jumps,
             // since the old view's camera doesn't fit it.
@@ -32,6 +30,27 @@ extension HomeMapLibreView {
             self.map = map
             guard !holdsIntro(map, isFirstFraming: isFirstFraming) else { return }
             parent.frame(map, animated: animated) { [weak self] in self?.lastFraming == key }
+            handOverToExplorer(map)
+        }
+
+        /// Lets the person move the map, and moves it back to the couple when they ask.
+        func handOverToExplorer(_ map: MLNMapView) {
+            guard let explorer = parent?.explorer, explorer.map !== map else { return }
+            explorer.attach(map) { [weak self, weak map] in
+                guard let self, let map, let parent = self.parent else { return }
+                let key = self.framingKey(parent, map)
+                self.lastFraming = key
+                parent.frame(map, animated: self.isLoaded && !UIAccessibility.isReduceMotionEnabled) { [weak self] in
+                    self?.lastFraming == key
+                }
+            }
+        }
+
+        private func framingKey(_ parent: HomeMapLibreView, _ map: MLNMapView) -> FramingKey {
+            FramingKey(
+                current: parent.current, partner: parent.partner, box: parent.framedBox,
+                size: map.bounds.size, avatarSize: parent.avatarSize
+            )
         }
 
         // Give SwiftUI time to lay out before the map draws. The render callback

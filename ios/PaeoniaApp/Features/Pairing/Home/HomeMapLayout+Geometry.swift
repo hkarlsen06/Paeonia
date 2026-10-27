@@ -4,6 +4,38 @@ import SwiftUI
 struct HomeMapAvatarPoints: Equatable {
     let own: CGPoint
     let partner: CGPoint
+
+    /// Holds each avatar inside the open map. Only a couple on opposite sides of the world
+    /// can be too far apart for the widest zoom, and then an avatar waits at the edge, on
+    /// the side its partner is.
+    func kept(inside bounds: CGRect) -> Self {
+        func keep(_ point: CGPoint) -> CGPoint {
+            CGPoint(x: min(max(point.x, bounds.minX), bounds.maxX), y: min(max(point.y, bounds.minY), bounds.maxY))
+        }
+        return Self(own: keep(own), partner: keep(partner))
+    }
+
+    /// Where the avatars are while the intro plays, with these as their places on the map
+    /// now. They turn and zoom with the map. They start where they waited and end on their
+    /// spaced-out spots, so the difference from their places on the map shifts from one to
+    /// the other. Their midpoint slides straight across, since MapLibre keeps the poles out
+    /// of sight by moving a far-out, turned camera.
+    func duringIntro(
+        rawStart: Self,
+        waiting: Self,
+        rawEnd: Self,
+        end: Self,
+        progress: Double
+    ) -> Self {
+        let waiting = HomeMapPairShape(waiting)
+        let end = HomeMapPairShape(end)
+        let shape = HomeMapPairShape(self)
+            .applying(HomeMapPairShape(rawStart).change(to: waiting), times: 1 - progress)
+            .applying(HomeMapPairShape(rawEnd).change(to: end), times: progress)
+        let slide = waiting.change(to: end).mid
+        let mid = CGPoint(x: waiting.mid.x + slide.x * progress, y: waiting.mid.y + slide.y * progress)
+        return HomeMapPairShape(mid: mid, logDistance: shape.logDistance, angle: shape.angle).points
+    }
 }
 
 /// Two avatars as their midpoint, how far apart they are and which way the partner is.

@@ -152,6 +152,7 @@ extension HomeMapLibreView.Coordinator {
             intro = .none
             introProgress = 1
             parent.frame(map, animated: false) { true }
+            handOverToExplorer(map)
             return
         }
         introProgress = HomeMapLibreView.introCurve.value(at: time)

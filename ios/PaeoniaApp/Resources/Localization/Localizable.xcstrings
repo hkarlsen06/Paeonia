@@ -19053,6 +19053,24 @@
         }
       }
     },
+    "home.map.showBoth" : {
+      "comment" : "Button on the Home map that appears after the person moves or zooms the map. It moves the map back so both partners are in view.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show both of you"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis dere begge"
+          }
+        }
+      }
+    },
     "home.map.together" : {
       "comment" : "Short label in the corner of the couple map, in place of the distance, when both partners are in the same place right now.",
       "extractionState" : "manual",
