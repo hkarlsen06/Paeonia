@@ -349,8 +349,9 @@ enum GuessMySpotCamera {
             width: abs(first.x - second.x),
             height: abs(first.y - second.y)
         )
-        // A guess right on the spot still shows a few hundred metres around it.
-        let minimum = MKMapPointsPerMeterAtLatitude(spot.latitude) * 800
+        // A guess right on the spot still shows the streets around it, as wide as the
+        // closest landing, so the camera doesn't zoom out to show two pins side by side.
+        let minimum = MKMapPointsPerMeterAtLatitude(spot.latitude) * 150
         let side = max(rect.width, rect.height, minimum)
         rect = rect.insetBy(
             dx: -(side - rect.width) / 2 - side * padding / 2,
