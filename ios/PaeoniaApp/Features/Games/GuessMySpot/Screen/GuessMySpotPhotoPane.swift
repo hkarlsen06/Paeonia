@@ -1,13 +1,16 @@
 import SwiftUI
 
 /// A round's photo filling its pane. A tap or a pinch opens it full screen to look closer.
-/// While it downloads, a spinner. When it can't be fetched, a line and Try again.
+/// While it downloads, the partner's blurred preview when there is one, and the
+/// photo sharpens out of it. Otherwise a spinner. When it can't be fetched, a line
+/// and Try again.
 struct GuessMySpotPhotoPane: View {
     /// The photo's part of the room it shares with the map on the split screens. It
     /// is small because a tap opens the photo, and the map needs room to pan and zoom.
     static let splitShare: CGFloat = 0.3
 
     let image: UIImage?
+    var preview: UIImage?
     var failed = false
     var retry: (() -> Void)?
 
@@ -18,7 +21,7 @@ struct GuessMySpotPhotoPane: View {
         ZStack {
             if let image {
                 filled(image)
-                    .transition(.opacity)
+                    .transition(preview == nil ? .opacity : AnyTransition(.blurReplace))
             } else if failed {
                 VStack(spacing: PaeoniaSpacing.space8) {
                     Text(.guessMySpotGuessPhotoFailed)
@@ -34,6 +37,9 @@ struct GuessMySpotPhotoPane: View {
                     }
                 }
                 .padding(PaeoniaSpacing.space16)
+            } else if let preview {
+                blurred(preview)
+                    .transition(.blurReplace)
             } else {
                 ProgressView()
                     .tint(.paeoniaAccentPrimary)
@@ -45,9 +51,26 @@ struct GuessMySpotPhotoPane: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(PaeoniaMotion.stateChange, value: image == nil)
+        // The photo sharpening out of the preview takes its time.
+        .animation(preview == nil ? PaeoniaMotion.stateChange : PaeoniaMotion.meaningfulMoment, value: image == nil)
+        .animation(PaeoniaMotion.meaningfulMoment, value: preview)
         .paeoniaImageViewer(selection: $viewer)
         .accessibilityIdentifier("guessMySpot.photo")
+    }
+
+    private func blurred(_ preview: UIImage) -> some View {
+        Color.clear
+            .overlay {
+                Image(uiImage: preview)
+                    .resizable()
+                    .interpolation(.medium)
+                    .scaledToFill()
+                    .blur(radius: 16, opaque: true)
+            }
+            .clipped()
+            .accessibilityElement()
+            .accessibilityLabel(Text(.guessMySpotPhotoPreviewA11Y))
+            .accessibilityAddTraits(.isImage)
     }
 
     private func filled(_ image: UIImage) -> some View {

@@ -19,6 +19,7 @@ extension GuessMySpotViewModel {
         namingTask?.cancel()
         if let replaced = draft {
             Task { await forgetRefusal(of: replaced) }
+            liveChannel?.send(.photoPreviewCleared)
         }
         draft = nil
     }

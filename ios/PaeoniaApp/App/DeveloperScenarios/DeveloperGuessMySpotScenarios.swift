@@ -293,6 +293,7 @@
       )
       guard let role = partnerRole(in: scenario) else { return live }
       let taps = scenario == .guessMySpotWaitLive
+      let picks = scenario == .guessMySpotWaitChoosing
       Task { @MainActor [weak live] in
         var step = 0
         while let live {
@@ -301,17 +302,26 @@
             connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: role.rawValue))
           }
           if taps {
-            let message = GuessMySpotLiveMessage(roundID: roundID, view: liveViews[step % liveViews.count])
-            let envelope = GameLiveEnvelope(game: GuessMySpotLiveMessage.game, message: message)
-            if let data = try? JSONEncoder().encode(envelope) {
-              live.connection.onGameData?(data)
-            }
+            feed(.guessMap(roundID: roundID, view: liveViews[step % liveViews.count]), to: live)
             step += 1
           }
+          // Robin picks the harbor photo after a moment.
+          if picks, step == 1,
+             let jpeg = await GuessMySpotPhotoPreview.jpeg(from: photoData(.guessMySpotScenarioHarbor)) {
+            feed(.photoPreview(roundID: roundID, jpeg: jpeg), to: live)
+          }
+          if picks { step += 1 }
           try? await Task.sleep(for: .seconds(taps ? 2.2 : 2))
         }
       }
       return live
+    }
+
+    private static func feed(_ message: GuessMySpotLiveMessage, to live: WidgetLiveDrawing) {
+      let envelope = GameLiveEnvelope(game: GuessMySpotLiveMessage.game, message: message)
+      if let data = try? JSONEncoder().encode(envelope) {
+        live.connection.onGameData?(data)
+      }
     }
   }
 

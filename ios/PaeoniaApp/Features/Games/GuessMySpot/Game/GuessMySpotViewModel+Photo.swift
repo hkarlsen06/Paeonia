@@ -24,8 +24,12 @@ extension GuessMySpotViewModel {
         } else {
             nil
         }
-        guard let prepared = await GuessMySpotPhotoReader.prepareAsync(data),
-              let image = await MemoryImageDecoding.downsample(prepared.jpeg, maxPixelSize: Self.displayPixelSize),
+        guard let prepared = await GuessMySpotPhotoReader.prepareAsync(data) else {
+            pickFailed = true
+            return
+        }
+        async let preview = GuessMySpotPhotoPreview.jpeg(from: prepared.jpeg)
+        guard let image = await MemoryImageDecoding.downsample(prepared.jpeg, maxPixelSize: Self.displayPixelSize),
               phase == .send
         else {
             pickFailed = true
@@ -36,8 +40,10 @@ extension GuessMySpotViewModel {
             roundID: UUID(),
             photo: prepared,
             image: image,
-            spot: prepared.spot
+            spot: prepared.spot,
+            preview: await preview
         )
+        sendLivePreview()
         namePlaceSoon()
     }
 
@@ -48,6 +54,7 @@ extension GuessMySpotViewModel {
             await cache.forgetRefusedMove(roundID: send.roundID, ownerUserID: ownerUserID)
             return
         }
+        async let preview = GuessMySpotPhotoPreview.jpeg(from: jpeg)
         guard let image = await MemoryImageDecoding.downsample(jpeg, maxPixelSize: Self.displayPixelSize),
               phase == .send, draft == nil
         else { return }
@@ -65,8 +72,10 @@ extension GuessMySpotViewModel {
             place: send.details.placeName.map {
                 GuessMySpotPlace(name: $0, city: send.details.placeCity, countryCode: send.details.placeCountryCode)
             },
-            refusedRoundID: send.roundID
+            refusedRoundID: send.roundID,
+            preview: await preview
         )
+        sendLivePreview()
     }
 
     /// The refused send a draft put back is done with: sent again or replaced.

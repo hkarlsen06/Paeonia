@@ -3,7 +3,8 @@ import SwiftUI
 
 /// The partner's turn. While they guess this person's photo, the photo and its
 /// spot show to their owner, and live the map shows what the partner's map shows.
-/// While they pick a photo, their avatar breathes. Either way the screen says what
+/// While they pick a photo, their avatar breathes, and once they picked one it shows
+/// blurred where the guess screen will show it. Either way the screen says what
 /// happens next.
 struct GuessMySpotWaitingView: View {
     let viewModel: GuessMySpotViewModel
@@ -98,6 +99,56 @@ struct GuessMySpotWaitingView: View {
     // MARK: Waiting for a photo
 
     private var waitingForPhoto: some View {
+        ZStack {
+            if let preview = viewModel.partnerPhotoPreview {
+                photoComing(preview)
+                    .transition(.blurReplace)
+            } else {
+                pickingPhoto
+                    .transition(.opacity)
+            }
+        }
+        .animation(
+            reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment,
+            value: viewModel.partnerPhotoPreview == nil
+        )
+    }
+
+    /// The partner picked a photo and checks it. It shows blurred above the map,
+    /// laid out as the guess screen, which takes over in place once it is sent.
+    private func photoComing(_ preview: GuessMySpotPhotoPreview) -> some View {
+        GuessMySpotSplitLayout {
+            GameLiveRow {
+                GamePresenceLabel(player: viewModel.partner, text: title, showsRing: partnerIsHere)
+            } trailing: {
+                EmptyView()
+            }
+        } photo: {
+            GuessMySpotPhotoPane(image: nil, preview: preview.image)
+        } map: {
+            GuessMySpotMap(
+                position: .constant(GuessMySpotCamera.world),
+                isInteractive: false,
+                showsSatelliteButton: false
+            )
+            .overlay(alignment: .bottom) {
+                Text(.guessMySpotWaitPreviewHint)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .padding(.horizontal, PaeoniaSpacing.space12)
+                    .padding(.vertical, PaeoniaSpacing.space8)
+                    .glassEffect(.regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6)), in: Capsule())
+                    .padding(PaeoniaSpacing.space12)
+                    .allowsHitTesting(false)
+            }
+        } footer: {
+            heldLine
+        } bottom: {
+            EmptyView()
+        }
+    }
+
+    private var pickingPhoto: some View {
         GameFocusedLayout(fillsHeight: true) {
             VStack(spacing: PaeoniaSpacing.space24) {
                 Spacer(minLength: PaeoniaSpacing.space16)

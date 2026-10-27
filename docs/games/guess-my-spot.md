@@ -126,7 +126,8 @@ Live runs whenever both partners have the game open. Without the partner there, 
 - **Presence and roles.** While the screen is open, the phone joins the `guess_my_spot` relay room and says `hello` with one of the shared roles: `choosing` while picking and checking a photo, `watching` while guessing, `result` on a reveal, and `present` anywhere else. The partner's phone reads them as "picking a photo", "guessing" and "looking at the result". The Convex presence heartbeat runs next to it for push suppression.
 - **The guess map, live.** `GuessMySpotLiveMessage` has `roundID` and `view`, the map rect the guess map shows and whether it is the satellite map. The guessing phone sends it while the map moves, at most 30 times a second, always at the end of a move, when the satellite button switches, and when the sender arrives. The sender's waiting map shows that rect and that style, and can't be moved or switched while it follows. Nothing in it is saved. Decided by the developer on 2026-10-27.
 - **The guess pin never goes over the relay.** The sender sees where the partner looks, not where they tap. The locked guess reaches the sender through Convex, in the reveal.
-- **The real spot never goes over the relay.** The message type has no field for a pin or a spot, and the sending phone sends no message at all. A test checks the message type.
+- **The photo, coming.** As soon as the sender picks a photo, their phone sends `photoPreview`: the round id the photo will make and the photo as a JPEG of at most 32 pixels on its longest side, made from the stripped photo. It sends it again when the guesser arrives, and `photoPreviewCleared` when the sender goes back to the picker. The guesser's phone drops a preview over 16 KB or 32 pixels, and drops the preview when the sender leaves without sending. Decided by the developer on 2026-10-27.
+- **The real spot never goes over the relay.** No message has a field for a pin or a spot, and the preview is re-encoded without the photo's metadata. A test checks the message fields and that the preview has no location.
 - **The reveal.** The guess goes to Convex. The guesser's phone opens the reveal at once and plays it as soon as the server answers with the real spot. The sender's phone plays it when the live feed delivers the guessed round.
 - **Lost connection.** The relay reconnects as in Draw & Guess. The waiting map stays where the partner's map last was and can be moved again, and the status falls back to the async wording.
 - **Invite.** The bell at the leading edge of the toolbar, with the shared invite rules.
@@ -274,13 +275,14 @@ Layout.
 | `map.pinDropped` | Pin dropped | Nålen er satt |
 | `map.satellite` | Satellite | Satellitt |
 | `photo.a11y` | The photo. Pinch to look closer. | Bildet. Klyp for å se nærmere. |
+| `photo.preview.a11y` | A photo on its way, still blurred | Et bilde på vei, fortsatt uskarpt |
 
 ### 3. Waiting
 
 Two cases.
 
 - **Waiting for the guess.** The photo I sent on top and the map under it, as on the guess screen, with my pin at the spot at 0.6 opacity. Live, the map shows what the partner's guess map shows, as they pan and zoom, without their pin. It can't be moved and has no satellite button while it follows. Title "[Name] is guessing" while live, "Waiting for [Name]" otherwise.
-- **Waiting for a photo.** The partner's avatar, 96 pt, with a breathing ring while they are in the game. Title "[Name] is picking a photo" while their role is `choosing`, "Waiting for [Name]" otherwise.
+- **Waiting for a photo.** The partner's avatar, 96 pt, with a breathing ring while they are in the game. Title "[Name] is picking a photo" while their role is `choosing`, "Waiting for [Name]" otherwise. Once the partner has picked one, the screen takes the guess screen's layout: the title in the live row, their photo blurred in the photo pane, and the world map under it, which can't be moved yet, with "Get ready to guess where it was taken." The preview blurs in as the avatar fades out, and the map fades in 0.6 s later. When the photo arrives, the guess screen fades in over it with the preview in the same place, and the photo sharpens out of the preview as it loads.
 
 Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." Away: "We'll tell you when [Name] guesses." or "We'll tell you when it's your turn." When the send is still on the phone after a failed try, the shared offline line shows, or "We couldn't send your move yet" with Try again. When the partner's photo arrives, the guess opens, and the shared turn cue (`gameYourTurn()` and `nudge`) plays, also while the last reveal is still on screen.
 
@@ -292,6 +294,7 @@ Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." 
 | `wait.hintLive` | You'll both see it the moment %@ locks in. | Dere ser det begge så snart %@ har låst gjetningen. |
 | `wait.hintTurn` | We'll tell you when it's your turn. | Vi sier fra når det er din tur. |
 | `wait.partnerMap.a11y` | Showing what %@ sees | Viser det %@ ser |
+| `wait.preview.hint` | Get ready to guess where it was taken. | Gjør deg klar til å gjette hvor det ble tatt. |
 | `wait.title` | Waiting for %@ | Venter på %@ |
 | `wait.yourSpot.a11y` | Your spot. Only you can see it. | Stedet ditt. Bare du ser det. |
 
@@ -300,7 +303,7 @@ Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." 
 Layout.
 
 1. The live row (`GameLiveRow`): "[Name] is watching" with the accent ring while the sender is in the game, or "[Name] will see your guess later".
-2. The photo on top, at 30% of the room it shares with the map (`GuessMySpotPhotoPane.splitShare`). It fills its frame, and a tap or a pinch outward opens it in the full-screen viewer (`paeoniaImageViewer`) to pinch and zoom. While it downloads, a spinner. When it can't be fetched, "We couldn't get the photo. Try again in a moment." with Try again.
+2. The photo on top, at 30% of the room it shares with the map (`GuessMySpotPhotoPane.splitShare`). It fills its frame, and a tap or a pinch outward opens it in the full-screen viewer (`paeoniaImageViewer`) to pinch and zoom. While it downloads, the partner's blurred preview when this phone got one, otherwise a spinner. When it can't be fetched, "We couldn't get the photo. Try again in a moment." with Try again.
 3. The map under it, on the whole world, with the hint "Tap the map where you think it is." over it until the first pin.
 4. Pinned bottom: primary "Lock in my guess" (`lock.fill`), off until there is a pin.
 
@@ -512,7 +515,7 @@ Errors follow Consensio: `42501` for access, `23514` for rules ("this round alre
 | `guess-my-spot-first-turn` | The picker of a new game |
 | `guess-my-spot-check-found` | The check, with a photo that had a spot |
 | `guess-my-spot-check-missing` | The check, with a photo that had none |
-| `guess-my-spot-wait-choosing` | Waiting while the partner picks a photo |
+| `guess-my-spot-wait-choosing` | Waiting while the partner picks a photo, then their blurred photo arriving |
 | `guess-my-spot-wait-live` | Waiting for the guess, following the partner's map as it moves |
 | `guess-my-spot-wait-later` | Waiting for the guess, partner away, invite bell |
 | `guess-my-spot-guess` | Guessing |

@@ -17,6 +17,7 @@ struct GuessMySpotGuessView: View {
         } photo: {
             GuessMySpotPhotoPane(
                 image: viewModel.roundPhoto,
+                preview: viewModel.roundPhotoPreview,
                 failed: viewModel.roundPhotoFailed,
                 retry: viewModel.retryRoundPhoto
             )

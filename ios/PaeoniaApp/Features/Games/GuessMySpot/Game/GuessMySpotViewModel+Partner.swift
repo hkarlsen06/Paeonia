@@ -93,6 +93,10 @@ extension GuessMySpotViewModel {
         if partnerMapView != nil, status != .guessing || !isWaitingForGuess {
             partnerMapView = nil
         }
+        // A partner who left without sending took their photo with them.
+        if partnerPhotoPreview != nil, status == .away, phase == .waitingForPhoto {
+            partnerPhotoPreview = nil
+        }
         let invite = GameInviteState.make(
             lastInviteAt: overview?.presence(for: .guessMySpot)?.lastInviteAt,
             localSentAt: localInviteSentAt,
@@ -140,7 +144,10 @@ extension GuessMySpotViewModel {
     static let liveMapViewInterval: TimeInterval = 1.0 / 30
 
     func attach(_ room: WidgetLiveDrawing) {
-        room.onPartnerArrived = { [weak self] in self?.sendLiveMapView() }
+        room.onPartnerArrived = { [weak self] in
+            self?.sendLiveMapView()
+            self?.sendLivePreview()
+        }
         let channel = GameLiveChannel<GuessMySpotLiveMessage>(connection: room.connection)
         channel.onMessage = { [weak self] message in self?.receive(message) }
         liveChannel = channel
@@ -205,19 +212,50 @@ extension GuessMySpotViewModel {
         guard phase == .guess, let round, let rect = guessMapRect else { return }
         let view = GuessMySpotLiveMapView(rect, satellite: guessMapSatellite)
         liveMapViewSent = view
-        liveChannel?.send(GuessMySpotLiveMessage(roundID: round.id, view: view))
+        liveChannel?.send(.guessMap(roundID: round.id, view: view))
+    }
+
+    /// Sends the few pixels of the photo this person is checking, so the partner
+    /// sees it coming.
+    func sendLivePreview() {
+        guard phase == .send, let draft, let jpeg = draft.preview else { return }
+        liveChannel?.send(.photoPreview(roundID: draft.roundID, jpeg: jpeg))
+    }
+
+    func receive(_ message: GuessMySpotLiveMessage) {
+        switch message {
+        case let .guessMap(roundID, view):
+            receiveGuessMap(roundID: roundID, view: view)
+        case let .photoPreview(roundID, jpeg):
+            // Kept in any phase: the partner may pick their photo while this person
+            // still watches the last reveal.
+            guard phase != .send, partnerPhotoPreview?.roundID != roundID,
+                  let preview = GuessMySpotPhotoPreview(roundID: roundID, jpeg: jpeg)
+            else { return }
+            partnerPhotoPreview = preview
+        case .photoPreviewCleared:
+            if phase != .guess {
+                partnerPhotoPreview = nil
+            }
+        }
     }
 
     /// The partner's guess map, shown only while this person waits for that guess.
-    func receive(_ message: GuessMySpotLiveMessage) {
-        let rect = message.view.rect
-        guard isWaitingForGuess, message.roundID == round?.id,
+    private func receiveGuessMap(roundID: UUID, view: GuessMySpotLiveMapView) {
+        let rect = view.rect
+        guard isWaitingForGuess, roundID == round?.id,
               [rect.origin.x, rect.origin.y, rect.size.width, rect.size.height].allSatisfy(\.isFinite),
               rect.size.width > 0, rect.size.height > 0
         else { return }
-        if partnerMapView != message.view {
-            partnerMapView = message.view
+        if partnerMapView != view {
+            partnerMapView = view
         }
+    }
+
+    /// The partner's preview of the round on screen, while its photo is on its way.
+    var roundPhotoPreview: UIImage? {
+        guard let preview = partnerPhotoPreview, preview.roundID == round?.id else { return nil }
+        return preview.image
     }
 
     // MARK: - Marks

@@ -17379,6 +17379,24 @@
         }
       }
     },
+    "guessMySpot.photo.preview.a11y" : {
+      "comment" : "VoiceOver label of the partner's photo, shown blurred while they pick it and while it loads.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A photo on its way, still blurred"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et bilde på vei, fortsatt uskarpt"
+          }
+        }
+      }
+    },
     "guessMySpot.pick.subtitle" : {
       "comment" : "Subtitle over the camera roll. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -18053,6 +18071,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Viser det %@ ser"
+          }
+        }
+      }
+    },
+    "guessMySpot.wait.preview.hint" : {
+      "comment" : "Hint over the map while the partner checks the photo they picked, before they send it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get ready to guess where it was taken."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gjør deg klar til å gjette hvor det ble tatt."
           }
         }
       }

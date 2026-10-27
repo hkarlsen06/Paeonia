@@ -24,6 +24,8 @@ struct GuessMySpotDraft: Equatable {
     /// The refused send this draft puts back. Its record and photo stay on the phone
     /// until this draft is sent or replaced.
     var refusedRoundID: UUID?
+    /// The few pixels the partner sees while this person checks the photo.
+    var preview: Data?
 
     var placeName: String? { place?.name }
 }
@@ -67,6 +69,9 @@ final class GuessMySpotViewModel {
     /// What the partner's guess map shows while they guess live. Their pin never
     /// comes along, so the sender sees where they look, not where they tap.
     var partnerMapView: GuessMySpotLiveMapView?
+    /// The photo the partner picked, before it is sent. It stays after the send as
+    /// the guess screen's stand-in until the real photo loads.
+    var partnerPhotoPreview: GuessMySpotPhotoPreview?
     var partnerStatus: GuessMySpotPartnerStatus = .away
     var invite: GameInviteState = .hidden
     var isStartingGame = false
@@ -266,6 +271,7 @@ final class GuessMySpotViewModel {
         guessPin = nil
         guessPinRoundID = nil
         partnerMapView = nil
+        partnerPhotoPreview = nil
         partnerStatus = .away
         invite = .hidden
         localInviteSentAt = nil

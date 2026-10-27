@@ -51,6 +51,9 @@ struct GuessMySpotScreen: View {
     private var phaseTransition: AnyTransition {
         if reduceMotion { return .opacity }
         if case .reveal = viewModel.phase { return .opacity }
+        // The guess screen's photo pane sits where the waiting screen showed the
+        // preview, so the preview stays put while the map comes alive around it.
+        if viewModel.phase == .guess, viewModel.roundPhotoPreview != nil { return .opacity }
         return .asymmetric(insertion: .opacity.combined(with: .offset(y: 12)), removal: .opacity)
     }
 

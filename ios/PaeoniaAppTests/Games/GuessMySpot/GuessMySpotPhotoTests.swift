@@ -97,10 +97,35 @@ struct GuessMySpotPhotoTests {
 
     @Test func theLiveMessageCannotCarryAPinOrTheRealSpot() throws {
         let view = GuessMySpotLiveMapView(MKMapRect(x: 1, y: 2, width: 3, height: 4), satellite: false)
-        let message = GuessMySpotLiveMessage(roundID: UUID(), view: view)
-        let json = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(message)) as? [String: Any])
-        #expect(Set(json.keys) == ["roundID", "view"])
-        let viewJSON = try #require(json["view"] as? [String: Any])
+        let messages: [GuessMySpotLiveMessage] = [
+            .guessMap(roundID: UUID(), view: view),
+            .photoPreview(roundID: UUID(), jpeg: Data([1, 2])),
+            .photoPreviewCleared,
+        ]
+        let fields = try messages.map { message in
+            let data = try JSONEncoder().encode(message)
+            let json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+            let body = try #require(json.values.first as? [String: Any])
+            return Set(body.keys)
+        }
+        #expect(fields == [["roundID", "view"], ["roundID", "jpeg"], []])
+        let viewJSON = try #require(
+            try JSONSerialization.jsonObject(with: JSONEncoder().encode(view)) as? [String: Any]
+        )
         #expect(Set(viewJSON.keys) == ["x", "y", "width", "height", "satellite"])
+    }
+
+    @MainActor @Test func thePreviewIsAFewPixelsWithoutLocation() async throws {
+        let original = try cameraPhoto(gps: [
+            kCGImagePropertyGPSLatitude: 60.39, kCGImagePropertyGPSLatitudeRef: "N",
+            kCGImagePropertyGPSLongitude: 5.32, kCGImagePropertyGPSLongitudeRef: "E",
+        ])
+        let prepared = try #require(GuessMySpotPhotoReader.prepare(original))
+        let jpeg = try #require(await GuessMySpotPhotoPreview.jpeg(from: prepared.jpeg))
+        #expect(try properties(of: jpeg)[kCGImagePropertyGPSDictionary] == nil)
+        let preview = try #require(GuessMySpotPhotoPreview(roundID: UUID(), jpeg: jpeg))
+        #expect(max(preview.image.size.width, preview.image.size.height) <= 32)
+        // A whole photo is not a preview, so the guesser's phone drops it.
+        #expect(GuessMySpotPhotoPreview(roundID: UUID(), jpeg: original) == nil)
     }
 }
