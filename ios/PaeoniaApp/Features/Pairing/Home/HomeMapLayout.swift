@@ -63,16 +63,18 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             }
             // When everything fits, there is nothing to scroll to, so the page stays still.
             .scrollBounceBehavior(.basedOnSize)
-            // The map runs up under the bar and the status bar.
-            .ignoresSafeArea(edges: couple == nil ? [] : .top)
+            // Keep the scroll view's bounds and insets stable as the map arrives.
+            // Without a map, the page reserves the header's space itself.
+            .ignoresSafeArea(edges: .top)
             // Like a navigation bar: no glass at rest over the map, glass as soon as Home scrolls.
             .scrollEdgeEffectHidden(scrollOffset <= 1, for: .top)
             .safeAreaBar(edge: .top) {
                 header
+                    .frame(height: PaeoniaSpacing.compactButtonHeight)
                     // Sits where a navigation bar puts its title, under the Dynamic Island.
                     .overlay { title(couple) }
                     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                    // A navigation bar is 54 points tall, so its glass reaches past the 44 point pill.
+                    // Leave room below the pill for the bar's glass.
                     .padding(.bottom, PaeoniaSpacing.space12)
             }
             .onChange(of: hearts?.incomingBurst) { _, burst in
@@ -105,11 +107,15 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 // The cards start just under the map's last full row, and the map fades on behind them.
                 .padding(.top, couple == nil ? PaeoniaSpacing.space24 : -HomeMapMetrics.cardsOverlap)
         }
-        .padding(.top, couple == nil ? PaeoniaSpacing.space8 : 0)
+        .padding(.top, couple == nil ? screen.topInset + Self.headerHeight + PaeoniaSpacing.space8 : 0)
         // With the map, the page fills the screen down to just above the tab bar, and
         // the map takes whatever the cards leave. One layout pass sizes both, so they
         // move together when a card changes height.
         .frame(minHeight: couple == nil ? nil : screen.fillHeight, alignment: .top)
+    }
+
+    private static var headerHeight: CGFloat {
+        PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space12
     }
 
     /// The partner's hearts while they play, otherwise how far apart the couple is.
