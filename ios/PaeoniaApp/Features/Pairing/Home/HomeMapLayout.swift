@@ -205,6 +205,13 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             .mask(alignment: .top) { fadeMask(metrics) }
             .opacity(mapOpacity)
 
+            // The faded map under the cards does nothing on a tap, but SwiftUI hands the
+            // page's map gesture only touches that land on something. The areas over the map
+            // decide whether a drag or a pinch from here moves it.
+            Color.clear
+                .contentShape(Rectangle())
+                .accessibilityHidden(true)
+
             // A tap on the open map sends a heart, as on the map card. Only down to the
             // cards, so a tap between two cards does nothing.
             Color.clear

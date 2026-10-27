@@ -21,6 +21,7 @@ struct DailyPromptCompactCard: View {
     private static let envelopeSize: CGFloat = 68
 
     @Environment(\.dailyPromptIsInline) private var isInline
+    @Environment(\.homeMapExplorer) private var homeMapExplorer
 
     var body: some View {
         if isInline {
@@ -37,6 +38,8 @@ struct DailyPromptCompactCard: View {
                 // Without a card, the envelope and words still line up with the content of
                 // the cards around the row.
                 .padding(.horizontal, isInline ? PaeoniaSpacing.cardContentPadding : 0)
+                // On the map, the row lies on it, so a drag or a pinch there moves the map.
+                .homeMapRows("questionRow", isInline ? homeMapExplorer : nil)
 
             actionButton
 

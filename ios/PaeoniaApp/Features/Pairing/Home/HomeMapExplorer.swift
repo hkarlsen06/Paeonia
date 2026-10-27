@@ -114,6 +114,16 @@ extension View {
         }
         .onDisappear { explorer?.setArea(name, nil) }
     }
+
+    /// Marks the rows this view sits on as over Home's map, across the whole screen and up
+    /// to the card above, for words and pictures that lie on the map without a card.
+    func homeMapRows(_ name: String, _ explorer: HomeMapExplorer?) -> some View {
+        onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
+            let top = frame.minY - PaeoniaSpacing.space16
+            explorer?.setArea(name, CGRect(x: 0, y: top, width: .greatestFiniteMagnitude, height: frame.maxY - top))
+        }
+        .onDisappear { explorer?.setArea(name, nil) }
+    }
 }
 
 /// One finger drags the map. Two drag it by their midpoint, zoom it by their spread and

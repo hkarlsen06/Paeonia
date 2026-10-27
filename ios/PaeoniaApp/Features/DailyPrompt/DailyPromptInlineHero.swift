@@ -26,18 +26,21 @@ struct DailyPromptInlineHero: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
-            Button(action: onAnswer) {
-                DailyPromptSealedEnvelope(
-                    width: Self.envelopeWidth, seal: art.seal, sealBreak: sealBreak, opening: envelopeOpening
-                )
-            }
-            .buttonStyle(.plain)
-            .disabled(copy.isLoading)
-            // The envelope sits over Home's map, so a drag or a pinch on it moves the map.
-            .homeMapArea("envelope", homeMapExplorer)
-            .accessibilityHidden(true)
+            VStack(spacing: PaeoniaSpacing.space16) {
+                Button(action: onAnswer) {
+                    DailyPromptSealedEnvelope(
+                        width: Self.envelopeWidth, seal: art.seal, sealBreak: sealBreak, opening: envelopeOpening
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(copy.isLoading)
+                .accessibilityHidden(true)
 
-            titleAndMessage
+                titleAndMessage
+            }
+            // The envelope and the words lie on Home's map, so a drag or a pinch on them or
+            // beside them moves the map. A tap on the envelope still opens the question.
+            .homeMapRows("question", homeMapExplorer)
 
             Button(action: onAnswer) {
                 Text(copy.actionTitle)
