@@ -52,7 +52,7 @@ struct DrawAndGuessHubCard: View {
 extension DrawAndGuessHubSummary.Status {
     /// The game waits for this person, so the card stands out.
     var isYourTurn: Bool {
-        self == .yourTurnToDraw || self == .yourTurnToGuess
+        self == .yourTurnToDraw || self == .yourTurnToGuess || self == .revealReady
     }
 
     func title(partnerName: String) -> LocalizedStringResource {
@@ -60,6 +60,7 @@ extension DrawAndGuessHubSummary.Status {
         case .notStarted: .gamesHubStatusNotStarted
         case .yourTurnToDraw: .gamesHubStatusYourTurnToDraw
         case .yourTurnToGuess: .gamesHubStatusYourTurnToGuess
+        case .revealReady: .gamesHubStatusRevealReady
         case .partnerIsDrawing: .gamesHubStatusPartnerDrawing(partnerName)
         case .waitingForPartner: .gamesHubStatusWaiting(partnerName)
         }
@@ -70,6 +71,7 @@ extension DrawAndGuessHubSummary.Status {
         case .notStarted: .gamesHubActionStart
         case .yourTurnToDraw: .gamesHubActionDraw
         case .yourTurnToGuess: .gamesHubActionGuess
+        case .revealReady: .gamesHubActionReveal
         case .partnerIsDrawing: .gamesHubActionWatch
         case .waitingForPartner: .gamesHubActionOpen
         }

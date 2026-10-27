@@ -7,6 +7,7 @@ nonisolated struct DrawAndGuessHubSummary: Equatable, Sendable {
         case notStarted
         case yourTurnToDraw
         case yourTurnToGuess
+        case revealReady
         case partnerIsDrawing
         case waitingForPartner
     }
@@ -27,13 +28,13 @@ nonisolated struct DrawAndGuessHubSummary: Equatable, Sendable {
     init(state: RemoteDrawAndGuessState, resolution: DrawAndGuessResolution) {
         let playStyle = state.settings?.playStyle ?? .against
         self.init(
-            status: Self.status(for: resolution.turnPhase),
+            status: resolution.phase == .reveal ? .revealReady : Self.status(for: resolution.turnPhase),
             score: state.game.map { DrawAndGuessScore(game: $0, playStyle: playStyle) },
             hasDrawings: state.hasFinishedDrawing
         )
     }
 
-    /// A reveal comes first, and the hub shows the turn that follows it.
+    /// After the result is seen, the hub shows the turn that follows it.
     private static func status(for turnPhase: DrawAndGuessPhase) -> Status {
         switch turnPhase {
         case .loading, .needsSetup, .preparing:

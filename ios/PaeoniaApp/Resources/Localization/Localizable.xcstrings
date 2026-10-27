@@ -14817,6 +14817,24 @@
         }
       }
     },
+    "games.hub.action.reveal" : {
+      "comment" : "Draw & Guess hub button that opens an unseen round result.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See result"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se resultat"
+          }
+        }
+      }
+    },
     "games.hub.action.start" : {
       "comment" : "Hub button that starts the first round",
       "extractionState" : "manual",
@@ -14975,6 +14993,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ tegner for deg"
+          }
+        }
+      }
+    },
+    "games.hub.status.revealReady" : {
+      "comment" : "Draw & Guess hub status when a finished round has not been viewed yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The round is finished."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runden er ferdig."
           }
         }
       }

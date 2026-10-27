@@ -54,9 +54,8 @@ extension GamesPhaseTests {
         )
     }
 
-    /// The server gives the guesser the turn while they guess. A result this phone
-    /// has not shown yet must not turn that into "your turn to draw".
-    @Test func theHubShowsTheTurnAfterAnUnseenResult() {
+    /// A result stays actionable until seen, even after the next turn begins.
+    @Test func theHubShowsAnUnseenResultBeforeTheNextTurn() {
         let me = GameFixture.me
         let partner = GameFixture.partner
         let partnerSentADrawing = afterUnseenResult(game: .guessing, turn: me, nextDrawer: partner, oldDrawer: me)
@@ -82,12 +81,12 @@ extension GamesPhaseTests {
             )
         ]
 
-        #expect(revealHubStatus(partnerSentADrawing) == .yourTurnToGuess)
-        #expect(revealHubStatus(partnerIsDrawing) == .partnerIsDrawing)
-        #expect(revealHubStatus(iSentADrawing) == .waitingForPartner)
-        #expect(revealHubStatus(iGuessedIt) == .yourTurnToDraw)
-        #expect(revealHubStatus(partnerGuessedIt) == .waitingForPartner)
-        #expect(revealHubStatus(guessingHere, pending: unsentCorrectGuess) == .yourTurnToDraw)
+        #expect(revealHubStatus(partnerSentADrawing) == .revealReady)
+        #expect(revealHubStatus(partnerIsDrawing) == .revealReady)
+        #expect(revealHubStatus(iSentADrawing) == .revealReady)
+        #expect(revealHubStatus(iGuessedIt) == .revealReady)
+        #expect(revealHubStatus(partnerGuessedIt) == .revealReady)
+        #expect(revealHubStatus(guessingHere, pending: unsentCorrectGuess) == .revealReady)
     }
 
     @Test func onlyAGameThePartnerJustOpenedCounts() {

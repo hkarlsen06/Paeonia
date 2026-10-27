@@ -115,7 +115,7 @@
         )
       case .drawRevealMissed:
         return revealState(.missed, drawer: Fixture.partner)
-      case .drawRevealAsDrawer:
+      case .drawRevealAsDrawer, .gamesHubReveal:
         return revealState(
           .solved,
           drawer: Fixture.me,

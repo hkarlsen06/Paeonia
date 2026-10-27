@@ -67,7 +67,7 @@ Decided on 2026-10-12.
 - **Game language.** The couple picks a language they both understand. Word lists, decoy letters and other game content use it, whatever language each partner's app is in. The choices are the app's languages, English and Norwegian Bokmal. When both partners already use the same app language, setup preselects it.
 - **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
 - **Tab order.** Home, Questions, Games, Memories, You. Games sits in the middle.
-- **Tab badge.** The Games tab shows a badge of 1 while any game waits for this person to draw or guess. The tab bar loads the game state at launch, so the badge shows before the tab is opened.
+- **Tab badge.** The Games tab counts the turns, unseen results and open invites waiting for this person, except those put aside with "Not now". An unseen Draw & Guess result stays under "Right now" with a button to see the result and "Not now", even when the partner has the next turn. The badge loads at launch, before the tab is opened.
 - **Tab bar in a game.** On iPhone the tab bar hides while a game screen is open. On iPad it stays, because the iPad tab bar sits at the top and iPadOS 26 moves the game's content when it hides during the push.
 - **One ongoing game per kind.** A couple has at most one active game of each kind.
 - **Turn reminder.** When a move has waited 72 hours, the partner whose turn it is gets one reminder. There is never a second one for the same move.

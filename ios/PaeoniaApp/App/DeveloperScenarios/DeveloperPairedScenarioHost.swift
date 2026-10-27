@@ -95,7 +95,7 @@
         .questions
       case .memoriesEmpty, .memoriesPopulated, .memoriesCards, .memoriesMapTab:
         .memories
-      case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting,
+      case .gamesSetup, .gamesPartnerPicked, .gamesHubYourTurn, .gamesHubWaiting, .gamesHubReveal,
         .gamesHubPartnerHere, .exquisiteCorpseHubYourTurn, .exquisiteCorpseHubPartnerDrawing,
         .exquisiteCorpseHubReveal, .exquisiteCorpseHubNotStarted, .gamesHubBoardGames:
         .games

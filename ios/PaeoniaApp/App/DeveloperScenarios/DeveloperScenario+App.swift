@@ -22,7 +22,8 @@
       countdownMissing, countdownUpcoming, countdownToday,
       locationNotSharing, locationCurrentMissing, locationLive, locationStale,
       widgetDrawing, widgetHistoryEmpty, widgetHistoryPopulated,
-      gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubPartnerHere, gamesHubBoardGames,
+      gamesSetup, gamesPartnerPicked, gamesHubYourTurn, gamesHubWaiting, gamesHubReveal, gamesHubPartnerHere,
+      gamesHubBoardGames,
       notificationPrimer, settings, settingsPartnerPays, settingsNotificationsDenied, privacySafety, reportAndLeave,
       deepLinkDailyToday, deepLinkDailyReveal, deepLinkWidget, deepLinkStreak, deepLinkSubscription,
     ]
@@ -301,6 +302,10 @@
     )
     static let gamesHubWaiting = pairedApp(
       "games-hub-waiting", "Games · hub, waiting for partner", "Hub while Robin has the next move", .games
+    )
+    static let gamesHubReveal = pairedApp(
+      "games-hub-reveal", "Games · hub, drawing result",
+      "An unseen drawing result can be opened or put aside while Robin has the next turn", .games
     )
     static let gamesHubPartnerHere = pairedApp(
       "games-hub-partner-here", "Games · hub, partner is here",

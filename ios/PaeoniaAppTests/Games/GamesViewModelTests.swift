@@ -15,6 +15,28 @@ struct GamesViewModelTests {
 
     private let ludo = GamesDestination.game(.ludo)
 
+    @Test func anUnseenDrawingResultStaysInRightNowAndCanBeSnoozed() async {
+        let state = GameFixture.state(
+            settings: GameFixture.settings(),
+            game: GameFixture.game(state: .choosingWord, turn: GameFixture.partner),
+            round: GameFixture.round(state: .solved, drawer: GameFixture.me, hasDrawing: true)
+        )
+        let env = GamesTestEnvironment(state: state)
+        env.gateway.setStateToLoad(state)
+        let viewModel = viewModel(env)
+        await viewModel.load()
+
+        #expect(viewModel.drawAndGuess.isYourTurn)
+        #expect(viewModel.cardContext(for: .drawAndGuess, isOnHub: true).hide != nil)
+
+        // Dismissing the result locally restores the partner's next turn at once.
+        await viewModel.drawAndGuess.game.reload()
+        await viewModel.drawAndGuess.game.continueFromReveal()
+        await viewModel.reload()
+        #expect(!viewModel.drawAndGuess.isYourTurn)
+        #expect(viewModel.cardContext(for: .drawAndGuess, isOnHub: true).hide == nil)
+    }
+
     private func step(_ viewModel: GamesViewModel) -> String {
         switch viewModel.introStep {
         case .setup: "setup"

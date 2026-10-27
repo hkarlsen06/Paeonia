@@ -26,7 +26,7 @@ extension SimDriver {
         try checkPhase(phone, viewModel, game: game, work: work)
         try checkWatchingLive(phone, viewModel)
         try checkInvite(phone, viewModel, view: view)
-        try checkHub(phone, game: game)
+        try checkHub(phone, game: game, work: work)
         // A letter a hint showed stays shown, also after a relaunch.
         if viewModel.phase.allowsGuessing, let round = viewModel.round, viewModel.tilesRoundID == round.id,
            viewModel.slots.hintedIndexes != hinted["\(name)-\(round.id)"] ?? [] {
@@ -111,15 +111,24 @@ extension SimDriver {
         }
     }
 
-    /// The hub tells the same story. On a reveal it shows the turn that follows it.
-    private func checkHub(_ phone: SimPhone, game: SimServer.Game) throws {
+    /// An unseen result stays on the hub before the next turn.
+    private func checkHub(_ phone: SimPhone, game: SimServer.Game, work: DrawAndGuessPendingWork) throws {
         guard let summary = phone.games?.drawAndGuess.summary else { return }
         let me = phone.userID
         let current = server.currentRound
-        let expectedStatus: DrawAndGuessHubSummary.Status = switch game.state {
-        case .choosingWord: game.turnUser == me ? .yourTurnToDraw : .waitingForPartner
-        case .drawing: current?.drawer == me ? .yourTurnToDraw : .partnerIsDrawing
-        case .guessing: current?.drawer == me ? .waitingForPartner : .yourTurnToGuess
+        let result = server.rounds.last { $0.state.isFinished }
+        let unseenResult = result.map {
+            !work.hasResultSeen(roundID: $0.id) && ($0.drawer == me ? $0.drawerSeenAt : $0.guesserSeenAt) == nil
+        } ?? false
+        let expectedStatus: DrawAndGuessHubSummary.Status
+        if unseenResult {
+            expectedStatus = .revealReady
+        } else {
+            expectedStatus = switch game.state {
+            case .choosingWord: game.turnUser == me ? .yourTurnToDraw : .waitingForPartner
+            case .drawing: current?.drawer == me ? .yourTurnToDraw : .partnerIsDrawing
+            case .guessing: current?.drawer == me ? .waitingForPartner : .yourTurnToGuess
+            }
         }
         if summary.status != expectedStatus {
             throw fail("\(phone.name) hub says \(summary.status), expected \(expectedStatus)")
