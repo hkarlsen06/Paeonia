@@ -66,15 +66,19 @@ struct HomeMapLibreView: UIViewRepresentable {
         Self.camera(current: current, partner: partner, isNear: isNear, area: framedBox, viewSize: size)
     }
 
+    /// Zoomed far out, the tiles for that zoom carry only very simplified coastlines.
+    /// Loading tiles up to three levels more detailed keeps them sharp. A city needs none.
+    static func tileDetailShift(zoom: Double) -> Double {
+        min(max(6 - zoom, 0), 3)
+    }
+
     /// `animated` pans on Paeonia's standard curve and timing, so the map moves with the
     /// cards when the box changes.
     func frame(_ map: MLNMapView, animated: Bool, isCurrent: @escaping () -> Bool) {
         let camera = framing(in: map.bounds.size)
         map.contentInset = .zero
         let heading = Self.heading(camera.direction)
-        // Zoomed far out, the tiles for that zoom carry only very simplified coastlines.
-        // Loading tiles up to three levels more detailed keeps them sharp. A city needs none.
-        map.tileLodZoomShift = min(max(6 - camera.zoom, 0), 3)
+        map.tileLodZoomShift = Self.tileDetailShift(zoom: camera.zoom)
         guard animated else {
             map.setCenter(camera.center, zoomLevel: camera.zoom, direction: heading, animated: false)
             return

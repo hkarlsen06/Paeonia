@@ -135,7 +135,7 @@ extension HomeMapLibreView.Coordinator {
         guard case let .waiting(pose, since) = intro, let parent, let map, parent.canStartIntro,
               isLoaded || Date.now.timeIntervalSince(since) >= HomeMapLibreView.introLoadWait else { return }
         intro = .flying(pose, began: CACurrentMediaTime())
-        map.tileLodZoomShift = min(max(6 - parent.framing(in: map.bounds.size).zoom, 0), 3)
+        map.tileLodZoomShift = HomeMapLibreView.tileDetailShift(zoom: parent.framing(in: map.bounds.size).zoom)
         let link = CADisplayLink(target: self, selector: #selector(introTick))
         link.add(to: .main, forMode: .common)
     }

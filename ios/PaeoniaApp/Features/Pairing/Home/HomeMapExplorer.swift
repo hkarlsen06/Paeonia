@@ -71,6 +71,7 @@ final class HomeMapExplorer {
         _ coordinate: CLLocationCoordinate2D, at point: CGPoint, zoom: Double, direction: Double, on map: MLNMapView
     ) {
         isExploring = true
+        map.tileLodZoomShift = HomeMapLibreView.tileDetailShift(zoom: zoom)
         let center = HomeMapLibreView.mapCenter(
             putting: HomeMapLibreView.mercator(coordinate),
             at: point,
