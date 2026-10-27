@@ -8,7 +8,7 @@
       launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled, onboardingUsage,
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
-      homeLaunchLocationFirst, homeLaunchCalendarFirst,
+      homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
@@ -37,6 +37,11 @@
       "home-launch-calendar-first", "Home launch, calendar first",
       "Cold launch through the real root with delayed question and location reads", .launchAndAuth
     ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .calendarFirst) }
+
+    static let homeLaunchOverlapping = DeveloperScenario(
+      "home-launch-overlapping", "Home launch, overlapping reads",
+      "The map arrives while the question and calendar are animating", .launchAndAuth
+    ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .overlapping) }
 
     static let launchLoading = DeveloperScenario(
       "launch-loading", "Launch loading", "Copy-free launch surface", .launchAndAuth

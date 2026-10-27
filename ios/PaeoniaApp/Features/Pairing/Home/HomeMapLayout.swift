@@ -158,6 +158,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             }
         }
         .frame(
+            // Reserve the width while empty, so the arriving map cannot expand from the center.
+            maxWidth: .infinity,
             minHeight: reservesMapSpace ? screen.shortestBand : nil,
             maxHeight: reservesMapSpace ? .infinity : nil,
             alignment: .top

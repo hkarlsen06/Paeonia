@@ -5,6 +5,7 @@ import SwiftUI
 /// page, so the tile looks the same on a narrow phone and in the wide iPad column.
 struct CountdownCalendarView: View {
     enum Face: Equatable {
+        case loading
         /// A question mark, for a couple with no date to count down to yet.
         case empty
         case days(Int)
@@ -61,6 +62,10 @@ struct CountdownCalendarView: View {
     private func pageFace(in rect: CGRect) -> some View {
         ZStack {
             switch face {
+            case .loading:
+                Text(verbatim: "0")
+                    .font(.system(size: rect.height * 0.74, weight: .heavy, design: .rounded))
+                    .redacted(reason: .placeholder)
             case .empty:
                 Text(verbatim: "?")
                     .font(.system(size: rect.height * 0.74, weight: .heavy, design: .rounded))

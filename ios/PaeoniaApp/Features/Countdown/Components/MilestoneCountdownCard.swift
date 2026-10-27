@@ -106,14 +106,6 @@ struct MilestoneCountdownCard: View {
             if milestone == nil { presentEditor() } else { isTimelinePresented = true }
         } label: {
             calendarLabel(for: milestone)
-                .opacity(isLoading ? 0 : 1)
-                .overlay {
-                    if isLoading {
-                        calendarLabel(for: nil)
-                            .redacted(reason: .placeholder)
-                            .transition(.opacity)
-                    }
-                }
         }
         .buttonStyle(.paeoniaPressableCard)
         .disabled(isLoading)
@@ -154,7 +146,7 @@ struct MilestoneCountdownCard: View {
             face = isToday ? .today : .days(shownDays(milestone.daysRemaining))
             line = isToday ? Text(verbatim: title) : Text(untilLine(for: milestone, title: title))
         } else {
-            face = .empty
+            face = isLoading ? .loading : .empty
             line = Text(.homeMilestoneSetupTitle)
         }
         return tile(face: face, burstID: isCelebrating ? celebrationID : nil, line: line)
@@ -170,6 +162,8 @@ struct MilestoneCountdownCard: View {
             line
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
+                .redacted(reason: isLoading ? .placeholder : [])
+                .contentTransition(.opacity)
                 .multilineTextAlignment(.center)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 2)
                 .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.85)
