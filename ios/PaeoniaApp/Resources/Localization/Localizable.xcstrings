@@ -19863,6 +19863,24 @@
         }
       }
     },
+    "home.milestone.timeline.started" : {
+      "comment" : "First timeline entry marking the date the couple got together.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You got together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dere ble sammen"
+          }
+        }
+      }
+    },
     "home.milestone.timeline.title" : {
       "comment" : "Navigation title of the sheet listing upcoming relationship milestones",
       "extractionState" : "manual",

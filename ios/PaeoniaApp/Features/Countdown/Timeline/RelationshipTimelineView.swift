@@ -125,6 +125,11 @@ struct RelationshipTimelineView: View {
         let past = pastEvents
         let upcoming = upcomingEvents
         return VStack(alignment: .leading, spacing: PaeoniaSpacing.space32) {
+            if let startDate {
+                RelationshipTimelineStartRow(date: startDate, onEdit: presentEditor)
+                    .modifier(veil(distance: past.count + 1))
+            }
+
             ForEach(Array(past.enumerated()), id: \.element.id) { index, event in
                 eventRow(for: event, isPast: true)
                     .modifier(veil(distance: past.count - index))
@@ -336,6 +341,31 @@ extension RelationshipTimelineView {
             parts.append(daysText(days))
         }
         return parts.formatted(.list(type: .and))
+    }
+}
+
+private struct RelationshipTimelineStartRow: View {
+    let date: Date
+    let onEdit: () -> Void
+
+    var body: some View {
+        Button(action: onEdit) {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
+                Text(.homeMilestoneTimelineStarted)
+                    .font(PaeoniaTypography.heroTitle)
+                    .foregroundStyle(.paeoniaTextSecondary)
+
+                Text(date, format: .dateTime.weekday(.wide).day().month(.wide).year())
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextTertiary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(Text(.homeMilestoneTimelineEditHint))
     }
 }
 
