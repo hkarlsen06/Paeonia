@@ -35,7 +35,6 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     /// canvas holds an older drawing and is not read back.
     @ObservationIgnored private var canvasDrawingRevision = 0
     @ObservationIgnored private var canvasRefreshTask: Task<Void, Never>?
-    @ObservationIgnored private var selectedUIColor = WidgetDrawingColorChoice.palette[0].uiColor
     /// The tool before the current one, for Apple Pencil's "last used" double tap.
     @ObservationIgnored private var previousTool: WidgetDrawingTool?
     /// The pen or pencil to go back to after the eraser.
@@ -50,7 +49,9 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     }
 
     var canvasTool: CanvasTool {
-        selectedTool.canvasTool(color: selectedUIColor, width: toolWidth, lineStyle: selectedLineStyle)
+        selectedTool.canvasTool(
+            color: UIColor(cgColor: selectedCGColor), width: toolWidth, lineStyle: selectedLineStyle
+        )
     }
 
     /// The drawing at the size every phone exchanges.
@@ -83,7 +84,6 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     func selectColorChoice(_ choice: WidgetDrawingColorChoice) {
         guard isColorSelectionEnabled else { return }
         selectedCGColor = choice.uiColor.cgColor
-        selectedUIColor = choice.uiColor
         selectedColorChoiceID = choice.id
     }
 
@@ -91,7 +91,6 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
         guard isColorSelectionEnabled else { return }
         let uiColor = UIColor.paeoniaDrawingColor(from: color)
         selectedCGColor = uiColor.cgColor
-        selectedUIColor = uiColor
         selectedColorChoiceID = nil
     }
 
@@ -251,7 +250,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
             in: drawing,
             side: canvasSide,
             at: point,
-            color: selectedUIColor
+            color: UIColor(cgColor: selectedCGColor)
         ) else { return }
         applyEdit(PKDrawing(strokes: drawing.strokes + [stroke]))
     }
