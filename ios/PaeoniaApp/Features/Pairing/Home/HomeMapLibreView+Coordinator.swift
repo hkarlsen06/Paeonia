@@ -7,6 +7,13 @@ extension HomeMapLibreView {
         var lastFraming: FramingKey?
         /// MapLibre drops timed camera moves until the map has loaded.
         var isLoaded = false
+        weak var map: MLNMapView?
+        var intro = Intro.none
+        /// From 0 to 1 as the intro carries the avatars to their places. 1 without an intro.
+        var introProgress: Double = 1
+        /// Both places on the intro's first camera. They miss the waiting avatars when the
+        /// map can't zoom out far enough.
+        var introStartPoints = HomeMapAvatarPoints(own: .zero, partner: .zero)
 
         /// Frames the map again when the couple, the box or the view's real size changed.
         /// The box must fit inside the view, or the fit has no room and zooms out to the world.
@@ -20,7 +27,10 @@ extension HomeMapLibreView {
             // A new place or box after the first framing moves the map. A new size jumps,
             // since the old view's camera doesn't fit it.
             let animated = lastFraming?.size == key.size && isLoaded && !UIAccessibility.isReduceMotionEnabled
+            let isFirstFraming = lastFraming == nil
             lastFraming = key
+            self.map = map
+            guard !holdsIntro(map, isFirstFraming: isFirstFraming) else { return }
             parent.frame(map, animated: animated) { [weak self] in self?.lastFraming == key }
         }
 
@@ -39,12 +49,15 @@ extension HomeMapLibreView {
             parent.onProjection(HomeMapProjection(
                 own: mapView.convert(parent.current, toPointTo: mapView),
                 partner: mapView.convert(parent.partner, toPointTo: mapView),
-                direction: mapView.direction
+                direction: mapView.direction,
+                introProgress: introProgress,
+                introStart: introStartPoints
             ))
         }
 
         func mapViewDidFinishLoadingMap(_ mapView: MLNMapView) {
             isLoaded = true
+            startIntroIfReady()
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
@@ -58,4 +71,8 @@ struct HomeMapProjection: Equatable {
     let own: CGPoint
     let partner: CGPoint
     let direction: Double
+    /// From 0 to 1 while the intro plays (`HomeMapLibreView+Intro`), 1 after.
+    let introProgress: Double
+    /// The positions on the intro's first camera.
+    let introStart: HomeMapAvatarPoints
 }

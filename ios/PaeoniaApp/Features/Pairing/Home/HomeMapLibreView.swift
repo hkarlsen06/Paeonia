@@ -14,6 +14,11 @@ struct HomeMapLibreView: UIViewRepresentable {
     let framedBox: CGRect
     let avatarSize: CGFloat
     var compass: PartnerCompass?
+    /// Where the avatars wait before the map shows. The map then fades in and flies them
+    /// from there to their places (`HomeMapLibreView+Intro`). Nil skips the intro.
+    var introStart: HomeMapAvatarPoints?
+    /// The intro waits for this, so it plays where the person can see it.
+    var canStartIntro = true
     var onProjection: (HomeMapProjection) -> Void
 
     static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
@@ -51,18 +56,20 @@ struct HomeMapLibreView: UIViewRepresentable {
     func updateUIView(_ map: FramingMapView, context: Context) {
         context.coordinator.parent = self
         context.coordinator.frameIfNeeded(map)
+        context.coordinator.startIntroIfReady()
+    }
+
+    /// The framing for a map view of `size`.
+    func framing(in size: CGSize) -> Framing {
+        Self.camera(current: current, partner: partner, isNear: isNear, area: framedBox, viewSize: size)
     }
 
     /// `animated` pans on Paeonia's standard curve and timing, so the map moves with the
     /// cards when the box changes.
     func frame(_ map: MLNMapView, animated: Bool, isCurrent: @escaping () -> Bool) {
-        let camera = Self.camera(
-            current: current, partner: partner, isNear: isNear, area: framedBox, viewSize: map.bounds.size
-        )
+        let camera = framing(in: map.bounds.size)
         map.contentInset = .zero
-        // MapLibre reads a negative direction as "keep the current one", so the same turn
-        // goes in as 0 to 360 degrees.
-        let heading = camera.direction < 0 ? camera.direction + 360 : camera.direction
+        let heading = Self.heading(camera.direction)
         // Zoomed far out, the tiles for that zoom carry only very simplified coastlines.
         // Loading tiles up to three levels more detailed keeps them sharp. A city needs none.
         map.tileLodZoomShift = min(max(6 - camera.zoom, 0), 3)
@@ -110,14 +117,7 @@ struct HomeMapLibreView: UIViewRepresentable {
         area: CGRect,
         viewSize: CGSize
     ) -> Framing {
-        var ownPoint = mercator(current)
-        var partnerPoint = mercator(partner)
-        // The short way round, across the date line if need be.
-        if partnerPoint.x - ownPoint.x > 0.5 {
-            partnerPoint.x -= 1
-        } else if ownPoint.x - partnerPoint.x > 0.5 {
-            ownPoint.x -= 1
-        }
+        let (ownPoint, partnerPoint) = mercatorPair(current, partner)
         let (zoom, direction) = isNear
             ? (nearZoom, 0.0)
             : apartZoomAndDirection(
@@ -127,14 +127,13 @@ struct HomeMapLibreView: UIViewRepresentable {
                 viewSize: viewSize
             )
         let worldSize = 512 * pow(2, zoom)
-        // From the area's middle to the view's middle, in points, turned into the map's
-        // own directions.
-        let right = (Double(viewSize.width) / 2 - Double(area.midX)) / worldSize
-        let below = (Double(viewSize.height) / 2 - Double(area.midY)) / worldSize
         let turn = direction * .pi / 180
-        var center = CGPoint(
-            x: (ownPoint.x + partnerPoint.x) / 2 + right * cos(turn) - below * sin(turn),
-            y: (ownPoint.y + partnerPoint.y) / 2 + right * sin(turn) + below * cos(turn)
+        var center = mapCenter(
+            putting: midpoint(ownPoint, partnerPoint),
+            at: CGPoint(x: area.midX, y: area.midY),
+            worldSize: worldSize,
+            turn: turn,
+            viewSize: viewSize
         )
         // MapLibre keeps the poles out of sight, measured on the view's height, and moves
         // the camera to do so. The same limit here keeps the avatars on their places.
@@ -200,6 +199,50 @@ struct HomeMapLibreView: UIViewRepresentable {
         return (zoom, direction)
     }
 
+    /// The two places on the Web Mercator square, the short way round, across the date
+    /// line if need be.
+    static func mercatorPair(
+        _ current: CLLocationCoordinate2D,
+        _ partner: CLLocationCoordinate2D
+    ) -> (own: CGPoint, partner: CGPoint) {
+        var ownPoint = mercator(current)
+        var partnerPoint = mercator(partner)
+        if partnerPoint.x - ownPoint.x > 0.5 {
+            partnerPoint.x -= 1
+        } else if ownPoint.x - partnerPoint.x > 0.5 {
+            ownPoint.x -= 1
+        }
+        return (ownPoint, partnerPoint)
+    }
+
+    /// The camera's center, on the Web Mercator square, that lands `mapPoint` on
+    /// `screenPoint`: from that point to the view's middle, turned into the map's own directions.
+    static func mapCenter(
+        putting mapPoint: CGPoint,
+        at screenPoint: CGPoint,
+        worldSize: Double,
+        turn: Double,
+        viewSize: CGSize
+    ) -> CGPoint {
+        let right = (Double(viewSize.width) / 2 - Double(screenPoint.x)) / worldSize
+        let below = (Double(viewSize.height) / 2 - Double(screenPoint.y)) / worldSize
+        return CGPoint(
+            x: mapPoint.x + right * cos(turn) - below * sin(turn),
+            y: mapPoint.y + right * sin(turn) + below * cos(turn)
+        )
+    }
+
+    /// MapLibre reads a negative direction as "keep the current one", so a turn goes in as
+    /// 0 to 360 degrees.
+    static func heading(_ direction: Double) -> Double {
+        let heading = direction.truncatingRemainder(dividingBy: 360)
+        return heading < 0 ? heading + 360 : heading
+    }
+
+    static func midpoint(_ lhs: CGPoint, _ rhs: CGPoint) -> CGPoint {
+        CGPoint(x: (lhs.x + rhs.x) / 2, y: (lhs.y + rhs.y) / 2)
+    }
+
     /// From latitude and longitude to the Web Mercator square, 0 to 1 across and down.
     private static func mercator(_ coordinate: CLLocationCoordinate2D) -> CGPoint {
         let latitude = min(max(coordinate.latitude, -85.05), 85.05) * .pi / 180
@@ -209,7 +252,7 @@ struct HomeMapLibreView: UIViewRepresentable {
         )
     }
 
-    private static func coordinate(_ point: CGPoint) -> CLLocationCoordinate2D {
+    static func coordinate(_ point: CGPoint) -> CLLocationCoordinate2D {
         var x = point.x.truncatingRemainder(dividingBy: 1)
         if x < 0 { x += 1 }
         let latitude = atan(sinh(.pi * (1 - 2 * Double(point.y)))) * 180 / .pi

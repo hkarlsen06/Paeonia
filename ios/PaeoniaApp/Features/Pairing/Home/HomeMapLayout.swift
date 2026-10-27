@@ -26,6 +26,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     /// for having no map changes.
     @AppStorage("home.locationNotice.dismissed") private var dismissedNotice = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.launchSidesUncovered) private var launchSidesUncovered
     @State private var scrollOffset: CGFloat = 0
     @State private var compass = PartnerCompass()
     @State private var flights = HeartFlights()
@@ -183,6 +184,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 framedBox: metrics.framedBox,
                 avatarSize: avatarSize,
                 compass: compass,
+                introStart: reduceMotion ? nil : waitingPoints(metrics),
+                canStartIntro: launchSidesUncovered,
                 onProjection: { projection in
                     guard mapProjection != projection else { return }
                     mapProjection = projection
@@ -192,6 +195,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             // the map grows or shrinks. Only the fade moves.
             .frame(height: screen.mapHeight)
             .mask(alignment: .top) { fadeMask(metrics) }
+            .opacity(mapOpacity)
 
             // A tap on the open map sends a heart, as on the map card. Only down to the
             // cards, so a tap between two cards does nothing.
@@ -252,22 +256,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             avatarSize: avatarSize,
             isNear: couple?.isNear ?? true
         )
-    }
-
-    /// Follow the camera's current projection instead of animating to its destination.
-    /// Before its first frame, use the same math that places the map.
-    private func points(_ couple: HomeMapCouple?, _ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
-        let raw: HomeMapAvatarPoints
-        if couple != nil, let mapProjection {
-            raw = HomeMapAvatarPoints(own: mapProjection.own, partner: mapProjection.partner)
-        } else if let couple {
-            let framing = framing(couple, metrics)
-            raw = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
-        } else {
-            let center = CGPoint(x: metrics.framedBox.midX, y: metrics.framedBox.midY)
-            raw = HomeMapAvatarPoints(own: center, partner: center)
-        }
-        return kept(separated(raw, isNear: couple?.isNear ?? true), inside: metrics.avatarBounds)
     }
 
     private func framing(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapLibreView.Framing {
@@ -399,6 +387,68 @@ extension HomeMapLayout {
     }
 
     // MARK: Avatars
+
+    /// Follow the camera's current projection instead of animating to its destination.
+    /// Without the intro, before the map's first frame, use the same math that places the map.
+    private func points(_ couple: HomeMapCouple?, _ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
+        guard let couple else { return waitingPoints(metrics) }
+        guard let mapProjection else {
+            if !reduceMotion { return waitingPoints(metrics) }
+            let framing = framing(couple, metrics)
+            let raw = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
+            return kept(separated(raw, isNear: couple.isNear), inside: metrics.avatarBounds)
+        }
+        let raw = HomeMapAvatarPoints(own: mapProjection.own, partner: mapProjection.partner)
+        guard mapProjection.introProgress < 1 else {
+            return kept(separated(raw, isNear: couple.isNear), inside: metrics.avatarBounds)
+        }
+        return introPoints(raw, couple, metrics, mapProjection)
+    }
+
+    /// While the intro plays, the avatars turn and zoom with the map. They start where they
+    /// waited and end on their spaced-out spots, so the difference from their places on the
+    /// map shifts from one to the other as the intro plays. Their midpoint slides straight
+    /// across, since MapLibre keeps the poles out of sight by moving a far-out, turned camera.
+    private func introPoints(
+        _ raw: HomeMapAvatarPoints,
+        _ couple: HomeMapCouple,
+        _ metrics: HomeMapMetrics,
+        _ projection: HomeMapProjection
+    ) -> HomeMapAvatarPoints {
+        let framing = framing(couple, metrics)
+        let rawEnd = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
+        let end = HomeMapPairShape(kept(separated(rawEnd, isNear: couple.isNear), inside: metrics.avatarBounds))
+        let waiting = HomeMapPairShape(waitingPoints(metrics))
+        let startFix = HomeMapPairShape(projection.introStart).change(to: waiting)
+        let endFix = HomeMapPairShape(rawEnd).change(to: end)
+        let progress = projection.introProgress
+        let shape = HomeMapPairShape(raw)
+            .applying(startFix, times: 1 - progress)
+            .applying(endFix, times: progress)
+        let slide = waiting.change(to: end).mid
+        let mid = CGPoint(x: waiting.mid.x + slide.x * progress, y: waiting.mid.y + slide.y * progress)
+        return kept(
+            HomeMapPairShape(mid: mid, logDistance: shape.logDistance, angle: shape.angle).points,
+            inside: metrics.avatarBounds
+        )
+    }
+
+    /// Side by side in the middle of the open map, where the avatars wait while it loads.
+    private func waitingPoints(_ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
+        let near = HomeMapMetrics(
+            screen: metrics.screen, bandHeight: metrics.bandHeight, avatarSize: avatarSize, isNear: true
+        )
+        let center = CGPoint(x: near.framedBox.midX, y: near.framedBox.midY)
+        let together = separated(HomeMapAvatarPoints(own: center, partner: center), isNear: true)
+        return kept(together, inside: near.avatarBounds)
+    }
+
+    /// The map fades in over the first half of the intro.
+    private var mapOpacity: Double {
+        guard !reduceMotion else { return 1 }
+        guard let mapProjection else { return 0 }
+        return min(1, mapProjection.introProgress * 2)
+    }
 
     /// Holds each avatar inside the open map. Only a couple on opposite sides of the world
     /// can be too far apart for the widest zoom, and then an avatar waits at the edge, on

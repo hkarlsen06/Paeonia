@@ -6,6 +6,59 @@ struct HomeMapAvatarPoints: Equatable {
     let partner: CGPoint
 }
 
+/// Two avatars as their midpoint, how far apart they are and which way the partner is.
+struct HomeMapPairShape {
+    let mid: CGPoint
+    /// The natural log of the distance in points, so a change scales it.
+    let logDistance: Double
+    /// In radians, from the person to the partner.
+    let angle: Double
+
+    init(mid: CGPoint, logDistance: Double, angle: Double) {
+        self.mid = mid
+        self.logDistance = logDistance
+        self.angle = angle
+    }
+
+    init(_ points: HomeMapAvatarPoints) {
+        let dx = Double(points.partner.x - points.own.x)
+        let dy = Double(points.partner.y - points.own.y)
+        self.init(
+            mid: CGPoint(x: (points.own.x + points.partner.x) / 2, y: (points.own.y + points.partner.y) / 2),
+            logDistance: log(max(hypot(dx, dy), 1)),
+            angle: atan2(dy, dx)
+        )
+    }
+
+    var points: HomeMapAvatarPoints {
+        let half = exp(logDistance) / 2
+        let step = CGPoint(x: half * cos(angle), y: half * sin(angle))
+        return HomeMapAvatarPoints(
+            own: CGPoint(x: mid.x - step.x, y: mid.y - step.y),
+            partner: CGPoint(x: mid.x + step.x, y: mid.y + step.y)
+        )
+    }
+
+    /// What turns this shape into `other`, turning the short way round.
+    func change(to other: Self) -> Self {
+        var turn = (other.angle - angle).truncatingRemainder(dividingBy: 2 * .pi)
+        if turn > .pi { turn -= 2 * .pi } else if turn <= -.pi { turn += 2 * .pi }
+        return Self(
+            mid: CGPoint(x: other.mid.x - mid.x, y: other.mid.y - mid.y),
+            logDistance: other.logDistance - logDistance,
+            angle: turn
+        )
+    }
+
+    func applying(_ change: Self, times fraction: Double) -> Self {
+        Self(
+            mid: CGPoint(x: mid.x + change.mid.x * fraction, y: mid.y + change.mid.y * fraction),
+            logDistance: logDistance + change.logDistance * fraction,
+            angle: angle + change.angle * fraction
+        )
+    }
+}
+
 struct HomeMapCouple {
     let current: LocationPoint
     let partner: LocationPoint
