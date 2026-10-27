@@ -27,8 +27,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     @AppStorage("home.locationNotice.dismissed") private var dismissedNotice = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var scrollOffset: CGFloat = 0
-    /// How tall the map is, read back after layout. Only the north arrow in the bar uses it.
-    @State private var bandHeight: CGFloat = 0
+    @State private var compass = PartnerCompass()
     @State private var flights = HeartFlights()
     @State private var heartTaps = 0
     @State private var mapProjection: HomeMapProjection?
@@ -71,7 +70,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             .safeAreaBar(edge: .top) {
                 header
                     // Sits where a navigation bar puts its title, under the Dynamic Island.
-                    .overlay { title(couple, screen) }
+                    .overlay { title(couple) }
                     .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
                     // A navigation bar is 54 points tall, so its glass reaches past the 44 point pill.
                     .padding(.bottom, PaeoniaSpacing.space12)
@@ -115,7 +114,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 
     /// The partner's hearts while they play, otherwise how far apart the couple is.
     @ViewBuilder
-    private func title(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
+    private func title(_ couple: HomeMapCouple?) -> some View {
         ZStack {
             if let line = hearts?.incomingLine {
                 HeartsIncomingLine(text: line)
@@ -127,8 +126,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                     partner: couple.partner,
                     partnerCoordinate: fakePartner.coordinate ?? couple.partner.coordinate,
                     partnerWasStaleAtLastRefresh: couple.partnerWasStaleAtLastRefresh,
-                    mapDirection: mapProjection?.direction
-                        ?? framing(couple, metrics(couple, screen, bandHeight: bandHeight)).direction
+                    compass: compass
                 )
                 .accessibilityAction(named: Text(.heartsSendAction)) { sendHeart() }
                 .contextMenu { prototypeMenu }
@@ -160,7 +158,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             maxHeight: couple == nil ? nil : .infinity,
             alignment: .top
         )
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bandHeight = $0 }
         // A pull down keeps the map against the top of the screen.
         .visualEffect { [pinned = couple != nil] content, proxy in
             content.offset(y: pinned ? min(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY) : 0)
@@ -177,6 +174,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 isNear: couple.isNear,
                 framedBox: metrics.framedBox,
                 avatarSize: avatarSize,
+                compass: compass,
                 onProjection: { projection in
                     guard mapProjection != projection else { return }
                     mapProjection = projection

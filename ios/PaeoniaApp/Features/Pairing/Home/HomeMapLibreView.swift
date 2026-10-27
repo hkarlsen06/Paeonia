@@ -13,6 +13,7 @@ struct HomeMapLibreView: UIViewRepresentable {
     /// Where the couple should sit, in the map view's own coordinates.
     let framedBox: CGRect
     let avatarSize: CGFloat
+    var compass: PartnerCompass?
     var onProjection: (HomeMapProjection) -> Void
 
     static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
@@ -43,6 +44,7 @@ struct HomeMapLibreView: UIViewRepresentable {
         map.compassView.isHidden = true
         map.showsScale = false
         map.backgroundColor = UIColor(Color.paeoniaBackgroundPrimary)
+        compass?.setReferenceBody(map)
         return map
     }
 
