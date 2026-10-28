@@ -15,8 +15,6 @@ enum PairingCelebrationPhase: Int, Comparable {
     }
 }
 
-/// Single source of truth for the celebration's timing so the time-driven
-/// particle `Canvas` and the state-driven reveals never drift apart.
 enum PairingCelebrationTiming {
     static let centerYRatio: CGFloat = 0.46
 
@@ -28,13 +26,6 @@ enum PairingCelebrationTiming {
     static let profilePhotoRevealGrace: Double = 0.35
     /// The longest the intro waits for the partner's name before it starts anyway.
     static let partnerNameWait: Double = 1.5
-
-    /// Seconds from the animation start at which absorbing begins.
-    static var absorbStart: Double { heartAppear }
-    /// Seconds from the animation start at which the burst begins.
-    static var explodeStart: Double { heartAppear + absorb }
-    /// Seconds from the animation start after which no particles are drawn.
-    static var explodeEnd: Double { explodeStart + explode }
 }
 
 /// The step durations the timeline sleeps for. The defaults match
@@ -66,7 +57,6 @@ struct PairingCelebrationSchedule {
     static let standard = PairingCelebrationSchedule()
 }
 
-/// The haptics and sounds the timeline fires. Injected so tests can record them.
 struct PairingCelebrationHaptics {
     var buildUp: @MainActor (CGFloat) -> Void
     var burst: @MainActor () -> Void
@@ -78,12 +68,10 @@ struct PairingCelebrationHaptics {
         buildUp: { PaeoniaHaptics.pairingLinkBuildUp(intensity: $0) },
         burst: {
             PaeoniaHaptics.pairingLinkExplosion()
-            GameSound.win.play()
         },
         linked: { PaeoniaHaptics.streakContinued() },
         settledWithoutIntro: {
             PaeoniaHaptics.pairedSuccessfully()
-            GameSound.win.play()
         }
     )
 }

@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 import SwiftUI
 
 /// Runs the scripted pairing celebration and owns every value the view renders
@@ -27,7 +28,7 @@ final class PairingCelebrationTimeline {
 
     private(set) var mode: Mode = .undecided
     private(set) var phase: PairingCelebrationPhase = .heartAppearing
-    private(set) var animationStart = Date()
+    private(set) var particlePlayback = PairingCelebrationParticlePlayback(started: CACurrentMediaTime())
 
     private(set) var heartScale: CGFloat = 0.2
     private(set) var heartOpacity: Double = 0
@@ -42,6 +43,7 @@ final class PairingCelebrationTimeline {
     private(set) var surroundingsShown = false
     private(set) var dismissButtonShown = false
 
+    @ObservationIgnored private let sound = PairingCelebrationSoundPlayer()
     @ObservationIgnored private let schedule: PairingCelebrationSchedule
     @ObservationIgnored private let haptics: PairingCelebrationHaptics
     @ObservationIgnored private let isPartnerPhotoLoading: @MainActor () -> Bool
@@ -99,6 +101,7 @@ final class PairingCelebrationTimeline {
         }
         hasBegun = true
         self.onIntroComplete = onIntroComplete
+        if playsIntro { sound.prepare() }
 
         // No intro: the app launched straight into the paired space, or Reduce
         // Motion is on. Nothing waits and nothing moves. A real, fresh link still
@@ -107,6 +110,7 @@ final class PairingCelebrationTimeline {
             applySettledState()
             if playsIntro {
                 haptics.settledWithoutIntro()
+                sound.release(duration: schedule.partnerHold)
             }
             complete()
             return
@@ -134,6 +138,7 @@ final class PairingCelebrationTimeline {
 
     /// Ends the intro when the view goes away, so nothing keeps running.
     func stop() {
+        sound.stop()
         finishEarly(animated: false)
     }
 
@@ -174,7 +179,7 @@ final class PairingCelebrationTimeline {
         // The animation below runs from this timeline's own state, not the prop.
         complete()
         mode = .playing
-        animationStart = Date()
+        particlePlayback = PairingCelebrationParticlePlayback(started: CACurrentMediaTime())
 
         let id = beginRun()
         introTask = Task { [weak self] in
@@ -213,6 +218,8 @@ final class PairingCelebrationTimeline {
     /// Returns `false` if the sequence ended before the climax.
     private func absorbParticles(_ id: Int) async -> Bool {
         phase = .absorbing
+        particlePlayback.stage = .absorbing(.init(since: CACurrentMediaTime(), duration: schedule.absorb))
+        sound.absorb(duration: schedule.absorb)
         withAnimation(.easeInOut(duration: schedule.absorb)) {
             heartScale = 0.8
             heartGlow = 32
@@ -230,6 +237,13 @@ final class PairingCelebrationTimeline {
     /// 4. The core bursts outward and reveals the partner's avatar at the center.
     private func revealPartner() {
         phase = .exploding
+        if case let .absorbing(absorption) = particlePlayback.stage {
+            particlePlayback.stage = .bursting(
+                absorption: absorption, since: CACurrentMediaTime(),
+                releaseDuration: min(PairingCelebrationTiming.explode, schedule.partnerHold)
+            )
+        }
+        sound.release(duration: schedule.partnerHold)
         haptics.burst()
         withAnimation(.easeOut(duration: 0.22)) {
             heartScale = 1.7
@@ -246,6 +260,7 @@ final class PairingCelebrationTimeline {
     /// 5. The partner glides into place and the rest of the linked state settles in.
     private func linkPartner() {
         phase = .linking
+        sound.land(duration: schedule.landingSettle)
         haptics.linked()
         withAnimation(.spring(response: 0.82, dampingFraction: 0.84)) {
             partnerScale = 1
@@ -298,6 +313,7 @@ final class PairingCelebrationTimeline {
     /// Cancels running tasks and invalidates their id, so a task that is already
     /// past its cancellation check still stops at its next step.
     private func cancelWork() {
+        sound.stop()
         runID += 1
         introTask?.cancel()
         introTask = nil
@@ -329,8 +345,8 @@ final class PairingCelebrationTimeline {
     /// Gives the partner's photo a short moment to finish loading so the avatar
     /// does not flip from initials to a photo during the burst.
     private func waitForPartnerPhoto(_ id: Int) async {
-        let deadline = Date().addingTimeInterval(schedule.partnerPhotoGrace)
-        while isPartnerPhotoLoading(), Date() < deadline, isCurrent(id) {
+        let deadline = CACurrentMediaTime() + schedule.partnerPhotoGrace
+        while isPartnerPhotoLoading(), CACurrentMediaTime() < deadline, isCurrent(id) {
             try? await Task.sleep(for: .milliseconds(40))
         }
     }

@@ -177,9 +177,7 @@ struct PairingCelebrationView: View {
     private func core(heartCenter: CGPoint) -> some View {
         if timeline.showsHeart {
             if timeline.showsParticles {
-                PairingCelebrationParticleField(start: timeline.animationStart)
-                    .opacity(timeline.phase >= .linking ? 0 : 1)
-                    .animation(PaeoniaMotion.meaningfulMoment, value: timeline.phase)
+                PairingCelebrationParticleField(playback: timeline.particlePlayback, foreground: false)
                     .accessibilityHidden(true)
             }
 
@@ -189,6 +187,11 @@ struct PairingCelebrationView: View {
                 .shadow(color: .paeoniaAccentPrimary.opacity(0.65), radius: timeline.heartGlow)
                 .position(x: heartCenter.x, y: heartCenter.y)
                 .accessibilityHidden(true)
+
+            if timeline.showsParticles {
+                PairingCelebrationParticleField(playback: timeline.particlePlayback, foreground: true)
+                    .accessibilityHidden(true)
+            }
         }
     }
 
