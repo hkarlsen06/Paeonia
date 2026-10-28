@@ -22,7 +22,7 @@ struct DrawAndGuessScreen: View {
         .paeoniaFittingNavigationTitle(Text(.gamesDrawAndGuessName))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbar { historyButton }
+        .toolbar { menu }
         .preferredColorScheme(.dark)
         .task { await viewModel.start() }
         .onAppear { viewModel.prefersReducedMotion = reduceMotion }
@@ -41,18 +41,11 @@ struct DrawAndGuessScreen: View {
         .accessibilityIdentifier("draw.screen")
     }
 
-    /// Opens "Our drawings".
+    /// The game's menu, with "Our drawings".
     @ToolbarContentBuilder
-    private var historyButton: some ToolbarContent {
+    private var menu: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
-            NavigationLink(value: GamesDestination.drawAndGuessHistory) {
-                Label {
-                    Text(.gamesDrawAndGuessHistoryTitle)
-                } icon: {
-                    Image(systemName: "square.grid.2x2")
-                }
-            }
-            .accessibilityIdentifier("draw.history.open")
+            GameMenu(history: .drawAndGuess)
         }
     }
 

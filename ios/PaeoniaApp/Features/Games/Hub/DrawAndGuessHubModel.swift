@@ -71,6 +71,10 @@ final class DrawAndGuessHubModel: GameHubModel {
         return await dependencies.cache.takeNotices(ownerUserID: userID).last.map(GamesNotice.init)
     }
 
+    var historyLink: GameHistoryLink? {
+        .drawAndGuess
+    }
+
     func card(_ context: GameHubCardContext, open: @escaping (GamesDestination) -> Void) -> AnyView? {
         guard let summary else { return nil }
         return AnyView(DrawAndGuessHubCard(

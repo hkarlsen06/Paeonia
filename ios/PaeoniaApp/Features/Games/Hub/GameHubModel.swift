@@ -9,6 +9,11 @@ protocol GameHubModel: AnyObject {
     var kind: GameKind { get }
     /// The game waits for this person to move. The hub card shows it.
     var isYourTurn: Bool { get }
+    /// The game's list of finished games. The game's menu and its card's
+    /// long-press menu open it. Nil for a game without one.
+    var historyLink: GameHistoryLink? { get }
+    /// The game's pieces carry this person's mark, so its menus offer "Your mark".
+    var hasBoardMark: Bool { get }
     func configure(participants: GameParticipants)
     /// Called after a move is saved on this phone, so it is sent soon.
     func setLocalChangeSyncHandler(_ handler: (@MainActor @Sendable () async -> Void)?)
@@ -26,6 +31,10 @@ protocol GameHubModel: AnyObject {
 }
 
 extension GameHubModel {
+    var hasBoardMark: Bool {
+        false
+    }
+
     func setLocalChangeSyncHandler(_: (@MainActor @Sendable () async -> Void)?) {}
 
     // swiftlint:disable:next async_without_await

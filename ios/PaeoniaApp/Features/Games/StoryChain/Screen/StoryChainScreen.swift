@@ -22,7 +22,7 @@ struct StoryChainScreen: View {
         .paeoniaFittingNavigationTitle(Text(.storyChainName))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbar { historyButton }
+        .toolbar { menu }
         .preferredColorScheme(.dark)
         .task { await viewModel.start() }
         .onDisappear { viewModel.stop() }
@@ -39,18 +39,11 @@ struct StoryChainScreen: View {
         .accessibilityIdentifier("storyChain.screen")
     }
 
-    /// Opens "Our stories".
+    /// The game's menu, with "Our stories".
     @ToolbarContentBuilder
-    private var historyButton: some ToolbarContent {
+    private var menu: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
-            NavigationLink(value: GamesDestination.storyChainHistory) {
-                Label {
-                    Text(.storyChainHistoryTitle)
-                } icon: {
-                    Image(systemName: "books.vertical")
-                }
-            }
-            .accessibilityIdentifier("storyChain.history.open")
+            GameMenu(history: .storyChain)
         }
     }
 

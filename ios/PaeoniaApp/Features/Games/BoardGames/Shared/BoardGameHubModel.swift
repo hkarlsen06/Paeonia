@@ -16,7 +16,7 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
     @ObservationIgnored private let name: LocalizedStringResource
     @ObservationIgnored private let subtitle: LocalizedStringResource
     @ObservationIgnored private let artwork: () -> AnyView
-    @ObservationIgnored private let makeScreen: (BoardGameViewModel<Board>) -> AnyView
+    @ObservationIgnored private let makeScreen: (BoardGameViewModel<Board>, GameHistoryLink?) -> AnyView
     @ObservationIgnored private let replayBoard: ((BoardGameReplayBoard<Board>) -> AnyView)?
 
     init(
@@ -26,7 +26,7 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
         timing: BoardGameMoveTiming,
         dependencies: GamesDependencies,
         artwork: @escaping () -> AnyView,
-        screen: @escaping (BoardGameViewModel<Board>) -> AnyView,
+        screen: @escaping (BoardGameViewModel<Board>, GameHistoryLink?) -> AnyView,
         replayBoard: ((BoardGameReplayBoard<Board>) -> AnyView)? = nil
     ) {
         self.kind = kind
@@ -43,6 +43,14 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
 
     var isYourTurn: Bool {
         game.summary?.isYourTurn == true
+    }
+
+    var historyLink: GameHistoryLink? {
+        history == nil ? nil : .boardGame(kind)
+    }
+
+    var hasBoardMark: Bool {
+        true
     }
 
     func configure(participants: GameParticipants) {
@@ -88,7 +96,7 @@ final class BoardGameHubModel<Board: BoardGameRules>: GameHubModel {
     func screen(for destination: GamesDestination) -> AnyView? {
         switch destination {
         case .game(kind):
-            return makeScreen(game)
+            return makeScreen(game, historyLink)
         case .boardGameHistory(kind):
             guard let history else { return nil }
             return AnyView(BoardGameHistoryScreen(viewModel: history, players: game))

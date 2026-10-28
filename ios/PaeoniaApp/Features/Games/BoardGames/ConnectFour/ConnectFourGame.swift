@@ -20,7 +20,7 @@ enum ConnectFourGame {
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(ConnectFourHubArtwork()) },
-            screen: { AnyView(ConnectFourScreen(viewModel: $0)) },
+            screen: { AnyView(ConnectFourScreen(viewModel: $0, history: $1)) },
             replayBoard: { AnyView(BoardGameReplayBoards.connectFour($0)) }
         )
     }
@@ -28,9 +28,10 @@ enum ConnectFourGame {
 
 struct ConnectFourScreen: View {
     let viewModel: BoardGameViewModel<ConnectFourBoard>
+    let history: GameHistoryLink?
 
     var body: some View {
-        BoardGameScreen(viewModel: viewModel, title: .connectFourName) {
+        BoardGameScreen(viewModel: viewModel, title: .connectFourName, history: history) {
             ConnectFourBoardView(
                 board: viewModel.board,
                 lastMove: viewModel.lastMove,

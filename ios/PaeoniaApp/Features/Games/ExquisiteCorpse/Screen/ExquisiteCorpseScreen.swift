@@ -27,7 +27,7 @@ struct ExquisiteCorpseScreen: View {
         .paeoniaFittingNavigationTitle(Text(.exquisiteCorpseName))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbar { historyButton }
+        .toolbar { menu }
         .favoriteToolbarItem(
             viewModel.figure.map { .corpseFigure($0.id) },
             isShown: viewModel.phase == .reveal,
@@ -58,18 +58,11 @@ struct ExquisiteCorpseScreen: View {
         .accessibilityIdentifier("corpse.screen")
     }
 
-    /// Opens "Our creatures".
+    /// The game's menu, with "Our creatures".
     @ToolbarContentBuilder
-    private var historyButton: some ToolbarContent {
+    private var menu: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
-            Button(action: openHistory) {
-                Label {
-                    Text(.exquisiteCorpseHistoryTitle)
-                } icon: {
-                    Image(systemName: "square.grid.2x2")
-                }
-            }
-            .accessibilityIdentifier("corpse.history.open")
+            GameMenu(history: .exquisiteCorpse, openHistory: openHistory)
         }
     }
 

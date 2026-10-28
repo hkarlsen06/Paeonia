@@ -29,8 +29,8 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     /// The board draws over the whole screen behind the rows and fits itself in the
     /// free space between them, as Ludo's does. It reads `boardFitHeight` for that.
     var boardBleeds = false
-    /// "Past games" of this game. The score opens it.
-    var history: GamesDestination?
+    /// "Past games" of this game. The menu and the score open it.
+    var history: GameHistoryLink?
     /// A game's own button under the board, such as Ultimate Tic-Tac-Toe's
     /// "Lock in". It shows while there is no result and no move waiting to send.
     var action: BoardGameScreenAction?
@@ -63,7 +63,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
                 score: viewModel.score,
                 me: viewModel.meInfo,
                 partner: viewModel.partnerInfo,
-                history: history
+                history: history?.destination
             )
             .preferredColorScheme(.dark)
             .task { await viewModel.start(prefersReducedMotion: reduceMotion) }
@@ -146,7 +146,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             score: viewModel.score,
             hint: hint,
             colorChoice: viewModel.colorChoice,
-            history: history
+            history: history?.destination
         )
     }
 
@@ -206,20 +206,12 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
 
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        if tutorial != nil {
-            ToolbarItem(placement: .topBarTrailing) {
-                GameTutorialButton { showsTutorial = true }
-            }
-        }
         ToolbarItem(placement: .topBarTrailing) {
-            Button(action: viewModel.openMarkEditor) {
-                Label {
-                    Text(.boardGamesMarkTitle)
-                } icon: {
-                    Image(systemName: "scribble.variable")
-                }
-            }
-            .accessibilityIdentifier("boardGames.mark.open")
+            GameMenu(
+                history: history,
+                editMark: viewModel.openMarkEditor,
+                showTutorial: tutorial == nil ? nil : { showsTutorial = true }
+            )
         }
     }
 

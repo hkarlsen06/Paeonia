@@ -8,6 +8,8 @@ import SwiftUI
 ///
 /// A move in a game can move its card between the two while the game is open. The card
 /// the game opened from then keeps its place on screen, so closing the game lands on it.
+///
+/// A long press on a card or tile shows the items of the game's menu.
 struct GamesHubView: View {
     let viewModel: GamesViewModel
     let isShowingGame: Bool
@@ -20,6 +22,8 @@ struct GamesHubView: View {
     @State private var cardFrames = CardFrames()
     @State private var viewportHeight: CGFloat = 0
     @State private var openedCard: (kind: GameKind, anchor: UnitPoint)?
+    @State private var markEditor: BoardMarkEditorModel?
+    @State private var tutorial: GameTutorial?
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -67,6 +71,17 @@ struct GamesHubView: View {
             GamesSettingsSheet(viewModel: viewModel)
                 .analyticsScreen("games_settings")
         }
+        .sheet(isPresented: isEditingMark) {
+            if let markEditor {
+                BoardMarkEditorView(color: .boardGameMine, model: markEditor)
+                    .analyticsScreen("mark_editor")
+            }
+        }
+        .sheet(isPresented: isShowingTutorial) {
+            if let tutorial {
+                GameTutorialSheet(tutorial: tutorial)
+            }
+        }
         .accessibilityIdentifier("games.hub")
     }
 
@@ -81,8 +96,7 @@ struct GamesHubView: View {
             section(featured.isEmpty ? nil : .gamesHubSectionMore) {
                 LazyVGrid(columns: gridColumns, spacing: PaeoniaSpacing.space16) {
                     ForEach(viewModel.hubGridGames, id: \.kind) { game in
-                        card(for: game)
-                            .environment(\.gameHubCardIsCompact, true)
+                        card(for: game, isCompact: true)
                     }
                 }
             }
@@ -110,18 +124,83 @@ struct GamesHubView: View {
     }
 
     @ViewBuilder
-    private func card(for game: any GameHubModel) -> some View {
-        let card = game.card(viewModel.cardContext(for: game.kind, isOnHub: true)) { destination in
+    private func card(for game: any GameHubModel, isCompact: Bool = false) -> some View {
+        let openFromCard = { (destination: GamesDestination) in
             openedCard = (game.kind, cardFrames.anchor(for: game.kind, viewportHeight: viewportHeight))
             open(destination)
         }
-        if let card {
-            card.id(game.kind)
+        if let card = game.card(viewModel.cardContext(for: game.kind, isOnHub: true), open: openFromCard) {
+            card.environment(\.gameHubCardIsCompact, isCompact)
+                .contentShape(
+                    .contextMenuPreview,
+                    RoundedRectangle(
+                        cornerRadius: isCompact ? PaeoniaRadius.radius20 : PaeoniaRadius.radius28,
+                        style: .continuous
+                    )
+                )
+                .contextMenu { menuItems(for: game, open: openFromCard) }
+                .id(game.kind)
                 .matchedGeometryEffect(id: game.kind, in: cardSpace)
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .scrollView) } action: { frame in
                     cardFrames.frames[game.kind] = frame
                 }
         }
+    }
+
+    /// The same items as the game's own menu. "Past games" opens like a tap on the card.
+    private func menuItems(
+        for game: any GameHubModel,
+        open: @escaping (GamesDestination) -> Void
+    ) -> some View {
+        let history = game.historyLink
+        var editMark: (() -> Void)?
+        if game.hasBoardMark {
+            editMark = { openMarkEditor() }
+        }
+        var showTutorial: (() -> Void)?
+        if let tutorial = GameTutorial(kind: game.kind, partnerName: viewModel.partnerName) {
+            showTutorial = { show(tutorial) }
+        }
+        return GameMenuItems(
+            history: history,
+            openHistory: {
+                if let history { open(history.destination) }
+            },
+            editMark: editMark,
+            showTutorial: showTutorial
+        )
+    }
+
+    private func openMarkEditor() {
+        Task { markEditor = await viewModel.makeMarkEditor() }
+    }
+
+    /// The game then skips showing the cards on its own when it first opens.
+    private func show(_ tutorial: GameTutorial) {
+        tutorial.hasBeenShown = true
+        self.tutorial = tutorial
+    }
+
+    private var isEditingMark: Binding<Bool> {
+        Binding(
+            get: { markEditor != nil },
+            set: { isPresented in
+                if !isPresented {
+                    markEditor = nil
+                }
+            }
+        )
+    }
+
+    private var isShowingTutorial: Binding<Bool> {
+        Binding(
+            get: { tutorial != nil },
+            set: { isPresented in
+                if !isPresented {
+                    tutorial = nil
+                }
+            }
+        )
     }
 
     private func section(

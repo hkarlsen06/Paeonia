@@ -84,6 +84,10 @@ final class ExquisiteCorpseHubModel: GameHubModel {
         return await dependencies.exquisiteCorpseCache.takeNotices(ownerUserID: userID).last.map(GamesNotice.init)
     }
 
+    var historyLink: GameHistoryLink? {
+        .exquisiteCorpse
+    }
+
     func card(_ context: GameHubCardContext, open: @escaping (GamesDestination) -> Void) -> AnyView? {
         guard let summary else { return nil }
         return AnyView(ExquisiteCorpseHubCard(

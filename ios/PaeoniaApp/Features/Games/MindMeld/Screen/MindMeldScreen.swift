@@ -99,8 +99,8 @@ struct MindMeldScreen: View {
 
     // MARK: Toolbar
 
-    /// The melds capsule, which opens "Our melds", and the menu with "How to play".
-    /// Nothing else, so the title keeps its room.
+    /// The melds capsule, which opens "Our melds", and the game's menu. Nothing
+    /// else, so the title keeps its room.
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
@@ -108,30 +108,12 @@ struct MindMeldScreen: View {
         }
         .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .topBarTrailing) {
-            moreMenu
-        }
-    }
-
-    private var moreMenu: some View {
-        Menu {
-            Button {
-                showsTutorial = true
-            } label: {
-                Label {
-                    Text(.gamesTutorialOpen)
-                } icon: {
-                    Image(systemName: "questionmark.circle")
+            GameMenu(history: .mindMeld, showTutorial: { showsTutorial = true }) {
+                if viewModel.game?.state == .playing {
+                    restartButton
                 }
             }
-            .accessibilityIdentifier("games.tutorial.open")
-            if viewModel.game?.state == .playing {
-                restartButton
-            }
-        } label: {
-            Image(systemName: "ellipsis")
-                .accessibilityLabel(Text(.mindMeldMenuA11Y))
         }
-        .accessibilityIdentifier("mindMeld.menu")
     }
 
     private var restartButton: some View {

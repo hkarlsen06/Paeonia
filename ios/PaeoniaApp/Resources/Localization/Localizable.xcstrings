@@ -5505,24 +5505,6 @@
         }
       }
     },
-    "consensio.menu.a11y" : {
-      "comment" : "VoiceOver label of the ••• menu in the Consensio toolbar.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "More options"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flere valg"
-          }
-        }
-      }
-    },
     "consensio.offline.message" : {
       "comment" : "Shown when the game can't start because the phone is offline.",
       "extractionState" : "manual",
@@ -15249,6 +15231,24 @@
         }
       }
     },
+    "games.menu.a11y" : {
+      "comment" : "VoiceOver label of the ••• menu in a game's toolbar. It holds the game's past games, the player's mark and How to play.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More options"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere valg"
+          }
+        }
+      }
+    },
     "games.needsSetup" : {
       "comment" : "Shown if the game opens before the couple chose how they play",
       "extractionState" : "manual",
@@ -17627,24 +17627,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Satellitt"
-          }
-        }
-      }
-    },
-    "guessMySpot.menu.a11y" : {
-      "comment" : "VoiceOver label of the ••• menu in the Guess my spot toolbar.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "More options"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flere valg"
           }
         }
       }
@@ -23717,24 +23699,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Venter på %@."
-          }
-        }
-      }
-    },
-    "mindMeld.menu.a11y" : {
-      "comment" : "Accessibility label for the three-dot menu button in the Mind Meld toolbar. The menu holds Start over.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "More options"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Flere valg"
           }
         }
       }

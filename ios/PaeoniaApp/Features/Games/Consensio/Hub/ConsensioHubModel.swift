@@ -67,6 +67,10 @@ final class ConsensioHubModel: GameHubModel {
         _ = try? await dependencies.consensioCache.fetchState(from: dependencies.consensioGateway, ownerUserID: userID)
     }
 
+    var historyLink: GameHistoryLink? {
+        .consensio
+    }
+
     func card(_ context: GameHubCardContext, open: @escaping (GamesDestination) -> Void) -> AnyView? {
         guard let summary else { return nil }
         return AnyView(ConsensioHubCard(

@@ -16,7 +16,7 @@ enum LudoGame {
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(LudoHubArtwork()) },
-            screen: { AnyView(LudoScreen(viewModel: $0)) },
+            screen: { AnyView(LudoScreen(viewModel: $0, history: $1)) },
             replayBoard: { AnyView(BoardGameReplayBoards.ludo($0)) }
         )
     }
@@ -24,13 +24,15 @@ enum LudoGame {
 
 struct LudoScreen: View {
     let viewModel: BoardGameViewModel<LudoBoard>
+    let history: GameHistoryLink?
 
     @State private var roll: LudoRollModel
     /// Sends and receives live rolls while the screen is open.
     @State private var live: LudoLiveLink?
 
-    init(viewModel: BoardGameViewModel<LudoBoard>) {
+    init(viewModel: BoardGameViewModel<LudoBoard>, history: GameHistoryLink?) {
         self.viewModel = viewModel
+        self.history = history
         _roll = State(initialValue: LudoRollModel(
             context: { LudoRollContext(viewModel) },
             store: .cache(for: viewModel),
@@ -39,7 +41,13 @@ struct LudoScreen: View {
     }
 
     var body: some View {
-        BoardGameScreen(viewModel: viewModel, title: .ludoName, hint: roll.hint?.text, boardBleeds: true) {
+        BoardGameScreen(
+            viewModel: viewModel,
+            title: .ludoName,
+            hint: roll.hint?.text,
+            boardBleeds: true,
+            history: history
+        ) {
             LudoBoardView(
                 board: viewModel.board,
                 lastMove: viewModel.lastMove,

@@ -73,6 +73,10 @@ final class GuessMySpotHubModel: GameHubModel {
         )
     }
 
+    var historyLink: GameHistoryLink? {
+        .guessMySpot
+    }
+
     func card(_ context: GameHubCardContext, open: @escaping (GamesDestination) -> Void) -> AnyView? {
         guard let summary else { return nil }
         return AnyView(GuessMySpotHubCard(

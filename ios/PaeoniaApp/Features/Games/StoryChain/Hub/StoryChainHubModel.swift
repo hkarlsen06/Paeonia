@@ -133,6 +133,10 @@ final class StoryChainHubModel: GameHubModel {
         return await dependencies.storyChainCache.takeNotices(ownerUserID: userID).first.map(GamesNotice.init)
     }
 
+    var historyLink: GameHistoryLink? {
+        .storyChain
+    }
+
     func card(_ context: GameHubCardContext, open: @escaping (GamesDestination) -> Void) -> AnyView? {
         guard let summary else { return nil }
         return AnyView(StoryChainHubCard(

@@ -10,7 +10,7 @@ enum UltimateTicTacToeGame {
             timing: UltimateTicTacToeBoardView.moveTiming,
             dependencies: dependencies,
             artwork: { AnyView(UltimateTicTacToeHubArtwork()) },
-            screen: { AnyView(UltimateTicTacToeScreen(viewModel: $0)) },
+            screen: { AnyView(UltimateTicTacToeScreen(viewModel: $0, history: $1)) },
             replayBoard: { replay in
                 AnyView(UltimateTicTacToeBoardView(
                     board: replay.board,
@@ -34,6 +34,7 @@ enum UltimateTicTacToeGame {
 /// pick also shows faintly on the other phone (`UltimateTicTacToeLiveLink`).
 struct UltimateTicTacToeScreen: View {
     let viewModel: BoardGameViewModel<UltimateTicTacToeBoard>
+    let history: GameHistoryLink?
 
     @State private var pick = UltimateTicTacToePick.none
     /// What my partner last picked, as their phone sent it.
@@ -46,7 +47,7 @@ struct UltimateTicTacToeScreen: View {
             title: .ultimateTicTacToeName,
             hint: pick.asksForBoard(on: viewModel.board, canPlay: viewModel.canPlay)
                 ? .ultimateTicTacToeHintChooseBoard : nil,
-            history: .boardGameHistory(.ultimateTicTacToe),
+            history: history,
             action: lockIn
         ) {
             UltimateTicTacToeBoardView(

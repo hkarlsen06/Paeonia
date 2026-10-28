@@ -123,22 +123,7 @@ struct GuessMySpotScreen: View {
         }
         .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .topBarTrailing) {
-            Menu {
-                Button {
-                    showsTutorial = true
-                } label: {
-                    Label {
-                        Text(.gamesTutorialOpen)
-                    } icon: {
-                        Image(systemName: "questionmark.circle")
-                    }
-                }
-                .accessibilityIdentifier("games.tutorial.open")
-            } label: {
-                Image(systemName: "ellipsis")
-                    .accessibilityLabel(Text(.guessMySpotMenuA11Y))
-            }
-            .accessibilityIdentifier("guessMySpot.menu")
+            GameMenu(history: .guessMySpot, showTutorial: { showsTutorial = true })
         }
     }
 }

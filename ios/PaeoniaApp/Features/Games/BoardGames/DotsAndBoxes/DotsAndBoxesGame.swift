@@ -17,7 +17,7 @@ enum DotsAndBoxesGame {
             timing: timing,
             dependencies: dependencies,
             artwork: { AnyView(DotsAndBoxesHubArtwork()) },
-            screen: { AnyView(DotsAndBoxesScreen(viewModel: $0)) },
+            screen: { AnyView(DotsAndBoxesScreen(viewModel: $0, history: $1)) },
             replayBoard: { AnyView(BoardGameReplayBoards.dotsAndBoxes($0)) }
         )
     }
@@ -25,9 +25,10 @@ enum DotsAndBoxesGame {
 
 struct DotsAndBoxesScreen: View {
     let viewModel: BoardGameViewModel<DotsAndBoxesBoard>
+    let history: GameHistoryLink?
 
     var body: some View {
-        BoardGameScreen(viewModel: viewModel, title: .dotsAndBoxesName) {
+        BoardGameScreen(viewModel: viewModel, title: .dotsAndBoxesName, history: history) {
             DotsAndBoxesBoardView(
                 board: viewModel.board,
                 lastMove: viewModel.lastMove,

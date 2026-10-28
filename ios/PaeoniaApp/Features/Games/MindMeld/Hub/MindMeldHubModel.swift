@@ -63,6 +63,10 @@ final class MindMeldHubModel: GameHubModel {
         _ = try? await dependencies.mindMeldCache.fetchState(from: dependencies.mindMeldGateway, ownerUserID: userID)
     }
 
+    var historyLink: GameHistoryLink? {
+        .mindMeld
+    }
+
     func card(_ context: GameHubCardContext, open: @escaping (GamesDestination) -> Void) -> AnyView? {
         guard let summary else { return nil }
         return AnyView(MindMeldHubCard(

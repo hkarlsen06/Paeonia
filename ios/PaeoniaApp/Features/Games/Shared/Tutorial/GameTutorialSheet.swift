@@ -22,22 +22,6 @@ extension View {
     }
 }
 
-/// The toolbar button that opens a game's "How to play" cards.
-struct GameTutorialButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Label {
-                Text(.gamesTutorialOpen)
-            } icon: {
-                Image(systemName: "questionmark.circle")
-            }
-        }
-        .accessibilityIdentifier("games.tutorial.open")
-    }
-}
-
 /// Swipeable cards, each with one picture and a short explanation. The button
 /// under them goes to the next card, and on the last card closes the sheet.
 struct GameTutorialSheet: View {
