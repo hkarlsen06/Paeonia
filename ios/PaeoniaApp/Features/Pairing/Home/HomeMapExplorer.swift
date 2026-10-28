@@ -109,20 +109,13 @@ extension View {
 
     /// Marks this view as lying over Home's map, so a drag or a pinch on it moves the map.
     func homeMapArea(_ name: String, _ explorer: HomeMapExplorer?) -> some View {
-        onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-            explorer?.setArea(name, frame)
-        }
-        .onDisappear { explorer?.setArea(name, nil) }
+        modifier(HomeMapArea(name: name, explorer: explorer))
     }
 
     /// Marks the rows this view sits on as over Home's map, across the whole screen and up
     /// to the card above, for words and pictures that lie on the map without a card.
     func homeMapRows(_ name: String, _ explorer: HomeMapExplorer?) -> some View {
-        onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame in
-            let top = frame.minY - PaeoniaSpacing.space16
-            explorer?.setArea(name, CGRect(x: 0, y: top, width: .greatestFiniteMagnitude, height: frame.maxY - top))
-        }
-        .onDisappear { explorer?.setArea(name, nil) }
+        modifier(HomeMapArea(name: name, explorer: explorer, extendsAcrossRows: true))
     }
 }
 
