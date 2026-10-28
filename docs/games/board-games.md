@@ -19,7 +19,7 @@ Decided on 2026-10-13.
 - **The photo is random.** When a Dots and Boxes game starts, the server picks a random photo from the couple's Memories. Neither partner knows which one until boxes start closing.
 - **Norwegian names.** Fire på rad, Prikker og streker and Ultimat bondesjakk.
 - **Gentle rematch.** When a game ends, either partner can tap "Play again". The partner who did not start the last game starts the new one.
-- **Past games.** Decided on 2026-10-15. The server keeps every finished game with its moves, and the couple can watch any of them again, faster than it was played. Ultimate Tic-Tac-Toe shows them so far. The other board games keep theirs on the server, and each needs a replay mode on its board view before it shows them (see "Past games" under "Screens").
+- **Past games.** Decided on 2026-10-15. The server keeps every finished game with its moves, and the couple can watch any of them again, faster than it was played. All four board games show them (see "Past games" under "Screens").
 
 ## Decisions made without the developer
 
@@ -87,7 +87,7 @@ Player one started the game and always moves first. Each game has a pure rules f
 - The board tints the mark in its owner's color. On this phone, my pieces use `.paeoniaPartnerOne` and my partner's use `.paeoniaInkLavender` (`Color.boardGameMine` and `Color.boardGamePartner`). Ludo is the exception: each partner picks one of four colors, and both phones show the same colors (see `docs/games/ludo.md`).
 - Without a drawn mark, a partner's mark is the first letter of their display name.
 - The first time a partner opens any game, the first-time sheet ends on the mark editor for someone with no mark, after setup or the partner's choices. Cancel skips it, and the game opens either way.
-- Later the editor opens from "Your mark" in the game settings sheet on the hub, "Your mark in games" on the Us tab, and the "Your mark" button in the board toolbar. It never blocks a game.
+- Later the editor opens from "Your mark" in the game settings sheet on the hub, "Your mark in games" on the Us tab, and "Your mark" in the board's toolbar menu or a long press on its hub card. It never blocks a game.
 - Saving needs a connection. A failed save keeps the drawing in the editor and shows "We couldn't save your mark. Check your connection and try again."
 - The partner's new mark shows on their pieces the next time the board renders. Nobody gets a push for it.
 
@@ -174,7 +174,7 @@ Copy keys start with `boardGames.` for the shared shell and `connectFour.`, `dot
 - **Status row.** Under the board. On a Dots and Boxes extra turn, "Another turn" pops in for 1.5 seconds. A game can show its own hint there, as Ludo does ("Roll again"). VoiceOver announces when the partner comes and goes.
 - **Pinned bottom.** In Ludo, the invite button while it is not my turn and the partner is away. The bar always keeps room for it, so the board never resizes. The other boards show the invite as a bell at the leading edge of the toolbar instead. The offline line while a move waits to send. Under it, "[Name] isn't here right now" while the partner doesn't have the game open. While they do, the dot on their avatar says so and the line is gone.
 - **Score capsule.** Toolbar trailing, as in Draw & Guess (see "Scoring"). In a game with past games, a tap on it opens them.
-- **Toolbar.** "Your mark" (`scribble.variable`) opens the mark editor.
+- **Toolbar.** One `…` menu (`GameMenu`), the same in every game. It lists "Past games" (`clock`), "Your mark" (`scribble.variable`), which opens the mark editor, and "How to play" (`questionmark.circle`) for a game with tutorial cards. A long press on the game's hub card or tile shows the same items (decided on 2026-10-28).
 
 ### Result
 
@@ -225,7 +225,7 @@ The moment the last move lands.
 
 ### Past games
 
-- Ultimate Tic-Tac-Toe has "Past games" ("Tidligere spill"). It opens from a quiet link on the hub card once the couple has finished a game, and from the score capsule on the board screen. The shared code is in `Features/Games/BoardGames/Shared/History/`, so another board game gets it by passing a replay board to its `BoardGameHubModel`.
+- Every board game has "Past games" ("Tidligere spill"). It opens from a quiet link on the hub card once the couple has finished a game, from the score capsule and the toolbar menu on the board screen, and from a long press on the hub card or tile. The shared code is in `Features/Games/BoardGames/Shared/History/`, and each game's replay board is in `BoardGameReplayBoards.swift`. A board game gets "Past games" by passing a replay board to its `BoardGameHubModel`, which hands the link to the game's screen.
 - The list shows every finished game, newest first: the winner's photo (an equals sign for a draw), "You won!", "[Name] won" or "It's a draw", the number of moves and the date, and the bet when there was one. It pages 30 games at a time. It reads the server each time it opens. Without a connection it says "Connect to the internet to see your past games." Any other failure says "Something went wrong" and to try again in a little while. Both offer "Try again".
 - A row plays that game again. The replay screen has the players row, which marks whose move it is and then the winner, the board, the bet, and a play button with a slider and "Move 12 of 39" under it.
 - The replay starts at once and plays one move every 0.32 seconds. The board never zooms in a replay, and moves make no haptics or sounds. After the last move the outcome highlight plays as it did in the game. The play button pauses, and at the end it reads "Watch again" and starts over. Moving the slider pauses the replay and shows the board after that move.

@@ -177,7 +177,7 @@ Copy keys start with `storyChain.`, and the tables list only the part after it. 
 ### Shell
 
 - One screen, `StoryChainScreen`, opened from the Games tab and from pushes. It shows one phase at a time, picked by `StoryChainResolver` from the game, the current and previous story, the queued moves, and my user id.
-- Look. `.paeoniaBackgroundSecondary`, dark toolbar, inline title "Story Chain" / "Skrivestafett", like Draw & Guess. Toolbar trailing: "Our stories" (`books.vertical`), and the star on a finished story.
+- Look. `.paeoniaBackgroundSecondary`, dark toolbar, inline title "Story Chain" / "Skrivestafett", like Draw & Guess. Toolbar trailing: the games' shared `…` menu with "Our stories", and the star on a finished story.
 - Phase change. Cross-fade plus a 12 pt rise over `meaningfulMoment`. Reduce Motion: cross-fade over `motionFast`.
 - The page stays in place across writing, waiting and naming, so the story never jumps when the turn passes. Only the bottom changes.
 
@@ -304,7 +304,7 @@ The reveal. It should feel like closing a book you wrote together.
 
 ### 6. Our stories
 
-- Entry: the toolbar button on every Story Chain screen, and a quiet link on the hub card once a story has finished.
+- Entry: the toolbar menu on every Story Chain screen, a long press on the hub card or tile, and a quiet link on the hub card once a story has finished.
 - A segmented "All" / "Starred" picker, then a list. A row is the title in serif `title3`, the first line in `caption` (two lines, `.paeoniaTextSecondary`), and "Oct 13 · 14 lines". A starred story shows `star.fill` at the trailing edge.
 - Empty: "No stories yet" (`books.vertical`), "Your stories will show up here when you finish your first one." Starred empty: "No starred stories", "Tap the star on a story you like, and it shows up here."
 - The detail is the finished page without the reveal, with the toolbar star.

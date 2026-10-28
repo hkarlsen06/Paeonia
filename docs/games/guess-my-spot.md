@@ -189,7 +189,7 @@ Copy keys start with `guessMySpot.`, so their Swift symbols start with `guessMyS
 
 - One screen, `GuessMySpotScreen`, opened from the Games tab and from the pushes. It shows one phase at a time, picked by `GuessMySpotResolver` from the server's state, the queued moves, and what this person has seen.
 - Look. `.paeoniaScreenBackground(.paeoniaBackgroundSecondary)`, `.preferredColorScheme(.dark)`, inline title "Guess my spot", dark toolbar.
-- Toolbar trailing. The score capsule, which opens "Our guesses". Together: `heart.fill` and the shared total. Against each other: each partner's avatar with their own points. Then a `…` menu with "How to play". The invite bell sits at the leading edge while the partner is away.
+- Toolbar trailing. The score capsule, which opens "Our guesses". Together: `heart.fill` and the shared total. Against each other: each partner's avatar with their own points. Then a `…` menu with "Our guesses" and "How to play". The invite bell sits at the leading edge while the partner is away.
 - Phase change. Cross-fade plus a 12 pt rise over `PaeoniaMotion.meaningfulMoment`. Reduce Motion: cross-fade.
 - A photo picked but not sent lives in the view model only. Leaving the screen keeps it until the app closes, so a look at "Our guesses" loses nothing.
 

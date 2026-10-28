@@ -159,7 +159,7 @@ Copy keys start with `mindMeld.`, so their Swift symbols start with `mindMeld`. 
 
 - One screen, `MindMeldScreen`, opened from the Games tab and from the pushes. It shows one phase at a time, picked by `MindMeldResolver` from the server's state, the queued moves, and what this person has seen. The view body holds no rules.
 - Look. `.paeoniaScreenBackground(.paeoniaBackgroundSecondary)`, `.preferredColorScheme(.dark)`, inline title "Mind Meld" / "Tenk likt", dark toolbar. No cards except the two word cards and the trail chips.
-- Toolbar trailing. The melds capsule and a `…` menu with "Start over" while a game is in play. The capsule has both avatars, slightly overlapping (mine first), and the meld count, in the same capsule as the other games' scores. Tapping it opens "Our melds". It shows in every phase, at 0 melds too. VoiceOver: "Our melds, 3 melds together".
+- Toolbar trailing. The melds capsule and a `…` menu with "Our melds", "How to play", and "Start over" while a game is in play. The capsule has both avatars, slightly overlapping (mine first), and the meld count, in the same capsule as the other games' scores. Tapping it opens "Our melds". It shows in every phase, at 0 melds too. VoiceOver: "Our melds, 3 melds together".
 - Phase change. Cross-fade plus a 12 pt rise over `PaeoniaMotion.meaningfulMoment`. Reduce Motion: cross-fade over `motionFast`.
 - The pinned bottom uses `paeoniaBottomBar`, capped with `.paeoniaReadableWidth()`. The text-led phases use `.paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)`.
 - Avatars are `PaeoniaProfilePhotoAvatar`, `.paeoniaPartnerOne` for me and `.paeoniaPartnerTwo` for the partner. My card is always on the leading side.
@@ -332,7 +332,7 @@ When a person opens a game whose ending they have already seen, the screen shows
 
 ### 5. Our melds
 
-Entry points: the melds capsule in the toolbar of `MindMeldScreen`, "See our melds" on a finished reveal, and a quiet link on the hub card once the couple has a finished game.
+Entry points: the melds capsule and the `…` menu in the toolbar of `MindMeldScreen`, "See our melds" on a finished reveal, a long press on the hub card or tile, and a quiet link on the hub card once the couple has a finished game.
 
 Layout, in one scroll view.
 

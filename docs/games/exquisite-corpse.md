@@ -133,7 +133,7 @@ The history of finished figures. It follows "Our drawings" in look and behavior 
 - The grid uses adaptive columns of at least 104 pt, which gives 3 columns on a phone. A cell is the whole figure as a 1:3 thumbnail on `.paeoniaBackgroundPrimary` (`radius12`), with "Creature 12 · Oct 12" under it in `caption`. A `star.fill` badge sits at the top trailing corner when I starred it.
 - A page is 30 figures, newest first, with All and Starred. Paging, caching, offline and empty states work as in "Our drawings".
 - The detail screen shows the figure with the credits and plays the reveal's unfold without the bloom, once. "Play again" starts it over. The toolbar star toggles my private favorite.
-- Entry points: a `square.grid.2x2` toolbar button on the game screen ("Our creatures"), and a quiet link on the hub card once a figure is finished.
+- Entry points: "Our creatures" in the `…` toolbar menu on the game screen, a long press on the hub card or tile, and a quiet link on the hub card once a figure is finished.
 
 VoiceOver. A cell is one element, "Creature 12, by you and Robin, starred". The detail figure reads like the reveal's figure.
 
@@ -213,7 +213,7 @@ Layout, top to bottom.
 6. Tool rows, unchanged from Draw & Guess.
 7. Pinned bottom: primary "Done", disabled while the canvas is empty. Accessibility label "Done, send to [Name]".
 
-Toolbar trailing: "Our creatures" and "Clear", with the Draw & Guess clear alert.
+Toolbar trailing: the `…` menu with "Our creatures", and "Clear", with the Draw & Guess clear alert.
 
 First figure. The first head of a new game shows one extra line under the part line in `.paeoniaTextSecondary`: "[Name] draws the body next, and only sees the bottom of yours." That line is the only teaching.
 

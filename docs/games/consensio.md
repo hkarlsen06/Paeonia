@@ -161,7 +161,7 @@ Copy keys start with `consensio.`, so their Swift symbols start with `consensio`
 
 - One screen, `ConsensioScreen`, opened from the Games tab and from the pushes. It shows one phase at a time, picked by `ConsensioResolver` from the server's state, the queued moves, and what this person has seen. The view body holds no rules.
 - Look. `.paeoniaScreenBackground(.paeoniaBackgroundSecondary)`, `.preferredColorScheme(.dark)`, inline title "Consensio", dark toolbar.
-- Toolbar trailing. The score capsule with `heart.fill` and the shared total, which opens "What we know" (VoiceOver: "What we know, 142 points together"). Then a `…` menu with "How to play". The invite bell sits at the leading edge while the partner is away.
+- Toolbar trailing. The score capsule with `heart.fill` and the shared total, which opens "What we know" (VoiceOver: "What we know, 142 points together"). Then a `…` menu with "What we know" and "How to play". The invite bell sits at the leading edge while the partner is away.
 - Phase change. Cross-fade plus a 12 pt rise over `PaeoniaMotion.meaningfulMoment`. Reduce Motion: cross-fade over `motionFast`.
 - The pinned bottom uses `paeoniaBottomBar`, capped with `.paeoniaReadableWidth()`. Every phase uses `.paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)`.
 - Avatars are `PaeoniaProfilePhotoAvatar`, `.paeoniaPartnerOne` for me and `.paeoniaPartnerTwo` for the partner.
@@ -369,7 +369,7 @@ VoiceOver. On the verdict, one announcement: "Robin is 70 percent of the way to 
 
 ### 6. What we know
 
-Entry points: the score capsule in the toolbar, and a quiet link on the hub card once the couple has a revealed round. Layout as in "History" above, in one scroll view, with `.paeoniaSurfaceSecondary` rows on `radius16`.
+Entry points: the score capsule and the `…` menu in the toolbar, a long press on the hub card or tile, and a quiet link on the hub card once the couple has a revealed round. Layout as in "History" above, in one scroll view, with `.paeoniaSurfaceSecondary` rows on `radius16`.
 
 Empty states use `PaeoniaEmptyStateView`: no rounds yet (`point.topleft.down.to.point.bottomright.curvepath`, "Nothing here yet", "Your rounds show up here after the first guess."), and offline with nothing cached (the shared offline state).
 
