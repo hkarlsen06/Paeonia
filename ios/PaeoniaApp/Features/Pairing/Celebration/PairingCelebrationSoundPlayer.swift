@@ -6,7 +6,7 @@ final class PairingCelebrationSoundPlayer {
 
     func prepare() {
         guard players.isEmpty else { return }
-        for name in ["Gather", "Release", "Land"] {
+        for name in ["Gather", "Release"] {
             guard let url = Bundle.main.url(forResource: "Pairing\(name)", withExtension: "caf"),
                   let player = try? AVAudioPlayer(contentsOf: url) else { continue }
             player.enableRate = true
@@ -22,10 +22,6 @@ final class PairingCelebrationSoundPlayer {
     func release(duration: Double) {
         players["Gather"]?.setVolume(0, fadeDuration: 0.035)
         play("Release", rate: 0.9 / max(duration, 0.01))
-    }
-
-    func land(duration: Double) {
-        play("Land", rate: 0.6 / max(duration, 0.01))
     }
 
     func stop() {

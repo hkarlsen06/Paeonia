@@ -260,7 +260,6 @@ final class PairingCelebrationTimeline {
     /// 5. The partner glides into place and the rest of the linked state settles in.
     private func linkPartner() {
         phase = .linking
-        sound.land(duration: schedule.landingSettle)
         haptics.linked()
         withAnimation(.spring(response: 0.82, dampingFraction: 0.84)) {
             partnerScale = 1

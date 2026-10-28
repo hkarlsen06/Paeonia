@@ -10,7 +10,7 @@ let directory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true
 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
 func writeCue(_ name: String, seconds: Double, peak: Double,
-              signal: (Double, Int) -> Double) throws {
+              signal: (Int, Int) -> Double) throws {
     let frames = Int(seconds * sampleRate)
     guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2),
           let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)),
@@ -20,8 +20,8 @@ func writeCue(_ name: String, seconds: Double, peak: Double,
     for channel in 0..<2 {
         for frame in 0..<frames {
             let time = Double(frame) / sampleRate
-            let fade = min(time / 0.006, 1) * min((seconds - time) / 0.06, 1)
-            let value = signal(time, channel) * fade
+            let fade = min(time / 0.0005, 1) * min((seconds - time) / 0.06, 1)
+            let value = signal(frame, channel) * fade
             channels[channel][frame] = Float(value)
             measured = max(measured, abs(value))
         }
@@ -38,31 +38,68 @@ func writeCue(_ name: String, seconds: Double, peak: Double,
     FileHandle.standardOutput.write(Data(summary.utf8))
 }
 
-func key(_ time: Double, frequency: Double, decay: Double = 6) -> Double {
-    guard time >= 0 else { return 0 }
-    let attack = 1 - exp(-time * 150)
-    let phase = 2 * Double.pi * frequency * time
-    return attack * (sin(phase) * exp(-time * decay)
-        + 0.22 * sin(phase * 2) * exp(-time * (decay + 5))
-        + 0.06 * sin(phase * 3) * exp(-time * (decay + 10)))
-}
+struct FeltNoise {
+    var state: UInt64
+    var upper = 0.0
+    var softened = 0.0
+    var lower = 0.0
+    let upperWeight: Double
+    let lowerWeight: Double
 
-try writeCue("Gather", seconds: 1.95, peak: 0.18) { time, _ in
-    let notes: [(Double, Double)] = [
-        (0, 261.6256), (0.34, 329.6276), (0.67, 391.9954),
-        (0.98, 329.6276), (1.24, 391.9954)
-    ]
-    return notes.reduce(0) { value, note in
-        value + key(time - note.0, frequency: note.1, decay: 5) * 0.7
+    init(seed: UInt64, low: Double, high: Double) {
+        state = seed
+        upperWeight = 1 - exp(-2 * .pi * high / sampleRate)
+        lowerWeight = 1 - exp(-2 * .pi * low / sampleRate)
+    }
+
+    mutating func next() -> Double {
+        state &+= 0x9e37_79b9_7f4a_7c15
+        var mixed = state
+        mixed = (mixed ^ (mixed >> 30)) &* 0xbf58_476d_1ce4_e5b9
+        mixed = (mixed ^ (mixed >> 27)) &* 0x94d0_49bb_1331_11eb
+        let white = Double((mixed ^ (mixed >> 31)) >> 11) / Double(1 << 53) * 2 - 1
+        upper += upperWeight * (white - upper)
+        softened += upperWeight * (upper - softened)
+        lower += lowerWeight * (softened - lower)
+        return softened - lower
     }
 }
 
-try writeCue("Release", seconds: 0.9, peak: 0.23) { time, _ in
-    key(time, frequency: 261.6256, decay: 5)
-        + key(time, frequency: 329.6276, decay: 6) * 0.35
-        + key(time, frequency: 391.9954, decay: 7) * 0.22
+var gatherNoise = FeltNoise(seed: 0x7061656f6e6961, low: 160, high: 1_400)
+let gather = (0..<Int(1.95 * sampleRate)).map { frame in
+    let time = Double(frame) / sampleRate
+    let pressure = pow(min(time / 1.45, 1), 1.35)
+    return gatherNoise.next() * (0.015 + 0.985 * pressure)
+}
+try writeCue("Gather", seconds: 1.95, peak: 0.075) { index, _ in
+    gather[index]
 }
 
-try writeCue("Land", seconds: 0.6, peak: 0.065) { time, _ in
-    key(time, frequency: 261.6256, decay: 10)
+var contactNoise = FeltNoise(seed: 0x66656c74, low: 90, high: 700)
+var breathLeft = FeltNoise(seed: 0x7061706572, low: 220, high: 1_800)
+var breathRight = FeltNoise(seed: 0x6272757368, low: 220, high: 1_800)
+struct ReleaseFrame {
+    let contact: Double
+    let left: Double
+    let right: Double
+}
+let release = (0..<Int(0.9 * sampleRate)).map { frame in
+    let time = Double(frame) / sampleRate
+    let contactEnvelope = (1 - exp(-time / 0.0004)) * exp(-time / 0.007)
+        * max(0, 1 - time / 0.045)
+    let breathEnvelope = (1 - exp(-time / 0.008)) * exp(-time / 0.14)
+        * min(max((0.75 - time) / 0.15, 0), 1) * 0.045
+    return ReleaseFrame(
+        contact: contactNoise.next() * contactEnvelope,
+        left: breathLeft.next() * breathEnvelope,
+        right: breathRight.next() * breathEnvelope
+    )
+}
+try writeCue("Release", seconds: 0.9, peak: 0.22) { index, channel in
+    let frame = release[index]
+    let time = Double(index) / sampleRate
+    let opening = min(time / 0.15, 1) * 0.3
+    let center = (frame.left + frame.right) * 0.5
+    let side = channel == 0 ? frame.left : frame.right
+    return frame.contact + center * (1 - opening) + side * opening
 }
