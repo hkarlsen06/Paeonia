@@ -60,6 +60,17 @@ enum PaeoniaHaptics {
         notify(.success)
     }
 
+    /// An answer to a question was saved and is on its way: a firm tap and a soft
+    /// settle, like sealing an envelope.
+    static func answerSent() {
+        impact(.rigid, intensity: 0.75)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(80))
+            guard !Task.isCancelled else { return }
+            impact(.soft, intensity: 0.6)
+        }
+    }
+
     static func answerRevealed() {
         notify(.success)
     }

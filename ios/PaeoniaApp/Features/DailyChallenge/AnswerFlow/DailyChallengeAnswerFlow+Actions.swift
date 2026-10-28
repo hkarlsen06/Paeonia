@@ -24,6 +24,7 @@ extension DailyChallengeAnswerFlow {
             return
         }
 
+        PaeoniaHaptics.answerSent()
         submittedAnswer = viewModel.sendingPreview(for: question)
         sentQuestionID = question.id
         // Until the partner answers, the chat would only show the answer just written.

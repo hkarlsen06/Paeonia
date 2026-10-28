@@ -6669,42 +6669,6 @@
         }
       }
     },
-    "dailyChallenge.flow.allDone.message" : {
-      "comment" : "Shown after the user answers today's question, before the partner has answered it. %@ is the partner's name.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nice. We'll let %@ know. Come back to see their answer when they reply."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fint. Vi gir %@ beskjed. Kom tilbake for å se svaret når de svarer."
-          }
-        }
-      }
-    },
-    "dailyChallenge.flow.allDone.title" : {
-      "comment" : "Celebration title shown after the user answers today's question, before the partner has answered it",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You answered"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du har svart"
-          }
-        }
-      }
-    },
     "dailyChallenge.flow.close" : {
       "comment" : "Accessibility label for the button that closes the daily questions screen",
       "extractionState" : "manual",

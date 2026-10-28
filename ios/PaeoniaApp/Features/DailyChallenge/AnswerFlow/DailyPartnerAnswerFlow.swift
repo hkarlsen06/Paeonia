@@ -165,6 +165,7 @@ struct DailyPartnerAnswerFlow: View {
             return
         }
 
+        PaeoniaHaptics.answerSent()
         submittedAnswer = viewModel.sendingPreview(for: question)
         isComposerFocused = false
 
