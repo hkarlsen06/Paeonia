@@ -184,7 +184,7 @@ struct PairingCelebrationView: View {
             PairingCelebrationHeartCore()
                 .scaleEffect(timeline.heartScale)
                 .opacity(timeline.heartOpacity)
-                .shadow(color: .paeoniaAccentPrimary.opacity(0.65), radius: timeline.heartGlow)
+                .shadow(color: .paeoniaAccentPrimary.opacity(0.18), radius: timeline.heartGlow)
                 .position(x: heartCenter.x, y: heartCenter.y)
                 .accessibilityHidden(true)
 

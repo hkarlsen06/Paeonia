@@ -38,33 +38,31 @@ func writeCue(_ name: String, seconds: Double, peak: Double,
     FileHandle.standardOutput.write(Data(summary.utf8))
 }
 
-try writeCue("Gather", seconds: 1.95, peak: 0.32) { time, channel in
-    let progress = min(time / 1.45, 1)
-    let pitchPhase = time < 1.45 ? time * time / 1.45 : 2 * time - 1.45
-    let turn = time * 1.4 + progress * progress * 4.2
-    let pan = 0.7 + 0.3 * sin(turn + Double(channel) * .pi)
-    var air = 0.0
-    for partial in 1...18 {
-        let frequency = 170 + Double(partial * partial) * 7.3
-        let phase = 2 * Double.pi * frequency * (time + 0.12 * pitchPhase)
-        air += sin(phase + Double(partial) * 2.39996 + Double(channel) * 0.3) / Double(partial + 4)
+func key(_ time: Double, frequency: Double, decay: Double = 6) -> Double {
+    guard time >= 0 else { return 0 }
+    let attack = 1 - exp(-time * 150)
+    let phase = 2 * Double.pi * frequency * time
+    return attack * (sin(phase) * exp(-time * decay)
+        + 0.22 * sin(phase * 2) * exp(-time * (decay + 5))
+        + 0.06 * sin(phase * 3) * exp(-time * (decay + 10)))
+}
+
+try writeCue("Gather", seconds: 1.95, peak: 0.18) { time, _ in
+    let notes: [(Double, Double)] = [
+        (0, 261.6256), (0.34, 329.6276), (0.67, 391.9954),
+        (0.98, 329.6276), (1.24, 391.9954)
+    ]
+    return notes.reduce(0) { value, note in
+        value + key(time - note.0, frequency: note.1, decay: 5) * 0.7
     }
-    let body = sin(2 * Double.pi * (196 * time + 42 * pitchPhase)) * 0.15
-    return (air * 0.5 + body) * (0.12 + 0.88 * progress * progress) * pan
 }
 
-try writeCue("Release", seconds: 0.9, peak: 0.42) { time, channel in
-    let spread = Double(channel) * 0.002 * (1 - exp(-time * 12))
-    let local = max(0, time - spread)
-    let body = sin(2 * Double.pi * 392 * local) * exp(-time * 4.5)
-    let overtone = sin(2 * Double.pi * 587.33 * local) * exp(-time * 6) * 0.35
-    let shimmer = sin(2 * Double.pi * 784 * local) * exp(-time * 8) * 0.14
-    return (body + overtone + shimmer) * (1 - exp(-time * 240))
+try writeCue("Release", seconds: 0.9, peak: 0.23) { time, _ in
+    key(time, frequency: 261.6256, decay: 5)
+        + key(time, frequency: 329.6276, decay: 6) * 0.35
+        + key(time, frequency: 391.9954, decay: 7) * 0.22
 }
 
-try writeCue("Land", seconds: 0.6, peak: 0.14) { time, channel in
-    let phase = Double(channel) * 0.04
-    return (sin(2 * Double.pi * 196 * time + phase)
-            + sin(2 * Double.pi * 392 * time + phase) * 0.18)
-        * exp(-time * 8) * (1 - exp(-time * 130))
+try writeCue("Land", seconds: 0.6, peak: 0.065) { time, _ in
+    key(time, frequency: 261.6256, decay: 10)
 }

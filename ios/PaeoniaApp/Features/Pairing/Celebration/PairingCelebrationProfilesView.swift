@@ -1,65 +1,6 @@
 import SwiftUI
 import UIKit
 
-/// The heart that forms at the center: a soft dark well that reads as the gravity
-/// core, haloed in accent light, with the heart symbol on top. The rim is built
-/// from a blurred glow plus a faint gradient edge so it feels lit rather than
-/// outlined.
-struct PairingCelebrationHeartCore: View {
-    var body: some View {
-        ZStack {
-            darkWell
-            softHalo
-            lightRim
-            Image(systemName: "heart.fill")
-                .font(.system(size: 42, weight: .semibold))
-                .foregroundStyle(.paeoniaAccentPrimary)
-                .shadow(color: .paeoniaAccentPrimary.opacity(0.55), radius: 10)
-        }
-        .accessibilityHidden(true)
-    }
-
-    private var darkWell: some View {
-        Circle()
-            .fill(
-                RadialGradient(
-                    colors: [
-                        .black.opacity(0.5),
-                        .black.opacity(0.34),
-                        .clear
-                    ],
-                    center: .center,
-                    startRadius: 6,
-                    endRadius: 84
-                )
-            )
-            .frame(width: 168, height: 168)
-    }
-
-    private var softHalo: some View {
-        Circle()
-            .stroke(.paeoniaAccentPrimary.opacity(0.4), lineWidth: 6)
-            .frame(width: 118, height: 118)
-            .blur(radius: 6)
-    }
-
-    private var lightRim: some View {
-        Circle()
-            .stroke(
-                LinearGradient(
-                    colors: [
-                        .paeoniaAccentPrimary.opacity(0.6),
-                        .paeoniaAccentSecondary.opacity(0.2)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                ),
-                lineWidth: 1.5
-            )
-            .frame(width: 122, height: 122)
-    }
-}
-
 /// A circular avatar showing a person's profile photo, falling back to initials.
 /// Used both in the linked row and as the hero avatar that bursts from the heart
 /// and flies into place. The fixed diameter is scaled up via `scaleEffect` when
