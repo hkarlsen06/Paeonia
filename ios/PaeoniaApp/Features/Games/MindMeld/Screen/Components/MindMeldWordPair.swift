@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The last two words as two chips with a small plus between, my word first. It
-/// sits under the title of the write phase. When the chips do not fit side by side
+/// sits under the title of the write phase. The plus stays in the middle of the
+/// row, in line with the trail above it. When the chips do not fit side by side
 /// (long words, large text), they stack.
 struct MindMeldWordPair: View {
     let mine: String
@@ -10,9 +11,9 @@ struct MindMeldWordPair: View {
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: PaeoniaSpacing.space12) {
-                chip(mine, tint: .paeoniaPartnerOne, lines: 1)
+                side(mine, beside: theirs, tint: .paeoniaPartnerOne, alignment: .trailing)
                 plus
-                chip(theirs, tint: .paeoniaPartnerTwo, lines: 1)
+                side(theirs, beside: mine, tint: .paeoniaPartnerTwo, alignment: .leading)
             }
             VStack(spacing: PaeoniaSpacing.space8) {
                 chip(mine, tint: .paeoniaPartnerOne, lines: 2)
@@ -28,6 +29,16 @@ struct MindMeldWordPair: View {
             .font(PaeoniaTypography.caption.weight(.bold))
             .foregroundStyle(.paeoniaTextTertiary)
             .accessibilityHidden(true)
+    }
+
+    /// Both halves are as wide as the wider chip, so the plus sits in the middle
+    /// and the row only fits when each half has room for either word.
+    private func side(_ word: String, beside other: String, tint: Color, alignment: Alignment) -> some View {
+        ZStack(alignment: alignment) {
+            chip(other, tint: tint, lines: 1).hidden()
+            chip(word, tint: tint, lines: 1)
+        }
+        .frame(maxWidth: .infinity, alignment: alignment)
     }
 
     private func chip(_ word: String, tint: Color, lines: Int) -> some View {
@@ -189,6 +200,7 @@ struct MindMeldTrailView: View {
 #Preview("Pair") {
     VStack(spacing: PaeoniaSpacing.space24) {
         MindMeldWordPair(mine: "Ocean", theirs: "Sushi")
+        MindMeldWordPair(mine: "Alvilde", theirs: "Mann")
         MindMeldWordPair(mine: "Strawberry ice cream", theirs: "New York city")
         MindMeldWordPair(mine: "Ocean", theirs: "Sushi")
             .dynamicTypeSize(.accessibility3)
