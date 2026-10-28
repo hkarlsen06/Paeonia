@@ -232,6 +232,11 @@ nonisolated extension MindMeldResolution {
         return (mine, theirs)
     }
 
+    /// The round of `connectingPair`.
+    var connectingRoundID: UUID? {
+        game?.lastRevealedRound?.id
+    }
+
     /// Every revealed round of the game, oldest first.
     var trail: [MindMeldTrailRound] {
         guard let game else { return [] }

@@ -274,18 +274,20 @@ Verdict.
 
 - **Meld.** At 2.10 the cards speed up into each other (0.24 s, an ease-in curve, like two magnets). The partner's card stays solid and slides under mine. At 2.34 they touch: the partner's card hides, the card swells to 1.07 and back, the borders turn `.paeoniaSuccess`, the glow peaks at 0.40, and a big petal bloom bursts from the merged card (`GamePetalBloom` at intensity 1.6, seeded by the round id). `streakCelebrated()` and the win sound play on the touch, not at 2.10. At 2.60 the title "You melded!" and "In 4 rounds". At 2.90 the stats line, with `streakContinued()`: "Meld number 3. Your fewest is 2 rounds.", "Your first meld." for the first one, or, on a new record, "Your fewest rounds yet." in `.paeoniaAccentPrimary`.
 - **Near miss.** The cards reach for each other on a bouncy spring, nearly touch, and settle 13 pt closer each, and their borders turn `.paeoniaAccentPrimary`. `streakContinued()`. Title "So close!", line "OCEAN and OCEANS are almost the same word.", and a quiet "Count it" button next to the primary.
-- **Miss.** The cards stay apart and a thin line draws between them with a small `plus` in the middle (`motionMorph`). `partnerDrawingReceived()`. Title "Now find the link", line "What connects OCEAN and SUSHI?".
+- **Miss.** The cards stay apart and a thin line draws between them with a small `plus` in the middle (`motionMorph`). `partnerDrawingReceived()`. The title "Now find the link" and the line "What connects OCEAN and SUSHI?" show only with VoiceOver on.
 - **Got away** (round 10, miss). As a miss, then title "This one got away" and line "You came close. Want to try another?". A near miss in round 10 shows "So close!" with "Count it" and "Play again".
 
 Everything is tappable from 2.60. A tap on the screen jumps to the settled state, as `DrawAndGuessRevealTimeline.skip` does, without repeating haptics. Reduce Motion: no pulses, flips, slides or bloom. The settled state shows at once with only the verdict haptic.
 
 Buttons.
 
-- Miss: primary "Next round". It fills up from the leading edge over 2.5 s, then moves on to the next round by itself, so the couple goes straight from the two words to finding the link. A tap moves on at once. With VoiceOver on, the button waits for a tap.
+- Miss: no title and no buttons. 1.4 s after the line draws, the round moves on by itself and the two words fall into the next round (see "Into the next round"). Nothing is lost, because the next round shows the same two words. With VoiceOver on, the title and a primary "Next round" stay, and the round waits for a tap.
 - Near miss: primary "Next round", which waits for a tap, and "Count it" (`PaeoniaQuietButtonStyle`). "Count it" turns the reveal into a meld in place. The near title and buttons fade out in 0.16 s, then the meld plays with the same gaps as above: the cards slide together, touch 0.24 s later with the bloom and `streakCelebrated()`, and "You melded!" fades up 0.5 s after the slide began.
 - Meld and got away: primary "Play again", and a quiet "See our melds".
 
 Leaving the reveal (Next round, Play again, or back) marks it seen once its verdict has shown. A reveal left before the verdict plays again next time.
+
+Into the next round. After a miss, each card drops onto the screen behind it and lands as its chip under the next round's title (`MindMeldWordFlightView`). It starts as the face-up card, falls faster and faster for 0.42 s while it shrinks, its corners round into a capsule, its border takes the partner's color and its shadow tightens. On landing it squashes and springs back, with `streakTick(0.7)` and the tap sound. The partner's card lands 0.08 s after mine. The rest of the reveal fades out meanwhile, the write phase fades in without its rise, and the keyboard opens after both have landed. A near miss's "Next round" lands the words the same way. Reduce Motion: no drop, only the phase cross-fade.
 
 VoiceOver. On the verdict, one announcement: "You said OCEAN. Robin said SUSHI. Not a match yet." or "You both said FISH. You melded!" Focus moves to the title. The cards are one element each after the flip: "You, OCEAN", "Robin, SUSHI". The bloom and glow are hidden.
 

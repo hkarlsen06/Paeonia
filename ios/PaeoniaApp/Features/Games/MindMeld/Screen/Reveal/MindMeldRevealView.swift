@@ -7,8 +7,9 @@ import SwiftUI
 /// - A game whose ending the person has seen opens settled, with the trail of
 ///   earlier rounds above the cards.
 /// - "Count it" on a near miss turns the reveal into a meld in place.
-/// - After a miss, "Next round" fills up and moves on by itself, so the couple
-///   goes straight from the two words to finding the link.
+/// - A miss shows no title or buttons. A moment after the line draws, the round
+///   moves on by itself and the screen flies both words into the next round, so
+///   nothing on the reveal is lost. VoiceOver keeps the title and "Next round".
 struct MindMeldRevealView: View {
     @Bindable var viewModel: MindMeldViewModel
 
@@ -25,6 +26,8 @@ struct MindMeldRevealView: View {
 
     private static let cardWidth: CGFloat = 160
     private static let wideCardWidth: CGFloat = 220
+    /// How long the two words of a miss stay on the cards before the round moves on.
+    private static let missHold: TimeInterval = 1.4
 
     init(viewModel: MindMeldViewModel) {
         self.viewModel = viewModel
@@ -74,6 +77,12 @@ struct MindMeldRevealView: View {
             guard shown else { return }
             viewModel.revealSettled()
             if UIAccessibility.isVoiceOverRunning { isTitleFocused = true }
+        }
+        .task(id: autoAdvances) {
+            guard autoAdvances else { return }
+            try? await Task.sleep(for: .seconds(Self.missHold))
+            guard !Task.isCancelled else { return }
+            continueToNextRound()
         }
         .onDisappear { timeline.stop() }
         .accessibilityIdentifier("mindMeld.reveal")
@@ -132,7 +141,8 @@ struct MindMeldRevealView: View {
             glow: timeline.glow,
             bloomStart: timeline.bloomStart,
             seed: viewModel.round?.id.uuidString ?? "",
-            cardMaxWidth: isWide ? Self.wideCardWidth : Self.cardWidth
+            cardMaxWidth: isWide ? Self.wideCardWidth : Self.cardWidth,
+            roundID: viewModel.round?.id
         )
     }
 
@@ -152,7 +162,7 @@ struct MindMeldRevealView: View {
 
     private var result: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            if timeline.titleShown, let outcome = shownOutcome {
+            if timeline.titleShown, let outcome = shownOutcome, !autoAdvances {
                 MindMeldRevealTitle(
                     title: title(for: outcome),
                     lines: lines(for: outcome),
@@ -162,15 +172,6 @@ struct MindMeldRevealView: View {
             }
         }
         .frame(maxWidth: .infinity)
-    }
-
-    private func title(for outcome: MindMeldRevealOutcome) -> LocalizedStringResource {
-        switch outcome {
-        case .meld: .mindMeldRevealMeldTitle
-        case .near: .mindMeldRevealNearTitle
-        case .miss: .mindMeldRevealMissTitle
-        case .gotAway: .mindMeldRevealGotAwayTitle
-        }
     }
 
     private func lines(for outcome: MindMeldRevealOutcome) -> [MindMeldRevealTitle.Line] {
@@ -222,11 +223,11 @@ struct MindMeldRevealView: View {
 
     // MARK: Actions
 
-    /// A miss in a game still in play moves on by itself once the buttons show.
-    /// VoiceOver users keep the button, so the move never cuts off what is read out.
+    /// A miss in a game still in play moves on by itself once the cards show it.
+    /// VoiceOver users keep the title and the button, so the move never cuts off
+    /// what is read out.
     private var autoAdvances: Bool {
         viewModel.phase == .reveal
-            && timeline.actionsShown
             && shownOutcome == .miss
             && !UIAccessibility.isVoiceOverRunning
     }
@@ -238,7 +239,7 @@ struct MindMeldRevealView: View {
             VStack(spacing: PaeoniaSpacing.space12) {
                 switch outcome {
                 case .miss:
-                    nextRoundButton
+                    if !autoAdvances { nextRoundButton }
                 case .near:
                     if viewModel.game?.isFinished == true { playAgainButton } else { nextRoundButton }
                     if viewModel.resolution.canCount { countItButton }
@@ -258,7 +259,13 @@ struct MindMeldRevealView: View {
     }
 
     private var nextRoundButton: some View {
-        MindMeldNextRoundButton(autoAdvances: autoAdvances, action: continueToNextRound)
+        Button {
+            continueToNextRound()
+        } label: {
+            Text(.mindMeldRevealNext)
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .accessibilityIdentifier("mindMeld.nextRound")
     }
 
     private func continueToNextRound() {
@@ -299,43 +306,14 @@ struct MindMeldRevealView: View {
     }
 }
 
-// MARK: - Next round
-
-/// "Next round". After a miss it fills up from the leading edge and then moves
-/// on by itself. A tap moves on at once.
-private struct MindMeldNextRoundButton: View {
-    let autoAdvances: Bool
-    let action: () -> Void
-
-    @State private var isFilling = false
-
-    private static let autoDelay: TimeInterval = 2.5
-
-    var body: some View {
-        Button(action: action) {
-            Text(.mindMeldRevealNext)
+private extension MindMeldRevealView {
+    func title(for outcome: MindMeldRevealOutcome) -> LocalizedStringResource {
+        switch outcome {
+        case .meld: .mindMeldRevealMeldTitle
+        case .near: .mindMeldRevealNearTitle
+        case .miss: .mindMeldRevealMissTitle
+        case .gotAway: .mindMeldRevealGotAwayTitle
         }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .overlay(alignment: .leading) {
-            GeometryReader { proxy in
-                Rectangle()
-                    .fill(.paeoniaTextInverse.opacity(0.14))
-                    .frame(width: isFilling ? proxy.size.width : 0)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-        }
-        .task(id: autoAdvances) {
-            guard autoAdvances else { return }
-            withAnimation(.linear(duration: Self.autoDelay)) {
-                isFilling = true
-            }
-            try? await Task.sleep(for: .seconds(Self.autoDelay))
-            guard !Task.isCancelled else { return }
-            action()
-        }
-        .accessibilityIdentifier("mindMeld.nextRound")
     }
 }
 

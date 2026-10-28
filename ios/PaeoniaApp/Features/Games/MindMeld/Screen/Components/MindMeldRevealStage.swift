@@ -34,6 +34,9 @@ struct MindMeldRevealStage: View {
     let bloomStart: Date?
     let seed: String
     var cardMaxWidth: CGFloat = 160
+    /// The round on the cards. The cards report where they sit, so the screen
+    /// can fly the words into the next round's chips.
+    var roundID: UUID?
 
     private static let avatarSize: CGFloat = 44
     private static let bloomIntensity: CGFloat = 1.6
@@ -79,6 +82,7 @@ struct MindMeldRevealStage: View {
         .modifier(MindMeldPulse(trigger: joined, peak: Self.thumpScale))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(myCardLabel))
+        .mindMeldWordSlot(roundID.map { MindMeldWordSlot(roundID: $0, isMine: true, place: .card) })
         // On top of the partner's card once they are one.
         .zIndex(1)
     }
@@ -97,6 +101,7 @@ struct MindMeldRevealStage: View {
         .modifier(MindMeldPulse(trigger: pulse, peak: pulsePeak))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(partnerCardLabel))
+        .mindMeldWordSlot(roundID.map { MindMeldWordSlot(roundID: $0, isMine: false, place: .card) })
     }
 
     /// Each pulse swells the cards a little more than the last.

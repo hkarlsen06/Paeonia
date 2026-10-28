@@ -11,6 +11,9 @@ struct MindMeldScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isConfirmingRestart = false
     @State private var showsTutorial = false
+    /// Where the cards and chips of each revealed round sit, so the words can fly between them.
+    @State private var wordFrames: [MindMeldWordSlot: CGRect] = [:]
+    @State private var wordFlight: MindMeldWordFlight?
 
     var body: some View {
         ZStack {
@@ -20,6 +23,19 @@ struct MindMeldScreen: View {
         }
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .coordinateSpace(.named(MindMeldWordFrames.space))
+        .onPreferenceChange(MindMeldWordFrames.self) { frames in
+            wordFrames.merge(frames) { $1 }
+        }
+        .overlay {
+            if let wordFlight {
+                MindMeldWordFlightView(flight: wordFlight, frames: wordFrames)
+            }
+        }
+        .onChange(of: viewModel.phase) { old, new in
+            startWordFlight(from: old, to: new)
+        }
+        .task(id: wordFlight?.roundID) { await landWordFlight() }
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
         .paeoniaFittingNavigationTitle(Text(.mindMeldTitle))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
@@ -61,8 +77,10 @@ struct MindMeldScreen: View {
     // MARK: Phases
 
     /// Cross-fade and a 12 point rise. Reduce Motion keeps only the cross-fade.
+    /// A later round's write phase only fades in, because the last words fly
+    /// into it and must land where its chips are.
     private var phaseTransition: AnyTransition {
-        reduceMotion
+        reduceMotion || (viewModel.phase == .write && viewModel.resolution.connectingPair != nil)
             ? .opacity
             : .asymmetric(insertion: .opacity.combined(with: .offset(y: 12)), removal: .opacity)
     }
@@ -89,11 +107,70 @@ struct MindMeldScreen: View {
         case .write:
             // The cards open on their own the first time, so the keyboard waits
             // for them to close instead of showing over them.
-            MindMeldWriteView(viewModel: viewModel, canShowKeyboard: !showsTutorial && tutorial?.hasBeenShown != false)
+            MindMeldWriteView(
+                viewModel: viewModel,
+                canShowKeyboard: !showsTutorial && tutorial?.hasBeenShown != false,
+                hidesPairWords: wordFlight != nil
+            )
         case .waiting:
             MindMeldWaitingView(viewModel: viewModel)
         case .reveal, .over:
             MindMeldRevealView(viewModel: viewModel)
+        }
+    }
+
+    // MARK: Word flight
+
+    /// The reveal moved on to the next round: its two words shrink from the
+    /// cards into the chips that the next round shows under its title.
+    private func startWordFlight(from old: MindMeldPhase, to new: MindMeldPhase) {
+        guard !reduceMotion, old == .reveal, new == .write,
+              let pair = viewModel.resolution.connectingPair,
+              let roundID = viewModel.resolution.connectingRoundID,
+              wordFrames[MindMeldWordSlot(roundID: roundID, isMine: true, place: .card)] != nil
+        else { return }
+        wordFlight = MindMeldWordFlight(roundID: roundID, mine: pair.mine, theirs: pair.theirs)
+    }
+
+    /// Waits for the chips to report where they sit, drops the words onto them,
+    /// taps the phone as each one lands, and then hands over to the chips.
+    private func landWordFlight() async {
+        guard let flight = wordFlight else { return }
+        let chip = MindMeldWordSlot(roundID: flight.roundID, isMine: true, place: .chip)
+        for _ in 0..<10 where wordFrames[chip] == nil {
+            try? await Task.sleep(for: .milliseconds(16))
+        }
+        guard !Task.isCancelled, wordFrames[chip] != nil else {
+            wordFlight = nil
+            return
+        }
+        withAnimation(MindMeldWordFlight.fall) { wordFlight?.myWordFell = true }
+        try? await Task.sleep(for: .seconds(MindMeldWordFlight.partnerDelay))
+        withAnimation(MindMeldWordFlight.fall) { wordFlight?.partnerWordFell = true }
+        try? await Task.sleep(for: .seconds(MindMeldWordFlight.fallDuration - MindMeldWordFlight.partnerDelay))
+        guard !Task.isCancelled else { return }
+        await landWord(isMine: true)
+        try? await Task.sleep(for: .seconds(MindMeldWordFlight.partnerDelay - MindMeldWordFlight.squashDuration))
+        await landWord(isMine: false)
+        try? await Task.sleep(for: .seconds(MindMeldWordFlight.settleDuration))
+        guard !Task.isCancelled else { return }
+        wordFlight = nil
+    }
+
+    /// A word hits the screen: it squashes, taps the phone, and springs back.
+    private func landWord(isMine: Bool) async {
+        PaeoniaHaptics.streakTick(intensity: 0.7)
+        GameSound.tap.play(volume: 0.6)
+        withAnimation(MindMeldWordFlight.squash) { setSquash(true, isMine: isMine) }
+        try? await Task.sleep(for: .seconds(MindMeldWordFlight.squashDuration))
+        withAnimation(MindMeldWordFlight.settle) { setSquash(false, isMine: isMine) }
+    }
+
+    private func setSquash(_ squashed: Bool, isMine: Bool) {
+        if isMine {
+            wordFlight?.myWordSquashed = squashed
+        } else {
+            wordFlight?.partnerWordSquashed = squashed
         }
     }
 

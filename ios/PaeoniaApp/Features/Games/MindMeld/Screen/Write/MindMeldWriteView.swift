@@ -11,6 +11,8 @@ struct MindMeldWriteView: View {
     @Bindable var viewModel: MindMeldViewModel
     /// False while the "How to play" cards are open or about to open.
     let canShowKeyboard: Bool
+    /// The last round's words are still falling in from their cards.
+    var hidesPairWords = false
 
     @FocusState private var isFieldFocused: Bool
     /// Set once the screen has opened the keyboard by itself, so coming back from "Our
@@ -44,8 +46,9 @@ struct MindMeldWriteView: View {
         )
         .animation(stateChange, value: viewModel.draftIssue)
         .animation(stateChange, value: viewModel.showsPartnerRestartedNote)
-        .task(id: canShowKeyboard) {
-            guard canShowKeyboard else {
+        // The keyboard waits for the last round's words to land, so it never pushes in mid-fall.
+        .task(id: canShowKeyboard && !hidesPairWords) {
+            guard canShowKeyboard, !hidesPairWords else {
                 isFieldFocused = false
                 hasOpenedKeyboard = false
                 return
@@ -126,7 +129,12 @@ struct MindMeldWriteView: View {
                 if !earlier.isEmpty {
                     MindMeldTrailView(pairs: earlier)
                 }
-                MindMeldWordPair(mine: pair.mine, theirs: pair.theirs)
+                MindMeldWordPair(
+                    mine: pair.mine,
+                    theirs: pair.theirs,
+                    roundID: viewModel.resolution.connectingRoundID,
+                    hidesWords: hidesPairWords
+                )
             }
             .accessibilityIdentifier("mindMeld.pair")
         }

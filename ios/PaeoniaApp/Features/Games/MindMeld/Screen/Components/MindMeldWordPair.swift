@@ -7,6 +7,11 @@ import SwiftUI
 struct MindMeldWordPair: View {
     let mine: String
     let theirs: String
+    /// The revealed round these words come from. The chips report where they sit,
+    /// so the screen can fly the round's cards into them.
+    var roundID: UUID?
+    /// Hides the chips while the words fly in from the cards.
+    var hidesWords = false
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -17,8 +22,10 @@ struct MindMeldWordPair: View {
             }
             VStack(spacing: PaeoniaSpacing.space8) {
                 chip(mine, tint: .paeoniaPartnerOne, lines: 2)
+                    .mindMeldWordSlot(slot(isMine: true))
                 plus
                 chip(theirs, tint: .paeoniaPartnerTwo, lines: 2)
+                    .mindMeldWordSlot(slot(isMine: false))
             }
         }
         .accessibilityElement(children: .combine)
@@ -37,17 +44,23 @@ struct MindMeldWordPair: View {
         ZStack(alignment: alignment) {
             chip(other, tint: tint, lines: 1).hidden()
             chip(word, tint: tint, lines: 1)
+                .mindMeldWordSlot(slot(isMine: alignment == .trailing))
         }
         .frame(maxWidth: .infinity, alignment: alignment)
     }
 
     private func chip(_ word: String, tint: Color, lines: Int) -> some View {
         MindMeldWordChip(word: word, tint: tint, font: PaeoniaTypography.bodyEmphasis, lines: lines)
+            .opacity(hidesWords ? 0 : 1)
+    }
+
+    private func slot(isMine: Bool) -> MindMeldWordSlot? {
+        roundID.map { MindMeldWordSlot(roundID: $0, isMine: isMine, place: .chip) }
     }
 }
 
 /// A word in capitals on a capsule with a thin border in one partner's color.
-private struct MindMeldWordChip: View {
+struct MindMeldWordChip: View {
     let word: String
     let tint: Color
     let font: Font
