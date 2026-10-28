@@ -224,12 +224,7 @@ final class PairingCelebrationTimeline {
         hapticsTask = Task { [weak self] in
             await self?.buildHapticPressure(id)
         }
-        guard await pause(max(0, schedule.absorb - 0.45), id) else { return false }
-        withAnimation(.easeInOut(duration: 0.45)) {
-            heartOpacity = 0.18
-            heartGlow = 38
-        }
-        let reachedClimax = await pause(min(0.45, schedule.absorb), id)
+        let reachedClimax = await pause(schedule.absorb, id)
         hapticsTask?.cancel()
         hapticsTask = nil
         return reachedClimax

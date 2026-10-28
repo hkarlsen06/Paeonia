@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 import SwiftUI
 
 /// The cinematic moment shown the instant two people become linked.
@@ -180,12 +181,15 @@ struct PairingCelebrationView: View {
                     .accessibilityHidden(true)
             }
 
-            PairingCelebrationHeartCore()
-                .scaleEffect(timeline.heartScale)
-                .opacity(timeline.heartOpacity)
-                .shadow(color: .paeoniaAccentPrimary.opacity(0.18), radius: timeline.heartGlow)
-                .position(x: heartCenter.x, y: heartCenter.y)
-                .accessibilityHidden(true)
+            TimelineView(.animation) { _ in
+                let shape = timeline.particlePlayback.gatherShape(at: CACurrentMediaTime())
+                PairingCelebrationHeartCore()
+                    .scaleEffect(timeline.heartScale)
+                    .shadow(color: .paeoniaAccentPrimary.opacity(0.18), radius: timeline.heartGlow)
+                    .opacity(timeline.heartOpacity * shape.heartOpacity)
+                    .position(x: heartCenter.x, y: heartCenter.y)
+                    .accessibilityHidden(true)
+            }
         }
     }
 

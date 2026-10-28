@@ -18,7 +18,7 @@ struct PairingCelebrationParticlePlayback {
     var stage: Stage = .appearing
 
     func position(seed: PairingCelebrationParticleSeed, at time: Double,
-                  closingRadius: Double = 0.52) -> SIMD3<Double> {
+                  closingRadius: Double = 0.026) -> SIMD3<Double> {
         switch stage {
         case .appearing:
             return seed.orbit(elapsed: time - started, gatherElapsed: 0, duration: 1, closingRadius: closingRadius)
@@ -32,12 +32,23 @@ struct PairingCelebrationParticlePlayback {
             let previous = inward(seed: seed, at: since - 0.002, absorption: absorption, closingRadius: closingRadius)
             let velocity = (origin - previous) / 0.002
             let elapsed = time - since
-            let progress = min(elapsed / max(releaseDuration, 0.001), 1)
+            let progress = elapsed / max(releaseDuration, 0.001)
             let distance = sqrt(origin.x * origin.x + origin.y * origin.y + origin.z * origin.z)
             let outward = origin / max(distance, 0.000001)
-            return origin + velocity * ((1 - exp(-elapsed * 2)) / 2)
-                + outward * ((progress - 0.16 * (1 - exp(-progress / 0.16))) * (2.4 + seed.variation * 0.8))
+            let travel = (1 - (1 + progress * 3) * exp(-progress * 3)) * (2.0 + seed.variation * 0.7)
+            return origin + velocity * ((1 - exp(-elapsed * 2)) / 2) + outward * travel
         }
+    }
+
+    func gatherShape(at time: Double) -> PairingCelebrationGatherShape {
+        PairingCelebrationGatherShape(progress: gatherProgress(at: time))
+    }
+
+    func sparkOpacity(seed: PairingCelebrationParticleSeed, at time: Double) -> Double {
+        guard case let .bursting(_, since, duration) = stage else { return 1 }
+        let progress = max(0, (time - since) / max(duration, 0.001))
+        let lifetime = 0.70 + seed.variation * 0.25
+        return 1 - Self.smoothstep((progress - lifetime * 0.40) / (lifetime * 0.60))
     }
 
     func opacity(at time: Double) -> Double {
@@ -68,6 +79,31 @@ struct PairingCelebrationParticlePlayback {
     static func smoothstep(_ value: Double) -> Double {
         let value = min(max(value, 0), 1)
         return value * value * (3 - 2 * value)
+    }
+}
+
+struct PairingCelebrationGatherShape {
+    static let coverStart = 0.55
+    static let coverComplete = 0.73
+    static let heartHidden = 0.75
+    static let compressionStart = 0.76
+    static let compressionComplete = 0.96
+
+    let progress: Double
+
+    var cover: Double {
+        PairingCelebrationParticlePlayback.smoothstep(
+            (progress - Self.coverStart) / (Self.coverComplete - Self.coverStart))
+    }
+
+    var compression: Double {
+        PairingCelebrationParticlePlayback.smoothstep(
+            (progress - Self.compressionStart) / (Self.compressionComplete - Self.compressionStart))
+    }
+
+    var heartOpacity: Double {
+        1 - PairingCelebrationParticlePlayback.smoothstep(
+            (progress - Self.coverComplete) / (Self.heartHidden - Self.coverComplete))
     }
 }
 
@@ -102,11 +138,10 @@ struct PairingCelebrationParticleSeed {
     func orbit(elapsed: Double, gatherElapsed: Double, duration: Double,
                closingRadius: Double) -> SIMD3<Double> {
         let progress = min(gatherElapsed / duration, 1)
-        let broad = PairingCelebrationParticlePlayback.smoothstep(progress / (1.7 / 3.5))
-        let envelop = PairingCelebrationParticlePlayback.smoothstep((progress - 1.7 / 3.5) / (1.3 / 3.5))
-        let shoulder = 0.77
-        let radius = (1 - (1 - shoulder) * broad - (shoulder - closingRadius) * envelop)
-            * shellRadius * (1 + 0.025 * sin(elapsed * 1.2 + phase))
+        let shape = PairingCelebrationGatherShape(progress: progress)
+        let broad = PairingCelebrationParticlePlayback.smoothstep(progress / (2.0 / 3.5))
+        let shell = (1 - 0.30 * broad) * shellRadius * (1 + 0.025 * sin(elapsed * 1.2 + phase))
+        let radius = shell * (1 - shape.compression) + closingRadius * shape.compression
         let accelerationDuration = duration * 0.72
         let ramp = min(gatherElapsed / accelerationDuration, 1)
         let extraAngle = 3.2 * (accelerationDuration * (pow(ramp, 3) - 0.5 * pow(ramp, 4))
@@ -126,15 +161,24 @@ struct PairingCelebrationParticleProjection {
 
     var center: CGPoint { CGPoint(x: size.width / 2, y: size.height * PairingCelebrationTiming.centerYRatio) }
     var radius: Double { min(115, min(size.width / 2, center.y, size.height - center.y) * 0.65) }
-    var closingRadius: Double { min(0.78, Double(PairingCelebrationTiming.heartSize) * (5.0 / 6) / max(radius, 1)) }
+    var closingRadius: Double { 3 / max(radius, 1) }
 
     func perspective(_ position: SIMD3<Double>) -> Double {
-        1 / max(0.35, 1 - position.z * 0.2)
+        1 / (1 - tanh(position.z) * 0.2)
     }
 
     func point(_ position: SIMD3<Double>) -> CGPoint {
         let scale = radius * perspective(position)
         return CGPoint(x: center.x + position.x * scale, y: center.y + position.y * scale)
+    }
+
+    func burstVisibility(points: [CGPoint], extent: Double, seed: PairingCelebrationParticleSeed) -> Double {
+        let inscribed = min(size.width / 2, center.y, size.height - center.y)
+        let available = max(1, inscribed - extent - 24)
+        let end = available * (0.86 + seed.variation * 0.12)
+        let start = end * (0.55 + seed.variation * 0.10)
+        let distance = points.map { hypot($0.x - center.x, $0.y - center.y) }.max() ?? 0
+        return 1 - PairingCelebrationParticlePlayback.smoothstep((distance - start) / (end - start))
     }
 
     func visibility(points: [CGPoint], extent: Double) -> Double {

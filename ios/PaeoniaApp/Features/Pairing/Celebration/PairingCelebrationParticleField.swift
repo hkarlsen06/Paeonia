@@ -27,7 +27,10 @@ struct PairingCelebrationParticleField: View {
         guard opacity > 0 else { return }
         let projection = PairingCelebrationParticleProjection(size: size)
         let growth = playback.gatherProgress(at: time)
-        let envelopment = PairingCelebrationParticlePlayback.smoothstep((growth - 0.52) / 0.40)
+        let envelopment = playback.gatherShape(at: time).cover
+        if foreground {
+            PairingCelebrationCloud.draw(in: &context, projection: projection, playback: playback, time: time)
+        }
         let particles = Self.seeds.map {
             ($0, playback.position(seed: $0, at: time, closingRadius: projection.closingRadius))
         }
@@ -42,7 +45,8 @@ struct PairingCelebrationParticleField: View {
                                   closingRadius: projection.closingRadius)
             }
             let samples = history.map { projection.point($0) }
-            let visibility = projection.visibility(points: samples, extent: orbRadius * 2.6 + 1)
+            let visibility = visibility(projection: projection, samples: samples,
+                                        extent: orbRadius * 2.6 + 1, seed: seed, time: time)
             guard visibility > 0 else { continue }
             let depth = min(max((position.z + 1) / 2, 0), 1)
             let depthOpacity = opacity * visibility * (0.25 + 0.55 * depth) * (1 + 0.20 * envelopment)
@@ -54,6 +58,15 @@ struct PairingCelebrationParticleField: View {
                      shading: Shading(color: color, opacity: depthOpacity, radius: orbRadius),
                      envelopment: envelopment)
         }
+    }
+
+    private func visibility(projection: PairingCelebrationParticleProjection, samples: [CGPoint],
+                            extent: Double, seed: PairingCelebrationParticleSeed, time: Double) -> Double {
+        if case let .bursting(_, since, _) = playback.stage, time >= since {
+            return projection.burstVisibility(points: samples, extent: extent, seed: seed)
+                * playback.sparkOpacity(seed: seed, at: time)
+        }
+        return projection.visibility(points: samples, extent: extent)
     }
 
     private func drawHead(in context: inout GraphicsContext, point: CGPoint,
