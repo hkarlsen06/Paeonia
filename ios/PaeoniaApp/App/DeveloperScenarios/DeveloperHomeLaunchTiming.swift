@@ -7,6 +7,9 @@ struct DeveloperHomeLaunchTiming {
     let question: Duration
     let calendar: Duration
 
+    static let duringReveal = Self(
+        location: .milliseconds(40), question: .milliseconds(80), calendar: .milliseconds(120)
+    )
     static let locationFirst = Self(location: .seconds(0.7), question: .seconds(1.6), calendar: .seconds(2.3))
     static let calendarFirst = Self(location: .seconds(2.3), question: .seconds(1.6), calendar: .seconds(0.7))
     static let overlapping = Self(location: .seconds(2.7), question: .seconds(1.6), calendar: .seconds(2.0))

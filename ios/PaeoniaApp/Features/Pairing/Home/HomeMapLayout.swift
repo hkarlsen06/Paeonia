@@ -100,29 +100,36 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     }
 
     /// The top and the cards, in the one scroll view.
+    @ViewBuilder
     private func page(_ couple: HomeMapCouple?, _ screen: HomeMapScreen) -> some View {
-        VStack(spacing: 0) {
-            top(couple, screen)
-            if !reservesMapSpace {
-                noMapNotice
+        // The first sizing pass can have zero width. Mount the cards with their real size.
+        if screen.width > 0 {
+            VStack(spacing: 0) {
+                top(couple, screen)
+                if !reservesMapSpace {
+                    noMapNotice
+                }
+                sheet
+                    // A drag or a pinch on today's envelope moves the map behind it.
+                    .environment(\.homeMapExplorer, couple == nil ? nil : explorer)
+                    // The cards keep their own height, so only the map takes up the rest of the
+                    // screen. A square tile sizes itself from the room it is offered, and would
+                    // otherwise split that room with the map and overflow under the tab bar.
+                    .fixedSize(horizontal: false, vertical: true)
+                    // Keep loading and loaded descendants in the same moving coordinate space.
+                    .geometryGroup()
+                    // The cards start just under the map's last full row, and the map fades on behind them.
+                    .padding(.top, reservesMapSpace ? -HomeMapMetrics.cardsOverlap : PaeoniaSpacing.space24)
             }
-            sheet
-                // A drag or a pinch on today's envelope moves the map behind it.
-                .environment(\.homeMapExplorer, couple == nil ? nil : explorer)
-                // The cards keep their own height, so only the map takes up the rest of the
-                // screen. A square tile sizes itself from the room it is offered, and would
-                // otherwise split that room with the map and overflow under the tab bar.
-                .fixedSize(horizontal: false, vertical: true)
-                // Keep loading and loaded descendants in the same moving coordinate space.
-                .geometryGroup()
-                // The cards start just under the map's last full row, and the map fades on behind them.
-                .padding(.top, reservesMapSpace ? -HomeMapMetrics.cardsOverlap : PaeoniaSpacing.space24)
+            .padding(.top, reservesMapSpace ? 0 : screen.topInset + Self.headerHeight + PaeoniaSpacing.space8)
+            // ScrollView also asks for an ideal width. Keep that probe at the viewport width,
+            // so the square tiles never start narrow and animate out of their first positions.
+            .frame(width: screen.width)
+            // With the map, the page fills the screen down to just above the tab bar, and
+            // the map takes whatever the cards leave. One layout pass sizes both, so they
+            // move together when a card changes height.
+            .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
         }
-        .padding(.top, reservesMapSpace ? 0 : screen.topInset + Self.headerHeight + PaeoniaSpacing.space8)
-        // With the map, the page fills the screen down to just above the tab bar, and
-        // the map takes whatever the cards leave. One layout pass sizes both, so they
-        // move together when a card changes height.
-        .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
     }
 
     /// The partner's hearts while they play, otherwise how far apart the couple is.

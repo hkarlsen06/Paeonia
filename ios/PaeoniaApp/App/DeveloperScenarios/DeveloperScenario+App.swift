@@ -9,7 +9,7 @@
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
       localFlowGameConversation,
-      homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
+      homeLaunchDuringReveal, homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayInvited,
@@ -29,6 +29,11 @@
     ]
 
     // MARK: Launch and authentication
+
+    static let homeLaunchDuringReveal = DeveloperScenario(
+      "home-launch-during-reveal", "Home launch, reads during reveal",
+      "Cold launch through the real root with Home reads finishing during the reveal", .launchAndAuth
+    ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .duringReveal) }
 
     static let homeLaunchLocationFirst = DeveloperScenario(
       "home-launch-location-first", "Home launch, location first",
