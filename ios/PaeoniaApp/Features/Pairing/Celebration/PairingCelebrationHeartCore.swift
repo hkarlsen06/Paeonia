@@ -32,7 +32,7 @@ struct PairingCelebrationHeartCore: View {
 
     private var heart: some View {
         Image(systemName: "heart.fill")
-            .font(.system(size: 72, weight: .regular))
+            .font(.system(size: PairingCelebrationTiming.heartSize, weight: .regular))
             .accessibilityHidden(true)
     }
 }

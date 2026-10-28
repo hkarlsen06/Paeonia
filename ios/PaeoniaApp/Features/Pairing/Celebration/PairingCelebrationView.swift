@@ -3,12 +3,6 @@ import SwiftUI
 
 /// The cinematic moment shown the instant two people become linked.
 ///
-/// A heart forms in the middle of the screen and pulls a swirling field of
-/// particles inward like a small gravity well, while soft haptic pulses build in
-/// pressure. At the climax the core bursts outward and the burst reveals the
-/// partner's avatar at the center; it then glides into place beside the current
-/// person, and the connecting line, heart, and names settle into view.
-///
 /// The whole intro plays only when `playsIntro` is true and Reduce Motion is off.
 /// Otherwise the final, settled state is shown immediately so the screen never
 /// looks broken and the moment is never replayed on an ordinary app open.
@@ -153,6 +147,11 @@ struct PairingCelebrationView: View {
             .position(x: size.width / 2, y: size.height * 0.5)
 
             partnerHero(heartCenter: heartCenter, slotTarget: slotTarget)
+
+            if timeline.showsParticles {
+                PairingCelebrationParticleField(playback: timeline.particlePlayback, foreground: true)
+                    .accessibilityHidden(true)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
@@ -187,11 +186,6 @@ struct PairingCelebrationView: View {
                 .shadow(color: .paeoniaAccentPrimary.opacity(0.18), radius: timeline.heartGlow)
                 .position(x: heartCenter.x, y: heartCenter.y)
                 .accessibilityHidden(true)
-
-            if timeline.showsParticles {
-                PairingCelebrationParticleField(playback: timeline.particlePlayback, foreground: true)
-                    .accessibilityHidden(true)
-            }
         }
     }
 

@@ -20,8 +20,9 @@ func writeCue(_ name: String, seconds: Double, peak: Double,
     for channel in 0..<2 {
         for frame in 0..<frames {
             let time = Double(frame) / sampleRate
-            let fade = min(time / 0.0005, 1) * min((seconds - time) / 0.06, 1)
+            let fade = min(time / 0.0005, 1) * min(Double(frames - 1 - frame) / sampleRate / 0.06, 1)
             let value = signal(frame, channel) * fade
+            precondition(value.isFinite, "Non-finite audio sample")
             channels[channel][frame] = Float(value)
             measured = max(measured, abs(value))
         }
@@ -38,68 +39,57 @@ func writeCue(_ name: String, seconds: Double, peak: Double,
     FileHandle.standardOutput.write(Data(summary.utf8))
 }
 
-struct FeltNoise {
-    var state: UInt64
-    var upper = 0.0
-    var softened = 0.0
-    var lower = 0.0
-    let upperWeight: Double
-    let lowerWeight: Double
+let timingURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    .appendingPathComponent("../PaeoniaApp/Features/Pairing/Celebration/PairingCelebrationSchedule.swift")
+let timingSource = try String(contentsOf: timingURL, encoding: .utf8)
+func timing(_ name: String) -> Double {
+    let pattern = "static let \(name): Double = ([0-9.]+)"
+    guard let expression = try? NSRegularExpression(pattern: pattern) else { fatalError("Invalid timing pattern") }
+    guard let match = expression.firstMatch(
+        in: timingSource, range: NSRange(timingSource.startIndex..., in: timingSource)),
+          let range = Range(match.range(at: 1), in: timingSource),
+          let value = Double(timingSource[range]) else { fatalError("Missing timing \(name)") }
+    return value
+}
+let gatherDuration = timing("absorb")
+let grace = timing("profilePhotoRevealGrace")
+let releaseDuration = timing("partnerHold")
+let notes = [(261.625565, 1.0), (329.627557, 0.36), (391.995436, 0.42)]
 
-    init(seed: UInt64, low: Double, high: Double) {
-        state = seed
-        upperWeight = 1 - exp(-2 * .pi * high / sampleRate)
-        lowerWeight = 1 - exp(-2 * .pi * low / sampleRate)
+func resonance(time: Double, brightness: Double, release: Bool, channel: Int) -> Double {
+    var value = 0.0
+    for (index, note) in notes.enumerated() {
+        let (frequency, weight) = note
+        let phase = Double(index) * 0.47
+        let pan = index == 0 ? 1 : (index == channel + 1 ? 1.0 : 0.82)
+        let fundamental = sin(2 * .pi * frequency * time + phase)
+        let second = sin(2 * .pi * frequency * 2 * time + phase) * 0.14 * brightness
+            * (release ? exp(-time / 0.16) : 1)
+        let third = sin(2 * .pi * frequency * 3 * time + phase) * 0.045 * brightness
+            * (release ? exp(-time / 0.09) : 1)
+        let feltMode = sin(2 * .pi * frequency * 4.08 * time + phase) * 0.018 * brightness
+            * (release ? exp(-time / 0.035) : pow(min(time / gatherDuration, 1), 3))
+        let modalDecay = release ? exp(-time * (2.8 + Double(index) * 0.3)) : 1
+        value += (fundamental + second + third + feltMode) * weight * pan * modalDecay
     }
-
-    mutating func next() -> Double {
-        state &+= 0x9e37_79b9_7f4a_7c15
-        var mixed = state
-        mixed = (mixed ^ (mixed >> 30)) &* 0xbf58_476d_1ce4_e5b9
-        mixed = (mixed ^ (mixed >> 27)) &* 0x94d0_49bb_1331_11eb
-        let white = Double((mixed ^ (mixed >> 31)) >> 11) / Double(1 << 53) * 2 - 1
-        upper += upperWeight * (white - upper)
-        softened += upperWeight * (upper - softened)
-        lower += lowerWeight * (softened - lower)
-        return softened - lower
-    }
+    return value
 }
 
-var gatherNoise = FeltNoise(seed: 0x7061656f6e6961, low: 160, high: 1_400)
-let gather = (0..<Int(1.95 * sampleRate)).map { frame in
+try writeCue("Gather", seconds: gatherDuration + grace + 0.15, peak: 0.14) { frame, channel in
     let time = Double(frame) / sampleRate
-    let pressure = pow(min(time / 1.45, 1), 1.35)
-    return gatherNoise.next() * (0.015 + 0.985 * pressure)
-}
-try writeCue("Gather", seconds: 1.95, peak: 0.075) { index, _ in
-    gather[index]
+    let progress = min(time / gatherDuration, 1)
+    let attack = 1 - exp(-pow(time / 0.35, 2))
+    let pressure = 0.10 + 0.90 * pow(progress, 1.35)
+    return resonance(time: time, brightness: 0.18 + 0.82 * progress * progress,
+                     release: false, channel: channel) * attack * pressure
 }
 
-var contactNoise = FeltNoise(seed: 0x66656c74, low: 90, high: 700)
-var breathLeft = FeltNoise(seed: 0x7061706572, low: 220, high: 1_800)
-var breathRight = FeltNoise(seed: 0x6272757368, low: 220, high: 1_800)
-struct ReleaseFrame {
-    let contact: Double
-    let left: Double
-    let right: Double
-}
-let release = (0..<Int(0.9 * sampleRate)).map { frame in
+try writeCue("Release", seconds: releaseDuration, peak: 0.24) { frame, channel in
     let time = Double(frame) / sampleRate
-    let contactEnvelope = (1 - exp(-time / 0.0004)) * exp(-time / 0.007)
-        * max(0, 1 - time / 0.045)
-    let breathEnvelope = (1 - exp(-time / 0.008)) * exp(-time / 0.14)
-        * min(max((0.75 - time) / 0.15, 0), 1) * 0.045
-    return ReleaseFrame(
-        contact: contactNoise.next() * contactEnvelope,
-        left: breathLeft.next() * breathEnvelope,
-        right: breathRight.next() * breathEnvelope
-    )
-}
-try writeCue("Release", seconds: 0.9, peak: 0.22) { index, channel in
-    let frame = release[index]
-    let time = Double(index) / sampleRate
-    let opening = min(time / 0.15, 1) * 0.3
-    let center = (frame.left + frame.right) * 0.5
-    let side = channel == 0 ? frame.left : frame.right
-    return frame.contact + center * (1 - opening) + side * opening
+    let attack = 1 - exp(-time / 0.004)
+    let contact = sin(2 * .pi * 523.25113 * time) * exp(-time / 0.14)
+        + 0.10 * sin(2 * .pi * 1_046.50226 * time) * exp(-time / 0.045)
+        + 0.025 * sin(2 * .pi * 1_569.75339 * time) * exp(-time / 0.025)
+    let tail = resonance(time: time, brightness: exp(-time / 0.12), release: true, channel: channel)
+    return attack * (contact * 0.8 + tail * 0.30)
 }

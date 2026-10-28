@@ -96,9 +96,7 @@ final class PairingCelebrationTimeline {
         partnerNameKnown: Bool,
         onIntroComplete: @escaping () -> Void
     ) {
-        guard !hasBegun else {
-            return
-        }
+        guard !hasBegun else { return }
         hasBegun = true
         self.onIntroComplete = onIntroComplete
         if playsIntro { sound.prepare() }
@@ -110,7 +108,7 @@ final class PairingCelebrationTimeline {
             applySettledState()
             if playsIntro {
                 haptics.settledWithoutIntro()
-                sound.release(duration: schedule.partnerHold)
+                sound.release()
             }
             complete()
             return
@@ -125,9 +123,7 @@ final class PairingCelebrationTimeline {
 
     /// The partner's name is known now. Starts the intro if it was waiting.
     func partnerNameDidArrive() {
-        guard mode == .waitingForPartner else {
-            return
-        }
+        guard mode == .waitingForPartner else { return }
         play()
     }
 
@@ -219,16 +215,21 @@ final class PairingCelebrationTimeline {
     private func absorbParticles(_ id: Int) async -> Bool {
         phase = .absorbing
         particlePlayback.stage = .absorbing(.init(since: CACurrentMediaTime(), duration: schedule.absorb))
-        sound.absorb(duration: schedule.absorb)
+        sound.absorb()
         withAnimation(.easeInOut(duration: schedule.absorb)) {
-            heartScale = 0.8
+            heartScale = 1
             heartGlow = 32
         }
 
         hapticsTask = Task { [weak self] in
             await self?.buildHapticPressure(id)
         }
-        let reachedClimax = await pause(schedule.absorb, id)
+        guard await pause(max(0, schedule.absorb - 0.45), id) else { return false }
+        withAnimation(.easeInOut(duration: 0.45)) {
+            heartOpacity = 0.18
+            heartGlow = 38
+        }
+        let reachedClimax = await pause(min(0.45, schedule.absorb), id)
         hapticsTask?.cancel()
         hapticsTask = nil
         return reachedClimax
@@ -243,7 +244,7 @@ final class PairingCelebrationTimeline {
                 releaseDuration: min(PairingCelebrationTiming.explode, schedule.partnerHold)
             )
         }
-        sound.release(duration: schedule.partnerHold)
+        sound.release()
         haptics.burst()
         withAnimation(.easeOut(duration: 0.22)) {
             heartScale = 1.7
