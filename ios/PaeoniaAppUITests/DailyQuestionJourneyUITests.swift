@@ -1,8 +1,9 @@
 import XCTest
 
-/// Answering a daily question the partner already answered, run through the real root in
-/// the paired local flow. The answer turns the cover into the question's chat, where the
-/// partner's answer shows, and closing it goes back to the screen that opened the flow.
+/// Answering daily questions through the real root in the paired local flow. When the
+/// partner already answered, the answer turns the cover into the question's chat, where
+/// the partner's answer shows, and closing it goes back to the screen that opened the
+/// flow. When the partner hasn't answered, the cover closes and the card opens the chat.
 final class DailyQuestionJourneyUITests: XCTestCase {
 
     override func setUpWithError() throws {
@@ -57,7 +58,7 @@ final class DailyQuestionJourneyUITests: XCTestCase {
     }
 
     @MainActor
-    func testFirstAnswerOpensConversationAndTheQuestionsCardReopensIt() throws {
+    func testFirstAnswerClosesTheCoverAndTheQuestionsCardOpensTheConversation() throws {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-paired"
         app.launch()
@@ -74,16 +75,15 @@ final class DailyQuestionJourneyUITests: XCTestCase {
         answer.typeText("The first coffee together")
         app.buttons["daily.flow.primary"].tap()
 
-        XCTAssertTrue(app.buttons["daily.chat.close"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["The first coffee together"].waitForExistence(timeout: 5))
-        XCTAssertFalse(answer.exists)
-        app.buttons["daily.chat.close"].tap()
-
+        // The partner hasn't answered, so the chat would only show this answer. The
+        // cover closes instead, and the card shows the question as answered.
+        XCTAssertTrue(answer.waitForNonExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["daily.chat.close"].exists)
         let ownAnswer = app.buttons["daily.done.openConversation"]
         XCTAssertTrue(ownAnswer.waitForExistence(timeout: 10))
         XCTAssertTrue(ownAnswer.label.contains(prompt))
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", prompt)).count, 1)
-        capture(app, named: "Completed daily question and conversation")
+        capture(app, named: "Completed daily question")
         ownAnswer.tap()
         XCTAssertTrue(app.staticTexts["The first coffee together"].waitForExistence(timeout: 5))
         XCTAssertFalse(answer.exists)

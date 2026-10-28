@@ -7,9 +7,9 @@ import SwiftUI
 /// It is presented as a full-screen cover that zooms out of the tapped card, so the
 /// card appears to grow into the screen. It reuses the daily question's prompt and
 /// composer. Sending your answer unlocks your partner's reply when they have answered.
-/// Once the answer is saved on this phone, the flow opens the question's chat. When the send is slow
-/// or offline, the chat's waiting page shows the user's answer and opens up once the
-/// reply arrives. Close ends the flow at any point.
+/// Once the answer is saved on this phone, the flow opens the question's chat if the
+/// partner has answered. Otherwise the chat would only show the answer just written, so
+/// the flow moves on (`onSent`). Close ends the flow at any point.
 struct DailyPartnerAnswerFlow: View {
     let question: DailyChallengeQuestion
     let viewModel: DailyChallengeViewModel
@@ -21,8 +21,13 @@ struct DailyPartnerAnswerFlow: View {
     var topicTitle: String?
     /// Puts a topic question aside without asking (`TopicAnswerSession`).
     var onSkip: (() -> Void)?
-    /// Moves on to the topic's next question once this one is sent.
+    /// Moves on to the topic's next question, from the chat's Next.
     var onNext: (() -> Void)?
+    /// The answer is saved and the partner has not answered, so there is nothing new to
+    /// see. Moves on to the next question with a note that it was sent.
+    var onSent: (() -> Void)?
+    /// Shows that the previous question's answer was just sent.
+    var showsSentNote = false
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     /// The question's chat, made when the answer is sent.
@@ -97,7 +102,8 @@ struct DailyPartnerAnswerFlow: View {
                 canSkip: onSkip != nil,
                 skipTitle: .dailyChallengeSkipButton,
                 isSkipDisabled: isSubmitting,
-                onSkip: { onSkip?() }
+                onSkip: { onSkip?() },
+                sentNote: showsSentNote ? .topicsFlowSentNote(viewModel.participants.partnerName) : nil
             )
 
             DailyChallengeAnswerStep(
@@ -161,6 +167,13 @@ struct DailyPartnerAnswerFlow: View {
 
         submittedAnswer = viewModel.sendingPreview(for: question)
         isComposerFocused = false
+
+        // Nothing new to see until the partner answers. The composer keeps its hold
+        // while the next question fades in, so the sent answer never flashes back.
+        if !liveQuestion.hasPartnerAnswer, let onSent {
+            onSent()
+            return
+        }
 
         // The answer is safe on this phone. Open its conversation without waiting
         // for the upload or the partner's answer.

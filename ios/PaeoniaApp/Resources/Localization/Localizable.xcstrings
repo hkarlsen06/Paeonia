@@ -37346,6 +37346,24 @@
         }
       }
     },
+    "topics.flow.sentNote" : {
+      "comment" : "Small note at the top of the next topic question, right after the user sent an answer the partner has not answered yet. %@ is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll let %@ know"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi gir %@ beskjed"
+          }
+        }
+      }
+    },
     "topics.flow.youGoFirst" : {
       "comment" : "Note on a topic question nobody has answered yet. Partner name",
       "extractionState" : "manual",

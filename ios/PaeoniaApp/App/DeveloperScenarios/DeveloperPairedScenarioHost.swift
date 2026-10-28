@@ -7,6 +7,8 @@
     @State private var selection: MainTab
     @State private var deepLink: PaeoniaDeepLink?
     @State private var dailyChallengeViewModel: DailyChallengeViewModel
+    /// Counts how often the standalone answer flow was closed, so it opens again.
+    @State private var answerFlowOpenings = 0
     @State private var milestoneViewModel: RelationshipMilestoneViewModel
     @State private var memoriesViewModel: MemoriesViewModel
     @State private var gamesViewModel: GamesViewModel
@@ -136,7 +138,13 @@
     @ViewBuilder
     var body: some View {
       if Self.opensAnswerFlow(scenario) {
-        DailyChallengeAnswerFlow(viewModel: dailyChallengeViewModel)
+        // Nothing sits behind the flow here, so closing it opens it again, as tapping
+        // the answered card does. An answered question then opens its conversation.
+        // The setup below runs once, not on each opening.
+        Group {
+          DailyChallengeAnswerFlow(viewModel: dailyChallengeViewModel, onClose: { answerFlowOpenings += 1 })
+            .id(answerFlowOpenings)
+        }
           .task {
             await dailyChallengeViewModel.configure(
               participants: DailyChallengeParticipants(

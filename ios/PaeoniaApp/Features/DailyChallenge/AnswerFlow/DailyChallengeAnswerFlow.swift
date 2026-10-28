@@ -1,6 +1,9 @@
 import SwiftUI
 
-/// Answers one daily question, then opens its conversation in the same cover.
+/// Answers one daily question. When the partner has already answered, it then opens
+/// the conversation in the same cover. Otherwise it closes, and the daily card shows
+/// that the answer is on its way. An answered question opened later still opens its
+/// conversation.
 struct DailyChallengeAnswerFlow: View {
     let viewModel: DailyChallengeViewModel
     var questionID: UUID?

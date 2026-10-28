@@ -37,6 +37,8 @@ struct DailyAnswerFlowHeader: View {
     var isSkipDisabled = false
     var isSkipping = false
     var onSkip: () -> Void = {}
+    /// A quiet line between Close and Skip, such as that the last answer was sent.
+    var sentNote: LocalizedStringResource?
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
@@ -47,7 +49,22 @@ struct DailyAnswerFlowHeader: View {
             .accessibilityLabel(Text(.dailyChallengeFlowClose))
             .accessibilityIdentifier("daily.flow.close")
 
-            Spacer(minLength: 0)
+            ZStack {
+                if let sentNote {
+                    Label {
+                        Text(sentNote)
+                    } icon: {
+                        Image(systemName: "checkmark").accessibilityHidden(true)
+                    }
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .transition(.opacity)
+                    .accessibilityIdentifier("daily.flow.sentNote")
+                }
+            }
+            .frame(maxWidth: .infinity)
 
             if question?.hasPartnerAnswer == true {
                 partnerBadge

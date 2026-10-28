@@ -26,6 +26,12 @@ extension DailyChallengeAnswerFlow {
 
         submittedAnswer = viewModel.sendingPreview(for: question)
         sentQuestionID = question.id
+        // Until the partner answers, the chat would only show the answer just written.
+        // The flow closes instead, and the daily card's seal moment says it was sent.
+        guard viewModel.latestQuestion(question).hasPartnerAnswer else {
+            dismiss()
+            return
+        }
         await openChat(for: viewModel.latestQuestion(question), revealsPartnerAnswer: true)
     }
 

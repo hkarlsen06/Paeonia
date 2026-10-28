@@ -14,6 +14,8 @@ struct TopicAnswerSession: View {
     let onClose: () -> Void
 
     @State private var question: DailyChallengeQuestion
+    /// The previous question's answer was just sent, so the header says so for a moment.
+    @State private var showsSentNote = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
@@ -44,11 +46,20 @@ struct TopicAnswerSession: View {
             onClose: onClose,
             topicTitle: question.topicKey.flatMap { topics.topic($0)?.title },
             onSkip: skip,
-            onNext: next
+            onNext: next,
+            onSent: sent,
+            showsSentNote: showsSentNote
         )
         // A fresh flow per question, so its phase and held composer start over.
         .id(question.id)
         .transition(.opacity)
+        // Keyed by the question too, so a note on the next question gets its full time.
+        .task(id: showsSentNote ? question.id : nil) {
+            guard showsSentNote else { return }
+            try? await Task.sleep(for: Self.sentNoteDuration)
+            guard !Task.isCancelled else { return }
+            withAnimation(PaeoniaMotion.stateChange) { showsSentNote = false }
+        }
         .analyticsScreen("topic_answer")
     }
 
@@ -57,7 +68,19 @@ struct TopicAnswerSession: View {
         topics.nextQuestion(after: question).map(dailyChallenge.latestQuestion)
     }
 
+    private static let sentNoteDuration: Duration = .seconds(2.5)
+
+    /// The answer is saved and the partner has not answered. The next question opens
+    /// with a short note that it was sent, or the cover closes after the last one.
+    private func sent() {
+        let partnerName = dailyChallenge.participants.partnerName
+        AccessibilityNotification.Announcement(String(localized: .topicsFlowSentNote(partnerName))).post()
+        next()
+        withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { showsSentNote = true }
+    }
+
     private func next() {
+        showsSentNote = false
         guard let nextQuestion else {
             onClose()
             return
@@ -68,6 +91,7 @@ struct TopicAnswerSession: View {
     }
 
     private func skip() {
+        showsSentNote = false
         let skipped = question
         let following = nextQuestion
         Task { await topics.setSkipped(skipped, skipped: true) }
