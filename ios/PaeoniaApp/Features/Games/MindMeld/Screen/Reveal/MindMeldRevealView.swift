@@ -7,6 +7,8 @@ import SwiftUI
 /// - A game whose ending the person has seen opens settled, with the trail of
 ///   earlier rounds above the cards.
 /// - "Count it" on a near miss turns the reveal into a meld in place.
+/// - After a miss, "Next round" fills up and moves on by itself, so the couple
+///   goes straight from the two words to finding the link.
 struct MindMeldRevealView: View {
     @Bindable var viewModel: MindMeldViewModel
 
@@ -220,6 +222,15 @@ struct MindMeldRevealView: View {
 
     // MARK: Actions
 
+    /// A miss in a game still in play moves on by itself once the buttons show.
+    /// VoiceOver users keep the button, so the move never cuts off what is read out.
+    private var autoAdvances: Bool {
+        viewModel.phase == .reveal
+            && timeline.actionsShown
+            && shownOutcome == .miss
+            && !UIAccessibility.isVoiceOverRunning
+    }
+
     /// The bar keeps its place before the buttons appear, so the cards above do not move.
     @ViewBuilder
     private var actions: some View {
@@ -247,14 +258,13 @@ struct MindMeldRevealView: View {
     }
 
     private var nextRoundButton: some View {
-        Button {
-            PaeoniaHaptics.gameContinued()
-            viewModel.continueFromReveal()
-        } label: {
-            Text(.mindMeldRevealNext)
-        }
-        .buttonStyle(PaeoniaPrimaryButtonStyle())
-        .accessibilityIdentifier("mindMeld.nextRound")
+        MindMeldNextRoundButton(autoAdvances: autoAdvances, action: continueToNextRound)
+    }
+
+    private func continueToNextRound() {
+        guard viewModel.phase == .reveal else { return }
+        PaeoniaHaptics.gameContinued()
+        viewModel.continueFromReveal()
     }
 
     private var playAgainButton: some View {
@@ -286,6 +296,46 @@ struct MindMeldRevealView: View {
         }
         .buttonStyle(PaeoniaQuietButtonStyle())
         .accessibilityIdentifier("mindMeld.seeMelds")
+    }
+}
+
+// MARK: - Next round
+
+/// "Next round". After a miss it fills up from the leading edge and then moves
+/// on by itself. A tap moves on at once.
+private struct MindMeldNextRoundButton: View {
+    let autoAdvances: Bool
+    let action: () -> Void
+
+    @State private var isFilling = false
+
+    private static let autoDelay: TimeInterval = 2.5
+
+    var body: some View {
+        Button(action: action) {
+            Text(.mindMeldRevealNext)
+        }
+        .buttonStyle(PaeoniaPrimaryButtonStyle())
+        .overlay(alignment: .leading) {
+            GeometryReader { proxy in
+                Rectangle()
+                    .fill(.paeoniaTextInverse.opacity(0.14))
+                    .frame(width: isFilling ? proxy.size.width : 0)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+        .task(id: autoAdvances) {
+            guard autoAdvances else { return }
+            withAnimation(.linear(duration: Self.autoDelay)) {
+                isFilling = true
+            }
+            try? await Task.sleep(for: .seconds(Self.autoDelay))
+            guard !Task.isCancelled else { return }
+            action()
+        }
+        .accessibilityIdentifier("mindMeld.nextRound")
     }
 }
 

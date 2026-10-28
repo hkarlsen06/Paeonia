@@ -188,7 +188,7 @@ Purpose. Think of one word and lock it in, with the partner's progress in view.
 Layout, top to bottom. At normal text sizes the whole phase is meant to fit above the keyboard on a 6.1 inch phone, without scrolling.
 
 1. One line (`GameLiveRow`): partner status on the leading side (see below), and "Round 3 of 10" on the trailing side (`caption` bold, uppercase, tracking 1.4, `.paeoniaTextTertiary`).
-2. Round 1: title "Say any word" (`title`) and subtitle "[Name] does the same. Then you try to meet in the middle." Later rounds: the title "Find a word that connects them", then the last two words as a pair of chips (`MindMeldWordPair`), mine leading, with a small `plus` between.
+2. Round 1: title "Say any word" (`title`) and subtitle "[Name] does the same. Then you try to meet in the middle." Later rounds: the title "Find a word that connects them", then the last two words as a pair of chips (`MindMeldWordPair`), mine leading, with a small `plus` between. The plus sits in the middle of the row, in line with the plus signs of the trail above.
 3. The trail so far, when round 3 or later: the two rounds before the last pair, in a compact column above it, at `caption` size in `.paeoniaTextTertiary`. The plus signs line up in the middle, with my word right-aligned before it and the partner's left-aligned after it. "Our melds" keeps the whole trail.
 4. The field. One large centered text field in `PaeoniaTypography.title`, `radius16`, `.paeoniaSurfaceSecondary`, 64 pt tall, `autocorrectionDisabled`, no autocapitalization, `submitLabel(.done)`. It takes focus when the phase opens. Placeholder "Type a word".
 5. Under the field, one line: a validation message (`exclamationmark.circle`, `caption`, `.paeoniaErrorText`) or, in round 1, the quiet "Surprise me" button (`dice`).
@@ -281,7 +281,8 @@ Everything is tappable from 2.60. A tap on the screen jumps to the settled state
 
 Buttons.
 
-- Miss and near miss: primary "Next round". A near miss adds "Count it" (`PaeoniaQuietButtonStyle`). "Count it" turns the reveal into a meld in place. The near title and buttons fade out in 0.16 s, then the meld plays with the same gaps as above: the cards slide together, touch 0.24 s later with the bloom and `streakCelebrated()`, and "You melded!" fades up 0.5 s after the slide began.
+- Miss: primary "Next round". It fills up from the leading edge over 2.5 s, then moves on to the next round by itself, so the couple goes straight from the two words to finding the link. A tap moves on at once. With VoiceOver on, the button waits for a tap.
+- Near miss: primary "Next round", which waits for a tap, and "Count it" (`PaeoniaQuietButtonStyle`). "Count it" turns the reveal into a meld in place. The near title and buttons fade out in 0.16 s, then the meld plays with the same gaps as above: the cards slide together, touch 0.24 s later with the bloom and `streakCelebrated()`, and "You melded!" fades up 0.5 s after the slide began.
 - Meld and got away: primary "Play again", and a quiet "See our melds".
 
 Leaving the reveal (Next round, Play again, or back) marks it seen once its verdict has shown. A reveal left before the verdict plays again next time.
