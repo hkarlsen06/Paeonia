@@ -108,7 +108,7 @@ Openings and dare words are hand-written for each language and live in `backend/
 
 Rules for openings:
 
-- Follow the voice rule in `docs/couple-question-guidelines.md`. An opening comes from Paeonia, never from a partner. Write in third person about invented characters and places. No "I", "me", "we", "our", and no "you". In Norwegian, no "jeg", "meg", "vi", "vår", "du" or "deg".
+- Follow the voice rule in `.agents/skills/paeonia-questions/writing.md`. An opening comes from Paeonia, never from a partner. Write in third person about invented characters and places. No "I", "me", "we", "our", and no "you". In Norwegian, no "jeg", "meg", "vi", "vår", "du" or "deg".
 - One sentence, at most 120 characters, ending with a period.
 - Concrete and open: an object, a place, a small mystery. Something a 16-year-old can continue at once.
 - Warm, curious, or funny. Nothing scary, sad, sexual, or about real people.

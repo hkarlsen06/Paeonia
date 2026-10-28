@@ -82,11 +82,10 @@ Keep `AGENTS.md` for durable rules and constraints. Put feature ownership maps, 
 - `docs/mvp-release-checklist.md`: active MVP release-readiness checklist.
 - `docs/phase-3-data-contract.md`: product and data-model decisions, written for the retired Supabase schema. `backend/convex/schema.ts` is current.
 - `docs/phase-3-migration-checklist.md`: historical Supabase migration plan. The backend now runs on Convex.
-- `docs/couple-question-guidelines.md`: required reading before writing, seeding, localizing, or versioning couple questions.
 - `docs/marketing-app-contract.md`: public routes, Universal Links, Cloudflare static files, and marketing app structure.
 - `docs/games-plan.md`: Games tab decisions and build plan. Read it before any games work, and update it in the same change when a games decision or design changes.
 - `backend/AGENTS.md`: backend working rules, local commands, server access, and deploy steps.
-- `backend/questions/README.md`: question catalog source files and sync notes.
+- `.agents/skills/paeonia-questions/`: the `paeonia-questions` skill, required before writing, localizing, versioning or syncing questions.
 
 ## Agent Behavior Guidelines
 
@@ -139,7 +138,7 @@ The developer may run multiple agents in parallel in the same worktree.
 - Only tell the user they are offline, or to check their connection, when the phone has no connection. Classify a thrown error with `PaeoniaFailure(error)` (`ios/PaeoniaApp/Shared/Utilities/PaeoniaFailure.swift`) and show connection copy only for `.offline`. A server error, a missing function, a refusal or a timeout may happen on a working connection, so their copy says something went wrong and to try again later. A full screen that says only that also shows `PaeoniaSupportLink`, so the user has somewhere to go when waiting doesn't help. `PaeoniaLoadFailureView` does both for a screen that could not load.
 - If a phrase sounds correct to an engineer but awkward for a normal teenager, rewrite it.
 
-- Before writing, seeding, localizing, or versioning couple/daily questions, read `docs/couple-question-guidelines.md`. Questions are authored by Paeonia, not by either partner, and must not sound like they came from the partner.
+- Before writing, seeding, localizing, or versioning couple/daily questions, use the `paeonia-questions` skill. Questions are authored by Paeonia, not by either partner, and must not sound like they came from the partner.
 
 ### Git
 

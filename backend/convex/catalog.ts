@@ -466,7 +466,7 @@ async function applyQuestion(ctx: WriterCtx, question: QuestionPayload): Promise
       await ctx.db.patch(row._id, { status: "active", retired_at: undefined });
       // ponytail: before launch, every daily question shows the newest wording, so a fixed typo
       // reaches questions already handed out. Stop once real answers exist: an answer should keep
-      // the version it was written for (docs/couple-question-guidelines.md, Versioning).
+      // the version it was written for (.agents/skills/paeonia-questions/SKILL.md, step 4).
       for (const old of await ctx.db
         .query("question_versions")
         .withIndex("by_question_id_status", (q) => q.eq("question_id", target.id))

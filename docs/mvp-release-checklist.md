@@ -37,7 +37,7 @@ Paeonia is ready for MVP when:
 - Marketing/app contract: `docs/marketing-app-contract.md`
 - Design and copy rules: `docs/phase-2-design/`
 - Historical UX audit with a current status summary: `docs/ux-friction-report.md`
-- Question authoring rules: `docs/couple-question-guidelines.md`
+- Question authoring rules: `.agents/skills/paeonia-questions/`
 
 ## Release Blockers
 
@@ -196,7 +196,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Photo answers work.
 - [ ] Voice answers work. Needs a device for recording and playback. The app side is tested. No backend test submits a daily voice answer.
 - [x] Partner-choice answers work.
-- [x] Combined answer-kind behavior follows `docs/couple-question-guidelines.md`.
+- [x] Combined answer-kind behavior follows `.agents/skills/paeonia-questions/SKILL.md`.
 - [x] Staged drafts survive closing/reopening the answer composer.
 - [x] Offline answers queue and show local-first reassurance.
 - [x] Queued answers upload later without duplication.

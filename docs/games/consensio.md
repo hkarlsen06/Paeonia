@@ -69,14 +69,14 @@ The very first turn of a new game skips the guess and starts at "Pick a topic".
 ### Topics
 
 - A topic has a subject and two ends, written for each language. For example, "Camping", from "Never again" to "Book it now".
-- The subject is a thing, a habit or a small situation, never a question in the first person. The screen asks the question in Paeonia's voice: "Where are you on this?" for the placer and "Where is [Name] on this?" for the guesser. So no topic can sound as if the partner wrote it, which `docs/couple-question-guidelines.md` requires.
+- The subject is a thing, a habit or a small situation, never a question in the first person. The screen asks the question in Paeonia's voice: "Where are you on this?" for the placer and "Where is [Name] on this?" for the guesser. So no topic can sound as if the partner wrote it, which `.agents/skills/paeonia-questions/writing.md` requires.
 - The three choices are fixed when they are made. The server makes the next placer's three choices when a round opens for a guess, so the guesser has them on the phone before they guess. A guess and the next placement can then both be made offline. The server picks them from the couple's game language, among topics not yet used. Only the topic that gets placed counts as used. When fewer than three are left, the language starts over.
 - A language change replaces the three choices. A placement queued with an older choice still works, because the server takes any topic id in its catalogs and stores the subject and ends on the round. A later edit to the catalog never changes an old round.
 - To write your own, the placer gives a subject of 2 to 60 characters and two ends of 1 to 24 characters each, different from each other. Letters, digits, spaces and common punctuation are allowed. Line breaks and runs of spaces become one space.
 
 ### Writing topics
 
-The topics follow `docs/couple-question-guidelines.md`. Paeonia writes them, they never sound like the partner wrote them, and they are warm and playful.
+The topics follow `.agents/skills/paeonia-questions/writing.md`. Paeonia writes them, they never sound like the partner wrote them, and they are warm and playful.
 
 - Good subjects are tastes, habits and small preferences with a real range. Spicy food, mornings, surprise parties, rewatching a favorite series, getting lost on purpose, dancing in public, cold showers, a whole day with no plans.
 - Ends name the two far sides of one feeling, in plain words a 16-year-old uses. Each fits on two short lines under its end of the line. Both ends are fine places to be.

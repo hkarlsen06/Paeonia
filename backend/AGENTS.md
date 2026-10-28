@@ -11,7 +11,7 @@ Paeonia's backend is a self-hosted Convex deployment. This folder replaced the S
 - `convex/crons.ts`: every scheduled job.
 - Keep the import graph of a query module small. Convex loads and evaluates every module a function imports on every call, and `import()` is not allowed in queries and mutations. On a local backend a function that imports about 400 KB of bundled code costs about 1 ms more per call than one that imports 100 KB, and the hosted server is about four times slower. A module with queries must not import `lib/gameRegistry.ts`, which pulls in every game. Put the code that needs it in its own module and call it with `ctx.runMutation`, as `games.ts` does with `gameHooks.ts`. `relationship.ts` does the same with `relationshipJobs.ts`, because `lib/relationshipEnd.ts` reaches every game through `lib/badges.ts`. `lib/mediaOrphans.ts` also stays free of the game libraries. It asks `lib/gameMediaReferences.ts` whether a game still shows a file.
 - `convex/*.test.ts`: `convex-test` + `vitest` tests next to the module they cover.
-- `questions/`: source-controlled question catalog markdown, uploaded with `scripts/sync-question-catalog` (see `questions/README.md`).
+- `questions/`: source-controlled question catalog markdown, uploaded with `scripts/sync-question-catalog` (see the `paeonia-questions` skill).
 - `games/words/en.json` and `nb.json`: the Draw & Guess word lists. `convex/lib/gameWords.ts` imports them into the bundle, so a list change needs a deploy. `lib/gameWords.test.ts` checks both files against the rules in `docs/games/draw-and-guess.md`.
 - `seed/subscription_products.json`: subscription product reference data, loaded by `internal.catalog.seed_subscription_products`.
 
