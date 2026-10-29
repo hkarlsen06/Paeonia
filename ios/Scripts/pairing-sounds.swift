@@ -52,7 +52,6 @@ func timing(_ name: String) -> Double {
     return value
 }
 let gatherDuration = timing("absorb")
-let grace = timing("profilePhotoRevealGrace")
 let releaseDuration = timing("partnerHold")
 let notes = [(261.625565, 1.0), (329.627557, 0.36), (391.995436, 0.42)]
 
@@ -75,7 +74,7 @@ func resonance(time: Double, brightness: Double, release: Bool, channel: Int) ->
     return value
 }
 
-try writeCue("Gather", seconds: gatherDuration + grace + 0.15, peak: 0.14) { frame, channel in
+try writeCue("Gather", seconds: gatherDuration, peak: 0.14) { frame, channel in
     let time = Double(frame) / sampleRate
     let progress = min(time / gatherDuration, 1)
     let attack = 1 - exp(-pow(time / 0.35, 2))

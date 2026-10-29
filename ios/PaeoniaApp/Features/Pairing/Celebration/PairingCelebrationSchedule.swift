@@ -20,7 +20,7 @@ enum PairingCelebrationTiming {
     static let heartSize: CGFloat = 72
 
     static let heartAppear: Double = 0.55
-    static let absorb: Double = 3.5
+    static let absorb: Double = 2.4
     static let explode: Double = 0.9
     static let partnerHold: Double = 1.1
     static let landingSettle: Double = 0.8
@@ -47,14 +47,14 @@ struct PairingCelebrationSchedule {
     /// Rising intensity with shrinking gaps, so the moment before the burst feels
     /// like pressure building.
     var pulses: [Pulse] = [
-        Pulse(intensity: 0.16, gap: 0.65),
-        Pulse(intensity: 0.22, gap: 0.60),
-        Pulse(intensity: 0.28, gap: 0.55),
-        Pulse(intensity: 0.35, gap: 0.48),
-        Pulse(intensity: 0.43, gap: 0.42),
-        Pulse(intensity: 0.52, gap: 0.34),
-        Pulse(intensity: 0.62, gap: 0.26),
-        Pulse(intensity: 0.72, gap: 0.20)
+        Pulse(intensity: 0.16, gap: 0.45),
+        Pulse(intensity: 0.22, gap: 0.40),
+        Pulse(intensity: 0.28, gap: 0.38),
+        Pulse(intensity: 0.35, gap: 0.33),
+        Pulse(intensity: 0.43, gap: 0.29),
+        Pulse(intensity: 0.52, gap: 0.23),
+        Pulse(intensity: 0.62, gap: 0.18),
+        Pulse(intensity: 0.72, gap: 0.14)
     ]
 
     static let standard = PairingCelebrationSchedule()

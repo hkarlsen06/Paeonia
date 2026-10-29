@@ -16,8 +16,12 @@ final class PairingCelebrationSoundPlayer {
         }
     }
 
-    func absorb() {
+    func absorb(releasingAfter duration: Double) {
         play("Gather")
+        guard let release = players["Release"] else { return }
+        release.currentTime = 0
+        release.volume = 0.65
+        release.play(atTime: release.deviceCurrentTime + duration)
     }
 
     func release() {

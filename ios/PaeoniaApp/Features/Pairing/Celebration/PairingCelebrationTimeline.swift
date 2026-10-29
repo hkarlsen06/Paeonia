@@ -186,9 +186,8 @@ final class PairingCelebrationTimeline {
         guard isCurrent(id) else { return }
         guard await pause(schedule.heartAppear, id) else { return }
 
-        guard await absorbParticles(id) else { return }
         await waitForPartnerPhoto(id)
-        guard isCurrent(id) else { return }
+        guard isCurrent(id), await absorbParticles(id) else { return }
 
         revealPartner()
         guard await pause(schedule.partnerHold, id) else { return }
@@ -203,13 +202,17 @@ final class PairingCelebrationTimeline {
     /// Returns `false` if the sequence ended before the climax.
     private func absorbParticles(_ id: Int) async -> Bool {
         phase = .absorbing
-        particlePlayback.stage = .absorbing(.init(since: CACurrentMediaTime(), duration: schedule.absorb))
-        sound.absorb()
+        let absorption = PairingCelebrationParticlePlayback.Absorption(
+            since: CACurrentMediaTime(), duration: schedule.absorb,
+            releaseDuration: min(PairingCelebrationTiming.explode, schedule.partnerHold)
+        )
+        particlePlayback.stage = .absorbing(absorption)
+        sound.absorb(releasingAfter: max(0, absorption.impact - CACurrentMediaTime()))
 
         hapticsTask = Task { [weak self] in
             await self?.buildHapticPressure(id)
         }
-        let reachedClimax = await pause(schedule.absorb, id)
+        let reachedClimax = await pause(max(0, absorption.impact - CACurrentMediaTime()), id)
         hapticsTask?.cancel()
         hapticsTask = nil
         return reachedClimax
@@ -218,17 +221,10 @@ final class PairingCelebrationTimeline {
     /// 4. The core bursts outward and reveals the partner's avatar at the center.
     private func revealPartner() {
         phase = .exploding
-        if case let .absorbing(absorption) = particlePlayback.stage {
-            particlePlayback.stage = .bursting(
-                absorption: absorption, since: CACurrentMediaTime(),
-                releaseDuration: min(PairingCelebrationTiming.explode, schedule.partnerHold)
-            )
-        }
-        sound.release()
         haptics.burst()
 
         partnerRevealed = true
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.62).delay(0.03)) {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.62)) {
             partnerScale = Self.heroScale
             partnerOpacity = 1
         }
