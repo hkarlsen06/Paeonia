@@ -56,7 +56,9 @@ let releaseDuration = timing("partnerHold") + timing("landingSettle")
 
 // Cmaj9 opens into Ab6/9. C stays shared while E falls to Eb and B falls to Bb.
 let opening: [(UInt8, UInt8)] = [(48, 44), (60, 49), (64, 44), (67, 38), (71, 31), (74, 35)]
-let arrival: [(UInt8, UInt8)] = [(44, 53), (51, 35), (60, 48), (63, 42), (65, 29), (70, 28), (75, 34)]
+let arrival: [(UInt8, UInt8)] = [
+    (44, 53), (51, 35), (60, 48), (63, 42), (65, 29), (70, 28), (75, 34), (80, 31)
+]
 
 // Render the Mac's sampled piano here. The app only plays the finished PCM assets.
 func pianoChord(_ notes: [(UInt8, UInt8)], seconds: Double) throws -> [[Double]] {
@@ -137,33 +139,48 @@ func sustainGains(_ samples: [[Double]]) -> [Double] {
 
 let openingPiano = soften(try pianoChord(opening, seconds: gatherDuration), cutoff: 1_900, room: 0.25)
 let openingGains = sustainGains(openingPiano)
+// A held G sits above Cmaj9, then rises a semitone to Ab at the release.
+let upperHarmony = soften(try pianoChord([(79, 44)], seconds: gatherDuration), cutoff: 1_400, room: 0.85)
+let harmonyGains = sustainGains(upperHarmony)
 let arrivalPiano = soften(try pianoChord(arrival, seconds: releaseDuration), cutoff: 2_800, room: 0.55)
 
-// A quiet upper phrase overlaps the arrival chord and finishes on its fifth.
-struct SprinkleNote {
+struct PianoNote {
     let pitch: UInt8
     let velocity: UInt8
     let start: Double
 }
-let sprinkleNotes = [
-    SprinkleNote(pitch: 80, velocity: 38, start: 0.18),
-    SprinkleNote(pitch: 82, velocity: 36, start: 0.36),
-    SprinkleNote(pitch: 84, velocity: 34, start: 0.54),
-    SprinkleNote(pitch: 75, velocity: 32, start: 0.78)
-]
-var sprinkle = Array(repeating: [Double](repeating: 0, count: Int(releaseDuration * sampleRate)), count: 2)
-for note in sprinkleNotes {
-    let start = Int(note.start * sampleRate)
-    let voice = soften(try pianoChord([(note.pitch, note.velocity)], seconds: releaseDuration - note.start),
-                       cutoff: 2_500, room: 0.85)
-    for channel in 0..<2 {
-        for frame in 0..<min(voice[channel].count, sprinkle[channel].count - start) {
-            let age = Double(frame) / sampleRate
-            let attack = 1 - exp(-age / 0.018)
-            sprinkle[channel][start + frame] += voice[channel][frame] * attack * exp(-age / 0.52) * 0.30
+
+func pianoPhrase(_ notes: [PianoNote], seconds: Double, gain: Double) throws -> [[Double]] {
+    var samples = Array(repeating: [Double](repeating: 0, count: Int(seconds * sampleRate)), count: 2)
+    for note in notes {
+        let start = Int(note.start * sampleRate)
+        let voice = soften(try pianoChord([(note.pitch, note.velocity)], seconds: seconds - note.start),
+                           cutoff: 2_500, room: 0.85)
+        for channel in 0..<2 {
+            for frame in 0..<min(voice[channel].count, samples[channel].count - start) {
+                let age = Double(frame) / sampleRate
+                let attack = 1 - exp(-age / 0.018)
+                samples[channel][start + frame] += voice[channel][frame] * attack * exp(-age / 0.52) * gain
+            }
         }
     }
+    return samples
 }
+
+// G, D, E rise through the swell. The E then falls to the arrival chord's Eb.
+let gatherPhrase = try pianoPhrase([
+    PianoNote(pitch: 67, velocity: 40, start: 0.42),
+    PianoNote(pitch: 74, velocity: 37, start: 1.02),
+    PianoNote(pitch: 76, velocity: 35, start: 1.66)
+], seconds: gatherDuration, gain: 0.38)
+
+// Ab, Bb, C, Eb rise above the arrival chord with rounded attacks.
+let sprinkle = try pianoPhrase([
+    PianoNote(pitch: 80, velocity: 38, start: 0.18),
+    PianoNote(pitch: 82, velocity: 36, start: 0.36),
+    PianoNote(pitch: 84, velocity: 34, start: 0.54),
+    PianoNote(pitch: 87, velocity: 32, start: 0.78)
+], seconds: releaseDuration, gain: 0.50)
 
 try writeCue("Gather", seconds: gatherDuration, peak: 0.14, fadeOut: 0.008) { frame, channel in
     let time = Double(frame) / sampleRate
@@ -172,7 +189,10 @@ try writeCue("Gather", seconds: gatherDuration, peak: 0.14, fadeOut: 0.008) { fr
     let reverseFrame = openingPiano[channel].count - 1 - frame
     let reverse = openingPiano[channel][reverseFrame] * openingGains[reverseFrame]
     let pressure = 0.40 + 0.60 * progress * progress
-    return attack * reverse * pressure
+    let harmonyProgress = min(max((progress - 0.24) / 0.28, 0), 1)
+    let harmonyFade = harmonyProgress * harmonyProgress * (3 - 2 * harmonyProgress)
+    let harmony = upperHarmony[channel][reverseFrame] * harmonyGains[reverseFrame] * harmonyFade * 0.24
+    return attack * reverse * pressure + gatherPhrase[channel][frame] + harmony
 }
 
 try writeCue("Release", seconds: releaseDuration, peak: 0.24, fadeOut: 0.24) { frame, channel in
