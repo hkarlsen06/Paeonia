@@ -25,7 +25,7 @@ extension RootViewModel {
         }
         await runSync(reason: .foreground)
         if currentSession != nil {
-            await DeliveredNotifications.reconcile()
+            await systemSideEffects.reconcileDeliveredNotifications()
         }
     }
 

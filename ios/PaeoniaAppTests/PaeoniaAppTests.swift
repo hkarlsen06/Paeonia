@@ -423,7 +423,8 @@ struct PaeoniaAppTests {
         let viewModel = RootViewModel(
             syncService: syncService,
             authService: AuthServiceSpy(session: .test(profileStatus: .complete)),
-            accessRouteService: StaticAccessRouteService(route: .paired)
+            accessRouteService: StaticAccessRouteService(route: .paired),
+            systemSideEffects: NoOpRootSystemSideEffects()
         )
 
         await viewModel.start()
