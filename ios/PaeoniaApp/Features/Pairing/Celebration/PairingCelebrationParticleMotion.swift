@@ -20,26 +20,73 @@ struct PairingCelebrationParticlePlayback {
     var heartIsVisibleAtStart = false
     var stage: Stage = .appearing
 
-    func position(seed: PairingCelebrationParticleSeed, at time: Double,
-                  closingRadius: Double = 0.026) -> SIMD3<Double> {
-        switch stage {
-        case .appearing:
-            return seed.orbit(elapsed: time - started, gatherElapsed: 0, duration: 1, closingRadius: closingRadius)
-        case let .absorbing(absorption):
-            guard time >= absorption.impact else {
-                return inward(seed: seed, at: time, absorption: absorption, closingRadius: closingRadius)
+    struct SampleFrame {
+        struct Burst {
+            let origin: PairingCelebrationParticleSeed.Orbit
+            let previous: PairingCelebrationParticleSeed.Orbit
+            let tangentScale: Double
+            let travel: Double
+        }
+
+        enum Motion {
+            case orbit(PairingCelebrationParticleSeed.Orbit)
+            case burst(Burst)
+        }
+
+        let motion: Motion
+
+        init(playback: PairingCelebrationParticlePlayback, time: Double, closingRadius: Double) {
+            func orbit(gatherElapsed: Double, at time: Double,
+                       duration: Double) -> PairingCelebrationParticleSeed.Orbit {
+                .init(elapsed: time - playback.started, gatherElapsed: gatherElapsed,
+                      duration: duration, closingRadius: closingRadius)
             }
-            let origin = inward(seed: seed, at: absorption.impact,
-                                absorption: absorption, closingRadius: closingRadius)
-            let previous = inward(seed: seed, at: absorption.impact - 0.0001,
-                                  absorption: absorption, closingRadius: closingRadius)
-            let velocity = (origin - previous) / 0.0001
-            let outward = simd_normalize(origin)
-            let tangent = velocity - outward * simd_dot(velocity, outward)
-            let elapsed = time - absorption.impact
-            let progress = elapsed / absorption.releaseDuration
-            let travel = (1 - exp(-progress * 2.6)) * (1.6 + seed.variation * 0.7)
-            return origin + tangent * ((1 - exp(-elapsed * 2)) / 2) + outward * travel
+            switch playback.stage {
+            case .appearing:
+                motion = .orbit(orbit(gatherElapsed: 0, at: time, duration: 1))
+            case let .absorbing(absorption):
+                let duration = max(absorption.duration, 0.001)
+                if time < absorption.impact {
+                    motion = .orbit(orbit(gatherElapsed: max(0, time - absorption.since), at: time, duration: duration))
+                } else {
+                    let elapsed = time - absorption.impact
+                    motion = .burst(Burst(
+                        origin: orbit(gatherElapsed: max(0, absorption.impact - absorption.since),
+                                      at: absorption.impact, duration: duration),
+                        previous: orbit(gatherElapsed: max(0, absorption.impact - 0.0001 - absorption.since),
+                                        at: absorption.impact - 0.0001, duration: duration),
+                        tangentScale: (1 - exp(-elapsed * 2)) / 2,
+                        travel: 1 - exp(-elapsed / absorption.releaseDuration * 2.6)))
+                }
+            }
+        }
+    }
+
+    private struct BurstGeometry {
+        let origin: SIMD3<Double>
+        let outward: SIMD3<Double>
+        let tangent: SIMD3<Double>
+    }
+
+    func history(seed: PairingCelebrationParticleSeed, frames: ArraySlice<SampleFrame>) -> [SIMD3<Double>] {
+        var burst: BurstGeometry?
+        return frames.map { frame in
+            switch frame.motion {
+            case let .orbit(orbit):
+                return orbit.position(seed: seed)
+            case let .burst(frame):
+                if burst == nil {
+                    let origin = frame.origin.position(seed: seed)
+                    let previous = frame.previous.position(seed: seed)
+                    let velocity = (origin - previous) / 0.0001
+                    let outward = simd_normalize(origin)
+                    burst = BurstGeometry(origin: origin, outward: outward,
+                                          tangent: velocity - outward * simd_dot(velocity, outward))
+                }
+                guard let burst else { preconditionFailure("Missing burst geometry") }
+                return burst.origin + burst.tangent * frame.tangentScale
+                    + burst.outward * (frame.travel * (1.6 + seed.variation * 0.7))
+            }
         }
     }
 
@@ -86,14 +133,6 @@ struct PairingCelebrationParticlePlayback {
         return closingRadius + (1 - closingRadius) * gatherShape(at: time).radius
     }
 
-    private func inward(
-        seed: PairingCelebrationParticleSeed, at time: Double, absorption: Absorption,
-        closingRadius: Double
-    ) -> SIMD3<Double> {
-        seed.orbit(elapsed: time - started, gatherElapsed: max(0, time - absorption.since),
-                   duration: max(absorption.duration, 0.001), closingRadius: closingRadius)
-    }
-
     static func smoothstep(_ value: Double) -> Double {
         let value = min(max(value, 0), 1)
         return value * value * (3 - 2 * value)
@@ -128,6 +167,8 @@ struct PairingCelebrationParticleSeed {
     let variation: Double
     let direction: SIMD3<Double>
     let speed: Double
+    let axisCrossDirection: SIMD3<Double>
+    let axisProjection: SIMD3<Double>
     let shellRadius: Double
 
     static let starCount = 240
@@ -148,6 +189,9 @@ struct PairingCelebrationParticleSeed {
         let transverse = sqrt(1 - latitude * latitude)
         let sign = index.isMultiple(of: 2) ? 1.0 : -1.0
         direction = SIMD3(transverse * cos(azimuth), transverse * sin(azimuth), latitude) * sign
+        let axis = simd_normalize(SIMD3<Double>(0.32, 0.79, 0.52))
+        axisCrossDirection = simd_cross(axis, direction)
+        axisProjection = axis * simd_dot(axis, direction)
         speed = 0.97 + Self.random(pair, salt: 6.41) * 0.06
         shellRadius = index < Self.starCount
             ? 0.82 + Self.random(pair, salt: 8.13) * 0.18
@@ -156,17 +200,23 @@ struct PairingCelebrationParticleSeed {
 
     var size: Double { isDust ? 1.2 + variation * 0.8 : 1.0 + variation * 1.1 }
 
-    func orbit(elapsed: Double, gatherElapsed: Double, duration: Double,
-               closingRadius: Double) -> SIMD3<Double> {
-        let progress = min(gatherElapsed / duration, 1)
-        let shape = PairingCelebrationGatherShape(progress: progress)
-        let radius = shellRadius * (closingRadius + (1 - closingRadius) * shape.radius)
-        let angle = speed * (max(0, elapsed - gatherElapsed) * 2
-            + duration * Self.integratedSpin(at: progress))
-        let axis = simd_normalize(SIMD3<Double>(0.32, 0.79, 0.52))
-        let rotated = direction * cos(angle) + simd_cross(axis, direction) * sin(angle)
-            + axis * simd_dot(axis, direction) * (1 - cos(angle))
-        return radius * rotated
+    // These scalars are shared by every seed at one history time.
+    struct Orbit {
+        let radius: Double
+        let angle: Double
+
+        init(elapsed: Double, gatherElapsed: Double, duration: Double, closingRadius: Double) {
+            let progress = min(gatherElapsed / duration, 1)
+            radius = closingRadius + (1 - closingRadius) * PairingCelebrationGatherShape(progress: progress).radius
+            angle = max(0, elapsed - gatherElapsed) * 2 + duration * integratedSpin(at: progress)
+        }
+
+        func position(seed: PairingCelebrationParticleSeed) -> SIMD3<Double> {
+            let angle = seed.speed * angle
+            let rotated = seed.direction * cos(angle) + seed.axisCrossDirection * sin(angle)
+                + seed.axisProjection * (1 - cos(angle))
+            return (seed.shellRadius * radius) * rotated
+        }
     }
 
     // Integrate once so every frame preserves tangential speed as the radius falls.
@@ -210,7 +260,9 @@ struct PairingCelebrationParticleProjection {
         let available = max(1, inscribed - extent - 24)
         let end = available * (0.70 + seed.variation * 0.28)
         let start = end * (0.40 + seed.variation * 0.20)
-        let distance = points.map { hypot($0.x - center.x, $0.y - center.y) }.max() ?? 0
+        let distance = points.reduce(0.0) { distance, point in
+            max(distance, hypot(point.x - center.x, point.y - center.y))
+        }
         return 1 - PairingCelebrationParticlePlayback.smoothstep((distance - start) / (end - start))
     }
 

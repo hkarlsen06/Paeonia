@@ -55,19 +55,29 @@ struct PairingCelebrationParticleField: View {
         let opacity = playback.opacity(at: time)
         let radius = playback.radius(at: time, closingRadius: projection.closingRadius)
         let markScale = min(1, max(0.08, radius / 0.62))
+        let frames = (0...8).map { step in
+            PairingCelebrationParticlePlayback.SampleFrame(
+                playback: playback, time: time - Double(8 - step) * 0.012 * markScale,
+                closingRadius: projection.closingRadius)
+        }
+        var pairedHistory = [SIMD3<Double>]()
         return Self.seeds.compactMap { seed -> Particle? in
             let density = seed.isDust ? shape.cover : 1
             guard density * opacity > 0.001 else { return nil }
-            let position = playback.position(seed: seed, at: time, closingRadius: projection.closingRadius)
+            let segments = seed.isDust ? 5 : 8
+            let history: [SIMD3<Double>]
+            if seed.index.isMultiple(of: 2) {
+                history = playback.history(seed: seed, frames: frames.suffix(segments + 1))
+                pairedHistory = history
+            } else {
+                // Opposite seeds share every motion scalar and keep opposite positions.
+                history = pairedHistory.map { -$0 }
+            }
+            let position = history[segments]
             let depth = min(max((position.z + 1) / 2, 0), 1)
             let growth = 1 + shape.cover * (seed.isDust ? 0 : 0.35)
             let orbRadius = seed.size * (0.86 + 0.28 * depth) * growth * markScale
             // Shorten the sampled trail together with its head during compression.
-            let segments = seed.isDust ? 5 : 8
-            let history = (0...segments).map { step in
-                playback.position(seed: seed, at: time - Double(segments - step) * 0.012 * markScale,
-                                  closingRadius: projection.closingRadius)
-            }
             let samples = history.map { projection.point($0) }
             let visibility = visibility(projection: projection, samples: samples,
                                         extent: orbRadius * 3.8 + 1, seed: seed, time: time)
