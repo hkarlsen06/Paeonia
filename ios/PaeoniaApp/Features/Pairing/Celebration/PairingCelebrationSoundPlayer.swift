@@ -6,6 +6,8 @@ final class PairingCelebrationSoundPlayer {
 
     func prepare() {
         guard players.isEmpty else { return }
+        PaeoniaAudioSession.useAmbient()
+        try? AVAudioSession.sharedInstance().setActive(true)
         for name in ["Gather", "Release"] {
             guard let url = Bundle.main.url(forResource: "Pairing\(name)", withExtension: "caf"),
                   let player = try? AVAudioPlayer(contentsOf: url) else { continue }
@@ -32,8 +34,6 @@ final class PairingCelebrationSoundPlayer {
 
     private func play(_ name: String) {
         guard let player = players[name] else { return }
-        PaeoniaAudioSession.useAmbient()
-        try? AVAudioSession.sharedInstance().setActive(true)
         player.currentTime = 0
         player.volume = 0.65
         player.play()

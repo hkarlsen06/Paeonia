@@ -15,6 +15,7 @@ struct PairingCelebrationParticlePlayback {
     }
 
     var started: Double
+    var heartIsVisibleAtStart = false
     var stage: Stage = .appearing
 
     func position(seed: PairingCelebrationParticleSeed, at time: Double,
@@ -60,6 +61,10 @@ struct PairingCelebrationParticlePlayback {
         return appear
     }
 
+    func heartOpacity(at time: Double) -> Double {
+        (heartIsVisibleAtStart ? 1 : opacity(at: time)) * gatherShape(at: time).heartOpacity
+    }
+
     func gatherProgress(at time: Double) -> Double {
         switch stage {
         case .appearing: return 0
@@ -83,11 +88,11 @@ struct PairingCelebrationParticlePlayback {
 }
 
 struct PairingCelebrationGatherShape {
-    static let coverStart = 0.55
-    static let coverComplete = 0.73
-    static let heartHidden = 0.75
-    static let compressionStart = 0.76
-    static let compressionComplete = 0.96
+    static let coverStart = 0.26
+    static let coverComplete = 0.65
+    static let heartHidden = 0.72
+    static let compressionStart = 0.78
+    static let compressionComplete = 0.98
 
     let progress: Double
 
@@ -103,51 +108,56 @@ struct PairingCelebrationGatherShape {
 
     var heartOpacity: Double {
         1 - PairingCelebrationParticlePlayback.smoothstep(
-            (progress - Self.coverComplete) / (Self.heartHidden - Self.coverComplete))
+            (progress - 0.54) / (Self.heartHidden - 0.54))
     }
 }
 
 struct PairingCelebrationParticleSeed {
     let index: Int
     let variation: Double
-    let orbitalU: SIMD3<Double>
-    let orbitalV: SIMD3<Double>
-    let phase: Double
+    let direction: SIMD3<Double>
     let speed: Double
     let shellRadius: Double
 
+    var isDust: Bool { index >= 240 }
+
     init(index: Int) {
         self.index = index
-        variation = Self.random(index, salt: 3.71)
-        let axis = simd_normalize(SIMD3<Double>(0.25, 0.45, 0.86))
-        let across = simd_normalize(simd_cross(axis, SIMD3(0, 1, 0)))
-        let around = simd_cross(axis, across)
-        let azimuth = Double(index) * 2.3999632297
-        let inclination = (45 + 15 * Self.random(index, salt: 5.37)) * .pi / 180
-        let normal = axis * cos(inclination)
-            + (across * cos(azimuth) + around * sin(azimuth)) * sin(inclination)
-        orbitalU = simd_normalize(simd_cross(normal, axis))
-        orbitalV = simd_cross(normal, orbitalU)
-        phase = Self.random(index, salt: 2.17) * 2 * .pi
-        speed = 0.88 + Self.random(index, salt: 6.41) * 0.24
-        shellRadius = 0.78 + Self.random(index, salt: 8.13) * 0.42
+        let pair = index / 2
+        variation = Self.random(pair, salt: 3.71)
+        // Every direction has an opposite with the same radius and angular speed.
+        // Orthographic projection preserves that balance at every sampled time.
+        let latitude = index < 240
+            ? (Double(pair) + 0.5) / 120
+            : (Double(pair - 120) + 0.5) / 200
+        let azimuth = Double(pair) * 2.3999632297
+        let transverse = sqrt(1 - latitude * latitude)
+        let sign = index.isMultiple(of: 2) ? 1.0 : -1.0
+        direction = SIMD3(transverse * cos(azimuth), transverse * sin(azimuth), latitude) * sign
+        speed = 0.97 + Self.random(pair, salt: 6.41) * 0.06
+        shellRadius = index < 240
+            ? 0.82 + Self.random(pair, salt: 8.13) * 0.18
+            : 0.16 + pow(Self.random(pair, salt: 8.13), 0.6) * 0.74
     }
 
-    var size: Double { 1.1 + variation * 1.4 }
+    var size: Double { isDust ? 0.7 + variation * 1.1 : 1.0 + variation * 1.1 }
 
     func orbit(elapsed: Double, gatherElapsed: Double, duration: Double,
                closingRadius: Double) -> SIMD3<Double> {
         let progress = min(gatherElapsed / duration, 1)
         let shape = PairingCelebrationGatherShape(progress: progress)
-        let broad = PairingCelebrationParticlePlayback.smoothstep(progress / (2.0 / 3.5))
-        let shell = (1 - 0.30 * broad) * shellRadius * (1 + 0.025 * sin(elapsed * 1.2 + phase))
-        let radius = shell * (1 - shape.compression) + closingRadius * shape.compression
+        let broad = PairingCelebrationParticlePlayback.smoothstep(progress / 0.70)
+        let shell = shellRadius * (1 - 0.43 * broad)
+        let radius = shell * (1 - shape.compression) + closingRadius * shellRadius * shape.compression
         let accelerationDuration = duration * 0.72
         let ramp = min(gatherElapsed / accelerationDuration, 1)
-        let extraAngle = 3.2 * (accelerationDuration * (pow(ramp, 3) - 0.5 * pow(ramp, 4))
+        let extraAngle = 4.0 * (accelerationDuration * (pow(ramp, 3) - 0.5 * pow(ramp, 4))
             + max(0, gatherElapsed - accelerationDuration))
-        let angle = phase + speed * (elapsed * 1.8 + extraAngle)
-        return radius * (orbitalU * cos(angle) + orbitalV * sin(angle))
+        let angle = speed * (max(0, elapsed) * 1.25 + extraAngle)
+        let axis = simd_normalize(SIMD3<Double>(0.32, 0.79, 0.52))
+        let rotated = direction * cos(angle) + simd_cross(axis, direction) * sin(angle)
+            + axis * simd_dot(axis, direction) * (1 - cos(angle))
+        return radius * rotated
     }
 
     private static func random(_ index: Int, salt: Double) -> Double {
@@ -161,22 +171,17 @@ struct PairingCelebrationParticleProjection {
 
     var center: CGPoint { CGPoint(x: size.width / 2, y: size.height * PairingCelebrationTiming.centerYRatio) }
     var radius: Double { min(115, min(size.width / 2, center.y, size.height - center.y) * 0.65) }
-    var closingRadius: Double { 3 / max(radius, 1) }
-
-    func perspective(_ position: SIMD3<Double>) -> Double {
-        1 / (1 - tanh(position.z) * 0.2)
-    }
+    var closingRadius: Double { 0.6 / max(radius, 1) }
 
     func point(_ position: SIMD3<Double>) -> CGPoint {
-        let scale = radius * perspective(position)
-        return CGPoint(x: center.x + position.x * scale, y: center.y + position.y * scale)
+        CGPoint(x: center.x + position.x * radius, y: center.y + position.y * radius)
     }
 
     func burstVisibility(points: [CGPoint], extent: Double, seed: PairingCelebrationParticleSeed) -> Double {
         let inscribed = min(size.width / 2, center.y, size.height - center.y)
         let available = max(1, inscribed - extent - 24)
-        let end = available * (0.86 + seed.variation * 0.12)
-        let start = end * (0.55 + seed.variation * 0.10)
+        let end = available * (0.70 + seed.variation * 0.28)
+        let start = end * (0.40 + seed.variation * 0.20)
         let distance = points.map { hypot($0.x - center.x, $0.y - center.y) }.max() ?? 0
         return 1 - PairingCelebrationParticlePlayback.smoothstep((distance - start) / (end - start))
     }

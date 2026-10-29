@@ -1,5 +1,4 @@
 import Foundation
-import QuartzCore
 import SwiftUI
 
 /// The cinematic moment shown the instant two people become linked.
@@ -133,7 +132,7 @@ struct PairingCelebrationView: View {
         // the rule cannot see.
         // swiftlint:disable:next accessibility_trait_for_button
         ZStack {
-            core(heartCenter: heartCenter)
+            core
 
             PairingCelebrationProfilesView(
                 currentName: currentName,
@@ -148,11 +147,6 @@ struct PairingCelebrationView: View {
             .position(x: size.width / 2, y: size.height * 0.5)
 
             partnerHero(heartCenter: heartCenter, slotTarget: slotTarget)
-
-            if timeline.showsParticles {
-                PairingCelebrationParticleField(playback: timeline.particlePlayback, foreground: true)
-                    .accessibilityHidden(true)
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
@@ -174,22 +168,13 @@ struct PairingCelebrationView: View {
     }
 
     @ViewBuilder
-    private func core(heartCenter: CGPoint) -> some View {
+    private var core: some View {
         if timeline.showsHeart {
-            if timeline.showsParticles {
-                PairingCelebrationParticleField(playback: timeline.particlePlayback, foreground: false)
-                    .accessibilityHidden(true)
-            }
-
-            TimelineView(.animation) { _ in
-                let shape = timeline.particlePlayback.gatherShape(at: CACurrentMediaTime())
-                PairingCelebrationHeartCore()
-                    .scaleEffect(timeline.heartScale)
-                    .shadow(color: .paeoniaAccentPrimary.opacity(0.18), radius: timeline.heartGlow)
-                    .opacity(timeline.heartOpacity * shape.heartOpacity)
-                    .position(x: heartCenter.x, y: heartCenter.y)
-                    .accessibilityHidden(true)
-            }
+            PairingCelebrationParticleField(
+                playback: timeline.particlePlayback,
+                showsParticles: timeline.showsParticles
+            )
+            .accessibilityHidden(true)
         }
     }
 

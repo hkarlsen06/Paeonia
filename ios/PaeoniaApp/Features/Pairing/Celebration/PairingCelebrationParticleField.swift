@@ -3,60 +3,84 @@ import SwiftUI
 
 struct PairingCelebrationParticleField: View {
     let playback: PairingCelebrationParticlePlayback
-    let foreground: Bool
+    let showsParticles: Bool
     private struct Shading {
         let color: Color
         let opacity: Double
         let radius: Double
     }
 
-    private static let seeds = (0..<240).map { PairingCelebrationParticleSeed(index: $0) }
+    private struct Particle {
+        let position: SIMD3<Double>
+        let history: [SIMD3<Double>]
+        let samples: [CGPoint]
+        let shading: Shading
+    }
+
+    private static let seeds = (0..<640).map { PairingCelebrationParticleSeed(index: $0) }
 
     var body: some View {
         TimelineView(.animation) { _ in
             let now = CACurrentMediaTime()
-            Canvas(opaque: false, rendersAsynchronously: true) { context, size in
+            Canvas(opaque: false, rendersAsynchronously: false) { context, size in
                 draw(in: &context, size: size, time: now)
+            } symbols: {
+                PairingCelebrationHeartCore().tag(0)
             }
         }
         .allowsHitTesting(false)
     }
 
     private func draw(in context: inout GraphicsContext, size: CGSize, time: Double) {
-        let opacity = playback.opacity(at: time)
-        guard opacity > 0 else { return }
         let projection = PairingCelebrationParticleProjection(size: size)
-        let growth = playback.gatherProgress(at: time)
-        let envelopment = playback.gatherShape(at: time).cover
-        if foreground {
-            PairingCelebrationCloud.draw(in: &context, projection: projection, playback: playback, time: time)
+        let shape = playback.gatherShape(at: time)
+        let particles = showsParticles ? particles(projection: projection, time: time) : []
+        drawParticles(particles, in: &context, foreground: false, shape: shape)
+        if let heart = context.resolveSymbol(id: 0) {
+            var heartContext = context
+            heartContext.opacity = showsParticles ? playback.heartOpacity(at: time) : 1
+            heartContext.draw(heart, at: projection.center)
         }
-        let particles = Self.seeds.map {
-            ($0, playback.position(seed: $0, at: time, closingRadius: projection.closingRadius))
+        drawParticles(particles, in: &context, foreground: true, shape: shape)
+    }
+
+    private func particles(projection: PairingCelebrationParticleProjection, time: Double) -> [Particle] {
+        let shape = playback.gatherShape(at: time)
+        let opacity = playback.opacity(at: time)
+        var markScale = 1 - 0.94 * shape.compression
+        if case let .bursting(_, since, duration) = playback.stage, time >= since {
+            markScale += 0.94 * PairingCelebrationParticlePlayback.smoothstep(
+                (time - since) / max(0.001, duration * 0.16))
         }
-            .sorted { $0.1.z < $1.1.z }
-        for (seed, position) in particles {
-            let perspective = projection.perspective(position)
-            let point = projection.point(position)
-            let orbRadius = seed.size * perspective
-            let color = particleColor(seed.index)
-            let history = (0...10).map { step in
-                playback.position(seed: seed, at: time - Double(10 - step) * 0.011,
+        return Self.seeds.compactMap { seed -> Particle? in
+            let density = seed.isDust ? shape.cover : 1
+            guard density * opacity > 0.001 else { return nil }
+            let position = playback.position(seed: seed, at: time, closingRadius: projection.closingRadius)
+            let depth = min(max((position.z + 1) / 2, 0), 1)
+            let orbRadius = seed.size * (0.86 + 0.28 * depth) * markScale
+            // Shorten the sampled trail together with its head during compression.
+            let history = (0...8).map { step in
+                playback.position(seed: seed, at: time - Double(8 - step) * 0.012 * markScale,
                                   closingRadius: projection.closingRadius)
             }
             let samples = history.map { projection.point($0) }
             let visibility = visibility(projection: projection, samples: samples,
-                                        extent: orbRadius * 2.6 + 1, seed: seed, time: time)
-            guard visibility > 0 else { continue }
-            let depth = min(max((position.z + 1) / 2, 0), 1)
-            let depthOpacity = opacity * visibility * (0.25 + 0.55 * depth) * (1 + 0.20 * envelopment)
-            drawTrails(in: &context, history: history, samples: samples,
-                       shading: Shading(color: color, opacity: depthOpacity, radius: orbRadius),
-                       growth: growth)
-            guard (position.z >= 0) == foreground else { continue }
-            drawHead(in: &context, point: point,
-                     shading: Shading(color: color, opacity: depthOpacity, radius: orbRadius),
-                     envelopment: envelopment)
+                                        extent: orbRadius * 3.8 + 1, seed: seed, time: time)
+            guard visibility > 0 else { return nil }
+            let ink = Shading(color: particleColor(seed.index / 2),
+                              opacity: opacity * density * visibility * (0.55 + 0.25 * depth),
+                              radius: orbRadius)
+            return Particle(position: position, history: history, samples: samples, shading: ink)
+        }.sorted { $0.position.z < $1.position.z }
+    }
+
+    private func drawParticles(_ particles: [Particle], in context: inout GraphicsContext,
+                               foreground: Bool, shape: PairingCelebrationGatherShape) {
+        for particle in particles {
+            drawTrails(in: &context, particle: particle, growth: shape.cover, foreground: foreground)
+            guard (particle.position.z >= 0) == foreground,
+                  let point = particle.samples.last else { continue }
+            drawHead(in: &context, point: point, shading: particle.shading, envelopment: shape.cover)
         }
     }
 
@@ -64,6 +88,7 @@ struct PairingCelebrationParticleField: View {
                             extent: Double, seed: PairingCelebrationParticleSeed, time: Double) -> Double {
         if case let .bursting(_, since, _) = playback.stage, time >= since {
             return projection.burstVisibility(points: samples, extent: extent, seed: seed)
+                * projection.visibility(points: samples, extent: extent)
                 * playback.sparkOpacity(seed: seed, at: time)
         }
         return projection.visibility(points: samples, extent: extent)
@@ -76,11 +101,11 @@ struct PairingCelebrationParticleField: View {
         let orbRadius = shading.radius
         let rect = CGRect(x: point.x - orbRadius, y: point.y - orbRadius,
                           width: orbRadius * 2, height: orbRadius * 2)
-        let glowRadius = orbRadius * 2.6
+        let glowRadius = orbRadius * (2.6 + 1.2 * envelopment)
         let glow = CGRect(x: point.x - glowRadius, y: point.y - glowRadius,
                           width: glowRadius * 2, height: glowRadius * 2)
         context.fill(Path(ellipseIn: glow), with: .radialGradient(
-            Gradient(colors: [color.opacity(depthOpacity * (0.16 + 0.18 * envelopment)), .clear]),
+            Gradient(colors: [color.opacity(depthOpacity * (0.16 + 0.40 * envelopment)), .clear]),
             center: point, startRadius: 0, endRadius: glowRadius))
         let highlight = CGPoint(x: point.x - orbRadius * 0.32, y: point.y - orbRadius * 0.38)
         context.fill(Path(ellipseIn: rect), with: .radialGradient(
@@ -91,10 +116,13 @@ struct PairingCelebrationParticleField: View {
             ]), center: highlight, startRadius: 0, endRadius: orbRadius * 1.6))
     }
 
-    private func drawTrails(in context: inout GraphicsContext, history: [SIMD3<Double>], samples: [CGPoint],
-                            shading: Shading, growth: Double) {
+    private func drawTrails(in context: inout GraphicsContext, particle: Particle,
+                            growth: Double, foreground: Bool) {
+        let history = particle.history
+        let samples = particle.samples
+        let shading = particle.shading
         var length = 0.0
-        for step in stride(from: 9, through: 0, by: -1) {
+        for step in stride(from: 7, through: 0, by: -1) {
             let start = samples[step]
             let end = samples[step + 1]
             length += hypot(end.x - start.x, end.y - start.y)
@@ -102,26 +130,26 @@ struct PairingCelebrationParticleField: View {
             let startZ = history[step].z
             let endZ = history[step + 1].z
             let ink = Shading(color: shading.color,
-                              opacity: shading.opacity * (0.12 + 0.10 * growth) * Double(step + 1) / 10,
+                              opacity: shading.opacity * (0.14 + 0.34 * growth) * Double(step + 1) / 8,
                               radius: shading.radius)
             if (startZ >= 0) != (endZ >= 0) {
                 let split = startZ / (startZ - endZ)
                 let crossing = CGPoint(x: start.x + (end.x - start.x) * split,
                                        y: start.y + (end.y - start.y) * split)
-                stroke(in: &context, from: start, to: crossing, isFront: startZ >= 0,
-                       shading: ink)
-                stroke(in: &context, from: crossing, to: end, isFront: endZ >= 0,
-                       shading: ink)
-            } else {
-                stroke(in: &context, from: start, to: end, isFront: startZ >= 0,
-                       shading: ink)
+                if (startZ >= 0) == foreground {
+                    stroke(in: &context, from: start, to: crossing, shading: ink)
+                }
+                if (endZ >= 0) == foreground {
+                    stroke(in: &context, from: crossing, to: end, shading: ink)
+                }
+            } else if (startZ >= 0) == foreground {
+                stroke(in: &context, from: start, to: end, shading: ink)
             }
         }
     }
 
     private func stroke(in context: inout GraphicsContext, from start: CGPoint, to end: CGPoint,
-                        isFront: Bool, shading: Shading) {
-        guard isFront == foreground else { return }
+                        shading: Shading) {
         var trail = Path()
         trail.move(to: start)
         trail.addLine(to: end)

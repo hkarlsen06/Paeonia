@@ -30,10 +30,6 @@ final class PairingCelebrationTimeline {
     private(set) var phase: PairingCelebrationPhase = .heartAppearing
     private(set) var particlePlayback = PairingCelebrationParticlePlayback(started: CACurrentMediaTime())
 
-    private(set) var heartScale: CGFloat = 0.2
-    private(set) var heartOpacity: Double = 0
-    private(set) var heartGlow: CGFloat = 12
-
     private(set) var partnerRevealed = false
     private(set) var partnerOpacity: Double = 0
     private(set) var partnerScale: CGFloat = 0.5
@@ -159,7 +155,6 @@ final class PairingCelebrationTimeline {
     /// Shows the heart alone while the partner's name loads.
     private func waitForPartnerName() {
         mode = .waitingForPartner
-        revealHeart()
 
         let id = beginRun()
         introTask = Task { [weak self] in
@@ -174,8 +169,11 @@ final class PairingCelebrationTimeline {
         // Claim the intro up front so a SwiftUI view re-creation cannot replay it.
         // The animation below runs from this timeline's own state, not the prop.
         complete()
+        let heartIsVisible = mode == .waitingForPartner
         mode = .playing
-        particlePlayback = PairingCelebrationParticlePlayback(started: CACurrentMediaTime())
+        particlePlayback = PairingCelebrationParticlePlayback(
+            started: CACurrentMediaTime(), heartIsVisibleAtStart: heartIsVisible
+        )
 
         let id = beginRun()
         introTask = Task { [weak self] in
@@ -186,7 +184,6 @@ final class PairingCelebrationTimeline {
     private func runIntro(_ id: Int) async {
         // A task cancelled before it first runs still starts, so check up front.
         guard isCurrent(id) else { return }
-        revealHeart()
         guard await pause(schedule.heartAppear, id) else { return }
 
         guard await absorbParticles(id) else { return }
@@ -202,24 +199,12 @@ final class PairingCelebrationTimeline {
         finish()
     }
 
-    /// 1. The heart forms in the middle of the screen.
-    private func revealHeart() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-            heartScale = 1
-            heartOpacity = 1
-        }
-    }
-
     /// 2 + 3. Particles are pulled inward while haptic pressure accumulates.
     /// Returns `false` if the sequence ended before the climax.
     private func absorbParticles(_ id: Int) async -> Bool {
         phase = .absorbing
         particlePlayback.stage = .absorbing(.init(since: CACurrentMediaTime(), duration: schedule.absorb))
         sound.absorb()
-        withAnimation(.easeInOut(duration: schedule.absorb)) {
-            heartScale = 1
-            heartGlow = 32
-        }
 
         hapticsTask = Task { [weak self] in
             await self?.buildHapticPressure(id)
@@ -241,10 +226,6 @@ final class PairingCelebrationTimeline {
         }
         sound.release()
         haptics.burst()
-        withAnimation(.easeOut(duration: 0.22)) {
-            heartScale = 1.7
-            heartOpacity = 0
-        }
 
         partnerRevealed = true
         withAnimation(.spring(response: 0.5, dampingFraction: 0.62).delay(0.03)) {
@@ -280,7 +261,6 @@ final class PairingCelebrationTimeline {
     private func applySettledState() {
         mode = .settled
         phase = .settled
-        heartOpacity = 0
         partnerRevealed = false
         surroundingsShown = true
         dismissButtonShown = true
