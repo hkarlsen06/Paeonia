@@ -181,6 +181,21 @@ struct PairingCelebrationView: View {
     @ViewBuilder
     private func partnerHero(heartCenter: CGPoint, slotTarget: CGPoint) -> some View {
         if timeline.mode == .playing && timeline.partnerRevealed {
+            let metrics = PairingCelebrationProfilesView.Metrics.celebration
+            PairingCelebrationLandingConnector(
+                heartCenter: CGPoint(x: heartCenter.x, y: slotTarget.y),
+                avatarCenter: timeline.partnerLanded ? slotTarget : heartCenter,
+                avatarScale: timeline.partnerScale,
+                heartRadius: metrics.connectorCircleDiameter / 2,
+                avatarRadius: metrics.avatarDiameter / 2
+            )
+            .stroke(
+                .paeoniaAccentPrimary.opacity(0.6),
+                lineWidth: metrics.connectorLineThickness
+            )
+            .opacity(timeline.surroundingsShown ? 1 : 0)
+            .accessibilityHidden(true)
+
             PairingCelebrationAvatar(
                 name: partnerName,
                 tint: .paeoniaPartnerTwo,

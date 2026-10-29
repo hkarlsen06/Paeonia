@@ -67,8 +67,8 @@ struct PairingCelebrationAvatar: View {
 ///
 /// During the intro the partner's avatar flies in from the center, so the partner
 /// slot is left as a space-reserving placeholder that publishes its frame (the
-/// flying avatar then lands exactly over it). Everything except the partner avatar
-/// fades in together through `surroundingsOpacity`.
+/// flying avatar then lands exactly over it). Its overlay draws the right-hand
+/// line during landing. The remaining row fades in through `surroundingsOpacity`.
 struct PairingCelebrationProfilesView: View {
     /// Sizing for the settled layout. The celebration preset must stay identical to
     /// the original layout so the flying avatar still lands exactly over its
@@ -189,9 +189,13 @@ struct PairingCelebrationProfilesView: View {
         ZStack {
             // The line overflows the connector frame on both sides so it reaches
             // all the way to the avatar circles while leaving column spacing intact.
-            Rectangle()
-                .fill(.paeoniaAccentPrimary.opacity(0.6))
-                .frame(width: connectorLineWidth, height: metrics.connectorLineThickness)
+            HStack(spacing: 0) {
+                Rectangle()
+                Rectangle()
+                    .opacity(partnerSlotIsPlaceholder ? 0 : 1)
+            }
+            .foregroundStyle(.paeoniaAccentPrimary.opacity(0.6))
+            .frame(width: connectorLineWidth, height: metrics.connectorLineThickness)
 
             Circle()
                 .fill(.paeoniaBackgroundPrimary)
