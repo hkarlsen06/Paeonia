@@ -63,13 +63,15 @@ export async function openGameKinds(ctx: ReaderCtx, coupleId: string, userId: st
  * of a deleted account.
  */
 export async function removePresenceRooms(ctx: WriterCtx, userIds: string[], prefix: string): Promise<void> {
-  const rooms = new Set<string>();
   for (const userId of userIds) {
-    // ponytail: one page of 1000 rooms per user. A user has at most one room per game and
-    // couple, plus typing rooms an app left behind when it was killed mid-typing.
-    for (const { roomId } of await presence.listUser(ctx, userId, false, 1000)) {
-      if (roomId.startsWith(prefix)) rooms.add(roomId);
+    let limit = 1000;
+    while (true) {
+      const rooms = await presence.listUser(ctx, userId, false, limit);
+      const matching = rooms.filter(({ roomId }) => roomId.startsWith(prefix));
+      for (const { roomId } of matching) await presence.removeRoom(ctx, roomId);
+      if (rooms.length < limit) break;
+      // The component has no cursor. Grow past unrelated rooms without removing them.
+      if (matching.length === 0) limit += 1000;
     }
   }
-  for (const roomId of rooms) await presence.removeRoom(ctx, roomId);
 }

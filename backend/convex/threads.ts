@@ -456,7 +456,8 @@ async function withdrawMessageAlert(ctx: WriterCtx, thread: Doc<"conversation_th
         .query("thread_read_states")
         .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", thread.id).eq("user_id", member.user_id))
         .unique();
-      if (read && read.last_read_message_created_at >= message.created_at) continue;
+      if (read && (read.last_read_message_created_at > message.created_at ||
+        (read.last_read_message_created_at === message.created_at && read.last_read_message_id >= message.id))) continue;
       await enqueueNotificationForUser(ctx, {
         recipient_user_id: member.user_id,
         kind: "thread_message_deleted",

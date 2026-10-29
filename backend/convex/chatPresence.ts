@@ -81,7 +81,8 @@ export const mark_thread_read = mutation({
       .query("thread_read_states")
       .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", threadId).eq("user_id", userId))
       .unique();
-    if (existing && existing.last_read_message_created_at >= message.created_at) return null;
+    if (existing && (existing.last_read_message_created_at > message.created_at ||
+        (existing.last_read_message_created_at === message.created_at && existing.last_read_message_id >= message.id))) return null;
     const row = {
       last_read_message_id: messageId,
       last_read_message_created_at: message.created_at,

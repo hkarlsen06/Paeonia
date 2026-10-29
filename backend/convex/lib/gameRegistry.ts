@@ -8,7 +8,7 @@ import { guessMySpotBackend } from "./guessMySpot";
 import { mindMeldBackend } from "./mindMeld";
 import { storyChainBackend } from "./storyChain";
 import type { GameLanguage } from "./gameWords";
-import { INVITE_INTERVAL_MS, openGameInvitesFor, type GameKind, type GamePushKind, type GameWait } from "./games";
+import { INVITE_INTERVAL_MS, isGamePresent, openGameInvitesFor, type GameKind, type GamePushKind, type GameWait } from "./games";
 import { addMs, nowIso } from "./time";
 import { GAME_KINDS } from "./validators";
 
@@ -85,6 +85,10 @@ export async function gamePushStillWanted(
       ? { wanted: true } : { wanted: false, reason: "out_of_date" };
   }
   const kind = GAME_KINDS.find((item) => item === payload.game_kind);
+  if (kind && (push === "game_turn_ready" || push === "game_result") &&
+      await isGamePresent(ctx, coupleId, kind, recipientUserId)) {
+    return { wanted: false, reason: "out_of_date" };
+  }
   const backend = kind ? GAME_BACKENDS[kind] : null;
   let wanted = backend ? await backend.pushStillWanted(ctx, push, payload, recipientUserId) : false;
   // The recipient said "Not now" to the turn the reminder is about.

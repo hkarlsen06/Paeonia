@@ -114,3 +114,28 @@ test("delivered reminders expire even when their backing row remains", async () 
   expect(await s.obsolete([id])).toEqual([]);
   expect(await s.obsolete([id], "2026-10-10T12:01:00.000Z")).toEqual([id]);
 });
+
+test("reading an earlier message in the same millisecond keeps the later alert", async () => {
+  const s = await setup();
+  const memory = newUuid();
+  await s.couple.first.as.mutation(api.memories.create_memory, {
+    ...op(), p_memory_id: memory, p_title: "Together", p_memory_date: "2026-10-10", p_note_body: "A memory",
+  });
+  const [first] = await s.couple.first.as.mutation(api.threads.create_memory_thread_with_message, {
+    ...op(), p_memory_id: memory, p_body: "One",
+  });
+  const [second] = await s.couple.first.as.mutation(api.threads.send_thread_message, {
+    ...op(), p_thread_id: first.thread_id, p_body: "Two",
+  });
+  const [older, newer] = [first.message_id, second.message_id].sort();
+  const alert = await s.queue("thread_message_sent", { message_id: newer });
+  await s.couple.second.as.mutation(api.chatPresence.mark_thread_read, {
+    p_thread_id: first.thread_id, p_message_id: older,
+  });
+  expect(await s.obsolete([alert])).toEqual([]);
+  expect(await s.prepare(alert)).not.toBeNull();
+  await s.couple.second.as.mutation(api.chatPresence.mark_thread_read, {
+    p_thread_id: first.thread_id, p_message_id: newer,
+  });
+  expect(await s.obsolete([alert])).toEqual([alert]);
+});

@@ -101,7 +101,8 @@ async function unreadChats(ctx: ReaderCtx, coupleId: string, userId: string): Pr
       .query("thread_read_states")
       .withIndex("by_thread_id_user_id", (q) => q.eq("thread_id", thread.id).eq("user_id", userId))
       .unique();
-    if (read && read.last_read_message_created_at >= last.created_at) continue;
+    if (read && (read.last_read_message_created_at > last.created_at ||
+        (read.last_read_message_created_at === last.created_at && read.last_read_message_id >= last.id))) continue;
     if (thread.kind === "daily_question") {
       const daily = await ctx.db
         .query("daily_question_threads")

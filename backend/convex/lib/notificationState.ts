@@ -41,7 +41,8 @@ export async function notificationStillWanted(
     }
     const read = await ctx.db.query("thread_read_states")
       .withIndex("by_thread_id_user_id", q => q.eq("thread_id", message.thread_id).eq("user_id", recipientUserId)).unique();
-    if (read && read.last_read_message_created_at >= message.created_at) return { wanted: false, reason: "out_of_date" };
+    if (read && (read.last_read_message_created_at > message.created_at ||
+        (read.last_read_message_created_at === message.created_at && read.last_read_message_id >= message.id))) return { wanted: false, reason: "out_of_date" };
   }
   if (row.kind === "memory_created" && typeof payload.memory_id === "string") {
     const memory = await getByUuid(ctx, "memories", payload.memory_id);
