@@ -61,6 +61,7 @@ struct PairingCelebrationSchedule {
 }
 
 struct PairingCelebrationHaptics {
+    var prepare: @MainActor () -> Void = {}
     var buildUp: @MainActor (CGFloat) -> Void
     var burst: @MainActor () -> Void
     var linked: @MainActor () -> Void
@@ -68,6 +69,7 @@ struct PairingCelebrationHaptics {
     var settledWithoutIntro: @MainActor () -> Void
 
     static let live = PairingCelebrationHaptics(
+        prepare: { PaeoniaHaptics.preparePairingLink() },
         buildUp: { PaeoniaHaptics.pairingLinkBuildUp(intensity: $0) },
         burst: {
             PaeoniaHaptics.pairingLinkExplosion()

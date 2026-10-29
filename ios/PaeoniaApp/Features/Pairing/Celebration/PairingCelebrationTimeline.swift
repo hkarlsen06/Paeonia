@@ -95,7 +95,6 @@ final class PairingCelebrationTimeline {
         guard !hasBegun else { return }
         hasBegun = true
         self.onIntroComplete = onIntroComplete
-        if playsIntro { sound.prepare() }
 
         // No intro: the app launched straight into the paired space, or Reduce
         // Motion is on. Nothing waits and nothing moves. A real, fresh link still
@@ -103,6 +102,7 @@ final class PairingCelebrationTimeline {
         guard playsIntro, !reduceMotion else {
             applySettledState()
             if playsIntro {
+                sound.prepare()
                 haptics.settledWithoutIntro()
                 sound.release()
             }
@@ -170,12 +170,16 @@ final class PairingCelebrationTimeline {
         // The animation below runs from this timeline's own state, not the prop.
         complete()
         let heartIsVisible = mode == .waitingForPartner
+        let id = beginRun()
+        // Cancellation discards audio buffers. Queue preparation after it so the
+        // intro keeps its prepared audio. Warm the haptics before the visual clock.
+        sound.prepare()
+        haptics.prepare()
         mode = .playing
         particlePlayback = PairingCelebrationParticlePlayback(
             started: CACurrentMediaTime(), heartIsVisibleAtStart: heartIsVisible
         )
 
-        let id = beginRun()
         introTask = Task { [weak self] in
             await self?.runIntro(id)
         }
@@ -207,7 +211,7 @@ final class PairingCelebrationTimeline {
             releaseDuration: min(PairingCelebrationTiming.explode, schedule.partnerHold)
         )
         particlePlayback.stage = .absorbing(absorption)
-        sound.absorb(releasingAfter: max(0, absorption.impact - CACurrentMediaTime()))
+        sound.absorb(startedAt: absorption.since, releasingAt: absorption.impact)
 
         hapticsTask = Task { [weak self] in
             await self?.buildHapticPressure(id)

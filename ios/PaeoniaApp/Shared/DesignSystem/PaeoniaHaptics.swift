@@ -33,6 +33,13 @@ enum PaeoniaHaptics {
         impact(.soft, intensity: intensity)
     }
 
+    static func preparePairingLink() {
+        for style: UIImpactFeedbackGenerator.FeedbackStyle in [.soft, .heavy, .light] {
+            impactGenerator(for: style).prepare()
+        }
+        notificationGenerator.prepare()
+    }
+
     static func pairingLinkExplosion() {
         impact(.heavy, intensity: 1)
         notify(.success)
@@ -277,8 +284,7 @@ enum PaeoniaHaptics {
     }
 
     private static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle, intensity: CGFloat? = nil) {
-        let generator = impactGenerators[style] ?? UIImpactFeedbackGenerator(style: style)
-        impactGenerators[style] = generator
+        let generator = impactGenerator(for: style)
 
         if let intensity {
             generator.impactOccurred(intensity: max(0, min(intensity, 1)))
@@ -286,5 +292,14 @@ enum PaeoniaHaptics {
             generator.impactOccurred()
         }
         generator.prepare()
+    }
+
+    private static func impactGenerator(
+        for style: UIImpactFeedbackGenerator.FeedbackStyle
+    ) -> UIImpactFeedbackGenerator {
+        if let generator = impactGenerators[style] { return generator }
+        let generator = UIImpactFeedbackGenerator(style: style)
+        impactGenerators[style] = generator
+        return generator
     }
 }
