@@ -182,7 +182,7 @@ let sprinkle = try pianoPhrase([
     PianoNote(pitch: 87, velocity: 32, start: 0.78)
 ], seconds: releaseDuration, gain: 0.50)
 
-try writeCue("Gather", seconds: gatherDuration, peak: 0.14, fadeOut: 0.008) { frame, channel in
+try writeCue("Gather", seconds: gatherDuration, peak: 0.28, fadeOut: 0.008) { frame, channel in
     let time = Double(frame) / sampleRate
     let progress = time / gatherDuration
     let attack = 1 - exp(-pow(time / 0.22, 2))
@@ -195,7 +195,7 @@ try writeCue("Gather", seconds: gatherDuration, peak: 0.14, fadeOut: 0.008) { fr
     return attack * reverse * pressure + gatherPhrase[channel][frame] + harmony
 }
 
-try writeCue("Release", seconds: releaseDuration, peak: 0.24, fadeOut: 0.24) { frame, channel in
+try writeCue("Release", seconds: releaseDuration, peak: 0.48, fadeOut: 0.24) { frame, channel in
     let time = Double(frame) / sampleRate
     let attack = 1 - exp(-time / 0.002)
     return arrivalPiano[channel][frame] * attack * exp(-time / 1.15) + sprinkle[channel][frame]

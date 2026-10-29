@@ -56,7 +56,7 @@ nonisolated final class PairingCelebrationSoundPlayer: @unchecked Sendable {
     private func play(_ name: String, offset: Double = 0, at deviceTime: Double? = nil) {
         guard let player = players[name], offset < player.duration else { return }
         player.currentTime = offset
-        player.volume = 0.65
+        player.volume = 1
         if let deviceTime {
             player.play(atTime: deviceTime)
         } else {
