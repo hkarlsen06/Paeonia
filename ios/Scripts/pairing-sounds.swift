@@ -10,7 +10,7 @@ let directory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true
 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
 func writeCue(_ name: String, seconds: Double, peak: Double,
-              signal: (Int, Int) -> Double) throws {
+              fadeOut: Double, signal: (Int, Int) -> Double) throws {
     let frames = Int(seconds * sampleRate)
     guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2),
           let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)),
@@ -20,7 +20,7 @@ func writeCue(_ name: String, seconds: Double, peak: Double,
     for channel in 0..<2 {
         for frame in 0..<frames {
             let time = Double(frame) / sampleRate
-            let fade = min(time / 0.0005, 1) * min(Double(frames - 1 - frame) / sampleRate / 0.06, 1)
+            let fade = min(time / 0.0005, 1) * min(Double(frames - 1 - frame) / sampleRate / fadeOut, 1)
             let value = signal(frame, channel) * fade
             precondition(value.isFinite, "Non-finite audio sample")
             channels[channel][frame] = Float(value)
@@ -52,43 +52,131 @@ func timing(_ name: String) -> Double {
     return value
 }
 let gatherDuration = timing("absorb")
-let releaseDuration = timing("partnerHold")
-let notes = [(261.625565, 1.0), (329.627557, 0.36), (391.995436, 0.42)]
+let releaseDuration = timing("partnerHold") + timing("landingSettle")
 
-func resonance(time: Double, brightness: Double, release: Bool, channel: Int) -> Double {
-    var value = 0.0
-    for (index, note) in notes.enumerated() {
-        let (frequency, weight) = note
-        let phase = Double(index) * 0.47
-        let pan = index == 0 ? 1 : (index == channel + 1 ? 1.0 : 0.82)
-        let fundamental = sin(2 * .pi * frequency * time + phase)
-        let second = sin(2 * .pi * frequency * 2 * time + phase) * 0.14 * brightness
-            * (release ? exp(-time / 0.16) : 1)
-        let third = sin(2 * .pi * frequency * 3 * time + phase) * 0.045 * brightness
-            * (release ? exp(-time / 0.09) : 1)
-        let feltMode = sin(2 * .pi * frequency * 4.08 * time + phase) * 0.018 * brightness
-            * (release ? exp(-time / 0.035) : pow(min(time / gatherDuration, 1), 3))
-        let modalDecay = release ? exp(-time * (2.8 + Double(index) * 0.3)) : 1
-        value += (fundamental + second + third + feltMode) * weight * pan * modalDecay
+// Cmaj9 opens into Ab6/9. C stays shared while E falls to Eb and B falls to Bb.
+let opening: [(UInt8, UInt8)] = [(48, 44), (60, 49), (64, 44), (67, 38), (71, 31), (74, 35)]
+let arrival: [(UInt8, UInt8)] = [(44, 53), (51, 35), (60, 48), (63, 42), (65, 29), (70, 28), (75, 34)]
+
+// Render the Mac's sampled piano here. The app only plays the finished PCM assets.
+func pianoChord(_ notes: [(UInt8, UInt8)], seconds: Double) throws -> [[Double]] {
+    let engine = AVAudioEngine()
+    let piano = AVAudioUnitSampler()
+    engine.attach(piano)
+    guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2),
+          let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 512)
+    else { fatalError("Cannot allocate piano buffer") }
+    try engine.connectNode(piano, to: engine.mainMixerNode, format: format)
+    let soundBank = URL(fileURLWithPath:
+        "/System/Library/Components/CoreAudio.component/Contents/Resources/gs_instruments.dls")
+    try piano.loadSoundBankInstrument(at: soundBank, program: 0,
+                                     bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB), bankLSB: 0)
+    piano.sendController(91, withValue: 0, onChannel: 0)
+    piano.sendController(93, withValue: 0, onChannel: 0)
+    try engine.enableManualRenderingMode(.offline, format: format, maximumFrameCount: 512)
+    try engine.start()
+    defer { engine.stop() }
+    for (note, velocity) in notes { piano.startNote(note, withVelocity: velocity, onChannel: 0) }
+
+    let frames = Int(seconds * sampleRate)
+    var samples = Array(repeating: [Double](), count: 2)
+    for channel in 0..<2 { samples[channel].reserveCapacity(frames) }
+    while samples[0].count < frames {
+        let count = AVAudioFrameCount(min(512, frames - samples[0].count))
+        guard try engine.renderOffline(count, to: buffer) == .success,
+              let channels = buffer.floatChannelData,
+              buffer.frameLength == count else { fatalError("Piano rendering failed") }
+        for channel in 0..<2 {
+            samples[channel].append(contentsOf: (0..<Int(count)).map { Double(channels[channel][$0]) })
+        }
     }
-    return value
+    return samples
 }
 
-try writeCue("Gather", seconds: gatherDuration, peak: 0.14) { frame, channel in
-    let time = Double(frame) / sampleRate
-    let progress = min(time / gatherDuration, 1)
-    let attack = 1 - exp(-pow(time / 0.35, 2))
-    let pressure = 0.10 + 0.90 * pow(progress, 1.35)
-    return resonance(time: time, brightness: 0.18 + 0.82 * progress * progress,
-                     release: false, channel: channel) * attack * pressure
+// Soften the hammer and add quiet room reflections, with different delays in each ear.
+func soften(_ samples: [[Double]], cutoff: Double, room: Double) -> [[Double]] {
+    var result = samples
+    let coefficient = 1 - exp(-2 * .pi * cutoff / sampleRate)
+    for channel in 0..<2 {
+        var first = 0.0
+        var second = 0.0
+        for frame in samples[channel].indices {
+            first += coefficient * (samples[channel][frame] - first)
+            second += coefficient * (first - second)
+            result[channel][frame] = second
+        }
+    }
+    let dry = result
+    for channel in 0..<2 {
+        for (seconds, gain) in [(0.019, 0.40), (0.043, 0.29), (0.079, 0.18), (0.127, 0.10)] {
+            let delay = Int((seconds + Double(channel) * 0.007) * sampleRate)
+            for frame in delay..<samples[channel].count {
+                result[channel][frame] += dry[1 - channel][frame - delay] * gain * room
+            }
+        }
+    }
+    return result
 }
 
-try writeCue("Release", seconds: releaseDuration, peak: 0.24) { frame, channel in
+// Level a 240 ms window before reversing, so the chord stays audible throughout the pull.
+func sustainGains(_ samples: [[Double]]) -> [Double] {
+    let frames = samples[0].count
+    var energy = [Double](repeating: 0, count: frames + 1)
+    for frame in 0..<frames {
+        energy[frame + 1] = energy[frame] +
+            (samples[0][frame] * samples[0][frame] + samples[1][frame] * samples[1][frame]) * 0.5
+    }
+    let radius = Int(0.12 * sampleRate)
+    return (0..<frames).map { frame in
+        let lower = max(0, frame - radius)
+        let upper = min(frames, frame + radius + 1)
+        let rms = sqrt((energy[upper] - energy[lower]) / Double(upper - lower))
+        return 0.025 / max(rms, 0.002)
+    }
+}
+
+let openingPiano = soften(try pianoChord(opening, seconds: gatherDuration), cutoff: 1_900, room: 0.25)
+let openingGains = sustainGains(openingPiano)
+let arrivalPiano = soften(try pianoChord(arrival, seconds: releaseDuration), cutoff: 2_800, room: 0.55)
+
+// A quiet upper phrase overlaps the arrival chord and finishes on its fifth.
+struct SprinkleNote {
+    let pitch: UInt8
+    let velocity: UInt8
+    let start: Double
+}
+let sprinkleNotes = [
+    SprinkleNote(pitch: 80, velocity: 38, start: 0.18),
+    SprinkleNote(pitch: 82, velocity: 36, start: 0.36),
+    SprinkleNote(pitch: 84, velocity: 34, start: 0.54),
+    SprinkleNote(pitch: 75, velocity: 32, start: 0.78)
+]
+var sprinkle = Array(repeating: [Double](repeating: 0, count: Int(releaseDuration * sampleRate)), count: 2)
+for note in sprinkleNotes {
+    let start = Int(note.start * sampleRate)
+    let voice = soften(try pianoChord([(note.pitch, note.velocity)], seconds: releaseDuration - note.start),
+                       cutoff: 2_500, room: 0.85)
+    for channel in 0..<2 {
+        for frame in 0..<min(voice[channel].count, sprinkle[channel].count - start) {
+            let age = Double(frame) / sampleRate
+            let attack = 1 - exp(-age / 0.018)
+            sprinkle[channel][start + frame] += voice[channel][frame] * attack * exp(-age / 0.52) * 0.30
+        }
+    }
+}
+
+try writeCue("Gather", seconds: gatherDuration, peak: 0.14, fadeOut: 0.008) { frame, channel in
     let time = Double(frame) / sampleRate
-    let attack = 1 - exp(-time / 0.004)
-    let contact = sin(2 * .pi * 523.25113 * time) * exp(-time / 0.14)
-        + 0.10 * sin(2 * .pi * 1_046.50226 * time) * exp(-time / 0.045)
-        + 0.025 * sin(2 * .pi * 1_569.75339 * time) * exp(-time / 0.025)
-    let tail = resonance(time: time, brightness: exp(-time / 0.12), release: true, channel: channel)
-    return attack * (contact * 0.8 + tail * 0.30)
+    let progress = time / gatherDuration
+    let attack = 1 - exp(-pow(time / 0.22, 2))
+    let reverseFrame = openingPiano[channel].count - 1 - frame
+    let reverse = openingPiano[channel][reverseFrame] * openingGains[reverseFrame]
+    let pressure = 0.40 + 0.60 * progress * progress
+    return attack * reverse * pressure
+}
+
+try writeCue("Release", seconds: releaseDuration, peak: 0.24, fadeOut: 0.24) { frame, channel in
+    let time = Double(frame) / sampleRate
+    let attack = 1 - exp(-time / 0.002)
+    return arrivalPiano[channel][frame] * attack * exp(-time / 1.15) + sprinkle[channel][frame]
 }
