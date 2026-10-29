@@ -211,7 +211,7 @@ final class PairingCelebrationTimeline {
             releaseDuration: min(PairingCelebrationTiming.explode, schedule.partnerHold)
         )
         particlePlayback.stage = .absorbing(absorption)
-        sound.absorb(startedAt: absorption.since, releasingAt: absorption.impact)
+        sound.absorb(releasingAt: absorption.impact)
 
         hapticsTask = Task { [weak self] in
             await self?.buildHapticPressure(id)

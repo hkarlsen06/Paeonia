@@ -22,20 +22,18 @@ nonisolated final class PairingCelebrationSoundPlayer: @unchecked Sendable {
         }
     }
 
-    func absorb(startedAt start: Double, releasingAt impact: Double) {
+    func absorb(releasingAt impact: Double) {
         queue.async {
-            // Seek past any queue delay so the sustained chord follows the visual pull.
-            self.play("Gather", offset: max(0, CACurrentMediaTime() - start))
-            guard let release = self.players["Release"] else { return }
-            release.currentTime = 0
-            release.volume = 0.65
+            guard let gather = self.players["Gather"], let release = self.players["Release"] else { return }
             let deviceTime = release.deviceCurrentTime
             let remaining = impact - CACurrentMediaTime()
-            if remaining > 0 {
-                release.play(atTime: deviceTime + remaining)
-            } else {
-                self.play("Release", offset: -remaining)
-            }
+            // Give the audio queues 100 ms to start and seek ahead by that interval.
+            // Both cues use one device clock, so Gather ends exactly when Release starts.
+            let gatherDelay = max(0.1, remaining - gather.duration)
+            self.play("Gather", offset: max(0, gather.duration + gatherDelay - remaining),
+                      at: deviceTime + gatherDelay)
+            let releaseDelay = max(0.1, remaining)
+            self.play("Release", offset: releaseDelay - remaining, at: deviceTime + releaseDelay)
         }
     }
 
@@ -55,10 +53,14 @@ nonisolated final class PairingCelebrationSoundPlayer: @unchecked Sendable {
         }
     }
 
-    private func play(_ name: String, offset: Double = 0) {
+    private func play(_ name: String, offset: Double = 0, at deviceTime: Double? = nil) {
         guard let player = players[name], offset < player.duration else { return }
         player.currentTime = offset
         player.volume = 0.65
-        player.play()
+        if let deviceTime {
+            player.play(atTime: deviceTime)
+        } else {
+            player.play()
+        }
     }
 }
