@@ -1,6 +1,7 @@
 import Combine
 @preconcurrency import ConvexMobile
 import Foundation
+import Observation
 
 /// `LiveQueryTransport` backed by ConvexMobile.
 nonisolated struct ConvexLiveTransport: LiveQueryTransport {
@@ -25,6 +26,13 @@ nonisolated struct ConvexLiveTransport: LiveQueryTransport {
                 }
 
                 handle.set(Self.attach(client: client, path: path, args: args, to: continuation))
+                for await state in Observations({ connection.connectionState }) {
+                    guard !Task.isCancelled else { return }
+                    if state != .connected {
+                        continuation.finish(throwing: LiveQueryError.unavailable)
+                        return
+                    }
+                }
             }
             continuation.onTermination = { _ in
                 task.cancel()

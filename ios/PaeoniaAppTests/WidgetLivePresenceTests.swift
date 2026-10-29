@@ -1,7 +1,24 @@
+import Foundation
 import Testing
 @testable import PaeoniaApp
 
 struct WidgetLivePresenceTests {
+    @Test func droppedCanvasExpiresWhileHomeAndLiveCanvasCanCoexist() {
+        let now = Date(timeIntervalSince1970: 100)
+        var presence = WidgetLivePresence()
+        presence.welcome(id: "me", peers: 2)
+        presence.hello(from: "canvas", role: .drawing, now: now)
+        presence.hello(from: "home", role: .watching, now: now.addingTimeInterval(10))
+        presence.expire(now: now.addingTimeInterval(14))
+        #expect(presence.partnerActivity == .drawing)
+        presence.expire(now: now.addingTimeInterval(15))
+        #expect(presence.partnerActivity == .watching)
+        presence.hello(from: "canvas", role: .drawing, now: now.addingTimeInterval(16))
+        #expect(presence.partnerActivity == .drawing)
+        presence.expire(now: now.addingTimeInterval(31))
+        #expect(presence.partnerActivity == .away)
+    }
+
     @Test func drawingWinsOverWatchingAndLeavingClearsIt() {
         var presence = WidgetLivePresence()
         presence.welcome(id: "me", peers: 2)

@@ -12,6 +12,38 @@ struct GamesDocumentStoreTests {
         GamesDocumentStore(directoryURL: directory, schemaVersion: 1)
     }
 
+    @Test func reopeningKeepsGameContentAndInvitesWithoutLivePresence() async {
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = FileGamesCache(directoryURL: directory)
+        var state = GameFixture.state(
+            settings: GameFixture.settings(), game: GameFixture.game(state: .drawing, turn: GameFixture.me)
+        )
+        state.myPresent = true
+        state.partnerPresent = true
+        var overview = RemoteGamesOverview(drawAndGuess: state)
+        let invitedAt = Date(timeIntervalSince1970: 100)
+        overview.presence = [RemoteGamePresence(
+            kind: .drawAndGuess, myPresent: true, partnerPresent: true, lastInviteAt: invitedAt
+        )]
+        await cache.saveOverview(overview, ownerUserID: GameFixture.me)
+        await cache.saveState(state, ownerUserID: GameFixture.me)
+        #expect(await cache.document(ownerUserID: GameFixture.me).state?.partnerPresent == true)
+        let reopened = FileGamesCache(directoryURL: directory)
+        let document = await reopened.document(ownerUserID: GameFixture.me)
+        #expect(document.state?.partnerPresent == false)
+        #expect(document.overview?.presence(for: .drawAndGuess)?.partnerPresent == false)
+        #expect(document.state?.settings == state.settings)
+        #expect(document.state?.game == state.game)
+        #expect(document.overview?.presence(for: .drawAndGuess)?.lastInviteAt == invitedAt)
+        #expect(document.state?.lastInviteAt == state.lastInviteAt)
+        await cache.clearPresence(ownerUserID: GameFixture.me, overview: false)
+        let stillLive = await cache.document(ownerUserID: GameFixture.me)
+        #expect(stillLive.overview?.presence(for: .drawAndGuess)?.partnerPresent == true)
+        await cache.clearPresence(ownerUserID: GameFixture.me, overview: true)
+        let stopped = await cache.document(ownerUserID: GameFixture.me)
+        #expect(stopped.overview?.presence(for: .drawAndGuess)?.partnerPresent == false)
+    }
+
     @Test func clearingDropsTheCopyInMemoryAndTheFiles() {
         defer { try? FileManager.default.removeItem(at: directory) }
         var store = makeStore()

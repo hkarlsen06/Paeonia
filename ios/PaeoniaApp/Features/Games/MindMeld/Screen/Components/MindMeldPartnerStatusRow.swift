@@ -10,6 +10,7 @@ import SwiftUI
 struct MindMeldPartnerStatusRow: View {
     let partner: MindMeldPlayer
     let status: MindMeldPartnerStatus
+    let isPresent: Bool
 
     private static let avatarSize: CGFloat = 24
 
@@ -25,11 +26,11 @@ struct MindMeldPartnerStatusRow: View {
                 size: Self.avatarSize
             )
             .overlay {
-                if status != .away {
+                if isPresent {
                     Circle().strokeBorder(.paeoniaAccentPrimary, lineWidth: 2).padding(-2)
                 }
             }
-            .gamePresenceDot(status != .away, size: 10)
+            .gamePresenceDot(isPresent, size: 10)
             .scaleEffect(pulse)
             .accessibilityHidden(true)
             line
@@ -95,10 +96,10 @@ struct MindMeldPartnerStatusRow: View {
 #Preview {
     VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
         let robin = MindMeldPlayer(name: "Robin", photoAssetID: nil)
-        MindMeldPartnerStatusRow(partner: robin, status: .locked)
-        MindMeldPartnerStatusRow(partner: robin, status: .typing)
-        MindMeldPartnerStatusRow(partner: robin, status: .here)
-        MindMeldPartnerStatusRow(partner: robin, status: .away)
+        MindMeldPartnerStatusRow(partner: robin, status: .locked, isPresent: false)
+        MindMeldPartnerStatusRow(partner: robin, status: .typing, isPresent: true)
+        MindMeldPartnerStatusRow(partner: robin, status: .here, isPresent: true)
+        MindMeldPartnerStatusRow(partner: robin, status: .away, isPresent: false)
     }
     .padding()
     .background(.paeoniaBackgroundSecondary)

@@ -162,8 +162,8 @@ nonisolated struct RemoteDrawAndGuessState: Codable, Equatable, Sendable {
     var recentRounds: [RemoteDrawAndGuessRound]
     /// Only the drawer whose turn it is, while the game is choosing a word.
     let choices: [RemoteDrawAndGuessChoice]?
-    let myPresent: Bool
-    let partnerPresent: Bool
+    var myPresent: Bool
+    var partnerPresent: Bool
     let lastInviteAt: Date?
 
     enum CodingKeys: String, CodingKey {

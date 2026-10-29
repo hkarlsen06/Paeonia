@@ -4,7 +4,8 @@
   /// Mind Meld scenarios. Each one opens in `DeveloperMindMeldScenarioView`.
   nonisolated extension DeveloperScenario {
     static let mindMeld: [DeveloperScenario] = [
-      mindMeldFirstRound, mindMeldWrite, mindMeldWriteTyping, mindMeldWaiting, mindMeldWaitingOffline,
+      mindMeldFirstRound, mindMeldWrite, mindMeldWriteAway, mindMeldWriteTyping,
+      mindMeldWaiting, mindMeldWaitingOffline,
       mindMeldRevealMiss, mindMeldRevealNear, mindMeldRevealMeld, mindMeldRevealRecord, mindMeldRevealGotAway,
       mindMeldOver, mindMeldPartnerRestarted, mindMeldHistory, mindMeldHistoryEmpty,
     ]
@@ -16,6 +17,10 @@
     static let mindMeldWrite = mindMeldScreen(
       "mind-meld-write", "Mind Meld · write, partner locked in",
       "Round 4 with three earlier pairs above the field. Robin is here and has locked in"
+    )
+    static let mindMeldWriteAway = mindMeldScreen(
+      "mind-meld-write-away", "Mind Meld · partner locked in, away",
+      "Robin locked in a word and left. The locked wording stays, with no presence dot and an available invite"
     )
     static let mindMeldWriteTyping = mindMeldScreen(
       "mind-meld-write-typing", "Mind Meld · write, partner typing",

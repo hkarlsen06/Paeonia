@@ -22,18 +22,22 @@ nonisolated struct GamesOverviewLiveFeed: LiveFeed {
         let results = live.subscribe("games:get_games_overview", as: RemoteGamesOverview.self)
         for await result in results {
             guard !Task.isCancelled else {
-                return
+                break
             }
             guard case let .value(overview) = result else {
+                await cache.clearPresence(ownerUserID: session.userID, overview: true)
+                LocalStoreChanges.post(.games, ownerUserID: session.userID)
                 continue
             }
             await cache.saveOverview(overview, ownerUserID: session.userID)
             // The write may have finished after a cancel. The coordinator waits for
             // this task before a privacy purge, so nothing is written after it.
             guard !Task.isCancelled else {
-                return
+                break
             }
             LocalStoreChanges.post(.games, ownerUserID: session.userID)
         }
+        await cache.clearPresence(ownerUserID: session.userID, overview: true)
+        LocalStoreChanges.post(.games, ownerUserID: session.userID)
     }
 }

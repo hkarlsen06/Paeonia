@@ -21,7 +21,7 @@ extension BoardGameViewModel {
             now = dependencies.now()
             updatePresence()
         }
-        loops.beginHeartbeat()
+        if isActive { loops.beginHeartbeat() }
         // The live feed keeps the cache current. This read covers the first
         // launch, when the cache is empty.
         await refresh()

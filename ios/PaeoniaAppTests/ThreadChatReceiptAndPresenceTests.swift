@@ -74,8 +74,16 @@ struct ThreadChatPresenceModelTests {
     private actor TypingRecorder: ThreadChatServicing {
         private(set) var typingCalls: [Bool] = []
         private(set) var readMarks: [UUID] = []
+        var delaysStart = false
+        private var start: CheckedContinuation<Void, Never>?
+        func delayStart() { delaysStart = true }
+        var startIsWaiting: Bool { start != nil }
+        func finishStart() { start?.resume(); start = nil }
 
-        func setTyping(coupleID _: UUID, subject _: ThreadChatSubject, isTyping: Bool) { typingCalls.append(isTyping) }
+        func setTyping(coupleID _: UUID, subject _: ThreadChatSubject, isTyping: Bool) async {
+            if isTyping, delaysStart { await withCheckedContinuation { start = $0 } }
+            typingCalls.append(isTyping)
+        }
         func markThreadReadOnServer(threadID _: UUID, messageID: UUID) { readMarks.append(messageID) }
 
         func cachedThreadSummaries(ownerUserID _: UUID) -> [ThreadChatSummary] { [] }
@@ -98,6 +106,19 @@ struct ThreadChatPresenceModelTests {
 
     private func settle() async {
         for _ in 0..<5 { await Task.yield() }
+    }
+
+    @Test func stoppingWaitsForAnInFlightTypingStart() async {
+        let service = TypingRecorder()
+        await service.delayStart()
+        let model = ThreadChatPresenceModel(coupleID: UUID(), subject: .question(UUID()), service: service)
+        model.draftChanged("Hello")
+        while !(await service.startIsWaiting) { await Task.yield() }
+        let stop = Task { await model.stopTyping() }
+        await settle()
+        await service.finishStart()
+        await stop.value
+        #expect(await service.typingCalls == [true, false])
     }
 
     @Test func typingSendsOneHeartbeatEveryFewSecondsAndStopsOnAnEmptyField() async {

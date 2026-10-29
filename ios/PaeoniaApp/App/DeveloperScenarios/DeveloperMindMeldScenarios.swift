@@ -22,7 +22,7 @@
       switch scenario {
       case .mindMeldFirstRound:
         return Fixture.state(current: Fixture.game(1, rounds: [Fixture.open(1, game: 1)]), stats: Fixture.noMelds)
-      case .mindMeldWrite:
+      case .mindMeldWrite, .mindMeldWriteAway:
         return Fixture.playing(Fixture.revealedRounds(3) + [Fixture.open(4, partnerLocked: true)])
       case .mindMeldWriteTyping, .gamesHubPartnerHere:
         return Fixture.playing(Fixture.revealedRounds(1) + [Fixture.open(2)])

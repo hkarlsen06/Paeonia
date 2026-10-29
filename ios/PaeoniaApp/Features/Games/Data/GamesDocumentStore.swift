@@ -4,6 +4,11 @@ import Foundation
 nonisolated protocol GamesPersistedDocument: Codable, Equatable, Sendable {
     /// The empty document, for a person with no file yet.
     init()
+    func persisted() -> Self
+}
+
+nonisolated extension GamesPersistedDocument {
+    func persisted() -> Self { self }
 }
 
 /// The file storage behind the games caches: one JSON file per signed-in person
@@ -82,12 +87,12 @@ nonisolated struct GamesDocumentStore<Document: GamesPersistedDocument> {
         else {
             return nil
         }
-        return envelope.document
+        return envelope.document.persisted()
     }
 
     /// Returns false when the file could not be written, for example on a full disk.
     private func writeFile(_ document: Document, ownerUserID: UUID) -> Bool {
-        let envelope = Envelope(schemaVersion: schemaVersion, ownerUserID: ownerUserID, document: document)
+        let envelope = Envelope(schemaVersion: schemaVersion, ownerUserID: ownerUserID, document: document.persisted())
         do {
             let data = try PaeoniaConvexClient.encoder.encode(envelope)
             try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)

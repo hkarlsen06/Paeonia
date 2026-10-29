@@ -74,7 +74,9 @@ struct MindMeldWriteView: View {
     /// The partner on the left and the round on the right.
     private var topLine: some View {
         GameLiveRow {
-            MindMeldPartnerStatusRow(partner: viewModel.partner, status: viewModel.partnerStatus)
+            MindMeldPartnerStatusRow(
+                partner: viewModel.partner, status: viewModel.partnerStatus, isPresent: viewModel.isPartnerHere
+            )
         } trailing: {
             Text(.mindMeldRound(viewModel.resolution.roundNumber, viewModel.maxRounds))
                 .font(PaeoniaTypography.caption.weight(.bold))

@@ -48,6 +48,7 @@ nonisolated struct WidgetLivePresence {
     /// The partner's sockets in the room, including ones that have not said hello yet.
     private(set) var peerCount = 0
     private var roles: [String: Role] = [:]
+    private var renewedAt: [String: Date] = [:]
 
     init(countsLatestHelloOnly: Bool = false) {
         self.countsLatestHelloOnly = countsLatestHelloOnly
@@ -65,23 +66,35 @@ nonisolated struct WidgetLivePresence {
         ownID = id
         peerCount = max(0, peers)
         roles = [:]
+        renewedAt = [:]
     }
 
     mutating func joined() {
         peerCount += 1
     }
 
-    mutating func hello(from id: String, role: Role) {
+    mutating func hello(from id: String, role: Role, now: Date = Date()) {
         if countsLatestHelloOnly {
             roles = [:]
+            renewedAt = [:]
         }
         roles[id] = role
+        renewedAt[id] = now
+    }
+
+    /// Each connected surface repeats hello every 5 seconds. Dropped sockets lose their role after 15.
+    mutating func expire(now: Date = Date()) {
+        for id in roles.keys where now.timeIntervalSince(renewedAt[id] ?? .distantPast) >= 15 {
+            roles[id] = nil
+            renewedAt[id] = nil
+        }
     }
 
     mutating func left(id: String?) {
         peerCount = max(0, peerCount - 1)
         if let id {
             roles[id] = nil
+            renewedAt[id] = nil
         }
         if peerCount == 0 {
             roles = [:]

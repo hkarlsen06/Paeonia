@@ -65,6 +65,7 @@ final class WidgetLiveDrawing {
     /// after a relaunch. It goes out once the canvas is attached.
     @ObservationIgnored private var isSnapshotOwed = false
     @ObservationIgnored private var pendingRemote: [WidgetLiveMessage] = []
+    @ObservationIgnored private var presenceTask: Task<Void, Never>?
     @ObservationIgnored private var retryTask: Task<Void, Never>?
     @ObservationIgnored private var outgoing: WidgetLiveOutgoingStroke?
     /// The partner's strokes waited for a stroke here, so they wait a little
@@ -222,6 +223,7 @@ final class WidgetLiveDrawing {
         switch message.type {
         case .welcome:
             isConnected = true
+            beginPresenceRenewal()
             isPartnerCanvasCaughtUp = false
             hasSentCanvasToPartner = false
             presence.welcome(id: message.id, peers: message.peers ?? 0)
@@ -254,6 +256,19 @@ final class WidgetLiveDrawing {
         }
     }
 
+    private func beginPresenceRenewal() {
+        presenceTask?.cancel()
+        presenceTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                guard !Task.isCancelled, let self else { return }
+                presence.expire()
+                sendHello(needsCanvas: false)
+                updatePresence()
+            }
+        }
+    }
+
     private func announceArrivalIfPartnerIsHere() {
         if presence.peerCount > 0 {
             onPartnerArrived?()
@@ -262,6 +277,8 @@ final class WidgetLiveDrawing {
 
     private func handleDisconnect() {
         isConnected = false
+        presenceTask?.cancel()
+        presenceTask = nil
         isSnapshotOwed = false
         isPartnerCanvasCaughtUp = false
         hasSentCanvasToPartner = false

@@ -81,6 +81,7 @@ protocol GamesCaching: Actor {
     /// Called when the person leaves the paired state, so private content does not
     /// stay on the phone. A one-shot read still on its way is not saved after it.
     func clearAll()
+    func clearPresence(ownerUserID: UUID, overview: Bool)
 }
 
 extension GamesCaching {
@@ -108,6 +109,21 @@ extension GamesCaching {
 
 /// Rules shared by the file and in-memory caches.
 nonisolated extension GamesLocalDocument {
+    func persisted() -> Self {
+        clearingPresence(overview: true).clearingPresence(overview: false)
+    }
+
+    func clearingPresence(overview: Bool) -> Self {
+        var copy = self
+        if overview {
+            copy.overview = self.overview?.clearingPresence()
+        } else {
+            copy.state?.myPresent = false
+            copy.state?.partnerPresent = false
+        }
+        return copy
+    }
+
     private static let maxHintedRounds = 20
     private static let maxRefusals = 100
 
@@ -204,7 +220,9 @@ actor FileGamesCache: GamesCaching {
     func saveFetchedOverview(_ overview: RemoteGamesOverview, ownerUserID: UUID, ticket: Int) -> Bool {
         guard overview.userID == ownerUserID else { return false }
         let kept = document(ownerUserID: ownerUserID).overview
-        guard overviewOrder.acceptFetch(ticket) || overview.hasNewerSettings(than: kept) else { return false }
+        let acceptsPresence = overviewOrder.acceptFetch(ticket)
+        guard acceptsPresence || overview.hasNewerSettings(than: kept) else { return false }
+        let overview = acceptsPresence ? overview : overview.clearingPresence()
         store.update(ownerUserID: ownerUserID) { $0.overview = overview }
         return true
     }
@@ -223,7 +241,10 @@ actor FileGamesCache: GamesCaching {
     func saveFetchedState(_ state: RemoteDrawAndGuessState, ownerUserID: UUID, ticket: Int) -> Bool {
         var kept = document(ownerUserID: ownerUserID)
         let isNewer = kept.state.map { $0.isOlder(than: state) } ?? false
-        guard kept.accept(state), order.acceptFetch(ticket) || isNewer else { return false }
+        guard kept.accept(state) else { return false }
+        let acceptsPresence = order.acceptFetch(ticket)
+        guard acceptsPresence || isNewer else { return false }
+        if !acceptsPresence { kept = kept.clearingPresence(overview: false) }
         store.save(kept, ownerUserID: ownerUserID)
         return true
     }
@@ -255,6 +276,11 @@ actor FileGamesCache: GamesCaching {
             document.notices = []
         }
         return taken
+    }
+
+    func clearPresence(ownerUserID: UUID, overview: Bool) {
+        if overview { overviewOrder.overrideFetches() } else { order.overrideFetches() }
+        store.update(ownerUserID: ownerUserID) { $0 = $0.clearingPresence(overview: overview) }
     }
 
     func clearAll() {
@@ -300,7 +326,9 @@ actor InMemoryGamesCache: GamesCaching {
     func saveFetchedOverview(_ overview: RemoteGamesOverview, ownerUserID: UUID, ticket: Int) -> Bool {
         guard overview.userID == ownerUserID else { return false }
         let kept = documents[ownerUserID]?.overview
-        guard overviewOrder.acceptFetch(ticket) || overview.hasNewerSettings(than: kept) else { return false }
+        let acceptsPresence = overviewOrder.acceptFetch(ticket)
+        guard acceptsPresence || overview.hasNewerSettings(than: kept) else { return false }
+        let overview = acceptsPresence ? overview : overview.clearingPresence()
         documents[ownerUserID, default: GamesLocalDocument()].overview = overview
         return true
     }
@@ -317,7 +345,10 @@ actor InMemoryGamesCache: GamesCaching {
     func saveFetchedState(_ state: RemoteDrawAndGuessState, ownerUserID: UUID, ticket: Int) -> Bool {
         var document = documents[ownerUserID, default: GamesLocalDocument()]
         let isNewer = document.state.map { $0.isOlder(than: state) } ?? false
-        guard document.accept(state), order.acceptFetch(ticket) || isNewer else { return false }
+        guard document.accept(state) else { return false }
+        let acceptsPresence = order.acceptFetch(ticket)
+        guard acceptsPresence || isNewer else { return false }
+        if !acceptsPresence { document = document.clearingPresence(overview: false) }
         documents[ownerUserID] = document
         return true
     }
@@ -346,6 +377,11 @@ actor InMemoryGamesCache: GamesCaching {
         let notices = documents[ownerUserID]?.notices ?? []
         documents[ownerUserID]?.notices = []
         return notices
+    }
+
+    func clearPresence(ownerUserID: UUID, overview: Bool) {
+        if overview { overviewOrder.overrideFetches() } else { order.overrideFetches() }
+        documents[ownerUserID] = document(ownerUserID: ownerUserID).clearingPresence(overview: overview)
     }
 
     func clearAll() {

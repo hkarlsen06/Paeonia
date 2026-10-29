@@ -26,6 +26,7 @@ final class ThreadChatPresenceModel {
     private let service: any ThreadChatServicing
     private let now: () -> Date
 
+    private var typingWrite: Task<Void, Never>?
     private var didSendTypingStart = false
     private var lastTypingStartSentAt: Date?
     private var idleStopTask: Task<Void, Never>?
@@ -69,7 +70,7 @@ final class ThreadChatPresenceModel {
         guard didSendTypingStart else { return }
         didSendTypingStart = false
         lastTypingStartSentAt = nil
-        await service.setTyping(coupleID: coupleID, subject: subject, isTyping: false)
+        await enqueueTyping(false).value
     }
 
     private func sendTypingStartIfNeeded() {
@@ -78,7 +79,18 @@ final class ThreadChatPresenceModel {
         }
         lastTypingStartSentAt = now()
         didSendTypingStart = true
-        Task { await service.setTyping(coupleID: coupleID, subject: subject, isTyping: true) }
+        enqueueTyping(true)
+    }
+
+    @discardableResult
+    private func enqueueTyping(_ isTyping: Bool) -> Task<Void, Never> {
+        let previous = typingWrite
+        let task = Task { [service, coupleID, subject] in
+            await previous?.value
+            await service.setTyping(coupleID: coupleID, subject: subject, isTyping: isTyping)
+        }
+        typingWrite = task
+        return task
     }
 
     // MARK: - Partner

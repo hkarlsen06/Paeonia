@@ -11,6 +11,18 @@ struct BoardGameViewModelLifecycleTests {
 
     private let harness = BoardGameHarness()
 
+    @Test func backgroundingDuringStartupDoesNotRestartPresence() async {
+        await harness.save(harness.game(moves: [3, 4]))
+        let viewModel = harness.makeViewModel()
+        let startup = Task { await viewModel.start(prefersReducedMotion: true) }
+        while !viewModel.isRunning { await Task.yield() }
+        viewModel.scenePhaseChanged(isActive: false)
+        await startup.value
+        for _ in 0..<20 { await Task.yield() }
+        #expect(!harness.env.gateway.presence.contains(true))
+        viewModel.stop()
+    }
+
     @Test func leavingDuringAMissedEndingShowsItAgainOnTheSameModel() async {
         let finished = harness.game(first: .partner, moves: Fixture.connectFourWin, partnerWins: 1, gamesFinished: 1)
         let viewModel = await harness.openBoard(harness.game(after: finished), shown: harness.position(6))

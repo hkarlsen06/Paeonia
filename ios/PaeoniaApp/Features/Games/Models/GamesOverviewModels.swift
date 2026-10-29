@@ -11,7 +11,7 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
     let settings: RemoteGameSettings?
     /// One entry per game that either partner has open or has ever opened, or this
     /// person sent an invite for. Other games are left out.
-    let presence: [RemoteGamePresence]
+    var presence: [RemoteGamePresence]
     /// The games this person put aside with "Not now" whose turn, result or invite has
     /// not changed since. They count toward no badge and stay out of "Right now".
     var hiddenKinds: [GameKind] = []
@@ -25,6 +25,17 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
         case hiddenKinds = "hidden_kinds"
     }
 
+    func clearingPresence() -> Self {
+        var copy = self
+        copy.presence = presence.map {
+            var presence = $0
+            presence.myPresent = false
+            presence.partnerPresent = false
+            return presence
+        }
+        return copy
+    }
+
     func presence(for kind: GameKind) -> RemoteGamePresence? {
         presence.first { $0.kind == kind }
     }
@@ -33,9 +44,9 @@ nonisolated struct RemoteGamesOverview: Codable, Equatable, Sendable {
 nonisolated struct RemoteGamePresence: Codable, Equatable, Sendable {
     let kind: GameKind
     /// This person has the game open on a phone.
-    let myPresent: Bool
+    var myPresent: Bool
     /// The partner has the game open.
-    let partnerPresent: Bool
+    var partnerPresent: Bool
     /// This person's last "Tell [Name] you want to play" for this game.
     let lastInviteAt: Date?
     /// When either partner last had the game open. Nil when neither ever opened it.
