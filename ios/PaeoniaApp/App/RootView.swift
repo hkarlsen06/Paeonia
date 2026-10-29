@@ -169,7 +169,7 @@ struct RootView: View {
                 }
                 subscriptionChanged()
             }
-            // A partner's widget update arrived while the app is open: the delegate
+            // A notification arrived while the app is open: the delegate
             // suppressed the system banner and relayed it here for the in-app one.
             .onChange(of: PaeoniaNotificationRouter.shared.pendingForegroundNotice) { _, notice in
                 showForegroundNotice(notice)

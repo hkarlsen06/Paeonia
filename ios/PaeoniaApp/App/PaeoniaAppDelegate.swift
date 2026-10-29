@@ -100,74 +100,54 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         "partner_joined",
     ]
 
-    /// While the app is open, suppress the system banner for a partner's widget
-    /// update and surface it as an in-app top banner instead (like the rest of
-    /// the app's notices). Question activity and a partner joining show no banner. Other
-    /// notifications show a banner but stay out of Notification Center, since the
-    /// person already saw it in the app. The sender name
-    /// and localized body are read off the content before crossing to the main
-    /// actor, since `userInfo` is not `Sendable`.
+    /// Foreground pushes never show a system banner, play a push sound or enter
+    /// Notification Center. Live activity uses its existing screen cues. Other
+    /// notices use the app banner and keep their notification destination.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         let content = notification.request.content
-        // Detect a widget update from several signals: the notification service
-        // extension rewrites the alert into a communication notification before
-        // this runs, and `updating(from:)` can drop custom `userInfo`. The
-        // thread identifier ("widget", or "chat:<thread>" for a message) survives
-        // that rewrite.
         let userInfo = content.userInfo
+        // Communication notifications can lose custom fields when rewritten.
+        // Their thread identifier survives, so it also identifies drawings and chat.
         let isWidgetUpdate = (userInfo["type"] as? String) == "widget_updated"
             || (userInfo["route"] as? String) == "widget"
             || content.threadIdentifier == "widget"
-
         let type = (userInfo["type"] as? String)
             ?? (content.threadIdentifier.hasPrefix("chat:") ? "thread_message_sent" : "")
+        let isGameActivity = type.hasPrefix("game_")
+            || (type == "reaction_added" && userInfo["game_kind"] is String)
+
+        // Keep this independent of notification type, including future types.
+        // Badge-only pushes still update the icon without interrupting the person.
+        defer { completionHandler(type == "badge_update" ? [.badge] : []) }
 
         #if DEBUG
         let detail = "widget=\(isWidgetUpdate) thread=\(content.threadIdentifier) type=\(type)"
         logger.debug("willPresent \(detail, privacy: .public)")
         #endif
 
-        // A game push means the Home game card is out of date. The game feeds run
-        // for a short while and bring in the new turn.
-        if type.hasPrefix("game_") {
+        if isGameActivity {
             Task { @MainActor in
                 LiveFeedDemand.shared.touch([.gameTurns])
             }
         }
-
-        // A badge-only push shows nothing. Its number goes on the icon.
-        if type == "badge_update" {
-            completionHandler([.badge])
+        guard type != "badge_update", !isGameActivity, !Self.typesShownLiveInApp.contains(type) else {
             return
         }
-
-        // Question activity and a partner joining already show live in the
-        // app, so drop the system banner while the app is open.
-        if Self.typesShownLiveInApp.contains(type) {
-            completionHandler([])
-            return
-        }
-
-        guard isWidgetUpdate else {
-            completionHandler([.banner, .sound])
-            return
-        }
-
         let title = content.title
         let body = content.body
+        guard !title.isEmpty || !body.isEmpty else { return }
+        let deepLink = isWidgetUpdate ? .widgetDrawing : PaeoniaDeepLink(notificationUserInfo: userInfo)
+        let showsPartnerAvatar = isWidgetUpdate || userInfo["actor_user_id"] is String
         Task { @MainActor in
             PaeoniaNotificationRouter.shared.presentForegroundNotice(
                 title: title.isEmpty ? nil : title,
-                message: body
+                message: body, deepLink: deepLink, showsPartnerAvatar: showsPartnerAvatar
             )
         }
-        // Suppress the system presentation entirely so nothing piles up in
-        // Notification Center while the user is already in the app.
-        completionHandler([])
     }
 
     /// Tapping a notification routes through the typed SwiftUI deep-link relay.

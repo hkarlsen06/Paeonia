@@ -131,7 +131,7 @@ Reaction games compare reaction times, not arrival order. Each phone measures fr
 
 ### Notifications
 
-- Turn notifications go through `pushQueue` and `lib/notificationCopy.ts`.
+- Turn notifications go through `enqueueGamePush` and `lib/notificationCopy.ts`. While the app is open, game pushes and game reactions never show a system banner or play a push sound. Live game cues and the existing partner-presence banner provide the in-app notices.
 - Alerts collapse per game kind and couple. Opening a game clears its delivered alerts. Queued invites send only while the same invite is unanswered and less than 15 minutes old.
 - Lock-screen text names the game and that it is your turn. It never shows the move, a drawing, or written content.
 - After a few days without a move, send at most one gentle reminder, then stay quiet.

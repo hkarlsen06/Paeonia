@@ -238,8 +238,10 @@ extension RootView {
             .info(
                 title: notice.title,
                 message: notice.message,
-                imageData: PaeoniaAppGroup.partnerAvatarData(),
-                isTappable: true
+                imageData: notice.showsPartnerAvatar ? PaeoniaAppGroup.partnerAvatarData() : nil,
+                action: notice.deepLink.map { deepLink in
+                    { PaeoniaNotificationRouter.shared.route(deepLink) }
+                }
             )
         )
         PaeoniaNotificationRouter.shared.consumeForegroundNotice()
