@@ -196,8 +196,8 @@ Layout, top to bottom. At normal text sizes the whole phase is meant to fit abov
 
 Partner status. A 24 pt avatar and one line:
 
-- "[Name] locked in" with `lock.fill` in `.paeoniaAccentPrimary`, when the server says so. It arrives with `cardReveal` and a pulse of the avatar (1 to 1.12 and back). The shared turn cue taps the phone, also when the partner locked in before this screen opened its write phase. VoiceOver announces it.
-- "[Name] is typing" with three dots that rise in turn (`motionDefault`, repeating). Reduce Motion: still dots.
+- "[Name] locked in" with `lock.fill` in `.paeoniaAccentPrimary`, when the server says so. It arrives with `cardReveal`. The portrait ring shows presence independently of the locked word. The shared turn cue taps the phone, also when the partner locked in before this screen opened its write phase. VoiceOver announces it.
+- "[Name] is typing" with the shared three dots that brighten in turn. Reduce Motion keeps the dots still.
 - "[Name] is here" when the partner has the game open but isn't typing.
 - "[Name] will answer later" in `.paeoniaTextTertiary` when the partner is away. The invite bell shows in the toolbar until the partner arrives.
 
@@ -234,8 +234,8 @@ Purpose. Say that the word is safe and the reveal is coming, and make the wait f
 Layout, centered.
 
 1. My card, face up, smaller (`MindMeldWordCard`, 0.8 scale), with `lock.fill` and my word.
-2. The partner's card next to it, face down, with a soft breathing glow while the partner is in the game (`.paeoniaAccentPrimary` 0.2 to 0.5 over 2.4 s). The face-down side shows the petal mark. Reduce Motion: still glow at 0.35.
-3. Title. "[Name] is typing" while live typing, "Waiting for [Name]" otherwise.
+2. The partner's card next to it, face down, with their portrait over the petal pattern. The shared green presence ring surrounds the portrait while the partner has the game open. It pulses once on arrival, then stays still. Reduce Motion suppresses the pulse.
+3. Title. "[Name] is typing" while live typing, "[Name] is here" while present, and "Waiting for [Name]" while away.
 4. Hint. "We'll show both words at the same time." When the partner is away: "We'll tell you when [Name] locks in."
 5. The offline line when the lock-in is still on the phone.
 6. Toolbar, only while the partner is not in the game: the invite bell at the leading edge of the toolbar.

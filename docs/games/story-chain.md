@@ -10,7 +10,7 @@ Decided on 2026-10-13.
 
 - **Name.** "Story Chain" in English and "Skrivestafett" in Norwegian. A skrivestafett is the Norwegian school exercise where people take turns writing a story.
 - **Async first, with live letters.** Each partner writes a line whenever they like. When both have the game open, the waiting partner watches every letter as it is typed, deletions included. A sent line arrives on both phones at once with a write-in animation.
-- **The writer always knows.** While the partner watches, the writer sees "[Name] is reading along" with the partner's avatar and a breathing ring. There is no setting to hide typing.
+- **The writer always knows.** While the partner watches, the writer sees "[Name] is reading along" with the partner's avatar and the shared green presence ring. There is no setting to hide typing.
 - **Openings.** A new story starts with a choice of three opening lines written by Paeonia in the couple's game language, or with the starter's own first line.
 - **The dare word.** After writing a line, the writer may give the partner a word that the partner's next line must use. The writer picks one of three words Paeonia suggests, or types their own. It is optional on every turn.
 - **The dare check.** A line uses the word when the line contains it, ignoring case. "hunden" and "gårdshund" both count for "hund". The phone and the server run the same check, and Send stays off until the word is used.

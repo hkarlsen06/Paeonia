@@ -19,7 +19,6 @@ struct StoryChainPartnerLine: View {
                 .accessibilityHidden(true)
                 .gamePresenceRing(isHere)
                 .padding(.vertical, 3)
-                .padding(.leading, 3)
             Text(text)
                 .font(font)
                 .foregroundStyle(isHere ? .paeoniaTextPrimary : .paeoniaTextTertiary)

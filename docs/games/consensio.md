@@ -272,7 +272,7 @@ Purpose. Say what the partner is doing and that the reveal is coming. Live, this
 Two cases, one layout.
 
 - **Waiting for the guess.** The subject and the line, with my marker at my spot at 0.6 opacity. Live, the partner's guess marker moves on the same line at full strength. While the two markers are within 7 positions, the track between them warms to `.paeoniaInkGold` at 0.3, so the placer sees "close" without a word. Title "[Name] is guessing" while live, "Waiting for [Name]" otherwise.
-- **Waiting for a topic.** The partner's avatar, 96 pt, with a breathing ring while they are in the game (`.paeoniaAccentPrimary` 0.2 to 0.5 over 2.4 s, still at 0.35 under Reduce Motion). Title "[Name] is picking a topic" while their role is `choosing` or `placing`, "Waiting for [Name]" otherwise. When their marker arrives, the guess phase rises in with `cardReveal`, and the shared turn cue plays.
+- **Waiting for a topic.** The partner's avatar, 96 pt, with the shared green presence ring while they are in the game. Title "[Name] is picking a topic" while their role is `choosing` or `placing`, "Waiting for [Name]" otherwise. When their marker arrives, the guess phase rises in with `cardReveal`, and the shared turn cue plays.
 
 Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." Away: "We'll tell you when [Name] guesses." or "We'll tell you when it's your turn." When the placement is still on the phone after a failed send, the shared offline line shows, or, when the send failed on a working connection, "We couldn't send your move yet" with Try again (`ConsensioHeldLine`). When the partner's marker arrives, the guess opens, and the shared turn cue (`gameYourTurn()` and `nudge`) plays, also while the last reveal is still on screen.
 
@@ -292,7 +292,7 @@ Purpose. Think about the partner, then commit.
 
 Layout, centered.
 
-1. The live row (`GameLiveRow`): the partner's avatar and "[Name] is watching" with the accent ring while the placer is in the game, or "[Name] will see your guess later".
+1. The live row (`GameLiveRow`): the partner's avatar and "[Name] is watching" with the shared green presence ring while the placer is in the game, or "[Name] will see your guess later".
 2. The subject (`heroTitle`), then "Where is [Name] on this?".
 3. The line, with my marker in the middle.
 4. Pinned bottom: primary "Lock in my guess" (`lock.fill`).

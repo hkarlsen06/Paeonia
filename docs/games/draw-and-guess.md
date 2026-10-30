@@ -295,7 +295,7 @@ Variants, one layout.
 - Once the round has started, dim answer slots appear under the title with "5 letters". It is the first hint that something is coming, and it leaks nothing, because the guesser's phone has the word anyway.
 
 Layout, centered in the content, top to bottom.
-1. Partner avatar, 96 pt. When the partner is in the room, a soft ring breathes around it (`.paeoniaAccentPrimary` at 0.2 to 0.5 opacity over 2.4 s, repeating). Reduce Motion: a still ring at 0.35.
+1. Partner avatar, 96 pt. The shared green presence ring shows while the partner has the game open. It pulses once on arrival, then stays still. Reduce Motion suppresses the pulse.
 2. Title (`PaeoniaTypography.title`) and one line of hint.
 3. Dim slots (optional, see above).
 4. Toolbar, only while the partner is not in the game: the invite bell at the leading edge of the toolbar.
@@ -325,7 +325,7 @@ VoiceOver reads avatar and title as one element. The ring is hidden. The score c
 Purpose. Watch, guess fast, feel clever.
 
 Layout, top to bottom.
-1. Live row, one fixed line. Leading, "[Name] is drawing for you" while live, "[Name] is watching you guess" with the accent ring while the drawer is in the game after Done (their result screen shows this screen), or "[Name] drew this for you" otherwise (avatar 24 pt). Trailing, the speed bonus label in "Against each other" only, until the first hint (see below).
+1. Live row, one fixed line. Leading, "[Name] is drawing for you" while live, "[Name] is watching you guess" with the shared green presence ring while the drawer is in the game after Done (their result screen shows this screen), or "[Name] drew this for you" otherwise (avatar 24 pt). Trailing, the speed bonus label in "Against each other" only, until the first hint (see below).
 2. Square replay (`GameReplayTimeline` driven by `GameReplayClock`). A 2 pt progress line runs along its bottom edge in `.paeoniaAccentPrimary` at 0.6 opacity.
 3. Language line, only when the word's language differs from the app's: `globe` and "The word is in English" in `caption`, `.paeoniaTextSecondary`, centered above the slots. It follows the couple's game language, as the decoy tiles do. It fades out with the live row on the reveal. A custom word instead shows `pencil` and "Custom word" / "Eget ord" above the slots, including at accessibility text sizes and on the reveal. It gets no language line, because the drawer could type it in any language.
 4. Answer slots, centered, one group per word. A group never splits unless one word is wider than the screen at the smallest slot. Then it splits into even pieces on separate lines (`DrawAndGuessSlotSizing`). Slots are 28 to 44 pt wide, the widest that adds no line, and 48 pt tall. An empty slot is `.paeoniaSurfaceSecondary` with a 2 pt underline in `.paeoniaTextTertiary`. A filled slot is `.paeoniaSurfacePrimary` with the letter in `PaeoniaTypography.title`. A slot a hint filled has a `strokeEmphasis` outline in `.paeoniaAccentPrimary` and takes no taps. Hit areas run the full 48 pt height and reach into the gaps.

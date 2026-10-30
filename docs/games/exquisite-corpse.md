@@ -241,7 +241,7 @@ Done. `drawingSent()`, then the waiting screen with "Sent to [Name]". Offline, t
 Purpose. Say whose turn it is, and when the partner draws live, let you feel it.
 
 Async, the partner isn't drawing here.
-1. Partner avatar, 96 pt, with the breathing ring while the partner is in the game (as Draw & Guess).
+1. Partner avatar, 96 pt, with the shared green presence ring while the partner is in the game.
 2. Title: "[Name] is drawing the body" when the partner's role is `drawing`, otherwise "Waiting for [Name] to draw the body". After a figure is finished and the partner starts the next: "Waiting for [Name] to start a new creature".
 3. Hint: "We'll tell you when it's your turn." In the first figure, the head drawer also sees "You'll draw the legs after that."
 4. A small folded paper (72 by 216 pt) showing which parts are done: done parts as paper backs, the open part with a soft shimmer, the next part as an empty outline.

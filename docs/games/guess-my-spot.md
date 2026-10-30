@@ -282,7 +282,7 @@ Layout.
 Two cases.
 
 - **Waiting for the guess.** The photo I sent on top and the map under it, as on the guess screen, with my pin at the spot at 0.6 opacity. Live, the map shows what the partner's guess map shows, as they pan and zoom, without their pin. It can't be moved and has no satellite button while it follows. Title "[Name] is guessing" while live, "Waiting for [Name]" otherwise.
-- **Waiting for a photo.** The partner's avatar, 96 pt, with a breathing ring while they are in the game. Title "[Name] is picking a photo" while their role is `choosing`, "Waiting for [Name]" otherwise. Once the partner has picked one, the screen takes the guess screen's layout: the title in the live row, their photo blurred in the photo pane, and the world map under it, which can't be moved yet, with "Get ready to guess where it was taken." The preview blurs in as the avatar fades out, and the map fades in 0.6 s later. When the photo arrives, the guess screen fades in over it with the preview in the same place, and the photo sharpens out of the preview as it loads.
+- **Waiting for a photo.** The partner's avatar, 96 pt, with the shared green presence ring while they are in the game. Title "[Name] is picking a photo" while their role is `choosing`, "Waiting for [Name]" otherwise. Once the partner has picked one, the screen takes the guess screen's layout: the title in the live row, their photo blurred in the photo pane, and the world map under it, which can't be moved yet, with "Get ready to guess where it was taken." The preview blurs in as the avatar fades out, and the map fades in 0.6 s later. When the photo arrives, the guess screen fades in over it with the preview in the same place, and the photo sharpens out of the preview as it loads.
 
 Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." Away: "We'll tell you when [Name] guesses." or "We'll tell you when it's your turn." When the send is still on the phone after a failed try, the shared offline line shows, or "We couldn't send your move yet" with Try again. When the partner's photo arrives, the guess opens, and the shared turn cue (`gameYourTurn()` and `nudge`) plays, also while the last reveal is still on screen.
 
@@ -302,7 +302,7 @@ Under the title, a hint. Live: "You'll both see it the moment [Name] locks in." 
 
 Layout.
 
-1. The live row (`GameLiveRow`): "[Name] is watching" with the accent ring while the sender is in the game, or "[Name] will see your guess later".
+1. The live row (`GameLiveRow`): "[Name] is watching" with the shared green presence ring while the sender is in the game, or "[Name] will see your guess later".
 2. The photo on top, at 30% of the room it shares with the map (`GuessMySpotPhotoPane.splitShare`). It fills its frame, and a tap or a pinch outward opens it in the full-screen viewer (`paeoniaImageViewer`) to pinch and zoom. While it downloads, the partner's blurred preview when this phone got one, otherwise a spinner. When it can't be fetched, "We couldn't get the photo. Try again in a moment." with Try again.
 3. The map under it, on the whole world, with the hint "Tap the map where you think it is." over it until the first pin.
 4. Pinned bottom: primary "Lock in my guess" (`lock.fill`), off until there is a pin.
