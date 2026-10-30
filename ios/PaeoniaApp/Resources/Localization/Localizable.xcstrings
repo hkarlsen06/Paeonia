@@ -34634,6 +34634,24 @@
         }
       }
     },
+    "stories.home.addButton" : {
+      "comment" : "Compact button below your decorated profile photo that opens the story composer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til"
+          }
+        }
+      }
+    },
     "stories.home.partnerNewStory" : {
       "comment" : "VoiceOver label for the partner's avatar on Home when they shared a story you haven't opened. %@ is the partner's name.",
       "extractionState" : "manual",

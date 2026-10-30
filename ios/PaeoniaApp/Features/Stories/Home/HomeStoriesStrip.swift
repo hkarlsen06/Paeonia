@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The two partners at the top of Home. A ring around an avatar means there is a story
 /// from the last day: bright while the partner's is new to you, quiet once you opened it.
-/// Your own avatar opens your stories, and its plus adds one. A thought bubble over an
+/// Your own avatar opens your stories, and a separate button adds one. A thought bubble over an
 /// avatar holds that person's note, and your own bubble opens the note editor. The row's
 /// top is the top of a full two-line bubble, so the header can line it up with the streak.
 struct HomeStoriesStrip: View {
@@ -166,7 +166,12 @@ extension HomeStoriesStrip {
             }
             ownAvatarButton(stories)
                 .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
-                .overlay(alignment: .bottomTrailing) { addButton }
+                .overlay(alignment: .bottomTrailing) {
+                    if (avatarStyling?.decorations.own ?? AvatarDecoration.none) == AvatarDecoration.none {
+                        addButton
+                    }
+                }
+                .overlay(alignment: .bottom) { ownStoryControls(stories) }
                 .storyNoteBubble(
                     clearance: (avatarStyling?.decorations.own ?? .none).noteClearance(photoSize: avatarSize)
                 ) {
@@ -181,9 +186,27 @@ extension HomeStoriesStrip {
 
             if arrange == nil {
                 name(Text(.storiesHomeYourStory))
-                    .padding(.top, PaeoniaSpacing.space40)
+                    .padding(.top, ownNameSpacing)
             }
         }
+    }
+
+    private func ownStoryControls(_ stories: [Story]) -> some View {
+        let decoration = avatarStyling?.decorations.own ?? .none
+        return VStack(spacing: PaeoniaSpacing.space4) {
+            StoryStatusBadge(ring: stories.isEmpty ? .noStory : .seen, isOwn: true)
+            if decoration != .none {
+                decoratedAddButton
+            }
+        }
+        .padding(.top, max(0, avatarSize * decoration.outset - StoryRingAvatar.ringGap))
+        .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
+    }
+
+    private var ownNameSpacing: CGFloat {
+        let decoration = avatarStyling?.decorations.own ?? .none
+        return PaeoniaSpacing.space40 + (decoration == .none ? 0 :
+            PaeoniaSpacing.space32 + avatarSize * decoration.outset)
     }
 
     /// Opens your stories, or the composer when you have none.
@@ -204,10 +227,6 @@ extension HomeStoriesStrip {
                 decoration: avatarStyling?.decorations.own ?? .none
             )
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { ownAvatarFrame = $0 }
-            .overlay(alignment: .bottom) {
-                StoryStatusBadge(ring: stories.isEmpty ? .noStory : .seen, isOwn: true)
-                    .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
-            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(stories.isEmpty ? .storiesHomeAddAccessibility : .storiesHomeYourStory))
@@ -220,6 +239,20 @@ extension HomeStoriesStrip {
                 }
             }
         }
+    }
+
+    private var decoratedAddButton: some View {
+        Button {
+            isComposing = true
+        } label: {
+            Label { Text(.storiesHomeAddButton) } icon: { Image(systemName: "plus") }
+                .modifier(StoryBadgeStyle())
+                .frame(minWidth: 44, minHeight: 44, alignment: .top)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(.storiesHomeAddAccessibility))
+        .accessibilityIdentifier("stories.add")
     }
 
     private var addButton: some View {

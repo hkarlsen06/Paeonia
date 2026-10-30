@@ -12,17 +12,25 @@ struct StoryStatusBadge: View {
             } icon: {
                 Image(systemName: isOwn || ring == .unseen ? "play.fill" : "checkmark")
             }
+            .modifier(StoryBadgeStyle(isHighlighted: ring == .unseen && !isOwn))
+            .accessibilityHidden(true)
+        }
+    }
+}
+
+/// Shared capsule treatment for story status and the add action below decorated portraits.
+struct StoryBadgeStyle: ViewModifier {
+    var isHighlighted = false
+
+    func body(content: Content) -> some View {
+        content
             .font(.caption2.weight(.bold))
             .padding(.horizontal, PaeoniaSpacing.space8)
             .padding(.vertical, PaeoniaSpacing.space4)
-            .foregroundStyle(ring == .unseen && !isOwn ? .paeoniaTextInverse : .paeoniaTextPrimary)
-            .background(ring == .unseen && !isOwn ? Color.paeoniaAccentPrimary : .paeoniaBackgroundSecondary,
-                        in: Capsule())
+            .foregroundStyle(isHighlighted ? .paeoniaTextInverse : .paeoniaTextPrimary)
+            .background(isHighlighted ? Color.paeoniaAccentPrimary : .paeoniaBackgroundSecondary, in: Capsule())
             .overlay(Capsule().strokeBorder(.paeoniaTextPrimary.opacity(0.7), lineWidth: 1))
-            // A compact map marker. VoiceOver reads the full story state on its button.
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .fixedSize()
-            .accessibilityHidden(true)
-        }
     }
 }
