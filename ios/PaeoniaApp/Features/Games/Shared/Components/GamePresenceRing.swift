@@ -17,7 +17,7 @@ private struct GamePresenceRing: View {
     var body: some View {
         let suppressMotion = reduceMotion || !isHere
         Circle()
-            .strokeBorder(.paeoniaSuccess, lineWidth: PaeoniaRadius.strokeEmphasis)
+            .strokeBorder(.paeoniaPresence, lineWidth: PaeoniaRadius.strokeEmphasis)
             .padding(-4)
             .keyframeAnimator(initialValue: CGFloat(1), trigger: arrivalCount) { ring, scale in
                 ring.scaleEffect(suppressMotion ? 1 : scale)

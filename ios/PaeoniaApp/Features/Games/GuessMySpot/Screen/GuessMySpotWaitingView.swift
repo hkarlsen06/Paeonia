@@ -9,6 +9,7 @@ import SwiftUI
 struct GuessMySpotWaitingView: View {
     let viewModel: GuessMySpotViewModel
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var camera = GuessMySpotCamera.world
 
@@ -186,7 +187,10 @@ struct GuessMySpotWaitingView: View {
 
     private var text: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
-            HStack(spacing: PaeoniaSpacing.space8) {
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space8))
+                : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
+            layout {
                 if isWaitingForGuess {
                     GameAvatar(player: viewModel.partner, isMe: false, size: 24)
                         .gamePresenceRing(partnerIsHere)
@@ -203,6 +207,7 @@ struct GuessMySpotWaitingView: View {
                 .contentTransition(.opacity)
         }
         .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
         .accessibilityValue(Text(partnerIsHere ? .gamesPresenceHere : .gamesPresenceAway))

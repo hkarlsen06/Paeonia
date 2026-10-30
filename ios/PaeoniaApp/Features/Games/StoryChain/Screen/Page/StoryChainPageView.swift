@@ -68,7 +68,8 @@ struct StoryChainPageView<LineInfo: View, Trailing: View>: View {
                 .textCase(.uppercase)
                 .tracking(1.4)
                 .foregroundStyle(.paeoniaTextTertiary)
-                .frame(maxWidth: .infinity, alignment: title == nil ? .leading : .center)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
                 .accessibilityAddTraits(.isHeader)
             if let title {
                 StoryChainTitleText(title: title, progress: titleProgress, bloomStart: titleBloomStart)

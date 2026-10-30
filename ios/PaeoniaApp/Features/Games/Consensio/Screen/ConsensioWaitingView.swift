@@ -7,6 +7,7 @@ import SwiftUI
 struct ConsensioWaitingView: View {
     let viewModel: ConsensioViewModel
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The live pin is this close to the real spot, so the track between them warms.
@@ -125,8 +126,11 @@ struct ConsensioWaitingView: View {
     // MARK: Text
 
     private var text: some View {
-        VStack(spacing: PaeoniaSpacing.space8) {
-            HStack(spacing: PaeoniaSpacing.space8) {
+        VStack(spacing: PaeoniaSpacing.space4) {
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space8))
+                : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
+            layout {
                 if isWaitingForGuess {
                     GameAvatar(player: viewModel.partner, isMe: false, size: 24)
                         .gamePresenceRing(partnerIsHere)
@@ -143,6 +147,7 @@ struct ConsensioWaitingView: View {
                 .contentTransition(.opacity)
         }
         .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .combine)
         .accessibilityValue(Text(partnerIsHere ? .gamesPresenceHere : .gamesPresenceAway))
     }

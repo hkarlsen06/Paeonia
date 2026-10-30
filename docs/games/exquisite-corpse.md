@@ -206,9 +206,9 @@ Haptics.
 Purpose. Draw your part, and connect to the lines you were given.
 
 Layout, top to bottom.
-1. Part line, one fixed line. Eyebrow "Your part" (`caption` bold, uppercase, tracking 1.4, `.paeoniaTextTertiary`) and "Draw the head" in `PaeoniaTypography.title`.
+1. Centered part line, wrapping without shrinking when needed. Eyebrow "Your part" (`caption` bold, uppercase, tracking 1.4, `.paeoniaTextTertiary`) and "Draw the head" in `PaeoniaTypography.title`.
 2. Idea row, one fixed line (44 pt). "Need an idea?" as a quiet text button with `lightbulb`, or the idea chip: `.paeoniaSurfacePrimary` capsule, `caption` semibold idea text, a `shuffle` button and an `xmark` button (each 44 pt hit area). The chip comes in with `cardReveal` and a 6 pt rise. Shuffle swaps the text with a quick cross-fade and `selection()`.
-3. Live row, one fixed line: the presence, as in Draw & Guess. The portrait stays in the row while away or present. The shared ring shows whenever the partner has the game open. The text says "[Name] is waiting for your part" while they watch, "[Name] is here" for other present roles, or "[Name] will see it later" while away.
+3. Centered live row with wrapping presence text, as in Draw & Guess. The portrait stays in the row while away or present. The shared ring shows whenever the partner has the game open. The text says "[Name] is waiting for your part" while they watch, "[Name] is here" for other present roles, or "[Name] will see it later" while away.
 4. Body and legs: the strip, full canvas width and 12% of its height, drawn from the part above. It sits on the same surface as the canvas, with a 1 pt dashed line along its bottom edge where the canvas starts. VoiceOver: "The bottom of [Name]'s part. Connect your drawing to its lines."
 5. The square canvas. Head and body: the dashed fold line at 88% (`.paeoniaTextTertiary`, 1.5 pt, dash 6 and 4) and, just under it at the trailing edge, "[Name] only sees below this line" in `caption2`, `.paeoniaTextTertiary`. Both are drawn over the canvas and take no touches.
 6. Tool rows, unchanged from Draw & Guess.
@@ -249,7 +249,7 @@ Async, the partner isn't drawing here.
 5. Toolbar: the invite bell at the leading edge of the toolbar while the partner isn't in the game.
 
 Live, the partner is drawing: the watch screen.
-1. Live row: avatar with the ring and "[Name] is drawing the head".
+1. Centered live row: avatar with the ring and "[Name] is drawing the head".
 2. The folded paper at the size of the square, with the pen glow and the strip (see "Live").
 3. Hint under it: "You'll connect to the lines below the fold."
 4. When the partner taps Done: "[Name] finished the head", one pulse, then the hand-off into the drawing screen.

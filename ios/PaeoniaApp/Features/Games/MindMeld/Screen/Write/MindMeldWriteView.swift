@@ -29,8 +29,10 @@ struct MindMeldWriteView: View {
     var body: some View {
         GameFocusedLayout(barRidesKeyboard: true) {
             VStack(spacing: PaeoniaSpacing.space20) {
-                topLine
-                heading
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    topLine
+                    heading
+                }
                 earlierWords
                 fieldBlock
             }
@@ -71,7 +73,7 @@ struct MindMeldWriteView: View {
 
     // MARK: Top line
 
-    /// The partner on the left and the round on the right.
+    /// Partner progress and round share a centered row when they fit.
     private var topLine: some View {
         GameLiveRow {
             MindMeldPartnerStatusRow(
@@ -83,7 +85,6 @@ struct MindMeldWriteView: View {
                 .tracking(1.4)
                 .textCase(.uppercase)
                 .foregroundStyle(.paeoniaTextTertiary)
-                .lineLimit(1)
         }
     }
 

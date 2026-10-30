@@ -72,22 +72,21 @@ struct DrawAndGuessDrawingView: View {
             )
             .accessibilityIdentifier("draw.presence")
         } trailing: {
-            guessCapsule
+            if shownGuess != nil {
+                guessCapsule
+            }
         }
     }
 
-    /// The slot is always laid out, so nothing moves when a guess comes or goes.
+    /// The latest guess wraps with the presence row when it needs more room.
     private var guessCapsule: some View {
         Text(.gamesDrawAndGuessDrawTried(viewModel.partnerName, (shownGuess?.text ?? " ").uppercased()))
             .font(PaeoniaTypography.caption.weight(.semibold))
             .foregroundStyle(.paeoniaTextSecondary)
-            .lineLimit(1)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, PaeoniaSpacing.space12)
             .padding(.vertical, PaeoniaSpacing.space4)
             .background(.paeoniaSurfacePrimary, in: Capsule(style: .continuous))
-            .opacity(shownGuess == nil ? 0 : 1)
-            .offset(y: shownGuess == nil || reduceMotion ? 0 : 0)
-            .frame(height: 28)
             .accessibilityHidden(true)
     }
 
@@ -114,30 +113,23 @@ struct DrawAndGuessDrawingView: View {
     }
 }
 
-/// "DRAW" and the word, on one line.
+/// A centered word heading that stacks when space is tight.
 struct DrawAndGuessWordLine: View {
     let word: String
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space2))
-            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8))
-        layout {
+        GameLiveRow {
             Text(.gamesDrawAndGuessDrawWordLabel)
                 .font(PaeoniaTypography.caption.weight(.bold))
                 .textCase(.uppercase)
                 .tracking(1.4)
                 .foregroundStyle(.paeoniaTextTertiary)
+        } trailing: {
             Text(word)
                 .font(PaeoniaTypography.title)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .minimumScaleFactor(0.6)
                 .accessibilityIdentifier("draw.word")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, PaeoniaSpacing.space8)
         .accessibilityElement(children: .combine)
     }
 }

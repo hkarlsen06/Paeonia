@@ -24,6 +24,8 @@ struct MindMeldPartnerStatusRow: View {
                 .id(String(describing: status))
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 6)))
         }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
         .frame(minHeight: Self.avatarSize)
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.cardReveal, value: status)
         .accessibilityElement(children: .combine)

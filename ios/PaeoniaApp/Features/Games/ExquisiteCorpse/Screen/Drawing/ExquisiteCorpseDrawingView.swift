@@ -79,7 +79,8 @@ struct ExquisiteCorpseDrawingView: View {
         Text(.exquisiteCorpseDrawFirstHint(viewModel.partnerName))
             .font(PaeoniaTypography.caption)
             .foregroundStyle(.paeoniaTextSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
             .padding(.horizontal, PaeoniaSpacing.space8)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityIdentifier("corpse.firstHint")
@@ -127,30 +128,23 @@ struct ExquisiteCorpseDrawingView: View {
     }
 }
 
-/// "YOUR PART" and "Draw the head", on one line.
+/// A centered part heading that stacks when space is tight.
 struct ExquisiteCorpsePartLine: View {
     let part: ExquisiteCorpsePartKind
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space2))
-            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8))
-        layout {
+        GameLiveRow {
             Text(.exquisiteCorpseDrawEyebrow)
                 .font(PaeoniaTypography.caption.weight(.bold))
                 .textCase(.uppercase)
                 .tracking(1.4)
                 .foregroundStyle(.paeoniaTextTertiary)
+        } trailing: {
             Text(title)
                 .font(PaeoniaTypography.title)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
-                .minimumScaleFactor(0.6)
                 .accessibilityIdentifier("corpse.partTitle")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, PaeoniaSpacing.space8)
         .accessibilityElement(children: .combine)
     }
 

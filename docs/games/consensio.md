@@ -6,6 +6,8 @@ The name is Consensio in both languages, Latin for harmony or shared agreement.
 
 Keep this file current. When a decision lands or the design changes, update it in the same change.
 
+The guessing activity row is centered. Waiting titles keep the portrait beside the text, then stack it above the title at accessibility sizes. The hint follows with a compact gap.
+
 ## Decisions
 
 Decided by the developer on 2026-10-18.

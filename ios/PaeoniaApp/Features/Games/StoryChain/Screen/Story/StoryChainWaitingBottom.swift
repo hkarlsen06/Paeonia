@@ -11,7 +11,7 @@ struct StoryChainWaitingBottom: View {
     private var presence: StoryChainPartnerPresence { viewModel.partnerPresence }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+        VStack(alignment: .center, spacing: PaeoniaSpacing.space4) {
             StoryChainPartnerLine(
                 participants: viewModel.participants,
                 text: statusText,
@@ -24,11 +24,11 @@ struct StoryChainWaitingBottom: View {
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, PaeoniaSpacing.space4)
                     .transition(.opacity)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
         .animation(PaeoniaMotion.stateChange, value: presence)
         .accessibilityIdentifier("storyChain.waiting")
     }

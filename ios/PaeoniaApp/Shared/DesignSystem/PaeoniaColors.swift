@@ -35,6 +35,7 @@ nonisolated private enum PaeoniaPaletteHex {
     static let errorText: UInt32 = 0xFF_80_84
     static let errorPressed: UInt32 = 0xD6_42_47
     static let warning: UInt32 = 0xE8_91_5D
+    static let presence: UInt32 = 0x82_BA_A5
     static let success: UInt32 = 0x5B_B9_8B
 }
 
@@ -65,6 +66,7 @@ nonisolated private enum PaeoniaPalette {
     static let errorText = Color(paeoniaHex: PaeoniaPaletteHex.errorText)
     static let errorPressed = Color(paeoniaHex: PaeoniaPaletteHex.errorPressed)
     static let warning = Color(paeoniaHex: PaeoniaPaletteHex.warning)
+    static let presence = Color(paeoniaHex: PaeoniaPaletteHex.presence)
     static let success = Color(paeoniaHex: PaeoniaPaletteHex.success)
 }
 
@@ -85,6 +87,7 @@ nonisolated extension Color {
 
     static let paeoniaAccentPrimary = PaeoniaPalette.petalLight
     static let paeoniaAccentSecondary = PaeoniaPalette.pink
+    static let paeoniaPresence = PaeoniaPalette.presence
     static let paeoniaSuccess = PaeoniaPalette.success
     static let paeoniaWarning = PaeoniaPalette.warning
     static let paeoniaError = PaeoniaPalette.error
@@ -128,6 +131,7 @@ nonisolated extension ShapeStyle where Self == Color {
     static var paeoniaTextInverse: Color { Color.paeoniaTextInverse }
     static var paeoniaAccentPrimary: Color { Color.paeoniaAccentPrimary }
     static var paeoniaAccentSecondary: Color { Color.paeoniaAccentSecondary }
+    static var paeoniaPresence: Color { Color.paeoniaPresence }
     static var paeoniaSuccess: Color { Color.paeoniaSuccess }
     static var paeoniaWarning: Color { Color.paeoniaWarning }
     static var paeoniaError: Color { Color.paeoniaError }

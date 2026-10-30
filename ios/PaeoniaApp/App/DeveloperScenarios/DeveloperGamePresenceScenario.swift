@@ -14,6 +14,8 @@ private struct DeveloperGamePresenceScenario: View {
     @State private var isTyping = false
     @State private var isLocked = false
     @State private var largerText = false
+    @State private var longName = false
+    @State private var narrow = false
     @State private var portraitGeneration = 0
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
@@ -29,9 +31,14 @@ private struct DeveloperGamePresenceScenario: View {
                         .accessibilityIdentifier("presence.locked")
                     Toggle("Larger text", isOn: $largerText)
                         .accessibilityIdentifier("presence.largeText")
+                    Toggle("Long partner name", isOn: $longName)
+                    Toggle("Narrow play area", isOn: $narrow)
                     Button("Recreate portraits") { portraitGeneration += 1 }
                         .accessibilityIdentifier("presence.recreate")
-                    statusRows.id(portraitGeneration)
+                    statusRows
+                        .frame(maxWidth: narrow ? 260 : .infinity)
+                        .frame(maxWidth: .infinity)
+                        .id(portraitGeneration)
                 }
                 .padding(PaeoniaSpacing.screenHorizontalPadding)
             }
@@ -42,18 +49,11 @@ private struct DeveloperGamePresenceScenario: View {
         }
     }
 
+    private var partnerName: String { longName ? "Alvilde Alexandra Karlsen" : "Robin" }
+
     private var statusRows: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space24) {
-            GamePresenceLabel(
-                player: GamePlayer(name: "Robin", photoAssetID: nil),
-                text: isHere ? .gamesPresenceHere : .gamesPresenceAway,
-                isHere: isHere
-            )
-            MindMeldPartnerStatusRow(
-                partner: MindMeldPlayer(name: "Robin", photoAssetID: nil),
-                status: isLocked ? .locked : isHere ? isTyping ? .typing : .here : .away,
-                isPresent: isHere
-            )
+            activityRows
             StoryChainPartnerLine(
                 participants: DeveloperGamesFixture.participants,
                 text: storyStatus,
@@ -61,8 +61,8 @@ private struct DeveloperGamePresenceScenario: View {
                 showsDots: isHere && isTyping
             )
             GamePresenceLabel(
-                player: GamePlayer(name: "Robin", photoAssetID: nil),
-                text: isHere ? .storyChainWriteHere("Robin") : .storyChainWaitGeneric("Robin"),
+                player: GamePlayer(name: partnerName, photoAssetID: nil),
+                text: isHere ? .storyChainWriteHere(partnerName) : .storyChainWaitGeneric(partnerName),
                 isHere: isHere
             )
             .frame(maxWidth: .infinity)
@@ -70,9 +70,31 @@ private struct DeveloperGamePresenceScenario: View {
         }
     }
 
+    @ViewBuilder
+    private var activityRows: some View {
+        GameLiveRow {
+            GamePresenceLabel(
+                player: GamePlayer(name: partnerName, photoAssetID: nil),
+                text: .exquisiteCorpseWaitDrawingNowBody(partnerName),
+                isHere: isHere
+            )
+        } trailing: {
+            EmptyView()
+        }
+        GameLiveRow {
+            MindMeldPartnerStatusRow(
+                partner: MindMeldPlayer(name: partnerName, photoAssetID: nil),
+                status: isLocked ? .locked : isHere ? isTyping ? .typing : .here : .away,
+                isPresent: isHere
+            )
+        } trailing: {
+            Text(.mindMeldRound(2, 10)).font(PaeoniaTypography.caption)
+        }
+    }
+
     private var storyStatus: LocalizedStringResource {
-        if !isHere { return .storyChainWaitGeneric("Robin") }
-        return isTyping ? .storyChainWaitWriting("Robin") : .storyChainWriteHere("Robin")
+        if !isHere { return .storyChainWaitGeneric(partnerName) }
+        return isTyping ? .storyChainWaitWriting(partnerName) : .storyChainWriteHere(partnerName)
     }
 }
 #endif

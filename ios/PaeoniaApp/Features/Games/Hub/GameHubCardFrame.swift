@@ -236,7 +236,7 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
         .foregroundStyle(.paeoniaTextInverse)
         .padding(.horizontal, PaeoniaSpacing.space12)
         .padding(.vertical, PaeoniaSpacing.space8)
-        .background(.paeoniaSuccess, in: Capsule())
+        .background(.paeoniaPresence, in: Capsule())
     }
 }
 

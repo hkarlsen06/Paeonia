@@ -4,6 +4,8 @@ Design for the third built game. The two partners write one story together, one 
 
 Keep this file current. When a decision lands or the design changes, update it in the same change.
 
+Page eyebrows and partner activity groups are centered. Waiting hints wrap under their status. Story paragraphs and composers keep their existing alignment.
+
 ## Decisions
 
 Decided on 2026-10-13.

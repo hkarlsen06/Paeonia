@@ -6,6 +6,8 @@ The name is "Guess my spot" in English and "Gjett hvor" in Norwegian.
 
 Keep this file current. When a decision lands or the design changes, update it in the same change.
 
+Activity rows are centered above the play area. Waiting titles keep the portrait beside the text, then stack it above the title at accessibility sizes.
+
 ## Decisions
 
 Decided by the developer on 2026-10-18 (the "Guess my spot" bullets in `docs/games-plan.md`).

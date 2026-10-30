@@ -27,7 +27,8 @@ struct StoryChainPartnerLine: View {
                 GameTypingDots()
             }
         }
-        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.space24, alignment: .leading)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.space24, alignment: .center)
         .accessibilityElement(children: .combine)
         .accessibilityValue(Text(isHere ? .gamesPresenceHere : .gamesPresenceAway))
     }

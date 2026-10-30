@@ -4,6 +4,8 @@ Design for the second word game. Shared rules for all games (transports, the Con
 
 Keep this file current. When a decision lands or the design changes, update it in the same change.
 
+The write header groups partner progress and the round in one centered row when they fit. The heading follows with a compact gap. Larger text stacks the statuses without shrinking them.
+
 ## Decisions
 
 Decided on 2026-10-13.

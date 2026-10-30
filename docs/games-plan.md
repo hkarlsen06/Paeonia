@@ -19,6 +19,7 @@ Decided on 2026-10-31.
 
 - Games size their play area from the available window. Landscape boards and drawing canvases keep a centered pair of columns, with a narrower control column in smaller windows. The controls stay together beside the play area. Drawing tools, colors and size controls share its width, and tool rows scroll when their buttons cannot keep their tap targets. Odd Creatures unfolds in the center of the screen, then moves beside the credits as the camera pulls back. Consensio uses the readable width for its line, and Mind Meld uses larger reveal cards in both iPad orientations. Story Chain keeps its reading column, Guess my spot keeps its photo and map layout, and Ludo keeps its full-screen board.
 - Odd Creatures remembers the last creature whose unfolding finished on this phone, separately for each signed-in person. Reopening shows the whole creature and its buttons immediately. Continue still starts the next turn.
+- Gameplay activity groups center within their play area. A portrait and status form one unit. Related status items share a compact centered row when their full text fits, then stack with centered wrapping text. Accessibility sizes stack the items without shrinking text. Waiting titles and hints stay close together. Board player scores, story paragraphs, inputs and history rows keep their own alignment. Presence uses the dedicated mint `paeoniaPresence` color, distinct from correct-answer and result feedback. The ring, hub presence chip, arrival pulse and spoken presence keep the same meaning.
 
 Decided on 2026-10-30.
 
