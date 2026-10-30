@@ -6,8 +6,12 @@
     private var isEntitled: Bool
     private var isPaired: Bool
     private var acceptedInvite = false
+    private let avatarScenario: Bool
+    private var avatarDecoration: AvatarDecoration
 
-    init(seed: DeveloperLocalFlowSeed) {
+    init(seed: DeveloperLocalFlowSeed, avatarScenario: Bool = false) {
+      self.avatarScenario = avatarScenario
+      self.avatarDecoration = avatarScenario ? .petals : .none
       switch seed {
       case .fresh:
         session = nil
@@ -26,11 +30,13 @@
         isEntitled = true
         isPaired = false
       case .paired:
-        session = Self.session(provider: .apple, complete: true)
+        session = Self.session(provider: .apple, complete: true, avatarScenario: avatarScenario)
         isEntitled = true
         isPaired = true
       }
     }
+
+    func setAvatarDecoration(_ decoration: AvatarDecoration) { avatarDecoration = decoration }
 
     func restoredSession() -> AuthSession? { session }
 
@@ -153,7 +159,9 @@
         acceptedInvite: acceptedInvite,
         partnerUserID: DeveloperScenarioFixture.partnerUserID,
         partnerAccountName: "Robin",
-        partnerProfilePhotoAssetID: nil,
+        ownAvatarDecoration: avatarDecoration,
+        partnerAvatarDecoration: avatarScenario ? .stars : nil,
+        partnerProfilePhotoAssetID: avatarScenario ? DeveloperAvatarFixture.partnerPhoto : nil,
         startedOn: "2025-09-14",
         endedAt: nil,
         deleteAfter: nil,
@@ -163,14 +171,15 @@
 
     private nonisolated static func session(
       provider: AuthProvider,
-      complete: Bool
+      complete: Bool,
+      avatarScenario: Bool = false
     ) -> AuthSession {
       AuthSession(
         id: DeveloperScenarioFixture.currentUserID.uuidString,
         provider: provider,
         displayName: complete ? "Alex" : nil,
         timeZoneID: complete ? "Europe/Oslo" : nil,
-        profilePhotoAssetID: nil,
+        profilePhotoAssetID: avatarScenario ? DeveloperAvatarFixture.ownPhoto : nil,
         profileStatus: complete ? .complete : .needsOnboarding
       )
     }

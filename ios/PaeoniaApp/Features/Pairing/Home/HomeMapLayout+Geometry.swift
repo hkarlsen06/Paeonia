@@ -191,7 +191,7 @@ struct HomeMapMetrics {
             x: half + sideMargin,
             y: pillBottom + PaeoniaSpacing.space8 + half,
             width: max(width - avatarSize - 2 * sideMargin, 1),
-            height: max(cardsTop - pillBottom - avatarSize - 2 * PaeoniaSpacing.space8, 1)
+            height: max(cardsTop - pillBottom - avatarSize - 2 * PaeoniaSpacing.space8 - PaeoniaSpacing.space32, 1)
         )
         if isNear {
             framedBox = CGRect(x: 0, y: (pillBottom + cardsTop) / 2 - 1, width: width, height: 2)

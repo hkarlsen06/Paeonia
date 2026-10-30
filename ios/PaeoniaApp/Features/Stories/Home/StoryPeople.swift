@@ -33,28 +33,31 @@ struct StoryRingAvatar: View {
     let tint: Color
     let ring: StoryRingState
     var size: CGFloat = 60
+    var decoration: AvatarDecoration = .none
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The space between the photo and the ring.
     static let ringGap = PaeoniaSpacing.space4
 
     var body: some View {
-        PaeoniaProfilePhotoAvatar(mediaAssetID: mediaAssetID, name: name, tint: tint, size: size)
+        PaeoniaDecoratedAvatar(
+            mediaAssetID: mediaAssetID, name: name, tint: tint, size: size, decoration: decoration
+        )
             .padding(Self.ringGap)
-            .overlay { ringShape }
-            .animation(PaeoniaMotion.stateChange, value: ring)
+            .background {
+                ZStack {
+                    Circle().fill(.paeoniaBackgroundPrimary)
+                    ringShape
+                }
+            }
+            .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: ring)
     }
 
     @ViewBuilder
     private var ringShape: some View {
         switch ring {
         case .unseen:
-            Circle().strokeBorder(
-                AngularGradient(
-                    colors: [.paeoniaAccentPrimary, .paeoniaPartnerTwo, .paeoniaInkGold, .paeoniaAccentPrimary],
-                    center: .center
-                ),
-                lineWidth: 3
-            )
+            Circle().strokeBorder(.paeoniaAccentPrimary, lineWidth: 3)
         case .seen:
             Circle().strokeBorder(.paeoniaTextTertiary, lineWidth: PaeoniaRadius.strokeDefault)
         case .noStory:

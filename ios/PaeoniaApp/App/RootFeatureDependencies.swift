@@ -17,6 +17,8 @@ struct RootFeatureDependencies {
     var memoriesViewModel: MemoriesViewModel?
     var gamesViewModel: GamesViewModel?
     var settingsViewModel: SettingsViewModel?
+    var avatarStylingModel: AvatarStylingModel?
+    var storiesViewModel: StoriesViewModel?
     var settingsPrivacyService: (any PrivacySafetyServicing)?
     var settingsPrivacyOperationProvider: (any SyncClientOperationProviding)?
     var widgetDrawingViewModel: WidgetDrawingViewModel?
@@ -34,6 +36,8 @@ struct RootFeatureDependencies {
         memoriesViewModel: MemoriesViewModel? = nil,
         gamesViewModel: GamesViewModel? = nil,
         settingsViewModel: SettingsViewModel? = nil,
+        avatarStylingModel: AvatarStylingModel? = nil,
+        storiesViewModel: StoriesViewModel? = nil,
         settingsPrivacyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         settingsPrivacyOperationProvider: (any SyncClientOperationProviding)? = nil,
         widgetDrawingViewModel: WidgetDrawingViewModel? = nil,
@@ -50,6 +54,8 @@ struct RootFeatureDependencies {
         self.memoriesViewModel = memoriesViewModel
         self.gamesViewModel = gamesViewModel
         self.settingsViewModel = settingsViewModel
+        self.avatarStylingModel = avatarStylingModel
+        self.storiesViewModel = storiesViewModel
         self.settingsPrivacyService = settingsPrivacyService
         self.settingsPrivacyOperationProvider = settingsPrivacyOperationProvider
         self.widgetDrawingViewModel = widgetDrawingViewModel

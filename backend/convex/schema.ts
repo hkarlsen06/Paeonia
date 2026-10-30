@@ -4,6 +4,7 @@ import {
   activityKind,
   apnsEnvironment,
   authProvider,
+  avatarDecoration,
   favoriteKind,
   gameKind,
   gameLanguage,
@@ -1132,6 +1133,7 @@ export default defineSchema({
   // FK: user_id -> users cascade; profile_photo_asset_id -> media_assets set null;
   // provider_profile_photo_asset_id -> media_assets restrict; moderation_report_id -> content_reports set null
   profiles: defineTable({
+    avatar_decoration: v.optional(avatarDecoration),
     user_id: uuid,
     display_name: optString,
     profile_photo_asset_id: optUuid,

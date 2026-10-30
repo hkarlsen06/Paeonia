@@ -37,6 +37,7 @@ struct StoryComposerView: View {
                         } label: {
                             Text(.commonCancel)
                         }
+                        .accessibilityIdentifier("story.composer.cancel")
                         .disabled(viewModel.isPosting)
                     }
                 }

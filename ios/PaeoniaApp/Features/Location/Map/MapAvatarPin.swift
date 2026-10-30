@@ -10,6 +10,7 @@ struct MapAvatarPin: View {
     let capturedAt: Date
     var wasStaleAtLastRefresh = false
     var dimsWhenStale = false
+    var decoration: AvatarDecoration = .none
 
     static let avatarDiameter: CGFloat = 36
     private static let staleMarkerOpacity = 0.5
@@ -17,11 +18,12 @@ struct MapAvatarPin: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: Self.refreshInterval)) { context in
-            PaeoniaProfilePhotoAvatar(
+            PaeoniaDecoratedAvatar(
                 mediaAssetID: assetID,
                 name: name,
                 tint: tint,
-                size: Self.avatarDiameter
+                size: Self.avatarDiameter,
+                decoration: decoration
             )
             .opacity(opacity(asOf: context.date))
         }

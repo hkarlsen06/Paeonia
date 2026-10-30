@@ -31,6 +31,7 @@ private struct SnapshotRequest: Hashable {
 /// point, and floats the partner's location age over a scrim at the top and the
 /// distance over one at the bottom.
 struct CoupleMapSnapshot: View {
+    @Environment(\.avatarStyling) private var avatarStyling
     let currentName: String
     let currentProfilePhotoAssetID: UUID?
     let currentCoordinate: CLLocationCoordinate2D
@@ -222,7 +223,8 @@ struct CoupleMapSnapshot: View {
                 name: currentName,
                 assetID: currentProfilePhotoAssetID,
                 tint: .paeoniaPartnerOne,
-                capturedAt: currentCapturedAt
+                capturedAt: currentCapturedAt,
+                decoration: avatarStyling?.decorations.own ?? .none
             )
             .position(pins.current)
 
@@ -232,7 +234,8 @@ struct CoupleMapSnapshot: View {
                 tint: .paeoniaPartnerTwo,
                 capturedAt: partnerCapturedAt,
                 wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
-                dimsWhenStale: true
+                dimsWhenStale: true,
+                decoration: avatarStyling?.decorations.partner ?? .none
             )
             .position(pins.partner)
 

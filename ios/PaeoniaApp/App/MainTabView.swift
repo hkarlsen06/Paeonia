@@ -24,6 +24,7 @@ struct MainTabIdentity: Equatable {
     var ownAccess: OwnAccess = .nothing
     /// The notice Home shows before access ends. Display-only.
     var accessNotice: AccessNotice?
+    var avatarDecorations = CoupleAvatarDecorations()
 
     /// The partner's name as this person sees it: their nickname, otherwise the partner's own name.
     var partnerDisplayName: String? {
@@ -90,7 +91,8 @@ final class MainTabModels {
         dependencies.gamesViewModel ?? GamesViewModel(dependencies: .live())
     lazy var hearts = HeartsViewModel()
     lazy var coupleDates = CoupleDatesViewModel()
-    lazy var stories = StoriesViewModel()
+    lazy var stories = dependencies.storiesViewModel ?? StoriesViewModel()
+    lazy var avatarStyling = dependencies.avatarStylingModel ?? AvatarStylingModel()
     lazy var search = SearchViewModel.live()
     /// The memories' comments and the stories' replies the partner wrote in and the user has not read.
     lazy var chatSummaries = ThreadChatSummaries(service: dailyChallenge.chatService)
@@ -230,6 +232,10 @@ struct MainTabView: View {
             // Outside the covers and sheets, so the Home drawing, the story viewer and every game
             // screen can show and take reactions.
             .environment(reactionStore)
+            .environment(\.avatarStyling, models.avatarStyling)
+            .onChange(of: identity.avatarDecorations, initial: true) { _, decorations in
+                models.avatarStyling.update(decorations)
+            }
             // Memory comments and story replies open as chats from their own screens.
             .environment(\.threadChatContext, threadChatContext)
             .task(id: introGatedLoadKey) {

@@ -25,9 +25,11 @@ struct HomeStoriesStrip: View {
     @State private var partnerAvatarFrame: CGRect = .zero
     /// The viewer's Add button closes it first, then the composer opens.
     @State private var composesAfterViewer = false
+    @State private var isStyling = false
+    @Environment(\.avatarStyling) private var avatarStyling
 
     /// The plus on your avatar that adds a story.
-    private static let plusBadgeSize: CGFloat = 22
+    private static let plusBadgeSize: CGFloat = 32
     /// Center to center, wide enough that the two bubbles never touch, and narrow enough
     /// that the partner's bubble stays clear of the streak in the corner.
     private var avatarSpacing: CGFloat { StoryNoteBubble.maxWidth - avatarSize + PaeoniaSpacing.space8 }
@@ -63,6 +65,15 @@ struct HomeStoriesStrip: View {
             StoryComposerView(viewModel: viewModel, partnerName: people.partnerName)
                 .analyticsScreen("story_composer")
         }
+        .sheet(isPresented: $isStyling) {
+            if let avatarStyling {
+                NavigationStack {
+                    AvatarDecorationPicker(
+                        model: avatarStyling, name: people.currentName, photoAssetID: people.currentPhotoAssetID
+                    )
+                }
+            }
+        }
         // The note screen runs its own opening and closing, flying the avatar between
         // Home and the middle of the screen, so the cover appears and leaves without animation.
         .fullScreenCover(item: $openNote) { open in
@@ -77,7 +88,7 @@ struct HomeStoriesStrip: View {
             .analyticsScreen("story_note")
             .presentationBackground(.clear)
         }
-        .preference(key: HomeIsCoveredKey.self, value: viewer != nil || isComposing || openNote != nil)
+        .preference(key: HomeIsCoveredKey.self, value: viewer != nil || isComposing || openNote != nil || isStyling)
     }
 
     /// Opens the story a push named. A story that left Home opens alone in the archive style.
@@ -140,7 +151,9 @@ struct HomeStoriesStrip: View {
             }
         }
     }
+}
 
+extension HomeStoriesStrip {
     private func ownAvatar(_ stories: [Story], note: StoryNote?) -> some View {
         VStack(spacing: 0) {
             // Room for the tallest note above the avatar, so the row's top is the top of
@@ -151,8 +164,6 @@ struct HomeStoriesStrip: View {
             ownAvatarButton(stories)
                 .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
                 .overlay(alignment: .bottomTrailing) { addButton }
-                .accessibilityLabel(Text(stories.isEmpty ? .storiesHomeAddAccessibility : .storiesHomeYourStory))
-                .accessibilityAction(named: Text(.storiesHomeAddAccessibility)) { isComposing = true }
                 .storyNoteBubble {
                     Button {
                         showNote(.edit(current: note), from: ownAvatarFrame)
@@ -165,7 +176,7 @@ struct HomeStoriesStrip: View {
 
             if arrange == nil {
                 name(Text(.storiesHomeYourStory))
-                    .padding(.top, PaeoniaSpacing.space4)
+                    .padding(.top, PaeoniaSpacing.space40)
             }
         }
     }
@@ -183,12 +194,27 @@ struct HomeStoriesStrip: View {
                 mediaAssetID: people.currentPhotoAssetID,
                 name: people.currentName,
                 tint: .paeoniaPartnerOne,
-                ring: stories.isEmpty ? .noStory : .unseen,
-                size: avatarSize
+                ring: stories.isEmpty ? .noStory : .seen,
+                size: avatarSize,
+                decoration: avatarStyling?.decorations.own ?? .none
             )
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { ownAvatarFrame = $0 }
+            .overlay(alignment: .bottomLeading) {
+                StoryStatusBadge(ring: stories.isEmpty ? .noStory : .seen, isOwn: true)
+                    .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
+            }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text(stories.isEmpty ? .storiesHomeAddAccessibility : .storiesHomeYourStory))
+        .accessibilityValue(Text((avatarStyling?.decorations.own ?? .none).title))
+        .accessibilityIdentifier("stories.own")
+        .contextMenu {
+            if avatarStyling != nil {
+                Button { isStyling = true } label: {
+                    Label { Text(.avatarDecorationTitle) } icon: { Image(systemName: "person.crop.circle") }
+                }
+            }
+        }
     }
 
     private var addButton: some View {
@@ -197,19 +223,19 @@ struct HomeStoriesStrip: View {
         } label: {
             Image(systemName: "plus")
                 .accessibilityHidden(true)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.paeoniaTextInverse)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.paeoniaTextPrimary)
                 .frame(width: Self.plusBadgeSize, height: Self.plusBadgeSize)
-                .background(Circle().fill(.paeoniaAccentPrimary))
-                .overlay(Circle().strokeBorder(.paeoniaBackgroundPrimary, lineWidth: 2))
+                .background(Circle().fill(.paeoniaBackgroundPrimary))
+                .overlay(Circle().strokeBorder(.paeoniaTextPrimary, lineWidth: 2))
                 // A bigger target than the badge looks.
-                .padding(PaeoniaSpacing.space8)
+                .frame(width: 44, height: 44)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .offset(x: PaeoniaSpacing.space8, y: PaeoniaSpacing.space8)
-        // The avatar's own action covers it for VoiceOver.
-        .accessibilityHidden(true)
+        .accessibilityLabel(Text(.storiesHomeAddAccessibility))
+        .accessibilityIdentifier("stories.add")
     }
 
     private func partnerAvatar(_ stories: [Story], ring: StoryRingState, note: StoryNote?) -> some View {
@@ -236,7 +262,7 @@ struct HomeStoriesStrip: View {
                 }
             if arrange == nil {
                 name(Text(people.partnerName))
-                    .padding(.top, PaeoniaSpacing.space4)
+                    .padding(.top, PaeoniaSpacing.space40)
             }
         }
     }
@@ -249,11 +275,17 @@ struct HomeStoriesStrip: View {
             name: people.partnerName,
             tint: .paeoniaPartnerTwo,
             ring: ring,
-            size: avatarSize
+            size: avatarSize,
+            decoration: avatarStyling?.decorations.partner ?? .none
         )
+        .overlay(alignment: .bottomLeading) {
+            StoryStatusBadge(ring: ring)
+                .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
+        }
         if stories.isEmpty {
             avatar
                 .accessibilityLabel(Text(.storiesHomePartnerNoStory(people.partnerName)))
+                .accessibilityIdentifier("stories.partner.empty")
         } else {
             Button {
                 viewer = StoryViewerContent(
@@ -265,6 +297,8 @@ struct HomeStoriesStrip: View {
                 avatar
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("stories.partner")
+            .accessibilityValue(Text(ring == .unseen ? .storiesBadgeNew : .storiesBadgeSeen))
             .accessibilityLabel(
                 Text(
                     ring == .unseen

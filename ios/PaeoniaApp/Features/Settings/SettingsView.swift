@@ -134,6 +134,10 @@ struct SettingsView: View {
             Group {
                 Section {
                     profileRow
+                    AvatarDecorationSettingsRow(
+                        name: profileRowName,
+                        photoAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID
+                    )
                     if partner != nil {
                         PartnerNicknameSettingsRow(editor: nicknameEditor, partner: partner)
                     }

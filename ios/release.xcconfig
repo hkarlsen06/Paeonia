@@ -18,4 +18,4 @@ PAEONIA_POSTHOG_PROJECT_KEY = phc_ruqiKvB8F5xvh5fMRt7oRAWpL8dhbvKjhzAhTQT3qqGg
 
 // Photos for the Debug-only developer scenarios (App/DeveloperScenarios/MemoriesMapPhotos).
 // The scenario code is compiled out of Release, so its photos are left out too.
-EXCLUDED_SOURCE_FILE_NAMES = scenario-memory-*.jpg
+EXCLUDED_SOURCE_FILE_NAMES = scenario-memory-*.jpg scenario-memory-*.webp

@@ -2835,6 +2835,204 @@
         }
       }
     },
+    "avatar.decoration.explanation" : {
+      "comment" : "Explains that the decoration selected around the profile photo is shared with the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner sees this decoration too."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partneren din ser denne pynten også."
+          }
+        }
+      }
+    },
+    "avatar.decoration.hearts" : {
+      "comment" : "Name of the illustrated hearts avatar decoration.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hearts"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjerter"
+          }
+        }
+      }
+    },
+    "avatar.decoration.none" : {
+      "comment" : "No decoration around the profile photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen"
+          }
+        }
+      }
+    },
+    "avatar.decoration.petals" : {
+      "comment" : "Name of the illustrated flower petals avatar decoration.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Petals"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kronblader"
+          }
+        }
+      }
+    },
+    "avatar.decoration.preview" : {
+      "comment" : "Accessibility label for the decoration preview. The selected style is read as its value.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your avatar"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profilbildet ditt"
+          }
+        }
+      }
+    },
+    "avatar.decoration.save" : {
+      "comment" : "Saves the selected avatar decoration.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
+    "avatar.decoration.saveFailed" : {
+      "comment" : "Error banner title when saving an avatar decoration fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not save your decoration"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre pynten"
+          }
+        }
+      }
+    },
+    "avatar.decoration.saveOffline" : {
+      "comment" : "Shown only when the phone is offline. The selection stays in the open editor.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your choice is still here. Connect to the internet and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valget ditt er fortsatt her. Koble til internett og prøv igjen."
+          }
+        }
+      }
+    },
+    "avatar.decoration.saveOther" : {
+      "comment" : "Shown when saving fails for a reason other than no connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your choice is still here. Try saving again in a moment."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valget ditt er fortsatt her. Prøv å lagre igjen om litt."
+          }
+        }
+      }
+    },
+    "avatar.decoration.stars" : {
+      "comment" : "Name of the stars avatar decoration.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stars"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stjerner"
+          }
+        }
+      }
+    },
+    "avatar.decoration.title" : {
+      "comment" : "Title of the picker for decorations around your profile photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avatar decoration"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pynt på profilbildet"
+          }
+        }
+      }
+    },
     "boardGames.history.empty.message" : {
       "comment" : "Message of the empty state when the couple has not finished a game of this kind.",
       "extractionState" : "manual",
@@ -33640,6 +33838,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stories"
+          }
+        }
+      }
+    },
+    "stories.badge.new" : {
+      "comment" : "Short badge on the partner avatar when there is an unseen story.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ny"
+          }
+        }
+      }
+    },
+    "stories.badge.own" : {
+      "comment" : "Short badge on your avatar when you have an active story. Separate from the add button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Story"
+          }
+        }
+      }
+    },
+    "stories.badge.seen" : {
+      "comment" : "Short badge on the partner avatar when all active stories have been viewed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seen"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett"
           }
         }
       }

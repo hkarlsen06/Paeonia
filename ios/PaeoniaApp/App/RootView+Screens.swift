@@ -296,7 +296,11 @@ extension RootView {
             coupleID: viewModel.currentActiveCoupleID,
             relationshipStartedOn: viewModel.currentRelationshipStartedOn,
             ownAccess: viewModel.currentOwnAccess,
-            accessNotice: viewModel.currentAccessNotice
+            accessNotice: viewModel.currentAccessNotice,
+            avatarDecorations: CoupleAvatarDecorations(
+                own: viewModel.route.accessResolution?.snapshot.relationshipState?.ownAvatarDecoration ?? .none,
+                partner: viewModel.route.accessResolution?.snapshot.relationshipState?.partnerAvatarDecoration ?? .none
+            )
         )
     }
 

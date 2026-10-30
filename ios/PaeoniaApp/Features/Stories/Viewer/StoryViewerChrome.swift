@@ -71,6 +71,7 @@ struct StoryViewerHeader: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text(.commonClose))
+            .accessibilityIdentifier("story.viewer.close")
         }
     }
 

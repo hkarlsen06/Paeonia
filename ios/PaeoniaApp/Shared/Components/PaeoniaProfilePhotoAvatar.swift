@@ -7,6 +7,7 @@ struct PaeoniaProfilePhotoAvatar: View {
     let tint: Color
     let size: CGFloat
     private let profilePhotoProvider: any ProfilePhotoImageProviding
+    @Environment(\.profilePhotoImageProvider) private var environmentPhotoProvider
 
     @State private var profileImage: UIImage?
     /// The asset `profileImage` was loaded for. A new asset id clears the old photo
@@ -81,7 +82,8 @@ struct PaeoniaProfilePhotoAvatar: View {
         }
 
         let load = { () async -> UIImage? in
-            guard let data = await profilePhotoProvider.profilePhotoData(for: mediaAssetID) else {
+            let provider = environmentPhotoProvider ?? profilePhotoProvider
+            guard let data = await provider.profilePhotoData(for: mediaAssetID) else {
                 return nil
             }
             return await Self.decode(data)
@@ -136,4 +138,8 @@ private struct EmptyProfilePhotoImageProvider: ProfilePhotoImageProviding {
         await Task.yield()
         return nil
     }
+}
+
+extension EnvironmentValues {
+    @Entry var profilePhotoImageProvider: (any ProfilePhotoImageProviding)?
 }

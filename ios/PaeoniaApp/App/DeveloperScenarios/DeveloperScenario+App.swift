@@ -8,7 +8,7 @@
       launchLoading, welcome, signIn, signInInvite, onboardingEmpty, onboardingPrefilled, onboardingUsage,
       relationshipEnded, accountClosed, deletingAccount,
       localFlowFresh, localFlowOnboarding, localFlowPaywall, localFlowPairing, localFlowPaired,
-      localFlowGameConversation,
+      localFlowGameConversation, avatarStoriesNew, avatarStoriesSeen, avatarStoriesEmpty,
       homeLaunchDuringReveal, homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError,

@@ -38,6 +38,7 @@ export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string
         .unique()
     : null;
   const visible = profile?.moderation_status === "visible";
+  const ownProfile = await ctx.db.query("profiles").withIndex("by_user_id", (q) => q.eq("user_id", userId)).unique();
   return {
     couple_id: best.couple.id,
     pair_id: best.couple.pair_id,
@@ -50,6 +51,8 @@ export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string
     // in `PartnerName`, so the settings screen can show both. Push copy uses `nameForViewer`.
     partner_account_name: visible ? accountNameOf(profile) : null,
     partner_nickname: visible && best.current ? (best.member.partner_nickname ?? null) : null,
+    own_avatar_decoration: ownProfile?.avatar_decoration ?? null,
+    partner_avatar_decoration: visible && best.current ? (profile?.avatar_decoration ?? null) : null,
     partner_profile_photo_asset_id: visible
       ? orNull(profile?.profile_photo_asset_id ?? profile?.provider_profile_photo_asset_id)
       : null,

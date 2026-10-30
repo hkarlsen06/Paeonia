@@ -88,6 +88,8 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
     let partnerAccountName: String?
     /// What this person calls their partner. The server sends it only to them.
     var partnerNickname: String?
+    var ownAvatarDecoration: AvatarDecoration?
+    var partnerAvatarDecoration: AvatarDecoration?
     let partnerProfilePhotoAssetID: UUID?
     let startedOn: String?
     let endedAt: Date?
@@ -103,6 +105,8 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
         case partnerUserID = "partner_user_id"
         case partnerAccountName = "partner_account_name"
         case partnerNickname = "partner_nickname"
+        case ownAvatarDecoration = "own_avatar_decoration"
+        case partnerAvatarDecoration = "partner_avatar_decoration"
         case partnerProfilePhotoAssetID = "partner_profile_photo_asset_id"
         case startedOn = "started_on"
         case endedAt = "ended_at"
@@ -133,6 +137,8 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
             partnerUserID: partnerUserID,
             partnerAccountName: partnerAccountName,
             partnerNickname: partnerNickname,
+            ownAvatarDecoration: ownAvatarDecoration,
+            partnerAvatarDecoration: partnerAvatarDecoration,
             partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
             startedOn: startedOn,
             endedAt: endedAt,

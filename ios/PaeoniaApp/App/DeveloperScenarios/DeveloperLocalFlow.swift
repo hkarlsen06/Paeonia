@@ -12,11 +12,12 @@
     @State private var pendingInviteCode: String?
     @State private var environment: DeveloperLocalFlowEnvironment
 
-    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil, gameConversation: Bool = false) {
+    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming? = nil, gameConversation: Bool = false,
+         avatarStories: StoryRingState? = nil) {
       self.seed = seed
       _environment = State(
         initialValue: DeveloperLocalFlowEnvironment(
-          seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation))
+          seed: seed, homeLaunch: homeLaunch, gameConversation: gameConversation, avatarStories: avatarStories))
     }
 
     var body: some View {
@@ -36,6 +37,7 @@
         featureDependencies: environment.featureDependencies,
         allowsSystemIntegrations: false
       )
+      .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
       .task(id: environment.rootViewModel.state) {
         guard environment.rootViewModel.state == .paired else { return }
         await environment.prepareHomeLaunch()
@@ -64,9 +66,10 @@
 
     // This is the single Debug composition boundary for the full local app graph.
     // swiftlint:disable:next function_body_length
-    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: Bool) {
+    init(seed: DeveloperLocalFlowSeed, homeLaunch: DeveloperHomeLaunchTiming?, gameConversation: Bool,
+         avatarStories: StoryRingState?) {
       self.homeLaunch = homeLaunch
-      let store = DeveloperLocalFlowStore(seed: seed)
+      let store = DeveloperLocalFlowStore(seed: seed, avatarScenario: avatarStories != nil)
       let authService = DeveloperLocalFlowAuthService(store: store)
       let accessService = DeveloperLocalFlowAccessService(store: store)
       let pairingService = DeveloperLocalFlowPairingService(store: store)
@@ -210,6 +213,8 @@
         memoriesViewModel: memoriesViewModel,
         gamesViewModel: gameFlow?.games,
         settingsViewModel: settingsViewModel,
+        avatarStylingModel: AvatarStylingModel(gateway: DeveloperAvatarDecorationGateway(store: store)),
+        storiesViewModel: avatarStories.map { DeveloperAvatarFixture.stories($0) },
         settingsPrivacyService: nil,
         settingsPrivacyOperationProvider: operationProvider,
         widgetDrawingViewModel: widgetDrawingViewModel,
