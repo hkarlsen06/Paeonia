@@ -100,6 +100,7 @@ extension ExquisiteCorpseViewModel {
         overview = nil
         pending = .none
         savedIdeaIDs = [:]
+        lastSettledRevealFigureID = nil
         phase = .loading
         part = nil
         figure = nil

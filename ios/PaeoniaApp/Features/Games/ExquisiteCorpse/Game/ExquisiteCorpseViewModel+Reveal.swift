@@ -65,7 +65,8 @@ extension ExquisiteCorpseViewModel {
             parts: parts,
             partnerName: partnerName,
             // The partner who drew the body starts the next figure.
-            nextIsMine: figure.starterUserID != userID
+            nextIsMine: figure.starterUserID != userID,
+            startsSettled: lastSettledRevealFigureID == figure.id
         )
         revealContent = content
         isLoadingReveal = !content.isReady && !loadingRevealAssets.isEmpty
@@ -145,6 +146,16 @@ extension ExquisiteCorpseViewModel {
     }
 
     // MARK: - Moving on
+
+    /// Keeps the finished creature on reopening without moving past it.
+    func revealDidSettle(figureID: UUID) async {
+        guard phase == .reveal, figure?.id == figureID, revealContent?.isReady == true,
+              lastSettledRevealFigureID != figureID, let userID = currentUserID
+        else { return }
+        await cache.recordSettledReveal(figureID: figureID, ownerUserID: userID)
+        guard currentUserID == userID else { return }
+        await reload()
+    }
 
     /// Leaves the reveal for the next turn. The "I have seen this" mark is saved on
     /// the phone first, so the screen moves on at once without the network. The

@@ -47,6 +47,7 @@ struct ExquisiteCorpseRevealContent {
     let partnerName: String
     /// The next figure starts with me, so the button says "Draw the next head".
     let nextIsMine: Bool
+    var startsSettled = false
 
     /// All three drawings are on the phone.
     var isReady: Bool {

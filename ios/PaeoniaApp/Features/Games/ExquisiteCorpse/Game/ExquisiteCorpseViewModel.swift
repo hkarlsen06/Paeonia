@@ -182,6 +182,7 @@ final class ExquisiteCorpseViewModel {
 
     // The reveal.
     @ObservationIgnored var revealFigureID: UUID?
+    @ObservationIgnored var lastSettledRevealFigureID: UUID?
     @ObservationIgnored var revealDrawings: [ExquisiteCorpsePartKind: PKDrawing] = [:]
     @ObservationIgnored var loadingRevealAssets: Set<UUID> = []
     @ObservationIgnored var failedRevealAssets: Set<UUID> = []

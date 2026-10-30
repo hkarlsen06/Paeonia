@@ -68,6 +68,51 @@ struct ExquisiteCorpseViewModelRevealTests {
         #expect(env.room.role == .drawing)
     }
 
+    @Test func reopeningASettledCreatureKeepsTheWholeFigureUntilContinue() async {
+        let (env, figure) = reveal(of: 1)
+        let first = env.viewModel()
+        await first.reload()
+        let ready = await waitUntil { first.revealContent?.isReady == true }
+        #expect(ready)
+        #expect(first.revealContent?.startsSettled == false)
+
+        await first.revealDidSettle(figureID: figure.id)
+
+        let reopened = env.viewModel()
+        await reopened.reload()
+        #expect(reopened.phase == .reveal)
+        #expect(reopened.revealContent?.figureID == figure.id)
+        #expect(reopened.revealContent?.startsSettled == true)
+        #expect(await env.queued(.exquisiteCorpseRevealSeen).isEmpty)
+
+        await reopened.continueFromReveal()
+        #expect(reopened.phase == .drawing)
+        #expect(reopened.part == .head)
+        #expect(await env.queued(.exquisiteCorpseRevealSeen).count == 1)
+    }
+
+    @Test func aNewCreatureStillUnfoldsAndIgnoresThePreviousFiguresCallback() async {
+        let (env, previous) = reveal(of: 1)
+        let viewModel = env.viewModel()
+        await viewModel.reload()
+        let firstReady = await waitUntil { viewModel.revealContent?.isReady == true }
+        #expect(firstReady)
+        await viewModel.revealDidSettle(figureID: previous.id)
+
+        let nextState = Fixture.unseenReveal(figure: 2)
+        let next = nextState.recentFigures[0]
+        env.seedDrawings(of: next)
+        await env.serverState(nextState)
+        await viewModel.reload()
+        let nextReady = await waitUntil { viewModel.revealContent?.isReady == true }
+        #expect(nextReady)
+
+        await viewModel.revealDidSettle(figureID: previous.id)
+        #expect(viewModel.revealContent?.figureID == next.id)
+        #expect(viewModel.revealContent?.startsSettled == false)
+        #expect(await env.cache.document(ownerUserID: Fixture.me).lastSettledRevealFigureID == previous.id)
+    }
+
     @Test func theRevealStaysGoneOnceTheServerHasTheMark() async {
         let (env, _) = reveal(of: 1)
         let viewModel = env.viewModel()

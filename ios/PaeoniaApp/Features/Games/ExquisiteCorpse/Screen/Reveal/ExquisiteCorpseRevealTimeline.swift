@@ -118,6 +118,7 @@ final class ExquisiteCorpseRevealTimeline {
     @ObservationIgnored private let schedule: Schedule
     @ObservationIgnored private let haptics: Haptics
     @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
+    @ObservationIgnored private let onSettled: @MainActor () -> Void
     /// The part whose replay end the timeline waits for.
     @ObservationIgnored private var awaitedPart: Part?
     @ObservationIgnored private var runID = 0
@@ -126,11 +127,13 @@ final class ExquisiteCorpseRevealTimeline {
     init(
         schedule: Schedule = .standard,
         haptics: Haptics? = nil,
+        onSettled: @escaping @MainActor () -> Void = {},
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.schedule = schedule
         self.haptics = haptics ?? .live
         self.sleep = sleep
+        self.onSettled = onSettled
     }
 
     // MARK: Entry points
@@ -143,6 +146,7 @@ final class ExquisiteCorpseRevealTimeline {
         if reduceMotion {
             applySettledState()
             haptics.answerRevealed()
+            onSettled()
             return
         }
         haptics.selection()
@@ -175,6 +179,14 @@ final class ExquisiteCorpseRevealTimeline {
         withAnimation(PaeoniaMotion.stateChange) {
             applySettledState()
         }
+        onSettled()
+    }
+
+    /// Restores a creature already shown, without replaying its effects.
+    func restoreSettled() {
+        guard !hasBegun else { return }
+        hasBegun = true
+        applySettledState()
     }
 
     /// Ends the run when the view goes away.
@@ -228,6 +240,7 @@ final class ExquisiteCorpseRevealTimeline {
                     showsButtons = true
                 }
                 stage = .settled
+                onSettled()
             }
         }
     }

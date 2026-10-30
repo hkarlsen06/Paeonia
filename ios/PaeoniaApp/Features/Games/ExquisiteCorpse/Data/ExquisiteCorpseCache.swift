@@ -16,6 +16,8 @@ nonisolated struct ExquisiteCorpseLocalDocument: GamesPersistedDocument {
     var state: RemoteExquisiteCorpseState?
     /// The first page of "Our creatures".
     var history: RemoteExquisiteCorpseHistoryPage?
+    /// The latest creature whose animation finished on this phone.
+    var lastSettledRevealFigureID: UUID?
     /// The idea id on the chip, by part id, so a draft restores it. The latest 20.
     var ideas: [UUID: String] = [:]
     /// The part ids in `ideas`, oldest first.
@@ -46,6 +48,7 @@ protocol ExquisiteCorpseCaching: Actor {
     func saveFetchedState(_ state: RemoteExquisiteCorpseState, ownerUserID: UUID, ticket: Int) -> Bool
     /// Keeps the first page of "Our creatures".
     func saveHistoryFirstPage(_ page: RemoteExquisiteCorpseHistoryPage, ownerUserID: UUID)
+    func recordSettledReveal(figureID: UUID, ownerUserID: UUID)
     /// Keeps the idea on the chip for a part. Nil removes it.
     func saveIdea(_ ideaID: String?, partID: UUID, ownerUserID: UUID)
     /// Counts one unexplained server refusal of a queued write and returns how
@@ -156,6 +159,10 @@ actor FileExquisiteCorpseCache: ExquisiteCorpseCaching {
         store.update(ownerUserID: ownerUserID) { $0.history = page }
     }
 
+    func recordSettledReveal(figureID: UUID, ownerUserID: UUID) {
+        store.update(ownerUserID: ownerUserID) { $0.lastSettledRevealFigureID = figureID }
+    }
+
     func saveIdea(_ ideaID: String?, partID: UUID, ownerUserID: UUID) {
         store.update(ownerUserID: ownerUserID) { $0.saveIdea(ideaID, partID: partID) }
     }
@@ -220,6 +227,10 @@ actor InMemoryExquisiteCorpseCache: ExquisiteCorpseCaching {
 
     func saveHistoryFirstPage(_ page: RemoteExquisiteCorpseHistoryPage, ownerUserID: UUID) {
         documents[ownerUserID, default: ExquisiteCorpseLocalDocument()].history = page
+    }
+
+    func recordSettledReveal(figureID: UUID, ownerUserID: UUID) {
+        documents[ownerUserID, default: ExquisiteCorpseLocalDocument()].lastSettledRevealFigureID = figureID
     }
 
     func saveIdea(_ ideaID: String?, partID: UUID, ownerUserID: UUID) {

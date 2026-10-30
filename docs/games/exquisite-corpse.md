@@ -94,6 +94,7 @@ Who sees it when.
 - The legs drawer sees the reveal right after Done, once the server has the part. Offline, the phone keeps the part and shows "Saved on this phone. You'll both see the whole figure when it's sent."
 - The partner sees it the next time they open the game, or at once when they watch live.
 - A figure's reveal shows until this person taps Continue. The server keeps a "reveal seen" time for each partner, so a second phone or a fresh install doesn't show it again. Like Draw & Guess, the latest unseen reveal comes before a new turn.
+- Once the unfolding finishes or is skipped, reopening shows the finished creature and its buttons at once. Reduce Motion counts as shown too. The phone keeps this separately from Continue, so watching the reveal does not start the next turn. Leaving during the unfolding does not mark it finished.
 
 Beats, in seconds from the start. The later times assume each part plays for the full 2.5 s. Shorter parts move everything after them earlier.
 

@@ -11,7 +11,7 @@ import SwiftUI
 /// Motion everything shows at once, and "Play again" replays the parts one by one.
 ///
 /// Give each figure its own view (`.id(content.figureID)`). The reveal plays once
-/// per view.
+/// per creature on this phone.
 struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_length
     let content: ExquisiteCorpseRevealContent
     let figure: RemoteExquisiteCorpseFigure?
@@ -37,6 +37,7 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
         figure: RemoteExquisiteCorpseFigure? = nil,
         reduceMotion: Bool,
         onContinue: @escaping () -> Void,
+        onSettled: @escaping @MainActor () -> Void = {},
         onPlayAgain: (() -> Void)? = nil,
         timeline: ExquisiteCorpseRevealTimeline? = nil,
         player: ExquisiteCorpseFigurePlayer? = nil
@@ -46,7 +47,7 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
         self.reduceMotion = reduceMotion
         self.onContinue = onContinue
         self.onPlayAgain = onPlayAgain
-        _timeline = State(initialValue: timeline ?? ExquisiteCorpseRevealTimeline())
+        _timeline = State(initialValue: timeline ?? ExquisiteCorpseRevealTimeline(onSettled: onSettled))
         _player = State(initialValue: player ?? ExquisiteCorpseFigurePlayer())
     }
 
@@ -270,6 +271,11 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
     private func startIfReady() {
         guard content.isReady, !timeline.hasBegun else { return }
         player.load(content.drawings)
+        if content.startsSettled {
+            player.finish()
+            timeline.restoreSettled()
+            return
+        }
         if reduceMotion {
             player.finish()
         }

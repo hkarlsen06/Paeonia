@@ -28,6 +28,7 @@ extension ExquisiteCorpseViewModel {
         state = document.state
         overview = sharedOverview
         savedIdeaIDs = document.ideas
+        lastSettledRevealFigureID = document.lastSettledRevealFigureID
         if let work {
             pending = work
         }

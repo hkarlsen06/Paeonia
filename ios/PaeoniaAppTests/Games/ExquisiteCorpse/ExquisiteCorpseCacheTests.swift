@@ -236,6 +236,7 @@ struct ExquisiteCorpseCacheContentTests {
         await cache.saveState(Fixture.state(version: 5), ownerUserID: me)
         await cache.saveIdea("head-robot", partID: UUID(), ownerUserID: me)
         await cache.recordNotice(.partRejected, ownerUserID: me)
+        await cache.recordSettledReveal(figureID: Fixture.figureID(1), ownerUserID: me)
 
         await cache.clearAll()
 
@@ -255,6 +256,7 @@ struct ExquisiteCorpseCacheContentTests {
             ownerUserID: me
         )
         await cache.saveIdea("head-robot", partID: part, ownerUserID: me)
+        await cache.recordSettledReveal(figureID: Fixture.figureID(1), ownerUserID: me)
         await cache.recordNotice(.partRejected, ownerUserID: me)
         _ = await cache.recordUnexplainedRefusal(operationID: part, ownerUserID: me)
 
@@ -265,6 +267,7 @@ struct ExquisiteCorpseCacheContentTests {
         #expect(document.state?.recentFigures.map(\.id) == [Fixture.figureID(1)])
         #expect(document.history?.figures.map(\.id) == [Fixture.figureID(1)])
         #expect(document.ideas == [part: "head-robot"])
+        #expect(document.lastSettledRevealFigureID == Fixture.figureID(1))
         #expect(document.notices == [.partRejected])
         #expect(document.unexplainedRefusals == [part])
         #expect(await next.document(ownerUserID: Fixture.partner) == ExquisiteCorpseLocalDocument())
