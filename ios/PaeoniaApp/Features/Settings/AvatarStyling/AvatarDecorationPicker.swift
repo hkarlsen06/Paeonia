@@ -96,12 +96,7 @@ struct AvatarDecorationPicker: View {
             }
             .frame(maxWidth: .infinity)
             .padding(PaeoniaSpacing.space16)
-            .background(.paeoniaSurfacePrimary, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius16)
-                    .strokeBorder(selection == decoration ? Color.paeoniaAccentPrimary : .clear, lineWidth: 2)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(model.isSaving)

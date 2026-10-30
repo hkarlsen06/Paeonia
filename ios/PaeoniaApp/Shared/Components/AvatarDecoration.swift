@@ -4,7 +4,7 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
     case none, peony, ribbon, moon, candy
 
     /// The largest frame extends this far beyond the photo. Reserve room for nearby content.
-    static let maximumOutset: CGFloat = 0.22
+    static let maximumOutset: CGFloat = 0.12
 
     var title: LocalizedStringResource {
         switch self {
@@ -26,14 +26,15 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    /// Measured inner rims in the untrimmed 1024px exports. Petals may overlap the photo's edge.
+    /// Align the middle of each frame's band with the photo edge, covering its border.
+    /// Diameters are measured in the untrimmed 1024px exports.
     var artworkScale: CGFloat {
         switch self {
         case .none: 1
-        case .peony: 1_024 / 680
-        case .ribbon: 1_024 / 660
-        case .moon: 1_024 / 666
-        case .candy: 1_024 / 674
+        case .peony: 1_024 / 770
+        case .ribbon: 1_024 / 760
+        case .moon: 1_024 / 740
+        case .candy: 1_024 / 740
         }
     }
 
@@ -47,7 +48,7 @@ nonisolated struct CoupleAvatarDecorations: Equatable, Sendable {
     var partner: AvatarDecoration = .none
 }
 
-/// The frame meets the photo's outline. Story controls are drawn separately above it.
+/// The frame overlaps the photo's border. Story controls are drawn separately above it.
 struct AvatarDecorationArtwork: View {
     let decoration: AvatarDecoration
     let size: CGFloat
