@@ -20,7 +20,7 @@
     )
     static let mindMeldWriteAway = mindMeldScreen(
       "mind-meld-write-away", "Mind Meld · partner locked in, away",
-      "Robin locked in a word and left. The locked wording stays, with no presence dot and an available invite"
+      "Robin locked in a word and left. The locked wording stays, with no presence ring and an available invite"
     )
     static let mindMeldWriteTyping = mindMeldScreen(
       "mind-meld-write-typing", "Mind Meld · write, partner typing",

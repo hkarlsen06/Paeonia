@@ -62,8 +62,7 @@ struct ExquisiteCorpseWatchView: View {
             GamePresenceLabel(
                 player: viewModel.partner,
                 text: title,
-                isHere: viewModel.partnerPresence.isHere,
-                showsRing: true
+                isHere: viewModel.partnerPresence.isHere
             )
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("corpse.watching")

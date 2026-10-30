@@ -15,6 +15,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 ## Decisions
 
+Decided on 2026-10-30.
+
+- Gameplay portraits use one steady green presence ring only while the partner has that game open. Turn decoration, locked words and finished moves remain separate. Drawing uses its existing pencil and canvas cues. Mind Meld and Story Chain share typing dots in their existing status areas. Mind Meld requires its typing message, and Story Chain requires a fresh nonempty live draft, never title selection. Reduce Motion stops the dots, including when changed while visible. Presence is also spoken separately from progress in English and Norwegian Bokmal.
+
 Decided on 2026-10-27.
 
 - **Draw & Guess shows letter hints to both partners.** The drawer sees the same pink outline around letters the guesser revealed with "Show a letter". A custom word has a "Custom word" cue above the guesser's answer slots.

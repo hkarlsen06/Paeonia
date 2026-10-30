@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The line under the board. On the left, the game's own hint while it has one
-/// (Ludo's "Roll again"). Whether the partner is here shows elsewhere: the green dot
+/// (Ludo's "Roll again"). Whether the partner is here shows elsewhere: the steady green ring
 /// on their avatar, or `BoardGameAwayLine` under the bottom content. VoiceOver hears
 /// both changes from here.
 /// On the right, an "Another turn" chip that pops in each time the extra turn

@@ -12,7 +12,6 @@ struct ExquisiteCorpseDrawingView: View {
     private let part: ExquisiteCorpsePartKind
     private let showsFirstHint: Bool
 
-    @State private var partnerPulse: CGFloat = 1
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var board: GameDrawingBoard { viewModel.board }
@@ -110,9 +109,7 @@ struct ExquisiteCorpseDrawingView: View {
                 GamePresenceLabel(
                     player: viewModel.partner,
                     text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
-                    isHere: viewModel.partnerPresence.isHere,
-                    showsRing: viewModel.partnerPresence == .watching,
-                    scale: partnerPulse
+                    isHere: viewModel.partnerPresence.isHere
                 )
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("corpse.presence")
@@ -137,9 +134,6 @@ struct ExquisiteCorpseDrawingView: View {
             PaeoniaHaptics.partnerDrawingReceived()
         }
         GameSound.nudge.play(volume: 0.7)
-        guard !reduceMotion else { return }
-        withAnimation(PaeoniaMotion.stateChange) { partnerPulse = 1.12 }
-        withAnimation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionDefault)) { partnerPulse = 1 }
     }
 }
 

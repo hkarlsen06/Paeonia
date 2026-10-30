@@ -3,14 +3,13 @@ import SwiftUI
 
 /// The partner's turn. While they guess this person's photo, the photo and its
 /// spot show to their owner, and live the map shows what the partner's map shows.
-/// While they pick a photo, their avatar breathes, and once they picked one it shows
+/// While they pick a photo, their portrait shows presence, and once they picked one it shows
 /// blurred where the guess screen will show it. Either way the screen says what
 /// happens next.
 struct GuessMySpotWaitingView: View {
     let viewModel: GuessMySpotViewModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var breathes = false
     @State private var camera = GuessMySpotCamera.world
 
     private var isWaitingForGuess: Bool {
@@ -119,7 +118,7 @@ struct GuessMySpotWaitingView: View {
     private func photoComing(_ preview: GuessMySpotPhotoPreview) -> some View {
         GuessMySpotSplitLayout {
             GameLiveRow {
-                GamePresenceLabel(player: viewModel.partner, text: title, showsRing: partnerIsHere)
+                GamePresenceLabel(player: viewModel.partner, text: title, isHere: partnerIsHere)
             } trailing: {
                 EmptyView()
             }
@@ -168,19 +167,7 @@ struct GuessMySpotWaitingView: View {
             tint: .paeoniaPartnerTwo,
             size: 96
         )
-        .overlay {
-            Circle()
-                .strokeBorder(.paeoniaAccentPrimary, lineWidth: 3)
-                .padding(-6)
-                .opacity(partnerIsHere ? (reduceMotion ? 0.35 : (breathes ? 0.5 : 0.2)) : 0)
-        }
-        .gamePresenceDot(partnerIsHere, size: 20)
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
-                breathes = true
-            }
-        }
+        .gamePresenceRing(partnerIsHere)
         .accessibilityHidden(true)
     }
 
@@ -200,11 +187,10 @@ struct GuessMySpotWaitingView: View {
     private var text: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
             HStack(spacing: PaeoniaSpacing.space8) {
-                // While the partner guesses there is no avatar on screen, so the dot
-                // sits by the title.
-                if partnerIsHere, isWaitingForGuess {
-                    GamePresenceDot(size: 12)
-                        .transition(.scale.combined(with: .opacity))
+                if isWaitingForGuess {
+                    GameAvatar(player: viewModel.partner, isMe: false, size: 24)
+                        .gamePresenceRing(partnerIsHere)
+                        .accessibilityHidden(true)
                 }
                 Text(title)
                     .font(PaeoniaTypography.title)
@@ -219,6 +205,7 @@ struct GuessMySpotWaitingView: View {
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(partnerIsHere ? .gamesPresenceHere : .gamesPresenceAway))
     }
 
     private var title: LocalizedStringResource {

@@ -1,13 +1,11 @@
 import SwiftUI
 
 /// The partner's avatar next to one line of status, such as "Robin is reading
-/// along". The ring breathes around the avatar while the partner is live, and
-/// three dots breathe after the text while they write.
+/// along". Presence and writing use separate cues.
 struct StoryChainPartnerLine: View {
     let participants: GameParticipants
     let text: LocalizedStringResource
-    var isHere = false
-    var showsRing = false
+    let isHere: Bool
     var showsDots = false
     var font = PaeoniaTypography.caption.weight(.semibold)
 
@@ -19,28 +17,19 @@ struct StoryChainPartnerLine: View {
         HStack(spacing: PaeoniaSpacing.space8) {
             StoryChainAvatar(participants: participants, isMe: false, size: Self.avatarSize)
                 .accessibilityHidden(true)
-                .background {
-                    StoryChainBreathingRing(
-                        isActive: showsRing,
-                        lineWidth: 2,
-                        inset: 3,
-                        blur: 0.5,
-                        peak: 1,
-                        trough: 0.4
-                    )
-                }
-                .gamePresenceDot(isHere, size: 10)
+                .gamePresenceRing(isHere)
                 .padding(.vertical, 3)
                 .padding(.leading, 3)
             Text(text)
                 .font(font)
-                .foregroundStyle(showsRing || showsDots ? .paeoniaTextPrimary : .paeoniaTextTertiary)
+                .foregroundStyle(isHere ? .paeoniaTextPrimary : .paeoniaTextTertiary)
                 .fixedSize(horizontal: false, vertical: true)
             if showsDots, !dynamicTypeSize.isAccessibilitySize {
-                StoryChainTypingDots(ink: StoryChainPageStyle.partnerInk)
+                GameTypingDots()
             }
         }
         .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.space24, alignment: .leading)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(isHere ? .gamesPresenceHere : .gamesPresenceAway))
     }
 }

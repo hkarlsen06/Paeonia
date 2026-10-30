@@ -27,6 +27,7 @@ struct StoryChainWaitingView: View {
                     .multilineTextAlignment(.center)
                 }
                 .accessibilityElement(children: .combine)
+                .accessibilityValue(Text(presence.isHere ? .gamesPresenceHere : .gamesPresenceAway))
                 .accessibilityIdentifier("storyChain.waitingForOpening")
                 Spacer(minLength: PaeoniaSpacing.space16)
             }
@@ -51,8 +52,7 @@ struct StoryChainWaitingView: View {
     private var avatar: some View {
         StoryChainAvatar(participants: viewModel.participants, isMe: false, size: 96)
             .accessibilityHidden(true)
-            .background { StoryChainBreathingRing(isActive: presence.isHere) }
-            .gamePresenceDot(presence.isHere, size: 20)
+            .gamePresenceRing(presence.isHere)
             .padding(PaeoniaSpacing.space8)
     }
 }

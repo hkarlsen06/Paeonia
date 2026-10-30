@@ -97,8 +97,7 @@ struct ConsensioLineView: View {
             GamePresenceLabel(
                 player: viewModel.partner,
                 text: isHere ? .consensioGuessWatching(name) : .consensioGuessLater(name),
-                isHere: isHere,
-                showsRing: isHere
+                isHere: isHere
             )
             .animation(PaeoniaMotion.stateChange, value: isHere)
         } trailing: {

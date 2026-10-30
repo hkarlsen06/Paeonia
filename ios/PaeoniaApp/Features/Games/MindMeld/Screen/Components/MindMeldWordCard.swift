@@ -22,18 +22,14 @@ struct MindMeldWordCard: View {
     var tone: Tone = .plain
     /// Shows a lock on a face-up card, for the word this person has locked in.
     var isLocked = false
-    /// A soft glow that breathes around a face-down card while the partner is in the game.
-    var breathes = false
     var maxWidth: CGFloat = 160
 
     private static let aspectRatio: CGFloat = 0.8
     private static let radius = PaeoniaRadius.radius20
-    private static let breathingDuration: TimeInterval = 2.4
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The card is at least this tall, and grows with the text size.
     @ScaledMetric(relativeTo: .title2) private var minimumHeight: CGFloat = 150
-    @State private var isBreathing = false
 
     var body: some View {
         // The invisible base sets the size: 4:5, taller at large text sizes. The faces
@@ -43,7 +39,6 @@ struct MindMeldWordCard: View {
             .frame(minHeight: minimumHeight)
             .overlay {
                 ZStack {
-                    breathingGlow
                     faces
                         .shadow(color: shadowColor.opacity(0.22), radius: 18, y: 8)
                         .shadow(color: .paeoniaBackgroundSecondary.opacity(0.5), radius: 10, y: 6)
@@ -52,7 +47,6 @@ struct MindMeldWordCard: View {
             .frame(maxWidth: maxWidth)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
-        .onAppear { isBreathing = true }
     }
 
     // MARK: Faces
@@ -164,27 +158,6 @@ struct MindMeldWordCard: View {
         tone == .success ? .paeoniaSuccess : .paeoniaAccentPrimary
     }
 
-    // MARK: Breathing glow
-
-    /// Fades in and out while the partner is in the game. It stays in the layout,
-    /// so the card does not shift when the partner arrives or leaves.
-    private var breathingGlow: some View {
-        shape
-            .stroke(.paeoniaAccentPrimary, lineWidth: 6)
-            .blur(radius: 8)
-            .animation(reduceMotion ? nil : breathing) {
-                $0.opacity(reduceMotion ? 0.35 : isBreathing ? 0.5 : 0.2)
-            }
-            .opacity(breathes ? 1 : 0)
-            .animation(PaeoniaMotion.stateChange, value: breathes)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-    }
-
-    private var breathing: Animation {
-        PaeoniaMotion.standardCurve(duration: Self.breathingDuration).repeatForever(autoreverses: true)
-    }
-
     // MARK: Accessibility
 
     private var accessibilityText: Text {
@@ -253,7 +226,7 @@ private struct MindMeldCardPattern: View {
     let hidden = LocalizedStringResource.mindMeldRevealCardFacedownA11Y("Robin")
     VStack(spacing: PaeoniaSpacing.space24) {
         HStack(spacing: PaeoniaSpacing.space24) {
-            MindMeldWordCard(word: "Ocean", isFaceUp: isFaceUp, faceDownLabel: hidden, breathes: true)
+            MindMeldWordCard(word: "Ocean", isFaceUp: isFaceUp, faceDownLabel: hidden)
             MindMeldWordCard(word: "Ice cream", isFaceUp: true, faceDownLabel: hidden, isLocked: true)
         }
         HStack(spacing: PaeoniaSpacing.space24) {

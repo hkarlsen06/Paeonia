@@ -116,7 +116,7 @@ private enum StoryChainPagePreviewData {
                     Circle().fill(.paeoniaPartnerTwo).frame(width: 32, height: 32)
                 }
             },
-            trailing: { StoryChainTypingDots(ink: .paeoniaAccentPrimary) }
+            trailing: { GameTypingDots() }
         )
     }
     .paeoniaScreenBackground(.paeoniaBackgroundSecondary)

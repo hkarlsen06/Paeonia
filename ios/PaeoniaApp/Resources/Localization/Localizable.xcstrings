@@ -16041,6 +16041,42 @@
         }
       }
     },
+    "games.presence.away" : {
+      "comment" : "Spoken absence from the current game, separate from move or word progress.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Away from this game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke her i spillet"
+          }
+        }
+      }
+    },
+    "games.presence.here" : {
+      "comment" : "Spoken presence in the current game, separate from move or word progress.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Here in this game"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Her i dette spillet"
+          }
+        }
+      }
+    },
     "games.settings.languageNote" : {
       "comment" : "Note under the Games settings about changing the language",
       "extractionState" : "manual",

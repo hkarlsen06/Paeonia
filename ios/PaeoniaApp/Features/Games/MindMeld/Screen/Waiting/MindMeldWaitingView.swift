@@ -11,7 +11,7 @@ struct MindMeldWaitingView: View {
     private static let cardWidth: CGFloat = 128
 
     private var partnerIsHere: Bool {
-        viewModel.partnerStatus != .away
+        viewModel.isPartnerHere
     }
 
     private var isTyping: Bool {
@@ -43,12 +43,12 @@ struct MindMeldWaitingView: View {
             send: viewModel.sendInvite,
             identifier: "mindMeld.invite"
         )
-        // The partner's phone changes the title, the hint and the glow while this
+        // The partner's phone changes the title, the hint and presence while this
         // screen is open. Everything moves to its new place together.
         .animation(stateChange, value: viewModel.partnerStatus)
         .animation(stateChange, value: viewModel.showsOfflineLine)
-        .onChange(of: viewModel.partnerStatus) { old, new in
-            if old == .away, new != .away {
+        .onChange(of: viewModel.isPartnerHere) { old, new in
+            if !old, new {
                 PaeoniaHaptics.partnerDrawingReceived()
                 GameSound.nudge.play(volume: 0.7)
             }
@@ -77,9 +77,18 @@ struct MindMeldWaitingView: View {
                 word: nil,
                 isFaceUp: false,
                 faceDownLabel: .mindMeldWaitPartnerCardA11Y(viewModel.partnerName),
-                breathes: partnerIsHere,
                 maxWidth: Self.cardWidth
             )
+            .overlay {
+                PaeoniaProfilePhotoAvatar(
+                    mediaAssetID: viewModel.partner.photoAssetID,
+                    name: viewModel.partner.name,
+                    tint: .paeoniaPartnerTwo,
+                    size: 40
+                )
+                .gamePresenceRing(partnerIsHere)
+                .accessibilityHidden(true)
+            }
         }
         .frame(maxWidth: .infinity)
     }
@@ -94,7 +103,7 @@ struct MindMeldWaitingView: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .contentTransition(.opacity)
                 if isTyping {
-                    MindMeldTypingDots()
+                    GameTypingDots()
                         .transition(.opacity)
                 }
             }
@@ -105,10 +114,12 @@ struct MindMeldWaitingView: View {
         }
         .multilineTextAlignment(.center)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(partnerIsHere ? .gamesPresenceHere : .gamesPresenceAway))
     }
 
     private var title: LocalizedStringResource {
-        isTyping ? .mindMeldPartnerTyping(viewModel.partnerName) : .mindMeldWaitTitle(viewModel.partnerName)
+        if isTyping { return .mindMeldPartnerTyping(viewModel.partnerName) }
+        return partnerIsHere ? .mindMeldPartnerHere(viewModel.partnerName) : .mindMeldWaitTitle(viewModel.partnerName)
     }
 
     private var hint: LocalizedStringResource {

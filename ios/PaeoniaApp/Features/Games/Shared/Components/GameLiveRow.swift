@@ -31,28 +31,22 @@ struct GameLiveRow<Leading: View, Trailing: View>: View {
     }
 }
 
-/// An avatar next to a short status line. The green dot says the partner has the
-/// game open, and the ring that they are watching this screen.
+/// An existing portrait and status, with presence independent of progress.
 struct GamePresenceLabel: View {
     let player: GamePlayer
     let text: LocalizedStringResource
-    var isHere = false
-    var showsRing = false
-    var scale: CGFloat = 1
+    let isHere: Bool
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
             GameAvatar(player: player, isMe: false, size: 24)
-                .overlay {
-                    if showsRing {
-                        Circle().strokeBorder(.paeoniaAccentPrimary, lineWidth: 2).padding(-2)
-                    }
-                }
-                .gamePresenceDot(isHere, size: 10)
-                .scaleEffect(scale)
+                .gamePresenceRing(isHere)
+                .accessibilityHidden(true)
             Text(text)
                 .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(showsRing ? .paeoniaTextPrimary : .paeoniaTextTertiary)
+                .foregroundStyle(isHere ? .paeoniaTextPrimary : .paeoniaTextTertiary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(isHere ? .gamesPresenceHere : .gamesPresenceAway))
     }
 }

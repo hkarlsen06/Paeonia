@@ -9,7 +9,6 @@ struct DrawAndGuessWaitingView: View {
     private let isDrawing: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
-    @State private var isBreathing = false
 
     init(viewModel: DrawAndGuessViewModel) {
         self.viewModel = viewModel
@@ -115,29 +114,9 @@ struct DrawAndGuessWaitingView: View {
 
     private var avatar: some View {
         GameAvatar(player: viewModel.partner, isMe: false, size: 96)
-            .background { ring }
-            .gamePresenceDot(viewModel.partnerPresence.isHere, size: 20)
+            .gamePresenceRing(viewModel.partnerPresence.isHere)
+            .accessibilityValue(Text(viewModel.partnerPresence.isHere ? .gamesPresenceHere : .gamesPresenceAway))
             .padding(PaeoniaSpacing.space8)
-    }
-
-    /// A soft ring that breathes while the partner is in the room. It stays in the
-    /// layout and fades in and out. The breathing animation covers only the
-    /// ring's opacity, so the ring moves with the avatar when the layout changes.
-    private var ring: some View {
-        Circle()
-            .stroke(.paeoniaAccentPrimary, lineWidth: 4)
-            .padding(-PaeoniaSpacing.space8)
-            .blur(radius: 1.5)
-            .animation(reduceMotion ? nil : breathing) {
-                $0.opacity(reduceMotion ? 0.35 : isBreathing ? 0.5 : 0.2)
-            }
-            .opacity(viewModel.partnerPresence.isHere ? 1 : 0)
-            .onAppear { isBreathing = true }
-            .accessibilityHidden(true)
-    }
-
-    private var breathing: Animation {
-        PaeoniaMotion.standardCurve(duration: 2.4).repeatForever(autoreverses: true)
     }
 
     // MARK: Dim slots

@@ -16,7 +16,6 @@ struct StoryChainWaitingBottom: View {
                 participants: viewModel.participants,
                 text: statusText,
                 isHere: presence.isHere,
-                showsRing: presence.isHere,
                 showsDots: showsDots,
                 font: PaeoniaTypography.body.weight(.semibold)
             )
@@ -34,9 +33,9 @@ struct StoryChainWaitingBottom: View {
         .accessibilityIdentifier("storyChain.waiting")
     }
 
-    /// Dots show while the partner is live on the screen that matches the wait.
+    /// A fresh nonempty draft supports writing dots. Screen choice alone does not.
     private var showsDots: Bool {
-        isNaming ? presence == .choosing : presence == .writing
+        !isNaming && presence == .writing && viewModel.page.ghost != nil
     }
 
     /// The hint is about the partner's line. A story that waits for a title has

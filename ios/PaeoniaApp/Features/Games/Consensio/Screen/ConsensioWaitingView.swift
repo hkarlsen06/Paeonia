@@ -2,13 +2,12 @@ import SwiftUI
 
 /// The partner's turn. While they guess this person's marker, the line shows
 /// the real spot to its owner, and live the partner's guess pin moving toward it.
-/// While they pick a topic, their avatar breathes. Either way the screen says
+/// While they pick a topic, their portrait shows presence. Either way the screen says
 /// what happens next.
 struct ConsensioWaitingView: View {
     let viewModel: ConsensioViewModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var breathes = false
 
     /// The live pin is this close to the real spot, so the track between them warms.
     private static let warmDistance = 7
@@ -119,19 +118,7 @@ struct ConsensioWaitingView: View {
             tint: .paeoniaPartnerTwo,
             size: 96
         )
-        .overlay {
-            Circle()
-                .strokeBorder(.paeoniaAccentPrimary, lineWidth: 3)
-                .padding(-6)
-                .opacity(partnerIsHere ? (reduceMotion ? 0.35 : (breathes ? 0.5 : 0.2)) : 0)
-        }
-        .gamePresenceDot(partnerIsHere, size: 20)
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
-                breathes = true
-            }
-        }
+        .gamePresenceRing(partnerIsHere)
         .accessibilityHidden(true)
     }
 
@@ -140,11 +127,10 @@ struct ConsensioWaitingView: View {
     private var text: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
             HStack(spacing: PaeoniaSpacing.space8) {
-                // While the partner guesses there is no avatar on screen, so the dot
-                // sits by the title.
-                if partnerIsHere, isWaitingForGuess {
-                    GamePresenceDot(size: 12)
-                        .transition(.scale.combined(with: .opacity))
+                if isWaitingForGuess {
+                    GameAvatar(player: viewModel.partner, isMe: false, size: 24)
+                        .gamePresenceRing(partnerIsHere)
+                        .accessibilityHidden(true)
                 }
                 Text(title)
                     .font(PaeoniaTypography.title)
@@ -158,6 +144,7 @@ struct ConsensioWaitingView: View {
         }
         .multilineTextAlignment(.center)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(partnerIsHere ? .gamesPresenceHere : .gamesPresenceAway))
     }
 
     private var title: LocalizedStringResource {

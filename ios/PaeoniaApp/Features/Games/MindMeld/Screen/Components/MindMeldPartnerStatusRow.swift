@@ -1,12 +1,6 @@
 import SwiftUI
 
-/// The partner's avatar and one line about what they are doing, on the leading
-/// side of the write phase's top line. It keeps one height, so the content under
-/// it never moves when the line changes.
-///
-/// - Locked in: the line arrives with a spring, the avatar pulses once and
-///   VoiceOver says it. The view model's attention cue taps the phone.
-/// - Joins: the same pulse and a tap, without the announcement.
+/// Presence and locked-word progress remain independent.
 struct MindMeldPartnerStatusRow: View {
     let partner: MindMeldPlayer
     let status: MindMeldPartnerStatus
@@ -15,7 +9,6 @@ struct MindMeldPartnerStatusRow: View {
     private static let avatarSize: CGFloat = 24
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pulse: CGFloat = 1
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
@@ -25,13 +18,7 @@ struct MindMeldPartnerStatusRow: View {
                 tint: .paeoniaPartnerTwo,
                 size: Self.avatarSize
             )
-            .overlay {
-                if isPresent {
-                    Circle().strokeBorder(.paeoniaAccentPrimary, lineWidth: 2).padding(-2)
-                }
-            }
-            .gamePresenceDot(isPresent, size: 10)
-            .scaleEffect(pulse)
+            .gamePresenceRing(isPresent)
             .accessibilityHidden(true)
             line
                 .id(String(describing: status))
@@ -40,7 +27,13 @@ struct MindMeldPartnerStatusRow: View {
         .frame(minHeight: Self.avatarSize)
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.cardReveal, value: status)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(isPresent ? .gamesPresenceHere : .gamesPresenceAway))
         .accessibilityIdentifier("mindMeld.partnerStatus")
+        .onChange(of: isPresent) { old, new in
+            guard new, !old else { return }
+            PaeoniaHaptics.partnerDrawingReceived()
+            GameSound.nudge.play(volume: 0.7)
+        }
         .onChange(of: status) { old, new in
             statusChanged(from: old, to: new)
         }
@@ -60,7 +53,7 @@ struct MindMeldPartnerStatusRow: View {
         case .typing:
             HStack(spacing: PaeoniaSpacing.space8) {
                 Text(.mindMeldPartnerTyping(partner.name))
-                MindMeldTypingDots()
+                GameTypingDots()
             }
             .font(PaeoniaTypography.caption.weight(.semibold))
             .foregroundStyle(.paeoniaTextPrimary)
@@ -77,18 +70,9 @@ struct MindMeldPartnerStatusRow: View {
 
     private func statusChanged(from old: MindMeldPartnerStatus, to new: MindMeldPartnerStatus) {
         let locked = new == .locked && old != .locked
-        let joined = old == .away && (new == .here || new == .typing)
-        guard locked || joined else { return }
-        if joined {
-            PaeoniaHaptics.partnerDrawingReceived()
-            GameSound.nudge.play(volume: 0.7)
-        }
         if locked {
             AccessibilityNotification.Announcement(String(localized: .mindMeldPartnerLocked(partner.name))).post()
         }
-        guard !reduceMotion else { return }
-        withAnimation(PaeoniaMotion.stateChange) { pulse = 1.12 }
-        withAnimation(PaeoniaMotion.stateChange.delay(PaeoniaMotion.motionDefault)) { pulse = 1 }
     }
 }
 

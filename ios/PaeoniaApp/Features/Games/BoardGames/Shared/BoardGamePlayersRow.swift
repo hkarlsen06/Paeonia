@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Both players. My avatar is on the leading side, my partner's on the trailing
 /// side. Whoever's turn it is, or whoever won, gets glass in their piece color, a
-/// slightly larger avatar and a bold name. A green dot on my partner's avatar shows
+/// slightly larger avatar and a bold name. A steady green ring on my partner's avatar shows
 /// they have the game open. At accessibility text sizes the row stacks.
 struct BoardGamePlayersRow: View {
     let me: BoardGamePlayerInfo
@@ -137,7 +137,7 @@ private extension View {
 }
 
 /// An avatar with their mark in a small badge at the bottom trailing edge. On
-/// the player's turn it grows a little. A green dot at the top trailing edge
+/// the player's turn it grows a little. A steady green ring
 /// shows the player has the game open.
 struct BoardGamePlayerAvatar: View {
     let player: BoardGamePlayerInfo
@@ -153,7 +153,7 @@ struct BoardGamePlayerAvatar: View {
             .overlay(alignment: .bottomTrailing) {
                 badge.offset(x: 4, y: 4)
             }
-            .gamePresenceDot(isHere, size: 12)
+            .gamePresenceRing(isHere)
             .scaleEffect(isActive ? Self.activeScale : 1)
     }
 

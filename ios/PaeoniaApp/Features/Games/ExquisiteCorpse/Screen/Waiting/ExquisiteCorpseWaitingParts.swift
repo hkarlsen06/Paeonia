@@ -1,38 +1,15 @@
 import SwiftUI
 
-/// The partner's avatar at 96 pt. A soft ring breathes around it and the green
-/// dot shows while the partner is in the game. The ring stays in the layout and fades in and out, and
-/// the breathing covers only its opacity, so it moves with the avatar when the
-/// layout changes.
+/// The partner's existing portrait with steady game presence.
 struct ExquisiteCorpsePartnerAvatar: View {
     let player: GamePlayer
     let isPartnerHere: Bool
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isBreathing = false
-
     var body: some View {
         GameAvatar(player: player, isMe: false, size: 96)
-            .background { ring }
-            .gamePresenceDot(isPartnerHere, size: 20)
+            .gamePresenceRing(isPartnerHere)
             .padding(PaeoniaSpacing.space8)
-    }
-
-    private var ring: some View {
-        Circle()
-            .stroke(.paeoniaAccentPrimary, lineWidth: 4)
-            .padding(-PaeoniaSpacing.space8)
-            .blur(radius: 1.5)
-            .animation(reduceMotion ? nil : breathing) {
-                $0.opacity(reduceMotion ? 0.35 : isBreathing ? 0.5 : 0.2)
-            }
-            .opacity(isPartnerHere ? 1 : 0)
-            .onAppear { isBreathing = true }
-            .accessibilityHidden(true)
-    }
-
-    private var breathing: Animation {
-        PaeoniaMotion.standardCurve(duration: 2.4).repeatForever(autoreverses: true)
+            .accessibilityValue(Text(isPartnerHere ? .gamesPresenceHere : .gamesPresenceAway))
     }
 }
 
