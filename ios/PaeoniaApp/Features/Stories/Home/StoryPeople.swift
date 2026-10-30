@@ -26,7 +26,7 @@ struct StoryPeople: Equatable {
     }
 }
 
-/// A profile photo with the story ring around it.
+/// Decorated portraits use the separate story badge; plain portraits also show a ring.
 struct StoryRingAvatar: View {
     let mediaAssetID: UUID?
     let name: String
@@ -45,9 +45,11 @@ struct StoryRingAvatar: View {
         )
             .padding(Self.ringGap)
             .background {
-                ZStack {
-                    Circle().fill(.paeoniaBackgroundPrimary)
-                    ringShape
+                if decoration == .none {
+                    ZStack {
+                        Circle().fill(.paeoniaBackgroundPrimary)
+                        ringShape
+                    }
                 }
             }
             .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: ring)
