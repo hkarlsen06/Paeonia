@@ -1,0 +1,242 @@
+{
+  "rope": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-f3336217-ea5b-4440-b406-982814b0c660.png",
+    "aperture_center": [
+      638.369715786316,
+      614.7058483333627
+    ],
+    "aperture_radius": 431.6113655872882,
+    "photo_diameter_source": 939.2227311745764,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.0966600401249678,
+    "outsets": [
+      0.12039842984166527,
+      0.09378067542601631,
+      0.11835091027123068,
+      0.12449346898253433
+    ],
+    "outset": 0.13,
+    "bounds": [
+      209,
+      222,
+      814,
+      817
+    ]
+  },
+  "paint": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-005dc386-957d-4404-af19-f17db008c9df.png",
+    "aperture_center": [
+      634.5322837418489,
+      626.7605529086177
+    ],
+    "aperture_radius": 407.35316255602,
+    "photo_diameter_source": 890.70632511204,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.2108642475207123,
+    "outsets": [
+      0.18225888888334485,
+      0.17146365329974755,
+      0.16714555906630868,
+      0.14987318213255318
+    ],
+    "outset": 0.19,
+    "bounds": [
+      196,
+      201,
+      821,
+      813
+    ]
+  },
+  "jelly": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-905bd72a-9fbf-4f80-95b3-20c11a1bfb13.png",
+    "aperture_center": [
+      626.9269798188119,
+      630.8630577604704
+    ],
+    "aperture_radius": 431.6811281557581,
+    "photo_diameter_source": 939.3622563115161,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.096348619501828,
+    "outsets": [
+      0.1305423582095342,
+      0.10597577282474713,
+      0.13463678910699872,
+      0.05479538660644079
+    ],
+    "outset": 0.14,
+    "bounds": [
+      204,
+      216,
+      822,
+      783
+    ]
+  },
+  "racing": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-eb127bee-d8fc-4471-8ba7-277f910deeaf.png",
+    "aperture_center": [
+      629.7714702096271,
+      628.925894967129
+    ],
+    "aperture_radius": 453.12942862456845,
+    "photo_diameter_source": 982.2588572491369,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.004798179927534,
+    "outsets": [
+      0.11279475616925594,
+      0.11866818833701243,
+      0.11671037761442693,
+      0.11083694544667044
+    ],
+    "outset": 0.12,
+    "bounds": [
+      199,
+      196,
+      827,
+      824
+    ]
+  },
+  "hearts": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-fe03d5a6-412a-40b6-9c55-b72091dda4b4.png",
+    "aperture_center": [
+      632.1031363114305,
+      611.6168648177311
+    ],
+    "aperture_radius": 417.1240621514403,
+    "photo_diameter_source": 910.2481243028806,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.163399974857314,
+    "outsets": [
+      0.1654990157031777,
+      0.14859745339960495,
+      0.15916092983933783,
+      0.14859745339960495
+    ],
+    "outset": 0.17,
+    "bounds": [
+      197,
+      205,
+      824,
+      819
+    ]
+  },
+  "easter": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-71b5bacb-733a-4449-80d5-276f72e4e1a5.png",
+    "aperture_center": [
+      626.8553777435367,
+      616.9755871152937
+    ],
+    "aperture_radius": 421.38219089799395,
+    "photo_diameter_source": 918.7643817959879,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.143346877881078,
+    "outsets": [
+      0.15723722622525238,
+      0.14467855311266797,
+      0.16770278715240605,
+      0.13002676781465272
+    ],
+    "outset": 0.17,
+    "bounds": [
+      198,
+      204,
+      831,
+      813
+    ]
+  },
+  "norway": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-8b03366a-e26c-403e-8c7f-0ddaabc21836.png",
+    "aperture_center": [
+      620.8832045960695,
+      607.0181055618293
+    ],
+    "aperture_radius": 420.6640785926107,
+    "photo_diameter_source": 917.3281571852214,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.1467026317749385,
+    "outsets": [
+      0.1624590152742974,
+      0.14568790096355566,
+      0.18342290816272455,
+      0.14149512238587025
+    ],
+    "outset": 0.19,
+    "bounds": [
+      196,
+      204,
+      838,
+      818
+    ]
+  },
+  "wildflowers": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-f711c965-6a96-44cf-b2bd-bf1182f04c5e.png",
+    "aperture_center": [
+      635.9371888353431,
+      608.8557947718239
+    ],
+    "aperture_radius": 359.7045149216172,
+    "photo_diameter_source": 798.6286307552814,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.465765304918285,
+    "outsets": [
+      0.27536760564813256,
+      0.2464719184811215,
+      0.25128786634228995,
+      0.2609197620646271
+    ],
+    "outset": 0.28,
+    "bounds": [
+      190,
+      202,
+      824,
+      828
+    ]
+  },
+  "newyear": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-fdc93f4c-e91f-4360-a54f-6a8b2ef73e22.png",
+    "aperture_center": [
+      636.8967593907702,
+      620.0037040541802
+    ],
+    "aperture_radius": 437.0466234100302,
+    "photo_diameter_source": 950.0932468200604,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.072671051838057,
+    "outsets": [
+      0.15580607499563526,
+      0.12949286828284745,
+      0.13556514675502918,
+      0.12949286828284745
+    ],
+    "outset": 0.16,
+    "bounds": [
+      188,
+      201,
+      826,
+      823
+    ]
+  },
+  "pride": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-19b1a41e-efc3-468d-9ea5-90761d5f8e11.png",
+    "aperture_center": [
+      629.1379216753942,
+      626.9966184558642
+    ],
+    "aperture_radius": 406.9854936758204,
+    "photo_diameter_source": 889.9709873516408,
+    "canvas_factor": 0.52,
+    "artworkScale": 2.2126909721976102,
+    "outsets": [
+      0.17850094264653282,
+      0.18066177367406955,
+      0.1763401116189961,
+      0.16121429442623902
+    ],
+    "outset": 0.19,
+    "bounds": [
+      198,
+      197,
+      825,
+      818
+    ]
+  }
+}

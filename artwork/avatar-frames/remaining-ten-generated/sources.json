@@ -1,0 +1,42 @@
+{
+  "rope": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-f3336217-ea5b-4440-b406-982814b0c660.png",
+    "sha256": "a2fb8b518d64f0c726b7b69716a6da3f942551f29ec31faf832c7c6fe602a3f7"
+  },
+  "paint": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-005dc386-957d-4404-af19-f17db008c9df.png",
+    "sha256": "49d94a5f00caf883be51b16b9a9802da61f43d8c8927b69f1bd52428076c3f62"
+  },
+  "jelly": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-905bd72a-9fbf-4f80-95b3-20c11a1bfb13.png",
+    "sha256": "39b344bbd6171f9fad9312912fa9c4e4a3e582ae60d4bd3ad4d966fae809958a"
+  },
+  "racing": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-eb127bee-d8fc-4471-8ba7-277f910deeaf.png",
+    "sha256": "76486ef7e0f4e053077546f7a3cff6c53e956850de170b41505ac3f8f41a6f16"
+  },
+  "hearts": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-fe03d5a6-412a-40b6-9c55-b72091dda4b4.png",
+    "sha256": "1e812dca6d3197de53332034b301644ec03a6aed2f68cb4898c9e55855409fac"
+  },
+  "easter": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-71b5bacb-733a-4449-80d5-276f72e4e1a5.png",
+    "sha256": "dc20a57bf573e17e6ce51097c20d9c5574d692afa0c32d79d30689d2f59107d4"
+  },
+  "norway": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-8b03366a-e26c-403e-8c7f-0ddaabc21836.png",
+    "sha256": "19d9d5b005df8e86c67eaa12961b5ff059c9716decd5a9b4f6c1fde06c2941e9"
+  },
+  "wildflowers": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-f711c965-6a96-44cf-b2bd-bf1182f04c5e.png",
+    "sha256": "9d99b13146a838aa1c36b32fcd12f7e17d6780e63d0291d37a3290e0edcd05e2"
+  },
+  "newyear": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-fdc93f4c-e91f-4360-a54f-6a8b2ef73e22.png",
+    "sha256": "79976c711e0341eddd143645b7ef47957664ba0ca3b4fc1818e8b542619e675d"
+  },
+  "pride": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dd6-cfc9-7b02-b47f-90816410a26b/exec-19b1a41e-efc3-468d-9ea5-90761d5f8e11.png",
+    "sha256": "535b946156480b18a22b9d6d5f5ff8d35185292c4270e769e4693128f6cb28ea"
+  }
+}

@@ -1,0 +1,30 @@
+from pathlib import Path
+import base64
+root=Path('/tmp/paeonia-avatar-frames')
+repo=Path('/Users/hkarlsen06/.t3/worktrees/Paeonia/feat-map-avatar-styling')
+photos={'alex':str(repo/'ios/PaeoniaApp/App/DeveloperScenarios/MemoriesMapPhotos/scenario-memory-avatar-alex.webp'),'robin':str(repo/'ios/PaeoniaApp/App/DeveloperScenarios/MemoriesMapPhotos/scenario-memory-avatar-robin.jpg')}
+frames=[('peony-ruff','Peony ruff','Layered pink petals and a full bloom.'),('ribbon-hug','Ribbon hug','Folded lavender silk with a pink tail.'),('moon-cloud','Moon cloud','Honey-gold crescent and lilac clouds.'),('candy-twist','Candy twist','Two woven strands with a candy heart.')]
+def avatar(slug,photo,d,state='',own=False):
+ ring='new' if state=='New' else 'seen' if state else ''
+ plus='<span class="add"><i></i></span>' if own else ''
+ pill=f'<span class="pill {ring}"><i class="{"check" if state=="Seen" else "play"}"></i>{state}</span>' if state else ''
+ return f'<div class="avatar" style="--d:{d}px"><img class="portrait" src="{photos[photo]}"><span class="ring {ring}"></span><img class="frame" src="{root}/exports/{slug}.png">{plus}{pill}</div>'
+css='''
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Arial",sans-serif;color:var(--foreground,#FBF3F7)}
+.sheet{background:#351026;color:#FBF3F7;border-radius:16px;padding:30px 24px 22px}
+h1{font-size:30px;font-weight:600;margin:0 0 8px;letter-spacing:-.7px}.intro{margin:0;color:#d7b6c8;font-size:14px}.columns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:32px;gap:22px}.direction{min-width:0;border-top:1px solid #80516c;padding-top:18px}.name{margin:0;font-size:22px;font-weight:600;letter-spacing:-.35px}.desc{font-size:13px;color:#d7b6c8;line-height:1.4;min-height:38px;margin:8px 0 0}.caption{font-size:11px;color:#cfa9be;text-align:center;margin:0;line-height:1.5}.inspect{height:314px;display:flex;align-items:center;justify-content:center}.picker{height:202px;display:flex;align-items:center;justify-content:center}.scalegrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 0;margin-top:18px}.cell{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;height:162px}.sample{height:130px;display:flex;align-items:center;justify-content:center;padding-bottom:16px}.avatar{width:var(--d);height:var(--d);position:relative;flex-shrink:0}.portrait{width:100%;height:100%;border-radius:100%;object-fit:cover;display:block}.frame{position:absolute;width:180%;height:180%;top:-40%;left:-40%;pointer-events:none}.ring{position:absolute;inset:-4px;border-radius:50%;pointer-events:none}.ring.new{border:3px solid #F27EB2}.ring.seen{border:1px solid #b895a8}.add{position:absolute;right:-6px;bottom:-6px;border:2px solid #FBF3F7;background:#351026;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;z-index:2}.add i:before,.add i:after{content:"";display:block;background:#FBF3F7;border-radius:2px;position:absolute;left:7px;top:13px;width:14px;height:2px}.add i:after{transform:rotate(90deg)}.pill{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);display:flex;gap:5px;align-items:center;justify-content:center;border:1px solid #dfc4d3;border-radius:20px;height:22px;padding:0 8px;white-space:nowrap;background:#4F203A;color:#FBF3F7;font-size:11px;font-weight:700;z-index:3}.pill.new{background:#F27EB2;color:#351026}.play{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:7px solid currentColor}.check{width:9px;height:5px;border-left:1.7px solid currentColor;border-bottom:1.7px solid currentColor;transform:rotate(-45deg);margin-top:-3px}.foot{margin:26px 0 0;padding-top:18px;border-top:1px solid #80516c;color:#d7b6c8;font-size:12px;line-height:1.6}.meta{color:#F27EB2;margin-top:3px}.detail{display:block}
+@media(max-width:900px){.columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 20px}.sheet{padding:20px 16px}.name{font-size:20px}.inspect{height:290px}}
+@media(max-width:510px){.columns{grid-template-columns:1fr}.inspect .avatar{--d:180px!important}.direction{padding-top:16px}.sheet{padding:18px 16px}.desc{min-height:0}.scalegrid{max-width:310px;margin:18px auto 0}}
+'''
+parts=[]
+for idx,(slug,title,desc) in enumerate(frames):
+ parts.append(f'''<section class="direction"><h2 class="name">{title}</h2><p class="desc">{desc}</p><div class="inspect">{avatar(slug,'robin' if idx%2==0 else 'alex',180)}</div><p class="caption">Large inspection · 180px photo</p><div class="picker">{avatar(slug,'alex' if idx%2==0 else 'robin',104)}</div><p class="caption">Picker preview · 104px photo</p><div class="scalegrid">
+ <div class="cell"><div class="sample">{avatar(slug,'alex',64,'Story',True)}</div><p class="caption">Own · 64px<br>Add Story + existing story</p></div>
+ <div class="cell"><div class="sample">{avatar(slug,'robin',72,'New')}</div><p class="caption">Partner · 72px<br>Unseen story</p></div>
+ <div class="cell"><div class="sample">{avatar(slug,'robin',80,'Seen')}</div><p class="caption">Partner · 80px<br>Viewed story</p></div>
+ <div class="cell"><div class="sample">{avatar(slug,'robin',72)}</div><p class="caption">Partner · 72px<br>No story</p></div>
+ </div></section>''')
+html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>'+css+'</style></head><body><main class="sheet"><h1>Frames with a little more personality</h1><p class="intro">Paeonia avatar study. Design mockups, not simulator screenshots. Original photos remain unchanged.</p><div class="columns">'+''.join(parts)+'</div><p class="foot">Each frame is a separate transparent overlay. Photo, story ring, Add Story button and centered status pill remain independent.<br><span class="meta">Blender 3D artwork · four editable scenes · 1024px RGBA exports · upper-right studio light</span></p></main></body></html>'
+(root/'boards/comparison.html').write_text(html)
+# A portable copy is generated only after final PNG files are present.
+print('Board HTML saved')

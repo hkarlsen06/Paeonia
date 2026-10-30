@@ -1,0 +1,209 @@
+{
+  "mischief": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-3f3fb158-5bee-4ae8-ae0f-b6f82c87d9a1.png",
+    "aperture_center": [
+      622.3980833178334,
+      667.2539613914281
+    ],
+    "aperture_radius": 464.0349883241044,
+    "photo_diameter_source": 988.0699766482088,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.5944059151850065,
+    "outsets": [
+      0.03717777415901102,
+      0.11191555143330811,
+      0.06987555171651605,
+      0
+    ],
+    "bounds": [
+      167,
+      119,
+      878,
+      831
+    ]
+  },
+  "flame": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-532f05be-11ef-46f7-8090-dd48a125b75c.png",
+    "aperture_center": [
+      729.4947961929164,
+      744.928198472351
+    ],
+    "aperture_radius": 418.8061692511136,
+    "photo_diameter_source": 947.6123385022272,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.6624779473372304,
+    "outsets": [
+      0.2370751836827174,
+      0.2695454560916477,
+      0.021147872163331027,
+      0
+    ],
+    "bounds": [
+      58,
+      38,
+      833,
+      810
+    ]
+  },
+  "rose": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-a607ae0f-e01a-43ac-9a0b-622186abf531.png",
+    "aperture_center": [
+      664.1903827310744,
+      662.8824043162809
+    ],
+    "aperture_radius": 441.2766666919923,
+    "photo_diameter_source": 942.5533333839846,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.6714010333278648,
+    "outsets": [
+      0.1888000352191005,
+      0.16921330435978965,
+      0.1137175669250754,
+      0.043531781345877874
+    ],
+    "bounds": [
+      90,
+      102,
+      888,
+      845
+    ]
+  },
+  "woodland": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-8d5ff64c-56e1-490e-b8a6-c676c61967b4.png",
+    "aperture_center": [
+      655.3924611465969,
+      649.4453713941199
+    ],
+    "aperture_radius": 430.9596317783032,
+    "photo_diameter_source": 971.9192635566064,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.6209007007636718,
+    "outsets": [
+      0.14582762296052543,
+      0.13474724707639885,
+      0.08725992185871312,
+      0.08409410017753405
+    ],
+    "bounds": [
+      104,
+      111,
+      883,
+      881
+    ]
+  },
+  "cosy": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-9b6d81f3-4f7c-4ce2-9939-af6d5c3be161.png",
+    "aperture_center": [
+      632.619732587176,
+      639.3398022135951
+    ],
+    "aperture_radius": 392.62111596991906,
+    "photo_diameter_source": 915.2422319398381,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.7212761391545692,
+    "outsets": [
+      0.1538832208311791,
+      0.12698828115688898,
+      0.1555641545608223,
+      0.1202645462383165
+    ],
+    "bounds": [
+      123,
+      139,
+      902,
+      881
+    ]
+  },
+  "silver": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-25d1705b-4fc4-44b5-b830-cc291fd7a24e.png",
+    "aperture_center": [
+      634.2520454441263,
+      646.7000806869485
+    ],
+    "aperture_radius": 491.33463090887267,
+    "photo_diameter_source": 1042.6692618177453,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.5109149881700326,
+    "outsets": [
+      0.037083062201066275,
+      0.028230044692257428,
+      0.025279038855987923,
+      0
+    ],
+    "bounds": [
+      148,
+      154,
+      868,
+      848
+    ]
+  },
+  "halloween": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-cdb527a1-7b17-4d87-9229-eeca9350e0e5.png",
+    "aperture_center": [
+      652.6720036424119,
+      618.2061296321673
+    ],
+    "aperture_radius": 452.68802539854437,
+    "photo_diameter_source": 965.3760507970887,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.631886987546311,
+    "outsets": [
+      0.14542405269165615,
+      0.07371026905924993,
+      0.10398942214848816,
+      0.05139931415139021
+    ],
+    "bounds": [
+      107,
+      152,
+      891,
+      858
+    ]
+  },
+  "christmas": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-a36a166d-c78a-44f2-8b8d-b629eb791312.png",
+    "aperture_center": [
+      693.4790462277406,
+      686.560714985291
+    ],
+    "aperture_radius": 416.9597088120157,
+    "photo_diameter_source": 943.9194176240314,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.6689821037372707,
+    "outsets": [
+      0.22529007437801318,
+      0.18291357565030897,
+      0.09164111685217702,
+      0.04274515678174917
+    ],
+    "bounds": [
+      67,
+      93,
+      875,
+      845
+    ]
+  },
+  "winter": {
+    "source": "/Users/hkarlsen06/.codex/generated_images/01a18dbd-7e9b-7523-8e99-90af64209716/exec-94f6a911-f07e-461b-83f8-786ef0e933cb.png",
+    "aperture_center": [
+      639.4876731923245,
+      670.2914552586911
+    ],
+    "aperture_radius": 439.50010590905083,
+    "photo_diameter_source": 969.0002118181017,
+    "canvas_factor": 0.65,
+    "artworkScale": 1.6257835614181915,
+    "outsets": [
+      0.12395794886459888,
+      0.12872098664219123,
+      0.09855508071743968,
+      0.03663558960873903
+    ],
+    "bounds": [
+      119,
+      116,
+      889,
+      850
+    ]
+  }
+}

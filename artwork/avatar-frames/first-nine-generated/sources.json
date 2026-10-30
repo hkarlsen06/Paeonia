@@ -1,0 +1,47 @@
+[
+  {
+    "file": "christmas-original.png",
+    "sha256": "9239da2ed0ec8f4fe70beb4f50ba187476a86bc8a9ce746d1187c2dbdb8d9276",
+    "center_alpha": 0
+  },
+  {
+    "file": "cosy-original.png",
+    "sha256": "70faea00a5a9a76edcd8aa07eec7a776e1f22880250b3fb28e24ac30eacec497",
+    "center_alpha": 0
+  },
+  {
+    "file": "flame-original.png",
+    "sha256": "0e01a85d99bfff8d0cc45f816055b8e983e762b1d41268f0db7ad38be6d8c058",
+    "center_alpha": 0
+  },
+  {
+    "file": "halloween-original.png",
+    "sha256": "f6c8c27291608b8de8bf4c08c341f3e0cad345b5c458c921118f2109c2ece78d",
+    "center_alpha": 0
+  },
+  {
+    "file": "mischief-original.png",
+    "sha256": "0ebf12bffab933b0ded9af542f374d941e735d4a63ed4d5ac20e0d8396ccfdec",
+    "center_alpha": 0
+  },
+  {
+    "file": "rose-original.png",
+    "sha256": "cfba6b598d6fb2d6bd4da21c26c05aa3d99e0c1cdf983f257dcbbc2b59470883",
+    "center_alpha": 0
+  },
+  {
+    "file": "silver-original.png",
+    "sha256": "365a3238cc70337a72861e33f07dfdebe44ed3418e3a790ee94215b5a6536100",
+    "center_alpha": 0
+  },
+  {
+    "file": "winter-original.png",
+    "sha256": "7eea9fc8b37f501c06b0a90bb5a5d8b8d0caee39d0b46ab1552f183abd40e258",
+    "center_alpha": 0
+  },
+  {
+    "file": "woodland-original.png",
+    "sha256": "a786b9cee96878284a5f00a2a1230448a5f905d08cf3168f30699791100a302f",
+    "center_alpha": 0
+  }
+]

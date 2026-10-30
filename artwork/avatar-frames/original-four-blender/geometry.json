@@ -1,0 +1,91 @@
+{
+  "canvas_px": [
+    1024,
+    1024
+  ],
+  "center_px": [
+    512,
+    512
+  ],
+  "photo_diameter_in_export_coordinates_px": 568.8888888888889,
+  "placement": {
+    "overlay_width_in_photo_diameters": 1.8,
+    "overlay_height_in_photo_diameters": 1.8,
+    "centered": true,
+    "trim_transparent_margin": false
+  },
+  "frames": {
+    "candy-twist.png": {
+      "alpha_bounds_px": [
+        104,
+        91,
+        920,
+        787
+      ],
+      "clear_aperture_radius_px": 327.23,
+      "max_alpha_inside_320px_radius": 0,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "nontransparent_pixels_in_64pt_plus_zone": 0,
+      "nontransparent_pixels_in_64pt_story_pill_zone": 0
+    },
+    "moon-cloud.png": {
+      "alpha_bounds_px": [
+        103,
+        54,
+        921,
+        777
+      ],
+      "clear_aperture_radius_px": 324.8,
+      "max_alpha_inside_320px_radius": 0,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "nontransparent_pixels_in_64pt_plus_zone": 0,
+      "nontransparent_pixels_in_64pt_story_pill_zone": 0
+    },
+    "peony-ruff.png": {
+      "alpha_bounds_px": [
+        81,
+        63,
+        945,
+        804
+      ],
+      "clear_aperture_radius_px": 321.26,
+      "max_alpha_inside_320px_radius": 0,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "nontransparent_pixels_in_64pt_plus_zone": 0,
+      "nontransparent_pixels_in_64pt_story_pill_zone": 0
+    },
+    "ribbon-hug.png": {
+      "alpha_bounds_px": [
+        57,
+        44,
+        924,
+        814
+      ],
+      "clear_aperture_radius_px": 321.19,
+      "max_alpha_inside_320px_radius": 0,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "nontransparent_pixels_in_64pt_plus_zone": 0,
+      "nontransparent_pixels_in_64pt_story_pill_zone": 0
+    }
+  }
+}
