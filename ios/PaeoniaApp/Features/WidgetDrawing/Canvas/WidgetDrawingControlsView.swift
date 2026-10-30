@@ -116,7 +116,6 @@ struct WidgetDrawingSizeControlsView: View {
         }
         .padding(.leading, PaeoniaSpacing.space16)
         .padding(.trailing, PaeoniaSpacing.space8)
-        .frame(maxWidth: 412)
     }
 
     private var slider: some View {
@@ -202,7 +201,7 @@ struct WidgetDrawingSizePreview: View {
 }
 
 /// Pen, pencil, paint bucket, and eraser, then undo and redo. All buttons
-/// are 44 points.
+/// keep a 44-point minimum tap target and share the available width.
 struct WidgetDrawingToolControlsView: View {
     let viewModel: any WidgetDrawingToolControlling
 
@@ -222,6 +221,7 @@ struct WidgetDrawingToolControlsView: View {
                         .foregroundStyle(toolForeground(for: tool))
                         .background(toolBackground(for: tool))
                         .clipShape(Capsule(style: .continuous))
+                        .frame(minWidth: Self.buttonSize, maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(tool.accessibilityLabel))
@@ -279,6 +279,7 @@ struct WidgetDrawingToolControlsView: View {
                 .foregroundStyle(isEnabled ? .paeoniaTextPrimary : .paeoniaTextTertiary)
                 .background(isEnabled ? Color.paeoniaSurfacePrimary : Color.clear)
                 .clipShape(Circle())
+                .frame(minWidth: Self.buttonSize, maxWidth: .infinity)
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)

@@ -144,30 +144,39 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
         .scrollDisabled(!timeline.isSettled)
     }
 
-    /// The figure on the left, the title, the credits and the button on the right.
+    /// The unfolding stays centered until the whole creature moves beside its credits.
     private func wide(_ size: CGSize) -> some View {
         let padding = PaeoniaSpacing.screenHorizontalPadding
-        let column = GameMetrics.sideColumnWidth
-        let width = max(Self.minWideStage, size.width - column - PaeoniaSpacing.space32 - padding * 2)
+        let column = GameMetrics.sideColumnWidth(in: size)
+        let width = min(GameMetrics.maxSquare,
+                        max(Self.minWideStage, size.width - column - PaeoniaSpacing.space32 - padding * 2))
         let height = size.height - PaeoniaSpacing.space16
         return HStack(spacing: PaeoniaSpacing.space32) {
             stage(width: width, height: height, overviewHeight: height, viewportHeight: size.height)
-            VStack(spacing: 0) {
+                .offset(x: timeline.isZoomedOut ? 0 : (column + PaeoniaSpacing.space32) / 2)
+                .animation(reduceMotion ? nil : PaeoniaMotion.celebrationReveal, value: timeline.isZoomedOut)
+            ViewThatFits(in: .vertical) {
+                wideDetails
+                    .fixedSize(horizontal: false, vertical: true)
                 ScrollView {
-                    textBlock
-                        .modifier(RevealEntrance(isShown: timeline.showsTitle, reduceMotion: reduceMotion))
-                        .padding(.vertical, PaeoniaSpacing.space8)
+                    wideDetails
                 }
-                .defaultScrollAnchor(.center)
                 .scrollBounceBehavior(.basedOnSize)
-                buttons
-                    .padding(.vertical, PaeoniaSpacing.space12)
             }
-            .frame(width: column)
+            .frame(width: column, height: height)
         }
         .padding(.horizontal, padding)
         .padding(.vertical, PaeoniaSpacing.space8)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var wideDetails: some View {
+        VStack(spacing: PaeoniaSpacing.space24) {
+            textBlock
+                .modifier(RevealEntrance(isShown: timeline.showsTitle, reduceMotion: reduceMotion))
+            buttons
+        }
+        .padding(.vertical, PaeoniaSpacing.space12)
     }
 
     private var textBlock: some View {
@@ -177,6 +186,7 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
             ReactionSection(target: .exquisiteCorpseFigure(content.figureID), alignment: .center)
         }
         .frame(maxWidth: .infinity)
+        .allowsHitTesting(timeline.showsTitle)
         .accessibilityHidden(!timeline.showsTitle)
     }
 

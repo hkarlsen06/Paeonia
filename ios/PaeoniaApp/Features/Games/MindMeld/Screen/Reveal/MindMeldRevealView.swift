@@ -52,7 +52,7 @@ struct MindMeldRevealView: View {
             if timeline.canSkip { timeline.skip() }
         })
         .onGeometryChange(for: Bool.self) { proxy in
-            proxy.size.width >= 700 && proxy.size.width > proxy.size.height
+            proxy.size.width >= PaeoniaSpacing.readableContentWidth
         } action: { isWide = $0 }
         .onChange(of: viewModel.phase, initial: true) {
             beginIfNeeded()

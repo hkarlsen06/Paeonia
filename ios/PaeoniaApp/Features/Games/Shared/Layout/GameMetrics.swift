@@ -5,8 +5,6 @@ import SwiftUI
 nonisolated enum GameMetrics {
     /// The square never grows past this, so strokes keep their weight.
     static let maxSquare: CGFloat = 640
-    /// The widest the right column grows in the wide layout.
-    static let sideColumnWidth: CGFloat = 420
     /// Height kept for the rows above and below the square on a phone, until the
     /// layout has measured them (`GamePhaseLayout`).
     static let reservedHeight: CGFloat = 340
@@ -20,12 +18,18 @@ nonisolated enum GameMetrics {
         size.width >= wideMinWidth && size.width > size.height
     }
 
+    /// Leaves most of a smaller window for the board or canvas.
+    static func sideColumnWidth(in size: CGSize) -> CGFloat {
+        let available = size.width - PaeoniaSpacing.screenHorizontalPadding * 2 - PaeoniaSpacing.space32
+        return min(420, max(320, available * 0.4))
+    }
+
     /// - Parameter heightRatio: The square content's height divided by its side.
     ///   It is 1 for a plain square. A square with a strip above it is taller than wide.
     static func squareSide(in size: CGSize, heightRatio: CGFloat = 1) -> CGFloat {
         let padding = PaeoniaSpacing.screenHorizontalPadding * 2
         if isWide(size) {
-            let beside = size.width - sideColumnWidth - PaeoniaSpacing.space32 - padding
+            let beside = size.width - sideColumnWidth(in: size) - PaeoniaSpacing.space32 - padding
             return max(200, min(maxSquare, beside, (size.height - PaeoniaSpacing.space24 * 2) / heightRatio))
         }
         let byHeight = max(220, (size.height - reservedHeight) / heightRatio)

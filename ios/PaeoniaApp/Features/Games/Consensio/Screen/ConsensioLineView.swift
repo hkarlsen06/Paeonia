@@ -29,7 +29,7 @@ struct ConsensioLineView: View {
     }
 
     var body: some View {
-        GameFocusedLayout(fillsHeight: true) {
+        GameFocusedLayout(fillsHeight: true, contentWidth: PaeoniaSpacing.readableContentWidth) {
             VStack(spacing: PaeoniaSpacing.space24) {
                 if role == .guess {
                     liveRow

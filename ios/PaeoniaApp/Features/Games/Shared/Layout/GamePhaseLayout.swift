@@ -44,18 +44,12 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
     @State private var wideBottomHeight: CGFloat = 0
     /// The height of the scrolling rows in the wide layout.
     @State private var wideContentHeight: CGFloat = 0
-    /// The square's height as drawn in the wide layout. A result shows it smaller
-    /// than `side`, and the column matches what is on screen.
-    @State private var wideSquareHeight: CGFloat?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GeometryReader { proxy in
             if GameMetrics.isWide(proxy.size) {
-                wide(
-                    side: GameMetrics.squareSide(in: proxy.size, heightRatio: squareHeightRatio),
-                    height: proxy.size.height
-                )
+                wide(size: proxy.size)
             } else {
                 narrow(size: proxy.size)
             }
@@ -160,18 +154,18 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
         }
     }
 
-    private func wide(side: CGFloat, height: CGFloat) -> some View {
+    private func wide(size: CGSize) -> some View {
+        let side = GameMetrics.squareSide(in: size, heightRatio: squareHeightRatio)
+        let height = size.height
         // A tall cluster, such as four rows of tiles on a landscape phone, would
         // leave the rows above it no room. It then scrolls with them.
         let scrollsBottom = wideBottomHeight > height * 0.55
-        // The column is as tall as the square, so its rows line up with the square's
-        // edges. It grows toward the full height only when the rows need more room.
+        // Keep the controls together beside the square. Tall content scrolls.
         let rowsHeight = wideContentHeight + (scrollsBottom ? 0 : wideBottomHeight)
         let squareHeight = side * squareHeightRatio
-        let columnHeight = min(height, max(wideSquareHeight ?? squareHeight, rowsHeight))
+        let columnHeight = min(height, rowsHeight > 0 ? rowsHeight : squareHeight)
         return HStack(alignment: .center, spacing: PaeoniaSpacing.space32) {
             square(side)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { wideSquareHeight = $0 }
                 .frame(width: side, height: squareHeight)
             VStack(spacing: 0) {
                 ScrollView {
@@ -190,8 +184,7 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
                     measuredWideBottom
                 }
             }
-            .frame(width: GameMetrics.sideColumnWidth, height: columnHeight)
-            // Moves with the square when a result shrinks it.
+            .frame(width: GameMetrics.sideColumnWidth(in: size), height: columnHeight)
             .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: columnHeight)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)

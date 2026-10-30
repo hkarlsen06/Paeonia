@@ -39,10 +39,33 @@ struct GameDrawingTools: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            WidgetDrawingToolControlsView(viewModel: board)
-            WidgetDrawingColorControlsView(viewModel: board)
+            ViewThatFits(in: .horizontal) {
+                WidgetDrawingToolControlsView(viewModel: board)
+                ScrollView(.horizontal) {
+                    WidgetDrawingToolControlsView(viewModel: board)
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .frame(height: PaeoniaSpacing.compactButtonHeight + PaeoniaSpacing.space4 * 2)
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
+            }
+            ViewThatFits(in: .horizontal) {
+                colors
+                ScrollView(.horizontal) {
+                    colors
+                }
+                .frame(height: PaeoniaSpacing.compactButtonHeight)
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
+            }
             WidgetDrawingSizeControlsView(viewModel: board)
         }
+    }
+
+    private var colors: some View {
+        WidgetDrawingColorControlsView(viewModel: board)
+            .frame(minWidth: CGFloat(board.colorChoices.count + 1) * PaeoniaSpacing.compactButtonHeight
+                + PaeoniaSpacing.space8 * 2)
     }
 }
 

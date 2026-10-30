@@ -7,8 +7,6 @@ enum BoardGameMetrics {
     static let maxBoard: CGFloat = 560
     /// The board never grows past this in the wide layout.
     static let maxWideBoard: CGFloat = 640
-    /// The widest the column beside the board grows in the wide layout.
-    static let sideColumnWidth: CGFloat = 420
     static let minWideBoard: CGFloat = 200
     static let wideMinWidth: CGFloat = 700
 
@@ -20,7 +18,7 @@ enum BoardGameMetrics {
     /// The side of the square the board gets in the wide layout.
     static func wideBoardSide(in size: CGSize) -> CGFloat {
         let padding = PaeoniaSpacing.screenHorizontalPadding * 2
-        let beside = size.width - sideColumnWidth - PaeoniaSpacing.space32 - padding
+        let beside = size.width - GameMetrics.sideColumnWidth(in: size) - PaeoniaSpacing.space32 - padding
         return max(minWideBoard, min(maxWideBoard, beside, size.height - PaeoniaSpacing.space24 * 2))
     }
 }
@@ -308,9 +306,8 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         // the rows above it no room. It then scrolls with them.
         let scrollsBottom = wideBottomHeight > size.height * 0.55
         let rowsHeight = wideRowsHeight + (scrollsBottom ? 0 : wideBottomHeight)
-        // The column is as tall as the board, so its rows line up with the
-        // board's edges. It grows only when the rows need more room.
-        let columnHeight = min(size.height, max(side, rowsHeight))
+        // Keep the players, status and actions together beside the board.
+        let columnHeight = min(size.height, rowsHeight > 0 ? rowsHeight : side)
         return HStack(alignment: .center, spacing: PaeoniaSpacing.space32) {
             board
                 .frame(width: side, height: side)
@@ -336,7 +333,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
                     wideBottom
                 }
             }
-            .frame(width: BoardGameMetrics.sideColumnWidth, height: columnHeight)
+            .frame(width: GameMetrics.sideColumnWidth(in: size), height: columnHeight)
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

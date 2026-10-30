@@ -42,7 +42,7 @@ struct ConsensioRevealView: View {
     var body: some View {
         // A tap anywhere skips to the settled result. It is a shortcut, and the buttons stay.
         // swiftlint:disable:next accessibility_trait_for_button
-        GameFocusedLayout(fillsHeight: true) {
+        GameFocusedLayout(fillsHeight: true, contentWidth: PaeoniaSpacing.readableContentWidth) {
             VStack(spacing: PaeoniaSpacing.space24) {
                 Spacer(minLength: PaeoniaSpacing.space8)
                 VStack(spacing: PaeoniaSpacing.space8) {
@@ -79,7 +79,7 @@ struct ConsensioRevealView: View {
             if timeline.canSkip { timeline.skip() }
         })
         .onGeometryChange(for: Bool.self) { proxy in
-            proxy.size.width >= 700 && proxy.size.width > proxy.size.height
+            proxy.size.width >= PaeoniaSpacing.readableContentWidth
         } action: { isWide = $0 }
         .onChange(of: plan, initial: true) { beginIfNeeded() }
         .onChange(of: timeline.pulse) { _, _ in pulse() }
