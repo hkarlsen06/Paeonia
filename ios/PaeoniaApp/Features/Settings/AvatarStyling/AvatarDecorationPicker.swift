@@ -23,7 +23,7 @@ struct AvatarDecorationPicker: View {
                     mediaAssetID: photoAssetID, name: name, tint: .paeoniaPartnerOne,
                     size: 104, decoration: selection
                 )
-                .padding(.top, PaeoniaSpacing.space16)
+                .padding(.top, 104 * AvatarDecoration.maximumOutset)
                 .accessibilityLabel(Text(.avatarDecorationPreview))
                 .accessibilityValue(Text(selection.title))
 
@@ -83,6 +83,8 @@ struct AvatarDecorationPicker: View {
                     size: 64, decoration: decoration
                 )
                 .accessibilityHidden(true)
+                .padding(.top, 64 * AvatarDecoration.maximumOutset)
+                .padding(.horizontal, 64 * AvatarDecoration.maximumOutset)
                 HStack(spacing: PaeoniaSpacing.space8) {
                     Text(decoration.title)
                     if selection == decoration {

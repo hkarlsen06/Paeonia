@@ -19,7 +19,7 @@ export const moderationStatus = literals(
 export const threadKind = literals("daily_question", "memory", "story", "game");
 
 export const authProvider = literals("apple", "google", "unknown");
-export const avatarDecoration = literals("none", "petals", "hearts", "stars");
+export const avatarDecoration = literals("none", "peony", "ribbon", "moon", "candy");
 export const apnsEnvironment = literals("sandbox", "production");
 export const storekitEnvironment = literals("xcode", "sandbox", "production");
 export const grantKind = literals("lifetime", "review", "test", "beta");

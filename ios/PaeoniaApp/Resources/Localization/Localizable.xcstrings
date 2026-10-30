@@ -2835,6 +2835,24 @@
         }
       }
     },
+    "avatar.decoration.candy" : {
+      "comment" : "Name of the twisted candy frame with a heart around the profile photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Candy twist"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukkertøy"
+          }
+        }
+      }
+    },
     "avatar.decoration.explanation" : {
       "comment" : "Explains that the decoration selected around the profile photo is shared with the partner.",
       "extractionState" : "manual",
@@ -2853,20 +2871,20 @@
         }
       }
     },
-    "avatar.decoration.hearts" : {
-      "comment" : "Name of the illustrated hearts avatar decoration.",
+    "avatar.decoration.moon" : {
+      "comment" : "Name of the crescent moon and cloud frame around the profile photo.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hearts"
+            "value" : "Moon"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hjerter"
+            "value" : "Måne"
           }
         }
       }
@@ -2889,20 +2907,20 @@
         }
       }
     },
-    "avatar.decoration.petals" : {
-      "comment" : "Name of the illustrated flower petals avatar decoration.",
+    "avatar.decoration.peony" : {
+      "comment" : "Name of the sculpted peony frame around the profile photo.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Petals"
+            "value" : "Peony"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kronblader"
+            "value" : "Peon"
           }
         }
       }
@@ -2921,6 +2939,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Profilbildet ditt"
+          }
+        }
+      }
+    },
+    "avatar.decoration.ribbon" : {
+      "comment" : "Name of the ribbon and bow frame around the profile photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ribbon"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sløyfe"
           }
         }
       }
@@ -2993,24 +3029,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Valget ditt er fortsatt her. Prøv å lagre igjen om litt."
-          }
-        }
-      }
-    },
-    "avatar.decoration.stars" : {
-      "comment" : "Name of the stars avatar decoration.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stars"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stjerner"
           }
         }
       }

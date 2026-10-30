@@ -160,11 +160,16 @@ extension HomeStoriesStrip {
             // a full bubble, whoever has a note.
             if arrange == nil {
                 StoryNoteBubble.tallestBody
+                    .padding(
+                        .bottom, (avatarStyling?.decorations.own ?? .none).noteClearance(photoSize: avatarSize)
+                    )
             }
             ownAvatarButton(stories)
                 .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
                 .overlay(alignment: .bottomTrailing) { addButton }
-                .storyNoteBubble {
+                .storyNoteBubble(
+                    clearance: (avatarStyling?.decorations.own ?? .none).noteClearance(photoSize: avatarSize)
+                ) {
                     Button {
                         showNote(.edit(current: note), from: ownAvatarFrame)
                     } label: {
@@ -244,11 +249,16 @@ extension HomeStoriesStrip {
             // a full bubble, whoever has a note.
             if arrange == nil {
                 StoryNoteBubble.tallestBody
+                    .padding(
+                        .bottom, (avatarStyling?.decorations.partner ?? .none).noteClearance(photoSize: avatarSize)
+                    )
             }
             partnerAvatarButton(stories, ring: ring)
                 .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { partnerAvatarFrame = $0 }
-                .storyNoteBubble {
+                .storyNoteBubble(
+                    clearance: (avatarStyling?.decorations.partner ?? .none).noteClearance(photoSize: avatarSize)
+                ) {
                     if let note {
                         // Opens the whole note, which may be longer than the bubble shows.
                         Button {

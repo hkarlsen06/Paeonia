@@ -17,7 +17,7 @@ final class AvatarStylingJourneyUITests: XCTestCase {
         checkDecorationPicker(app)
         app.tabBars.firstMatch.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(own.waitForExistence(timeout: 5))
-        XCTAssertEqual(own.value as? String, "Hearts")
+        XCTAssertEqual(own.value as? String, "Ribbon")
         XCTAssertTrue(app.buttons["stories.add"].isHittable)
         own.tap()
         XCTAssertTrue(app.buttons["story.viewer.close"].waitForExistence(timeout: 5))
@@ -47,14 +47,14 @@ final class AvatarStylingJourneyUITests: XCTestCase {
         let styleRow = app.buttons["settings.avatarDecoration"]
         XCTAssertTrue(styleRow.waitForExistence(timeout: 5))
         styleRow.tap()
-        let hearts = app.buttons["avatarDecoration.choice.hearts"]
-        XCTAssertTrue(hearts.waitForExistence(timeout: 5))
-        hearts.tap()
+        let ribbon = app.buttons["avatarDecoration.choice.ribbon"]
+        XCTAssertTrue(ribbon.waitForExistence(timeout: 5))
+        ribbon.tap()
         app.buttons["avatarDecoration.save"].tap()
         XCTAssertTrue(styleRow.waitForExistence(timeout: 5))
         styleRow.tap()
-        XCTAssertTrue(hearts.waitForExistence(timeout: 5))
-        XCTAssertTrue(hearts.isSelected)
+        XCTAssertTrue(ribbon.waitForExistence(timeout: 5))
+        XCTAssertTrue(ribbon.isSelected)
         app.buttons["avatarDecoration.choice.none"].tap()
         app.buttons["avatarDecoration.cancel"].tap()
     }

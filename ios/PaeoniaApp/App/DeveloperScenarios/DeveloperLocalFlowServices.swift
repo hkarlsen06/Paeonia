@@ -11,7 +11,7 @@
 
     init(seed: DeveloperLocalFlowSeed, avatarScenario: Bool = false) {
       self.avatarScenario = avatarScenario
-      self.avatarDecoration = avatarScenario ? .petals : .none
+      self.avatarDecoration = avatarScenario ? .peony : .none
       switch seed {
       case .fresh:
         session = nil
@@ -160,7 +160,7 @@
         partnerUserID: DeveloperScenarioFixture.partnerUserID,
         partnerAccountName: "Robin",
         ownAvatarDecoration: avatarDecoration,
-        partnerAvatarDecoration: avatarScenario ? .stars : nil,
+        partnerAvatarDecoration: avatarScenario ? .moon : nil,
         partnerProfilePhotoAssetID: avatarScenario ? DeveloperAvatarFixture.partnerPhoto : nil,
         startedOn: "2025-09-14",
         endedAt: nil,

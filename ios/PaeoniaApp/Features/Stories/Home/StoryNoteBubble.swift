@@ -110,10 +110,10 @@ nonisolated enum ThoughtBubbleMetrics {
 extension View {
     /// Rests `bubble`'s body on top of this avatar, its dots reaching into the avatar.
     /// The bubble takes no room in the layout.
-    func storyNoteBubble<Bubble: View>(@ViewBuilder _ bubble: () -> Bubble) -> some View {
+    func storyNoteBubble<Bubble: View>(clearance: CGFloat = 0, @ViewBuilder _ bubble: () -> Bubble) -> some View {
         overlay(alignment: .top) {
             bubble()
-                .alignmentGuide(.top) { $0[.thoughtBubbleBase] }
+                .alignmentGuide(.top) { $0[.thoughtBubbleBase] + clearance }
         }
     }
 }
