@@ -17,7 +17,7 @@ struct DrawAndGuessPartnerGuess: Equatable {
 
 /// The partner's latest guess screen, as it arrived on the drawer's phone.
 struct DrawAndGuessReceivedGuessScreen {
-    let message: DrawAndGuessLiveMessage
+    let message: DrawAndGuessGuessScreenMessage
     /// `monotonicNow()` on arrival, where the message's replay time was current.
     let receivedAt: TimeInterval
     /// Wrong words seen this round, to shake the slots once each.
@@ -55,7 +55,7 @@ extension DrawAndGuessViewModel {
         )
         guard sent != lastSentGuessScreen else { return }
         lastSentGuessScreen = sent
-        channel.send(message)
+        channel.send(.guessScreen(message))
     }
 
     /// The partner may have missed the last screen, so it goes again.
@@ -64,16 +64,16 @@ extension DrawAndGuessViewModel {
         sendGuessScreen()
     }
 
-    private func guessScreenMessage() -> DrawAndGuessLiveMessage? {
+    private func guessScreenMessage() -> DrawAndGuessGuessScreenMessage? {
         guard phase.allowsGuessing, let round, let userID = currentUserID,
               round.guesserUserID == userID, tilesRoundID == round.id
         else { return nil }
         let replay = guessSource == .replay
             ? replayClock.map { clock in
-                DrawAndGuessLiveMessage.Replay(time: clock.replayTime(at: monotonicNow()), rate: clock.rate)
+                DrawAndGuessGuessScreenMessage.Replay(time: clock.replayTime(at: monotonicNow()), rate: clock.rate)
             }
             : nil
-        return DrawAndGuessLiveMessage(
+        return DrawAndGuessGuessScreenMessage(
             round: round.id,
             letters: slots.slots.map { slot in slot.tile.map { String($0.letter) } },
             isWrong: isShowingWrongGuess,
@@ -87,7 +87,7 @@ extension DrawAndGuessViewModel {
     /// Keeps the partner's latest screen. It may arrive before this phone has
     /// loaded the round or its drawing, so `updatePartnerGuess()` applies it on
     /// every change.
-    func receiveGuessScreen(_ message: DrawAndGuessLiveMessage) {
+    func receiveGuessScreen(_ message: DrawAndGuessGuessScreenMessage) {
         let previous = receivedGuessScreen?.message.round == message.round ? receivedGuessScreen : nil
         let turnedWrong = message.isWrong && previous?.message.isWrong != true
         receivedGuessScreen = DrawAndGuessReceivedGuessScreen(

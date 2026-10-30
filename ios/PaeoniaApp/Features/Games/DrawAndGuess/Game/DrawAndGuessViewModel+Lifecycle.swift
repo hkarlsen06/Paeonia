@@ -84,6 +84,7 @@ extension DrawAndGuessViewModel {
     }
 
     func resetForNewIdentity() {
+        clearLiveReactions()
         attentionCue.reset()
         state = nil
         pending = .none

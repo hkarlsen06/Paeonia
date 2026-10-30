@@ -68,7 +68,12 @@ extension DrawAndGuessViewModel {
         room.currentDrawing = { [weak self] in self?.board.drawing ?? PKDrawing() }
         room.onPartnerArrived = { [weak self] in self?.resendGuessScreen() }
         let channel = GameLiveChannel<DrawAndGuessLiveMessage>(connection: room.connection)
-        channel.onMessage = { [weak self] message in self?.receiveGuessScreen(message) }
+        channel.onMessage = { [weak self] message in
+            switch message {
+            case let .guessScreen(screen): self?.receiveGuessScreen(screen)
+            case let .reaction(round, reaction): self?.receiveLiveReaction(reaction, roundID: round)
+            }
+        }
         liveGuessChannel = channel
         live = room
     }
@@ -93,6 +98,7 @@ extension DrawAndGuessViewModel {
     }
 
     func stopLive() {
+        clearLiveReactions()
         liveObservationTask?.cancel()
         liveObservationTask = nil
         live?.stop()

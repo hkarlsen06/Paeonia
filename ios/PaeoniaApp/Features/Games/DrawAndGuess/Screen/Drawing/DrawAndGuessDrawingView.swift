@@ -20,6 +20,7 @@ struct DrawAndGuessDrawingView: View {
             VStack(spacing: PaeoniaSpacing.space8) {
                 DrawAndGuessWordLine(word: DrawAndGuessAnswer.display(viewModel.round?.word ?? ""))
                 liveRow
+                DrawAndGuessLiveReactionButtons(viewModel: viewModel)
             }
         } square: { side in
             GameDrawingCanvas(

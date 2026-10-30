@@ -1,12 +1,14 @@
 import Foundation
 
-/// Draw & Guess's own message on its relay room. The guesser's phone sends the
-/// whole guess screen each time it changes, and again when the drawer arrives,
-/// so the drawer can watch the guesser think. Nothing in it is saved. The
-/// guesses themselves still go through Convex.
-nonisolated struct DrawAndGuessLiveMessage: GameLiveMessage, Equatable {
+/// Temporary guess screens and reactions in the game's relay room.
+nonisolated enum DrawAndGuessLiveMessage: GameLiveMessage, Equatable {
     static let game = "draw_and_guess"
 
+    case guessScreen(DrawAndGuessGuessScreenMessage)
+    case reaction(round: UUID, reaction: DrawAndGuessLiveReaction)
+}
+
+nonisolated struct DrawAndGuessGuessScreenMessage: Codable, Equatable, Sendable {
     /// The guesser's replay of the finished drawing.
     struct Replay: Codable, Equatable, Sendable {
         /// Replay seconds shown when the message was sent.

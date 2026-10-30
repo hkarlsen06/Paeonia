@@ -32,7 +32,11 @@ struct DrawAndGuessGuessView: View {
         GamePhaseLayout(scrollTrigger: revealProgress, freezesSide: isRevealed) {
             // The rows that only matter while guessing fade out but keep their space,
             // so nothing above or below the square jumps when the guess is right.
-            liveRow
+            VStack(spacing: PaeoniaSpacing.space8) {
+                liveRow
+                DrawAndGuessLiveReactionButtons(viewModel: viewModel)
+                    .disabled(isRevealed)
+            }
                 .opacity(isRevealed ? 0 : 1)
                 .animation(PaeoniaMotion.stateChange, value: isRevealed)
                 .accessibilityHidden(isRevealed)

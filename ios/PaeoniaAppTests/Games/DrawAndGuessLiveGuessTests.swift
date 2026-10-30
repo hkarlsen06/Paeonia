@@ -22,9 +22,11 @@ final class GameDataRecordingConnection: WidgetLiveConnection {
         sentGameData.append(gameData)
     }
 
-    var sentGuessScreens: [DrawAndGuessLiveMessage] {
+    var sentGuessScreens: [DrawAndGuessGuessScreenMessage] {
         sentGameData.compactMap {
-            try? JSONDecoder().decode(GameLiveEnvelope<DrawAndGuessLiveMessage>.self, from: $0).message
+            guard let envelope = try? JSONDecoder().decode(GameLiveEnvelope<DrawAndGuessLiveMessage>.self, from: $0),
+                  case let .guessScreen(screen) = envelope.message else { return nil }
+            return screen
         }
     }
 }
@@ -35,24 +37,30 @@ final class GameDataRecordingConnection: WidgetLiveConnection {
 struct DrawAndGuessLiveGuessTests {
     private typealias Setup = (viewModel: DrawAndGuessViewModel, connection: GameDataRecordingConnection)
 
-    private func envelope(_ message: DrawAndGuessLiveMessage, game: String = DrawAndGuessLiveMessage.game) -> Data {
-        (try? JSONEncoder().encode(GameLiveEnvelope(game: game, message: message))) ?? Data()
+    private func envelope(
+        _ message: DrawAndGuessGuessScreenMessage,
+        game: String = DrawAndGuessLiveMessage.game
+    ) -> Data {
+        (try? JSONEncoder().encode(GameLiveEnvelope(
+            game: game,
+            message: DrawAndGuessLiveMessage.guessScreen(message)
+        ))) ?? Data()
     }
 
     private func message(
         round: UUID = GameFixture.roundID,
         letters: [String?] = ["U", nil, nil, nil, nil, nil, nil, nil],
         isWrong: Bool = false,
-        replay: DrawAndGuessLiveMessage.Replay? = nil
-    ) -> DrawAndGuessLiveMessage {
-        DrawAndGuessLiveMessage(round: round, letters: letters, isWrong: isWrong, replay: replay)
+        replay: DrawAndGuessGuessScreenMessage.Replay? = nil
+    ) -> DrawAndGuessGuessScreenMessage {
+        DrawAndGuessGuessScreenMessage(round: round, letters: letters, isWrong: isWrong, replay: replay)
     }
 
     // MARK: Channel
 
     @Test func aGameMessageTravelsInItsEnvelopeToTheSameGameOnly() throws {
         let sender = GameDataRecordingConnection()
-        GameLiveChannel<DrawAndGuessLiveMessage>(connection: sender).send(message())
+        GameLiveChannel<DrawAndGuessLiveMessage>(connection: sender).send(.guessScreen(message()))
         let data = try #require(sender.sentGameData.first)
         #expect(GameLiveEnvelopeTag.isGameMessage(data, decoder: JSONDecoder()))
 
@@ -63,7 +71,7 @@ struct DrawAndGuessLiveGuessTests {
         receiver.onGameData?(data)
         receiver.onGameData?(envelope(message(), game: "another_game"))
 
-        #expect(received == [message()])
+        #expect(received == [.guessScreen(message())])
     }
 
     @Test func aDrawingMessageIsNotAGameMessage() throws {
@@ -72,6 +80,39 @@ struct DrawAndGuessLiveGuessTests {
     }
 
     // MARK: Guesser
+
+    @Test func liveReactionsTravelBothWaysAndIgnoreOtherRoundsOrAnAbsentPartner() async throws {
+        let (guesser, sender) = await guessing()
+        let (drawer, receiver) = await waitingForGuess()
+        sender.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
+        sender.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "drawing"))
+        guesser.recompute()
+
+        guesser.sendLiveReaction(.exclamation)
+        receiver.onGameData?(try #require(sender.sentGameData.last))
+        #expect(guesser.liveReactions.map(\.reaction) == [.exclamation])
+        #expect(drawer.liveReactions.map(\.reaction) == [.exclamation])
+
+        drawer.sendLiveReaction(.love)
+        sender.onGameData?(try #require(receiver.sentGameData.last))
+        #expect(guesser.liveReactions.map(\.reaction) == [.exclamation, .love])
+
+        let stale = DrawAndGuessLiveMessage.reaction(round: UUID(), reaction: .question)
+        receiver.onGameData?(try JSONEncoder().encode(GameLiveEnvelope(
+            game: DrawAndGuessLiveMessage.game,
+            message: stale
+        )))
+        #expect(drawer.liveReactions.count == 2)
+
+        sender.onMessage?(WidgetLiveMessage(type: .left, from: "partner"))
+        guesser.recompute()
+        let sentCount = sender.sentGameData.count
+        guesser.sendLiveReaction(.laugh)
+        #expect(!guesser.canSendLiveReaction)
+        #expect(sender.sentGameData.count == sentCount)
+        guesser.clearLiveReactions()
+        drawer.clearLiveReactions()
+    }
 
     private func guessing() async -> Setup {
         let state = GameFixture.state(

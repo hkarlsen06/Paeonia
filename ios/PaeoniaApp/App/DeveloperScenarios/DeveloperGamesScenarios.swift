@@ -248,31 +248,38 @@
     /// The live room, with the partner already in it when the scenario calls for
     /// it. No relay is involved: the partner's messages are fed in directly.
     private static func makeLive(for scenario: DeveloperScenario, coupleID: UUID) -> WidgetLiveDrawing? {
-      let connection = WidgetLiveConnection(coupleID: coupleID, ticketProvider: { _ in nil })
+      let connection = DeveloperGameLiveConnection(coupleID: coupleID, ticketProvider: { _ in nil })
       let live = WidgetLiveDrawing(connection: connection, role: .watching)
       switch scenario {
       case .drawWatchingHints:
         showPartnerHints(in: live)
       case .drawDrawing, .drawSavedOffline:
-        simulatePartner(on: connection, role: .watching, canvas: nil)
+        connection.partnerRole = .watching
+        connection.onStart = { simulatePartner(on: $0, role: .watching, canvas: nil) }
       case .drawWaitingForWord:
-        simulatePartner(on: connection, role: .choosing, canvas: nil)
+        connection.partnerRole = .choosing
+        connection.onStart = { simulatePartner(on: $0, role: .choosing, canvas: nil) }
       case .drawWatchingLive, .drawRevealPartnerDrawing:
-        simulatePartner(on: connection, role: .drawing, canvas: DeveloperGamesFixture.umbrella())
+        connection.partnerRole = .drawing
+        connection.onStart = { simulatePartner(on: $0, role: .drawing, canvas: DeveloperGamesFixture.umbrella()) }
       default:
         break
       }
+      connection.onStart?(connection)
       return live
     }
 
     private static func showPartnerHints(in live: WidgetLiveDrawing) {
-      let message = DrawAndGuessLiveMessage(
+      let message = DrawAndGuessGuessScreenMessage(
         round: DeveloperGamesFixture.roundID,
         letters: ["U", nil, nil, nil, nil, "L", nil, nil],
         isWrong: false,
         hintedIndexes: [0, 5]
       )
-      let data = try? JSONEncoder().encode(GameLiveEnvelope(game: DrawAndGuessLiveMessage.game, message: message))
+      let data = try? JSONEncoder().encode(GameLiveEnvelope(
+        game: DrawAndGuessLiveMessage.game,
+        message: DrawAndGuessLiveMessage.guessScreen(message)
+      ))
       Task { @MainActor [weak live] in
         while let live {
           simulatePartner(on: live.connection, role: .watching, canvas: nil)
@@ -297,6 +304,19 @@
           snapshot: true
         ))
       }
+    }
+  }
+
+  /// Rejoins the simulated room after foregrounding, like a real relay connection.
+  private final class DeveloperGameLiveConnection: WidgetLiveConnection {
+    var onStart: ((WidgetLiveConnection) -> Void)?
+    var partnerRole: WidgetLivePresence.Role?
+
+    override func start() { onStart?(self) }
+
+    override func send(_ message: WidgetLiveMessage) {
+      guard message.type == .hello, message.needsCanvas != true, let partnerRole else { return }
+      onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: partnerRole.rawValue))
     }
   }
 

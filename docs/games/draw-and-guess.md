@@ -6,6 +6,10 @@ Keep this file current. When a decision lands or the design changes, update it i
 
 ## Decisions
 
+Decided on 2026-10-31.
+
+- Live reactions are !, ?, laughter and a heart. The four buttons sit below the partner status, above the canvas, on both the drawing and guessing screens and the drawer's screen while awaiting a guess. A tap sends one reaction through the live room for the current round. Both phones show it rising from its button, with a small random tilt and sideways drift, until it exits the screen's top edge. The overlay does not take touches. Reduce Motion keeps it still above the button and fades it away. The row appears only while both partners are in the live room on an unfinished round. Reactions expire after 2.8 seconds, are never replayed after reconnecting, and send no push. Finished-round emoji reactions remain separate.
+
 Decided on 2026-10-12.
 
 - **Draw & Guess is the first game.**
