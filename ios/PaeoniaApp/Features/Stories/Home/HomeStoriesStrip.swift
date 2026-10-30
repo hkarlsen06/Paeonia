@@ -199,7 +199,7 @@ extension HomeStoriesStrip {
                 decoration: avatarStyling?.decorations.own ?? .none
             )
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { ownAvatarFrame = $0 }
-            .overlay(alignment: .bottomLeading) {
+            .overlay(alignment: .bottom) {
                 StoryStatusBadge(ring: stories.isEmpty ? .noStory : .seen, isOwn: true)
                     .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
             }
@@ -278,7 +278,7 @@ extension HomeStoriesStrip {
             size: avatarSize,
             decoration: avatarStyling?.decorations.partner ?? .none
         )
-        .overlay(alignment: .bottomLeading) {
+        .overlay(alignment: .bottom) {
             StoryStatusBadge(ring: ring)
                 .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
         }
