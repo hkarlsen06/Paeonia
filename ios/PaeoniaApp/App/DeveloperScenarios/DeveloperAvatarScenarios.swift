@@ -51,18 +51,28 @@ enum DeveloperAvatarFixture {
 
     private static func seedPhotos() {
         // Existing marketing portraits.
-        if let url = Bundle.main.url(forResource: "scenario-memory-avatar-alex", withExtension: "webp"),
-           let photo = UIImage(contentsOfFile: url.path) {
-            PaeoniaImageMemoryCache.store(photo, for: ownPhoto)
-        }
-        if let url = Bundle.main.url(forResource: "scenario-memory-avatar-robin", withExtension: "jpg"),
-           let photo = UIImage(contentsOfFile: url.path) {
-            PaeoniaImageMemoryCache.store(photo, for: partnerPhoto)
+        for id in [ownPhoto, partnerPhoto] {
+            if let data = photoData(for: id), let photo = UIImage(data: data) {
+                PaeoniaImageMemoryCache.store(photo, for: id)
+            }
         }
         if let url = Bundle.main.url(forResource: "scenario-memory-oslo-opera", withExtension: "jpg"),
            let photo = UIImage(contentsOfFile: url.path) {
             MemoryImageDecoding.store(photo, for: storyPhoto, maxPixelSize: StoryPhotoView.maxPixelSize)
         }
+    }
+
+    nonisolated static func photoData(for mediaAssetID: UUID?) -> Data? {
+        let resource: (name: String, fileExtension: String)
+        switch mediaAssetID {
+        case ownPhoto: resource = ("scenario-memory-avatar-alex", "webp")
+        case partnerPhoto: resource = ("scenario-memory-avatar-robin", "jpg")
+        default: return nil
+        }
+        guard let url = Bundle.main.url(forResource: resource.name, withExtension: resource.fileExtension) else {
+            return nil
+        }
+        return try? Data(contentsOf: url)
     }
 }
 
@@ -75,8 +85,9 @@ struct DeveloperAvatarDecorationGateway: AvatarDecorationSaving {
 }
 
 nonisolated struct DeveloperAvatarPhotoProvider: ProfilePhotoImageProviding {
+    // swiftlint:disable:next async_without_await
     func profilePhotoData(for mediaAssetID: UUID?) async -> Data? {
-        await MainActor.run { PaeoniaImageMemoryCache.image(for: mediaAssetID)?.jpegData(compressionQuality: 0.9) }
+        DeveloperAvatarFixture.photoData(for: mediaAssetID)
     }
 }
 

@@ -2889,6 +2889,24 @@
         }
       }
     },
+    "avatar.decoration.easter" : {
+      "comment" : "Name of the selectable Easter illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Easter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Påske"
+          }
+        }
+      }
+    },
     "avatar.decoration.explanation" : {
       "comment" : "Explains that the decoration selected around the profile photo is shared with the partner.",
       "extractionState" : "manual",
@@ -2943,6 +2961,42 @@
         }
       }
     },
+    "avatar.decoration.hearts" : {
+      "comment" : "Name of the selectable Hearts illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hearts"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hjerter"
+          }
+        }
+      }
+    },
+    "avatar.decoration.jelly" : {
+      "comment" : "Name of the selectable Jelly illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jelly"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gelé"
+          }
+        }
+      }
+    },
     "avatar.decoration.mischief" : {
       "comment" : "Purple horns and tail avatar frame name",
       "extractionState" : "manual",
@@ -2979,6 +3033,24 @@
         }
       }
     },
+    "avatar.decoration.newyear" : {
+      "comment" : "Name of the selectable New Year illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Year"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nyttår"
+          }
+        }
+      }
+    },
     "avatar.decoration.none" : {
       "comment" : "No decoration around the profile photo.",
       "extractionState" : "manual",
@@ -2993,6 +3065,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ingen"
+          }
+        }
+      }
+    },
+    "avatar.decoration.norway" : {
+      "comment" : "Name of the selectable 17 May illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "17 May"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "17. mai"
+          }
+        }
+      }
+    },
+    "avatar.decoration.paint" : {
+      "comment" : "Name of the selectable Paint illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paint"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maling"
           }
         }
       }
@@ -3033,6 +3141,42 @@
         }
       }
     },
+    "avatar.decoration.pride" : {
+      "comment" : "Name of the selectable Pride illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pride"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pride"
+          }
+        }
+      }
+    },
+    "avatar.decoration.racing" : {
+      "comment" : "Name of the selectable Racing illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racing"
+          }
+        }
+      }
+    },
     "avatar.decoration.ribbon" : {
       "comment" : "Name of the ribbon and bow frame around the profile photo.",
       "extractionState" : "manual",
@@ -3047,6 +3191,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sløyfe"
+          }
+        }
+      }
+    },
+    "avatar.decoration.rope" : {
+      "comment" : "Name of the selectable Rope illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rope"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tau"
           }
         }
       }
@@ -3177,6 +3339,24 @@
         }
       }
     },
+    "avatar.decoration.wildflowers" : {
+      "comment" : "Name of the selectable Wildflowers illustrated portrait frame. Available all year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wildflowers"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markblomster"
+          }
+        }
+      }
+    },
     "avatar.decoration.winter" : {
       "comment" : "Ice, snow and mittens avatar frame name, available all year",
       "extractionState" : "manual",
@@ -3209,186 +3389,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skog"
-          }
-        }
-      }
-    },
-    "avatarDecoration.easter" : {
-      "comment" : "Name of the selectable Easter illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Easter"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Påske"
-          }
-        }
-      }
-    },
-    "avatarDecoration.hearts" : {
-      "comment" : "Name of the selectable Hearts illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hearts"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hjerter"
-          }
-        }
-      }
-    },
-    "avatarDecoration.jelly" : {
-      "comment" : "Name of the selectable Jelly illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Jelly"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gelé"
-          }
-        }
-      }
-    },
-    "avatarDecoration.newyear" : {
-      "comment" : "Name of the selectable New Year illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New Year"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nyttår"
-          }
-        }
-      }
-    },
-    "avatarDecoration.norway" : {
-      "comment" : "Name of the selectable 17 May illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "17 May"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "17. mai"
-          }
-        }
-      }
-    },
-    "avatarDecoration.paint" : {
-      "comment" : "Name of the selectable Paint illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paint"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Maling"
-          }
-        }
-      }
-    },
-    "avatarDecoration.pride" : {
-      "comment" : "Name of the selectable Pride illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pride"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pride"
-          }
-        }
-      }
-    },
-    "avatarDecoration.racing" : {
-      "comment" : "Name of the selectable Racing illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Racing"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Racing"
-          }
-        }
-      }
-    },
-    "avatarDecoration.rope" : {
-      "comment" : "Name of the selectable Rope illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rope"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tau"
-          }
-        }
-      }
-    },
-    "avatarDecoration.wildflowers" : {
-      "comment" : "Name of the selectable Wildflowers illustrated portrait frame. Available all year.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wildflowers"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Markblomster"
           }
         }
       }
