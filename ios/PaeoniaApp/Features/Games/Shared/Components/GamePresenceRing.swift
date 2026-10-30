@@ -25,8 +25,7 @@ private struct GamePresenceRing: View {
                 CubicKeyframe(1.12, duration: PaeoniaMotion.motionFast)
                 CubicKeyframe(1, duration: PaeoniaMotion.motionSlow)
             }
-            .opacity(isHere ? 1 : 0)
-            .transaction { $0.animation = nil }
+            .animation(nil) { $0.opacity(isHere ? 1 : 0) }
             .allowsHitTesting(false)
             .accessibilityHidden(true)
             .onChange(of: isHere) { wasHere, isHere in

@@ -150,10 +150,10 @@ struct BoardGamePlayerAvatar: View {
 
     var body: some View {
         BoardGameAvatar(player: player, size: size)
+            .gamePresenceRing(isHere)
             .overlay(alignment: .bottomTrailing) {
                 badge.offset(x: 4, y: 4)
             }
-            .gamePresenceRing(isHere)
             .scaleEffect(isActive ? Self.activeScale : 1)
     }
 

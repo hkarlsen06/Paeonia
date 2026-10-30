@@ -64,7 +64,6 @@ struct ExquisiteCorpseWatchView: View {
                 text: title,
                 isHere: viewModel.partnerPresence.isHere
             )
-                .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("corpse.watching")
         } trailing: {
             EmptyView()

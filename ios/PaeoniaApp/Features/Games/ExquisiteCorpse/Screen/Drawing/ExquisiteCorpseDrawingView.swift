@@ -12,8 +12,6 @@ struct ExquisiteCorpseDrawingView: View {
     private let part: ExquisiteCorpsePartKind
     private let showsFirstHint: Bool
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     private var board: GameDrawingBoard { viewModel.board }
 
     init(viewModel: ExquisiteCorpseViewModel, handoff: Namespace.ID? = nil) {
@@ -105,20 +103,12 @@ struct ExquisiteCorpseDrawingView: View {
 
     private var liveRow: some View {
         GameLiveRow {
-            if viewModel.partnerPresence.isHere {
-                GamePresenceLabel(
-                    player: viewModel.partner,
-                    text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
-                    isHere: viewModel.partnerPresence.isHere
-                )
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("corpse.presence")
-            } else {
-                Text(.exquisiteCorpseDrawLater(viewModel.partnerName))
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextTertiary)
-                    .accessibilityIdentifier("corpse.presence")
-            }
+            GamePresenceLabel(
+                player: viewModel.partner,
+                text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
+                isHere: viewModel.partnerPresence.isHere
+            )
+            .accessibilityIdentifier("corpse.presence")
         } trailing: {
             EmptyView()
         }

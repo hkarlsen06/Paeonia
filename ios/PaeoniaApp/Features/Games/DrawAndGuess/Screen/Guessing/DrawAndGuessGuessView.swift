@@ -225,7 +225,9 @@ struct DrawAndGuessGuessView: View {
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
         if isRevealed, timeline.buttonShown, viewModel.isPartnerWaitingForMe {
-            DrawAndGuessLiveHint(text: .gamesDrawAndGuessRevealPartnerWaiting(viewModel.partnerName))
+            Text(.gamesDrawAndGuessRevealPartnerWaiting(viewModel.partnerName))
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
                 .transition(.opacity)
                 .accessibilityIdentifier("draw.reveal.partnerWaiting")
         }

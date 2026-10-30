@@ -63,7 +63,9 @@ struct DrawAndGuessDrawerResultView: View {
             footer
         } bottom: {
             if isRevealed, timeline.buttonShown, viewModel.isPartnerChoosingNextWord {
-                DrawAndGuessLiveHint(text: .gamesDrawAndGuessWaitChoosing(viewModel.partnerName))
+                Text(.gamesDrawAndGuessWaitChoosing(viewModel.partnerName))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
                     .transition(.opacity)
                     .accessibilityIdentifier("draw.reveal.partnerChoosing")
             }
@@ -74,7 +76,7 @@ struct DrawAndGuessDrawerResultView: View {
                 } label: {
                     switch viewModel.partnerNextRound {
                     case .drawing:
-                        DrawAndGuessWatchLabel(partnerName: viewModel.partnerName)
+                        Text(.gamesDrawAndGuessHandoffWatch(viewModel.partnerName))
                     case .sent:
                         Text(.gamesDrawAndGuessHandoffSeeDrawing(viewModel.partnerName))
                     case nil:
@@ -312,30 +314,5 @@ extension DrawAndGuessDrawerResultView {
             beginReveal()
         }
         if timeline.titleShown { timeline.skip() }
-    }
-}
-
-/// The action to watch the partner draw.
-struct DrawAndGuessWatchLabel: View {
-    let partnerName: String
-
-    var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Text(.gamesDrawAndGuessHandoffWatch(partnerName))
-        }
-    }
-}
-
-/// A line above a result screen's button about what the partner does right now.
-struct DrawAndGuessLiveHint: View {
-    let text: LocalizedStringResource
-
-    var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
-            Text(text)
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-        }
-        .accessibilityElement(children: .combine)
     }
 }

@@ -6,7 +6,7 @@ struct GameTypingDots: View {
     @ScaledMetric(relativeTo: .caption) private var dotSize: CGFloat = 5
 
     var body: some View {
-        TimelineView(.animation(paused: reduceMotion)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { context in
             HStack(spacing: dotSize * 0.6) {
                 ForEach(0..<3, id: \.self) { index in
                     Circle()

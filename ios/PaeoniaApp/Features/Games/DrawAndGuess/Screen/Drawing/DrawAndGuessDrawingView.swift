@@ -65,20 +65,12 @@ struct DrawAndGuessDrawingView: View {
 
     private var liveRow: some View {
         GameLiveRow {
-            if viewModel.partnerPresence.isHere {
-                GamePresenceLabel(
-                    player: viewModel.partner,
-                    text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
-                    isHere: viewModel.partnerPresence.isHere
-                )
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("draw.presence")
-            } else {
-                Text(.gamesDrawAndGuessDrawLater(viewModel.partnerName))
-                    .font(PaeoniaTypography.caption.weight(.semibold))
-                    .foregroundStyle(.paeoniaTextTertiary)
-                    .accessibilityIdentifier("draw.presence")
-            }
+            GamePresenceLabel(
+                player: viewModel.partner,
+                text: viewModel.partnerPresence.drawingLine(partnerName: viewModel.partnerName),
+                isHere: viewModel.partnerPresence.isHere
+            )
+            .accessibilityIdentifier("draw.presence")
         } trailing: {
             guessCapsule
         }
