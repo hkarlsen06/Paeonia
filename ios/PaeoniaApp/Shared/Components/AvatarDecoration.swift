@@ -3,6 +3,7 @@ import SwiftUI
 nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
     case none, peony, ribbon, moon, candy
     case mischief, flame, rose, woodland, cosy, silver, halloween, christmas, winter
+    case rope, paint, jelly, racing, hearts, easter, norway, wildflowers, newyear, pride
 
     /// The largest frame extends this far beyond the photo. Reserve room for nearby content.
     static let maximumOutset: CGFloat = 0.28
@@ -23,6 +24,16 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween: .avatarDecorationHalloween
         case .christmas: .avatarDecorationChristmas
         case .winter: .avatarDecorationWinter
+        case .rope: .avatarDecorationRope
+        case .paint: .avatarDecorationPaint
+        case .jelly: .avatarDecorationJelly
+        case .racing: .avatarDecorationRacing
+        case .hearts: .avatarDecorationHearts
+        case .easter: .avatarDecorationEaster
+        case .norway: .avatarDecorationNorway
+        case .wildflowers: .avatarDecorationWildflowers
+        case .newyear: .avatarDecorationNewyear
+        case .pride: .avatarDecorationPride
         }
     }
 
@@ -42,6 +53,16 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween: .avatarFrameHalloween
         case .christmas: .avatarFrameChristmas
         case .winter: .avatarFrameWinter
+        case .rope: .avatarFrameRope
+        case .paint: .avatarFramePaint
+        case .jelly: .avatarFrameJelly
+        case .racing: .avatarFrameRacing
+        case .hearts: .avatarFrameHearts
+        case .easter: .avatarFrameEaster
+        case .norway: .avatarFrameNorway
+        case .wildflowers: .avatarFrameWildflowers
+        case .newyear: .avatarFrameNewyear
+        case .pride: .avatarFramePride
         }
     }
 
@@ -63,6 +84,16 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween: 1.63189
         case .christmas: 1.66898
         case .winter: 1.62578
+        case .rope: 2.09666
+        case .paint: 2.21086
+        case .jelly: 2.09635
+        case .racing: 2.00480
+        case .hearts: 2.16340
+        case .easter: 2.14335
+        case .norway: 2.14670
+        case .wildflowers: 2.46577
+        case .newyear: 2.07267
+        case .pride: 2.21269
         }
     }
 
@@ -80,6 +111,16 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .halloween: 0.15
         case .christmas: 0.23
         case .winter: 0.13
+        case .rope: 0.13
+        case .paint: 0.19
+        case .jelly: 0.14
+        case .racing: 0.12
+        case .hearts: 0.17
+        case .easter: 0.17
+        case .norway: 0.19
+        case .wildflowers: 0.28
+        case .newyear: 0.16
+        case .pride: 0.19
         }
     }
 

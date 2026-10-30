@@ -4,7 +4,8 @@ import { createCouple, createSignedInUser, newTest, relationshipStateOf } from "
 
 describe("avatar decorations", () => {
   test.each(["peony", "ribbon", "moon", "candy",
-    "mischief", "flame", "rose", "woodland", "cosy", "silver", "halloween", "christmas", "winter"] as const)("shares the caller's %s frame with their partner", async (decoration) => {
+    "mischief", "flame", "rose", "woodland", "cosy", "silver", "halloween", "christmas", "winter",
+    "rope", "paint", "jelly", "racing", "hearts", "easter", "norway", "wildflowers", "newyear", "pride"] as const)("shares the caller's %s frame with their partner", async (decoration) => {
     const t = newTest();
     const { first, second } = await createCouple(t);
     await first.as.mutation(api.avatarDecorations.set_own_decoration, { p_decoration: decoration });

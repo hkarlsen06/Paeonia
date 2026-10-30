@@ -20,7 +20,8 @@ export const threadKind = literals("daily_question", "memory", "story", "game");
 
 export const authProvider = literals("apple", "google", "unknown");
 export const avatarDecoration = literals("none", "peony", "ribbon", "moon", "candy",
-  "mischief", "flame", "rose", "woodland", "cosy", "silver", "halloween", "christmas", "winter");
+  "mischief", "flame", "rose", "woodland", "cosy", "silver", "halloween", "christmas", "winter",
+  "rope", "paint", "jelly", "racing", "hearts", "easter", "norway", "wildflowers", "newyear", "pride");
 export const apnsEnvironment = literals("sandbox", "production");
 export const storekitEnvironment = literals("xcode", "sandbox", "production");
 export const grantKind = literals("lifetime", "review", "test", "beta");
