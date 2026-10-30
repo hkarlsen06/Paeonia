@@ -2,9 +2,10 @@ import SwiftUI
 
 nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
     case none, peony, ribbon, moon, candy
+    case mischief, flame, rose, woodland, cosy, silver, halloween, christmas, winter
 
     /// The largest frame extends this far beyond the photo. Reserve room for nearby content.
-    static let maximumOutset: CGFloat = 0.12
+    static let maximumOutset: CGFloat = 0.28
 
     var title: LocalizedStringResource {
         switch self {
@@ -13,6 +14,15 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .ribbon: .avatarDecorationRibbon
         case .moon: .avatarDecorationMoon
         case .candy: .avatarDecorationCandy
+        case .mischief: .avatarDecorationMischief
+        case .flame: .avatarDecorationFlame
+        case .rose: .avatarDecorationRose
+        case .woodland: .avatarDecorationWoodland
+        case .cosy: .avatarDecorationCosy
+        case .silver: .avatarDecorationSilver
+        case .halloween: .avatarDecorationHalloween
+        case .christmas: .avatarDecorationChristmas
+        case .winter: .avatarDecorationWinter
         }
     }
 
@@ -23,11 +33,20 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .ribbon: .avatarFrameRibbon
         case .moon: .avatarFrameMoon
         case .candy: .avatarFrameCandy
+        case .mischief: .avatarFrameMischief
+        case .flame: .avatarFrameFlame
+        case .rose: .avatarFrameRose
+        case .woodland: .avatarFrameWoodland
+        case .cosy: .avatarFrameCosy
+        case .silver: .avatarFrameSilver
+        case .halloween: .avatarFrameHalloween
+        case .christmas: .avatarFrameChristmas
+        case .winter: .avatarFrameWinter
         }
     }
 
     /// Align the middle of each frame's band with the photo edge, covering its border.
-    /// Diameters are measured in the untrimmed 1024px exports.
+    /// Scales use measured band diameters in the centered 1024px canvases.
     var artworkScale: CGFloat {
         switch self {
         case .none: 1
@@ -35,11 +54,37 @@ nonisolated enum AvatarDecoration: String, Codable, CaseIterable, Sendable {
         case .ribbon: 1_024 / 760
         case .moon: 1_024 / 740
         case .candy: 1_024 / 740
+        case .mischief: 1.59441
+        case .flame: 1.66248
+        case .rose: 1.67140
+        case .woodland: 1.62090
+        case .cosy: 1.72128
+        case .silver: 1.51091
+        case .halloween: 1.63189
+        case .christmas: 1.66898
+        case .winter: 1.62578
+        }
+    }
+
+    /// Rounded up from the centered artwork's measured opaque bounds.
+    var outset: CGFloat {
+        switch self {
+        case .none: 0
+        case .peony, .ribbon, .moon, .candy: 0.12
+        case .mischief: 0.12
+        case .flame: 0.28
+        case .rose: 0.20
+        case .woodland: 0.15
+        case .cosy: 0.16
+        case .silver: 0.04
+        case .halloween: 0.15
+        case .christmas: 0.23
+        case .winter: 0.13
         }
     }
 
     func noteClearance(photoSize: CGFloat) -> CGFloat {
-        self == .none ? 0 : photoSize * Self.maximumOutset
+        photoSize * outset
     }
 }
 

@@ -81,7 +81,9 @@ extension HomeMapLayout {
 
     func separated(_ points: HomeMapAvatarPoints, isNear: Bool) -> HomeMapAvatarPoints {
         // Wide enough that the two note bubbles never touch.
-        let minimum = max(StoryNoteBubble.maxWidth + PaeoniaSpacing.space8, avatarSize + PaeoniaSpacing.space16)
+        let decorations = avatarStyling?.decorations ?? CoupleAvatarDecorations()
+        let decoratedWidth = avatarSize * (1 + decorations.own.outset + decorations.partner.outset)
+        let minimum = max(StoryNoteBubble.maxWidth + PaeoniaSpacing.space8, decoratedWidth + PaeoniaSpacing.space16)
         guard isNear else {
             // Apart: pushed away from each other along the line between the two places,
             // so north stays north, with room for a note bubble when one sits above the other.

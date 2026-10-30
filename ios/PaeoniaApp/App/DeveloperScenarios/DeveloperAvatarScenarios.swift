@@ -16,6 +16,11 @@ nonisolated extension DeveloperScenario {
 }
 
 enum DeveloperAvatarFixture {
+    nonisolated static func decoration(for person: String, default fallback: AvatarDecoration) -> AvatarDecoration {
+        let value = UserDefaults.standard.string(forKey: "avatar-frame-\(person)") ?? ""
+        return AvatarDecoration(rawValue: value) ?? fallback
+    }
+
     nonisolated static let ownPhoto = UUID(uuidString: "1e61a671-473d-421a-a881-420e6f148003") ?? UUID()
     nonisolated static let partnerPhoto = UUID(uuidString: "1e61a671-473d-421a-a881-420e6f148001") ?? UUID()
     nonisolated static let storyPhoto = UUID(uuidString: "1e61a671-473d-421a-a881-420e6f148002") ?? UUID()

@@ -25,6 +25,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     /// The kind of notice the person said "Not now" to. It shows again once the reason
     /// for having no map changes.
     @AppStorage("home.locationNotice.dismissed") private var dismissedNotice = ""
+    @Environment(\.avatarStyling) var avatarStyling
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.launchSidesUncovered) private var launchSidesUncovered
     @State private var scrollOffset: CGFloat = 0

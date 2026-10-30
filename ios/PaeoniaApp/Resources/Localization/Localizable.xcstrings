@@ -2853,6 +2853,42 @@
         }
       }
     },
+    "avatar.decoration.christmas" : {
+      "comment" : "Evergreen, lights and red bow avatar frame name, available all year",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Christmas"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jul"
+          }
+        }
+      }
+    },
+    "avatar.decoration.cosy" : {
+      "comment" : "Knitted wool and warm mug avatar frame name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosy"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kos"
+          }
+        }
+      }
+    },
     "avatar.decoration.explanation" : {
       "comment" : "Explains that the decoration selected around the profile photo is shared with the partner.",
       "extractionState" : "manual",
@@ -2867,6 +2903,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Partneren din ser denne pynten også."
+          }
+        }
+      }
+    },
+    "avatar.decoration.flame" : {
+      "comment" : "Orange sculpted flame avatar frame name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flames"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flammer"
+          }
+        }
+      }
+    },
+    "avatar.decoration.halloween" : {
+      "comment" : "Bat and pumpkin avatar frame name, available all year",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halloween"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halloween"
+          }
+        }
+      }
+    },
+    "avatar.decoration.mischief" : {
+      "comment" : "Purple horns and tail avatar frame name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mischief"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rampete"
           }
         }
       }
@@ -2961,6 +3051,24 @@
         }
       }
     },
+    "avatar.decoration.rose" : {
+      "comment" : "Dark cherry roses and silver thorns avatar frame name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roses"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roser"
+          }
+        }
+      }
+    },
     "avatar.decoration.save" : {
       "comment" : "Saves the selected avatar decoration.",
       "extractionState" : "manual",
@@ -3033,6 +3141,24 @@
         }
       }
     },
+    "avatar.decoration.silver" : {
+      "comment" : "Understated brushed silver avatar frame name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silver"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sølv"
+          }
+        }
+      }
+    },
     "avatar.decoration.title" : {
       "comment" : "Title of the picker for decorations around your profile photo.",
       "extractionState" : "manual",
@@ -3047,6 +3173,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pynt på profilbildet"
+          }
+        }
+      }
+    },
+    "avatar.decoration.winter" : {
+      "comment" : "Ice, snow and mittens avatar frame name, available all year",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Winter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vinter"
+          }
+        }
+      }
+    },
+    "avatar.decoration.woodland" : {
+      "comment" : "Wood, moss and mushrooms avatar frame name",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Woodland"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skog"
           }
         }
       }

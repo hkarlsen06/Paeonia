@@ -50,6 +50,11 @@ struct CoupleMapSnapshot: View {
     /// The partner's hearts to fly toward the person's avatar. Nil when none are playing.
     var incomingBurst: HeartsBurst?
 
+    private var decorationSpacing: CGFloat {
+        let decorations = avatarStyling?.decorations ?? CoupleAvatarDecorations()
+        return MapAvatarPin.avatarDiameter * (decorations.own.outset + decorations.partner.outset)
+    }
+
     private static let scrimHeight: CGFloat = 52
     /// Closest the two avatar centers may sit on screen. Apart, a small gap keeps both
     /// faces whole. Together, the avatars overlap a little, leaving enough of a path
@@ -126,7 +131,7 @@ struct CoupleMapSnapshot: View {
         CoupleMapFraming.separated(
             snap.currentPoint,
             snap.partnerPoint,
-            minimumDistance: isTogether ? Self.togetherPinSpacing : Self.apartPinSpacing
+            minimumDistance: (isTogether ? Self.togetherPinSpacing : Self.apartPinSpacing) + decorationSpacing
         )
     }
 
