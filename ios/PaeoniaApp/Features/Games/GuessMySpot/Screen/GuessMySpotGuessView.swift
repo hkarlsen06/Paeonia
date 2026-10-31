@@ -37,16 +37,8 @@ struct GuessMySpotGuessView: View {
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { viewModel.guessMapFrame = $0 }
             .overlay(alignment: .bottom) {
                 if viewModel.guessPin == nil {
-                    Text(.guessMySpotGuessHint)
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .padding(.horizontal, PaeoniaSpacing.space12)
-                        .padding(.vertical, PaeoniaSpacing.space8)
-                        .glassEffect(.regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6)), in: Capsule())
-                        .padding(PaeoniaSpacing.space12)
-                        .allowsHitTesting(false)
+                    GuessMySpotMapHint(text: .guessMySpotGuessHint)
                         .transition(.opacity)
-                        .accessibilityHidden(true)
                 }
             }
             .animation(PaeoniaMotion.stateChange, value: viewModel.guessPin == nil)

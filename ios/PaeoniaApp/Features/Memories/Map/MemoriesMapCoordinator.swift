@@ -202,7 +202,7 @@ final class MemoriesMapCoordinator: NSObject, MKMapViewDelegate, UIGestureRecogn
         let left = insets.left + padding
         let clearWidth = max(mapView.bounds.width - left - insets.right - padding, 1)
         // The Maps logo and Legal link sit at the bottom margin and must stay readable.
-        let bottom = insets.bottom + Self.attributionHeight + padding
+        let bottom = insets.bottom + PaeoniaMapAttribution.height + padding
         let clearHeight = max(mapView.bounds.height - top - bottom, 1)
         // Map points per screen point, so the rect just fills the clear area.
         let scale = max(rect.width / clearWidth, rect.height / clearHeight)
@@ -238,10 +238,6 @@ final class MemoriesMapCoordinator: NSObject, MKMapViewDelegate, UIGestureRecogn
         }
         return view
     }
-
-    /// Room for MapKit's attribution strip (the Maps logo and Legal link), so a fit
-    /// never places a pin over it.
-    static let attributionHeight: CGFloat = 28
 
     static func mapRect(for region: MKCoordinateRegion) -> MKMapRect {
         let center = region.center

@@ -200,7 +200,7 @@ Copy keys start with `guessMySpot.`, so their Swift symbols start with `guessMyS
 
 `GuessMySpotMap` is the one map every phase shares.
 
-- Apple's standard map, flat, muted, with no points of interest, in the dark color scheme. The satellite button in its top trailing corner switches to the hybrid satellite map with labels, and back. Its icon shows the style the map has now: `map.fill` for the standard map, `globe.europe.africa.fill` for satellite. VoiceOver reads it as the switch "Satellite", selected while satellite shows. The choice is kept on this phone (`@AppStorage`).
+- Apple's standard map, flat, muted, with no points of interest, in the dark color scheme. The Maps logo and Legal link along its bottom edge stay visible on every screen. Hints and controls over the map leave `PaeoniaMapAttribution.height` free under them. The satellite button in its top trailing corner switches to the hybrid satellite map with labels, and back. Its icon shows the style the map has now: `map.fill` for the standard map, `globe.europe.africa.fill` for satellite. VoiceOver reads it as the switch "Satellite", selected while satellite shows. The choice is kept on this phone (`@AppStorage`).
 - A switch from the button dissolves: the map's picture from just before the switch covers the new style and fades out over 0.3 s after 0.1 s, while the new images load. The picture reaches down to where the map draws, past its frame. Reduce Motion switches at once.
 - Pan and zoom only. A tap drops this person's pin or moves it.
 - The game's screens and "Our guesses" turn off the full-width back swipe (`GameEdgeSwipeOnly`), so a swipe or pinch on the map moves the map. The swipe from the left edge still goes back.

@@ -43,9 +43,7 @@ struct GuessMySpotRevealView: View {
 
     private var round: RemoteGuessMySpotRound? { viewModel.round }
 
-    private var isHeld: Bool {
-        viewModel.phase == .reveal(isHeld: true)
-    }
+    private var isHeld: Bool { viewModel.phase == .reveal(isHeld: true) }
 
     private var mapSize: CGSize { mapFrame.size }
 
@@ -61,9 +59,7 @@ struct GuessMySpotRevealView: View {
         mapSize.width >= 700 && mapSize.width > mapSize.height
     }
 
-    private var isSender: Bool {
-        round?.senderUserID == viewModel.currentUserID
-    }
+    private var isSender: Bool { round?.senderUserID == viewModel.currentUserID }
 
     /// Where the camera looks, from the map's size and the room the bars and the card leave now.
     private var framing: GuessMySpotRevealFraming {
@@ -103,6 +99,7 @@ struct GuessMySpotRevealView: View {
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.vertical, PaeoniaSpacing.space8)
+            .padding(.bottom, PaeoniaMapAttribution.height)
             .frame(maxWidth: Self.cardColumn)
             .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
             .onGeometryChange(for: CGFloat.self) { [isHeld] in isHeld ? 0 : $0.size.height } action: {

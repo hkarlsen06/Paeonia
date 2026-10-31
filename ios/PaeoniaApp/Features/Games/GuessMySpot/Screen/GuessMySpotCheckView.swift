@@ -35,16 +35,8 @@ struct GuessMySpotCheckView: View {
             )
             .overlay(alignment: .bottom) {
                 if draft?.spot == nil {
-                    Text(.guessMySpotCheckMissingHint)
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(.paeoniaTextPrimary)
-                        .padding(.horizontal, PaeoniaSpacing.space12)
-                        .padding(.vertical, PaeoniaSpacing.space8)
-                        .glassEffect(.regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6)), in: Capsule())
-                        .padding(PaeoniaSpacing.space12)
-                        .allowsHitTesting(false)
+                    GuessMySpotMapHint(text: .guessMySpotCheckMissingHint)
                         .transition(.opacity)
-                        .accessibilityHidden(true)
                 }
             }
             .animation(PaeoniaMotion.stateChange, value: draft?.spot == nil)
