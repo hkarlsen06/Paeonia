@@ -1,8 +1,6 @@
 import SwiftUI
 
-/// The bar above the keyboard while the person writes: the word to give, the
-/// last-line switch from line 8, the character counter from 200, and Send. It
-/// rides up with the keyboard, like a chat composer.
+/// Optional writing controls and Send, pinned above the keyboard.
 struct StoryChainComposerBar: View {
     @Bindable var viewModel: StoryChainViewModel
     let openDareSheet: () -> Void
@@ -10,16 +8,11 @@ struct StoryChainComposerBar: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space4) {
-            if viewModel.canEndHere {
-                lastLineSwitch
-            }
-            controls
-        }
-        .padding(.vertical, PaeoniaSpacing.space8)
-        .paeoniaReadableWidth(StoryChainPageStyle.measure)
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .background(.paeoniaBackgroundSecondary)
+        controls
+            .padding(.vertical, PaeoniaSpacing.space8)
+            .paeoniaReadableWidth(StoryChainPageStyle.measure)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .background(.paeoniaBackgroundSecondary)
     }
 
     // MARK: Controls
@@ -27,23 +20,50 @@ struct StoryChainComposerBar: View {
     @ViewBuilder
     private var controls: some View {
         if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                dareControl
-                HStack(spacing: PaeoniaSpacing.space8) {
-                    counter
-                    Spacer(minLength: 0)
-                    StoryChainSendButton(viewModel: viewModel)
-                }
-            }
+            wrappedControls
         } else {
-            HStack(spacing: PaeoniaSpacing.space8) {
-                dareControl
-                    .layoutPriority(1)
-                Spacer(minLength: 0)
-                counter
-                StoryChainSendButton(viewModel: viewModel)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    optionalControls
+                        .fixedSize(horizontal: true, vertical: false)
+                    Spacer(minLength: 0)
+                    sendControls
+                }
+                wrappedControls
             }
         }
+    }
+
+    private var optionalControls: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            dareControl
+            if viewModel.canEndHere { lastLineChip }
+        }
+    }
+
+    private var wrappedControls: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+            ViewThatFits(in: .horizontal) {
+                optionalControls.fixedSize(horizontal: true, vertical: false)
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                    dareControl
+                    if viewModel.canEndHere { lastLineChip }
+                }
+            }
+            HStack {
+                Spacer(minLength: 0)
+                sendControls
+            }
+        }
+    }
+
+    private var sendControls: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            counter
+                .fixedSize()
+            StoryChainSendButton(viewModel: viewModel)
+        }
+        .fixedSize()
     }
 
     // MARK: The word to give
@@ -59,16 +79,13 @@ struct StoryChainComposerBar: View {
         }
     }
 
-    /// An empty slot in the shape of the chip it turns into: a dashed gold
-    /// outline with a plus, so it reads as something to tap.
     private var giveWordButton: some View {
         Button {
             openDareSheet()
         } label: {
             Label {
-                Text(.storyChainWriteGiveWord(viewModel.partnerName))
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
-                    .minimumScaleFactor(0.8)
+                Text(.storyChainWriteGiveWordShort)
+                    .fixedSize(horizontal: false, vertical: true)
             } icon: {
                 Image(systemName: "plus")
                     .accessibilityHidden(true)
@@ -79,16 +96,10 @@ struct StoryChainComposerBar: View {
             .padding(.vertical, PaeoniaSpacing.space8)
             .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
             .background(Capsule(style: .continuous).fill(.paeoniaSurfaceSecondary))
-            .overlay {
-                Capsule(style: .continuous)
-                    .strokeBorder(
-                        Color.paeoniaInkGold,
-                        style: StrokeStyle(lineWidth: PaeoniaRadius.strokeEmphasis, dash: [4, 3])
-                    )
-            }
             .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text(.storyChainWriteGiveWord(viewModel.partnerName)))
         .accessibilityIdentifier("storyChain.giveWord")
     }
 
@@ -98,10 +109,6 @@ struct StoryChainComposerBar: View {
             dareRemoveButton
         }
         .background(Capsule(style: .continuous).fill(.paeoniaSurfaceSecondary))
-        .overlay {
-            Capsule(style: .continuous)
-                .strokeBorder(Color.paeoniaInkGold, lineWidth: PaeoniaRadius.strokeEmphasis)
-        }
     }
 
     /// Tapping the word opens the sheet again, to pick another.
@@ -109,9 +116,8 @@ struct StoryChainComposerBar: View {
         Button {
             openDareSheet()
         } label: {
-            Text(.storyChainWriteDareChip(viewModel.partnerName, dare.word.uppercased()))
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
-                .minimumScaleFactor(0.8)
+            Text(verbatim: dare.word.uppercased())
+                .fixedSize(horizontal: false, vertical: true)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
                 .padding(.leading, PaeoniaSpacing.space12)
@@ -119,6 +125,7 @@ struct StoryChainComposerBar: View {
                 .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text(.storyChainWriteDareChip(viewModel.partnerName, dare.word.uppercased())))
         .accessibilityIdentifier("storyChain.dareChip")
     }
 
@@ -141,7 +148,7 @@ struct StoryChainComposerBar: View {
 
     // MARK: Last line
 
-    private var lastLineSwitch: some View {
+    private var lastLineChip: some View {
         let isOn = Binding(
             get: { viewModel.isLastLine },
             set: { newValue in
@@ -151,14 +158,29 @@ struct StoryChainComposerBar: View {
             }
         )
         return Toggle(isOn: isOn) {
-            Text(.storyChainWriteLastLine)
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextPrimary)
+            Label {
+                Text(.storyChainWriteLastLineShort)
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: viewModel.isLastLine ? "checkmark.circle.fill" : "circle")
+                    .accessibilityHidden(true)
+            }
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(viewModel.isLastLine ? Color.paeoniaAccentPrimary : Color.paeoniaTextPrimary)
+            .padding(.horizontal, PaeoniaSpacing.space12)
+            .padding(.vertical, PaeoniaSpacing.space8)
+            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+            .background(
+                viewModel.isLastLine ? Color.paeoniaAccentPrimary.opacity(0.16) : Color.paeoniaSurfaceSecondary,
+                in: Capsule(style: .continuous)
+            )
+            .contentShape(Capsule(style: .continuous))
         }
-        .tint(.paeoniaAccentPrimary)
-        // Line 20 always ends the story, so the switch is on and locked.
+        .toggleStyle(.button)
+        .buttonStyle(.plain)
+        // Line 20 always ends the story, so the chip is selected and locked.
         .disabled(viewModel.mustEndHere)
-        .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+        .accessibilityLabel(Text(.storyChainWriteLastLine))
         .accessibilityIdentifier("storyChain.lastLine")
     }
 

@@ -5,12 +5,12 @@ import SwiftUI
 /// field is the last paragraph of the page, in the writer's own ink.
 ///
 /// The controls that belong above the keyboard (the word to give, the last-line
-/// switch, the counter and Send) are in `StoryChainComposerBar`.
+/// chip, the counter and Send) are in `StoryChainComposerBar`.
 struct StoryChainComposer: View {
     @Bindable var viewModel: StoryChainViewModel
 
-    @FocusState private var isFocused: Bool
-    @ScaledMetric(relativeTo: .title3) private var fieldMinHeight: CGFloat = 96
+    @State private var isFocused = false
+    @ScaledMetric(relativeTo: .title3) private var fieldMinHeight: CGFloat = 56
     /// The rule under the field. It changes through `withAnimation`, because an
     /// `.animation(value:)` modifier here would also re-time the movement the
     /// keyboard causes (see `DailyAnswerTextField`).
@@ -49,7 +49,7 @@ struct StoryChainComposer: View {
     // MARK: Field
 
     private var field: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
             ZStack(alignment: .topLeading) {
                 StoryChainDraftField(text: $viewModel.draft, focus: $isFocused)
                     .frame(maxWidth: .infinity, minHeight: fieldMinHeight, alignment: .topLeading)
@@ -69,6 +69,7 @@ struct StoryChainComposer: View {
 
             Rectangle()
                 .fill(ruleColor)
+                .opacity(0.45)
                 .frame(height: PaeoniaRadius.strokeDefault)
                 .accessibilityHidden(true)
         }

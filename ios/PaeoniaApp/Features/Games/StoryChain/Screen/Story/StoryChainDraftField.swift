@@ -5,7 +5,7 @@ import UIKit
 /// while the person types, so selection, undo and keyboard composition survive.
 struct StoryChainDraftField: UIViewRepresentable {
     @Binding var text: String
-    var focus: FocusState<Bool>.Binding
+    @Binding var focus: Bool
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -30,10 +30,14 @@ struct StoryChainDraftField: UIViewRepresentable {
         context.coordinator.parent = self
         if view.text != text { view.text = text }
         style(view)
-        if focus.wrappedValue, !view.isFirstResponder {
-            view.becomeFirstResponder()
-        } else if !focus.wrappedValue, view.isFirstResponder {
-            view.resignFirstResponder()
+        // UIKit asks SwiftUI for its next responder. Do that after this graph update ends.
+        Task { @MainActor [weak view, coordinator = context.coordinator] in
+            guard let view else { return }
+            if coordinator.parent.focus, !view.isFirstResponder {
+                view.becomeFirstResponder()
+            } else if !coordinator.parent.focus, view.isFirstResponder {
+                view.resignFirstResponder()
+            }
         }
     }
 
@@ -85,11 +89,11 @@ struct StoryChainDraftField: UIViewRepresentable {
         }
 
         func textViewDidBeginEditing(_: UITextView) {
-            if !parent.focus.wrappedValue { parent.focus.wrappedValue = true }
+            if !parent.focus { parent.focus = true }
         }
 
         func textViewDidEndEditing(_: UITextView) {
-            if parent.focus.wrappedValue { parent.focus.wrappedValue = false }
+            if parent.focus { parent.focus = false }
         }
     }
 }

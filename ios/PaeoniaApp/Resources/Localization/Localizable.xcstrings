@@ -36536,6 +36536,24 @@
         }
       }
     },
+    "storyChain.write.giveWordShort" : {
+      "comment" : "Compact optional toolbar button that opens the sheet to give the partner a word for their next story line. Full partner-specific wording is spoken by VoiceOver.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give a word"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gi et ord"
+          }
+        }
+      }
+    },
     "storyChain.write.here" : {
       "comment" : "Over the field while the partner is in the game. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -36586,6 +36604,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skriv den siste linjen."
+          }
+        }
+      }
+    },
+    "storyChain.write.lastLineShort" : {
+      "comment" : "Compact checkable toolbar chip that makes the draft the final line of the story. Full instruction is spoken by VoiceOver.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siste linje"
           }
         }
       }

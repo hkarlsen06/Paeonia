@@ -37,7 +37,7 @@ struct StoryChainStoryView: View {
         ScrollView {
             page
                 .padding(.top, PaeoniaSpacing.space16)
-                .padding(.bottom, PaeoniaSpacing.space24)
+                .padding(.bottom, viewModel.bottomPhase == .writing ? PaeoniaSpacing.space8 : PaeoniaSpacing.space24)
         }
         .scrollPosition($position)
         .defaultScrollAnchor(opensAtTop ? .top : .bottom, for: .initialOffset)
