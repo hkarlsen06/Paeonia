@@ -4,6 +4,23 @@ import Testing
 
 @MainActor
 struct StoryChainLiveReactionTests {
+    @Test func aDraftFromTheCommandLinePartnerReachesThePage() async {
+        let environment = StoryChainTestEnvironment.waitingOnPartner()
+        let viewModel = environment.viewModel()
+        await viewModel.start()
+        defer { viewModel.stop() }
+        environment.connection.partnerJoins(role: "drawing")
+
+        let json = """
+        {"game":"story_chain","message":{"draft":{"_0":{
+          "story":"\(StoryChainFixture.storyID)","number":2,"text":"The key turned.","last":false,"sent":false
+        }}}}
+        """
+        environment.connection.onGameData?(Data(json.utf8))
+
+        #expect(viewModel.page.ghost?.text == "The key turned.")
+    }
+
     @Test func reactionsTravelBothWaysWithoutReplacingTheDraft() async throws {
         let writer = StoryChainTestEnvironment.myTurnAfterPartner()
         let reader = StoryChainTestEnvironment.waitingOnPartner()

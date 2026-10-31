@@ -156,7 +156,7 @@ switch (command) {
     console.log("commands: state | ensure | start <1|2|3|own> | line [--last] [--dare <1|2|3|word>] <text> | name <title> | seen | type [--last] <text>");
 }
 
-/** The app's `StoryChainLiveMessage` on the wire. Keep the keys in step with the Swift type. */
+/** The app's StoryChainRoomMessage.draft case, including Swift's associated-value key. */
 function liveMessage({ story, number, text, isLast, lineId, sent }) {
-  return { story, number, text, last: isLast, ...(lineId ? { line: lineId } : {}), sent };
+  return { draft: { _0: { story, number, text, last: isLast, ...(lineId ? { line: lineId } : {}), sent } } };
 }
