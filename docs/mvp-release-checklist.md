@@ -336,7 +336,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Relationship end/account deletion removes location visibility.
 - [x] App Store privacy labels include precise location.
 - [x] Privacy policy explains opt-in latest-location sharing, no history, stale timestamps, pausing, and deletion behavior clearly.
-- [ ] Home looks right when OpenFreeMap is down. Paeonia keeps OpenFreeMap: it is free, allows commercial use and needs no key or logo, but one person runs it and it promises no uptime. Paid providers and self-hosted or bundled map data were ruled out on 2026-10-31. On the simulator with the style URL unreachable, Home showed the cards, the avatars and the distance on the plain background. Gap: the avatars then sit side by side with the heart, as if the couple were together, and the map credit under the cards still shows.
+- [x] Home keeps OpenFreeMap, with credits behind the info button beside the last-update time. An online load failure switches Home to the MapKit card below the calendar and drawing for at least three hours. Recovery checks include a map tile. Offline keeps the header and places the avatars apart when their locations are apart. Both transition animations, offline placement, credit links, the largest text size and an open note during recovery were checked on a shared simulator, 2026-11-01. Paid providers, self-hosted maps and bundled map data remain ruled out.
 - [x] The privacy policy names the map providers, OpenFreeMap for Home's map and Apple Maps for the map card, and says they receive the IP address and roughly which area a phone shows. `legal.en.ts` and `legal.no.ts`, updated 2026-10-31.
 
 ## Notifications
