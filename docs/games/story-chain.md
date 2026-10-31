@@ -224,7 +224,7 @@ The page is the heart of the game, so it gets the care a book would.
 - The page, then the composer as the last paragraph of the page: a borderless serif field in my ink, placeholder "What happens next? One or two sentences." in `.paeoniaTextTertiary`. On line 1 without an opening the placeholder is "Write the first line."
 - Above the field, when my partner dared me: a capsule "Use the word LIGHTHOUSE" with an empty `circle`, gold outline. The circle turns to `checkmark.circle.fill` in `.paeoniaSuccess` once the draft contains the word, with `selection()`.
 - Live row above the composer: a 24 pt portrait with the shared presence ring whenever the partner has the game open. The text says "[Name] is reading along" while the partner is `watching`, "[Name] is here" for other present roles, and "[Name] will read it later" when away.
-- A compact toolbar sits directly under the draft, above the keyboard. Its quiet filled chips are "+ Give a word", or the chosen word with a remove button, and a checkable "Last line" from line 8. The selected last-line chip has a pink check and fill. The counter appears immediately before the round Send arrow from 200 characters, turning `.paeoniaErrorText` past 240. All controls keep at least 44 pt hit targets. Long words and larger text sizes wrap the controls into more rows, with Send at the right. VoiceOver keeps the full partner-specific word instruction and last-line instruction.
+- A compact toolbar sits directly under the draft, above the keyboard. Its quiet filled chips are "+ Give a word", or the chosen word with a remove button, and a checkable "Last line?" from line 8. The selected last-line chip has a pink check and fill. The counter appears immediately before the round Send arrow from 200 characters, turning `.paeoniaErrorText` past 240. All controls keep at least 44 pt hit targets. Long words and larger text sizes wrap the controls into more rows, with Send at the right. VoiceOver keeps the full partner-specific word instruction and last-line instruction.
 - The dare picker is a sheet at `.medium` detent: title "Give [Name] a word", subtitle "Their next line has to use it.", three word rows, and "Your own word" with a field. Choosing closes the sheet.
 - Send is off with a hint line under the field: "Use LIGHTHOUSE to send." when the dare is missing, nothing otherwise.
 - A line sent offline shows in the page with the offline line "Saved on this phone. We'll send it when you're online."
@@ -244,7 +244,7 @@ The page is the heart of the game, so it gets the care a book would.
 | `write.dareChip` | [Name] must use %@ | [Name] må bruke %@ |
 | `write.dareRemove.a11y` | Remove the word | Fjern ordet |
 | `write.lastLine` | Make this the last line | Gjør dette til siste linje |
-| `write.lastLineShort` | Last line | Siste linje |
+| `write.lastLineShort` | Last line? | Siste linje? |
 | `write.send` | Send | Send |
 | `write.send.a11y` | Send to [Name] | Send til [Name] |
 | `write.count.a11y` | %1$lld of %2$lld characters | %1$lld av %2$lld tegn |

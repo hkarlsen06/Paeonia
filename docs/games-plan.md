@@ -18,7 +18,7 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 Decided on 2026-10-31.
 
 - Story Chain skips the arrival animation for a line watched live during this visit and for the writer's own line. A pause in typing does not replay a watched line. A partner's line missed while away still writes itself in. The story and title fields explicitly enable system autocorrect.
-- Story Chain keeps optional writing controls in a compact toolbar beneath the draft and above the keyboard. Give a word and Last line are quiet filled chips, with the counter beside Send. Long words and larger text sizes wrap the controls while keeping their tap targets and full accessibility labels.
+- Story Chain keeps optional writing controls in a compact toolbar beneath the draft and above the keyboard. "Give a word" and "Last line?" are quiet filled chips, with the counter beside Send. Long words and larger text sizes wrap the controls while keeping their tap targets and full accessibility labels.
 
 - Guess my spot uses a compact reveal card. The verdict centers above a square photo at the bottom left and scores on the right. The totals share the right edge, and earned points sit directly above their total. The distance stays above the map. Chat and Your turn share one button row, with Continue for the sender. The overview uses the full map while the controls are hidden, and the landing keeps the destination pin above them.
 

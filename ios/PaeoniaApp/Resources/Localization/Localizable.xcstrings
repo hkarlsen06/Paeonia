@@ -36615,13 +36615,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Last line"
+            "value" : "Last line?"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Siste linje"
+            "value" : "Siste linje?"
           }
         }
       }
