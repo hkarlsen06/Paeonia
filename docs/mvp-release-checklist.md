@@ -336,7 +336,8 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Relationship end/account deletion removes location visibility.
 - [x] App Store privacy labels include precise location.
 - [x] Privacy policy explains opt-in latest-location sharing, no history, stale timestamps, pausing, and deletion behavior clearly.
-- [ ] Home's map draws with no outside map service. The app bundles the map style and a world map down to country level (zoom 6, 37 MB), and reads closer zooms from a map file Paeonia hosts on Cloudflare R2. Gap: `HomeMapLibreView.styleURL` loads the style and every tile from OpenFreeMap, a free service with one maintainer and no uptime promise. MapLibre 6.31 reads PMTiles from the bundle or a URL. On 2026-10-31 the Protomaps world build, cut to the layers Home draws (land, water, greenery, main roads), measured 37 MB to zoom 6, 160 MB to zoom 7 and 457 MB to zoom 8. Estimated from samples: about 10 GB to zoom 12, and about 25 GB to zoom 14 without buildings (42 GB with them). The Protomaps layer names differ from OpenFreeMap's, so `HomeMapLibreView+PlumStyle.swift` changes with it.
+- [ ] Home's map tiles come from a paid map provider whose terms allow a paid app and promise uptime. Your call: which provider. `HomeMapLibreView.styleURL` loads the style and every tile from OpenFreeMap, a free service with one maintainer and no uptime promise. Self-hosting tiles and shipping map data in the app were ruled out on 2026-10-31. Stadia Maps and MapTiler serve tiles in the OpenMapTiles schema that OpenFreeMap uses, so `HomeMapLibreView+PlumStyle.swift` should carry over.
+- [ ] The privacy policy names the map provider and says it receives the IP address and the map areas a phone loads, which show roughly where both partners are. Gap: `marketing/src/lib/i18n/dictionaries/legal.en.ts` and `legal.no.ts` list Apple, Google, Clerk, Cloudflare, PostHog and the server in Leipzig, but not OpenFreeMap.
 
 ## Notifications
 
