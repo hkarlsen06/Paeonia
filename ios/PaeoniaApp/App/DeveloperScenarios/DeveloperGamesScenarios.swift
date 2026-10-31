@@ -261,6 +261,7 @@
         connection.onStart = { simulatePartner(on: $0, role: .choosing, canvas: nil) }
       case .drawWatchingLive, .drawRevealPartnerDrawing:
         connection.partnerRole = .drawing
+        connection.partnerCanvas = DeveloperGamesFixture.umbrella()
         connection.onStart = { simulatePartner(on: $0, role: .drawing, canvas: DeveloperGamesFixture.umbrella()) }
       default:
         break
@@ -304,19 +305,6 @@
           snapshot: true
         ))
       }
-    }
-  }
-
-  /// Rejoins the simulated room after foregrounding, like a real relay connection.
-  private final class DeveloperGameLiveConnection: WidgetLiveConnection {
-    var onStart: ((WidgetLiveConnection) -> Void)?
-    var partnerRole: WidgetLivePresence.Role?
-
-    override func start() { onStart?(self) }
-
-    override func send(_ message: WidgetLiveMessage) {
-      guard message.type == .hello, message.needsCanvas != true, let partnerRole else { return }
-      onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: partnerRole.rawValue))
     }
   }
 
