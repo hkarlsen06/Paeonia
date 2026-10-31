@@ -85,16 +85,11 @@ struct GameOptionRow: View {
             }
             .padding(PaeoniaSpacing.cardContentPadding)
             .frame(minHeight: PaeoniaSpacing.buttonHeight)
-            .background(isSelected ? .paeoniaSurfacePrimary : .paeoniaSurfaceSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                    .strokeBorder(
-                        isSelected ? .paeoniaAccentPrimary : .paeoniaSurfacePressed,
-                        lineWidth: isSelected ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeHairline
-                    )
-            }
-            .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+            .gameRowSurface(
+                fill: isSelected ? .paeoniaSurfacePrimary : .paeoniaSurfaceSecondary,
+                border: isSelected ? .paeoniaAccentPrimary : .paeoniaSurfacePressed,
+                borderWidth: isSelected ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeHairline
+            )
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])

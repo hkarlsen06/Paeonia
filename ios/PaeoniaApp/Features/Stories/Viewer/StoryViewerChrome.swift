@@ -1,5 +1,27 @@
 import SwiftUI
 
+struct StoryViewerTopBar: View {
+    let story: Story
+    let people: StoryPeople
+    let mode: StoryViewerContent.Mode
+    let count: Int
+    let index: Int
+    let progress: Double
+    let onShare: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            if mode == .home {
+                StoryProgressBars(count: count, index: index, progress: progress)
+            }
+            StoryViewerHeader(story: story, people: people, mode: mode, onShare: onShare, onClose: onClose)
+        }
+        .padding(PaeoniaSpacing.space8)
+        .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
+    }
+}
+
 /// One bar per story at the top of the viewer. Bars before the current one are full.
 struct StoryProgressBars: View {
     let count: Int

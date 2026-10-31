@@ -15,7 +15,7 @@ struct SettingsActionRow: View {
             HStack {
                 Label {
                     Text(title)
-                        .foregroundStyle(role == .destructive ? Color.paeoniaError : Color.paeoniaTextPrimary)
+                        .foregroundStyle(role == .destructive ? Color.paeoniaErrorText : Color.paeoniaTextPrimary)
                 } icon: {
                     Image(systemName: systemImage)
                 }

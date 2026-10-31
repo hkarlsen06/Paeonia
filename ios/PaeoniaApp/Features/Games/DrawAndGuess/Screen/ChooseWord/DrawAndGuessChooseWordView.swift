@@ -202,16 +202,11 @@ struct DrawAndGuessWordRow: View {
         }
         .padding(PaeoniaSpacing.cardContentPadding)
         .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
-        .background(.paeoniaSurfaceSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                .strokeBorder(
-                    isSelected ? .paeoniaAccentPrimary : .clear,
-                    lineWidth: PaeoniaRadius.strokeEmphasis
-                )
-        }
-        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+        .gameRowSurface(
+            fill: .paeoniaSurfaceSecondary,
+            border: isSelected ? .paeoniaAccentPrimary : .clear,
+            borderWidth: PaeoniaRadius.strokeEmphasis
+        )
     }
 
     /// One, two or three flowers, as many as the word is worth.

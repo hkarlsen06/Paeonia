@@ -151,13 +151,9 @@ struct StoryViewer: View {
 
     private func overlay(for story: Story) -> some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            if content.mode == .home {
-                StoryProgressBars(count: stories.count, index: index, progress: playsOnItsOwn ? progress : 1)
-            }
-            StoryViewerHeader(
-                story: story,
-                people: people,
-                mode: content.mode,
+            StoryViewerTopBar(
+                story: story, people: people, mode: content.mode,
+                count: stories.count, index: index, progress: playsOnItsOwn ? progress : 1,
                 onShare: { shareable = StoryShare.shareable(for: story, people: people) },
                 onClose: { dismiss() }
             )
@@ -169,14 +165,18 @@ struct StoryViewer: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, PaeoniaSpacing.space16)
                     .padding(.vertical, PaeoniaSpacing.space12)
-                    .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
+                    .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
             }
-            StoryReactionBar(story: story, people: people)
-            if people.isOwn(story) {
-                ownFooter(for: story)
-            } else if chatContext.isAvailable {
-                replyBar(for: story)
+            VStack(spacing: PaeoniaSpacing.space12) {
+                StoryReactionBar(story: story, people: people)
+                if people.isOwn(story) {
+                    ownFooter(for: story)
+                } else if chatContext.isAvailable {
+                    replyBar(for: story)
+                }
             }
+            .padding(PaeoniaSpacing.space8)
+            .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
         }
         .padding(.horizontal, PaeoniaSpacing.space16)
         .padding(.top, PaeoniaSpacing.space8)

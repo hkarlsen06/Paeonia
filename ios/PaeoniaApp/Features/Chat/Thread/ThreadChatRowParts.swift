@@ -16,7 +16,7 @@ struct ThreadChatPayloadFrameKey: PreferenceKey {
 /// Rounded bubbles whose corners tighten where they join the next or previous
 /// message from the same person.
 enum ThreadChatBubbleShape {
-    private static let radius: CGFloat = 20
+    private static let radius = PaeoniaRadius.radius20
     private static let joinedRadius: CGFloat = 6
 
     static func shape(for context: ThreadChatGroupContext) -> UnevenRoundedRectangle {
@@ -76,7 +76,7 @@ struct ThreadChatQuotedMessage: View {
             .fixedSize(horizontal: false, vertical: true)
             .background(
                 .paeoniaSurfaceSecondary.opacity(0.72),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
             )
         }
         .buttonStyle(.plain)

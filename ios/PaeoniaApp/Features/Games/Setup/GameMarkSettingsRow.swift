@@ -59,13 +59,11 @@ struct GameMarkSettingsRow: View {
         }
         .padding(PaeoniaSpacing.cardContentPadding)
         .frame(minHeight: PaeoniaSpacing.buttonHeight)
-        .background(.paeoniaSurfaceSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                .strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeHairline)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
+        .gameRowSurface(
+            fill: .paeoniaSurfaceSecondary,
+            border: .paeoniaSurfacePressed,
+            borderWidth: PaeoniaRadius.strokeHairline
+        )
     }
 
     private var isEditing: Binding<Bool> {

@@ -53,9 +53,9 @@ struct PaywallBottomCTAView: View {
             .multilineTextAlignment(.center)
             .foregroundStyle(looksEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary)
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 56)
+            .frame(minHeight: PaeoniaSpacing.buttonHeight)
             .background(primaryButtonBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled || isDone)

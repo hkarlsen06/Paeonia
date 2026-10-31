@@ -66,7 +66,7 @@ struct DailyAnswerTextField: View {
         if length > limit - min(200, limit / 4) {
             Text(verbatim: "\(length.formatted()) / \(limit.formatted())")
                 .font(PaeoniaTypography.caption.monospacedDigit())
-                .foregroundStyle(length > limit ? Color.paeoniaError : colors.secondary)
+                .foregroundStyle(length > limit ? Color.paeoniaErrorText : colors.secondary)
                 .accessibilityLabel(Text(.dailyChallengeTextAnswerCharacterCount(length, limit)))
         }
     }

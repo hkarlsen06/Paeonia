@@ -6,6 +6,7 @@
   --color-brand-gradient-mid: hsl(333 80% 72%);
   --color-brand-gradient-end: hsl(342 70% 64%);
   --color-brand-highlight: hsl(333 80% 72%);
+  --color-brand-pink: #ef5094;
   --color-surface-primary: hsl(325 50% 13%);
   --color-surface-secondary: hsl(327 42% 18%);
   --color-text-primary: hsl(326 60% 99%);
@@ -23,47 +24,19 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: hsl(var(--border));
+    border-color: var(--color-border-subtle);
   }
 }
 
 @layer utilities {
   :root {
     color-scheme: dark;
-    --background: 323 56% 10%;
-    --foreground: 326 60% 99%;
-    --primary: 333 80% 72%;
-    --primary-foreground: 323 58% 12%;
-    --secondary: 327 42% 18%;
-    --secondary-foreground: 326 60% 99%;
-    --muted: 327 30% 22%;
-    --muted-foreground: 326 14% 72%;
-    --accent: 327 42% 18%;
-    --accent-foreground: 326 60% 99%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 326 60% 99%;
-    --border: 327 22% 28%;
-    --input: 327 22% 28%;
-    --ring: 333 80% 72%;
-    --surface-primary: 325 50% 13%;
-    --surface-secondary: 327 42% 18%;
-    --background-secondary: 324 56% 8%;
-    --text-primary: 326 60% 99%;
-    --text-secondary: 330 30% 92%;
-    --text-muted: 326 14% 72%;
-    --text-inverse: 323 58% 12%;
-    --border-subtle: 327 22% 30%;
-    --brand-highlight: 333 80% 72%;
-    --shadow-color: 324 56% 4% / 0.3;
-    --shadow-color-strong: 324 56% 4% / 0.5;
-    --hero-initial-dvh: 100dvh;
-    --radius: 14px;
   }
 }
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    border-color: var(--color-border-subtle);
   }
 
   html {
@@ -71,7 +44,7 @@
   }
 
   body {
-    background-color: hsl(var(--background));
+    background-color: var(--color-background);
     background-image: radial-gradient(
       ellipse 130% 80% at 50% -15%,
       hsl(334 83% 63% / 0.16),
@@ -79,7 +52,7 @@
     );
     background-repeat: no-repeat;
     background-size: 100% 44rem;
-    color: hsl(var(--foreground));
+    color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-family:
@@ -92,7 +65,7 @@
   h4,
   h5,
   h6 {
-    color: hsl(var(--text-primary));
+    color: var(--color-text-primary);
     font-weight: 600;
     letter-spacing: -0.03em;
   }
@@ -100,7 +73,7 @@
   p {
     font-size: 0.875rem;
     line-height: 1.25rem;
-    color: hsl(var(--text-secondary));
+    color: var(--color-text-secondary);
   }
 }
 
@@ -115,7 +88,7 @@
 .page-shell {
   width: min(calc(100% - 40px), 760px);
   margin: clamp(32px, 6vw, 72px) auto clamp(64px, 10vw, 116px);
-  color: hsl(var(--text-primary));
+  color: var(--color-text-primary);
 }
 
 .page-shell.narrow {
@@ -135,7 +108,7 @@
 .page-shell p {
   font-size: 1rem;
   line-height: 1.7;
-  color: hsl(var(--text-secondary));
+  color: var(--color-text-secondary);
 }
 
 .lede {
@@ -143,7 +116,7 @@
   margin: 20px 0 0;
   font-size: 1.1rem;
   line-height: 1.65;
-  color: hsl(var(--text-secondary));
+  color: var(--color-text-secondary);
 }
 
 .label {
@@ -170,7 +143,7 @@
   padding: 0 24px;
   border-radius: 999px;
   background: var(--color-brand-highlight);
-  color: hsl(var(--text-inverse));
+  color: var(--color-text-inverse);
   font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
@@ -185,8 +158,8 @@
 
 .button.secondary {
   background: transparent;
-  color: hsl(var(--text-primary));
-  box-shadow: inset 0 0 0 1px hsl(333 80% 72% / 0.4);
+  color: var(--color-text-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-brand-highlight) 40%, transparent);
 }
 
 /* Invite fallback: a direct continuation surface, not another marketing panel. */
@@ -204,7 +177,7 @@
   align-items: center;
   align-self: flex-start;
   gap: 10px;
-  color: hsl(var(--text-primary));
+  color: var(--color-text-primary);
   font-size: 18px;
   font-weight: 650;
   letter-spacing: -0.03em;
@@ -235,7 +208,7 @@
 }
 
 .join-opening {
-  color: hsl(var(--text-muted)) !important;
+  color: var(--color-text-muted) !important;
 }
 
 .join-code {
@@ -243,20 +216,20 @@
   width: 100%;
   margin-top: 36px;
   padding: 18px 0;
-  border-top: 1px solid hsl(var(--border));
-  border-bottom: 1px solid hsl(var(--border));
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
   align-items: baseline;
   justify-content: space-between;
   gap: 20px;
 }
 
 .join-code span {
-  color: hsl(var(--text-muted));
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
 .join-code strong {
-  color: hsl(var(--text-primary));
+  color: var(--color-text-primary);
   font-size: 1.3rem;
   letter-spacing: 0.12em;
 }
@@ -287,7 +260,7 @@
 
 .join-primary {
   background: var(--color-brand-highlight);
-  color: hsl(var(--text-inverse));
+  color: var(--color-text-inverse);
 }
 
 .join-primary:hover {
@@ -295,18 +268,18 @@
 }
 
 .join-secondary {
-  border: 1px solid hsl(var(--border));
-  color: hsl(var(--text-primary));
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
 }
 
 .join-secondary:hover {
-  border-color: hsl(333 80% 72% / 0.6);
-  background: hsl(var(--surface-secondary));
+  border-color: color-mix(in srgb, var(--color-brand-highlight) 60%, transparent);
+  background: var(--color-surface-secondary);
 }
 
 .join-note {
   margin-top: 16px;
-  color: hsl(var(--text-secondary));
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -314,7 +287,7 @@
 .join-help {
   min-height: 44px;
   margin-top: 16px;
-  color: hsl(var(--text-secondary));
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
   line-height: 44px;
 }
@@ -335,7 +308,7 @@
 
 .legal-content section {
   padding-top: 24px;
-  border-top: 1px solid hsl(327 22% 30% / 0.5);
+  border-top: 1px solid color-mix(in srgb, var(--color-border-subtle) 50%, transparent);
 }
 
 .legal-content section > * + * {

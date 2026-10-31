@@ -125,7 +125,7 @@ struct ThreadChatAttachmentDrawer: View {
             .photosPickerDisabledCapabilities(.selectionActions)
             .photosPickerAccessoryVisibility(.hidden)
             .frame(height: Self.pickerHeight)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
 
             HStack(spacing: PaeoniaSpacing.space8) {
                 tile(systemImage: "photo.on.rectangle", title: .dailyChatComposerLibrary) {
@@ -138,7 +138,7 @@ struct ThreadChatAttachmentDrawer: View {
             }
         }
         .padding(PaeoniaSpacing.space8)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
     }
 
     private func tile(
@@ -157,7 +157,7 @@ struct ThreadChatAttachmentDrawer: View {
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(
                 Color.paeoniaTextPrimary.opacity(0.08),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
             )
         }
         .buttonStyle(.plain)
@@ -190,7 +190,8 @@ struct ThreadChatStagedPhotosRow: View {
             photo: item.photo,
             size: CGSize(width: side, height: side),
             shape: UnevenRoundedRectangle(cornerRadii: .init(
-                topLeading: 14, bottomLeading: 14, bottomTrailing: 14, topTrailing: 14
+                topLeading: PaeoniaRadius.radius16, bottomLeading: PaeoniaRadius.radius16,
+                bottomTrailing: PaeoniaRadius.radius16, topTrailing: PaeoniaRadius.radius16
             ), style: .continuous)
         )
         .overlay(alignment: .topTrailing) {

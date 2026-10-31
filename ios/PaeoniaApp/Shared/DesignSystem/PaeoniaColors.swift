@@ -17,6 +17,7 @@ nonisolated private enum PaeoniaPaletteHex {
     static let plumSurfaceLow: UInt32 = 0x43_1A_30
     static let plumRaised: UInt32 = 0x4F_20_3A
     static let plumPressed: UInt32 = 0x5C_2A_47
+    static let outgoingMessage: UInt32 = 0x68_1B_3C
 
     static let petalLight: UInt32 = 0xF2_7E_B2
     static let pink: UInt32 = 0xEF_50_94
@@ -46,6 +47,7 @@ nonisolated private enum PaeoniaPalette {
     static let plumSurfaceLow = Color(paeoniaHex: PaeoniaPaletteHex.plumSurfaceLow)
     static let plumRaised = Color(paeoniaHex: PaeoniaPaletteHex.plumRaised)
     static let plumPressed = Color(paeoniaHex: PaeoniaPaletteHex.plumPressed)
+    static let outgoingMessage = Color(paeoniaHex: PaeoniaPaletteHex.outgoingMessage)
 
     // Pink / petal accents.
     static let petalLight = Color(paeoniaHex: PaeoniaPaletteHex.petalLight)
@@ -79,6 +81,7 @@ nonisolated extension Color {
     static let paeoniaSurfaceSecondary = PaeoniaPalette.plumSurfaceLow
     static let paeoniaSurfacePressed = PaeoniaPalette.plumPressed
     static let paeoniaSurfaceDisabled = PaeoniaPalette.plumSurfaceLow
+    static let paeoniaOutgoingMessage = PaeoniaPalette.outgoingMessage
 
     static let paeoniaTextPrimary = PaeoniaPalette.blush
     static let paeoniaTextSecondary = PaeoniaPalette.blush.opacity(0.74)

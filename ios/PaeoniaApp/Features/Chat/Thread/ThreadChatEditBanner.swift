@@ -20,7 +20,7 @@ struct ThreadChatEditBanner: View {
         .padding(.vertical, PaeoniaSpacing.space8)
         .padding(.trailing, PaeoniaSpacing.space32)
         .frame(minHeight: 44)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
         .overlay(alignment: .trailing) {
             Button(action: onCancel) {
                 Image(systemName: "xmark")

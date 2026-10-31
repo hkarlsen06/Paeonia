@@ -18,7 +18,7 @@
   // One sticker per feature and extra, in dictionary order.
   const featureArt = ['envelope', 'photo-stack'];
   const featureTints = [
-    'bg-[radial-gradient(120%_90%_at_100%_0%,rgba(239,80,148,0.22),transparent_60%),linear-gradient(180deg,#3a1030,#2a0b24)]',
+    'bg-[radial-gradient(120%_90%_at_100%_0%,color-mix(in_srgb,var(--color-brand-pink)_22%,transparent),transparent_60%),linear-gradient(180deg,#3a1030,#2a0b24)]',
     'bg-[radial-gradient(120%_90%_at_0%_0%,rgba(167,139,250,0.22),transparent_60%),linear-gradient(180deg,#2f1238,#240b2a)]',
   ];
   const extraArt = ['calendar', 'pencil', 'heart', 'peony-bud'];
@@ -38,7 +38,7 @@
   <a
     href={mailtoHref}
     class={[
-      'inline-flex h-13 items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-white px-7 text-base font-semibold text-text-inverse shadow-[0_8px_32px_rgba(239,80,148,0.35)] transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]',
+      'inline-flex h-13 items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-white px-7 text-base font-semibold text-text-inverse shadow-[0_8px_32px_color-mix(in_srgb,var(--color-brand-pink)_35%,transparent)] transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]',
       className,
     ]}
   >
@@ -51,7 +51,7 @@
   <div
     aria-hidden="true"
     class={[
-      'pointer-events-none absolute -z-10 rounded-full bg-[radial-gradient(circle,rgba(239,80,148,0.42),rgba(239,80,148,0.16)_40%,transparent_70%)]',
+      'pointer-events-none absolute -z-10 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-brand-pink)_42%,transparent),color-mix(in_srgb,var(--color-brand-pink)_16%,transparent)_40%,transparent_70%)]',
       className,
     ]}
   ></div>
@@ -97,7 +97,7 @@
         <div>
           <h1 class="text-balance text-[2.75rem] font-semibold leading-[1.04] tracking-[-0.04em] sm:text-6xl lg:text-[4.5rem] xl:text-[5rem]">
             {titleStart}<em
-              class="bg-[linear-gradient(100deg,#f59ac4,#ef5094_45%,#c4a1ff)] bg-clip-text not-italic text-transparent">{hero.titleEmphasis}</em
+              class="bg-[linear-gradient(100deg,#f59ac4,var(--color-brand-pink)_45%,#c4a1ff)] bg-clip-text not-italic text-transparent">{hero.titleEmphasis}</em
             >{titleEnd}
           </h1>
           <p class="mt-6 max-w-[34ch] text-pretty text-lg leading-relaxed text-text-secondary sm:text-xl">
@@ -141,7 +141,7 @@
 
     <section id="games" aria-labelledby="games-heading" class="scroll-mt-4 overflow-x-clip px-3 pt-6 sm:px-6 lg:pt-12">
       <div
-        class="relative isolate mx-auto max-w-[78rem] overflow-hidden rounded-[2.5rem] bg-[radial-gradient(80%_60%_at_15%_0%,rgba(239,80,148,0.35),transparent_60%),radial-gradient(70%_60%_at_95%_20%,rgba(167,139,250,0.3),transparent_60%),linear-gradient(180deg,#4a1238,#2c0b28_70%)] px-5 py-14 ring-1 ring-white/10 sm:px-10 sm:py-20 lg:px-14"
+        class="relative isolate mx-auto max-w-[78rem] overflow-hidden rounded-[2.5rem] bg-[radial-gradient(80%_60%_at_15%_0%,color-mix(in_srgb,var(--color-brand-pink)_35%,transparent),transparent_60%),radial-gradient(70%_60%_at_95%_20%,rgba(167,139,250,0.3),transparent_60%),linear-gradient(180deg,#4a1238,#2c0b28_70%)] px-5 py-14 ring-1 ring-white/10 sm:px-10 sm:py-20 lg:px-14"
       >
         <img
           src={art('ludo')}
@@ -211,7 +211,7 @@
 
     <section
       aria-labelledby="moment-heading"
-      class="bg-[radial-gradient(ellipse_75%_50%_at_50%_50%,rgba(239,80,148,0.26),rgba(239,80,148,0.08)_45%,transparent_72%)] px-5 py-24 sm:px-8 sm:py-32"
+      class="bg-[radial-gradient(ellipse_75%_50%_at_50%_50%,color-mix(in_srgb,var(--color-brand-pink)_26%,transparent),color-mix(in_srgb,var(--color-brand-pink)_8%,transparent)_45%,transparent_72%)] px-5 py-24 sm:px-8 sm:py-32"
     >
       <div class="reveal mx-auto flex max-w-4xl flex-col items-center text-center">
         <img src={art('peony-pair')} alt="" loading="lazy" decoding="async" class="sticker-float w-44 drop-shadow-[0_20px_30px_rgba(10,2,8,0.5)] sm:w-56" />
@@ -227,7 +227,7 @@
 
     <section id="live" aria-labelledby="live-heading" class="scroll-mt-4 overflow-x-clip px-3 sm:px-6">
       <div
-        class="relative isolate mx-auto max-w-[78rem] overflow-hidden rounded-[2.5rem] bg-[radial-gradient(60%_70%_at_85%_40%,rgba(52,211,153,0.14),transparent_60%),radial-gradient(70%_60%_at_10%_100%,rgba(239,80,148,0.2),transparent_60%),linear-gradient(180deg,#1f0a22,#170819)] px-5 py-14 ring-1 ring-white/10 sm:px-10 sm:py-20 lg:px-14"
+        class="relative isolate mx-auto max-w-[78rem] overflow-hidden rounded-[2.5rem] bg-[radial-gradient(60%_70%_at_85%_40%,rgba(52,211,153,0.14),transparent_60%),radial-gradient(70%_60%_at_10%_100%,color-mix(in_srgb,var(--color-brand-pink)_20%,transparent),transparent_60%),linear-gradient(180deg,#1f0a22,#170819)] px-5 py-14 ring-1 ring-white/10 sm:px-10 sm:py-20 lg:px-14"
       >
         <div class="grid grid-cols-[minmax(0,1fr)] items-center gap-12 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-16">
           <div class="reveal">
@@ -260,7 +260,7 @@
                   class="live-notice absolute inset-x-0 top-0 flex items-center gap-3 rounded-2xl bg-white/90 p-2.5 pr-4 text-text-inverse shadow-[0_20px_40px_-12px_rgba(0,0,0,0.6)] backdrop-blur"
                   style:--delay={`${index * 3}s`}
                 >
-                  <img src={art('elena')} alt="" width="40" height="40" class="h-10 w-10 rounded-full ring-2 ring-[#ef5094]" />
+                  <img src={art('elena')} alt="" width="40" height="40" class="h-10 w-10 rounded-full ring-2 ring-brand-pink" />
                   <span class="flex-1 text-sm font-semibold">{event}</span>
                   <span class="flex items-center gap-1.5 text-xs text-text-inverse/60">
                     <span class="h-2 w-2 rounded-full bg-emerald-500"></span>

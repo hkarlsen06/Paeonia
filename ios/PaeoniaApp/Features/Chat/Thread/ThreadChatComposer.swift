@@ -367,7 +367,7 @@ extension ThreadChatComposer {
         .padding(.vertical, PaeoniaSpacing.space8)
         .padding(.trailing, PaeoniaSpacing.space32)
         .fixedSize(horizontal: false, vertical: true)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
         .overlay(alignment: .topTrailing) {
             Button(action: onCancelReply) {
                 Image(systemName: "xmark")

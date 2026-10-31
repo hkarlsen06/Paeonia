@@ -243,7 +243,7 @@ struct ThreadChatMessageRow: View {
     }
 
     private var bubbleFill: Color {
-        isCurrentUser ? .paeoniaAccentSecondary : .paeoniaSurfacePrimary
+        isCurrentUser ? .paeoniaOutgoingMessage : .paeoniaSurfacePrimary
     }
 
     private var bubbleMaxWidth: CGFloat {
@@ -417,10 +417,10 @@ extension ThreadChatMessageRow {
             case .failed:
                 Image(systemName: "exclamationmark.circle.fill")
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.paeoniaError)
+                    .foregroundStyle(.paeoniaErrorText)
                     .accessibilityHidden(true)
                 Text(.dailyChatStatusFailed)
-                    .foregroundStyle(.paeoniaError)
+                    .foregroundStyle(.paeoniaErrorText)
                 Button(action: onRetry) {
                     Text(.commonTryAgain)
                         .foregroundStyle(.paeoniaAccentPrimary)

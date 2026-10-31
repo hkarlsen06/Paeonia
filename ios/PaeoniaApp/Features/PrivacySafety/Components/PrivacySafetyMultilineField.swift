@@ -23,7 +23,7 @@ struct PrivacySafetyMultilineField: View {
             if charactersLeft <= Self.counterThreshold {
                 Text(.privacySafetyFieldCharactersLeft(charactersLeft.formatted()))
                     .font(PaeoniaTypography.caption)
-                    .foregroundStyle(charactersLeft == 0 ? .paeoniaError : .paeoniaTextSecondary)
+                    .foregroundStyle(charactersLeft == 0 ? .paeoniaErrorText : .paeoniaTextSecondary)
             }
         }
         .onChange(of: text) { _, newValue in
