@@ -60,6 +60,7 @@ struct MemoryEditorView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var loadingPhotoCount = 0
     @State private var isSaving = false
@@ -83,14 +84,16 @@ struct MemoryEditorView: View {
                 .navigationTitle(navigationTitle)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(role: .cancel) { cancel() } label: {
-                            Text(.commonCancel)
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(role: .cancel) { cancel() } label: {
+                                Text(.commonCancel)
+                            }
+                            .disabled(isSaving)
                         }
-                        .disabled(isSaving)
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        saveButton
+                        ToolbarItem(placement: .confirmationAction) {
+                            saveButton
+                        }
                     }
                 }
                 .alert(Text(.memoriesEditorDiscardTitle), isPresented: $isConfirmingDiscard) {
@@ -126,6 +129,12 @@ struct MemoryEditorView: View {
     private var form: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    navigationTitle
+                        .font(PaeoniaTypography.title)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 if isMemoryRemoved {
                     MemoryRemovedNotice(copyableText: draft.copyableText)
                 }
@@ -134,6 +143,7 @@ struct MemoryEditorView: View {
                 if allowsPhotos || !existingMedia.isEmpty {
                     MemoryEditorPhotosField(
                         photos: $draft.photos,
+                        existingDescriptions: $draft.existingDescriptions,
                         removedExistingMediaIDs: $removedExistingMediaIDs,
                         loadingPhotoCount: $loadingPhotoCount,
                         existingMedia: existingMedia,
@@ -147,6 +157,9 @@ struct MemoryEditorView: View {
                 dateField
                 MemoryPlaceField(place: $draft.place, photos: draft.photos, knownPlaces: knownPlaces)
                     .disabled(isSaving)
+                if dynamicTypeSize.isAccessibilitySize {
+                    accessibleActions
+                }
             }
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
             .padding(.top, PaeoniaSpacing.space16)
@@ -164,7 +177,7 @@ struct MemoryEditorView: View {
             placeholder: .memoriesEditorTitlePlaceholder,
             isFocused: $focusedField,
             field: .title,
-            axis: .horizontal,
+            lineLimit: nil,
             characterLimit: MemoryDataService.titleCharacterLimit
         )
         .submitLabel(.next)
@@ -172,11 +185,15 @@ struct MemoryEditorView: View {
     }
 
     private var dateField: some View {
-        HStack {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space8))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space16))
+        return layout {
             Text(.memoriesEditorDateLabel)
                 .font(PaeoniaTypography.body)
                 .foregroundStyle(.paeoniaTextPrimary)
-            Spacer(minLength: PaeoniaSpacing.space16)
+                .fixedSize(horizontal: false, vertical: true)
+            if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
             // A memory is something that already happened, so the latest choice is today.
             // The bound is the end of today: an edit's date sits at noon, which can still
             // be ahead of the clock in the morning.
@@ -226,6 +243,22 @@ struct MemoryEditorView: View {
         .disabled(!canSave || isSaving)
     }
 
+    /// Native navigation bars stay compact. These actions grow with the form at accessibility sizes.
+    private var accessibleActions: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            Button {
+                Task { await save() }
+            } label: {
+                Text(.memoriesEditorSave)
+            }
+            .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: isSaving))
+            .disabled(!canSave || isSaving)
+            Button(role: .cancel) { cancel() } label: { Text(.commonCancel) }
+                .buttonStyle(PaeoniaSecondaryButtonStyle())
+                .disabled(isSaving)
+        }
+    }
+
     /// While photos send, the title counts them, since saving can take a while.
     private var navigationTitle: Text {
         if isSaving, let uploadProgress {
@@ -248,6 +281,8 @@ struct MemoryEditorView: View {
 
     private var canSave: Bool {
         guard !isMemoryRemoved, loadingPhotoCount == 0 else { return false }
+        guard (draft.photos.map(\.accessibilityText) + Array(draft.existingDescriptions.values))
+            .allSatisfy({ $0.unicodeScalars.count <= 10_000 }) else { return false }
         guard !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return false
         }
@@ -262,7 +297,8 @@ struct MemoryEditorView: View {
 
     private var hasUnsavedEdits: Bool {
         guard mode == .edit, !isMemoryRemoved, let initialDraft else { return false }
-        return draft.title != initialDraft.title
+        return draft.existingDescriptions != initialDraft.existingDescriptions
+            || draft.title != initialDraft.title
             || draft.note != initialDraft.note
             || draft.place != initialDraft.place
             || !draft.photos.isEmpty

@@ -21,6 +21,17 @@ struct GuessMySpotPickView: View {
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             header
+            if viewModel.draftReadFailed {
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    Text(.guessMySpotDraftRestoreFailed)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                    Button(.commonTryAgain) { Task { await viewModel.retryDraftRestore() } }
+                        .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                        .accessibilityIdentifier("guessMySpot.draft.retry")
+                }
+                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            }
             picker
         }
         .onChange(of: selection) { _, item in
@@ -42,7 +53,6 @@ struct GuessMySpotPickView: View {
             send: viewModel.sendInvite,
             identifier: "guessMySpot.invite"
         )
-        .accessibilityIdentifier("guessMySpot.pick")
     }
 
     private var header: some View {

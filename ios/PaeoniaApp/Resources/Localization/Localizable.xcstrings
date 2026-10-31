@@ -4779,6 +4779,114 @@
         }
       }
     },
+    "chat.photoDraft.readFailed.message" : {
+      "comment" : "Recoverable error after a chat photo draft cannot be read. The saved files are retained.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try reopening this chat. The saved draft is still on this phone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prøv å åpne samtalen på nytt. Det lagrede utkastet er fortsatt på denne telefonen."
+          }
+        }
+      }
+    },
+    "chat.photoDraft.readFailed.title" : {
+      "comment" : "Error title when saved unsent chat photos and their text cannot be reopened.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't reopen your draft"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke åpne utkastet"
+          }
+        }
+      }
+    },
+    "chat.photoDraft.saveFailed.message" : {
+      "comment" : "The composer retains photos and text after a local draft write fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep this chat open and try sending again. Your unsent photos and text are still here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold samtalen åpen og prøv å sende på nytt. Bildene og teksten du ikke har sendt, er fortsatt her."
+          }
+        }
+      }
+    },
+    "chat.photoDraft.saveFailed.title" : {
+      "comment" : "Error title when photos and descriptions in the chat composer could not be saved as a draft.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your draft"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre utkastet"
+          }
+        }
+      }
+    },
+    "chat.voiceDraft.restoreFailed" : {
+      "comment" : "A saved private voice draft remains on disk but could not be opened for review.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We could not open your saved recording. Try opening this conversation again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vi kunne ikke åpne det lagrede opptaket. Prøv å åpne samtalen på nytt."
+          }
+        }
+      }
+    },
+    "chat.voiceDraft.saveFailed.message" : {
+      "comment" : "A local voice draft write or cleanup failed. Distinct from sending or reopening a saved recording.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep this chat open and try sending again. Your recording and transcript are still here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold samtalen åpen og prøv å sende på nytt. Opptaket og tekstversjonen er fortsatt her."
+          }
+        }
+      }
+    },
     "common.actionFailed.message" : {
       "comment" : "Message of a banner when an action, such as starting a game or sending an invite, failed. Shown when the phone is online but the server failed, so it must not blame the connection.",
       "extractionState" : "manual",
@@ -5069,6 +5177,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Slipp en brikke"
+          }
+        }
+      }
+    },
+    "connectFour.column.dropHere" : {
+      "comment" : "Native move button with a unique visible and spoken column number for Voice Control.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop in column %lld"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slipp i kolonne %lld"
           }
         }
       }
@@ -6095,6 +6221,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Du er ikke på nett"
+          }
+        }
+      }
+    },
+    "consensio.pin.position" : {
+      "comment" : "Owner, exact scale position measured from left and verbal endpoint description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$lld out of 100, %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$lld av 100, %3$@"
           }
         }
       }
@@ -10665,6 +10809,438 @@
         }
       }
     },
+    "drawing.compose.add" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add mark"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til merke"
+          }
+        }
+      }
+    },
+    "drawing.compose.circle" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Circle"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sirkel"
+          }
+        }
+      }
+    },
+    "drawing.compose.color" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Farge"
+          }
+        }
+      }
+    },
+    "drawing.compose.diagonal" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagonal line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagonal linje"
+          }
+        }
+      }
+    },
+    "drawing.compose.horizontal" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horizontal line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vannrett linje"
+          }
+        }
+      }
+    },
+    "drawing.compose.instructions" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add shapes to the drawing. Positions and sizes are percentages of the canvas. Marks near an edge move inward to fit. Select a mark to replace or remove it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legg til former i tegningen. Plassering og størrelse er prosent av tegneflaten. Merker nær kanten flyttes innover for å få plass. Velg et merke for å erstatte eller fjerne det."
+          }
+        }
+      }
+    },
+    "drawing.compose.mark" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark %d"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merke %d"
+          }
+        }
+      }
+    },
+    "drawing.compose.new" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New mark"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nytt merke"
+          }
+        }
+      }
+    },
+    "drawing.compose.rectangle" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Square"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kvadrat"
+          }
+        }
+      }
+    },
+    "drawing.compose.remove" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove selected mark"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern valgt merke"
+          }
+        }
+      }
+    },
+    "drawing.compose.replace" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replace selected mark"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstatt valgt merke"
+          }
+        }
+      }
+    },
+    "drawing.compose.selection" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit mark"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger merke"
+          }
+        }
+      }
+    },
+    "drawing.compose.shape" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shape"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Form"
+          }
+        }
+      }
+    },
+    "drawing.compose.size" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size: %d percent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Størrelse: %d prosent"
+          }
+        }
+      }
+    },
+    "drawing.compose.title" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build with shapes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lag med former"
+          }
+        }
+      }
+    },
+    "drawing.compose.triangle" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Triangle"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trekant"
+          }
+        }
+      }
+    },
+    "drawing.compose.vertical" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vertical line"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loddrett linje"
+          }
+        }
+      }
+    },
+    "drawing.compose.x" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position from left: %d percent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plassering fra venstre: %d prosent"
+          }
+        }
+      }
+    },
+    "drawing.compose.y" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position from top: %d percent"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plassering fra toppen: %d prosent"
+          }
+        }
+      }
+    },
+    "drawing.description.hint" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what you drew for your partner. This description is shared with the drawing."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv det du tegnet for partneren din. Beskrivelsen deles sammen med tegningen."
+          }
+        }
+      }
+    },
+    "drawing.description.title" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe this drawing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv tegningen"
+          }
+        }
+      }
+    },
+    "drawing.description.tooLong" : {
+      "comment" : "Validation shown beside a drawing description that exceeds the storage limit. Keep the entered text so the person can edit it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use 500 characters or fewer before sending."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk 500 tegn eller færre før du sender."
+          }
+        }
+      }
+    },
+    "drawing.geometry.mark" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark %1$d: center %2$d percent from left, %3$d percent from top; width %4$d percent, height %5$d percent."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merke %1$d: midtpunkt %2$d prosent fra venstre, %3$d prosent fra toppen, bredde %4$d prosent, høyde %5$d prosent."
+          }
+        }
+      }
+    },
+    "drawing.geometry.missing" : {
+      "comment" : "Accessible drawing composition and description. Percentages refer to the square drawing canvas.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No description added. Freehand content is not recognized."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen beskrivelse lagt til. Frihåndsinnhold blir ikke gjenkjent."
+          }
+        }
+      }
+    },
     "exquisiteCorpse.draw.body" : {
       "comment" : "Instruction on the drawing screen when the player draws the body of the creature.",
       "extractionState" : "manual",
@@ -12293,6 +12869,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi fikk ikke lagret svaret ditt"
+          }
+        }
+      }
+    },
+    "games.board.cell" : {
+      "comment" : "Board cell, row counted from top, column from left, followed by owner or empty.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Row %1$lld, column %2$lld, %3$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rad %1$lld, kolonne %2$lld, %3$@"
+          }
+        }
+      }
+    },
+    "games.board.controls" : {
+      "comment" : "Opens native controls and complete board state, as an alternative to gestures.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board controls"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brettkontroller"
+          }
+        }
+      }
+    },
+    "games.cell.empty" : {
+      "comment" : "State of an unoccupied board cell.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tom"
+          }
+        }
+      }
+    },
+    "games.cell.partner" : {
+      "comment" : "Owner of a game piece belonging to the partner.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your partner's"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partnerens"
+          }
+        }
+      }
+    },
+    "games.cell.yours" : {
+      "comment" : "Owner of a game piece belonging to the viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yours"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Din"
           }
         }
       }
@@ -15303,6 +15969,60 @@
         }
       }
     },
+    "games.drawing.description.clueHint" : {
+      "comment" : "Draw and Guess description authoring guidance. Do not disclose the secret answer automatically or encourage giving it away.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe the visible marks, shapes and colors without naming the secret answer. Your partner can read this when you send the drawing."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv synlige streker, former og farger uten å si det hemmelige svaret. Partneren din kan lese dette når du sender tegningen."
+          }
+        }
+      }
+    },
+    "games.drawing.description.partHint" : {
+      "comment" : "Odd Creatures description authoring guidance. Full part descriptions are never shared beside the clipped fold strip.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what you drew. This text stays hidden from your partner until the whole creature is revealed."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv det du tegnet. Teksten er skjult for partneren din til hele figuren er avslørt."
+          }
+        }
+      }
+    },
+    "games.drawing.description.retryMessage" : {
+      "comment" : "The partner solved live but the final drawing has not been queued because its description or the local save needs recovery. The author can review the description and retry without changing scoring.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your drawing hasn't been sent. You can review its description and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegningen er ikke sendt. Du kan se over beskrivelsen og prøve igjen."
+          }
+        }
+      }
+    },
     "games.drawing.loading" : {
       "comment" : "VoiceOver label of the spinner shown in the square while the drawing is still downloading.",
       "extractionState" : "manual",
@@ -17535,6 +18255,60 @@
         }
       }
     },
+    "guessMySpot.choosePlace" : {
+      "comment" : "Opens or confirms the native place selection alternative to tapping the map.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg et sted"
+          }
+        }
+      }
+    },
+    "guessMySpot.coordinate.help" : {
+      "comment" : "Coordinate limits and sign explanation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latitude is −90 to 90. Longitude is −180 to 180. Use a minus sign for south or west."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breddegrad er −90 til 90. Lengdegrad er −180 til 180. Bruk minustegn for sør eller vest."
+          }
+        }
+      }
+    },
+    "guessMySpot.draft.restoreFailed" : {
+      "comment" : "Recoverable local draft read or image decode failure. The app retains the private files.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your saved photo could not be opened. Try again or choose another photo. The draft is still on this phone."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det lagrede bildet kunne ikke åpnes. Prøv igjen eller velg et annet bilde. Utkastet er fortsatt på denne telefonen."
+          }
+        }
+      }
+    },
     "guessMySpot.guess.hint" : {
       "comment" : "Hint over the guess map before the first pin.",
       "extractionState" : "manual",
@@ -18207,6 +18981,42 @@
         }
       }
     },
+    "guessMySpot.latitude" : {
+      "comment" : "Signed latitude coordinate input.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latitude"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breddegrad"
+          }
+        }
+      }
+    },
+    "guessMySpot.longitude" : {
+      "comment" : "Signed longitude coordinate input.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Longitude"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lengdegrad"
+          }
+        }
+      }
+    },
     "guessMySpot.map.a11y" : {
       "comment" : "VoiceOver label of the map in Guess my spot.",
       "extractionState" : "manual",
@@ -18351,6 +19161,24 @@
         }
       }
     },
+    "guessMySpot.photoDescription.help" : {
+      "comment" : "Guidance for an authored scene description, separate from hidden map coordinates, place names and camera date.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what is visible without naming the location. Your partner can read this while guessing. The location and date stay hidden until the guess."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv det som er synlig uten å navngi stedet. Partneren din kan lese dette mens hen gjetter. Stedet og datoen holdes skjult til gjettet er låst."
+          }
+        }
+      }
+    },
     "guessMySpot.pick.subtitle" : {
       "comment" : "Subtitle over the camera roll. %@ is the partner's name.",
       "extractionState" : "manual",
@@ -18419,6 +19247,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vi fikk ikke åpnet det bildet. Prøv et annet."
+          }
+        }
+      }
+    },
+    "guessMySpot.place.search" : {
+      "comment" : "Place search field and search button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search for a place"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Søk etter et sted"
+          }
+        }
+      }
+    },
+    "guessMySpot.place.searchFailed" : {
+      "comment" : "Shown for empty or failed place search. Does not assume the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No places found. Try another search or enter coordinates."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fant ingen steder. Prøv et annet søk eller skriv inn koordinater."
           }
         }
       }
@@ -19683,6 +20547,24 @@
         }
       }
     },
+    "home.map.controls" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map controls"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartkontroller"
+          }
+        }
+      }
+    },
     "home.map.credits.label" : {
       "comment" : "VoiceOver label of the small info button next to the distance on Home's map. It opens who made the map.",
       "extractionState" : "manual",
@@ -19881,6 +20763,42 @@
         }
       }
     },
+    "home.map.faceNorth" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face north"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vis nord øverst"
+          }
+        }
+      }
+    },
+    "home.map.latitude" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latitude"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breddegrad"
+          }
+        }
+      }
+    },
     "home.map.locating.message" : {
       "comment" : "Map card message while the phone looks up the user's own location.",
       "extractionState" : "manual",
@@ -19917,6 +20835,42 @@
         }
       }
     },
+    "home.map.locationDetails" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location details"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stedsinformasjon"
+          }
+        }
+      }
+    },
+    "home.map.longitude" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Longitude"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lengdegrad"
+          }
+        }
+      }
+    },
     "home.map.openHint" : {
       "comment" : "Accessibility hint for the map tile on the Home tab; tapping opens the locations in the Maps app.",
       "extractionState" : "manual",
@@ -19931,6 +20885,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Åpner i Kart"
+          }
+        }
+      }
+    },
+    "home.map.openLocations" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open locations in Maps"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Åpne posisjonene i Kart"
+          }
+        }
+      }
+    },
+    "home.map.panDown" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move map down"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt kartet ned"
+          }
+        }
+      }
+    },
+    "home.map.panLeft" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move map left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt kartet til venstre"
+          }
+        }
+      }
+    },
+    "home.map.panRight" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move map right"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt kartet til høyre"
+          }
+        }
+      }
+    },
+    "home.map.panUp" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move map up"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt kartet opp"
           }
         }
       }
@@ -20237,6 +21281,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kan ikke vise kartet akkurat nå"
+          }
+        }
+      }
+    },
+    "home.map.yourLocation" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your location"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posisjonen din"
+          }
+        }
+      }
+    },
+    "home.map.zoomIn" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom in"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom inn"
+          }
+        }
+      }
+    },
+    "home.map.zoomOut" : {
+      "comment" : "Native Home map control or location detail label.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom ut"
           }
         }
       }
@@ -21393,6 +22491,42 @@
         }
       }
     },
+    "imageCrop.adjustFraming" : {
+      "comment" : "Button and sheet title for precise profile photo framing controls.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust framing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juster utsnitt"
+          }
+        }
+      }
+    },
+    "imageCrop.applyFraming" : {
+      "comment" : "Applies framing adjustments and returns to the cropper. Does not save or upload the photo yet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use framing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruk utsnitt"
+          }
+        }
+      }
+    },
     "imageCrop.done" : {
       "comment" : "Button title that confirms the selected image crop.",
       "extractionState" : "manual",
@@ -21411,6 +22545,294 @@
         }
       }
     },
+    "imageCrop.framingInstructions" : {
+      "comment" : "Instructions for native crop framing controls. Position percentages describe the crop within the photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adjust the part of your photo to keep. Horizontal position runs from left to right. Vertical position runs from top to bottom. Zoom in to make more room to move."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg delen av bildet du vil beholde. Vannrett posisjon går fra venstre til høyre. Loddrett posisjon går fra topp til bunn. Zoom inn for å få mer plass til å flytte utsnittet."
+          }
+        }
+      }
+    },
+    "imageCrop.horizontalPosition" : {
+      "comment" : "Position of the crop across the photo. Zero percent is the left edge and 100 percent is the right edge.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horizontal position"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vannrett posisjon"
+          }
+        }
+      }
+    },
+    "imageCrop.preview" : {
+      "comment" : "Accessibility label for the current square profile photo crop preview.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo preview"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forhåndsvisning av bildet"
+          }
+        }
+      }
+    },
+    "imageCrop.resetFraming" : {
+      "comment" : "Button that restores the largest centered square crop of the same photo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Center and zoom out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Midtstill og zoom ut"
+          }
+        }
+      }
+    },
+    "imageCrop.verticalPosition" : {
+      "comment" : "Position of the crop down the photo. Zero percent is the top edge and 100 percent is the bottom edge.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vertical position"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loddrett posisjon"
+          }
+        }
+      }
+    },
+    "imageCrop.zoom" : {
+      "comment" : "Magnification of the photo within its square crop. One shows the largest square crop.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom"
+          }
+        }
+      }
+    },
+    "imageViewer.fit" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fit image"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilpass bildet"
+          }
+        }
+      }
+    },
+    "imageViewer.loadFailed" : {
+      "comment" : "Full-screen photo load failure with no evidence of being offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo could not load. Try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet kunne ikke lastes inn. Prøv igjen."
+          }
+        }
+      }
+    },
+    "imageViewer.loading" : {
+      "comment" : "Accessible progress while a full-size photo loads.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster bildet"
+          }
+        }
+      }
+    },
+    "imageViewer.loadOffline" : {
+      "comment" : "Full-screen photo load failure only after an actual offline error.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo could not load because you are offline. Try again when you have a connection."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet kunne ikke lastes inn fordi du er frakoblet. Prøv igjen når du har nett."
+          }
+        }
+      }
+    },
+    "imageViewer.move" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt bildet"
+          }
+        }
+      }
+    },
+    "imageViewer.move.down" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move down"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt ned"
+          }
+        }
+      }
+    },
+    "imageViewer.move.left" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move left"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt til venstre"
+          }
+        }
+      }
+    },
+    "imageViewer.move.right" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move right"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt til høyre"
+          }
+        }
+      }
+    },
+    "imageViewer.move.up" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move up"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flytt opp"
+          }
+        }
+      }
+    },
+    "imageViewer.next" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste bilde"
+          }
+        }
+      }
+    },
     "imageViewer.pageCounter" : {
       "comment" : "Page counter in the full-screen photo viewer. First value is the current photo number, second is the total, e.g. 2 of 5",
       "extractionState" : "manual",
@@ -21425,6 +22847,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ av %2$@"
+          }
+        }
+      }
+    },
+    "imageViewer.previous" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forrige bilde"
           }
         }
       }
@@ -21465,6 +22905,42 @@
         }
       }
     },
+    "imageViewer.saveFailed" : {
+      "comment" : "Recoverable failure when saving a photo, without inferring an offline connection.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo could not be saved. Try Save to Photos again. Your photo is still here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet kunne ikke lagres. Prøv Lagre i Bilder igjen. Bildet ditt er fortsatt her."
+          }
+        }
+      }
+    },
+    "imageViewer.saveOffline" : {
+      "comment" : "Save failure only after an image loader throws an actual offline error.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo could not be saved because you are offline. When you have a connection, try Save to Photos again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildet kunne ikke lagres fordi du er frakoblet. Prøv Lagre i Bilder igjen når du har nett."
+          }
+        }
+      }
+    },
     "imageViewer.savePermission.message" : {
       "comment" : "Message of the alert shown in the full-screen photo viewer when the app can't save a photo because photo access is turned off.",
       "extractionState" : "manual",
@@ -21497,6 +22973,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La Paeonia lagre i Bilder"
+          }
+        }
+      }
+    },
+    "imageViewer.saveRestricted" : {
+      "comment" : "PhotoKit add-only authorization is restricted by device policy rather than denied by the user.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device restricts saving to Photos. You can still view the photo here. Check with the person who manages this device."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne enheten har begrenset lagring i Bilder. Du kan fortsatt se bildet her. Spør den som administrerer enheten."
+          }
+        }
+      }
+    },
+    "imageViewer.zoomIn" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom in"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom inn"
+          }
+        }
+      }
+    },
+    "imageViewer.zoomLevel" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom"
+          }
+        }
+      }
+    },
+    "imageViewer.zoomOut" : {
+      "comment" : "Native control for the full-screen photo viewer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom out"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom ut"
           }
         }
       }
@@ -22083,6 +23631,78 @@
         }
       }
     },
+    "ludo.pawn.base" : {
+      "comment" : "Pawn has not entered the track.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In base"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I basen"
+          }
+        }
+      }
+    },
+    "ludo.pawn.exposed" : {
+      "comment" : "Pawn is on an ordinary track square.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can be captured"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kan slås ut"
+          }
+        }
+      }
+    },
+    "ludo.pawn.home" : {
+      "comment" : "Pawn has finished.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I mål"
+          }
+        }
+      }
+    },
+    "ludo.pawn.homeLane" : {
+      "comment" : "Pawn is on its private home lane.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home lane, %lld squares to finish"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Målstrekningen, %lld felt til mål"
+          }
+        }
+      }
+    },
     "ludo.pawn.movable" : {
       "comment" : "VoiceOver label of one of this person's pawns that can move with the roll. %1$lld is the pawn, 1 or 2. %2$lld is how many squares are left before the pawn is home.",
       "extractionState" : "manual",
@@ -22115,6 +23735,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Flytt %lld"
+          }
+        }
+      }
+    },
+    "ludo.pawn.safe" : {
+      "comment" : "Pawn cannot be captured on this square.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Safe"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trygg"
+          }
+        }
+      }
+    },
+    "ludo.pawn.state" : {
+      "comment" : "Pawn number and its board location. Activating a movable pawn moves it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pawn %1$lld, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brikke %1$lld, %2$@"
+          }
+        }
+      }
+    },
+    "ludo.pawn.track" : {
+      "comment" : "Absolute shared track square 1 to 52 and whether it is safe.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Track square %1$lld, %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Felt %1$lld på banen, %2$@"
           }
         }
       }
@@ -22205,6 +23879,402 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Oss"
+          }
+        }
+      }
+    },
+    "media.accessibility.clearDrawing" : {
+      "comment" : "Removes only the drawing description text, never the drawing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove drawing description"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjern beskrivelsen av tegningen"
+          }
+        }
+      }
+    },
+    "media.accessibility.clearPhoto" : {
+      "comment" : "Empties the description editor. Save applies the removal; Cancel keeps the previous text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear description"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tøm beskrivelse"
+          }
+        }
+      }
+    },
+    "media.accessibility.clearTranscript" : {
+      "comment" : "Empties the transcript editor. Save applies the removal; Cancel keeps the previous text.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear transcript"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tøm tekstversjon"
+          }
+        }
+      }
+    },
+    "media.accessibility.drawingDescription" : {
+      "comment" : "Title and action for an authored description of a drawing, separate from any caption or secret game answer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawing description"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskrivelse av tegningen"
+          }
+        }
+      }
+    },
+    "media.accessibility.drawingMissing" : {
+      "comment" : "Explicit missing state for a drawing with no authored visual description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No drawing description added."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen beskrivelse av tegningen er lagt til."
+          }
+        }
+      }
+    },
+    "media.accessibility.editDrawing" : {
+      "comment" : "Author-only action to correct a shared drawing description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit drawing description"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rediger beskrivelsen av tegningen"
+          }
+        }
+      }
+    },
+    "media.accessibility.editPhoto" : {
+      "comment" : "Action to correct the sender-authored description of sent media; never edits the photo or caption.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit description"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre beskrivelse"
+          }
+        }
+      }
+    },
+    "media.accessibility.editTranscript" : {
+      "comment" : "Action to correct the sender-authored transcript of a sent recording; never edits the audio.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit transcript"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endre tekstversjon"
+          }
+        }
+      }
+    },
+    "media.accessibility.loadFailed" : {
+      "comment" : "Recoverable local-store read failure. Do not edit an older server description while a queued local correction may exist.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not read your saved changes. Try again before editing."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lese de lagrede endringene dine. Prøv igjen før du redigerer."
+          }
+        }
+      }
+    },
+    "media.accessibility.loading" : {
+      "comment" : "Accessibility label while the phone reads any queued correction before showing or editing a description or transcript.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading your saved text"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laster den lagrede teksten din"
+          }
+        }
+      }
+    },
+    "media.accessibility.photoDescription" : {
+      "comment" : "Heading for an authored photo accessibility description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo description"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bildebeskrivelse"
+          }
+        }
+      }
+    },
+    "media.accessibility.photoHelp" : {
+      "comment" : "Help for a privately authored photo description, separate from the caption.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what is in the photo. Only you and your partner can read this."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv hva som er på bildet. Bare du og partneren din kan lese dette."
+          }
+        }
+      }
+    },
+    "media.accessibility.photoHint" : {
+      "comment" : "Placeholder inviting the author to describe their own photo",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what matters in this photo"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beskriv det som er viktig i dette bildet"
+          }
+        }
+      }
+    },
+    "media.accessibility.photoMissing" : {
+      "comment" : "A photo has no authored accessibility description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No photo description added"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen bildebeskrivelse lagt til"
+          }
+        }
+      }
+    },
+    "media.accessibility.reviewRecording" : {
+      "comment" : "Stops a chat recording and opens playback and transcript editing before sending",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review recording"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se gjennom opptaket"
+          }
+        }
+      }
+    },
+    "media.accessibility.save" : {
+      "comment" : "Saves a corrected media description or voice transcript on this phone, then sends it using the offline queue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        }
+      }
+    },
+    "media.accessibility.saveFailed" : {
+      "comment" : "Recoverable local-save failure in the media alternative editor; retains every typed character.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't save your text. Try again. Your changes are still here."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke lagre teksten. Prøv igjen. Endringene dine er fortsatt her."
+          }
+        }
+      }
+    },
+    "media.accessibility.tooLong" : {
+      "comment" : "Validation for an authored photo description or audio transcript over 10000 Unicode characters",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shorten this to 10,000 characters before sending."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kort ned til 10 000 tegn før du sender."
+          }
+        }
+      }
+    },
+    "media.accessibility.transcript" : {
+      "comment" : "Heading for a manually authored audio transcript",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcript"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transkripsjon"
+          }
+        }
+      }
+    },
+    "media.accessibility.transcriptHint" : {
+      "comment" : "Placeholder inviting the author to transcribe their own recording",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write what you said and any important sounds"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skriv det du sa og eventuelle viktige lyder"
+          }
+        }
+      }
+    },
+    "media.accessibility.transcriptMissing" : {
+      "comment" : "A recording has no manually authored transcript",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No transcript added"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen transkripsjon lagt til"
+          }
+        }
+      }
+    },
+    "media.accessibility.waiting" : {
+      "comment" : "Only shown after a queued description or transcript correction has encountered a failed send attempt. Does not claim the device is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your text is saved on this phone. We will keep trying to send it."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teksten er lagret på denne telefonen. Vi fortsetter å prøve å sende den."
           }
         }
       }
@@ -35156,6 +37226,24 @@
         }
       }
     },
+    "stories.viewer.pause" : {
+      "comment" : "Pauses automatic story advancement until the user resumes it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause stories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sett historier på pause"
+          }
+        }
+      }
+    },
     "stories.viewer.photoAccessibility" : {
       "comment" : "VoiceOver label for the story photo. %@ is the name of the person who shared it.",
       "extractionState" : "manual",
@@ -35296,6 +37384,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Svar sendt"
+          }
+        }
+      }
+    },
+    "stories.viewer.resume" : {
+      "comment" : "Resumes automatic story advancement after a pause.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resume stories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett historier"
           }
         }
       }
@@ -38480,6 +40586,24 @@
         }
       }
     },
+    "ultimateTicTacToe.board.cell" : {
+      "comment" : "Unique accessible name for one of 81 cells, with its owner or empty state.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Board %1$lld, row %2$lld, column %3$lld, %4$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brett %1$lld, rad %2$lld, kolonne %3$lld, %4$@"
+          }
+        }
+      }
+    },
     "ultimateTicTacToe.board.full.a11y" : {
       "comment" : "VoiceOver label of a small board that is full with no winner. %lld is 1 to 9.",
       "extractionState" : "manual",
@@ -38638,6 +40762,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rad %1$lld, kolonne %2$lld, din"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.controls.chooseSquare" : {
+      "comment" : "Heading above native square buttons; unavailable moves remain visible and disabled.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a square"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velg en rute"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.controls.forcedBoard" : {
+      "comment" : "Native game controls. The next move is restricted to this numbered board and its grid position.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The next move must be in board %1$lld, %2$@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste trekk må være på brett %1$lld, %2$@."
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.controls.openBoards" : {
+      "comment" : "Native game controls. The list contains all numbered boards allowed for the next move.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The next move can be in any open board: %@."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neste trekk kan være på et av de åpne brettene: %@."
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.controls.selected" : {
+      "comment" : "Accessibility value of the pending square, also marked with a visible checkmark.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selected"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valgt"
+          }
+        }
+      }
+    },
+    "ultimateTicTacToe.controls.viewBoard" : {
+      "comment" : "Native menu for inspecting any small board, including boards where a move is not allowed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View a board"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se et brett"
           }
         }
       }

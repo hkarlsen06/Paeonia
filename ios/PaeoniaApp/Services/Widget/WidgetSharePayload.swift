@@ -9,8 +9,8 @@ nonisolated enum WidgetSharePrivacyMode: String, Codable, Equatable, Sendable {
 
 /// Lightweight metadata the app writes into the App Group container for the
 /// widget to read. This is local cache only: it never contains canonical
-/// `PKDrawing` data, note text, or other private content beyond the rendered
-/// preview images it points at.
+/// `PKDrawing` data or note text. The authored drawing description is private
+/// content and follows the same redaction and purge rules as the previews.
 ///
 /// The field names and JSON shape must stay compatible with the decoder in the
 /// widget target (`PaeoniaWidgetStore`). The widget extension also writes this
@@ -39,6 +39,7 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
     /// scale the drawing on a phone with a different screen size. The widget
     /// ignores it.
     let canvasSide: Double
+    var accessibilityText: String?
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion
@@ -51,6 +52,7 @@ nonisolated struct WidgetSharePayload: Codable, Equatable {
         case isRedacted
         case contentHash
         case previews
+        case accessibilityText
         case canvasSide
     }
 

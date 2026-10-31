@@ -27,9 +27,11 @@ struct HomeStoriesStrip: View {
     @State private var composesAfterViewer = false
     @State private var isStyling = false
     @Environment(\.avatarStyling) private var avatarStyling
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// The plus on your avatar that adds a story.
-    private static let plusBadgeSize: CGFloat = 32
+    private var flowsPortraitControls: Bool { dynamicTypeSize.isAccessibilitySize && arrange == nil }
+
     /// Center to center, wide enough that the two bubbles never touch, and narrow enough
     /// that the partner's bubble stays clear of the streak in the corner.
     private var avatarSpacing: CGFloat { StoryNoteBubble.maxWidth - avatarSize + PaeoniaSpacing.space8 }
@@ -74,8 +76,7 @@ struct HomeStoriesStrip: View {
                 }
             }
         }
-        // The note screen runs its own opening and closing, flying the avatar between
-        // Home and the middle of the screen, so the cover appears and leaves without animation.
+        // The note owns its opening. Native cover dismissal does not wait for that animation.
         .fullScreenCover(item: $openNote) { open in
             StoryNoteScreen(
                 mode: open.mode,
@@ -83,7 +84,7 @@ struct HomeStoriesStrip: View {
                 people: people,
                 sourceFrame: open.sourceFrame
             ) {
-                withoutAnimation { openNote = nil }
+                if reduceMotion { withoutAnimation { openNote = nil } } else { openNote = nil }
             }
             .analyticsScreen("story_note")
             .presentationBackground(.clear)
@@ -139,6 +140,12 @@ struct HomeStoriesStrip: View {
         return Group {
             if let arrange {
                 arrange(AnyView(ownView), AnyView(partnerView))
+            } else if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: PaeoniaSpacing.space32) {
+                    ownView
+                    partnerView
+                }
+                .frame(maxWidth: .infinity)
             } else {
                 HStack(alignment: .storyAvatarMiddle, spacing: middle == nil ? avatarSpacing : -middleOverlap) {
                     ownView
@@ -166,12 +173,6 @@ extension HomeStoriesStrip {
             }
             ownAvatarButton(stories)
                 .alignmentGuide(.storyAvatarMiddle) { $0[VerticalAlignment.center] }
-                .overlay(alignment: .bottomTrailing) {
-                    if (avatarStyling?.decorations.own ?? AvatarDecoration.none) == AvatarDecoration.none {
-                        addButton
-                    }
-                }
-                .overlay(alignment: .bottom) { ownStoryControls(stories) }
                 .storyNoteBubble(
                     clearance: (avatarStyling?.decorations.own ?? .none).noteClearance(photoSize: avatarSize)
                 ) {
@@ -184,9 +185,11 @@ extension HomeStoriesStrip {
                     .accessibilityLabel(Text(ownNoteLabel(note)))
                 }
 
+            ownStoryControls(stories)
+                .padding(.top, PaeoniaSpacing.space8)
             if arrange == nil {
                 name(Text(.storiesHomeYourStory))
-                    .padding(.top, ownNameSpacing)
+                    .padding(.top, PaeoniaSpacing.space8)
             }
         }
     }
@@ -195,18 +198,10 @@ extension HomeStoriesStrip {
         let decoration = avatarStyling?.decorations.own ?? .none
         return VStack(spacing: PaeoniaSpacing.space4) {
             StoryStatusBadge(ring: stories.isEmpty ? .noStory : .seen, isOwn: true)
-            if decoration != .none {
-                decoratedAddButton
-            }
+            decoratedAddButton
         }
         .padding(.top, max(0, avatarSize * decoration.outset - StoryRingAvatar.ringGap))
         .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
-    }
-
-    private var ownNameSpacing: CGFloat {
-        let decoration = avatarStyling?.decorations.own ?? .none
-        return PaeoniaSpacing.space40 + (decoration == .none ? 0 :
-            PaeoniaSpacing.space32 + avatarSize * decoration.outset)
     }
 
     /// Opens your stories, or the composer when you have none.
@@ -255,27 +250,6 @@ extension HomeStoriesStrip {
         .accessibilityIdentifier("stories.add")
     }
 
-    private var addButton: some View {
-        Button {
-            isComposing = true
-        } label: {
-            Image(systemName: "plus")
-                .accessibilityHidden(true)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: Self.plusBadgeSize, height: Self.plusBadgeSize)
-                .background(Circle().fill(.paeoniaBackgroundPrimary))
-                .overlay(Circle().strokeBorder(.paeoniaTextPrimary, lineWidth: 2))
-                // A bigger target than the badge looks.
-                .frame(width: 44, height: 44)
-                .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .offset(x: PaeoniaSpacing.space8, y: PaeoniaSpacing.space8)
-        .accessibilityLabel(Text(.storiesHomeAddAccessibility))
-        .accessibilityIdentifier("stories.add")
-    }
-
     private func partnerAvatar(_ stories: [Story], ring: StoryRingState, note: StoryNote?) -> some View {
         VStack(spacing: 0) {
             // Room for the tallest note above the avatar, so the row's top is the top of
@@ -304,8 +278,12 @@ extension HomeStoriesStrip {
                     }
                 }
             if arrange == nil {
+                if flowsPortraitControls {
+                    StoryStatusBadge(ring: ring)
+                        .padding(.top, PaeoniaSpacing.space8)
+                }
                 name(Text(people.partnerName))
-                    .padding(.top, PaeoniaSpacing.space40)
+                    .padding(.top, flowsPortraitControls ? PaeoniaSpacing.space8 : PaeoniaSpacing.space40)
             }
         }
     }
@@ -322,8 +300,10 @@ extension HomeStoriesStrip {
             decoration: avatarStyling?.decorations.partner ?? .none
         )
         .overlay(alignment: .bottom) {
-            StoryStatusBadge(ring: ring)
-                .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
+            if !flowsPortraitControls {
+                StoryStatusBadge(ring: ring)
+                    .alignmentGuide(.bottom) { $0[.top] - PaeoniaSpacing.space4 }
+            }
         }
         if stories.isEmpty {
             avatar
@@ -364,8 +344,10 @@ extension HomeStoriesStrip {
         text
             .font(PaeoniaTypography.caption)
             .foregroundStyle(.paeoniaTextSecondary)
-            .lineLimit(1)
-            .frame(maxWidth: avatarSize + PaeoniaSpacing.space24)
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : avatarSize + PaeoniaSpacing.space24)
             .accessibilityHidden(true)
     }
 

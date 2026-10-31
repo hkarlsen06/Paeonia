@@ -1,3 +1,4 @@
+import PencilKit
 import SwiftUI
 import UIKit
 
@@ -15,6 +16,7 @@ struct WelcomeView: View {
     let onSubmitInviteCode: (String) -> Void
 
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isInviteSheetPresented = false
     /// Whether the clipboard holds something that looks like a link. The `/join` web
     /// page copies the invite link when a partner without the app taps "Install",
@@ -28,6 +30,46 @@ struct WelcomeView: View {
     @State private var doodle: WelcomeCarriedDoodle?
 
     var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView {
+                    VStack(spacing: PaeoniaSpacing.space12) {
+                        content
+                        choices
+                            .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+                            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                            .padding(.bottom, PaeoniaSpacing.space16)
+                    }
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                regularContent
+            }
+        }
+        .background(PaeoniaGlowBackground())
+        .onAppear(perform: model.welcomeAppeared)
+        // Checked again on return to the app, since the link may be copied after the
+        // welcome screen first appeared.
+        .task(id: scenePhase) {
+            guard scenePhase == .active else {
+                return
+            }
+            let patterns = try? await UIPasteboard.general.detectedPatterns(for: [\.probableWebURL])
+            clipboardHasLink = patterns?.contains(\.probableWebURL) ?? false
+        }
+        .sheet(isPresented: $isInviteSheetPresented) {
+            PairingCodeEntrySheet(
+                title: .welcomeInviteCodeTitle,
+                message: .welcomeInviteCodeSubtitle,
+                submitTitle: .welcomeInviteCodeContinue
+            ) { code in
+                onSubmitInviteCode(code)
+                return true
+            }
+        }
+    }
+
+    private var regularContent: some View {
         // The summary sits just above the buttons, and the widget is centered between
         // the wordmark and the summary. On a short screen the widget shrinks. When even
         // its smallest size does not fit, such as at large text sizes, the same content
@@ -61,27 +103,6 @@ struct WelcomeView: View {
                 }
                 .launchEntrance(order: 2)
         }
-        .background(PaeoniaGlowBackground())
-        .onAppear(perform: model.welcomeAppeared)
-        // Checked again on return to the app, since the link may be copied after the
-        // welcome screen first appeared.
-        .task(id: scenePhase) {
-            guard scenePhase == .active else {
-                return
-            }
-            let patterns = try? await UIPasteboard.general.detectedPatterns(for: [\.probableWebURL])
-            clipboardHasLink = patterns?.contains(\.probableWebURL) ?? false
-        }
-        .sheet(isPresented: $isInviteSheetPresented) {
-            PairingCodeEntrySheet(
-                title: .welcomeInviteCodeTitle,
-                message: .welcomeInviteCodeSubtitle,
-                submitTitle: .welcomeInviteCodeContinue
-            ) { code in
-                onSubmitInviteCode(code)
-                return true
-            }
-        }
     }
 
     private var content: some View {
@@ -99,6 +120,9 @@ struct WelcomeView: View {
                 .layoutPriority(1)
                 .launchEntrance(order: 1)
 
+            drawingBuilder
+                .padding(.top, PaeoniaSpacing.space12)
+
             Spacer(minLength: PaeoniaSpacing.space24)
 
             Text(.welcomeSummary)
@@ -115,6 +139,14 @@ struct WelcomeView: View {
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.screenTopSpacing)
         .padding(.bottom, PaeoniaSpacing.space24)
+    }
+
+    private var drawingBuilder: some View {
+        let side = doodle?.canvasSide ?? WelcomeWidgetDoodle.maxSide
+        return DrawingCompositionButton(drawing: doodle?.drawing ?? PKDrawing(), side: side) { drawing in
+            doodle = WelcomeCarriedDoodle(drawing: drawing, canvasSide: side)
+        }
+        .paeoniaReadableWidth(300)
     }
 
     // MARK: Choices

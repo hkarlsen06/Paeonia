@@ -13,6 +13,7 @@ nonisolated struct WidgetDrawingHistoryItem: Identifiable, Sendable, Equatable {
     let createdAt: Date
     let mediaAssetID: UUID
     let canvasSide: CGFloat
+    var accessibilityText: String?
 }
 
 /// Loads the couple's past drawings newest-first, one page at a time, for the
@@ -124,7 +125,7 @@ final class WidgetDrawingHistoryViewModel {
     /// be shared, since it is a picture the two of them made together.
     func shareable(for item: WidgetDrawingHistoryItem) -> PaeoniaShareable {
         let exporter = exporter
-        return PaeoniaShareable(title: String(localized: .shareTitleDrawing)) {
+        return PaeoniaShareable(title: String(localized: .shareTitleDrawing), text: item.accessibilityText) {
             guard let png = await exporter.exportPNG(
                 revisionID: item.id,
                 mediaAssetID: item.mediaAssetID,
@@ -279,7 +280,8 @@ final class WidgetDrawingHistoryViewModel {
                 isMine: isMine,
                 createdAt: summary.createdAt,
                 mediaAssetID: mediaAssetID,
-                canvasSide: summary.bounds.map { CGFloat($0.canvasSide) } ?? WidgetDrawingViewModel.fallbackCanvasSide
+                canvasSide: summary.bounds.map { CGFloat($0.canvasSide) } ?? WidgetDrawingViewModel.fallbackCanvasSide,
+                accessibilityText: summary.bounds?.accessibilityText
             )
         }
     }

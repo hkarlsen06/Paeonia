@@ -35,11 +35,28 @@ struct ConnectFourInputLayer: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             Color.clear.contentShape(Rectangle())
+                .gesture(dragGesture, including: canPlay ? .all : .none)
             columnElements
+                .allowsHitTesting(false)
             hoverDisc
         }
         .frame(width: geometry.width, height: geometry.totalHeight, alignment: .topLeading)
-        .gesture(dragGesture, including: canPlay ? .all : .none)
+        .overlay(alignment: .topTrailing) {
+            GameBoardControls {
+                ForEach(0..<ConnectFourBoardGeometry.columns, id: \.self) { column in
+                    Section {
+                        ForEach(0..<ConnectFourBoard.rows, id: \.self) { row in
+                            Text(cellLabel(row: row, column: column))
+                        }
+                        Button(.connectFourColumnDropHere(column + 1)) { drop(in: column) }
+                            .accessibilityIdentifier("connectFour.drop.\(column)")
+                            .disabled(!canPlay || isAwaitingMove || board.landingRow(column: column) == nil)
+                    } header: {
+                        Text(.connectFourColumnLabel(column + 1))
+                    }
+                }
+            }
+        }
         .onChange(of: isTouching) { cancelIfTouchWasInterrupted() }
         .onChange(of: moveNumber) { handOver() }
         .onChange(of: canPlay) {
@@ -180,6 +197,8 @@ struct ConnectFourInputLayer: View {
             .frame(width: geometry.cell, height: geometry.totalHeight)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(label(for: column))
+            .accessibilityValue(Text(verbatim: (0..<ConnectFourBoard.rows)
+                .map { cellLabel(row: $0, column: column) }.joined(separator: ". ")))
             .accessibilityIdentifier("connectFour.column.\(column)")
         if canPlay, board.landingRow(column: column) != nil {
             element
@@ -189,6 +208,13 @@ struct ConnectFourInputLayer: View {
         } else {
             element
         }
+    }
+
+    private func cellLabel(row: Int, column: Int) -> String {
+        let owner = board.cells[row * ConnectFourBoardGeometry.columns + column]
+        let state: LocalizedStringResource = owner == nil ? .gamesCellEmpty
+            : owner == me ? .gamesCellYours : .gamesCellPartner
+        return String(localized: .gamesBoardCell(row + 1, column + 1, String(localized: state)))
     }
 
     /// "Column 3, 2 discs, yours on top", "Column 3, empty" or "Column 3, full".

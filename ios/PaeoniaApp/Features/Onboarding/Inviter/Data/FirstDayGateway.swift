@@ -230,7 +230,8 @@ nonisolated struct SaveFirstDayDrawingRequest: Encodable {
                 y: Double(payload.bounds.origin.y),
                 width: Double(payload.bounds.width),
                 height: Double(payload.bounds.height),
-                canvasSide: Double(payload.canvasSide)
+                canvasSide: Double(payload.canvasSide),
+                accessibilityText: payload.accessibilityText
             ),
             forKey: .bounds
         )

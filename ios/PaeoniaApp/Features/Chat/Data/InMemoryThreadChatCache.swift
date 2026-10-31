@@ -9,6 +9,35 @@
         private var storedTimelines: [UUID: [UUID: GameChatTimeline]] = [:]
         private var generation = 0
 
+        func updateMediaAlternative(
+            _ edit: MediaAlternativeEdit, ownerUserID: UUID, unlessPurgedSince generation: Int
+        ) {
+            guard generation == self.generation else { return }
+            for key in (storedMessages[ownerUserID] ?? [:]).keys {
+                storedMessages[ownerUserID]?[key] = storedMessages[ownerUserID]?[key]?.map {
+                    $0.applyingMediaAlternative(edit, ownerUserID: ownerUserID)
+                }
+            }
+            for key in (storedTimelines[ownerUserID] ?? [:]).keys {
+                guard var timeline = storedTimelines[ownerUserID]?[key] else { continue }
+                timeline.messages = timeline.messages.map {
+                    $0.applyingMediaAlternative(edit, ownerUserID: ownerUserID)
+                }
+                storedTimelines[ownerUserID]?[key] = timeline
+            }
+            if case let .daily(answerID) = edit.target {
+                for (key, current) in storedRounds[ownerUserID] ?? [:] {
+                    storedRounds[ownerUserID]?[key] = DailyQuestionChatRoundsRow(
+                        threadID: current.threadID, questions: current.questions,
+                        answerDetails: current.answerDetails.map {
+                            $0.applyingMediaAlternative(answerID: answerID, text: edit.text, ownerUserID: ownerUserID)
+                        }, reactions: current.reactions
+                    )
+                }
+            }
+            LocalStoreChanges.post(.threadChat, ownerUserID: ownerUserID)
+        }
+
         func summaries(ownerUserID: UUID) -> [ThreadChatSummary] {
             storedSummaries[ownerUserID] ?? []
         }
@@ -105,7 +134,10 @@
                     createdAt: message.createdAt,
                     clientOperationID: clientOperationID,
                     isSending: false,
-                    sendFailed: true
+                    sendFailed: true,
+                    voice: message.voice,
+                    photos: message.photos,
+                    replyTo: message.replyTo
                 )
                 return
             }
@@ -161,40 +193,17 @@
             senderUserID: UUID,
             createdAt: Date
         ) {
-            let subjectID = subject.id
-            let index = storedMessages[ownerUserID]?[subjectID]?.firstIndex(where: {
-                $0.clientOperationID == clientOperationID
-            })
-            let confirmed = ThreadChatMessage(
-                id: messageID,
-                threadID: threadID,
-                subjectID: subjectID,
-                senderUserID: senderUserID,
-                body: body,
-                createdAt: createdAt,
-                clientOperationID: clientOperationID,
-                isSending: false
+            let send = ThreadChatConfirmedSend(
+                subject: subject, coupleID: coupleID, clientOperationID: clientOperationID,
+                threadID: threadID, messageID: messageID, body: body,
+                senderUserID: senderUserID, createdAt: createdAt
             )
-            if let index {
-                storedMessages[ownerUserID]?[subjectID]?[index] = confirmed
-            } else {
-                storedMessages[ownerUserID, default: [:]][subjectID, default: []].append(confirmed)
-            }
-            if storedSummaries[ownerUserID]?.contains(where: { $0.subject == subject }) != true {
-                storedSummaries[ownerUserID, default: []].append(
-                    ThreadChatSummary(
-                        threadID: threadID,
-                        coupleID: coupleID,
-                        subject: subject,
-                        createdAt: createdAt,
-                        updatedAt: createdAt,
-                        lastMessageID: messageID,
-                        lastMessageAt: createdAt,
-                        lastMessageSenderUserID: senderUserID,
-                        lastMessageBody: body
-                    )
-                )
-            }
+            var document = ThreadChatSubjectDocument(messages: storedMessages[ownerUserID]?[subject.id] ?? [])
+            document.storeConfirmedMessage(send)
+            storedMessages[ownerUserID, default: [:]][subject.id] = document.messages
+            var core = ThreadChatCoreDocument(summaries: storedSummaries[ownerUserID] ?? [])
+            core.updateSummary(for: send)
+            storedSummaries[ownerUserID] = core.summaries
         }
 
         func clearAll() {

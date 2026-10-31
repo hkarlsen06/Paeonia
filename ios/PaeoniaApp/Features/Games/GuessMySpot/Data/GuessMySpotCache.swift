@@ -41,6 +41,7 @@ protocol GuessMySpotCaching: Actor {
     /// Taken before a history read starts. A purge after it makes `saveHistory` drop that read.
     func historyTicket() -> Int
     func saveHistory(_ history: RemoteGuessMySpotHistory, ownerUserID: UUID, ticket: Int)
+    func updatePhotoDescription(_ edit: MediaAlternativeEdit, ownerUserID: UUID, ticket: Int)
     func recordRefusedMove(_ refused: GuessMySpotRefusedMove, ownerUserID: UUID)
     /// Forgets one refused move, once the screen has dealt with it.
     func forgetRefusedMove(roundID: UUID, ownerUserID: UUID)
@@ -145,6 +146,12 @@ actor FileGuessMySpotCache: GuessMySpotCaching {
         store.update(ownerUserID: ownerUserID) { $0.history = history }
     }
 
+    func updatePhotoDescription(_ edit: MediaAlternativeEdit, ownerUserID: UUID, ticket: Int) {
+        guard ticket == purges else { return }
+        order.overrideFetches()
+        store.update(ownerUserID: ownerUserID) { $0.updatePhotoDescription(edit, ownerUserID: ownerUserID) }
+    }
+
     func recordRefusedMove(_ refused: GuessMySpotRefusedMove, ownerUserID: UUID) {
         store.update(ownerUserID: ownerUserID) { $0.record(refused) }
     }
@@ -208,6 +215,13 @@ actor InMemoryGuessMySpotCache: GuessMySpotCaching {
         documents[ownerUserID, default: GuessMySpotLocalDocument()].history = history
     }
 
+    func updatePhotoDescription(_ edit: MediaAlternativeEdit, ownerUserID: UUID, ticket: Int) {
+        guard ticket == purges else { return }
+        order.overrideFetches()
+        documents[ownerUserID, default: GuessMySpotLocalDocument()]
+            .updatePhotoDescription(edit, ownerUserID: ownerUserID)
+    }
+
     func recordRefusedMove(_ refused: GuessMySpotRefusedMove, ownerUserID: UUID) {
         documents[ownerUserID, default: GuessMySpotLocalDocument()].record(refused)
     }
@@ -224,5 +238,21 @@ actor InMemoryGuessMySpotCache: GuessMySpotCaching {
         order.overrideFetches()
         purges += 1
         documents = [:]
+    }
+}
+
+private extension GuessMySpotLocalDocument {
+    mutating func updatePhotoDescription(_ edit: MediaAlternativeEdit, ownerUserID: UUID) {
+        guard case let .guessMySpot(roundID) = edit.target,
+              state == nil || state?.coupleID == edit.coupleID else { return }
+        if state?.currentRound?.id == roundID, state?.currentRound?.senderUserID == ownerUserID {
+            state?.currentRound?.photoAccessibilityText = edit.text.trimmedNonEmpty
+        }
+        if state?.previousRound?.id == roundID, state?.previousRound?.senderUserID == ownerUserID {
+            state?.previousRound?.photoAccessibilityText = edit.text.trimmedNonEmpty
+        }
+        if let index = history?.rounds.firstIndex(where: { $0.id == roundID && $0.senderUserID == ownerUserID }) {
+            history?.rounds[index].photoAccessibilityText = edit.text.trimmedNonEmpty
+        }
     }
 }

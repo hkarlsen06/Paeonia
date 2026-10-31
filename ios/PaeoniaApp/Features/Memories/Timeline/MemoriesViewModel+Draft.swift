@@ -40,3 +40,30 @@ extension MemoriesViewModel {
         draftStore.setDraft(draft, for: currentUserID)
     }
 }
+
+extension MemoriesViewModel {
+    func addPhotos(_ edit: MemoryEdit, _ latest: MemoryRecord, _ userID: UUID) async -> StepResult {
+        guard !edit.newPhotos.isEmpty else { return .unchanged }
+        let coupleID = latest.snapshot.coupleID
+        guard let uploaded = await photoUploads.upload(
+            MemoryDraftPhoto.photos(edit.newPhotos, descriptions: edit.photoDescriptions),
+            coupleID: coupleID,
+            ownerUserID: userID,
+            startingSortOrder: (latest.snapshot.media.map(\.sortOrder).max() ?? 0) + 1
+        ) else {
+            notice = .photoUploadFailed
+            return .failed
+        }
+        let attached = await perform("Attaching photos to a memory failed", notice: .photoUploadFailed) {
+            _ = try await self.memoryService.attachMemoryMedia(
+                ownerUserID: userID,
+                memoryID: latest.snapshot.memoryID,
+                optimisticMedia: uploaded,
+                operation: self.operationProvider.makeOperation()
+            )
+        }
+        guard attached else { return .failed }
+        photoUploads.reset()
+        return .saved
+    }
+}

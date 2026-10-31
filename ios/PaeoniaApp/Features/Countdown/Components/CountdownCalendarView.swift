@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The tear-off desk calendar on the Home tab countdown tile, with the day count drawn on
-/// its blank page. The art scales to whatever space it gets, and the number scales with the
-/// page, so the tile looks the same on a narrow phone and in the wide iPad column.
+/// its blank page. The art scales with its available space; the meaningful text uses
+/// native Dynamic Type instead of shrinking with the picture.
 struct CountdownCalendarView: View {
     enum Face: Equatable {
         case loading
@@ -56,9 +56,6 @@ struct CountdownCalendarView: View {
         )
     }
 
-    /// The text is sized from the page, not from Dynamic Type, because it is part of the
-    /// picture. The tile's own text line follows Dynamic Type. Deep plum on the blush page
-    /// is about 15 to 1.
     private func pageFace(in rect: CGRect) -> some View {
         ZStack {
             switch face {
@@ -66,23 +63,23 @@ struct CountdownCalendarView: View {
                 Color.clear
             case .empty:
                 Text(verbatim: "?")
-                    .font(.system(size: rect.height * 0.74, weight: .heavy, design: .rounded))
+                    .font(PaeoniaTypography.countdownNumber.weight(.heavy))
             case let .days(days):
                 Text(days, format: .number)
-                    .font(.system(size: rect.height * 0.74, weight: .heavy, design: .rounded))
+                    .font(PaeoniaTypography.countdownNumber.weight(.heavy))
                     .contentTransition(.numericText(value: Double(days)))
                     .animation(reduceMotion ? nil : Self.countAnimation, value: days)
             case .today:
                 Text(.homeMilestoneToday)
-                    .font(.system(size: rect.height * 0.4, weight: .heavy, design: .rounded))
+                    .font(PaeoniaTypography.title.weight(.heavy))
             }
         }
         // The page stays blank while the count loads, then the number comes into focus as
         // it rolls up.
         .paeoniaLoadingReveal(face == .loading)
         .foregroundStyle(.paeoniaTextInverse)
-        .lineLimit(1)
-        .minimumScaleFactor(0.3)
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
         .keyframeAnimator(initialValue: CGFloat(1), trigger: popCount) { content, scale in
             content.scaleEffect(scale)
         } keyframes: { _ in

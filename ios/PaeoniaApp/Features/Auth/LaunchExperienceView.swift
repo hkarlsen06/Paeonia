@@ -22,6 +22,7 @@ struct LaunchExperienceView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isRevealing = false
+    @State private var hasFinished = false
     /// Per-side horizontal travel of each petal half. `0` composes the full mark,
     /// exactly matching the system launch screen.
     @State private var petalSpread: CGFloat = 0
@@ -68,6 +69,12 @@ struct LaunchExperienceView: View {
             }
         }
         .opacity(overlayOpacity)
+        .onChange(of: reduceMotion) { _, reduced in
+            if reduced && isRevealing {
+                onSidesUncovered()
+                finishReveal()
+            }
+        }
         .ignoresSafeArea()
         // The mask does not change hit testing, so without this the overlay would
         // swallow taps on the screen it is uncovering until it is removed.
@@ -130,10 +137,9 @@ struct LaunchExperienceView: View {
         if reduceMotion {
             withAnimation(.easeOut(duration: Self.reducedMotionExitDuration)) {
                 overlayOpacity = 0
-            } completion: {
-                onFinished()
             }
             onSidesUncovered()
+            finishAfter(Self.reducedMotionExitDuration)
             return
         }
 
@@ -142,13 +148,26 @@ struct LaunchExperienceView: View {
         }
         withAnimation(Self.holeAnimation) {
             holeProgress = 1
-        } completion: {
-            onFinished()
         }
+        finishAfter(Self.revealDuration)
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(Self.sidesUncoveredDelay(in: size)))
             onSidesUncovered()
         }
+    }
+
+    private func finishAfter(_ duration: TimeInterval) {
+        // Overlay removal is independent of animation callbacks, including interrupted animations.
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(duration))
+            finishReveal()
+        }
+    }
+
+    private func finishReveal() {
+        guard !hasFinished else { return }
+        hasFinished = true
+        onFinished()
     }
 }
 

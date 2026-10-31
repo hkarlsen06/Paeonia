@@ -102,8 +102,9 @@ struct GlossyHeart: View {
             .scaledToFit()
             .frame(width: width)
             .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
-            .keyframeAnimator(initialValue: Squish(), trigger: reduceMotion ? 0 : tapCount) { view, squish in
-                view.scaleEffect(x: squish.x, y: squish.y)
+            .keyframeAnimator(initialValue: Squish(), trigger: reduceMotion ? 0 : tapCount) {
+                [reduceMotion] view, squish in
+                view.scaleEffect(x: reduceMotion ? 1 : squish.x, y: reduceMotion ? 1 : squish.y)
             } keyframes: { _ in
                 KeyframeTrack(\.x) {
                     CubicKeyframe(1.22, duration: 0.08)
@@ -117,8 +118,8 @@ struct GlossyHeart: View {
                 }
             }
             // A lub-dub, once.
-            .keyframeAnimator(initialValue: 1.0, trigger: reduceMotion ? 0 : beatCount) { view, scale in
-                view.scaleEffect(scale)
+            .keyframeAnimator(initialValue: 1.0, trigger: reduceMotion ? 0 : beatCount) { [reduceMotion] view, scale in
+                view.scaleEffect(reduceMotion ? 1 : scale)
             } keyframes: { _ in
                 KeyframeTrack {
                     CubicKeyframe(1.16, duration: 0.12)

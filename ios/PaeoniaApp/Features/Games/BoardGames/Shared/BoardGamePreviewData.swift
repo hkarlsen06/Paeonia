@@ -6,13 +6,13 @@ enum BoardGamePreviewData {
     static let me = BoardGamePlayerInfo(
         name: "Hjalmar",
         photoAssetID: nil,
-        style: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "H")
+        style: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "H", owner: .one)
     )
 
     static let partner = BoardGamePlayerInfo(
         name: "Robin",
         photoAssetID: nil,
-        style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R")
+        style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R", owner: .two)
     )
 
     static func shell(

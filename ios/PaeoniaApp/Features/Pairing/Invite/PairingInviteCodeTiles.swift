@@ -101,7 +101,7 @@ struct PairingInviteWaitingLine: View {
             Circle()
                 .fill(.paeoniaAccentPrimary)
                 .frame(width: PaeoniaSpacing.space8, height: PaeoniaSpacing.space8)
-                .opacity(isDimmed ? 0.3 : 1)
+                .opacity(!reduceMotion && isDimmed ? 0.3 : 1)
                 .accessibilityHidden(true)
 
             Text(notifiesOnJoin ? .pairingInviteWaitingNotified : .pairingInviteWaitingStatus)
@@ -111,7 +111,10 @@ struct PairingInviteWaitingLine: View {
                 .contentTransition(.opacity)
                 .animation(PaeoniaMotion.stateChange, value: notifiesOnJoin)
         }
-        .onAppear {
+        .task(id: reduceMotion) {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { isDimmed = false }
             guard !reduceMotion else {
                 return
             }

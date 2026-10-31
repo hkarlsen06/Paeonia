@@ -231,12 +231,17 @@ struct DailyAnswerContent: View {
         // A combined answer can carry several parts at once, so each present part is
         // shown — media first, then a partner pick, then the text caption beneath.
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            if let mediaAssetID = detail.mediaAssetIDs.first {
+            if detail.canViewAnswer, let mediaAssetID = detail.mediaAssetIDs.first {
                 if mediaKind == .voice {
                     DailyVoicePlaybackView(source: .mediaAsset(mediaAssetID))
                 } else {
-                    DailyAnswerImageView(mediaAssetID: mediaAssetID)
+                    DailyAnswerImageView(mediaAssetID: mediaAssetID, authoredDescription: detail.mediaAccessibilityText)
                 }
+                DailyMediaAccessibilityText(
+                    text: detail.mediaAccessibilityText, isVoice: mediaKind == .voice,
+                    editingTarget: detail.isOwnAnswer && detail.answerUserID == participants.currentUserID
+                        ? .daily(answerID: detail.answerID) : nil
+                )
             }
 
             if let selectedUserID = detail.selectedUserID {

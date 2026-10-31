@@ -251,7 +251,10 @@ private struct GiftAccessibility: ViewModifier {
                     : Text(.onboardingFirstDayGiftReplayAccessibility(partnerName))
             )
             .accessibilityAddTraits(isWrapped ? .isButton : [])
-            .accessibilityHidden(model.phase == .opening)
+            .accessibilityValue(
+                model.phase == .wrapped || model.phase == .opening
+                    ? "" : PhotoDescription.label(model.accessibilityText)
+            )
             .accessibilityAction {
                 if isWrapped {
                     open()

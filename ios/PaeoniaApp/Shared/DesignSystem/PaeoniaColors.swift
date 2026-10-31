@@ -14,12 +14,12 @@ nonisolated extension Color {
     static let paeoniaSurfacePressed = PaeoniaPalette.plumPressed
     static let paeoniaSurfaceHighlight = PaeoniaPalette.plumPressed
     static let paeoniaSurfaceDisabled = PaeoniaPalette.plumSurfaceLow
-    static let paeoniaBorder = PaeoniaPalette.plumPressed
+    static let paeoniaBorder = Color("ControlBorder")
     static let paeoniaOutgoingMessage = PaeoniaPalette.outgoingMessage
 
     static let paeoniaTextPrimary = PaeoniaBrandColors.textPrimary
     static let paeoniaTextSecondary = PaeoniaBrandColors.textSecondary
-    static let paeoniaTextTertiary = PaeoniaPalette.blush.opacity(0.55)
+    static let paeoniaTextTertiary = Color("TextTertiary")
     static let paeoniaTextInverse = PaeoniaPalette.plumDeep
 
     static let paeoniaAccentPrimary = PaeoniaBrandColors.accent
@@ -28,11 +28,11 @@ nonisolated extension Color {
     static let paeoniaPresence = PaeoniaPalette.mint
     static let paeoniaSuccess = PaeoniaPalette.green
     static let paeoniaWarning = PaeoniaPalette.orange
-    static let paeoniaError = PaeoniaPalette.coral
+    static let paeoniaError = PaeoniaPalette.coralLight
     static let paeoniaErrorText = PaeoniaPalette.coralLight
     static let paeoniaErrorPressed = PaeoniaPalette.coralBright
     static let paeoniaSyncPending = PaeoniaPalette.orange
-    static let paeoniaSyncError = PaeoniaPalette.coral
+    static let paeoniaSyncError = PaeoniaPalette.coralLight
 
     static let paeoniaPartnerOne = PaeoniaPalette.petalLight
     static let paeoniaPartnerTwo = PaeoniaPalette.petalWarm

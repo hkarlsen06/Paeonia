@@ -1,5 +1,13 @@
 import CoreGraphics
+import CryptoKit
 import Foundation
+
+nonisolated enum WidgetDrawingPublication {
+    static func id(contentHash: String, canvasSide: Double, accessibilityText: String?) -> String {
+        let identity = [contentHash, String(canvasSide.bitPattern), accessibilityText ?? ""].joined(separator: "\0")
+        return SHA256.hash(data: Data(identity.utf8)).paeoniaHexString
+    }
+}
 
 nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
     let contentHash: String
@@ -12,12 +20,19 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
     let boundsY: Double
     let boundsWidth: Double
     let boundsHeight: Double
+    var accessibilityText: String?
     /// Where the upload got to, so a retry reuses its IDs. Nil until the
     /// first attempt starts.
     var progress: WidgetUploadProgress?
     /// The inviter's first drawing, made before any partner joined. It belongs to
     /// no couple, so an ended relationship's purge keeps it (`LocalPrivacyPurgeService`).
     let isFirstDay: Bool
+
+    var publicationID: String {
+        WidgetDrawingPublication.id(
+            contentHash: contentHash, canvasSide: canvasSide, accessibilityText: accessibilityText
+        )
+    }
 
     init(
         contentHash: String,
@@ -26,6 +41,7 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
         payload: WidgetDrawingUploadPayload,
         isFirstDay: Bool = false
     ) {
+        self.accessibilityText = payload.accessibilityText
         self.contentHash = contentHash
         self.markedAt = markedAt
         self.lastAttemptAt = lastAttemptAt
@@ -50,7 +66,8 @@ nonisolated struct WidgetPendingUploadSnapshot: Codable, Equatable, Sendable {
                 y: boundsY,
                 width: boundsWidth,
                 height: boundsHeight
-            )
+            ),
+            accessibilityText: accessibilityText
         )
     }
 }
@@ -119,8 +136,8 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
         return now.timeIntervalSince(lastAttemptAt) >= retryDelay
     }
 
-    func recordAttempt(_ contentHash: String, at date: Date = Date()) {
-        guard var snapshot = pendingSnapshot, snapshot.contentHash == contentHash else {
+    func recordAttempt(_ publicationID: String, at date: Date = Date()) {
+        guard var snapshot = pendingSnapshot, snapshot.publicationID == publicationID else {
             return
         }
 
@@ -132,8 +149,8 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
 
     /// Saves (or, with nil, forgets) the upload progress, but only while the
     /// marker still belongs to this drawing.
-    func saveProgress(_ progress: WidgetUploadProgress?, contentHash: String) {
-        guard var snapshot = pendingSnapshot, snapshot.contentHash == contentHash else {
+    func saveProgress(_ progress: WidgetUploadProgress?, publicationID: String) {
+        guard var snapshot = pendingSnapshot, snapshot.publicationID == publicationID else {
             return
         }
         snapshot.progress = progress
@@ -142,16 +159,16 @@ nonisolated final class WidgetPendingUploadStore: @unchecked Sendable {
         }
     }
 
-    func clearPending(_ contentHash: String) {
-        if pendingSnapshot?.contentHash == contentHash {
+    func clearPending(_ publicationID: String) {
+        if pendingSnapshot?.publicationID == publicationID {
             defaults.removeObject(forKey: key)
         }
     }
 
     /// Puts back `previous` (or clears the marker when there was none), but only
     /// while the marker still belongs to the drawing that replaced it.
-    func restore(_ previous: WidgetPendingUploadSnapshot?, replacingContentHash contentHash: String) {
-        guard pendingSnapshot?.contentHash == contentHash else {
+    func restore(_ previous: WidgetPendingUploadSnapshot?, replacingPublicationID publicationID: String) {
+        guard pendingSnapshot?.publicationID == publicationID else {
             return
         }
         if let previous, let data = try? JSONEncoder().encode(previous) {

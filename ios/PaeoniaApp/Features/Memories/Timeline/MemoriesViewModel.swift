@@ -6,6 +6,8 @@ import OSLog
 
 /// What the edit form asks to save. `base` is the memory as it was when the form opened.
 struct MemoryEdit {
+    var photoDescriptions: [String] = []
+    var existingDescriptions: [UUID: String] = [:]
     let base: MemoryRecord
     let title: String
     let date: String
@@ -20,7 +22,7 @@ struct MemoryEdit {
 final class MemoriesViewModel {
     let memoryService: any MemoryDataServicing
     let operationProvider: any SyncClientOperationProviding
-    private let photoUploads: MemoryPhotoUploads
+    let photoUploads: MemoryPhotoUploads
     private let imageProvider: (any MemoryMediaImageProviding)?
     private let photoSaver: any PhotoLibrarySaving
     let draftStore: any MemoryDraftStoring
@@ -201,6 +203,7 @@ final class MemoriesViewModel {
         date: String,
         note: String,
         photos: [Data],
+        photoDescriptions: [String] = [],
         place: MemoryPlace? = nil
     ) async -> Bool {
         guard !isSaving else { return false }
@@ -216,7 +219,7 @@ final class MemoriesViewModel {
         defer { isSaving = false }
 
         guard let media = await photoUploads.upload(
-            photos,
+            MemoryDraftPhoto.photos(photos, descriptions: photoDescriptions),
             coupleID: coupleID,
             ownerUserID: currentUserID,
             startingSortOrder: 0
@@ -239,7 +242,7 @@ final class MemoriesViewModel {
         }
         guard created else { return false }
 
-        photoUploads.forget(photos, coupleID: coupleID)
+        photoUploads.reset()
         PaeoniaHaptics.memorySaved()
         updateDraft(MemoryDraft())
         await load()
@@ -363,6 +366,9 @@ extension MemoriesViewModel {
                     expectedRevision: current.snapshot.revision,
                     title: change.title,
                     memoryDate: change.date,
+                    photoDescriptions: edit.existingDescriptions.map {
+                        MemoryPhotoDescription(mediaAssetID: $0.key, text: $0.value)
+                    },
                     operation: operationProvider.makeOperation()
                 )
                 return .saved
@@ -387,7 +393,10 @@ extension MemoriesViewModel {
         let title = edit.title.trimmingCharacters(in: .whitespacesAndNewlines)
         let nextTitle = title != (base.title ?? "") ? title : (current.snapshot.title ?? title)
         let nextDate = edit.date != base.memoryDate ? edit.date : current.snapshot.memoryDate
-        guard nextTitle != current.snapshot.title || nextDate != current.snapshot.memoryDate else {
+        guard nextTitle != current.snapshot.title || nextDate != current.snapshot.memoryDate
+            || edit.existingDescriptions.contains(where: { id, text in
+                current.snapshot.media.first { $0.mediaAssetID == id }?.accessibilityText != text
+            }) else {
             return nil
         }
         return (nextTitle, nextDate)
@@ -426,31 +435,6 @@ extension MemoriesViewModel {
             }
             guard removed else { return .failed }
         }
-        return .saved
-    }
-
-    func addPhotos(_ edit: MemoryEdit, _ latest: MemoryRecord, _ userID: UUID) async -> StepResult {
-        guard !edit.newPhotos.isEmpty else { return .unchanged }
-        let coupleID = latest.snapshot.coupleID
-        guard let uploaded = await photoUploads.upload(
-            edit.newPhotos,
-            coupleID: coupleID,
-            ownerUserID: userID,
-            startingSortOrder: (latest.snapshot.media.map(\.sortOrder).max() ?? 0) + 1
-        ) else {
-            notice = .photoUploadFailed
-            return .failed
-        }
-        let attached = await perform("Attaching photos to a memory failed", notice: .photoUploadFailed) {
-            _ = try await self.memoryService.attachMemoryMedia(
-                ownerUserID: userID,
-                memoryID: latest.snapshot.memoryID,
-                optimisticMedia: uploaded,
-                operation: self.operationProvider.makeOperation()
-            )
-        }
-        guard attached else { return .failed }
-        photoUploads.forget(edit.newPhotos, coupleID: coupleID)
         return .saved
     }
 

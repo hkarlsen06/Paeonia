@@ -98,6 +98,7 @@ extension MemoryDataService {
         expectedRevision: Int,
         title: String,
         memoryDate: String,
+        photoDescriptions: [MemoryPhotoDescription] = [],
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         let existing = try await requireMemory(ownerUserID: ownerUserID, memoryID: memoryID)
@@ -122,7 +123,8 @@ extension MemoryDataService {
             title: normalizedTitle,
             memoryDate: memoryDate,
             baseTitle: existing.snapshot.title,
-            baseMemoryDate: existing.snapshot.memoryDate
+            baseMemoryDate: existing.snapshot.memoryDate,
+            photoDescriptions: photoDescriptions
         )
         let next = record(
             from: existing,
@@ -131,7 +133,8 @@ extension MemoryDataService {
             title: payload.title,
             memoryDate: payload.memoryDate,
             revision: resolvedRevision + 1,
-            lastEditedByUserID: ownerUserID
+            lastEditedByUserID: ownerUserID,
+            media: existing.snapshot.media.map { $0.applying(photoDescriptions, author: ownerUserID) }
         )
 
         try await enqueue(

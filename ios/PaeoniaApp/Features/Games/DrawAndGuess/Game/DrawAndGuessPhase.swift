@@ -148,7 +148,8 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         guard !hasSeenResult(of: round, pending: pending) else {
             return nil
         }
-        if pending.hasDrawing(roundID: round.id) {
+        if let drawing = pending.drawings.last(where: { $0.roundID == round.id }) {
+            round.drawingAccessibilityText = drawing.drawingAccessibilityText
             round.isDrawingSent = true
         }
         return round
@@ -184,7 +185,8 @@ nonisolated struct DrawAndGuessResolver: Sendable {
         guard var round = baseRound(state: state, game: game, pending: pending) else {
             return nil
         }
-        if pending.hasDrawing(roundID: round.id) {
+        if let drawing = pending.drawings.last(where: { $0.roundID == round.id }) {
+            round.drawingAccessibilityText = drawing.drawingAccessibilityText
             round.isDrawingSent = true
             // A round the partner solved live still gets its drawing attached.
             if round.state == .drawing {

@@ -370,6 +370,8 @@ private final class WetInkCanvas: OverscanCanvasView {
         super.init(frame: frame)
         configureForPaeoniaDrawingCanvas()
         isUserInteractionEnabled = false
+        // This layer only previews the same stroke rendered by the real canvas.
+        accessibilityElementsHidden = true
         drawingGestureRecognizer.isEnabled = false
     }
 

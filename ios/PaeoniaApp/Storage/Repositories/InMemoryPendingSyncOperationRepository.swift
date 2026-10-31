@@ -5,20 +5,22 @@ actor InMemoryPendingSyncOperationRepository: PendingSyncOperationPersisting {
 
     func enqueue(_ request: PendingSyncOperationRequest) throws {
         defer { LocalStoreChanges.post(.pendingOperations, ownerUserID: request.ownerUserID) }
-        operations[request.operation.id] = operations[request.operation.id] ?? PendingSyncOperationSnapshot(
-            ownerUserID: request.ownerUserID,
-            operation: request.operation,
-            operationKind: request.operationKind,
-            idempotencyScope: request.idempotencyScope,
-            requestHash: request.requestHash,
-            requestData: request.requestData,
-            status: .queued,
-            attemptCount: 0,
-            lastAttemptAt: nil,
-            nextRetryAt: nil,
-            lastError: nil,
-            completedAt: nil
-        )
+        try LocalPrivacyWriteGuard.shared.write(ownerUserID: request.ownerUserID, token: request.privacyToken) {
+            operations[request.operation.id] = operations[request.operation.id] ?? PendingSyncOperationSnapshot(
+                ownerUserID: request.ownerUserID,
+                operation: request.operation,
+                operationKind: request.operationKind,
+                idempotencyScope: request.idempotencyScope,
+                requestHash: request.requestHash,
+                requestData: request.requestData,
+                status: .queued,
+                attemptCount: 0,
+                lastAttemptAt: nil,
+                nextRetryAt: nil,
+                lastError: nil,
+                completedAt: nil
+            )
+        }
     }
 
     func readyOperations(

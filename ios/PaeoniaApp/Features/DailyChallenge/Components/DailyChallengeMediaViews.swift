@@ -62,11 +62,15 @@ struct DailySendingAnswerView: View {
     var voiceDurationMs: Int?
     var partnerChoiceName: String?
     var text: String?
+    var mediaAccessibilityText: String?
     @State private var imageViewerSelection: PaeoniaImageViewerSelection?
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             mediaPreview
+            if mediaData != nil {
+                DailyMediaAccessibilityText(text: mediaAccessibilityText, isVoice: mediaKind == .voice)
+            }
 
             if let partnerChoiceName {
                 Text(partnerChoiceName)
@@ -127,6 +131,8 @@ struct DailyAnswerImageView: View {
     var height: CGFloat = 220
     var allowsViewing = true
 
+    private let authoredDescription: String?
+
     @State private var image: UIImage?
     @State private var didFail = false
     /// Bumped by a tap on the failed placeholder to run the load again.
@@ -137,12 +143,14 @@ struct DailyAnswerImageView: View {
         mediaAssetID: UUID?,
         provider: (any DailyAnswerMediaImageProviding)? = DailyAnswerMediaImageProviderFactory.shared,
         height: CGFloat = 220,
-        allowsViewing: Bool = true
+        allowsViewing: Bool = true,
+        authoredDescription: String? = nil
     ) {
         self.mediaAssetID = mediaAssetID
         self.provider = provider
         self.height = height
         self.allowsViewing = allowsViewing
+        self.authoredDescription = authoredDescription
         // A photo shown before is in the first frame, with no placeholder in between.
         let cached = Self.cacheKey(for: mediaAssetID, height: height).flatMap(PaeoniaImageMemoryCache.image(forKey:))
         _image = State(initialValue: cached)
@@ -182,13 +190,14 @@ struct DailyAnswerImageView: View {
                     presentImageViewer()
                 }
             }
-            .accessibilityLabel(Text(accessibilityLabel))
+            .accessibilityLabel(Text(verbatim: accessibilityLabel))
             .accessibilityAddTraits((image != nil && allowsViewing) || didFail ? .isButton : [])
             .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
-    private var accessibilityLabel: LocalizedStringResource {
-        didFail ? .dailyChallengePhotoLoadFailed : .dailyChallengePhotoAnswerAccessibility
+    private var accessibilityLabel: String {
+        if didFail { return String(localized: .dailyChallengePhotoLoadFailed) }
+        return authoredDescription?.trimmedNonEmpty ?? String(localized: .dailyChallengePhotoAnswerAccessibility)
     }
 
     @ViewBuilder

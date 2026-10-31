@@ -14,8 +14,12 @@ final class ThreadChatViewModel {
         case unavailable
         /// A recording could not be turned into a message on this phone.
         case voiceFailed
+        case voiceDraftReadFailed
+        case voiceDraftSaveFailed
         /// Picked photos could not be prepared or saved on this phone.
         case photoFailed
+        case photoDraftReadFailed
+        case photoDraftSaveFailed
         /// A change to a sent message didn't reach the server. The text stays in the box.
         case editFailed(PaeoniaFailure)
         /// The five minutes to change a message ran out.
@@ -33,6 +37,10 @@ final class ThreadChatViewModel {
     /// What the chat is about: a question, a memory or a story.
     let subject: ThreadChatSubject
     let coupleID: UUID
+    let voiceDraftStore: FileThreadChatVoiceDraftStore
+    let voiceDraftGeneration: Int
+    let photoDraftStore: FileThreadChatPhotoDraftStore
+    let photoDraftGeneration: Int
     /// The card that opens a memory's or a story's chat. Nil in a question's chat, which opens
     /// with its question. `ThreadChatScreen` replaces it when a memory's note changes.
     var header: ThreadChatHeader?
@@ -118,10 +126,16 @@ final class ThreadChatViewModel {
         focusesNewest: Bool = false,
         service: (any ThreadChatServicing)? = nil,
         operationProvider: (any SyncClientOperationProviding)? = nil,
-        syncAfterLocalChange: (@MainActor () async -> Void)? = nil
+        syncAfterLocalChange: (@MainActor () async -> Void)? = nil,
+        voiceDraftStore: FileThreadChatVoiceDraftStore = .shared,
+        photoDraftStore: FileThreadChatPhotoDraftStore = .shared
     ) {
         self.subject = subject
         self.coupleID = coupleID
+        self.voiceDraftStore = voiceDraftStore
+        voiceDraftGeneration = voiceDraftStore.generation
+        self.photoDraftStore = photoDraftStore
+        photoDraftGeneration = photoDraftStore.generation
         self.header = header
         self.question = question
         self.participants = participants
@@ -428,7 +442,8 @@ extension ThreadChatViewModel {
                         width: photo.width ?? 0,
                         height: photo.height ?? 0,
                         reserveOperation: operationProvider.makeOperation(),
-                        finalizeOperation: operationProvider.makeOperation()
+                        finalizeOperation: operationProvider.makeOperation(),
+                        accessibilityText: photo.accessibilityText
                     )
                 }
             }

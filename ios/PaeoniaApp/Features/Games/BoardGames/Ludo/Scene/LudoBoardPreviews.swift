@@ -153,8 +153,10 @@ private enum LudoPreviewStyles {
     /// Player one has a drawn mark (a heart). Player two has no mark yet, so their initial shows.
     static func styles(for colors: LudoColorPair) -> BoardPieceStyles {
         BoardPieceStyles(
-            one: BoardPieceStyle(color: colors.mine.color, mark: UIImage(systemName: "heart.fill"), initial: "H"),
-            two: BoardPieceStyle(color: colors.partner.color, mark: nil, initial: "M")
+            one: BoardPieceStyle(
+                color: colors.mine.color, mark: UIImage(systemName: "heart.fill"), initial: "H", owner: .one
+            ),
+            two: BoardPieceStyle(color: colors.partner.color, mark: nil, initial: "M", owner: .two)
         )
     }
 }

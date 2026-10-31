@@ -31,6 +31,7 @@ struct StoryViewer: View {
     @State private var index: Int
     /// 0 to 1 through the current story on Home.
     @State private var progress: Double = 0
+    @State private var isAutoAdvancePaused = false
     /// The story whose photo is on screen. The timer waits for it.
     @State private var shownPhotoID: UUID?
     @State private var dragOffset: CGFloat = 0
@@ -38,6 +39,7 @@ struct StoryViewer: View {
     @State private var touchStart: Date?
     @State private var isConfirmingDelete = false
     @State private var isDeleting = false
+    @State private var isReadingDescription = false
     @State private var shareable: PaeoniaShareable?
     /// The replies to the story on screen, and whether their chat is open over the story.
     @State var replies = StoryReplies()
@@ -47,7 +49,8 @@ struct StoryViewer: View {
     @FocusState var isReplyFocused: Bool
     @Environment(\.threadChatContext) var chatContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
+    @Environment(\.accessibilityEnabled) private var assistiveTechnologyEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(PaeoniaBannerCenter.self) var bannerCenter
 
     private static let storyDuration: Double = 6
@@ -75,6 +78,7 @@ struct StoryViewer: View {
     /// delete is on its way.
     private var isPaused: Bool {
         touchStart != nil || isConfirmingDelete || isDeleting || shareable != nil || isReplyFocused || isShowingReplies
+            || isReadingDescription
     }
 
     /// A touch held at least this long is a hold, not a tap, so letting go doesn't move on.
@@ -84,9 +88,10 @@ struct StoryViewer: View {
     /// Dragging the story down this far closes it.
     private static let closeDistance: CGFloat = 120
 
-    /// Auto-advance would move on before VoiceOver finishes reading, so it stays off then.
+    /// Reading and scanning must not race a timer. The same controls remain available
+    /// when automatic advance is off, including when a system preference changes here.
     private var playsOnItsOwn: Bool {
-        content.mode == .home && !voiceOverEnabled
+        content.mode == .home && !assistiveTechnologyEnabled && !reduceMotion && !isAutoAdvancePaused
     }
 
     var body: some View {
@@ -104,7 +109,10 @@ struct StoryViewer: View {
         }
         .offset(y: dragOffset)
         .preferredColorScheme(.dark)
-        .task(id: TimerKey(storyID: story?.id, photoShown: shownPhotoID == story?.id, isPaused: isPaused)) {
+        .task(id: TimerKey(
+            storyID: story?.id, photoShown: shownPhotoID == story?.id,
+            isPaused: isPaused, playsOnItsOwn: playsOnItsOwn
+        )) {
             await runTimer()
         }
         .onChange(of: story?.id, initial: true) { _, _ in
@@ -112,6 +120,15 @@ struct StoryViewer: View {
             if let story {
                 viewModel.markSeen(story)
                 Task { await loadReplies(for: story) }
+            }
+        }
+        .onChange(of: viewModel.stories) { _, latest in
+            // Metadata correction keeps the same story and timer position.
+            stories = stories.map { shown in
+                guard let updated = latest.first(where: { $0.id == shown.id }) else { return shown }
+                var copy = shown
+                copy.accessibilityText = updated.accessibilityText
+                return copy
             }
         }
         .sheet(isPresented: $isShowingReplies) { repliesSheet }
@@ -145,6 +162,7 @@ struct StoryViewer: View {
         // One VoiceOver element with next and previous actions stands in for the gesture.
         .accessibilityElement()
         .accessibilityLabel(Text(.storiesViewerPhotoAccessibility(people.name(of: story))))
+        .accessibilityValue(Text(verbatim: PhotoDescription.label(story.accessibilityText)))
         .accessibilityAction(named: Text(.storiesViewerNext)) { goForward() }
         .accessibilityAction(named: Text(.storiesViewerPrevious)) { goBack() }
     }
@@ -157,6 +175,14 @@ struct StoryViewer: View {
                 onShare: { shareable = StoryShare.shareable(for: story, people: people) },
                 onClose: { dismiss() }
             )
+            navigationControls
+            MediaAlternativeReadout(
+                text: story.accessibilityText, isVoice: false,
+                editingTarget: people.isOwn(story) ? .story(storyID: story.id) : nil,
+                isCompact: true, onPresentationChanged: { isReadingDescription = $0 }
+            )
+            .padding(.horizontal, PaeoniaSpacing.space12)
+            .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
             Spacer(minLength: 0)
             if let caption = story.caption {
                 Text(caption)
@@ -183,6 +209,15 @@ struct StoryViewer: View {
         .padding(.bottom, PaeoniaSpacing.space16)
     }
 
+    private var navigationControls: some View {
+        StoryNavigationControls(
+            canGoBack: index > 0,
+            automaticAdvanceAvailable: content.mode == .home && !assistiveTechnologyEnabled && !reduceMotion,
+            isPaused: $isAutoAdvancePaused,
+            onPrevious: goBack, onNext: goForward
+        )
+    }
+
     private func ownFooter(for story: Story) -> some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             Label {
@@ -202,29 +237,13 @@ struct StoryViewer: View {
                 StoryRepliesButton(isUnread: hasUnreadReply(for: story), action: openReplies)
             }
             if let onAddStory, content.mode == .home {
-                footerButton(systemImage: "plus", label: .storiesHomeAddAccessibility, action: onAddStory)
+                StoryViewerIconButton(systemImage: "plus", label: .storiesHomeAddAccessibility, action: onAddStory)
             }
-            footerButton(systemImage: "trash", label: .storiesViewerDeleteAction) {
+            StoryViewerIconButton(systemImage: "trash", label: .storiesViewerDeleteAction) {
                 isConfirmingDelete = true
             }
             .disabled(isDeleting)
         }
-    }
-
-    private func footerButton(
-        systemImage: String,
-        label: LocalizedStringResource,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(.white.opacity(0.15), in: Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(label))
     }
 
     private func touchGesture(width: CGFloat) -> some Gesture {
@@ -242,7 +261,7 @@ struct StoryViewer: View {
                     dismiss()
                     return
                 }
-                withAnimation(PaeoniaMotion.stateChange) { dragOffset = 0 }
+                withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { dragOffset = 0 }
                 // A tap while the keyboard is up puts it away instead of moving on.
                 if isReplyFocused {
                     isReplyFocused = false
@@ -264,6 +283,7 @@ struct StoryViewer: View {
         let storyID: UUID?
         let photoShown: Bool
         let isPaused: Bool
+        let playsOnItsOwn: Bool
     }
 
     /// Fills the current bar while the photo shows, then moves on. Starts again from

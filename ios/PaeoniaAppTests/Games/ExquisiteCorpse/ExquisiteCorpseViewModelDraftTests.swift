@@ -290,4 +290,20 @@ extension ExquisiteCorpseViewModelDraftTests {
 
         #expect(env.drawingStore.draft(ownerUserID: Fixture.me, roundID: body) == nil)
     }
+    @Test func aQueuedPartIsNotReusedAsTheNextPartsDraft() async throws {
+        let env = ExquisiteCorpseTestEnvironment(state: Fixture.myHeadTurn(figure: 2))
+        let first = await env.loadedViewModel()
+        first.board.updateDrawing(CorpseDrawings.crossingFold)
+        await first.finishDrawing()
+        let head = Fixture.partID(figure: 2, partIndex: 0)
+        #expect(env.drawingStore.draft(ownerUserID: Fixture.me, roundID: head) != nil)
+        try #require(await env.queuedParts().count == 1)
+        await env.serverState(Fixture.myLegsTurn())
+        let reopened = await env.loadedViewModel()
+        #expect(reopened.phase == .drawing)
+        #expect(reopened.part == .legs)
+        #expect(reopened.board.isEmpty)
+        #expect(env.drawingStore.draft(ownerUserID: Fixture.me, roundID: head) != nil)
+    }
+
 }

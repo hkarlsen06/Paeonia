@@ -9,6 +9,7 @@ nonisolated struct DailySendingPreview: Equatable, Hashable, Sendable {
     var voiceDurationMs: Int?
     var partnerChoiceName: String?
     var text: String?
+    var mediaAccessibilityText: String?
     var isHeldOnPhone = false
 }
 
@@ -37,6 +38,8 @@ struct DailyChallengeReadCard: View {
     /// Today's completed question stays at the top, with earlier unanswered questions below it.
     var completionState: DailyChallengeCardState?
     var onOpenPartnerQuestion: (UUID) -> Void = { _ in }
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// A question the partner answered that the user can still answer to reveal the
     /// reply. When sending, the row shows the "saved, sending" preview instead, so this
@@ -114,7 +117,7 @@ struct DailyChallengeReadCard: View {
             Text(question.prompt)
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             if let sending, completionState == nil {
@@ -123,7 +126,8 @@ struct DailyChallengeReadCard: View {
                     mediaData: sending.mediaData,
                     voiceDurationMs: sending.voiceDurationMs,
                     partnerChoiceName: sending.partnerChoiceName,
-                    text: sending.text
+                    text: sending.text,
+                    mediaAccessibilityText: sending.mediaAccessibilityText
                 )
             } else {
                 statusRow
@@ -145,25 +149,36 @@ struct DailyChallengeReadCard: View {
     }
 
     private var statusRow: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            DailyAnswerersView(question: question, participants: participants, hasPendingOwnAnswer: sending != nil)
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space12))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space12))
+        return layout {
+            HStack {
+                DailyAnswerersView(question: question, participants: participants, hasPendingOwnAnswer: sending != nil)
+                if dynamicTypeSize.isAccessibilitySize {
+                    Spacer(minLength: PaeoniaSpacing.space12)
+                    accessory
+                }
+            }
 
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 statusText
                     .font(isNew ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.caption)
                     .foregroundStyle(isNew ? Color.paeoniaTextPrimary : Color.paeoniaTextSecondary)
-                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if isUnread, let preview = lastMessagePreview?.trimmedNonEmpty {
                     Text(verbatim: preview)
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaTextSecondary)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            accessory
+            if !dynamicTypeSize.isAccessibilitySize {
+                accessory
+            }
         }
     }
 

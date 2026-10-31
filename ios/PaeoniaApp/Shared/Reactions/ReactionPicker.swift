@@ -26,6 +26,8 @@ struct ReactionPickerRow: View {
 
     @Environment(ReactionStore.self) private var store: ReactionStore?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let palette = ReactionPalette.shared
 
     var body: some View {
@@ -34,15 +36,33 @@ struct ReactionPickerRow: View {
             row(own: own)
                 .padding(PaeoniaSpacing.space4)
                 .modifier(PickerFrame(isFramed: isFramed))
-                .animation(PaeoniaMotion.buttonPress, value: own)
-                // A row that outgrows a narrow screen would run off its edges.
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: own)
                 .accessibilityElement(children: .contain)
         }
     }
 
+    @ViewBuilder
     private func row(own: String?) -> some View {
-        HStack(spacing: PaeoniaSpacing.space2) {
+        if dynamicTypeSize.isAccessibilitySize {
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 44)), count: 3)) {
+                    choices(own: own)
+                }
+            }
+            .frame(idealWidth: 280, idealHeight: 240, maxHeight: 400)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: PaeoniaSpacing.space2) { choices(own: own) }
+                    .fixedSize(horizontal: true, vertical: false)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 44)), count: 3)) {
+                    choices(own: own)
+                }
+                .frame(idealWidth: 280)
+            }
+        }
+    }
+
+    private func choices(own: String?) -> some View {
             ForEach(palette.emojis, id: \.self) { emoji in
                 let isOwn = own == emoji
                 let label: LocalizedStringResource = isOwn ? .reactionsRemove : .reactionsAdd(emoji)
@@ -57,14 +77,20 @@ struct ReactionPickerRow: View {
                                 Circle().fill(.paeoniaSurfaceHighlight)
                             }
                         }
-                        .scaleEffect(isOwn ? 1.12 : 1)
+                        .overlay(alignment: .bottomTrailing) {
+                            if isOwn {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.paeoniaTextPrimary, .paeoniaBackgroundPrimary)
+                                    .accessibilityHidden(true)
+                            }
+                        }
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(label))
                 .accessibilityAddTraits(isOwn ? .isSelected : [])
             }
-        }
     }
 
     private func pick(_ emoji: String) {

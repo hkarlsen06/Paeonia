@@ -4,6 +4,7 @@ import SwiftUI
 /// It floats instead of taking a row, so the canvas never changes size.
 struct WidgetDrawingSetAsideBar: View {
     let viewModel: WidgetDrawingViewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isDiscardConfirmationPresented = false
 
     var body: some View {
@@ -19,6 +20,8 @@ struct WidgetDrawingSetAsideBar: View {
                     }
                     .padding(.leading, PaeoniaSpacing.space12)
                     .padding(.vertical, PaeoniaSpacing.space8)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
                 }
 
                 Button {
@@ -27,13 +30,15 @@ struct WidgetDrawingSetAsideBar: View {
                     Image(systemName: "xmark")
                         .padding(.horizontal, PaeoniaSpacing.space12)
                         .padding(.vertical, PaeoniaSpacing.space8)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel(Text(.widgetDrawingSetAsideDiscard))
             }
             .font(PaeoniaTypography.caption.weight(.semibold))
             .foregroundStyle(.paeoniaTextPrimary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+            .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
             .background(.paeoniaSurfacePrimary, in: Capsule(style: .continuous))
             .padding(PaeoniaSpacing.space8)
             .transition(.opacity)

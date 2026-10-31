@@ -7,13 +7,16 @@ extension GuessMySpotViewModel {
     /// Re-reads the cache, the queue and the marks, then works out the phase.
     func reload() async {
         guard let userID = currentUserID else { return }
+        let requestedCoupleID = participants.coupleID
         let ticket = reloadGate.begin()
         let document = await cache.document(ownerUserID: userID)
         let overview = await dependencies.cache.document(ownerUserID: userID).overview
         let work = await GuessMySpotPendingWork.load(from: dependencies.pendingOperationStore, ownerUserID: userID)
         let marks = await dependencies.boardGamesCache.document(ownerUserID: userID).marks
         let images = await renderedMarks(marks, userID: userID, partnerID: document.state?.partnerUserID)
-        guard currentUserID == userID, reloadGate.apply(ticket) else { return }
+        guard currentUserID == userID, participants.coupleID == requestedCoupleID,
+              requestedCoupleID == nil || document.state == nil || document.state?.coupleID == requestedCoupleID,
+              reloadGate.apply(ticket) else { return }
 
         state = document.state
         self.overview = overview
@@ -32,6 +35,7 @@ extension GuessMySpotViewModel {
         updateStyles()
         now = dependencies.now()
         recompute()
+        await restoreStoredDraftIfNeeded()
         await showRefusedMoves()
     }
 
@@ -139,7 +143,8 @@ extension GuessMySpotViewModel {
     /// Tells the person about a refused move, once a visit, and puts a refused send
     /// back on the check when it's their turn to send. A refusal arrives just before
     /// its operation leaves the queue, so each one waits until the move is gone from
-    /// the queue. A refused guess, or a send whose photo is gone, is forgotten once told.
+    /// the queue. A refused guess is forgotten once told. A send keeps its details
+    /// if its photo cannot be read.
     func showRefusedMoves() async {
         guard !refusedMoves.isEmpty, let userID = currentUserID else { return }
         for refused in refusedMoves {

@@ -118,19 +118,16 @@ final class PaeoniaBannerCenter {
     /// attachments therefore never show the same banner twice.
     private(set) var hosts: [UUID] = []
 
-    private let errorDuration: Duration
     private let infoDuration: Duration
     private let isVoiceOverRunning: @MainActor () -> Bool
     @ObservationIgnored private var dismissTask: Task<Void, Never>?
 
-    /// A `.standard` banner dismisses itself after `errorDuration` or `infoDuration`.
-    /// With VoiceOver running every banner stays until the user dismisses it.
+    /// Errors and actionable notices stay until dismissed so reading or operating
+    /// another control never makes someone miss a problem or an available action.
     init(
-        errorDuration: Duration = .seconds(6),
         infoDuration: Duration = .seconds(4),
         isVoiceOverRunning: @escaping @MainActor () -> Bool = { UIAccessibility.isVoiceOverRunning }
     ) {
-        self.errorDuration = errorDuration
         self.infoDuration = infoDuration
         self.isVoiceOverRunning = isVoiceOverRunning
     }
@@ -189,20 +186,17 @@ final class PaeoniaBannerCenter {
     private func scheduleDismiss(of banner: PaeoniaBannerContent) {
         dismissTask?.cancel()
         dismissTask = nil
+        guard banner.style != .error, !banner.isTappable, !isVoiceOverRunning() else { return }
 
         let duration: Duration
         switch banner.timing {
         case .standard:
-            duration = banner.style == .error ? errorDuration : infoDuration
+            duration = infoDuration
         case let .fixed(fixed):
             duration = fixed
         case .untilDismissed:
             return
         }
-        guard !isVoiceOverRunning() else {
-            return
-        }
-
         let id = banner.id
         dismissTask = Task { [weak self] in
             try? await Task.sleep(for: duration)
@@ -235,12 +229,7 @@ struct PaeoniaTopBanner: View {
         .padding(.horizontal, PaeoniaSpacing.space16)
         .padding(.vertical, PaeoniaSpacing.space12)
         .frame(maxWidth: 430)
-        // Liquid Glass so the banner reads as a translucent layer over the
-        // content behind it, tinted by the style's accent.
-        .glassEffect(
-            .regular.tint(accentColor.opacity(0.16)),
-            in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
-        )
+        .modifier(PaeoniaBannerSurface(accent: accentColor))
         .overlay {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
                 .stroke(accentColor.opacity(0.35), lineWidth: PaeoniaRadius.strokeDefault)

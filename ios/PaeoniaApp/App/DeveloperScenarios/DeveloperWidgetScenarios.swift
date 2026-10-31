@@ -132,6 +132,15 @@
       )
     }
     func clearForPrivacy() { snapshot = nil }
+    func saveDescribedDrawing(
+      _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+      revisionID _: UUID?, accessibilityText: String?
+    ) {
+      snapshot = WidgetCanvasSnapshot(
+        drawingData: data, authorName: authorName, createdAt: createdAt,
+        canvasSide: canvasSize.width, accessibilityText: accessibilityText
+      )
+    }
     func hideForPrivacy() { snapshot = nil }
   }
 

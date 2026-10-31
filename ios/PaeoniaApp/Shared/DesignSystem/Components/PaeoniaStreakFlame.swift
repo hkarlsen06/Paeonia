@@ -93,13 +93,16 @@ struct PaeoniaStreakFlame: View {
         content
             .onAppear(perform: start)
             .onDisappear(perform: stop)
+            .onChange(of: reduceMotion) { _, enabled in
+                if enabled { stop() }
+            }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(verbatim: accessibilityLabel))
     }
 
     @ViewBuilder
     private var content: some View {
-        if isAnimating {
+        if isAnimating && !reduceMotion {
             TimelineView(
                 .animation(minimumInterval: isToppedUp ? Self.ambientFrameInterval : nil, paused: isSettled)
             ) { timeline in

@@ -49,7 +49,7 @@ struct DotsAndBoxesAccessibilityLayer: View {
                 Color.clear
                     .frame(width: rect.width, height: rect.height)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(label(for: box))
+                    .accessibilityLabel(Self.boxLabel(board: board, box: box, me: me, partnerName: partnerName))
                     .accessibilityIdentifier("dotsAndBoxes.box.\(box)")
                     .accessibilityActions { actions(for: box) }
                     .position(x: rect.midX, y: rect.midY)
@@ -57,7 +57,7 @@ struct DotsAndBoxesAccessibilityLayer: View {
         }
     }
 
-    private func label(for box: Int) -> Text {
+    static func boxLabel(board: DotsAndBoxesBoard, box: Int, me: BoardPlayer, partnerName: String) -> Text {
         let count = DotsAndBoxesBoard.boxesPerSide
         let row = box / count + 1
         let column = box % count + 1

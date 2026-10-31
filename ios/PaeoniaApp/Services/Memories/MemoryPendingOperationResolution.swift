@@ -13,7 +13,8 @@ extension UpdateMemoryOperationPayload {
             title: changedTitle ? title : (row.title ?? title),
             memoryDate: changedDate ? memoryDate : row.memoryDate,
             baseTitle: baseTitle,
-            baseMemoryDate: baseMemoryDate
+            baseMemoryDate: baseMemoryDate,
+            photoDescriptions: photoDescriptions
         )
     }
 }

@@ -32,6 +32,8 @@ struct ExquisiteCorpseRevealCredits: View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             ForEach(parts) { part in
                 row(part)
+                MediaAlternativeReadout(text: part.accessibilityText, isVoice: false, isDrawing: true,
+                    editingTarget: part.editingTarget, isCompact: true)
             }
         }
         .frame(maxWidth: .infinity)
@@ -49,6 +51,9 @@ struct ExquisiteCorpseRevealCredits: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(part.drawing.map {
+            DrawingGeometryDescription.text($0, side: GameCanvas.canonicalSide)
+        } ?? ""))
     }
 
     /// The credit in the main text color and the idea after a dot in the quiet one.

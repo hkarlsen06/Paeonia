@@ -30,6 +30,7 @@ struct GameDrawingCanvas: View {
         }
         .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
         .accessibilityIdentifier(identifier)
+        .allowsHitTesting(!board.isFinishing)
     }
 }
 
@@ -59,7 +60,9 @@ struct GameDrawingTools: View {
                 .scrollBounceBehavior(.basedOnSize)
             }
             WidgetDrawingSizeControlsView(viewModel: board)
+            DrawingCompositionButton(drawing: board.drawing, side: board.canvasSide) { board.applyEdit($0) }
         }
+        .disabled(board.isFinishing)
     }
 
     private var colors: some View {
@@ -92,7 +95,7 @@ private struct GameClearDrawingToolbar: ViewModifier {
                     } label: {
                         Text(.widgetDrawingClearButton)
                     }
-                    .disabled(board.isEmpty)
+                    .disabled(board.isEmpty || board.isFinishing)
                     .accessibilityIdentifier(identifier)
                 }
             }

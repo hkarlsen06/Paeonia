@@ -7,6 +7,7 @@ import UIKit
 nonisolated struct PostPairingGift: Sendable {
     let revisionID: UUID
     let drawing: PKDrawing
+    var accessibilityText: String?
 }
 
 /// What came of loading the partner's drawing.
@@ -58,7 +59,8 @@ nonisolated struct LivePostPairingDataLoader: PostPairingDataLoading {
             let side = state.bounds?.canvasSide ?? Double(WidgetDrawingViewModel.fallbackCanvasSide)
             return .ready(PostPairingGift(
                 revisionID: revisionID,
-                drawing: drawing.scaled(fromSide: CGFloat(side), toSide: GameCanvas.canonicalSide)
+                drawing: drawing.scaled(fromSide: CGFloat(side), toSide: GameCanvas.canonicalSide),
+                accessibilityText: state.bounds?.accessibilityText
             ))
         } catch {
             return .failed(PaeoniaFailure(error))

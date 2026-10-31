@@ -214,7 +214,8 @@ private func uploadAttachments(
                 mimeType: "image/jpeg",
                 fileExtension: "jpg",
                 width: photo.width,
-                height: photo.height
+                height: photo.height,
+                accessibilityText: photo.accessibilityText
             ),
             answerID: payload.photos?.messageID ?? UUID(),
             coupleID: payload.coupleID,
@@ -234,7 +235,8 @@ private func uploadAttachments(
                 purpose: .voice,
                 mimeType: ThreadChatVoiceRecording.mimeType,
                 fileExtension: ThreadChatVoiceRecording.fileExtension,
-                durationMs: voice.durationMs
+                durationMs: voice.durationMs,
+                accessibilityText: voice.transcript
             ),
             answerID: voice.messageID,
             coupleID: payload.coupleID,

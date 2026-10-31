@@ -1,19 +1,23 @@
+import Photos
 import SwiftUI
 import UIKit
 
 struct PaeoniaImageViewerItem: Identifiable {
+    var accessibilityText: String?
     let id: String
     let image: UIImage?
-    let imageLoader: (@Sendable () async -> UIImage?)?
+    let imageLoader: (@Sendable () async throws -> UIImage?)?
 
-    init(id: String = UUID().uuidString, image: UIImage) {
+    init(id: String = UUID().uuidString, image: UIImage, accessibilityText: String? = nil) {
         self.id = id
+        self.accessibilityText = accessibilityText
         self.image = image
         self.imageLoader = nil
     }
 
-    init(id: UUID, image: UIImage) {
+    init(id: UUID, image: UIImage, accessibilityText: String? = nil) {
         self.id = id.uuidString
+        self.accessibilityText = accessibilityText
         self.image = image
         self.imageLoader = nil
     }
@@ -21,9 +25,11 @@ struct PaeoniaImageViewerItem: Identifiable {
     init(
         id: String,
         image: UIImage? = nil,
-        imageLoader: @escaping @Sendable () async -> UIImage?
+        accessibilityText: String? = nil,
+        imageLoader: @escaping @Sendable () async throws -> UIImage?
     ) {
         self.id = id
+        self.accessibilityText = accessibilityText
         self.image = image
         self.imageLoader = imageLoader
     }
@@ -31,9 +37,11 @@ struct PaeoniaImageViewerItem: Identifiable {
     init(
         id: UUID,
         image: UIImage? = nil,
-        imageLoader: @escaping @Sendable () async -> UIImage?
+        accessibilityText: String? = nil,
+        imageLoader: @escaping @Sendable () async throws -> UIImage?
     ) {
         self.id = id.uuidString
+        self.accessibilityText = accessibilityText
         self.image = image
         self.imageLoader = imageLoader
     }
@@ -71,9 +79,12 @@ struct PaeoniaImageViewerOverlay: View {
     @State private var isSaving = false
     @State private var isShowingSavePermissionAlert = false
     @State private var selectedPageIsZoomed = false
+    @State private var failedItemIDs: Set<String> = []
+    @State private var zoomControls = PaeoniaImageZoomController()
+    @State private var controlsHeight: CGFloat = 200
+    @State private var bannerCenter = PaeoniaBannerCenter()
     @State private var dragOffset: CGFloat = 0
     @State private var isDismissing = false
-    @State private var containerHeight: CGFloat = 800
     /// Resets to false when the drag ends or the system cancels it, so a cancelled
     /// drag still settles back even though `onEnded` never runs.
     @GestureState private var isDragging = false
@@ -96,37 +107,28 @@ struct PaeoniaImageViewerOverlay: View {
     }
 
     var body: some View {
-        ZStack {
-            Color.black
-                .opacity(1 - dragProgress)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack {
+                Color.black
+                    .opacity(1 - dragProgress)
+                    .ignoresSafeArea()
 
-            if items.isEmpty {
-                Color.clear
-                    .onAppear { onDismiss() }
-            } else {
-                pages
+                VStack(spacing: 0) {
+                    topBar
+                        .padding(.horizontal, PaeoniaSpacing.space20)
+                        .padding(.top, PaeoniaSpacing.space20)
+                        .opacity(1 - dragProgress)
+                    if items.isEmpty {
+                        Color.clear.onAppear { onDismiss() }
+                    } else {
+                        pages
+                    }
+                    controls(maxHeight: geometry.size.height / 2)
+                        .opacity(1 - dragProgress)
+                }
             }
-
-            VStack {
-                topBar
-                    .padding(.horizontal, PaeoniaSpacing.space20)
-                    .padding(.top, PaeoniaSpacing.space20)
-
-                Spacer()
-
-                pageIndicator
-                    .padding(.bottom, PaeoniaSpacing.space32)
-            }
-            .opacity(1 - dragProgress)
-        }
-        .onGeometryChange(for: CGFloat.self) {
-            $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom
-        } action: {
-            containerHeight = $0
         }
         .accessibilityAction(.escape) { onDismiss() }
-        .simultaneousGesture(verticalDismissGesture)
         .onChange(of: isDragging) { _, dragging in
             if !dragging, !isDismissing { settleBack() }
         }
@@ -134,6 +136,7 @@ struct PaeoniaImageViewerOverlay: View {
             selectedPageIsZoomed = false
         }
         .statusBarHidden()
+        .paeoniaTopBanner(bannerCenter)
         .alert(Text(.imageViewerSavePermissionTitle), isPresented: $isShowingSavePermissionAlert) {
             Button {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -151,16 +154,36 @@ struct PaeoniaImageViewerOverlay: View {
         }
     }
 
+    /// At large text sizes or in a short window, controls scroll within their
+    /// own space while the fitted photo remains visible above them.
+    private func controls(maxHeight: CGFloat) -> some View {
+        ScrollView {
+            PaeoniaImageViewerControls(
+                index: selectedIndex, count: items.count, zoom: zoomControls,
+                previous: { changePage(by: -1) }, next: { changePage(by: 1) }
+            )
+            .frame(maxWidth: .infinity)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { controlsHeight = $0 }
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(height: min(controlsHeight, maxHeight))
+    }
+
     private var pages: some View {
         TabView(selection: $selectedItemID) {
             ForEach(items) { item in
                 PaeoniaImageViewerPage(
                     item: item,
                     isSelected: item.id == selectedItemID,
+                    zoomControls: zoomControls,
                     onZoomStateChanged: { isZoomed in
                         if item.id == selectedItemID {
                             selectedPageIsZoomed = isZoomed
                         }
+                    },
+                    onFailureChanged: { failed in
+                        if failed { failedItemIDs.insert(item.id) }
+                        else { failedItemIDs.remove(item.id) }
                     }
                 )
                 .tag(item.id)
@@ -168,6 +191,9 @@ struct PaeoniaImageViewerOverlay: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .offset(y: dragOffset)
+        .simultaneousGesture(
+            verticalDismissGesture, including: failedItemIDs.contains(selectedItemID) ? .subviews : .all
+        )
     }
 
     private var topBar: some View {
@@ -186,6 +212,8 @@ struct PaeoniaImageViewerOverlay: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text(.commonClose))
+            .accessibilityIdentifier("imageViewer.close")
+            .keyboardShortcut(.cancelAction)
         }
         .padding(.vertical, PaeoniaSpacing.space4)
     }
@@ -215,40 +243,13 @@ struct PaeoniaImageViewerOverlay: View {
         .buttonStyle(.plain)
         .disabled(isSaving || isSaved)
         .accessibilityLabel(Text(isSaved ? .imageViewerSaved : .imageViewerSave))
+        .accessibilityIdentifier("imageViewer.save")
     }
 
-    private func saveSelectedImage() async {
-        guard let item = items.first(where: { $0.id == selectedItemID }) else { return }
-        isSaving = true
-        defer { isSaving = false }
-        var loaded = item.image
-        if loaded == nil { loaded = await item.imageLoader?() }
-        guard let data = loaded?.pngData() else {
-            PaeoniaHaptics.validationError()
-            return
-        }
-        switch await PhotoLibrarySaver().saveImage(data) {
-        case .saved:
-            savedItemIDs.insert(item.id)
-            PaeoniaHaptics.memorySaved()
-        case .permissionDenied:
-            isShowingSavePermissionAlert = true
-        case .failed:
-            PaeoniaHaptics.validationError()
-        }
-    }
-
-    @ViewBuilder
-    private var pageIndicator: some View {
-        if let selectedIndex, items.count > 1 {
-            Text(.imageViewerPageCounter((selectedIndex + 1).formatted(), items.count.formatted()))
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(Color.white.opacity(0.88))
-                .padding(.horizontal, PaeoniaSpacing.space12)
-                .padding(.vertical, PaeoniaSpacing.space8)
-                .background(Capsule(style: .continuous).fill(Self.controlBackground))
-                .allowsHitTesting(false)
-        }
+    private func changePage(by offset: Int) {
+        guard let index = selectedIndex, items.indices.contains(index + offset) else { return }
+        zoomControls.clear()
+        selectedItemID = items[index + offset].id
     }
 
     private var selectedIndex: Int? {
@@ -276,7 +277,7 @@ struct PaeoniaImageViewerOverlay: View {
                        distance: translation.height,
                        predictedDistance: value.predictedEndTranslation.height
                    ) {
-                    flyOffAndDismiss()
+                    dismissAfterDrag()
                 } else {
                     settleBack()
                 }
@@ -302,23 +303,64 @@ struct PaeoniaImageViewerOverlay: View {
         withAnimation(animation) { dragOffset = 0 }
     }
 
-    /// Slides the photo off the bottom while the backdrop fades, then dismisses.
-    /// With Reduce Motion it dismisses straight away.
-    private func flyOffAndDismiss() {
+    /// Dismiss through the native cover immediately. Navigation does not wait for animation completion.
+    private func dismissAfterDrag() {
         isDismissing = true
-        guard !reduceMotion else {
-            onDismiss()
+        var transaction = Transaction()
+        transaction.disablesAnimations = reduceMotion
+        withTransaction(transaction) { onDismiss() }
+    }
+
+}
+
+extension PaeoniaImageViewerOverlay {
+    private func saveSelectedImage() async {
+        guard let item = items.first(where: { $0.id == selectedItemID }) else { return }
+        isSaving = true
+        defer { isSaving = false }
+        var loaded = item.image
+        do {
+            if loaded == nil { loaded = try await item.imageLoader?() }
+        } catch {
+            guard !Task.isCancelled else { return }
+            showSaveFailure(PaeoniaFailure(error))
             return
         }
-
-        withAnimation(PaeoniaMotion.standardCurve(duration: PaeoniaMotion.motionDefault)) {
-            dragOffset = containerHeight
-        } completion: {
-            // The photo is already gone, so skip the cover's own slide-down.
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) { onDismiss() }
+        guard !Task.isCancelled else { return }
+        guard let data = loaded?.pngData() else {
+            showSaveFailure(.other)
+            return
         }
+        handleSaveResult(await PhotoLibrarySaver().saveImage(data), itemID: item.id)
+    }
+
+    private func handleSaveResult(_ result: PhotoLibrarySaveResult, itemID: String) {
+        switch result {
+        case .saved:
+            savedItemIDs.insert(itemID)
+            bannerCenter.show(.info(message: String(localized: .imageViewerSaved)))
+        case .permissionDenied:
+            showPhotoPermissionFailure()
+        case .failed:
+            showSaveFailure(.other)
+        }
+    }
+
+    private func showPhotoPermissionFailure() {
+        switch PHPhotoLibrary.authorizationStatus(for: .addOnly) {
+        case .denied:
+            isShowingSavePermissionAlert = true
+        case .restricted:
+            bannerCenter.show(.error(message: String(localized: .imageViewerSaveRestricted)))
+        default:
+            showSaveFailure(.other)
+        }
+    }
+
+    private func showSaveFailure(_ failure: PaeoniaFailure) {
+        bannerCenter.show(.error(message: String(localized:
+            failure == .offline ? .imageViewerSaveOffline : .imageViewerSaveFailed
+        )))
     }
 }
 
@@ -331,71 +373,8 @@ extension View {
             ) {
                 selection.wrappedValue = nil
             }
-            // The backdrop fades during a drag, so the cover must not add its own.
+            // Keep the underlying screen visible as the dragged backdrop fades.
             .presentationBackground(.clear)
-        }
-    }
-}
-
-private struct PaeoniaImageViewerPage: View {
-    let item: PaeoniaImageViewerItem
-    let isSelected: Bool
-    let onZoomStateChanged: (Bool) -> Void
-
-    @State private var image: UIImage?
-    @State private var didFail = false
-
-    init(
-        item: PaeoniaImageViewerItem,
-        isSelected: Bool,
-        onZoomStateChanged: @escaping (Bool) -> Void
-    ) {
-        self.item = item
-        self.isSelected = isSelected
-        self.onZoomStateChanged = onZoomStateChanged
-        _image = State(initialValue: item.image)
-    }
-
-    var body: some View {
-        ZStack {
-            if let image {
-                PaeoniaZoomableImageView(
-                    image: image,
-                    isActive: isSelected,
-                    onZoomStateChanged: onZoomStateChanged
-                )
-                .accessibilityElement(children: .ignore)
-                .accessibilityAddTraits(.isImage)
-                .accessibilityIgnoresInvertColors()
-            } else if didFail {
-                Image(systemName: "photo")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.6))
-                    .accessibilityHidden(true)
-            } else {
-                ProgressView()
-                    .tint(.white.opacity(0.8))
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .task(id: item.id) { await loadImageIfNeeded() }
-        .onChange(of: isSelected) { _, newValue in
-            if !newValue {
-                onZoomStateChanged(false)
-            }
-        }
-    }
-
-    private func loadImageIfNeeded() async {
-        guard image == nil, let imageLoader = item.imageLoader else {
-            return
-        }
-
-        if let loadedImage = await imageLoader() {
-            image = loadedImage
-        } else {
-            didFail = true
         }
     }
 }

@@ -133,6 +133,7 @@ nonisolated enum SyncPendingOperationKind: String, Codable, CaseIterable, Sendab
     case createChatThreadWithMessage = "create_chat_thread_with_message"
     case sendThreadMessage = "send_thread_message"
     case deleteThreadMessage = "delete_thread_message"
+    case updateMediaAlternative = "update_media_accessibility_text"
     case createMemory = "create_memory"
     case updateMemory = "update_memory"
     case setMemoryPlace = "set_memory_place"

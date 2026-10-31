@@ -105,6 +105,9 @@ struct PairingCelebrationView: View {
                 timeline.partnerNameDidArrive()
             }
         }
+        .onChange(of: reduceMotion) { _, enabled in
+            if enabled { timeline.stop() }
+        }
         .onChange(of: timeline.isSettled) { _, isSettled in
             if isSettled {
                 AccessibilityNotification.Announcement(connectedText).post()

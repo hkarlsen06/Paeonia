@@ -16,9 +16,11 @@ struct BoardPieceStyle: Equatable {
     let mark: UIImage?
     /// The first letter of the player's display name, uppercased.
     let initial: String
+    /// A stable shape distinguishes owners even when their custom marks match.
+    var owner: BoardPlayer
 
     static func == (lhs: BoardPieceStyle, rhs: BoardPieceStyle) -> Bool {
-        lhs.color == rhs.color && lhs.mark === rhs.mark && lhs.initial == rhs.initial
+        lhs.color == rhs.color && lhs.mark === rhs.mark && lhs.initial == rhs.initial && lhs.owner == rhs.owner
     }
 
     nonisolated static func initial(of name: String) -> String {
@@ -30,6 +32,15 @@ struct BoardPieceStyle: Equatable {
 struct BoardPieceStyles: Equatable {
     let one: BoardPieceStyle
     let two: BoardPieceStyle
+
+    init(one: BoardPieceStyle, two: BoardPieceStyle) {
+        var one = one
+        var two = two
+        one.owner = .one
+        two.owner = .two
+        self.one = one
+        self.two = two
+    }
 
     subscript(player: BoardPlayer) -> BoardPieceStyle {
         player == .one ? one : two
@@ -73,7 +84,43 @@ struct BoardMarkView: View {
             }
             .foregroundStyle(tint)
             .frame(width: proxy.size.width, height: proxy.size.height)
+            .overlay(alignment: .topTrailing) {
+                BoardOwnerSymbol(owner: style.owner)
+                    .frame(width: max(10, side * 0.32), height: max(10, side * 0.32))
+                    .offset(x: side * 0.12, y: -side * 0.12)
+            }
         }
         .accessibilityHidden(true)
+    }
+}
+
+/// Used on pieces and beside player names. The dark backing separates the
+/// shape from arbitrary custom ink and from both piece colors.
+struct BoardOwnerSymbol: View {
+    let owner: BoardPlayer
+
+    var body: some View {
+        Group {
+            if owner == .one {
+                Circle().fill(.paeoniaTextPrimary)
+            } else {
+                BoardOwnerDiamond().fill(.paeoniaTextPrimary)
+            }
+        }
+        .padding(2)
+        .background(.paeoniaBackgroundSecondary, in: RoundedRectangle(cornerRadius: 2))
+        .accessibilityHidden(true)
+    }
+}
+
+private nonisolated struct BoardOwnerDiamond: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { path in
+            path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+            path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
+            path.closeSubpath()
+        }
     }
 }

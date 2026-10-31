@@ -47,6 +47,8 @@ nonisolated struct RemoteGuessMySpotRound: Codable, Equatable, Identifiable, Sen
     var myRevealSeenAt: Date?
     /// The sender may delete it: both have seen its reveal.
     var canDelete: Bool?
+    /// Authored scene text, readable with the photo before guessing. Never derived from the hidden spot.
+    var photoAccessibilityText: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -70,6 +72,7 @@ nonisolated struct RemoteGuessMySpotRound: Codable, Equatable, Identifiable, Sen
         case guessedAt = "guessed_at"
         case myRevealSeenAt = "my_reveal_seen_at"
         case canDelete = "can_delete"
+        case photoAccessibilityText = "photo_accessibility_text"
     }
 }
 
@@ -144,9 +147,9 @@ nonisolated struct RemoteGuessMySpotState: Codable, Equatable, Sendable {
     let dataEpoch: String
     /// Nil before the couple's first game.
     let game: RemoteGuessMySpotGame?
-    let currentRound: RemoteGuessMySpotRound?
+    var currentRound: RemoteGuessMySpotRound?
     /// The round before the newest, so a reveal this person missed still shows.
-    let previousRound: RemoteGuessMySpotRound?
+    var previousRound: RemoteGuessMySpotRound?
 
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
@@ -205,7 +208,7 @@ nonisolated struct RemoteGuessMySpotRecords: Codable, Equatable, Sendable {
 
 /// `guessMySpot:get_guess_my_spot_history`: the newest guessed rounds, newest first.
 nonisolated struct RemoteGuessMySpotHistory: Codable, Equatable, Sendable {
-    let rounds: [RemoteGuessMySpotRound]
+    var rounds: [RemoteGuessMySpotRound]
     let records: RemoteGuessMySpotRecords
 }
 

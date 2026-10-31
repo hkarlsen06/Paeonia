@@ -12,6 +12,13 @@ actor FirstDayGatewaySpy {
     private(set) var startedOnValues: [String?] = []
     private var failingStep: String?
     private var failure: any Error = URLError(.notConnectedToInternet)
+    private var holdsNextDrawing = false
+    private var drawingRelease: CheckedContinuation<Void, Never>?
+    private(set) var isDrawingHeld = false
+    private(set) var drawingDescriptions: [String?] = []
+
+    func holdNextDrawing() { holdsNextDrawing = true }
+    func releaseDrawing() { drawingRelease?.resume(); drawingRelease = nil }
 
     init(draft: FirstDayDraft = firstDayDraft()) {
         self.draft = draft
@@ -63,8 +70,15 @@ actor FirstDayGatewaySpy {
         try record("finalize")
     }
 
-    func saveDrawing(_: WidgetDrawingUploadPayload, mediaAssetID _: UUID, operation _: SyncClientOperation) throws {
+    func saveDrawing(
+        _ payload: WidgetDrawingUploadPayload, mediaAssetID _: UUID, operation _: SyncClientOperation
+    ) async throws {
         try record("save")
+        drawingDescriptions.append(payload.accessibilityText)
+        if holdsNextDrawing {
+            holdsNextDrawing = false
+            await withCheckedContinuation { drawingRelease = $0; isDrawingHeld = true }
+        }
     }
 
     func signedDrawingURL(mediaAssetID _: UUID) throws -> URL? {
@@ -78,6 +92,7 @@ extension FirstDayGatewaySpy: FirstDayGateway {}
 /// The widget's saved drawing, in memory.
 actor FirstDayCanvasFake {
     private(set) var drawingData: Data?
+    private(set) var accessibilityText: String?
 
     init(drawingData: Data? = nil) {
         self.drawingData = drawingData
@@ -91,7 +106,16 @@ actor FirstDayCanvasFake {
         self.drawingData = drawingData
     }
 
+    func saveDescribedDrawing(
+        _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID _: UUID?, accessibilityText: String?
+    ) {
+        saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
+        self.accessibilityText = accessibilityText
+    }
+
     func clearForPrivacy() {
+        accessibilityText = nil
         drawingData = nil
     }
 }

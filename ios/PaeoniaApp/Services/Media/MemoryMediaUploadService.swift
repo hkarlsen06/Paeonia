@@ -40,6 +40,7 @@ nonisolated struct MemoryUploadMedia: Sendable, Equatable {
     let width: Int?
     let height: Int?
     let durationMs: Int?
+    let accessibilityText: String?
 
     init(
         data: Data,
@@ -48,7 +49,8 @@ nonisolated struct MemoryUploadMedia: Sendable, Equatable {
         fileExtension: String,
         width: Int? = nil,
         height: Int? = nil,
-        durationMs: Int? = nil
+        durationMs: Int? = nil,
+        accessibilityText: String? = nil
     ) {
         self.data = data
         self.purpose = purpose
@@ -57,6 +59,7 @@ nonisolated struct MemoryUploadMedia: Sendable, Equatable {
         self.width = width
         self.height = height
         self.durationMs = durationMs
+        self.accessibilityText = accessibilityText
     }
 }
 
@@ -67,14 +70,16 @@ nonisolated struct MemoryMediaUploadResult: Equatable, Sendable {
     func optimisticSnapshot(
         ownerUserID: UUID,
         sortOrder: Int,
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        accessibilityText: String? = nil
     ) -> MemoryMediaSnapshot {
         MemoryMediaSnapshot(
             memoryMediaID: memoryMediaID,
             mediaAssetID: mediaAssetID,
             ownerUserID: ownerUserID,
             sortOrder: sortOrder,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            accessibilityText: accessibilityText
         )
     }
 }
@@ -123,7 +128,8 @@ actor LiveMemoryMediaUploadService: MemoryMediaUploading {
                 memoryMediaID: memoryMediaID,
                 coupleID: coupleID,
                 purpose: media.purpose,
-                fileExtension: media.fileExtension
+                fileExtension: media.fileExtension,
+                accessibilityText: media.accessibilityText
             )
         )
         guard let reservation = reservationRows.first else {
@@ -169,13 +175,15 @@ nonisolated struct ReserveMemoryMediaRequest: Encodable {
     let uploadPurpose: String
     let mediaType: String
     let fileExtension: String
+    let accessibilityText: String?
 
     init(
         operation: SyncClientOperation,
         memoryMediaID: UUID,
         coupleID: UUID,
         purpose: MemoryMediaPurpose,
-        fileExtension: String
+        fileExtension: String,
+        accessibilityText: String? = nil
     ) {
         clientOperationID = operation.id
         clientID = operation.clientID
@@ -187,6 +195,7 @@ nonisolated struct ReserveMemoryMediaRequest: Encodable {
         uploadPurpose = purpose.rawValue
         mediaType = purpose.mediaType
         self.fileExtension = fileExtension
+        self.accessibilityText = accessibilityText
     }
 
     enum CodingKeys: String, CodingKey {
@@ -200,6 +209,7 @@ nonisolated struct ReserveMemoryMediaRequest: Encodable {
         case uploadPurpose = "p_upload_purpose"
         case mediaType = "p_media_type"
         case fileExtension = "p_file_extension"
+        case accessibilityText = "p_accessibility_text"
     }
 }
 

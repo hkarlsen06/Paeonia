@@ -15,6 +15,8 @@ struct ExquisiteCorpseRevealContent {
         let drawer: GamePlayer
         /// The idea the drawer had when they tapped Done, if any.
         let idea: String?
+        var accessibilityText: String?
+        var editingTarget: MediaAlternativeTarget?
 
         var id: ExquisiteCorpsePartKind { kind }
 

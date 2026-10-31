@@ -182,7 +182,8 @@ struct GameConversationPeople {
             color: mine ? .boardGameMine : .boardGamePartner,
             mark: nil,
             initial: BoardPieceStyle.initial(
-                of: mine ? participants.currentDisplayName ?? name(for: userID) : participants.partnerName)
+                of: mine ? participants.currentDisplayName ?? name(for: userID) : participants.partnerName),
+            owner: mine ? .one : .two
         )
     }
 }

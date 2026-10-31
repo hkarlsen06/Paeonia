@@ -36,16 +36,27 @@ struct DailyChallengeAnswerStep: View {
     @State var isKeyboardPresented = false
     @State var isRecording = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .title) private var questionSize: CGFloat = 32
     @ScaledMetric(relativeTo: .title2) private var compactQuestionSize: CGFloat = 24
     @ScaledMetric(relativeTo: .body) private var smallQuestionSize: CGFloat = 20
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-            questionContent
-
-            composer
-                .fixedSize(horizontal: false, vertical: true)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                // Keep the requested prompt size when the keyboard opens. The
+                // whole answer scrolls so neither the prompt nor input has to shrink.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                        questionHeader(size: questionSize)
+                        composer
+                    }
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                regularContent
+            }
         }
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space16)
@@ -61,6 +72,15 @@ struct DailyChallengeAnswerStep: View {
         .onChange(of: isFocused.wrappedValue) { _, focused in
             if focused { isKeyboardPresented = true }
             else { isKeyboardPresented = false }
+        }
+    }
+
+    private var regularContent: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+            questionContent
+
+            composer
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

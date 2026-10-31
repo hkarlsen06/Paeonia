@@ -63,9 +63,11 @@ struct ConsensioMarker: View {
 #if DEBUG
 #Preview {
     HStack(spacing: PaeoniaSpacing.space24) {
-        ConsensioMarker(style: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "A"))
-        ConsensioMarker(style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R"), isLifted: true)
-        ConsensioMarker(style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R"), glow: 1)
+        ConsensioMarker(style: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "A", owner: .one))
+        ConsensioMarker(
+            style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R", owner: .two), isLifted: true
+        )
+        ConsensioMarker(style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R", owner: .two), glow: 1)
     }
     .padding()
     .background(.paeoniaBackgroundSecondary)

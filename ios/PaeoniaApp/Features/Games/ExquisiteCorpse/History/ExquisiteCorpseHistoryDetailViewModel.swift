@@ -159,7 +159,9 @@ final class ExquisiteCorpseHistoryDetailViewModel {
                 drawing: drawings[kind],
                 drawerIsMe: isMine,
                 drawer: isMine ? me : partner,
-                idea: remote.idea?.text
+                idea: remote.idea?.text,
+                accessibilityText: figure.isFinished ? remote.drawingAccessibilityText : nil,
+                editingTarget: figure.isFinished && isMine ? .exquisiteCorpse(partID: remote.id) : nil
             )
         }
         return ExquisiteCorpseRevealContent(

@@ -99,6 +99,7 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
     let word: String
     let points: Int
     let drawingMediaAssetID: UUID?
+    var drawingAccessibilityText: String?
     let drawingSubmittedAt: Date?
     let startedAt: Date
     let guesserFirstSeenAt: Date?
@@ -131,6 +132,7 @@ nonisolated struct RemoteDrawAndGuessRound: Codable, Equatable, Identifiable, Se
         case word
         case points
         case drawingMediaAssetID = "drawing_media_asset_id"
+        case drawingAccessibilityText = "drawing_accessibility_text"
         case drawingSubmittedAt = "drawing_submitted_at"
         case startedAt = "started_at"
         case guesserFirstSeenAt = "guesser_first_seen_at"

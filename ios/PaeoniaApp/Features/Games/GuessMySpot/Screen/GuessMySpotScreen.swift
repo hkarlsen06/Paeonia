@@ -44,7 +44,6 @@ struct GuessMySpotScreen: View {
             viewModel.clearNotice()
         }
         .gameTutorial(GameTutorial(kind: .guessMySpot, partnerName: viewModel.partnerName), isPresented: $showsTutorial)
-        .accessibilityIdentifier("guessMySpot.screen")
     }
 
     // MARK: Phases
@@ -155,9 +154,8 @@ private struct GuessMySpotToolbarPresence: View {
                 .gamePresenceRing(isHere)
             Text(verbatim: partner.name)
                 .font(.headline)
-                .lineLimit(1)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .accessibilityElement(children: .combine)
         .accessibilityValue(Text(isHere ? .gamesPresenceHere : .gamesPresenceAway))
         .accessibilityIdentifier("guessMySpot.reveal.presence")
@@ -181,8 +179,7 @@ struct GuessMySpotPointsLink: View {
                 .accessibilityValue(Text(GuessMySpotScoreCapsule.accessibilityText(score, partnerName: partner.name)))
         }
         .buttonStyle(.plain)
-        .fixedSize()
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .frame(minWidth: 44, minHeight: 44)
         .accessibilityIdentifier("guessMySpot.history.open")
     }
 }

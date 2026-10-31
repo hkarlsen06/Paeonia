@@ -37,6 +37,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     @State var mapProjection: HomeMapProjection?
     @State private var mapLocations: HomeMapLocations?
     @State var explorer = HomeMapExplorer()
+    @State var isShowingMapDetails = false
 
     /// Both places, while there is a map to show.
     private var couple: HomeMapCouple? {
@@ -92,6 +93,14 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         // A note's keyboard belongs to its cover. Keep Home's map and cards in place behind it.
         .ignoresSafeArea(.keyboard)
         .onChange(of: mapState, initial: true) { _, _ in retainMapLocations() }
+        .sheet(isPresented: $isShowingMapDetails) {
+            if let couple {
+                LocationMapDetails(
+                    current: couple.current, partner: couple.partner, partnerName: partnerName,
+                    partnerWasStaleAtLastRefresh: couple.partnerWasStaleAtLastRefresh
+                )
+            }
+        }
     }
 
     /// The top and the cards, in the one scroll view.
@@ -126,6 +135,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
         }
     }
+
 
     // MARK: Top
 
@@ -277,15 +287,15 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         )
         mapLocations = mapLocations?.retainingNearbyLocations(from: latest) ?? latest
     }
+}
 
+extension HomeMapLayout {
     private func sendHeart() {
         guard let hearts else { return }
         flights.send()
         hearts.tap()
     }
-}
 
-extension HomeMapLayout {
     /// Eases out over a long stretch, so the map runs into the cards instead of ending.
     private func fadeMask(_ metrics: HomeMapMetrics) -> some View {
         VStack(spacing: 0) {
@@ -394,6 +404,7 @@ extension HomeMapLayout {
                 }
             if dynamicTypeSize.isAccessibilitySize {
                 title(couple)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -409,7 +420,8 @@ extension HomeMapLayout {
         ZStack {
             if let line = hearts?.incomingLine {
                 HeartsIncomingLine(text: line)
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                    .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
             } else if let couple {
                 HStack(spacing: 0) {

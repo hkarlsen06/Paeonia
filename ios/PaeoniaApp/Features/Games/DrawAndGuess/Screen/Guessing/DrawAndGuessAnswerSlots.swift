@@ -21,6 +21,8 @@ struct DrawAndGuessAnswerSlots: View {
 
     @State private var availableWidth: CGFloat = 320
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .title2) private var slotHeight: CGFloat = 48
     @Namespace private var rotorNamespace
 
     private struct Word: Identifiable {
@@ -80,12 +82,14 @@ struct DrawAndGuessAnswerSlots: View {
     /// Between 28 and 44 points wide, with a long word split over lines so no slot
     /// leaves the screen.
     private var sizing: DrawAndGuessSlotSizing.Layout {
-        DrawAndGuessSlotSizing.layout(
+        let scale = slotHeight / 48 * (dynamicTypeSize.isAccessibilitySize ? 44.0 / 28.0 : 1)
+        let layout = DrawAndGuessSlotSizing.layout(
             wordLengths: words.map(\.slots.count),
-            availableWidth: availableWidth,
-            gap: Self.slotGap,
-            wordSpacing: PaeoniaSpacing.space16
+            availableWidth: availableWidth / scale,
+            gap: Self.slotGap / scale,
+            wordSpacing: PaeoniaSpacing.space16 / scale
         )
+        return DrawAndGuessSlotSizing.Layout(slotWidth: layout.slotWidth * scale, pieces: layout.pieces)
     }
 
     /// The words cut into the pieces the sizing chose.
@@ -120,16 +124,16 @@ struct DrawAndGuessAnswerSlots: View {
             ZStack {
                 if let tile = slot.tile, let letter {
                     DrawAndGuessTileFace(letter: letter, fill: fill, textColor: textColor)
-                        .frame(width: slotWidth, height: Self.slotHeight)
+                        .frame(width: slotWidth, height: slotHeight)
                         .modifier(DrawAndGuessTileFlight(id: tile.id, namespace: namespace))
                 } else if let letter {
                     DrawAndGuessTileFace(letter: letter, fill: fill, textColor: textColor)
-                        .frame(width: slotWidth, height: Self.slotHeight)
+                        .frame(width: slotWidth, height: slotHeight)
                 } else {
                     emptySlot
                 }
             }
-            .frame(width: slotWidth, height: Self.slotHeight)
+            .frame(width: slotWidth, height: slotHeight)
             .overlay { outline(of: slot) }
             .modifier(DrawAndGuessLetterPop(isLit: isLit, peak: 1.12, isEnabled: litsGreen && !timeline.wasSkipped))
             .contentShape(Rectangle().inset(by: -2))
@@ -140,8 +144,6 @@ struct DrawAndGuessAnswerSlots: View {
         .accessibilityHint(canRemove(slot) ? Text(.gamesDrawAndGuessSlotRemoveHint) : Text(verbatim: ""))
         .accessibilityRotorEntry(id: slot.id, in: rotorNamespace)
     }
-
-    private static let slotHeight: CGFloat = 48
 
     /// The orange outline of a wrong word, and the accent outline of a letter a hint placed.
     private func outline(of slot: DrawAndGuessSlots.Slot) -> some View {

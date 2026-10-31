@@ -290,6 +290,37 @@ struct LocalPrivacyPurgeTests {
         // Widgets keep showing their last timeline until they reload.
         #expect(widgets.reloader.reloadCount > reloadsBeforePurge)
     }
+
+    @Test(arguments: everyPurgeScope)
+    func guessMySpotOwnedDraftSurvivesOnlyATemporaryAccessHide(scope: LocalPrivacyPurgeScope) async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let photos = FileGuessMySpotPhotoStore(directoryURL: directory.appendingPathComponent("photos"))
+        let owner = UUID(), couple = UUID(), round = UUID()
+        let ticket = photos.draftTicket(ownerUserID: owner)
+        let draft = GuessMySpotStoredDraft(
+            roundID: round,
+            photo: GuessMySpotPreparedPhoto(jpeg: Data("private photo".utf8), width: 4, height: 3,
+                                            spot: nil, takenOn: nil),
+            spot: nil, place: nil, refusedRoundID: nil, accessibilityText: "A snowy mountain."
+        )
+        try #require(try photos.saveDraft(draft, ownerUserID: owner, coupleID: couple, ticket: ticket))
+        let widgets = WidgetCanvasTestEnvironment()
+        let fixture = try LivePurgeFixture(widgetCanvas: widgets.makeService(),
+                                           memoryMediaURL: directory.appendingPathComponent("memory"),
+                                           guessMySpotPhotos: photos)
+        #expect(await fixture.purger.purge(ownerUserID: owner, scope: scope) == .completed)
+        #expect((try? photos.saveDraft(draft, ownerUserID: owner, coupleID: couple, ticket: ticket)) != true)
+        if scope == .relationshipAccessHidden {
+            #expect(try photos.draft(ownerUserID: owner, coupleID: couple) == draft)
+            #expect(photos.photo(ownerUserID: owner, roundID: round) == draft.photo.jpeg)
+            #expect(try photos.saveDraft(draft, ownerUserID: owner, coupleID: couple,
+                                         ticket: photos.draftTicket(ownerUserID: owner)))
+        } else {
+            #expect(try photos.draft(ownerUserID: owner, coupleID: couple) == nil)
+            #expect(photos.photo(ownerUserID: owner, roundID: round) == nil)
+        }
+    }
 }
 
 /// The real purge service and file purger, with the widget files and memory photos
@@ -298,7 +329,8 @@ private struct LivePurgeFixture {
     let localStore: PaeoniaLocalStore
     let purger: LocalPrivacyPurgeService
 
-    init(widgetCanvas: WidgetCanvasService, memoryMediaURL: URL) throws {
+    init(widgetCanvas: WidgetCanvasService, memoryMediaURL: URL,
+         guessMySpotPhotos: any GuessMySpotPhotoStoring = FileGuessMySpotPhotoStore.shared) throws {
         let client = PaeoniaConvexClient(
             deploymentURL: try #require(URL(string: "https://privacy-purge.invalid")),
             session: URLSession(configuration: .ephemeral),
@@ -313,7 +345,8 @@ private struct LivePurgeFixture {
                 partnerAvatar: nil,
                 dailyAnswerMediaCache: nil,
                 memoryMediaCache: MemoryMediaImageService(client: client, directoryURL: memoryMediaURL),
-                profilePhotoCache: nil
+                profilePhotoCache: nil,
+                guessMySpotPhotos: guessMySpotPhotos
             ),
             retryStore: InMemoryLocalPrivacyPurgeRetryStore(),
             automaticallyRetry: false
@@ -358,7 +391,7 @@ private actor ScriptedLocalPrivacyRecordStore: LocalPrivacyRecordPurging {
     }
 }
 
-private actor InMemoryLocalPrivacyPurgeRetryStore: LocalPrivacyPurgeRetryStoring {
+actor InMemoryLocalPrivacyPurgeRetryStore: LocalPrivacyPurgeRetryStoring {
     private var requests: [UUID: LocalPrivacyPurgeRequest] = [:]
 
     func enqueue(_ request: LocalPrivacyPurgeRequest) {

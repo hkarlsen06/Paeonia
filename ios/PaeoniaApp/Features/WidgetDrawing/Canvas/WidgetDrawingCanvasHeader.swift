@@ -2,30 +2,36 @@ import PencilKit
 import SwiftUI
 
 /// The row above the canvas: what the widgets show right now (who drew it, and
-/// when) and whether the canvas holds something not sent yet. Always one line
-/// tall, also while the first drawing loads, so the square canvas never jumps.
+/// when) and whether the canvas holds something not sent yet. At accessibility
+/// text sizes, the status follows the attribution in a separate row.
 struct WidgetDrawingCanvasHeader: View {
     let viewModel: WidgetDrawingViewModel
     let partnerName: String
     /// Whether the "Not sent yet" pill can show. Off before an account exists, when
     /// there is no one to send to yet.
     var showsSendStatus = true
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
+        headerLayout {
             headerLeading
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
                 .layoutPriority(1)
 
-            Spacer(minLength: PaeoniaSpacing.space8)
+            if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: PaeoniaSpacing.space8) }
 
             headerTrailing
         }
         .frame(minHeight: PaeoniaSpacing.space24)
         .padding(.horizontal, PaeoniaSpacing.space8)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(headerAccessibilityLabel)
+        .accessibilityElement(children: .contain)
+        .accessibilityHidden(!viewModel.partnerSentWhileEditing && livePresenceText == nil
+            && !viewModel.isShowingSavedAttribution && !(showsSendStatus && isNotSentYet))
+    }
+
+    private var headerLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space8))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
     }
 
     @ViewBuilder
@@ -49,7 +55,9 @@ struct WidgetDrawingCanvasHeader: View {
         } else {
             HStack(spacing: PaeoniaSpacing.space8) {
                 Text(verbatim: viewModel.isShowingSavedAttribution ? (viewModel.savedDrawingAuthorName ?? " ") : " ")
-                    .font(PaeoniaTypography.widgetPrimary)
+                    .font(PaeoniaTypography.caption.weight(.semibold))
+                    .accessibilityLabel(attributionLabel)
+                    .accessibilityHidden(!viewModel.isShowingSavedAttribution)
                     .foregroundStyle(.paeoniaTextPrimary)
                 if viewModel.isShowingSavedAttribution {
                     // What the partner reacted with, or what the user did to the partner's drawing.
@@ -70,17 +78,17 @@ struct WidgetDrawingCanvasHeader: View {
             Text(.widgetDrawingNotSent)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(1)
                 .padding(.horizontal, PaeoniaSpacing.space8)
                 .padding(.vertical, PaeoniaSpacing.space4)
                 .background(.paeoniaSurfacePrimary, in: Capsule(style: .continuous))
                 .opacity(showsSendStatus && isNotSentYet ? 1 : 0)
+                .accessibilityHidden(!showsSendStatus || !isNotSentYet)
 
             if !isNotSentYet, viewModel.isShowingSavedAttribution, let createdAt = viewModel.savedDrawingCreatedAt {
                 Text(verbatim: Self.attributionTimestamp(createdAt))
-                    .font(PaeoniaTypography.widgetSecondary)
+                    .font(PaeoniaTypography.caption)
+                    .accessibilityHidden(true)
                     .foregroundStyle(.paeoniaTextSecondary)
-                    .lineLimit(1)
             }
         }
     }
@@ -104,25 +112,12 @@ struct WidgetDrawingCanvasHeader: View {
         viewModel.hasUnsavedEdits && !viewModel.drawing.strokes.isEmpty && !viewModel.isPublishing
     }
 
-    private var headerAccessibilityLabel: Text {
-        var parts: [String] = []
-        if viewModel.partnerSentWhileEditing {
-            parts.append(String(localized: .widgetDrawingPartnerSentMessage(partnerName)))
-        } else if let presence = livePresenceText {
-            parts.append(presence)
-        } else if viewModel.isShowingSavedAttribution,
-                  let author = viewModel.savedDrawingAuthorName,
-                  let createdAt = viewModel.savedDrawingCreatedAt {
-            parts.append(String(localized: .widgetDrawingOnWidgetAccessibility(
-                author,
-                Self.attributionTimestamp(createdAt)
-            )))
+    private var attributionLabel: Text {
+        guard let author = viewModel.savedDrawingAuthorName,
+              let createdAt = viewModel.savedDrawingCreatedAt else {
+            return Text(verbatim: viewModel.savedDrawingAuthorName ?? "")
         }
-        if showsSendStatus, isNotSentYet {
-            parts.append(String(localized: .widgetDrawingNotSent))
-        }
-        // A line break makes VoiceOver pause between the parts.
-        return Text(verbatim: parts.joined(separator: "\n"))
+        return Text(.widgetDrawingOnWidgetAccessibility(author, Self.attributionTimestamp(createdAt)))
     }
 
     /// Matches the widget's timestamp treatment: just the time today, otherwise

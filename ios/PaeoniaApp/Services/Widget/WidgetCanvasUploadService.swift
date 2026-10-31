@@ -14,6 +14,14 @@ nonisolated struct WidgetDrawingUploadPayload: Sendable {
     let strokeCount: Int
     let pointCount: Int
     let bounds: CGRect
+    var accessibilityText: String?
+
+    var publicationID: String {
+        WidgetDrawingPublication.id(
+            contentHash: SHA256.hash(data: drawingData).paeoniaHexString,
+            canvasSide: Double(canvasSide), accessibilityText: accessibilityText
+        )
+    }
 }
 
 /// How a send ended, as far as the person is concerned.
@@ -76,7 +84,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     private let operationFactory: any WidgetCanvasClientOperationProviding
     private let pendingStore: WidgetPendingUploadStore
     private var lastUpload: Task<Void, Never>?
-    private var deliveredContentHash: String?
+    private var deliveredPublicationID: String?
 
     #if DEBUG
     private let logger = Logger(
@@ -106,15 +114,14 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     }
 
     func restorePending(_ previous: WidgetPendingUploadSnapshot?, replacing payload: WidgetDrawingUploadPayload) {
-        pendingStore.restore(previous, replacingContentHash: Self.sha256Hex(of: payload.drawingData))
+        pendingStore.restore(previous, replacingPublicationID: payload.publicationID)
     }
 
     /// Call `markPending` first. A drawing that is not (or no longer) the one
     /// marked as not sent is reported as replaced and not uploaded.
     func send(_ payload: WidgetDrawingUploadPayload) async -> WidgetDrawingDelivery {
-        let contentHash = Self.sha256Hex(of: payload.drawingData)
         do {
-            return try await uploadSerially(payload, contentHash: contentHash)
+            return try await uploadSerially(payload)
         } catch {
             // Keep the marker so newer local work is not overwritten before it
             // reaches the server. A later sync retries it.
@@ -126,7 +133,7 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     }
 
     func uploadPending(_ payload: WidgetDrawingUploadPayload) async throws {
-        _ = try await uploadSerially(payload, contentHash: Self.sha256Hex(of: payload.drawingData))
+        _ = try await uploadSerially(payload)
     }
 
     /// Waits for the upload before it, then uploads only if this drawing is
@@ -136,14 +143,13 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     /// stopping the sync) cancels the upload too. The next upload still waits
     /// until this one has stopped, so two never overlap.
     private func uploadSerially(
-        _ payload: WidgetDrawingUploadPayload,
-        contentHash: String
+        _ payload: WidgetDrawingUploadPayload
     ) async throws -> WidgetDrawingDelivery {
         let previous = lastUpload
         let upload = Task { () async throws -> WidgetDrawingDelivery in
             await previous?.value
             try Task.checkCancellation()
-            return try await self.uploadIfStillPending(payload, contentHash: contentHash)
+            return try await self.uploadIfStillPending(payload)
         }
         lastUpload = Task { _ = await upload.result }
         return try await withTaskCancellationHandler {
@@ -154,23 +160,23 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
     }
 
     private func uploadIfStillPending(
-        _ payload: WidgetDrawingUploadPayload,
-        contentHash: String
+        _ payload: WidgetDrawingUploadPayload
     ) async throws -> WidgetDrawingDelivery {
+        let publicationID = payload.publicationID
         guard let pending = pendingStore.pendingSnapshot else {
             // Either an earlier upload (for example the sync's retry) already
             // sent this drawing, or a newer one was sent after it.
-            return deliveredContentHash == contentHash ? .delivered : .replaced
+            return deliveredPublicationID == publicationID ? .delivered : .replaced
         }
-        guard pending.contentHash == contentHash else {
+        guard pending.publicationID == publicationID else {
             return .replaced
         }
-        pendingStore.recordAttempt(contentHash)
+        pendingStore.recordAttempt(publicationID)
         try await upload(payload, resumingFrom: pending.progress) { progress in
-            pendingStore.saveProgress(progress, contentHash: contentHash)
+            pendingStore.saveProgress(progress, publicationID: publicationID)
         }
-        pendingStore.clearPending(contentHash)
-        deliveredContentHash = contentHash
+        pendingStore.clearPending(publicationID)
+        deliveredPublicationID = publicationID
         await MainActor.run {
             NotificationCenter.default.post(name: .paeoniaWidgetUploadDidFinish, object: nil)
         }
@@ -310,7 +316,8 @@ actor WidgetCanvasUploadService: WidgetCanvasUploading {
                 y: Double(payload.bounds.origin.y),
                 width: Double(payload.bounds.width),
                 height: Double(payload.bounds.height),
-                canvasSide: Double(payload.canvasSide)
+                canvasSide: Double(payload.canvasSide),
+                accessibilityText: payload.accessibilityText
             ),
             sha256Hex: sha256Hex(of: payload.drawingData),
             clientDecodeValidatedAt: Date()

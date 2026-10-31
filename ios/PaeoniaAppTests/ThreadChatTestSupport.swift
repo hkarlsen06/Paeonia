@@ -48,6 +48,7 @@ actor ChatVoiceUploader {
     let assetID: UUID
     private(set) var uploadedParentIDs: [UUID] = []
     private(set) var uploadedPurposes: [DailyAnswerMediaPurpose] = []
+    private(set) var uploadedAccessibilityTexts: [String?] = []
 
     init(assetID: UUID) {
         self.assetID = assetID
@@ -62,6 +63,7 @@ actor ChatVoiceUploader {
     ) throws -> UUID {
         uploadedParentIDs.append(answerID)
         uploadedPurposes.append(media.purpose)
+        uploadedAccessibilityTexts.append(media.accessibilityText)
         return assetID
     }
 }

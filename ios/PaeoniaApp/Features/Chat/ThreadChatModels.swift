@@ -366,6 +366,7 @@ nonisolated struct ThreadChatPhoto: Codable, Equatable, Hashable, Sendable {
     var data: Data?
     var width: Int?
     var height: Int?
+    var accessibilityText: String?
 }
 
 /// The photos of a queued message, already compressed. Every photo is reserved under
@@ -377,13 +378,18 @@ nonisolated struct ThreadChatPhotosPayload: Codable, Equatable, Sendable {
         let height: Int
         let reserveOperation: SyncClientOperation
         let finalizeOperation: SyncClientOperation
+        var accessibilityText: String?
     }
 
     let messageID: UUID
     let items: [Item]
 
     var pendingPhotos: [ThreadChatPhoto] {
-        items.map { ThreadChatPhoto(data: $0.data, width: $0.width, height: $0.height) }
+        items.map { item in
+            ThreadChatPhoto(
+                data: item.data, width: item.width, height: item.height, accessibilityText: item.accessibilityText
+            )
+        }
     }
 }
 
@@ -395,6 +401,7 @@ nonisolated struct ThreadChatVoice: Codable, Equatable, Sendable {
     /// without a download and can be sent again.
     var data: Data?
     var durationMs: Int?
+    var transcript: String?
 }
 
 /// A queued voice message. The upload operations are fixed here, so a retry never
@@ -406,9 +413,10 @@ nonisolated struct ThreadChatVoicePayload: Codable, Equatable, Sendable {
     let durationMs: Int
     let reserveOperation: SyncClientOperation
     let finalizeOperation: SyncClientOperation
+    var transcript: String?
 
     var pendingVoice: ThreadChatVoice {
-        ThreadChatVoice(data: data, durationMs: durationMs)
+        ThreadChatVoice(data: data, durationMs: durationMs, transcript: transcript)
     }
 }
 

@@ -71,16 +71,16 @@ struct AuthOnboardingPhotoField: View {
             initialValue: NudgeFrame(),
             // Reduce Motion never starts the keyframes.
             trigger: reduceMotion ? 0 : nudge.taps
-        ) { content, frame in
+        ) { [reduceMotion] content, frame in
             content
                 .background {
                     Circle()
                         .fill(.paeoniaAccentPrimary)
                         .blur(radius: 16)
-                        .opacity(frame.glow * 0.7)
-                        .scaleEffect(1 + frame.glow * 0.15)
+                        .opacity(reduceMotion ? 0 : frame.glow * 0.7)
+                        .scaleEffect(reduceMotion ? 1 : 1 + frame.glow * 0.15)
                 }
-                .offset(x: frame.shake)
+                .offset(x: reduceMotion ? 0 : frame.shake)
         } keyframes: { _ in
             KeyframeTrack(\.shake) {
                 // A damped "no": swings that start at 15 points and settle in about

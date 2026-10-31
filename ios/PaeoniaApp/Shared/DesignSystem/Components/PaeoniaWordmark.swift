@@ -37,6 +37,8 @@ struct PaeoniaWordmark: View {
                 .lineLimit(1)
                 .minimumScaleFactor(minimumScaleFactor)
                 .layoutPriority(1)
+                // The whole logo has the same accessible title; avoid exposing a duplicate text child.
+                .accessibilityHidden(true)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(title))
@@ -49,6 +51,8 @@ struct PaeoniaBrandLockup: View {
     private let spacing: CGFloat
     private let taglineColor: Color
     private let horizontalAlignment: HorizontalAlignment
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var scaledTaglineBaseline: CGFloat = 17
 
     @State private var taglineSizeValue: CGSize = .zero
     @State private var wordmarkSizeValue: CGSize = .zero
@@ -89,22 +93,30 @@ struct PaeoniaBrandLockup: View {
 
     var body: some View {
         VStack(alignment: horizontalAlignment, spacing: spacing) {
-            PaeoniaWordmark(size: wordmarkSize)
-                .fixedSize(horizontal: true, vertical: true)
-                .readSize { wordmarkSizeValue = $0 }
-                .scaleEffect(wordmarkScale, anchor: .center)
-                .frame(width: taglineWidth, alignment: .center)
-                .frame(height: scaledWordmarkHeight)
+            if dynamicTypeSize.isAccessibilitySize {
+                PaeoniaWordmark(size: wordmarkSize)
+                tagline.fixedSize(horizontal: false, vertical: true)
+            } else {
+                PaeoniaWordmark(size: wordmarkSize)
+                    .fixedSize(horizontal: true, vertical: true)
+                    .readSize { wordmarkSizeValue = $0 }
+                    .scaleEffect(wordmarkScale, anchor: .center)
+                    .frame(width: taglineWidth, alignment: .center)
+                    .frame(height: scaledWordmarkHeight)
 
-            Text(.appTagline)
-                .font(PaeoniaTypography.wordmarkTagline(size: taglineSize))
-                .foregroundStyle(taglineColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .fixedSize(horizontal: true, vertical: false)
-                .readSize { taglineSizeValue = $0 }
+                tagline
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .readSize { taglineSizeValue = $0 }
+            }
         }
         .multilineTextAlignment(.center)
+    }
+
+    private var tagline: some View {
+        Text(.appTagline)
+            .font(PaeoniaTypography.wordmarkTagline(size: scaledTaglineBaseline * taglineSize / 17))
+            .foregroundStyle(taglineColor)
     }
 }
 

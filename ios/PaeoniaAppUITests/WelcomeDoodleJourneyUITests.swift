@@ -41,6 +41,86 @@ final class WelcomeDoodleJourneyUITests: XCTestCase {
         XCTAssertFalse(undo.isEnabled, "Undo should take the doodle's one stroke off")
     }
 
+    @MainActor
+    func testWelcomeDoodleSurvivesTextSizeReflowAndAnotherStroke() throws {
+        try SimulatorTextSizeSettings(testCase: self).withSize(.standard) {
+            let app = XCUIApplication()
+            app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
+            app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+            app.launch()
+            defer { app.terminate() }
+            let tile = app.descendants(matching: .any)["welcome.doodle"].firstMatch
+            XCTAssertTrue(tile.waitForExistence(timeout: 10))
+            trace(on: tile)
+            try SimulatorTextSizeSettings(testCase: self).withSize(.largestAccessibility) {
+                app.activate()
+                XCTAssertTrue(tile.waitForExistence(timeout: 10))
+                trace(on: tile)
+                let start = app.buttons["welcome.start"]
+                scrollTo(start, in: app)
+                start.tap()
+                let date = app.buttons["welcome.startDate.continue"]
+                XCTAssertTrue(date.waitForExistence(timeout: 5))
+                scrollTo(date, in: app)
+                date.tap()
+                let compose = app.buttons["drawing.compose"]
+                XCTAssertTrue(compose.waitForExistence(timeout: 15))
+                scrollTo(compose, in: app)
+                compose.tap()
+                let secondMark = app.staticTexts["drawing.geometry.mark.1"]
+                scrollTo(secondMark, in: app)
+                XCTAssertTrue(app.staticTexts["drawing.geometry.mark.0"].exists)
+                XCTAssertTrue(secondMark.exists, "Both strokes must reach the first drawing after reflow")
+                attachScreenshot(app, named: "welcome-two-strokes-after-AX5-reflow")
+            }
+        }
+    }
+
+    @MainActor
+    func testWelcomeShapeCreationCarriesIntoTheFirstDrawingWithoutTracing() throws {
+        try SimulatorTextSizeSettings(testCase: self).withSize(.standard) {
+            let app = XCUIApplication()
+            app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
+            app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+            app.launch()
+            defer { app.terminate() }
+            let compose = app.buttons["drawing.compose"]
+            XCTAssertTrue(compose.waitForExistence(timeout: 10))
+            scrollTo(compose, in: app)
+            compose.tap()
+            let add = app.buttons["drawing.compose.apply"]
+            scrollTo(add, in: app)
+            add.tap()
+            app.buttons["drawing.compose.done"].tap()
+            let start = app.buttons["welcome.start"]
+            scrollTo(start, in: app)
+            start.tap()
+            let date = app.buttons["welcome.startDate.continue"]
+            XCTAssertTrue(date.waitForExistence(timeout: 5))
+            scrollTo(date, in: app)
+            date.tap()
+            XCTAssertTrue(compose.waitForExistence(timeout: 15))
+            scrollTo(compose, in: app)
+            compose.tap()
+            let mark = app.staticTexts["drawing.geometry.mark.0"]
+            scrollTo(mark, in: app)
+            XCTAssertTrue(mark.exists)
+            attachScreenshot(app, named: "welcome-native-shape-carried")
+        }
+    }
+
+    @MainActor
+    private func trace(on tile: XCUIElement) {
+        tile.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.25))
+            .press(forDuration: 0.05, thenDragTo: tile.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.6)))
+    }
+
+    @MainActor
+    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<14 where !element.exists || !element.isHittable { app.swipeUp() }
+        XCTAssertTrue(element.isHittable)
+    }
+
     /// Kept with the test result, so the doodle can be checked by eye.
     @MainActor
     private func attachScreenshot(_ app: XCUIApplication, named name: String) {

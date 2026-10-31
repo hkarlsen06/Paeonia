@@ -34,7 +34,6 @@ struct ExquisiteCorpseFigureView: View {
             if let drawing {
                 GameStaticDrawing(drawing: drawing, side: side)
                     .allowsHitTesting(false)
-                    .accessibilityHidden(true)
                     .transition(.opacity)
             } else {
                 ExquisiteCorpsePartSpinner()

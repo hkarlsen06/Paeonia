@@ -16,7 +16,7 @@ struct WelcomeWidgetDoodle: View {
     @Binding var doodle: WelcomeCarriedDoodle?
 
     /// The tile's side when the screen has room for it.
-    private static let maxSide: CGFloat = 280
+    static let maxSide: CGFloat = 280
     /// The smallest it gets before the welcome screen scrolls instead.
     private static let minSide: CGFloat = 150
     /// How long after the screen is revealed the pen lands, so the tile has dropped
@@ -32,6 +32,11 @@ struct WelcomeWidgetDoodle: View {
     @State private var isWritten = false
     /// The person has touched the canvas, so the note is gone.
     @State private var isDoodling = false
+
+    init(doodle: Binding<WelcomeCarriedDoodle?>) {
+        _doodle = doodle
+        _isDoodling = State(initialValue: doodle.wrappedValue != nil)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -54,6 +59,8 @@ struct WelcomeWidgetDoodle: View {
             }
 
             footer
+                // The sample author/time are decoration inside the already-described widget preview.
+                .accessibilityHidden(true)
         }
         // The system's content margin on a widget.
         .padding(PaeoniaSpacing.space16)
@@ -61,9 +68,12 @@ struct WelcomeWidgetDoodle: View {
         .homeWidgetCardSurface()
         .frame(minHeight: Self.minSide, idealHeight: Self.minSide, maxHeight: Self.maxSide)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(.welcomeDoodleAccessibility))
+        .accessibilityLabel(Text(doodle == nil ? .welcomeDoodleAccessibility : .widgetDrawingCanvasLabel))
         .accessibilityAddTraits(.isImage)
         .accessibilityIdentifier("welcome.doodle")
+        .onChange(of: doodle) { _, latest in
+            isDoodling = latest != nil
+        }
         .task(id: revealed) {
             guard revealed, writingStart == nil, !reduceMotion else {
                 return

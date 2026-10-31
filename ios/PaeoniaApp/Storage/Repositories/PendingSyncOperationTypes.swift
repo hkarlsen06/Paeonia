@@ -7,6 +7,7 @@ nonisolated struct PendingSyncOperationRequest: Equatable, Sendable {
     let idempotencyScope: String
     let requestHash: Data?
     let requestData: Data?
+    let privacyToken: LocalPrivacyWriteGuard.Token?
 
     init(
         ownerUserID: UUID,
@@ -14,7 +15,8 @@ nonisolated struct PendingSyncOperationRequest: Equatable, Sendable {
         operationKind: SyncPendingOperationKind,
         idempotencyScope: String,
         requestHash: Data? = nil,
-        requestData: Data? = nil
+        requestData: Data? = nil,
+        privacyToken: LocalPrivacyWriteGuard.Token? = nil
     ) {
         self.ownerUserID = ownerUserID
         self.operation = operation
@@ -22,6 +24,7 @@ nonisolated struct PendingSyncOperationRequest: Equatable, Sendable {
         self.idempotencyScope = idempotencyScope
         self.requestHash = requestHash
         self.requestData = requestData
+        self.privacyToken = privacyToken
     }
 }
 

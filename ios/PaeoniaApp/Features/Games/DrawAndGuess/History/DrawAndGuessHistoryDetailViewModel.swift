@@ -39,6 +39,8 @@ final class DrawAndGuessHistoryDetailViewModel {
 
     // MARK: - What the screen shows
 
+    var isDrawer: Bool { round.drawerUserID == participants.currentUserID }
+
     var word: String {
         DrawAndGuessAnswer.display(round.word)
     }

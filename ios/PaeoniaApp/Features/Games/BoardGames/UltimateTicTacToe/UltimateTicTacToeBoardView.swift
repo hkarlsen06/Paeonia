@@ -348,6 +348,7 @@ extension UltimateTicTacToeBoardView {
             partnerName: partnerName,
             isUsable: isUsable,
             playableCells: isUsable ? Set(playable) : [],
+            selectedCell: pick.move(on: board).flatMap { $0 / 9 == index ? $0 % 9 : nil },
             pick: { cell in pickFromAccessibility(index * 9 + cell) }
         )
     }

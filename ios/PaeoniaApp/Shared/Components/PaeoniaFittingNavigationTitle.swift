@@ -1,32 +1,24 @@
 import SwiftUI
 
 extension View {
-    /// An inline title that shows in full or not at all. Beside a back button and
-    /// several toolbar buttons a title gets cut off, so it gives the bar up instead.
-    /// The back button's history menu and VoiceOver still read it.
+    /// Keep native title behavior, including the system's large content viewer.
+    /// Full content headings can wrap without inheriting the navigation bar's compact text size.
     func paeoniaFittingNavigationTitle(_ title: Text) -> some View {
         navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    PaeoniaFittingTitle(title: title)
-                }
-            }
     }
 }
 
-/// The principal toolbar item of `paeoniaFittingNavigationTitle`, for a screen
-/// that sometimes shows something else in its place.
+/// A custom principal item for a screen that sometimes replaces its title with presence.
+/// Large Content Viewer keeps the full title available within the compact control bar.
 struct PaeoniaFittingTitle: View {
     let title: Text
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            title
-                .font(.headline)
-                .lineLimit(1)
-                .accessibilityAddTraits(.isHeader)
-            Color.clear.frame(width: 0, height: 0)
-        }
+        title
+            .font(.headline)
+            .lineLimit(1)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityShowsLargeContentViewer { title }
     }
 }

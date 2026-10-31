@@ -5,6 +5,27 @@ import UIKit
 @testable import PaeoniaApp
 
 struct FirstDayDrawingUploadServiceTests {
+    @Test func aFirstDayRetryCannotDiscardANewerDescription() async throws {
+        let gateway = FirstDayGatewaySpy()
+        await gateway.holdNextDrawing()
+        let (service, pending) = makeService(gateway: gateway, defaults: try firstDayTestDefaults())
+        var staged = firstDayPayload()
+        staged.accessibilityText = "A circle"
+        let first = staged
+        staged.accessibilityText = "The sun above our house"
+        let second = staged
+        _ = await service.markPending(first)
+        let retry = Task { await service.send(first) }
+        while !(await gateway.isDrawingHeld) { await Task.yield() }
+        _ = await service.markPending(second)
+        let send = Task { await service.send(second) }
+        await gateway.releaseDrawing()
+        #expect(await retry.value == .delivered)
+        #expect(await send.value == .delivered)
+        #expect(await gateway.drawingDescriptions == [first.accessibilityText, second.accessibilityText])
+        #expect(!pending.hasPending)
+    }
+
     private func makeService(
         gateway: FirstDayGatewaySpy,
         canvas: FirstDayCanvasFake = FirstDayCanvasFake(),

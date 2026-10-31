@@ -204,7 +204,8 @@ extension ExquisiteCorpseViewModel {
     func enqueue(
         _ kind: SyncPendingOperationKind,
         scope: String,
-        payload: some Encodable
+        payload: some Encodable,
+        privacyToken: LocalPrivacyWriteGuard.Token? = nil
     ) async -> Bool {
         guard let userID = currentUserID, let data = try? JSONEncoder().encode(payload) else { return false }
         do {
@@ -214,7 +215,7 @@ extension ExquisiteCorpseViewModel {
                     operation: dependencies.operationProvider.makeOperation(),
                     operationKind: kind,
                     idempotencyScope: scope,
-                    requestData: data
+                    requestData: data, privacyToken: privacyToken
                 )
             )
         } catch {

@@ -41,10 +41,14 @@ struct ExquisiteCorpseSubmitPartHandler: PendingSyncOperationHandling {
         _ operation: PendingSyncOperationSnapshot,
         context: SyncContext
     ) async throws -> PendingSyncOperationSendResult {
+        let privacyToken = LocalPrivacyWriteGuard.shared.token(ownerUserID: operation.ownerUserID)
         guard let data = operation.requestData,
               let payload = try? JSONDecoder().decode(ExquisiteCorpseSubmitPartPayload.self, from: data)
         else {
             return .terminalFailure("Missing part payload")
+        }
+        if let coupleID = context.session.activeCoupleID, coupleID != payload.coupleID {
+            return .terminalFailure("The drawing belongs to an earlier relationship")
         }
 
         do {
@@ -62,20 +66,41 @@ struct ExquisiteCorpseSubmitPartHandler: PendingSyncOperationHandling {
                 stripAssetID: stripAssetID,
                 operation: operation.operation
             )
+            guard LocalPrivacyWriteGuard.shared.isCurrent(privacyToken) else {
+                return .terminalFailure("The drawing belongs to a cleared relationship")
+            }
+            _ = try? drawingStore.removePublishedDraft(GameDrawingDraftPublication(
+                id: payload.draftPublicationID, coupleID: payload.coupleID,
+                roundID: payload.partID, data: payload.drawing.data,
+                accessibilityText: payload.drawing.accessibilityText
+            ), ownerUserID: operation.ownerUserID, privacyToken: privacyToken)
             return await readExquisiteCorpseStateAfterAcceptedMove(operation, gateway: gateway, cache: cache)
         } catch let error as PaeoniaConvexError {
-            if GameServerRejection.isUploadGone(error) || ExquisiteCorpseRefusal.isExpiredUpload(error),
-               GameServerRejection.mayRenewUpload(renewedAt: payload.renewedAt) {
-                return try await sendWithNewUpload(payload, replacing: operation, context: context)
-            }
-            // A retry of this send gets the server's stored answer, never `23505`. So
-            // `23505` means another send took this part or figure, such as the same
-            // turn sent from this person's other phone, and this drawing never went out.
-            if !GameServerRejection.isAlreadyDone(error) {
-                guard await shouldDrop(error, of: operation, cache: cache) else { throw error }
-            }
-            return await putBack(payload, of: operation, refusedFor: error)
+            return try await handleRefusal(error, payload: payload, operation: operation,
+                                          context: context, privacyToken: privacyToken)
         }
+    }
+
+    private func handleRefusal(
+        _ error: PaeoniaConvexError, payload: ExquisiteCorpseSubmitPartPayload,
+        operation: PendingSyncOperationSnapshot, context: SyncContext,
+        privacyToken: LocalPrivacyWriteGuard.Token
+    ) async throws -> PendingSyncOperationSendResult {
+        guard LocalPrivacyWriteGuard.shared.isCurrent(privacyToken) else {
+            return .terminalFailure("The drawing belongs to a cleared relationship")
+        }
+        if GameServerRejection.isUploadGone(error) || ExquisiteCorpseRefusal.isExpiredUpload(error),
+           GameServerRejection.mayRenewUpload(renewedAt: payload.renewedAt) {
+            return try await sendWithNewUpload(payload, replacing: operation, context: context,
+                                               privacyToken: privacyToken)
+        }
+        // A retry of this send gets the server's stored answer, never `23505`. So
+        // `23505` means another send took this part or figure, such as the same
+        // turn sent from this person's other phone, and this drawing never went out.
+        if !GameServerRejection.isAlreadyDone(error) {
+            guard await shouldDrop(error, of: operation, cache: cache) else { throw error }
+        }
+        return try await putBack(payload, of: operation, refusedFor: error, privacyToken: privacyToken)
     }
 
     /// Nothing the person drew is lost: the drawing goes back on the canvas of
@@ -83,8 +108,12 @@ struct ExquisiteCorpseSubmitPartHandler: PendingSyncOperationHandling {
     private func putBack(
         _ payload: ExquisiteCorpseSubmitPartPayload,
         of operation: PendingSyncOperationSnapshot,
-        refusedFor error: PaeoniaConvexError
-    ) async -> PendingSyncOperationSendResult {
+        refusedFor error: PaeoniaConvexError,
+        privacyToken: LocalPrivacyWriteGuard.Token
+    ) async throws -> PendingSyncOperationSendResult {
+        try drawingStore.saveDraftDescription(
+            payload.drawing.accessibilityText ?? "", ownerUserID: operation.ownerUserID,
+            coupleID: payload.coupleID, roundID: payload.partID, privacyToken: privacyToken)
         drawingStore.saveDraft(payload.drawing.data, ownerUserID: operation.ownerUserID, roundID: payload.partID)
         if ExquisiteCorpseRefusal.isUnknownIdea(error) {
             await cache.saveIdea(nil, partID: payload.partID, ownerUserID: operation.ownerUserID)
@@ -105,7 +134,8 @@ struct ExquisiteCorpseSubmitPartHandler: PendingSyncOperationHandling {
                 kind: Self.parentKind,
                 id: payload.partID,
                 purpose: purpose,
-                gameID: payload.gameID
+                gameID: payload.gameID,
+                accessibilityText: purpose == Self.drawingPurpose ? file.accessibilityText : nil
             ),
             coupleID: payload.coupleID,
             reserveOperation: file.reserveOperation,
@@ -119,7 +149,8 @@ struct ExquisiteCorpseSubmitPartHandler: PendingSyncOperationHandling {
     private func sendWithNewUpload(
         _ payload: ExquisiteCorpseSubmitPartPayload,
         replacing operation: PendingSyncOperationSnapshot,
-        context: SyncContext
+        context: SyncContext,
+        privacyToken: LocalPrivacyWriteGuard.Token
     ) async throws -> PendingSyncOperationSendResult {
         try await context.pendingOperationStore.enqueue(
             PendingSyncOperationRequest(
@@ -132,7 +163,8 @@ struct ExquisiteCorpseSubmitPartHandler: PendingSyncOperationHandling {
                 ),
                 operationKind: .exquisiteCorpseSubmitPart,
                 idempotencyScope: operation.idempotencyScope,
-                requestData: try JSONEncoder().encode(payload.withNewUploads(renewedAt: Date()))
+                requestData: try JSONEncoder().encode(payload.withNewUploads(renewedAt: Date())),
+                privacyToken: privacyToken
             )
         )
         return .terminalFailure("The upload expired. The part was queued again with a new upload.")

@@ -11,8 +11,6 @@ struct DrawAndGuessTileFace: View {
         Text(String(letter))
             .font(PaeoniaTypography.title)
             .foregroundStyle(textColor)
-            // The grid keeps six columns, so the letters stop growing at this size.
-            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(fill, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
     }

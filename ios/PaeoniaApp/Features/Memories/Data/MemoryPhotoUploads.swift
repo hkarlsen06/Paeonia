@@ -39,6 +39,7 @@ final class MemoryPhotoUploads {
         let coupleID: UUID
         let photo: Data
         let occurrence: Int
+        let accessibilityText: String
     }
 
     init(
@@ -59,7 +60,7 @@ final class MemoryPhotoUploads {
     /// their backend `mediaAssetID`. Returns nil if any photo fails, so the caller can
     /// stop without attaching only some of them.
     func upload(
-        _ photos: [Data],
+        _ photos: [MemoryDraftPhoto],
         coupleID: UUID,
         ownerUserID: UUID,
         startingSortOrder: Int
@@ -75,28 +76,27 @@ final class MemoryPhotoUploads {
                 return nil
             }
             snapshots.append(
-                result.optimisticSnapshot(ownerUserID: ownerUserID, sortOrder: startingSortOrder + index)
+                result.optimisticSnapshot(
+                    ownerUserID: ownerUserID, sortOrder: startingSortOrder + index,
+                    accessibilityText: key.accessibilityText
+                )
             )
         }
         return snapshots
-    }
-
-    /// Drops reusable uploads once their photos are attached to a memory.
-    func forget(_ photos: [Data], coupleID: UUID) {
-        for key in keys(for: photos, coupleID: coupleID) {
-            uploaded[key] = nil
-        }
     }
 
     func reset() {
         uploaded = [:]
     }
 
-    private func keys(for photos: [Data], coupleID: UUID) -> [Key] {
+    private func keys(for photos: [MemoryDraftPhoto], coupleID: UUID) -> [Key] {
         photos.indices.map { index in
             let photo = photos[index]
-            let occurrence = photos[..<index].count(where: { $0 == photo })
-            return Key(coupleID: coupleID, photo: photo, occurrence: occurrence)
+            let occurrence = photos[..<index].count(where: { $0.data == photo.data })
+            return Key(
+                coupleID: coupleID, photo: photo.data, occurrence: occurrence,
+                accessibilityText: photo.accessibilityText
+            )
         }
     }
 
@@ -114,7 +114,8 @@ final class MemoryPhotoUploads {
                     mimeType: compressed.mediaType,
                     fileExtension: compressed.fileExtension,
                     width: compressed.width,
-                    height: compressed.height
+                    height: compressed.height,
+                    accessibilityText: key.accessibilityText
                 ),
                 memoryMediaID: UUID(),
                 coupleID: key.coupleID,

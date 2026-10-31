@@ -174,8 +174,8 @@ final class BoardGameViewModel<Board: BoardGameRules> {
         )
         now = dependencies.now()
         partnerName = ""
-        let mine = BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "")
-        let theirs = BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "")
+        let mine = BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "", owner: .one)
+        let theirs = BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "", owner: .two)
         styles = BoardPieceStyles(one: mine, two: theirs)
         meInfo = BoardGamePlayerInfo(name: "", photoAssetID: nil, style: mine)
         partnerInfo = BoardGamePlayerInfo(name: "", photoAssetID: nil, style: theirs)

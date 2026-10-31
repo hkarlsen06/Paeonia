@@ -9,10 +9,21 @@ struct AuthOnboardingPhotoPreview: View {
     let savedPhotoAssetID: UUID?
     let name: String
     let isWarm: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     static let size: CGFloat = 112
 
     var body: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            photo
+            if !hasPhoto, dynamicTypeSize.isAccessibilitySize {
+                invitationText
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private var photo: some View {
         ZStack {
             if let image {
                 image
@@ -62,17 +73,22 @@ struct AuthOnboardingPhotoPreview: View {
                 .font(.title2.weight(.semibold))
                 .accessibilityHidden(true)
 
-            Text(.authOnboardingProfilePhotoAddLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+            if !dynamicTypeSize.isAccessibilitySize {
+                invitationText
+            }
         }
         .foregroundStyle(.paeoniaAccentPrimary)
-        // The circle keeps its size, so the words inside stop growing at a size that fits.
-        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .padding(PaeoniaSpacing.space12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaAccentPrimary.opacity(isWarm ? 0.16 : 0.08))
+    }
+
+    private var invitationText: some View {
+        Text(.authOnboardingProfilePhotoAddLabel)
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaAccentPrimary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     @ViewBuilder

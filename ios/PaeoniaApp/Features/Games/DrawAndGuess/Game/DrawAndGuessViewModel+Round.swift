@@ -64,6 +64,10 @@ extension DrawAndGuessViewModel {
             if let saved = startingDrawing(for: round, userID: userID) {
                 board.restore(canonical: saved)
             }
+            if let coupleID = participants.coupleID, let drawingPrivacyToken {
+                drawingDescription.configure(store: dependencies.drawingStore, owner: userID, couple: coupleID,
+                                             round: round.id, privacyToken: drawingPrivacyToken)
+            }
             live?.drawingReplacedFromCode(board.drawing)
         }
         boardSentRoundID = round.isDrawingSent ? round.id : nil
@@ -84,6 +88,14 @@ extension DrawAndGuessViewModel {
         guard let data = store.rescuedDrawing(ownerUserID: userID), let rescued = try? PKDrawing(data: data) else {
             return nil
         }
+        guard let drawingPrivacyToken else { return nil }
+        do {
+            try store.moveDraftDescription(ownerUserID: userID, from: nil, to: round.id,
+                                           privacyToken: drawingPrivacyToken)
+        } catch {
+            notice = .couldNotSaveMove
+            return nil
+        }
         store.saveDraft(data, ownerUserID: userID, roundID: round.id)
         store.removeRescuedDrawing(ownerUserID: userID)
         return rescued
@@ -101,6 +113,7 @@ extension DrawAndGuessViewModel {
 
     /// Forgets the drawing of the round that ended, so the next one starts clean.
     func resetReplay() {
+        drawingAwaitingRetry = false
         downloadedDrawing = nil
         loadedAssetID = nil
         cancelDrawingLoad()

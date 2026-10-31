@@ -87,9 +87,13 @@
   struct DeveloperMemoryDetailScenarioView: View {
     private let memoryID: UUID
     @State private var viewModel: MemoriesViewModel
+    @State private var mediaImageProvider: DeveloperMemoryGalleryImageProvider
 
     init() {
-      let records = DeveloperScenarioFixture.memoryRecords()
+      let records = DeveloperMemoryGalleryFixture.records()
+      _mediaImageProvider = State(initialValue: DeveloperMemoryGalleryImageProvider(
+        failsFirstFullImageLoad: UserDefaults.standard.bool(forKey: "paeonia-scenario-gallery-retry")
+      ))
       memoryID = UUID(uuidString: "aaaaaaa1-aaaa-aaaa-aaaa-aaaaaaaaaaaa") ?? UUID()
       _viewModel = State(
         initialValue: MemoriesViewModel(
@@ -106,7 +110,8 @@
         MemoryDetailView(
           memoryID: memoryID,
           currentUserID: DeveloperScenarioFixture.currentUserID,
-          viewModel: viewModel
+          viewModel: viewModel,
+          mediaImageProvider: mediaImageProvider
         )
       }
       .task {

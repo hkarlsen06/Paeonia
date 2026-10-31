@@ -44,7 +44,7 @@ struct WidgetDrawingColorControlsView: View {
     private static let hitTarget: CGFloat = 44
 
     var body: some View {
-        HStack(spacing: 0) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: Self.hitTarget), spacing: 0)], spacing: 0) {
             ForEach(viewModel.colorChoices) { choice in
                 Button {
                     guard viewModel.selectedColorChoiceID != choice.id else { return }
@@ -68,7 +68,7 @@ struct WidgetDrawingColorControlsView: View {
         }
         .padding(.horizontal, PaeoniaSpacing.space8)
         .background(.paeoniaSurfaceSecondary)
-        .clipShape(Capsule(style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
         .opacity(viewModel.isColorSelectionEnabled ? 1 : 0.52)
     }
 
@@ -84,6 +84,8 @@ struct WidgetDrawingColorControlsView: View {
             supportsOpacity: false
         )
         .labelsHidden()
+        .scaleEffect(44.0 / 28.0)
+        .frame(width: 44, height: 44)
         .disabled(!viewModel.isColorSelectionEnabled)
         .opacity(viewModel.isColorSelectionEnabled ? 1 : 0.34)
     }
@@ -128,18 +130,9 @@ struct WidgetDrawingSizeControlsView: View {
             label: {
                 Text(.widgetDrawingSizeSlider)
             },
-            minimumValueLabel: {
-                Image(systemName: "circle.fill")
-                    .font(.system(size: 8, weight: .semibold))
-                    .accessibilityHidden(true)
-            },
-            maximumValueLabel: {
-                Image(systemName: "circle.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .accessibilityHidden(true)
-            },
             onEditingChanged: { viewModel.setAdjustingToolWidth($0) }
         )
+        .frame(minHeight: 44)
         .tint(isSizeEnabled ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
         .disabled(viewModel.selectedTool.isFill)
     }

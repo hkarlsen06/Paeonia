@@ -1,15 +1,15 @@
 import SwiftUI
 
 /// A note, full screen. The person's avatar flies from its place on Home to the middle of
-/// the screen with the bubble above it, and closing flies it back.
+/// the screen with the bubble above it. Closing uses the native cover dismissal.
 ///
 /// Editing your own note, the bubble is the text field and the row on the keyboard says
 /// who sees it and shares it. A failed save keeps the text here, and the error shows in
 /// the banner. Reading your partner's note, the bubble shows all of it and the row says
 /// when it was shared.
 ///
-/// Present it with animations turned off and a clear background, so this view runs the
-/// whole move itself: see `HomeStoriesStrip`.
+/// Present it without an opening cover animation and with a clear background.
+/// `HomeStoriesStrip` dismisses it through the native cover.
 struct StoryNoteScreen: View {
     enum Mode {
         /// Your note, which starts as the one on Home now, if any.
@@ -23,7 +23,7 @@ struct StoryNoteScreen: View {
     let people: StoryPeople
     /// Where the avatar sits on Home, ring included, in global coordinates.
     let sourceFrame: CGRect
-    /// Removes the cover once the avatar is back on Home.
+    /// Removes the cover without waiting for an animation callback.
     let onClose: () -> Void
 
     @State private var text: String
@@ -208,7 +208,7 @@ struct StoryNoteScreen: View {
     private var controls: some View {
         VStack(spacing: 0) {
             HStack {
-                StoryNoteCloseButton { Task { await close() } }
+                StoryNoteCloseButton { close() }
                     .disabled(viewModel.isSavingNote)
                 Spacer()
             }
@@ -294,21 +294,15 @@ struct StoryNoteScreen: View {
         if isEditing { isFocused = true }
     }
 
-    private func close() async {
+    private func close() {
         isFocused = false
-        await withCheckedContinuation { continuation in
-            withAnimation(motion) {
-                isOpen = false
-            } completion: {
-                continuation.resume()
-            }
-        }
+        // Native dismissal owns the exit. Saving and navigation never wait for an animation callback.
         onClose()
     }
 
     private func save(_ note: String) async {
         if await viewModel.setNote(note) {
-            await close()
+            close()
         }
     }
 }

@@ -35,6 +35,7 @@ final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
     var savedDrawingData: Data?
     var savedAuthorName: String?
     var savedCreatedAt: Date?
+    var savedAccessibilityText: String?
 
     func loadSavedDrawing() async -> Data? {
         savedDrawingData
@@ -48,7 +49,8 @@ final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
         return WidgetCanvasSnapshot(
             drawingData: savedDrawingData,
             authorName: savedAuthorName,
-            createdAt: savedCreatedAt
+            createdAt: savedCreatedAt,
+            accessibilityText: savedAccessibilityText
         )
     }
 
@@ -65,6 +67,14 @@ final class WidgetCanvasServiceSpy: WidgetCanvasManaging, @unchecked Sendable {
         if let saveError {
             throw saveError
         }
+    }
+
+    func saveDescribedDrawing(
+        _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID _: UUID?, accessibilityText: String?
+    ) async throws {
+        try await saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
+        savedAccessibilityText = accessibilityText
     }
 
     func clearForPrivacy() async {
@@ -152,7 +162,17 @@ actor SuspendedWidgetCanvasService {
         }
     }
 
-    func clearForPrivacy() async {}
+    private(set) var savedAccessibilityText: String?
+
+    func saveDescribedDrawing(
+        _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID _: UUID?, accessibilityText: String?
+    ) async throws {
+        try await saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
+        savedAccessibilityText = accessibilityText
+    }
+
+    func clearForPrivacy() async { savedAccessibilityText = nil }
 }
 
 extension SuspendedWidgetCanvasService: WidgetCanvasManaging {}
@@ -167,6 +187,7 @@ func draftKey(_ ownerUserID: UUID, coupleID: UUID = draftTestCoupleID) -> Widget
 @MainActor
 final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     private var drafts: [WidgetDrawingDraftKey: Data] = [:]
+    private var descriptions: [WidgetDrawingDraftKey: String] = [:]
     private var purgeGenerations: [UUID: Int] = [:]
 
     func draft(for key: WidgetDrawingDraftKey) -> Data? {
@@ -179,11 +200,13 @@ final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
 
     func removeDraft(for key: WidgetDrawingDraftKey) {
         drafts[key] = nil
+        descriptions[key] = nil
     }
 
     func clearDraft(for ownerUserID: UUID) {
         purgeGenerations[ownerUserID, default: 0] += 1
         drafts = drafts.filter { $0.key.ownerUserID != ownerUserID }
+        descriptions = descriptions.filter { $0.key.ownerUserID != ownerUserID }
     }
 
     func purgeGeneration(for ownerUserID: UUID) -> Int {
@@ -191,6 +214,9 @@ final class InMemoryWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     }
 
     private var bases: [WidgetDrawingDraftKey: String] = [:]
+
+    func description(for key: WidgetDrawingDraftKey) -> String? { descriptions[key] }
+    func setDescription(_ text: String, for key: WidgetDrawingDraftKey) { descriptions[key] = text }
 
     func draftBase(for key: WidgetDrawingDraftKey) -> String? {
         drafts[key] == nil ? nil : bases[key]

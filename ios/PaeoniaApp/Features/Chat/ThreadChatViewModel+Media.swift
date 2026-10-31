@@ -6,7 +6,9 @@ extension ThreadChatViewModel {
     /// Queues a message with photos from the composer, already compressed, and the
     /// text as their caption.
     func send(_ text: String, photos: [ThreadChatPhoto]) async -> Bool {
-        await send(text, photos: photos, replacingFailed: nil, replyTo: nil)
+        guard photos.allSatisfy({ DailyAnswerDraft.measuredLength(of: $0.accessibilityText ?? "") <= 10_000 })
+        else { return false }
+        return await send(text, photos: photos, replacingFailed: nil, replyTo: nil)
     }
 
     /// Sends a failed photo message again from the compressed copies kept on this phone.
@@ -24,9 +26,8 @@ extension ThreadChatViewModel {
     }
 
     /// Queues a voice message recorded with the composer's microphone button. The
-    /// recording is read into the queued message and its file deleted.
-    func sendVoice(fileURL: URL, durationMs: Int) async -> Bool {
-        defer { try? FileManager.default.removeItem(at: fileURL) }
+    /// recording is read into the queued message. The composer owns its source file.
+    func sendVoice(fileURL: URL, durationMs: Int, transcript: String? = nil) async -> Bool {
         guard let data = try? Data(contentsOf: fileURL) else {
             notice = .voiceFailed
             return false
@@ -34,6 +35,7 @@ extension ThreadChatViewModel {
         return await sendVoice(
             data: data,
             durationMs: durationMs,
+            transcript: transcript,
             replacingFailed: nil,
             replyTo: replyTarget?.id
         )
@@ -45,6 +47,7 @@ extension ThreadChatViewModel {
         _ = await sendVoice(
             data: data,
             durationMs: message.voice?.durationMs ?? 0,
+            transcript: message.voice?.transcript,
             replacingFailed: message.clientOperationID,
             replyTo: message.replyTo
         )
@@ -53,6 +56,7 @@ extension ThreadChatViewModel {
     private func sendVoice(
         data: Data,
         durationMs: Int,
+        transcript: String?,
         replacingFailed failedOperationID: UUID?,
         replyTo: ThreadChatItemID?
     ) async -> Bool {
@@ -60,7 +64,7 @@ extension ThreadChatViewModel {
             notice = .unavailable
             return false
         }
-        guard !isQueueing else { return false }
+        guard !isQueueing, DailyAnswerDraft.measuredLength(of: transcript ?? "") <= 10_000 else { return false }
         isQueueing = true
         defer { isQueueing = false }
 
@@ -76,7 +80,8 @@ extension ThreadChatViewModel {
                         data: data,
                         durationMs: durationMs,
                         reserveOperation: operationProvider.makeOperation(),
-                        finalizeOperation: operationProvider.makeOperation()
+                        finalizeOperation: operationProvider.makeOperation(),
+                        transcript: transcript
                     ),
                     createThread: createThread,
                     replyTo: replyTo,

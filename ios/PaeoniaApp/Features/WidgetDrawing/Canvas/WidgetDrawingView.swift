@@ -55,18 +55,13 @@ struct WidgetDrawingView: View {
     }
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName, showsSendStatus: showsSendStatus)
-
-            drawingCanvas
-
-            VStack(spacing: PaeoniaSpacing.space8) {
-                WidgetDrawingToolControlsView(viewModel: viewModel)
-                WidgetDrawingColorControlsView(viewModel: viewModel)
-                WidgetDrawingSizeControlsView(viewModel: viewModel)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView { canvasContent }
+                    .scrollBounceBehavior(.basedOnSize)
+            } else {
+                canvasContent
             }
-
-            bottomActions
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
@@ -79,6 +74,9 @@ struct WidgetDrawingView: View {
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
+        // Description entry happens in a sheet. Its keyboard must not resize
+        // this canvas and rescale the drawing underneath the composer.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .toolbar { toolbarButtons }
         .paeoniaShareToolbar(showsShareButton ? viewModel.shareable : nil, identifier: "widgetDrawing.share")
         .sheet(isPresented: $isHistoryPresented) {
@@ -156,6 +154,39 @@ struct WidgetDrawingView: View {
         }
     }
 
+    private var canvasContent: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName, showsSendStatus: showsSendStatus)
+
+            drawingCanvas
+                .frame(height: dynamicTypeSize.isAccessibilitySize ? 280 : nil)
+
+            if dynamicTypeSize.isAccessibilitySize {
+                WidgetDrawingSetAsideBar(viewModel: viewModel)
+            }
+
+            VStack(spacing: PaeoniaSpacing.space8) {
+                WidgetDrawingToolControlsView(viewModel: viewModel)
+                WidgetDrawingColorControlsView(viewModel: viewModel)
+                WidgetDrawingSizeControlsView(viewModel: viewModel)
+            }
+
+            DrawingCompositionButton(
+                drawing: viewModel.drawing, side: viewModel.currentCanvasSide(),
+                apply: { viewModel.applyEdit($0) },
+                description: Binding(
+                    get: { viewModel.accessibilityText }, set: { viewModel.updateAccessibilityText($0) }
+                )
+            )
+            Text(viewModel.accessibilityText.trimmedNonEmpty ?? String(localized: .drawingGeometryMissing))
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            bottomActions
+        }
+    }
+
     private func showBanner(for failure: WidgetDrawingSaveFailure) {
         switch failure.reason {
         case .couldNotSave:
@@ -179,7 +210,9 @@ struct WidgetDrawingView: View {
 
     private var drawingCanvas: some View {
         GeometryReader { proxy in
-            let side = min(proxy.size.width, proxy.size.height)
+            // Keyboard and sheet transitions can briefly offer less than zero
+            // remaining height. Keep that layout pass out of PencilKit's geometry.
+            let side = max(0, min(proxy.size.width, proxy.size.height))
 
             canvasView
             // PencilKit coordinates, the rasterizer source rect, previews, and
@@ -190,7 +223,9 @@ struct WidgetDrawingView: View {
             .overlay { liveOverlay }
             .overlay { emptyCanvasHintView }
             .overlay { WidgetDrawingSizePreview(viewModel: viewModel) }
-            .overlay(alignment: .bottom) { WidgetDrawingSetAsideBar(viewModel: viewModel) }
+            .overlay(alignment: .bottom) {
+                if !dynamicTypeSize.isAccessibilitySize { WidgetDrawingSetAsideBar(viewModel: viewModel) }
+            }
             .background(.paeoniaBackgroundPrimary)
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
@@ -210,14 +245,16 @@ struct WidgetDrawingView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityLabel(Text(.widgetDrawingCanvasLabel))
         .accessibilityIdentifier("widgetDrawing.canvas")
     }
 
     // MARK: - Actions
 
     private var bottomActions: some View {
-        HStack(spacing: PaeoniaSpacing.space8) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space8))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
+        return layout {
             Button {
                 // No confirmation: undo takes a clear back.
                 viewModel.clearCanvas()
@@ -314,6 +351,8 @@ private extension WidgetDrawingView {
                 viewModel.revertToSavedDrawing()
             } label: {
                 Image(systemName: "arrow.counterclockwise")
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .disabled(!viewModel.canRevertToSavedDrawing)
             .accessibilityLabel(Text(.widgetDrawingRevertButton))
@@ -324,6 +363,8 @@ private extension WidgetDrawingView {
                     isHistoryPresented = true
                 } label: {
                     Image(systemName: "photo.on.rectangle.angled")
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel(Text(.widgetHistoryOpenButton))
             }

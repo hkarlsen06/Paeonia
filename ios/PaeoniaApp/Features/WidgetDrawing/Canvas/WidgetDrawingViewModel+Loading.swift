@@ -24,7 +24,12 @@ extension WidgetDrawingViewModel {
         }
         let signatureBeforeLoad = drawingSignature
 
+        let descriptionBeforeLoad = accessibilityText
         let snapshot = await service.loadSavedSnapshot()
+        savedAccessibilityText = snapshot?.accessibilityText ?? ""
+        if descriptionBeforeLoad.isEmpty, accessibilityText == descriptionBeforeLoad {
+            accessibilityText = savedAccessibilityText
+        }
         let hasPendingUpload = await uploader.hasPendingUpload
         if hasPendingUpload, delivery == .idle {
             delivery = .waiting
@@ -41,7 +46,7 @@ extension WidgetDrawingViewModel {
 
         // The person may have started drawing while the saved drawing loaded.
         // Their strokes win; the loaded drawing is still the baseline above.
-        guard drawingSignature == signatureBeforeLoad else {
+        guard drawingSignature == signatureBeforeLoad, accessibilityText == savedAccessibilityText else {
             return
         }
 
@@ -97,14 +102,18 @@ extension WidgetDrawingViewModel {
         // pile one drawing on the other, so the new one goes on the canvas and
         // the draft is kept aside.
         if widgetsChanged(since: draftKey) {
+            accessibilityText = draftStore.description(for: draftKey) ?? ""
             setAside(draftDrawing)
+            accessibilityText = savedAccessibilityText
             draftStore.removeDraft(for: draftKey)
             replaceDrawing(with: savedBaseline ?? PKDrawing())
             return
         }
         // A draft is from this phone, so it is already in the canvas's size.
+        accessibilityText = draftStore.description(for: draftKey) ?? ""
         replaceDrawing(with: draftDrawing)
-        if draftDrawing.paeoniaContentSignature == lastSavedDrawingSignature {
+        if draftDrawing.paeoniaContentSignature == lastSavedDrawingSignature,
+           accessibilityText == savedAccessibilityText {
             draftStore.removeDraft(for: draftKey)
         }
     }
@@ -124,6 +133,8 @@ extension WidgetDrawingViewModel {
         }
         let signatureBeforeLoad = drawingSignature
         let hadUnsavedEdits = hasUnsavedEdits && !drawing.strokes.isEmpty
+        let descriptionBeforeLoad = accessibilityText
+        let hadDescriptionEdits = accessibilityText != savedAccessibilityText
 
         guard let snapshot = await service.loadSavedSnapshot(),
               let loadedDrawing = try? PKDrawing(data: snapshot.drawingData),
@@ -150,8 +161,13 @@ extension WidgetDrawingViewModel {
         }
 
         // A different drawing must never inherit the previous one's attribution.
+        let hasLocalDescriptionEdits = hadDescriptionEdits || accessibilityText != descriptionBeforeLoad
         setBaseline(savedDrawing, authorName: snapshot.authorName?.trimmedNonEmpty, createdAt: snapshot.createdAt)
         hasLoadedSavedDrawing = true
+        savedAccessibilityText = snapshot.accessibilityText ?? ""
+        if drawingSignature == savedDrawing.paeoniaContentSignature, !hasLocalDescriptionEdits {
+            accessibilityText = savedAccessibilityText
+        }
 
         guard !canvasAlreadyShows(savedDrawing) else {
             return
@@ -159,9 +175,10 @@ extension WidgetDrawingViewModel {
 
         // Strokes drawn while the drawing loaded count as unsent changes too.
         let editedMeanwhile = drawingSignature != signatureBeforeLoad
-        guard setAsideUnsentWork(if: hadUnsavedEdits || editedMeanwhile) else {
+        guard setAsideUnsentWork(if: hadUnsavedEdits || editedMeanwhile || hasLocalDescriptionEdits) else {
             return
         }
+        accessibilityText = savedAccessibilityText
         showSavedDrawing(savedDrawing, side: targetSide)
     }
 
@@ -194,7 +211,11 @@ extension WidgetDrawingViewModel {
             return false
         }
         partnerSentWhileEditing = false
-        clearDraft()
+        if accessibilityText == savedAccessibilityText {
+            clearDraft()
+        } else {
+            persistDraftImmediatelyIfNeeded()
+        }
         return true
     }
 
@@ -204,6 +225,9 @@ extension WidgetDrawingViewModel {
     /// a missing author clears the old name instead of misattributing it.
     /// Without any metadata, keep the last values.
     private func refreshAttribution(from snapshot: WidgetCanvasSnapshot) {
+        let hadUnsentWork = hasUnsavedEdits
+        savedAccessibilityText = snapshot.accessibilityText ?? ""
+        if !hadUnsentWork { accessibilityText = savedAccessibilityText }
         let normalizedAuthorName = snapshot.authorName?.trimmedNonEmpty
         if let createdAt = snapshot.createdAt {
             savedDrawingAuthorName = normalizedAuthorName
@@ -267,6 +291,7 @@ extension WidgetDrawingViewModel {
         draftOrder.performNow {
             if shouldKeepDraft {
                 draftStore.setDraft(drawing.dataRepresentation(), for: draftKey)
+                draftStore.setDescription(accessibilityText, for: draftKey)
                 draftStore.setDraftBase((savedBaseline ?? PKDrawing()).paeoniaStrokeFingerprint, for: draftKey)
             } else {
                 draftStore.removeDraft(for: draftKey)
@@ -284,6 +309,7 @@ extension WidgetDrawingViewModel {
             persistDraftImmediatelyIfNeeded()
             return
         }
+        draftStore.setDescription(accessibilityText, for: draftKey)
         let ticket = draftOrder.nextTicket()
         let snapshot = DraftSnapshot(drawing: drawing, baseline: savedBaseline ?? PKDrawing())
         let draftStore = draftStore
@@ -359,6 +385,9 @@ extension WidgetDrawingViewModel {
         setAsideDrawing = combined
         if let setAsideKey {
             draftStore.setDraft(combined.dataRepresentation(), for: setAsideKey)
+            let previous = draftStore.description(for: setAsideKey) ?? ""
+            let description = [previous, accessibilityText].filter { !$0.isEmpty }.joined(separator: "\n")
+            draftStore.setDescription(description, for: setAsideKey)
         }
     }
 
@@ -370,6 +399,7 @@ extension WidgetDrawingViewModel {
         guard let aside = setAsideDrawing else {
             return
         }
+        let asideDescription = setAsideKey.flatMap { draftStore.description(for: $0) } ?? ""
         let current = drawing
         let currentHasUnsentWork = hasUnsavedEdits && !current.strokes.isEmpty
         discardSetAsideDrawing()
@@ -377,6 +407,7 @@ extension WidgetDrawingViewModel {
             setAside(current)
         }
         live?.localDrawingDidChange(aside, side: currentCanvasSide())
+        accessibilityText = asideDescription
         replaceDrawing(with: aside)
         partnerSentWhileEditing = false
         persistDraftIfNeeded()

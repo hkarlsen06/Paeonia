@@ -5,10 +5,11 @@ import UIKit
 struct PaeoniaZoomableImageView: UIViewRepresentable {
     let image: UIImage
     let isActive: Bool
+    let controls: PaeoniaImageZoomController
     let onZoomStateChanged: (Bool) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onZoomStateChanged: onZoomStateChanged)
+        Coordinator(controls: controls, onZoomStateChanged: onZoomStateChanged)
     }
 
     func makeUIView(context: Context) -> UIScrollView {
@@ -56,6 +57,10 @@ struct PaeoniaZoomableImageView: UIViewRepresentable {
         coordinator.configure(image: image, in: scrollView, forceReset: deactivated)
     }
 
+    static func dismantleUIView(_ scrollView: UIScrollView, coordinator: Coordinator) {
+        coordinator.controls.release(scrollView)
+    }
+
     private final class ZoomScrollView: UIScrollView {
         var onLayout: ((UIScrollView) -> Void)?
 
@@ -69,6 +74,7 @@ struct PaeoniaZoomableImageView: UIViewRepresentable {
         let imageView = UIImageView()
         var onZoomStateChanged: (Bool) -> Void
         var isActive = true
+        let controls: PaeoniaImageZoomController
 
         private let minimumZoomEpsilon: CGFloat = 0.01
         private let minimumZoomSnapThreshold: CGFloat = 0.06
@@ -79,7 +85,8 @@ struct PaeoniaZoomableImageView: UIViewRepresentable {
         private var isResettingZoom = false
         private var pendingImage: UIImage?
 
-        init(onZoomStateChanged: @escaping (Bool) -> Void) {
+        init(controls: PaeoniaImageZoomController, onZoomStateChanged: @escaping (Bool) -> Void) {
+            self.controls = controls
             self.onZoomStateChanged = onZoomStateChanged
         }
 
@@ -88,6 +95,7 @@ struct PaeoniaZoomableImageView: UIViewRepresentable {
         }
 
         func scrollViewDidZoom(_ scrollView: UIScrollView) {
+            if isActive { controls.bind(scrollView, coordinator: self) }
             let isZoomed = isZoomed(scrollView)
             scrollView.isScrollEnabled = isZoomed
             scrollView.panGestureRecognizer.isEnabled = isZoomed
@@ -136,6 +144,10 @@ struct PaeoniaZoomableImageView: UIViewRepresentable {
         }
 
         func configure(image: UIImage, in scrollView: UIScrollView, forceReset: Bool) {
+            defer {
+                if isActive { controls.bind(scrollView, coordinator: self) }
+                else { controls.release(scrollView) }
+            }
             pendingImage = image
             let imageIdentifier = ObjectIdentifier(image)
             let boundsSize = scrollView.bounds.size
@@ -198,6 +210,22 @@ struct PaeoniaZoomableImageView: UIViewRepresentable {
             scrollView.isScrollEnabled = false
             scrollView.panGestureRecognizer.isEnabled = false
             setZoomState(false)
+            if isActive { controls.bind(scrollView, coordinator: self) }
+        }
+
+        func zoom(to requestedScale: CGFloat, in scrollView: UIScrollView) {
+            let scale = min(scrollView.maximumZoomScale, max(scrollView.minimumZoomScale, requestedScale))
+            if scale <= scrollView.minimumZoomScale + minimumZoomEpsilon {
+                resetZoom(in: scrollView, animated: !UIAccessibility.isReduceMotionEnabled)
+                return
+            }
+            let center = imageView.convert(
+                CGPoint(x: scrollView.bounds.midX, y: scrollView.bounds.midY), from: scrollView
+            )
+            scrollView.zoom(
+                to: zoomRect(around: center, scale: scale, in: scrollView),
+                animated: !UIAccessibility.isReduceMotionEnabled
+            )
         }
 
         /// A zoom target centered on `point` (in image view coordinates) that stays

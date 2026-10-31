@@ -16,6 +16,7 @@ struct StoryComposerView: View {
     @State private var photo: Data?
     @State private var preview: UIImage?
     @State private var caption = ""
+    @State private var accessibilityText = ""
     @State private var pickerItem: PhotosPickerItem?
     @State private var isLoadingPhoto = false
     @State private var showsExplainer = false
@@ -73,6 +74,8 @@ struct StoryComposerView: View {
                 choosePhotoButton
             } else {
                 captionField
+                PhotoDescriptionField(text: $accessibilityText)
+                    .disabled(viewModel.isPosting)
                 if showsExplainer {
                     Text(.storiesComposerExplainer(partnerName))
                         .font(PaeoniaTypography.caption)
@@ -120,6 +123,7 @@ struct StoryComposerView: View {
         Button {
             photo = nil
             preview = nil
+            accessibilityText = ""
         } label: {
             Image(systemName: "xmark")
                 .font(.body.weight(.semibold))
@@ -174,6 +178,7 @@ struct StoryComposerView: View {
             Text(.storiesComposerShare(partnerName))
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isPosting))
+        .disabled(accessibilityText.unicodeScalars.count > 10_000)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.bottom, PaeoniaSpacing.space8)
         .paeoniaReadableWidth()
@@ -231,7 +236,7 @@ struct StoryComposerView: View {
 
     private func post() async {
         guard let photo else { return }
-        if await viewModel.post(photo: photo, caption: caption) {
+        if await viewModel.post(photo: photo, caption: caption, accessibilityText: accessibilityText) {
             PaeoniaHaptics.storyShared()
             dismiss()
         }

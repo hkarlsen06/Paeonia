@@ -50,7 +50,15 @@ struct ExquisiteCorpseDrawingView: View {
             // Done owns the drawing while it queues it, so a stroke added now would be lost.
             .allowsHitTesting(!viewModel.isFinishing)
         } footer: {
+            if part.showsFoldLine {
+                Text(.exquisiteCorpseDrawFoldLabel(viewModel.partnerName))
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             GameDrawingTools(board: board)
+            GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isLocked: viewModel.isFinishing)
         } bottom: {
             Button {
                 PaeoniaHaptics.drawingSent()

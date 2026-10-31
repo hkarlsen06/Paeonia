@@ -30,11 +30,16 @@ struct MemoryDraftStoreTests {
         defer { try? FileManager.default.removeItem(at: directory) }
 
         LocalMemoryDraftStore(defaults: defaults, directoryURL: directory)
-            .setDraft(MemoryDraft(title: "Lake", photos: [MemoryDraftPhoto(data: Data([9]))]), for: userID)
+            .setDraft(
+                MemoryDraft(title: "Lake", photos: [
+                    MemoryDraftPhoto(data: Data([9]), accessibilityText: "Two mugs beside the lake")
+                ]), for: userID
+            )
 
         let restored = LocalMemoryDraftStore(defaults: defaults, directoryURL: directory).draft(for: userID)
         #expect(restored?.title == "Lake")
         #expect(restored?.photos.map(\.data) == [Data([9])])
+        #expect(restored?.photos.first?.accessibilityText == "Two mugs beside the lake")
     }
 
     @Test func savingAnEmptyDraftRemovesTheStoredOne() {

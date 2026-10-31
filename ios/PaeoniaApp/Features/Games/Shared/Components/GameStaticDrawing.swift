@@ -15,11 +15,13 @@ struct GameStaticDrawing: UIViewRepresentable {
         let canvasView = PKCanvasView()
         canvasView.configureForPaeoniaDrawingCanvas()
         canvasView.isUserInteractionEnabled = false
+        canvasView.isAccessibilityElement = true
         return canvasView
     }
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
         context.coordinator.show(drawing, side: side, on: canvasView)
+        canvasView.accessibilityLabel = DrawingGeometryDescription.text(drawing, side: GameCanvas.canonicalSide)
     }
 
     func makeCoordinator() -> Coordinator {

@@ -15,9 +15,17 @@ struct WelcomeFingerDoodle: View {
     let onFirstTouch: () -> Void
 
     @Environment(\.displayScale) private var displayScale
-    @State private var strokes: [InkStroke] = []
+    @State private var committed: WelcomeCarriedDoodle?
     @State private var activeStroke: InkStroke?
     @State private var image: UIImage?
+
+    init(doodle: Binding<WelcomeCarriedDoodle?>, onFirstTouch: @escaping () -> Void) {
+        _doodle = doodle
+        self.onFirstTouch = onFirstTouch
+        // Reflow can recreate the illustration. Keep prior strokes in the same
+        // carried drawing rather than restarting an unobserved local stroke list.
+        _committed = State(initialValue: doodle.wrappedValue)
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -32,6 +40,14 @@ struct WelcomeFingerDoodle: View {
             }
             .frame(width: side, height: side)
             .contentShape(Rectangle())
+            .task(id: side) {
+                if side > 0, committed != nil { render(side: side) }
+            }
+            .onChange(of: doodle) { _, latest in
+                guard activeStroke == nil else { return }
+                committed = latest
+                render(side: side)
+            }
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
@@ -45,7 +61,7 @@ struct WelcomeFingerDoodle: View {
     }
 
     private func draw(_ value: DragGesture.Value, side: CGFloat) {
-        if strokes.isEmpty, activeStroke == nil {
+        if committed == nil, activeStroke == nil {
             onFirstTouch()
         }
         if var stroke = activeStroke {
@@ -65,13 +81,14 @@ struct WelcomeFingerDoodle: View {
         guard let activeStroke else {
             return
         }
-        strokes.append(activeStroke)
-        self.activeStroke = nil
-        render(side: side)
-        doodle = WelcomeCarriedDoodle(
-            drawing: PKDrawing(strokes: strokes.map { $0.pencilKitStroke() }),
-            canvasSide: side
+        let added = WelcomeCarriedDoodle(
+            drawing: PKDrawing(strokes: [activeStroke.pencilKitStroke()]), canvasSide: side
         )
+        let combined = committed?.adding(added) ?? added
+        committed = combined
+        self.activeStroke = nil
+        doodle = combined
+        render(side: side)
     }
 
     private func sample(_ value: DragGesture.Value, since start: Date) -> InkSample {
@@ -98,8 +115,8 @@ struct WelcomeFingerDoodle: View {
     /// Draws every stroke so far, in light mode as the saved drawings are, so
     /// PencilKit keeps the ink's own color.
     private func render(side: CGFloat) {
-        let drawn = strokes + [activeStroke].compactMap(\.self)
-        let drawing = PKDrawing(strokes: drawn.map { $0.pencilKitStroke() })
+        let base = committed.map { $0.drawing.scaled(fromSide: $0.canvasSide, toSide: side) } ?? PKDrawing()
+        let drawing = PKDrawing(strokes: base.strokes + [activeStroke].compactMap { $0?.pencilKitStroke() })
         var rendered: UIImage?
         UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
             rendered = drawing.image(from: CGRect(x: 0, y: 0, width: side, height: side), scale: displayScale)

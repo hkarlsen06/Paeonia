@@ -10,6 +10,7 @@ struct HomeMapDistanceLine: View {
     let compass: PartnerCompass
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var rotation: Double?
 
     var body: some View {
@@ -24,21 +25,31 @@ struct HomeMapDistanceLine: View {
                     wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh
                 ) == .stale
             )
-            HStack(spacing: PaeoniaSpacing.space4) {
-                Image(systemName: isTogether ? "person.2.fill" : "location.north.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.paeoniaAccentPrimary)
-                    .rotationEffect(.degrees(isTogether ? 0 : rotation ?? 0))
-                    .opacity(isTogether || direction != nil ? 1 : 0)
-                    .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: rotation)
-                    .accessibilityHidden(true)
-                Text(isTogether
-                    ? String(localized: .homeMapTogether)
-                    : CoupleMapSnapshot.formattedDistance(from: current.coordinate, to: partnerCoordinate))
-                Text(verbatim: "· " + PartnerLocationRecordedStatus.shortAge(
-                    capturedAt: partner.capturedAt, now: context.date
-                ))
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                HStack(spacing: PaeoniaSpacing.space4) {
+                    Image(systemName: isTogether ? "person.2.fill" : "location.north.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .rotationEffect(.degrees(isTogether ? 0 : rotation ?? 0))
+                        .opacity(isTogether || direction != nil ? 1 : 0)
+                        .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: rotation)
+                        .accessibilityHidden(true)
+                    Text(isTogether
+                        ? String(localized: .homeMapTogether)
+                        : CoupleMapSnapshot.formattedDistance(from: current.coordinate, to: partnerCoordinate))
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        Text(verbatim: "· " + PartnerLocationRecordedStatus.shortAge(
+                            capturedAt: partner.capturedAt, now: context.date
+                        ))
+                    }
+                }
+                if dynamicTypeSize.isAccessibilitySize {
+                    age(at: context.date)
+                        .font(PaeoniaTypography.caption)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
             }
+            .fixedSize(horizontal: false, vertical: true)
             .font(PaeoniaTypography.bodyEmphasis)
             .foregroundStyle(.paeoniaTextPrimary)
             .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
@@ -56,6 +67,10 @@ struct HomeMapDistanceLine: View {
             }
         }
         .onDisappear { compass.stop() }
+    }
+
+    private func age(at date: Date) -> some View {
+        Text(verbatim: PartnerLocationRecordedStatus.shortAge(capturedAt: partner.capturedAt, now: date))
     }
 
     private var direction: Double? {

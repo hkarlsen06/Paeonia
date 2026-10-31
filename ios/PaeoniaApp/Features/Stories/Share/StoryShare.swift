@@ -14,6 +14,7 @@ enum StoryShare {
         let caption = story.caption
         return PaeoniaShareable(
             title: String(localized: .shareTitleStory),
+            text: [story.caption, story.accessibilityText].compactMap { $0?.trimmedNonEmpty }.joined(separator: "\n\n"),
             allowsSharing: people.isOwn(story)
         ) {
             guard let data = await MemoryMediaImageProviderFactory.shared?.imageData(for: mediaAssetID),

@@ -12,12 +12,14 @@ final class ScriptedGuessMySpotGateway: GuessMySpotGateway, @unchecked Sendable 
     private let lock = NSLock()
     private var _calls: [String] = []
     private var _sentDetails: [GuessMySpotSendDetails] = []
+    private var _uploadDescriptions: [String?] = []
     private var _state: RemoteGuessMySpotState?
     private var _sendError: PaeoniaConvexError?
     private var _guessError: PaeoniaConvexError?
     let assetID = UUID()
 
     var calls: [String] { lock.withLock { _calls } }
+    var uploadDescriptions: [String?] { lock.withLock { _uploadDescriptions } }
     var sentDetails: [GuessMySpotSendDetails] { lock.withLock { _sentDetails } }
 
     func setState(_ state: RemoteGuessMySpotState?) { lock.withLock { _state = state } }
@@ -39,6 +41,7 @@ final class ScriptedGuessMySpotGateway: GuessMySpotGateway, @unchecked Sendable 
 
     func uploadGuessMySpotPhoto( // swiftlint:disable:this function_parameter_count
         _: Data,
+        accessibilityText: String?,
         width _: Int,
         height _: Int,
         roundID _: UUID,
@@ -47,6 +50,7 @@ final class ScriptedGuessMySpotGateway: GuessMySpotGateway, @unchecked Sendable 
         finalize _: SyncClientOperation
     ) async throws -> UUID {
         note("upload")
+        lock.withLock { _uploadDescriptions.append(accessibilityText) }
         return assetID
     }
 
@@ -227,7 +231,9 @@ struct GuessMySpotPendingOperationTests {
 
     @Test func aSendWhoseUploadRanOutQueuesAgainWithANewUpload() async throws {
         gateway.setSendError(.server(code: "23514", message: "guess my spot photo is not usable"))
-        let result = try await send(sendHandler(), .guessMySpotSend, sendPayload(placeName: "Bergen"))
+        var payload = sendPayload(placeName: "Bergen")
+        payload.details.accessibilityText = "Wooden houses beside the water."
+        let result = try await send(sendHandler(), .guessMySpotSend, payload)
         guard case .terminalFailure = result else {
             Issue.record("Expected the old write to retire")
             return
@@ -237,6 +243,8 @@ struct GuessMySpotPendingOperationTests {
             try? JSONDecoder().decode(GuessMySpotSendPayload.self, from: $0)
         })
         #expect(renewed.renewedAt != nil)
+        #expect(renewed.details.accessibilityText == payload.details.accessibilityText)
+        #expect(gateway.uploadDescriptions == [payload.details.accessibilityText])
         #expect(photos.photo(ownerUserID: GameFixture.me, roundID: roundID) == jpeg)
         #expect(await cache.document(ownerUserID: GameFixture.me).refusedMoves.isEmpty)
     }

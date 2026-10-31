@@ -68,6 +68,8 @@ final class DrawAndGuessViewModel {
     let liveReactions = GameLiveReactions()
     /// A move is saved on this phone and not sent yet. It may be on its way.
     var isWaitingToSend = false
+    /// A live solve kept this drawing as a draft because its description or queue needs recovery.
+    var drawingAwaitingRetry = false
     /// A waiting move has failed to send at least once, so it really is held on
     /// this phone.
     var isHeldOnPhone = false
@@ -100,6 +102,7 @@ final class DrawAndGuessViewModel {
 
     /// The drawer's canvas.
     let board = GameDrawingBoard()
+    let drawingDescription = GameDrawingDescriptionDraftModel()
     /// The relay room, nil when the couple has none.
     var live: WidgetLiveDrawing?
     /// The game's own messages in the relay room.
@@ -111,6 +114,7 @@ final class DrawAndGuessViewModel {
     // MARK: - Dependencies
 
     @ObservationIgnored let dependencies: GamesDependencies
+    @ObservationIgnored var drawingPrivacyToken: LocalPrivacyWriteGuard.Token?
     @ObservationIgnored var gateway: any DrawAndGuessGateway { dependencies.gateway }
     /// The loops that run while the screen is open: heartbeat, data changes and the clock.
     @ObservationIgnored let loops: GameScreenLoops
@@ -184,6 +188,7 @@ final class DrawAndGuessViewModel {
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.dependencies = dependencies
+        drawingPrivacyToken = participants.currentUserID.map { LocalPrivacyWriteGuard.shared.token(ownerUserID: $0) }
         self.participants = participants
         self.tickInterval = tickInterval
         self.monotonicNow = monotonicNow
@@ -197,6 +202,8 @@ final class DrawAndGuessViewModel {
         partnerName = participants.partnerName
         (me, partner) = participants.players
         now = dependencies.now()
+        let drawingBoard = board
+        drawingDescription.canEdit = { [weak drawingBoard] in drawingBoard?.isFinishing == false }
         board.onUserChange = { [weak self] drawing in
             self?.drawingChangedByUser(drawing)
         }
@@ -218,6 +225,10 @@ final class DrawAndGuessViewModel {
         partnerName = newParticipants.partnerName
         (me, partner) = newParticipants.players
         if identityChanged {
+            drawingPrivacyToken = newParticipants.currentUserID.map {
+                LocalPrivacyWriteGuard.shared.token(ownerUserID: $0)
+            }
+            drawingDescription.reset()
             resetForNewIdentity()
         }
         if live == nil, let coupleID = newParticipants.coupleID, let room = dependencies.makeLive(coupleID) {

@@ -9,19 +9,23 @@ struct DrawAndGuessTileGrid: View {
     @State private var availableWidth: CGFloat = 340
     @ScaledMetric(relativeTo: .title2) private var tileCap: CGFloat = 56
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private static let gap = PaeoniaSpacing.space8
-    private static let maxCap: CGFloat = 64
+    private var columnCount: Int {
+        guard dynamicTypeSize.isAccessibilitySize else { return DrawAndGuessTiles.rowSize }
+        return max(1, min(DrawAndGuessTiles.rowSize, Int((availableWidth + Self.gap) / (tileCap + Self.gap))))
+    }
 
     private var side: CGFloat {
-        let cap = min(tileCap, Self.maxCap)
-        let columns = CGFloat(DrawAndGuessTiles.rowSize)
+        let cap = dynamicTypeSize.isAccessibilitySize ? tileCap : min(tileCap, 64)
+        let columns = CGFloat(columnCount)
         return min(cap, ((availableWidth - Self.gap * (columns - 1)) / columns).rounded(.down))
     }
 
     private var rows: [[DrawAndGuessTile]] {
-        stride(from: 0, to: viewModel.tiles.count, by: DrawAndGuessTiles.rowSize).map {
-            Array(viewModel.tiles[$0..<min($0 + DrawAndGuessTiles.rowSize, viewModel.tiles.count)])
+        stride(from: 0, to: viewModel.tiles.count, by: columnCount).map {
+            Array(viewModel.tiles[$0..<min($0 + columnCount, viewModel.tiles.count)])
         }
     }
 

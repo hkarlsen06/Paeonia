@@ -26,6 +26,11 @@ enum DeveloperAvatarFixture {
     nonisolated static let storyPhoto = UUID(uuidString: "1e61a671-473d-421a-a881-420e6f148002") ?? UUID()
 
     static func stories(_ state: StoryRingState) -> StoriesViewModel {
+        storyDependencies(state).viewModel
+    }
+
+    static func storyDependencies(_ state: StoryRingState)
+        -> (viewModel: StoriesViewModel, cache: DeveloperAvatarStoriesCache) {
         seedPhotos()
         let now = Date()
         var stories = [Story(
@@ -43,10 +48,12 @@ enum DeveloperAvatarFixture {
             StoryNote(userID: DeveloperScenarioFixture.partnerUserID, text: "Thinking of you", createdAt: now)
         ])
         let defaults = UserDefaults(suiteName: "avatar-scenario-\(UUID().uuidString)") ?? .standard
-        return StoriesViewModel(
-            cache: DeveloperAvatarStoriesCache(snapshot), gateway: DeveloperAvatarStoriesGateway(),
+        let cache = DeveloperAvatarStoriesCache(snapshot)
+        let viewModel = StoriesViewModel(
+            cache: cache, gateway: DeveloperAvatarStoriesGateway(),
             operationProvider: DeveloperScenarioOperationProvider(), defaults: defaults
         )
+        return (viewModel, cache)
     }
 
     private static func seedPhotos() {

@@ -36,7 +36,8 @@ final class BoardMarkEditorModel {
     let initial: String
 
     private var history = DrawingEditHistory()
-    @ObservationIgnored private var canvasSide: CGFloat = 0
+    /// The native shape composer uses the same coordinates as the visible canvas.
+    private(set) var canvasSide: CGFloat = 0
     @ObservationIgnored private var previewTask: Task<Void, Never>?
     @ObservationIgnored private let saveMark: (Data?) async throws -> Void
 
@@ -90,6 +91,14 @@ final class BoardMarkEditorModel {
     func drawingChanged(_ newDrawing: PKDrawing) {
         history.record(from: drawing, to: newDrawing)
         drawing = newDrawing
+        drawingEdited()
+    }
+
+    /// Native creation follows the same history and preview path as freehand ink.
+    func applyEdit(_ newDrawing: PKDrawing) {
+        guard !isSaving else { return }
+        history.record(from: drawing, to: newDrawing)
+        show(newDrawing)
         drawingEdited()
     }
 

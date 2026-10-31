@@ -137,6 +137,7 @@ nonisolated struct MemoryMediaStateRow: Codable, Equatable, Sendable {
     let assetDeletedAt: Date?
     let assetModerationStatus: MemoryModerationStatus
     let assetStorageDeleteStatus: String
+    let accessibilityText: String?
     let updatedAt: Date
 
     enum CodingKeys: String, CodingKey {
@@ -149,6 +150,7 @@ nonisolated struct MemoryMediaStateRow: Codable, Equatable, Sendable {
         case assetDeletedAt = "asset_deleted_at"
         case assetModerationStatus = "asset_moderation_status"
         case assetStorageDeleteStatus = "asset_storage_delete_status"
+        case accessibilityText = "accessibility_text"
         case updatedAt = "updated_at"
     }
 
@@ -163,7 +165,8 @@ nonisolated struct MemoryMediaStateRow: Codable, Equatable, Sendable {
             assetDeletedAt: assetDeletedAt,
             assetModerationStatus: assetModerationStatus,
             assetStorageDeleteStatus: assetStorageDeleteStatus,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            accessibilityText: accessibilityText
         )
     }
 }

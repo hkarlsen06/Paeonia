@@ -32,7 +32,7 @@ actor WelcomeDrawingUploader: WidgetCanvasUploading {
     func restorePending(_ previous: WidgetPendingUploadSnapshot?, replacing payload: WidgetDrawingUploadPayload) {
         pendingStore.restore(
             previous,
-            replacingContentHash: WidgetCanvasUploadService.sha256Hex(of: payload.drawingData)
+            replacingPublicationID: payload.publicationID
         )
     }
 

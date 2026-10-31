@@ -26,6 +26,7 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
     let word: String
     let points: Int
     let drawingMediaAssetID: UUID?
+    var drawingAccessibilityText: String?
     /// The server has the drawing, or it is queued on this phone.
     var isDrawingSent: Bool
     let startedAt: Date
@@ -56,6 +57,7 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
         word = round.word
         points = round.points
         drawingMediaAssetID = round.drawingMediaAssetID
+        drawingAccessibilityText = round.drawingAccessibilityText
         isDrawingSent = round.drawingMediaAssetID != nil
         startedAt = round.startedAt
         guesserFirstSeenAt = round.guesserFirstSeenAt
@@ -92,6 +94,7 @@ nonisolated struct DrawAndGuessRoundView: Identifiable, Equatable, Sendable {
         word = pick.word.lowercased()
         points = pick.points
         drawingMediaAssetID = nil
+        drawingAccessibilityText = nil
         isDrawingSent = false
         startedAt = pick.createdAt
         guesserFirstSeenAt = nil

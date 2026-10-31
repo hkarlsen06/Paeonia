@@ -47,7 +47,8 @@ final class GuessMySpotHistoryViewModel {
         return BoardPieceStyle(
             color: isMine ? .boardGameMine : .boardGamePartner,
             mark: isMine ? myMark : partnerMark,
-            initial: BoardPieceStyle.initial(of: isMine ? me.name : partner.name)
+            initial: BoardPieceStyle.initial(of: isMine ? me.name : partner.name),
+            owner: isMine ? .one : .two
         )
     }
 

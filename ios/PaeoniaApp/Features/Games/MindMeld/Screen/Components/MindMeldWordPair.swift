@@ -66,6 +66,7 @@ struct MindMeldWordChip: View {
     let font: Font
     let lines: Int
     var hasMark = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
@@ -77,12 +78,12 @@ struct MindMeldWordChip: View {
             Text(verbatim: word.localizedUppercase)
                 .font(font)
                 .tracking(0.5)
-                .lineLimit(lines)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : lines)
                 .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
                 .foregroundStyle(.paeoniaTextPrimary)
                 // A chip that has to fit on one line keeps the width of its word.
-                .fixedSize(horizontal: lines == 1, vertical: true)
+                .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize && lines == 1, vertical: true)
         }
         .padding(.horizontal, PaeoniaSpacing.space16)
         .padding(.vertical, PaeoniaSpacing.space8)

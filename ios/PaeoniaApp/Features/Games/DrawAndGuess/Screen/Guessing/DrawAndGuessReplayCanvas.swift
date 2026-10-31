@@ -21,6 +21,14 @@ struct DrawAndGuessReplayCanvas: View {
         .frame(width: side, height: side)
         .contentShape(Rectangle())
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, perform: {}, onPressingChanged: holdChanged)
+        .overlay(alignment: .topTrailing) {
+            if canFastForward {
+                Button(.gamesDrawAndGuessGuessReplaySkip) { viewModel.showWholeDrawing() }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("draw.guess.skipReplay")
+                    .padding(PaeoniaSpacing.space8)
+            }
+        }
         .task(id: viewModel.isReplayReady) {
             guard viewModel.isReplayReady, !holdHintShown else { return }
             holdHintShown = true

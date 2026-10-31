@@ -24,6 +24,8 @@ nonisolated struct WidgetDrawingDraftKey: Hashable, Sendable {
 /// (`setDraft(_:base:for:)`). Main-actor classes are `Sendable` already.
 @MainActor
 protocol WidgetDrawingDraftStoring: AnyObject, Sendable {
+    func description(for key: WidgetDrawingDraftKey) -> String?
+    func setDescription(_ text: String, for key: WidgetDrawingDraftKey)
     func draft(for key: WidgetDrawingDraftKey) -> Data?
     func setDraft(_ data: Data, for key: WidgetDrawingDraftKey)
     func removeDraft(for key: WidgetDrawingDraftKey)
@@ -51,6 +53,17 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
 
     init(directoryURL: URL = FileWidgetDrawingDraftStore.defaultDirectoryURL()) {
         self.directoryURL = directoryURL
+    }
+
+    func description(for key: WidgetDrawingDraftKey) -> String? {
+        try? String(contentsOf: fileURL(for: key).appendingPathExtension("description"), encoding: .utf8)
+    }
+
+    func setDescription(_ text: String, for key: WidgetDrawingDraftKey) {
+        try? FileManager.default.createDirectory(
+            at: ownerDirectoryURL(for: key.ownerUserID), withIntermediateDirectories: true
+        )
+        try? Data(text.utf8).write(to: fileURL(for: key).appendingPathExtension("description"), options: .atomic)
     }
 
     func draft(for key: WidgetDrawingDraftKey) -> Data? {
@@ -82,6 +95,7 @@ final class FileWidgetDrawingDraftStore: WidgetDrawingDraftStoring {
     func removeDraft(for key: WidgetDrawingDraftKey) {
         try? FileManager.default.removeItem(at: fileURL(for: key))
         try? FileManager.default.removeItem(at: baseFileURL(for: key))
+        try? FileManager.default.removeItem(at: fileURL(for: key).appendingPathExtension("description"))
     }
 
     func draftBase(for key: WidgetDrawingDraftKey) -> String? {

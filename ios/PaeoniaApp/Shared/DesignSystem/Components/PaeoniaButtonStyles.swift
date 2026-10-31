@@ -42,6 +42,7 @@ struct PaeoniaPrimaryButtonStyle: ButtonStyle {
         return configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, PaeoniaSpacing.space16)
             .padding(.vertical, PaeoniaSpacing.space12)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
@@ -83,6 +84,7 @@ struct PaeoniaSecondaryButtonStyle: ButtonStyle {
         return configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, PaeoniaSpacing.space16)
             .padding(.vertical, PaeoniaSpacing.space12)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
@@ -115,6 +117,7 @@ struct PaeoniaQuietButtonStyle: ButtonStyle {
         configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, PaeoniaSpacing.space12)
             .padding(.vertical, PaeoniaSpacing.space8)
             .frame(minWidth: PaeoniaSpacing.compactButtonHeight, minHeight: PaeoniaSpacing.compactButtonHeight)
@@ -173,6 +176,7 @@ struct PaeoniaDestructiveButtonStyle: ButtonStyle {
         configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, PaeoniaSpacing.space16)
             .padding(.vertical, PaeoniaSpacing.space12)
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)

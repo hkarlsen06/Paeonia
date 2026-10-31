@@ -9,19 +9,28 @@ import Foundation
 struct MemoryDraftPhoto: Identifiable, Equatable, Sendable {
     let id: UUID
     let data: Data
+    var accessibilityText: String = ""
 
-    init(id: UUID = UUID(), data: Data) {
+    init(id: UUID = UUID(), data: Data, accessibilityText: String = "") {
         self.id = id
         self.data = data
+        self.accessibilityText = accessibilityText
     }
 
-    /// The bytes for an id never change, so the id alone decides equality.
+    static func photos(_ data: [Data], descriptions: [String]) -> [Self] {
+        data.enumerated().map { index, bytes in
+            Self(data: bytes, accessibilityText: descriptions.indices.contains(index) ? descriptions[index] : "")
+        }
+    }
+
+    /// Description edits must also trigger draft persistence.
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.accessibilityText == rhs.accessibilityText
     }
 }
 
 struct MemoryDraft: Equatable {
+    var existingDescriptions: [UUID: String] = [:]
     var title: String = ""
     var date: Date = Date()
     var note: String = ""
@@ -37,7 +46,7 @@ struct MemoryDraft: Equatable {
 
     /// The written parts, for copying out when the memory can no longer be saved.
     var copyableText: String {
-        [title, note]
+        ([title, note] + photos.map(\.accessibilityText) + Array(existingDescriptions.values))
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: "\n\n")

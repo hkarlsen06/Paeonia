@@ -93,10 +93,12 @@ final class ExquisiteCorpseViewModel {
 
     /// The drawer's canvas.
     let board = GameDrawingBoard()
+    let drawingDescription = GameDrawingDescriptionDraftModel()
 
     // MARK: - Dependencies
 
     @ObservationIgnored let dependencies: GamesDependencies
+    @ObservationIgnored var drawingPrivacyToken: LocalPrivacyWriteGuard.Token?
     @ObservationIgnored var gateway: any ExquisiteCorpseGateway { dependencies.exquisiteCorpseGateway }
     @ObservationIgnored var cache: any ExquisiteCorpseCaching { dependencies.exquisiteCorpseCache }
     /// The loops that run while the screen is open: heartbeat, data changes and the clock.
@@ -145,7 +147,7 @@ final class ExquisiteCorpseViewModel {
     /// as the draft (the server refused it), it goes back on the canvas.
     @ObservationIgnored var boardSentPartID: UUID?
     /// Done is reading the canvas and queuing the part. The canvas takes no touches meanwhile.
-    var isFinishing = false
+    var isFinishing: Bool { board.isFinishing }
     @ObservationIgnored var ideaDeck: ExquisiteCorpseIdeaDeck?
     /// Saving the chip to the cache, in the order the person changed it.
     @ObservationIgnored var ideaSaveTask: Task<Void, Never>?
@@ -197,6 +199,7 @@ final class ExquisiteCorpseViewModel {
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.dependencies = dependencies
+        drawingPrivacyToken = participants.currentUserID.map { LocalPrivacyWriteGuard.shared.token(ownerUserID: $0) }
         self.participants = participants
         self.tickInterval = tickInterval
         self.monotonicNow = monotonicNow
@@ -210,6 +213,8 @@ final class ExquisiteCorpseViewModel {
         partnerName = participants.partnerName
         (me, partner) = participants.players
         now = dependencies.now()
+        let drawingBoard = board
+        drawingDescription.canEdit = { [weak drawingBoard] in drawingBoard?.isFinishing == false }
         board.onUserChange = { [weak self] drawing in
             self?.drawingChangedByUser(drawing)
         }
@@ -236,6 +241,10 @@ final class ExquisiteCorpseViewModel {
         partnerName = newParticipants.partnerName
         (me, partner) = newParticipants.players
         if identityChanged {
+            drawingPrivacyToken = newParticipants.currentUserID.map {
+                LocalPrivacyWriteGuard.shared.token(ownerUserID: $0)
+            }
+            drawingDescription.reset()
             resetForNewIdentity()
         }
         if live == nil, let coupleID = newParticipants.coupleID,

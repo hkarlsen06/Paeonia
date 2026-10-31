@@ -22,8 +22,9 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     /// The side of the square canvas on screen, in points. Zero until laid out.
     private(set) var canvasSide: CGFloat = 0
     private var history = DrawingEditHistory()
-    var canUndoDrawing: Bool { history.canUndo }
-    var canRedoDrawing: Bool { history.canRedo }
+    private(set) var isFinishing = false
+    var canUndoDrawing: Bool { !isFinishing && history.canUndo }
+    var canRedoDrawing: Bool { !isFinishing && history.canRedo }
     /// A stroke is being drawn right now.
     private(set) var isStrokeInProgress = false
 
@@ -64,11 +65,23 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     let colorChoices = WidgetDrawingColorChoice.palette
 
     var isColorSelectionEnabled: Bool {
-        !selectedTool.isEraser
+        !isFinishing && !selectedTool.isEraser
     }
 
     var isLineStyleSelectionEnabled: Bool {
-        selectedTool.drawsLines
+        !isFinishing && selectedTool.drawsLines
+    }
+
+    /// Once a send captures this board, button edits must wait until the queue
+    /// has accepted it or failed. Finishing reads still include an existing stroke.
+    func beginFinishing() -> Bool {
+        guard !isFinishing else { return false }
+        isFinishing = true
+        return true
+    }
+
+    func endFinishing() {
+        isFinishing = false
     }
 
     func selectTool(_ tool: WidgetDrawingTool) {
@@ -225,6 +238,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     // MARK: Undo, clear and fill
 
     func undoDrawing() {
+        guard !isFinishing else { return }
         refreshDrawingFromCanvas()
         if let previous = history.undo(drawing) {
             showEdit(previous)
@@ -232,6 +246,7 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     }
 
     func redoDrawing() {
+        guard !isFinishing else { return }
         refreshDrawingFromCanvas()
         if let next = history.redo(drawing) {
             showEdit(next)
@@ -239,12 +254,13 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     }
 
     func clear() {
-        guard !isEmpty else { return }
+        guard !isFinishing, !isEmpty else { return }
         applyEdit(PKDrawing())
     }
 
     /// The paint bucket was tapped at `point`, in canvas points.
     func fill(at point: CGPoint) {
+        guard !isFinishing else { return }
         refreshDrawingFromCanvas()
         guard let stroke = DrawingFloodFill.fillStroke(
             in: drawing,
@@ -256,7 +272,8 @@ final class GameDrawingBoard: WidgetDrawingToolControlling {
     }
 
     /// A change the person made with a button or a tap, not a stroke.
-    private func applyEdit(_ newDrawing: PKDrawing) {
+    func applyEdit(_ newDrawing: PKDrawing) {
+        guard !isFinishing else { return }
         history.record(from: drawing, to: newDrawing)
         showEdit(newDrawing)
     }

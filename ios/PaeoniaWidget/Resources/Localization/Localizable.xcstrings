@@ -4,6 +4,24 @@
     "%@" : {
 
     },
+    "drawing.description.missing" : {
+      "comment" : "VoiceOver fallback for a saved drawing without an authored description.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No description added to this drawing."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingen beskrivelse lagt til denne tegningen."
+          }
+        }
+      }
+    },
     "widget.description" : {
       "comment" : "Widget gallery description for the Paeonia widget.",
       "extractionState" : "manual",

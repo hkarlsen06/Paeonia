@@ -18,10 +18,13 @@ nonisolated struct GameUploadParent: Equatable, Sendable {
     /// `upload_purpose`, such as `game_drawing_payload`.
     var purpose: String
     var gameID: UUID
+    /// Only a full drawing carries authored text. A clipped fold strip never does.
+    var accessibilityText: String?
 
     /// The finished drawing of a Draw & Guess round.
-    static func drawAndGuessRound(gameID: UUID, roundID: UUID) -> GameUploadParent {
-        GameUploadParent(kind: "game_move", id: roundID, purpose: "game_drawing_payload", gameID: gameID)
+    static func drawAndGuessRound(gameID: UUID, roundID: UUID, accessibilityText: String? = nil) -> GameUploadParent {
+        GameUploadParent(kind: "game_move", id: roundID, purpose: "game_drawing_payload",
+                         gameID: gameID, accessibilityText: accessibilityText)
     }
 }
 
@@ -116,6 +119,7 @@ nonisolated private struct ReserveGameDrawingRequest: Encodable {
     let fileExtension = LiveGameDrawingTransfer.payloadFileExtension
     let coupleID: UUID
     let pathContext: PathContext
+    let accessibilityText: String?
 
     struct PathContext: Encodable {
         let gameID: UUID
@@ -132,6 +136,7 @@ nonisolated private struct ReserveGameDrawingRequest: Encodable {
         uploadPurpose = parent.purpose
         self.coupleID = coupleID
         pathContext = PathContext(gameID: parent.gameID)
+        accessibilityText = parent.accessibilityText
     }
 
     enum CodingKeys: String, CodingKey {
@@ -142,6 +147,7 @@ nonisolated private struct ReserveGameDrawingRequest: Encodable {
         case fileExtension = "p_file_extension"
         case coupleID = "p_couple_id"
         case pathContext = "p_path_context"
+        case accessibilityText = "p_accessibility_text"
     }
 
     func encode(to encoder: Encoder) throws {
@@ -153,6 +159,7 @@ nonisolated private struct ReserveGameDrawingRequest: Encodable {
         try container.encode(fileExtension, forKey: .fileExtension)
         try container.encode(coupleID, forKey: .coupleID)
         try container.encode(pathContext, forKey: .pathContext)
+        try container.encodeIfPresent(accessibilityText, forKey: .accessibilityText)
         try operation.encode(to: encoder)
     }
 }

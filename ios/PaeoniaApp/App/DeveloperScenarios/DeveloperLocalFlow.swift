@@ -39,6 +39,7 @@
         allowsSystemIntegrations: false
       )
       .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
+      .environment(\.mediaAlternativeEditingService, environment.mediaAlternativeEditingService)
       .overlay(alignment: .bottomTrailing) {
         if let gameFlow = environment.gameConversationFlow,
            UserDefaults.standard.bool(forKey: "paeonia-game-chat-test-events") {
@@ -79,6 +80,7 @@
     let widgetCanvasService: DeveloperWidgetCanvasService
     let featureDependencies: RootFeatureDependencies
     let gameConversationFlow: DeveloperGameConversationFlow?
+    let mediaAlternativeEditingService: MediaAlternativeEditingService
     private let homeLaunch: DeveloperHomeLaunchTiming?
     private let visibilityStore = InMemoryLocationVisibilityRepository()
     private let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
@@ -95,6 +97,14 @@
       let operationProvider = DeveloperScenarioOperationProvider()
       let inviteStore = DeveloperScenarioInviteStore()
       let pendingOperationStore = InMemoryPendingSyncOperationRepository()
+      let avatar = avatarStories.map { DeveloperAvatarFixture.storyDependencies($0) }
+      mediaAlternativeEditingService = MediaAlternativeEditingService(
+        pending: pendingOperationStore,
+        cache: MediaAlternativeCacheUpdater(
+          chat: InMemoryThreadChatCache(), stories: avatar?.cache ?? DeveloperAvatarStoriesCache(StoriesSnapshot()),
+          daily: DeveloperLocalFlowSnapshotCache()
+        )
+      )
       let gameFlow = gameConversation ? DeveloperGameConversationFlow(pending: pendingOperationStore) : nil
       gameConversationFlow = gameFlow
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
@@ -234,7 +244,7 @@
         gamesViewModel: gameFlow?.games,
         settingsViewModel: settingsViewModel,
         avatarStylingModel: AvatarStylingModel(gateway: DeveloperAvatarDecorationGateway(store: store)),
-        storiesViewModel: avatarStories.map { DeveloperAvatarFixture.stories($0) },
+        storiesViewModel: avatar?.viewModel,
         homeMapTiles: mapTiles.makeStatus(),
         settingsPrivacyService: nil,
         settingsPrivacyOperationProvider: operationProvider,

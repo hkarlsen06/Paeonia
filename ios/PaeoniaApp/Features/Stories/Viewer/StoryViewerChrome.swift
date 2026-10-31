@@ -1,5 +1,64 @@
 import SwiftUI
 
+struct StoryViewerIconButton: View {
+    let systemImage: String
+    let label: LocalizedStringResource
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(.white.opacity(0.15), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(label))
+    }
+}
+
+struct StoryNavigationControls: View {
+    let canGoBack: Bool
+    let automaticAdvanceAvailable: Bool
+    @Binding var isPaused: Bool
+    let onPrevious: () -> Void
+    let onNext: () -> Void
+
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space12) {
+            control("chevron.left", label: .storiesViewerPrevious, action: onPrevious)
+                .disabled(!canGoBack)
+                .accessibilityIdentifier("story.viewer.previous")
+            Spacer(minLength: 0)
+            if automaticAdvanceAvailable {
+                control(
+                    isPaused ? "play.fill" : "pause.fill",
+                    label: isPaused ? .storiesViewerResume : .storiesViewerPause
+                ) { isPaused.toggle() }
+                .accessibilityIdentifier("story.viewer.pause")
+            }
+            Spacer(minLength: 0)
+            control("chevron.right", label: .storiesViewerNext, action: onNext)
+                .accessibilityIdentifier("story.viewer.next")
+        }
+        .padding(.horizontal, PaeoniaSpacing.space8)
+        .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius16))
+    }
+
+    private func control(_ image: String, label: LocalizedStringResource, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: image)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(label))
+    }
+}
+
 struct StoryViewerTopBar: View {
     let story: Story
     let people: StoryPeople
@@ -74,11 +133,11 @@ struct StoryViewerHeader: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(people.name(of: story))
                     .font(PaeoniaTypography.bodyEmphasis)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(subtitle)
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.white.opacity(0.75))
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(.white)
             .accessibilityElement(children: .combine)

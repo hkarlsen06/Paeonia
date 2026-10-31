@@ -53,8 +53,8 @@ struct BoardGameReplayScreen<Board: BoardGameRules>: View {
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             BoardGamePlayersRow(
-                me: players.meInfo,
-                partner: players.partnerInfo,
+                me: playerInfo(players.meInfo, as: model.me),
+                partner: playerInfo(players.partnerInfo, as: model.me.other),
                 turn: turn,
                 partnerName: players.partnerName,
                 partnerIsHere: false
@@ -93,6 +93,10 @@ struct BoardGameReplayScreen<Board: BoardGameRules>: View {
     }
 
     // MARK: Board
+
+    private func playerInfo(_ player: BoardGamePlayerInfo, as owner: BoardPlayer) -> BoardGamePlayerInfo {
+        BoardGamePlayerInfo(name: player.name, photoAssetID: player.photoAssetID, style: styles[owner])
+    }
 
     private var replayBoard: BoardGameReplayBoard<Board> {
         BoardGameReplayBoard(

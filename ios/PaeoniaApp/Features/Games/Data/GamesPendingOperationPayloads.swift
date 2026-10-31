@@ -24,6 +24,8 @@ nonisolated struct GameSubmitDrawingPayload: Codable, Equatable, Sendable {
     let roundID: UUID
     let coupleID: UUID
     let drawingData: Data
+    var drawingAccessibilityText: String?
+    var draftPublicationID: UUID?
     let reserveOperation: SyncClientOperation
     let finalizeOperation: SyncClientOperation
     /// When the drawing was queued again because its first upload was gone.

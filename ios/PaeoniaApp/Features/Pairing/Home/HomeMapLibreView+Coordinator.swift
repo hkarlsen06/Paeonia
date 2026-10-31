@@ -16,6 +16,7 @@ extension HomeMapLibreView {
         /// Both places on the intro's first camera. They miss the waiting avatars when the
         /// map can't zoom out far enough.
         var introStartPoints = HomeMapAvatarPoints(own: .zero, partner: .zero)
+        private var projectionTask: Task<Void, Never>?
 
         /// Frames the map again when the couple, the box or the view's real size changed.
         /// The box must fit inside the view, or the fit has no room and zooms out to the world.
@@ -66,6 +67,19 @@ extension HomeMapLibreView {
         }
 
         private func publishProjection(_ mapView: MLNMapView) {
+            // Camera setters can call the delegate while updateUIView is running.
+            // Publish the latest projection after that update, once per run-loop turn.
+            guard projectionTask == nil else { return }
+            projectionTask = Task { @MainActor [weak self, weak mapView] in
+                await Task.yield()
+                guard let self else { return }
+                self.projectionTask = nil
+                guard let mapView else { return }
+                self.publishCurrentProjection(mapView)
+            }
+        }
+
+        private func publishCurrentProjection(_ mapView: MLNMapView) {
             guard let parent, lastFraming != nil else { return }
             parent.onProjection(HomeMapProjection(
                 own: mapView.convert(parent.current, toPointTo: mapView),

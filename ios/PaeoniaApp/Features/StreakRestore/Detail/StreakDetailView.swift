@@ -71,49 +71,51 @@ struct StreakDetailView: View {
     }
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space24) {
-            Spacer()
+        PaeoniaScreenScroll {
+            VStack(spacing: PaeoniaSpacing.space24) {
+                Spacer(minLength: PaeoniaSpacing.space16)
 
-            if isSaveDay {
-                // The cooled flame with the days that come back, as on the restore offer.
-                PaeoniaStreakFlame(count: streak.restorableCount, isBroken: true)
-            } else {
-                PaeoniaStreakFlame(
-                    count: streak.currentCount,
-                    playsCelebration: playsCelebration,
-                    ambientMotion: ambientMotion && !playsCelebration
-                )
-                // The flame has no empty level of its own, so a streak that has not started
-                // is dimmed here instead of showing a fully lit "0".
-                .saturation(hasNotStarted ? 0.15 : 1)
-                .opacity(hasNotStarted ? 0.8 : 1)
-            }
+                if isSaveDay {
+                    // The cooled flame with the days that come back, as on the restore offer.
+                    PaeoniaStreakFlame(count: streak.restorableCount, isBroken: true)
+                } else {
+                    PaeoniaStreakFlame(
+                        count: streak.currentCount,
+                        playsCelebration: playsCelebration,
+                        ambientMotion: ambientMotion && !playsCelebration
+                    )
+                    // The flame has no empty level of its own, so a streak that has not started
+                    // is dimmed here instead of showing a fully lit "0".
+                    .saturation(hasNotStarted ? 0.15 : 1)
+                    .opacity(hasNotStarted ? 0.8 : 1)
+                }
 
-            heading
-                .modifier(StreakDetailReveal(shown: shouldShowDetails))
-
-            notes
-                .modifier(StreakDetailReveal(shown: shouldShowDetails))
-
-            // Their record, shown only when it beats the current run so it adds
-            // something the hero flame doesn't already say.
-            if !isSaveDay, streak.longestCount > streak.currentCount {
-                longestStat
+                heading
                     .modifier(StreakDetailReveal(shown: shouldShowDetails))
-            }
 
-            Spacer()
+                notes
+                    .modifier(StreakDetailReveal(shown: shouldShowDetails))
 
-            Button(action: onClose) {
-                Text(.streakDetailDone)
+                // Their record, shown only when it beats the current run so it adds
+                // something the hero flame doesn't already say.
+                if !isSaveDay, streak.longestCount > streak.currentCount {
+                    longestStat
+                        .modifier(StreakDetailReveal(shown: shouldShowDetails))
+                }
+
+                Spacer(minLength: PaeoniaSpacing.space16)
+
+                Button(action: onClose) {
+                    Text(.streakDetailDone)
+                }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                .modifier(StreakDetailReveal(shown: shouldShowDetails))
             }
-            .buttonStyle(PaeoniaQuietButtonStyle())
-            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
-            .modifier(StreakDetailReveal(shown: shouldShowDetails))
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.vertical, PaeoniaSpacing.space32)
+            .paeoniaReadableWidth()
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaSurfacePrimary)
         .onAppear(perform: revealCelebrationDetails)
     }

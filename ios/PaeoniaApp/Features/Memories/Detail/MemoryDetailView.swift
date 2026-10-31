@@ -9,6 +9,7 @@ struct MemoryDetailView: View {
     let memoryID: UUID
     let currentUserID: UUID?
     let viewModel: MemoriesViewModel
+    let mediaImageProvider: (any MemoryMediaImageProviding)?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -24,6 +25,18 @@ struct MemoryDetailView: View {
 
     private let photoCarouselHeight: CGFloat = 320
     private let photoCarouselPageControlInset: CGFloat = PaeoniaSpacing.space40
+
+    init(
+        memoryID: UUID,
+        currentUserID: UUID?,
+        viewModel: MemoriesViewModel,
+        mediaImageProvider: (any MemoryMediaImageProviding)? = MemoryMediaImageProviderFactory.shared
+    ) {
+        self.memoryID = memoryID
+        self.currentUserID = currentUserID
+        self.viewModel = viewModel
+        self.mediaImageProvider = mediaImageProvider
+    }
 
     private var record: MemoryRecord? {
         viewModel.record(for: memoryID)
@@ -123,12 +136,15 @@ struct MemoryDetailView: View {
             ForEach(mediaItems, id: \.memoryMediaID) { media in
                 MemoryMediaImageView(
                     mediaAssetID: media.mediaAssetID,
+                    accessibilityText: media.accessibilityText,
+                    provider: mediaImageProvider,
                     height: photoCarouselHeight,
                     cornerRadius: PaeoniaRadius.radius16,
                     onTapImage: { mediaAssetID, _ in
                         presentImageViewer(initialMediaAssetID: mediaAssetID, mediaItems: mediaItems)
                     }
                 )
+                .accessibilityIdentifier("memory.photo.\(media.mediaAssetID.uuidString)")
                 .contextMenu {
                     savePhotoButton(for: media)
                 }
@@ -225,6 +241,8 @@ struct MemoryDetailView: View {
             ) { title, date, note, photos, removedMedia, place in
                 await viewModel.saveEdits(
                     MemoryEdit(
+                        photoDescriptions: editDraft.photos.map(\.accessibilityText),
+                        existingDescriptions: editDraft.existingDescriptions,
                         base: base,
                         title: title,
                         date: date,
@@ -274,10 +292,12 @@ struct MemoryDetailView: View {
     /// only holds smaller copies.
     private func presentImageViewer(initialMediaAssetID: UUID?, mediaItems: [MemoryMediaSnapshot]) {
         guard let initialMediaAssetID else { return }
-        let provider = MemoryMediaImageProviderFactory.shared
+        let provider = mediaImageProvider
         let items = mediaItems.map { media in
             let mediaAssetID = media.mediaAssetID
-            return PaeoniaImageViewerItem(id: mediaAssetID) {
+            return PaeoniaImageViewerItem(
+                id: mediaAssetID, accessibilityText: PhotoDescription.label(media.accessibilityText)
+            ) {
                 guard let data = await provider?.imageData(for: mediaAssetID) else { return nil }
                 return UIImage(data: data)
             }

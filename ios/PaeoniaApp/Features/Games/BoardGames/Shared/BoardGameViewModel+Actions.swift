@@ -191,12 +191,14 @@ extension BoardGameViewModel {
         let mine = BoardPieceStyle(
             color: colors.mine.color,
             mark: currentUserID.flatMap { markImages[$0]?.image },
-            initial: myInitial
+            initial: myInitial,
+            owner: me
         )
         let theirs = BoardPieceStyle(
             color: colors.partner.color,
             mark: partnerUserID.flatMap { markImages[$0]?.image },
-            initial: theirInitial
+            initial: theirInitial,
+            owner: me.other
         )
         styles = me == .one ? BoardPieceStyles(one: mine, two: theirs) : BoardPieceStyles(one: theirs, two: mine)
         meInfo = BoardGamePlayerInfo(

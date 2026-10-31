@@ -17,6 +17,7 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
     /// `solved` or `missed`.
     let state: DrawAndGuessRoundState
     let drawingMediaAssetID: UUID
+    var drawingAccessibilityText: String?
     let solveMs: Int?
     let speedBonus: Int
     let firstTryBonus: Int
@@ -38,6 +39,7 @@ nonisolated struct RemoteDrawAndGuessHistoryRound: Codable, Equatable, Identifia
         case points
         case state
         case drawingMediaAssetID = "drawing_media_asset_id"
+        case drawingAccessibilityText = "drawing_accessibility_text"
         case solveMs = "solve_ms"
         case speedBonus = "speed_bonus"
         case firstTryBonus = "first_try_bonus"

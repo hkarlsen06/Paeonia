@@ -72,7 +72,6 @@ struct GameTutorialSheet: View {
         .preferredColorScheme(.dark)
         .presentationDetents(sheetHeight > pageHeight && pageHeight > 0 ? [.height(sheetHeight)] : [.large])
         .presentationDragIndicator(.visible)
-        .accessibilityIdentifier("games.tutorial.\(tutorial.kind.rawValue)")
     }
 
     private func pageView(_ page: GameTutorial.Page) -> some View {

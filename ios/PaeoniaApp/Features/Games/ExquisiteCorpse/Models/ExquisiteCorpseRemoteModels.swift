@@ -23,6 +23,8 @@ nonisolated struct RemoteExquisiteCorpsePart: Codable, Equatable, Identifiable, 
     let stripMediaAssetID: UUID?
     /// Nil until the figure is finished, unless this person drew the part.
     let drawingMediaAssetID: UUID?
+    /// Full authored text is absent until the whole figure is finished. Never use it for a fold strip.
+    var drawingAccessibilityText: String?
     /// Hidden from the partner until the figure is finished.
     let idea: RemoteExquisiteCorpseIdea?
 
@@ -33,6 +35,7 @@ nonisolated struct RemoteExquisiteCorpsePart: Codable, Equatable, Identifiable, 
         case createdAt = "created_at"
         case stripMediaAssetID = "strip_media_asset_id"
         case drawingMediaAssetID = "drawing_media_asset_id"
+        case drawingAccessibilityText = "drawing_accessibility_text"
         case idea
     }
 }

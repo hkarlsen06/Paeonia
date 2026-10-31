@@ -98,10 +98,11 @@ struct PaeoniaWidgetEntryView: View {
     }
 
     private func drawingAccessibilityLabel(for content: PaeoniaWidgetDrawingContent) -> Text {
+        if let text = content.accessibilityText, !text.isEmpty { return Text(text) }
         if let authorName = content.authorName, !authorName.isEmpty {
-            Text(.widgetDrawingAccessibility(authorName))
+            return Text(.widgetDrawingAccessibility(authorName)) + Text(". ") + Text(.drawingDescriptionMissing)
         } else {
-            Text(.widgetDrawingTitle)
+            return Text(.drawingDescriptionMissing)
         }
     }
 

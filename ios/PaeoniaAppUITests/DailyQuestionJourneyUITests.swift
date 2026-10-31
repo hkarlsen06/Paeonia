@@ -26,6 +26,10 @@ final class DailyQuestionJourneyUITests: XCTestCase {
         // card as a locked row.
         let lockedRow = app.buttons.matching(identifier: "daily.lockedRow").firstMatch
         XCTAssertTrue(lockedRow.waitForExistence(timeout: 10))
+        let unrevealedAnswer = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "started pouring"))
+            .firstMatch
+        XCTAssertFalse(unrevealedAnswer.exists, "A locked answer must not appear in accessibility output")
         lockedRow.tap()
 
         let answerField = app.descendants(matching: .any)["daily.answer.text"]
@@ -109,6 +113,35 @@ final class DailyQuestionJourneyUITests: XCTestCase {
         XCTAssertTrue(app.buttons["daily.chat.close"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Wish you were sitting here too"].waitForExistence(timeout: 5))
         capture(app, named: "Photo answer conversation")
+    }
+
+    @MainActor
+    func testPhotoAnswerAtAX5KeepsQuestionAndAttachmentWhileTyping() throws {
+        try SimulatorTextSizeSettings(testCase: self).withSize(.largestAccessibility) {
+            let app = XCUIApplication()
+            app.launchEnvironment["PAEONIA_SCENARIO"] = "question-answer-flow"
+            app.launchArguments = [
+                "-paeonia-answer-format", "photo-text", "-paeonia-answer-seeded", "YES",
+                "-paeonia-scenario-hide-controls", "YES", "-AppleLanguages", "(nb)", "-AppleLocale", "nb_NO"
+            ]
+            app.launch()
+            defer { app.terminate() }
+            let answer = app.descendants(matching: .any)["daily.answer.text"].firstMatch
+            let question = app.staticTexts["daily.answer.question"]
+            XCTAssertTrue(question.waitForExistence(timeout: 10))
+            let fullPrompt = question.label
+            for _ in 0..<8 where !answer.isHittable { app.swipeUp() }
+            XCTAssertTrue(answer.isHittable)
+            answer.tap()
+            let text = "Jeg tenkte på kaffen vi drakk sammen."
+            answer.typeText(text)
+            XCTAssertEqual(question.label, fullPrompt)
+            XCTAssertTrue(app.buttons["daily.answer.photo.remove"].exists)
+            capture(app, named: "AX5 photo answer with keyboard")
+            app.buttons["daily.flow.primary"].tap()
+            XCTAssertTrue(app.buttons["daily.chat.close"].waitForExistence(timeout: 10))
+            XCTAssertTrue(app.staticTexts[text].waitForExistence(timeout: 5))
+        }
     }
 
     @MainActor

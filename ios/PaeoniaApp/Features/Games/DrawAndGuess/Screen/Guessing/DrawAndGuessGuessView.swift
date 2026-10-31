@@ -153,6 +153,10 @@ struct DrawAndGuessGuessView: View {
                 slots
             }
 
+            if let round = viewModel.round, round.drawingMediaAssetID != nil {
+                MediaAlternativeReadout(text: round.drawingAccessibilityText, isVoice: false, isDrawing: true)
+            }
+
             if isRevealed {
                 revealSections
             }
@@ -360,6 +364,13 @@ private struct DrawAndGuessReplayAccessibility: ViewModifier {
     let viewModel: DrawAndGuessViewModel
     let isDrawingShown: Bool
 
+    private var geometryDescription: String {
+        let drawing = viewModel.guessSource == .live
+            ? viewModel.live?.partnerCanvasDrawing : viewModel.finalDrawing?.drawing
+        guard let drawing else { return String(localized: .drawingGeometryMissing) }
+        return DrawingGeometryDescription.text(drawing, side: GameCanvas.canonicalSide)
+    }
+
     func body(content: Content) -> some View {
         content
             .drawAndGuessDrawingAccessibility(
@@ -367,6 +378,7 @@ private struct DrawAndGuessReplayAccessibility: ViewModifier {
                 hint: Text(.gamesDrawAndGuessGuessReplayHint),
                 isDrawingShown: isDrawingShown
             )
+            .accessibilityValue(Text(geometryDescription))
             .accessibilityActions {
                 if isDrawingShown {
                     Button {

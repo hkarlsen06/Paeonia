@@ -152,12 +152,13 @@ struct MilestoneCountdownCard: View {
         return tile(face: face, burstID: isCelebrating ? celebrationID : nil, line: line)
     }
 
-    /// The calendar with its one line underneath. The calendar takes the space the line
-    /// leaves, so the tile stays square and the number is the biggest thing in it.
+    /// Ordinary sizes keep the compact square. At accessibility sizes the calendar and
+    /// complete event title determine the height, so neither competes for a fixed square.
     private func tile(face: CountdownCalendarView.Face, burstID: Int?, line: Text) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
             CountdownCalendarView(face: face, burstID: burstID)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .aspectRatio(322.0 / 360.0, contentMode: .fit)
+                .frame(maxWidth: .infinity, maxHeight: dynamicTypeSize.isAccessibilitySize ? nil : .infinity)
 
             line
                 .font(.footnote.weight(.semibold))
@@ -165,11 +166,10 @@ struct MilestoneCountdownCard: View {
                 .contentTransition(.opacity)
                 .paeoniaLoadingReveal(isLoading, delay: 0.1)
                 .multilineTextAlignment(.center)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 2)
-                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.85)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .milestoneTileChrome()
+        .milestoneTileChrome(keepsSquare: !dynamicTypeSize.isAccessibilitySize)
     }
 
     /// "days until 500 days together". The number sits on the calendar page above it.
@@ -237,14 +237,20 @@ private enum CountUpGate {
 }
 
 private extension View {
-    /// The tile's square footprint, the same size as the drawing card next to it in the
-    /// row. There is no card around it: the calendar is an object of its own and stands
-    /// on the page's background. The whole square takes the tap.
-    func milestoneTileChrome() -> some View {
-        frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .padding(.vertical, PaeoniaSpacing.space8)
-            .aspectRatio(1, contentMode: .fit)
-            .contentShape(Rectangle())
+    /// The compact footprint matches the neighboring drawing. Accessibility sizes
+    /// keep the full content height. Both layouts preserve the whole tile as a target.
+    @ViewBuilder
+    func milestoneTileChrome(keepsSquare: Bool) -> some View {
+        if keepsSquare {
+            frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding(.vertical, PaeoniaSpacing.space8)
+                .aspectRatio(1, contentMode: .fit)
+                .contentShape(Rectangle())
+        } else {
+            frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, PaeoniaSpacing.space8)
+                .contentShape(Rectangle())
+        }
     }
 }
 

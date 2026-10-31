@@ -31,6 +31,7 @@ struct DailyChallengeVoiceAndDraftTests {
         #expect(viewModel.hasDraftToSubmit(for: question))
         #expect(viewModel.stagedVoiceDurationMs(for: question.id) == 4_200)
 
+        viewModel.setMediaAccessibilityText("Jeg savner deg. Fugler synger.", for: question.id)
         await viewModel.submitAnswer(for: question)
 
         #expect(viewModel.isSending(question.id))
@@ -46,6 +47,8 @@ struct DailyChallengeVoiceAndDraftTests {
             return
         }
         #expect(media.draft.purpose == .voice)
+        #expect(media.draft.accessibilityText == "Jeg savner deg. Fugler synger.")
+        #expect(payload.content.restoredDraft.media?.accessibilityText == "Jeg savner deg. Fugler synger.")
         #expect(media.draft.durationMs == 4_200)
         #expect(media.stagedData == Data([0x00, 0x01, 0x02, 0x03]))
     }
@@ -127,11 +130,15 @@ struct DailyChallengeVoiceAndDraftTests {
         let instanceID = UUID()
 
         UserDefaultsDailyChallengeDraftStore(defaults: defaults)
-            .setDraft(DailyAnswerDraft(text: "Saved across launches"), for: instanceID, userID: userID)
+            .setDraft(DailyAnswerDraft(text: "Saved across launches", media: DailyAnswerMediaDraft(
+                purpose: .voice, mimeType: "audio/mp4", fileExtension: "m4a",
+                accessibilityText: "Jeg savner deg. Fugler synger."
+            )), for: instanceID, userID: userID)
 
         let reopened = UserDefaultsDailyChallengeDraftStore(defaults: defaults)
         #expect(reopened.drafts(for: userID)[instanceID]?.text == "Saved across launches")
 
+        #expect(reopened.drafts(for: userID)[instanceID]?.media?.accessibilityText == "Jeg savner deg. Fugler synger.")
         reopened.clearDraft(for: instanceID, userID: userID)
         #expect(UserDefaultsDailyChallengeDraftStore(defaults: defaults).drafts(for: userID).isEmpty)
     }

@@ -77,6 +77,25 @@ actor FileTopicsCache: TopicsCaching {
         update(ownerUserID: ownerUserID) { $0.celebratedTopicKeys.insert(topicKey) }
     }
 
+    func updateMediaAlternative(
+        answerID: UUID, text: String, ownerUserID: UUID, privacyToken: LocalPrivacyWriteGuard.Token
+    ) {
+        // A correction can finish after access was removed. Do not recreate a purged topic file.
+        try? LocalPrivacyWriteGuard.shared.write(ownerUserID: ownerUserID, token: privacyToken) {
+            update(ownerUserID: ownerUserID) { document in
+                for (key, detail) in document.details {
+                    document.details[key] = RemoteTopicDetail(
+                        topic: detail.topic, questions: detail.questions,
+                        answerDetails: detail.answerDetails.map {
+                            $0.applyingMediaAlternative(answerID: answerID, text: text, ownerUserID: ownerUserID)
+                        }
+                    )
+                }
+            }
+        }
+        LocalStoreChanges.post(.topics, ownerUserID: ownerUserID)
+    }
+
     func clearAll() {
         loaded = [:]
         guard FileManager.default.fileExists(atPath: directoryURL.path) else { return }

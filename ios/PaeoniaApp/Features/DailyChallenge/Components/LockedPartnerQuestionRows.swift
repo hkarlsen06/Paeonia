@@ -20,6 +20,8 @@ struct LockedPartnerQuestionRows: View {
     var zoomNamespace: Namespace.ID?
     var onOpen: (UUID) -> Void = { _ in }
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         if !state.lockedPartnerQuestions.isEmpty {
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
@@ -49,25 +51,40 @@ struct LockedPartnerQuestionRows: View {
     }
 
     private func rowContent(_ question: DailyChallengeCardState.LockedPartnerQuestion) -> some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            lockedAvatar
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space12))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space12))
+        return layout {
+            HStack {
+                lockedAvatar
+                if dynamicTypeSize.isAccessibilitySize {
+                    Spacer(minLength: PaeoniaSpacing.space12)
+                    disclosure
+                }
+            }
 
             Text(rowText(question))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Image(systemName: "chevron.right")
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .foregroundStyle(.paeoniaTextTertiary)
-                .accessibilityHidden(true)
+            if !dynamicTypeSize.isAccessibilitySize {
+                disclosure
+            }
         }
         .padding(PaeoniaSpacing.space12)
         .background(.paeoniaSurfaceSecondary)
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
         .contentShape(Rectangle())
+    }
+
+    private var disclosure: some View {
+        Image(systemName: "chevron.right")
+            .font(PaeoniaTypography.caption.weight(.semibold))
+            .foregroundStyle(.paeoniaTextTertiary)
+            .accessibilityHidden(true)
     }
 
     /// The row's sentence with the question's short prompt in bold, then the day it is

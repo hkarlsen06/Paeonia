@@ -21,39 +21,41 @@ struct StreakMilestoneView: View {
     private static let flameStartDelay: Duration = .milliseconds(450)
 
     var body: some View {
-        VStack(spacing: PaeoniaSpacing.space24) {
-            Spacer()
+        PaeoniaScreenScroll {
+            VStack(spacing: PaeoniaSpacing.space24) {
+                Spacer(minLength: PaeoniaSpacing.space16)
 
-            flame
+                flame
 
-            VStack(spacing: PaeoniaSpacing.space8) {
-                Text(isSave ? .streakSavedEyebrow : .streakMilestoneEyebrow)
-                    .paeoniaEyebrowStyle(foreground: Color.paeoniaInkGold)
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    Text(isSave ? .streakSavedEyebrow : .streakMilestoneEyebrow)
+                        .paeoniaEyebrowStyle(foreground: Color.paeoniaInkGold)
 
-                Text(isSave ? .streakSavedTitle : StreakMilestoneCopy.title(days: days))
-                    .font(PaeoniaTypography.heroTitle)
-                    .foregroundStyle(.paeoniaTextPrimary)
+                    Text(isSave ? .streakSavedTitle : StreakMilestoneCopy.title(days: days))
+                        .font(PaeoniaTypography.heroTitle)
+                        .foregroundStyle(.paeoniaTextPrimary)
 
-                Text(isSave ? .streakSavedMessage : StreakMilestoneCopy.message(days: days))
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text(isSave ? .streakSavedMessage : StreakMilestoneCopy.message(days: days))
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .multilineTextAlignment(.center)
+                .opacity(showDetails ? 1 : 0)
+                .offset(y: showDetails ? 0 : PaeoniaSpacing.space12)
+
+                Spacer(minLength: PaeoniaSpacing.space16)
+
+                Button(action: close) {
+                    Text(.streakMilestoneKeepGoingButton)
+                }
+                .buttonStyle(PaeoniaPrimaryButtonStyle())
+                .opacity(showDetails ? 1 : 0)
             }
-            .multilineTextAlignment(.center)
-            .opacity(showDetails ? 1 : 0)
-            .offset(y: showDetails ? 0 : PaeoniaSpacing.space12)
-
-            Spacer()
-
-            Button(action: close) {
-                Text(.streakMilestoneKeepGoingButton)
-            }
-            .buttonStyle(PaeoniaPrimaryButtonStyle())
-            .opacity(showDetails ? 1 : 0)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.vertical, PaeoniaSpacing.space32)
+            .paeoniaReadableWidth()
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.vertical, PaeoniaSpacing.space32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.paeoniaSurfacePrimary)
         // Waits for the app to be in front. Haptics do not play while it is opening.
         .task(id: scenePhase) {

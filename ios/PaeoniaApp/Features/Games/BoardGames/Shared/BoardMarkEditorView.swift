@@ -56,6 +56,12 @@ struct BoardMarkEditorView: View {
 
                 canvas
 
+                DrawingCompositionButton(
+                    drawing: model.drawing, side: model.canvasSide,
+                    apply: model.applyEdit, fixedInkColor: .white
+                )
+                .disabled(model.canvasSide <= 0 || model.isSaving)
+
                 editButtons
 
                 if model.failure == .tooBig {
@@ -90,7 +96,7 @@ struct BoardMarkEditorView: View {
     }
 
     private var previewStyle: BoardPieceStyle {
-        BoardPieceStyle(color: color, mark: model.previewMark, initial: model.initial)
+        BoardPieceStyle(color: color, mark: model.previewMark, initial: model.initial, owner: .one)
     }
 
     // MARK: Canvas

@@ -11,6 +11,7 @@ nonisolated struct GuessMySpotSendDetails: Codable, Equatable, Sendable {
     /// The city alone and the country code, which the memory map counts.
     var placeCity: String?
     var placeCountryCode: String?
+    var accessibilityText: String?
 
     /// Fills the place from a lookup.
     mutating func name(_ place: GuessMySpotPlace?) {
@@ -32,6 +33,7 @@ nonisolated protocol GuessMySpotGateway: Sendable {
     /// Reserves, uploads and finalizes the round's photo. Returns its media asset id.
     func uploadGuessMySpotPhoto( // swiftlint:disable:this function_parameter_count
         _ jpeg: Data,
+        accessibilityText: String?,
         width: Int,
         height: Int,
         roundID: UUID,
@@ -69,6 +71,7 @@ nonisolated extension LiveGamesGateway: GuessMySpotGateway {
 
     func uploadGuessMySpotPhoto( // swiftlint:disable:this function_parameter_count
         _ jpeg: Data,
+        accessibilityText: String?,
         width: Int,
         height: Int,
         roundID: UUID,
@@ -82,7 +85,8 @@ nonisolated extension LiveGamesGateway: GuessMySpotGateway {
             mimeType: "image/jpeg",
             fileExtension: "jpg",
             width: width,
-            height: height
+            height: height,
+            accessibilityText: accessibilityText
         )
         let result = try await LiveMemoryMediaUploadService(client: client).uploadMedia(
             media,
@@ -153,6 +157,7 @@ nonisolated extension UnavailableGamesGateway: GuessMySpotGateway {
 
     func uploadGuessMySpotPhoto( // swiftlint:disable:this function_parameter_count
         _: Data,
+        accessibilityText _: String?,
         width _: Int,
         height _: Int,
         roundID _: UUID,

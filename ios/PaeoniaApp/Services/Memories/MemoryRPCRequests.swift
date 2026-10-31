@@ -66,6 +66,7 @@ nonisolated struct CreateMemoryRequest: Encodable {
 }
 
 nonisolated struct UpdateMemoryRequest: Encodable {
+    let photoDescriptions: [MemoryPhotoDescription]
     let memoryID: UUID
     let expectedRevision: Int
     let title: String
@@ -76,6 +77,7 @@ nonisolated struct UpdateMemoryRequest: Encodable {
     let localCreatedAt: Date
 
     init(payload: UpdateMemoryOperationPayload, operation: SyncClientOperation) {
+        photoDescriptions = payload.photoDescriptions
         memoryID = payload.memoryID
         expectedRevision = payload.expectedRevision
         title = payload.title
@@ -87,6 +89,7 @@ nonisolated struct UpdateMemoryRequest: Encodable {
     }
 
     enum CodingKeys: String, CodingKey {
+        case photoDescriptions = "p_photo_descriptions"
         case memoryID = "p_memory_id"
         case expectedRevision = "p_expected_revision"
         case title = "p_title"

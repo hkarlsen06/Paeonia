@@ -3,8 +3,8 @@ import SwiftUI
 /// Sample boards, styles and a photo for the previews.
 private enum DotsAndBoxesPreviewData {
     static let styles = BoardPieceStyles(
-        one: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "H"),
-        two: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "A")
+        one: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "H", owner: .one),
+        two: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "A", owner: .two)
     )
 
     /// Three closed boxes: player two has the first two and player one has the third.

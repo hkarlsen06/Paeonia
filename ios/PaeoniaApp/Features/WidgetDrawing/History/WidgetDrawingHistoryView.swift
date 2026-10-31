@@ -282,7 +282,7 @@ private struct WidgetDrawingHistoryThumbnail: View {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFit()
-                .accessibilityHidden(true)
+                .accessibilityLabel(Text(item.accessibilityText ?? String(localized: .drawingGeometryMissing)))
         case .failed:
             // The whole square is the retry target, so a failed drawing can be
             // tried again without scrolling it off screen and back.

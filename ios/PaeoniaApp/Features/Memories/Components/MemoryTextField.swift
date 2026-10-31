@@ -9,9 +9,7 @@ struct MemoryTextField<Field: Hashable>: View {
     let placeholder: LocalizedStringResource
     var isFocused: FocusState<Field?>.Binding
     let field: Field
-    /// `.horizontal` keeps the field to one line, so Return submits instead of adding a line.
-    var axis: Axis = .vertical
-    var lineLimit: ClosedRange<Int> = 1...4
+    var lineLimit: ClosedRange<Int>? = 1...4
     var characterLimit: Int?
 
     private var isActive: Bool {
@@ -19,14 +17,7 @@ struct MemoryTextField<Field: Hashable>: View {
     }
 
     var body: some View {
-        TextField(
-            text: $text,
-            prompt: Text(placeholder).foregroundStyle(.paeoniaTextSecondary),
-            axis: axis
-        ) {
-            Text(placeholder)
-        }
-        .lineLimit(lineLimit)
+        textInput
         .font(PaeoniaTypography.body)
         .foregroundStyle(.paeoniaTextPrimary)
         .focused(isFocused, equals: field)
@@ -36,5 +27,17 @@ struct MemoryTextField<Field: Hashable>: View {
             guard let characterLimit, MemoryDataService.isOverLimit(newText, characterLimit) else { return }
             text = MemoryDataService.prefix(newText, fittingCodePoints: characterLimit)
         }
+    }
+
+    @ViewBuilder
+    private var textInput: some View {
+        let input = TextField(
+            text: $text,
+            prompt: Text(placeholder).foregroundStyle(.paeoniaTextSecondary),
+            axis: .vertical
+        ) {
+            Text(placeholder)
+        }
+        if let lineLimit { input.lineLimit(lineLimit) } else { input }
     }
 }

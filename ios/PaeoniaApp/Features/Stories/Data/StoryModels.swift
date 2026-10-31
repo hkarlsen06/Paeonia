@@ -8,6 +8,7 @@ nonisolated struct Story: Codable, Equatable, Identifiable, Sendable {
     let authorUserID: UUID
     let mediaAssetID: UUID
     let caption: String?
+    var accessibilityText: String?
     let createdAt: Date
     /// When the partner first opened it. Nil until then.
     var seenAt: Date?
@@ -30,6 +31,7 @@ nonisolated struct Story: Codable, Equatable, Identifiable, Sendable {
         case authorUserID = "author_user_id"
         case mediaAssetID = "media_asset_id"
         case caption
+        case accessibilityText = "accessibility_text"
         case createdAt = "created_at"
         case seenAt = "seen_at"
     }

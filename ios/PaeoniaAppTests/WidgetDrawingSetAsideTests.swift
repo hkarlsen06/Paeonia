@@ -111,7 +111,7 @@ private func setAsideDrawing(at origin: CGFloat) -> PKDrawing {
 }
 
 private actor SetAsideCanvasService: WidgetCanvasManaging {
-    let snapshot: WidgetCanvasSnapshot?
+    var snapshot: WidgetCanvasSnapshot?
 
     init(snapshot: WidgetCanvasSnapshot?) {
         self.snapshot = snapshot
@@ -127,15 +127,15 @@ private actor SetAsideCanvasService: WidgetCanvasManaging {
         snapshot
     }
 
-    func saveDrawing(_: Data, canvasSize _: CGSize, authorName _: String?, createdAt _: Date) async throws {}
-
-    func saveSyncedDrawing(
-        _: Data,
-        canvasSize _: CGSize,
-        authorName _: String?,
-        createdAt _: Date,
-        revisionID _: UUID
-    ) async throws {}
+    func saveDescribedDrawing(
+        _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID _: UUID?, accessibilityText: String?
+    ) async throws {
+        snapshot = WidgetCanvasSnapshot(
+            drawingData: data, authorName: authorName, createdAt: createdAt,
+            canvasSide: canvasSize.width, accessibilityText: accessibilityText
+        )
+    }
 
     func clearForPrivacy() async {}
 
@@ -223,6 +223,7 @@ private func restoreDrawing(at origin: CGFloat) -> PKDrawing {
 
 private actor RestoreCanvasService: WidgetCanvasManaging {
     let widget: PKDrawing
+    private var snapshot: WidgetCanvasSnapshot?
 
     init(widget: PKDrawing) {
         self.widget = widget
@@ -231,18 +232,22 @@ private actor RestoreCanvasService: WidgetCanvasManaging {
     // The protocol is async. This double answers right away.
     // swiftlint:disable async_without_await
     func loadSavedDrawing() async -> Data? {
-        widget.dataRepresentation()
+        snapshot?.drawingData ?? widget.dataRepresentation()
     }
 
-    func saveDrawing(_: Data, canvasSize _: CGSize, authorName _: String?, createdAt _: Date) async throws {}
+    func loadSavedSnapshot() async -> WidgetCanvasSnapshot? {
+        snapshot ?? WidgetCanvasSnapshot(drawingData: widget.dataRepresentation(), authorName: nil, createdAt: nil)
+    }
 
-    func saveSyncedDrawing(
-        _: Data,
-        canvasSize _: CGSize,
-        authorName _: String?,
-        createdAt _: Date,
-        revisionID _: UUID
-    ) async throws {}
+    func saveDescribedDrawing(
+        _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID _: UUID?, accessibilityText: String?
+    ) async throws {
+        snapshot = WidgetCanvasSnapshot(
+            drawingData: data, authorName: authorName, createdAt: createdAt,
+            canvasSide: canvasSize.width, accessibilityText: accessibilityText
+        )
+    }
 
     func clearForPrivacy() async {}
 

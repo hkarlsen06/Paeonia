@@ -32,7 +32,7 @@ struct TopicArtwork: View {
     var body: some View {
         artwork
             .accessibilityHidden(true)
-            .task {
+            .task(id: reduceMotion) {
                 guard playsBeat, !reduceMotion else { return }
                 try? await Task.sleep(for: .milliseconds(350))
                 guard !Task.isCancelled else { return }
@@ -81,8 +81,8 @@ struct TopicArtwork: View {
                 .accessibilityHidden(true)
                 .frame(width: width * 0.8548, height: seam)
                 .offset(x: width * 0.0726)
-                .keyframeAnimator(initialValue: 0.0, trigger: beat) { content, lift in
-                    content.offset(y: -lift * height)
+                .keyframeAnimator(initialValue: 0.0, trigger: beat) { [reduceMotion] content, lift in
+                    content.offset(y: reduceMotion ? 0 : -lift * height)
                 } keyframes: { _ in
                     KeyframeTrack {
                         SpringKeyframe(0.27, duration: 0.45, spring: .bouncy)
@@ -110,8 +110,8 @@ struct TopicArtwork: View {
                 .resizable()
                 .accessibilityHidden(true)
                 .frame(width: arrowHeight * 0.547, height: arrowHeight)
-                .keyframeAnimator(initialValue: -35.0, trigger: beat) { content, angle in
-                    content.rotationEffect(.degrees(angle), anchor: hub)
+                .keyframeAnimator(initialValue: -35.0, trigger: beat) { [reduceMotion] content, angle in
+                    content.rotationEffect(.degrees(reduceMotion ? 0 : angle), anchor: hub)
                 } keyframes: { _ in
                     KeyframeTrack {
                         CubicKeyframe(560, duration: 1.0)
@@ -145,8 +145,8 @@ struct TopicArtwork: View {
             .resizable()
             .accessibilityHidden(true)
             .frame(width: width, height: width / 3)
-            .keyframeAnimator(initialValue: 0.0, trigger: beat) { content, lift in
-                content.offset(y: -lift * hop)
+            .keyframeAnimator(initialValue: 0.0, trigger: beat) { [reduceMotion] content, lift in
+                content.offset(y: reduceMotion ? 0 : -lift * hop)
             } keyframes: { _ in
                 KeyframeTrack {
                     // A keyframe of no length gives the animation no valid value and
@@ -175,8 +175,8 @@ struct TopicArtwork: View {
                 .resizable()
                 .accessibilityHidden(true)
                 .frame(width: tagWidth, height: tagHeight)
-                .keyframeAnimator(initialValue: 4.0, trigger: beat) { content, angle in
-                    content.rotationEffect(.degrees(angle), anchor: UnitPoint(x: 0.4928, y: 0))
+                .keyframeAnimator(initialValue: 4.0, trigger: beat) { [reduceMotion] content, angle in
+                    content.rotationEffect(.degrees(reduceMotion ? 0 : angle), anchor: UnitPoint(x: 0.4928, y: 0))
                 } keyframes: { _ in
                     KeyframeTrack {
                         SpringKeyframe(18, duration: 0.3)
@@ -220,8 +220,8 @@ struct TopicArtwork: View {
             .resizable()
             .accessibilityHidden(true)
             .frame(width: height * 1.0353, height: height)
-            .keyframeAnimator(initialValue: 0.0, trigger: beat) { content, angle in
-                content.rotationEffect(.degrees(angle), anchor: UnitPoint(x: 0.4865, y: 0.0024))
+            .keyframeAnimator(initialValue: 0.0, trigger: beat) { [reduceMotion] content, angle in
+                content.rotationEffect(.degrees(reduceMotion ? 0 : angle), anchor: UnitPoint(x: 0.4865, y: 0.0024))
             } keyframes: { _ in
                 KeyframeTrack {
                     SpringKeyframe(10, duration: 0.3)

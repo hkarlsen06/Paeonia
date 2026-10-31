@@ -24,6 +24,9 @@ struct PencilKitCanvasView: UIViewRepresentable {
     func makeUIView(context: Context) -> PaeoniaDrawingCanvasContainer {
         let container = PaeoniaDrawingCanvasContainer()
         let canvasView = container.canvas
+        canvasView.isAccessibilityElement = true
+        canvasView.accessibilityLabel = String(localized: .widgetDrawingCanvasLabel)
+        canvasView.accessibilityTraits = .image
         canvasView.overscanTop = overscanTop
         canvasView.canvasTool = tool
         let coordinator = context.coordinator

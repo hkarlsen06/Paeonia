@@ -47,6 +47,7 @@ nonisolated struct WidgetDrawingBounds: Codable, Equatable, Sendable {
     let width: Double
     let height: Double
     let canvasSide: Double
+    var accessibilityText: String?
 }
 
 nonisolated struct WidgetDrawingRevisionResult: Decodable, Sendable {

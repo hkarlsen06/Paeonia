@@ -107,7 +107,8 @@ actor WidgetCanvasService: WidgetCanvasManaging {
             drawingData: data,
             authorName: metadata?.authorName,
             createdAt: metadata?.createdAt,
-            canvasSide: metadata.map { CGFloat($0.canvasSide) }
+            canvasSide: metadata.map { CGFloat($0.canvasSide) },
+            accessibilityText: metadata?.accessibilityText
         )
     }
 
@@ -160,6 +161,16 @@ actor WidgetCanvasService: WidgetCanvasManaging {
                 serverRevisionID: revisionID.uuidString.lowercased()
             )
         )
+    }
+
+    func saveDescribedDrawing(
+        _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID: UUID?, accessibilityText: String?
+    ) async throws {
+        try await publish(WidgetCanvasPublication(
+            drawingData: drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt,
+            serverRevisionID: revisionID?.uuidString.lowercased(), accessibilityText: accessibilityText
+        ))
     }
 
     private func publish(_ publication: WidgetCanvasPublication) async throws {

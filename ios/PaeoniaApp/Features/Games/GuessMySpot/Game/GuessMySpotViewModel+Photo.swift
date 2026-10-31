@@ -7,42 +7,43 @@ extension GuessMySpotViewModel {
     /// The longest side the screens decode a photo at.
     static let displayPixelSize = 2_048
 
+    func photoDescriptionTarget(for round: RemoteGuessMySpotRound) -> MediaAlternativeTarget? {
+        guard round.senderUserID == currentUserID,
+              state?.currentRound?.id == round.id || state?.previousRound?.id == round.id else { return nil }
+        return .guessMySpot(roundID: round.id)
+    }
+
     // MARK: - Picking
 
     /// A photo tapped in the picker. It is read and stripped off the main actor,
     /// then the check opens with its spot, or with none.
     func pick(_ data: Data) async {
-        guard phase == .send, !isPreparingPhoto else { return }
+        guard phase == .send, !isPreparingPhoto, let owner = currentUserID,
+              let couple = state?.coupleID ?? participants.coupleID,
+              let storageTicket = draftStorageTicket else { return }
+        draftRevision += 1
+        let revision = draftRevision
         isPreparingPhoto = true
-        defer { isPreparingPhoto = false }
-        // Looked up while the photo is read, so a photo without a location opens near home.
+        draftReadFailed = false
+        defer { if draftRevision == revision { isPreparingPhoto = false } }
         let homeArea = dependencies.guessMySpotHomeArea
-        let owner = currentUserID
-        let couple = state?.coupleID ?? participants.coupleID
-        async let area: GuessMySpotArea? = if let owner {
-            await homeArea.homeArea(ownerUserID: owner, coupleID: couple)
-        } else {
-            nil
-        }
-        guard let prepared = await GuessMySpotPhotoReader.prepareAsync(data) else {
-            pickFailed = true
-            return
-        }
+        async let area = homeArea.homeArea(ownerUserID: owner, coupleID: couple)
+        let prepared = await GuessMySpotPhotoReader.prepareAsync(data)
+        guard draftLoadIsCurrent(owner: owner, couple: couple, revision: revision, ticket: storageTicket)
+        else { return }
+        guard let prepared else { pickFailed = true; return }
         async let preview = GuessMySpotPhotoPreview.jpeg(from: prepared.jpeg)
-        guard let image = await MemoryImageDecoding.downsample(prepared.jpeg, maxPixelSize: Self.displayPixelSize),
-              phase == .send
-        else {
-            pickFailed = true
-            return
-        }
-        draftStartArea = prepared.spot == nil ? await area : nil
+        let image = await decodeDraftPhoto(prepared.jpeg)
+        let startingArea = prepared.spot == nil ? await area : nil
+        let previewData = await preview
+        guard draftLoadIsCurrent(owner: owner, couple: couple, revision: revision, ticket: storageTicket)
+        else { return }
+        guard let image else { pickFailed = true; return }
+        draftStartArea = startingArea
         draft = GuessMySpotDraft(
-            roundID: UUID(),
-            photo: prepared,
-            image: image,
-            spot: prepared.spot,
-            preview: await preview
+            roundID: UUID(), photo: prepared, image: image, spot: prepared.spot, preview: previewData
         )
+        persistCurrentDraft()
         sendLivePreview()
         namePlaceSoon()
     }
@@ -51,12 +52,17 @@ extension GuessMySpotViewModel {
     /// refused round until the draft is sent or replaced, and goes out with a new round id.
     func restoreDraft(from send: GuessMySpotSendPayload, ownerUserID: UUID) async {
         guard let jpeg = dependencies.guessMySpotPhotos.photo(ownerUserID: ownerUserID, roundID: send.roundID) else {
-            await cache.forgetRefusedMove(roundID: send.roundID, ownerUserID: ownerUserID)
+            // Keep the authored text and send details if the file is temporarily unavailable.
+            draftReadFailed = true
             return
         }
+        guard let couple = state?.coupleID ?? participants.coupleID, let ticket = draftStorageTicket else { return }
+        let revision = draftRevision
         async let preview = GuessMySpotPhotoPreview.jpeg(from: jpeg)
-        guard let image = await MemoryImageDecoding.downsample(jpeg, maxPixelSize: Self.displayPixelSize),
-              phase == .send, draft == nil
+        let image = await decodeDraftPhoto(jpeg)
+        let previewData = await preview
+        guard let image, draft == nil,
+              draftLoadIsCurrent(owner: ownerUserID, couple: couple, revision: revision, ticket: ticket)
         else { return }
         draft = GuessMySpotDraft(
             roundID: UUID(),
@@ -73,8 +79,10 @@ extension GuessMySpotViewModel {
                 GuessMySpotPlace(name: $0, city: send.details.placeCity, countryCode: send.details.placeCountryCode)
             },
             refusedRoundID: send.roundID,
-            preview: await preview
+            preview: previewData,
+            accessibilityText: send.details.accessibilityText ?? ""
         )
+        persistCurrentDraft()
         sendLivePreview()
     }
 

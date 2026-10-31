@@ -243,12 +243,14 @@ extension ConsensioViewModel {
         let mine = BoardPieceStyle(
             color: .boardGameMine,
             mark: currentUserID.flatMap { markImages[$0]?.image },
-            initial: BoardPieceStyle.initial(of: participants.currentName)
+            initial: BoardPieceStyle.initial(of: participants.currentName),
+            owner: .one
         )
         let theirs = BoardPieceStyle(
             color: .boardGamePartner,
             mark: state?.partnerUserID.flatMap { markImages[$0]?.image },
-            initial: BoardPieceStyle.initial(of: participants.partnerName)
+            initial: BoardPieceStyle.initial(of: participants.partnerName),
+            owner: .two
         )
         if myStyle != mine {
             myStyle = mine

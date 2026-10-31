@@ -399,6 +399,7 @@ private nonisolated final class SyncLocalStoreSpy: WidgetCanvasManaging, @unchec
         let canvasSize: CGSize
         let authorName: String?
         let createdAt: Date
+        let accessibilityText: String?
     }
     private(set) var savedCalls: [SaveCall] = []
     var savedDrawingData: Data?
@@ -407,13 +408,22 @@ private nonisolated final class SyncLocalStoreSpy: WidgetCanvasManaging, @unchec
     func loadSavedDrawing() -> Data? { savedDrawingData }
     func loadSavedSnapshot() -> WidgetCanvasSnapshot? {
         savedCalls.last.map {
-            WidgetCanvasSnapshot(drawingData: $0.data, authorName: $0.authorName, createdAt: $0.createdAt)
+            WidgetCanvasSnapshot(
+                drawingData: $0.data, authorName: $0.authorName, createdAt: $0.createdAt,
+                accessibilityText: $0.accessibilityText
+            )
         }
     }
     func isShowingSavedDrawing() -> Bool { isShowingDrawing }
-    func saveDrawing(_ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date) {
+    func saveDescribedDrawing(
+        _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID _: UUID?, accessibilityText: String?
+    ) {
         savedCalls.append(
-            SaveCall(data: drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
+            SaveCall(
+                data: drawingData, canvasSize: canvasSize, authorName: authorName,
+                createdAt: createdAt, accessibilityText: accessibilityText
+            )
         )
     }
     func clearForPrivacy() {}
@@ -436,7 +446,7 @@ private nonisolated final class SyncUploadSpy: WidgetCanvasUploading, @unchecked
         if let error {
             throw error
         }
-        pendingStore.clearPending(WidgetCanvasUploadService.sha256Hex(of: payload.drawingData))
+        pendingStore.clearPending(payload.publicationID)
     }
 }
 

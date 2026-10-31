@@ -141,6 +141,13 @@ struct DailyStreakToolbarLabel: View {
         if let onTap {
             Button(action: onTap) { label(for: state) }
                 .buttonStyle(.plain)
+                .accessibilityShowsLargeContentViewer {
+                    Label {
+                        Text(verbatim: accessibilityLabel(for: state))
+                    } icon: {
+                        Image(systemName: "flame.fill")
+                    }
+                }
         } else {
             label(for: state)
         }

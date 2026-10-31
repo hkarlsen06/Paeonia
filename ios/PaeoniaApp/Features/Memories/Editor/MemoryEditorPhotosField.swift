@@ -7,6 +7,7 @@ import UIKit
 /// buttons. Each partner can add up to five photos to a memory.
 struct MemoryEditorPhotosField: View {
     @Binding var photos: [MemoryDraftPhoto]
+    @Binding var existingDescriptions: [UUID: String]
     @Binding var removedExistingMediaIDs: Set<UUID>
     /// Picked photos still loading from the library. The form can't save until they're in.
     @Binding var loadingPhotoCount: Int
@@ -29,10 +30,10 @@ struct MemoryEditorPhotosField: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: PaeoniaSpacing.space8) {
                         ForEach(visibleExistingMedia, id: \.memoryMediaID) { media in
-                            existingThumbnail(media)
+                            existingPhotoEditor(media)
                         }
                         ForEach(photos) { photo in
-                            stagedThumbnail(photo)
+                            stagedPhotoEditor(photo)
                         }
                         ForEach(0..<loadingPhotoCount, id: \.self) { _ in
                             loadingThumbnail
@@ -55,10 +56,43 @@ struct MemoryEditorPhotosField: View {
         .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
+    private func existingPhotoEditor(_ media: MemoryMediaSnapshot) -> some View {
+        VStack {
+            existingThumbnail(media)
+            if media.ownerUserID == currentUserID {
+                PhotoDescriptionField(text: Binding(
+                    get: {
+                        existingDescriptions[media.mediaAssetID] ?? media.accessibilityText ?? ""
+                    },
+                    set: { existingDescriptions[media.mediaAssetID] = $0 }
+                ))
+                .frame(width: 200)
+                .disabled(isSaving)
+            }
+        }
+    }
+
+    private func stagedPhotoEditor(_ photo: MemoryDraftPhoto) -> some View {
+        VStack {
+            stagedThumbnail(photo)
+            PhotoDescriptionField(text: Binding(
+                get: { photos.first { $0.id == photo.id }?.accessibilityText ?? "" },
+                set: { value in
+                    if let index = photos.firstIndex(where: { $0.id == photo.id }) {
+                        photos[index].accessibilityText = value
+                    }
+                }
+            ))
+            .frame(width: 200)
+            .disabled(isSaving)
+        }
+    }
+
     private func existingThumbnail(_ media: MemoryMediaSnapshot) -> some View {
         ZStack(alignment: .topTrailing) {
             MemoryMediaImageView(
                 mediaAssetID: media.mediaAssetID,
+                accessibilityText: media.accessibilityText,
                 height: thumbnailSize,
                 cornerRadius: PaeoniaRadius.radius12
             )
@@ -79,7 +113,7 @@ struct MemoryEditorPhotosField: View {
                 .onTapGesture {
                     presentStagedImage(photo.data)
                 }
-                .accessibilityLabel(Text(.memoriesPhotoAccessibility))
+                .accessibilityLabel(Text(verbatim: PhotoDescription.label(photo.accessibilityText)))
                 .accessibilityAddTraits(.isButton)
 
             removeButton {

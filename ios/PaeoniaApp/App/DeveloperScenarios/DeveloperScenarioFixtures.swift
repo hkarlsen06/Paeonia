@@ -348,11 +348,12 @@
     // swiftlint:disable:next function_parameter_count
     func updateMemory(
       ownerUserID: UUID, memoryID: UUID, expectedRevision: Int, title: String, memoryDate: String,
+      photoDescriptions: [MemoryPhotoDescription],
       operation: SyncClientOperation
     ) async throws -> MemoryRecord {
       try await service.updateMemory(
         ownerUserID: ownerUserID, memoryID: memoryID, expectedRevision: expectedRevision,
-        title: title, memoryDate: memoryDate, operation: operation)
+        title: title, memoryDate: memoryDate, photoDescriptions: photoDescriptions, operation: operation)
     }
     func setMemoryPlace(
       ownerUserID: UUID, memoryID: UUID, place: MemoryPlace?, operation: SyncClientOperation

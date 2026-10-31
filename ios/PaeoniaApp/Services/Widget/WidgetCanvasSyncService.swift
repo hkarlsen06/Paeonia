@@ -280,12 +280,13 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
 
         // Persists locally, reloads the widget, and posts
         // `.paeoniaWidgetCanvasDidUpdate` so open in-app surfaces refresh.
-        try await localStore.saveSyncedDrawing(
+        try await localStore.saveDescribedDrawing(
             data,
             canvasSize: CGSize(width: canvasSide, height: canvasSide),
             authorName: authorName,
             createdAt: state.revisionCreatedAt ?? Date(),
-            revisionID: revisionID
+            revisionID: revisionID,
+            accessibilityText: state.bounds?.accessibilityText
         )
 
         try Task.checkCancellation()
@@ -298,14 +299,14 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         }
 
         guard let drawingData = await localStore.loadSavedDrawing() else {
-            pendingStore.clearPending(snapshot.contentHash)
+            pendingStore.clearPending(snapshot.publicationID)
             return true
         }
 
         guard WidgetCanvasUploadService.sha256Hex(of: drawingData) == snapshot.contentHash,
               (try? PKDrawing(data: drawingData)) != nil
         else {
-            pendingStore.clearPending(snapshot.contentHash)
+            pendingStore.clearPending(snapshot.publicationID)
             return true
         }
 

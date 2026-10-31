@@ -139,7 +139,7 @@ struct ConsensioPointsLink: View {
             .accessibilityValue(Text(.consensioPointsTogether(points)))
         }
         .buttonStyle(.plain)
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .frame(minWidth: 44, minHeight: 44)
         .accessibilityIdentifier("consensio.history.open")
     }
 }

@@ -29,6 +29,7 @@ nonisolated struct DailyAnswerUploadMedia: Sendable, Equatable {
     let width: Int?
     let height: Int?
     let durationMs: Int?
+    let accessibilityText: String?
 
     init(
         data: Data,
@@ -37,7 +38,8 @@ nonisolated struct DailyAnswerUploadMedia: Sendable, Equatable {
         fileExtension: String,
         width: Int? = nil,
         height: Int? = nil,
-        durationMs: Int? = nil
+        durationMs: Int? = nil,
+        accessibilityText: String? = nil
     ) {
         self.data = data
         self.purpose = purpose
@@ -46,6 +48,7 @@ nonisolated struct DailyAnswerUploadMedia: Sendable, Equatable {
         self.width = width
         self.height = height
         self.durationMs = durationMs
+        self.accessibilityText = accessibilityText
     }
 }
 
@@ -101,7 +104,8 @@ actor LiveDailyAnswerMediaUploadService: DailyAnswerMediaUploading {
                 answerID: answerID,
                 coupleID: coupleID,
                 purpose: media.purpose,
-                fileExtension: media.fileExtension
+                fileExtension: media.fileExtension,
+                accessibilityText: media.accessibilityText
             )
         )
         guard let reservation = reservation.first else {
@@ -145,6 +149,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
     let uploadPurpose: String
     let mediaType: String
     let fileExtension: String
+    let accessibilityText: String?
 
     init(
         operation: SyncClientOperation,
@@ -152,7 +157,8 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
         answerID: UUID,
         coupleID: UUID,
         purpose: DailyAnswerMediaPurpose,
-        fileExtension: String
+        fileExtension: String,
+        accessibilityText: String? = nil
     ) {
         clientOperationID = operation.id
         clientID = operation.clientID
@@ -164,6 +170,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
         uploadPurpose = purpose.rawValue
         mediaType = purpose.mediaType
         self.fileExtension = fileExtension
+        self.accessibilityText = accessibilityText
     }
 
     enum CodingKeys: String, CodingKey {
@@ -177,6 +184,7 @@ nonisolated struct ReserveDailyAnswerMediaRequest: Encodable {
         case uploadPurpose = "p_upload_purpose"
         case mediaType = "p_media_type"
         case fileExtension = "p_file_extension"
+        case accessibilityText = "p_accessibility_text"
     }
 }
 

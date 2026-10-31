@@ -121,7 +121,7 @@ struct ThreadChatPresenceModelTests {
         #expect(await service.typingCalls == [true, false])
     }
 
-    @Test func typingSendsOneHeartbeatEveryFewSecondsAndStopsOnAnEmptyField() async {
+    @Test func typingSendsOneHeartbeatEveryFewSecondsAndStopsOnAnEmptyField() async throws {
         let service = TypingRecorder()
         let clock = Clock()
         let model = ThreadChatPresenceModel(
@@ -132,12 +132,19 @@ struct ThreadChatPresenceModelTests {
         model.draftChanged("He")
         clock.now += 3
         model.draftChanged("Hey")
-        await settle()
+        try await waitForTypingCalls(2, in: service)
         #expect(await service.typingCalls == [true, true])
 
         model.draftChanged("")
-        await settle()
+        try await waitForTypingCalls(3, in: service)
         #expect(await service.typingCalls == [true, true, false])
+    }
+
+    private func waitForTypingCalls(_ count: Int, in service: TypingRecorder) async throws {
+        // Actor work is eventual. A fixed number of yields does not guarantee it ran on a busy executor.
+        for _ in 0..<100 where await service.typingCalls.count < count {
+            try await Task.sleep(for: .milliseconds(10))
+        }
     }
 
     @Test func readMarksWaitBrieflyAndSendOnceForABurst() async throws {

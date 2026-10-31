@@ -7,6 +7,7 @@ nonisolated struct WidgetCanvasPublication {
     let authorName: String?
     let createdAt: Date
     let serverRevisionID: String?
+    var accessibilityText: String?
 }
 
 /// The privacy and publication counters when a publication started. A newer
@@ -147,7 +148,8 @@ extension WidgetCanvasService {
             isRedacted: false,
             contentHash: contentHash(for: publication.drawingData),
             previews: previews,
-            canvasSide: Double(publication.canvasSize.width)
+            canvasSide: Double(publication.canvasSize.width),
+            accessibilityText: publication.accessibilityText
         )
     }
 }

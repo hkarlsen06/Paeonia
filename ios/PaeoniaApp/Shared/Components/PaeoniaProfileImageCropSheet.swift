@@ -13,10 +13,43 @@ struct PaeoniaProfileImageCropSheet: View {
     let onCrop: (UIImage) -> Void
     let onCancel: () -> Void
 
+    @State private var framingController = ProfilePhotoFramingController()
+    @State private var framingDraft: ProfilePhotoFraming?
+    @State private var showsFraming = false
+
     var body: some View {
-        CropControllerRepresentable(image: image, onCrop: onCrop, onCancel: onCancel)
-            .interactiveDismissDisabled()
+        VStack(spacing: 0) {
+            CropControllerRepresentable(
+                image: image, onCrop: onCrop, onCancel: onCancel,
+                framingController: framingController
+            )
+            Button(.imageCropAdjustFraming) {
+                guard let crop = framingController.cropController?.imageCropFrame else { return }
+                framingDraft = ProfilePhotoFraming(imageSize: image.size, crop: crop)
+                showsFraming = true
+            }
+            .buttonStyle(.borderedProminent)
+            .frame(minHeight: PaeoniaSpacing.buttonHeight)
+            .padding(PaeoniaSpacing.space12)
+            .accessibilityIdentifier("imageCrop.adjustFraming")
+        }
+        .background(Color.paeoniaBackgroundPrimary)
+        .preferredColorScheme(.dark)
+        .interactiveDismissDisabled()
+        .sheet(isPresented: $showsFraming) {
+            if let framingDraft {
+                ProfilePhotoFramingSheet(image: image, onApply: { crop in
+                    framingController.cropController?.imageCropFrame = crop
+                }, framing: framingDraft)
+            }
+        }
     }
+}
+
+/// The existing third-party cropper is UIKit-only. Keep its public crop rectangle
+/// API behind the same adapter; the additional framing controls are native SwiftUI.
+private final class ProfilePhotoFramingController {
+    weak var cropController: CropViewController?
 }
 
 private struct CropControllerRepresentable: UIViewControllerRepresentable {
@@ -24,9 +57,13 @@ private struct CropControllerRepresentable: UIViewControllerRepresentable {
     let onCrop: (UIImage) -> Void
     let onCancel: () -> Void
 
+    let framingController: ProfilePhotoFramingController
+
     func makeUIViewController(context: Context) -> UINavigationController {
         let cropViewController = CropViewController(croppingStyle: .default, image: image)
         cropViewController.delegate = context.coordinator
+        framingController.cropController = cropViewController
+        cropViewController.overrideUserInterfaceStyle = .dark
         cropViewController.rotateButtonsHidden = true
         cropViewController.rotateClockwiseButtonHidden = true
         cropViewController.aspectRatioPreset = CGSize(width: 1, height: 1)
@@ -41,9 +78,13 @@ private struct CropControllerRepresentable: UIViewControllerRepresentable {
         toolbar.doneIconButton.accessibilityLabel = String(localized: .imageCropDone)
         toolbar.doneIconButton.accessibilityIdentifier = "imageCrop.done"
         toolbar.cancelIconButton.accessibilityLabel = String(localized: .commonCancel)
+        toolbar.cancelIconButton.accessibilityIdentifier = "imageCrop.cancel"
+        toolbar.resetButton.accessibilityLabel = String(localized: .imageCropResetFraming)
+        toolbar.resetButton.accessibilityIdentifier = "imageCrop.reset"
 
         let navigationController = UINavigationController(rootViewController: cropViewController)
         navigationController.modalPresentationStyle = .fullScreen
+        navigationController.overrideUserInterfaceStyle = .dark
         return navigationController
     }
 

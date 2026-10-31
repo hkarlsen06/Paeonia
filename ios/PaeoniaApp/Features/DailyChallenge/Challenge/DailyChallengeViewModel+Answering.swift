@@ -18,7 +18,9 @@ extension DailyChallengeViewModel {
     func submitAnswer(for question: DailyChallengeQuestion) async {
         guard submittingQuestionID == nil, let currentUserID else { return }
         // The composer's counter already shows this; the backend would reject it.
-        guard !isDraftTextTooLong(for: question.id) else { return }
+        guard !isDraftTextTooLong(for: question.id),
+              DailyAnswerDraft.measuredLength(of: mediaAccessibilityText(for: question.id)) <= 10_000
+        else { return }
         // The couple's day ended while this was open (offline, or before the live
         // update arrived). After its day the server takes an answer only when the
         // partner has answered, so a queued one would never send.

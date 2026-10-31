@@ -78,10 +78,9 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
         // Grid cards can fill their row's height, with extra room at the bottom.
         .frame(maxHeight: fillsHeight ? .infinity : nil, alignment: .top)
         .overlay(alignment: .top) {
-            badge()
-                .padding(.top, PaeoniaSpacing.space12)
-                // The scene is only so tall, so the badge stops growing before it covers it.
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            if !dynamicTypeSize.isAccessibilitySize {
+                badge().padding(.top, PaeoniaSpacing.space12)
+            }
         }
         .modifier(framing)
     }
@@ -169,6 +168,10 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
     /// the picture's centered scene.
     private var textBlock: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
+            if dynamicTypeSize.isAccessibilitySize {
+                badge()
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             titleAndStatus
 
             Button {

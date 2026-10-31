@@ -28,6 +28,7 @@ nonisolated protocol MemoryDataServicing: Actor {
         expectedRevision: Int,
         title: String,
         memoryDate: String,
+        photoDescriptions: [MemoryPhotoDescription],
         operation: SyncClientOperation
     ) async throws -> MemoryRecord
     func setMemoryPlace(
@@ -271,5 +272,18 @@ nonisolated enum MemoryDataServiceFactory {
         guard let localStore = PaeoniaLocalStore.shared else { return }
         let repository = SwiftDataMemoryRecordRepository(container: localStore.container)
         try? await repository.deleteAll(ownerUserID: ownerUserID)
+    }
+}
+
+extension MemoryDataServicing {
+    // swiftlint:disable:next function_parameter_count
+    func updateMemory(
+        ownerUserID: UUID, memoryID: UUID, expectedRevision: Int,
+        title: String, memoryDate: String, operation: SyncClientOperation
+    ) async throws -> MemoryRecord {
+        try await updateMemory(
+            ownerUserID: ownerUserID, memoryID: memoryID, expectedRevision: expectedRevision,
+            title: title, memoryDate: memoryDate, photoDescriptions: [], operation: operation
+        )
     }
 }

@@ -8,6 +8,7 @@ import Foundation
 nonisolated struct ExquisiteCorpseQueuedUpload: Codable, Equatable, Sendable {
     /// A `PKDrawing` at the canonical canvas size (`GameCanvas.canonicalSide`).
     let data: Data
+    var accessibilityText: String?
     let reserveOperation: SyncClientOperation
     let finalizeOperation: SyncClientOperation
 }
@@ -31,6 +32,8 @@ nonisolated struct ExquisiteCorpseSubmitPartPayload: Codable, Equatable, Sendabl
     /// The idea on the chip when the drawer tapped Done. It stays with the part.
     let idea: RemoteExquisiteCorpseIdea?
     let createdAt: Date
+    /// Identifies the exact retained draft, so acceptance cannot remove newer edits.
+    var draftPublicationID: UUID?
     /// When the part was queued again because an upload was gone.
     var renewedAt: Date?
 }
@@ -49,6 +52,7 @@ nonisolated extension ExquisiteCorpseSubmitPartPayload {
             strip: strip?.withNewOperations(),
             idea: idea,
             createdAt: createdAt,
+            draftPublicationID: draftPublicationID,
             renewedAt: date
         )
     }
@@ -61,6 +65,7 @@ nonisolated extension ExquisiteCorpseQueuedUpload {
         }
         return ExquisiteCorpseQueuedUpload(
             data: data,
+            accessibilityText: accessibilityText,
             reserveOperation: renewed(reserveOperation),
             finalizeOperation: renewed(finalizeOperation)
         )

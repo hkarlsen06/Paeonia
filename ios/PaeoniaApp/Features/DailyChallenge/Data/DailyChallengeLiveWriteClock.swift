@@ -42,6 +42,23 @@ nonisolated final class DailyChallengeLiveWriteClock: @unchecked Sendable {
         }
     }
 
+    func updateMediaAlternative(
+        answerID: UUID, text: String, ownerUserID: UUID, since start: Mark,
+        cache: any DailyChallengeSnapshotCaching
+    ) {
+        lock.withLock {
+            guard purges == start.purges, let current = cache.load(ownerUserID: ownerUserID) else { return }
+            cache.save(DailyChallengeRemoteSnapshotRow(
+                questions: current.questions,
+                answerDetails: current.answerDetails.map {
+                    $0.applyingMediaAlternative(answerID: answerID, text: text, ownerUserID: ownerUserID)
+                }, streak: current.streak, generatedAt: current.generatedAt,
+                coupleDayID: current.coupleDayID, endsAt: current.endsAt
+            ), ownerUserID: ownerUserID)
+            counts[ownerUserID, default: 0] += 1
+        }
+    }
+
     /// Saves a row the live feed received and counts it.
     func recordLiveWrite(
         _ row: DailyChallengeRemoteSnapshotRow,

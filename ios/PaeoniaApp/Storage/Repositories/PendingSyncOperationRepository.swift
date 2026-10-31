@@ -67,23 +67,21 @@ actor SwiftDataPendingSyncOperationRepository: PendingSyncOperationPersisting {
     }
 
     func enqueue(_ request: PendingSyncOperationRequest) throws {
-        let context = ModelContext(container)
-
-        if try fetchOperation(id: request.operation.id, in: context) != nil {
-            return
-        }
-
-        context.insert(
-            LocalPendingSyncOperation(
-                ownerUserID: request.ownerUserID,
-                operation: request.operation,
-                operationKind: request.operationKind,
-                idempotencyScope: request.idempotencyScope,
-                requestHash: request.requestHash,
-                requestData: request.requestData
+        try LocalPrivacyWriteGuard.shared.write(ownerUserID: request.ownerUserID, token: request.privacyToken) {
+            let context = ModelContext(container)
+            if try fetchOperation(id: request.operation.id, in: context) != nil { return }
+            context.insert(
+                LocalPendingSyncOperation(
+                    ownerUserID: request.ownerUserID,
+                    operation: request.operation,
+                    operationKind: request.operationKind,
+                    idempotencyScope: request.idempotencyScope,
+                    requestHash: request.requestHash,
+                    requestData: request.requestData
+                )
             )
-        )
-        try context.save()
+            try context.save()
+        }
         LocalStoreChanges.post(.pendingOperations, ownerUserID: request.ownerUserID)
     }
 

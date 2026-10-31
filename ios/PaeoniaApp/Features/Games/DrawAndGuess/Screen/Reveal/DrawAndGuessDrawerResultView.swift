@@ -177,6 +177,21 @@ struct DrawAndGuessDrawerResultView: View {
 
     private var footer: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
+            if viewModel.drawingAwaitingRetry {
+                Text(.gamesDrawingDescriptionRetryMessage)
+                    .font(PaeoniaTypography.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isGuessingGame: true,
+                                             isLocked: viewModel.board.isFinishing)
+                Button(.commonTryAgain, action: viewModel.retryFinishedDrawing)
+                    .buttonStyle(PaeoniaSecondaryButtonStyle())
+                    .disabled(!viewModel.drawingDescription.canSend || viewModel.board.isFinishing)
+                    .accessibilityIdentifier("draw.description.retry")
+            }
+            if let round = viewModel.round, round.isDrawingSent {
+                MediaAlternativeReadout(text: round.drawingAccessibilityText, isVoice: false, isDrawing: true,
+                    editingTarget: round.drawingMediaAssetID != nil ? .drawAndGuess(roundID: round.id) : nil)
+            }
             if !isRevealed, let word = viewModel.round?.word, !word.isEmpty {
                 DrawAndGuessDrawerSlots(word: word, guess: partnerGuess, partnerName: viewModel.partnerName)
                     .transition(.opacity)

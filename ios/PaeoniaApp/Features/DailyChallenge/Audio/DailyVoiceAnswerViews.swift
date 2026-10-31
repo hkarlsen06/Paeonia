@@ -480,9 +480,12 @@ struct RecordingDot: View {
         Circle()
             .fill(.paeoniaError)
             .frame(width: size, height: size)
-            .opacity(isDimmed ? 0.3 : 1)
+            .opacity(!reduceMotion && isDimmed ? 0.3 : 1)
             .accessibilityHidden(true)
-            .onAppear {
+            .task(id: reduceMotion) {
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { isDimmed = false }
                 guard !reduceMotion else { return }
                 withAnimation(PaeoniaMotion.standardCurve(duration: 0.8).repeatForever(autoreverses: true)) {
                     isDimmed = true

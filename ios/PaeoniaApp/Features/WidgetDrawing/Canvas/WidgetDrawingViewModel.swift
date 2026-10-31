@@ -104,6 +104,14 @@ final class WidgetDrawingViewModel {
     @ObservationIgnored let uploader: any WidgetCanvasUploading
     /// Drafts are kept per person and relationship. Without both IDs the screen
     /// keeps no draft at all, so a draft can never reach another couple.
+    var accessibilityText = ""
+    var savedAccessibilityText = ""
+
+    func updateAccessibilityText(_ text: String) {
+        accessibilityText = text
+        persistDraftIfNeeded()
+    }
+
     @ObservationIgnored let draftKey: WidgetDrawingDraftKey?
     @ObservationIgnored let draftStore: any WidgetDrawingDraftStoring
     /// The store's purge count when this screen opened. A purge while the screen
@@ -182,11 +190,12 @@ final class WidgetDrawingViewModel {
     /// True when the canvas differs from the drawing on the widgets. Returns
     /// false again once edits are undone back to that drawing.
     var hasUnsavedEdits: Bool {
-        drawingSignature != lastSavedDrawingSignature
+        drawingSignature != lastSavedDrawingSignature || accessibilityText != savedAccessibilityText
     }
 
     var canSave: Bool {
         !isPublishing && !drawing.strokes.isEmpty && hasUnsavedEdits
+            && accessibilityText.unicodeScalars.count <= 500
     }
 
     /// True once there is a drawing on the widgets to describe. Independent of
@@ -298,6 +307,7 @@ extension WidgetDrawingViewModel {
         }
 
         let sentDrawing = drawing
+        let sentDescription = accessibilityText
         guard let uploadPayload = makeUploadPayload(for: sentDrawing) else {
             saveFailure = WidgetDrawingSaveFailure(reason: .tooBig)
             return
@@ -316,11 +326,13 @@ extension WidgetDrawingViewModel {
         // cannot pull an older drawing over this one.
         let previousPending = await uploader.markPending(uploadPayload)
         do {
-            try await service.saveDrawing(
+            try await service.saveDescribedDrawing(
                 uploadPayload.drawingData,
                 canvasSize: CGSize(width: canvasSide, height: canvasSide),
                 authorName: authorName,
-                createdAt: savedAt
+                createdAt: savedAt,
+                revisionID: nil,
+                accessibilityText: uploadPayload.accessibilityText
             )
         } catch {
             await uploader.restorePending(previousPending, replacing: uploadPayload)
@@ -330,14 +342,15 @@ extension WidgetDrawingViewModel {
             return
         }
 
-        isPublishing = false
         hasSentDrawing = true
+        savedAccessibilityText = sentDescription
         // The canvas can change size while saving: on iPad the rows around it
         // change height. The baseline must be in the canvas's current size, or
         // the sent drawing reads as "not sent yet".
         adoptPublishedDrawing(sentDrawing.scaled(fromSide: canvasSide, toSide: currentCanvasSide()), savedAt: savedAt)
 
         let outcome = await uploader.send(uploadPayload)
+        isPublishing = false
         // A newer send owns the status now.
         if generation == sendGeneration {
             applyDelivery(outcome)
@@ -374,7 +387,8 @@ extension WidgetDrawingViewModel {
             canvasSide: currentCanvasSide(),
             strokeCount: strokeCount,
             pointCount: pointCount,
-            bounds: drawing.bounds
+            bounds: drawing.bounds,
+            accessibilityText: accessibilityText.trimmedNonEmpty
         )
     }
 
@@ -387,7 +401,7 @@ extension WidgetDrawingViewModel {
         savedDrawingAuthorName = authorName?.trimmedNonEmpty
         savedDrawingCreatedAt = savedAt
         partnerSentWhileEditing = false
-        if drawingSignature == sentSignature {
+        if drawingSignature == sentSignature, accessibilityText == savedAccessibilityText {
             clearDraft()
         } else {
             persistDraftIfNeeded()
@@ -430,6 +444,7 @@ extension WidgetDrawingViewModel {
         guard canRevertToSavedDrawing, let savedBaseline else {
             return
         }
+        accessibilityText = savedAccessibilityText
         applyEdit(savedBaseline)
         partnerSentWhileEditing = false
         persistDraftIfNeeded()

@@ -8,7 +8,7 @@ extension ExquisiteCorpseViewModel {
 
     /// Whether the Done button works.
     var canFinishDrawing: Bool {
-        phase == .drawing && !board.isEmpty && board.canvasSide > 0 && !isFinishing
+        phase == .drawing && !board.isEmpty && board.canvasSide > 0 && !isFinishing && drawingDescription.canSend
     }
 
     /// Fills the canvas when this person's part starts, and again when a refused
@@ -34,6 +34,10 @@ extension ExquisiteCorpseViewModel {
         if let data = store.draft(ownerUserID: userID, roundID: partID), let saved = try? PKDrawing(data: data) {
             board.restore(canonical: saved)
         }
+        if let coupleID = participants.coupleID, let drawingPrivacyToken {
+            drawingDescription.configure(store: store, owner: userID, couple: coupleID,
+                                         round: partID, privacyToken: drawingPrivacyToken)
+        }
         sentStrip = (partID, PKDrawing().paeoniaContentSignature)
         penSampler = ExquisiteCorpsePenSampler()
         restoreIdea(for: partID)
@@ -51,9 +55,19 @@ extension ExquisiteCorpseViewModel {
     /// go stale, also after a relaunch or a privacy purge that keeps drafts.
     private func takeLeftoverDraft(into partID: UUID, ownerUserID: UUID) {
         let store = dependencies.drawingStore
+        guard let drawingPrivacyToken else { return }
         guard store.draft(ownerUserID: ownerUserID, roundID: partID) == nil else { return }
-        for leftover in ownRecentPartIDs(ownerUserID: ownerUserID) where leftover != partID {
+        let queuedParts = Set(pending.parts.map(\.partID))
+        for leftover in ownRecentPartIDs(ownerUserID: ownerUserID)
+        where leftover != partID && !queuedParts.contains(leftover) {
             guard let data = store.draft(ownerUserID: ownerUserID, roundID: leftover) else { continue }
+            do {
+                try store.moveDraftDescription(ownerUserID: ownerUserID, from: leftover, to: partID,
+                                               privacyToken: drawingPrivacyToken)
+            } catch {
+                notice = .couldNotSaveMove
+                return
+            }
             store.saveDraft(data, ownerUserID: ownerUserID, roundID: partID)
             store.removeDraft(ownerUserID: ownerUserID, roundID: leftover)
             return
@@ -142,8 +156,11 @@ extension ExquisiteCorpseViewModel {
     /// Sends the part. It is saved on the phone first and goes out when the phone
     /// is online. The partner sees Done right away when they are watching.
     func finishDrawing() async {
-        guard canFinishDrawing, let part, let partID = ownPartID else { return }
-        isFinishing = true
+        guard canFinishDrawing, let part, let partID = ownPartID, board.beginFinishing() else { return }
+        defer {
+            board.endFinishing()
+            recompute()
+        }
         // A late eraser change and a stroke in progress are read first, so they go out too.
         let drawing = await board.finishedCanonicalDrawing()
         if phase == .drawing, ownPartID == partID, !drawing.strokes.isEmpty {
@@ -153,15 +170,11 @@ extension ExquisiteCorpseViewModel {
             // phone sent this part. The drawing stays a draft of its part.
             dependencies.drawingStore.saveDraft(drawing.dataRepresentation(), ownerUserID: userID, roundID: partID)
         }
-        isFinishing = false
-        // The canvas waited for Done. The turn may have moved meanwhile, and the
-        // canvas follows it now.
-        recompute()
     }
 
     private func queuePart(_ part: ExquisiteCorpsePartKind, id partID: UUID, drawing: PKDrawing) async {
         guard let userID = currentUserID, let coupleID = participants.coupleID,
-              let game = state?.game, let figureID = figureIDToSend
+              let game = state?.game, let figureID = figureIDToSend, let drawingPrivacyToken
         else { return }
         let data = drawing.dataRepresentation()
         guard WidgetDrawingLimits.allows(
@@ -172,8 +185,18 @@ extension ExquisiteCorpseViewModel {
             notice = .drawingTooBig
             return
         }
-        // The draft saves again if the part can't be queued.
         draftTask?.cancel()
+        // Persist before the first suspension. Acceptance removes only this publication.
+        let publicationID: UUID
+        do {
+            publicationID = try LocalPrivacyWriteGuard.shared.write(ownerUserID: userID, token: drawingPrivacyToken) {
+                dependencies.drawingStore.saveDraft(data, ownerUserID: userID, roundID: partID)
+                return try dependencies.drawingStore.markDraftForPublication(ownerUserID: userID, roundID: partID)
+            }
+        } catch {
+            notice = .couldNotSaveMove
+            return
+        }
         // The strip is clipped here, so the hidden part of the drawing never leaves the phone as a file either.
         let strip = part.hasStrip ? ExquisiteCorpseFold.strip(of: drawing) : nil
         let payload = ExquisiteCorpseSubmitPartPayload(
@@ -182,29 +205,25 @@ extension ExquisiteCorpseViewModel {
             partID: partID,
             partIndex: part.rawValue,
             coupleID: coupleID,
-            drawing: makeUpload(data),
+            drawing: makeUpload(data, accessibilityText: drawingDescription.text.trimmedNonEmpty),
             strip: strip.map { makeUpload($0.dataRepresentation()) },
             idea: idea,
-            createdAt: dependencies.now()
+            createdAt: dependencies.now(),
+            draftPublicationID: publicationID
         )
         let scope = "exquisite-corpse-part:\(partID.uuidString.lowercased())"
-        // The queued part carries the drawing from here on. The draft goes first,
-        // because the send can start, and be refused and put the drawing back as
-        // the draft, before `enqueue` returns.
-        dependencies.drawingStore.removeDraft(ownerUserID: userID, roundID: partID)
-        guard await enqueue(.exquisiteCorpseSubmitPart, scope: scope, payload: payload) else {
-            dependencies.drawingStore.saveDraft(data, ownerUserID: userID, roundID: partID)
-            return
-        }
+        guard await enqueue(.exquisiteCorpseSubmitPart, scope: scope, payload: payload,
+                            privacyToken: drawingPrivacyToken) else { return }
         boardSentPartID = partID
         sendDoneLive(partID: partID, strip: strip)
     }
 
     /// A file to upload, with the client operations of its two steps made up front,
     /// so a retry replays the same requests.
-    private func makeUpload(_ data: Data) -> ExquisiteCorpseQueuedUpload {
+    private func makeUpload(_ data: Data, accessibilityText: String? = nil) -> ExquisiteCorpseQueuedUpload {
         ExquisiteCorpseQueuedUpload(
             data: data,
+            accessibilityText: accessibilityText,
             reserveOperation: dependencies.operationProvider.makeOperation(),
             finalizeOperation: dependencies.operationProvider.makeOperation()
         )

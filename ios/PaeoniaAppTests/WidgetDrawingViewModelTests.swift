@@ -7,6 +7,24 @@ import UIKit
 /// Saving a drawing: what reaches the local copy, the upload queue and the draft.
 @MainActor
 struct WidgetDrawingViewModelTests {
+    @Test func anOverlongDescriptionStaysInTheDraftForEditing() {
+        let owner = UUID()
+        let couple = UUID()
+        let drafts = InMemoryWidgetDrawingDraftStore()
+        let viewModel = WidgetDrawingViewModel(
+            ownerUserID: owner, coupleID: couple, service: WidgetCanvasServiceSpy(),
+            uploader: NoOpWidgetCanvasUpload(), draftStore: drafts
+        )
+        viewModel.updateDrawing(makeNonEmptyDrawing())
+        let description = String(repeating: "A", count: 501)
+        viewModel.updateAccessibilityText(description)
+        #expect(viewModel.accessibilityText == description)
+        #expect(drafts.description(for: WidgetDrawingDraftKey(ownerUserID: owner, coupleID: couple)) == description)
+        #expect(!viewModel.canSave)
+        viewModel.updateAccessibilityText("Our house")
+        #expect(viewModel.canSave)
+    }
+
     @Test func saveSendsDrawingDataToServiceAndConfirms() async {
         let spy = WidgetCanvasServiceSpy()
         let viewModel = WidgetDrawingViewModel(service: spy, uploader: NoOpWidgetCanvasUpload())

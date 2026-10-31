@@ -82,8 +82,8 @@ private struct ConnectFourFinishedPreview: View {
 private enum ConnectFourPreviewStyles {
     /// Player one has a drawn mark (a heart). Player two has no mark yet, so their initial shows.
     static let styles = BoardPieceStyles(
-        one: BoardPieceStyle(color: .boardGameMine, mark: UIImage(systemName: "heart.fill"), initial: "H"),
-        two: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "M")
+        one: BoardPieceStyle(color: .boardGameMine, mark: UIImage(systemName: "heart.fill"), initial: "H", owner: .one),
+        two: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "M", owner: .two)
     )
 }
 

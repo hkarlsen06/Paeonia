@@ -25,7 +25,7 @@ struct DailyChallengeSubmitHandlerTests {
                 DailySubmitAnswerOperationPayload.Media(
                     draft: DailyAnswerMediaDraft(
                         purpose: .photo, mimeType: "image/jpeg", fileExtension: "jpg", width: 10, height: 8,
-                        durationMs: nil
+                        durationMs: nil, accessibilityText: "A red boat beside the dock"
                     ),
                     coupleID: TestDailyChallengeIDs.couple,
                     reserveOperation: dailyFixedClientOperation(),
@@ -41,7 +41,9 @@ struct DailyChallengeSubmitHandlerTests {
         #expect(await uploader.uploadCount == 1)
         #expect(await uploader.lastAnswerID == answerID)
         #expect(await uploader.lastCoupleID == TestDailyChallengeIDs.couple)
-        #expect(await gateway.submittedPayloads == [DailyAnswerPayload(mediaAssetIDs: [assetID])])
+        #expect(await gateway.submittedPayloads == [
+            DailyAnswerPayload(mediaAssetIDs: [assetID], mediaAccessibilityText: "A red boat beside the dock")
+        ])
         #expect(await gateway.submittedAnswerIDs == [answerID])
         // The staged copy is removed once the answer is sent.
         #expect(mediaStore.stagedMediaData(instanceID: instanceID) == nil)
@@ -73,7 +75,7 @@ struct DailyChallengeSubmitHandlerTests {
                         fileExtension: "m4a",
                         width: nil,
                         height: nil,
-                        durationMs: 1_200
+                        durationMs: 1_200, accessibilityText: "I miss you. A dog barks."
                     ),
                     coupleID: TestDailyChallengeIDs.couple,
                     reserveOperation: dailyFixedClientOperation(),
@@ -88,7 +90,9 @@ struct DailyChallengeSubmitHandlerTests {
 
         #expect(result == .succeeded)
         #expect(await uploader.uploadCount == 1)
-        #expect(await gateway.submittedPayloads == [DailyAnswerPayload(mediaAssetIDs: [assetID])])
+        #expect(await gateway.submittedPayloads == [
+            DailyAnswerPayload(mediaAssetIDs: [assetID], mediaAccessibilityText: "I miss you. A dog barks.")
+        ])
         #expect(mediaStore.stagedMediaData(instanceID: instanceID) == nil)
     }
 

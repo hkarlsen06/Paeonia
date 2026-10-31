@@ -58,8 +58,7 @@ struct MindMeldMeldsLink: View {
             .accessibilityValue(Text(.mindMeldStatsMeldsA11Y(melds)))
         }
         .buttonStyle(.plain)
-        // The capsule stays one line in the toolbar.
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .frame(minWidth: 44, minHeight: 44)
         .accessibilityIdentifier("mindMeld.history.open")
     }
 

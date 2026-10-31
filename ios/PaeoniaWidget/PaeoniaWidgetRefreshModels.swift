@@ -19,6 +19,7 @@ extension PaeoniaWidgetRefreshService {
 
     struct PendingUpload: Decodable {
         let contentHash: String
+        let accessibilityText: String?
         /// The inviter's own first drawing, which belongs to no couple yet.
         let isFirstDay: Bool
     }
@@ -59,6 +60,7 @@ extension PaeoniaWidgetRefreshService {
 
     struct DrawingBounds: Decodable {
         let canvasSide: Double?
+        let accessibilityText: String?
     }
 
     /// The part of `firstDay:get_first_day_draft` the widget needs: the person's own
@@ -116,6 +118,7 @@ extension PaeoniaWidgetRefreshService {
         let revisionID: UUID
         let authorName: String?
         let createdAt: Date
+        var accessibilityText: String?
     }
 
     struct CurrentPayload: Codable {
@@ -132,6 +135,7 @@ extension PaeoniaWidgetRefreshService {
         /// The app requires this to read the payload, so leaving it out shows
         /// the empty sketch on the app's home card.
         let canvasSide: Double
+        var accessibilityText: String?
 
         enum CodingKeys: String, CodingKey {
             case schemaVersion
@@ -144,6 +148,7 @@ extension PaeoniaWidgetRefreshService {
             case isRedacted
             case contentHash
             case previews
+            case accessibilityText
             case canvasSide
         }
 

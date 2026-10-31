@@ -9,6 +9,7 @@ struct UltimateTicTacToeSmallBoardAccess {
     let isUsable: Bool
     /// The empty cells I can play here, as 0 to 8.
     let playableCells: Set<Int>
+    var selectedCell: Int?
     /// Picks a cell, 0 to 8. "Lock in" plays it.
     let pick: (Int) -> Void
 }
@@ -36,7 +37,7 @@ struct UltimateTicTacToeSmallBoardView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let closedOpacity = 0.3
-    private static let positions: [LocalizedStringResource] = [
+    static let positions: [LocalizedStringResource] = [
         .ultimateTicTacToePositionTopLeft, .ultimateTicTacToePositionTop, .ultimateTicTacToePositionTopRight,
         .ultimateTicTacToePositionLeft, .ultimateTicTacToePositionCenter, .ultimateTicTacToePositionRight,
         .ultimateTicTacToePositionBottomLeft, .ultimateTicTacToePositionBottom,
@@ -158,6 +159,7 @@ struct UltimateTicTacToeSmallBoardView: View {
                 .position(x: center.midX, y: center.midY)
                 .accessibilityElement()
                 .accessibilityLabel(cellLabel(cell))
+                .accessibilityAddTraits(access.selectedCell == cell ? .isSelected : [])
                 .accessibilityAddTraits(access.playableCells.contains(cell) ? .isButton : [])
                 .accessibilityAction {
                     if access.playableCells.contains(cell) {
@@ -187,13 +189,10 @@ struct UltimateTicTacToeSmallBoardView: View {
     private func cellLabel(_ cell: Int) -> Text {
         let row = cell / 3 + 1
         let column = cell % 3 + 1
-        guard let player = content.cells[cell] else {
-            return Text(.ultimateTicTacToeCellEmptyA11Y(row, column))
-        }
-        if player == access.me {
-            return Text(.ultimateTicTacToeCellYoursA11Y(row, column))
-        }
-        return Text(.ultimateTicTacToeCellPartnerA11Y(row, column, access.partnerName))
+        let owner = content.cells[cell]
+        let state = owner == nil ? String(localized: .gamesCellEmpty)
+            : owner == access.me ? String(localized: .gamesCellYours) : access.partnerName
+        return Text(.ultimateTicTacToeBoardCell(index + 1, row, column, state))
     }
 }
 

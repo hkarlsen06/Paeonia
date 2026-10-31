@@ -51,32 +51,38 @@ extension DailyChallengeAnswerStep {
     }
 
     private var photoComposer: some View {
-        DailyPhotoAnswerComposer(
-            imageData: stagedMediaData,
-            isPreparing: viewModel.isPreparingPhoto(for: question.id),
-            isCompact: isKeyboardPresented,
-            onPick: stagePhoto,
-            onPickFailed: viewModel.photoPickFailed,
-            onRemove: removeStagedMedia
-        )
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            DailyPhotoAnswerComposer(
+                imageData: stagedMediaData,
+                isPreparing: viewModel.isPreparingPhoto(for: question.id),
+                isCompact: isKeyboardPresented,
+                onPick: stagePhoto,
+                onPickFailed: viewModel.photoPickFailed,
+                onRemove: removeStagedMedia
+            )
+            if stagedMediaData != nil { mediaAccessibilityField(isVoice: false) }
+        }
     }
 
     @ViewBuilder
     private var voiceComposer: some View {
         if let voiceData = stagedMediaData {
-            HStack(alignment: .center, spacing: PaeoniaSpacing.space8) {
-                DailyVoicePlaybackView(
-                    source: .data(voiceData),
-                    fallbackDurationMs: voiceDurationMs
-                )
-                Button(action: removeStagedMedia) {
-                    Image(systemName: "xmark")
-                        .frame(minWidth: 44, minHeight: 44)
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                HStack(alignment: .center, spacing: PaeoniaSpacing.space8) {
+                    DailyVoicePlaybackView(
+                        source: .data(voiceData),
+                        fallbackDurationMs: voiceDurationMs
+                    )
+                    Button(action: removeStagedMedia) {
+                        Image(systemName: "xmark")
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(DailyAnswerComposerColors.composer.secondary)
+                    .accessibilityLabel(Text(.dailyChallengeVoiceReRecord))
+                    .accessibilityIdentifier("daily.answer.voice.remove")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(DailyAnswerComposerColors.composer.secondary)
-                .accessibilityLabel(Text(.dailyChallengeVoiceReRecord))
-                .accessibilityIdentifier("daily.answer.voice.remove")
+                mediaAccessibilityField(isVoice: true)
             }
         } else {
             DailyVoiceRecorderView(
@@ -87,6 +93,29 @@ extension DailyChallengeAnswerStep {
                     isRecording = recording
                 }
             )
+        }
+    }
+
+    private func mediaAccessibilityField(isVoice: Bool) -> some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+            Text(isVoice ? LocalizedStringResource.mediaAccessibilityTranscript : .mediaAccessibilityPhotoDescription)
+                .font(PaeoniaTypography.caption)
+            TextField(
+                isVoice ? String(localized: .mediaAccessibilityTranscriptHint)
+                    : String(localized: .mediaAccessibilityPhotoHint),
+                text: Binding(
+                    get: { viewModel.mediaAccessibilityText(for: question.id) },
+                    set: { viewModel.setMediaAccessibilityText($0, for: question.id) }
+                ), axis: .vertical
+            )
+            .accessibilityIdentifier("daily.answer.mediaAccessibilityText")
+            .font(PaeoniaTypography.body)
+            .textFieldStyle(.roundedBorder)
+            if DailyAnswerDraft.measuredLength(of: viewModel.mediaAccessibilityText(for: question.id)) > 10_000 {
+                Text(.mediaAccessibilityTooLong)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaErrorText)
+            }
         }
     }
 

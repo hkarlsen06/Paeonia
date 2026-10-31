@@ -10,6 +10,7 @@ nonisolated struct WidgetCanvasSnapshot: Sendable, Equatable {
     /// Side of the square canvas the strokes were drawn on, when known. A
     /// drawing from a phone with a different screen size is scaled by this.
     var canvasSide: CGFloat?
+    var accessibilityText: String?
 }
 
 nonisolated protocol WidgetCanvasManaging: Sendable {
@@ -41,6 +42,11 @@ nonisolated protocol WidgetCanvasManaging: Sendable {
         authorName: String?,
         createdAt: Date,
         revisionID: UUID
+    ) async throws
+
+    func saveDescribedDrawing(
+        _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID: UUID?, accessibilityText: String?
     ) async throws
 
     /// Removes the saved drawing and widget previews so private content does not
@@ -78,8 +84,20 @@ extension WidgetCanvasManaging {
         canvasSize: CGSize,
         authorName: String?,
         createdAt: Date,
-        revisionID _: UUID
+        revisionID: UUID
     ) async throws {
-        try await saveDrawing(drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
+        try await saveDescribedDrawing(
+            drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt,
+            revisionID: revisionID, accessibilityText: nil
+        )
+    }
+
+    func saveDrawing(
+        _ drawingData: Data, canvasSize: CGSize, authorName: String?, createdAt: Date
+    ) async throws {
+        try await saveDescribedDrawing(
+            drawingData, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt,
+            revisionID: nil, accessibilityText: nil
+        )
     }
 }

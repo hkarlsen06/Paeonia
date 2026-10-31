@@ -44,7 +44,9 @@ struct DistanceLockScreenView: View {
                 switch distance {
                 case .unavailable:
                     Image(systemName: "mappin.and.ellipse").font(.system(size: 12)).accessibilityHidden(true)
-                    Text(verbatim: "–").font(.system(size: 17, weight: .bold, design: .rounded))
+                    Text(verbatim: "–")
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .accessibilityLabel(Text(.widgetLockScreenDistanceTurnOn))
                 case .together:
                     Image(systemName: "heart.fill").font(.system(size: 14)).accessibilityHidden(true)
                     Text(.widgetLockScreenDistanceTogether)

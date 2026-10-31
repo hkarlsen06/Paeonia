@@ -23,7 +23,11 @@ struct GuessMySpotRoundDetail: View {
     var body: some View {
         ScrollView {
             VStack(spacing: PaeoniaSpacing.space16) {
-                GuessMySpotPhotoPane(image: image, failed: photoFailed, retry: loadPhoto)
+                GuessMySpotPhotoPane(
+                    image: image, failed: photoFailed, retry: loadPhoto,
+                    accessibilityText: round.photoAccessibilityText,
+                    editingTarget: sentByMe ? .guessMySpot(roundID: round.id) : nil
+                )
                     .frame(height: 300)
                     .background(.paeoniaSurfacePrimary)
                     .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))

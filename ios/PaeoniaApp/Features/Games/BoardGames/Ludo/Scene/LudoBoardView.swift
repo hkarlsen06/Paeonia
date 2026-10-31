@@ -101,10 +101,10 @@ private struct LudoBoardScene: View {
                     me: inputs.me,
                     die: inputs.die,
                     movableChoices: inputs.movableChoices,
-                    rig: rig,
                     size: size,
                     onRoll: { inputs.onRoll(stage.tapToss()) },
-                    onChoose: inputs.onChoose
+                    onChoose: inputs.onChoose,
+                    partnerName: inputs.partnerName
                 )
             }
             .frame(width: size.width, height: size.height)

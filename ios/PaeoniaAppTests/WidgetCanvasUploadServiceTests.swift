@@ -4,6 +4,31 @@ import Testing
 @testable import PaeoniaApp
 
 struct WidgetCanvasUploadServiceTests {
+    @Test func aRetryCannotDiscardANewerDescriptionForTheSameStrokes() async throws {
+        let gateway = WidgetCanvasGatewaySpy()
+        gateway.holdFirstSubmit = true
+        let pendingStore = WidgetPendingUploadStore(defaults: UserDefaults(suiteName: UUID().uuidString))
+        let service = WidgetCanvasUploadService(
+            gateway: gateway, operationFactory: WidgetCanvasOperationFactorySpy(), pendingStore: pendingStore
+        )
+        var staged = Self.samplePayload
+        staged.accessibilityText = "A circle"
+        let first = staged
+        staged.accessibilityText = "The sun above our house"
+        let second = staged
+        _ = await service.markPending(first)
+        let retry = Task { await service.send(first) }
+        while !gateway.isSubmitHeld { await Task.yield() }
+        _ = await service.markPending(second)
+        let send = Task { await service.send(second) }
+        gateway.releaseHeldSubmit()
+        #expect(await retry.value == .delivered)
+        #expect(await send.value == .delivered)
+        #expect(gateway.submitCalls.map(\.bounds.accessibilityText)
+            == [first.accessibilityText, second.accessibilityText])
+        #expect(!pendingStore.hasPending)
+    }
+
     @Test func uploadRunsReserveUploadFinalizeSubmitInOrder() async throws {
         let gateway = WidgetCanvasGatewaySpy()
         let service = WidgetCanvasUploadService(

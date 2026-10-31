@@ -56,7 +56,12 @@ extension ExquisiteCorpseViewModel {
                 drawing: revealDrawings[kind],
                 drawerIsMe: isMine,
                 drawer: isMine ? me : partner,
-                idea: remote.idea?.text
+                idea: remote.idea?.text,
+                accessibilityText: figure.isFinished
+                    ? pending.parts.last(where: { $0.partID == remote.id })?.drawing.accessibilityText
+                        ?? remote.drawingAccessibilityText
+                    : nil,
+                editingTarget: figure.isFinished && isMine ? .exquisiteCorpse(partID: remote.id) : nil
             )
         }
         let content = ExquisiteCorpseRevealContent(

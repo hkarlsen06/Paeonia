@@ -16,6 +16,7 @@ nonisolated enum MemoryMediaImageProviderFactory {
 /// rather than widening its container (same approach as `DailyAnswerImageView`).
 struct MemoryMediaImageView: View {
     let mediaAssetID: UUID?
+    let accessibilityText: String?
     let provider: (any MemoryMediaImageProviding)?
     let height: CGFloat
     let cornerRadius: CGFloat
@@ -30,6 +31,7 @@ struct MemoryMediaImageView: View {
 
     init(
         mediaAssetID: UUID?,
+        accessibilityText: String? = nil,
         provider: (any MemoryMediaImageProviding)? = MemoryMediaImageProviderFactory.shared,
         height: CGFloat = 240,
         cornerRadius: CGFloat = PaeoniaRadius.radius16,
@@ -37,6 +39,7 @@ struct MemoryMediaImageView: View {
         onTapImage: ((UUID?, UIImage) -> Void)? = nil
     ) {
         self.mediaAssetID = mediaAssetID
+        self.accessibilityText = accessibilityText
         self.provider = provider
         self.height = height
         self.cornerRadius = cornerRadius
@@ -55,7 +58,7 @@ struct MemoryMediaImageView: View {
 
     var body: some View {
         imageSurface
-            .accessibilityLabel(Text(.memoriesPhotoAccessibility))
+            .accessibilityLabel(Text(verbatim: PhotoDescription.label(accessibilityText)))
             .paeoniaImageViewer(selection: $imageViewerSelection)
     }
 
@@ -172,6 +175,7 @@ struct MemoryMediaImageView: View {
                 items: [
                     PaeoniaImageViewerItem(
                         id: mediaAssetID,
+                        accessibilityText: PhotoDescription.label(accessibilityText),
                         imageLoader: {
                             guard let data = await provider.imageData(for: mediaAssetID) else { return nil }
                             return UIImage(data: data)
@@ -181,7 +185,11 @@ struct MemoryMediaImageView: View {
                 initialItemID: mediaAssetID.uuidString
             )
         } else {
-            imageViewerSelection = PaeoniaImageViewerSelection(id: mediaAssetID, image: image)
+            imageViewerSelection = PaeoniaImageViewerSelection(
+                items: [PaeoniaImageViewerItem(
+                    id: mediaAssetID, image: image, accessibilityText: PhotoDescription.label(accessibilityText)
+                )], initialItemID: mediaAssetID.uuidString
+            )
         }
     }
 }

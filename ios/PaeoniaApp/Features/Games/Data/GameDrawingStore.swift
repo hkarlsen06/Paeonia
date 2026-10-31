@@ -12,6 +12,16 @@ nonisolated protocol GameDrawingStoring: Sendable {
     func draft(ownerUserID: UUID, roundID: UUID) -> Data?
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID)
     func removeDraft(ownerUserID: UUID, roundID: UUID)
+    func markDraftForPublication(ownerUserID: UUID, roundID: UUID) throws -> UUID
+    @discardableResult
+    func removePublishedDraft(_ publication: GameDrawingDraftPublication, ownerUserID: UUID,
+                              privacyToken: LocalPrivacyWriteGuard.Token) throws -> Bool
+    func draftDescription(ownerUserID: UUID, coupleID: UUID, roundID: UUID?) throws -> String?
+    func saveDraftDescription(_ text: String, ownerUserID: UUID, coupleID: UUID, roundID: UUID?,
+                              privacyToken: LocalPrivacyWriteGuard.Token) throws
+    func removeDraftDescription(ownerUserID: UUID, roundID: UUID?)
+    func moveDraftDescription(ownerUserID: UUID, from: UUID?, to: UUID?,
+                              privacyToken: LocalPrivacyWriteGuard.Token) throws
     /// Starts a save that runs in the background, and returns its ticket. Any
     /// later save or removal of this draft, background or not, makes the ticket
     /// stale.
@@ -66,6 +76,7 @@ nonisolated extension GameDrawingStoring {
 nonisolated struct GameDraftTickets {
     private var latest: [String: Int] = [:]
     private var clearCount = 0
+    private var publications: [String: UUID] = [:]
 
     private static func key(_ ownerUserID: UUID, _ roundID: UUID) -> String {
         "\(ownerUserID)/\(roundID)"
@@ -74,6 +85,7 @@ nonisolated struct GameDraftTickets {
     /// Makes every earlier ticket of this draft stale and returns a new one.
     mutating func next(_ ownerUserID: UUID, _ roundID: UUID) -> Int {
         let key = Self.key(ownerUserID, roundID)
+        publications[key] = nil
         latest[key, default: 0] += 1
         return latest[key, default: 0] + clearCount
     }
@@ -81,6 +93,23 @@ nonisolated struct GameDraftTickets {
     /// Makes every ticket of every draft stale.
     mutating func invalidateAll() {
         clearCount += 1
+        publications = [:]
+    }
+
+    /// A newer save, including one still encoding, invalidates acceptance cleanup.
+    /// File stores also persist this identity for acceptance after relaunch.
+    mutating func markPublication(_ ownerUserID: UUID, _ roundID: UUID) -> UUID {
+        let id = UUID()
+        publications[Self.key(ownerUserID, roundID)] = id
+        return id
+    }
+
+    func isCurrentPublication(_ id: UUID, _ ownerUserID: UUID, _ roundID: UUID) -> Bool {
+        publications[Self.key(ownerUserID, roundID)] == id
+    }
+
+    func canRemovePersistedPublication(_ id: UUID, _ ownerUserID: UUID, _ roundID: UUID) -> Bool {
+        latest[Self.key(ownerUserID, roundID)] == nil || isCurrentPublication(id, ownerUserID, roundID)
     }
 
     func isCurrent(_ ticket: Int, _ ownerUserID: UUID, _ roundID: UUID) -> Bool {
@@ -111,13 +140,17 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
 
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID) {
         lock.withLock {
+            invalidatePublication(ownerUserID: ownerUserID, roundID: roundID)
             _ = draftTickets.next(ownerUserID, roundID)
             write(data, to: draftURL(ownerUserID: ownerUserID, roundID: roundID))
         }
     }
 
     func beginDraftSave(ownerUserID: UUID, roundID: UUID) -> Int {
-        lock.withLock { draftTickets.next(ownerUserID, roundID) }
+        lock.withLock {
+            invalidatePublication(ownerUserID: ownerUserID, roundID: roundID)
+            return draftTickets.next(ownerUserID, roundID)
+        }
     }
 
     func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID, ticket: Int) {
@@ -129,9 +162,116 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
 
     func removeDraft(ownerUserID: UUID, roundID: UUID) {
         lock.withLock {
+            invalidatePublication(ownerUserID: ownerUserID, roundID: roundID)
             _ = draftTickets.next(ownerUserID, roundID)
             try? FileManager.default.removeItem(at: draftURL(ownerUserID: ownerUserID, roundID: roundID))
         }
+    }
+
+    func markDraftForPublication(ownerUserID: UUID, roundID: UUID) throws -> UUID {
+        try lock.withLock {
+            let id = draftTickets.markPublication(ownerUserID, roundID)
+            let url = publicationURL(ownerUserID: ownerUserID, roundID: roundID)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+            try JSONEncoder().encode(id).write(to: url, options: .atomic)
+            return id
+        }
+    }
+
+    func removePublishedDraft(_ publication: GameDrawingDraftPublication, ownerUserID: UUID,
+                              privacyToken: LocalPrivacyWriteGuard.Token) throws -> Bool {
+        try LocalPrivacyWriteGuard.shared.write(ownerUserID: ownerUserID, token: privacyToken) {
+            try lock.withLock {
+                let markerURL = publicationURL(ownerUserID: ownerUserID, roundID: publication.roundID)
+                guard let id = publication.id,
+                      draftTickets.canRemovePersistedPublication(id, ownerUserID, publication.roundID),
+                      let marker = try? Data(contentsOf: markerURL),
+                      try JSONDecoder().decode(UUID.self, from: marker) == id else { return false }
+                let drawingURL = draftURL(ownerUserID: ownerUserID, roundID: publication.roundID)
+                guard FileManager.default.fileExists(atPath: drawingURL.path),
+                      try Data(contentsOf: drawingURL) == publication.data else { return false }
+                let descriptionURL = draftDescriptionURL(ownerUserID: ownerUserID, roundID: publication.roundID)
+                let hasDescription = FileManager.default.fileExists(atPath: descriptionURL.path)
+                var text: String?
+                if hasDescription {
+                    let saved = try JSONDecoder().decode(
+                        GameDrawingDescriptionDraft.self, from: Data(contentsOf: descriptionURL)
+                    )
+                    guard saved.coupleID == publication.coupleID else { return false }
+                    text = saved.text.trimmedNonEmpty
+                }
+                guard text == publication.accessibilityText?.trimmedNonEmpty else { return false }
+                _ = draftTickets.next(ownerUserID, publication.roundID)
+                try FileManager.default.removeItem(at: drawingURL)
+                if hasDescription { try FileManager.default.removeItem(at: descriptionURL) }
+                try FileManager.default.removeItem(at: markerURL)
+                return true
+            }
+        }
+    }
+
+    func draftDescription(ownerUserID: UUID, coupleID: UUID, roundID: UUID?) throws -> String? {
+        try lock.withLock {
+            let url = draftDescriptionURL(ownerUserID: ownerUserID, roundID: roundID)
+            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+            let saved = try JSONDecoder().decode(GameDrawingDescriptionDraft.self, from: Data(contentsOf: url))
+            return saved.coupleID == coupleID ? saved.text : nil
+        }
+    }
+
+    func saveDraftDescription(_ text: String, ownerUserID: UUID, coupleID: UUID, roundID: UUID?,
+                              privacyToken: LocalPrivacyWriteGuard.Token) throws {
+        try LocalPrivacyWriteGuard.shared.write(ownerUserID: ownerUserID, token: privacyToken) {
+            try lock.withLock {
+                if let roundID { invalidatePublication(ownerUserID: ownerUserID, roundID: roundID) }
+                let url = draftDescriptionURL(ownerUserID: ownerUserID, roundID: roundID)
+                try FileManager.default.createDirectory(
+                    at: url.deletingLastPathComponent(), withIntermediateDirectories: true
+                )
+                try JSONEncoder().encode(GameDrawingDescriptionDraft(coupleID: coupleID, text: text))
+                    .write(to: url, options: .atomic)
+            }
+        }
+    }
+
+    func removeDraftDescription(ownerUserID: UUID, roundID: UUID?) {
+        lock.withLock {
+            if let roundID { invalidatePublication(ownerUserID: ownerUserID, roundID: roundID) }
+            try? FileManager.default.removeItem(at: draftDescriptionURL(ownerUserID: ownerUserID, roundID: roundID))
+        }
+    }
+
+    func moveDraftDescription(ownerUserID: UUID, from: UUID?, to: UUID?,
+                              privacyToken: LocalPrivacyWriteGuard.Token) throws {
+        try LocalPrivacyWriteGuard.shared.write(ownerUserID: ownerUserID, token: privacyToken) {
+            try lock.withLock {
+                if let from { invalidatePublication(ownerUserID: ownerUserID, roundID: from) }
+                if let to { invalidatePublication(ownerUserID: ownerUserID, roundID: to) }
+                let source = draftDescriptionURL(ownerUserID: ownerUserID, roundID: from)
+                guard FileManager.default.fileExists(atPath: source.path) else { return }
+                let destination = draftDescriptionURL(ownerUserID: ownerUserID, roundID: to)
+                try FileManager.default.createDirectory(
+                    at: destination.deletingLastPathComponent(), withIntermediateDirectories: true
+                )
+                try Data(contentsOf: source).write(to: destination, options: .atomic)
+                try FileManager.default.removeItem(at: source)
+            }
+        }
+    }
+
+    private func publicationURL(ownerUserID: UUID, roundID: UUID) -> URL {
+        draftURL(ownerUserID: ownerUserID, roundID: roundID).appendingPathExtension("publication.json")
+    }
+
+    private func invalidatePublication(ownerUserID: UUID, roundID: UUID) {
+        try? FileManager.default.removeItem(at: publicationURL(ownerUserID: ownerUserID, roundID: roundID))
+    }
+
+    private func draftDescriptionURL(ownerUserID: UUID, roundID: UUID?) -> URL {
+        let drawingURL = roundID.map { draftURL(ownerUserID: ownerUserID, roundID: $0) }
+            ?? rescuedURL(ownerUserID: ownerUserID)
+        return drawingURL.appendingPathExtension("description.json")
     }
 
     func rescuedDrawing(ownerUserID: UUID) -> Data? {
@@ -223,108 +363,16 @@ nonisolated final class FileGameDrawingStore: GameDrawingStoring, @unchecked Sen
     }
 }
 
-/// For tests and the developer scenarios.
-nonisolated final class InMemoryGameDrawingStore: GameDrawingStoring, @unchecked Sendable {
-    private let lock = NSLock()
-    private var drafts: [String: Data] = [:]
-    private var draftTickets = GameDraftTickets()
-    private var startedBackgroundSaves = 0
-    private var finishedBackgroundSaves = 0
-    private var rescued: [UUID: Data] = [:]
-    private var downloads: [UUID: Data] = [:]
-    private var snapshots: [UUID: (roundID: UUID, data: Data)] = [:]
+nonisolated struct GameDrawingDescriptionDraft: Codable {
+    let coupleID: UUID
+    let text: String
+}
 
-    init() {}
-
-    func draft(ownerUserID: UUID, roundID: UUID) -> Data? {
-        lock.withLock { drafts["\(ownerUserID)/\(roundID)"] }
-    }
-
-    func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID) {
-        lock.withLock {
-            _ = draftTickets.next(ownerUserID, roundID)
-            drafts["\(ownerUserID)/\(roundID)"] = data
-        }
-    }
-
-    func beginDraftSave(ownerUserID: UUID, roundID: UUID) -> Int {
-        lock.withLock {
-            startedBackgroundSaves += 1
-            return draftTickets.next(ownerUserID, roundID)
-        }
-    }
-
-    /// Whether a background draft save has begun and not written yet. Tests wait for
-    /// this to be false before they read a draft or close the app.
-    var hasUnfinishedBackgroundSave: Bool {
-        lock.withLock { startedBackgroundSaves != finishedBackgroundSaves }
-    }
-
-    func saveDraft(_ data: Data, ownerUserID: UUID, roundID: UUID, ticket: Int) {
-        lock.withLock {
-            finishedBackgroundSaves += 1
-            guard draftTickets.isCurrent(ticket, ownerUserID, roundID) else { return }
-            drafts["\(ownerUserID)/\(roundID)"] = data
-        }
-    }
-
-    func removeDraft(ownerUserID: UUID, roundID: UUID) {
-        lock.withLock {
-            _ = draftTickets.next(ownerUserID, roundID)
-            drafts["\(ownerUserID)/\(roundID)"] = nil
-        }
-    }
-
-    func rescuedDrawing(ownerUserID: UUID) -> Data? {
-        lock.withLock { rescued[ownerUserID] }
-    }
-
-    func saveRescuedDrawing(_ data: Data, ownerUserID: UUID) {
-        lock.withLock { rescued[ownerUserID] = data }
-    }
-
-    func removeRescuedDrawing(ownerUserID: UUID) {
-        lock.withLock { rescued[ownerUserID] = nil }
-    }
-
-    func downloadedDrawing(mediaAssetID: UUID) -> Data? {
-        lock.withLock { downloads[mediaAssetID] }
-    }
-
-    func saveDownloadedDrawing(_ data: Data, mediaAssetID: UUID) {
-        lock.withLock { downloads[mediaAssetID] = data }
-    }
-
-    func liveSnapshot(ownerUserID: UUID, roundID: UUID) -> Data? {
-        lock.withLock { snapshots[ownerUserID].flatMap { $0.roundID == roundID ? $0.data : nil } }
-    }
-
-    func saveLiveSnapshot(_ data: Data, ownerUserID: UUID, roundID: UUID) {
-        lock.withLock { snapshots[ownerUserID] = (roundID, data) }
-    }
-
-    func removeLiveSnapshot(ownerUserID: UUID, roundID: UUID) {
-        lock.withLock {
-            if snapshots[ownerUserID]?.roundID == roundID {
-                snapshots[ownerUserID] = nil
-            }
-        }
-    }
-
-    func clearDownloads() {
-        lock.withLock {
-            downloads = [:]
-            snapshots = [:]
-        }
-    }
-
-    func clearAll() {
-        lock.withLock {
-            draftTickets.invalidateAll()
-            drafts = [:]
-            rescued = [:]
-            downloads = [:]
-            snapshots = [:]
-        }
-    }
+/// The exact draft content accepted by the server. A late response cannot remove a newer draft.
+nonisolated struct GameDrawingDraftPublication: Sendable {
+    let id: UUID?
+    let coupleID: UUID
+    let roundID: UUID
+    let data: Data
+    let accessibilityText: String?
 }

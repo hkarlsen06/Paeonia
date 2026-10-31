@@ -12,6 +12,7 @@ struct PaeoniaWidgetDrawingContent: Sendable {
     let image: UIImage
     let authorName: String?
     let savedAt: Date?
+    var accessibilityText: String?
 }
 
 enum PaeoniaWidgetStore {
@@ -65,7 +66,8 @@ enum PaeoniaWidgetStore {
             PaeoniaWidgetDrawingContent(
                 image: image,
                 authorName: payload.authorName,
-                savedAt: payload.createdAt
+                savedAt: payload.createdAt,
+                accessibilityText: payload.accessibilityText
             )
         )
     }
@@ -91,6 +93,7 @@ private struct PaeoniaWidgetCurrentPayload: Decodable {
     let isRedacted: Bool
     let contentHash: String
     let previews: [String: String]
+    let accessibilityText: String?
 
     func previewPath(for family: WidgetFamily) -> String? {
         switch family {

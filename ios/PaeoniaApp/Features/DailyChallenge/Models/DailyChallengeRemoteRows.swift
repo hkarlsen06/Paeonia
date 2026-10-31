@@ -212,6 +212,7 @@ nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
     let selectedUserID: UUID?
     let mediaAssetIDs: [UUID]
     var selectedOption: DailyAnswerOption?
+    var mediaAccessibilityText: String?
 
     enum CodingKeys: String, CodingKey {
         case coupleDayID = "couple_day_id"
@@ -225,6 +226,7 @@ nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
         case selectedUserID = "selected_user_id"
         case mediaAssetIDs = "media_asset_ids"
         case selectedOption = "selected_option"
+        case mediaAccessibilityText = "media_accessibility_text"
     }
 
     var detail: DailyQuestionAnswerDetail {
@@ -237,7 +239,8 @@ nonisolated struct DailyAnswerDetailRow: Codable, Equatable, Sendable {
             textBody: textBody,
             selectedUserID: selectedUserID,
             mediaAssetIDs: mediaAssetIDs,
-            selectedOption: selectedOption
+            selectedOption: selectedOption,
+            mediaAccessibilityText: mediaAccessibilityText
         )
     }
 }

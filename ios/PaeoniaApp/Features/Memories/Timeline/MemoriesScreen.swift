@@ -95,7 +95,10 @@ struct MemoriesScreen: View {
                     uploadProgress: viewModel.photoUploadProgress,
                     knownPlaces: viewModel.knownPlaces
                 ) { title, date, note, photos, _, place in
-                    await viewModel.createMemory(title: title, date: date, note: note, photos: photos, place: place)
+                    await viewModel.createMemory(
+                        title: title, date: date, note: note, photos: photos,
+                        photoDescriptions: viewModel.draft.photos.map(\.accessibilityText), place: place
+                    )
                 }
             }
             // New-memory alerts are seen once their memory is on the timeline.

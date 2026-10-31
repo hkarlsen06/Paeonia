@@ -50,22 +50,30 @@ extension DrawAndGuessViewModel {
 
     /// Whether the Done button works.
     var canFinishDrawing: Bool {
-        phase == .drawing && !board.isEmpty && board.canvasSide > 0
+        phase == .drawing && !board.isEmpty && board.canvasSide > 0 && !board.isFinishing && drawingDescription.canSend
     }
 
     /// Sends the drawing. It is saved on the phone first and goes out when the
     /// phone is online.
     func finishDrawing() async {
-        guard canFinishDrawing, let round else { return }
+        guard canFinishDrawing, let round, board.beginFinishing() else { return }
+        defer { board.endFinishing() }
         // A late eraser change is read from the canvas first, so it goes out too.
         board.refreshDrawingFromCanvas()
-        await queueDrawing(for: round, drawing: board.canonicalDrawing)
+        await queueFinishedDrawing(for: round, drawing: board.canonicalDrawing)
     }
 
     func queueDrawing(for round: DrawAndGuessRoundView, drawing: PKDrawing) async {
+        guard board.beginFinishing() else { return }
+        defer { board.endFinishing() }
+        await queueFinishedDrawing(for: round, drawing: drawing)
+    }
+
+    @discardableResult
+    private func queueFinishedDrawing(for round: DrawAndGuessRoundView, drawing: PKDrawing) async -> Bool {
         guard let userID = currentUserID, let coupleID = participants.coupleID,
-              let gameID = state?.game?.id
-        else { return }
+              let gameID = state?.game?.id, let drawingPrivacyToken
+        else { return false }
         let data = drawing.dataRepresentation()
         guard WidgetDrawingLimits.allows(
             byteCount: data.count,
@@ -73,21 +81,47 @@ extension DrawAndGuessViewModel {
             pointCount: drawing.paeoniaPointCount
         ) else {
             notice = .drawingTooBig
-            return
+            return false
+        }
+        let description: String?
+        let publicationID: UUID
+        do {
+            if drawingDescription.matches(owner: userID, couple: coupleID, round: round.id) {
+                guard drawingDescription.canSend else {
+                    notice = .couldNotSaveMove
+                    return false
+                }
+                description = drawingDescription.text.trimmedNonEmpty
+            } else {
+                description = try dependencies.drawingStore.draftDescription(
+                    ownerUserID: userID, coupleID: coupleID, roundID: round.id
+                )
+            }
+            guard (description?.unicodeScalars.count ?? 0) <= 10_000 else { return false }
+            publicationID = try LocalPrivacyWriteGuard.shared.write(ownerUserID: userID, token: drawingPrivacyToken) {
+                dependencies.drawingStore.saveDraft(data, ownerUserID: userID, roundID: round.id)
+                return try dependencies.drawingStore.markDraftForPublication(ownerUserID: userID, roundID: round.id)
+            }
+        } catch {
+            notice = .couldNotSaveMove
+            return false
         }
         let payload = GameSubmitDrawingPayload(
             gameID: gameID,
             roundID: round.id,
             coupleID: coupleID,
             drawingData: data,
+            drawingAccessibilityText: description,
+            draftPublicationID: publicationID,
             reserveOperation: dependencies.operationProvider.makeOperation(),
             finalizeOperation: dependencies.operationProvider.makeOperation()
         )
         let scope = "game-drawing:\(round.id.uuidString.lowercased())"
-        if await enqueue(.submitGameDrawing, scope: scope, payload: payload) {
-            // The queued move carries the drawing now.
-            dependencies.drawingStore.removeDraft(ownerUserID: userID, roundID: round.id)
-        }
+        let queued = await enqueue(.submitGameDrawing, scope: scope, payload: payload,
+                                   privacyToken: drawingPrivacyToken)
+        // The accepted-response handler removes only a matching published draft.
+        // A refusal may already have restored it while enqueue was suspended.
+        return queued
     }
 
     /// The partner solved the round while this person was still drawing, or the
@@ -96,7 +130,8 @@ extension DrawAndGuessViewModel {
     /// canvas holds the round, with a stroke in progress finished first, and
     /// otherwise from the draft saved on the phone.
     func sendLiveDrawingIfSolved() {
-        guard let userID = currentUserID, let round, round.isFinished, round.isDrawer(userID),
+        guard !drawingAwaitingRetry, let userID = currentUserID, let coupleID = participants.coupleID,
+              let drawingPrivacyToken, let round, round.isFinished, round.isDrawer(userID),
               !round.isDrawingSent, !autoSentRoundIDs.contains(round.id)
         else { return }
         let isOnBoard = boardRoundID == round.id && !board.isEmpty && board.canvasSide > 0
@@ -104,17 +139,45 @@ extension DrawAndGuessViewModel {
             .flatMap { try? PKDrawing(data: $0) }
             .flatMap { $0.strokes.isEmpty ? nil : $0 }
         guard isOnBoard || draft != nil else { return }
+        if !drawingDescription.matches(owner: userID, couple: coupleID, round: round.id) {
+            drawingDescription.configure(store: dependencies.drawingStore, owner: userID, couple: coupleID,
+                                         round: round.id, privacyToken: drawingPrivacyToken)
+        }
         autoSentRoundIDs.insert(round.id)
         let board = board
         Task {
+            guard board.beginFinishing() else {
+                autoSentRoundIDs.remove(round.id)
+                return
+            }
+            defer { board.endFinishing() }
             let drawing: PKDrawing
             if let draft {
                 drawing = draft
             } else {
                 drawing = await board.finishedCanonicalDrawing()
             }
-            await queueDrawing(for: round, drawing: drawing)
+            do {
+                try LocalPrivacyWriteGuard.shared.write(ownerUserID: userID, token: drawingPrivacyToken) {
+                    dependencies.drawingStore.saveDraft(
+                        drawing.dataRepresentation(), ownerUserID: userID, roundID: round.id
+                    )
+                }
+            } catch {
+                autoSentRoundIDs.remove(round.id)
+                return
+            }
+            if !(await queueFinishedDrawing(for: round, drawing: drawing)) {
+                autoSentRoundIDs.remove(round.id)
+                drawingAwaitingRetry = true
+            }
         }
+    }
+
+    /// The author corrected an unreadable/overlong description or a failed local save.
+    func retryFinishedDrawing() {
+        drawingAwaitingRetry = false
+        sendLiveDrawingIfSolved()
     }
 
     func drawingChangedByUser(_ drawing: PKDrawing) {
@@ -270,7 +333,8 @@ extension DrawAndGuessViewModel {
     func enqueue(
         _ kind: SyncPendingOperationKind,
         scope: String,
-        payload: some Encodable
+        payload: some Encodable,
+        privacyToken: LocalPrivacyWriteGuard.Token? = nil
     ) async -> Bool {
         guard let userID = currentUserID, let data = try? JSONEncoder().encode(payload) else { return false }
         do {
@@ -280,7 +344,7 @@ extension DrawAndGuessViewModel {
                     operation: dependencies.operationProvider.makeOperation(),
                     operationKind: kind,
                     idempotencyScope: scope,
-                    requestData: data
+                    requestData: data, privacyToken: privacyToken
                 )
             )
         } catch {

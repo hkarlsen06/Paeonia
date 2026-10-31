@@ -123,6 +123,7 @@ nonisolated struct DailyAnswerPayloadBody: Encodable {
         case text
         case partnerChoiceUserID = "partner_choice_user_id"
         case mediaAssetIDs = "media_asset_ids"
+        case mediaAccessibilityText = "media_accessibility_text"
         case optionChoice = "option_choice"
     }
 
@@ -131,6 +132,7 @@ nonisolated struct DailyAnswerPayloadBody: Encodable {
         try container.encode(answerID, forKey: .answerID)
         // Any combination the backend allows: a text body, a partner pick, and/or
         // media ids — only the parts that are present are sent.
+        try container.encodeIfPresent(payload.mediaAccessibilityText, forKey: .mediaAccessibilityText)
         if let text = payload.text {
             try container.encode(text, forKey: .text)
         }

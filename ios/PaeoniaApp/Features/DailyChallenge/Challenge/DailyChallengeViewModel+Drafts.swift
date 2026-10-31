@@ -29,7 +29,8 @@ extension DailyChallengeViewModel {
     /// combined question needs only one of its parts filled in.
     func hasDraftToSubmit(for question: DailyChallengeQuestion) -> Bool {
         // While a picked photo is still being prepared, sending would leave it out.
-        !isDraftTextTooLong(for: question.id)
+        DailyAnswerDraft.measuredLength(of: mediaAccessibilityText(for: question.id)) <= 10_000
+            && !isDraftTextTooLong(for: question.id)
             && !isPreparingPhoto(for: question.id)
             && draftHasRequiredParts(for: question)
     }
@@ -64,6 +65,17 @@ extension DailyChallengeViewModel {
         draft.selectedKind = kind
         answerDrafts[questionID] = draft
         persist(draft, for: questionID)
+    }
+
+    func mediaAccessibilityText(for questionID: UUID) -> String {
+        answerDrafts[questionID]?.media?.accessibilityText ?? ""
+    }
+
+    func setMediaAccessibilityText(_ text: String, for questionID: UUID) {
+        guard var draft = answerDrafts[questionID], draft.media != nil else { return }
+        draft.media?.accessibilityText = text
+        answerDrafts[questionID] = draft
+        scheduleDraftSave(for: questionID)
     }
 
     func draftText(for questionID: UUID) -> String {

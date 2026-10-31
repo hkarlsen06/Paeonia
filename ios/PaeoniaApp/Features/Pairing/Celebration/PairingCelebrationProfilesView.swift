@@ -153,8 +153,8 @@ struct PairingCelebrationProfilesView: View {
             Text(name)
                 .font(metrics.nameFont)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .opacity(nameOpacity)
         }
         .frame(width: metrics.columnWidth)

@@ -15,12 +15,27 @@ struct ThreadChatVoiceTests {
                 data: data,
                 durationMs: 1_500,
                 reserveOperation: fixture.operationProvider.makeOperation(),
-                finalizeOperation: fixture.operationProvider.makeOperation()
+                finalizeOperation: fixture.operationProvider.makeOperation(),
+                transcript: "Jeg savner deg. En hund bjeffer."
             ),
             createThread: false,
             replyTo: nil,
             operation: fixture.operationProvider.makeOperation()
         )
+    }
+
+    @Test func aRefusedVoiceQueueKeepsTheRecordingForEditingAndRetry() async throws {
+        let fixture = ChatTestFixture()
+        let viewModel = fixture.makeViewModel()
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let bytes = Data([1, 2, 3])
+        try bytes.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let queued = await viewModel.sendVoice(
+            fileURL: url, durationMs: 1_000, transcript: String(repeating: "x", count: 10_001)
+        )
+        #expect(!queued)
+        #expect(try Data(contentsOf: url) == bytes)
     }
 
     @Test func aQueuedVoiceMessageUploadsItsRecordingAndSendsTheUpload() async throws {
@@ -33,6 +48,7 @@ struct ThreadChatVoiceTests {
         let pending = await fixture.pendingMessages(service)
         #expect(pending.map(\.id) == [fixture.messageID])
         #expect(pending.first?.voice?.data == recording)
+        #expect(pending.first?.voice?.transcript == "Jeg savner deg. En hund bjeffer.")
 
         let assetID = UUID()
         let uploader = ChatVoiceUploader(assetID: assetID)
@@ -45,9 +61,25 @@ struct ThreadChatVoiceTests {
 
         #expect(result == .succeeded)
         #expect(await uploader.uploadedParentIDs == [fixture.messageID])
+        #expect(await uploader.uploadedAccessibilityTexts == ["Jeg savner deg. En hund bjeffer."])
         #expect(await fixture.gateway.lastMediaAssetIDs == [assetID])
         let cached = await fixture.cachedMessages()
         #expect(cached.first?.isSending == false)
+        #expect(cached.first?.voice?.transcript == "Jeg savner deg. En hund bjeffer.")
+    }
+
+    @Test func aFailedVoiceSendKeepsItsRecordingAndTranscriptForRetry() async throws {
+        let fixture = ChatTestFixture()
+        let service = fixture.makeService()
+        let recording = Data([1, 2, 3])
+        try await queueVoice(fixture, service, data: recording)
+        let operation = try #require(try await fixture.queuedOperations(.sendThreadMessage).first)
+        await SendChatMessageOperationHandler(gateway: fixture.gateway, cache: fixture.cache)
+            .gaveUp(on: operation, context: chatSyncContext(ownerUserID: fixture.ownerUserID))
+        let cached = await fixture.cachedMessages()
+        #expect(cached.first?.sendFailed == true)
+        #expect(cached.first?.voice?.data == recording)
+        #expect(cached.first?.voice?.transcript == "Jeg savner deg. En hund bjeffer.")
     }
 
     @Test func aConfirmedVoiceMessageKeepsPlayingFromThisPhone() async throws {
@@ -60,7 +92,7 @@ struct ThreadChatVoiceTests {
         let message = ThreadChatMessage(
             id: UUID(), threadID: nil, subjectID: UUID(), senderUserID: owner, body: "",
             createdAt: Date(timeIntervalSince1970: 1), clientOperationID: operationID, isSending: true,
-            voice: ThreadChatVoice(data: Data([7]), durationMs: 900)
+            voice: ThreadChatVoice(data: Data([7]), durationMs: 900, transcript: "A dog barks.")
         )
         await cache.append(message, ownerUserID: owner)
 
@@ -70,7 +102,8 @@ struct ThreadChatVoiceTests {
             threadID: UUID(), messageID: message.id, body: "", senderUserID: owner, createdAt: message.createdAt
         )
 
-        let confirmed = try #require(await cache.messages(ownerUserID: owner, subjectID: message.subjectID).first)
+        let reopened = FileThreadChatCache(directoryURL: directory)
+        let confirmed = try #require(await reopened.messages(ownerUserID: owner, subjectID: message.subjectID).first)
         #expect(!confirmed.isSending)
         #expect(confirmed.voice == message.voice)
     }
@@ -86,8 +119,8 @@ struct ThreadChatVoiceTests {
         let viewModel = fixture.makeViewModel()
         await viewModel.prepare()
         let photos = [
-            ThreadChatPhoto(data: Data([1]), width: 400, height: 300),
-            ThreadChatPhoto(data: Data([2]), width: 300, height: 400),
+            ThreadChatPhoto(data: Data([1]), width: 400, height: 300, accessibilityText: "The red boat"),
+            ThreadChatPhoto(data: Data([2]), width: 300, height: 400, accessibilityText: "The old dock"),
         ]
 
         #expect(await viewModel.send("Look", photos: photos))
@@ -105,6 +138,7 @@ struct ThreadChatVoiceTests {
 
         #expect(result == .succeeded)
         #expect(await uploader.uploadedPurposes == [.threadPhoto, .threadPhoto])
+        #expect(await uploader.uploadedAccessibilityTexts == ["The red boat", "The old dock"])
         // Both photos are reserved under the message's own id, which the server requires.
         let parentIDs = await uploader.uploadedParentIDs
         #expect(Set(parentIDs).count == 1)

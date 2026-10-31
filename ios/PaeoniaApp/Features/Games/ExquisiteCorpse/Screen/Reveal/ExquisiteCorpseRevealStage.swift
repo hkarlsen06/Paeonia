@@ -51,6 +51,9 @@ struct ExquisiteCorpseRevealStage: View {
         .frame(width: size.width, height: size.height)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(figureLabel)
+        .accessibilityValue(Text(content.parts.filter { timeline.openParts.contains($0.kind) }.compactMap { part in
+            part.drawing.map { DrawingGeometryDescription.text($0, side: GameCanvas.canonicalSide) }
+        }.joined(separator: "\n")))
         .accessibilityAddTraits(.isImage)
         .accessibilityActions {
             if canShowAll {

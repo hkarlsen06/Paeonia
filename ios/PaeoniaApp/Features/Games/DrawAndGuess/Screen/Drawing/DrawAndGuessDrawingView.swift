@@ -33,6 +33,8 @@ struct DrawAndGuessDrawingView: View {
             )
         } footer: {
             GameDrawingTools(board: board)
+            GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isGuessingGame: true,
+                                         isLocked: board.isFinishing)
         } bottom: {
             Button {
                 PaeoniaHaptics.drawingSent()

@@ -20,7 +20,7 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
     private let pendingStore: WidgetPendingUploadStore
     private let localStore: any WidgetCanvasManaging
     private var lastUpload: Task<Void, Never>?
-    private var deliveredContentHash: String?
+    private var deliveredPublicationID: String?
 
     init(
         gateway: any FirstDayGateway,
@@ -45,7 +45,7 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
     }
 
     func restorePending(_ previous: WidgetPendingUploadSnapshot?, replacing payload: WidgetDrawingUploadPayload) {
-        pendingStore.restore(previous, replacingContentHash: Self.sha256Hex(of: payload.drawingData))
+        pendingStore.restore(previous, replacingPublicationID: payload.publicationID)
     }
 
     func send(_ payload: WidgetDrawingUploadPayload) async -> WidgetDrawingDelivery {
@@ -76,7 +76,7 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
               Self.sha256Hex(of: drawingData) == snapshot.contentHash
         else {
             // The marker describes a drawing that is no longer on this phone.
-            pendingStore.clearPending(snapshot.contentHash)
+            pendingStore.clearPending(snapshot.publicationID)
             return true
         }
         do {
@@ -107,16 +107,17 @@ actor FirstDayDrawingUploadService: WidgetCanvasUploading {
         _ payload: WidgetDrawingUploadPayload,
         contentHash: String
     ) async throws -> WidgetDrawingDelivery {
+        let publicationID = payload.publicationID
         guard let pending = pendingStore.pendingSnapshot else {
-            return deliveredContentHash == contentHash ? .delivered : .replaced
+            return deliveredPublicationID == publicationID ? .delivered : .replaced
         }
-        guard pending.contentHash == contentHash else {
+        guard pending.publicationID == publicationID else {
             return .replaced
         }
-        pendingStore.recordAttempt(contentHash)
+        pendingStore.recordAttempt(publicationID)
         try await upload(payload, contentHash: contentHash)
-        pendingStore.clearPending(contentHash)
-        deliveredContentHash = contentHash
+        pendingStore.clearPending(publicationID)
+        deliveredPublicationID = publicationID
         await MainActor.run {
             NotificationCenter.default.post(name: .paeoniaWidgetUploadDidFinish, object: nil)
         }

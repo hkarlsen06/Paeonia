@@ -42,7 +42,8 @@ final class HomeMapExplorer {
 
     /// Glides on in the direction of a fast release, slowing to a stop.
     func fling(velocity: CGPoint) {
-        guard let map, hypot(velocity.x, velocity.y) > 200 else { return }
+        guard !UIAccessibility.isReduceMotionEnabled,
+              let map, hypot(velocity.x, velocity.y) > 200 else { return }
         let middle = CGPoint(x: map.bounds.midX, y: map.bounds.midY)
         let camera = map.camera
         camera.centerCoordinate = map.convert(
@@ -69,6 +70,29 @@ final class HomeMapExplorer {
         isExploring = false
         start = nil
         reframe()
+    }
+
+    func pan(horizontal: CGFloat, vertical: CGFloat) {
+        guard let map else { return }
+        let center = CGPoint(x: map.bounds.midX, y: map.bounds.midY)
+        move(
+            from: center,
+            to: CGPoint(x: center.x - horizontal * map.bounds.width / 3,
+                        y: center.y - vertical * map.bounds.height / 3),
+            scale: 1, turn: 0
+        )
+    }
+
+    func zoom(by scale: CGFloat) {
+        guard let map else { return }
+        let center = CGPoint(x: map.bounds.midX, y: map.bounds.midY)
+        move(from: center, to: center, scale: scale, turn: 0)
+    }
+
+    func faceNorth() {
+        guard let map else { return }
+        let center = CGPoint(x: map.bounds.midX, y: map.bounds.midY)
+        move(from: center, to: center, scale: 1, turn: map.direction * .pi / 180)
     }
 
     private func place(
@@ -303,13 +327,15 @@ final class HomeMapGestureTracker: NSObject, UIGestureRecognizerDelegate {
 /// trailing edge, just above where the map fades into the cards.
 struct HomeMapShowBothButton: View {
     let explorer: HomeMapExplorer
+    let onDetails: () -> Void
     /// The bottom of the open map, in the map's points.
     let mapBottom: CGFloat
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        ZStack {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            Spacer(minLength: 0)
             if explorer.isExploring {
                 Button { explorer.showBoth() } label: {
                     Image(systemName: "location.fill")
@@ -322,10 +348,33 @@ struct HomeMapShowBothButton: View {
                 .accessibilityLabel(Text(.homeMapShowBoth))
                 .transition(.opacity)
             }
+            mapMenu
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: explorer.isExploring)
         .padding(.trailing, PaeoniaSpacing.screenHorizontalPadding)
         .frame(maxWidth: .infinity, alignment: .trailing)
         .offset(y: mapBottom - PaeoniaSpacing.compactButtonHeight - PaeoniaSpacing.space8)
+    }
+
+    private var mapMenu: some View {
+        Menu {
+            Button(.homeMapLocationDetails, systemImage: "list.bullet", action: onDetails)
+            Button(.homeMapShowBoth, systemImage: "location.fill") { explorer.showBoth() }
+            Button(.homeMapZoomIn, systemImage: "plus.magnifyingglass") { explorer.zoom(by: 2) }
+            Button(.homeMapZoomOut, systemImage: "minus.magnifyingglass") { explorer.zoom(by: 0.5) }
+            Button(.homeMapPanUp, systemImage: "arrow.up") { explorer.pan(horizontal: 0, vertical: -1) }
+            Button(.homeMapPanDown, systemImage: "arrow.down") { explorer.pan(horizontal: 0, vertical: 1) }
+            Button(.homeMapPanLeft, systemImage: "arrow.left") { explorer.pan(horizontal: -1, vertical: 0) }
+            Button(.homeMapPanRight, systemImage: "arrow.right") { explorer.pan(horizontal: 1, vertical: 0) }
+            Button(.homeMapFaceNorth, systemImage: "location.north") { explorer.faceNorth() }
+        } label: {
+            Image(systemName: "map")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .frame(width: 44, height: 44)
+                .background(.paeoniaBackgroundSecondary, in: Circle())
+        }
+        .accessibilityLabel(Text(.homeMapControls))
+        .accessibilityIdentifier("home.map.controls")
     }
 }

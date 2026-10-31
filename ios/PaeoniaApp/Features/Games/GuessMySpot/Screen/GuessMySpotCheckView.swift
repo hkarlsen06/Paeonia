@@ -8,6 +8,7 @@ struct GuessMySpotCheckView: View {
 
     @State private var camera: MapCameraPosition
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(viewModel: GuessMySpotViewModel) {
         _viewModel = Bindable(viewModel)
@@ -21,7 +22,7 @@ struct GuessMySpotCheckView: View {
         GuessMySpotSplitLayout {
             EmptyView()
         } photo: {
-            GuessMySpotPhotoPane(image: draft?.image)
+            GuessMySpotPhotoPane(image: draft?.image, accessibilityText: draft?.accessibilityText)
         } map: {
             GuessMySpotMap(
                 position: $camera,
@@ -48,7 +49,6 @@ struct GuessMySpotCheckView: View {
         .onChange(of: draft?.roundID) { _, _ in
             camera = Self.startCamera(for: viewModel)
         }
-        .accessibilityIdentifier("guessMySpot.check")
     }
 
     /// A new photo: its spot, or else near home, or else the whole world.
@@ -73,9 +73,10 @@ struct GuessMySpotCheckView: View {
             Text(draft?.spot != nil ? .guessMySpotCheckFoundTitle : .guessMySpotCheckMissingTitle)
                 .font(PaeoniaTypography.title)
                 .foregroundStyle(.paeoniaTextPrimary)
-                .lineLimit(1)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                 .accessibilityAddTraits(.isHeader)
             placeLine
+            GuessMySpotPhotoDescriptionEditor(viewModel: viewModel)
             Text(.guessMySpotCheckPrivate(viewModel.partnerName))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextTertiary)
@@ -94,7 +95,7 @@ struct GuessMySpotCheckView: View {
         }
         .font(PaeoniaTypography.bodyEmphasis)
         .foregroundStyle(.paeoniaTextPrimary)
-        .lineLimit(1)
+        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
         .opacity(name == nil ? 0 : 1)
         .animation(PaeoniaMotion.stateChange, value: name)
         .accessibilityHidden(name == nil)

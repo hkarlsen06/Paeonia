@@ -57,6 +57,8 @@ actor LocalPrivacyPurgeService: LocalPrivacyPurging {
         ownerUserID: UUID,
         scope: LocalPrivacyPurgeScope
     ) async -> LocalPrivacyPurgeResult {
+        LocalPrivacyWriteGuard.shared.invalidate(ownerUserID: ownerUserID)
+        await MediaAlternativeCacheWrites.shared.clear(ownerUserID: ownerUserID)
         var request = LocalPrivacyPurgeRequest(ownerUserID: ownerUserID, scope: scope)
         if let volatileRequest = volatileRetryRequests[ownerUserID] {
             request = volatileRequest.merging(request)
@@ -283,8 +285,10 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
 
         let shouldPurgeOwnedContent = scope != .relationshipAccessHidden
         if shouldPurgeOwnedContent {
+            FileThreadChatVoiceDraftStore.shared.clearAll()
+            FileThreadChatPhotoDraftStore.shared.clearAll()
             dailyAnswerMediaDraftStore.clearAll()
-            removeTemporaryVoiceFiles()
+            Self.removeTemporaryVoiceFiles(in: temporaryDirectory)
             if !keepsFirstDayUpload {
                 WidgetPendingUploadStore.shared.clearAll()
             }
@@ -357,7 +361,9 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         await mindMeldCache.clearAll()
         await consensioCache.clearAll()
         await guessMySpotCache.clearAll()
-        guessMySpotPhotos.clearAll()
+        // These are owned unsent photos and drafts, not a shared-media cache.
+        // A temporary access hide must allow the same send to resume later.
+        if scope != .relationshipAccessHidden { guessMySpotPhotos.clearAll() }
         await heartsCache.clearAll()
         await coupleDatesCache.clearAll()
         await favoritesCache.clearAll()
@@ -396,7 +402,7 @@ actor LiveLocalPrivateContentPurger: LocalPrivateContentPurging {
         try? FileManager.default.removeItem(at: avatarURL)
     }
 
-    private func removeTemporaryVoiceFiles() {
+    nonisolated static func removeTemporaryVoiceFiles(in temporaryDirectory: URL) {
         let prefixes = ["daily-voice-", "daily-voice-play-"]
         guard let urls = try? FileManager.default.contentsOfDirectory(
             at: temporaryDirectory,

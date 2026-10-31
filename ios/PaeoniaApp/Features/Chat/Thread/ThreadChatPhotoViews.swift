@@ -104,7 +104,8 @@ struct ThreadChatPhotoCard: View {
             }
             .task(id: ThreadChatPhotoLayout.cacheKey(for: photo)) { await load() }
             .accessibilityElement()
-            .accessibilityLabel(Text(.dailyChatPhotoPreview))
+            .accessibilityLabel(Text(verbatim: photo.accessibilityText?.trimmedNonEmpty
+                ?? String(localized: .dailyChatPhotoPreview)))
             .accessibilityAddTraits(.isImage)
     }
 

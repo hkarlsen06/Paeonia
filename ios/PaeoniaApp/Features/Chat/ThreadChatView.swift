@@ -184,7 +184,9 @@ struct ThreadChatView: View {
                     onSaveEdit: { await viewModel.saveEdit($0) },
                     onSendText: { await viewModel.send($0) },
                     onSendPhotos: { await viewModel.send($0, photos: $1) },
-                    onSendVoice: { await viewModel.sendVoice(fileURL: $0, durationMs: $1) },
+                    onSendVoice: { await viewModel.sendVoice(fileURL: $0, durationMs: $1, transcript: $2) },
+                    beginVoiceDraft: { viewModel.beginVoiceDraftEditing() },
+                    beginPhotoDraft: { viewModel.beginPhotoDraftEditing() },
                     onTextChanged: viewModel.draftChanged
                 )
             },
@@ -361,6 +363,7 @@ extension ThreadChatView {
             return PaeoniaImageViewerItem(
                 id: key,
                 image: nil,
+                accessibilityText: photo.accessibilityText,
                 imageLoader: { await Self.fullImage(of: photo) }
             )
         }

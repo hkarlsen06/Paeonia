@@ -137,12 +137,14 @@ final class ConsensioViewModel {
         myStyle = BoardPieceStyle(
             color: .boardGameMine,
             mark: nil,
-            initial: BoardPieceStyle.initial(of: participants.currentName)
+            initial: BoardPieceStyle.initial(of: participants.currentName),
+            owner: .one
         )
         partnerStyle = BoardPieceStyle(
             color: .boardGamePartner,
             mark: nil,
-            initial: BoardPieceStyle.initial(of: participants.partnerName)
+            initial: BoardPieceStyle.initial(of: participants.partnerName),
+            owner: .two
         )
         now = dependencies.now()
         if let coupleID = participants.coupleID, let room = dependencies.makeConsensioLive(coupleID) {

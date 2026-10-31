@@ -24,39 +24,26 @@ struct WelcomeSignInStep: View {
     @State private var isInviteSheetPresented = false
     @State private var drawing: UIImage?
     @State private var hasLoadedDrawing = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        // The picture and the headline sit together in the middle of the height under
-        // Back, with the picture as large as fits. When the step does not fit, such as
-        // at large text sizes, the content scrolls with the headline first and a smaller
-        // picture under it.
-        ViewThatFits(in: .vertical) {
-            content(fillsHeight: true)
-
-            ScrollView {
-                content(fillsHeight: false)
-            }
-            .scrollIndicators(.hidden)
-            .scrollBounceBehavior(.basedOnSize)
-        }
-        .paeoniaBottomBar(spacing: 0) {
-            VStack(spacing: PaeoniaSpacing.space12) {
-                appleButton
-                googleButton
-                if mode == .joining {
-                    inviteCodeSavedRow
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        content(fillsHeight: false)
+                        signInActions.paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
+                    }
                 }
-                WelcomeLegalLinks()
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                regularContent
+                    .paeoniaBottomBar(spacing: 0) { signInActions }
             }
-            .padding(.top, PaeoniaSpacing.space12)
-            .screenEntrance(order: 3)
-            .onboardingBottomBarFade()
         }
         .onAppear(perform: onAppear)
         .task(id: mode) {
-            guard mode == .start(hasDrawing: true), drawing == nil else {
-                return
-            }
+            guard mode == .start(hasDrawing: true), drawing == nil else { return }
             drawing = await loadDrawing()
             hasLoadedDrawing = true
         }
@@ -70,6 +57,36 @@ struct WelcomeSignInStep: View {
                 return true
             }
         }
+    }
+
+    private var regularContent: some View {
+        // The picture and the headline sit together in the middle of the height under
+        // Back, with the picture as large as fits. When the step does not fit, such as
+        // at large text sizes, the content scrolls with the headline first and a smaller
+        // picture under it.
+        ViewThatFits(in: .vertical) {
+            content(fillsHeight: true)
+
+            ScrollView {
+                content(fillsHeight: false)
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+        }
+    }
+
+    private var signInActions: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            appleButton
+            googleButton
+            if mode == .joining {
+                inviteCodeSavedRow
+            }
+            WelcomeLegalLinks()
+        }
+        .padding(.top, PaeoniaSpacing.space12)
+        .screenEntrance(order: 3)
+        .onboardingBottomBarFade()
     }
 
     /// `fillsHeight` puts the picture above the headline, grown into the free height up

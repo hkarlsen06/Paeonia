@@ -45,6 +45,7 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
     /// The height of the scrolling rows in the wide layout.
     @State private var wideContentHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         GeometryReader { proxy in
@@ -119,6 +120,9 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
                 header
                 square(side)
                 footer
+                if dynamicTypeSize.isAccessibilitySize {
+                    pinnedBottomContent
+                }
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                 contentHeight = height
@@ -143,11 +147,13 @@ struct GamePhaseLayout<Header: View, Square: View, Footer: View, Bottom: View>: 
             scrollToEnd()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            pinnedBottom
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                    pinnedHeight = height
-                    take(bottomHeight: height)
-                }
+            if !dynamicTypeSize.isAccessibilitySize {
+                pinnedBottom
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        pinnedHeight = height
+                        take(bottomHeight: height)
+                    }
+            }
         }
         .onChange(of: side, initial: true) { _, newSide in
             if sharing == .publishes { sideMemory?.side = newSide }

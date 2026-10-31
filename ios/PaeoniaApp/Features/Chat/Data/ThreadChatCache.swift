@@ -1,6 +1,7 @@
 import Foundation
 
 protocol ThreadChatCaching: Actor {
+    func updateMediaAlternative(_ edit: MediaAlternativeEdit, ownerUserID: UUID, unlessPurgedSince generation: Int)
     func summaries(ownerUserID: UUID) -> [ThreadChatSummary]
     func messages(ownerUserID: UUID, subjectID: UUID) -> [ThreadChatMessage]
     /// Keeps the summaries. Returns whether they differ from what was kept.

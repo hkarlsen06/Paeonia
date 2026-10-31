@@ -36,6 +36,7 @@ final class PostPairingGiftModel {
 
     private(set) var phase: Phase = .wrapped
     private(set) var isFastForwarding = false
+    let accessibilityText: String?
 
     @ObservationIgnored private let timeline: GameReplayTimeline
     @ObservationIgnored private let effects: PostPairingGiftEffects
@@ -54,6 +55,7 @@ final class PostPairingGiftModel {
         monotonicNow: @escaping @Sendable () -> TimeInterval = { CACurrentMediaTime() }
     ) {
         timeline = GameReplayTimeline(drawing: gift.drawing)
+        accessibilityText = gift.accessibilityText
         self.effects = effects
         self.monotonicNow = monotonicNow
     }

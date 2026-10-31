@@ -203,6 +203,11 @@ struct DrawAndGuessHistoryDetailScreen: View {
             .disabled(viewModel.drawingState != .ready)
             .accessibilityIdentifier("draw.history.replay")
 
+            Button(.gamesDrawAndGuessGuessReplaySkip) { viewModel.showWholeDrawing() }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .disabled(viewModel.drawingState != .ready)
+                .accessibilityIdentifier("draw.history.skipReplay")
+
             Text(.gamesDrawAndGuessHistoryDetailHoldHint)
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextTertiary)
@@ -215,6 +220,8 @@ struct DrawAndGuessHistoryDetailScreen: View {
 
     private var details: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            MediaAlternativeReadout(text: viewModel.round.drawingAccessibilityText, isVoice: false, isDrawing: true,
+                editingTarget: viewModel.isDrawer ? .drawAndGuess(roundID: viewModel.round.id) : nil)
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                 Text(viewModel.word)
                     .font(PaeoniaTypography.heroTitle)

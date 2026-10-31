@@ -26,6 +26,7 @@ struct GuessMySpotDraft: Equatable {
     var refusedRoundID: UUID?
     /// The few pixels the partner sees while this person checks the photo.
     var preview: Data?
+    var accessibilityText = ""
 
     var placeName: String? { place?.name }
 }
@@ -88,6 +89,7 @@ final class GuessMySpotViewModel {
     var notice: GamesNotice?
     /// Shown once on the picker when a picked photo can't be read.
     var pickFailed = false
+    var draftReadFailed = false
     var prefersReducedMotion = false
     /// The round whose reveal reached its verdict on screen.
     @ObservationIgnored var settledRevealRoundID: UUID?
@@ -123,6 +125,11 @@ final class GuessMySpotViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    @ObservationIgnored var draftRevision = 0
+    @ObservationIgnored var draftStorageTicket: GuessMySpotDraftTicket?
+    @ObservationIgnored var restoredDraftScope: String?
+    @ObservationIgnored var isRestoringDraft = false
+    @ObservationIgnored let decodeDraftPhoto: @Sendable (Data) async -> UIImage?
     /// Taps when the partner sends a photo and it becomes this person's turn to guess.
     @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var refusedMoves: [GuessMySpotRefusedMove] = []
@@ -161,12 +168,16 @@ final class GuessMySpotViewModel {
         participants: GameParticipants = GameParticipants(),
         heartbeatInterval: Duration = GamePresence.heartbeatInterval,
         tickInterval: Duration = .seconds(15),
-        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        decodeDraftPhoto: @escaping @Sendable (Data) async -> UIImage? = {
+            await MemoryImageDecoding.downsample($0, maxPixelSize: GuessMySpotPhotoReader.maxPixelSize)
+        }
     ) {
         self.dependencies = dependencies
         self.participants = participants
         self.tickInterval = tickInterval
         self.sleep = sleep
+        self.decodeDraftPhoto = decodeDraftPhoto
         loops = GameScreenLoops(
             kind: .guessMySpot,
             gateway: dependencies.gateway,
@@ -177,14 +188,19 @@ final class GuessMySpotViewModel {
         myStyle = BoardPieceStyle(
             color: .boardGameMine,
             mark: nil,
-            initial: BoardPieceStyle.initial(of: participants.currentName)
+            initial: BoardPieceStyle.initial(of: participants.currentName),
+            owner: .one
         )
         partnerStyle = BoardPieceStyle(
             color: .boardGamePartner,
             mark: nil,
-            initial: BoardPieceStyle.initial(of: participants.partnerName)
+            initial: BoardPieceStyle.initial(of: participants.partnerName),
+            owner: .two
         )
         now = dependencies.now()
+        draftStorageTicket = participants.currentUserID.map {
+            dependencies.guessMySpotPhotos.draftTicket(ownerUserID: $0)
+        }
         if let coupleID = participants.coupleID, let room = dependencies.makeGuessMySpotLive(coupleID) {
             attach(room)
         }
@@ -215,8 +231,10 @@ final class GuessMySpotViewModel {
     }
 
     var canSend: Bool {
-        showsCheck && draft?.spot != nil
+        showsCheck && draft?.spot != nil && !photoDescriptionTooLong
     }
+
+    var photoDescriptionTooLong: Bool { (draft?.accessibilityText.unicodeScalars.count ?? 0) > 10_000 }
 
     func configure(participants newParticipants: GameParticipants) {
         let identityChanged = participants.currentUserID != newParticipants.currentUserID
@@ -225,6 +243,9 @@ final class GuessMySpotViewModel {
         (me, partner) = newParticipants.players
         if identityChanged {
             resetForNewIdentity()
+            draftStorageTicket = newParticipants.currentUserID.map {
+                dependencies.guessMySpotPhotos.draftTicket(ownerUserID: $0)
+            }
         }
         updateStyles()
         if live == nil, let coupleID = newParticipants.coupleID,
@@ -248,6 +269,11 @@ final class GuessMySpotViewModel {
     }
 
     func resetForNewIdentity() {
+        draftRevision += 1
+        draftStorageTicket = nil
+        restoredDraftScope = nil
+        draftReadFailed = false
+        isPreparingPhoto = false
         attentionCue.reset()
         state = nil
         overview = nil

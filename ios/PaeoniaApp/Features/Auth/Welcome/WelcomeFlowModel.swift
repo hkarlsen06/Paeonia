@@ -293,11 +293,13 @@ final class WelcomeFlowModel {
         }
         let side = snapshot.canvasSide ?? CGFloat(pending.canvasSide)
         do {
-            try await widgetCanvas.saveDrawing(
+            try await widgetCanvas.saveDescribedDrawing(
                 snapshot.drawingData,
                 canvasSize: CGSize(width: side, height: side),
                 authorName: snapshot.authorName,
-                createdAt: snapshot.createdAt ?? pending.markedAt
+                createdAt: snapshot.createdAt ?? pending.markedAt,
+                revisionID: nil,
+                accessibilityText: pending.accessibilityText
             )
         } catch {
             return

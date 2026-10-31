@@ -5,7 +5,7 @@ import SwiftUI
 /// the photo drawer follow Tidex's chat. With an empty field the round button records
 /// a voice message instead of sending, using the same recorder as voice answers.
 ///
-/// Recording: tap the microphone to start, the arrow to stop and send, or the bin to
+/// Recording: tap the microphone to start, Stop to review, or the bin to
 /// throw it away. A take that hits the one-minute limit stops by itself and waits,
 /// so it can be played back before sending.
 ///
@@ -24,17 +24,20 @@ struct ThreadChatComposer: View {
     let onSaveEdit: (String) async -> ThreadChatViewModel.EditOutcome
     let onSendText: (String) async -> Bool
     let onSendPhotos: (String, [ThreadChatPhoto]) async -> Bool
-    let onSendVoice: (URL, Int) async -> Bool
+    let onSendVoice: (URL, Int, String) async -> Bool
+    let beginVoiceDraft: () -> ThreadChatVoiceDraftEditing?
+    let beginPhotoDraft: () -> ThreadChatPhotoDraftEditing?
     let onTextChanged: (String) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
+    @Environment(PaeoniaBannerCenter.self) var bannerCenter
     @FocusState var isFocused: Bool
     @State var recorder = DailyVoiceRecorder()
-    @State private var staging = ThreadChatPhotoStaging()
+    @State var voiceTranscript = ""
+    @State var voiceDraftEditing: ThreadChatVoiceDraftEditing?
+    @State var staging = ThreadChatPhotoStaging()
     @State var isSubmitting = false
-    /// True when the person tapped send while recording, so the take sends once it stops.
-    @State var sendsWhenStopped = false
     /// What the field held before an edit started, put back when the edit ends.
     @State private var draftBeforeEdit: String?
 
@@ -91,7 +94,10 @@ struct ThreadChatComposer: View {
             staging.isDrawerOpen = false
             text.wrappedValue = editingMessage.body
         }
-        .onChange(of: text.wrappedValue) { _, newText in onTextChanged(newText) }
+        .onChange(of: text.wrappedValue) { _, newText in
+            onTextChanged(newText)
+            savePhotoDraftCaption()
+        }
         // Typing closes the drawer. Opening the drawer puts the keyboard away.
         .onChange(of: isFocused) { _, focused in if focused { staging.isDrawerOpen = false } }
         .onChange(of: staging.isDrawerOpen) { _, isOpen in if isOpen { isFocused = false } }
@@ -106,19 +112,26 @@ struct ThreadChatComposer: View {
             DailyCameraPicker(onCapture: staging.addCameraPhoto)
                 .ignoresSafeArea()
         }
-        .onChange(of: recorder.phase) { _, phase in
-            guard phase == .recorded, sendsWhenStopped else { return }
-            sendsWhenStopped = false
-            Task { await sendRecording() }
-        }
         .onChange(of: recorder.isTakeTooShort) { _, isTooShort in
             if isTooShort {
-                sendsWhenStopped = false
                 AccessibilityNotification.Announcement(String(localized: .dailyChallengeVoiceTooShort)).post()
             }
         }
-        // A half-made recording never sends from a screen that is gone.
-        .onDisappear { recorder.reset() }
+        .onAppear {
+            restoreRecording()
+            restorePhotoDraft()
+        }
+        .onChange(of: voiceTranscript) { _, _ in saveRecordingDraft() }
+        .onChange(of: recorder.phase) { _, phase in
+            if phase == .recorded { saveRecordingDraft() }
+        }
+        .onDisappear {
+            recorder.finishForDisappear()
+            saveRecordingDraft()
+            if !staging.staged.isEmpty || !text.wrappedValue.isEmpty {
+                savePhotoDraftCaption()
+            }
+        }
     }
 
     private enum Mode: Equatable {
@@ -131,7 +144,7 @@ struct ThreadChatComposer: View {
         switch recorder.phase {
         case .idle: .text
         case .starting, .recording: .recording
-        case .recorded: sendsWhenStopped ? .recording : .review
+        case .recorded: .review
         }
     }
 
@@ -300,13 +313,17 @@ extension ThreadChatComposer {
     private func sendText() {
         let body = trimmedText
         let photos = staging.photos
+        let sentPhotos = staging.staged
+        let originalText = text.wrappedValue
         guard canSend, !isSubmitting else { return }
         isSubmitting = true
         Task {
             let sent = photos.isEmpty ? await onSendText(body) : await onSendPhotos(body, photos)
             if sent {
-                text.wrappedValue = ""
-                staging.clear()
+                // Keep anything typed, picked or described while this send was being saved.
+                if text.wrappedValue == originalText { text.wrappedValue = "" }
+                staging.removeSent(sentPhotos)
+                savePhotoDraftCaption()
             }
             isSubmitting = false
         }

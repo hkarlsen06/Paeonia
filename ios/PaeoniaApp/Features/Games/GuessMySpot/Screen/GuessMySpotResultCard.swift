@@ -95,6 +95,10 @@ struct GuessMySpotResultCard: View {
                     .allowsHitTesting(false)
                     .frame(maxWidth: .infinity)
             }
+            GuessMySpotPhotoDescriptionReader(
+                text: round?.photoAccessibilityText,
+                editingTarget: round.flatMap { viewModel.photoDescriptionTarget(for: $0) }
+            )
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
     }
@@ -105,7 +109,7 @@ struct GuessMySpotResultCard: View {
         if isCollapsed {
             if cardFrame.contains(location) { onToggle() }
         } else if let image, photoFrame.contains(location) {
-            viewer = PaeoniaImageViewerSelection(image: image)
+            presentPhoto(image)
         }
     }
 
@@ -133,7 +137,7 @@ struct GuessMySpotResultCard: View {
 
     private var photo: some View {
         Button {
-            if let image { viewer = PaeoniaImageViewerSelection(image: image) }
+            if let image { presentPhoto(image) }
         } label: {
             VStack(spacing: PaeoniaSpacing.space4) {
                 GuessMySpotPhotoCaption(
@@ -159,12 +163,17 @@ struct GuessMySpotResultCard: View {
         }
         .buttonStyle(.plain)
         .disabled(!canToggle || image == nil)
-        .accessibilityLabel(Text(.guessMySpotPhotoA11Y))
+        .accessibilityLabel(Text(verbatim: PhotoDescription.label(round?.photoAccessibilityText)))
         .accessibilityValue(Text(verbatim: [round?.placeName, GuessMySpotText.takenOn(round?.takenOn)]
             .compactMap { $0 }.joined(separator: ", ")))
         .accessibilityAddTraits(.isImage)
         .accessibilityIdentifier("guessMySpot.reveal.card.photo")
         .transition(.opacity)
+    }
+
+    private func presentPhoto(_ image: UIImage) {
+        let item = PaeoniaImageViewerItem(image: image, accessibilityText: round?.photoAccessibilityText)
+        viewer = PaeoniaImageViewerSelection(items: [item], initialItemID: item.id)
     }
 
     /// Keeps the map available after the compact card has appeared. It sits on a

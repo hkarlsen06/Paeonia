@@ -54,6 +54,9 @@ nonisolated enum PaeoniaSyncServiceDefaults {
         defaultHandlers += heartsAndDatesHandlers(client: client)
         defaultHandlers += GamesPendingOperationRegistry.handlers(client: client)
         defaultHandlers += favoritesHandlers(client: client)
+        defaultHandlers.append(MediaAlternativePendingOperationHandler(
+            gateway: LiveMediaAlternativeGateway(client: client), cache: .live
+        ))
 
         return [
             PendingSyncOperationDrainStream(

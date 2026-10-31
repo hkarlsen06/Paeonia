@@ -133,7 +133,7 @@ final class StoriesViewModel {
 
     /// Shares `photo` with an optional caption. Returns false and sets `error` when it
     /// could not be sent, so the composer stays open with the photo and caption.
-    func post(photo: Data, caption: String) async -> Bool {
+    func post(photo: Data, caption: String, accessibilityText: String = "") async -> Bool {
         guard !isPosting else { return false }
         guard ownerUserID != nil, let coupleID, let gateway else {
             error = .postFailed
@@ -148,7 +148,7 @@ final class StoriesViewModel {
             error = .photoUnreadable
             return false
         }
-        let attempt = postAttempt(photo: photo, caption: caption)
+        let attempt = postAttempt(photo: photo, caption: caption, accessibilityText: accessibilityText)
         do {
             let story = try await gateway.post(
                 id: attempt.id,
@@ -158,7 +158,8 @@ final class StoriesViewModel {
                     mimeType: compressed.mediaType,
                     fileExtension: compressed.fileExtension,
                     width: compressed.width,
-                    height: compressed.height
+                    height: compressed.height,
+                    accessibilityText: accessibilityText
                 ),
                 caption: caption,
                 coupleID: coupleID,
@@ -278,11 +279,15 @@ final class StoriesViewModel {
     }
 
     /// The failed post again when the photo and caption are unchanged, otherwise a new one.
-    private func postAttempt(photo: Data, caption: String?) -> FailedPost {
-        if let failedPost, failedPost.matches(photo: photo, caption: caption) {
+    private func postAttempt(photo: Data, caption: String?, accessibilityText: String) -> FailedPost {
+        if let failedPost, failedPost.matches(photo: photo, caption: caption),
+           failedPost.accessibilityText == accessibilityText {
             return failedPost
         }
-        return FailedPost(photo: photo, caption: caption, id: UUID(), operations: makeOperations())
+        return FailedPost(
+            photo: photo, caption: caption, accessibilityText: accessibilityText,
+            id: UUID(), operations: makeOperations()
+        )
     }
 
     private func makeOperations() -> StoryPostOperations {
@@ -313,6 +318,7 @@ final class StoriesViewModel {
     private struct FailedPost {
         let photo: Data
         let caption: String?
+        let accessibilityText: String
         let id: UUID
         let operations: StoryPostOperations
 

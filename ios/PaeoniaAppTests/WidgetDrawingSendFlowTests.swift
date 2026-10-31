@@ -319,6 +319,14 @@ private actor GatedLoadCanvasService: WidgetCanvasManaging {
         )
     }
 
+    func saveDescribedDrawing(
+        _ data: Data, canvasSize: CGSize, authorName: String?, createdAt: Date,
+        revisionID _: UUID?, accessibilityText: String?
+    ) async throws {
+        try await saveDrawing(data, canvasSize: canvasSize, authorName: authorName, createdAt: createdAt)
+        snapshot?.accessibilityText = accessibilityText
+    }
+
     func clearForPrivacy() async {
         snapshot = nil
     }

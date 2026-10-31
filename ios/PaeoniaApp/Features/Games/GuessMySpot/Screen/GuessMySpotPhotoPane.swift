@@ -13,15 +13,18 @@ struct GuessMySpotPhotoPane: View {
     var preview: UIImage?
     var failed = false
     var retry: (() -> Void)?
+    var accessibilityText: String?
+    var editingTarget: MediaAlternativeTarget?
 
     @State private var showsSpinner = false
     @State private var viewer: PaeoniaImageViewerSelection?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
             if let image {
                 filled(image)
-                    .transition(preview == nil ? .opacity : AnyTransition(.blurReplace))
+                    .transition(reduceMotion || preview == nil ? .opacity : AnyTransition(.blurReplace))
             } else if failed {
                 VStack(spacing: PaeoniaSpacing.space8) {
                     Text(.guessMySpotGuessPhotoFailed)
@@ -39,7 +42,7 @@ struct GuessMySpotPhotoPane: View {
                 .padding(PaeoniaSpacing.space16)
             } else if let preview {
                 blurred(preview)
-                    .transition(.blurReplace)
+                    .transition(reduceMotion ? .opacity : AnyTransition(.blurReplace))
             } else {
                 ProgressView()
                     .tint(.paeoniaAccentPrimary)
@@ -51,11 +54,21 @@ struct GuessMySpotPhotoPane: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .bottomTrailing) {
+            if image != nil || failed || accessibilityText != nil {
+                GuessMySpotPhotoDescriptionReader(
+                    text: accessibilityText, editingTarget: editingTarget, isIconOnly: true
+                )
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .background(.paeoniaBackgroundPrimary, in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius12))
+                .padding(PaeoniaSpacing.space8)
+            }
+        }
         // The photo sharpening out of the preview takes its time.
-        .animation(preview == nil ? PaeoniaMotion.stateChange : PaeoniaMotion.meaningfulMoment, value: image == nil)
-        .animation(PaeoniaMotion.meaningfulMoment, value: preview)
+        .animation(reduceMotion ? nil : preview == nil ? PaeoniaMotion.stateChange
+                   : PaeoniaMotion.meaningfulMoment, value: image == nil)
+        .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: preview)
         .paeoniaImageViewer(selection: $viewer)
-        .accessibilityIdentifier("guessMySpot.photo")
     }
 
     private func blurred(_ preview: UIImage) -> some View {
@@ -89,18 +102,24 @@ struct GuessMySpotPhotoPane: View {
             .clipped()
             .contentShape(.rect)
             .onTapGesture {
-                viewer = PaeoniaImageViewerSelection(image: image)
+                present(image)
             }
             // The pane is too small to zoom in, so a pinch outward opens the viewer
             // to zoom there. Pinching inward does nothing.
             .gesture(
                 MagnifyGesture().onChanged { value in
                     guard value.magnification > 1.05, viewer == nil else { return }
-                    viewer = PaeoniaImageViewerSelection(image: image)
+                    present(image)
                 }
             )
             .accessibilityElement()
-            .accessibilityLabel(Text(.guessMySpotPhotoA11Y))
+            .accessibilityLabel(Text(verbatim: PhotoDescription.label(accessibilityText)))
             .accessibilityAddTraits([.isImage, .isButton])
+            .accessibilityIdentifier("guessMySpot.photo.open")
+    }
+
+    private func present(_ image: UIImage) {
+        let item = PaeoniaImageViewerItem(image: image, accessibilityText: accessibilityText)
+        viewer = PaeoniaImageViewerSelection(items: [item], initialItemID: item.id)
     }
 }

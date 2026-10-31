@@ -41,6 +41,7 @@ struct PaeoniaApp: App {
     var body: some Scene {
         WindowGroup {
             appContent
+            .modifier(PaeoniaSymbolMotionPreferences())
             .onOpenURL { url in
                 if let deepLink = PaeoniaDeepLink(url) {
                     self.deepLink = deepLink
@@ -138,5 +139,15 @@ struct PaeoniaApp: App {
             viewModel: rootViewModel,
             locationViewModel: locationViewModel
         )
+        .environment(\.mediaAlternativeEditingService, try? MediaAlternativeEditingService.live())
+    }
+}
+
+/// Applies to feature controls and their presented sheets, including future symbol effects.
+private struct PaeoniaSymbolMotionPreferences: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content.symbolEffectsRemoved(reduceMotion)
     }
 }

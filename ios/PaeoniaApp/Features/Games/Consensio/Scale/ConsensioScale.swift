@@ -9,6 +9,7 @@ struct ConsensioScale: View {
         let id: String
         let position: Int
         let style: BoardPieceStyle
+        var ownerLabel: String = ""
         var isLifted = false
         var pulseScale: CGFloat = 1
         var glow: CGFloat = 0
@@ -65,17 +66,35 @@ struct ConsensioScale: View {
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            lineArea
-            ends
+            VStack(spacing: PaeoniaSpacing.space12) {
+                lineArea
+                ends
+            }
+            .accessibilityElement(children: .ignore)
+            .modifier(ScaleAccessibility(
+                subject: subject, leftEnd: leftEnd, rightEnd: rightEnd,
+                editable: editable, readOnlyPins: pins
+            ))
+            if let editable {
+                Slider(value: Binding(
+                    get: { Double(editable.position ?? ConsensioRules.middle) },
+                    set: { editable.move(Int($0), false) }
+                ), in: 0...Double(ConsensioRules.maxSpot), step: 1) {
+                    Text(verbatim: subject)
+                }
+                .accessibilityValue(Text(ConsensioScaleValue.text(
+                    editable.position, leftEnd: leftEnd, rightEnd: rightEnd
+                )))
+                .accessibilityIdentifier("consensio.position.slider")
+                Stepper(value: Binding(
+                    get: { editable.position ?? ConsensioRules.middle },
+                    set: { editable.move($0, false) }
+                ), in: 0...ConsensioRules.maxSpot) {
+                    Text(ConsensioScaleValue.text(editable.position, leftEnd: leftEnd, rightEnd: rightEnd))
+                }
+                .accessibilityIdentifier("consensio.position.stepper")
+            }
         }
-        .accessibilityElement(children: .ignore)
-        .modifier(ScaleAccessibility(
-            subject: subject,
-            leftEnd: leftEnd,
-            rightEnd: rightEnd,
-            editable: editable,
-            readOnlyPins: pins
-        ))
     }
 
     // MARK: Line
@@ -290,6 +309,12 @@ private struct ScaleAccessibility: ViewModifier {
         } else {
             content
                 .accessibilityLabel(Text(verbatim: subject))
+                .accessibilityValue(Text(verbatim: readOnlyPins.filter { $0.opacity > 0 }.map { pin in
+                    let owner = pin.ownerLabel.isEmpty
+                        ? String(localized: pin.id == "mine" ? .gamesCellYours : .gamesCellPartner) : pin.ownerLabel
+                    return String(localized: .consensioPinPosition(owner, pin.position,
+                        String(localized: Self.value(pin.position, leftEnd: leftEnd, rightEnd: rightEnd))))
+                }.joined(separator: ". ")))
                 .accessibilityHint(Text(.consensioScaleRange(Self.inSentence(leftEnd), Self.inSentence(rightEnd))))
                 .accessibilityIdentifier("consensio.scale")
         }

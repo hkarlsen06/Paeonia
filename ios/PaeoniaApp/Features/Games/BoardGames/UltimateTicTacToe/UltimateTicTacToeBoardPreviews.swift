@@ -3,8 +3,8 @@ import SwiftUI
 
 private enum UltimateTicTacToePreviewData {
     static let styles = BoardPieceStyles(
-        one: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "H"),
-        two: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "K")
+        one: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "H", owner: .one),
+        two: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "K", owner: .two)
     )
 
     /// A finished game. Player one takes boards 2, 5 and 8 on the last move.

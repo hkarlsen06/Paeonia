@@ -38,6 +38,11 @@ final class DailyVoiceRecorder {
 
     private var recorder: AVAudioRecorder?
     private var tickTask: Task<Void, Never>?
+    private let temporaryDirectory: URL
+
+    init(temporaryDirectory: URL = FileManager.default.temporaryDirectory) {
+        self.temporaryDirectory = temporaryDirectory
+    }
 
     func startRecording() async {
         guard phase == .idle || phase == .recorded else { return }
@@ -109,6 +114,16 @@ final class DailyVoiceRecorder {
         case .idle, .recorded:
             break
         }
+    }
+
+    func restoreRecording(data: Data, durationMs: Int) throws {
+        guard phase == .idle else { return }
+        let url = temporaryDirectory.appendingPathComponent("daily-voice-\(UUID()).m4a")
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        recordedURL = url
+        recordedDurationMs = durationMs
+        elapsed = Double(durationMs) / 1_000
+        phase = .recorded
     }
 
     /// Throws away the current take so the user can record again.

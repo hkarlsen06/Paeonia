@@ -61,7 +61,9 @@ struct GuessMySpotWaitingView: View {
             GuessMySpotPhotoPane(
                 image: viewModel.roundPhoto,
                 failed: viewModel.roundPhotoFailed,
-                retry: viewModel.retryRoundPhoto
+                retry: viewModel.retryRoundPhoto,
+                accessibilityText: round.photoAccessibilityText,
+                editingTarget: viewModel.photoDescriptionTarget(for: round)
             )
         } map: {
             // Live, the map follows the partner's and can't be moved here.

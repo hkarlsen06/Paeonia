@@ -58,8 +58,7 @@ struct DailyAnswerFlowHeader: View {
                     }
                     .font(PaeoniaTypography.caption)
                     .foregroundStyle(.paeoniaTextSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
                     .accessibilityIdentifier("daily.flow.sentNote")
                 }
@@ -116,6 +115,8 @@ struct DailyAnswerComposerSendButton: View {
     let isDisabled: Bool
     let onSend: () -> Void
 
+    private var showsEnabled: Bool { !isDisabled || isBusy }
+
     var body: some View {
         Button(action: onSend) {
             Label {
@@ -130,12 +131,12 @@ struct DailyAnswerComposerSendButton: View {
             }
             .padding(.horizontal, PaeoniaSpacing.space16)
             .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-            .foregroundStyle(.paeoniaTextInverse)
-            .background(.paeoniaAccentPrimary, in: Capsule())
+            .foregroundStyle(showsEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary)
+            .background(showsEnabled ? .paeoniaAccentPrimary : .paeoniaSurfaceDisabled, in: Capsule())
         }
         .buttonStyle(.plain)
         .disabled(isDisabled || isBusy)
-        .opacity(isDisabled && !isBusy ? 0.4 : 1)
+        .accessibilityValue(isBusy ? String(localized: .commonLoading) : "")
         .accessibilityIdentifier("daily.flow.primary")
     }
 }

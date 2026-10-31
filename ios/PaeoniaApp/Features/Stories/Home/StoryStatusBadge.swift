@@ -30,7 +30,7 @@ struct StoryBadgeStyle: ViewModifier {
             .foregroundStyle(isHighlighted ? .paeoniaTextInverse : .paeoniaTextPrimary)
             .background(isHighlighted ? Color.paeoniaAccentPrimary : .paeoniaBackgroundSecondary, in: Capsule())
             .overlay(Capsule().strokeBorder(.paeoniaTextPrimary.opacity(0.7), lineWidth: 1))
-            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            .fixedSize()
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }

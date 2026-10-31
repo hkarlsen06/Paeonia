@@ -175,7 +175,7 @@ struct ThreadChatMessageRow: View {
                         if message.voice != nil {
                             voicePayload(message)
                         } else if let photos = message.photos, !photos.isEmpty {
-                            photoPayloads(photos, caption: message.body)
+                            photoPayloads(photos, message: message)
                         } else {
                             bubbleBody(fill: bubbleFill) {
                                 messageText(message.body)
@@ -187,7 +187,7 @@ struct ThreadChatMessageRow: View {
                 .padding(.top, reactionClearance)
                 .frame(maxWidth: bubbleMaxWidth, alignment: isCurrentUser ? .trailing : .leading)
             }
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .contain)
             .accessibilityActions { itemAccessibilityActions }
         case .partnerChoiceMatch, .waiting, .subjectHeader, .pendingAnswer, .gameResult:
             EmptyView()
@@ -208,7 +208,7 @@ struct ThreadChatMessageRow: View {
     }
 
     private func voicePayload(_ message: ThreadChatMessage) -> some View {
-        Group {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
             if let source = voiceSource(message) {
                 DailyVoicePlaybackView(source: source, fallbackDurationMs: message.voice?.durationMs)
             } else {
@@ -216,8 +216,13 @@ struct ThreadChatMessageRow: View {
                     .font(PaeoniaTypography.body)
                     .foregroundStyle(.paeoniaTextSecondary)
             }
+            DailyMediaAccessibilityText(
+                text: message.voice?.transcript, isVoice: true,
+                editingTarget: mediaEditingTarget(message: message, assetID: message.voice?.mediaAssetID)
+            )
+                .padding(PaeoniaSpacing.space8)
         }
-        .frame(width: 260)
+        .frame(maxWidth: 300)
         .background(bubbleFill, in: bubbleShape)
         .frameGetterIfNeeded(messageFrame)
     }
@@ -286,22 +291,35 @@ struct ThreadChatMessageRow: View {
 extension ThreadChatMessageRow {
     // MARK: - Photos
 
+    func mediaEditingTarget(message: ThreadChatMessage, assetID: UUID?) -> MediaAlternativeTarget? {
+        guard !isInMenu, message.senderUserID == participants.currentUserID, !message.isDeleted,
+              !message.isUnsent, let assetID else { return nil }
+        return .chat(messageID: message.id, mediaAssetID: assetID)
+    }
+
     /// Each photo is its own bubble, stacked and joined into one group with the caption
     /// last, like Tidex's photo messages.
-    func photoPayloads(_ photos: [ThreadChatPhoto], caption: String) -> some View {
+    func photoPayloads(_ photos: [ThreadChatPhoto], message: ThreadChatMessage) -> some View {
+        let caption = message.body
         let hasCaption = !caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let count = photos.count + (hasCaption ? 1 : 0)
         return VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 2) {
             ForEach(Array(photos.enumerated()), id: \.offset) { index, photo in
-                ThreadChatPhotoCard(
-                    photo: photo,
-                    size: ThreadChatPhotoLayout.frameSize(for: photo),
-                    shape: ThreadChatBubbleShape.shape(for: payloadGroupContext(index: index, count: count)),
-                    isCurrentUser: isCurrentUser
-                )
+                Button { if !isInMenu { onOpenPhoto(photo) } } label: {
+                    ThreadChatPhotoCard(
+                        photo: photo,
+                        size: ThreadChatPhotoLayout.frameSize(for: photo),
+                        shape: ThreadChatBubbleShape.shape(for: payloadGroupContext(index: index, count: count)),
+                        isCurrentUser: isCurrentUser
+                    )
+                }
+                .buttonStyle(.plain)
                 .frameGetterIfNeeded(index == count - 1 ? messageFrame : nil)
-                .onTapGesture { if !isInMenu { onOpenPhoto(photo) } }
-                .accessibilityAddTraits(.isButton)
+                .disabled(isInMenu)
+                DailyMediaAccessibilityText(
+                    text: photo.accessibilityText, isVoice: false,
+                    editingTarget: mediaEditingTarget(message: message, assetID: photo.mediaAssetID)
+                )
             }
             if hasCaption {
                 messageText(caption)

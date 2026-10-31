@@ -225,6 +225,7 @@ struct GuessMySpotSendPendingOperationHandler: PendingSyncOperationHandling {
         do {
             let assetID = try await gateway.uploadGuessMySpotPhoto(
                 jpeg,
+                accessibilityText: payload.details.accessibilityText,
                 width: payload.width,
                 height: payload.height,
                 roundID: payload.roundID,

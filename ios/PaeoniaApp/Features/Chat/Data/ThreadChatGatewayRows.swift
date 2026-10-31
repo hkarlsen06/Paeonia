@@ -105,6 +105,17 @@ nonisolated struct ThreadMessageRow: Decodable {
         let width: Int?
         let height: Int?
         let durationMs: Int?
+        var accessibilityText: String?
+
+        var voice: ThreadChatVoice {
+            ThreadChatVoice(mediaAssetID: mediaAssetID, durationMs: durationMs, transcript: accessibilityText)
+        }
+
+        var photo: ThreadChatPhoto {
+            ThreadChatPhoto(
+                mediaAssetID: mediaAssetID, width: width, height: height, accessibilityText: accessibilityText
+            )
+        }
 
         enum CodingKeys: String, CodingKey {
             case mediaAssetID = "media_asset_id"
@@ -112,6 +123,7 @@ nonisolated struct ThreadMessageRow: Decodable {
             case width
             case height
             case durationMs = "duration_ms"
+            case accessibilityText = "accessibility_text"
         }
     }
 
@@ -136,12 +148,8 @@ nonisolated struct ThreadMessageRow: Decodable {
         let media = media ?? (mediaAssetIDs ?? []).map {
             MediaRow(mediaAssetID: $0, mediaType: "voice", width: nil, height: nil, durationMs: nil)
         }
-        let voice = media.first { $0.mediaType == "voice" }.map {
-            ThreadChatVoice(mediaAssetID: $0.mediaAssetID, durationMs: $0.durationMs)
-        }
-        let photos = media.filter { $0.mediaType == "image" }.map {
-            ThreadChatPhoto(mediaAssetID: $0.mediaAssetID, width: $0.width, height: $0.height)
-        }
+        let voice = media.first { $0.mediaType == "voice" }?.voice
+        let photos = media.filter { $0.mediaType == "image" }.map(\.photo)
         guard body != nil || voice != nil || !photos.isEmpty else { return nil }
         return ThreadChatMessage(
             id: messageID,

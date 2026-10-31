@@ -38,6 +38,9 @@ struct ExquisiteCorpseStripView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(accessibilityLabel))
+        .accessibilityValue(Text(drawing.map {
+            DrawingGeometryDescription.text($0, side: GameCanvas.canonicalSide)
+        } ?? ""))
     }
 }
 

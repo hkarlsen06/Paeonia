@@ -100,7 +100,8 @@ nonisolated struct GuessMySpotResolver: Sendable {
             spotLongitude: send.details.spot.longitude,
             placeName: send.details.placeName,
             takenOn: send.details.takenOn,
-            sentAt: send.createdAt
+            sentAt: send.createdAt,
+            photoAccessibilityText: send.details.accessibilityText
         )
     }
 

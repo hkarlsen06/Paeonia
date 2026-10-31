@@ -53,7 +53,9 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
         else { return nil }
 
         let photos = (0..<stored.photoCount).compactMap { index in
-            (try? Data(contentsOf: photoURL(userID: userID, index: index))).map { MemoryDraftPhoto(data: $0) }
+            (try? Data(contentsOf: photoURL(userID: userID, index: index))).map {
+                MemoryDraftPhoto(data: $0, accessibilityText: stored.photoDescriptions[index])
+            }
         }
         // These files are what's on disk now, so typing in a restored draft doesn't rewrite them.
         writtenPhotos[userID] = photos.map(\.id)
@@ -76,12 +78,15 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
         // If the new photos can't be written (for example the disk is full), keep the
         // text and the photos saved before, rather than lose everything.
         var storedPhotoCount = draft.photos.count
+        var descriptions = draft.photos.map(\.accessibilityText)
         let photoIDs = draft.photos.map(\.id)
         if writtenPhotos[userID] != photoIDs {
             if writePhotos(draft.photos.map(\.data), userID: userID) {
                 writtenPhotos[userID] = photoIDs
             } else {
-                storedPhotoCount = storedDraft(for: userID)?.photoCount ?? 0
+                let previous = storedDraft(for: userID)
+                storedPhotoCount = previous?.photoCount ?? 0
+                descriptions = previous?.photoDescriptions ?? []
             }
         }
 
@@ -91,6 +96,7 @@ final class LocalMemoryDraftStore: MemoryDraftStoring {
             date: draft.date,
             note: draft.note,
             photoCount: storedPhotoCount,
+            photoDescriptions: descriptions,
             place: draft.place
         )
         if let data = try? encoder.encode(stored) {
@@ -159,5 +165,6 @@ private struct StoredDraft: Codable {
     var date: Date
     var note: String
     var photoCount: Int
+    var photoDescriptions: [String]
     var place: MemoryPlace?
 }

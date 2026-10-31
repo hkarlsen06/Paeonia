@@ -169,6 +169,9 @@ struct ExquisiteCorpseHistoryDetailScreen: View {
             )
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(figureLabel)
+            .accessibilityValue(Text(viewModel.content.parts.compactMap { part in
+                part.drawing.map { DrawingGeometryDescription.text($0, side: GameCanvas.canonicalSide) }
+            }.joined(separator: "\n")))
             .accessibilityAddTraits(.isImage)
             .accessibilityActions {
                 if viewModel.drawingState == .ready {

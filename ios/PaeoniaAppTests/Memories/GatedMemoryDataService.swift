@@ -87,6 +87,7 @@ actor GatedMemoryDataService {
         expectedRevision: Int,
         title: String,
         memoryDate: String,
+        photoDescriptions: [MemoryPhotoDescription] = [],
         operation: SyncClientOperation
     ) async throws -> MemoryRecord {
         try await base.updateMemory(
@@ -95,6 +96,7 @@ actor GatedMemoryDataService {
             expectedRevision: expectedRevision,
             title: title,
             memoryDate: memoryDate,
+            photoDescriptions: photoDescriptions,
             operation: operation
         )
     }

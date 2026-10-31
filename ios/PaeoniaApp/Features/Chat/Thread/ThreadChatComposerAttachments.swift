@@ -14,10 +14,15 @@ final class ThreadChatPhotoStaging {
         let id: UUID
         /// The library pick it came from. Nil for a camera shot.
         let pickerItemID: String?
-        let photo: ThreadChatPhoto
+        var photo: ThreadChatPhoto
     }
 
-    private(set) var staged: [Staged] = []
+    private(set) var staged: [Staged] = [] {
+        didSet { persistDraft() }
+    }
+    private var caption = ""
+    /// Staging owns this callback so a pick finishing after the view disappears is still saved.
+    @ObservationIgnored var onDraftChange: ((ThreadChatPhotoDraft) -> Void)?
     /// While true, the field and send button wait, so a half-loaded pick can't send.
     private(set) var isProcessing = false
     var pickerItems: [PhotosPickerItem] = [] {
@@ -60,10 +65,31 @@ final class ThreadChatPhotoStaging {
         }
     }
 
-    func clear() {
-        staged = []
-        pickerItems = []
-        isDrawerOpen = false
+    func setDescription(_ text: String, for id: UUID) {
+        guard let index = staged.firstIndex(where: { $0.id == id }) else { return }
+        staged[index].photo.accessibilityText = text
+    }
+
+    func updateCaption(_ caption: String) {
+        self.caption = caption
+        persistDraft()
+    }
+
+    func restore(_ draft: ThreadChatPhotoDraft) {
+        caption = draft.caption
+        // Compressed local copies are independent of a later photo-library selection.
+        staged = draft.photos.map { Staged(id: UUID(), pickerItemID: nil, photo: $0) }
+    }
+
+    func removeSent(_ sent: [Staged]) {
+        for item in sent where staged.contains(item) {
+            remove(item.id)
+        }
+        if staged.isEmpty { isDrawerOpen = false }
+    }
+
+    private func persistDraft() {
+        onDraftChange?(ThreadChatPhotoDraft(photos: photos, caption: caption))
     }
 
     /// Mirrors the picker's selection: new picks are loaded and staged, picks taken
@@ -169,20 +195,26 @@ struct ThreadChatStagedPhotosRow: View {
     let staging: ThreadChatPhotoStaging
 
     var body: some View {
-        GeometryReader { proxy in
-            let count = CGFloat(max(staging.staged.count, 1))
-            let side = min(88, max(56, floor((proxy.size.width - PaeoniaSpacing.space8 * (count - 1)) / count)))
-            HStack(spacing: PaeoniaSpacing.space8) {
-                ForEach(staging.staged) { item in
-                    thumbnail(item, side: side)
-                }
-                if staging.isProcessing {
-                    ProgressView()
-                        .frame(width: side, height: side)
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            ForEach(staging.staged) { item in
+                HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
+                    thumbnail(item, side: 64)
+                    VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                        Text(.mediaAccessibilityPhotoDescription).font(PaeoniaTypography.caption)
+                        TextField(String(localized: .mediaAccessibilityPhotoHint), text: Binding(
+                            get: { staging.staged.first(where: { $0.id == item.id })?.photo.accessibilityText ?? "" },
+                            set: { staging.setDescription($0, for: item.id) }
+                        ), axis: .vertical)
+                        .lineLimit(1...3)
+                        .textFieldStyle(.roundedBorder)
+                        if DailyAnswerDraft.measuredLength(of: item.photo.accessibilityText ?? "") > 10_000 {
+                            Text(.mediaAccessibilityTooLong).foregroundStyle(.paeoniaErrorText)
+                        }
+                    }
                 }
             }
+            if staging.isProcessing { ProgressView() }
         }
-        .frame(height: 88)
     }
 
     private func thumbnail(_ item: ThreadChatPhotoStaging.Staged, side: CGFloat) -> some View {

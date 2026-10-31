@@ -62,6 +62,7 @@ extension DailyChallengeViewModel {
             voiceDurationMs: sendingVoiceDurationMs(for: question.id),
             partnerChoiceName: sendingPartnerChoiceName(for: question.id),
             text: sendingText(for: question.id),
+            mediaAccessibilityText: sendingAnswers[question.id]?.media?.draft.accessibilityText,
             isHeldOnPhone: isHeldOnPhone(question.id)
         )
     }

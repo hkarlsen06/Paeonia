@@ -155,6 +155,7 @@ nonisolated struct DailyAnswerMediaDraft: Codable, Equatable, Sendable {
     var width: Int?
     var height: Int?
     var durationMs: Int?
+    var accessibilityText: String?
 }
 
 /// What the user is actually sending for one answer, resolved from the draft at
@@ -166,16 +167,19 @@ nonisolated struct DailyAnswerPayload: Equatable, Sendable {
     var partnerChoiceUserID: UUID?
     var mediaAssetIDs: [UUID]
     var optionChoice: DailyAnswerOption?
+    var mediaAccessibilityText: String?
 
     init(
         text: String? = nil,
         partnerChoiceUserID: UUID? = nil,
         mediaAssetIDs: [UUID] = [],
-        optionChoice: DailyAnswerOption? = nil
+        optionChoice: DailyAnswerOption? = nil,
+        mediaAccessibilityText: String? = nil
     ) {
         self.text = text
         self.partnerChoiceUserID = partnerChoiceUserID
         self.mediaAssetIDs = mediaAssetIDs
+        self.mediaAccessibilityText = mediaAccessibilityText
         self.optionChoice = optionChoice
     }
 
@@ -301,6 +305,7 @@ nonisolated struct DailyQuestionAnswerDetail: Equatable, Hashable, Sendable {
     /// language (`labelingPick`).
     var selectedOption: DailyAnswerOption?
     var selectedOptionLabel: String?
+    var mediaAccessibilityText: String?
 
     var hasMedia: Bool {
         !mediaAssetIDs.isEmpty

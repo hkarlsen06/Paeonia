@@ -94,7 +94,6 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
                 }
             }
             .gameTutorial(tutorial, isPresented: $showsTutorial)
-            .accessibilityIdentifier("boardGames.screen.\(viewModel.kind.rawValue)")
     }
 
     @ViewBuilder

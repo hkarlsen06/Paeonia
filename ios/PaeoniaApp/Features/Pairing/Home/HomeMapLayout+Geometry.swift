@@ -175,8 +175,8 @@ struct HomeMapMetrics {
 
     init(screen: HomeMapScreen, bandHeight: CGFloat, avatarSize: CGFloat, isNear: Bool) {
         self.screen = screen
-        self.bandHeight = bandHeight
-        framedBottom = bandHeight - Self.fadeHeight
+        self.bandHeight = max(0, bandHeight)
+        framedBottom = max(0, bandHeight - Self.fadeHeight)
         let cardsTop = framedBottom + PaeoniaSpacing.space16
         // The avatars are centered in the open map between the streak pill and the first
         // card. The bar's glass is off at rest, so the pill is where the space starts.

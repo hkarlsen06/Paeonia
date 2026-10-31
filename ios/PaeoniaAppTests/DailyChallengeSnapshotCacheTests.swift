@@ -95,6 +95,27 @@ final class InMemoryDailyChallengeSnapshotCache: DailyChallengeSnapshotCaching, 
 // MARK: - File cache tests
 
 struct DailyChallengeSnapshotCacheTests {
+    @Test func authoredMediaTextSurvivesFileCacheAndDetailProjection() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let sample = sampleSnapshotRow()
+        let detail = DailyAnswerDetailRow(
+            coupleDayID: CacheTestIDs.coupleDay, instanceID: UUID(), answerUserID: CacheTestIDs.ownerUserID,
+            answerID: UUID(), answeredAt: CacheTestIDs.answerDate, isOwnAnswer: true,
+            canViewAnswer: true, textBody: "A separate caption", selectedUserID: nil, mediaAssetIDs: [UUID()],
+            mediaAccessibilityText: "Vi ler sammen. En hund bjeffer."
+        )
+        let row = DailyChallengeRemoteSnapshotRow(
+            questions: sample.questions, answerDetails: [detail], streak: sample.streak,
+            generatedAt: sample.generatedAt
+        )
+        FileDailyChallengeSnapshotCache(directoryURL: directory).save(row, ownerUserID: CacheTestIDs.ownerUserID)
+        let reopened = FileDailyChallengeSnapshotCache(directoryURL: directory)
+        let cached = try #require(reopened.load(ownerUserID: CacheTestIDs.ownerUserID)?.answerDetails.first)
+        #expect(cached.detail.mediaAccessibilityText == "Vi ler sammen. En hund bjeffer.")
+        #expect(cached.detail.textBody == "A separate caption")
+    }
+
     @Test func loadForDifferentOwnerReturnsNil() {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("CacheTest-\(UUID().uuidString)", isDirectory: true)

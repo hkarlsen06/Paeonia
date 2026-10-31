@@ -207,7 +207,9 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
         )
 
         let result = try await submit(
-            DailyAnswerPayload(text: text, mediaAssetIDs: [assetID]),
+            DailyAnswerPayload(
+                text: text, mediaAssetIDs: [assetID], mediaAccessibilityText: media.draft.accessibilityText
+            ),
             payload: payload,
             operation: operation
         )

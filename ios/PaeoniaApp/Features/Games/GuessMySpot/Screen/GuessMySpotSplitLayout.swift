@@ -1,9 +1,8 @@
 import SwiftUI
 
 /// A small photo on top and the map under it, or side by side on a wide screen,
-/// with text above and under them and a pinned button bar. Nothing here scrolls,
-/// so the map's pan and pinch never fight a scroll view. Larger text takes its room
-/// from the photo and the map.
+/// with text above and under them and a pinned button bar. At accessibility text
+/// sizes, the panes keep useful heights and the content and actions scroll together.
 struct GuessMySpotSplitLayout<Header: View, Photo: View, MapPane: View, Footer: View, Bottom: View>: View {
     @ViewBuilder var header: Header
     @ViewBuilder var photo: Photo
@@ -12,8 +11,31 @@ struct GuessMySpotSplitLayout<Header: View, Photo: View, MapPane: View, Footer: 
     @ViewBuilder var bottom: Bottom
 
     @State private var isWide = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView {
+                    VStack(spacing: PaeoniaSpacing.space16) {
+                        header
+                        pane { photo }.frame(height: 180)
+                        pane { map }.frame(height: 300)
+                        footer
+                        bottom
+                    }
+                    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                    .padding(.vertical, PaeoniaSpacing.space12)
+                    .paeoniaReadableWidth()
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                regularContent
+            }
+        }
+    }
+
+    private var regularContent: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             header
             // Read in the same pass that lays out the panes, so the photo never

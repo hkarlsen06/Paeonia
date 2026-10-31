@@ -83,9 +83,9 @@ struct GuessMySpotPin: View {
 #if DEBUG
 #Preview {
     HStack(spacing: PaeoniaSpacing.space24) {
-        GuessMySpotPin(style: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "A"))
-        GuessMySpotPin(style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R"), glow: 1)
-        GuessMySpotPin(style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R"), lift: 40)
+        GuessMySpotPin(style: BoardPieceStyle(color: .boardGameMine, mark: nil, initial: "A", owner: .one))
+        GuessMySpotPin(style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R", owner: .two), glow: 1)
+        GuessMySpotPin(style: BoardPieceStyle(color: .boardGamePartner, mark: nil, initial: "R", owner: .two), lift: 40)
     }
     .padding()
     .background(.paeoniaBackgroundSecondary)

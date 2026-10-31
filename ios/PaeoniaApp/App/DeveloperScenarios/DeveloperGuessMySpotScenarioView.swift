@@ -104,6 +104,7 @@
 
     func uploadGuessMySpotPhoto( // swiftlint:disable:this function_parameter_count
       _: Data,
+      accessibilityText _: String?,
       width _: Int,
       height _: Int,
       roundID _: UUID,
@@ -157,6 +158,13 @@
       self.scenario = scenario
       let dependencies = DeveloperGamesScenarioFactory.dependencies(for: scenario)
       let game = GuessMySpotViewModel(dependencies: dependencies, participants: DeveloperGamesFixture.participants)
+      // These scenarios begin with an already-picked photo. Avoid mounting the
+      // inline system picker before the arranged draft arrives.
+      if scenario == .guessMySpotCheckFound || scenario == .guessMySpotCheckMissing {
+        game.draft = DeveloperGuessMySpotScenarioFactory.draft(
+          spot: scenario == .guessMySpotCheckFound ? DeveloperGuessMySpotScenarioFactory.bergen : nil
+        )
+      }
       let hub = GuessMySpotHubModel(dependencies: dependencies, game: game)
       hub.configure(participants: DeveloperGamesFixture.participants)
       _hub = State(initialValue: hub)

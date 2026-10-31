@@ -8,7 +8,7 @@ extension WidgetDrawingViewModel {
         guard !drawing.strokes.isEmpty else { return nil }
         let drawing = drawing
         let side = currentCanvasSide()
-        return PaeoniaShareable(title: String(localized: .shareTitleDrawing)) {
+        return PaeoniaShareable(title: String(localized: .shareTitleDrawing), text: accessibilityText.trimmedNonEmpty) {
             guard let ink = PaeoniaShareRenderer.inkImage(of: drawing, canvasSide: side) else { return nil }
             return PaeoniaShareCards.drawing(ink: ink)
         }

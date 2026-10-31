@@ -69,7 +69,9 @@ enum PaeoniaWidgetRefreshService {
             try await refreshFirstDayDrawing(client: client, epoch: epoch)
             return
         }
-        guard let remoteDrawing, shouldPublish(remoteContentHash: remoteDrawing.contentHash) else {
+        guard let remoteDrawing, shouldPublish(
+            remoteContentHash: remoteDrawing.contentHash, accessibilityText: remoteDrawing.accessibilityText
+        ) else {
             return
         }
         try publish(remoteDrawing, epoch: epoch)
@@ -101,7 +103,8 @@ enum PaeoniaWidgetRefreshService {
             canvasSide: state.bounds?.canvasSide ?? fallbackCanvasSide,
             revisionID: revisionID,
             authorName: state.activeRevisionAuthorName,
-            createdAt: state.revisionCreatedAt ?? .now
+            createdAt: state.revisionCreatedAt ?? .now,
+            accessibilityText: state.bounds?.accessibilityText
         )
     }
 
@@ -249,7 +252,8 @@ enum PaeoniaWidgetRefreshService {
             renderedAt: .now,
             contentHash: remoteDrawing.contentHash,
             previews: previews,
-            canvasSide: remoteDrawing.canvasSide
+            canvasSide: remoteDrawing.canvasSide,
+            accessibilityText: remoteDrawing.accessibilityText
         )
         let payloadData = try CurrentPayload.encoder.encode(payload)
 
@@ -257,7 +261,9 @@ enum PaeoniaWidgetRefreshService {
         // app may have purged the widget, or the app may have saved a newer local
         // drawing. Check again right before the write.
         try requireUnchangedPrivacy(since: epoch)
-        guard shouldPublish(remoteContentHash: remoteDrawing.contentHash) else {
+        guard shouldPublish(
+            remoteContentHash: remoteDrawing.contentHash, accessibilityText: remoteDrawing.accessibilityText
+        ) else {
             throw RefreshError.superseded
         }
         try payloadData.write(
@@ -319,9 +325,12 @@ extension PaeoniaWidgetRefreshService {
             revisionID: drawing.revisionID,
             // The app saves the person's own name.
             authorName: WidgetIdentity.load().currentDisplayName,
-            createdAt: drawing.savedAt
+            createdAt: drawing.savedAt,
+            accessibilityText: drawing.bounds?.accessibilityText
         )
-        guard shouldPublish(remoteContentHash: remoteDrawing.contentHash) else {
+        guard shouldPublish(
+            remoteContentHash: remoteDrawing.contentHash, accessibilityText: remoteDrawing.accessibilityText
+        ) else {
             return
         }
         try publish(remoteDrawing, epoch: epoch)
@@ -355,7 +364,8 @@ extension PaeoniaWidgetRefreshService {
             renderedAt: stored.renderedAt,
             contentHash: stored.contentHash,
             previews: stored.previews,
-            canvasSide: stored.canvasSide
+            canvasSide: stored.canvasSide,
+            accessibilityText: stored.accessibilityText
         )
         let payloadData = try CurrentPayload.encoder.encode(relabeled)
         try requireUnchangedPrivacy(since: epoch)
@@ -394,11 +404,12 @@ extension PaeoniaWidgetRefreshService {
         return pending.isFirstDay
     }
 
-    private static func shouldPublish(remoteContentHash: String) -> Bool {
+    private static func shouldPublish(remoteContentHash: String, accessibilityText: String?) -> Bool {
         let defaults = UserDefaults(suiteName: appGroupIdentifier)
         if let pendingData = defaults?.data(forKey: pendingUploadKey) {
             guard let pending = try? JSONDecoder().decode(PendingUpload.self, from: pendingData),
-                  remoteContentHash == "sha256-\(pending.contentHash)"
+                  remoteContentHash == "sha256-\(pending.contentHash)",
+                  pending.accessibilityText == accessibilityText
             else {
                 return false
             }

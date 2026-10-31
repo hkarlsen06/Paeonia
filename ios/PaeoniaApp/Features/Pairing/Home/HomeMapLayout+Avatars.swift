@@ -8,6 +8,7 @@ extension HomeMapLayout {
         HomeMapBand { bandHeight in
             HomeMapShowBothButton(
                 explorer: explorer,
+                onDetails: { isShowingMapDetails = true },
                 mapBottom: metrics(couple, screen, bandHeight: bandHeight).framedBottom
             )
         }

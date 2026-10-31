@@ -8,6 +8,12 @@ nonisolated protocol GuessMySpotPhotoStoring: Sendable {
     func save(_ jpeg: Data, ownerUserID: UUID, roundID: UUID) throws
     func photo(ownerUserID: UUID, roundID: UUID) -> Data?
     func remove(ownerUserID: UUID, roundID: UUID)
+    func draftTicket(ownerUserID: UUID) -> GuessMySpotDraftTicket
+    func draft(ownerUserID: UUID, coupleID: UUID) throws -> GuessMySpotStoredDraft?
+    @discardableResult
+    func saveDraft(_ draft: GuessMySpotStoredDraft, ownerUserID: UUID, coupleID: UUID,
+                   ticket: GuessMySpotDraftTicket) throws -> Bool
+    func discardDraft(roundID: UUID, ownerUserID: UUID, coupleID: UUID, keepingPhoto: Bool) throws
     /// The privacy purge calls this on sign-out and when a relationship ends.
     func clearAll()
 }
@@ -17,6 +23,7 @@ nonisolated final class FileGuessMySpotPhotoStore: GuessMySpotPhotoStoring, @unc
 
     private let directoryURL: URL
     private let lock = NSLock()
+    private var generation = 0
 
     init(directoryURL: URL = FileGuessMySpotPhotoStore.defaultDirectoryURL()) {
         self.directoryURL = directoryURL
@@ -49,7 +56,10 @@ nonisolated final class FileGuessMySpotPhotoStore: GuessMySpotPhotoStoring, @unc
     }
 
     func clearAll() {
-        lock.withLock { try? FileManager.default.removeItem(at: directoryURL) }
+        lock.withLock {
+            generation += 1
+            try? FileManager.default.removeItem(at: directoryURL)
+        }
     }
 
     private func fileURL(ownerUserID: UUID, roundID: UUID) -> URL {
@@ -63,6 +73,8 @@ nonisolated final class FileGuessMySpotPhotoStore: GuessMySpotPhotoStoring, @unc
 nonisolated final class InMemoryGuessMySpotPhotoStore: GuessMySpotPhotoStoring, @unchecked Sendable {
     private let lock = NSLock()
     private var photos: [String: Data] = [:]
+    private var drafts: [String: GuessMySpotStoredDraft] = [:]
+    private var generation = 0
 
     init() {}
 
@@ -79,10 +91,105 @@ nonisolated final class InMemoryGuessMySpotPhotoStore: GuessMySpotPhotoStoring, 
     }
 
     func clearAll() {
-        lock.withLock { photos = [:] }
+        lock.withLock {
+            generation += 1
+            photos = [:]
+            drafts = [:]
+        }
     }
 
     private func key(_ owner: UUID, _ round: UUID) -> String {
         "\(owner.uuidString):\(round.uuidString)"
+    }
+}
+
+extension FileGuessMySpotPhotoStore {
+    func draftTicket(ownerUserID: UUID) -> GuessMySpotDraftTicket {
+        lock.withLock {
+            GuessMySpotDraftTicket(generation: generation,
+                                   privacy: LocalPrivacyWriteGuard.shared.token(ownerUserID: ownerUserID))
+        }
+    }
+
+    func draft(ownerUserID: UUID, coupleID: UUID) throws -> GuessMySpotStoredDraft? {
+        try lock.withLock {
+            let url = draftURL(ownerUserID: ownerUserID, coupleID: coupleID)
+            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+            let metadata = try JSONDecoder().decode(GuessMySpotDraftMetadata.self, from: Data(contentsOf: url))
+            let jpeg = try Data(contentsOf: fileURL(ownerUserID: ownerUserID, roundID: metadata.roundID))
+            return metadata.draft(jpeg: jpeg)
+        }
+    }
+
+    func saveDraft(_ draft: GuessMySpotStoredDraft, ownerUserID: UUID, coupleID: UUID,
+                   ticket: GuessMySpotDraftTicket) throws -> Bool {
+        try lock.withLock {
+            guard ticket.generation == generation else { return false }
+            return try LocalPrivacyWriteGuard.shared.write(ownerUserID: ownerUserID, token: ticket.privacy) {
+                let url = draftURL(ownerUserID: ownerUserID, coupleID: coupleID)
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                        withIntermediateDirectories: true)
+                let photoURL = fileURL(ownerUserID: ownerUserID, roundID: draft.roundID)
+                if !FileManager.default.fileExists(atPath: photoURL.path) {
+                    try draft.photo.jpeg.write(to: photoURL,
+                                               options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+                }
+                try JSONEncoder().encode(GuessMySpotDraftMetadata(draft)).write(
+                    to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+                )
+                return true
+            }
+        }
+    }
+
+    func discardDraft(roundID: UUID, ownerUserID: UUID, coupleID: UUID, keepingPhoto: Bool) throws {
+        try lock.withLock {
+            let url = draftURL(ownerUserID: ownerUserID, coupleID: coupleID)
+            guard FileManager.default.fileExists(atPath: url.path) else { return }
+            let metadata = try JSONDecoder().decode(GuessMySpotDraftMetadata.self, from: Data(contentsOf: url))
+            guard metadata.roundID == roundID else { return }
+            try FileManager.default.removeItem(at: url)
+            if !keepingPhoto {
+                try FileManager.default.removeItem(at: fileURL(ownerUserID: ownerUserID, roundID: roundID))
+            }
+        }
+    }
+
+    private func draftURL(ownerUserID: UUID, coupleID: UUID) -> URL {
+        directoryURL.appendingPathComponent(ownerUserID.uuidString.lowercased(), isDirectory: true)
+            .appendingPathComponent("\(coupleID.uuidString.lowercased()).draft.json")
+    }
+}
+
+extension InMemoryGuessMySpotPhotoStore {
+    func draftTicket(ownerUserID: UUID) -> GuessMySpotDraftTicket {
+        lock.withLock {
+            GuessMySpotDraftTicket(generation: generation,
+                                   privacy: LocalPrivacyWriteGuard.shared.token(ownerUserID: ownerUserID))
+        }
+    }
+
+    func draft(ownerUserID: UUID, coupleID: UUID) throws -> GuessMySpotStoredDraft? {
+        lock.withLock { drafts[key(ownerUserID, coupleID)] }
+    }
+
+    func saveDraft(_ draft: GuessMySpotStoredDraft, ownerUserID: UUID, coupleID: UUID,
+                   ticket: GuessMySpotDraftTicket) throws -> Bool {
+        try lock.withLock {
+            guard ticket.generation == generation else { return false }
+            return try LocalPrivacyWriteGuard.shared.write(ownerUserID: ownerUserID, token: ticket.privacy) {
+                drafts[key(ownerUserID, coupleID)] = draft
+                photos[key(ownerUserID, draft.roundID)] = draft.photo.jpeg
+                return true
+            }
+        }
+    }
+
+    func discardDraft(roundID: UUID, ownerUserID: UUID, coupleID: UUID, keepingPhoto: Bool) throws {
+        lock.withLock {
+            guard drafts[key(ownerUserID, coupleID)]?.roundID == roundID else { return }
+            drafts[key(ownerUserID, coupleID)] = nil
+            if !keepingPhoto { photos[key(ownerUserID, roundID)] = nil }
+        }
     }
 }

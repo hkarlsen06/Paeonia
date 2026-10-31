@@ -370,10 +370,12 @@ struct ConsensioHistoryDetailScreen: View {
     private var pins: [ConsensioScale.Pin] {
         var pins: [ConsensioScale.Pin] = []
         if let guess = round.guess {
-            pins.append(ConsensioScale.Pin(id: "guess", position: guess, style: history.style(of: round.guesserUserID)))
+            pins.append(ConsensioScale.Pin(id: "guess", position: guess, style: history.style(of: round.guesserUserID),
+                ownerLabel: placedByMe ? history.partnerName : String(localized: .gamesCellYours)))
         }
         if let spot = round.spot {
-            pins.append(ConsensioScale.Pin(id: "spot", position: spot, style: history.style(of: round.placerUserID)))
+            pins.append(ConsensioScale.Pin(id: "spot", position: spot, style: history.style(of: round.placerUserID),
+                ownerLabel: placedByMe ? String(localized: .gamesCellYours) : history.partnerName))
         }
         return pins
     }

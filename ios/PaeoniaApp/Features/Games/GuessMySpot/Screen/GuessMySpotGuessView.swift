@@ -19,7 +19,8 @@ struct GuessMySpotGuessView: View {
                 image: viewModel.roundPhoto,
                 preview: viewModel.roundPhotoPreview,
                 failed: viewModel.roundPhotoFailed,
-                retry: viewModel.retryRoundPhoto
+                retry: viewModel.retryRoundPhoto,
+                accessibilityText: viewModel.round?.photoAccessibilityText
             )
         } map: {
             GuessMySpotMap(
@@ -56,7 +57,6 @@ struct GuessMySpotGuessView: View {
         .onChange(of: satellite, initial: true) { _, satellite in
             viewModel.guessMapSatelliteChanged(to: satellite)
         }
-        .accessibilityIdentifier("guessMySpot.guess")
     }
 
     private var pins: [GuessMySpotMap.Pin] {

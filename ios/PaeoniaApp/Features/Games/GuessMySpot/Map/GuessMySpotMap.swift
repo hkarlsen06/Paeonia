@@ -57,6 +57,7 @@ struct GuessMySpotMap: View {
 
     static let satelliteKey = "paeonia.games.guessMySpot.satellite"
     @AppStorage(GuessMySpotMap.satelliteKey) private var savedSatellite = false
+    @State private var showsPlacePicker = false
     @State private var center: CLLocationCoordinate2D?
     /// Where the map sits in its window, and the safe area under it.
     @State private var layoutFrame: CGRect = .zero
@@ -79,6 +80,7 @@ struct GuessMySpotMap: View {
                     .annotationTitles(.hidden)
                 }
             }
+            .accessibilityHidden(onPinTap == nil)
             .mapStyle(mapStyle)
             // No safe area padding here: a map that opens cold draws inside its padding
             // for its first frames and jumps when it grows. The cameras leave the room.
@@ -128,7 +130,7 @@ struct GuessMySpotMap: View {
         .animation(PaeoniaMotion.stateChange, value: showsSatelliteButton)
         // From the button or the reveal's landing. The map on screen still shows the old style here.
         .onChange(of: isSatellite) { coverStyleSwitch() }
-        .accessibilityElement(children: onPinTap == nil ? .ignore : .contain)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(.guessMySpotMapA11Y))
         .accessibilityValue(Text(accessibilityValue))
         .accessibilityActions {
@@ -138,6 +140,21 @@ struct GuessMySpotMap: View {
                     dropped(at: GuessMySpotCoordinate(center), onTap)
                 } label: {
                     Text(.guessMySpotMapDropCenter)
+                }
+            }
+        }
+        .overlay(alignment: .bottomLeading) {
+            if onTap != nil {
+                Button(.guessMySpotChoosePlace) { showsPlacePicker = true }
+                    .buttonStyle(.borderedProminent)
+                    .padding(PaeoniaSpacing.space8)
+                    .accessibilityIdentifier("guessMySpot.choosePlace")
+            }
+        }
+        .sheet(isPresented: $showsPlacePicker) {
+            if let onTap {
+                GuessMySpotPlacePicker { coordinate in
+                    dropped(at: coordinate, onTap)
                 }
             }
         }

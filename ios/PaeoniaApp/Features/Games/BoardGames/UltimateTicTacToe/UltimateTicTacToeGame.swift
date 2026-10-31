@@ -62,6 +62,16 @@ struct UltimateTicTacToeScreen: View {
                 bloomSeed: viewModel.bloomSeed,
                 partnerName: viewModel.partnerName
             )
+            .overlay(alignment: .topTrailing) {
+                GameBoardControls {
+                    UltimateTicTacToeNativeControls(
+                        board: viewModel.board, me: viewModel.me, partnerName: viewModel.partnerName,
+                        canPlay: viewModel.canPlay, turn: viewModel.turnLabel,
+                        selectedMove: pick.move(on: viewModel.board),
+                        onPick: selectMove
+                    )
+                }
+            }
             .onChange(of: viewModel.board) { pick = .none }
             .onChange(of: viewModel.canPlay) { pick = .none }
         }
@@ -75,6 +85,13 @@ struct UltimateTicTacToeScreen: View {
             live?.stop()
             live = nil
         }
+    }
+
+    private func selectMove(_ move: Int) {
+        guard viewModel.canPlay, viewModel.board.isLegal(move) else { return }
+        pick = .move(move)
+        PaeoniaHaptics.selection()
+        GameSound.tap.play(volume: 0.6)
     }
 
     /// My pick for my partner's board. It is nothing on their turn, so a new
