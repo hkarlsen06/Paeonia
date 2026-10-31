@@ -63,11 +63,12 @@ struct TopicQuestionRow: View {
     @ViewBuilder
     private var leading: some View {
         if state == .forYou {
-            PaeoniaProfilePhotoAvatar(
+            PaeoniaCoupleAvatar(
                 mediaAssetID: partnerPhotoAssetID,
                 name: partnerName,
                 tint: .paeoniaPartnerTwo,
-                size: 30
+                size: 30,
+                isCurrentUser: false
             )
             .overlay(alignment: .bottomTrailing) {
                 Image(systemName: "lock.fill")

@@ -97,11 +97,12 @@ struct LockedPartnerQuestionRows: View {
     /// The partner's avatar with a small lock on its bottom-right edge: they answered,
     /// and the answer opens once the user answers too.
     private var lockedAvatar: some View {
-        PaeoniaProfilePhotoAvatar(
+        PaeoniaCoupleAvatar(
             mediaAssetID: partnerPhotoAssetID,
             name: partnerName,
             tint: .paeoniaPartnerTwo,
-            size: Self.avatarSize
+            size: Self.avatarSize,
+            isCurrentUser: false
         )
         .overlay(alignment: .bottomTrailing) {
             Image(systemName: "lock.fill")

@@ -98,11 +98,12 @@ struct DailyAnswerFlowHeader: View {
             Text(.dailyChallengePartnerHidden(participants.partnerName))
                 .font(PaeoniaTypography.caption)
                 .foregroundStyle(.paeoniaTextSecondary)
-            PaeoniaProfilePhotoAvatar(
+            PaeoniaCoupleAvatar(
                 mediaAssetID: participants.partnerProfilePhotoAssetID,
                 name: participants.partnerName,
                 tint: .paeoniaAccentPrimary,
-                size: 32
+                size: 32,
+                isCurrentUser: false
             )
             .accessibilityHidden(true)
         }

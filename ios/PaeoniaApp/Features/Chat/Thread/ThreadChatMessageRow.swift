@@ -37,6 +37,7 @@ struct ThreadChatMessageRow: View {
     /// Set while ExyteChat shows this row above its long-press menu.
     let messageFrame: Binding<CGRect>?
 
+    @Environment(\.avatarStyling) private var avatarStyling
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @State var replySwipeOffset: CGFloat = 0
     @State var isReplySwipeActive = false
@@ -78,6 +79,7 @@ struct ThreadChatMessageRow: View {
             HStack(alignment: .top, spacing: PaeoniaSpacing.space8) {
                 if !isCurrentUser {
                     avatarSlot
+                        .frame(width: Self.avatarSize * (1 + 2 * (avatarStyling?.decorations.partner.outset ?? 0)))
                 }
                 VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 3) {
                     payload
@@ -267,11 +269,12 @@ struct ThreadChatMessageRow: View {
                 .padding(.top, 2)
                 .accessibilityHidden(true)
         } else if groupContext.showsAvatar {
-            PaeoniaProfilePhotoAvatar(
+            PaeoniaCoupleAvatar(
                 mediaAssetID: participants.partnerProfilePhotoAssetID,
                 name: participants.partnerName,
                 tint: .paeoniaPartnerTwo,
-                size: Self.avatarSize
+                size: Self.avatarSize,
+                isCurrentUser: false
             )
             .padding(.top, 2)
             .accessibilityHidden(true)

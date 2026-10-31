@@ -239,11 +239,12 @@ extension SettingsView {
             .analyticsScreen("settings_profile")
         } label: {
             HStack(spacing: PaeoniaSpacing.space16) {
-                PaeoniaProfilePhotoAvatar(
+                PaeoniaCoupleAvatar(
                     mediaAssetID: currentCustomProfilePhotoAssetID ?? currentProviderProfilePhotoAssetID,
                     name: profileRowName,
                     tint: .paeoniaPartnerOne,
-                    size: min(profileAvatarSize, 72)
+                    size: min(profileAvatarSize, 72),
+                    isCurrentUser: true
                 )
                 .accessibilityHidden(true)
 

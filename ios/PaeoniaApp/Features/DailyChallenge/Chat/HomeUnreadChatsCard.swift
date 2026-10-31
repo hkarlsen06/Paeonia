@@ -48,11 +48,12 @@ struct HomeUnreadChatsCard: View {
 
     private func row(_ chat: UnreadChatRow) -> some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            PaeoniaProfilePhotoAvatar(
+            PaeoniaCoupleAvatar(
                 mediaAssetID: partnerProfilePhotoAssetID,
                 name: partnerName,
                 tint: .paeoniaPartnerTwo,
-                size: 40
+                size: 40,
+                isCurrentUser: false
             )
             .accessibilityHidden(true)
 

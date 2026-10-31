@@ -222,20 +222,22 @@ private struct DailyAnswerersView: View {
                 photo: participants.currentProfilePhotoAssetID,
                 name: participants.currentDisplayName ?? String(localized: .dailyChallengeChoiceYou),
                 tint: .paeoniaPartnerOne,
+                isCurrentUser: true,
                 answered: question.hasOwnAnswer || hasPendingOwnAnswer
             )
             avatar(
                 photo: participants.partnerProfilePhotoAssetID,
                 name: participants.partnerName,
                 tint: .paeoniaPartnerTwo,
+                isCurrentUser: false,
                 answered: question.hasPartnerAnswer
             )
         }
         .accessibilityHidden(true)
     }
 
-    private func avatar(photo: UUID?, name: String, tint: Color, answered: Bool) -> some View {
-        PaeoniaProfilePhotoAvatar(mediaAssetID: photo, name: name, tint: tint, size: size)
+    private func avatar(photo: UUID?, name: String, tint: Color, isCurrentUser: Bool, answered: Bool) -> some View {
+        PaeoniaCoupleAvatar(mediaAssetID: photo, name: name, tint: tint, size: size, isCurrentUser: isCurrentUser)
             .opacity(answered ? 1 : 0.35)
             .overlay(alignment: .bottomTrailing) {
                 if answered {

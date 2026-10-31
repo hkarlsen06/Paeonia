@@ -288,11 +288,12 @@ private struct DailyChosenPersonView: View {
 
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
-            PaeoniaProfilePhotoAvatar(
+            PaeoniaCoupleAvatar(
                 mediaAssetID: option?.profilePhotoAssetID,
                 name: option?.avatarName ?? fallbackName,
                 tint: .paeoniaAccentPrimary,
-                size: 44
+                size: 44,
+                isCurrentUser: option?.isCurrentUser ?? false
             )
 
             Text(option?.label ?? fallbackName)
@@ -332,11 +333,11 @@ struct DailyPartnerChoicePicker: View {
         } label: {
             VStack(spacing: PaeoniaSpacing.space12) {
                 ZStack(alignment: .topTrailing) {
-                    PaeoniaProfilePhotoAvatar(
+                    PaeoniaCoupleAvatar(
                         mediaAssetID: option.profilePhotoAssetID,
                         name: option.avatarName,
                         tint: .paeoniaAccentPrimary,
-                        size: avatarSize
+                        size: avatarSize, isCurrentUser: option.isCurrentUser
                     )
                     .overlay {
                         Circle()

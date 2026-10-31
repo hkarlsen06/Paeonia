@@ -66,11 +66,12 @@ struct TopicsCard: View {
     private var hookLine: some View {
         if let hook {
             HStack(spacing: PaeoniaSpacing.space8) {
-                PaeoniaProfilePhotoAvatar(
+                PaeoniaCoupleAvatar(
                     mediaAssetID: partnerPhotoAssetID,
                     name: partnerName,
                     tint: .paeoniaPartnerTwo,
-                    size: 22
+                    size: 22,
+                    isCurrentUser: false
                 )
                 .accessibilityHidden(true)
                 Text(hook.text)

@@ -16,6 +16,8 @@ struct ProfileHeaderEditorView: View {
     /// the full screen width.
     @ScaledMetric(relativeTo: .body) private var nameFieldWidth: CGFloat = 260
 
+    @Environment(\.avatarStyling) private var avatarStyling
+
     @State private var selectedItem: PhotosPickerItem?
 
     var body: some View {
@@ -62,6 +64,9 @@ extension ProfileHeaderEditorView {
     private var avatar: some View {
         profilePreview
             .overlay {
+                AvatarDecorationArtwork(decoration: decoration, size: resolvedAvatarSize)
+            }
+            .overlay {
                 if editor.isLoadingPhoto {
                     Circle()
                         .fill(.black.opacity(0.35))
@@ -76,6 +81,11 @@ extension ProfileHeaderEditorView {
             .overlay(alignment: .bottomTrailing) {
                 removePhotoButton
             }
+            .padding(resolvedAvatarSize * decoration.outset)
+    }
+
+    private var decoration: AvatarDecoration {
+        avatarStyling?.decorations.own ?? .none
     }
 
     @ViewBuilder

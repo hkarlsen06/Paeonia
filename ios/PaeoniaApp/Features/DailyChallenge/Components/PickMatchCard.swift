@@ -95,20 +95,22 @@ struct PickMatchCard: View {
     }
 
     private var yourAvatar: some View {
-        PaeoniaProfilePhotoAvatar(
+        PaeoniaCoupleAvatar(
             mediaAssetID: participants.currentProfilePhotoAssetID,
             name: participants.currentDisplayName ?? String(localized: .dailyChallengeMatchYouLabel),
             tint: .paeoniaPartnerOne,
-            size: avatarSize
+            size: avatarSize,
+            isCurrentUser: true
         )
     }
 
     private var partnerAvatar: some View {
-        PaeoniaProfilePhotoAvatar(
+        PaeoniaCoupleAvatar(
             mediaAssetID: participants.partnerProfilePhotoAssetID,
             name: participants.partnerName,
             tint: .paeoniaPartnerTwo,
-            size: avatarSize
+            size: avatarSize,
+            isCurrentUser: false
         )
     }
 }

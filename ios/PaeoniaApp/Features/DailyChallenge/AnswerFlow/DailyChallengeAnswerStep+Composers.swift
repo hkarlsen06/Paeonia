@@ -102,11 +102,12 @@ extension DailyChallengeAnswerStep {
     private var compactChoice: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
             if let selectedPerson {
-                PaeoniaProfilePhotoAvatar(
+                PaeoniaCoupleAvatar(
                     mediaAssetID: selectedPerson.profilePhotoAssetID,
                     name: selectedPerson.avatarName,
                     tint: .paeoniaAccentPrimary,
-                    size: 32
+                    size: 32,
+                    isCurrentUser: selectedPerson.isCurrentUser
                 )
                 .accessibilityHidden(true)
             }

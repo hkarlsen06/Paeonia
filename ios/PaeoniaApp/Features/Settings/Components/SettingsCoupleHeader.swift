@@ -14,6 +14,8 @@ struct SettingsCoupleHeader: View {
     /// the couple sets it.
     let relationshipStartedOn: String?
 
+    @Environment(\.avatarStyling) private var avatarStyling
+
     @ScaledMetric(relativeTo: .title) private var scaledAvatarSize: CGFloat = 76
     /// Nothing else re-renders the header overnight, so the day count refreshes this.
     @State private var now = Date()
@@ -25,12 +27,26 @@ struct SettingsCoupleHeader: View {
     /// Room for a name a little wider than the photo above it.
     private var columnWidth: CGFloat { avatarSize + PaeoniaSpacing.space32 }
 
+    private var decorations: CoupleAvatarDecorations {
+        avatarStyling?.decorations ?? CoupleAvatarDecorations()
+    }
+
+    private var decorationClearance: CGFloat {
+        avatarSize * max(decorations.own.outset, decorations.partner.outset)
+    }
+
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space16) {
             HStack(alignment: .top, spacing: 0) {
-                person(name: currentName, photo: currentProfilePhotoAssetID, tint: .paeoniaPartnerOne)
+                person(
+                    name: currentName, photo: currentProfilePhotoAssetID,
+                    tint: .paeoniaPartnerOne, decoration: decorations.own
+                )
                 connector
-                person(name: partnerName, photo: partnerProfilePhotoAssetID, tint: .paeoniaPartnerTwo)
+                person(
+                    name: partnerName, photo: partnerProfilePhotoAssetID,
+                    tint: .paeoniaPartnerTwo, decoration: decorations.partner
+                )
             }
 
             if let relationshipStartedOn, let daysTogether {
@@ -44,10 +60,15 @@ struct SettingsCoupleHeader: View {
         .onCalendarDayChange { now = Date() }
     }
 
-    private func person(name: String, photo: UUID?, tint: Color) -> some View {
+    private func person(
+        name: String, photo: UUID?, tint: Color, decoration: AvatarDecoration
+    ) -> some View {
         VStack(spacing: PaeoniaSpacing.space8) {
-            PaeoniaProfilePhotoAvatar(mediaAssetID: photo, name: name, tint: tint, size: avatarSize)
-                .accessibilityHidden(true)
+            PaeoniaDecoratedAvatar(
+                mediaAssetID: photo, name: name, tint: tint, size: avatarSize, decoration: decoration
+            )
+            .padding(.vertical, decorationClearance)
+            .accessibilityHidden(true)
 
             Text(name)
                 .font(PaeoniaTypography.bodyEmphasis)
@@ -79,7 +100,7 @@ struct SettingsCoupleHeader: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.paeoniaAccentPrimary)
         }
-        .frame(width: Self.connectorWidth, height: avatarSize)
+        .frame(width: Self.connectorWidth, height: avatarSize + 2 * decorationClearance)
         .accessibilityHidden(true)
     }
 
