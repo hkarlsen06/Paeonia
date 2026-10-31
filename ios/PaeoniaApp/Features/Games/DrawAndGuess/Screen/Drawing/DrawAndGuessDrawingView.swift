@@ -7,6 +7,7 @@ struct DrawAndGuessDrawingView: View {
 
     @State private var shownGuess: DrawAndGuessAttemptView?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var board: GameDrawingBoard { viewModel.board }
 
@@ -23,6 +24,9 @@ struct DrawAndGuessDrawingView: View {
                 GameLiveReactionButtons(isAvailable: viewModel.canSendLiveReaction, identifierPrefix: "draw") {
                     viewModel.sendLiveReaction($0)
                 }
+                if dynamicTypeSize.isAccessibilitySize {
+                    nativeCreation
+                }
             }
         } square: { side in
             GameDrawingCanvas(
@@ -32,9 +36,11 @@ struct DrawAndGuessDrawingView: View {
                 identifier: "draw.canvas"
             )
         } footer: {
-            GameDrawingTools(board: board)
-            GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isGuessingGame: true,
-                                         isLocked: board.isFinishing)
+            GameDrawingTools(board: board, showsComposition: !dynamicTypeSize.isAccessibilitySize)
+            if !dynamicTypeSize.isAccessibilitySize {
+                GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isGuessingGame: true,
+                                             isLocked: board.isFinishing)
+            }
         } bottom: {
             Button {
                 PaeoniaHaptics.drawingSent()
@@ -63,6 +69,16 @@ struct DrawAndGuessDrawingView: View {
             try? await Task.sleep(for: .seconds(6))
             guard !Task.isCancelled else { return }
             withAnimation(PaeoniaMotion.meaningfulMoment) { shownGuess = nil }
+        }
+    }
+
+    // Native creation stays before the gesture canvas when enlarged content must scroll.
+    private var nativeCreation: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            DrawingCompositionButton(drawing: board.drawing, side: board.canvasSide) { board.applyEdit($0) }
+                .disabled(board.isFinishing)
+            GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isGuessingGame: true,
+                                         isLocked: board.isFinishing)
         }
     }
 

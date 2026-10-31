@@ -37,6 +37,7 @@ struct GameDrawingCanvas: View {
 /// The tool, color and size rows under the canvas.
 struct GameDrawingTools: View {
     let board: GameDrawingBoard
+    var showsComposition = true
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
@@ -60,7 +61,9 @@ struct GameDrawingTools: View {
                 .scrollBounceBehavior(.basedOnSize)
             }
             WidgetDrawingSizeControlsView(viewModel: board)
-            DrawingCompositionButton(drawing: board.drawing, side: board.canvasSide) { board.applyEdit($0) }
+            if showsComposition {
+                DrawingCompositionButton(drawing: board.drawing, side: board.canvasSide) { board.applyEdit($0) }
+            }
         }
         .disabled(board.isFinishing)
     }

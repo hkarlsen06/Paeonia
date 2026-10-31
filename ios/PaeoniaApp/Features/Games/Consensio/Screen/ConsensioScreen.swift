@@ -41,7 +41,6 @@ struct ConsensioScreen: View {
             viewModel.clearNotice()
         }
         .gameTutorial(GameTutorial(kind: .consensio, partnerName: viewModel.partnerName), isPresented: $showsTutorial)
-        .accessibilityIdentifier("consensio.screen")
     }
 
     // MARK: Phases

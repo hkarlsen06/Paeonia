@@ -49,7 +49,8 @@ final class GamesBoardAccessibilityUITests: XCTestCase {
         let commit = app.buttons["ultimateTicTacToe.lockIn"]
         XCTAssertTrue(commit.isEnabled)
         commit.tap()
-        waitFor(commit, matching: NSPredicate(format: "exists == false"))
+        // Hidden SwiftUI controls can remain queryable on iOS 27. Verify the move itself below.
+        waitFor(commit, matching: NSPredicate(format: "enabled == false"))
 
         openControls(in: app)
         viewBoard(6, in: app)

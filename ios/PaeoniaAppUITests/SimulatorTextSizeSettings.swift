@@ -71,17 +71,30 @@ struct SimulatorTextSizeSettings {
     }
 
     private func tapRow(_ label: String) throws {
-        for _ in 0..<10 {
+        for _ in 0..<14 {
+            // iOS Settings can expose zero-sized inner buttons at AX5. Use the native row.
             let candidates = [
-                settings.buttons[label].firstMatch,
                 settings.cells.containing(.staticText, identifier: label).firstMatch,
+                settings.buttons[label].firstMatch,
                 settings.staticTexts[label].firstMatch,
             ]
-            if let row = candidates.first(where: { $0.exists && $0.isHittable }) {
+            let viewport = settings.windows.firstMatch.frame.insetBy(dx: 0, dy: 116)
+            if let row = candidates.first(where: {
+                $0.exists && $0.isHittable && $0.frame.width > 0 && $0.frame.height > 0
+                    && viewport.contains(CGPoint(x: $0.frame.midX, y: $0.frame.midY))
+            }) {
                 row.tap()
+                guard settings.navigationBars[label].waitForExistence(timeout: 5) else {
+                    throw failure("Settings row did not open: \(label)")
+                }
                 return
             }
-            settings.swipeUp()
+            if let target = candidates.first(where: { $0.exists && $0.frame.height > 0 }),
+               target.frame.midY < viewport.midY {
+                settings.swipeDown()
+            } else {
+                settings.swipeUp()
+            }
         }
         throw failure("Settings row was not available: \(label)")
     }

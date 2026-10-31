@@ -12,6 +12,8 @@ struct ExquisiteCorpseDrawingView: View {
     private let part: ExquisiteCorpsePartKind
     private let showsFirstHint: Bool
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     private var board: GameDrawingBoard { viewModel.board }
 
     init(viewModel: ExquisiteCorpseViewModel, handoff: Namespace.ID? = nil) {
@@ -34,6 +36,9 @@ struct ExquisiteCorpseDrawingView: View {
                 }
                 ideaRow
                 liveRow
+                if dynamicTypeSize.isAccessibilitySize {
+                    nativeCreation
+                }
             }
         } square: { side in
             ExquisiteCorpseDrawingSurface(
@@ -57,8 +62,10 @@ struct ExquisiteCorpseDrawingView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            GameDrawingTools(board: board)
-            GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isLocked: viewModel.isFinishing)
+            GameDrawingTools(board: board, showsComposition: !dynamicTypeSize.isAccessibilitySize)
+            if !dynamicTypeSize.isAccessibilitySize {
+                GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isLocked: viewModel.isFinishing)
+            }
         } bottom: {
             Button {
                 PaeoniaHaptics.drawingSent()
@@ -77,6 +84,15 @@ struct ExquisiteCorpseDrawingView: View {
         .onChange(of: viewModel.partnerPresence) { old, new in
             guard new != .away, new != old else { return }
             partnerPresenceChanged(from: old)
+        }
+    }
+
+    // Native creation stays before the gesture canvas when enlarged content must scroll.
+    private var nativeCreation: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            DrawingCompositionButton(drawing: board.drawing, side: board.canvasSide) { board.applyEdit($0) }
+                .disabled(viewModel.isFinishing)
+            GameDrawingDescriptionEditor(model: viewModel.drawingDescription, isLocked: viewModel.isFinishing)
         }
     }
 

@@ -44,7 +44,7 @@ struct GuessMySpotWaitingView: View {
                 GameSound.nudge.play(volume: 0.6)
             }
         }
-        .accessibilityIdentifier(isWaitingForGuess ? "guessMySpot.waiting.guess" : "guessMySpot.waiting.photo")
+
     }
 
     private var stateChange: Animation {
@@ -209,6 +209,7 @@ struct GuessMySpotWaitingView: View {
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(isWaitingForGuess ? "guessMySpot.waiting.guess" : "guessMySpot.waiting.photo")
         .accessibilityValue(Text(partnerIsHere ? .gamesPresenceHere : .gamesPresenceAway))
     }
 

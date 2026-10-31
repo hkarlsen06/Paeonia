@@ -66,6 +66,17 @@ final class PaeoniaAppUITests: XCTestCase {
         firstPhoto.tap()
         let cropDone = app.buttons["imageCrop.done"]
         XCTAssertTrue(cropDone.waitForExistence(timeout: 5))
+        app.buttons["imageCrop.adjustFraming"].tap()
+        let zoom = app.steppers["imageCrop.zoom"]
+        XCTAssertTrue(zoom.waitForExistence(timeout: 5))
+        let initialZoom = zoom.value as? String
+        let increase = zoom.buttons["imageCrop.zoom-Increment"]
+        for _ in 0..<5 where !increase.isHittable { app.swipeUp() }
+        XCTAssertTrue(increase.isHittable)
+        increase.tap()
+        XCTAssertNotEqual(zoom.value as? String, initialZoom)
+        app.buttons["imageCrop.applyFraming"].tap()
+        XCTAssertTrue(cropDone.waitForExistence(timeout: 5))
         cropDone.tap()
 
         let nameField = app.textFields["auth.onboarding.displayName"]

@@ -1,4 +1,5 @@
 import CropViewController
+import Foundation
 import SwiftUI
 import TOCropViewController
 import UIKit
@@ -14,8 +15,12 @@ struct PaeoniaProfileImageCropSheet: View {
     let onCancel: () -> Void
 
     @State private var framingController = ProfilePhotoFramingController()
-    @State private var framingDraft: ProfilePhotoFraming?
-    @State private var showsFraming = false
+    @State private var framingDraft: FramingDraft?
+
+    private struct FramingDraft: Identifiable {
+        let id = UUID()
+        let framing: ProfilePhotoFraming
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,8 +30,7 @@ struct PaeoniaProfileImageCropSheet: View {
             )
             Button(.imageCropAdjustFraming) {
                 guard let crop = framingController.cropController?.imageCropFrame else { return }
-                framingDraft = ProfilePhotoFraming(imageSize: image.size, crop: crop)
-                showsFraming = true
+                framingDraft = FramingDraft(framing: ProfilePhotoFraming(imageSize: image.size, crop: crop))
             }
             .buttonStyle(.borderedProminent)
             .frame(minHeight: PaeoniaSpacing.buttonHeight)
@@ -36,12 +40,11 @@ struct PaeoniaProfileImageCropSheet: View {
         .background(Color.paeoniaBackgroundPrimary)
         .preferredColorScheme(.dark)
         .interactiveDismissDisabled()
-        .sheet(isPresented: $showsFraming) {
-            if let framingDraft {
-                ProfilePhotoFramingSheet(image: image, onApply: { crop in
-                    framingController.cropController?.imageCropFrame = crop
-                }, framing: framingDraft)
-            }
+        // Present the draft itself. A separate Boolean can present before the optional content updates.
+        .sheet(item: $framingDraft) { draft in
+            ProfilePhotoFramingSheet(image: image, onApply: { crop in
+                framingController.cropController?.imageCropFrame = crop
+            }, framing: draft.framing)
         }
     }
 }

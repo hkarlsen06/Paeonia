@@ -39,10 +39,10 @@ struct ExquisiteCorpseViewModelDoneTests {
         #expect(payload.idea == Fixture.ideas[0])
         #expect(operations.first?.idempotencyScope == "exquisite-corpse-part:\(payload.partID.uuidString.lowercased())")
         #expect(try PKDrawing(data: payload.drawing.data).strokes.count == 1)
-        // The phone moves on at once, and the draft is not needed anymore.
+        // The phone moves on at once; acceptance retires the matching retained draft.
         #expect(viewModel.phase == .waiting)
         #expect(viewModel.isWaitingToSend)
-        #expect(env.drawingStore.draft(ownerUserID: Fixture.me, roundID: payload.partID) == nil)
+        #expect(env.drawingStore.draft(ownerUserID: Fixture.me, roundID: payload.partID) == payload.drawing.data)
     }
 
     @Test func eachUploadAndTheSubmitHaveTheirOwnOperationsFromTheStart() async throws {
