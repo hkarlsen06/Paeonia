@@ -316,9 +316,11 @@ struct DailyPartnerChoicePicker: View {
     @Environment(\.dailyAnswerComposerColors) private var colors
 
     var body: some View {
-        HStack(alignment: .top, spacing: PaeoniaSpacing.space24) {
-            ForEach(options) { option in
-                avatarOption(option)
+        Grid(horizontalSpacing: PaeoniaSpacing.space24) {
+            GridRow {
+                ForEach(options) { option in
+                    avatarOption(option)
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -358,7 +360,7 @@ struct DailyPartnerChoicePicker: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(PaeoniaSpacing.space8)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
                 isSelected ? colors.selected : colors.control,
                 in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius12)
