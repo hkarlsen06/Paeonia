@@ -34,7 +34,9 @@ struct GuessMySpotScoreLine: View {
                     }
                 }
             case let .against(mine, theirs):
-                VStack(alignment: .trailing, spacing: PaeoniaSpacing.space8) {
+                // The card's row spacing, so the avatars sit as far apart as the
+                // title sits from the photo.
+                VStack(alignment: .trailing, spacing: PaeoniaSpacing.space12) {
                     column(me, tint: .paeoniaPartnerOne, total: mine, grows: guesserIsMe)
                     column(partner, tint: .paeoniaPartnerTwo, total: theirs, grows: !guesserIsMe)
                 }
