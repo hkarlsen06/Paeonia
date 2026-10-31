@@ -5,12 +5,12 @@ import SwiftUI
 enum TopicStyle {
     static func tint(for key: String) -> Color {
         switch key {
-        case "getting_to_know_you": .paeoniaInkLavender
-        case "whos_more_likely": .paeoniaInkGold
-        case "would_you_rather": .paeoniaSuccess
-        case "travel_and_places": .paeoniaInkBlue
-        case "someday": .paeoniaWarning
-        case "flirt": .paeoniaAccentSecondary
+        case "getting_to_know_you": PaeoniaPalette.lavender
+        case "whos_more_likely": PaeoniaPalette.gold
+        case "would_you_rather": PaeoniaPalette.green
+        case "travel_and_places": PaeoniaPalette.blue
+        case "someday": PaeoniaPalette.orange
+        case "flirt": PaeoniaPalette.pink
         default: .paeoniaAccentPrimary
         }
     }

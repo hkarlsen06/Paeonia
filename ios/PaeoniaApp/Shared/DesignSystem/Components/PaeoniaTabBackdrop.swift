@@ -16,7 +16,7 @@ struct PaeoniaTabBackdrop: View {
             GeometryReader { proxy in
                 ZStack {
                     glow(.paeoniaAccentPrimary, from: .topLeading)
-                    glow(.paeoniaInkLavender, from: .topTrailing)
+                    glow(.paeoniaBackdropGlow, from: .topTrailing)
                 }
                 .frame(height: proxy.size.height * Self.reach)
             }

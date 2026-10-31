@@ -1,81 +1,11 @@
 import SwiftUI
 import UIKit
 
-// Paeonia ships a single, canonical plum-led brand theme for MVP. These tokens
-// are the only place raw brand colors live; feature views must use the semantic
-// names below and never hardcode hex values. The palette is intentionally fixed
-// (not light/dark adaptive) so the app always feels like a private plum evening
-// space. Accessibility settings such as Dynamic Type and Reduce Motion still
-// apply; the brand surface does not.
-//
-// Canonical palette values come from the delivered logo and the marketing brand
-// guidelines (docs/phase-2-design/09-marketing-brand-guidelines.md).
-
-nonisolated private enum PaeoniaPaletteHex {
-    static let plumDeep: UInt32 = 0x2A_0B_1E
-    static let plum: UInt32 = 0x38_0F_27
-    static let plumSurfaceLow: UInt32 = 0x43_1A_30
-    static let plumRaised: UInt32 = 0x4F_20_3A
-    static let plumPressed: UInt32 = 0x5C_2A_47
-    static let outgoingMessage: UInt32 = 0x68_1B_3C
-
-    static let petalLight: UInt32 = 0xF2_7E_B2
-    static let pink: UInt32 = 0xEF_50_94
-    static let petalWarm: UInt32 = 0xE8_5D_86
-    static let petalWarmLight: UInt32 = 0xF5_87_A6
-    static let petalMist: UInt32 = 0xFD_E7_F1
-
-    static let blush: UInt32 = 0xFB_F3_F7
-
-    // Extra drawing ink hues, chosen to read clearly on the plum widget surface.
-    static let inkGold: UInt32 = 0xF2_B8_4B
-    static let inkBlue: UInt32 = 0x6F_B1_F0
-    static let inkLavender: UInt32 = 0xB9_9C_F2
-
-    static let error: UInt32 = 0xE5_48_4D
-    // Lighter error tone for text; `error` is only 4.2:1 on the plum background.
-    static let errorText: UInt32 = 0xFF_80_84
-    static let errorPressed: UInt32 = 0xEA_5C_61
-    static let warning: UInt32 = 0xE8_91_5D
-    static let presence: UInt32 = 0x82_BA_A5
-    static let success: UInt32 = 0x5B_B9_8B
-}
-
-nonisolated private enum PaeoniaPalette {
-    // Plum brand ramp, dark to light.
-    static let plumDeep = Color(paeoniaHex: PaeoniaPaletteHex.plumDeep)
-    static let plum = Color(paeoniaHex: PaeoniaPaletteHex.plum)
-    static let plumSurfaceLow = Color(paeoniaHex: PaeoniaPaletteHex.plumSurfaceLow)
-    static let plumRaised = Color(paeoniaHex: PaeoniaPaletteHex.plumRaised)
-    static let plumPressed = Color(paeoniaHex: PaeoniaPaletteHex.plumPressed)
-    static let outgoingMessage = Color(paeoniaHex: PaeoniaPaletteHex.outgoingMessage)
-
-    // Pink / petal accents.
-    static let petalLight = Color(paeoniaHex: PaeoniaPaletteHex.petalLight)
-    static let pink = Color(paeoniaHex: PaeoniaPaletteHex.pink)
-    static let petalWarm = Color(paeoniaHex: PaeoniaPaletteHex.petalWarm)
-    static let petalWarmLight = Color(paeoniaHex: PaeoniaPaletteHex.petalWarmLight)
-    static let petalMist = Color(paeoniaHex: PaeoniaPaletteHex.petalMist)
-
-    // Light text used on the plum surface.
-    static let blush = Color(paeoniaHex: PaeoniaPaletteHex.blush)
-
-    // Extra drawing ink hues.
-    static let inkGold = Color(paeoniaHex: PaeoniaPaletteHex.inkGold)
-    static let inkBlue = Color(paeoniaHex: PaeoniaPaletteHex.inkBlue)
-    static let inkLavender = Color(paeoniaHex: PaeoniaPaletteHex.inkLavender)
-
-    // State colors, kept calm and never generic red unless the state is real.
-    static let error = Color(paeoniaHex: PaeoniaPaletteHex.error)
-    static let errorText = Color(paeoniaHex: PaeoniaPaletteHex.errorText)
-    static let errorPressed = Color(paeoniaHex: PaeoniaPaletteHex.errorPressed)
-    static let warning = Color(paeoniaHex: PaeoniaPaletteHex.warning)
-    static let presence = Color(paeoniaHex: PaeoniaPaletteHex.presence)
-    static let success = Color(paeoniaHex: PaeoniaPaletteHex.success)
-}
+// Semantic roles for the single plum theme. PaeoniaShared/PaeoniaPalette.swift
+// owns the palette and the app/widget brand roles.
 
 nonisolated extension Color {
-    static let paeoniaBackgroundPrimary = PaeoniaPalette.plum
+    static let paeoniaBackgroundPrimary = PaeoniaBrandColors.background
     static let paeoniaBackgroundSecondary = PaeoniaPalette.plumDeep
     static let paeoniaBackgroundElevated = PaeoniaPalette.plumRaised
 
@@ -85,21 +15,22 @@ nonisolated extension Color {
     static let paeoniaSurfaceDisabled = PaeoniaPalette.plumSurfaceLow
     static let paeoniaOutgoingMessage = PaeoniaPalette.outgoingMessage
 
-    static let paeoniaTextPrimary = PaeoniaPalette.blush
-    static let paeoniaTextSecondary = PaeoniaPalette.blush.opacity(0.74)
+    static let paeoniaTextPrimary = PaeoniaBrandColors.textPrimary
+    static let paeoniaTextSecondary = PaeoniaBrandColors.textSecondary
     static let paeoniaTextTertiary = PaeoniaPalette.blush.opacity(0.55)
     static let paeoniaTextInverse = PaeoniaPalette.plumDeep
 
-    static let paeoniaAccentPrimary = PaeoniaPalette.petalLight
+    static let paeoniaAccentPrimary = PaeoniaBrandColors.accent
     static let paeoniaAccentSecondary = PaeoniaPalette.pink
-    static let paeoniaPresence = PaeoniaPalette.presence
-    static let paeoniaSuccess = PaeoniaPalette.success
-    static let paeoniaWarning = PaeoniaPalette.warning
-    static let paeoniaError = PaeoniaPalette.error
-    static let paeoniaErrorText = PaeoniaPalette.errorText
-    static let paeoniaErrorPressed = PaeoniaPalette.errorPressed
-    static let paeoniaSyncPending = PaeoniaPalette.warning
-    static let paeoniaSyncError = PaeoniaPalette.error
+    static let paeoniaBackdropGlow = PaeoniaPalette.lavender
+    static let paeoniaPresence = PaeoniaPalette.mint
+    static let paeoniaSuccess = PaeoniaPalette.green
+    static let paeoniaWarning = PaeoniaPalette.orange
+    static let paeoniaError = PaeoniaPalette.coral
+    static let paeoniaErrorText = PaeoniaPalette.coralLight
+    static let paeoniaErrorPressed = PaeoniaPalette.coralBright
+    static let paeoniaSyncPending = PaeoniaPalette.orange
+    static let paeoniaSyncError = PaeoniaPalette.coral
 
     static let paeoniaPartnerOne = PaeoniaPalette.petalLight
     static let paeoniaPartnerTwo = PaeoniaPalette.petalWarm
@@ -107,20 +38,20 @@ nonisolated extension Color {
     static let paeoniaMemory = PaeoniaPalette.petalMist
     static let paeoniaPrompt = PaeoniaPalette.pink
     static let paeoniaWidgetDrawing = PaeoniaPalette.blush
-    static let paeoniaInkGold = PaeoniaPalette.inkGold
-    static let paeoniaInkBlue = PaeoniaPalette.inkBlue
-    static let paeoniaInkLavender = PaeoniaPalette.inkLavender
+    static let paeoniaInkGold = PaeoniaPalette.gold
+    static let paeoniaInkBlue = PaeoniaPalette.blue
+    static let paeoniaInkLavender = PaeoniaPalette.lavender
 }
 
 nonisolated extension UIColor {
-    static let paeoniaAccentPrimary = UIColor(paeoniaHex: PaeoniaPaletteHex.petalLight)
-    static let paeoniaAccentSecondary = UIColor(paeoniaHex: PaeoniaPaletteHex.pink)
-    static let paeoniaPartnerTwo = UIColor(paeoniaHex: PaeoniaPaletteHex.petalWarm)
-    static let paeoniaSuccess = UIColor(paeoniaHex: PaeoniaPaletteHex.success)
-    static let paeoniaWidgetDrawing = UIColor(paeoniaHex: PaeoniaPaletteHex.blush)
-    static let paeoniaInkGold = UIColor(paeoniaHex: PaeoniaPaletteHex.inkGold)
-    static let paeoniaInkBlue = UIColor(paeoniaHex: PaeoniaPaletteHex.inkBlue)
-    static let paeoniaInkLavender = UIColor(paeoniaHex: PaeoniaPaletteHex.inkLavender)
+    static let paeoniaAccentPrimary = UIColor(PaeoniaPalette.petalLight)
+    static let paeoniaAccentSecondary = UIColor(PaeoniaPalette.pink)
+    static let paeoniaPartnerTwo = UIColor(PaeoniaPalette.petalWarm)
+    static let paeoniaSuccess = UIColor(PaeoniaPalette.green)
+    static let paeoniaWidgetDrawing = UIColor(PaeoniaPalette.blush)
+    static let paeoniaInkGold = UIColor(PaeoniaPalette.gold)
+    static let paeoniaInkBlue = UIColor(PaeoniaPalette.blue)
+    static let paeoniaInkLavender = UIColor(PaeoniaPalette.lavender)
 }
 
 nonisolated extension ShapeStyle where Self == Color {
@@ -151,31 +82,6 @@ nonisolated extension ShapeStyle where Self == Color {
     static var paeoniaMemory: Color { Color.paeoniaMemory }
     static var paeoniaPrompt: Color { Color.paeoniaPrompt }
     static var paeoniaWidgetDrawing: Color { Color.paeoniaWidgetDrawing }
-}
-
-nonisolated private extension Color {
-    /// Builds a fixed sRGB color from a `0xRRGGBB` literal. Kept private so brand
-    /// hex values never leak outside this file.
-    init(paeoniaHex hex: UInt32) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xFF) / 255,
-            green: Double((hex >> 8) & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255,
-            opacity: 1
-        )
-    }
-}
-
-nonisolated private extension UIColor {
-    convenience init(paeoniaHex hex: UInt32) {
-        self.init(
-            red: CGFloat((hex >> 16) & 0xFF) / 255,
-            green: CGFloat((hex >> 8) & 0xFF) / 255,
-            blue: CGFloat(hex & 0xFF) / 255,
-            alpha: 1
-        )
-    }
 }
 
 extension View {

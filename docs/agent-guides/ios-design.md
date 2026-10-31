@@ -2,18 +2,20 @@
 
 Use semantic colors and design tokens. Do not scatter hardcoded colors, spacing, or typography values through feature views. `paeoniaCardSurface` owns card edges and the glow for content waiting for this person. `paeoniaEyebrowStyle` owns small uppercase labels. `PaeoniaIllustratedCard` owns the shared picture, title and action layout.
 
+`ios/PaeoniaShared/PaeoniaPalette.swift` owns the palette and the brand roles shared by the app and widget. Their default accent comes from the single `AccentColor` asset in `PaeoniaShared/BrandAssets.xcassets`. Topics choose decorative hues through `TopicStyle`, independently of success, warning and drawing ink roles.
+
 Paeonia uses one canonical plum-led brand theme for MVP. Do not design or implement separate light and dark native app appearances unless the user explicitly reopens that product decision. Accessibility settings still matter: preserve Dynamic Type, Reduce Motion, contrast, and VoiceOver behavior within the plum theme.
 
-Suggested semantic colors:
+Common semantic colors:
 
-- `paeoniaBackground`
+- `paeoniaBackgroundPrimary`
 - `paeoniaBackgroundSecondary`
 - `paeoniaSurfacePrimary`
 - `paeoniaSurfaceSecondary`
 - `paeoniaTextPrimary`
 - `paeoniaTextSecondary`
-- `paeoniaTextMuted`
-- `paeoniaAccent`
+- `paeoniaTextTertiary`
+- `paeoniaAccentPrimary`
 - `paeoniaError`
 - `paeoniaSuccess`
 - `paeoniaWarning`
@@ -39,7 +41,7 @@ The app runs on iPhone and iPad, and on iPad it can be any width from a narrow S
 
 ### List Rows
 
-Every row in a list or settings screen uses a plum (`paeoniaAccentPrimary`) icon and primary text. Only irreversible destructive actions, such as leaving the relationship or deleting the account, are red. Do not use system blue, warning colours or per-row accents. `paeoniaGroupedList()` sets the plum tint for native `List` and `Form` screens.
+Every row in a list or settings screen uses primary text and tints its icon with `paeoniaAccentPrimary`. Only irreversible destructive actions, such as leaving the relationship or deleting the account, are red. Do not use system blue, warning colours or per-row accents. `paeoniaGroupedList()` sets the brand tint for native `List` and `Form` screens.
 
 ### Brand Wordmark
 
