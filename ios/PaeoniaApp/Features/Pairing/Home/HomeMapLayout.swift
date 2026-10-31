@@ -15,6 +15,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     let stories: StoriesViewModel?
     let storyPeople: StoryPeople?
     let hearts: HeartsViewModel?
+    let mapTiles: HomeMapTileStatus
     let onPromptCurrentLocation: () -> Void
     let onRefresh: () async -> Void
     @ViewBuilder let header: Header
@@ -26,8 +27,10 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     @AppStorage("home.locationNotice.dismissed") private var dismissedNotice = ""
     @Environment(\.avatarStyling) var avatarStyling
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.launchSidesUncovered) private var launchSidesUncovered
     @State private var scrollOffset: CGFloat = 0
+    @State private var topBarHeight = Self.headerHeight
     @State private var compass = PartnerCompass()
     @State private var flights = HeartFlights()
     @State private var heartTaps = 0
@@ -50,7 +53,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     var body: some View {
         GeometryReader { geo in
             let couple = couple
-            let screen = HomeMapScreen(geo: geo)
+            let screen = HomeMapScreen(geo: geo, additionalHeaderHeight: max(topBarHeight - Self.headerHeight, 0))
             ScrollView {
                 page(couple, screen)
                     // One gesture for the whole page, so a pinch whose fingers land on an
@@ -58,6 +61,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                     .homeMapGestures(explorer)
             }
             .scrollIndicators(.hidden)
+            // Offline, the avatars move from where they wait for the map to their places.
+            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: mapTiles.tiles)
             .refreshable {
                 await onRefresh()
             }
@@ -74,13 +79,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             // Like a navigation bar: no glass at rest over the map, glass as soon as Home scrolls.
             .scrollEdgeEffectHidden(scrollOffset <= 1, for: .top)
             .safeAreaBar(edge: .top) {
-                header
-                    .frame(height: PaeoniaSpacing.compactButtonHeight)
-                    // Sits where a navigation bar puts its title, under the Dynamic Island.
-                    .overlay { title(couple) }
-                    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                    // Leave room below the pill for the bar's glass.
-                    .padding(.bottom, PaeoniaSpacing.space12)
+                topBar(couple)
             }
             .onChange(of: hearts?.incomingBurst) { _, burst in
                 // Hearts fly between the avatars wherever they can be sent. Otherwise only the
@@ -116,19 +115,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                     .geometryGroup()
                     // The cards start just under the map's last full row, and the map fades on behind them.
                     .padding(.top, reservesMapSpace ? -HomeMapMetrics.cardsOverlap : PaeoniaSpacing.space24)
-                if couple != nil, let url = HomeMapLibreView.attributionURL {
-                    Link(destination: url) {
-                        Text(verbatim: HomeMapLibreView.credit)
-                            .font(PaeoniaTypography.caption)
-                            .foregroundStyle(.paeoniaTextSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-                    }
-                    .accessibilityIdentifier("home.map.attribution")
-                }
             }
-            .padding(.top, reservesMapSpace ? 0 : screen.topInset + Self.headerHeight + PaeoniaSpacing.space8)
+            .padding(.top, reservesMapSpace ? 0 : screen.topInset + topBarHeight + PaeoniaSpacing.space8)
             // ScrollView also asks for an ideal width. Keep that probe at the viewport width,
             // so the square tiles never start narrow and animate out of their first positions.
             .frame(width: screen.width)
@@ -137,29 +125,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             // move together when a card changes height.
             .frame(minHeight: reservesMapSpace ? screen.fillHeight : nil, alignment: .top)
         }
-    }
-
-    /// The partner's hearts while they play, otherwise how far apart the couple is.
-    @ViewBuilder
-    private func title(_ couple: HomeMapCouple?) -> some View {
-        ZStack {
-            if let line = hearts?.incomingLine {
-                HeartsIncomingLine(text: line)
-                    .lineLimit(1)
-                    .transition(.opacity)
-            } else if let couple {
-                HomeMapDistanceLine(
-                    current: couple.current,
-                    partner: couple.partner,
-                    partnerCoordinate: couple.partner.coordinate,
-                    partnerWasStaleAtLastRefresh: couple.partnerWasStaleAtLastRefresh,
-                    compass: compass
-                )
-                .accessibilityAction(named: Text(.heartsSendAction)) { sendHeart() }
-                .transition(.opacity)
-            }
-        }
-        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: hearts?.incomingLine)
     }
 
     // MARK: Top
@@ -207,6 +172,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 introStart: reduceMotion ? nil : waitingPoints(metrics),
                 canStartIntro: launchSidesUncovered,
                 explorer: explorer,
+                tiles: mapTiles,
                 onProjection: { projection in
                     guard mapProjection != projection else { return }
                     mapProjection = projection
@@ -416,4 +382,52 @@ extension HomeMapLayout {
         default: true
         }
     }
+}
+
+extension HomeMapLayout {
+    private func topBar(_ couple: HomeMapCouple?) -> some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            header
+                .frame(height: PaeoniaSpacing.compactButtonHeight)
+                .overlay {
+                    if !dynamicTypeSize.isAccessibilitySize { title(couple) }
+                }
+            if dynamicTypeSize.isAccessibilitySize {
+                title(couple)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        // Leave room below the pill for the bar's glass.
+        .padding(.bottom, PaeoniaSpacing.space12)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { topBarHeight = $0 }
+    }
+
+    /// The partner's hearts while they play, otherwise how far apart the couple is.
+    @ViewBuilder
+    private func title(_ couple: HomeMapCouple?) -> some View {
+        ZStack {
+            if let line = hearts?.incomingLine {
+                HeartsIncomingLine(text: line)
+                    .lineLimit(1)
+                    .transition(.opacity)
+            } else if let couple {
+                HStack(spacing: 0) {
+                    HomeMapDistanceLine(
+                        current: couple.current,
+                        partner: couple.partner,
+                        partnerCoordinate: couple.partner.coordinate,
+                        partnerWasStaleAtLastRefresh: couple.partnerWasStaleAtLastRefresh,
+                        compass: compass
+                    )
+                    .accessibilityAction(named: Text(.heartsSendAction)) { sendHeart() }
+                    HomeMapCreditsButton()
+                        .layoutPriority(1)
+                }
+                .transition(.opacity)
+            }
+        }
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: hearts?.incomingLine)
+    }
+
 }

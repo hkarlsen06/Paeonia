@@ -15,10 +15,11 @@ extension HomeMapLayout {
 
     /// Follow the camera's current projection instead of animating to its destination.
     /// Without the intro, before the map's first frame, use the same math that places the map.
+    /// Offline, the map may never draw, so the avatars go to their places without it.
     func points(_ couple: HomeMapCouple?, _ metrics: HomeMapMetrics) -> HomeMapAvatarPoints {
         guard let couple else { return waitingPoints(metrics) }
-        guard let mapProjection else {
-            if !reduceMotion { return waitingPoints(metrics) }
+        guard let mapProjection, mapTiles.tiles != .offline || mapProjection.introProgress > 0 else {
+            if !reduceMotion, mapTiles.tiles != .offline { return waitingPoints(metrics) }
             let framing = framing(couple, metrics)
             let raw = HomeMapAvatarPoints(own: framing.own, partner: framing.partner)
             return separated(raw, isNear: couple.isNear).kept(inside: metrics.avatarBounds)

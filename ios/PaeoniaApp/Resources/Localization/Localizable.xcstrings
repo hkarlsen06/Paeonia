@@ -19683,6 +19683,78 @@
         }
       }
     },
+    "home.map.credits.label" : {
+      "comment" : "VoiceOver label of the small info button next to the distance on Home's map. It opens who made the map.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About the map"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Om kartet"
+          }
+        }
+      }
+    },
+    "home.map.credits.openFreeMap" : {
+      "comment" : "Link in the map info popover on Home to OpenFreeMap, the service that sends the map. Keep the name OpenFreeMap.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map from OpenFreeMap"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kart fra OpenFreeMap"
+          }
+        }
+      }
+    },
+    "home.map.credits.openMapTiles" : {
+      "comment" : "Link in Home's map credits to OpenMapTiles. Keep the copyright sign and the name OpenMapTiles.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map design © OpenMapTiles"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartdesign © OpenMapTiles"
+          }
+        }
+      }
+    },
+    "home.map.credits.openStreetMap" : {
+      "comment" : "Link in the map info popover on Home to OpenStreetMap's copyright page. Keep the © sign and the name OpenStreetMap.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map data © OpenStreetMap contributors"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kartdata © OpenStreetMap-bidragsytere"
+          }
+        }
+      }
+    },
     "home.map.currentMissing.button" : {
       "comment" : "Map card button that tries to find the user's location again.",
       "extractionState" : "manual",

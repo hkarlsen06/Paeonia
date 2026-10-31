@@ -19,6 +19,7 @@ struct RootFeatureDependencies {
     var settingsViewModel: SettingsViewModel?
     var avatarStylingModel: AvatarStylingModel?
     var storiesViewModel: StoriesViewModel?
+    var homeMapTiles: HomeMapTileStatus?
     var settingsPrivacyService: (any PrivacySafetyServicing)?
     var settingsPrivacyOperationProvider: (any SyncClientOperationProviding)?
     var widgetDrawingViewModel: WidgetDrawingViewModel?
@@ -38,6 +39,7 @@ struct RootFeatureDependencies {
         settingsViewModel: SettingsViewModel? = nil,
         avatarStylingModel: AvatarStylingModel? = nil,
         storiesViewModel: StoriesViewModel? = nil,
+        homeMapTiles: HomeMapTileStatus? = nil,
         settingsPrivacyService: (any PrivacySafetyServicing)? = PrivacySafetyServiceFactory.makeDefault(),
         settingsPrivacyOperationProvider: (any SyncClientOperationProviding)? = nil,
         widgetDrawingViewModel: WidgetDrawingViewModel? = nil,
@@ -56,6 +58,7 @@ struct RootFeatureDependencies {
         self.settingsViewModel = settingsViewModel
         self.avatarStylingModel = avatarStylingModel
         self.storiesViewModel = storiesViewModel
+        self.homeMapTiles = homeMapTiles
         self.settingsPrivacyService = settingsPrivacyService
         self.settingsPrivacyOperationProvider = settingsPrivacyOperationProvider
         self.widgetDrawingViewModel = widgetDrawingViewModel

@@ -2,11 +2,12 @@ import MapKit
 import SwiftUI
 import UIKit
 
-/// The top card on the Home tab. With a map to show it is a 2:1 tile, square on a wide
+/// The couple's map card on the Home tab. With a map to show it is a 2:1 tile, square on a wide
 /// iPad (`aspectRatio`). A dark-mode map fills the whole card, framed to show both
 /// partners with their avatars, with the live distance overlaid at the bottom. The map
-/// is rendered with `MKMapSnapshotter` so it has no Apple Maps attribution overlay and
-/// so the camera framing and pin placement are fully under our control.
+/// is rendered with `MKMapSnapshotter`, so the camera framing and pin placement are fully
+/// under our control. The snapshot carries Apple's map logo in its bottom-left corner, but
+/// not the Legal link an interactive map adds.
 ///
 /// When there is no map, the card shrinks to a compact row (`MapEmptyState`) that
 /// explains why and, where it helps, offers one action. That keeps the rest of the

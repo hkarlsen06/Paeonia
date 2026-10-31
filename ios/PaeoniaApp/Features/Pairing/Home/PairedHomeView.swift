@@ -21,6 +21,8 @@ struct PairedHomeView: View {
     let dailyChallengeStreak: StreakPillState
     let zoomNamespace: Namespace.ID?
     let locationMapState: CoupleMapState
+    /// Whether OpenFreeMap can draw the map header. While it can't, Home shows the map card.
+    let mapTiles: HomeMapTileStatus
     let onPromptCurrentLocation: () -> Void
     let onPauseLocationSharing: ((Date) -> Void)?
     var unreadChats: [UnreadChatRow] = []
@@ -55,7 +57,14 @@ struct PairedHomeView: View {
     /// with a square map (`HomeWideLayout`).
     @State var isWideLayout = false
     /// A sheet from one of the cards is up (`HomeIsCoveredKey`).
-    @State private var isCovered = false
+    @State var isCovered = false
+    /// `mapTiles.showsMapHeader`, changed inside an animation so the layouts cross-fade.
+    @State private var showsMapHeader: Bool
+    /// Both layouts are on screen while one fades into the other.
+    @State private var isSwitchingLayout = false
+    @State private var layoutSwitchTask: Task<Void, Never>?
+    /// Moves the cards both layouts share from one layout's place to the other's.
+    @Namespace private var layoutSwitch
 
     private static let alertTypesSeenOnHome: Set<String> = [
         "widget_updated", "streak_reminder", "story_posted", "date_reminder", "partner_joined",
@@ -79,6 +88,7 @@ struct PairedHomeView: View {
         dailyChallengeStreak: StreakPillState = .hidden,
         zoomNamespace: Namespace.ID? = nil,
         locationMapState: CoupleMapState,
+        mapTiles: HomeMapTileStatus,
         onPromptCurrentLocation: @escaping () -> Void = {},
         onPauseLocationSharing: ((Date) -> Void)? = nil,
         unreadChats: [UnreadChatRow] = [],
@@ -116,6 +126,8 @@ struct PairedHomeView: View {
         self.dailyChallengeStreak = dailyChallengeStreak
         self.zoomNamespace = zoomNamespace
         self.locationMapState = locationMapState
+        self.mapTiles = mapTiles
+        _showsMapHeader = State(initialValue: mapTiles.showsMapHeader)
         self.onPromptCurrentLocation = onPromptCurrentLocation
         self.onPauseLocationSharing = onPauseLocationSharing
         self.unreadChats = unreadChats
@@ -142,7 +154,12 @@ struct PairedHomeView: View {
             homeContent
                 .environment(\.homeScrollProxy, proxy)
         }
-        .onPreferenceChange(HomeIsCoveredKey.self) { isCovered = $0 }
+        .onPreferenceChange(HomeIsCoveredKey.self) { covered in
+            isCovered = covered
+            if !covered, showsMapHeader != mapTiles.showsMapHeader {
+                switchLayout(showingMapHeader: mapTiles.showsMapHeader)
+            }
+        }
         .paeoniaWideLayout($isWideLayout)
         .heartsLifecycle(hearts, ownerUserID: currentUserID, partnerName: partnerName)
         .lookBackRefresh(lookBack, userID: currentUserID, coupleID: coupleID)
@@ -157,7 +174,19 @@ struct PairedHomeView: View {
                 Task {
                     await DeliveredNotifications.clear(types: Self.alertTypesSeenOnHome)
                 }
+                Task { await mapTiles.checkIfDue() }
             }
+        }
+        .task(id: mapTiles.tiles) {
+            await mapTiles.watch()
+        }
+        .onChange(of: mapTiles.showsMapHeader) { _, shows in
+            switchLayout(showingMapHeader: shows)
+        }
+        .onDisappear {
+            layoutSwitchTask?.cancel()
+            isSwitchingLayout = false
+            showsMapHeader = mapTiles.showsMapHeader
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Let the scroll view reach the bottom edge so the tab bar's automatic
@@ -178,94 +207,164 @@ struct PairedHomeView: View {
         }
     }
 
-    /// Compact windows use the map as Home's header.
-    @ViewBuilder
+}
+
+extension PairedHomeView {
+    /// Compact windows use the map as Home's header while OpenFreeMap can draw it. Otherwise
+    /// they show the map card under the tiles, as a wide iPad does, with the same mark and
+    /// streak at the top, so only the cards change.
     private var homeContent: some View {
-        if drawsOwnHeader {
-            HomeMapLayout(
-                mapState: locationMapState,
-                partnerName: partnerName,
-                stories: stories,
-                storyPeople: storyPeople,
-                hearts: hearts,
-                onPromptCurrentLocation: onPromptCurrentLocation,
-                onRefresh: onRefresh
-            ) {
-                markAndStreakRow
-            } sheet: {
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                    notices
-                    partnerGameCard
-                    dailyPromptCard
-                    firstStepsCard
-                    unreadChatsCard
-                    milestoneAndWidget
-                    lookBackCard
-                }
-                // On the map layout today's question sits on the page, with no card.
-                .environment(\.dailyPromptIsInline, true)
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.bottom, PaeoniaSpacing.space16)
+        ZStack {
+            if drawsOwnHeader && (showsMapHeader || isSwitchingLayout) {
+                mapHeaderContent
+                    .opacity(usesMapHeader ? 1 : 0)
+                    .allowsHitTesting(usesMapHeader)
+                    .accessibilityHidden(!usesMapHeader)
             }
-            // On the whole page, so the map and the avatars move with a card that changes height.
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: accessNotice)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeStreak.isSavable)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: games?.partnerGame?.kind)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: milestoneIsLoading)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: relationshipStartedOn)
-        } else {
-            classicContent
+            if !usesMapHeader || isSwitchingLayout {
+                classicContent
+                    .opacity(usesMapHeader ? 0 : 1)
+                    .allowsHitTesting(!usesMapHeader)
+                    .accessibilityHidden(usesMapHeader)
+            }
         }
+    }
+
+    /// Puts the incoming layout on screen, hidden, then fades it in while the cards both
+    /// layouts share move between their places. MapLibre holds up the main thread for a
+    /// moment while it sets up a new map, and a fade that starts then jumps to its end, so
+    /// the map header gets that moment before it fades in.
+    private func switchLayout(showingMapHeader shows: Bool) {
+        // Replacing a layout would dismiss its story or note editor. Wait until it closes.
+        guard !isCovered else { return }
+        layoutSwitchTask?.cancel()
+        guard drawsOwnHeader, !reduceMotion else {
+            isSwitchingLayout = false
+            showsMapHeader = shows
+            return
+        }
+        isSwitchingLayout = true
+        layoutSwitchTask = Task {
+            if shows {
+                do {
+                    try await Task.sleep(for: .milliseconds(600))
+                } catch {
+                    return
+                }
+            }
+            guard !Task.isCancelled, mapTiles.showsMapHeader == shows else { return }
+            guard !isCovered else {
+                isSwitchingLayout = false
+                return
+            }
+            withAnimation(PaeoniaMotion.homeLayoutChange) {
+                showsMapHeader = shows
+            } completion: {
+                guard mapTiles.showsMapHeader == shows else { return }
+                isSwitchingLayout = false
+            }
+        }
+    }
+
+    private var usesMapHeader: Bool {
+        drawsOwnHeader && showsMapHeader
+    }
+
+    private var mapHeaderContent: some View {
+        HomeMapLayout(
+            mapState: locationMapState,
+            partnerName: partnerName,
+            stories: stories,
+            storyPeople: storyPeople,
+            hearts: hearts,
+            mapTiles: mapTiles,
+            onPromptCurrentLocation: onPromptCurrentLocation,
+            onRefresh: onRefresh
+        ) {
+            markAndStreakRow
+        } sheet: {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                notices
+                partnerGameCard
+                dailyPromptCard
+                    .matchedGeometryEffect(
+                        id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: usesMapHeader
+                    )
+                firstStepsCard
+                unreadChatsCard
+                milestoneAndWidget
+                    .matchedGeometryEffect(id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: usesMapHeader)
+                lookBackCard
+            }
+            // On the map layout today's question sits on the page, with no card.
+            .environment(\.dailyPromptIsInline, true)
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.bottom, PaeoniaSpacing.space16)
+        }
+        // On the whole page, so the map and the avatars move with a card that changes height.
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: accessNotice)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeStreak.isSavable)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: games?.partnerGame?.kind)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: milestoneIsLoading)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: relationshipStartedOn)
     }
 
     private var classicContent: some View {
         ScrollView {
-            // One layout for phone and wide iPad keeps the cards' identity, so turning
-            // the iPad doesn't reset them or close the milestone sheet. The spacing
-            // matches the gap inside the milestone/drawing tile row so the cards read
-            // as one grid. The partner's game leads while they are in it, because it
-            // is the one card that can't wait. Then today's questions, and the tiles
-            // sit above the map, so a milestone day's celebration plays on screen.
-            // The header with the partners' story avatars sits above every card, also on a wide iPad.
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                homeHeader
-                notices
-                cardsLayout {
-                    partnerGameCard
-                    dailyPromptCard
-                    firstStepsCard
-                    unreadChatsCard
-                    milestoneAndWidget
-                        .layoutValue(key: HomeWideRole.self, value: .tiles)
-                    mapCard
-                    lookBackCard
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-            // The header starts right under the status bar, where a navigation bar would
-            // put the mark and the streak.
-            .padding(.bottom, PaeoniaSpacing.space16)
-            .paeoniaReadableWidth(
-                isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
-            )
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: accessNotice)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeStreak.isSavable)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: games?.partnerGame?.kind)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
-            // The daily card is tall until today's question is answered, then a short row.
-            .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
+            classicCards
         }
         .scrollIndicators(.hidden)
-        .refreshable {
-            await onRefresh()
+        .refreshable { await onRefresh() }
+    }
+
+    private var classicCards: some View {
+        // One layout for phone and wide iPad keeps the cards' identity, so turning
+        // the iPad doesn't reset them or close the milestone sheet. The spacing
+        // matches the gap inside the milestone/drawing tile row so the cards read
+        // as one grid. The partner's game leads while they are in it, because it
+        // is the one card that can't wait. Then today's questions, and the tiles
+        // sit above the map, so a milestone day's celebration plays on screen.
+        // The header with the partners' story avatars sits above every card, also on a wide iPad.
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+            homeHeader
+            notices
+            cardsLayout {
+                partnerGameCard
+                dailyPromptCard
+                    .matchedGeometryEffect(
+                        id: HomeLayoutSwitchCard.dailyPrompt, in: layoutSwitch, isSource: !usesMapHeader
+                    )
+                firstStepsCard
+                unreadChatsCard
+                milestoneAndWidget
+                    .matchedGeometryEffect(
+                        id: HomeLayoutSwitchCard.tiles, in: layoutSwitch, isSource: !usesMapHeader
+                    )
+                    .layoutValue(key: HomeWideRole.self, value: .tiles)
+                mapCard
+                lookBackCard
+            }
         }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+        // The header starts right under the status bar, where a navigation bar would
+        // put the mark and the streak.
+        .padding(.bottom, PaeoniaSpacing.space16)
+        .paeoniaReadableWidth(
+            isWideLayout ? PaeoniaSpacing.wideContentWidth : PaeoniaSpacing.readableContentWidth
+        )
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: unreadChats.isEmpty)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: accessNotice)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeStreak.isSavable)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: games?.partnerGame?.kind)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: lookBack?.item)
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: firstSteps)
+        // The daily card is tall until today's question is answered, then a short row.
+        .animation(reduceMotion ? nil : PaeoniaMotion.homeLayoutChange, value: dailyChallengeCardState.kind)
     }
 
     /// iPhone, which is portrait only, and a narrow iPad window, where the tab bar is at
@@ -275,150 +374,9 @@ struct PairedHomeView: View {
     }
 }
 
-/// The cards `body` lays out.
-extension PairedHomeView {
-    /// The notices above the cards: access ending (`AccessNotice`), and a broken
-    /// streak's free save day.
-    @ViewBuilder
-    private var notices: some View {
-        if let accessNotice {
-            HomeAccessNoticeCard(notice: accessNotice)
-                .transition(.opacity)
-        }
-        if dailyChallengeStreak.isSavable {
-            HomeStreakSaveCard(streak: dailyChallengeStreak, onTap: onTapStreak)
-        }
-    }
-
-    @ViewBuilder
-    private var unreadChatsCard: some View {
-        if !unreadChats.isEmpty {
-            HomeUnreadChatsCard(
-                chats: unreadChats,
-                partnerName: partnerName,
-                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                onOpenChat: onOpenChat
-            )
-            .transition(.opacity)
-        }
-    }
-
-    /// Only the game the partner opened last. Whose turn it is belongs on the Games tab.
-    @ViewBuilder
-    private var partnerGameCard: some View {
-        if let games, let game = games.partnerGame,
-           let card = game.card(games.cardContext(for: game.kind, isOnHub: false), open: onOpenGame) {
-            card
-                .id(game.kind)
-                .transition(.opacity)
-        }
-    }
-
-    private var mapCard: some View {
-        CoupleMapCard(
-            currentName: currentName,
-            currentProfilePhotoAssetID: currentProfilePhotoAssetID,
-            partnerName: partnerName,
-            partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-            state: locationMapState,
-            onPromptCurrentLocation: onPromptCurrentLocation,
-            onPauseSharing: onPauseLocationSharing,
-            hearts: hearts,
-            aspectRatio: isWideLayout ? 1 : 2
-        )
-    }
-
-    /// An old question, drawing or memory, below the map.
-    @ViewBuilder
-    private var lookBackCard: some View {
-        if let lookBack, let item = lookBack.item {
-            HomeLookBackCard(
-                item: item,
-                currentUserID: currentUserID,
-                partnerName: partnerName,
-                thumbnailLoader: lookBack.thumbnailLoader,
-                onOpen: { onOpenLookBack(item) }
-            )
-            .transition(.opacity)
-        }
-    }
-
-    @ViewBuilder
-    private var firstStepsCard: some View {
-        if let firstSteps {
-            HomeFirstStepsCard(
-                steps: firstSteps,
-                partnerName: partnerName,
-                isCovered: isCovered,
-                onOpen: onOpenFirstStep,
-                onClose: onCloseFirstSteps,
-                onFinished: onCloseFirstSteps
-            )
-            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.92)))
-            // In front of the cards around it, so they don't hide the petals of its finish moment.
-            .zIndex(1)
-        }
-    }
-
-    /// PROTOTYPE: today's question in the state named by `-proto.home.daily`, for screenshots.
-    private var protoDailyState: DailyChallengeCardState? {
-        #if DEBUG
-        guard ProcessInfo.processInfo.arguments.contains("-proto.home.daily") else { return nil }
-        let prompt = "Hva er et lite øyeblikk med oss du tenker tilbake på?"
-        let locked = [
-            DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "En favorittminne", daysAgo: 1),
-            DailyChallengeCardState.LockedPartnerQuestion(id: UUID(), shortPrompt: "Drømmeturen deres", daysAgo: 2),
-        ]
-        return switch UserDefaults.standard.string(forKey: "proto.home.daily") {
-        case "loading": DailyChallengeCardState(kind: .loading)
-        case "noChallenge": DailyChallengeCardState(kind: .noChallenge)
-        case "active": DailyChallengeCardState(kind: .active(prompt: prompt))
-        case "activePartnerAnswered": DailyChallengeCardState(
-            kind: .active(prompt: prompt), hasPartnerAnsweredToday: true
-        )
-        case "activeEarlier": DailyChallengeCardState(
-            kind: .active(prompt: prompt), hasEarlierQuestionsToAnswer: true,
-            lockedPartnerQuestions: locked, moreLockedPartnerQuestionCount: 3
-        )
-        case "completeWaiting": DailyChallengeCardState(kind: .complete)
-        case "completeBoth": DailyChallengeCardState(kind: .complete, hasPartnerAnsweredToday: true)
-        case "completeEarlier": DailyChallengeCardState(
-            kind: .complete, hasPartnerAnsweredToday: true, hasEarlierQuestionsToAnswer: true,
-            lockedPartnerQuestions: locked, moreLockedPartnerQuestionCount: 0
-        )
-        default: nil
-        }
-        #else
-        nil
-        #endif
-    }
-
-    private var dailyPromptCard: some View {
-        DailyPromptCard(
-            state: protoDailyState ?? dailyChallengeCardState,
-            partnerName: partnerName,
-            partnerPhotoAssetID: partnerProfilePhotoAssetID,
-            prefersPartnerAnswersWhenComplete: true,
-            zoomNamespace: zoomNamespace,
-            onAnswer: onOpenDailyChallenge,
-            onOpenPartnerQuestion: onOpenPartnerQuestion
-        )
-        .zoomSource(DailyFlowZoom.home, in: zoomNamespace)
-    }
-
-    private var cardsLayout: AnyLayout {
-        isWideLayout
-            ? AnyLayout(HomeWideLayout(spacing: PaeoniaSpacing.space16))
-            : AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space16))
-    }
-
-    private var currentName: String {
-        currentDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationYouName)
-    }
-
-    private var partnerName: String {
-        partnerDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationPartnerName)
-    }
+private enum HomeLayoutSwitchCard {
+    case dailyPrompt
+    case tiles
 }
 
 #Preview {
@@ -427,7 +385,8 @@ extension PairedHomeView {
             currentDisplayName: "Hjalmar",
             partnerDisplayName: "Oda",
             relationshipStartedOn: "2026-01-08",
-            locationMapState: .partnerUnknown(.notSharing)
+            locationMapState: .partnerUnknown(.notSharing),
+            mapTiles: HomeMapTileStatus()
         )
     }
     .environment(PaeoniaBannerCenter())

@@ -144,6 +144,7 @@ extension MainTabView {
             dailyChallengeStreak: StreakPillState(dailyChallengeViewModel.streak),
             zoomNamespace: zoomNamespace,
             locationMapState: locationMapState,
+            mapTiles: models.mapTiles,
             onPromptCurrentLocation: {
                 Task { await actions.shareLocation() }
             },

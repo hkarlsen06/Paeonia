@@ -133,19 +133,21 @@ struct HomeMapCouple {
 struct HomeMapScreen {
     let width: CGFloat
     let topInset: CGFloat
+    let additionalHeaderHeight: CGFloat
     /// Where the safe area ends, at the top of the tab bar.
     let visibleBottom: CGFloat
 
-    init(geo: GeometryProxy) {
+    init(geo: GeometryProxy, additionalHeaderHeight: CGFloat) {
         width = geo.size.width
         topInset = geo.safeAreaInsets.top
+        self.additionalHeaderHeight = additionalHeaderHeight
         visibleBottom = topInset + geo.size.height
     }
 
     /// The page's height when the cards fit: the last card ends just above the tab bar.
     var fillHeight: CGFloat { visibleBottom - PaeoniaSpacing.space8 }
     /// At least room for the avatars, plus the fade.
-    var shortestBand: CGFloat { topInset + 212 + HomeMapMetrics.fadeHeight }
+    var shortestBand: CGFloat { topInset + additionalHeaderHeight + 212 + HomeMapMetrics.fadeHeight }
     /// The map view's own height: the tallest the band can be.
     var mapHeight: CGFloat { visibleBottom + HomeMapMetrics.fadeHeight }
 }
@@ -181,7 +183,7 @@ struct HomeMapMetrics {
         // Together they sit side by side in the middle. Apart, they may go anywhere in that
         // space with the same margin above and below, room for a note bubble each way, so
         // the pair always stays centered.
-        let pillBottom = screen.topInset + PaeoniaSpacing.compactButtonHeight
+        let pillBottom = screen.topInset + PaeoniaSpacing.compactButtonHeight + screen.additionalHeaderHeight
         let half = avatarSize / 2
         let width = screen.width
         // An avatar's edge never comes closer to the screen's sides than the cards do.

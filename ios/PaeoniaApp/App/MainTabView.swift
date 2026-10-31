@@ -93,6 +93,7 @@ final class MainTabModels {
     lazy var coupleDates = CoupleDatesViewModel()
     lazy var stories = dependencies.storiesViewModel ?? StoriesViewModel()
     lazy var avatarStyling = dependencies.avatarStylingModel ?? AvatarStylingModel()
+    lazy var mapTiles = dependencies.homeMapTiles ?? HomeMapTileStatus()
     lazy var search = SearchViewModel.live()
     /// The memories' comments and the stories' replies the partner wrote in and the user has not read.
     lazy var chatSummaries = ThreadChatSummaries(service: dailyChallenge.chatService)

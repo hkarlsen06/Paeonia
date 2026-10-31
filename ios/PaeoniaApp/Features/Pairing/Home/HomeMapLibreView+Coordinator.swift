@@ -7,6 +7,8 @@ extension HomeMapLibreView {
         var lastFraming: FramingKey?
         /// MapLibre drops timed camera moves until the map has loaded.
         var isLoaded = false
+        private var didFail = false
+        private var loadTask: Task<Void, Never>?
         weak var map: MLNMapView?
         var intro = Intro.none
         /// From 0 to 1 as the intro carries the avatars to their places. 1 without an intro.
@@ -76,8 +78,49 @@ extension HomeMapLibreView {
         }
 
         func mapViewDidFinishLoadingMap(_ mapView: MLNMapView) {
+            loadTask?.cancel()
             isLoaded = true
+            didFail = false
+            parent?.tiles.mapLoaded()
             startIntroIfReady()
+        }
+
+        func mapViewDidFailLoadingMap(_ mapView: MLNMapView, withError error: any Error) {
+            isLoaded = false
+            didFail = true
+            guard let tiles = parent?.tiles else { return }
+            loadTask?.cancel()
+            loadTask = Task { await tiles.mapDidNotLoad() }
+        }
+
+        /// A map that has not drawn within `HomeMapTileStatus.loadTimeout` counts as failed.
+        func watchLoad() {
+            loadTask?.cancel()
+            loadTask = Task { [weak self] in
+                do {
+                    try await Task.sleep(for: HomeMapTileStatus.loadTimeout)
+                } catch {
+                    return
+                }
+                guard let self, !self.isLoaded, let tiles = self.parent?.tiles else { return }
+                self.didFail = true
+                await tiles.mapDidNotLoad()
+            }
+        }
+
+        func stopWatchingLoad() {
+            loadTask?.cancel()
+            loadTask = nil
+            parent = nil
+        }
+
+        /// MapLibre gives up on a style that failed to load. Once a check finds OpenFreeMap
+        /// answering again, the map asks for it once more.
+        func reloadIfTilesReturned(_ map: MLNMapView) {
+            guard didFail, !isLoaded, parent?.tiles.tiles == .available else { return }
+            didFail = false
+            watchLoad()
+            map.reloadStyle(nil)
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {

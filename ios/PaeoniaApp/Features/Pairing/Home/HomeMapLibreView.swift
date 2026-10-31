@@ -5,7 +5,7 @@ import UIKit
 /// A MapLibre map of OpenStreetMap data from OpenFreeMap, recolored to
 /// Paeonia's plum. Its camera fits both partners inside `framedBox`. The coordinator reports
 /// their projected positions as the camera moves, so SwiftUI's avatars follow the map.
-/// The data credit lives off the map.
+/// The data credit sits behind the info button next to the distance (`HomeMapCredits`).
 struct HomeMapLibreView: UIViewRepresentable {
     let current: CLLocationCoordinate2D
     let partner: CLLocationCoordinate2D
@@ -21,11 +21,11 @@ struct HomeMapLibreView: UIViewRepresentable {
     var canStartIntro = true
     /// Takes the map's drags and pinches once the intro has played.
     var explorer: HomeMapExplorer?
+    /// Gets told whether the map loaded, and gives the style to load.
+    let tiles: HomeMapTileStatus
     var onProjection: (HomeMapProjection) -> Void
 
     static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
-    static let credit = "© OpenStreetMap · OpenFreeMap · OpenMapTiles"
-    static let attributionURL = URL(string: "https://www.openstreetmap.org/copyright")
     /// About 10 km across a phone screen: the city, not its streets.
     private static let nearZoom: Double = 11
     /// How far apart the two avatars' centers sit when the couple is apart, in points. Close
@@ -36,8 +36,10 @@ struct HomeMapLibreView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> FramingMapView {
-        let map = FramingMapView(frame: .zero, styleURL: Self.styleURL)
+        context.coordinator.parent = self
+        let map = FramingMapView(frame: .zero, styleURL: tiles.styleURL)
         map.delegate = context.coordinator
+        context.coordinator.watchLoad()
         // SwiftUI can hand over a new box before the view has its new size. Framing again
         // once the size really changes keeps the fit from using the old size.
         let coordinator = context.coordinator
@@ -57,8 +59,14 @@ struct HomeMapLibreView: UIViewRepresentable {
 
     func updateUIView(_ map: FramingMapView, context: Context) {
         context.coordinator.parent = self
+        context.coordinator.reloadIfTilesReturned(map)
         context.coordinator.frameIfNeeded(map)
         context.coordinator.startIntroIfReady()
+    }
+
+    static func dismantleUIView(_ map: FramingMapView, coordinator: Coordinator) {
+        map.delegate = nil
+        coordinator.stopWatchingLoad()
     }
 
     /// The framing for a map view of `size`.
