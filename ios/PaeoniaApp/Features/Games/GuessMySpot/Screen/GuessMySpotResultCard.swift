@@ -23,7 +23,8 @@ struct GuessMySpotResultCard: View {
     private static let photoSide: CGFloat = 128
     private static let columnSpacing = PaeoniaSpacing.space16
 
-    /// The photo centers in the left half, and the title starts where the photo does.
+    /// The photo centers in the left half. The title starts where the photo does,
+    /// and the collapse button keeps the same distance from the other edge.
     private var photoInset: CGFloat {
         guard !dynamicTypeSize.isAccessibilitySize else { return 0 }
         return max(0, ((contentWidth - Self.columnSpacing) / 2 - Self.photoSide) / 2)
@@ -50,18 +51,15 @@ struct GuessMySpotResultCard: View {
             }
         }
         .padding(PaeoniaSpacing.space12)
-        .padding(.bottom, PaeoniaSpacing.space4)
+        // The title's line height adds about 8 pt above its letters, so the
+        // expanded card matches it below the photo.
+        .padding(.bottom, isCollapsed ? PaeoniaSpacing.space4 : PaeoniaSpacing.space8)
         .frame(maxWidth: .infinity)
         .background(
             .paeoniaSurfaceSecondary,
             in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
         )
         .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
-        .overlay(alignment: .topTrailing) {
-            if !isCollapsed, canToggle {
-                collapseButton
-            }
-        }
         .paeoniaImageViewer(selection: $viewer)
         .accessibilityElement(children: .contain)
         .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
@@ -70,9 +68,11 @@ struct GuessMySpotResultCard: View {
 
     private var expandedContent: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
-            verdict
-                .padding(.leading, photoInset)
-                .padding(.trailing, PaeoniaSpacing.space32)
+            HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
+                verdict
+                collapseButton
+            }
+            .padding(.horizontal, photoInset)
             let layout = dynamicTypeSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space12))
                 : AnyLayout(HStackLayout(spacing: Self.columnSpacing))
@@ -144,8 +144,25 @@ struct GuessMySpotResultCard: View {
         .transition(.opacity)
     }
 
-    /// Keeps the map available after the compact card has appeared.
+    /// Keeps the map available after the compact card has appeared. It sits on a
+    /// hidden letter in the title's font, so it centers on the title's first line.
+    /// The space stays while the reveal plays, so the title doesn't rewrap.
     private var collapseButton: some View {
+        Text(verbatim: "A")
+            .font(PaeoniaTypography.largeTitle)
+            .hidden()
+            .accessibilityHidden(true)
+            .frame(width: Self.collapseSide)
+            .overlay {
+                if canToggle {
+                    collapseButtonBody
+                }
+            }
+    }
+
+    private static let collapseSide: CGFloat = 32
+
+    private var collapseButtonBody: some View {
         Button {
             PaeoniaHaptics.selection()
             onToggle?()
@@ -153,13 +170,12 @@ struct GuessMySpotResultCard: View {
             Image(systemName: "chevron.down")
                 .font(PaeoniaTypography.caption.weight(.bold))
                 .foregroundStyle(.paeoniaTextPrimary)
-                .frame(width: 32, height: 32)
+                .frame(width: Self.collapseSide, height: Self.collapseSide)
                 .glassEffect(.regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.6)), in: Circle())
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(PaeoniaSpacing.space4)
         .accessibilityLabel(Text(.guessMySpotRevealCardCollapse))
         .accessibilityIdentifier("guessMySpot.reveal.card.collapse")
         .transition(.opacity)

@@ -46,7 +46,7 @@ struct GuessMySpotScoreLine: View {
     }
 
     private func column(_ player: GamePlayer, tint: Color, total: Int, grows: Bool) -> some View {
-        HStack(alignment: .bottom, spacing: PaeoniaSpacing.space8) {
+        HStack(spacing: PaeoniaSpacing.space8) {
             avatar(player, tint: tint)
             totalLine(total, grows: grows)
         }
