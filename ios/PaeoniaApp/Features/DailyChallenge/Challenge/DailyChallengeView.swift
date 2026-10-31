@@ -28,10 +28,12 @@ struct DailyChallengeScreen: View {
     var stories: StoriesViewModel?
     /// The Topics card under the daily question, which opens the extra questions.
     var topicsCard: TopicsCardContent?
+    var coupleID: UUID?
+    var partnerGameKinds: Set<GameKind> = []
 
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.threadChatContext) private var chatContext
+    @Environment(\.threadChatContext) var chatContext
 
     /// The earlier days under today's list. Built once the signed-in user is known, and
     /// kept while a chat is open on top of this screen.
@@ -59,6 +61,8 @@ struct DailyChallengeScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: PaeoniaSpacing.sectionSpacing) {
+                    activeGameChats
+
                     heroCard
 
                     topicsEntry
@@ -366,7 +370,7 @@ extension DailyChallengeScreen {
             DailyChallengeEarlierDaysView(
                 history: historyViewModel,
                 viewModel: viewModel,
-                conversations: conversations,
+                conversations: ordinaryConversations,
                 today: viewModel.snapshot.todayLocalDate,
                 storyPeople: storyPeople,
                 shownQuestionIDs: Set(readQuestions.map(\.id)),
@@ -379,6 +383,10 @@ extension DailyChallengeScreen {
 
     /// Opens a memory's or a story's chat the same way: read from the phone first, then pushed.
     private func openConversation(_ conversation: SubjectConversation) {
+        if case let .game(game) = conversation.subject {
+            chatContext.openGameChat?(game.kind, nil, nil)
+            return
+        }
         guard !isOpeningChat else { return }
         withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) { isOpeningChat = true }
         Task {
@@ -421,7 +429,7 @@ extension DailyChallengeScreen {
     private var todayRows: [QuestionsTabRow] {
         QuestionsTabRow.todayRows(
             questions: readQuestions.filter { !isDayComplete || $0.id != viewModel.snapshot.todayQuestion?.id },
-            conversations: conversations,
+            conversations: ordinaryConversations,
             today: viewModel.snapshot.todayLocalDate,
             isNew: viewModel.hasNewFromPartner
         )

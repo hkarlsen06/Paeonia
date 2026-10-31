@@ -15,9 +15,7 @@ nonisolated struct ThreadChatHeader: Hashable, Sendable {
     /// question's chat opens with the answers. They are not messages: they take no reply or
     /// reaction, and they never count as unread.
     var notes: [ThreadChatNote] = []
-    var gameSource: GameConversationSource?
-    var gameResult: GameConversationResult?
-    var gameLoadState = GameConversationLoadState.loading
+    var gameSubject: GameChatSubject?
 }
 
 /// One partner's note on a memory, as its chat shows it.

@@ -30,10 +30,10 @@ extension ConsensioViewModel {
         await refresh()
     }
 
-    func stop() {
+    func stop(preservingPresentation: Bool = false) {
         guard isRunning else { return }
         // A reveal watched to its verdict is seen, as leaving it with back.
-        if case .reveal = phase, let id = round?.id, settledRevealRoundID == id {
+        if !preservingPresentation, case .reveal = phase, let id = round?.id, settledRevealRoundID == id {
             continueFromReveal()
         }
         isRunning = false
@@ -50,7 +50,7 @@ extension ConsensioViewModel {
         stopLive()
         // The topic and pin being placed stay, so a look at "What we know" loses
         // nothing. A held reveal stepped past plays on the next visit.
-        deferredReveals = []
+        if !preservingPresentation { deferredReveals = [] }
     }
 
     func scenePhaseChanged(isActive newValue: Bool) {

@@ -38,6 +38,23 @@
         allowsSystemIntegrations: false
       )
       .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
+      .overlay(alignment: .bottomTrailing) {
+        if let gameFlow = environment.gameConversationFlow,
+           UserDefaults.standard.bool(forKey: "paeonia-game-chat-test-events") {
+          Button {
+            Task { await gameFlow.receivePartnerMessage() }
+          } label: {
+            Image(systemName: "envelope.badge.fill")
+              .frame(width: 44, height: 44)
+          }
+          .foregroundStyle(.paeoniaTextPrimary)
+          .background(.paeoniaSurfacePrimary, in: Circle())
+          .padding(.trailing, PaeoniaSpacing.space8)
+          .padding(.bottom, 80)
+          .accessibilityLabel("Receive game message")
+          .accessibilityIdentifier("developer.gameChat.receive")
+        }
+      }
       .task(id: environment.rootViewModel.state) {
         guard environment.rootViewModel.state == .paired else { return }
         await environment.prepareHomeLaunch()
@@ -60,6 +77,7 @@
     let appleSignInProvider = DeveloperLocalFlowAppleSignInProvider()
     let widgetCanvasService: DeveloperWidgetCanvasService
     let featureDependencies: RootFeatureDependencies
+    let gameConversationFlow: DeveloperGameConversationFlow?
     private let homeLaunch: DeveloperHomeLaunchTiming?
     private let visibilityStore = InMemoryLocationVisibilityRepository()
     private let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
@@ -77,6 +95,7 @@
       let inviteStore = DeveloperScenarioInviteStore()
       let pendingOperationStore = InMemoryPendingSyncOperationRepository()
       let gameFlow = gameConversation ? DeveloperGameConversationFlow(pending: pendingOperationStore) : nil
+      gameConversationFlow = gameFlow
       let accessSnapshotStore = InMemoryAccessSyncSnapshotRepository()
       let storeKitService = DeveloperScenarioStoreKitService()
       let widgetCanvasService = DeveloperWidgetCanvasService()

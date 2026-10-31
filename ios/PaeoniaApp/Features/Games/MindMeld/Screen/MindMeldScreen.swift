@@ -9,6 +9,7 @@ struct MindMeldScreen: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.threadChatContext) private var chatContext
     @State private var isConfirmingRestart = false
     @State private var showsTutorial = false
     /// Where the cards and chips of each revealed round sit, so the words can fly between them.
@@ -55,7 +56,7 @@ struct MindMeldScreen: View {
         .task { await viewModel.start() }
         .onAppear { viewModel.prefersReducedMotion = reduceMotion }
         .onChange(of: reduceMotion) { _, newValue in viewModel.prefersReducedMotion = newValue }
-        .onDisappear { viewModel.stop() }
+        .onDisappear { viewModel.stop(preservingPresentation: chatContext.preservesGamePresentation(.mindMeld)) }
         .onChange(of: scenePhase) { _, phase in
             // Control Center, a system alert or the app switcher only make the app inactive. Keep the game live.
             guard phase != .inactive else { return }

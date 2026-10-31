@@ -7,9 +7,11 @@
     let chat: ThreadChatService
     let sync: PaeoniaSyncService
     let games: GamesViewModel
+    private let gateway: DeveloperGameConversationGateway
 
     init(pending: any PendingSyncOperationPersisting, result: GameConversationResult? = nil) {
-      let gateway = DeveloperGameConversationGateway(result: result)
+      let gateway = DeveloperGameConversationGateway(result: result ?? Self.historicalResult())
+      self.gateway = gateway
       let cache = InMemoryThreadChatCache()
       chat = ThreadChatService(gateway: gateway, cache: cache, pendingOperationStore: pending)
       sync = PaeoniaSyncService(
@@ -23,7 +25,32 @@
         pendingOperationStore: pending,
         localPrivacyPurger: NoOpLocalPrivacyPurger()
       )
-      games = GamesViewModel(dependencies: DeveloperGamesScenarioFactory.dependencies(for: .mindMeldOver))
+      games = GamesViewModel(
+        dependencies: DeveloperGamesScenarioFactory.dependencies(for: .mindMeldWrite))
+    }
+
+    func receivePartnerMessage() async {
+      await gateway.receivePartnerMessage()
+      _ = try? await chat.refreshThreadSummaries(
+        ownerUserID: DeveloperScenarioFixture.currentUserID)
+      try? await chat.refreshGameTimeline(
+        ownerUserID: DeveloperScenarioFixture.currentUserID,
+        subject: GameChatSubject(coupleID: DeveloperScenarioFixture.coupleID, kind: .mindMeld))
+      LocalStoreChanges.post(.threadChat, ownerUserID: DeveloperScenarioFixture.currentUserID)
+    }
+
+    private static func historicalResult() -> GameConversationResult? {
+      guard let game = DeveloperMindMeldScenarioFactory.state(for: .mindMeldOver)?.current,
+        case .mindMeld(let history)? = game.conversationResult,
+        let historicalID = UUID(uuidString: "a9000000-0000-4000-8000-000000000001")
+      else { return nil }
+      return .mindMeld(
+        RemoteMindMeldHistoryGame(
+          id: historicalID,
+          gameNumber: max(1, history.gameNumber - 1), state: history.state,
+          endReason: history.endReason,
+          endedByUserID: history.endedByUserID, createdAt: history.createdAt,
+          endedAt: history.endedAt, meldNumber: history.meldNumber, rounds: history.rounds))
     }
   }
 
@@ -39,29 +66,39 @@
 
     func loadThreadSummaries() -> [ThreadChatSummary] { summaries }
 
-    func loadGameResult(coupleID _: UUID, source _: GameConversationSource) async throws -> GameConversationResult? {
-      if let result { return result }
-      return await MainActor.run {
-        guard let game = DeveloperMindMeldScenarioFactory.state(for: .mindMeldOver)?.current else { return nil }
-        return .mindMeld(
-          RemoteMindMeldHistoryGame(
-            id: game.id, gameNumber: game.gameNumber, state: game.state,
-            endReason: game.endReason, endedByUserID: game.endedByUserID, createdAt: game.createdAt,
-            endedAt: game.endedAt, meldNumber: game.meldNumber,
-            rounds: game.rounds.compactMap { round in
-              guard let mine = round.myWord, let theirs = round.partnerWord, let outcome = round.outcome else {
-                return nil
-              }
-              return RemoteMindMeldHistoryRound(
-                roundNumber: round.roundNumber, myWord: mine, partnerWord: theirs,
-                outcome: outcome, countedByUserID: round.countedByUserID
-              )
-            }
-          ))
-      }
+    func receivePartnerMessage() {
+      _ = record(
+        body: "Your move!",
+        subject: .game(
+          GameChatSubject(coupleID: DeveloperScenarioFixture.coupleID, kind: .mindMeld)),
+        coupleID: DeveloperScenarioFixture.coupleID, replyTo: nil,
+        operation: SyncClientOperation(clientID: UUID(), clientSequence: 1, localCreatedAt: .now),
+        senderUserID: DeveloperScenarioFixture.partnerUserID)
     }
 
-    func loadMessages(threadID _: UUID, subjectID _: UUID, before _: ThreadChatMessageCursor?) -> ThreadChatMessagePage
+    func loadGameResult(coupleID _: UUID, source: GameConversationSource) -> GameConversationResult?
+    {
+      guard reference?.source == source else { return nil }
+      return result
+    }
+
+    private var reference: GameChatResultReference? {
+      guard case .mindMeld(let game)? = result else { return nil }
+      return GameChatResultReference(
+        source: .mindMeld(game.id), finishedAt: result?.date ?? game.createdAt,
+        key: game.id.uuidString.lowercased())
+    }
+
+    func loadGameTimeline(subject: GameChatSubject, before _: GameChatTimelineCursor?)
+      -> GameChatTimeline
+    {
+      GameChatTimeline(
+        threadID: summaries.first?.threadID, messages: messages,
+        results: reference.map { [$0] } ?? [], hasMore: false)
+    }
+
+    func loadMessages(threadID _: UUID, subjectID _: UUID, before _: ThreadChatMessageCursor?)
+      -> ThreadChatMessagePage
     {
       ThreadChatMessagePage(messages: messages, hasMore: false)
     }
@@ -69,23 +106,33 @@
     func createThreadWithMessage(
       _ payload: CreateChatThreadPayload, mediaAssetIDs _: [UUID], operation: SyncClientOperation
     ) -> ThreadChatMessageResponse {
-      record(body: payload.body, subject: payload.subject, coupleID: payload.coupleID, operation: operation)
+      record(
+        body: payload.body, subject: payload.subject, coupleID: payload.coupleID,
+        replyTo: payload.replyToGameResultSource.map(ThreadChatItemID.gameResult),
+        operation: operation)
     }
 
     func sendMessage(
-      threadID _: UUID, body: String, mediaAssetIDs _: [UUID], replyTo _: ThreadChatItemID?,
+      threadID _: UUID, body: String, mediaAssetIDs _: [UUID], replyTo: ThreadChatItemID?,
       operation: SyncClientOperation
     ) throws -> ThreadChatMessageResponse {
       guard let summary = summaries.first else { throw ThreadChatServiceError.unavailable }
-      return record(body: body, subject: summary.subject, coupleID: summary.coupleID, operation: operation)
+      return record(
+        body: body, subject: summary.subject, coupleID: summary.coupleID,
+        replyTo: replyTo, operation: operation)
     }
 
-    private func record(body: String, subject: ThreadChatSubject, coupleID: UUID, operation: SyncClientOperation)
+    private func record(
+      body: String, subject: ThreadChatSubject, coupleID: UUID,
+      replyTo: ThreadChatItemID?, operation: SyncClientOperation,
+      senderUserID: UUID = DeveloperScenarioFixture.currentUserID
+    )
       -> ThreadChatMessageResponse
     {
       let message = ThreadChatMessage(
-        id: UUID(), threadID: threadID, subjectID: subject.id, senderUserID: DeveloperScenarioFixture.currentUserID,
-        body: body, createdAt: operation.localCreatedAt, clientOperationID: operation.id, isSending: false
+        id: UUID(), threadID: threadID, subjectID: subject.id, senderUserID: senderUserID,
+        body: body, createdAt: operation.localCreatedAt, clientOperationID: operation.id,
+        isSending: false, replyTo: replyTo
       )
       messages.append(message)
       summaries = [

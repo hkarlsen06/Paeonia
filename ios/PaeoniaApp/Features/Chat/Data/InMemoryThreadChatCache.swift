@@ -6,6 +6,7 @@
         private var storedMessages: [UUID: [UUID: [ThreadChatMessage]]] = [:]
         private var storedRounds: [UUID: [UUID: DailyQuestionChatRoundsRow]] = [:]
         private var storedGames: [UUID: [UUID: GameConversationResult]] = [:]
+        private var storedTimelines: [UUID: [UUID: GameChatTimeline]] = [:]
         private var generation = 0
 
         func summaries(ownerUserID: UUID) -> [ThreadChatSummary] {
@@ -14,6 +15,21 @@
 
         func messages(ownerUserID: UUID, subjectID: UUID) -> [ThreadChatMessage] {
             storedMessages[ownerUserID]?[subjectID] ?? []
+        }
+
+        func gameTimeline(ownerUserID: UUID, subjectID: UUID) -> GameChatTimeline? {
+            storedTimelines[ownerUserID]?[subjectID]
+        }
+
+        @discardableResult
+        func saveGameTimeline(_ timeline: GameChatTimeline, ownerUserID: UUID, subjectID: UUID,
+                              older: Bool, unlessPurgedSince generation: Int) -> Bool {
+            guard generation == self.generation else { return false }
+            let merged = storedTimelines[ownerUserID]?[subjectID]?.merging(timeline, older: older) ?? timeline
+            storedTimelines[ownerUserID, default: [:]][subjectID] = merged
+            saveMessages(merged.messages, ownerUserID: ownerUserID, subjectID: subjectID)
+            LocalStoreChanges.post(.threadChat, ownerUserID: ownerUserID)
+            return true
         }
 
         func gameResult(ownerUserID: UUID, subjectID: UUID) -> GameConversationResult? {
@@ -187,6 +203,7 @@
             storedMessages = [:]
             storedRounds = [:]
             storedGames = [:]
+            storedTimelines = [:]
         }
 
         func purgeGeneration() -> Int {

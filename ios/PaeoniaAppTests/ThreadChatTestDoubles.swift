@@ -145,6 +145,23 @@ actor ChatTestGateway: ThreadChatGateway {
     private(set) var deletedMessageIDs: [UUID] = []
     private var deleteError: (any Error)?
     private var roundsRow: DailyQuestionChatRoundsRow?
+    private var gameResultUpdates: [GameConversationResult?] = []
+
+    func setGameResultUpdates(_ updates: [GameConversationResult?]) {
+        gameResultUpdates = updates
+    }
+
+    nonisolated func liveGameResults(coupleID _: UUID, source _: GameConversationSource)
+        -> AsyncStream<GameConversationResult?>
+    {
+        AsyncStream { continuation in
+            let task = Task {
+                for result in await gameResultUpdates { continuation.yield(result) }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
 
     init(threadID: UUID, messageID: UUID) {
         self.threadID = threadID

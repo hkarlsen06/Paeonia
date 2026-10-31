@@ -33,11 +33,11 @@ extension MindMeldViewModel {
     }
 
     /// The game screen went away.
-    func stop() {
+    func stop(preservingPresentation: Bool = false) {
         guard isRunning else { return }
         // A reveal the person watched to its verdict is seen, as the design says
         // for leaving it with back. The queued marks outlive the screen.
-        if phase == .reveal, let id = resolution.round?.id, settledRevealRoundID == id {
+        if !preservingPresentation, phase == .reveal, let id = resolution.round?.id, settledRevealRoundID == id {
             continueFromReveal()
         }
         isRunning = false

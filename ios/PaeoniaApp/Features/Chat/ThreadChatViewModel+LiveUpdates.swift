@@ -25,7 +25,7 @@ extension ThreadChatViewModel {
         var iterator = changes.makeAsyncIterator()
         while shouldRead {
             await readStore(ownerUserID: ownerUserID)
-            if let threadID, threadID != followedThreadID {
+            if subject.kind != .game, let threadID, threadID != followedThreadID {
                 followedThreadID = threadID
                 messageUpdates?.cancel()
                 messageUpdates = followMessageUpdates(ownerUserID: ownerUserID, threadID: threadID)
@@ -42,12 +42,11 @@ extension ThreadChatViewModel {
     }
 
     private func followGameUpdates(ownerUserID: UUID) -> Task<Void, Never>? {
-        guard case let .game(source) = subject else { return nil }
-        let coupleID = coupleID
+        guard case let .game(game) = subject else { return nil }
         return Task { @MainActor [weak self, service] in
-            for await _ in service.liveGameUpdates(ownerUserID: ownerUserID, coupleID: coupleID, source: source) {
+            for await _ in service.liveGameTimelineUpdates(ownerUserID: ownerUserID, subject: game) {
                 guard let self else { return }
-                self.applyGameResult(await service.cachedGameResult(ownerUserID: ownerUserID, source: source))
+                await self.readStore(ownerUserID: ownerUserID)
             }
         }
     }

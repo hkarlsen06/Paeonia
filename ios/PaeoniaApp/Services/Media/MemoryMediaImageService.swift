@@ -93,6 +93,16 @@ actor MemoryMediaImageService: MemoryMediaImageProviding, MemoryMediaImageCacheC
         MemoryMediaImageService(client: try PaeoniaConvexClientProvider.shared.client())
     }
 
+    func evict(mediaAssetIDs: [UUID]) async {
+        // A suspended download must not put a removed photo back after this returns.
+        privacyGeneration &+= 1
+        for mediaAssetID in mediaAssetIDs {
+            inFlightDownloads.removeValue(forKey: mediaAssetID)?.cancel()
+            PaeoniaImageMemoryCache.remove(mediaAssetID: mediaAssetID)
+            await cache.remove(for: mediaAssetID)
+        }
+    }
+
     func imageData(for mediaAssetID: UUID?) async -> Data? {
         guard let mediaAssetID else {
             return nil

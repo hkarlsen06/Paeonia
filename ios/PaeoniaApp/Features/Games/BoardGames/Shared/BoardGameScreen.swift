@@ -40,6 +40,7 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.threadChatContext) private var chatContext
     @State private var showsTutorial = false
 
     var body: some View {
@@ -68,7 +69,9 @@ struct BoardGameScreen<Board: BoardGameRules, BoardContent: View>: View {
             .preferredColorScheme(.dark)
             .task { await viewModel.start(prefersReducedMotion: reduceMotion) }
             .onChange(of: reduceMotion) { _, newValue in viewModel.prefersReducedMotion = newValue }
-            .onDisappear { viewModel.stop() }
+            .onDisappear {
+                viewModel.stop(preservingPresentation: chatContext.preservesGamePresentation(viewModel.kind))
+            }
             .onChange(of: scenePhase) { _, phase in
                 // Control Center, a system alert or the app switcher only make the app inactive. Keep the game live.
                 guard phase != .inactive else { return }

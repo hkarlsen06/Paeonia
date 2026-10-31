@@ -39,8 +39,9 @@ extension ThreadChatViewModel {
 
     /// The user's own reaction to a message or an answer, as the page shows it.
     func ownReaction(to item: ThreadChatItemID) -> String? {
-        reactionEditor.ownReaction(
-            on: item.reactionTarget,
+        guard let target = item.reactionTarget else { return nil }
+        return reactionEditor.ownReaction(
+            on: target,
             saved: savedReactions[item] ?? [],
             userID: participants.currentUserID
         )
@@ -50,10 +51,10 @@ extension ThreadChatViewModel {
     /// it back. The change shows at once, and the earlier reaction comes back if the
     /// server turns it down.
     func toggleReaction(_ emoji: String, on item: ThreadChatItemID) async {
-        guard let ownerUserID = participants.currentUserID else { return }
+        guard let ownerUserID = participants.currentUserID, let target = item.reactionTarget else { return }
         let failure = await reactionEditor.toggle(
             emoji,
-            on: item.reactionTarget,
+            on: target,
             saved: savedReactions[item] ?? [],
             userID: ownerUserID
         ) { [service, coupleID, subject, threadID] next in

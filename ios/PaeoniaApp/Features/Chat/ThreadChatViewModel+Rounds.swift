@@ -13,7 +13,7 @@ extension ThreadChatViewModel {
     /// story's chat is open to both partners from the start.
     var isChatAvailable: Bool {
         guard participants.currentUserID != nil else { return false }
-        return header?.gameLoadState != .removed && (question == nil || DailyChatRounds.isChatAvailable(rounds))
+        return question == nil || DailyChatRounds.isChatAvailable(rounds)
     }
 
     /// The days as the page draws them. `celebratingInstanceID` is the day whose

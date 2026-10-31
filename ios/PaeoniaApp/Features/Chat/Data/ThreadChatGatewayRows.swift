@@ -7,7 +7,7 @@ nonisolated struct ConversationThreadRow: Decodable {
     let dailyQuestionID: UUID?
     let memoryID: UUID?
     let storyID: UUID?
-    var gameSource: GameConversationSource?
+    var gameKind: GameKind?
     let createdAt: Date
     let updatedAt: Date
     let deletedAt: Date?
@@ -30,7 +30,7 @@ nonisolated struct ConversationThreadRow: Decodable {
         case "daily_question": dailyQuestionID.map(ThreadChatSubject.question)
         case "memory": memoryID.map(ThreadChatSubject.memory)
         case "story": storyID.map(ThreadChatSubject.story)
-        case "game": gameSource.map(ThreadChatSubject.game)
+        case "game": gameKind.map { .game(GameChatSubject(coupleID: coupleID, kind: $0)) }
         default: nil
         }
     }
@@ -65,7 +65,7 @@ nonisolated struct ConversationThreadRow: Decodable {
         case dailyQuestionID = "daily_question_id"
         case memoryID = "memory_id"
         case storyID = "story_id"
-        case gameSource = "game_source"
+        case gameKind = "game_kind"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"
@@ -96,6 +96,7 @@ nonisolated struct ThreadMessageRow: Decodable {
     let media: [MediaRow]?
     let replyToMessageID: UUID?
     let replyToAnswerID: UUID?
+    var replyToGameResultSource: GameConversationSource?
     let reactions: [EmojiReaction]
 
     nonisolated struct MediaRow: Decodable {
@@ -153,7 +154,8 @@ nonisolated struct ThreadMessageRow: Decodable {
             isSending: false,
             voice: voice,
             photos: photos.isEmpty ? nil : photos,
-            replyTo: ThreadChatItemID(messageID: replyToMessageID, answerID: replyToAnswerID),
+            replyTo: replyToGameResultSource.map(ThreadChatItemID.gameResult)
+                ?? ThreadChatItemID(messageID: replyToMessageID, answerID: replyToAnswerID),
             editedAt: editedAt,
             reactions: reactions
         )
@@ -172,6 +174,7 @@ nonisolated struct ThreadMessageRow: Decodable {
         case media
         case replyToMessageID = "reply_to_message_id"
         case replyToAnswerID = "reply_to_answer_id"
+        case replyToGameResultSource = "reply_to_game_result_source"
         case reactions
     }
 }

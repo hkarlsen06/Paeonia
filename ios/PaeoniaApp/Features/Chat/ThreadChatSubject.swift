@@ -1,18 +1,18 @@
 import Foundation
 
-/// One conversation per question, memory, story or finished game.
+/// One conversation per question, memory, story or game kind.
 nonisolated enum ThreadChatSubject: Codable, Hashable, Sendable {
     case question(UUID)
     case memory(UUID)
     case story(UUID)
-    case game(GameConversationSource)
+    case game(GameChatSubject)
 
     enum Kind: String, Codable, Sendable {
         case question = "daily_question"
         case memory, story, game
     }
 
-    enum CodingKeys: String, CodingKey { case kind, id, gameSource }
+    enum CodingKeys: String, CodingKey { case kind, id, gameSubject }
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -20,7 +20,7 @@ nonisolated enum ThreadChatSubject: Codable, Hashable, Sendable {
         case .question: self = .question(try container.decode(UUID.self, forKey: .id))
         case .memory: self = .memory(try container.decode(UUID.self, forKey: .id))
         case .story: self = .story(try container.decode(UUID.self, forKey: .id))
-        case .game: self = .game(try container.decode(GameConversationSource.self, forKey: .gameSource))
+        case .game: self = .game(try container.decode(GameChatSubject.self, forKey: .gameSubject))
         }
     }
 
@@ -28,7 +28,7 @@ nonisolated enum ThreadChatSubject: Codable, Hashable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(kind, forKey: .kind)
         try container.encode(id, forKey: .id)
-        if case let .game(source) = self { try container.encode(source, forKey: .gameSource) }
+        if case let .game(source) = self { try container.encode(source, forKey: .gameSubject) }
     }
 
     var kind: Kind {

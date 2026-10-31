@@ -45,7 +45,23 @@ extension ThreadChatProjection {
             typingJoinsPrevious: typingJoinsPrevious
         )
         var placed = arranged(sections: sections, messages: messages)
-        if let header = input.header {
+        if !input.gameResults.isEmpty {
+            placed += input.gameResults.map { card in
+                placedRow(
+                    decoration(gameResultRowID(card.reference.id), .gameResult(card), at: card.reference.finishedAt),
+                    user: chatUser(nil, isCurrentUser: false, input: input), redrawKey: card)
+            }
+            let resultKeys = Dictionary(input.gameResults.map { (gameResultRowID($0.reference.id), $0.reference.key) },
+                uniquingKeysWith: { first, _ in first })
+            placed.sort {
+                let lhsKind = resultKeys[$0.row.id] == nil ? "message" : "result"
+                let rhsKind = resultKeys[$1.row.id] == nil ? "message" : "result"
+                let lhsKey = resultKeys[$0.row.id] ?? $0.row.message?.id.uuidString.lowercased() ?? $0.row.id
+                let rhsKey = resultKeys[$1.row.id] ?? $1.row.message?.id.uuidString.lowercased() ?? $1.row.id
+                return ($0.row.createdAt, lhsKind, lhsKey) < ($1.row.createdAt, rhsKind, rhsKey)
+            }
+        }
+        if let header = input.header, header.gameSubject == nil {
             placed.insert(contentsOf: subjectRows(header, before: placed, input: input), at: 0)
         }
         if input.partnerIsTyping {
@@ -250,10 +266,18 @@ extension ThreadChatProjection {
         context: MessageRowContext
     ) -> ThreadChatGroupContext {
         let messages = context.input.messages
+        func neighbor(_ candidate: ThreadChatMessage?) -> ThreadChatMessage? {
+            guard let candidate else { return nil }
+            let lower = min(candidate.createdAt, message.createdAt)
+            let upper = max(candidate.createdAt, message.createdAt)
+            return context.input.gameResults.contains {
+                $0.reference.finishedAt >= lower && $0.reference.finishedAt <= upper
+            } ? nil : candidate
+        }
         let groupContext = ThreadChatGrouping.context(
             for: message,
-            previous: index > 0 ? messages[index - 1] : nil,
-            next: index + 1 < messages.count ? messages[index + 1] : nil,
+            previous: neighbor(index > 0 ? messages[index - 1] : nil),
+            next: neighbor(index + 1 < messages.count ? messages[index + 1] : nil),
             currentUserID: context.input.currentUserID
         )
         guard context.typingJoinsPrevious, index == messages.count - 1 else { return groupContext }

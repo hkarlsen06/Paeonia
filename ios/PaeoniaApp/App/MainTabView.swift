@@ -170,6 +170,11 @@ struct MainTabView: View {
     @State var isLookBackDrawingHistoryPresented = false
     /// What the Games tab has open. A notification about a game sets it.
     @State var gamesPath: [GamesDestination] = []
+    @State var gameChatDestination: GameChatDestination?
+    @State var openingGameChatID: UUID?
+    @State var gameChatReturnKind: GameKind?
+    @State var visibleChatSubject: ThreadChatSubject?
+    @State var messageNoticeStartedAt = Date()
     /// The time the Home tab badge counts unseen stories at. It moves forward when the
     /// stories change and when an unseen story leaves Home.
     @State var storyBadgeDate = Date()
@@ -238,11 +243,27 @@ struct MainTabView: View {
             }
             // Memory comments and story replies open as chats from their own screens.
             .environment(\.threadChatContext, threadChatContext)
+            .onChange(of: chatSummaries.summaries) { old, new in
+                announcePartnerMessage(previous: old, current: new)
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { messageNoticeStartedAt = Date() }
+            }
+            .onChange(of: identity.currentUserID) { _, _ in
+                resetGameChatNavigation()
+            }
+            .onChange(of: identity.coupleID) { _, _ in
+                resetGameChatNavigation()
+            }
             .task(id: introGatedLoadKey) {
                 guard introGatedLoadKey.introComplete else { return }
                 await chatSummaries.observe(ownerUserID: identity.currentUserID)
             }
-            .liveFeedDemand(visibleTab: selection.wrappedValue, partnerGames: gamesViewModel.partnerGameKinds)
+            .liveFeedDemand(
+                visibleTab: selection.wrappedValue,
+                partnerGames: gamesViewModel.partnerGameKinds,
+                retainedGames: retainedGameKinds
+            )
     }
 
     private var tabContent: some View {
@@ -397,25 +418,6 @@ struct MainTabView: View {
     /// The partner's name in the words that say who reacted.
     var reactionPartnerName: String {
         identity.partnerDisplayName?.trimmedNonEmpty ?? String(localized: .pairingCelebrationPartnerName)
-    }
-
-    /// What a memory's comments and a story's replies need to open as a chat.
-    var threadChatContext: ThreadChatContext {
-        ThreadChatContext(
-            coupleID: identity.coupleID,
-            participants: dailyChallengeParticipants,
-            summaries: chatSummaries,
-            memories: memoriesViewModel,
-            gameDrawings: gamesViewModel.historyDrawings,
-            service: dailyChallengeViewModel.chatService,
-            operationProvider: dailyChallengeViewModel.operationProvider,
-            syncAfterLocalChange: actions.syncAfterLocalChange,
-            reporting: ChatReporting(
-                service: dependencies.settingsPrivacyService,
-                operationProvider: dependencies.settingsPrivacyOperationProvider,
-                onReportedAndLeft: actions.leftRelationship
-            )
-        )
     }
 
     /// Both partners' identity, used by the daily challenge to label partner-choice

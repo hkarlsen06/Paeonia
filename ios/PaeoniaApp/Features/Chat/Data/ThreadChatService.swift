@@ -1,13 +1,17 @@
 import Foundation
 
 protocol ThreadChatServicing: Actor {
+    func cachedGameTimeline(ownerUserID: UUID, subject: GameChatSubject) async -> GameChatTimeline?
+    func refreshGameTimeline(ownerUserID: UUID, subject: GameChatSubject) async throws
+    func loadOlderGameTimeline(ownerUserID: UUID, subject: GameChatSubject) async throws
+    nonisolated func liveGameTimelineUpdates(ownerUserID: UUID, subject: GameChatSubject) -> AsyncStream<Void>
+
     func keepGameResult(_ result: GameConversationResult, ownerUserID: UUID, source: GameConversationSource) async
-    nonisolated func liveGameUpdates(ownerUserID: UUID, coupleID: UUID, source: GameConversationSource) -> AsyncStream<
-        Void
-    >
     func cachedGameResult(ownerUserID: UUID, source: GameConversationSource) async -> GameConversationResult?
     func refreshGameResult(ownerUserID: UUID, coupleID: UUID, source: GameConversationSource) async throws
         -> GameConversationResult?
+    nonisolated func liveGameResultUpdates(ownerUserID: UUID, coupleID: UUID, source: GameConversationSource)
+        -> AsyncStream<Void>
     func cachedThreadSummaries(ownerUserID: UUID) async -> [ThreadChatSummary]
     func refreshThreadSummaries(ownerUserID: UUID) async throws -> [ThreadChatSummary]
     func cachedMessages(ownerUserID: UUID, subjectID: UUID) async -> [ThreadChatMessage]
@@ -121,17 +125,26 @@ nonisolated struct ThreadChatPresence: Equatable, Sendable {
 }
 
 extension ThreadChatServicing {
-    func keepGameResult(_: GameConversationResult, ownerUserID _: UUID, source _: GameConversationSource) {}
-    nonisolated func liveGameUpdates(ownerUserID _: UUID, coupleID _: UUID, source _: GameConversationSource)
-        -> AsyncStream<Void>
-    {
+    func cachedGameTimeline(ownerUserID _: UUID, subject _: GameChatSubject) -> GameChatTimeline? { nil }
+    func refreshGameTimeline(ownerUserID _: UUID, subject _: GameChatSubject) throws {
+        throw ThreadChatServiceError.unavailable
+    }
+    func loadOlderGameTimeline(ownerUserID _: UUID, subject _: GameChatSubject) throws {}
+    nonisolated func liveGameTimelineUpdates(ownerUserID _: UUID, subject _: GameChatSubject) -> AsyncStream<Void> {
         AsyncStream { $0.finish() }
     }
+
+    func keepGameResult(_: GameConversationResult, ownerUserID _: UUID, source _: GameConversationSource) {}
     func cachedGameResult(ownerUserID _: UUID, source _: GameConversationSource) -> GameConversationResult? { nil }
     func refreshGameResult(ownerUserID _: UUID, coupleID _: UUID, source _: GameConversationSource) throws
         -> GameConversationResult?
     {
         throw ThreadChatServiceError.unavailable
+    }
+    nonisolated func liveGameResultUpdates(ownerUserID _: UUID, coupleID _: UUID, source _: GameConversationSource)
+        -> AsyncStream<Void>
+    {
+        AsyncStream { $0.finish() }
     }
 
     func loadOlderMessages(ownerUserID _: UUID, subjectID _: UUID, threadID _: UUID) -> Bool { false }
@@ -213,6 +226,7 @@ actor ThreadChatService: ThreadChatServicing {
     /// Removes the files of deleted photos and voice messages from this phone.
     let mediaCache: (any DailyAnswerMediaCacheEvicting)?
     let encoder = JSONEncoder()
+    var gameTimelineVersions: [GameChatSubject: Int] = [:]
 
     init(
         gateway: any ThreadChatGateway,
@@ -442,6 +456,8 @@ actor ThreadChatService: ThreadChatServicing {
             _ = try? await refreshNewestMessages(ownerUserID: ownerUserID, subjectID: subjectID, threadID: threadID)
         case .answer:
             _ = try? await refreshRounds(ownerUserID: ownerUserID, coupleID: coupleID, questionID: subjectID)
+        case .gameResult:
+            throw ThreadChatServiceError.unavailable
         }
     }
 

@@ -9,6 +9,7 @@ struct GuessMySpotScreen: View {
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.threadChatContext) private var chatContext
     @State private var showsTutorial = false
 
     var body: some View {
@@ -32,7 +33,7 @@ struct GuessMySpotScreen: View {
         .task { await viewModel.start() }
         .onAppear { viewModel.prefersReducedMotion = reduceMotion }
         .onChange(of: reduceMotion) { _, newValue in viewModel.prefersReducedMotion = newValue }
-        .onDisappear { viewModel.stop() }
+        .onDisappear { viewModel.stop(preservingPresentation: chatContext.preservesGamePresentation(.guessMySpot)) }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .inactive else { return }
             viewModel.scenePhaseChanged(isActive: phase == .active)

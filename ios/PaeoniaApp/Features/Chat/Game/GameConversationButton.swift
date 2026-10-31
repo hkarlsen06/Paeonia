@@ -1,60 +1,68 @@
 import SwiftUI
 
-/// Opens the shared chat. Its first message creates the thread through the normal outbox.
+/// Opens the root-owned chat in Chats while Games retains its current screen.
 struct GameConversationButton: View {
-    let source: GameConversationSource
+    let kind: GameKind
+    var source: GameConversationSource?
     var result: GameConversationResult?
     var compact = false
     var title: LocalizedStringResource?
 
     @Environment(\.threadChatContext) private var context
-    @State private var chat: ThreadChatViewModel?
-    @State private var isOpening = false
+
+    init(source: GameConversationSource, result: GameConversationResult? = nil,
+         compact: Bool = false, title: LocalizedStringResource? = nil) {
+        kind = source.kind
+        self.source = source
+        self.result = result
+        self.compact = compact
+        self.title = title
+    }
+
+    init(kind: GameKind, compact: Bool = false, title: LocalizedStringResource? = nil) {
+        self.kind = kind
+        self.compact = compact
+        self.title = title
+    }
 
     private var resolvedTitle: LocalizedStringResource {
         if let title { return title }
-        return context.summaries?.summary(for: .game(source)) == nil ? .gamesConversationStart : .gamesConversationOpen
+        guard let coupleID = context.coupleID else { return .gamesConversationOpen }
+        return context.summaries?.summary(for: .game(GameChatSubject(coupleID: coupleID, kind: kind))) == nil
+            ? .gamesConversationStart : .gamesConversationOpen
+    }
+
+    private var hasUnreadMessage: Bool {
+        guard let coupleID = context.coupleID else { return false }
+        return context.summaries?.isUnread(.game(GameChatSubject(coupleID: coupleID, kind: kind))) == true
     }
 
     var body: some View {
-        if context.isAvailable {
-            if compact {
-                button.buttonStyle(.plain)
-            } else {
-                button.buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: isOpening))
-            }
+        if context.isAvailable, context.openGameChat != nil {
+            if compact { button.buttonStyle(.plain) }
+            else { button.buttonStyle(PaeoniaSecondaryButtonStyle()) }
         }
     }
 
     private var button: some View {
-        Button {
-            guard !isOpening else { return }
-            isOpening = true
-            Task {
-                chat = await context.makeViewModel(subject: .game(source), header: .game(source, result: result))
-                isOpening = false
-            }
-        } label: {
-            Label {
-                Text(resolvedTitle)
-            } icon: {
+        Button { context.openGameChat?(kind, source, result) } label: {
+            Label { Text(resolvedTitle) } icon: {
                 Image(systemName: "bubble.left.and.bubble.right")
+                    .overlay(alignment: .topTrailing) {
+                        if hasUnreadMessage {
+                            Circle().fill(.paeoniaAccentPrimary)
+                                .frame(width: 10, height: 10)
+                                .offset(x: 4, y: -4)
+                                .accessibilityHidden(true)
+                        }
+                    }
             }
-            .labelStyle(GameConversationLabelStyle(compact: compact))
+                .labelStyle(GameConversationLabelStyle(compact: compact))
         }
-        .disabled(isOpening)
-        .accessibilityLabel(Text(resolvedTitle))
+        .accessibilityLabel(
+            Text(hasUnreadMessage ? .dailyChatCardUnreadTitle(context.participants.partnerName) : resolvedTitle)
+        )
         .accessibilityIdentifier("game.conversation.open")
-        .navigationDestination(
-            isPresented: Binding(
-                get: { chat != nil },
-                set: { if !$0 { chat = nil } }
-            )
-        ) {
-            if let chat {
-                ThreadChatScreen(viewModel: chat)
-            }
-        }
     }
 }
 
@@ -66,7 +74,8 @@ private struct GameConversationLabelStyle: LabelStyle {
 }
 
 extension View {
-    func gameConversationToolbar(_ source: GameConversationSource?, result: GameConversationResult? = nil) -> some View
+    func gameConversationToolbar(_ source: GameConversationSource?, result: GameConversationResult? = nil)
+        -> some View
     {
         toolbar {
             if let source {
@@ -79,15 +88,9 @@ extension View {
 }
 
 extension ThreadChatHeader {
-    static func game(_ source: GameConversationSource, result: GameConversationResult? = nil) -> Self {
-        Self(
-            eyebrow: String(localized: .gamesConversationGame),
-            title: String(localized: source.kind.name),
-            detail: result?.date.formatted(.dateTime.day().month(.abbreviated)),
-            photoAssetID: nil,
-            gameSource: source,
-            gameResult: result
-        )
+    static func game(_ subject: GameChatSubject) -> Self {
+        Self(eyebrow: String(localized: .gamesConversationGame), title: String(localized: subject.kind.name),
+             detail: nil, photoAssetID: nil, gameSubject: subject)
     }
 }
 

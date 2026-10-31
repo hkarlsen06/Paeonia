@@ -70,6 +70,10 @@ protocol ThreadChatCaching: Actor {
         ownerUserID: UUID,
         unlessPurgedSince generation: Int
     ) -> Bool
+    func gameTimeline(ownerUserID: UUID, subjectID: UUID) -> GameChatTimeline?
+    @discardableResult
+    func saveGameTimeline(_ timeline: GameChatTimeline, ownerUserID: UUID, subjectID: UUID,
+                          older: Bool, unlessPurgedSince generation: Int) -> Bool
     /// The finished game last saved on this phone.
     func gameResult(ownerUserID: UUID, subjectID: UUID) -> GameConversationResult?
     @discardableResult
@@ -137,6 +141,9 @@ extension ThreadChatCaching {
         return true
     }
 
+    func gameTimeline(ownerUserID _: UUID, subjectID _: UUID) -> GameChatTimeline? { nil }
+    func saveGameTimeline(_: GameChatTimeline, ownerUserID _: UUID, subjectID _: UUID,
+                          older _: Bool, unlessPurgedSince _: Int) -> Bool { false }
     func gameResult(ownerUserID _: UUID, subjectID _: UUID) -> GameConversationResult? { nil }
     func saveGameResult(_: GameConversationResult?, ownerUserID _: UUID, subjectID _: UUID, unlessPurgedSince _: Int)
         -> Bool
@@ -317,19 +324,6 @@ actor FileThreadChatCache: ThreadChatCaching {
     ) -> Bool {
         guard generation == self.generation else { return false }
         saveSummaries(summaries, ownerUserID: ownerUserID)
-        return true
-    }
-
-    func gameResult(ownerUserID: UUID, subjectID: UUID) -> GameConversationResult? {
-        subjectDocument(ownerUserID, subjectID.uuidString).gameResult
-    }
-
-    @discardableResult
-    func saveGameResult(
-        _ result: GameConversationResult?, ownerUserID: UUID, subjectID: UUID, unlessPurgedSince generation: Int
-    ) -> Bool {
-        guard generation == self.generation else { return false }
-        updateSubject(ownerUserID, subjectID.uuidString) { $0.gameResult = result }
         return true
     }
 

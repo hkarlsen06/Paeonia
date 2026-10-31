@@ -13,10 +13,11 @@ struct GameConversationSourceTests {
             .ultimateTicTacToe(coupleID: id, number: 1), .ludo(coupleID: id, number: 1),
         ]
         for source in sources {
-            let subject = ThreadChatSubject.game(source)
+            let game = GameChatSubject(coupleID: id, kind: source.kind)
+            let subject = ThreadChatSubject.game(game)
             let data = try JSONEncoder().encode(subject)
             #expect(try JSONDecoder().decode(ThreadChatSubject.self, from: data) == subject)
-            #expect(subject.id == source.id)
+            #expect(subject.id == game.id)
         }
     }
 
@@ -30,15 +31,25 @@ struct GameConversationSourceTests {
     }
 
     @Test func gameNotificationOpensTheSameConversationAndCanReply() throws {
-        let id = UUID()
-        let url = try #require(URL(string: "paeonia://daily/game-chat?gameId=\(id.uuidString)"))
-        #expect(PaeoniaDeepLink(url) == .gameChat(subjectID: id))
+        let coupleID = UUID()
+        let url = try #require(URL(string: "paeonia://daily/game-chat?kind=mind_meld"))
+        #expect(PaeoniaDeepLink(url) == .gameChat(kind: .mindMeld))
         let push = NotificationQuickActionPush(userInfo: [
-            "type": "thread_message_sent", "couple_id": UUID().uuidString,
+            "type": "thread_message_sent", "couple_id": coupleID.uuidString,
             "thread_id": UUID().uuidString, "message_id": UUID().uuidString,
-            "game_source": ["kind": "mind_meld", "id": id.uuidString],
+            "game_kind": "mind_meld",
         ])
-        #expect(push.chatSubject == .game(.mindMeld(id)))
+        #expect(push.chatSubject == .game(GameChatSubject(coupleID: coupleID, kind: .mindMeld)))
+        let invalid = try #require(URL(string: "paeonia://daily/game-chat?kind=unknown"))
+        #expect(PaeoniaDeepLink(invalid) == nil)
+    }
+
+    @Test func persistentSubjectMatchesServerAndSeparatesKindsAndCouples() throws {
+        let coupleID = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let subject = GameChatSubject(coupleID: coupleID, kind: .connectFour)
+        #expect(subject.id.uuidString.lowercased() == "5117096c-484e-52e5-c36f-bb03b8cfaad8")
+        #expect(subject.id != GameChatSubject(coupleID: coupleID, kind: .ludo).id)
+        #expect(subject.id != GameChatSubject(coupleID: UUID(), kind: .connectFour).id)
     }
 
     @MainActor
@@ -71,27 +82,21 @@ struct GameConversationSourceTests {
     }
 
     @MainActor
-    @Test func completingTheAttachedGameRedrawsItsExistingChatRow() throws {
+    @Test func expandingTheResultRedrawsItsExistingRowAndDoesNotCreateAMessage() throws {
         let source = GameConversationSource.mindMeld(UUID())
-        func projection(word: String) -> ThreadChatProjection {
-            let result = GameConversationResult.mindMeld(
-                RemoteMindMeldHistoryGame(
-                    id: source.id, gameNumber: 1, state: .melded, endReason: nil, endedByUserID: nil,
-                    createdAt: .distantPast, endedAt: .distantPast, meldNumber: 1,
-                    rounds: [
-                        .init(roundNumber: 1, myWord: word, partnerWord: word, outcome: .match, countedByUserID: nil)
-                    ]
-                ))
-            return ThreadChatProjection.make(
-                input: .init(
-                    rounds: [], messages: [], currentUserID: UUID(), partnerName: "Robin", youName: "You",
-                    header: .game(source, result: result)
-                ))
+        let reference = GameChatResultReference(
+            source: source, finishedAt: .now, key: source.id.uuidString.lowercased())
+        func projection(expanded: Bool) -> ThreadChatProjection {
+            ThreadChatProjection.make(input: .init(
+                rounds: [], messages: [], currentUserID: UUID(), partnerName: "Robin", youName: "You",
+                gameResults: [GameChatResultCard(reference: reference, result: nil,
+                                                isExpanded: expanded, loadState: .loading)]))
         }
-        let earlier = try #require(projection(word: "Fish").exyteMessages.first)
-        let later = try #require(projection(word: "Boat").exyteMessages.first)
+        let earlier = try #require(projection(expanded: false).exyteMessages.first)
+        let later = try #require(projection(expanded: true).exyteMessages.first)
         #expect(earlier.id == later.id)
         #expect(earlier.triggerRedraw != later.triggerRedraw)
+        #expect(projection(expanded: true).rowsByID.values.allSatisfy { $0.message == nil })
     }
 
     @Test func boardSourceRefusesAnInvalidGameNumber() {

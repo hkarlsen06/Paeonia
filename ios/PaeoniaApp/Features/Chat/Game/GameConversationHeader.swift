@@ -4,7 +4,7 @@ nonisolated enum GameConversationLoadState: Hashable {
     case loading, failed, offline, removed
 }
 
-/// The complete result is the first chat row and scrolls away with the messages.
+/// Full detail of an expanded finished-result card.
 struct GameConversationHeader: View {
     let source: GameConversationSource
     let result: GameConversationResult?

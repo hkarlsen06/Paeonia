@@ -182,33 +182,42 @@ extension MainTabView {
 
     private var questionsTab: some View {
         NavigationStack(path: $questionsPath) {
-            DailyChallengeScreen(
-                viewModel: dailyChallengeViewModel,
-                zoomNamespace: zoomNamespace,
-                focusedQuestionIDs: $focusedDailyQuestionIDs,
-                chatQuestion: $dailyChatQuestion,
-                requestedConversationID: $requestedConversationID,
-                onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
-                onTapStreak: openStreakDetails,
-                onRefresh: {
-                    await refreshDailyChallenge()
-                },
-                onAnswerPartnerQuestion: openPartnerAnswerFlow,
-                privacySafetyService: dependencies.settingsPrivacyService,
-                privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
-                onReportedAndLeft: actions.leftRelationship,
-                conversations: chatSummaries.conversations(
-                    memories: memoriesViewModel.timeline.flatMap(\.memories),
-                    stories: storiesViewModel.stories
-                ),
-                storyPeople: storyPeople,
-                stories: storiesViewModel,
-                topicsCard: questionsTopicsCard
-            )
-            .searchToolbarButton(action: openSearch)
-            .analyticsScreen("questions")
-            .navigationDestination(for: QuestionsDestination.self, destination: questionsDestination)
+            questionsContent
+                .searchToolbarButton(action: openSearch)
+                .analyticsScreen("questions")
+                .navigationDestination(for: QuestionsDestination.self, destination: questionsDestination)
+                .navigationDestination(item: $gameChatDestination) { destination in
+                    ThreadChatScreen(viewModel: destination.viewModel)
+                }
         }
+    }
+
+    private var questionsContent: some View {
+        DailyChallengeScreen(
+            viewModel: dailyChallengeViewModel,
+            zoomNamespace: zoomNamespace,
+            focusedQuestionIDs: $focusedDailyQuestionIDs,
+            chatQuestion: $dailyChatQuestion,
+            requestedConversationID: $requestedConversationID,
+            onOpenAnswerFlow: { openAnswerFlow(source: .questions) },
+            onTapStreak: openStreakDetails,
+            onRefresh: {
+                await refreshDailyChallenge()
+            },
+            onAnswerPartnerQuestion: openPartnerAnswerFlow,
+            privacySafetyService: dependencies.settingsPrivacyService,
+            privacyOperationProvider: dependencies.settingsPrivacyOperationProvider,
+            onReportedAndLeft: actions.leftRelationship,
+            conversations: chatSummaries.conversations(
+                memories: memoriesViewModel.timeline.flatMap(\.memories),
+                stories: storiesViewModel.stories
+            ),
+            storyPeople: storyPeople,
+            stories: storiesViewModel,
+            topicsCard: questionsTopicsCard,
+            coupleID: identity.coupleID,
+            partnerGameKinds: Set(gamesViewModel.partnerGameKinds)
+        )
     }
 
     /// The Topics card on the Questions tab, and the topic questions that join its list.

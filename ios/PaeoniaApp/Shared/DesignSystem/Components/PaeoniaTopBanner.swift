@@ -263,6 +263,7 @@ struct PaeoniaTopBanner: View {
             }
             .buttonStyle(.plain)
             .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("app.banner.open")
         } else {
             mainContentLabel
         }

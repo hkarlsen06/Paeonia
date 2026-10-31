@@ -28,6 +28,7 @@ nonisolated struct ThreadChatSubjectDocument: Codable, Equatable {
     var messages: [ThreadChatMessage] = []
     var rounds: DailyQuestionChatRoundsRow?
     var gameResult: GameConversationResult?
+    var gameTimeline: GameChatTimeline?
 }
 
 /// A message the server accepted, in the terms the cache needs to replace the copy

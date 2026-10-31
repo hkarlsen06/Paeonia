@@ -115,6 +115,7 @@ struct ThreadChatRow {
         case message(ThreadChatMessage)
         /// The card that opens a memory's or a story's chat.
         case subjectHeader(ThreadChatHeader)
+        case gameResult(GameChatResultCard)
         /// A partner's note on the memory, under the card. Read-only.
         case note(ThreadChatNote)
         /// The partner's typing dots, after the newest message.
@@ -167,6 +168,7 @@ struct ThreadChatProjection {
         /// What a memory's or a story's chat is about, shown before the first message.
         var header: ThreadChatHeader?
         var pendingAnswer: PendingAnswer?
+        var gameResults: [GameChatResultCard] = []
     }
 
     static let questionRowPrefix = "question-"
@@ -176,6 +178,9 @@ struct ThreadChatProjection {
     static let waitingRowPrefix = "waiting-"
     static let typingRowID = "typing-indicator"
     static let headerRowID = "subject-header"
+    static let gameResultRowPrefix = "game-result-"
+
+    static func gameResultRowID(_ id: UUID) -> String { gameResultRowPrefix + id.uuidString }
     static let noteRowPrefix = "note-"
     /// A message its sender took back. The long-press menu has nothing to offer on it.
     static let deletedRowPrefix = "deleted-"
@@ -187,7 +192,7 @@ struct ThreadChatProjection {
 
     /// Rows with nothing to reply to, report, or edit: no long-press menu.
     static func isDecorationRowID(_ id: String) -> Bool {
-        id == typingRowID || id == headerRowID
+        id == typingRowID || id == headerRowID || id.hasPrefix(gameResultRowPrefix)
             || id.hasPrefix(matchRowPrefix) || id.hasPrefix(waitingRowPrefix) || id.hasPrefix(noteRowPrefix)
             || id.hasPrefix(pendingAnswerRowPrefix)
     }
@@ -218,6 +223,9 @@ struct ThreadChatProjection {
             preview(of: messages[id], id: id, input: input)
         case let .answer(id):
             answerPreview(of: id, input: input)
+        case let .gameResult(source):
+            ThreadChatReplyPreview(target: target, senderName: String(localized: source.kind.name),
+                snippet: String(localized: .gamesConversationResultTitle), isVoice: false)
         }
     }
 

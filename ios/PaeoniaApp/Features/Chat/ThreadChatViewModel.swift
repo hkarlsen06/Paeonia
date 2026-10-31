@@ -67,7 +67,13 @@ final class ThreadChatViewModel {
     var isLoadingOlderMessages = false
     /// The server said the oldest message of the chat is already on this phone.
     var hasReachedChatStart = false
-    /// The message or answer the next send replies to, shown above the composer.
+    /// Finished results interleaved with this game's messages.
+    var gameReferences: [GameChatResultReference] = []
+    var gameResults: [UUID: GameConversationResult] = [:]
+    var expandedGameResultIDs: Set<UUID> = []
+    var gameResultLoadStates: [UUID: GameConversationLoadState] = [:]
+    var focusedGameResultID: UUID?
+    /// The message, answer or finished result the next send replies to.
     var replyTarget: ThreadChatReplyTarget?
     /// The user's own message whose text the composer is changing.
     var editTarget: ThreadChatMessage?
@@ -177,10 +183,6 @@ final class ThreadChatViewModel {
     /// first frame already shows every message and nothing moves in after it appears.
     func prepare() async {
         guard let ownerUserID = participants.currentUserID, isChatAvailable else { return }
-        if case let .game(source) = subject, let result = header?.gameResult {
-            await service.keepGameResult(result, ownerUserID: ownerUserID, source: source)
-        }
-        await readGameResult(ownerUserID: ownerUserID)
         await readStore(ownerUserID: ownerUserID)
     }
 
@@ -191,10 +193,17 @@ final class ThreadChatViewModel {
             return
         }
 
-        await readGameResult(ownerUserID: ownerUserID)
         await readStore(ownerUserID: ownerUserID)
-
-        await loadGameResult(ownerUserID: ownerUserID)
+        if case let .game(game) = subject {
+            do {
+                try await service.refreshGameTimeline(ownerUserID: ownerUserID, subject: game)
+                await readStore(ownerUserID: ownerUserID)
+                await refreshExpandedGameResults()
+            } catch {
+                if !error.isCancellation { notice = .loadFailed(PaeoniaFailure(error)) }
+            }
+            return
+        }
 
         // The days come first, so an earlier day shows before the messages arrive. A failed
         // read keeps the days already on screen.
@@ -238,6 +247,10 @@ final class ThreadChatViewModel {
         if question != nil {
             cachedRounds = await service.cachedRounds(ownerUserID: ownerUserID, questionID: subject.id)
         }
+        var cachedTimeline: GameChatTimeline?
+        if case let .game(game) = subject {
+            cachedTimeline = await service.cachedGameTimeline(ownerUserID: ownerUserID, subject: game)
+        }
         let cached = await service.cachedMessages(ownerUserID: ownerUserID, subjectID: subject.id)
         let pending = await service.pendingMessages(
             ownerUserID: ownerUserID,
@@ -262,6 +275,7 @@ final class ThreadChatViewModel {
         // Removed messages are left out of the cache, so a count of what is shown cannot tell
         // whether older ones exist. A short chat costs one extra read at the top, which ends it.
         hasOlderMessages = !hasReachedChatStart && cached.contains { !$0.isSending && !$0.sendFailed }
+        if let cachedTimeline { applyGameTimeline(cachedTimeline) }
         hasReadStore = true
         raiseNoticeForNewFailures()
         let newestPartner = messages.last { $0.senderUserID != ownerUserID }?.id
@@ -329,37 +343,16 @@ final class ThreadChatViewModel {
     }
 }
 
-extension ThreadChatViewModel {
-    private func loadGameResult(ownerUserID: UUID) async {
-        if case let .game(source) = subject {
-            header?.gameLoadState = .loading
-            do {
-                applyGameResult(
-                    try await service.refreshGameResult(ownerUserID: ownerUserID, coupleID: coupleID, source: source))
-            } catch {
-                if !error.isCancellation {
-                    let failure = PaeoniaFailure(error)
-                    header?.gameLoadState = failure == .offline ? .offline : .failed
-                    if header?.gameResult == nil { notice = .loadFailed(failure) }
-                }
-            }
-        }
-    }
-
-    private func readGameResult(ownerUserID: UUID) async {
-        if case let .game(source) = subject,
-            let result = await service.cachedGameResult(ownerUserID: ownerUserID, source: source)
-        {
-            header?.gameResult = result
-        }
-    }
-
-    func applyGameResult(_ result: GameConversationResult?) {
-        header?.gameResult = result
-        if result == nil {
-            header?.gameLoadState = .removed
-            messages = []
-        }
+private extension ThreadChatViewModel {
+    func applyGameTimeline(_ cachedTimeline: GameChatTimeline) {
+        threadID = cachedTimeline.threadID ?? threadID
+        gameReferences = cachedTimeline.results.filter { gameResultLoadStates[$0.id] != .removed }
+        hasOlderMessages = cachedTimeline.hasMore
+        hasReachedChatStart = !cachedTimeline.hasMore
+        let validIDs = Set(gameReferences.map(\.id))
+        gameResults = gameResults.filter { validIDs.contains($0.key) }
+        expandedGameResultIDs.formIntersection(validIDs)
+        if case let .gameResult(result)? = replyTarget, !validIDs.contains(result.id) { replyTarget = nil }
     }
 }
 

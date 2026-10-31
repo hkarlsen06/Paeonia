@@ -9,6 +9,8 @@ extension ThreadChatView {
             ThreadChatProjection.preview(of: message, id: message.id, input: projectionInput)
         case let .answer(answer):
             ThreadChatProjection.answerPreview(of: answer.answerID, input: projectionInput)
+        case let .gameResult(reference):
+            ThreadChatProjection.preview(of: .gameResult(reference.source), messages: [:], input: projectionInput)
         case nil:
             nil
         }

@@ -12,6 +12,7 @@ extension BoardGameViewModel {
         isActive = true
         await reload()
         guard isRunning, !Task.isCancelled else { return }
+        if isShowingMissedEnding { resumeAfterWaitingForBoard() }
         loops.beginObserving(
             currentUserID: { [weak self] in self?.currentUserID },
             reload: { [weak self] in await self?.reload() }
@@ -32,12 +33,22 @@ extension BoardGameViewModel {
 
     /// The board screen went away. The board starts fresh next time, from where
     /// this phone left the game.
-    func stop() {
+    func stop(preservingPresentation: Bool = false) {
         guard isRunning else { return }
         isRunning = false
         attentionCue.reset()
         loops.cancelFollowing()
-        pauseDisplay()
+        if preservingPresentation {
+            replayTask?.cancel()
+            replayTask = nil
+            isReplaying = false
+            outcomeTask?.cancel()
+            outcomeTask = nil
+            if result == nil { stagedOutcomeGame = nil }
+            markShown()
+        } else {
+            pauseDisplay()
+        }
         loops.endHeartbeat()
     }
 

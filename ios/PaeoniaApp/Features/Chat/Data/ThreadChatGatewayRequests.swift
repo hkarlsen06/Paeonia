@@ -95,6 +95,7 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
     let mediaAssetIDs: [UUID]
     /// Left out of the request when nil.
     let replyToAnswerID: UUID?
+    let replyToGameResultSource: GameConversationSource?
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
@@ -110,6 +111,7 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
         body = payload.body
         self.mediaAssetIDs = mediaAssetIDs
         replyToAnswerID = payload.replyToAnswerID
+        replyToGameResultSource = payload.replyToGameResultSource
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -121,10 +123,11 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
         case questionID = "p_question_id"
         case memoryID = "p_memory_id"
         case storyID = "p_story_id"
-        case gameSource = "p_source"
+        case gameKind = "p_game_kind"
         case body = "p_body"
         case mediaAssetIDs = "p_media_asset_ids"
         case replyToAnswerID = "p_reply_to_answer_id"
+        case replyToGameResultSource = "p_reply_to_game_result_source"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"
@@ -144,7 +147,8 @@ nonisolated struct CreateThreadMessageRequest: Encodable {
             try container.encode(subject.id, forKey: .storyID)
         case let .game(source):
             try container.encode(coupleID, forKey: .coupleID)
-            try container.encode(source, forKey: .gameSource)
+            try container.encode(source.kind, forKey: .gameKind)
+            try container.encodeIfPresent(replyToGameResultSource, forKey: .replyToGameResultSource)
         }
         try container.encode(body, forKey: .body)
         try container.encode(mediaAssetIDs, forKey: .mediaAssetIDs)
@@ -162,6 +166,7 @@ nonisolated struct SendThreadMessageRequest: Encodable {
     /// What the message replies to. Each is left out of the request when nil.
     let replyToMessageID: UUID?
     let replyToAnswerID: UUID?
+    let replyToGameResultSource: GameConversationSource?
     let clientOperationID: UUID
     let clientID: UUID
     let clientSequence: Int64
@@ -179,6 +184,7 @@ nonisolated struct SendThreadMessageRequest: Encodable {
         self.mediaAssetIDs = mediaAssetIDs
         replyToMessageID = replyTo?.messageID
         replyToAnswerID = replyTo?.answerID
+        replyToGameResultSource = replyTo?.gameResultSource
         clientOperationID = operation.id
         clientID = operation.clientID
         clientSequence = operation.clientSequence
@@ -191,6 +197,7 @@ nonisolated struct SendThreadMessageRequest: Encodable {
         case mediaAssetIDs = "p_media_asset_ids"
         case replyToMessageID = "p_reply_to_message_id"
         case replyToAnswerID = "p_reply_to_answer_id"
+        case replyToGameResultSource = "p_reply_to_game_result_source"
         case clientOperationID = "p_client_operation_id"
         case clientID = "p_client_id"
         case clientSequence = "p_client_sequence"

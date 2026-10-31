@@ -38,6 +38,8 @@ struct ThreadChatView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.threadChatContext) private var chatContext
+    @State private var isVisible = false
     @State private var photoViewer: PaeoniaImageViewerSelection?
     @State private var projectionStore = ThreadChatProjectionStore()
     @State private var timestampReveal = ThreadChatTimestampReveal()
@@ -96,9 +98,12 @@ struct ThreadChatView: View {
             guard viewModel.isChatAvailable else { return }
             await viewModel.presence.observe()
         }
-        .onAppear { viewModel.setScreenActive(scenePhase == .active) }
-        .onDisappear { viewModel.setScreenActive(false) }
-        .onChange(of: scenePhase) { _, phase in viewModel.setScreenActive(phase == .active) }
+        .task(id: viewModel.expandedGameResultIDs) {
+            await viewModel.observeExpandedGameResults()
+        }
+        .onAppear { isVisible = true; updateVisibility() }
+        .onDisappear { isVisible = false; updateVisibility() }
+        .onChange(of: scenePhase) { updateVisibility() }
         .onChange(of: viewModel.presence.partnerIsTyping) { _, isTyping in
             guard isTyping else { return }
             AccessibilityNotification.Announcement(
@@ -107,6 +112,11 @@ struct ThreadChatView: View {
         }
         .onChange(of: viewModel.notice) { _, notice in showBanner(for: notice) }
         .onChange(of: viewModel.hasReadStore) { applyOpeningScroll() }
+        .onChange(of: viewModel.focusedGameResultID, initial: true) { _, id in
+            if let id {
+                scrollTarget = ScrollToParams(messageID: ThreadChatProjection.gameResultRowID(id), position: .middle)
+            }
+        }
         .onChange(of: viewModel.hasLoadedRounds) { applyOpeningScroll() }
         .onChange(of: revealingRowID, initial: true) { finishRevealAfterItPlays() }
         .paeoniaImageViewer(selection: $photoViewer)
@@ -124,7 +134,8 @@ struct ThreadChatView: View {
             partnerLastReadMessageID: viewModel.presence.partnerLastReadMessageID,
             reactions: viewModel.chatReactions,
             header: viewModel.header,
-            pendingAnswer: pendingAnswer
+            pendingAnswer: pendingAnswer,
+            gameResults: viewModel.gameResultCards
         )
     }
 
@@ -133,8 +144,14 @@ struct ThreadChatView: View {
         case .question: Text(.dailyChatNavigationTitle)
         case .memory: Text(.memoriesCommentsTitle)
         case .story: Text(.storiesRepliesTitle)
-        case .game: Text(.gamesConversationNavigationTitle)
+        case .game: Text(verbatim: viewModel.header?.title ?? String(localized: .gamesConversationNavigationTitle))
         }
+    }
+
+    private func updateVisibility() {
+        let active = isVisible && scenePhase == .active
+        viewModel.setScreenActive(active)
+        chatContext.chatVisibilityChanged?(viewModel.subject, active)
     }
 
     private var projection: ThreadChatProjection {
@@ -231,7 +248,9 @@ struct ThreadChatView: View {
             onTapQuoted: jumpToMessage,
             onOpenPhoto: openPhoto,
             onOpenHeader: onOpenHeader,
-            onReloadGame: { Task { await viewModel.load() } },
+            onToggleGameResult: { reference in Task { await viewModel.toggleGameResult(reference) } },
+            onReplyGameResult: { viewModel.setReplyTarget($0) },
+            onReloadGameResult: { reference in Task { await viewModel.loadGameResult(reference.source) } },
             timestampReveal: timestampReveal,
             messageFrame: messageFrame
         )
@@ -328,7 +347,7 @@ extension ThreadChatView {
             onReport?(.dailyAnswer(answerID: answer.answerID))
         case let .message(target):
             onReport?(.threadMessage(messageID: target.id))
-        case .question, .partnerChoiceMatch, .waiting, .subjectHeader, .note, .typing, .pendingAnswer:
+        case .question, .partnerChoiceMatch, .waiting, .subjectHeader, .note, .typing, .pendingAnswer, .gameResult:
             break
         }
     }
@@ -369,6 +388,9 @@ extension ThreadChatView {
         case let .answer(answerID):
             rowID = ThreadChatProjection.answerRowID(for: answerID)
             guard projection.rowsByID[rowID] != nil else { return }
+        case let .gameResult(source):
+            Task { await viewModel.focusGameResult(source: source, result: nil) }
+            return
         }
         scrollTarget = nil
         Task { @MainActor in

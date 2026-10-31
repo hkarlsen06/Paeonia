@@ -179,7 +179,8 @@ private nonisolated struct OutgoingChatMessage {
                     body: body,
                     voice: voice,
                     photos: photos,
-                    replyToAnswerID: replyTo?.answerID
+                    replyToAnswerID: replyTo?.answerID,
+                    replyToGameResultSource: replyTo?.gameResultSource
                 )
             )
         }
@@ -209,8 +210,8 @@ private nonisolated struct OutgoingChatMessage {
             isSending: true,
             voice: voice?.pendingVoice,
             photos: photos?.pendingPhotos,
-            // The first message creates the thread, so it can only reply to an answer.
-            replyTo: createThread ? replyTo?.answerID.map(ThreadChatItemID.answer) : replyTo
+            // A first message can reply to a question's answer or a game's result.
+            replyTo: replyTo
         )
     }
 }
@@ -235,7 +236,8 @@ private nonisolated struct PendingChatContent {
             threadID = nil
             voice = payload.voice
             photos = payload.photos
-            replyTo = payload.replyToAnswerID.map(ThreadChatItemID.answer)
+            replyTo = payload.replyToGameResultSource.map(ThreadChatItemID.gameResult)
+                ?? payload.replyToAnswerID.map(ThreadChatItemID.answer)
         case .sendThreadMessage:
             guard let payload = try? JSONDecoder().decode(SendChatMessagePayload.self, from: data),
                   payload.subject.id == subjectID, coupleID == nil || payload.coupleID == coupleID

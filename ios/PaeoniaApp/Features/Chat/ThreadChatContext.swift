@@ -16,6 +16,11 @@ struct ThreadChatContext {
     var operationProvider: (any SyncClientOperationProviding)?
     var syncAfterLocalChange: (@MainActor () async -> Void)?
     var reporting = ChatReporting()
+    var openGameChat: (@MainActor (GameKind, GameConversationSource?, GameConversationResult?) -> Void)?
+    var returnGameKind: GameKind?
+    var returnToGame: (@MainActor () -> Void)?
+    var chatVisibilityChanged: (@MainActor (ThreadChatSubject, Bool) -> Void)?
+    var preservesGamePresentation: @MainActor (GameKind) -> Bool = { _ in false }
 
     /// Whether chats can open at all. Previews and a phone without a couple have none.
     var isAvailable: Bool {

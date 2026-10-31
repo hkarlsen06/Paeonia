@@ -298,6 +298,7 @@ nonisolated struct ThreadChatMessage: Codable, Equatable, Identifiable, Sendable
 nonisolated enum ThreadChatItemID: Codable, Hashable, Sendable {
     case message(UUID)
     case answer(UUID)
+    case gameResult(GameConversationSource)
 
     var messageID: UUID? {
         if case let .message(id) = self { return id }
@@ -310,10 +311,16 @@ nonisolated enum ThreadChatItemID: Codable, Hashable, Sendable {
     }
 
     /// What the shared reactions call this message or answer.
-    var reactionTarget: ReactionTarget {
+    var gameResultSource: GameConversationSource? {
+        if case let .gameResult(source) = self { return source }
+        return nil
+    }
+
+    var reactionTarget: ReactionTarget? {
         switch self {
         case let .message(id): .threadMessage(id)
         case let .answer(id): .dailyAnswer(id)
+        case .gameResult: nil
         }
     }
 
@@ -340,11 +347,13 @@ nonisolated enum ThreadChatItemID: Codable, Hashable, Sendable {
 nonisolated enum ThreadChatReplyTarget: Equatable, Sendable {
     case message(ThreadChatMessage)
     case answer(DailyQuestionAnswerDetail)
+    case gameResult(GameChatResultReference)
 
     var id: ThreadChatItemID {
         switch self {
         case let .message(message): .message(message.id)
         case let .answer(answer): .answer(answer.answerID)
+        case let .gameResult(result): .gameResult(result.source)
         }
     }
 }
@@ -412,6 +421,7 @@ nonisolated struct CreateChatThreadPayload: Codable, Equatable, Sendable {
     var photos: ThreadChatPhotosPayload?
     /// The first message can reply to an answer. There are no messages to reply to yet.
     var replyToAnswerID: UUID?
+    var replyToGameResultSource: GameConversationSource?
 }
 
 nonisolated struct SendChatMessagePayload: Codable, Equatable, Sendable {

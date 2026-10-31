@@ -12297,6 +12297,24 @@
         }
       }
     },
+    "games.chat.messageTitle" : {
+      "comment" : "In-app incoming game message banner title. First value is the partner name, second is the game name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@"
+          }
+        }
+      }
+    },
     "games.conversation.chat" : {
       "comment" : "Short button that opens the conversation about a finished game, beside its continue button.",
       "extractionState" : "manual",
@@ -12491,6 +12509,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Åpne samtalen"
+          }
+        }
+      }
+    },
+    "games.conversation.partnerPlaying" : {
+      "comment" : "Heading above chats for games the partner currently has open. Argument is the partner name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is playing"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ spiller"
+          }
+        }
+      }
+    },
+    "games.conversation.result.collapsed" : {
+      "comment" : "Accessibility state of a closed game result card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collapsed"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lukket"
+          }
+        }
+      }
+    },
+    "games.conversation.result.expanded" : {
+      "comment" : "Accessibility state of an open game result card",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expanded"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utvidet"
+          }
+        }
+      }
+    },
+    "games.conversation.result.title" : {
+      "comment" : "Compact card for a finished game result in its shared chat",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Game finished"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spillet er ferdig"
+          }
+        }
+      }
+    },
+    "games.conversation.return" : {
+      "comment" : "Chat toolbar action that returns to the retained game screen. Argument is the game name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Return to %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilbake til %@"
           }
         }
       }

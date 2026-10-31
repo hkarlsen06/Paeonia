@@ -24,6 +24,13 @@ struct GamesRootView: View {
                 .navigationDestination(for: GamesDestination.self) { destination in
                     viewModel.screen(for: destination)
                         .analyticsScreen(destination.analyticsName)
+                        .toolbar {
+                            if case let .game(kind) = destination {
+                                ToolbarItem(placement: .topBarTrailing) {
+                                    GameConversationButton(kind: kind, compact: true)
+                                }
+                            }
+                        }
                 }
         }
         .dismissesKeyboardOnPush(path)

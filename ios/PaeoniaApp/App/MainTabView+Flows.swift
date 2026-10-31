@@ -417,6 +417,11 @@ extension MainTabView {
     /// Links into the Questions tab refresh first, so a partner's answer or a
     /// new day is on screen before the question is focused or opened.
     private func handleQuestionsDeepLink(_ deepLink: PaeoniaDeepLink) async {
+        if case let .gameChat(kind) = deepLink {
+            openGameChat(kind: kind)
+            self.deepLink.wrappedValue = nil
+            return
+        }
         selection.wrappedValue = .questions
         guard await refreshStillCurrent(for: deepLink) else { return }
 
@@ -425,8 +430,6 @@ extension MainTabView {
             focusedDailyQuestionIDs = [instanceID]
         case .dailyChat(let questionID):
             await openDailyChat(questionID: questionID)
-        case .gameChat(let subjectID):
-            await openGameConversation(subjectID: subjectID, for: deepLink)
         case .dailyToday:
             openTodayAnswerIfNeeded(source: .questions)
         case .topics:
@@ -436,33 +439,6 @@ extension MainTabView {
         }
         guard isCurrent(deepLink) else { return }
         self.deepLink.wrappedValue = nil
-    }
-
-    private func openGameConversation(subjectID: UUID, for deepLink: PaeoniaDeepLink) async {
-        guard let ownerID = identity.currentUserID else { return }
-        do {
-            let summaries = try await dailyChallengeViewModel.chatService.refreshThreadSummaries(ownerUserID: ownerID)
-            guard isCurrent(deepLink) else { return }
-            if summaries.contains(where: { $0.subject.kind == .game && $0.subject.id == subjectID }) {
-                requestedConversationID = subjectID
-            } else {
-                bannerCenter.show(
-                    .error(
-                        title: String(localized: .gamesConversationNavigationTitle),
-                        message: String(localized: .gamesConversationUnavailable)
-                    ))
-            }
-        } catch {
-            guard !error.isCancellation, isCurrent(deepLink) else { return }
-            let message: LocalizedStringResource =
-                PaeoniaFailure(error) == .offline
-                ? .gamesConversationOfflineMessage : .gamesConversationFailedMessage
-            bannerCenter.show(
-                .error(
-                    title: String(localized: .gamesConversationNavigationTitle),
-                    message: String(localized: message)
-                ))
-        }
     }
 
     /// Opens a question's chat on the Questions tab at its newest day, from a

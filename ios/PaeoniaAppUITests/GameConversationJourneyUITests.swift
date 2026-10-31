@@ -6,49 +6,87 @@ final class GameConversationJourneyUITests: XCTestCase {
     }
 
     @MainActor
-    func testStartFromFinishedGameAndReopenFromChats() throws {
+    func testChatDuringGameAndReturnToUnfinishedWord() throws {
+        let app = launchGameFlow()
+        let word = app.textFields["mindMeld.field"]
+        XCTAssertTrue(word.waitForExistence(timeout: 10), app.debugDescription)
+        word.tap()
+        word.typeText("CLOUD")
+        app.buttons["game.conversation.open"].firstMatch.tap()
+        replyToFinishedRound(in: app)
+
+        app.buttons["game.conversation.return"].tap()
+        XCTAssertTrue(word.waitForExistence(timeout: 5))
+        XCTAssertEqual(word.value as? String, "CLOUD")
+        app.buttons["developer.gameChat.receive"].tap()
+        let banner = app.buttons["app.banner.open"]
+        XCTAssertTrue(banner.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(banner.label.contains("Your move!"))
+        banner.tap()
+        XCTAssertTrue(app.staticTexts["What was that?"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Your move!"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.tabBars.firstMatch.buttons.element(boundBy: 1).isSelected)
+
+        app.buttons["developer.gameChat.receive"].tap()
+        XCTAssertFalse(banner.waitForExistence(timeout: 2))
+        reopenFromChats(in: app)
+        app.buttons["game.conversation.return"].tap()
+        XCTAssertTrue(word.waitForExistence(timeout: 5))
+        XCTAssertEqual(word.value as? String, "CLOUD")
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Unfinished game retained after messages and Chats"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    @MainActor
+    private func launchGameFlow() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-game-conversation"
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+                                "-paeonia-scenario-hide-controls", "YES", "-paeonia-game-chat-test-events", "YES"]
         app.launch()
         let tabs = app.tabBars.firstMatch
         XCTAssertTrue(tabs.waitForExistence(timeout: 10))
         tabs.buttons.element(boundBy: 2).tap()
-
         let game = app.buttons["games.hub.mindMeld"]
         for _ in 0..<4 where !game.isHittable { app.scrollViews["games.hub"].swipeUp() }
         XCTAssertTrue(game.waitForExistence(timeout: 10))
         game.tap()
         let tutorial = app.buttons["games.tutorial.next"]
         for _ in 0..<3 where tutorial.waitForExistence(timeout: 1) { tutorial.tap() }
+        return app
+    }
 
-        let start = app.buttons["Start a conversation"]
-        XCTAssertTrue(start.waitForExistence(timeout: 10), app.debugDescription)
-        start.tap()
+    @MainActor
+    private func replyToFinishedRound(in app: XCUIApplication) {
         let field = app.descendants(matching: .any)["chat.composer.field"]
         XCTAssertTrue(field.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.tabBars.firstMatch.buttons.element(boundBy: 1).isSelected)
+        let result = app.buttons["game.conversation.result.a9000000-0000-4000-8000-000000000001"]
+        XCTAssertTrue(result.waitForExistence(timeout: 10), app.debugDescription)
+        result.tap()
         for word in ["OCEAN", "SUSHI", "SALT", "FISH", "SEA", "NET", "BOAT"] {
             XCTAssertTrue(app.staticTexts[word].firstMatch.waitForExistence(timeout: 5))
         }
+        let reply = app.buttons["game.conversation.result.reply"]
+        for _ in 0..<5 where !reply.isHittable { app.swipeUp() }
+        XCTAssertTrue(reply.waitForExistence(timeout: 5))
+        reply.tap()
         field.tap()
         field.typeText("What was that?")
         tapSendAboveKeyboard(in: app)
         XCTAssertTrue(app.staticTexts["What was that?"].waitForExistence(timeout: 5))
+    }
 
+    @MainActor
+    private func reopenFromChats(in app: XCUIApplication) {
         app.navigationBars.buttons.element(boundBy: 0).tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        tabs.buttons.element(boundBy: 1).tap()
-        let conversation = app.buttons["chat.conversation.aaaaaaaa-1000-4000-8000-000000000005"]
+        let conversation = app.buttons["chat.conversation.11181706-63f4-43d9-5210-140fa90e1fce"]
+        for _ in 0..<4 where !conversation.isHittable { app.swipeUp() }
         XCTAssertTrue(conversation.waitForExistence(timeout: 10), app.debugDescription)
         conversation.tap()
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["What was that?"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.descendants(matching: .any)["game.conversation.result"].firstMatch.exists)
-
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Game conversation reopened from Chats"
-        attachment.lifetime = .keepAlways
-        add(attachment)
     }
 
     @MainActor

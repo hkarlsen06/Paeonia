@@ -1,10 +1,12 @@
 import Foundation
 
 protocol ThreadChatGateway: Actor {
-    nonisolated func liveGameResults(coupleID: UUID, source: GameConversationSource) -> AsyncStream<
-        GameConversationResult?
-    >
+    func loadGameTimeline(subject: GameChatSubject, before: GameChatTimelineCursor?) async throws -> GameChatTimeline
+    nonisolated func liveGameTimeline(subject: GameChatSubject) -> AsyncStream<GameChatTimeline>
+
     func loadGameResult(coupleID: UUID, source: GameConversationSource) async throws -> GameConversationResult?
+    nonisolated func liveGameResults(coupleID: UUID, source: GameConversationSource)
+        -> AsyncStream<GameConversationResult?>
     func loadThreadSummaries() async throws -> [ThreadChatSummary]
     /// The newest page of the thread, or the page before `before`.
     func loadMessages(
@@ -42,13 +44,21 @@ protocol ThreadChatGateway: Actor {
 }
 
 extension ThreadChatGateway {
-    nonisolated func liveGameResults(coupleID _: UUID, source _: GameConversationSource) -> AsyncStream<
-        GameConversationResult?
-    > {
+    func loadGameTimeline(subject _: GameChatSubject, before _: GameChatTimelineCursor?) throws -> GameChatTimeline {
+        throw ThreadChatServiceError.unavailable
+    }
+    nonisolated func liveGameTimeline(subject _: GameChatSubject) -> AsyncStream<GameChatTimeline> {
         AsyncStream { $0.finish() }
     }
+
     func loadGameResult(coupleID _: UUID, source _: GameConversationSource) throws -> GameConversationResult? {
         throw ThreadChatServiceError.unavailable
+    }
+
+    nonisolated func liveGameResults(coupleID _: UUID, source _: GameConversationSource)
+        -> AsyncStream<GameConversationResult?>
+    {
+        AsyncStream { $0.finish() }
     }
 
     func loadRounds(coupleID _: UUID, questionID _: UUID) throws -> DailyQuestionChatRoundsRow {
@@ -84,7 +94,7 @@ extension ThreadChatGateway {
 }
 
 actor LiveThreadChatGateway: ThreadChatGateway {
-    private let client: PaeoniaConvexClient
+    let client: PaeoniaConvexClient
     private let isSignedIn: PaeoniaSignedInCheck
 
     init(client: PaeoniaConvexClient, isSignedIn: @escaping PaeoniaSignedInCheck = PaeoniaSignedIn.live) {
@@ -92,30 +102,30 @@ actor LiveThreadChatGateway: ThreadChatGateway {
         self.isSignedIn = isSignedIn
     }
 
-    nonisolated func liveGameResults(coupleID: UUID, source: GameConversationSource) -> AsyncStream<
-        GameConversationResult?
-    > {
+    func loadGameResult(coupleID: UUID, source: GameConversationSource) async throws -> GameConversationResult? {
+        try await client.query(
+            "gameConversations:get_game_conversation", args: GameConversationRequest(coupleID: coupleID, source: source)
+        )
+    }
+
+    nonisolated func liveGameResults(coupleID: UUID, source: GameConversationSource)
+        -> AsyncStream<GameConversationResult?>
+    {
         AsyncStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
             let task = Task { @MainActor in
                 let live = LiveQueryService(transport: ConvexLiveTransport(connection: .shared))
                 let updates = live.subscribe(
                     "gameConversations:get_game_conversation",
                     args: ["p_couple_id": coupleID.uuidString.lowercased(), "p_source": source],
-                    as: GameConversationResult?.self
-                )
+                    as: GameConversationResult?.self)
                 for await update in updates {
-                    if case let .value(result) = update { continuation.yield(result) }
+                    guard !Task.isCancelled else { break }
+                    if case .value(let result) = update { continuation.yield(result) }
                 }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
         }
-    }
-
-    func loadGameResult(coupleID: UUID, source: GameConversationSource) async throws -> GameConversationResult? {
-        try await client.query(
-            "gameConversations:get_game_conversation", args: GameConversationRequest(coupleID: coupleID, source: source)
-        )
     }
 
     func loadThreadSummaries() async throws -> [ThreadChatSummary] {
@@ -296,6 +306,7 @@ actor LiveThreadChatGateway: ThreadChatGateway {
 
     func setReaction(on item: ThreadChatItemID, emoji: String?) async throws {
         try await PaeoniaSignedIn.require(isSignedIn)
-        try await LiveReactionGateway(client: client).setReaction(emoji, on: item.reactionTarget)
+        guard let target = item.reactionTarget else { throw ThreadChatServiceError.unavailable }
+        try await LiveReactionGateway(client: client).setReaction(emoji, on: target)
     }
 }

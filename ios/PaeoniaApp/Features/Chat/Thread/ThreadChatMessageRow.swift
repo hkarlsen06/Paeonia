@@ -31,7 +31,9 @@ struct ThreadChatMessageRow: View {
     var onOpenPhoto: (ThreadChatPhoto) -> Void = { _ in }
     /// Opens the memory or story a header row shows. Nil leaves the header without a tap.
     var onOpenHeader: (() -> Void)?
-    var onReloadGame: () -> Void = {}
+    var onToggleGameResult: (GameChatResultReference) -> Void = { _ in }
+    var onReplyGameResult: (GameChatResultReference) -> Void = { _ in }
+    var onReloadGameResult: (GameChatResultReference) -> Void = { _ in }
     /// Read only by the row views, so a swipe redraws them and not the page around them.
     let timestampReveal: ThreadChatTimestampReveal
     /// Set while ExyteChat shows this row above its long-press menu.
@@ -61,14 +63,11 @@ struct ThreadChatMessageRow: View {
         case let .waiting(waiting):
             DailyChatWaitingNote(waiting: waiting, partnerName: participants.partnerName)
         case let .subjectHeader(header):
-            if let source = header.gameSource {
-                GameConversationHeader(
-                    source: source, result: header.gameResult, participants: participants,
-                    loadState: header.gameLoadState, onRetry: onReloadGame
-                )
-            } else {
-                ThreadChatHeaderCard(header: header, onOpen: onOpenHeader)
-            }
+            ThreadChatHeaderCard(header: header, onOpen: onOpenHeader)
+        case let .gameResult(card):
+            GameChatResultRow(card: card, participants: participants,
+                onToggle: { onToggleGameResult(card.reference) },
+                onReply: { onReplyGameResult(card.reference) }, onRetry: { onReloadGameResult(card.reference) })
         default:
             bubbleRow
         }
@@ -190,7 +189,7 @@ struct ThreadChatMessageRow: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityActions { itemAccessibilityActions }
-        case .partnerChoiceMatch, .waiting, .subjectHeader, .pendingAnswer:
+        case .partnerChoiceMatch, .waiting, .subjectHeader, .pendingAnswer, .gameResult:
             EmptyView()
         case .typing:
             bubble(fill: .paeoniaSurfacePrimary) {

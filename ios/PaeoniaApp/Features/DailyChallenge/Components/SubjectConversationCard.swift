@@ -55,7 +55,7 @@ struct SubjectConversationCard: View {
                 .fill(.paeoniaSurfaceSecondary)
                 .overlay {
                     Image(
-                        systemName: header.gameSource == nil ? MainTab.memories.systemImage : MainTab.games.systemImage
+                        systemName: header.gameSubject == nil ? MainTab.memories.systemImage : MainTab.games.systemImage
                     )
                         .font(PaeoniaTypography.bodyEmphasis)
                         .foregroundStyle(.paeoniaMemory)
