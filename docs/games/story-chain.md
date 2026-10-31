@@ -20,7 +20,7 @@ Decided on 2026-10-13.
 - **Openings.** A new story starts with a choice of three opening lines written by Paeonia in the couple's game language, or with the starter's own first line.
 - **The dare word.** After writing a line, the writer may give the partner a word that the partner's next line must use. The writer picks one of three words Paeonia suggests, or types their own. It is optional on every turn.
 - **The dare check.** A line uses the word when the line contains it, ignoring case. "hunden" and "gårdshund" both count for "hund". The phone and the server run the same check, and Send stays off until the word is used.
-- **Length.** A line is 2 to 240 characters. The composer asks for "one or two sentences" and counts characters, not sentences. The writer's counter turns red above the limit and Send stays off. The watcher sees the extra letters in red until the writer removes them.
+- **Length.** A line is 2 to 240 characters. The composer asks for "one or two sentences" and counts characters, not sentences. Both partners see letters past the limit in red until the writer removes them. The writer's counter also turns red, and Send stays off.
 - **The end.** From the 8th line on, the writer can make their line the last one. Line 20 is always the last.
 - **The title.** The partner who did not write the last line names the story (1 to 40 characters), then starts the next one.
 - **Lines are final.** There is no undo after sending.

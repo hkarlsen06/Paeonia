@@ -50,22 +50,21 @@ struct StoryChainComposer: View {
 
     private var field: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-            TextField(
-                text: $viewModel.draft,
-                prompt: Text(prompt).foregroundStyle(.paeoniaTextTertiary),
-                axis: .vertical
-            ) {
-                Text(prompt)
+            ZStack(alignment: .topLeading) {
+                StoryChainDraftField(text: $viewModel.draft, focus: $isFocused)
+                    .frame(maxWidth: .infinity, minHeight: fieldMinHeight, alignment: .topLeading)
+                if viewModel.draft.isEmpty {
+                    Text(prompt)
+                        .font(StoryChainPageStyle.bodyFont)
+                        .lineSpacing(StoryChainPageStyle.lineSpacing)
+                        .foregroundStyle(.paeoniaTextTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
             }
-            .textFieldStyle(.plain)
-            .autocorrectionDisabled(false)
-            .font(StoryChainPageStyle.bodyFont)
-            .lineSpacing(StoryChainPageStyle.lineSpacing)
-            .foregroundStyle(StoryChainPageStyle.mineInk)
-            .tint(StoryChainPageStyle.mineInk)
-            .focused($isFocused)
-            .frame(maxWidth: .infinity, minHeight: fieldMinHeight, alignment: .topLeading)
             .background { tapArea }
+            .accessibilityLabel(Text(prompt))
             .accessibilityIdentifier("storyChain.composer")
 
             Rectangle()
