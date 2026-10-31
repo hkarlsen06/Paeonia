@@ -7,9 +7,11 @@ struct PaeoniaDecoratedAvatar: View {
     let tint: Color
     let size: CGFloat
     var decoration: AvatarDecoration = .none
+    var selectionRing: Color = .clear
 
     var body: some View {
         PaeoniaProfilePhotoAvatar(mediaAssetID: mediaAssetID, name: name, tint: tint, size: size)
+            .overlay { Circle().strokeBorder(selectionRing, lineWidth: 3) }
             .overlay { AvatarDecorationArtwork(decoration: decoration, size: size) }
     }
 }
@@ -21,6 +23,7 @@ struct PaeoniaCoupleAvatar: View {
     let tint: Color
     let size: CGFloat
     let isCurrentUser: Bool
+    var selectionRing: Color = .clear
 
     @Environment(\.avatarStyling) private var avatarStyling
 
@@ -32,7 +35,7 @@ struct PaeoniaCoupleAvatar: View {
     var body: some View {
         PaeoniaDecoratedAvatar(
             mediaAssetID: mediaAssetID, name: name, tint: tint,
-            size: size, decoration: decoration
+            size: size, decoration: decoration, selectionRing: selectionRing
         )
         .padding(size * decoration.outset)
     }

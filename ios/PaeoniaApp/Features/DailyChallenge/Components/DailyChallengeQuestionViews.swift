@@ -334,30 +334,25 @@ struct DailyPartnerChoicePicker: View {
             onSelect(option.id)
         } label: {
             VStack(spacing: PaeoniaSpacing.space12) {
-                ZStack(alignment: .topTrailing) {
-                    PaeoniaCoupleAvatar(
-                        mediaAssetID: option.profilePhotoAssetID,
-                        name: option.avatarName,
-                        tint: .paeoniaAccentPrimary,
-                        size: avatarSize, isCurrentUser: option.isCurrentUser
-                    )
-                    .overlay {
-                        Circle()
-                            .strokeBorder(
-                                isSelected ? colors.accent : Color.clear,
-                                lineWidth: 3
-                            )
-                    }
+                PaeoniaCoupleAvatar(
+                    mediaAssetID: option.profilePhotoAssetID,
+                    name: option.avatarName,
+                    tint: .paeoniaAccentPrimary,
+                    size: avatarSize, isCurrentUser: option.isCurrentUser,
+                    selectionRing: isSelected ? colors.accent : .clear
+                )
 
+                HStack(spacing: PaeoniaSpacing.space8) {
+                    Text(option.label)
+                        .font(isSelected ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.body)
+                        .foregroundStyle(isSelected ? colors.foreground : colors.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     if isSelected {
-                        selectedBadge
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(colors.accent)
+                            .accessibilityHidden(true)
                     }
                 }
-
-                Text(option.label)
-                    .font(isSelected ? PaeoniaTypography.bodyEmphasis : PaeoniaTypography.body)
-                    .foregroundStyle(isSelected ? colors.foreground : colors.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(PaeoniaSpacing.space8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -372,23 +367,6 @@ struct DailyPartnerChoicePicker: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
-    /// A green disc with a checkmark, rimmed in the background colour so it reads as
-    /// a badge sitting on the selected avatar's top-right edge.
-    private var selectedBadge: some View {
-        Circle()
-            .fill(colors.accent)
-            .frame(width: 28, height: 28)
-            .overlay {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.paeoniaTextInverse)
-            }
-            .overlay {
-                Circle().strokeBorder(colors.control, lineWidth: 2)
-            }
-            .offset(x: 4, y: -4)
-            .accessibilityHidden(true)
-    }
 }
 
 struct DailyUnsupportedAnswerMessage: View {
