@@ -20,7 +20,8 @@ struct GuessMySpotScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .paeoniaFittingNavigationTitle(Text(.guessMySpotTitle))
+        .navigationTitle(Text(.guessMySpotTitle))
+        .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(viewModel.showsCheck)
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -104,8 +105,20 @@ struct GuessMySpotScreen: View {
 
     // MARK: Toolbar
 
+    private var isReveal: Bool {
+        if case .reveal = viewModel.phase { true } else { false }
+    }
+
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
+        // The reveal has no live row, so the partner's presence takes the title's place.
+        ToolbarItem(placement: .principal) {
+            if isReveal {
+                GuessMySpotToolbarPresence(partner: viewModel.partner, isHere: viewModel.partnerStatus != .away)
+            } else {
+                PaeoniaFittingTitle(title: Text(.guessMySpotTitle))
+            }
+        }
         if viewModel.showsCheck {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
@@ -125,6 +138,28 @@ struct GuessMySpotScreen: View {
         ToolbarItem(placement: .topBarTrailing) {
             GameMenu(history: .guessMySpot, showTutorial: { showsTutorial = true })
         }
+    }
+}
+
+// MARK: - Presence
+
+/// The partner's portrait and name, with the shared ring while they have the game open.
+private struct GuessMySpotToolbarPresence: View {
+    let partner: GamePlayer
+    let isHere: Bool
+
+    var body: some View {
+        HStack(spacing: PaeoniaSpacing.space8) {
+            GameAvatar(player: partner, isMe: false, size: 24)
+                .gamePresenceRing(isHere)
+            Text(verbatim: partner.name)
+                .font(.headline)
+                .lineLimit(1)
+        }
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(isHere ? .gamesPresenceHere : .gamesPresenceAway))
+        .accessibilityIdentifier("guessMySpot.reveal.presence")
     }
 }
 

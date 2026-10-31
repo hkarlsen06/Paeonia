@@ -9,14 +9,24 @@ extension View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    ViewThatFits(in: .horizontal) {
-                        title
-                            .font(.headline)
-                            .lineLimit(1)
-                            .accessibilityAddTraits(.isHeader)
-                        Color.clear.frame(width: 0, height: 0)
-                    }
+                    PaeoniaFittingTitle(title: title)
                 }
             }
+    }
+}
+
+/// The principal toolbar item of `paeoniaFittingNavigationTitle`, for a screen
+/// that sometimes shows something else in its place.
+struct PaeoniaFittingTitle: View {
+    let title: Text
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            title
+                .font(.headline)
+                .lineLimit(1)
+                .accessibilityAddTraits(.isHeader)
+            Color.clear.frame(width: 0, height: 0)
+        }
     }
 }

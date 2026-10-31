@@ -63,17 +63,14 @@ struct GuessMySpotResultCard: View {
     private var expandedContent: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             verdict
-                .padding(.horizontal, PaeoniaSpacing.space24)
+                .padding(.trailing, PaeoniaSpacing.space32)
             let layout = dynamicTypeSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space12))
                 : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space16))
             layout {
                 photo
                 scores
-                    .frame(
-                        maxWidth: .infinity,
-                        alignment: dynamicTypeSize.isAccessibilitySize ? .center : .trailing
-                    )
+                    .frame(maxWidth: .infinity)
             }
         }
     }
@@ -83,8 +80,8 @@ struct GuessMySpotResultCard: View {
             .font(PaeoniaTypography.largeTitle)
             .foregroundStyle(.paeoniaTextPrimary)
             .accessibilityAddTraits(.isHeader)
-            .frame(maxWidth: .infinity)
-            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .multilineTextAlignment(.leading)
             .accessibilityFocused(isTitleFocused)
             .accessibilityIdentifier("guessMySpot.reveal.title")
     }
