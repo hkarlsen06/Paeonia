@@ -52,8 +52,7 @@ extension StoryChainViewModel {
             opening: story.story.openingText,
             lines: lines,
             ghost: partnerGhost,
-            arrivingLineID: arrivingLineID,
-            arrivalPace: arrivalPace
+            arrivingLineID: arrivingLineID
         )
     }
 
@@ -92,17 +91,18 @@ extension StoryChainViewModel {
 
     // MARK: - Arrivals
 
-    /// Starts one line writing itself in. `isMine` is a line this person just sent,
-    /// which writes in a little faster. Both values change in the same update.
-    func beginArrival(of lineID: UUID, isMine: Bool) {
+    /// A line already watched live settles into place without replaying it.
+    func beginArrival(of lineID: UUID, number: Int) {
         animatedLineIDs.insert(lineID)
+        if let story, watchedDraftKey == StoryChainWritingKey(storyID: story.id, number: number) {
+            return
+        }
         arrivingLineID = lineID
-        arrivalPace = isMine ? .mine : .partner
-        arrivalStartedOnPartnersTurn = !isMine && phase == .waitingForLine
+        arrivalStartedOnPartnersTurn = phase == .waitingForLine
     }
 
     /// The phase the bottom of the page shows. A line the partner sent while this
-    /// person watched lands before the composer or the title field rises in, even
+    /// person waited lands before the composer or the title field rises in, even
     /// when the server passed the turn while the line was still writing itself in.
     var bottomPhase: StoryChainPhase {
         guard page.arrivingLineID != nil, arrivalStartedOnPartnersTurn,
@@ -112,13 +112,12 @@ extension StoryChainViewModel {
     }
 
     /// The screen is open and it is this person's turn to write or name. The
-    /// partner's newest line writes itself in once, whether it arrived while the
-    /// screen was open or before it opened.
+    /// partner's newest line writes itself in once unless its draft was visible.
     func startArrivalIfNeeded() {
-        guard isRunning, arrivingLineID == nil, phase == .writing || phase == .naming,
+        guard isRunning, isActive, arrivingLineID == nil, phase == .writing || phase == .naming,
               let line = story?.story.lines.last, line.authorUserID != currentUserID,
               !animatedLineIDs.contains(line.id)
         else { return }
-        beginArrival(of: line.id, isMine: false)
+        beginArrival(of: line.id, number: line.number)
     }
 }

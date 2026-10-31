@@ -58,6 +58,7 @@ struct StoryChainComposer: View {
                 Text(prompt)
             }
             .textFieldStyle(.plain)
+            .autocorrectionDisabled(false)
             .font(StoryChainPageStyle.bodyFont)
             .lineSpacing(StoryChainPageStyle.lineSpacing)
             .foregroundStyle(StoryChainPageStyle.mineInk)

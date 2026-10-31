@@ -155,13 +155,11 @@ extension StoryChainViewModel {
         defer { isSavingMove = false }
         PaeoniaHaptics.drawingSent()
         GameSound.send.play()
-        // Before the queue reads the line back, so the first page that has it
-        // already writes it in.
-        beginArrival(of: line.lineID, isMine: true)
+        // The writer already saw these words in the composer.
+        animatedLineIDs.insert(line.lineID)
         do {
             try await moveQueue.addLine(line, ownerUserID: userID)
         } catch {
-            arrivingLineID = nil
             animatedLineIDs.remove(line.lineID)
             notice = .couldNotSaveMove
             return

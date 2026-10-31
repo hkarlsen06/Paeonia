@@ -56,8 +56,10 @@ struct StoryChainViewModelLiveTests {
     // MARK: A line sent live
 
     /// The partner's phone sent line 2 live, and Convex has not delivered it.
-    private func receiveLiveLine(_ lineID: UUID, in environment: Env) {
-        environment.connection.receive(draftMessage(text: "It opened onto a garden."))
+    private func receiveLiveLine(_ lineID: UUID, in environment: Env, showDraft: Bool = true) {
+        if showDraft {
+            environment.connection.receive(draftMessage(text: "It opened onto a garden."))
+        }
         environment.connection.receive(StoryChainLiveMessage(
             story: Fixture.storyID,
             number: 2,
@@ -68,7 +70,7 @@ struct StoryChainViewModelLiveTests {
         ))
     }
 
-    @Test func aLineSentLiveShowsBeforeConvexAndStartsToWriteIn() async {
+    @Test func aLineWatchedLiveSettlesBeforeConvexWithoutReplaying() async {
         let environment = Env.waitingOnPartner()
         let viewModel = environment.viewModel()
         await viewModel.start()
@@ -85,19 +87,21 @@ struct StoryChainViewModelLiveTests {
         #expect(live?.isMine == false)
         #expect(live?.authorName == "Robin")
         #expect(viewModel.page.ghost == nil)
-        #expect(viewModel.page.arrivingLineID == lineID)
-        #expect(viewModel.page.arrivalPace == .partner)
+        #expect(viewModel.page.arrivingLineID == nil)
         viewModel.stop()
     }
 
-    @Test func nothingMovesWhenConvexBringsTheLineThatWasSentLive() async {
+    @Test(arguments: [false, true])
+    func aWatchedLineDoesNotReplayRegardlessOfWhichConfirmationArrivesFirst(convexFirst: Bool) async {
         let environment = Env.waitingOnPartner()
         let viewModel = environment.viewModel()
         await viewModel.start()
         let lineID = UUID()
-        receiveLiveLine(lineID, in: environment)
+        environment.connection.receive(draftMessage(text: "It opened onto a garden."))
+        if !convexFirst {
+            receiveLiveLine(lineID, in: environment, showDraft: false)
+        }
 
-        // The page keeps the one write-in it started.
         let convex = Env.writing(
             turn: Fixture.me,
             lines: [
@@ -112,11 +116,65 @@ struct StoryChainViewModelLiveTests {
         #expect(viewModel.phase == .writing)
         #expect(viewModel.page.lines.map(\.id).last == lineID)
         #expect(viewModel.page.lines.count == 2)
-        #expect(viewModel.page.arrivingLineID == lineID)
+        #expect(viewModel.page.arrivingLineID == nil)
+        #expect(viewModel.bottomPhase == .writing)
 
-        viewModel.arrivalFinished(lineID: lineID)
+        if convexFirst {
+            receiveLiveLine(lineID, in: environment, showDraft: false)
+        }
         await viewModel.reload()
         #expect(viewModel.page.arrivingLineID == nil)
+        viewModel.stop()
+    }
+
+    @Test func aLiveSubmissionWithoutAVisibleDraftStillWritesIn() async {
+        let environment = Env.waitingOnPartner()
+        let viewModel = environment.viewModel()
+        await viewModel.start()
+        let lineID = UUID()
+
+        receiveLiveLine(lineID, in: environment, showDraft: false)
+
+        #expect(viewModel.page.lines.last?.id == lineID)
+        #expect(viewModel.page.arrivingLineID == lineID)
+        viewModel.stop()
+    }
+
+    @Test func aWatchedLineDoesNotReplayAfterAPauseInTyping() async {
+        let environment = Env.waitingOnPartner()
+        let viewModel = environment.viewModel()
+        await viewModel.start()
+        let lineID = UUID()
+        environment.connection.receive(draftMessage())
+        environment.clock.advance(by: StoryChainViewModel.draftLifetime + 1)
+        viewModel.recompute()
+        #expect(viewModel.page.ghost == nil)
+
+        receiveLiveLine(lineID, in: environment, showDraft: false)
+
+        #expect(viewModel.page.arrivingLineID == nil)
+        viewModel.stop()
+    }
+
+    @Test func aLineReceivedInTheBackgroundWritesInOnReturn() async {
+        let environment = Env.waitingOnPartner()
+        let viewModel = environment.viewModel()
+        await viewModel.start()
+        environment.connection.receive(draftMessage())
+        viewModel.scenePhaseChanged(isActive: false)
+        let lineID = UUID()
+        let convex = Env.writing(
+            turn: Fixture.me,
+            lines: [Env.line(1, by: Fixture.me), Env.line(2, by: Fixture.partner, id: lineID)],
+            version: 2
+        )
+        await environment.cache.saveState(convex, ownerUserID: Fixture.me)
+        await viewModel.reload()
+        #expect(viewModel.page.arrivingLineID == nil)
+
+        viewModel.scenePhaseChanged(isActive: true)
+
+        #expect(viewModel.page.arrivingLineID == lineID)
         viewModel.stop()
     }
 

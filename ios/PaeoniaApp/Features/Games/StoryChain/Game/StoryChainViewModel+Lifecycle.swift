@@ -87,6 +87,7 @@ extension StoryChainViewModel {
         localFinishedDates = [:]
         animatedLineIDs = []
         arrivingLineID = nil
+        watchedDraftKey = nil
         selectedOpening = nil
         titleDraft = ""
         namingStoryID = nil

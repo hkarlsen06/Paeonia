@@ -17,6 +17,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-10-31.
 
+- Story Chain skips the arrival animation for a line watched live during this visit and for the writer's own line. A pause in typing does not replay a watched line. A partner's line missed while away still writes itself in. The story and title fields explicitly enable system autocorrect.
+
 - Games size their play area from the available window. Landscape boards and drawing canvases keep a centered pair of columns, with a narrower control column in smaller windows. The controls stay together beside the play area. Drawing tools, colors and size controls share its width, and tool rows scroll when their buttons cannot keep their tap targets. Odd Creatures unfolds in the center of the screen, then moves beside the credits as the camera pulls back. Consensio uses the readable width for its line, and Mind Meld uses larger reveal cards in both iPad orientations. Story Chain keeps its reading column, Guess my spot keeps its photo and map layout, and Ludo keeps its full-screen board.
 
 - Draw & Guess has four live reaction buttons, !, ?, laughter and a heart, under the partner status and above the canvas. Both partners can send them while an unfinished round is open on both phones. Each tap sends one temporary reaction through the existing relay and shows it on both screens. It starts at its button with a random small tilt, drifts upward and leaves through the top edge. Reduce Motion uses a stationary fade. These reactions are not saved and send no push.

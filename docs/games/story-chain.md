@@ -11,7 +11,7 @@ Page eyebrows and partner activity groups are centered. Waiting hints wrap under
 Decided on 2026-10-13.
 
 - **Name.** "Story Chain" in English and "Skrivestafett" in Norwegian. A skrivestafett is the Norwegian school exercise where people take turns writing a story.
-- **Async first, with live letters.** Each partner writes a line whenever they like. When both have the game open, the waiting partner watches every letter as it is typed, deletions included. A sent line arrives on both phones at once with a write-in animation.
+- **Async first, with live letters.** Each partner writes a line whenever they like. When both have the game open, the waiting partner watches every letter as it is typed, deletions included. A watched line settles into place when sent. A partner's line missed while away writes itself in when the page opens.
 - **The writer always knows.** While the partner watches, the writer sees "[Name] is reading along" with the partner's avatar and the shared green presence ring. There is no setting to hide typing.
 - **Openings.** A new story starts with a choice of three opening lines written by Paeonia in the couple's game language, or with the starter's own first line.
 - **The dare word.** After writing a line, the writer may give the partner a word that the partner's next line must use. The writer picks one of three words Paeonia suggests, or types their own. It is optional on every turn.
@@ -53,6 +53,7 @@ The opening is not a line. It belongs to nobody, and it does not count toward th
 
 - A line is 2 to 240 characters after trimming. Line breaks and runs of spaces become one space, so a line is always one run of prose. Characters are counted as Unicode code points on both sides.
 - The writer sees the whole story above the composer. There is no hidden information.
+- The story and title fields explicitly enable system autocorrect. Corrections follow the person's keyboard settings.
 - Send is off while the line is too short, too long, or missing the dare word.
 - When the line is sent, the turn passes to the partner.
 
@@ -91,7 +92,7 @@ Live runs whenever both partners have the game screen open. Without the partner,
   - `present`: anywhere else in the game.
 - **Live letters.** While writing, the phone sends `StoryChainLiveMessage` on the game's `GameLiveChannel`: the story id, the line number, the draft as typed, and whether it is set to be the last line. It sends the whole draft on every change, at most every 50 ms, and again when the partner arrives. Drafts have a separate safety cap of 4,096 code points. Sent lines keep the 240-code-point limit. Nothing in it is saved.
 - **The reader's page.** The partner's draft shows at the end of the page in the partner's ink at reduced opacity, with a blinking caret. Letters past the normalized line limit turn red. Leading and trailing whitespace do not count, and inner whitespace counts once, as it does for Send. A composed character that crosses the limit turns red whole. VoiceOver can read the draft and its character count. Deletions show too. A draft older than 10 seconds without an update fades out, so a writer who left without sending leaves no ghost behind.
-- **Sending live.** The writer's phone sends a final message with the line id and `sent: true` the moment Send is tapped. The reader's page plays the arrival right away, before Convex confirms. When the Convex update arrives with the same line id, nothing moves. The reader's composer opens only once Convex says it is their turn.
+- **Sending live.** The writer's phone sends a final message with the line id and `sent: true` the moment Send is tapped. A line watched live during this visit settles into place without a replay, even after a pause in typing. An unwatched line plays its arrival before Convex confirms. A confirmation never replays the same line, whichever message arrives first. The reader's composer opens only once Convex says it is their turn.
 - **The dare stays a surprise.** The live message never carries the dare word. The reader learns it when their turn opens.
 - **Invite.** When the partner isn't in the game, "Tell [Name] you want to play" shows, as in every live game.
 
@@ -193,8 +194,8 @@ The page is the heart of the game, so it gets the care a book would.
 - Dared word. A gold (`paeoniaInkGold`) underline under the word inside the line that used it.
 - Header. Eyebrow "Story 4" (`caption` bold, uppercase, tracking 1.4, `.paeoniaTextTertiary`), then the title on a finished story.
 - Who wrote it. Tapping a line shows a small popover: avatar, "Robin · Tue 21:04", and "Used LIGHTHOUSE" when the line used a dare. `StoryChainPageText` hit-tests the tap against the line runs it laid out.
-- New lines arriving. A line the partner wrote since my last turn writes itself in when the page opens: word by word, each word rising 4 pt from a soft blur to sharp over 0.35 s, 45 ms apart, compressed so a line takes 1.6 s at most. When the line makes it my turn, the shared turn cue (`gameYourTurn()`) taps the phone as the server hands over the turn, which can be while the line is still writing itself in. A live line does the same at the moment the writer taps Send. Reduce Motion: the line fades in over `motionDefault`.
-- My own line. On Send it writes itself into the page the same way, a little faster (30 ms per word), with `drawingSent()`.
+- New lines arriving. A partner's line missed while away writes itself in when the page opens. Words rise 4 pt from a soft blur to sharp over 0.35 s, 45 ms apart, compressed so a line takes 1.6 s at most. A live submission does the same only when its draft was not watched during this visit. When the line makes it my turn, the shared turn cue, `gameYourTurn()`, taps the phone as the server hands over the turn. Reduce Motion fades the line in over `motionDefault`.
+- My own line. On Send it moves straight into the page, with `drawingSent()` and no replay.
 - VoiceOver. Each line is one element: "Robin: It opened nothing in town, so she took the night bus to the coast." The opening reads "Opening: ..." The page has a rotor of lines.
 
 ### 1. Choose an opening
@@ -251,7 +252,7 @@ The page is the heart of the game, so it gets the care a book would.
 
 - The page stays. Under it, the partner's live draft when they write live.
 - Bottom, one line of status: "[Name] is writing" with three breathing dots while the live draft is moving; "[Name] is here" in the game; "Waiting for [Name]" with "We'll tell you when it's your turn." when away, plus the invite bell at the leading edge of the toolbar.
-- When the partner's line lands and the turn is mine, the composer rises in (`cardReveal`) with the dare capsule if there is one, on the frame the line lands with its haptic. The server often passes the turn while a line sent live is still writing itself in, so the status row stays until the line has landed (`StoryChainViewModel.bottomPhase`). The page glides with the new bottom (`meaningfulMoment`) instead of jumping, and the composer starts to rise 0.12 s after the status row starts to fade, so the two do not show through each other.
+- When the partner's line lands and the turn is mine, the composer rises in with `cardReveal` and the dare capsule if there is one. A watched line needs no arrival animation, so the composer can open as soon as the server passes the turn. An unseen live submission keeps the status row until its animation finishes, through `StoryChainViewModel.bottomPhase`. The page moves with the new bottom using `meaningfulMoment`. The composer starts to rise 0.12 s after the status row starts to fade.
 
 | Key | English | Norwegian |
 |---|---|---|
@@ -353,7 +354,7 @@ The reveal. It should feel like closing a book you wrote together.
 - **Drafts.** The composer's text is saved on the phone (`StoryChainLocalDocument.draft`) half a second after typing stops, and at once when the screen closes, the app goes to the background, or a line is sent. The draft belongs to no story: it comes back into the first empty composer after the screen opens, before any edit, unless the story already holds that exact line. A new line to write keeps words that were never sent. Words typed while Send saves the line stay in the composer.
 - **Refused lines.** When the server refuses a queued line for good, the handler keeps its words in `rescuedLines`. The next composer this person writes in takes them in one cache step that also saves them as the draft, and adds them after whatever it holds, together with the "Your move wasn't sent" notice.
 - **A refused start.** When the server refuses the start of a story for good, the story never exists. The lines, title, seen mark and star queued for it stop too, because nothing could ever send them. The words of its line are rescued the same way.
-- **Arrivals.** A line writes itself in once per app session. The page runs the write-in from a `TimelineView` clock (`StoryChainPageText`), and the view model sets `page.arrivingLineID` and `arrivalPace` (`.partner` 45 ms between words, `.mine` 30 ms). The turn haptic comes from the shared `GameAttentionCue`, not from the arrival.
+- **Arrivals.** A partner's unseen line writes itself in once per app session. The page runs the animation from `StoryChainPageText`'s `TimelineView` clock, with `page.arrivingLineID` and 45 ms between words. The view model remembers which draft the person watched during this visit, so a pause in typing and either confirmation order never replay a watched line. Leaving the screen or backgrounding the app clears that record. Own lines show without an arrival animation. Background updates wait until the screen is active. The shared `GameAttentionCue` owns the turn haptic.
 - **Live room.** Story Chain uses `WidgetLiveDrawing` only for presence and the socket, with no canvas, and sends `StoryChainLiveMessage` on a `GameLiveChannel`.
 - **Built screens.** The screens follow the design with these differences. The dare hint "Use WORD to send." shows only once the line is otherwise valid, because the capsule above the field already names the word. On line 20 the locked switch keeps its "Make this the last line" label, and the placeholder says "Write the last line." The hub card's status before the first story is the card subtitle, and "Waiting for [Name]" reuses the shared Games copy. Each line is its own VoiceOver element, and there is no rotor or VoiceOver action for the line popover yet.
 - **Offline history.** The phone keeps the current and previous story and the first page of "Our stories". An older story's page needs the network.

@@ -140,12 +140,13 @@ final class StoryChainViewModel {
     /// than an edit, such as text the person just deleted.
     @ObservationIgnored var mayRestoreSavedDraft = true
 
-    /// Lines that wrote themselves in during this app session, so none repeats.
+    /// Lines already shown during this app session, so none repeats.
     @ObservationIgnored var animatedLineIDs: Set<UUID> = []
     @ObservationIgnored var arrivingLineID: UUID?
-    @ObservationIgnored var arrivalPace = StoryChainArrivalTiming.partner
-    /// The arriving line is the partner's, and it started while this person
-    /// watched them write it. See `bottomPhase`.
+    /// The partner's draft seen during this visit, including a pause in typing.
+    @ObservationIgnored var watchedDraftKey: StoryChainWritingKey?
+    /// The partner's line started arriving while this person waited for it.
+    /// See `bottomPhase`.
     @ObservationIgnored var arrivalStartedOnPartnersTurn = false
 
     // The live room.
@@ -300,6 +301,9 @@ final class StoryChainViewModel {
         )
         startArrivalIfNeeded()
         page = makePage()
+        if isRunning, isActive, let story, page.ghost != nil {
+            watchedDraftKey = StoryChainWritingKey(storyID: story.id, number: story.story.lines.count + 1)
+        }
 
         live?.switchRole(to: StoryChainResolver.liveRole(for: phase))
         startGameIfNeeded()

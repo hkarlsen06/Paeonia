@@ -38,6 +38,8 @@ struct StoryChainViewModelMoveTests {
         #expect(viewModel.draft.isEmpty)
         #expect(viewModel.dareToGive == nil)
         #expect(viewModel.phase == .waitingForLine)
+        #expect(viewModel.page.lines.last?.id == line.lineID)
+        #expect(viewModel.page.arrivingLineID == nil)
     }
 
     @Test func aSuggestedWordGoesByItsId() async throws {

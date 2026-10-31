@@ -86,9 +86,9 @@
 
   /// Robin writes line 8 in front of the reader: letters one at a time, a slip
   /// that gets deleted, a phrase that gets dropped, an overlong draft that gets
-  /// shortened, then Send. Half a
-  /// second later, while the line still writes itself in, the server confirms it
-  /// and the turn is Alex's. It runs once. The reset button plays it again.
+  /// shortened, then Send. The watched line settles without a replay. Half a
+  /// second later, the server confirms it and the turn is Alex's.
+  /// It runs once. The reset button plays it again.
   @MainActor
   private final class DeveloperStoryChainPartnerTypist {
     private enum Keystroke {

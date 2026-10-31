@@ -19,8 +19,6 @@ nonisolated struct StoryChainArrivalTiming: Equatable, Sendable {
 
     /// A line the partner wrote.
     static let partner = Self()
-    /// A line I just sent, a little faster.
-    static let mine = Self(wordGap: 0.030)
 
     /// The time between two word starts, compressed for long lines.
     func gap(wordCount: Int) -> TimeInterval {

@@ -46,6 +46,7 @@ struct StoryChainNamingBottom: View {
                 Text(.storyChainNamePlaceholder)
             }
             .textFieldStyle(.plain)
+            .autocorrectionDisabled(false)
             .font(Self.titleFont)
             .multilineTextAlignment(.center)
             .foregroundStyle(.paeoniaTextPrimary)

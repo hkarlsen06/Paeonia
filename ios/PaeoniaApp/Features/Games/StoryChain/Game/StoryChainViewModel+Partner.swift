@@ -113,6 +113,7 @@ extension StoryChainViewModel {
         live?.stop()
         // A draft from before the socket closed can't be told from a stale one.
         partnerMessage = nil
+        watchedDraftKey = nil
         recompute()
     }
 
@@ -164,8 +165,8 @@ extension StoryChainViewModel {
         }
     }
 
-    /// Tells the partner's page the line is sent, with its id, so it plays the
-    /// arrival before Convex confirms. No draft message follows it.
+    /// Tells the partner's page the line is sent, with its id, before Convex
+    /// confirms. No draft message follows it.
     func sendLineLive(_ line: StoryChainQueuedLine, number: Int) {
         liveSentKey = StoryChainWritingKey(storyID: line.storyID, number: number)
         liveWindowTask?.cancel()
@@ -186,10 +187,11 @@ extension StoryChainViewModel {
     func receive(_ message: StoryChainLiveMessage) {
         now = dependencies.now()
         partnerMessage = StoryChainReceivedMessage(message: message, receivedAt: now)
-        // The line plays in the moment the writer taps Send. When the same line
-        // comes from Convex, it is already animated and nothing moves.
-        if let lineID = liveSentLine?.lineID, !animatedLineIDs.contains(lineID) {
-            beginArrival(of: lineID, isMine: false)
+        // A line already watched live settles in place. Convex later confirms
+        // the same line without replaying it.
+        if isRunning, isActive, let line = liveSentLine, let lineID = line.lineID,
+           !animatedLineIDs.contains(lineID) {
+            beginArrival(of: lineID, number: line.number)
         }
         recompute()
     }
