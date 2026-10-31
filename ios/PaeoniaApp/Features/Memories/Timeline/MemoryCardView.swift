@@ -15,6 +15,7 @@ nonisolated enum MemoryDateStyle {
 struct MemoryCardView: View {
     let record: MemoryRecord
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var dateShadowFeather = PaeoniaSpacing.space20
 
     var body: some View {
         PaeoniaCard {
@@ -104,11 +105,11 @@ struct MemoryCardView: View {
                 .padding(PaeoniaSpacing.space8)
                 .background {
                     Rectangle()
-                        .fill(.black.opacity(0.7))
-                        .padding([.leading, .bottom], -PaeoniaSpacing.space8)
+                        .fill(.black.opacity(0.65))
+                        .padding([.leading, .bottom], -dateShadowFeather)
                         // Extend beyond the crop so only the left and bottom edges fade.
-                        .padding([.top, .trailing], -PaeoniaSpacing.space24)
-                        .blur(radius: PaeoniaSpacing.space12)
+                        .padding([.top, .trailing], -dateShadowFeather * 2)
+                        .blur(radius: dateShadowFeather)
                 }
         }
         .overlay(alignment: .bottomTrailing) {
