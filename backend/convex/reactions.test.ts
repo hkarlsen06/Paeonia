@@ -70,6 +70,7 @@ const makers: Record<FeedKind, Maker> = {
     const id = newUuid();
     await t.run((ctx) =>
       ctx.db.insert("game_moves", {
+        chat_result_available: true,
         id,
         game_id: newUuid(),
         couple_id: couple.coupleId,

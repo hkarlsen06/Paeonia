@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, components } from "./_generated/api";
 import { answeredRound, seedQuestion } from "./dailyChat.setup";
 import { newUuid } from "./lib/ids";
+import { gameChatSubjectId } from "./lib/gameChatSubjects";
 import { chatTypingRoom, removePresenceRooms } from "./lib/presence";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { failure, op } from "./media.testing";
@@ -28,6 +29,31 @@ const presence = (user: TestCouple["first"], coupleId: string, questionId: strin
   user.as.query(api.chatPresence.get_chat_presence, { p_couple_id: coupleId, p_subject_kind: "daily_question", p_subject_id: questionId });
 
 describe("typing", () => {
+  test("game typing works before its first message and refuses other couples and unpaid members", async () => {
+    vi.useFakeTimers();
+    const t = newTest();
+    const couple = await createCouple(t);
+    const other = await createCouple(t);
+    const unpaid = await createCouple(t, { entitled: false });
+    const args = {
+      p_couple_id: couple.coupleId, p_subject_kind: "game" as const,
+      p_subject_id: await gameChatSubjectId(couple.coupleId, "ludo"),
+    };
+    await couple.first.as.mutation(api.chatPresence.set_chat_typing, { ...args, p_is_typing: true });
+    expect((await couple.second.as.query(api.chatPresence.get_chat_presence, args)).partner_typing).toBe(true);
+    expect(await t.run(ctx => ctx.db.query("game_threads").collect())).toEqual([]);
+    expect((await failure(other.first.as.mutation(api.chatPresence.set_chat_typing, { ...args, p_is_typing: true }))).code).toBe("42501");
+    expect((await failure(other.first.as.mutation(api.chatPresence.set_chat_typing, {
+      ...args, p_couple_id: other.coupleId, p_is_typing: true,
+    }))).code).toBe("22023");
+    expect((await failure(unpaid.first.as.mutation(api.chatPresence.set_chat_typing, {
+      p_couple_id: unpaid.coupleId, p_subject_kind: "game", p_is_typing: true,
+      p_subject_id: await gameChatSubjectId(unpaid.coupleId, "ludo"),
+    }))).code).toBe("42501");
+    expect((await other.first.as.query(api.chatPresence.get_chat_presence, args)).partner_typing).toBe(false);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("the partner sees typing until it stops, and never their own", async () => {
     const t = newTest();
     const couple = await createCouple(t);

@@ -88,7 +88,8 @@ export const consensioTables = {
   })
     .index("by_uuid", ["id"])
     .index("by_game_id_round_number", ["game_id", "round_number"])
-    .index("by_couple_id", ["couple_id"]),
+    .index("by_couple_id", ["couple_id"])
+    .index("by_couple_id_guessed_at_id", ["couple_id", "guessed_at", "id"]),
 
   // The catalog topics a couple has placed, per language. A language starts over when all were used.
   consensio_used_topics: defineTable({

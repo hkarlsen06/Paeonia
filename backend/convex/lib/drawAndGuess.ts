@@ -115,7 +115,9 @@ export async function patchGame(ctx: WriterCtx, game: Game, patch: Partial<Omit<
 }
 
 export async function patchMove(ctx: WriterCtx, move: GameMove, patch: Partial<Omit<GameMove, "_id" | "_creationTime">>): Promise<GameMove> {
-  await ctx.db.patch(move._id, { ...patch, updated_at: nowIso() });
+  const next = { ...move, ...patch };
+  const chatResultAvailable = (next.state === "solved" || next.state === "missed") && next.drawing_media_asset_id !== undefined && next.ended_at !== undefined;
+  await ctx.db.patch(move._id, { ...patch, chat_result_available: chatResultAvailable, updated_at: nowIso() });
   return (await ctx.db.get(move._id))!;
 }
 

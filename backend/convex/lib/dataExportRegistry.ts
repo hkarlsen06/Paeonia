@@ -470,7 +470,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
 
   game_threads: shared("by_couple_id", {
     group: "chat",
-    about: { en: "Which conversation belongs to each finished game.", nb: "Hvilken samtale som hører til hvert ferdige spill." },
+    about: { en: "Which conversation belongs to each game kind.", nb: "Hvilken samtale som hører til hver spilltype." },
   }),
 
   // ---- memories ----

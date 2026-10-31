@@ -6,7 +6,10 @@ import { canAccessCoupleContent } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { getByUuid } from "./lib/db";
 import { fail } from "./lib/errors";
-import { finishedGameForChat, gameChatSource, normalizeGameChatSource } from "./lib/gameChatSubjects";
+import { finishedGameForChat, gameChatSource, gameChatSubjectId, normalizeGameChatSource } from "./lib/gameChatSubjects";
+import { compareGameChatItems, gameChatCursor, gameChatResults, normalizeGameChatCursor, type GameChatCursor } from "./lib/gameChatTimeline";
+import { projectThreadMessages } from "./lib/threadMessageProjection";
+import { gameKind } from "./lib/validators";
 import { uuidArg } from "./lib/ids";
 
 type Returned<Query> = Query extends RegisteredQuery<infer Visibility, infer Args, infer Value> ? Awaited<Value> : never;
@@ -76,5 +79,49 @@ export const get_game_conversation = query({
         return { kind: game.row.kind, result };
       }
     }
+  },
+});
+
+/** One common page boundary over messages and finished result references. */
+export const get_game_chat_timeline = query({
+  args: { p_couple_id: v.string(), p_game_kind: gameKind, p_limit: v.optional(v.number()), p_before: v.optional(gameChatCursor) },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = uuidArg(args.p_couple_id);
+    if (!(await canAccessCoupleContent(ctx, userId, coupleId))) return fail("42501", "active entitled couple access is required");
+    const requestedLimit = args.p_limit ?? 50;
+    if (!Number.isFinite(requestedLimit) || requestedLimit < 1) return fail("23514", "limit must be 1 or more");
+    const limit = Math.min(Math.floor(requestedLimit), 100);
+    const before = normalizeGameChatCursor(args.p_before, args.p_game_kind);
+    const subjectId = await gameChatSubjectId(coupleId, args.p_game_kind);
+    const link = await ctx.db.query("game_threads").withIndex("by_subject_id", q => q.eq("subject_id", subjectId)).unique();
+    const thread = link?.couple_id === coupleId ? await getByUuid(ctx, "conversation_threads", link.thread_id) : null;
+    const availableThread = thread?.couple_id === coupleId && thread.deleted_at === undefined && thread.moderation_status === "visible" ? thread : null;
+    const messages = [];
+    if (availableThread) {
+      const older = await ctx.db.query("thread_messages")
+        .withIndex("by_thread_id_created_at_id", q => before ? q.eq("thread_id", availableThread.id).lt("created_at", before.at) : q.eq("thread_id", availableThread.id))
+        .order("desc").take(limit + 1);
+      const tied = before ? await ctx.db.query("thread_messages")
+        .withIndex("by_thread_id_created_at_id", q => before.item_kind === "message"
+          ? q.eq("thread_id", availableThread.id).eq("created_at", before.at).lt("id", before.key)
+          : q.eq("thread_id", availableThread.id).eq("created_at", before.at))
+        .order("desc").take(limit + 1) : [];
+      messages.push(...tied, ...older);
+    }
+    const results = await gameChatResults(ctx, coupleId, args.p_game_kind, limit + 1, before);
+    const items = [
+      ...messages.map(message => ({ cursor: { at: message.created_at, item_kind: "message", key: message.id } satisfies GameChatCursor, message })),
+      ...results.map(result => ({ cursor: { at: result.finished_at, item_kind: "result", key: result.key } satisfies GameChatCursor, result })),
+    ].sort((a, b) => compareGameChatItems(b.cursor, a.cursor));
+    const page = items.slice(0, limit).reverse();
+    const pageMessages = page.flatMap(item => "message" in item ? [item.message] : []);
+    return {
+      thread_id: availableThread?.id ?? null,
+      messages: availableThread ? await projectThreadMessages(ctx, availableThread, pageMessages) : [],
+      results: page.flatMap(item => "result" in item ? [item.result] : []),
+      has_more: items.length > limit,
+      next_before: items.length > limit ? page[0].cursor : null,
+    };
   },
 });

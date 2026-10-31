@@ -3,16 +3,16 @@ import type { Doc } from "../_generated/dataModel";
 import { dailyQuestionThreadLink } from "./dailyQuestionRounds";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid, withUpdatedAt } from "./db";
-import { finishedGameForChat } from "./gameChatSubjects";
+import { gameChatSubjectId } from "./gameChatSubjects";
 import { uuidArg } from "./ids";
 import { queueThreadMediaAssetsIfOrphaned } from "./mediaOrphans";
 import { deleteReactionsOfThread } from "./reactions";
 import { nowIso } from "./time";
-import { threadKind } from "./validators";
+import { gameKind, threadKind } from "./validators";
 
-// A chat thread is about a question, memory, story or finished game. The kind is the thread's `conversation_threads.kind`. Each kind has its
+// A chat thread is about a question, memory, story or game kind. The kind is the thread's `conversation_threads.kind`. Each kind has its
 // own link table from the subject to the thread: `daily_question_threads`, `memory_threads` and
-// `story_threads`, with finished games linked by `game_threads`. Everything that works for any chat (typing, creating the thread with its
+// `story_threads`, with game kinds linked by `game_threads`. Everything that works for any chat (typing, creating the thread with its
 // first message, pushes) finds the thread and checks the subject here, so a new kind is one
 // more case in these functions.
 
@@ -112,7 +112,12 @@ export async function isChatSubjectAvailable(
   switch (subject.kind) {
     case "game": {
       const link = await ctx.db.query("game_threads").withIndex("by_subject_id", q => q.eq("subject_id", subject.id)).unique();
-      return link?.couple_id === coupleId && (await finishedGameForChat(ctx, coupleId, link.source)) !== null;
+      if (link) return link.couple_id === coupleId;
+      // Opening a game chat does not create its thread. Its canonical room can already show typing.
+      for (const kind of gameKind.members) {
+        if (await gameChatSubjectId(coupleId, kind.value) === subject.id) return true;
+      }
+      return false;
     }
     case "daily_question":
       return (await getByUuid(ctx, "questions", subject.id)) !== null;

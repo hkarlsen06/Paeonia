@@ -585,6 +585,22 @@ describe("reactions to live results", () => {
 });
 
 describe("give_up_round", () => {
+  test("chat history keeps completed drawings and excludes a round given up before drawing", async () => {
+    const s = await startGame();
+    const args = { p_couple_id: s.couple.coupleId, p_game_kind: "draw_and_guess" as const };
+    const skipped = await pick(s.a, s.gameId, "easy");
+    await s.b.as.mutation(api.drawAndGuess.give_up_round, { ...op(), p_round_id: skipped.round_id });
+    expect((await s.a.as.query(api.gameConversations.get_game_chat_timeline, args)).results).toEqual([]);
+    const missed = await pick(s.b, s.gameId, "easy");
+    await sendDrawing(s, s.b, missed.round_id);
+    expect((await s.a.as.query(api.gameConversations.get_game_chat_timeline, args)).results).toEqual([]);
+    await s.a.as.mutation(api.drawAndGuess.give_up_round, { ...op(), p_round_id: missed.round_id });
+    expect((await s.a.as.query(api.gameConversations.get_game_chat_timeline, args)).results.map(result => result.source)).toEqual([{ kind: "draw_and_guess", id: missed.round_id }]);
+    const solved = await finishedRound(s, s.a, s.b);
+    expect((await s.a.as.query(api.gameConversations.get_game_chat_timeline, args)).results.map(result => result.source)).toEqual(expect.arrayContaining([{ kind: "draw_and_guess", id: missed.round_id }, { kind: "draw_and_guess", id: solved.picked.round_id }]));
+    await s.t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("counts as missed, scores nothing, and the guesser draws next", async () => {
     const s = await startGame();
     const picked = await pick(s.a, s.gameId, "hard");
@@ -1264,6 +1280,7 @@ describe("history", () => {
       for (let number = 1; number <= 60; number += 1) {
         const now = new Date().toISOString();
         await ctx.db.insert("game_moves", {
+          chat_result_available: true,
           id: newUuid(),
           game_id: s.gameId,
           couple_id: s.couple.coupleId,

@@ -1051,11 +1051,11 @@ export default defineSchema({
     .index("by_story_id", ["story_id"])
     .index("by_thread_id", ["thread_id"]),
 
-  // One chat per finished game or round. The source stays in the game's own history.
+  // One persistent chat per game kind and couple. Results stay in each game's history.
   game_threads: defineTable({
     subject_id: uuid,
     couple_id: uuid,
-    source: gameChatSource,
+    game_kind: gameKind,
     thread_id: uuid,
     created_at: ts,
   })
@@ -1478,7 +1478,7 @@ export default defineSchema({
   // FK: thread_id -> conversation_threads cascade. reply_to_message_id -> thread_messages
   // in the same thread, kept when that message is removed (the reader hides its text).
   // reply_to_answer_id -> daily_question_answers of the thread's question, kept the same way.
-  // A message replies to one of the two at most.
+  // A message replies to at most one message, answer or finished game result.
   thread_messages: defineTable({
     id: uuid,
     thread_id: uuid,
@@ -1488,6 +1488,7 @@ export default defineSchema({
     body: optString,
     reply_to_message_id: optUuid,
     reply_to_answer_id: optUuid,
+    reply_to_game_result_source: v.optional(gameChatSource),
     created_at: ts,
     updated_at: ts,
     edited_at: optTs,
@@ -1670,6 +1671,8 @@ export default defineSchema({
     drawer_user_id: uuid,
     guesser_user_id: uuid,
     state: literals("drawing", "guessing", "solved", "missed"),
+    // Maintained by patchMove so skipped drawings never require a history scan.
+    chat_result_available: v.boolean(),
     difficulty: literals("easy", "medium", "hard", "custom"),
     // Absent for a custom word.
     word_id: optString,
@@ -1699,7 +1702,8 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_game_id_round_number", ["game_id", "round_number"])
     .index("by_couple_id", ["couple_id"])
-    .index("by_drawing_media_asset_id", ["drawing_media_asset_id"]),
+    .index("by_drawing_media_asset_id", ["drawing_media_asset_id"])
+    .index("by_couple_id_chat_result_available_ended_at_id", ["couple_id", "chat_result_available", "ended_at", "id"]),
 
   // FK: move_id -> game_moves cascade
   game_guesses: defineTable({
@@ -1815,7 +1819,8 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_game_id_story_number", ["game_id", "story_number"])
-    .index("by_couple_id_story_number", ["couple_id", "story_number"]),
+    .index("by_couple_id_story_number", ["couple_id", "story_number"])
+    .index("by_couple_id_state_finished_at_id", ["couple_id", "state", "finished_at", "id"]),
 
   // The openings and dare words a couple has used, per language. A kind starts over when used up.
   story_chain_used: defineTable({
@@ -1870,7 +1875,8 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_game_id_number", ["game_id", "number"])
-    .index("by_couple_id_number", ["couple_id", "number"]),
+    .index("by_couple_id_number", ["couple_id", "number"])
+    .index("by_couple_id_finished_at_id", ["couple_id", "finished_at", "id"]),
 
   // FK: figure_id -> exquisite_corpse_figures cascade; media_assets restrict. The client makes the id. The strip is for the head and body only.
   exquisite_corpse_parts: defineTable({
@@ -1963,7 +1969,9 @@ export default defineSchema({
     stake: optString,
     started_at: ts,
     finished_at: ts,
-  }).index("by_couple_id_kind_game_number", ["couple_id", "kind", "game_number"]),
+  })
+    .index("by_couple_id_kind_game_number", ["couple_id", "kind", "game_number"])
+    .index("by_couple_id_kind_finished_at_game_number", ["couple_id", "kind", "finished_at", "game_number"]),
 
   // FK: couple_id -> couples cascade; user_id -> users cascade. (couple_id, user_id) is unique.
   // A partner's own mark for all board games, as base64 PKDrawing data.

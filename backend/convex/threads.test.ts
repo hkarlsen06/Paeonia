@@ -382,7 +382,7 @@ describe("replies to answers", () => {
     const [first] = await dailyThread(couple.first, couple.coupleId, questionId);
     expect(
       await failure(send(couple.second, first.thread_id, { p_reply_to_answer_id: answerId, p_reply_to_message_id: first.message_id })),
-    ).toEqual({ code: "23514", message: "a message can reply to one message or answer" });
+    ).toEqual({ code: "23514", message: "a message can reply to one target" });
   });
 
   test("strangers and former partners cannot reply to an answer", async () => {
@@ -916,7 +916,7 @@ describe("reads", () => {
       daily_question_id: null,
       memory_id: memoryId,
       story_id: null,
-      game_source: null,
+      game_kind: null,
       created_by_user_id: couple.first.userId,
       created_at: expect.any(String),
       updated_at: expect.any(String),
@@ -1031,6 +1031,7 @@ describe("reads", () => {
       body: "first",
       reply_to_message_id: null,
       reply_to_answer_id: null,
+      reply_to_game_result_source: null,
       created_at: expect.any(String),
       edited_at: null,
       deleted_at: null,

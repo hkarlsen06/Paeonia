@@ -20,7 +20,7 @@ import { newUuid, optionalUuidArg, timestampArg, uuidArg } from "./lib/ids";
 import { queueThreadMessageMediaAssetsIfOrphaned } from "./lib/mediaOrphans";
 import { enqueueNotificationForUser, enqueuePartnerNotification } from "./lib/notifications";
 import { consumeRateLimit } from "./lib/rateLimits";
-import { deleteReactionsOf, reactionsOf } from "./lib/reactions";
+import { deleteReactionsOf } from "./lib/reactions";
 import { applyCoupleActivity } from "./lib/streaks";
 import { btrimToNull, charLength } from "./lib/text";
 import { nowIso } from "./lib/time";
@@ -31,9 +31,11 @@ import {
   type ThreadSubject,
   type ThreadSubjectKind,
 } from "./lib/threadSubjects";
+import { gameKind } from "./lib/validators";
+import { projectThreadMessages } from "./lib/threadMessageProjection";
 import { topicOfQuestion } from "./lib/topics";
 
-import { finishedGameForChat, gameChatSource, gameChatSubjectId, normalizeGameChatSource } from "./lib/gameChatSubjects";
+import { finishedGameForChat, gameChatSource, gameChatSubjectId, normalizeGameChatSource, type GameChatSource } from "./lib/gameChatSubjects";
 
 const nullableMediaIds = v.optional(v.union(v.null(), v.array(v.string())));
 
@@ -145,7 +147,10 @@ export async function handleThreadMessageCreated(ctx: WriterCtx, message: Doc<"t
   Object.assign(payload, threadPushRoute(subject));
   if (subject.kind === "game") {
     const link = await ctx.db.query("game_threads").withIndex("by_thread_id", q => q.eq("thread_id", thread.id)).unique();
-    if (link) payload.game_source = link.source;
+    if (link) {
+      payload.game_kind = link.game_kind;
+      payload.deeplink = `paeonia://daily/game-chat?kind=${link.game_kind}`;
+    }
   }
   try {
     await enqueuePartnerNotification(ctx, {
@@ -179,7 +184,7 @@ function threadPushRoute(subject: ThreadSubject): Record<string, string> {
     case "memory":
       return { route: "memories", deeplink: memoryDeepLink(subject.id, { comments: true }), memory_id: subject.id };
     case "game":
-      return { route: "daily", deeplink: `paeonia://daily/game-chat?gameId=${subject.id}`, game_chat_id: subject.id };
+      return { route: "daily", game_chat_id: subject.id };
     case "story":
       return { route: "stories", deeplink: storyDeepLink(subject.id, { replies: true }), story_id: subject.id };
   }
@@ -221,8 +226,15 @@ async function assertAnswerReplyTargetAllowed(
   }
 }
 
-/** What a new message replies to: an earlier message, an answer to the question, or nothing. */
-export type ThreadMessageReply = { messageId?: string; answerId?: string };
+/** A message can reply to an earlier message, a question answer or a finished game result. */
+export type ThreadMessageReply = { messageId?: string; answerId?: string; gameResultSource?: GameChatSource };
+
+async function assertGameResultReplyAllowed(ctx: ReaderCtx, thread: Doc<"conversation_threads">, source: GameChatSource) {
+  const link = await ctx.db.query("game_threads").withIndex("by_thread_id", q => q.eq("thread_id", thread.id)).unique();
+  if (!link || source.kind !== link.game_kind || !(await finishedGameForChat(ctx, thread.couple_id, source))) {
+    fail("23514", "reply target is not available in this game chat");
+  }
+}
 
 /** Port of `internal.insert_thread_message`. Returns the new message id. */
 export async function insertThreadMessage(
@@ -260,11 +272,12 @@ export async function insertThreadMessage(
   }
 
   await assertThreadMessageAllowed(ctx, thread.id, userId);
-  if (reply.messageId !== undefined && reply.answerId !== undefined) {
-    fail("23514", "a message can reply to one message or answer");
+  if ([reply.messageId, reply.answerId, reply.gameResultSource].filter(target => target !== undefined).length > 1) {
+    fail("23514", "a message can reply to one target");
   }
   if (reply.messageId !== undefined) await assertReplyTargetAllowed(ctx, thread.id, reply.messageId);
   if (reply.answerId !== undefined) await assertAnswerReplyTargetAllowed(ctx, thread.id, userId, reply.answerId);
+  if (reply.gameResultSource !== undefined) await assertGameResultReplyAllowed(ctx, thread, reply.gameResultSource);
   if (await getByUuid(ctx, "thread_messages", messageId)) uniqueViolation("thread_messages_pkey");
   const now = nowIso();
   const docId = await ctx.db.insert("thread_messages", {
@@ -275,6 +288,7 @@ export async function insertThreadMessage(
     body: normalizedBody ?? undefined,
     reply_to_message_id: reply.messageId,
     reply_to_answer_id: reply.answerId,
+    reply_to_game_result_source: reply.gameResultSource,
     moderation_status: "visible",
     created_at: now,
     updated_at: now,
@@ -302,6 +316,7 @@ function mediaFingerprint(body: string | null | undefined, mediaIds: string[] | 
 function replyFingerprint(reply: ThreadMessageReply): string[] {
   if (reply.messageId !== undefined) return [reply.messageId];
   if (reply.answerId !== undefined) return [`answer:${reply.answerId}`];
+  if (reply.gameResultSource !== undefined) return [`game-result:${JSON.stringify(reply.gameResultSource)}`];
   return [];
 }
 
@@ -310,6 +325,7 @@ export const send_thread_message = mutation({
     p_thread_id: v.string(),
     p_body: v.optional(v.union(v.null(), v.string())),
     p_media_asset_ids: nullableMediaIds,
+    p_reply_to_game_result_source: v.optional(v.union(v.null(), gameChatSource)),
     p_reply_to_message_id: v.optional(v.union(v.null(), v.string())),
     p_reply_to_answer_id: v.optional(v.union(v.null(), v.string())),
     ...clientOperationArgs,
@@ -318,9 +334,17 @@ export const send_thread_message = mutation({
     const userId = await requireUserId(ctx);
     const threadId = uuidArg(args.p_thread_id);
     const reply = {
+      gameResultSource: args.p_reply_to_game_result_source ? normalizeGameChatSource(args.p_reply_to_game_result_source) : undefined,
       messageId: optionalUuidArg(args.p_reply_to_message_id),
       answerId: optionalUuidArg(args.p_reply_to_answer_id),
     };
+    const thread = await getByUuid(ctx, "conversation_threads", threadId);
+    if (!thread || thread.deleted_at !== undefined || thread.moderation_status !== "visible" || !(await canAccessCoupleContent(ctx, userId, thread.couple_id))) {
+      return fail("42501", "active entitled thread access is required");
+    }
+    if ([reply.messageId, reply.answerId, reply.gameResultSource].filter(target => target !== undefined).length > 1) {
+      return fail("23514", "a message can reply to one target");
+    }
     const stored = await runClientOperation(
       ctx,
       userId,
@@ -674,7 +698,8 @@ export const create_story_thread_with_message = mutation({
 export const create_game_thread_with_message = mutation({
   args: {
     p_couple_id: v.string(),
-    p_source: gameChatSource,
+    p_game_kind: gameKind,
+    p_reply_to_game_result_source: v.optional(v.union(v.null(), gameChatSource)),
     p_body: v.optional(v.union(v.null(), v.string())),
     p_media_asset_ids: nullableMediaIds,
     ...clientOperationArgs,
@@ -682,24 +707,24 @@ export const create_game_thread_with_message = mutation({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const coupleId = uuidArg(args.p_couple_id);
-    const source = normalizeGameChatSource(args.p_source);
-    const subjectId = await gameChatSubjectId(source);
-    if (!(await canAccessCoupleContent(ctx, userId, coupleId)) || !(await finishedGameForChat(ctx, coupleId, source))) {
-      return fail("42501", "active entitled finished game access is required");
+    const subjectId = await gameChatSubjectId(coupleId, args.p_game_kind);
+    if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
+      return fail("42501", "active entitled couple access is required");
     }
+    const reply = { gameResultSource: args.p_reply_to_game_result_source ? normalizeGameChatSource(args.p_reply_to_game_result_source) : undefined };
     const stored = await runClientOperation(ctx, userId, toClientOperation(args, {
       kind: "create_game_thread_with_message", scope: "conversation_threads",
-      request: ["create_game_thread_with_message", coupleId, source, ...mediaFingerprint(args.p_body, args.p_media_asset_ids)],
+      request: ["create_game_thread_with_message", coupleId, args.p_game_kind, ...mediaFingerprint(args.p_body, args.p_media_asset_ids), ...replyFingerprint(reply)],
     }), async () => {
       await consumeRateLimit(ctx, "threadMessage", userId);
       let threadId = await threadIdOfSubject(ctx, coupleId, { kind: "game", id: subjectId });
       if (!threadId) {
         threadId = await insertConversationThread(ctx, { couple_id: coupleId, kind: "game", created_by_user_id: userId });
         await ctx.db.insert("game_threads", {
-          subject_id: subjectId, couple_id: coupleId, source, thread_id: threadId, created_at: nowIso(),
+          subject_id: subjectId, couple_id: coupleId, game_kind: args.p_game_kind, thread_id: threadId, created_at: nowIso(),
         });
       }
-      const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids);
+      const messageId = await insertThreadMessage(ctx, userId, threadId, args.p_body, args.p_media_asset_ids, reply);
       return { thread_id: threadId, message_id: messageId };
     });
     return [stored];
@@ -731,7 +756,7 @@ export const get_conversation_threads = query({
       const game = thread.kind === "game"
         ? await ctx.db.query("game_threads").withIndex("by_thread_id", q => q.eq("thread_id", thread.id)).unique()
         : null;
-      if (thread.kind === "game" && (!game || !(await finishedGameForChat(ctx, coupleId, game.source)))) continue;
+      if (thread.kind === "game" && !game) continue;
       // A topic question's chat says which topic it is in.
       const topic = daily ? await topicOfQuestion(ctx, daily.question_id) : null;
       const memory = await ctx.db
@@ -774,7 +799,7 @@ export const get_conversation_threads = query({
         daily_question_id: orNull(daily?.question_id),
         memory_id: orNull(memory?.memory_id),
         story_id: orNull(story?.story_id),
-        game_source: orNull(game?.source),
+        game_kind: orNull(game?.game_kind),
         created_by_user_id: thread.created_by_user_id,
         created_at: thread.created_at,
         updated_at: thread.updated_at,
@@ -828,7 +853,6 @@ export const get_thread_messages = query({
 
     const beforeAt = args.p_before_created_at ? timestampArg(args.p_before_created_at) : null;
     const beforeId = args.p_before_message_id ? uuidArg(args.p_before_message_id) : "";
-    const threadVisible = thread.deleted_at === undefined && thread.moderation_status === "visible";
     const newestFirst = ctx.db
       .query("thread_messages")
       .withIndex("by_thread_id_created_at_id", (q) =>
@@ -847,88 +871,7 @@ export const get_thread_messages = query({
       messages.push(message);
     }
     messages.reverse();
-    const rows = [];
-    for (const message of messages) {
-      // A message its sender took back stays as a bare marker: no text, media or reactions.
-      if (threadVisible && message.deleted_at !== undefined && message.moderation_status === "visible") {
-        rows.push({
-          thread_id: thread.id,
-          message_id: message.id,
-          sender_user_id: message.sender_user_id,
-          body: null,
-          reply_to_message_id: null,
-          reply_to_answer_id: null,
-          created_at: message.created_at,
-          edited_at: null,
-          deleted_at: message.deleted_at,
-          moderation_status: message.moderation_status,
-          media_asset_ids: [],
-          media: [],
-          media_states: [],
-          reactions: [],
-        });
-        continue;
-      }
-      const messageVisible = threadVisible && message.deleted_at === undefined && message.moderation_status === "visible";
-      const links = (
-        await ctx.db
-          .query("thread_message_media")
-          .withIndex("by_message_id_sort_order", (q) => q.eq("message_id", message.id))
-          .collect()
-      ).sort((a, b) => a.sort_order - b.sort_order || (a.media_asset_id < b.media_asset_id ? -1 : 1));
-      const mediaAssetIds: string[] = [];
-      // The shown attachments with what the app needs to lay them out before downloading.
-      const media = [];
-      const mediaStates = [];
-      for (const link of links) {
-        const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
-        if (!asset) continue;
-        if (
-          messageVisible &&
-          asset.reserved_parent_kind === "thread_message_media" &&
-          asset.reserved_parent_id === message.id &&
-          asset.upload_status === "finalized" &&
-          asset.storage_delete_status === "none" &&
-          asset.moderation_status === "visible" &&
-          asset.deleted_at === undefined
-        ) {
-          mediaAssetIds.push(link.media_asset_id);
-          media.push({
-            media_asset_id: link.media_asset_id,
-            media_type: asset.media_type,
-            width: orNull(asset.width),
-            height: orNull(asset.height),
-            duration_ms: orNull(asset.duration_ms),
-          });
-        }
-        mediaStates.push({
-          media_asset_id: link.media_asset_id,
-          sort_order: link.sort_order,
-          asset_deleted_at: orNull(asset.deleted_at),
-          asset_moderation_status: asset.moderation_status,
-          asset_storage_delete_status: asset.storage_delete_status,
-          updated_at: asset.updated_at,
-        });
-      }
-      // Who reacted with what. A removed message shows none.
-      const reactions = messageVisible ? await reactionsOf(ctx, "thread_message", message.id) : [];
-      rows.push({
-        thread_id: thread.id,
-        message_id: message.id,
-        sender_user_id: message.sender_user_id,
-        body: messageVisible ? orNull(message.body) : null,
-        reply_to_message_id: orNull(message.reply_to_message_id),
-        reply_to_answer_id: orNull(message.reply_to_answer_id),
-        created_at: message.created_at,
-        edited_at: orNull(message.edited_at),
-        deleted_at: orNull(message.deleted_at),
-        moderation_status: message.moderation_status,
-        media_asset_ids: mediaAssetIds,
-        media,
-        media_states: mediaStates,
-        reactions,
-      });
-    }
+    const rows = await projectThreadMessages(ctx, thread, messages);
     return { messages: rows, has_more: hasMore };
   },
 });

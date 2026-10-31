@@ -246,6 +246,7 @@ export const pick_draw_word = mutation({
           drawer_user_id: userId,
           guesser_user_id: guesserId,
           state: "drawing",
+          chat_result_available: false,
           difficulty: args.p_choice,
           word_id: wordId,
           word,

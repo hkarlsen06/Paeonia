@@ -92,7 +92,8 @@ export const guessMySpotTables = {
     .index("by_uuid", ["id"])
     .index("by_game_id_round_number", ["game_id", "round_number"])
     .index("by_couple_id", ["couple_id"])
-    .index("by_photo_media_asset_id", ["photo_media_asset_id"]),
+    .index("by_photo_media_asset_id", ["photo_media_asset_id"])
+    .index("by_couple_id_deleted_at_guessed_at_id", ["couple_id", "deleted_at", "guessed_at", "id"]),
 };
 
 export type GuessMySpotGame = Doc<"guess_my_spot_games">;

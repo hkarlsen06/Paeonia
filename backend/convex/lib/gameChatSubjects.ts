@@ -4,7 +4,7 @@ import type { ReaderCtx } from "./db";
 import { getByUuid } from "./db";
 import { fail } from "./errors";
 import { uuidArg } from "./ids";
-import { literals } from "./validators";
+import { gameKind, literals } from "./validators";
 
 export const boardChatKind = literals("connect_four", "dots_and_boxes", "ultimate_tic_tac_toe", "ludo");
 export const gameChatSource = v.union(
@@ -12,21 +12,28 @@ export const gameChatSource = v.union(
   v.object({ kind: boardChatKind, couple_id: v.string(), game_number: v.number() }),
 );
 export type GameChatSource = Infer<typeof gameChatSource>;
+export type GameChatKind = Infer<typeof gameKind>;
 
 export function normalizeGameChatSource(source: GameChatSource): GameChatSource {
-  if ("id" in source) return { ...source, id: uuidArg(source.id) };
+  if ("id" in source) return { kind: source.kind, id: uuidArg(source.id) };
   if (!Number.isSafeInteger(source.game_number) || source.game_number < 1) fail("23514", "invalid game number");
-  return { ...source, couple_id: uuidArg(source.couple_id) };
+  return { kind: source.kind, couple_id: uuidArg(source.couple_id), game_number: source.game_number };
 }
 
 /** A board's history uses a couple, kind and number instead of a UUID. Both clients use this key. */
-export async function gameChatSubjectId(source: GameChatSource): Promise<string> {
+export async function gameChatResultId(source: GameChatSource): Promise<string> {
   if ("id" in source) return source.id;
   const hex = await sha256Hex(`game-chat:${source.couple_id}:${source.kind}:${source.game_number}`);
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
-/** Only finished, still available content in the named couple can start or keep a chat. */
+/** One persistent chat for each game kind in a couple. */
+export async function gameChatSubjectId(coupleId: string, kind: GameChatKind): Promise<string> {
+  const hex = await sha256Hex(`game-chat:${uuidArg(coupleId)}:${kind}`);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
+
+/** Only finished, still available content in the named couple can be shown or replied to. */
 export async function finishedGameForChat(ctx: ReaderCtx, coupleId: string, source: GameChatSource) {
   switch (source.kind) {
     case "draw_and_guess": {

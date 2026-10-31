@@ -42,7 +42,8 @@ export const mindMeldTables = {
     updated_at: v.string(),
   })
     .index("by_uuid", ["id"])
-    .index("by_couple_id_game_number", ["couple_id", "game_number"]),
+    .index("by_couple_id_game_number", ["couple_id", "game_number"])
+    .index("by_couple_id_state_ended_at_id", ["couple_id", "state", "ended_at", "id"]),
 
   // FK: game_id -> mind_meld_games cascade. (game_id, round_number) is unique.
   mind_meld_rounds: defineTable({

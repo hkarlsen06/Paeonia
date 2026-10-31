@@ -1,4 +1,3 @@
-import { deleteThreadOfSubject } from "./lib/threadSubjects";
 import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
@@ -505,7 +504,6 @@ export const delete_guess_my_spot_round = mutation({
         }
         const now = nowIso();
         await ctx.db.patch(round._id, withUpdatedAt({ deleted_at: now }));
-        await deleteThreadOfSubject(ctx, round.couple_id, { kind: "game", id: round.id });
         await patchGame(ctx, game);
         // After the round's last write, so the sweep sees it deleted.
         await queueOrphanedMediaAssetForDelete(ctx, round.photo_media_asset_id);
