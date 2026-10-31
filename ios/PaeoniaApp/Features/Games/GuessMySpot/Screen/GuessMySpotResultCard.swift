@@ -16,10 +16,18 @@ struct GuessMySpotResultCard: View {
     var onToggle: (() -> Void)?
 
     @State private var viewer: PaeoniaImageViewerSelection?
+    @State private var contentWidth: CGFloat = 0
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var canToggle: Bool { onToggle != nil }
     private static let photoSide: CGFloat = 128
+    private static let columnSpacing = PaeoniaSpacing.space16
+
+    /// The photo centers in the left half, and the title starts where the photo does.
+    private var photoInset: CGFloat {
+        guard !dynamicTypeSize.isAccessibilitySize else { return 0 }
+        return max(0, ((contentWidth - Self.columnSpacing) / 2 - Self.photoSide) / 2)
+    }
 
     var body: some View {
         Group {
@@ -63,16 +71,19 @@ struct GuessMySpotResultCard: View {
     private var expandedContent: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             verdict
+                .padding(.leading, photoInset)
                 .padding(.trailing, PaeoniaSpacing.space32)
             let layout = dynamicTypeSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space12))
-                : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space16))
+                : AnyLayout(HStackLayout(spacing: Self.columnSpacing))
             layout {
                 photo
+                    .frame(maxWidth: .infinity)
                 scores
                     .frame(maxWidth: .infinity)
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
     }
 
     private var verdict: some View {
