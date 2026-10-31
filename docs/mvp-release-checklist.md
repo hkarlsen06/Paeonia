@@ -458,7 +458,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
 - [ ] Dynamic Type pass.
-- [ ] VoiceOver smoke pass.
+- [ ] Complete the device-specific release gate in [the accessibility report](accessibility-report.md), including real VoiceOver and Voice Control journeys. A smoke check or automated audit does not close this gate.
 - [ ] Reduce Motion pass.
 - [ ] Increased Contrast pass.
 - [ ] Color contrast is acceptable against plum surfaces.

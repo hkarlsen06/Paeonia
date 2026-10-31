@@ -58,7 +58,7 @@ MVP requirements:
 - duration should be visible
 - failed playback/upload states must be textual
 
-Transcription is not part of MVP unless explicitly added later.
+Voice answers and chat recordings offer an author-entered transcript. Keep it with the recording through drafts, uploads, cached content, mutual reveal and export. External transcription needs an explicit consent flow. The [accessibility report](../accessibility-report.md) records the evidence and current label status.
 
 ## Drawing Accessibility
 
@@ -72,6 +72,8 @@ The drawing experience should support:
 - large enough drawing controls
 - clear sent/synced state
 
+The native shape composer creates real PencilKit strokes through the same edit and undo paths as freehand drawing. Keep its position, size, color, replacement and removal controls available. Geometry readouts describe the supplied marks, never a hidden game answer or folded creature part. They do not recognize freehand objects.
+
 Do not make drawing the only way to communicate a required action.
 
 ## Testing Checklist
@@ -79,7 +81,7 @@ Do not make drawing the only way to communicate a required action.
 Before TestFlight:
 
 - Dynamic Type large accessibility size pass
-- VoiceOver smoke pass
+- Complete the device-specific release gate in the accessibility report, including real VoiceOver and Voice Control journeys
 - Reduce Motion pass
 - plum theme contrast pass
 - widget tint/contrast pass

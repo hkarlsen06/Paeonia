@@ -17,6 +17,10 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-10-31.
 
+- Board games offer a visible Board controls button opening native, scrollable controls. Four in a Row lists every cell and its owner before each column's drop button. Dots and Boxes lists each box and native side buttons. Ludo lists all four pawns, including base, shared track square and safety, home lane and finished state, with Roll and legal pawn buttons using the existing move callbacks. Ultimate Tic-Tac-Toe cells include their board number and selected state.
+- Consensio offers a native Slider and Stepper alongside the line. Revealed pins report owner and exact position measured from the left endpoint. Pins still hidden by the reveal are omitted. Guess my spot offers place search and signed coordinate entry in both photo checking and guessing. The picker receives no photo or round metadata and selects through the same callbacks as map taps.
+- Draw & Guess has a visible skip replay button in guessing and history, alongside its existing replay actions. These controls do not make visual drawing recognition accessible. Drawing composition, recognition and the remaining animated reveals still need device-based accessibility review before claiming complete game access.
+
 - Chats, Games, Memories and Us use inline navigation titles. Home keeps its custom map header. Mind Meld stacks full-width word cards at accessibility text sizes, so the revealed words use the person's chosen reading size.
 - Board games, drawing games and Guess my spot share the wide-window breakpoint. Board and drawing squares use the same wide sizing calculation.
 
@@ -182,7 +186,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Mind Meld | Convex, relay for presence and typing | Yes, the word trails | S |
 | Reaction duel | Relay, Convex for results | No | S |
 
-- **Draw & Guess.** The first game. It plays async, with live watching when both are online. Its full design is in `docs/games/draw-and-guess.md`.
+- **Draw & Guess.** The native "Build with shapes" form creates PencilKit marks with shape, position, size and color controls, with replacement, removal and undo. It uses the same local draft and send pipeline as finger drawing. Geometry readouts contain only visible stroke information. An optional author-written description travels with the full drawing through its local draft and upload queue, then appears beside the sent clue and in history. The author is told to describe visible marks without naming the secret answer. No answer or word is inserted automatically. Freehand object recognition remains unavailable. The first game. It plays async, with live watching when both are online. Its full design is in `docs/games/draw-and-guess.md`.
 - **Mind Meld.** Built. Both type a word at the same time and the words are revealed together. Each next round, both try to name a word that connects the last two. You win when you say the same word. Live play shows when the partner is here, typing or locked in. Its design is in `docs/games/mind-meld.md`.
 - **Reaction duel.** Tap when the flower opens. Uses the fairness rule above.
 
@@ -198,7 +202,7 @@ Effort is relative: S reuses most existing code, L needs a large new engine or c
 | Chess | No | No | L |
 | Wordfeud-style word game | Yes, the tile rack | No | L |
 
-- **Exquisite corpse.** Built. Partners take turns drawing the head, body and legs of a figure, and each sees only the bottom 12% of the part before. The whole figure unfolds part by part at the end and goes to "Our creatures". It plays live with a folded paper view and async with pushes. Its full design is in `docs/games/exquisite-corpse.md`.
+- **Exquisite corpse.** The same native shape form creates real strokes for each part. Accessible strip descriptions read only the already clipped previous strip. They never read the full previous part or unfinished hidden parts. Only the final finished figure exposes each full part's authored description and geometry. A clipped strip never carries full-part text. Optional descriptions stay with local drafts and queued full drawing uploads; the author can correct them after sharing. Missing descriptions are explicit. Built. Partners take turns drawing the head, body and legs of a figure, and each sees only the bottom 12% of the part before. The whole figure unfolds part by part at the end and goes to "Our creatures". It plays live with a folded paper view and async with pushes. Its full design is in `docs/games/exquisite-corpse.md`.
 - **Story Chain.** Built. The partners write one story together, one or two sentences a turn. A writer can dare the partner to use a word in the next line, and the partner who did not write the last line names the story. Live play shows the partner's letters as they are typed, with letters past the line limit in red. Its design is in `docs/games/story-chain.md`.
 - **Consensio.** Built. One partner puts a marker where they honestly stand on a line between two ends, such as how they feel about camping. The other guesses where it went, and the reveal scores how close they came. It plays async with pushes and live with the guess marker moving on the placer's screen. Its design and the decisions are in `docs/games/consensio.md`.
 - **Guess my spot.** Built. Send a photo from your library, and the partner drops a pin on a map where they think it was taken. The score is by distance, and the sender's spot stays hidden until the guess. It plays async with pushes and live with the guesser's map view showing on the sender's map, without their pin. Its design is in `docs/games/guess-my-spot.md`, with the decisions from 2026-10-18 above.
@@ -279,3 +283,11 @@ Draw & Guess comes first. It builds the turn engine, the drawing replay and the 
 ## Open questions
 
 - Which game comes after Draw & Guess.
+
+### Accessibility participation and send safety
+
+Board pieces retain each person's custom mark and add a fixed owner symbol, a circle for player one and a diamond for player two. Player headers show the same symbol beside the resolved name. SwiftUI boards and Ludo cap textures share this rendering, so matching names or custom marks do not leave color as the only distinction.
+
+Both drawing games lock canvas edits, native shape controls, undo, redo, fill and clear while the captured drawing is being queued. A failed queue unlocks the same drawing for recovery. A successful queue cannot silently drop edits made after capture because mutating controls refuse them during that interval.
+
+The full task and device verification gate is in [the accessibility report](accessibility-report.md). Shape composition, geometry readouts and authored descriptions do not establish blind freehand recognition or prove fair participation without testing. Neither drawing game expires the artist's turn. Draw & Guess guessing also remains available without a deadline. Against each other awards an optional speed bonus for 15 or 30 seconds from the first received live stroke or replay-ready clue, including time spent reading a description; it has no pause or extension. Together already omits speed bonuses. This work preserves those rules, and leaves competitive reading-time usability pending.

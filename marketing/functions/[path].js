@@ -1,6 +1,6 @@
 import { redirectToPreferredLocale } from './_locale.js';
 
-const localizedEntryPaths = new Set(['privacy', 'terms', 'support']);
+const localizedEntryPaths = new Set(['privacy', 'terms', 'support', 'accessibility']);
 
 export function onRequest({ request, params }) {
   const path = params.path;

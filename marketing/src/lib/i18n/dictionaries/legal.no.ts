@@ -1,6 +1,54 @@
 export const legalNo = {
   contactEmail: 'contact@paeonia.no',
   supportEmail: 'support@paeonia.no',
+  accessibility: {
+    meta: {
+      title: 'Tilgjengelighet',
+      description: 'Tilgjengelighet i Paeonia på iPhone og iPad, kjente begrensninger og hvordan du kontakter oss.',
+    },
+    title: 'Tilgjengelighet i Paeonia',
+    description: 'Paeonia er fortsatt under utvikling. Vi jobber for at alle felles aktiviteter skal fungere med ulike måter å se, høre, bevege seg og lese på.',
+    updated: 'Sist gjennomgått 1. november 2026',
+    sections: [
+      {
+        heading: 'Innstillingene på enheten',
+        paragraphs: [
+          'Appen har et mørkt plommefarget grensesnitt og bruker vanlige iOS-kontroller. Teksten følger systemets tekststørrelse på mange skjermer. Mange animasjoner tar hensyn til Reduser bevegelse. Vi sjekker hele appen med de største tekststørrelsene og økt kontrast.',
+          'Du finner disse valgene under Tilgjengelighet i Innstillinger på enheten. Du trenger ingen egen konto eller eget abonnement for tilgjengelighet.',
+        ],
+      },
+      {
+        heading: 'Stemme og tastatur',
+        paragraphs: [
+          'Historier har synlige knapper for pause, forrige og neste. På spillbrett, kart og ved beskjæring av profilbilder finnes det knapper eller skjemaer som alternativer til å dra. Disse kontrollene trenger fortsatt full testing med hjelpemidler.',
+          'Hele brukerreisen med VoiceOver, Talekontroll, Bryterkontroll og Full tastaturtilgang er ennå ikke testet på både iPhone og iPad. Vi hevder derfor ikke at disse funksjonene er fullt støttet.',
+        ],
+      },
+      {
+        heading: 'Bilder, tale og tegninger',
+        paragraphs: [
+          'Før du deler, kan du skrive beskrivelser til chatbilder, bildesvar på dagens spørsmål, bilder i minner, historier, spillbilder og tegninger. Du kan også skrive tekstversjoner av talemeldinger og talesvar. Bildebeskrivelser er atskilt fra bildetekster. Vi sender ikke mediene dine til en ekstern tjeneste for å lage beskrivelser eller tekstversjoner.',
+          'Du kan bygge delte tegninger og tegninger i spill med former. Du velger plassering, størrelse og farge. Partneren din får den samme tegningen. Appen kan beskrive streker og plasseringen deres, men kan ikke tolke hva en frihåndstegning forestiller.',
+        ],
+      },
+      {
+        heading: 'Kjente begrensninger',
+        paragraphs: [
+          'Frihåndstegninger og tegnede ledetråder kan fortsatt være vanskelige å forstå uten syn. Vi må fortsatt teste om former og skrevne beskrivelser gir deltakelse på like vilkår. Tidsbonusen når dere spiller mot hverandre i Tegn og gjett, kan starte før tegningen har en ferdig beskrivelse. Alternativene for kart, tegning og beskjæring av bilder trenger fortsatt full testing.',
+          'Beskrivelser og tekstversjoner avhenger av hva avsenderen skriver, og kan mangle. I chat, dagens spørsmål, historier og spill kan du rette dine egne beskrivelser eller tekstversjoner etter deling. Beskrivelser i tegningshistorikken kan ennå ikke redigeres. Vi har ikke testet hele redigeringsflyten på begge enhetstyper. Chat lagrer usendte bilder, beskrivelser og taleutkast på enheten din. Vi tester fortsatt avbrudd og gjenoppretting.',
+          'Noen oppsett, widgeter og skjermene for innlogging og kjøp fra andre leverandører trenger mer testing. Appen har foreløpig ikke videoinnhold som krever synstolking.',
+        ],
+      },
+      {
+        heading: 'Fortell oss om en hindring',
+        paragraphs: [
+          'Send e-post til support@paeonia.no hvis noe er vanskelig eller umulig å bruke. Fortell hva du prøvde å gjøre, hvilken enhet og versjon av iOS eller iPadOS du har, og hvilke tilgjengelighetsfunksjoner du bruker. Du kan be om hjelp på e-post uten å fylle ut et skjema i appen.',
+          'Ikke send private samtaler, intime bilder eller opptak, passord eller innloggingskoder. En beskrivelse av problemet er nok til å begynne med.',
+          'Vi oppdaterer denne siden når vi gjør endringer og tester appen. Tilgjengelighetsmerkene i App Store beskriver funksjoner som er testet. De er ingen juridisk sertifisering.',
+        ],
+      },
+    ],
+  },
   support: {
     meta: {
       title: 'Hjelp',

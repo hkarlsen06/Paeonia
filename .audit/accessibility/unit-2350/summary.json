@@ -1,0 +1,59 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "79EBB58E-1108-4EEE-987D-E193CEA9EA2A",
+        "deviceName" : "Shared iPhone 2",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 2242,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "App · Built with macOS 27.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1793487053.268,
+  "passedTests" : 2153,
+  "result" : "Failed",
+  "runtimeWarnings" : [
+
+  ],
+  "skippedTests" : 0,
+  "startTime" : 1793487010.593,
+  "statistics" : [
+    {
+      "subtitle" : "119 test runs",
+      "title" : "30 tests ran with dynamic parameters"
+    }
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "Expectation failed: await service.typingCalls == [true, true]",
+      "targetName" : "PaeoniaAppTests",
+      "testIdentifier" : 1990,
+      "testIdentifierString" : "ThreadChatPresenceModelTests/typingSendsOneHeartbeatEveryFewSecondsAndStopsOnAnEmptyField()",
+      "testIdentifierURL" : "test://com.apple.xcode/Paeonia/PaeoniaAppTests/ThreadChatPresenceModelTests/typingSendsOneHeartbeatEveryFewSecondsAndStopsOnAnEmptyField()",
+      "testName" : "typingSendsOneHeartbeatEveryFewSecondsAndStopsOnAnEmptyField()"
+    }
+  ],
+  "title" : "Test - App",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "42% of duration",
+      "text" : "7 longest test runs with outlier durations exceeding 0.49s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 2154
+}

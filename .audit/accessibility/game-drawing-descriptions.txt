@@ -1,0 +1,45 @@
+Draw & Guess and Odd Creatures authored visual alternatives, source boundary 31 October 2026.
+
+Canonical text is media_assets.accessibility_text on full drawing_payload assets.
+Draw & Guess projects drawing_accessibility_text only from the round's committed
+full drawing reference. Odd Creatures projects each full part's text only when
+the figure is finished, even for its drawer. Strip reservations reject text;
+signed-URL metadata contains no descriptions. Export includes the requester's
+own full media alternatives and excludes the partner's unfinished part text.
+Correction targets are draw_and_guess/round_id and exquisite_corpse/part_id.
+Both require the author, current entitled couple and live usable full asset.
+
+Owner/couple/round-scoped description drafts save on each edit and survive
+relaunch, empty canvases and download-cache purges. They remain separate from
+caption, word, idea and drawing bytes. Outbox payloads retain descriptions
+through retries, renewed uploads and refusal recovery. Full part descriptions
+are never copied to strip payloads or to the live fold-strip messages. Privacy
+tokens guard draft writes, initial enqueue, renewal and late response recovery.
+Native authoring stays editable after a save failure; unreadable drafts block
+sending until retried. No external description or recognition service is used.
+
+Backend verification completed: 180 tests across gameDrawingAlternatives,
+mediaAlternatives, exquisiteCorpse, drawAndGuess and dataExport passed, and
+typecheck passed. The eight new contract tests include a real export archive
+before final creature reveal, direct full/strip media requests, hidden current
+projections, final projection, outsider/partner correction refusal, current
+access replay refusal and removed references. Existing exact response-shape
+assertions now include drawing_accessibility_text. Log:
+/tmp/paeonia-game-drawing-description-tests.log
+
+Swift parsing passed. SwiftLint has seven size advisories in two Draw & Guess send methods, the shared native editor closure, its UI
+journey and two regression suites. New/extended
+iOS regression suites and GameDrawingDescriptionUITests remain UNRUN until the
+root's combined Xcode runner completes. No VoiceOver, Voice Control, iPad or
+regular assistive-technology user validation was performed.
+
+Timing remains unchanged. Neither game expires drawing creation. Draw & Guess
+guessing does not expire, but Against each other loses optional +2/+1 bonuses
+after 15/30 seconds from first live stroke or replay-ready clue. Description
+reading time counts; no pause or extension exists. Together omits these bonuses.
+The native editor does not lose its authored draft when a partner solves live;
+automatic send takes the current text while controls lock. An unreadable or
+overlong description blocks that send, keeps the drawing, and offers the native
+description editor and explicit Retry on the drawer result. Its two new recovery
+regression cases remain unrun. Fair participation
+and competitive reading time still require assistive-technology user testing.

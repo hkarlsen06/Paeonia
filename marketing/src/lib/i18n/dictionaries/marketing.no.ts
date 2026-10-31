@@ -252,6 +252,7 @@ export const marketingNo = {
     note: 'Laget med omtanke for private forhold.',
     headerNavigationLabel: 'Hovednavigasjon',
     footerNavigationLabel: 'Bunnavigasjon',
+    accessibility: 'Tilgjengelighet',
     privacy: 'Personvern',
     terms: 'Vilkår',
     support: 'Hjelp',

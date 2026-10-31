@@ -52,6 +52,7 @@
       <nav aria-label={footer.footerNavigationLabel} class="flex flex-wrap gap-x-6 gap-y-2">
         <a href={buildLocalizedPath(locale, 'privacy')} class="text-text-secondary transition-colors hover:text-text-primary">{footer.privacy}</a>
         <a href={buildLocalizedPath(locale, 'terms')} class="text-text-secondary transition-colors hover:text-text-primary">{footer.terms}</a>
+        <a href={buildLocalizedPath(locale, 'accessibility')} class="text-text-secondary transition-colors hover:text-text-primary">{footer.accessibility}</a>
         <a href={buildLocalizedPath(locale, 'support')} class="text-text-secondary transition-colors hover:text-text-primary">{footer.support}</a>
       </nav>
     </div>

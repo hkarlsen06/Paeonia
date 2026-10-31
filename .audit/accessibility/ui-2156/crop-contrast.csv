@@ -1,0 +1,4 @@
+crop,width,height,glyph_core_samples,medium_tone_core_samples,min_ratio,max_ratio,fg_sRGB,bg_sRGB,fg_xy,bg_xy
+paywall-AX5-nb-paragraph.png,1086,562,65488,0,8.174,8.777,CBB9C3,42152E,750:77,750:68
+home-native-tabbar.png,1086,378,11030,0,10.664,15.453,FFA2D2,1A0310,156:116,156:112
+sign-in-back.png,572,236,16887,0,7.377,7.924,CEBBC6,4F1D38,462:69,457:69

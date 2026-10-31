@@ -1,6 +1,54 @@
 export const legalEn = {
   contactEmail: 'contact@paeonia.no',
   supportEmail: 'support@paeonia.no',
+  accessibility: {
+    meta: {
+      title: 'Accessibility',
+      description: 'Accessibility in the Paeonia iPhone and iPad app, current limitations, and how to contact us.',
+    },
+    title: 'Accessibility in Paeonia',
+    description: 'Paeonia is still in development. We are working to make every shared activity usable with different ways of seeing, hearing, moving, and reading.',
+    updated: 'Last reviewed 1 November 2026',
+    sections: [
+      {
+        heading: 'System preferences',
+        paragraphs: [
+          'The app uses a dark plum interface and native iOS controls. Text follows the system text size in many screens. Many animations respond to Reduce Motion. We are checking the complete experience at the largest text sizes and with increased contrast.',
+          'Change these preferences in your device Settings under Accessibility. You do not need a separate accessibility account or subscription.',
+        ],
+      },
+      {
+        heading: 'Voice and keyboard access',
+        paragraphs: [
+          'Stories have visible pause, previous and next buttons. Boards, map navigation and profile-photo framing have button or form alternatives to dragging. These controls still need complete testing with assistive technology.',
+          'Full journeys with VoiceOver, Voice Control, Switch Control, and Full Keyboard Access have not yet been verified on both iPhone and iPad. We are not claiming complete support for these features.',
+        ],
+      },
+      {
+        heading: 'Photos, voice and drawings',
+        paragraphs: [
+          'Before sharing, you can write descriptions for chat photos, daily photo answers, memory photos, stories, game photos and drawings. You can also write text transcripts for voice messages and answers. Photo descriptions are separate from captions. We do not send your media to an external service to create descriptions or transcripts.',
+          'Shared drawings and drawing games offer a shape editor with position, size and colour controls. It creates the drawing your partner receives. The app can describe marks and their positions, but it cannot interpret what a freehand picture means.',
+        ],
+      },
+      {
+        heading: 'Known limitations',
+        paragraphs: [
+          'Freehand pictures and drawing-game clues can remain difficult to understand without sight. The shape editor and authored descriptions still need testing for fair participation. Speed bonuses in the competitive mode of Draw & Guess can start before a drawing description is ready. Map, drawing and photo-framing alternatives still need full testing.',
+          'Descriptions and transcripts depend on what the sender writes and may be missing. Chat, daily answers, stories and games let you correct your own descriptions or transcripts after sharing. Drawing history has no description editor yet. These correction flows still need complete device testing. Chat keeps unsent photos, descriptions and voice drafts on your device; interruption testing is still in progress.',
+          'Some layouts, widgets, and third-party sign-in and purchase screens still need accessibility testing. The app does not currently include video content that requires narrated audio descriptions.',
+        ],
+      },
+      {
+        heading: 'Tell us about a barrier',
+        paragraphs: [
+          'Email support@paeonia.no if something is hard or impossible to use. Tell us what you were trying to do, your device and iOS or iPadOS version, and which accessibility features you use. You can request help by email without completing an in-app form.',
+          'Please do not send private conversations, intimate media, passwords, or sign-in codes. A description of the problem is enough to start.',
+          'We update this page as we make changes and complete testing. App Store accessibility labels describe tested capabilities. They are not a legal certification.',
+        ],
+      },
+    ],
+  },
   support: {
     meta: {
       title: 'Support',

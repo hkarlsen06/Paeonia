@@ -48,6 +48,10 @@ Avoid reintroducing a single large dictionary file as the site grows. Add new ma
 
 ## Required Marketing Endpoints
 
+### `/accessibility`
+
+The language redirect serves `/en/accessibility/` or `/no/accessibility/`. The static page describes current native app support, known barriers, and the existing support email. Review it with `docs/accessibility-report.md` before publishing accessibility metadata.
+
 ### `/`
 
 Purpose: public landing page.

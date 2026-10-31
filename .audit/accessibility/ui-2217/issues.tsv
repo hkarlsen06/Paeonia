@@ -1,0 +1,38 @@
+test	audit_type	raw_value	element_kind	identifier	label	x_y_width_height	frame_visibility	original_attachment
+AccessibilityJourneyUITests/testDrawingAudit()	description	8	StaticText			28.0,124.7,346.0,22.3	within 402x874	A54E71D6-543B-4BA1-ADAE-740AF6BA77C3.txt
+AccessibilityJourneyUITests/testDrawingAudit()	hitRegion	4					unavailable	700492C1-28C0-4C59-A92F-B318052FEF85.txt
+AccessibilityJourneyUITests/testDrawingAudit()	hitRegion	4					unavailable	222DB9FD-BE34-478A-997B-D234CAD89C5B.txt
+AccessibilityJourneyUITests/testHomeAtAX5InNorwegian()	contrast	1	Button	home.dailyPrompt.action	Svar nå	20.0,820.3,362.0,87.3	partly outside 402x874	D908E540-C26D-48BE-8134-186BC2DF1DCE.txt
+AccessibilityJourneyUITests/testHomeAudit()	contrast	1	StaticText		days until 500 days together	20.0,593.0,173.0,173.0	within 402x874	EB231E9D-741A-4485-AD5D-1CF87FA29E33.txt
+AccessibilityJourneyUITests/testHomeAudit()	contrast	1	Link	home.map.attribution	© OpenStreetMap · OpenFreeMap · OpenMapTiles	39.0,782.0,324.3,44.0	within 402x874	452A7BF7-19CE-4FF3-BC16-99CBA5E8F16D.txt
+AccessibilityJourneyUITests/testHomeAudit()	contrast	1	StaticText		A small moment today	116.3,416.7,169.3,20.3	within 402x874	DF809DBD-10BD-40CE-9F7C-975F9780EAB2.txt
+AccessibilityJourneyUITests/testHomeAudit()	textClipped	131072	StaticText		"Robin answered ""A favourite memory"" yesterday"	20.0,521.0,362.0,56.0	within 402x874	604ECB8D-5154-4572-8010-231F145F7068.txt
+AccessibilityJourneyUITests/testHomeAudit()	dynamicType	65536	StaticText		88	70.3,646.0,72.7,63.3	within 402x874	7FDF9B42-BE43-46CD-A964-05040CD35F3F.txt
+AccessibilityJourneyUITests/testPaywallAtAX5InNorwegian()	contrast	1	StaticText		Ett abonnement gjelder for dere begge.	20.0,227.0,362.0,187.3	within 402x874	4AF9ED93-B9D9-4DDA-84E9-2B245A0627B0.txt
+AccessibilityJourneyUITests/testPaywallAudit()	contrast	1	StaticText		One subscription covers both of you.	61.0,158.0,280.0,20.3	within 402x874	803ECC07-13FC-4FC0-A8C5-18835694261C.txt
+AccessibilityJourneyUITests/testQuestionsAudit()	contrast	1	StaticText		Robin answered. Tap to see it.	108.0,869.9,189.0,42.3	partly outside 402x874	26AE60B8-981B-42FE-85AC-0E0807CDFDCB.txt
+AccessibilityJourneyUITests/testQuestionsAudit()	contrast	1	StaticText		What small moment made you think of your partner today?	36.0,815.6,308.0,42.3	within 402x874	68DB0567-0874-4468-BD17-82EAC7BCF184.txt
+AccessibilityJourneyUITests/testQuestionsAudit()	textClipped	131072	StaticText		"Robin answered ""A favourite memory"" yesterday"	40.0,532.7,322.0,56.0	within 402x874	7416FFB2-0E07-4C60-A511-D785C34952F6.txt
+AccessibilityJourneyUITests/testQuestionsAudit()	textClipped	131072	StaticText		What is a favourite memory of the two of you from this month?	36.0,648.6,325.3,42.3	within 402x874	E6FC7A89-F60D-44A1-A394-7E74E6303654.txt
+AccessibilityJourneyUITests/testQuestionsAudit()	textClipped	131072	StaticText		Answer this question to unlock Robin's answer.	108.0,702.9,177.0,30.3	within 402x874	5343287B-A803-4B8B-A746-3F16618DB7EA.txt
+AccessibilityJourneyUITests/testQuestionsAudit()	dynamicType	65536	StaticText		0	333.0,69.0,49.0,30.0	within 402x874	9ACCA6AC-C8B5-4AF0-BA74-8F523C757279.txt
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	contrast	1	StaticText		Tilbake	20.0,62.0,242.7,79.3	within 402x874	AFAA71D6-7ED1-4FCB-9347-66B672907E7B.txt
+AccessibilityJourneyUITests/testSignInAtAX5InNorwegian()	contrast	1	StaticText		Logg inn for å fortsette der du slapp.	24.3,306.3,353.3,187.3	within 402x874	6B922D72-A40E-4482-8AD0-C21141E9FE4F.txt
+AccessibilityJourneyUITests/testSignInAudit()	contrast	1	StaticText		Continue with Google	20.0,716.0,362.0,52.0	within 402x874	53419515-7D71-4A07-A2B3-66F9AA80E581.txt
+AccessibilityJourneyUITests/testSignInAudit()	contrast	1	StaticText		Back	20.0,62.0,84.7,44.0	within 402x874	CBFCBF89-C702-44D3-93C7-CE5DB34F43A9.txt
+AccessibilityJourneyUITests/testSignInAudit()	contrast	1	Button		Support	244.0,780.4,45.7,44.0	within 402x874	9E0A05A2-8452-4A9C-BADA-37AAAB89C4E9.txt
+AccessibilityJourneyUITests/testSignInAudit()	contrast	1	Button		Terms	181.3,781.2,35.0,44.0	within 402x874	6810552E-AD33-44FF-A8A5-C6961C8FA78B.txt
+AccessibilityJourneyUITests/testSignInAudit()	contrast	1	Button		Privacy	112.3,780.3,41.3,44.0	within 402x874	C40F2233-919E-4119-86B7-CA48BC5868B1.txt
+AccessibilityJourneyUITests/testSignInAudit()	contrast	1	StaticText	welcome.signIn.title	Welcome back	128.0,485.2,146.3,26.3	within 402x874	0D8B567B-0663-46F2-A603-E5C5A7AAE6F4.txt
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	contrast	1	Button	welcome.returning	Jeg har allerede en konto	20.0,628.7,362.0,203.3	within 402x874	0CD61372-D18E-4A70-8DBA-7D32059D2FCA.txt
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	textClipped	131072					unavailable	F32E9568-D23F-4018-A4A0-48FE49D2386F.txt
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	textClipped	131072					unavailable	583CCD76-2527-4EE0-998C-A8A75A4189FD.txt
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	textClipped	131072					unavailable	C562AB49-9FD7-4E4B-A7F6-6EEE568EA8D1.txt
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	textClipped	131072					unavailable	FD253498-BB3B-40FE-9F86-7D45FD6E3A47.txt
+AccessibilityJourneyUITests/testWelcomeAtAX5InNorwegian()	textClipped	131072	Button	welcome.start	Start rommet vårt	20.0,306.0,362.0,149.3	within 402x874	07DBFD3B-4FB3-4BC6-ADB6-526B9B2C1EF4.txt
+AccessibilityJourneyUITests/testWelcomeAudit()	contrast	1	Button	welcome.returning	I already have an account	20.0,772.0,362.0,60.0	within 402x874	A718A701-7B2D-4918-BEB7-8CF4D8D67161.txt
+AccessibilityJourneyUITests/testWelcomeAudit()	textClipped	131072	Button	welcome.start	Start our space	20.0,644.0,362.0,52.0	within 402x874	527021FC-7A2D-4E6F-92E4-8F6ACA80ECE4.txt
+AccessibilityJourneyUITests/testWelcomeAudit()	dynamicType	65536	StaticText		Draw something. It shows up on their Home Screen.	62.5,559.0,277.0,49.0	within 402x874	72A6036D-9B3D-452D-8069-8546E5901E1C.txt
+AccessibilityJourneyUITests/testWelcomeAudit()	dynamicType	65536	StaticText		Babe	77.0,433.7,30.0,14.3	within 402x874	FEE6CCF3-3EA5-42A1-9033-B06768998409.txt
+AccessibilityJourneyUITests/testWelcomeAudit()	dynamicType	65536	StaticText		10:21 PM	77.0,450.0,47.0,13.3	within 402x874	E4E6512A-E54F-46A9-9C44-2B2E013CE03B.txt
+AccessibilityJourneyUITests/testWelcomeAudit()	dynamicType	65536	StaticText		Paeonia	177.0,86.0,107.3,33.7	within 402x874	3D4B9B66-F00C-4279-904B-3352AD42298A.txt

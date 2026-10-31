@@ -252,6 +252,7 @@ export const marketingEn = {
     note: 'Made with care for private relationships.',
     headerNavigationLabel: 'Main navigation',
     footerNavigationLabel: 'Footer navigation',
+    accessibility: 'Accessibility',
     privacy: 'Privacy',
     terms: 'Terms',
     support: 'Support',
