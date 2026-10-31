@@ -204,7 +204,7 @@ private struct LookBackDrawingThumbnail: View {
                 }
             }
             .clipShape(shape)
-            .overlay { shape.stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault) }
+            .overlay { shape.stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault) }
             .accessibilityHidden(true)
             .task(id: drawing.revisionID) {
                 let side = drawing.canvasSide.map { CGFloat($0) } ?? WidgetDrawingViewModel.fallbackCanvasSide

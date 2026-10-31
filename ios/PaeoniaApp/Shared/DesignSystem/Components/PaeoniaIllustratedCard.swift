@@ -1,6 +1,13 @@
 import SwiftUI
 
 enum PaeoniaIllustratedCardLayout {
+    static func shape(isCompact: Bool) -> RoundedRectangle {
+        RoundedRectangle(
+            cornerRadius: isCompact ? PaeoniaRadius.radius20 : PaeoniaRadius.radius28,
+            style: .continuous
+        )
+    }
+
     /// The canvas the picture is laid out on, in pixels. It is as wide as the card and
     /// anchored at the top, so one pixel is `cardWidth / 1024` points.
     static let canvasSize = CGSize(width: 1_024, height: 1_536)
@@ -43,10 +50,7 @@ struct PaeoniaIllustratedCard<Artwork: View, Badge: View, Header: View, Extras: 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var shape: RoundedRectangle {
-        RoundedRectangle(
-            cornerRadius: isCompact ? PaeoniaRadius.radius20 : PaeoniaRadius.radius28,
-            style: .continuous
-        )
+        PaeoniaIllustratedCardLayout.shape(isCompact: isCompact)
     }
 
     var body: some View {

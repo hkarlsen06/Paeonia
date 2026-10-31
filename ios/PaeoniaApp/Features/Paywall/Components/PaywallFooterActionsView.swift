@@ -21,7 +21,7 @@ struct PaywallFooterActionsView: View {
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             Divider()
-                .background(.paeoniaSurfacePressed)
+                .background(.paeoniaBorder)
                 .padding(.bottom, PaeoniaSpacing.space4)
             restoreButton
             if let onManageSubscription {

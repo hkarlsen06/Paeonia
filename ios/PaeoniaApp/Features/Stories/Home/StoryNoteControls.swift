@@ -39,7 +39,7 @@ struct StoryNoteShareButton: View {
             .foregroundStyle(looksEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary)
             .padding(.horizontal, PaeoniaSpacing.space24)
             .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-            .background(Capsule().fill(looksEnabled ? .paeoniaAccentPrimary : .paeoniaSurfacePressed))
+            .background(Capsule().fill(looksEnabled ? .paeoniaAccentPrimary : .paeoniaSurfaceDisabled))
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled || isSaving)

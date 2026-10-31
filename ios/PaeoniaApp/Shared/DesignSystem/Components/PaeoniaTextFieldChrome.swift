@@ -16,7 +16,7 @@ extension View {
                 .clipShape(shape)
                 .overlay {
                     shape.stroke(
-                        isFocused ? accent : .paeoniaSurfacePressed,
+                        isFocused ? accent : .paeoniaBorder,
                         lineWidth: isFocused ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
                     )
                 }

@@ -14,7 +14,7 @@ struct StoryChainComposer: View {
     /// The rule under the field. It changes through `withAnimation`, because an
     /// `.animation(value:)` modifier here would also re-time the movement the
     /// keyboard causes (see `DailyAnswerTextField`).
-    @State private var ruleColor = Color.paeoniaSurfacePressed
+    @State private var ruleColor = Color.paeoniaBorder
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -41,7 +41,7 @@ struct StoryChainComposer: View {
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: showsDareHint)
         .onChange(of: isFocused) { _, focused in
             withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
-                ruleColor = focused ? .paeoniaAccentPrimary : .paeoniaSurfacePressed
+                ruleColor = focused ? .paeoniaAccentPrimary : .paeoniaBorder
             }
         }
     }

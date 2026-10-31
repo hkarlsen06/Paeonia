@@ -54,7 +54,7 @@ enum StreakFlameMotion {
 enum StreakFlameStyle {
     /// The empty flame: a dim vessel waiting to be filled.
     static let empty = LinearGradient(
-        colors: [.paeoniaSurfacePressed.opacity(0.9), .paeoniaSurfaceSecondary.opacity(0.65)],
+        colors: [.paeoniaSurfaceHighlight.opacity(0.9), .paeoniaSurfaceSecondary.opacity(0.65)],
         startPoint: .top,
         endPoint: .bottom
     )
@@ -72,7 +72,7 @@ enum StreakFlameStyle {
     )
 
     static let brokenLiquid = LinearGradient(
-        colors: [.paeoniaTextSecondary.opacity(0.5), .paeoniaSurfacePressed.opacity(0.7)],
+        colors: [.paeoniaTextSecondary.opacity(0.5), .paeoniaSurfaceHighlight.opacity(0.7)],
         startPoint: .top,
         endPoint: .bottom
     )

@@ -37,7 +37,7 @@ struct ExquisiteCorpseHubArtwork: View {
     private var background: some View {
         ZStack {
             LinearGradient(
-                colors: [.paeoniaSurfacePressed, .paeoniaBackgroundSecondary],
+                colors: [.paeoniaSurfaceHighlight, .paeoniaBackgroundSecondary],
                 startPoint: .topTrailing,
                 endPoint: .bottomLeading
             )

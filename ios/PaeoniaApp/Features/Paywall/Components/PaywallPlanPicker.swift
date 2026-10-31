@@ -34,6 +34,7 @@ private struct PaywallPlanCard: View {
     let isSelected: Bool
     let isLoading: Bool
     let onSelect: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
@@ -46,7 +47,7 @@ private struct PaywallPlanCard: View {
                 .background(isSelected ? Color.paeoniaSurfacePrimary : Color.paeoniaSurfaceSecondary, in: shape)
                 .overlay {
                     shape.strokeBorder(
-                        isSelected ? Color.paeoniaAccentPrimary : Color.paeoniaSurfacePressed,
+                        isSelected ? Color.paeoniaAccentPrimary : Color.paeoniaBorder,
                         lineWidth: isSelected ? 2 : PaeoniaRadius.strokeDefault
                     )
                 }
@@ -58,35 +59,49 @@ private struct PaywallPlanCard: View {
     }
 
     private var label: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
+        HStack(alignment: dynamicTypeSize.isAccessibilitySize ? .top : .center, spacing: PaeoniaSpacing.space12) {
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(isSelected ? .paeoniaAccentPrimary : .paeoniaTextTertiary)
                 .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                HStack(spacing: PaeoniaSpacing.space8) {
-                    Text(plan.period.planName)
-                        .font(PaeoniaTypography.bodyEmphasis)
-                        .foregroundStyle(.paeoniaTextPrimary)
+            detailsLayout {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+                    nameLayout {
+                        Text(plan.period.planName)
+                            .font(PaeoniaTypography.bodyEmphasis)
+                            .foregroundStyle(.paeoniaTextPrimary)
 
-                    if let savingsPercent = plan.savingsPercent {
-                        savingsBadge(savingsPercent)
+                        if let savingsPercent = plan.savingsPercent {
+                            savingsBadge(savingsPercent)
+                        }
                     }
+
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.paeoniaTextSecondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.paeoniaTextSecondary)
+                priceColumn
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            priceColumn
         }
     }
 
+    private var detailsLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space12))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space12))
+    }
+
+    private var nameLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space8))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
+    }
+
     private var priceColumn: some View {
-        VStack(alignment: .trailing, spacing: PaeoniaSpacing.space2) {
+        VStack(alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing, spacing: PaeoniaSpacing.space2) {
             Text(plan.price?.text ?? "000 kr")
                 .font(PaeoniaTypography.bodyEmphasis)
                 .foregroundStyle(.paeoniaTextPrimary)

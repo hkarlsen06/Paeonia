@@ -1,26 +1,9 @@
 import SwiftUI
 
-/// How big the board is, so a game never resizes it. The width decides, and the
-/// wide layout also keeps the board on screen by height.
+/// A narrow board's width. Wide layouts share the drawing games' square sizing.
 enum BoardGameMetrics {
     /// The board never grows past this on a phone or in a narrow window.
     static let maxBoard: CGFloat = 560
-    /// The board never grows past this in the wide layout.
-    static let maxWideBoard: CGFloat = 640
-    static let minWideBoard: CGFloat = 200
-    static let wideMinWidth: CGFloat = 700
-
-    /// Wide means 700 points or more and wider than tall, as in Draw & Guess.
-    static func isWide(_ size: CGSize) -> Bool {
-        size.width >= wideMinWidth && size.width > size.height
-    }
-
-    /// The side of the square the board gets in the wide layout.
-    static func wideBoardSide(in size: CGSize) -> CGFloat {
-        let padding = PaeoniaSpacing.screenHorizontalPadding * 2
-        let beside = size.width - GameMetrics.sideColumnWidth(in: size) - PaeoniaSpacing.space32 - padding
-        return max(minWideBoard, min(maxWideBoard, beside, size.height - PaeoniaSpacing.space24 * 2))
-    }
 }
 
 extension EnvironmentValues {
@@ -75,7 +58,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
         GeometryReader { proxy in
             // A board that bleeds keeps the one column on a wide screen too, so it spans
             // the whole width instead of a box beside the rows.
-            if !boardBleeds, BoardGameMetrics.isWide(proxy.size) {
+            if !boardBleeds, GameMetrics.isWide(proxy.size) {
                 wide(size: proxy.size)
             } else if dynamicTypeSize.isAccessibilitySize {
                 scrolling
@@ -301,7 +284,7 @@ struct BoardGameScreenLayout<Board: View, Bottom: View>: View {
     // MARK: Wide
 
     private func wide(size: CGSize) -> some View {
-        let side = BoardGameMetrics.wideBoardSide(in: size)
+        let side = GameMetrics.squareSide(in: size)
         // A tall bottom, such as a result panel on a landscape phone, would leave
         // the rows above it no room. It then scrolls with them.
         let scrollsBottom = wideBottomHeight > size.height * 0.55

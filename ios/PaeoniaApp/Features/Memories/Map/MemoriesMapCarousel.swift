@@ -74,7 +74,7 @@ struct MemoriesMapCarousel: View {
             }
             .padding(PaeoniaSpacing.space12)
             .background(.paeoniaSurfacePrimary, in: shape)
-            .overlay { shape.stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault) }
+            .overlay { shape.stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault) }
             .shadow(color: .black.opacity(0.3), radius: 14, y: 8)
             .contentShape(shape)
         }

@@ -78,17 +78,17 @@ struct ThoughtBubble<Content: View>: View {
             content
                 .background(
                     RoundedRectangle(cornerRadius: PaeoniaRadius.radius16 * scale, style: .continuous)
-                        .fill(.paeoniaSurfacePressed)
+                        .fill(.paeoniaSurfaceHighlight)
                 )
                 .alignmentGuide(.thoughtBubbleBase) { $0[.bottom] }
             // The bigger dot is one dot in from the left edge. The smaller one starts
             // where the bigger one ends, so the pair leads down and to the right.
             Circle()
-                .fill(.paeoniaSurfacePressed)
+                .fill(.paeoniaSurfaceHighlight)
                 .frame(width: dotSize, height: dotSize)
                 .padding(.leading, dotSize)
             Circle()
-                .fill(.paeoniaSurfacePressed)
+                .fill(.paeoniaSurfaceHighlight)
                 .frame(width: smallDotSize, height: smallDotSize)
                 .padding(.leading, dotSize * 2)
         }

@@ -61,7 +61,7 @@ struct GameMarkSettingsRow: View {
         .frame(minHeight: PaeoniaSpacing.buttonHeight)
         .gameRowSurface(
             fill: .paeoniaSurfaceSecondary,
-            border: .paeoniaSurfacePressed,
+            border: .paeoniaBorder,
             borderWidth: PaeoniaRadius.strokeHairline
         )
     }

@@ -110,7 +110,7 @@ struct ReportAndLeaveView: View {
                 ReportReasonField(selection: selectedReason)
 
                 Divider()
-                    .overlay(.paeoniaSurfacePressed)
+                    .overlay(.paeoniaBorder)
 
                 reportNoteField(note: note)
             }

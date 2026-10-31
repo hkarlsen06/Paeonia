@@ -31,7 +31,7 @@ struct ConnectFourBoardFace: View {
             ConnectFourFacePath(geometry: geometry, cornerRadius: PaeoniaRadius.radius20)
                 .fill(
                     LinearGradient(
-                        colors: [.paeoniaSurfacePressed, .paeoniaSurfacePrimary],
+                        colors: [.paeoniaSurfaceHighlight, .paeoniaSurfacePrimary],
                         startPoint: .top,
                         endPoint: .bottom
                     ),

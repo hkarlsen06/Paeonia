@@ -230,7 +230,7 @@ struct MemoriesMapScreen: View {
                 .padding(.horizontal, PaeoniaSpacing.space12)
                 .frame(minHeight: 36)
                 .background(.paeoniaSurfaceSecondary, in: Capsule())
-                .overlay(Capsule().stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault))
+                .overlay(Capsule().stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault))
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -246,7 +246,7 @@ struct MemoriesMapScreen: View {
                 .foregroundStyle(.paeoniaTextPrimary)
                 .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
                 .background(.paeoniaSurfaceSecondary, in: Circle())
-                .overlay(Circle().stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault))
+                .overlay(Circle().stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

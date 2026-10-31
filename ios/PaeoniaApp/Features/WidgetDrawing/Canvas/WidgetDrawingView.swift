@@ -195,7 +195,7 @@ struct WidgetDrawingView: View {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                    .stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             // The side is known before the saved drawing loads, so a drawing

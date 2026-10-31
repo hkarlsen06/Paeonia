@@ -64,7 +64,7 @@ private struct ExquisiteCorpseShareCard: View {
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                .strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeEmphasis)
+                .strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeEmphasis)
         }
     }
 }

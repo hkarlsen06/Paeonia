@@ -58,7 +58,7 @@ struct BoardGameResultPanel: View {
         .padding(PaeoniaSpacing.space20)
         .background(.paeoniaSurfacePrimary, in: shape)
         .overlay {
-            shape.strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeHairline)
+            shape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeHairline)
         }
         .opacity(isRisen ? 1 : 0)
         .offset(y: isRisen ? 0 : Self.riseDistance)

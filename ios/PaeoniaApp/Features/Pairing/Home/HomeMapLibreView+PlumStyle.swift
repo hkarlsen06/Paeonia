@@ -1,15 +1,16 @@
 import MapLibre
+import SwiftUI
 import UIKit
 
 extension HomeMapLibreView {
     /// Paints OpenFreeMap's dark style in Paeonia's colors: plum land and deeper plum water,
     /// no labels, and only the main roads, as hairlines.
     static func recolor(_ style: MLNStyle) {
-        let land = UIColor(red: 0.27, green: 0.09, blue: 0.19, alpha: 1)
-        let water = UIColor(red: 0.13, green: 0.03, blue: 0.09, alpha: 1)
-        let green = UIColor(red: 0.30, green: 0.11, blue: 0.22, alpha: 1)
-        let building = UIColor(red: 0.33, green: 0.13, blue: 0.24, alpha: 1)
-        let mainRoad = UIColor(red: 0.42, green: 0.17, blue: 0.30, alpha: 1)
+        let land = UIColor(PaeoniaMapPalette.land)
+        let water = UIColor(PaeoniaMapPalette.water)
+        let green = UIColor(PaeoniaMapPalette.vegetation)
+        let building = UIColor(PaeoniaMapPalette.building)
+        let mainRoad = UIColor(PaeoniaMapPalette.mainRoad)
 
         for layer in style.layers {
             let id = layer.identifier

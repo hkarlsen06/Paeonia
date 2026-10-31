@@ -20,8 +20,8 @@ nonisolated enum PaeoniaSpacing {
     /// touch-target floor even when the visual treatment is intentionally quiet.
     static let compactButtonHeight: CGFloat = 44
 
-    /// Bottom inset for the small caption labels overlaid at the bottom of the Us
-    /// tab tiles (the map distance and the widget CTA). Tuned to sit on the Apple
+    /// Bottom inset for the small caption labels overlaid at the bottom of the Home
+    /// tiles (the map distance and the widget CTA). Tuned to sit on the Apple
     /// Maps watermark line so the two tiles read consistently. Adjust this single
     /// value to nudge both labels together.
     static let tileCaptionBottomInset: CGFloat = 10

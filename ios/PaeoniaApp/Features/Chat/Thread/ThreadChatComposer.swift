@@ -38,9 +38,8 @@ struct ThreadChatComposer: View {
     /// What the field held before an edit started, put back when the edit ends.
     @State private var draftBeforeEdit: String?
 
-    static let controlHeight: CGFloat = 52
-    static let cornerRadius: CGFloat = 24
-    private static let buttonDiameter: CGFloat = 36
+    static let controlHeight = PaeoniaSpacing.buttonHeight
+    static let cornerRadius = PaeoniaRadius.radius24
 
     var body: some View {
         // Rows above the field sit outside the scroll view. A row appearing inside it
@@ -252,22 +251,9 @@ struct ThreadChatComposer: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Group {
-                if isBusy {
-                    ProgressView().tint(.paeoniaTextInverse)
-                } else {
-                    Image(systemName: systemImage)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(isProminent ? Color.paeoniaTextInverse : tint)
-                }
-            }
-            .frame(width: Self.buttonDiameter, height: Self.buttonDiameter)
-            .background(isProminent ? tint : tint.opacity(0.16), in: Circle())
-            // The circle stays 36pt. The tap area is 44pt.
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
+            Image(systemName: systemImage)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PaeoniaCircularButtonStyle(isProminent: isProminent, tint: tint, isLoading: isBusy))
         .disabled(isBusy)
         .accessibilityLabel(Text(label))
     }

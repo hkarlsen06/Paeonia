@@ -54,7 +54,7 @@ struct ReactionPickerRow: View {
                         .frame(minWidth: 44, minHeight: 44)
                         .background {
                             if isOwn {
-                                Circle().fill(.paeoniaSurfacePressed)
+                                Circle().fill(.paeoniaSurfaceHighlight)
                             }
                         }
                         .scaleEffect(isOwn ? 1.12 : 1)

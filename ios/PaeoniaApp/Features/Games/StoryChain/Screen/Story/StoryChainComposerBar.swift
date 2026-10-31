@@ -198,37 +198,19 @@ struct StoryChainComposerBar: View {
     }
 }
 
-/// The round Send button. The circle is 36 points and the tap area 44.
+/// Sends the current line with the shared circular action style.
 struct StoryChainSendButton: View {
     let viewModel: StoryChainViewModel
-
-    private var canSend: Bool { viewModel.lineCheck.canSend }
 
     var body: some View {
         Button {
             Task { await viewModel.sendLine() }
         } label: {
             Image(systemName: "arrow.up")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(canSend ? Color.paeoniaTextInverse : Color.paeoniaTextTertiary)
-                .frame(width: 36, height: 36)
-                .background(canSend ? Color.paeoniaAccentPrimary : Color.paeoniaSurfaceDisabled, in: Circle())
-                .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
-                .contentShape(Circle())
         }
-        .buttonStyle(StoryChainSendButtonStyle())
-        .disabled(!canSend)
+        .buttonStyle(PaeoniaCircularButtonStyle())
+        .disabled(!viewModel.lineCheck.canSend)
         .accessibilityLabel(Text(.storyChainWriteSendA11Y(viewModel.partnerName)))
         .accessibilityIdentifier("storyChain.send")
-    }
-}
-
-private struct StoryChainSendButtonStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.92 : 1)
-            .animation(PaeoniaMotion.buttonPress, value: configuration.isPressed)
     }
 }

@@ -162,7 +162,7 @@ struct SettingsView: View {
         .listStyle(.insetGrouped)
         .paeoniaGroupedList(showsTabBackdrop: true)
         .navigationTitle(Text(.mainTabUs))
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .task {
             await adminAccess.refresh()
         }

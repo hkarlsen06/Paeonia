@@ -112,7 +112,7 @@ struct WelcomeStartDateStep: View {
         .padding(PaeoniaSpacing.space12)
         .background(.paeoniaSurfacePrimary, in: shape)
         .overlay {
-            shape.strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeHairline)
+            shape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeHairline)
         }
         .onChange(of: selectedDate) { _, _ in
             PaeoniaHaptics.selection()

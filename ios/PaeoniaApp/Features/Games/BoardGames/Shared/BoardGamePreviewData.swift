@@ -56,7 +56,7 @@ enum BoardGamePreviewData {
             .fill(.paeoniaBackgroundPrimary)
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                    .strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                    .strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
             }
             .aspectRatio(1, contentMode: .fit)
     }

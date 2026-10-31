@@ -17,6 +17,9 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-10-31.
 
+- Chats, Games, Memories and Us use inline navigation titles. Home keeps its custom map header. Mind Meld stacks full-width word cards at accessibility text sizes, so the revealed words use the person's chosen reading size.
+- Board games, drawing games and Guess my spot share the wide-window breakpoint. Board and drawing squares use the same wide sizing calculation.
+
 - Queued moves show no local-save or offline reassurance line. The board, word, drawing or story stays visible and sends automatically. Failed sends on a working connection keep their warning and retry action. Held reveals still wait for the server before showing the hidden result.
 
 - Game hub cards use `PaeoniaIllustratedCard` for the shared artwork, title, action and compact layout. `GameHubCardFrame` adds presence, scores and Not now. Daily questions use the shared card directly. Topic cards and illustrated cards share their waiting-content border and glow through `paeoniaCardSurface`.
@@ -94,7 +97,7 @@ Decided on 2026-10-12.
 - **Play style.** The couple chooses whether they like to play against each other or together as a team. "Against each other" gives each partner their own score and a winner. "Together" gives one shared score. Each game's design doc says how the game plays in each style. A game where scores make no sense can ignore the setting.
 - **Game language.** The couple picks a language they both understand. Word lists, decoy letters and other game content use it, whatever language each partner's app is in. The choices are the app's languages, English and Norwegian Bokmal. When both partners already use the same app language, setup preselects it.
 - **No game streaks.** Games never get a streak of their own. A game turn counts toward the couple's existing streak through a new activity kind in `ACTIVITY_KINDS` (`backend/convex/lib/streaks.ts`). Each game's design doc says which action counts.
-- **Tab order.** Home, Questions, Games, Memories, You. Games sits in the middle.
+- **Tab order.** Home, Chats, Games, Memories, Us. Games sits in the middle.
 - **Tab badge.** The Games tab counts the turns, unseen results and open invites waiting for this person, except those put aside with "Not now". An unseen Draw & Guess result stays under "Right now" with a button to see the result and "Not now", even when the partner has the next turn. The badge loads at launch, before the tab is opened.
 - **Tab bar in a game.** On iPhone the tab bar hides while a game screen is open. On iPad it stays, because the iPad tab bar sits at the top and iPadOS 26 moves the game's content when it hides during the push.
 - **One ongoing game per kind.** A couple has at most one active game of each kind.

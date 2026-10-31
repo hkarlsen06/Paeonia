@@ -98,7 +98,7 @@ struct ThreadChatPhotoCard: View {
             .clipShape(shape)
             .overlay {
                 shape.strokeBorder(
-                    isCurrentUser ? Color.white.opacity(0.2) : Color.paeoniaSurfacePressed.opacity(0.45),
+                    isCurrentUser ? Color.white.opacity(0.2) : Color.paeoniaBorder.opacity(0.45),
                     lineWidth: 1
                 )
             }

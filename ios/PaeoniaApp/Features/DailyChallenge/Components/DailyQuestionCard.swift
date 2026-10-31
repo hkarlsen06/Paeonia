@@ -59,7 +59,7 @@ struct DailyQuestionCard<Header: View, Footer: View>: View {
         .background { cardBackground }
         .clipShape(shape)
         .overlay {
-            shape.strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeHairline)
+            shape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeHairline)
         }
     }
 

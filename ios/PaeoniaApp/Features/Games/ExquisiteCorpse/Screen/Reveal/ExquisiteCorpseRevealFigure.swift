@@ -56,7 +56,7 @@ struct ExquisiteCorpseRevealFigure: View {
         .clipShape(corner)
         .overlay {
             corner
-                .strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeEmphasis)
+                .strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeEmphasis)
                 .allowsHitTesting(false)
         }
     }

@@ -156,7 +156,7 @@ struct ThreadChatDateSeparator: View {
 
     private var rule: some View {
         Rectangle()
-            .fill(.paeoniaSurfacePressed)
+            .fill(.paeoniaBorder)
             .frame(height: 1)
             .accessibilityHidden(true)
     }

@@ -9,7 +9,7 @@ struct StoryChainNamingBottom: View {
     var isLeaving = false
 
     @FocusState private var isFocused: Bool
-    @State private var ruleColor = Color.paeoniaSurfacePressed
+    @State private var ruleColor = Color.paeoniaBorder
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let titleFont = Font.system(.title2, design: .serif, weight: .regular)
@@ -31,7 +31,7 @@ struct StoryChainNamingBottom: View {
         .accessibilityHidden(isLeaving)
         .onChange(of: isFocused) { _, focused in
             withAnimation(reduceMotion ? nil : PaeoniaMotion.stateChange) {
-                ruleColor = focused ? .paeoniaAccentPrimary : .paeoniaSurfacePressed
+                ruleColor = focused ? .paeoniaAccentPrimary : .paeoniaBorder
             }
         }
     }

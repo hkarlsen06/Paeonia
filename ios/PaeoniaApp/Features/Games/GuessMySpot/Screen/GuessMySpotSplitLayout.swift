@@ -42,7 +42,7 @@ struct GuessMySpotSplitLayout<Header: View, Photo: View, MapPane: View, Footer: 
         .padding(.top, PaeoniaSpacing.space8)
         .padding(.bottom, PaeoniaSpacing.space4)
         .onGeometryChange(for: Bool.self) { proxy in
-            proxy.size.width >= 700 && proxy.size.width > proxy.size.height
+            GameMetrics.isWide(proxy.size)
         } action: { isWide = $0 }
         .paeoniaBottomBar(spacing: 0) {
             VStack(spacing: PaeoniaSpacing.space12) {

@@ -6,6 +6,7 @@ import SwiftUI
 struct MindMeldWaitingView: View {
     let viewModel: MindMeldViewModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// A little smaller than on the reveal, where the cards grow.
     private static let cardWidth: CGFloat = 128
@@ -57,13 +58,17 @@ struct MindMeldWaitingView: View {
     // MARK: Cards
 
     private var cards: some View {
-        HStack(spacing: PaeoniaSpacing.space24) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space24))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space24))
+        let width = dynamicTypeSize.isAccessibilitySize ? CGFloat.infinity : Self.cardWidth
+        return layout {
             MindMeldWordCard(
                 word: myWord,
                 isFaceUp: true,
                 faceDownLabel: .mindMeldWaitYourWordA11Y(myWord),
                 isLocked: true,
-                maxWidth: Self.cardWidth
+                maxWidth: width
             )
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(.mindMeldWaitYourWordA11Y(myWord)))
@@ -71,7 +76,7 @@ struct MindMeldWaitingView: View {
                 word: nil,
                 isFaceUp: false,
                 faceDownLabel: .mindMeldWaitPartnerCardA11Y(viewModel.partnerName),
-                maxWidth: Self.cardWidth
+                maxWidth: width
             )
             .overlay {
                 PaeoniaProfilePhotoAvatar(

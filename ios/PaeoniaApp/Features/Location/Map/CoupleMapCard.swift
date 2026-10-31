@@ -278,7 +278,7 @@ struct CoupleMapCard: View {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                    .stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
             }
             .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
     }

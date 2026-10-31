@@ -118,7 +118,7 @@ struct BoardMarkEditorView: View {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                    .strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                    .strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
                     .allowsHitTesting(false)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { side in

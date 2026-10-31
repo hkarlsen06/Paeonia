@@ -246,7 +246,7 @@ private struct WidgetDrawingHistoryThumbnail: View {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                    .stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
             }
             // Offer the share button only once the drawing is on screen, so the
             // person can see what they're sharing and we don't export a blank box.

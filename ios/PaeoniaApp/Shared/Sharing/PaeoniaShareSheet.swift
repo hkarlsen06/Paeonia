@@ -78,7 +78,7 @@ struct PaeoniaShareSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                        .strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                        .strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
                 }
                 .accessibilityLabel(Text(.sharePreviewAccessibility(model.shareable.title)))
                 .accessibilityAddTraits(.isImage)

@@ -47,15 +47,32 @@ struct MindMeldRevealStage: View {
     private static let thumpScale: CGFloat = 1.07
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        MindMeldStageLayout(merge: merged ? 1 : 0, lean: leaning ? 1 : 0, maxCardWidth: cardMaxWidth) {
-            avatar(me, tint: .paeoniaPartnerOne)
-            avatar(partner, tint: .paeoniaPartnerTwo)
-            myCard
-            partnerCard
-            MindMeldRevealLink(isDrawn: linkDrawn)
-                .zIndex(2)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: PaeoniaSpacing.space12) {
+                    HStack(spacing: PaeoniaSpacing.space8) {
+                        avatar(me, tint: .paeoniaPartnerOne)
+                        if joined { avatar(partner, tint: .paeoniaPartnerTwo) }
+                    }
+                    myCard
+                    if !joined {
+                        avatar(partner, tint: .paeoniaPartnerTwo)
+                        partnerCard
+                    }
+                }
+            } else {
+                MindMeldStageLayout(merge: merged ? 1 : 0, lean: leaning ? 1 : 0, maxCardWidth: cardMaxWidth) {
+                    avatar(me, tint: .paeoniaPartnerOne)
+                    avatar(partner, tint: .paeoniaPartnerTwo)
+                    myCard
+                    partnerCard
+                    MindMeldRevealLink(isDrawn: linkDrawn)
+                        .zIndex(2)
+                }
+            }
         }
         .motionOnly(MindMeldRevealTimeline.slide, value: merged)
         .motionOnly(Self.lean, value: leaning)
@@ -75,7 +92,7 @@ struct MindMeldRevealStage: View {
             isFaceUp: myCardFlipped,
             faceDownLabel: .mindMeldWaitYourWordA11Y(myWord.localizedUppercase),
             tone: tone,
-            maxWidth: cardMaxWidth
+            maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : cardMaxWidth
         )
         .motionOnly(Self.flip, value: myCardFlipped)
         .modifier(MindMeldPulse(trigger: pulse, peak: pulsePeak))
@@ -94,7 +111,7 @@ struct MindMeldRevealStage: View {
             isFaceUp: partnerCardFlipped,
             faceDownLabel: .mindMeldRevealCardFacedownA11Y(partner.name),
             tone: tone,
-            maxWidth: cardMaxWidth
+            maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : cardMaxWidth
         )
         .motionOnly(Self.flip, value: partnerCardFlipped)
         .opacity(joined ? 0 : 1)

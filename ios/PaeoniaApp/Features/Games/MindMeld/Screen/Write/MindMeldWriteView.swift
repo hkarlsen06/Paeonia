@@ -178,7 +178,7 @@ struct MindMeldWriteView: View {
 
     private var borderColor: Color {
         if viewModel.draftIssue != nil { return .paeoniaErrorText }
-        return isFieldFocused ? .paeoniaAccentPrimary : .paeoniaSurfacePressed
+        return isFieldFocused ? .paeoniaAccentPrimary : .paeoniaBorder
     }
 
     private var borderWidth: CGFloat {

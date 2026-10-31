@@ -278,7 +278,7 @@ extension View {
         return background(.paeoniaBackgroundPrimary)
             .clipShape(shape)
             .overlay {
-                shape.stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                shape.stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
             }
             .shadow(color: .black.opacity(0.25), radius: 18, x: 0, y: 10)
     }

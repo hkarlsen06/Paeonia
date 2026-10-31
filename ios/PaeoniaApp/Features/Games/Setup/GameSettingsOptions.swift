@@ -87,7 +87,7 @@ struct GameOptionRow: View {
             .frame(minHeight: PaeoniaSpacing.buttonHeight)
             .gameRowSurface(
                 fill: isSelected ? .paeoniaSurfacePrimary : .paeoniaSurfaceSecondary,
-                border: isSelected ? .paeoniaAccentPrimary : .paeoniaSurfacePressed,
+                border: isSelected ? .paeoniaAccentPrimary : .paeoniaBorder,
                 borderWidth: isSelected ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeHairline
             )
         }

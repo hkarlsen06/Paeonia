@@ -1,6 +1,6 @@
 # Design System
 
-Use semantic colors and design tokens. Do not scatter hardcoded colors, spacing, or typography values through feature views. `paeoniaCardSurface` owns card edges and the glow for content waiting for this person. `paeoniaEyebrowStyle` owns small uppercase labels. `PaeoniaIllustratedCard` owns the shared picture, title and action layout.
+Use semantic colors and design tokens. Do not scatter hardcoded colors, spacing, or typography values through feature views. `paeoniaCardSurface` owns card edges and the glow for content waiting for this person. `paeoniaEyebrowStyle` owns small uppercase labels. `PaeoniaIllustratedCard` owns the shared picture, title and action layout. Its shared shape also sizes context-menu previews.
 
 `ios/PaeoniaShared/PaeoniaPalette.swift` owns the palette and the brand roles shared by the app and widget. Their default accent comes from the single `AccentColor` asset in `PaeoniaShared/BrandAssets.xcassets`. Topics choose decorative hues through `TopicStyle`, independently of success, warning and drawing ink roles.
 
@@ -12,6 +12,9 @@ Common semantic colors:
 - `paeoniaBackgroundSecondary`
 - `paeoniaSurfacePrimary`
 - `paeoniaSurfaceSecondary`
+- `paeoniaSurfaceHighlight` for permanent highlighted fills
+- `paeoniaSurfacePressed` for press feedback
+- `paeoniaBorder` for borders and separators
 - `paeoniaTextPrimary`
 - `paeoniaTextSecondary`
 - `paeoniaTextTertiary`
@@ -30,6 +33,8 @@ Also centralize:
 - reusable button and card styles
 
 Use cards only when the framed surface has product meaning, such as a distinct repeated item, modal, or tool. Prefer few or no cards, and do not wrap ordinary screen content in cards by default. Place content directly in the screen layout with intentional spacing and hierarchy. Put primary CTA clusters near the bottom of the screen when it improves thumb reach and matches the flow. Pin a bottom button bar with `paeoniaBottomBar` (`Shared/DesignSystem/PaeoniaKeyboard.swift`), not a bare `safeAreaInset`, so the keyboard covers the bar instead of pushing it up into the keyboard's Done button. Only inputs that belong above the keyboard, like a chat composer, should ride up with it. A screen that can show a keyboard sets its background with `paeoniaScreenBackground()` (`Shared/DesignSystem/PaeoniaColors.swift`). A plain `.background(.paeoniaBackgroundPrimary)` stops at the keyboard's top edge, and black shows beside the iOS 26 keyboard's rounded corners. In bottom button clusters, text-only actions without visible button backgrounds should still occupy button-sized hit targets and be spaced like adjacent buttons, not tucked close to the primary CTA.
+
+Chats, Games, Memories and Us use inline navigation titles. Home keeps its custom map header. Shared button styles provide vertical padding as well as a minimum tap height. Use `PaeoniaCircularButtonStyle` for the compact circular actions in composers. The paywall lets its purchase controls scroll at accessibility text sizes or when they would occupy more than half the available height.
 
 ### iPad Layout
 

@@ -52,7 +52,7 @@ struct GamesHubView: View {
         .paeoniaWideLayout($isWideLayout)
         .refreshable { await viewModel.refresh() }
         .navigationTitle(Text(.mainTabGames))
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -133,10 +133,7 @@ struct GamesHubView: View {
             card.environment(\.gameHubCardIsCompact, isCompact)
                 .contentShape(
                     .contextMenuPreview,
-                    RoundedRectangle(
-                        cornerRadius: isCompact ? PaeoniaRadius.radius20 : PaeoniaRadius.radius28,
-                        style: .continuous
-                    )
+                    PaeoniaIllustratedCardLayout.shape(isCompact: isCompact)
                 )
                 .contextMenu { menuItems(for: game, open: openFromCard) }
                 .id(game.kind)

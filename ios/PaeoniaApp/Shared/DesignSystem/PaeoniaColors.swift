@@ -12,7 +12,9 @@ nonisolated extension Color {
     static let paeoniaSurfacePrimary = PaeoniaPalette.plumRaised
     static let paeoniaSurfaceSecondary = PaeoniaPalette.plumSurfaceLow
     static let paeoniaSurfacePressed = PaeoniaPalette.plumPressed
+    static let paeoniaSurfaceHighlight = PaeoniaPalette.plumPressed
     static let paeoniaSurfaceDisabled = PaeoniaPalette.plumSurfaceLow
+    static let paeoniaBorder = PaeoniaPalette.plumPressed
     static let paeoniaOutgoingMessage = PaeoniaPalette.outgoingMessage
 
     static let paeoniaTextPrimary = PaeoniaBrandColors.textPrimary
@@ -61,7 +63,9 @@ nonisolated extension ShapeStyle where Self == Color {
     static var paeoniaSurfacePrimary: Color { Color.paeoniaSurfacePrimary }
     static var paeoniaSurfaceSecondary: Color { Color.paeoniaSurfaceSecondary }
     static var paeoniaSurfacePressed: Color { Color.paeoniaSurfacePressed }
+    static var paeoniaSurfaceHighlight: Color { Color.paeoniaSurfaceHighlight }
     static var paeoniaSurfaceDisabled: Color { Color.paeoniaSurfaceDisabled }
+    static var paeoniaBorder: Color { Color.paeoniaBorder }
     static var paeoniaTextPrimary: Color { Color.paeoniaTextPrimary }
     static var paeoniaTextSecondary: Color { Color.paeoniaTextSecondary }
     static var paeoniaTextTertiary: Color { Color.paeoniaTextTertiary }

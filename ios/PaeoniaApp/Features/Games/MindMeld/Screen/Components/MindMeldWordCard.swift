@@ -26,27 +26,58 @@ struct MindMeldWordCard: View {
 
     private static let aspectRatio: CGFloat = 0.8
     private static let radius = PaeoniaRadius.radius20
+    private static let minimumCardHeight: CGFloat = 150
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// The card is at least this tall, and grows with the text size.
-    @ScaledMetric(relativeTo: .title2) private var minimumHeight: CGFloat = 150
+    @ScaledMetric(relativeTo: .title2) private var minimumHeight = Self.minimumCardHeight
 
     var body: some View {
-        // The invisible base sets the size: 4:5, taller at large text sizes. The faces
-        // are drawn over it, so spare height in the parent never stretches the card.
-        Color.clear
-            .aspectRatio(Self.aspectRatio, contentMode: .fit)
-            .frame(minHeight: minimumHeight)
-            .overlay {
-                ZStack {
-                    faces
-                        .shadow(color: shadowColor.opacity(0.22), radius: 18, y: 8)
-                        .shadow(color: .paeoniaBackgroundSecondary.opacity(0.5), radius: 10, y: 6)
-                }
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                accessibleCard
+            } else {
+                // The invisible base keeps the faces at the card's aspect ratio.
+                Color.clear
+                    .aspectRatio(Self.aspectRatio, contentMode: .fit)
+                    .frame(minHeight: minimumHeight)
+                    .overlay { faces }
             }
-            .frame(maxWidth: maxWidth)
+        }
+        .frame(maxWidth: maxWidth)
+        .shadow(color: shadowColor.opacity(0.22), radius: 18, y: 8)
+        .shadow(color: .paeoniaBackgroundSecondary.opacity(0.5), radius: 10, y: 6)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
+    }
+
+    /// Full-width cards let the word wrap at the person's chosen reading size.
+    private var accessibleCard: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            if isFaceUp {
+                if isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(PaeoniaTypography.caption.weight(.bold))
+                        .foregroundStyle(.paeoniaAccentPrimary)
+                        .accessibilityHidden(true)
+                }
+                Text(verbatim: (word ?? "").localizedUppercase)
+                    .font(PaeoniaTypography.title)
+                    .foregroundStyle(.paeoniaTextPrimary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                MindMeldPetalMark()
+                    .frame(width: 30, height: 30)
+                    .foregroundStyle(.paeoniaAccentPrimary)
+            }
+        }
+        .padding(PaeoniaSpacing.space24)
+        .frame(maxWidth: .infinity, minHeight: Self.minimumCardHeight)
+        .background(isFaceUp ? Color.paeoniaSurfacePrimary : .paeoniaSurfaceSecondary, in: shape)
+        .overlay { border }
+        .animation(PaeoniaMotion.stateChange, value: isFaceUp)
     }
 
     // MARK: Faces
@@ -108,8 +139,6 @@ struct MindMeldWordCard: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .minimumScaleFactor(0.5)
-                // The card has a fixed width, so the word stops growing before it breaks mid-word.
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundStyle(.paeoniaTextPrimary)
                 .padding(.horizontal, PaeoniaSpacing.space12)
                 .padding(.vertical, PaeoniaSpacing.space24)
@@ -148,7 +177,7 @@ struct MindMeldWordCard: View {
 
     private var borderColor: Color {
         switch tone {
-        case .plain: .paeoniaSurfacePressed
+        case .plain: .paeoniaBorder
         case .near: .paeoniaAccentPrimary
         case .success: .paeoniaSuccess
         }

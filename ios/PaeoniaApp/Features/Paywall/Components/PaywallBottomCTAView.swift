@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The pinned bottom of the paywall: the button that buys, the billing terms right
+/// The paywall's purchase controls: the button that buys, the billing terms right
 /// under it, and, for someone not paired yet, a way to join a partner instead.
 struct PaywallBottomCTAView: View {
     let title: LocalizedStringResource
@@ -13,6 +13,7 @@ struct PaywallBottomCTAView: View {
     let isDone: Bool
     let onPrimaryAction: () -> Void
     let onHaveInviteCode: (() -> Void)?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: PaeoniaSpacing.space8) {
@@ -25,10 +26,6 @@ struct PaywallBottomCTAView: View {
         .background(barBackground)
     }
 
-    private var looksEnabled: Bool {
-        isEnabled || isDone
-    }
-
     private var primaryCTA: some View {
         Button(action: onPrimaryAction) {
             ZStack {
@@ -38,29 +35,17 @@ struct PaywallBottomCTAView: View {
                     } icon: {
                         Image(systemName: "checkmark")
                     }
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
-                } else if isBusy {
-                    ProgressView()
-                        .tint(.paeoniaTextInverse)
-                        .accessibilityHidden(true)
-                        .transition(.opacity)
+                    .transition(.opacity)
                 } else {
                     Text(title)
                         .transition(.opacity)
                 }
             }
-            .font(PaeoniaTypography.button)
-            .multilineTextAlignment(.center)
-            .foregroundStyle(looksEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: PaeoniaSpacing.buttonHeight)
-            .background(primaryButtonBackground)
-            .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
         }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled || isDone)
+        .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: isBusy && !isDone, isComplete: isDone))
+        .disabled(!isEnabled || isBusy || isDone)
         .animation(PaeoniaMotion.stateChange, value: isBusy)
-        .animation(PaeoniaMotion.cardReveal, value: isDone)
+        .animation(reduceMotion ? nil : PaeoniaMotion.cardReveal, value: isDone)
         .accessibilityLabel(Text(isDone ? .paywallCtaDone : title))
         .accessibilityIdentifier("paywall.primaryAction")
         // A soft tap when the App Store work starts. Success has its own haptic
@@ -100,25 +85,6 @@ struct PaywallBottomCTAView: View {
             .disabled(isBusy || isDone)
             .accessibilityIdentifier("paywall.haveInviteCode")
         }
-    }
-
-    private var primaryButtonBackground: LinearGradient {
-        // Disabled uses an opaque, recessed fill (never translucent) so the
-        // button reads as a solid disabled control rather than washing out.
-        let enabledColors = [
-            Color.paeoniaAccentPrimary,
-            Color.paeoniaAccentSecondary,
-        ]
-        let disabledColors = [
-            Color.paeoniaSurfaceSecondary,
-            Color.paeoniaSurfaceSecondary,
-        ]
-
-        return LinearGradient(
-            colors: looksEnabled ? enabledColors : disabledColors,
-            startPoint: .leading,
-            endPoint: .trailing
-        )
     }
 
     /// Content scrolling under the buttons fades out instead of being cut off.

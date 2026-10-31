@@ -11,6 +11,7 @@ struct PaywallView: View {
     /// The root is checking access after a purchase.
     private let isCheckingAccess: Bool
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let onPurchaseConfirmed: () -> Void
     /// Checks a partner's code typed in the code sheet. If it works the root saves
@@ -32,6 +33,7 @@ struct PaywallView: View {
     @State private var isOpening = false
     /// The scroll view's height above the buy button.
     @State private var visibleHeight: CGFloat = 0
+    @State private var bottomBarHeight: CGFloat = 0
     /// The offer drops in once the prices are in, so they don't swap in halfway
     /// through the drop. A slow App Store only holds it for a moment.
     @State private var isEntranceReady = false
@@ -66,37 +68,8 @@ struct PaywallView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                PaywallContentView(
-                    audience: audience,
-                    plans: plans,
-                    isLoadingPlans: selectedPresentation.isLoading,
-                    trialReminder: selectedPresentation.trialReminder(startingAt: .now, calendar: .current),
-                    isEntranceReady: isEntranceReady,
-                    billingPeriod: $viewModel.billingPeriod
-                )
-                .padding(.vertical, PaeoniaSpacing.space24)
-                // The offer fills the first screen, so restore, legal links and
-                // account actions only show once someone scrolls to them.
-                .paeoniaOpticallyCentered(in: visibleHeight)
-
-                footerActions
-                    .padding(.top, PaeoniaSpacing.space16)
-            }
-            .padding(.bottom, PaeoniaSpacing.space16)
-        }
-        .scrollIndicators(.hidden)
-        .scrollBounceBehavior(.basedOnSize)
-        // The container already stops at the top of the bottom bar, even though
-        // the content insets also count the bar.
-        .onScrollGeometryChange(for: CGFloat.self) { geometry in
-            geometry.containerSize.height
-        } action: { _, height in
-            visibleHeight = height
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            bottomBar
+        GeometryReader { proxy in
+            offer(scrollsActions: dynamicTypeSize.isAccessibilitySize || bottomBarHeight > proxy.size.height / 2)
         }
         // Someone asked to update their payment sees no prices, so they load
         // only if the paywall turns into an offer.
@@ -152,6 +125,53 @@ struct PaywallView: View {
 
 private extension PaywallView {
     // MARK: - Offer
+
+    func offer(scrollsActions: Bool) -> some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                PaywallContentView(
+                    audience: audience,
+                    plans: plans,
+                    isLoadingPlans: selectedPresentation.isLoading,
+                    trialReminder: selectedPresentation.trialReminder(startingAt: .now, calendar: .current),
+                    isEntranceReady: isEntranceReady,
+                    billingPeriod: $viewModel.billingPeriod
+                )
+                .padding(.vertical, PaeoniaSpacing.space24)
+                // The offer fills the first screen, so restore, legal links and
+                // account actions only show once someone scrolls to them.
+                .paeoniaOpticallyCentered(in: scrollsActions ? 0 : visibleHeight)
+
+                if scrollsActions {
+                    measuredBottomBar
+                }
+
+                footerActions
+                    .padding(.top, PaeoniaSpacing.space16)
+            }
+            .padding(.bottom, PaeoniaSpacing.space16)
+        }
+        .scrollIndicators(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
+        // The container already stops at the top of the bottom bar, even though
+        // the content insets also count the bar.
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.containerSize.height
+        } action: { _, height in
+            visibleHeight = height
+        }
+        .paeoniaBottomBar(spacing: 0) {
+            if !scrollsActions {
+                measuredBottomBar
+            }
+        }
+    }
+
+    var measuredBottomBar: some View {
+        bottomBar
+            .fixedSize(horizontal: false, vertical: true)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { bottomBarHeight = $0 }
+    }
 
     /// Trial copy waits until the App Store has said whether this account can
     /// still get the trial, so nobody sees a trial that then disappears.

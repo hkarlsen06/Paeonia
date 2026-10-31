@@ -199,7 +199,7 @@ struct DailyStreakToolbarLabel: View {
     private func flameStyle(for state: StreakPillState) -> LinearGradient {
         if state.usesMutedFlame {
             return LinearGradient(
-                colors: [.paeoniaTextSecondary.opacity(0.6), .paeoniaSurfacePressed],
+                colors: [.paeoniaTextSecondary.opacity(0.6), .paeoniaSurfaceHighlight],
                 startPoint: .top,
                 endPoint: .bottom
             )

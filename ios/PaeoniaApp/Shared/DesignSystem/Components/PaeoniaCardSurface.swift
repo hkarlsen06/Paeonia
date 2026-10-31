@@ -14,7 +14,7 @@ extension View {
         }
         .overlay {
             shape.strokeBorder(
-                needsAttention ? Color.paeoniaAccentPrimary.opacity(0.6) : .paeoniaSurfacePressed,
+                needsAttention ? Color.paeoniaAccentPrimary.opacity(0.6) : .paeoniaBorder,
                 lineWidth: needsAttention ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeHairline
             )
         }

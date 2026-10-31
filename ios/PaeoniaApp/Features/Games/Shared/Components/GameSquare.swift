@@ -17,7 +17,7 @@ struct GameSquare<Content: View>: View {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-                    .strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                    .strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
                     .allowsHitTesting(false)
             }
             .background {

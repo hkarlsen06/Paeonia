@@ -94,7 +94,7 @@ struct PrivacySafetyView: View {
                     DataExportSection(viewModel: dataExport)
 
                     Divider()
-                        .overlay(.paeoniaSurfacePressed)
+                        .overlay(.paeoniaBorder)
 
                     PrivacyRequestRow(
                         kind: .correction,

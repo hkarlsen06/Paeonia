@@ -12,7 +12,7 @@ struct DailyAnswerComposerColors {
         secondary: .paeoniaTextSecondary,
         control: .paeoniaSurfaceSecondary,
         accent: .paeoniaAccentPrimary,
-        selected: .paeoniaSurfacePressed
+        selected: .paeoniaSurfaceHighlight
     )
 
     static let composer = Self(

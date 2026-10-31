@@ -32,6 +32,14 @@ nonisolated enum PaeoniaBrandColors {
     static let accent = PaeoniaPalette.petalLight
 }
 
+nonisolated enum PaeoniaMapPalette {
+    static let land = Color(.sRGB, red: 0.27, green: 0.09, blue: 0.19)
+    static let water = Color(.sRGB, red: 0.13, green: 0.03, blue: 0.09)
+    static let vegetation = Color(.sRGB, red: 0.30, green: 0.11, blue: 0.22)
+    static let building = Color(.sRGB, red: 0.33, green: 0.13, blue: 0.24)
+    static let mainRoad = Color(.sRGB, red: 0.42, green: 0.17, blue: 0.30)
+}
+
 nonisolated private extension Color {
     /// Builds a fixed sRGB color from a `0xRRGGBB` literal. Palette literals stay in this file.
     init(paeoniaHex hex: UInt32) {

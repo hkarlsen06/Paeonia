@@ -258,7 +258,7 @@ struct WidgetDrawingToolControlsView: View {
 
     private var toolControlSeparator: some View {
         Rectangle()
-            .fill(.paeoniaSurfacePressed)
+            .fill(.paeoniaBorder)
             .frame(width: PaeoniaRadius.strokeDefault, height: 28)
             .padding(.horizontal, PaeoniaSpacing.space4)
             .accessibilityHidden(true)

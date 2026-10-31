@@ -28,7 +28,7 @@ struct DailyChallengeHistoryDateDivider: View {
 
     private var rule: some View {
         Rectangle()
-            .fill(.paeoniaSurfacePressed)
+            .fill(.paeoniaBorder)
             .frame(height: PaeoniaRadius.strokeDefault)
             .frame(maxWidth: .infinity)
             .accessibilityHidden(true)

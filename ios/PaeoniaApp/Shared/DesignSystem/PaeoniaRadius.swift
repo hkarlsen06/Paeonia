@@ -5,6 +5,7 @@ nonisolated enum PaeoniaRadius {
     static let radius12: CGFloat = 12
     static let radius16: CGFloat = 16
     static let radius20: CGFloat = 20
+    static let radius24: CGFloat = 24
     static let radius28: CGFloat = 28
     static let radiusFull: CGFloat = .greatestFiniteMagnitude
 

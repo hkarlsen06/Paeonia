@@ -59,7 +59,7 @@ struct ReportReasonField: View {
         .background(.paeoniaSurfaceSecondary)
         .overlay {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous)
-                .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                .stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
         }
         .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius16, style: .continuous))

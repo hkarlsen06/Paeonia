@@ -51,7 +51,7 @@ struct PrivacySafetyMultilineField: View {
         .overlay {
             RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
                 .stroke(
-                    isFocused ? Color.paeoniaAccentPrimary : Color.paeoniaSurfacePressed,
+                    isFocused ? Color.paeoniaAccentPrimary : Color.paeoniaBorder,
                     lineWidth: isFocused ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
                 )
         }

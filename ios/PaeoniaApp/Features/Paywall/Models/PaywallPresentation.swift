@@ -81,10 +81,6 @@ struct PaywallPresentation {
     }
 
     var primaryButtonTitle: LocalizedStringResource {
-        if isPurchasing {
-            return .paywallCtaPurchasing
-        }
-
         if freeTrial != nil {
             return .paywallCtaFreeTrial
         }

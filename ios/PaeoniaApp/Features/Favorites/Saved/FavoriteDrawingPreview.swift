@@ -48,7 +48,7 @@ struct FavoriteDrawingPreview: View {
             .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20, style: .continuous)
-                    .stroke(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeDefault)
+                    .stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
             }
     }
 
