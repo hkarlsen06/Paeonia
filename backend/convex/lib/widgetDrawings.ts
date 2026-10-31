@@ -87,8 +87,12 @@ export function parseWidgetDrawingPayload(args: {
     fail("23514", "widget drawing point count is out of range");
   }
   const bounds = args.p_bounds ?? undefined;
-  if (bounds !== undefined && (!isJsonObject(bounds) || jsonbByteLength(bounds) > 2048)) {
+  if (bounds !== undefined && (!isJsonObject(bounds) || jsonbByteLength(bounds) > 8192)) {
     fail("23514", "widget drawing bounds metadata is invalid");
+  }
+  if (isJsonObject(bounds) && bounds.accessibilityText !== undefined &&
+      (typeof bounds.accessibilityText !== "string" || charLength(bounds.accessibilityText) > 500)) {
+    fail("23514", "widget drawing description is invalid");
   }
   if (!/^[0-9a-fA-F]{64}$/.test(args.p_sha256_hex)) {
     fail("22023", "widget drawing sha256 must be a 64 character hex string");

@@ -1,3 +1,4 @@
+import type { FunctionArgs } from "convex/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { deleteCoupleGameRows } from "./lib/gameRegistry";
@@ -133,6 +134,61 @@ describe("access", () => {
 });
 
 describe("the round", () => {
+  test("authored scene text reaches the guesser without revealing the target or date", async () => {
+    const s = await startGame();
+    const roundId = newUuid();
+    const description = "A red wooden house beside water, with mountains behind it.";
+    const assetId = await uploadPhoto(s, s.a, roundId, {
+      ...photo(s.couple.coupleId, "guess_my_spot_round", "guess_my_spot_photo"), accessibilityText: description,
+    });
+    await send(s, s.a, BERGEN, { roundId, assetId });
+    expect((await view(s.b)).current_round).toMatchObject({
+      photo_accessibility_text: description, spot_latitude: null, spot_longitude: null,
+      place_name: null, place_city: null, place_country_code: null, taken_on: null,
+    });
+    const outsider = await createSignedInUser(s.t);
+    await expect(view(outsider)).rejects.toThrow(/42501/);
+    const otherCouple = await createCouple(s.t);
+    expect((await view(otherCouple.first)).current_round).toBeNull();
+    await guess(s.b, roundId, OSLO);
+    expect((await s.b.as.query(api.guessMySpot.get_guess_my_spot_history, {})).rounds[0])
+      .toMatchObject({ photo_accessibility_text: description, spot_latitude: BERGEN.latitude });
+  });
+
+  test("missing scene text stays missing and is never made from the private place or date", async () => {
+    const s = await startGame();
+    const roundId = await send(s, s.a);
+    expect((await view(s.a)).current_round?.photo_accessibility_text).toBeNull();
+    expect((await view(s.b)).current_round?.photo_accessibility_text).toBeNull();
+    await guess(s.b, roundId);
+    expect((await view(s.b)).current_round).toMatchObject({
+      photo_accessibility_text: null, place_name: "Bergen, Norway", taken_on: "2024-06-12",
+    });
+  });
+
+  test("only the sender can correct scene text while its live round and access remain", async () => {
+    const s = await startGame();
+    const roundId = await send(s, s.a);
+    const outsider = await createSignedInUser(s.t);
+    const args = {
+      ...op(), p_target: { kind: "guess_my_spot", round_id: roundId }, p_text: "A cabin under snowy peaks.",
+    } satisfies FunctionArgs<typeof api.media.update_accessibility_text>;
+    for (const user of [s.b, outsider]) {
+      await expect(user.as.mutation(api.media.update_accessibility_text, args)).rejects.toThrow(/42501/);
+    }
+    await expect(s.t.mutation(api.media.update_accessibility_text, args)).rejects.toThrow(/42501/);
+    await s.a.as.mutation(api.media.update_accessibility_text, args);
+    expect((await view(s.b)).current_round).toMatchObject({
+      photo_accessibility_text: args.p_text, spot_latitude: null, place_name: null, taken_on: null,
+    });
+    await s.t.run(async ctx => {
+      const round = await ctx.db.query("guess_my_spot_rounds").withIndex("by_uuid", q => q.eq("id", roundId)).unique();
+      if (!round) throw new Error("Expected the sent round");
+      await ctx.db.patch(round._id, { deleted_at: new Date().toISOString() });
+    });
+    await expect(s.a.as.mutation(api.media.update_accessibility_text, args)).rejects.toThrow(/42501/);
+  });
+
   test("makes one game with the caller sending first", async () => {
     const s = await startGame();
     expect(await s.b.as.mutation(api.guessMySpot.ensure_guess_my_spot_game, {})).toEqual({ game_id: s.gameId, created: false });

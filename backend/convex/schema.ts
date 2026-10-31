@@ -690,6 +690,7 @@ export default defineSchema({
   // FK: instance_id -> daily_question_instances cascade. (instance_id, user_id) is unique.
   daily_question_answers: defineTable({
     id: uuid,
+    media_accessibility_text: v.optional(v.string()),
     instance_id: uuid,
     user_id: uuid,
     created_at: ts,
@@ -881,6 +882,7 @@ export default defineSchema({
   // (bucket, storage_path) is unique.
   media_assets: defineTable({
     id: uuid,
+    accessibility_text: v.optional(v.string()),
     owner_user_id: uuid,
     couple_id: optUuid,
     reserved_parent_kind: literals(

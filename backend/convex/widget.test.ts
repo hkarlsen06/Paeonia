@@ -128,6 +128,32 @@ describe("get_or_create_widget_canvas", () => {
 });
 
 describe("submit_widget_drawing_revision", () => {
+  test("keeps authored descriptions in visible canvas and history and refuses outsiders", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const canvas = await canvasOf(couple.first);
+    const bounds = { x: 0, y: 0, width: 10, height: 10, canvasSide: 300, accessibilityText: "Two circles holding hands" };
+    await submitDrawing(t, couple.first, couple, canvas.canvas_id, null, { p_bounds: bounds });
+    const [shown] = await couple.second.as.query(api.widget.get_widget_canvas, {});
+    expect(shown.bounds).toEqual(bounds);
+    const history = await couple.second.as.query(api.widget.get_widget_drawing_revisions, { p_canvas_id: canvas.canvas_id });
+    expect(history[0].bounds).toEqual(bounds);
+    const stranger = await createSignedInUser(t);
+    expect((await failure(stranger.as.query(api.widget.get_widget_drawing_revisions, { p_canvas_id: canvas.canvas_id }))).code).toBe("42501");
+    expect((await failure(stranger.as.query(api.widget.get_widget_canvas, { p_couple_id: couple.coupleId }))).code).toBe("42501");
+  });
+
+  test("rejects malformed and oversized descriptions", async () => {
+    for (const accessibilityText of [12, "x".repeat(501)]) {
+      const t = newTest();
+      const couple = await createCouple(t);
+      const canvas = await canvasOf(couple.first);
+      expect((await failure(submitDrawing(t, couple.first, couple, canvas.canvas_id, null, {
+        p_bounds: { accessibilityText },
+      }))).code).toBe("23514");
+    }
+  });
+
   test("saves the revision and makes it the canvas's active revision", async () => {
     const t = newTest();
     const couple = await createCouple(t);

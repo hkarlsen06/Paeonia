@@ -358,6 +358,7 @@ describe("submit_exquisite_corpse_part", () => {
         created_at: head.result.created_at,
         strip_media_asset_id: head.strip!.assetId,
         drawing_media_asset_id: null,
+        drawing_accessibility_text: null,
         idea: null,
       },
     ]);
@@ -416,6 +417,7 @@ describe("submit_exquisite_corpse_part", () => {
     expect(Object.keys(data.current_figure!.parts[0]).sort()).toEqual([
       "created_at",
       "drawer_user_id",
+      "drawing_accessibility_text",
       "drawing_media_asset_id",
       "id",
       "idea",

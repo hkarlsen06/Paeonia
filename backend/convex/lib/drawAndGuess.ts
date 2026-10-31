@@ -6,6 +6,7 @@ import { pickWordChoices, WORD_DIFFICULTIES, type GameLanguage, type WordChoice,
 import type { GameBackend } from "./gameRegistry";
 import { enqueueGamePush, requireGameSettings, TURN_REMINDER_AFTER_MS } from "./games";
 import { charLength } from "./text";
+import { gameDrawingDescription } from "./gameDrawingDescriptions";
 import { addMs, nowIso } from "./time";
 
 // Draw & Guess: its tables (games, game_moves, game_guesses, game_used_words),
@@ -243,6 +244,7 @@ export async function roundJson(ctx: ReaderCtx, move: GameMove, withAttempts = t
     word: move.word,
     points: move.points,
     drawing_media_asset_id: orNull(move.drawing_media_asset_id),
+    drawing_accessibility_text: await gameDrawingDescription(ctx, move.drawing_media_asset_id),
     drawing_submitted_at: orNull(move.drawing_submitted_at),
     started_at: move.started_at,
     guesser_first_seen_at: orNull(move.guesser_first_seen_at),

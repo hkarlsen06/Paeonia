@@ -59,6 +59,25 @@ async function reserveAndStore(t: TestConvex, user: TestUser, coupleId: string, 
 }
 
 describe("create_pending_media_upload", () => {
+  test("keeps authored attachment text on an idempotent reservation and refuses outsiders", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const outsider = await createSignedInUser(t);
+    const args = { ...reserveArgs(couple.coupleId), p_accessibility_text: "En rød båt ved bryggen" };
+    await expect(outsider.as.mutation(api.media.create_pending_media_upload, args)).rejects.toThrow(/42501/);
+    await expect(t.mutation(api.media.create_pending_media_upload, args)).rejects.toThrow(/42501/);
+    const [first] = await couple.first.as.mutation(api.media.create_pending_media_upload, args);
+    const [replayed] = await couple.first.as.mutation(api.media.create_pending_media_upload, args);
+    expect(replayed.media_asset_id).toBe(first.media_asset_id);
+    expect(await asset(t, first.media_asset_id)).toMatchObject({ accessibility_text: args.p_accessibility_text });
+    await expect(couple.first.as.mutation(api.media.create_pending_media_upload, {
+      ...args, p_accessibility_text: "Different description",
+    })).rejects.toThrow(/23505/);
+    await expect(couple.first.as.mutation(api.media.create_pending_media_upload, {
+      ...reserveArgs(couple.coupleId), p_accessibility_text: "x".repeat(10001),
+    })).rejects.toThrow(/23514/);
+  });
+
   test("returns the reservation and an upload URL, and stores a pending asset", async () => {
     const t = newTest();
     const couple = await createCouple(t);

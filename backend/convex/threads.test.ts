@@ -525,13 +525,17 @@ describe("send_thread_message", () => {
     const t = newTest();
     const { couple, threadId } = await thread(t);
     const a = await uploadAsset(t, couple.first, photo(couple.coupleId, "thread_message_media", "thread_media"));
+    await t.run(async (ctx) => {
+      const asset = await ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", a.assetId)).unique();
+      await ctx.db.patch(asset!._id, { accessibility_text: "A red boat" });
+    });
     const [row] = await send(couple.first, threadId, { p_body: null, p_media_asset_ids: [a.assetId] });
     expect(row.message_id).toBe(a.parentId);
     const messages = await messagesOf(couple.second, threadId);
     const message = messages.find((item: { message_id: string }) => item.message_id === a.parentId);
     expect(message).toMatchObject({ body: null, media_asset_ids: [a.assetId] });
     expect(message!.media).toEqual([
-      { media_asset_id: a.assetId, media_type: "image", width: expect.anything(), height: expect.anything(), duration_ms: null },
+      { media_asset_id: a.assetId, media_type: "image", width: expect.anything(), height: expect.anything(), duration_ms: null, accessibility_text: "A red boat" },
     ]);
     expect(message!.media_states).toEqual([
       {

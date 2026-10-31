@@ -32,6 +32,7 @@ import {
 } from "./lib/drawAndGuess";
 import { fail, uniqueViolation } from "./lib/errors";
 import { favoritesByOrdinalDesc } from "./lib/favoriteRows";
+import { gameDrawingDescription } from "./lib/gameDrawingDescriptions";
 import { DIFFICULTY_POINTS, normalizeCustomWord, normalizeWordText } from "./lib/gameWords";
 import { dataEpoch, enqueueGamePush, getGameSettings, requireGameSettings, requirePartnerId, settingsJson } from "./lib/games";
 import { newUuid, uuidArg } from "./lib/ids";
@@ -670,6 +671,7 @@ async function historyRoundJson(ctx: ReaderCtx, move: GameMove) {
     points: move.points,
     state: move.state,
     drawing_media_asset_id: move.drawing_media_asset_id!,
+    drawing_accessibility_text: await gameDrawingDescription(ctx, move.drawing_media_asset_id),
     ...roundOutcomeJson(move),
     attempt_count: guesses.length,
     guesses: guesses.map(guess => guess.text),

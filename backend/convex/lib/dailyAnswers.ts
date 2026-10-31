@@ -38,6 +38,7 @@ export type DailyAnswerDetailRow = {
   is_own_answer: boolean;
   can_view_answer: boolean;
   text_body: string | null;
+  media_accessibility_text: string | null;
   selected_user_id: string | null;
   /** The option a "pick one of two" answer picked. */
   selected_option: "a" | "b" | null;
@@ -144,6 +145,7 @@ export async function detailRow(
     is_own_answer: answer.user_id === userId,
     can_view_answer: canView,
     text_body: textBody,
+    media_accessibility_text: canView && mediaAssetIds.length > 0 ? answer.media_accessibility_text ?? null : null,
     selected_user_id: selectedUserId,
     selected_option: selectedOption,
     media_asset_ids: mediaAssetIds,
@@ -388,18 +390,21 @@ export type ClientOperationArgs = {
   localCreatedAt: string;
 };
 
-const MAX_ANSWER_PAYLOAD_BYTES = 16_384;
+const MAX_ANSWER_PAYLOAD_BYTES = 65_536;
 
 /** The object check and size cap that run before an answer's client operation. */
 export function assertAnswerPayloadShape(payload: unknown): Record<string, unknown> {
   if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
     fail("23514", "answer payload must be an object");
   }
-  // Text is at most 2000 characters (8000 bytes) and the rest are a few ids, so a bigger body is not an answer.
-  if (jsonbByteLength(payload) > MAX_ANSWER_PAYLOAD_BYTES) {
+  const answerPayload = payload as Record<string, unknown>;
+  const answerContent = { ...answerPayload };
+  delete answerContent.media_accessibility_text;
+  // Keep the existing answer limit, with room for 10000 UTF-8 description characters.
+  if (jsonbByteLength(answerContent) > 16_384 || jsonbByteLength(payload) > MAX_ANSWER_PAYLOAD_BYTES) {
     fail("23514", "answer payload is too large");
   }
-  return payload as Record<string, unknown>;
+  return answerPayload;
 }
 
 export type ParsedAnswer = {
@@ -408,6 +413,7 @@ export type ParsedAnswer = {
   selectedPartnerUserId: string | null;
   selectedOption: "a" | "b" | null;
   mediaAssetIds: string[];
+  mediaAccessibilityText?: string;
 };
 
 /**
@@ -486,6 +492,14 @@ export async function parseAnswerPayload(
     fail("23514", "option choice is required");
   }
 
+  const accessibility = body.media_accessibility_text;
+  if (accessibility !== undefined && typeof accessibility !== "string") {
+    fail("23514", "media accessibility text must be text");
+  }
+  const mediaAccessibilityText = typeof accessibility === "string" ? accessibility.trim() : undefined;
+  if (mediaAccessibilityText && (charLength(mediaAccessibilityText) > 10000 || mediaAssetIds.length !== 1)) {
+    fail("23514", "media accessibility text requires one attachment and at most 10000 characters");
+  }
   const answerIdText = payloadText(body.answer_id);
   const answerId = answerIdText === "" ? newUuid() : uuidArg(answerIdText);
   if (await getByUuid(ctx, "daily_question_answers", answerId)) {
@@ -498,7 +512,7 @@ export async function parseAnswerPayload(
   if (existingOwn) {
     uniqueViolation("daily_question_answers_instance_user_unique");
   }
-  return { answerId, textBody, selectedPartnerUserId, selectedOption, mediaAssetIds };
+  return { answerId, textBody, selectedPartnerUserId, selectedOption, mediaAssetIds, mediaAccessibilityText };
 }
 
 /** Port of `internal.submit_daily_answer`. Returns the answer id. */
@@ -568,6 +582,7 @@ export async function insertDailyAnswer(
     selectedPartnerUserId: string | null;
     selectedOption: "a" | "b" | null;
     mediaAssetIds: string[];
+    mediaAccessibilityText?: string;
     notifyPartner: boolean;
     /** When the person answered, for the streak day. Topic answers count their own activity. */
     answeredAt: string;
@@ -577,6 +592,7 @@ export async function insertDailyAnswer(
   const now = nowIso();
   const answerDocId = await ctx.db.insert("daily_question_answers", {
     id: input.answerId,
+    media_accessibility_text: input.mediaAccessibilityText || undefined,
     instance_id: instance.id,
     user_id: userId,
     created_at: now,

@@ -7,6 +7,7 @@ import { EXQUISITE_CORPSE_IDEAS, type Idea, type IdeaLanguage, type IdeaPart } f
 import type { GameBackend } from "./gameRegistry";
 import { enqueueGamePush, TURN_REMINDER_AFTER_MS } from "./games";
 import { uuidArg } from "./ids";
+import { gameDrawingDescription } from "./gameDrawingDescriptions";
 import { addMs, nowIso } from "./time";
 
 // Exquisite corpse: the rules, the json shapes, the media hooks, and the hooks the shared games code
@@ -207,7 +208,12 @@ export async function figureJson(ctx: ReaderCtx, figure: CorpseFigure, userId: s
     created_at: figure.created_at,
     finished_at: orNull(figure.finished_at),
     my_reveal_seen_at: orNull(revealSeenAt(figure, userId)),
-    parts: parts.map((part) => partJson(part, userId, finished)),
+    parts: await Promise.all(parts.map(async (part) => ({
+      ...partJson(part, userId, finished),
+      // A full description reveals more than the clipped strip. Even the drawer's
+      // earlier part stays absent from this shared projection until the final reveal.
+      drawing_accessibility_text: finished ? await gameDrawingDescription(ctx, part.drawing_media_asset_id) : null,
+    }))),
   };
 }
 

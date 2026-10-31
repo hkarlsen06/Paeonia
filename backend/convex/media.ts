@@ -26,11 +26,17 @@ import { isCorpseUploadPurpose, reserveCorpseUpload } from "./lib/exquisiteCorps
 import { assertFirstDayDraftAllowed, firstDayDrawingPath } from "./lib/firstDay";
 import { btrim } from "./lib/text";
 import { addMs, nowIso } from "./lib/time";
+import { updateMediaAlternative, updateMediaAlternativeArgs } from "./lib/mediaAlternatives";
 
 type MediaAsset = Doc<"media_assets">;
 
 const HOUR_MS = 3_600_000;
 const nullableInt = v.optional(v.union(v.null(), v.number()));
+
+export const update_accessibility_text = mutation({
+  args: updateMediaAlternativeArgs,
+  handler: async (ctx, args) => updateMediaAlternative(ctx, await requireUserId(ctx), args),
+});
 
 // --- Signed download URLs ---------------------------------------------------
 
@@ -58,12 +64,20 @@ export const create_pending_media_upload = mutation({
     p_upload_purpose: v.string(),
     p_media_type: v.string(),
     p_file_extension: v.string(),
+    p_accessibility_text: v.optional(v.string()),
     p_couple_id: v.optional(v.union(v.null(), v.string())),
     p_upload_expires_at: v.optional(v.union(v.null(), v.string())),
     p_path_context: v.optional(v.union(v.null(), v.any())),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
+    const accessibilityText = args.p_accessibility_text?.trim();
+    if (accessibilityText && Array.from(accessibilityText).length > 10000) {
+      fail("23514", "media accessibility text is too long");
+    }
+    if (args.p_upload_purpose === "exquisite_corpse_strip" && accessibilityText) {
+      fail("23514", "a folded strip cannot carry a full drawing description");
+    }
     const parentId = uuidArg(args.p_reserved_parent_id);
     const pathContext = args.p_path_context ?? {};
     if (!isJsonObject(pathContext)) fail("23514", "path context must be an object");
@@ -95,6 +109,7 @@ export const create_pending_media_upload = mutation({
           coupleArg ?? "",
           requestedExpiry === undefined ? "server_generated" : expiresAt,
           pathContext,
+          accessibilityText ?? "",
         ],
       }),
       async () => {
@@ -216,6 +231,7 @@ export const create_pending_media_upload = mutation({
         await ctx.db.insert("media_assets", {
           id: assetId,
           owner_user_id: userId,
+          accessibility_text: accessibilityText || undefined,
           couple_id: coupleId,
           reserved_parent_kind: kind as MediaAsset["reserved_parent_kind"],
           reserved_parent_id: parentId,

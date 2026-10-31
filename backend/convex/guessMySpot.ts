@@ -28,6 +28,7 @@ import {
   type GuessMySpotRound,
 } from "./lib/guessMySpot";
 import { roundWithPhoto } from "./lib/gameMediaReferences";
+import { canReadMediaAsset } from "./lib/mediaAssets";
 import { newUuid, uuidArg } from "./lib/ids";
 import { queueOrphanedMediaAssetForDelete } from "./lib/mediaOrphans";
 import { applyCoupleActivity } from "./lib/streaks";
@@ -62,9 +63,12 @@ function requireCoordinate(latitude: number, longitude: number): Coordinate {
 // --- Reads ------------------------------------------------------------------
 
 /** The real spot, the place name and the date go to the sender, and to the guesser only once the round has a guess. */
-function roundJson(round: Omit<GuessMySpotRound, "_id" | "_creationTime">, userId: string) {
+async function roundJson(ctx: ReaderCtx, round: Omit<GuessMySpotRound, "_id" | "_creationTime">, userId: string) {
   const isSender = round.sender_user_id === userId;
   const shows = isSender || round.guess_latitude !== undefined;
+  const asset = await getByUuid(ctx, "media_assets", round.photo_media_asset_id);
+  // This is an authored scene clue. Hidden place/date fields never supply it.
+  const description = asset && await canReadMediaAsset(ctx, userId, asset) ? asset.accessibility_text : undefined;
   return {
     id: round.id,
     round_number: round.round_number,
@@ -73,6 +77,7 @@ function roundJson(round: Omit<GuessMySpotRound, "_id" | "_creationTime">, userI
     photo_media_asset_id: round.photo_media_asset_id,
     photo_width: orNull(round.photo_width),
     photo_height: orNull(round.photo_height),
+    photo_accessibility_text: orNull(description),
     spot_latitude: shows ? round.spot_latitude : null,
     spot_longitude: shows ? round.spot_longitude : null,
     place_name: shows ? orNull(round.place_name) : null,
@@ -132,8 +137,8 @@ export const get_guess_my_spot = query({
             updated_at: game.updated_at,
           }
         : null,
-      current_round: current ? roundJson(current, userId) : null,
-      previous_round: previous ? roundJson(previous, userId) : null,
+      current_round: current ? await roundJson(ctx, current, userId) : null,
+      previous_round: previous ? await roundJson(ctx, previous, userId) : null,
     };
   },
 });
@@ -175,10 +180,10 @@ export const get_guess_my_spot_history = query({
     };
     const partnerId = (await listActiveMembers(ctx, coupleId)).find((member) => member.user_id !== userId)?.user_id ?? "";
     return {
-      rounds: guessed
+      rounds: await Promise.all(guessed
         .filter((round) => round.deleted_at === undefined)
         .slice(0, MAX_HISTORY_ROUNDS)
-        .map((round) => roundJson(round, userId)),
+        .map((round) => roundJson(ctx, round, userId))),
       records: {
         shared_points: game.shared_points,
         my_points: game.points_by_user[userId] ?? 0,
@@ -197,7 +202,7 @@ export const get_finished_round_for_conversation = internalQuery({
     const userId = await requireUserId(ctx);
     const { round } = await requireRound(ctx, userId, uuidArg(args.p_round_id));
     if (round.guessed_at === undefined || round.deleted_at !== undefined) return null;
-    return roundJson(round, userId);
+    return roundJson(ctx, round, userId);
   },
 });
 
@@ -382,7 +387,7 @@ export const send_guess_my_spot_photo = mutation({
           dedupe_key: `game_turn_completed:${roundId}:${userId}`,
           metadata: { game_id: game.id, round_id: roundId },
         });
-        return roundJson(round, userId);
+        return roundJson(ctx, round, userId);
       },
     );
   },
@@ -446,7 +451,7 @@ export const submit_guess_my_spot_guess = mutation({
           skipIfPresent: true,
           delay_ms: RESULT_PUSH_DELAY_MS,
         });
-        return roundJson({ ...round, ...patch }, userId);
+        return roundJson(ctx, { ...round, ...patch }, userId);
       },
     );
   },

@@ -770,3 +770,26 @@ describe("access", () => {
     ).toEqual({ code: "42501", message: "active entitled memory access is required" });
   });
 });
+
+test("photo descriptions persist, are separately readable, and only their author can edit", async () => {
+  const t = newTest();
+  const couple = await createCouple(t);
+  const outsider = await createSignedInUser(t);
+  const uploaded = await uploadAsset(t, couple.first, photo(couple.coupleId));
+  const memoryId = await createMemory(couple.first, { p_media_asset_ids: [uploaded.assetId] });
+  const change = { p_memory_id: memoryId, p_expected_revision: 1, p_title: "Beach weekend",
+    p_memory_date: "2026-10-01", p_photo_descriptions: [{ media_asset_id: uploaded.assetId, text: "  Two red mugs on sand  " }] };
+  for (const user of [couple.second, outsider]) {
+    expect((await failure(user.as.mutation(api.memories.update_memory, { ...change, ...op() }))).code).toBe("42501");
+  }
+  expect((await failure(outsider.as.query(api.memories.get_memories, {}))).code).toBe("42501");
+  await couple.first.as.mutation(api.memories.update_memory, { ...change, ...op() });
+  for (const user of [couple.first, couple.second]) {
+    const rows = await getMemories(user);
+    expect(rows[0]?.memory_media_states[0]?.accessibility_text).toBe("Two red mugs on sand");
+    expect(rows[0]?.own_note_body ?? rows[0]?.partner_note_body).toBe("Warm sand");
+  }
+  await couple.first.as.mutation(api.memories.update_memory, { ...change, p_expected_revision: 2,
+    p_photo_descriptions: [{ media_asset_id: uploaded.assetId, text: "" }], ...op() });
+  expect((await getMemories(couple.second))[0]?.memory_media_states[0]?.accessibility_text).toBeNull();
+});

@@ -42,12 +42,15 @@ async function coupleNote(ctx: ReaderCtx, coupleId: string, userId: string) {
     .unique();
 }
 
-function storyRow(row: Doc<"stories">) {
+async function storyRow(ctx: ReaderCtx, row: Doc<"stories">) {
+  const asset = await getByUuid(ctx, "media_assets", row.media_asset_id);
   return {
     id: row.id,
     author_user_id: row.author_user_id,
     media_asset_id: row.media_asset_id,
     caption: orNull(row.caption),
+    accessibility_text: asset && asset.deleted_at === undefined && asset.moderation_status === "visible" &&
+      asset.storage_delete_status === "none" ? orNull(asset.accessibility_text) : null,
     created_at: row.created_at,
     seen_at: orNull(row.seen_at),
   };
@@ -56,7 +59,7 @@ function storyRow(row: Doc<"stories">) {
 /** The story as stored now, or null when it is missing, deleted, or another couple's. */
 async function currentStory(ctx: ReaderCtx, storyId: string, coupleId: string) {
   const row = await getByUuid(ctx, "stories", storyId);
-  return row && row.couple_id === coupleId && row.deleted_at === undefined ? storyRow(row) : null;
+  return row && row.couple_id === coupleId && row.deleted_at === undefined ? await storyRow(ctx, row) : null;
 }
 
 /**
@@ -81,7 +84,7 @@ export const get_stories = query({
       .collect();
     return {
       couple_id: coupleId,
-      stories: rows.filter((row) => row.deleted_at === undefined).map(storyRow),
+      stories: await Promise.all(rows.filter((row) => row.deleted_at === undefined).map((row) => storyRow(ctx, row))),
       notes: notes.map(noteRow),
     };
   },

@@ -54,6 +54,28 @@ const allJsonText = (zips: Map<string, Uint8Array>[]) =>
     .map(([, data]) => new TextDecoder().decode(data))
     .join("\n");
 
+test("Guess my spot exports the uploader's authored scene text and excludes it from the partner's export", async () => {
+  const t = newTest();
+  const couple = await createCouple(t);
+  await couple.first.as.mutation(api.guessMySpot.ensure_guess_my_spot_game, {});
+  const roundId = newUuid();
+  const description = "A blue boat beside a wooden pier.";
+  const uploaded = await uploadAsset(t, couple.first, {
+    ...photo(couple.coupleId, "guess_my_spot_round", "guess_my_spot_photo"),
+    parentId: roundId, accessibilityText: description,
+  });
+  await couple.first.as.mutation(api.guessMySpot.send_guess_my_spot_photo, {
+    ...op(), p_round_id: roundId, p_round_number: 1, p_media_asset_id: uploaded.assetId,
+    p_latitude: 60, p_longitude: 5, p_place_name: "Private target", p_taken_on: "2024-01-01",
+  });
+  const owner = await requestExport(t, couple.first, false);
+  const ownerFiles = await downloadZips(t, couple.first, owner.status.id);
+  expect(allJsonText(ownerFiles.zips)).toContain(description);
+  const partner = await requestExport(t, couple.second, false);
+  const partnerFiles = await downloadZips(t, couple.second, partner.status.id);
+  expect(allJsonText(partnerFiles.zips)).not.toContain(description);
+});
+
 type Content = {
   memoryId: string;
   photoBytes: Uint8Array;
@@ -127,6 +149,19 @@ describe("Download my data", () => {
     const mine = await fillCouple(t, couple, "AAA");
     const theirs = await fillCouple(t, other, "ZZZ");
 
+    const partnerPhoto = await uploadAsset(t, couple.second, photo(couple.coupleId));
+    const descriptions = [
+      { id: mine.assetId, text: "MY photo description" },
+      { id: theirs.assetId, text: "THEIR private photo description" },
+      { id: partnerPhoto.assetId, text: "PARTNER private photo description" },
+    ];
+    await t.run(async (ctx) => {
+      for (const { id, text } of descriptions) {
+        const asset = await ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", id)).unique();
+        if (!asset) throw new Error("missing photo");
+        await ctx.db.patch(asset._id, { accessibility_text: text });
+      }
+    });
     // A field added to an existing table needs no change to the export.
     await t.run((ctx) =>
       ctx.db.insert("location_sharing_preferences", {
@@ -170,6 +205,9 @@ describe("Download my data", () => {
     expect(mediaRows.every((row) => row.owner_user_id === couple.first.userId)).toBe(true);
     const photoRow = mediaRows.find((row) => row.id === mine.assetId)!;
     expect(zip.get(photoRow.file!)).toEqual(mine.photoBytes);
+    expect(text).toContain("MY photo description");
+    expect(text).not.toContain("THEIR private photo description");
+    expect(text).not.toContain("PARTNER private photo description");
 
     // Not the partner's text, files, location, devices or secrets.
     expect(text).not.toContain("AAA second message");
@@ -336,8 +374,18 @@ describe("Download my data", () => {
       texts: { [couple.second.userId]: "BBB their answer" },
     });
 
+    await t.run(async (ctx) => {
+      const answers = await ctx.db.query("daily_question_answers").collect();
+      for (const answer of answers) {
+        await ctx.db.patch(answer._id, {
+          media_accessibility_text: answer.user_id === couple.first.userId ? "MY authored transcript" : "THEIR private transcript",
+        });
+      }
+    });
     const { status } = await requestExport(t, couple.first);
     const { zips } = await downloadZips(t, couple.first, status.id);
+    expect(allJsonText(zips)).toContain("MY authored transcript");
+    expect(allJsonText(zips)).not.toContain("THEIR private transcript");
     const zip = zips[0]!;
     const instances = jsonOf<{ id: string }[]>(zip, "daily-questions/daily_question_instances.json").map((row) => row.id);
     expect(instances).toEqual(expect.arrayContaining([answeredHere, waiting]));

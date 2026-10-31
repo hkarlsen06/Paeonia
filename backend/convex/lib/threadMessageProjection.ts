@@ -56,6 +56,7 @@ export async function projectThreadMessages(ctx: ReaderCtx, thread: Doc<"convers
         media.push({
           media_asset_id: link.media_asset_id,
           media_type: asset.media_type,
+          accessibility_text: orNull(asset.accessibility_text),
           width: orNull(asset.width),
           height: orNull(asset.height),
           duration_ms: orNull(asset.duration_ms),

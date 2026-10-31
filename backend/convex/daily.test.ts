@@ -234,18 +234,54 @@ describe("answers and the reveal rule", () => {
     ).rejects.toThrow(/22023.*daily question instance was not found/);
   });
 
+  test("authored transcripts survive storage and reveal only with their recording", async () => {
+    const { t, a, b, couple, question } = await readyCouple({
+      questions: textQuestions(12).map((item) => ({ ...item, kinds: ["text", "voice"] })),
+    });
+    const answerId = newUuid();
+    const asset = await insertAnswerAsset(t, { ownerUserId: a.userId, coupleId: couple.coupleId, answerId, mediaType: "voice" });
+    const transcript = "Jeg savner deg. Fugler synger.";
+    const payload = { answer_id: answerId, media_asset_ids: [asset], media_accessibility_text: transcript };
+    const outsider = await createCouple(t);
+    await expect(submit(outsider.first, question.id, payload)).rejects.toThrow(/42501/);
+    await expect(t.mutation(api.daily.submit_daily_answer, { p_instance_id: question.id, p_payload: payload, ...op() })).rejects.toThrow(/42501/);
+    await submit(a, question.id, payload);
+    expect(await t.run((ctx) => ctx.db.query("daily_question_answers").withIndex("by_uuid", (q) => q.eq("id", answerId)).unique()))
+      .toMatchObject({ media_accessibility_text: transcript });
+    const day = question.couple_day_id!;
+    const hidden = [
+      await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day }),
+      await b.as.query(api.daily.get_daily_answer_history_details, {}),
+      await b.as.query(api.daily.get_today_daily_challenge_snapshot, {}),
+      await b.as.query(api.dailyQuestionChat.get_daily_question_chat, { p_couple_id: couple.coupleId, p_question_id: question.question_id }),
+    ];
+    expect(JSON.stringify(hidden)).not.toContain(transcript);
+    expect(await outsider.first.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day })).toEqual([]);
+    await expect(outsider.first.as.query(api.dailyQuestionChat.get_daily_question_chat, { p_couple_id: couple.coupleId, p_question_id: question.question_id })).rejects.toThrow(/42501/);
+    await submit(b, question.id, { text: "Me too" });
+    const revealed = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
+    expect(revealed.find((row) => row.answer_id === answerId)).toMatchObject({ media_accessibility_text: transcript, media_asset_ids: [asset] });
+  });
+
+  test("refuses descriptions without an attachment, over the limit, or of a non-text type", async () => {
+    const { a, question } = await readyCouple();
+    for (const value of ["not attached", "x".repeat(10001), { description: "x" }]) {
+      await expect(submit(a, question.id, { text: "answer", media_accessibility_text: value })).rejects.toThrow(/23514/);
+    }
+  });
+
   test("text plus photo answers attach media, and the photo stays hidden until the partner answers", async () => {
     const { t, couple, a, b, question } = await readyCouple({
       questions: textQuestions(12).map((item) => ({ ...item, kinds: ["text", "photo"] as ("text" | "photo")[] })),
     });
     const answerId = newUuid();
     const assetId = await insertAnswerAsset(t, { ownerUserId: a.userId, coupleId: couple.coupleId, answerId });
-    await submit(a, question.id, { text: "caption", answer_id: answerId, media_asset_ids: [assetId.toUpperCase()] });
+    await submit(a, question.id, { text: "caption", answer_id: answerId, media_asset_ids: [assetId.toUpperCase()], media_accessibility_text: "Two people beside a lake" });
     const day = question.couple_day_id!;
     const mine = await a.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
-    expect(mine[0]).toMatchObject({ text_body: "caption", media_asset_ids: [assetId], can_view_answer: true });
+    expect(mine[0]).toMatchObject({ text_body: "caption", media_asset_ids: [assetId], media_accessibility_text: "Two people beside a lake", can_view_answer: true });
     const theirs = await b.as.query(api.daily.get_daily_answer_details, { p_couple_day_id: day });
-    expect(theirs[0]).toMatchObject({ text_body: null, media_asset_ids: [], can_view_answer: false });
+    expect(theirs[0]).toMatchObject({ text_body: null, media_asset_ids: [], media_accessibility_text: null, can_view_answer: false });
     // The asset has to be reserved for this answer, so tomorrow's question cannot reuse it.
     await nextDay(a, "11");
     const tomorrow = await currentQuestionFor(t, a.userId);

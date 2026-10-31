@@ -403,6 +403,7 @@ export const update_memory = mutation({
   args: {
     p_memory_id: v.string(),
     p_expected_revision: v.number(),
+    p_photo_descriptions: v.optional(v.array(v.object({ media_asset_id: v.string(), text: v.string() }))),
     p_title: v.string(),
     p_memory_date: v.string(),
     ...clientOperationArgs,
@@ -420,11 +421,22 @@ export const update_memory = mutation({
       toClientOperation(args, {
         kind: "update_memory",
         scope: "memories",
-        request: ["update_memory", memoryId, args.p_expected_revision, title, memoryDate],
+        request: ["update_memory", memoryId, args.p_expected_revision, title, memoryDate, args.p_photo_descriptions ?? []],
       }),
       async () => {
         const memory = await requireWritableMemory(ctx, userId, memoryId);
         if (memory.revision !== args.p_expected_revision) fail("40001", "memory revision conflict");
+        for (const description of args.p_photo_descriptions ?? []) {
+          const assetId = uuidArg(description.media_asset_id);
+          const link = await ctx.db.query("memory_media")
+            .withIndex("by_memory_id_media_asset_id", (q) => q.eq("memory_id", memoryId).eq("media_asset_id", assetId)).unique();
+          const asset = await getByUuid(ctx, "media_assets", assetId);
+          if (!link || link.owner_user_id !== userId || link.deleted_at !== undefined || !asset ||
+              asset.owner_user_id !== userId || asset.deleted_at !== undefined) fail("42501", "photo description is not writable");
+          const text = description.text.trim();
+          if (Array.from(text).length > 10000) fail("23514", "photo description is too long");
+          await ctx.db.patch(asset._id, withUpdatedAt({ accessibility_text: text || undefined }));
+        }
         const updated = await patchMemory(ctx, memory, {
           title,
           memory_date: memoryDate,
@@ -733,6 +745,8 @@ async function buildMemoryRow(ctx: ReaderCtx, userId: string, memory: Doc<"memor
       asset_deleted_at: orNull(asset.deleted_at),
       asset_moderation_status: asset.moderation_status,
       asset_storage_delete_status: asset.storage_delete_status,
+      accessibility_text: visibleMemory && link.deleted_at === undefined && link.moderation_status === "visible" &&
+        asset.deleted_at === undefined && asset.moderation_status === "visible" ? orNull(asset.accessibility_text) : null,
       updated_at: updatedAt,
     });
   }

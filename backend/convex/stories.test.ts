@@ -59,6 +59,7 @@ describe("post_story and get_stories", () => {
       author_user_id: couple.first.userId,
       media_asset_id: older.up.assetId,
       caption: "Thinking of you",
+      accessibility_text: null,
       created_at: NOW,
       seen_at: null,
     });
@@ -480,4 +481,20 @@ describe("delete_expired_notes", () => {
     expect(await t.mutation(internal.stories.delete_expired_notes, {})).toEqual({ deleted: 0 });
     expect((await getStories(couple.first)).notes.map((note) => note.text)).toEqual(["again"]);
   });
+});
+
+test("story descriptions come from the private asset and outsiders cannot read them", async () => {
+  const t = newTest();
+  const couple = await createCouple(t);
+  const outsider = await createSignedInUser(t);
+  const story = await post(t, couple, { caption: "Good morning" });
+  await t.run(async (ctx) => {
+    const asset = await ctx.db.query("media_assets").withIndex("by_uuid", (q) => q.eq("id", story.up.assetId)).unique();
+    if (!asset) throw new Error("missing photo");
+    await ctx.db.patch(asset._id, { accessibility_text: "Sunlight on two mugs" });
+  });
+  expect((await story.run())?.accessibility_text).toBe("Sunlight on two mugs");
+  const read = await getStories(couple.second);
+  expect(read.stories[0]).toMatchObject({ caption: "Good morning", accessibility_text: "Sunlight on two mugs" });
+  expect((await failure(getStories(outsider))).code).toBe("42501");
 });

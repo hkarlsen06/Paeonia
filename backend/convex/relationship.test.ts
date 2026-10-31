@@ -184,6 +184,8 @@ describe("relationship_state in get_access_snapshot", () => {
       partner_account_name: "Second Partner",
       partner_nickname: null,
       partner_profile_photo_asset_id: null,
+      own_avatar_decoration: null,
+      partner_avatar_decoration: null,
       started_on: "2024-05-01",
       ended_at: null,
       delete_after: null,

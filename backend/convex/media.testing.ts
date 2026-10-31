@@ -61,6 +61,7 @@ export type UploadSpec = {
   gameId?: string;
   pathContext?: Record<string, unknown>;
   bytes?: Uint8Array;
+  accessibilityText?: string;
 };
 
 export type Uploaded = {
@@ -95,6 +96,7 @@ export async function uploadAsset(t: TestConvex, user: TestUser, spec: UploadSpe
     p_upload_purpose: spec.purpose,
     p_media_type: spec.mediaType,
     p_file_extension: spec.extension,
+    ...(spec.accessibilityText !== undefined ? { p_accessibility_text: spec.accessibilityText } : {}),
     ...(spec.coupleId ? { p_couple_id: spec.coupleId } : {}),
     ...(spec.canvasId ? { p_path_context: { canvas_id: spec.canvasId } } : {}),
     ...(spec.gameId ? { p_path_context: { game_id: spec.gameId } } : {}),
