@@ -28,10 +28,7 @@ struct StreakMilestoneView: View {
 
             VStack(spacing: PaeoniaSpacing.space8) {
                 Text(isSave ? .streakSavedEyebrow : .streakMilestoneEyebrow)
-                    .font(PaeoniaTypography.caption.weight(.bold))
-                    .textCase(.uppercase)
-                    .tracking(1.4)
-                    .foregroundStyle(Color.paeoniaInkGold)
+                    .paeoniaEyebrowStyle(foreground: Color.paeoniaInkGold)
 
                 Text(isSave ? .streakSavedTitle : StreakMilestoneCopy.title(days: days))
                     .font(PaeoniaTypography.heroTitle)

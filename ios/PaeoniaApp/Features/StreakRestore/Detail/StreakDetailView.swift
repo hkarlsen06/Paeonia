@@ -140,10 +140,7 @@ struct StreakDetailView: View {
                 .foregroundStyle(.paeoniaTextPrimary)
 
             Text(.streakDetailLongestLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .textCase(.uppercase)
-                .tracking(1.4)
-                .foregroundStyle(.paeoniaTextSecondary)
+                .paeoniaEyebrowStyle()
         }
         .accessibilityElement(children: .combine)
     }

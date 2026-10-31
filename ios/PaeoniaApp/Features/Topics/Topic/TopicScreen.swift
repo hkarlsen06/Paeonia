@@ -223,10 +223,7 @@ struct TopicScreen: View {
 
     private func sectionTitle(_ text: Text) -> some View {
         text
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .textCase(.uppercase)
-            .tracking(0.6)
-            .foregroundStyle(.paeoniaTextTertiary)
+            .paeoniaEyebrowStyle()
             .accessibilityAddTraits(.isHeader)
     }
 

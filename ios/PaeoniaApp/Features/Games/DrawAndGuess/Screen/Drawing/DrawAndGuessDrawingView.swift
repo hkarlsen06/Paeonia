@@ -123,10 +123,7 @@ struct DrawAndGuessWordLine: View {
     var body: some View {
         GameLiveRow {
             Text(.gamesDrawAndGuessDrawWordLabel)
-                .font(PaeoniaTypography.caption.weight(.bold))
-                .textCase(.uppercase)
-                .tracking(1.4)
-                .foregroundStyle(.paeoniaTextTertiary)
+                .paeoniaEyebrowStyle()
         } trailing: {
             Text(word)
                 .font(PaeoniaTypography.title)

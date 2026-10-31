@@ -236,8 +236,8 @@ struct ThreadChatMessageRow: View {
     /// A bubble as wide as its content. The caller limits its width.
     private func bubbleBody(fill: Color, @ViewBuilder content: () -> some View) -> some View {
         content()
-            .padding(.horizontal, PaeoniaSpacing.space12 + 2)
-            .padding(.vertical, PaeoniaSpacing.space8 + 2)
+            .padding(.horizontal, ThreadChatBubbleMetrics.horizontalInset)
+            .padding(.vertical, ThreadChatBubbleMetrics.verticalInset)
             .background(fill, in: bubbleShape)
             .frameGetterIfNeeded(messageFrame)
     }
@@ -306,8 +306,8 @@ extension ThreadChatMessageRow {
             }
             if hasCaption {
                 messageText(caption)
-                    .padding(.horizontal, PaeoniaSpacing.space12 + 2)
-                    .padding(.vertical, PaeoniaSpacing.space8 + 2)
+                    .padding(.horizontal, ThreadChatBubbleMetrics.horizontalInset)
+                    .padding(.vertical, ThreadChatBubbleMetrics.verticalInset)
                     .background(
                         bubbleFill,
                         in: ThreadChatBubbleShape.shape(for: payloadGroupContext(index: count - 1, count: count))

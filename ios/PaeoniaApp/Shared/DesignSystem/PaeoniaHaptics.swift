@@ -222,6 +222,10 @@ enum PaeoniaHaptics {
         impact(.light)
     }
 
+    static func cardOpened() {
+        impact(.light)
+    }
+
     static func partnerDrawingReceived() {
         impact(.soft)
     }

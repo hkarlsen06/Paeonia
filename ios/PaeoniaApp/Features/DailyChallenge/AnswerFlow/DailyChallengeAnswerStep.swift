@@ -87,10 +87,7 @@ struct DailyChallengeAnswerStep: View {
                     Text(.homeDailyPromptEyebrow)
                 }
             }
-            .font(PaeoniaTypography.caption.weight(.semibold))
-            .textCase(.uppercase)
-            .tracking(1)
-            .foregroundStyle(.paeoniaTextSecondary)
+            .paeoniaEyebrowStyle()
             Text(verbatim: question.prompt)
                 .font(.system(size: size, weight: .medium, design: .serif))
                 .foregroundStyle(.paeoniaTextPrimary)

@@ -17,6 +17,8 @@ Each game gets its own design doc in `docs/games/` once the developer picks it. 
 
 Decided on 2026-10-31.
 
+- Game hub cards use `PaeoniaIllustratedCard` for the shared artwork, title, action and compact layout. `GameHubCardFrame` adds presence, scores and Not now. Daily questions use the shared card directly. Topic cards and illustrated cards share their waiting-content border and glow through `paeoniaCardSurface`.
+
 - Story Chain skips the arrival animation for a line watched live during this visit and for the writer's own line. A pause in typing does not replay a watched line. A partner's line missed while away still writes itself in. The story and title fields explicitly enable system autocorrect.
 - Story Chain keeps optional writing controls in a compact toolbar beneath the draft and above the keyboard. "Give a word" and "Last line?" are quiet filled chips, with the counter beside Send. Long words and larger text sizes wrap the controls while keeping their tap targets and full accessibility labels.
 

@@ -202,10 +202,9 @@ struct PaeoniaStreakFlame: View {
                 .opacity(1 - 0.3 * brokenness)
 
             Text(.homeStreakLabel)
-                .font(PaeoniaTypography.caption.weight(.semibold))
-                .textCase(.uppercase)
-                .tracking(1.6)
-                .foregroundStyle(Color.paeoniaAccentPrimary.mix(with: .paeoniaTextTertiary, by: brokenness))
+                .paeoniaEyebrowStyle(
+                    foreground: Color.paeoniaAccentPrimary.mix(with: .paeoniaTextTertiary, by: brokenness)
+                )
         }
         .opacity(isUnlit ? 0.6 : 1)
     }

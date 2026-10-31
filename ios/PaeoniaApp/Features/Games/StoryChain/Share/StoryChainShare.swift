@@ -41,10 +41,7 @@ private struct StoryChainShareCard: View {
             VStack(spacing: PaeoniaSpacing.space8) {
                 if let number {
                     Text(.storyChainStoryNumber(number))
-                        .font(PaeoniaTypography.caption.bold())
-                        .textCase(.uppercase)
-                        .tracking(1.4)
-                        .foregroundStyle(.paeoniaTextTertiary)
+                        .paeoniaEyebrowStyle()
                 }
                 Text(verbatim: title)
                     .font(.system(size: 28, weight: .semibold, design: .serif))

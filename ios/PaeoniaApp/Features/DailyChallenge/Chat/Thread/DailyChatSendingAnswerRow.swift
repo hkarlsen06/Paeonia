@@ -24,8 +24,8 @@ struct DailyChatSendingAnswerRow: View {
                 showsSendingStatus: answer.isHeldOnPhone
             )
         }
-        .padding(.horizontal, PaeoniaSpacing.space12 + 2)
-        .padding(.vertical, PaeoniaSpacing.space8 + 2)
+        .padding(.horizontal, ThreadChatBubbleMetrics.horizontalInset)
+        .padding(.vertical, ThreadChatBubbleMetrics.verticalInset)
         .background(
             Color.paeoniaOutgoingMessage,
             in: ThreadChatBubbleShape.shape(for: .standalone(isCurrentUser: true))

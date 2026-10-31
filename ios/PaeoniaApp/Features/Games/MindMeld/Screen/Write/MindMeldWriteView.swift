@@ -81,10 +81,7 @@ struct MindMeldWriteView: View {
             )
         } trailing: {
             Text(.mindMeldRound(viewModel.resolution.roundNumber, viewModel.maxRounds))
-                .font(PaeoniaTypography.caption.weight(.bold))
-                .tracking(1.4)
-                .textCase(.uppercase)
-                .foregroundStyle(.paeoniaTextTertiary)
+                .paeoniaEyebrowStyle()
         }
     }
 

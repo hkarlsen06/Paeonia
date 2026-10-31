@@ -64,10 +64,7 @@ struct StoryChainPageView<LineInfo: View, Trailing: View>: View {
     private var header: some View {
         VStack(spacing: PaeoniaSpacing.space12) {
             eyebrow
-                .font(PaeoniaTypography.caption.bold())
-                .textCase(.uppercase)
-                .tracking(1.4)
-                .foregroundStyle(.paeoniaTextTertiary)
+                .paeoniaEyebrowStyle()
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .accessibilityAddTraits(.isHeader)

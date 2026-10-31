@@ -11,7 +11,7 @@ struct ThreadChatDeletedNote: View {
         Text(isCurrentUser ? .dailyChatDeletedYou : .dailyChatDeletedPartner(partnerName))
             .font(PaeoniaTypography.caption.italic())
             .foregroundStyle(.paeoniaTextTertiary)
-            .padding(.horizontal, PaeoniaSpacing.space12 + 2)
+            .padding(.horizontal, ThreadChatBubbleMetrics.horizontalInset)
             .padding(.vertical, PaeoniaSpacing.space8)
             .overlay { shape.strokeBorder(.paeoniaTextTertiary.opacity(0.4), lineWidth: 1) }
     }

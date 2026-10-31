@@ -13,6 +13,11 @@ struct ThreadChatPayloadFrameKey: PreferenceKey {
     }
 }
 
+enum ThreadChatBubbleMetrics {
+    static let horizontalInset: CGFloat = 14
+    static let verticalInset: CGFloat = 10
+}
+
 /// Rounded bubbles whose corners tighten where they join the next or previous
 /// message from the same person.
 enum ThreadChatBubbleShape {

@@ -38,18 +38,19 @@ struct DailyPromptHeroCard: View {
     }
 
     private var card: some View {
-        GameHubCardFrame(
-            name: copy.title,
+        PaeoniaIllustratedCard(
+            title: copy.title,
             status: status,
             actionTitle: copy.actionTitle,
-            isYourTurn: art.glows,
-            context: nil,
+            needsAttention: art.glows,
             actionIdentifier: "home.dailyPrompt.action",
             open: onAnswer,
             loadingLabel: copy.isLoading ? .dailyChallengeHomeLoadingTitle : nil
         ) {
             DailyPromptHeroArtwork(seal: art.seal, sealBreak: sealBreak, opening: envelopeOpening)
         } badge: {
+            EmptyView()
+        } header: {
             EmptyView()
         } extras: {
             LockedPartnerQuestionRows(

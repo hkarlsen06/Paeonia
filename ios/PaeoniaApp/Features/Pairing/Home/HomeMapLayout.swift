@@ -116,6 +116,17 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                     .geometryGroup()
                     // The cards start just under the map's last full row, and the map fades on behind them.
                     .padding(.top, reservesMapSpace ? -HomeMapMetrics.cardsOverlap : PaeoniaSpacing.space24)
+                if couple != nil, let url = HomeMapLibreView.attributionURL {
+                    Link(destination: url) {
+                        Text(verbatim: HomeMapLibreView.credit)
+                            .font(PaeoniaTypography.caption)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                    }
+                    .accessibilityIdentifier("home.map.attribution")
+                }
             }
             .padding(.top, reservesMapSpace ? 0 : screen.topInset + Self.headerHeight + PaeoniaSpacing.space8)
             // ScrollView also asks for an ideal width. Keep that probe at the viewport width,
@@ -405,5 +416,4 @@ extension HomeMapLayout {
         default: true
         }
     }
-
 }

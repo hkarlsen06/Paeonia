@@ -83,7 +83,7 @@ def luminance(rgb):
 
 
 # The card frame's Gaussian blur and shadow under the text. Keep in step with
-# GameHubTextScrim in GameHubCardFrame.swift and the blur in GameHubArtworkParts.swift.
+# PaeoniaIllustratedCardLayout in PaeoniaIllustratedCard.swift.
 BLUR_STRENGTH = 1.0
 SHADOW_AT_NAME = 0.25
 SHADOW_AT_BOTTOM = 0.5
@@ -100,7 +100,7 @@ TEXT_LINES = [
 ]
 CARD_HEIGHT_BELOW_TEXT = 260
 # Where the card's text starts, in canvas pixels. Keep in step with
-# GameHubArtworkLayout.sceneShare.
+# PaeoniaIllustratedCardLayout.sceneShare.
 TEXT_TOP = 720
 
 

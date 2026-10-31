@@ -157,10 +157,7 @@ struct MindMeldTrailView: View {
     private func detailRow(_ pair: Pair, round: Int, progress: CGFloat) -> some View {
         VStack(spacing: PaeoniaSpacing.space4) {
             Text(.mindMeldHistoryDetailRound(round))
-                .font(PaeoniaTypography.caption.weight(.bold))
-                .tracking(1.4)
-                .textCase(.uppercase)
-                .foregroundStyle(.paeoniaTextTertiary)
+                .paeoniaEyebrowStyle()
             if pair.isMeld && !pair.isCounted {
                 mergedChip(pair.mine)
             } else {

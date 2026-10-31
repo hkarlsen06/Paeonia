@@ -135,10 +135,7 @@ struct ExquisiteCorpsePartLine: View {
     var body: some View {
         GameLiveRow {
             Text(.exquisiteCorpseDrawEyebrow)
-                .font(PaeoniaTypography.caption.weight(.bold))
-                .textCase(.uppercase)
-                .tracking(1.4)
-                .foregroundStyle(.paeoniaTextTertiary)
+                .paeoniaEyebrowStyle()
         } trailing: {
             Text(title)
                 .font(PaeoniaTypography.title)

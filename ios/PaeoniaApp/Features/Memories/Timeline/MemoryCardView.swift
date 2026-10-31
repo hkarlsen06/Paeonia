@@ -42,50 +42,33 @@ struct MemoryCardView: View {
         .accessibilityElement(children: .combine)
     }
 
-    @ViewBuilder
     private var content: some View {
-        if !photoAssetIDs.isEmpty, !dynamicTypeSize.isAccessibilitySize {
-            MemoryCardPhotoLayout(hasNote: notePreview != nil) {
-                ForEach(MemoryCardPhotoLayout.TitleStyle.allCases, id: \.self) { style in
-                    title
-                        .font(style.font)
-                        .frame(
-                            minWidth: 0, maxWidth: .infinity,
-                            minHeight: 0, maxHeight: .infinity,
-                            alignment: .topLeading
-                        )
-                        .clipped()
-                }
-                note
-                    .frame(
-                        minWidth: 0, maxWidth: .infinity,
-                        minHeight: 0, maxHeight: .infinity,
-                        alignment: .topLeading
-                    )
-                    .clipped()
-                note
-                    .lineLimit(2, reservesSpace: true)
-                    .hidden()
-                note
-                    .lineLimit(3, reservesSpace: true)
-                    .hidden()
-                date
-                photo
-            }
-        } else {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
-                date
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                title
-                    .font(PaeoniaTypography.largeTitle)
-                    .fixedSize(horizontal: false, vertical: true)
-                if notePreview != nil {
-                    note
-                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
-                }
-                if !photoAssetIDs.isEmpty {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
+            date
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            if !photoAssetIDs.isEmpty, !dynamicTypeSize.isAccessibilitySize {
+                HStack(alignment: .top, spacing: PaeoniaSpacing.space16) {
+                    textContent
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     photo
+                        .frame(maxWidth: .infinity)
                 }
+            } else {
+                textContent
+                if !photoAssetIDs.isEmpty { photo }
+            }
+        }
+    }
+
+    private var textContent: some View {
+        VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+            title
+                .font(PaeoniaTypography.title)
+                .fixedSize(horizontal: false, vertical: true)
+            if notePreview != nil {
+                note
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

@@ -1,6 +1,6 @@
 # Design System
 
-Use semantic colors and design tokens. Do not scatter hardcoded colors, spacing, or typography values through feature views.
+Use semantic colors and design tokens. Do not scatter hardcoded colors, spacing, or typography values through feature views. `paeoniaCardSurface` owns card edges and the glow for content waiting for this person. `paeoniaEyebrowStyle` owns small uppercase labels. `PaeoniaIllustratedCard` owns the shared picture, title and action layout.
 
 Paeonia uses one canonical plum-led brand theme for MVP. Do not design or implement separate light and dark native app appearances unless the user explicitly reopens that product decision. Accessibility settings still matter: preserve Dynamic Type, Reduce Motion, contrast, and VoiceOver behavior within the plum theme.
 

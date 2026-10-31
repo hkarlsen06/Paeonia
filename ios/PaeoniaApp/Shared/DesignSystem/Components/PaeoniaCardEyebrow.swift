@@ -12,10 +12,16 @@ struct PaeoniaCardEyebrow: View {
 
     var body: some View {
         Text(title)
-            .font(PaeoniaTypography.caption.weight(.semibold))
+            .paeoniaEyebrowStyle()
+    }
+}
+
+extension View {
+    func paeoniaEyebrowStyle(foreground: Color = .paeoniaTextTertiary) -> some View {
+        font(PaeoniaTypography.caption.weight(.semibold))
             .textCase(.uppercase)
             .tracking(0.8)
-            .foregroundStyle(.paeoniaTextTertiary)
+            .foregroundStyle(foreground)
     }
 }
 

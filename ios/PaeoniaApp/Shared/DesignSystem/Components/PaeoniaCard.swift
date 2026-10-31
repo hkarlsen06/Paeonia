@@ -18,10 +18,7 @@ struct PaeoniaCard<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.paeoniaSurfacePrimary)
             .clipShape(shape)
-            .overlay {
-                shape.strokeBorder(.paeoniaSurfacePressed, lineWidth: PaeoniaRadius.strokeHairline)
-            }
+            .paeoniaCardSurface(in: shape, fill: Color.paeoniaSurfacePrimary)
     }
 }

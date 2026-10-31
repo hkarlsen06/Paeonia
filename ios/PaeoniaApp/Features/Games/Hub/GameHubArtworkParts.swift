@@ -1,21 +1,5 @@
 import SwiftUI
 
-/// The picture a hub card is made of: the shared backdrop, with the game's objects on
-/// it. `docs/games/hub-artwork.md` has the rules.
-enum GameHubArtworkLayout {
-    /// The canvas the picture is laid out on, in pixels. It is as wide as the card and
-    /// anchored at the top, so one pixel is `cardWidth / 1024` points.
-    static let canvasSize = CGSize(width: 1_024, height: 1_536)
-    /// How far down the scene reaches, as a share of the card's width. The card's text
-    /// starts below it, so the scene keeps its shape at every card width.
-    static let sceneShare: CGFloat = 720 / 1_024
-    /// The backdrop goes out of focus under the text: a Gaussian blur that fades in over
-    /// `blurFadeIn` points, starting `blurLead` points above where the text starts.
-    static let blurRadius: CGFloat = 20
-    static let blurLead: CGFloat = 24
-    static let blurFadeIn: CGFloat = 40
-}
-
 /// A hub card's picture: the shared backdrop, as wide as the card and anchored at the
 /// top, with the game's scene on it. Under the card's text the backdrop goes out of focus
 /// with a Gaussian blur, so the picture carries on behind the text. The scene is laid out
@@ -32,22 +16,22 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let canvasSize = GameHubArtworkLayout.canvasSize
+            let canvasSize = PaeoniaIllustratedCardLayout.canvasSize
             let scale = proxy.size.width / canvasSize.width
-            let textTop = proxy.size.width * GameHubArtworkLayout.sceneShare
+            let textTop = proxy.size.width * PaeoniaIllustratedCardLayout.sceneShare
             let backdropSize = CGSize(width: proxy.size.width, height: canvasSize.height * scale)
             ZStack(alignment: .topLeading) {
                 GameHubBackdrop()
                     .frame(width: backdropSize.width, height: backdropSize.height)
                 GameHubBackdrop()
                     .frame(width: backdropSize.width, height: backdropSize.height)
-                    .blur(radius: GameHubArtworkLayout.blurRadius, opaque: true)
+                    .blur(radius: PaeoniaIllustratedCardLayout.blurRadius, opaque: true)
                     .mask(alignment: .top) {
                         VStack(spacing: 0) {
                             Color.clear
-                                .frame(height: textTop - GameHubArtworkLayout.blurLead)
+                                .frame(height: textTop - PaeoniaIllustratedCardLayout.blurLead)
                             LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                                .frame(height: GameHubArtworkLayout.blurFadeIn)
+                                .frame(height: PaeoniaIllustratedCardLayout.blurFadeIn)
                             Color.black
                         }
                     }

@@ -48,17 +48,7 @@ struct TopicsCard: View {
         }
         .padding(PaeoniaSpacing.cardContentPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            shape
-                .fill(.paeoniaSurfaceSecondary)
-                .shadow(color: .paeoniaAccentPrimary.opacity(hook == nil ? 0 : 0.22), radius: 18, y: 6)
-        }
-        .overlay {
-            shape.strokeBorder(
-                hook == nil ? Color.paeoniaSurfacePressed : Color.paeoniaAccentPrimary.opacity(0.5),
-                lineWidth: hook == nil ? PaeoniaRadius.strokeHairline : PaeoniaRadius.strokeDefault
-            )
-        }
+        .paeoniaCardSurface(in: shape, fill: Color.paeoniaSurfaceSecondary, needsAttention: hook != nil)
         .contentShape(shape)
     }
 

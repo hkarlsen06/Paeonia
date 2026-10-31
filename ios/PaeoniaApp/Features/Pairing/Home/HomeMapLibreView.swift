@@ -2,7 +2,7 @@ import MapLibre
 import SwiftUI
 import UIKit
 
-/// PROTOTYPE. A still MapLibre map of OpenStreetMap data from OpenFreeMap, recolored to
+/// A MapLibre map of OpenStreetMap data from OpenFreeMap, recolored to
 /// Paeonia's plum. Its camera fits both partners inside `framedBox`. The coordinator reports
 /// their projected positions as the camera moves, so SwiftUI's avatars follow the map.
 /// The data credit lives off the map.
@@ -24,8 +24,8 @@ struct HomeMapLibreView: UIViewRepresentable {
     var onProjection: (HomeMapProjection) -> Void
 
     static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
-    /// Shown wherever the app credits its map data.
-    static let credit = "Kartdata © OpenStreetMap-bidragsytere · OpenFreeMap · OpenMapTiles"
+    static let credit = "© OpenStreetMap · OpenFreeMap · OpenMapTiles"
+    static let attributionURL = URL(string: "https://www.openstreetmap.org/copyright")
     /// About 10 km across a phone screen: the city, not its streets.
     private static let nearZoom: Double = 11
     /// How far apart the two avatars' centers sit when the couple is apart, in points. Close

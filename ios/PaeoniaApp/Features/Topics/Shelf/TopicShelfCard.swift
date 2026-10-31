@@ -17,11 +17,6 @@ struct TopicShelfCard: View {
         topic.forYouCount > 0
     }
 
-    /// A pink glow while something waits for this person, a soft shadow otherwise.
-    private var shadowColor: Color {
-        isWaitingForYou ? Color.paeoniaAccentPrimary.opacity(0.3) : Color.black.opacity(0.22)
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
             TopicArtwork(topicKey: topic.id, height: 88)
@@ -45,26 +40,18 @@ struct TopicShelfCard: View {
         }
         .padding(PaeoniaSpacing.space12)
         .frame(maxWidth: .infinity, minHeight: 236, alignment: .topLeading)
-        .background {
-            shape
-                .fill(
-                    LinearGradient(
-                        stops: [
-                            .init(color: tint.opacity(0.42), location: 0),
-                            .init(color: .paeoniaSurfacePrimary, location: 0.62),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .shadow(color: shadowColor, radius: 14, y: 6)
-        }
-        .overlay {
-            shape.strokeBorder(
-                isWaitingForYou ? Color.paeoniaAccentPrimary.opacity(0.6) : Color.paeoniaTextPrimary.opacity(0.1),
-                lineWidth: isWaitingForYou ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeHairline
-            )
-        }
+        .paeoniaCardSurface(
+            in: shape,
+            fill: LinearGradient(
+                stops: [
+                    .init(color: tint.opacity(0.42), location: 0),
+                    .init(color: .paeoniaSurfacePrimary, location: 0.62),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            ),
+            needsAttention: isWaitingForYou
+        )
         .overlay(alignment: .topTrailing) {
             badge
                 .padding(PaeoniaSpacing.space8)
