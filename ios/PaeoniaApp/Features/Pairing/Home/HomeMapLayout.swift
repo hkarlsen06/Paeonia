@@ -190,8 +190,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 
     /// The map, faded into the cards, with the open map above them sending hearts.
     private func mapBand(_ couple: HomeMapCouple, _ screen: HomeMapScreen) -> some View {
-        GeometryReader { band in
-            let metrics = metrics(couple, screen, bandHeight: band.size.height)
+        HomeMapBand { bandHeight in
+            let metrics = metrics(couple, screen, bandHeight: bandHeight)
             HomeMapLibreView(
                 current: couple.currentCoordinate,
                 partner: couple.partnerCoordinate,
@@ -234,8 +234,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
 
     /// The heart between the avatars when they sit together, and the hearts flying between them.
     private func heartLayer(_ couple: HomeMapCouple, _ screen: HomeMapScreen) -> some View {
-        GeometryReader { band in
-            let metrics = metrics(couple, screen, bandHeight: band.size.height)
+        HomeMapBand { bandHeight in
+            let metrics = metrics(couple, screen, bandHeight: bandHeight)
             let points = points(couple, metrics)
             if couple.isNear, hearts != nil {
                 let middle = CGPoint(x: (points.own.x + points.partner.x) / 2, y: (points.own.y + points.partner.y) / 2)
@@ -246,7 +246,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             KissLayer(start: points.own, end: points.partner, tapKisses: flights.kisses)
                 .allowsHitTesting(false)
         }
-        .transaction { $0.animation = nil }
     }
 
     /// Keep story controls available before location resolves, in the space reserved for the map.
@@ -259,8 +258,8 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 avatarSize: reservesMapSpace ? avatarSize : Self.rowAvatarSize,
                 arrange: reservesMapSpace ? { own, partner in
                     AnyView(
-                        GeometryReader { band in
-                            let metrics = metrics(couple, screen, bandHeight: band.size.height)
+                        HomeMapBand { bandHeight in
+                            let metrics = metrics(couple, screen, bandHeight: bandHeight)
                             let points = points(couple, metrics)
                             let scale = avatarScale
                             own.scaleEffect(scale).opacity(metrics.avatarOpacity(at: points.own))
@@ -268,7 +267,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                             partner.scaleEffect(scale).opacity(metrics.avatarOpacity(at: points.partner))
                                 .position(points.partner)
                         }
-                        .transaction { $0.animation = nil }
                     )
                 } : nil,
                 middle: !reservesMapSpace && hearts != nil && canSendHearts ? AnyView(rowHeart) : nil,

@@ -5,10 +5,10 @@ import SwiftUI
 extension HomeMapLayout {
     /// Over the avatars, which may sit under it while the person looks around.
     func showBothButton(_ couple: HomeMapCouple, _ screen: HomeMapScreen) -> some View {
-        GeometryReader { band in
+        HomeMapBand { bandHeight in
             HomeMapShowBothButton(
                 explorer: explorer,
-                mapBottom: metrics(couple, screen, bandHeight: band.size.height).framedBottom
+                mapBottom: metrics(couple, screen, bandHeight: bandHeight).framedBottom
             )
         }
     }
