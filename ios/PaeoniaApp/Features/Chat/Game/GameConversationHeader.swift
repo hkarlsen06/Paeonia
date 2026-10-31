@@ -107,7 +107,7 @@ struct GameConversationHeader: View {
             HStack {
                 Text(.dailyChallengeChoiceYou).foregroundStyle(.paeoniaPartnerOne)
                 Spacer()
-                Text(verbatim: participants.partnerName).foregroundStyle(.paeoniaPartnerTwo)
+                Text(verbatim: participants.partnerName).foregroundStyle(.paeoniaPartnerTwoText)
             }
             .font(PaeoniaTypography.caption.weight(.semibold))
             MindMeldTrailView(
@@ -157,7 +157,9 @@ struct GameConversationHeader: View {
                     Text(verbatim: people.name(for: line.authorUserID))
                         .font(PaeoniaTypography.caption.weight(.semibold))
                         .foregroundStyle(
-                            line.authorUserID == participants.currentUserID ? .paeoniaPartnerOne : .paeoniaPartnerTwo)
+                            line.authorUserID == participants.currentUserID
+                                ? Color.paeoniaPartnerOne : Color.paeoniaPartnerTwoText
+                        )
                     Text(verbatim: line.text).font(PaeoniaTypography.body)
                 }
                 .accessibilityElement(children: .combine)

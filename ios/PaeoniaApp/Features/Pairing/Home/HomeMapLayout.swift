@@ -1,7 +1,7 @@
 import CoreLocation
 import SwiftUI
 
-/// PROTOTYPE. Home with the couple's map as its header. The map fades on behind the cards,
+/// Home with the couple's map as its header. The map fades on behind the cards,
 /// both avatars sit on it with their stories and notes, and the cards follow in one plain
 /// scroll view. The mark and the streak stay at the top in a bar that turns to glass once
 /// the cards scroll under it, like a navigation bar. Without both locations, the avatars
@@ -20,8 +20,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
     @ViewBuilder let header: Header
     @ViewBuilder let sheet: Sheet
 
-    @AppStorage("proto.home.avatarSize") var avatarSize: Double = 72
-    @AppStorage("proto.home.fakePartner") private var fakePartner: FakePartnerPlace = .real
+    let avatarSize: Double = 72
     /// The kind of notice the person said "Not now" to. It shows again once the reason
     /// for having no map changes.
     @AppStorage("home.locationNotice.dismissed") private var dismissedNotice = ""
@@ -43,7 +42,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
             current: current,
             partner: partner,
             currentCoordinate: mapLocations?.current ?? current.coordinate,
-            partnerCoordinate: mapLocations?.partner ?? fakePartner.coordinate ?? partner.coordinate,
+            partnerCoordinate: mapLocations?.partner ?? partner.coordinate,
             partnerWasStaleAtLastRefresh: wasStale
         )
     }
@@ -94,10 +93,6 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         // A note's keyboard belongs to its cover. Keep Home's map and cards in place behind it.
         .ignoresSafeArea(.keyboard)
         .onChange(of: mapState, initial: true) { _, _ in retainMapLocations() }
-        .onChange(of: fakePartner) { _, _ in
-            mapLocations = nil
-            retainMapLocations()
-        }
     }
 
     /// The top and the cards, in the one scroll view.
@@ -145,12 +140,11 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
                 HomeMapDistanceLine(
                     current: couple.current,
                     partner: couple.partner,
-                    partnerCoordinate: fakePartner.coordinate ?? couple.partner.coordinate,
+                    partnerCoordinate: couple.partner.coordinate,
                     partnerWasStaleAtLastRefresh: couple.partnerWasStaleAtLastRefresh,
                     compass: compass
                 )
                 .accessibilityAction(named: Text(.heartsSendAction)) { sendHeart() }
-                .contextMenu { prototypeMenu }
                 .transition(.opacity)
             }
         }
@@ -302,7 +296,7 @@ struct HomeMapLayout<Header: View, Sheet: View>: View {
         }
         let latest = HomeMapLocations(
             current: current.coordinate,
-            partner: fakePartner.coordinate ?? partner.coordinate
+            partner: partner.coordinate
         )
         mapLocations = mapLocations?.retainingNearbyLocations(from: latest) ?? latest
     }
@@ -412,22 +406,4 @@ extension HomeMapLayout {
         }
     }
 
-    @ViewBuilder
-    private var prototypeMenu: some View {
-        Picker(selection: $avatarSize) {
-            Text(verbatim: "64").tag(64.0)
-            Text(verbatim: "72 (today's size)").tag(72.0)
-            Text(verbatim: "84").tag(84.0)
-        } label: {
-            Text(verbatim: "Avatar size")
-        }
-        Picker(selection: $fakePartner) {
-            ForEach(FakePartnerPlace.allCases, id: \.self) { place in
-                Text(verbatim: place.label).tag(place)
-            }
-        } label: {
-            Text(verbatim: "Partner location")
-        }
-        Section(HomeMapLibreView.credit) {}
-    }
 }

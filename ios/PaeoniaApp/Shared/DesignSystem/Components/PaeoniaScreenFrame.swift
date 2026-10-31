@@ -11,8 +11,8 @@ struct PaeoniaScreenFrame<Content: View>: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
             .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .paeoniaReadableWidth(PaeoniaSpacing.focusedContentWidth)
             .padding(.bottom, PaeoniaSpacing.space16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(PaeoniaGlowBackground())

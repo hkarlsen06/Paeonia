@@ -178,7 +178,7 @@ struct PairedHomeView: View {
         }
     }
 
-    /// PROTOTYPE: the map layout on iPhone.
+    /// Compact windows use the map as Home's header.
     @ViewBuilder
     private var homeContent: some View {
         if drawsOwnHeader {

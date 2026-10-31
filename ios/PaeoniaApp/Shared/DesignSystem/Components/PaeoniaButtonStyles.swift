@@ -109,8 +109,8 @@ struct PaeoniaQuietButtonStyle: ButtonStyle {
         configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
-            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
             .padding(.horizontal, PaeoniaSpacing.space12)
+            .frame(minWidth: PaeoniaSpacing.compactButtonHeight, minHeight: PaeoniaSpacing.compactButtonHeight)
             .foregroundStyle(isEnabled ? .paeoniaTextSecondary : .paeoniaTextTertiary)
             .background(backgroundColor(isPressed: configuration.isPressed))
             .clipShape(Capsule(style: .continuous))

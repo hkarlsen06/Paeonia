@@ -22,6 +22,7 @@ nonisolated private enum PaeoniaPaletteHex {
     static let petalLight: UInt32 = 0xF2_7E_B2
     static let pink: UInt32 = 0xEF_50_94
     static let petalWarm: UInt32 = 0xE8_5D_86
+    static let petalWarmLight: UInt32 = 0xF5_87_A6
     static let petalMist: UInt32 = 0xFD_E7_F1
 
     static let blush: UInt32 = 0xFB_F3_F7
@@ -34,7 +35,7 @@ nonisolated private enum PaeoniaPaletteHex {
     static let error: UInt32 = 0xE5_48_4D
     // Lighter error tone for text; `error` is only 4.2:1 on the plum background.
     static let errorText: UInt32 = 0xFF_80_84
-    static let errorPressed: UInt32 = 0xD6_42_47
+    static let errorPressed: UInt32 = 0xEA_5C_61
     static let warning: UInt32 = 0xE8_91_5D
     static let presence: UInt32 = 0x82_BA_A5
     static let success: UInt32 = 0x5B_B9_8B
@@ -53,6 +54,7 @@ nonisolated private enum PaeoniaPalette {
     static let petalLight = Color(paeoniaHex: PaeoniaPaletteHex.petalLight)
     static let pink = Color(paeoniaHex: PaeoniaPaletteHex.pink)
     static let petalWarm = Color(paeoniaHex: PaeoniaPaletteHex.petalWarm)
+    static let petalWarmLight = Color(paeoniaHex: PaeoniaPaletteHex.petalWarmLight)
     static let petalMist = Color(paeoniaHex: PaeoniaPaletteHex.petalMist)
 
     // Light text used on the plum surface.
@@ -101,6 +103,7 @@ nonisolated extension Color {
 
     static let paeoniaPartnerOne = PaeoniaPalette.petalLight
     static let paeoniaPartnerTwo = PaeoniaPalette.petalWarm
+    static let paeoniaPartnerTwoText = PaeoniaPalette.petalWarmLight
     static let paeoniaMemory = PaeoniaPalette.petalMist
     static let paeoniaPrompt = PaeoniaPalette.pink
     static let paeoniaWidgetDrawing = PaeoniaPalette.blush
@@ -144,6 +147,7 @@ nonisolated extension ShapeStyle where Self == Color {
     static var paeoniaSyncError: Color { Color.paeoniaSyncError }
     static var paeoniaPartnerOne: Color { Color.paeoniaPartnerOne }
     static var paeoniaPartnerTwo: Color { Color.paeoniaPartnerTwo }
+    static var paeoniaPartnerTwoText: Color { Color.paeoniaPartnerTwoText }
     static var paeoniaMemory: Color { Color.paeoniaMemory }
     static var paeoniaPrompt: Color { Color.paeoniaPrompt }
     static var paeoniaWidgetDrawing: Color { Color.paeoniaWidgetDrawing }
