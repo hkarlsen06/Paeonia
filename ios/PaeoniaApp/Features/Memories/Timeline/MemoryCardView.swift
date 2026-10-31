@@ -101,14 +101,15 @@ struct MemoryCardView: View {
         .overlay(alignment: .topTrailing) {
             date
                 .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+                .padding(PaeoniaSpacing.space8)
                 .background {
                     Rectangle()
-                        .fill(.black.opacity(0.75))
-                        .padding(-PaeoniaSpacing.space4)
-                        .blur(radius: PaeoniaSpacing.space8)
+                        .fill(.black.opacity(0.7))
+                        .padding([.leading, .bottom], -PaeoniaSpacing.space8)
+                        // Extend beyond the crop so only the left and bottom edges fade.
+                        .padding([.top, .trailing], -PaeoniaSpacing.space24)
+                        .blur(radius: PaeoniaSpacing.space12)
                 }
-                .padding(PaeoniaSpacing.space8)
         }
         .overlay(alignment: .bottomTrailing) {
             if photoAssetIDs.count > 1 {
