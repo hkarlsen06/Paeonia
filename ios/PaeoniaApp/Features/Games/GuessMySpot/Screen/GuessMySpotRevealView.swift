@@ -37,6 +37,8 @@ struct GuessMySpotRevealView: View {
     @State private var focus: GuessMySpotRevealCameraButtons.Focus?
     /// The settled card shows only the scores, so the map has nearly the whole screen.
     @State private var isCardCollapsed = false
+    /// The last tap anywhere on the reveal, for the card, which lets touches through to the map.
+    @State private var tap: GuessMySpotRevealTap?
     @AccessibilityFocusState private var isTitleFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -86,7 +88,7 @@ struct GuessMySpotRevealView: View {
 
     var body: some View {
         // A tap anywhere skips to the settled result. It is a shortcut, and the buttons stay.
-        // swiftlint:disable:next accessibility_trait_for_button
+        // Once settled, the card gets the tap, since only its buttons take touches themselves.
         ZStack(alignment: .top) {
             map
             GuessMySpotRevealPhoto(image: viewModel.roundPhoto, isAway: timeline.photoAway, isWide: isWide)
@@ -120,8 +122,8 @@ struct GuessMySpotRevealView: View {
                 .accessibilityHidden(true)
             }
         }
-        .simultaneousGesture(TapGesture().onEnded {
-            if timeline.canSkip { timeline.skip() }
+        .simultaneousGesture(SpatialTapGesture(coordinateSpace: .global).onEnded { value in
+            if timeline.canSkip { timeline.skip() } else { tap = GuessMySpotRevealTap(location: value.location) }
         })
         .onAppear(perform: placeFirstCamera)
         .onChange(of: plan, initial: true) { beginIfNeeded() }
@@ -237,6 +239,7 @@ struct GuessMySpotRevealView: View {
             if isHeld {
                 if viewModel.isHeldOnPhone {
                     GuessMySpotHeldCard(viewModel: viewModel)
+                        .allowsHitTesting(false)
                 }
             } else if let plan {
                 GuessMySpotResultCard(
@@ -248,6 +251,7 @@ struct GuessMySpotRevealView: View {
                     countedPoints: timeline.countedPoints,
                     isTitleFocused: $isTitleFocused,
                     isCollapsed: isCardCollapsed,
+                    tap: tap,
                     onToggle: cardToggle
                 )
                     // A short fade under the rise, so the card lands rather than cuts in.
@@ -317,6 +321,7 @@ extension GuessMySpotRevealView {
             // Centered over the map the camera frames.
             .frame(maxWidth: .infinity)
             .padding(.leading, isWide ? Self.cardColumn : 0)
+            .allowsHitTesting(false)
             .accessibilityHidden(!timeline.isSettled)
             .transition(.opacity.combined(with: .scale(scale: 0.9)))
         }
@@ -472,40 +477,19 @@ extension GuessMySpotRevealView {
 // MARK: Pins and line
 
 extension GuessMySpotRevealView {
-    /// The pin the reveal starts from stands and pulses, and the other one drops.
-    /// A held guess has only its own pin.
     private var pins: [GuessMySpotMap.Pin] {
         guard let round, let guess = round.guess else { return [] }
         let guessPin = GuessMySpotMap.Pin(
             id: "guess", coordinate: guess, style: viewModel.style(of: round.guesserUserID)
         )
-        guard let spot = round.spot else { return [standing(guessPin)] }
-        let spotPin = GuessMySpotMap.Pin(id: "spot", coordinate: spot, style: viewModel.style(of: round.senderUserID))
-        let (first, second) = isSender ? (spotPin, guessPin) : (guessPin, spotPin)
-        return timeline.dropped ? [standing(first), dropping(second)] : [standing(first)]
-    }
-
-    private func standing(_ pin: GuessMySpotMap.Pin) -> GuessMySpotMap.Pin {
-        var pin = pin
-        pin.glow = timeline.glow
-        pin.scale = timeline.pulseScale * timeline.verdictScale
-        return pin
-    }
-
-    private func dropping(_ pin: GuessMySpotMap.Pin) -> GuessMySpotMap.Pin {
-        var pin = pin
-        pin.glow = timeline.glow
-        pin.scale = timeline.verdictScale
-        pin.lift = timeline.dropLift
-        pin.ring = timeline.ring
-        return pin
+        let spotPin = round.spot.map {
+            GuessMySpotMap.Pin(id: "spot", coordinate: $0, style: viewModel.style(of: round.senderUserID))
+        }
+        return timeline.pins(guess: guessPin, spot: spotPin, isSender: isSender)
     }
 
     private var line: GuessMySpotMap.Line? {
         guard let ends = framing.ends else { return nil }
-        let progress = timeline.lineProgress
-        guard progress > 0 else { return nil }
-        // A far guess draws quiet and dashed from the start, as in Consensio.
-        return GuessMySpotMap.Line(from: ends.from, to: ends.to, progress: progress, isFar: plan?.verdict == .far)
+        return timeline.line(from: ends.from, to: ends.to, isFar: plan?.verdict == .far)
     }
 }

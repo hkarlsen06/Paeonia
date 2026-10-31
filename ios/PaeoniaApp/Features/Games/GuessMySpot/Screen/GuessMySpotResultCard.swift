@@ -3,6 +3,8 @@ import SwiftUI
 /// The reveal's card: the photo back with where and when it was taken, the
 /// verdict and the scores counting up. The map shows the distance above it.
 /// Collapsed it shows only the total, so the map has nearly the whole screen.
+/// Only the collapse button takes touches itself, so a pan or a pinch that starts
+/// on the card moves the map. Taps on the photo or the collapsed card come as `tap`.
 struct GuessMySpotResultCard: View {
     let round: RemoteGuessMySpotRound?
     let plan: GuessMySpotRevealPlan
@@ -12,11 +14,14 @@ struct GuessMySpotResultCard: View {
     let countedPoints: Int
     var isTitleFocused: AccessibilityFocusState<Bool>.Binding
     var isCollapsed = false
+    var tap: GuessMySpotRevealTap?
     /// Collapses or expands the card. Nil: the card can't, as while the reveal plays.
     var onToggle: (() -> Void)?
 
     @State private var viewer: PaeoniaImageViewerSelection?
     @State private var contentWidth: CGFloat = 0
+    @State private var cardFrame: CGRect = .zero
+    @State private var photoFrame: CGRect = .zero
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var canToggle: Bool { onToggle != nil }
@@ -42,9 +47,9 @@ struct GuessMySpotResultCard: View {
                         scores
                     }
                     .frame(maxWidth: .infinity)
-                    .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
+                .allowsHitTesting(false)
                 .accessibilityHint(Text(.guessMySpotRevealCardExpand))
             } else {
                 expandedContent
@@ -55,11 +60,15 @@ struct GuessMySpotResultCard: View {
         // expanded card matches it below the photo.
         .padding(.bottom, isCollapsed ? PaeoniaSpacing.space4 : PaeoniaSpacing.space8)
         .frame(maxWidth: .infinity)
-        .background(
-            .paeoniaSurfaceSecondary,
-            in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
+                .fill(.paeoniaSurfaceSecondary)
+                .allowsHitTesting(false)
+        }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { cardFrame = $0 }
+        .onChange(of: tap) { _, tap in
+            if let tap { tapped(at: tap.location) }
+        }
         .paeoniaImageViewer(selection: $viewer)
         .accessibilityElement(children: .contain)
         .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
@@ -70,6 +79,7 @@ struct GuessMySpotResultCard: View {
         VStack(spacing: PaeoniaSpacing.space12) {
             HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space8) {
                 verdict
+                    .allowsHitTesting(false)
                 collapseButton
             }
             .padding(.horizontal, photoInset)
@@ -78,12 +88,25 @@ struct GuessMySpotResultCard: View {
                 : AnyLayout(HStackLayout(spacing: Self.columnSpacing))
             layout {
                 photo
+                    .allowsHitTesting(false)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { photoFrame = $0 }
                     .frame(maxWidth: .infinity)
                 scores
+                    .allowsHitTesting(false)
                     .frame(maxWidth: .infinity)
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
+    }
+
+    /// A tap on the collapsed card expands it, and one on the photo opens it.
+    private func tapped(at location: CGPoint) {
+        guard let onToggle else { return }
+        if isCollapsed {
+            if cardFrame.contains(location) { onToggle() }
+        } else if let image, photoFrame.contains(location) {
+            viewer = PaeoniaImageViewerSelection(image: image)
+        }
     }
 
     private var verdict: some View {
@@ -152,6 +175,7 @@ struct GuessMySpotResultCard: View {
             .font(PaeoniaTypography.largeTitle)
             .hidden()
             .accessibilityHidden(true)
+            .allowsHitTesting(false)
             .frame(width: Self.collapseSide)
             .overlay {
                 if canToggle {
@@ -191,6 +215,12 @@ struct GuessMySpotResultCard: View {
         case .far: isSender ? .guessMySpotRevealFarTitleSender(partnerName) : .guessMySpotRevealFarTitle
         }
     }
+}
+
+/// A tap anywhere on the reveal, in global coordinates. Each tap is new, even on the same spot.
+struct GuessMySpotRevealTap: Equatable {
+    let location: CGPoint
+    let id = UUID()
 }
 
 /// The distance counting up at the top of the reveal. It keeps the width of the
