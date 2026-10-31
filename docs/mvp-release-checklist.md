@@ -336,7 +336,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Relationship end/account deletion removes location visibility.
 - [x] App Store privacy labels include precise location.
 - [x] Privacy policy explains opt-in latest-location sharing, no history, stale timestamps, pausing, and deletion behavior clearly.
-- [ ] Home's map tiles come from a paid map provider whose terms allow a paid app and promise uptime. Your call: which provider. `HomeMapLibreView.styleURL` loads the style and every tile from OpenFreeMap, a free service with one maintainer and no uptime promise. Self-hosting tiles and shipping map data in the app were ruled out on 2026-10-31. Stadia Maps and MapTiler serve tiles in the OpenMapTiles schema that OpenFreeMap uses, so `HomeMapLibreView+PlumStyle.swift` should carry over.
+- [ ] Home looks right when OpenFreeMap is down. Paeonia keeps OpenFreeMap: it is free, allows commercial use and needs no key or logo, but one person runs it and it promises no uptime. Paid providers and self-hosted or bundled map data were ruled out on 2026-10-31. On the simulator with the style URL unreachable, Home showed the cards, the avatars and the distance on the plain background. Gap: the avatars then sit side by side with the heart, as if the couple were together, and the map credit under the cards still shows.
 - [ ] The privacy policy names the map provider and says it receives the IP address and the map areas a phone loads, which show roughly where both partners are. Gap: `marketing/src/lib/i18n/dictionaries/legal.en.ts` and `legal.no.ts` list Apple, Google, Clerk, Cloudflare, PostHog and the server in Leipzig, but not OpenFreeMap.
 
 ## Notifications
