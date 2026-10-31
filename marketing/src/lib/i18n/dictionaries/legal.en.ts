@@ -60,7 +60,7 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 24 October 2026',
+    updated: 'Last updated 31 October 2026',
     sections: [
       {
         heading: 'Who this policy is for',
@@ -130,7 +130,7 @@ export const legalEn = {
       {
         heading: 'Who we share data with',
         paragraphs: [
-          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions. Cloudflare stores photos, voice messages, drawings, and other files in the EU, runs the live drawing relay, and delivers the website. PostHog stores usage statistics and crash reports on its EU servers in Frankfurt, Germany, and keeps neither your IP address nor a location worked out from it. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
+          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions. Cloudflare stores photos, voice messages, drawings, and other files in the EU, runs the live drawing relay, and delivers the website. OpenFreeMap provides the map on Home, and Apple Maps provides it on iPad or when OpenFreeMap is down. To draw the map, your phone asks them for the area on screen, so they receive your IP address and roughly where that area is, usually around you and your partner. They do not learn who you are in Paeonia. PostHog stores usage statistics and crash reports on its EU servers in Frankfurt, Germany, and keeps neither your IP address nor a location worked out from it. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
           'We may disclose data when required by law, to protect a person or the service, or as part of a business reorganization with appropriate safeguards. Trusted support or moderation personnel may access the minimum data needed to resolve a request, review reported content, keep the service safe, complete a data request, or perform deletion and recovery work.',
           'We do not sell personal data. We do not use relationship content for advertising, and Paeonia does not include third-party advertising or cross-app tracking.',
         ],

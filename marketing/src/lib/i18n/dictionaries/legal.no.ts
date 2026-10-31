@@ -60,7 +60,7 @@ export const legalNo = {
       description: 'Slik samler Paeonia inn, bruker, deler og beskytter personopplysninger.',
     },
     title: 'Personvern',
-    updated: 'Sist oppdatert 24. oktober 2026',
+    updated: 'Sist oppdatert 31. oktober 2026',
     sections: [
       {
         heading: 'Hvem personvernteksten gjelder for',
@@ -130,7 +130,7 @@ export const legalNo = {
       {
         heading: 'Hvem vi deler opplysninger med',
         paragraphs: [
-          'Disse leverandørene behandler opplysninger for Paeonia, og bare for å drive tjenesten. Apple håndterer Logg inn med Apple, betaling og abonnement i App Store og pushvarsler. Google håndterer Logg inn med Google. Clerk håndterer innlogging og økter. Cloudflare lagrer bilder, talemeldinger, tegninger og andre filer i EU, kjører relétjenesten for live-tegning og leverer nettsiden. PostHog lagrer bruksstatistikk og krasjrapporter på sine EU-servere i Frankfurt i Tyskland, og tar verken vare på IP-adressen din eller et sted som er utledet fra den. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
+          'Disse leverandørene behandler opplysninger for Paeonia, og bare for å drive tjenesten. Apple håndterer Logg inn med Apple, betaling og abonnement i App Store og pushvarsler. Google håndterer Logg inn med Google. Clerk håndterer innlogging og økter. Cloudflare lagrer bilder, talemeldinger, tegninger og andre filer i EU, kjører relétjenesten for live-tegning og leverer nettsiden. OpenFreeMap leverer kartet på Hjem, og Apple Kart leverer det på iPad eller når OpenFreeMap er nede. For å tegne kartet ber telefonen om området som vises, så de får IP-adressen din og omtrent hvor området er, som regel rundt deg og partneren din. De får ikke vite hvem du er i Paeonia. PostHog lagrer bruksstatistikk og krasjrapporter på sine EU-servere i Frankfurt i Tyskland, og tar verken vare på IP-adressen din eller et sted som er utledet fra den. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
           'Vi kan utlevere opplysninger når loven krever det, for å beskytte en person eller tjenesten, eller som del av en omorganisering med egnede sikkerhetstiltak. Betrodde personer innen brukerstøtte eller moderering kan få tilgang til minst mulig informasjon for å løse en henvendelse, vurdere rapportert innhold, ivareta sikkerhet, fullføre en personvernforespørsel eller utføre sletting og gjenoppretting.',
           'Vi selger ikke personopplysninger. Vi bruker ikke forholdsinnhold til annonsering, og Paeonia har ikke tredjepartsannonser eller sporing på tvers av apper.',
         ],
