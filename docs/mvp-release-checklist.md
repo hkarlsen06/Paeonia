@@ -336,6 +336,7 @@ Record any skipped command with the reason. Run all six again for the release ca
 - [x] Relationship end/account deletion removes location visibility.
 - [x] App Store privacy labels include precise location.
 - [x] Privacy policy explains opt-in latest-location sharing, no history, stale timestamps, pausing, and deletion behavior clearly.
+- [ ] Home's map draws with no outside map service. The app bundles the map style and a world map down to country level (zoom 6, 37 MB), and reads closer zooms from a map file Paeonia hosts on Cloudflare R2. Gap: `HomeMapLibreView.styleURL` loads the style and every tile from OpenFreeMap, a free service with one maintainer and no uptime promise. MapLibre 6.31 reads PMTiles from the bundle or a URL. On 2026-10-31 the Protomaps world build, cut to the layers Home draws (land, water, greenery, main roads), measured 37 MB to zoom 6, 160 MB to zoom 7 and 457 MB to zoom 8. Estimated from samples: about 10 GB to zoom 12, and about 25 GB to zoom 14 without buildings (42 GB with them). The Protomaps layer names differ from OpenFreeMap's, so `HomeMapLibreView+PlumStyle.swift` changes with it.
 
 ## Notifications
 
