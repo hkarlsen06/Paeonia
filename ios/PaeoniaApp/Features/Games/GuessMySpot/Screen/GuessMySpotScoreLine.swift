@@ -26,7 +26,7 @@ struct GuessMySpotScoreLine: View {
                         avatar(me, tint: .paeoniaPartnerOne)
                         avatar(partner, tint: .paeoniaPartnerTwo)
                     }
-                    VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .trailing, spacing: 0) {
                         totalLine(total, grows: true)
                         Text(.guessMySpotRevealPointsTogether)
                             .font(PaeoniaTypography.caption)
@@ -34,7 +34,7 @@ struct GuessMySpotScoreLine: View {
                     }
                 }
             case let .against(mine, theirs):
-                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
+                VStack(alignment: .trailing, spacing: PaeoniaSpacing.space8) {
                     column(me, tint: .paeoniaPartnerOne, total: mine, grows: guesserIsMe)
                     column(partner, tint: .paeoniaPartnerTwo, total: theirs, grows: !guesserIsMe)
                 }
@@ -53,7 +53,7 @@ struct GuessMySpotScoreLine: View {
     }
 
     private func totalLine(_ total: Int, grows: Bool) -> some View {
-        VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
+        VStack(alignment: .trailing, spacing: 0) {
             if grows, points > 0 {
                 Text(.guessMySpotRevealPoints(GuessMySpotText.number(points)))
                     .font(PaeoniaTypography.bodyEmphasis)

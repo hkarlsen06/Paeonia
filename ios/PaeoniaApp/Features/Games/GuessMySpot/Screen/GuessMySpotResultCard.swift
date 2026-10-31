@@ -19,7 +19,7 @@ struct GuessMySpotResultCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var canToggle: Bool { onToggle != nil }
-    private static let photoSide: CGFloat = 112
+    private static let photoSide: CGFloat = 128
 
     var body: some View {
         Group {
@@ -72,7 +72,7 @@ struct GuessMySpotResultCard: View {
                 scores
                     .frame(
                         maxWidth: .infinity,
-                        alignment: dynamicTypeSize.isAccessibilitySize ? .center : .leading
+                        alignment: dynamicTypeSize.isAccessibilitySize ? .center : .trailing
                     )
             }
         }
