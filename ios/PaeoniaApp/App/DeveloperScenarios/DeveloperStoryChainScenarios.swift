@@ -85,7 +85,8 @@
   }
 
   /// Robin writes line 8 in front of the reader: letters one at a time, a slip
-  /// that gets deleted, a phrase that gets dropped, a pause, then Send. Half a
+  /// that gets deleted, a phrase that gets dropped, an overlong draft that gets
+  /// shortened, then Send. Half a
   /// second later, while the line still writes itself in, the server confirms it
   /// and the turn is Alex's. It runs once. The reset button plays it again.
   @MainActor
@@ -138,12 +139,17 @@
       let slip = wordEnd(after: 0.3)
       let dropped = wordEnd(after: 0.7)
       let abandoned = " well, actually"
+      let overflow = """
+         Nobody knew who was speaking, so Ines checked behind the door, \
+        under the stairs, and even inside the enormous umbrella stand.
+        """
       return [
         .type(String(characters[..<slip])),
         .type("qw"), .pause(0.4), .delete(2),
         .type(String(characters[slip..<dropped])),
         .type(abandoned), .pause(0.9), .delete(abandoned.count), .pause(0.4),
         .type(String(characters[dropped...])),
+        .type(overflow), .pause(5), .delete(overflow.count),
       ]
     }
 

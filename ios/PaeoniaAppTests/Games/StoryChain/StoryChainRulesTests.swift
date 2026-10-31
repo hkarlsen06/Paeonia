@@ -70,12 +70,26 @@ struct StoryChainRulesTests {
         #expect(Rules.normalizedTitle(String(repeating: "\u{1F600}", count: 41)) == nil)
     }
 
-    @Test func aLiveDraftIsCutAtTheLineLimitAndOtherwiseLeftAsTyped() {
-        let long = String(repeating: "\u{1F600}", count: 300)
+    @Test func overflowStartsAtTheFirstCharacterPastTheNormalizedLimit() {
+        let atLimit = String(repeating: "🌙", count: 240)
+        #expect(Rules.overflowStart(in: atLimit) == nil)
+        let draft = atLimit + "extra"
+        #expect(Rules.overflowStart(in: draft).map { String(draft[$0...]) } == "extra")
+    }
 
-        #expect(Rules.truncated(long).unicodeScalars.count == 240)
-        #expect(Rules.truncated("short") == "short")
-        #expect(Rules.truncated("  keep   spaces \n") == "  keep   spaces \n")
+    @Test func overflowIgnoresPaddingAndCountsInnerWhitespaceOnlyOnce() {
+        let atLimit = " \t" + String(repeating: "a", count: 238) + " \n\t" + "b"
+        #expect(Rules.length(atLimit) == 240)
+        #expect(Rules.overflowStart(in: atLimit + " \n") == nil)
+        let draft = atLimit + " \nextra"
+        #expect(Rules.overflowStart(in: draft).map { String(draft[$0...]) } == " \nextra")
+    }
+
+    @Test func overflowKeepsEmojiAndCombiningAccentsWhole() {
+        for ending in ["👨‍👩‍👧", "e\u{301}"] {
+            let draft = String(repeating: "a", count: 239) + ending
+            #expect(Rules.overflowStart(in: draft).map { String(draft[$0...]) } == ending)
+        }
     }
 
     // MARK: Dare word

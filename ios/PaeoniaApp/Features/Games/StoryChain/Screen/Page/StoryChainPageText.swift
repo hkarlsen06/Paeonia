@@ -145,6 +145,12 @@ struct StoryChainPageText: View {
             ForEach(content.lines) { line in
                 Text(verbatim: Self.spokenText(for: line, youLabel: youLabel))
             }
+            if let ghost = content.ghost {
+                Text(verbatim: ghost.text)
+                    .accessibilityValue(Text(.storyChainWriteCountA11Y(
+                        StoryChainRules.length(ghost.text), StoryChainRules.maxLineLength
+                    )))
+            }
         }
     }
 }

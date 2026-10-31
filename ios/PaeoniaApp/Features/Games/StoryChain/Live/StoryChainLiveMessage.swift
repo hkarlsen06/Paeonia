@@ -12,13 +12,15 @@ import Foundation
 /// "line": "...", "sent": false}`. `line` is left out until the line is sent.
 nonisolated struct StoryChainLiveMessage: GameLiveMessage, Equatable {
     static let game = "story_chain"
+    /// Bounds the reader's page while allowing drafts past the send limit.
+    static let maxDraftLength = 4_096
 
     /// The story the writer is in. The reader ignores any other story.
     let story: UUID
     /// The number of the line being written. The reader ignores a number that is
     /// not the next one on the page.
     let number: Int
-    /// The draft as typed, at most 240 code points. A longer text is cut.
+    /// The draft as typed, including text past the line limit.
     let text: String
     /// The writer set the line to be the last one.
     let isLast: Bool
@@ -31,7 +33,8 @@ nonisolated struct StoryChainLiveMessage: GameLiveMessage, Equatable {
     init(story: UUID, number: Int, text: String, isLast: Bool, lineID: UUID? = nil, sent: Bool = false) {
         self.story = story
         self.number = number
-        self.text = StoryChainRules.truncated(text)
+        let limit = sent ? StoryChainRules.maxLineLength : Self.maxDraftLength
+        self.text = String(text.unicodeScalars.prefix(limit))
         self.isLast = isLast
         self.lineID = lineID
         self.sent = sent
@@ -46,8 +49,7 @@ nonisolated struct StoryChainLiveMessage: GameLiveMessage, Equatable {
         case sent
     }
 
-    /// A message from the partner's phone is cut to the same limit, so a long
-    /// text from a bad sender cannot fill the page.
+    /// Applies the same safety limit to incoming drafts.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(

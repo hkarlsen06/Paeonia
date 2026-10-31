@@ -28,7 +28,7 @@
     )
     static let storyChainWaitingLive = storyChainGame(
       "story-chain-waiting-live", "Story Chain · Robin is typing live",
-      "Robin types line 8 letter by letter with two corrections, sends it, and then your turn opens"
+      "Robin types past the limit, deletes the red overflow, sends line 8, and then your turn opens"
     )
     static let storyChainWaitingAway = storyChainGame(
       "story-chain-waiting-away", "Story Chain · waiting for Robin, who is away",

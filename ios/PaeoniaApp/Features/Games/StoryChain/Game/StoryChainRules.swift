@@ -49,10 +49,27 @@ nonisolated enum StoryChainRules {
         return normalized
     }
 
-    /// The first `limit` code points of the text, untouched otherwise. For the
-    /// live draft, which the reader shows as typed.
-    static func truncated(_ text: String, to limit: Int = maxLineLength) -> String {
-        String(text.unicodeScalars.prefix(limit))
+    /// Where a draft exceeds the normalized line limit, without changing its
+    /// spacing. A composed character that crosses the limit is marked whole.
+    static func overflowStart(in text: String) -> String.Index? {
+        var count = 0
+        var pendingSpace: String.Index?
+        for index in text.indices {
+            for scalar in text[index].unicodeScalars {
+                if isWhitespace(scalar) {
+                    if count > 0, pendingSpace == nil { pendingSpace = index }
+                    continue
+                }
+                if let space = pendingSpace {
+                    count += 1
+                    pendingSpace = nil
+                    if count > maxLineLength { return space }
+                }
+                count += 1
+                if count > maxLineLength { return index }
+            }
+        }
+        return nil
     }
 
     // MARK: Dare word

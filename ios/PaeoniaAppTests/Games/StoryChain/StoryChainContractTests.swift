@@ -208,16 +208,26 @@ struct StoryChainContractTests {
         #expect(inner["text"] as? String == "Once upon")
     }
 
-    @Test func aLiveDraftLongerThanTheLineLimitIsCutOnTheWayInAndOut() throws {
-        let long = String(repeating: "a", count: 300)
+    @Test func aLiveDraftKeepsTextPastTheLineLimitOnTheWayInAndOut() throws {
+        let long = "  " + String(repeating: "ø", count: 300) + "\t"
         let made = StoryChainLiveMessage(story: Fixture.storyID, number: 1, text: long, isLast: false)
+        let data = try JSONEncoder().encode(made)
+        let received = try JSONDecoder().decode(StoryChainLiveMessage.self, from: data)
+
+        #expect(made.text == long)
+        #expect(received.text == long)
+        #expect(received.lineID == nil)
+    }
+
+    @Test func incomingDraftsStillHaveASafetyLimitAndSentLinesKeepTheLineLimit() throws {
+        let long = String(repeating: "🌙", count: StoryChainLiveMessage.maxDraftLength + 1)
         let json = """
         {"story":"\(Fixture.storyID.uuidString)","number":1,"text":"\(long)","last":false,"sent":false}
         """
         let received = try JSONDecoder().decode(StoryChainLiveMessage.self, from: Data(json.utf8))
+        let sent = StoryChainLiveMessage(story: Fixture.storyID, number: 1, text: long, isLast: false, sent: true)
 
-        #expect(made.text.unicodeScalars.count == 240)
-        #expect(received.text.unicodeScalars.count == 240)
-        #expect(received.lineID == nil)
+        #expect(received.text == String(long.dropLast()))
+        #expect(sent.text == String(repeating: "🌙", count: 240))
     }
 }

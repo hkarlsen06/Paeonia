@@ -16,7 +16,7 @@ Decided on 2026-10-13.
 - **Openings.** A new story starts with a choice of three opening lines written by Paeonia in the couple's game language, or with the starter's own first line.
 - **The dare word.** After writing a line, the writer may give the partner a word that the partner's next line must use. The writer picks one of three words Paeonia suggests, or types their own. It is optional on every turn.
 - **The dare check.** A line uses the word when the line contains it, ignoring case. "hunden" and "gårdshund" both count for "hund". The phone and the server run the same check, and Send stays off until the word is used.
-- **Length.** A line is 2 to 240 characters. The composer asks for "one or two sentences" and counts characters, not sentences.
+- **Length.** A line is 2 to 240 characters. The composer asks for "one or two sentences" and counts characters, not sentences. The writer's counter turns red above the limit and Send stays off. The watcher sees the extra letters in red until the writer removes them.
 - **The end.** From the 8th line on, the writer can make their line the last one. Line 20 is always the last.
 - **The title.** The partner who did not write the last line names the story (1 to 40 characters), then starts the next one.
 - **Lines are final.** There is no undo after sending.
@@ -89,8 +89,8 @@ Live runs whenever both partners have the game screen open. Without the partner,
   - `choosing`: picking an opening, or naming a story.
   - `result`: looking at a finished story.
   - `present`: anywhere else in the game.
-- **Live letters.** While writing, the phone sends `StoryChainLiveMessage` on the game's `GameLiveChannel`: the story id, the line number, the draft as typed, and whether it is set to be the last line. It sends the whole draft on every change, at most every 50 ms, and again when the partner arrives. Nothing in it is saved.
-- **The reader's page.** The partner's draft shows at the end of the page in the partner's ink at reduced opacity, with a blinking caret. Deletions show too. A draft older than 10 seconds without an update fades out, so a writer who left without sending leaves no ghost behind.
+- **Live letters.** While writing, the phone sends `StoryChainLiveMessage` on the game's `GameLiveChannel`: the story id, the line number, the draft as typed, and whether it is set to be the last line. It sends the whole draft on every change, at most every 50 ms, and again when the partner arrives. Drafts have a separate safety cap of 4,096 code points. Sent lines keep the 240-code-point limit. Nothing in it is saved.
+- **The reader's page.** The partner's draft shows at the end of the page in the partner's ink at reduced opacity, with a blinking caret. Letters past the normalized line limit turn red. Leading and trailing whitespace do not count, and inner whitespace counts once, as it does for Send. A composed character that crosses the limit turns red whole. VoiceOver can read the draft and its character count. Deletions show too. A draft older than 10 seconds without an update fades out, so a writer who left without sending leaves no ghost behind.
 - **Sending live.** The writer's phone sends a final message with the line id and `sent: true` the moment Send is tapped. The reader's page plays the arrival right away, before Convex confirms. When the Convex update arrives with the same line id, nothing moves. The reader's composer opens only once Convex says it is their turn.
 - **The dare stays a surprise.** The live message never carries the dare word. The reader learns it when their turn opens.
 - **Invite.** When the partner isn't in the game, "Tell [Name] you want to play" shows, as in every live game.

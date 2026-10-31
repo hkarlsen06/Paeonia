@@ -20,6 +20,7 @@ struct StoryChainParagraphSegment: Equatable {
         case mine
         case partner
         case ghost
+        case ghostOverflow
         case caret
     }
 
@@ -49,7 +50,16 @@ enum StoryChainParagraph {
         }
         if let ghost = content.ghost {
             if !ghost.text.isEmpty {
-                result.append(StoryChainParagraphSegment(string: flattened(ghost.text), role: .ghost))
+                if let start = StoryChainRules.overflowStart(in: ghost.text) {
+                    result.append(StoryChainParagraphSegment(
+                        string: flattened(String(ghost.text[..<start])), role: .ghost
+                    ))
+                    result.append(StoryChainParagraphSegment(
+                        string: flattened(String(ghost.text[start...])), role: .ghostOverflow
+                    ))
+                } else {
+                    result.append(StoryChainParagraphSegment(string: flattened(ghost.text), role: .ghost))
+                }
             }
             result.append(StoryChainParagraphSegment(string: caret, role: .caret))
         }
@@ -138,6 +148,7 @@ extension StoryChainParagraphSegment {
         case .mine: StoryChainPageStyle.mineInk
         case .partner, .caret: StoryChainPageStyle.partnerInk
         case .ghost: StoryChainPageStyle.partnerInk.opacity(StoryChainPageStyle.ghostOpacity)
+        case .ghostOverflow: .paeoniaErrorText
         }
     }
 

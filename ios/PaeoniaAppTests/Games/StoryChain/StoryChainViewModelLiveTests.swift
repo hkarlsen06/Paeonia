@@ -20,6 +20,24 @@ struct StoryChainViewModelLiveTests {
 
     // MARK: The partner's draft
 
+    @Test func theWatcherSeesOverflowAndItsRemovalThroughTheLiveChannel() async {
+        let environment = Env.waitingOnPartner()
+        let viewModel = environment.viewModel()
+        await viewModel.reload()
+        let atLimit = String(repeating: "a", count: 240)
+
+        environment.connection.receive(draftMessage(text: atLimit + " too long"))
+
+        #expect(viewModel.page.ghost?.text == atLimit + " too long")
+        let overflow = StoryChainParagraph.segments(for: viewModel.page).filter { $0.role == .ghostOverflow }
+        #expect(overflow.map(\.string) == [" too long"])
+
+        environment.connection.receive(draftMessage(text: atLimit))
+
+        #expect(viewModel.page.ghost?.text == atLimit)
+        #expect(!StoryChainParagraph.segments(for: viewModel.page).contains { $0.role == .ghostOverflow })
+    }
+
     @Test func aDraftAboutAnotherStoryOrLineIsIgnored() async {
         let environment = Env.waitingOnPartner()
         let viewModel = environment.viewModel()
