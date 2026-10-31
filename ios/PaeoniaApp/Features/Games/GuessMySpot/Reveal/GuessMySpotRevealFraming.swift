@@ -13,7 +13,7 @@ struct GuessMySpotRevealFraming {
     let drawnHeight: CGFloat
     /// The safe area over the map, under the top bar, which MapKit's own view reaches up into.
     let topInset: CGFloat
-    let cardHeight: CGFloat
+    let controlsHeight: CGFloat
     /// A wide screen frames the map to the right of the card's column.
     let isWide: Bool
 
@@ -24,17 +24,17 @@ struct GuessMySpotRevealFraming {
     }
 
     /// The part of the map a camera move frames: under the top room and a pin's head,
-    /// and clear of the card. The card's room is kept from the start, so nothing
-    /// slides when it rises.
+    /// and clear of the controls when the camera lands. The overview uses the map
+    /// behind them while they are hidden.
     func framed(
         _ position: MapCameraPosition,
-        keepsCardRoom: Bool = true,
+        keepsControlsRoom: Bool = true,
         maxScale: Double = .infinity
     ) -> MapCameraPosition {
         let insets = EdgeInsets(
             top: GuessMySpotRevealView.topRoom + GuessMySpotPin.headSize,
             leading: isWide ? GuessMySpotRevealView.cardColumn : 0,
-            bottom: isWide || !keepsCardRoom ? PaeoniaSpacing.space8 : cardHeight + PaeoniaSpacing.space8,
+            bottom: isWide || !keepsControlsRoom ? PaeoniaSpacing.space8 : controlsHeight + PaeoniaSpacing.space8,
             trailing: 0
         )
         return GuessMySpotCamera.filling(position, size: mapSize, insets: insets, maxScale: maxScale)
@@ -49,16 +49,12 @@ struct GuessMySpotRevealFraming {
         case .landed: GuessMySpotCamera.landing(on: ends.to, guess: ends.from)
         }
         guard stage == .overview else { return framed(target) }
+        let overview = framed(target, keepsControlsRoom: false)
         // A far guess asks for more of the world than MapKit's flat map shows. Fly to
         // the view it really shows when that fits both spots, and to the globe when not.
-        guard let asked = framed(target).rect else { return framed(target) }
+        guard let asked = overview.rect else { return overview }
         let widest = shown(asked)
         guard widest.width < asked.width * 0.99 else { return .rect(widest) }
-        // The card rises only after the flight down, so a guess too far to fit over
-        // its room may use it, and both pins show.
-        if !isWide, let open = framed(target, keepsCardRoom: false).rect, shown(open).width >= open.width * 0.99 {
-            return .rect(shown(open))
-        }
         // Too far apart for any flat view: the globe. It needs every point it can get,
         // so a pin may stand anywhere it shows whole. The distance capsule comes later.
         return globe(
@@ -77,7 +73,7 @@ struct GuessMySpotRevealFraming {
         let insets = EdgeInsets(
             top: GuessMySpotRevealView.buttonsRoom + GuessMySpotPin.height,
             leading: isWide ? GuessMySpotRevealView.cardColumn : PaeoniaSpacing.space16,
-            bottom: isWide ? PaeoniaSpacing.space8 : cardHeight + PaeoniaSpacing.space8,
+            bottom: isWide ? PaeoniaSpacing.space8 : controlsHeight + PaeoniaSpacing.space8,
             trailing: PaeoniaSpacing.space16
         )
         guard let asked = GuessMySpotCamera.filling(both, size: mapSize, insets: insets).rect else { return nil }

@@ -12369,6 +12369,24 @@
         }
       }
     },
+    "games.conversation.chat" : {
+      "comment" : "Short button that opens the conversation about a finished game, beside its continue button.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat"
+          }
+        }
+      }
+    },
     "games.conversation.distance" : {
       "comment" : "A photo guessing result. Arguments are the guesser name and the distance from the spot.",
       "extractionState" : "manual",
@@ -17626,19 +17644,19 @@
       }
     },
     "guessMySpot.handoff.send" : {
-      "comment" : "Reveal button for the guesser, who sends the next photo.",
+      "comment" : "Short reveal button for the guesser, who sends the next photo.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your turn to send a photo"
+            "value" : "Your turn"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Din tur til å sende et bilde"
+            "value" : "Din tur"
           }
         }
       }

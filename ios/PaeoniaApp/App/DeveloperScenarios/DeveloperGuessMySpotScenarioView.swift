@@ -151,6 +151,7 @@
     let scenario: DeveloperScenario
     @State private var hub: GuessMySpotHubModel
     @State private var isReady = false
+    private let chatContext: ThreadChatContext
 
     init(scenario: DeveloperScenario) {
       self.scenario = scenario
@@ -159,6 +160,19 @@
       let hub = GuessMySpotHubModel(dependencies: dependencies, game: game)
       hub.configure(participants: DeveloperGamesFixture.participants)
       _hub = State(initialValue: hub)
+      let result = DeveloperGuessMySpotScenarioFactory.revealed(for: scenario)?.currentRound
+        .map { GameConversationResult.guessMySpot($0) }
+      let conversation = DeveloperGameConversationFlow(pending: dependencies.pendingOperationStore, result: result)
+      let participants = DeveloperGamesFixture.participants
+      chatContext = ThreadChatContext(
+        coupleID: result == nil ? nil : participants.coupleID,
+        participants: DailyChallengeParticipants(
+          currentUserID: participants.currentUserID, currentDisplayName: participants.currentName,
+          partnerUserID: DeveloperGamesFixture.partner, partnerDisplayName: participants.partnerName
+        ),
+        service: conversation.chat,
+        operationProvider: dependencies.operationProvider
+      )
     }
 
     var body: some View {
@@ -174,6 +188,7 @@
           Color.paeoniaBackgroundPrimary
         }
       }
+      .environment(\.threadChatContext, chatContext)
       .task {
         await seed()
         isReady = true

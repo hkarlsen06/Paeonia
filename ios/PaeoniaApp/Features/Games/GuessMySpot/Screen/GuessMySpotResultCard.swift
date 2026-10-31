@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The reveal's card: the photo back with where and when it was taken, the
-/// verdict, how far off the guess was, and the shared total counting up.
+/// verdict and the scores counting up. The map shows the distance above it.
 /// Collapsed it shows only the total, so the map has nearly the whole screen.
 struct GuessMySpotResultCard: View {
     let round: RemoteGuessMySpotRound?
@@ -16,39 +16,30 @@ struct GuessMySpotResultCard: View {
     var onToggle: (() -> Void)?
 
     @State private var viewer: PaeoniaImageViewerSelection?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var canToggle: Bool { onToggle != nil }
-    private static let photoHeight: CGFloat = 180
+    private static let photoSide: CGFloat = 112
 
     var body: some View {
-        // Collapsed, the card is a button. It has the trait then.
-        // swiftlint:disable:next accessibility_trait_for_button
-        VStack(spacing: PaeoniaSpacing.space12) {
-            if isCollapsed {
-                Image(systemName: "chevron.compact.up")
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .accessibilityHidden(true)
-                    .transition(.opacity)
+        Group {
+            if isCollapsed, let onToggle {
+                Button(action: onToggle) {
+                    VStack(spacing: PaeoniaSpacing.space12) {
+                        Image(systemName: "chevron.compact.up")
+                            .font(PaeoniaTypography.bodyEmphasis)
+                            .foregroundStyle(.paeoniaTextSecondary)
+                            .accessibilityHidden(true)
+                        scores
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text(.guessMySpotRevealCardExpand))
             } else {
-                GuessMySpotPhotoCaption(
-                    image: image,
-                    placeName: round?.placeName,
-                    takenOn: round?.takenOn,
-                    height: Self.photoHeight
-                )
-                .transition(.opacity)
-                verdict
-                    .transition(.opacity)
+                expandedContent
             }
-            GuessMySpotScoreLine(
-                me: viewModel.me,
-                partner: viewModel.partner,
-                score: viewModel.score,
-                guesserIsMe: round?.guesserUserID == viewModel.currentUserID,
-                points: plan.points,
-                countedPoints: countedPoints
-            )
         }
         .padding(PaeoniaSpacing.space12)
         .padding(.bottom, PaeoniaSpacing.space4)
@@ -58,67 +49,94 @@ struct GuessMySpotResultCard: View {
             in: RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous)
         )
         .contentShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius28, style: .continuous))
-        .onTapGesture { onToggle?() }
-        // Expanded, it has nothing to tap but its button, so a pan or pinch on it moves
-        // the map under it. Collapsed, a tap anywhere on it expands it.
-        .allowsHitTesting(isCollapsed && canToggle)
-        .overlay(alignment: .top) {
-            if !isCollapsed, canToggle, let image {
-                photoButton(image)
-            }
-        }
         .overlay(alignment: .topTrailing) {
             if !isCollapsed, canToggle {
                 collapseButton
             }
         }
         .paeoniaImageViewer(selection: $viewer)
-        .accessibilityElement(children: isCollapsed ? .combine : .contain)
-        .accessibilityAddTraits(isCollapsed && canToggle ? .isButton : [])
-        .accessibilityHint(isCollapsed && canToggle ? Text(.guessMySpotRevealCardExpand) : Text(verbatim: ""))
-        .accessibilityAction {
-            if isCollapsed { onToggle?() }
-        }
+        .accessibilityElement(children: .contain)
         .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
         .accessibilityIdentifier("guessMySpot.reveal.card")
     }
 
-    private var verdict: some View {
-        VStack(spacing: PaeoniaSpacing.space4) {
-            Text(Self.title(for: plan.verdict, isSender: isSender, partnerName: viewModel.partnerName))
-                .font(PaeoniaTypography.largeTitle)
-                .foregroundStyle(.paeoniaTextPrimary)
-                .accessibilityAddTraits(.isHeader)
-            Text(line)
-                .font(PaeoniaTypography.body)
-                .foregroundStyle(.paeoniaTextSecondary)
+    private var expandedContent: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            verdict
+                .padding(.horizontal, PaeoniaSpacing.space24)
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space12))
+                : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space16))
+            layout {
+                photo
+                scores
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: dynamicTypeSize.isAccessibilitySize ? .center : .leading
+                    )
+            }
         }
-        .multilineTextAlignment(.center)
-        .accessibilityElement(children: .combine)
-        .accessibilityFocused(isTitleFocused)
-        .accessibilityIdentifier("guessMySpot.reveal.title")
     }
 
-    /// Over the photo, so a tap opens it full screen to look closer or save it. The
-    /// rest of the expanded card lets touches through to the map.
-    private func photoButton(_ image: UIImage) -> some View {
+    private var verdict: some View {
+        Text(Self.title(for: plan.verdict, isSender: isSender, partnerName: viewModel.partnerName))
+            .font(PaeoniaTypography.largeTitle)
+            .foregroundStyle(.paeoniaTextPrimary)
+            .accessibilityAddTraits(.isHeader)
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
+            .accessibilityFocused(isTitleFocused)
+            .accessibilityIdentifier("guessMySpot.reveal.title")
+    }
+
+    private var scores: some View {
+        GuessMySpotScoreLine(
+            me: viewModel.me,
+            partner: viewModel.partner,
+            score: viewModel.score,
+            guesserIsMe: round?.guesserUserID == viewModel.currentUserID,
+            points: plan.points,
+            countedPoints: countedPoints
+        )
+    }
+
+    private var photo: some View {
         Button {
-            viewer = PaeoniaImageViewerSelection(image: image)
+            if let image { viewer = PaeoniaImageViewerSelection(image: image) }
         } label: {
-            Color.clear
-                .frame(height: Self.photoHeight)
-                .frame(maxWidth: .infinity)
-                .contentShape(.rect)
+            VStack(spacing: PaeoniaSpacing.space4) {
+                GuessMySpotPhotoCaption(
+                    image: image,
+                    placeName: dynamicTypeSize.isAccessibilitySize ? nil : round?.placeName,
+                    takenOn: dynamicTypeSize.isAccessibilitySize ? nil : round?.takenOn,
+                    height: Self.photoSide
+                )
+                .frame(width: Self.photoSide)
+                if dynamicTypeSize.isAccessibilitySize {
+                    if let place = round?.placeName {
+                        Text(verbatim: place)
+                            .font(PaeoniaTypography.bodyEmphasis)
+                    }
+                    if let date = GuessMySpotText.takenOn(round?.takenOn) {
+                        Text(verbatim: date)
+                            .font(PaeoniaTypography.caption)
+                    }
+                }
+            }
+            .foregroundStyle(.paeoniaTextPrimary)
+            .multilineTextAlignment(.center)
         }
         .buttonStyle(.plain)
-        .padding(PaeoniaSpacing.space12)
+        .disabled(!canToggle || image == nil)
         .accessibilityLabel(Text(.guessMySpotPhotoA11Y))
+        .accessibilityValue(Text(verbatim: [round?.placeName, GuessMySpotText.takenOn(round?.takenOn)]
+            .compactMap { $0 }.joined(separator: ", ")))
         .accessibilityAddTraits(.isImage)
         .accessibilityIdentifier("guessMySpot.reveal.card.photo")
         .transition(.opacity)
     }
 
-    /// On the photo's top corner.
+    /// Keeps the map available after the compact card has appeared.
     private var collapseButton: some View {
         Button {
             PaeoniaHaptics.selection()
@@ -133,7 +151,7 @@ struct GuessMySpotResultCard: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(PaeoniaSpacing.space12)
+        .padding(PaeoniaSpacing.space4)
         .accessibilityLabel(Text(.guessMySpotRevealCardCollapse))
         .accessibilityIdentifier("guessMySpot.reveal.card.collapse")
         .transition(.opacity)
@@ -148,16 +166,6 @@ struct GuessMySpotResultCard: View {
         case .close: .guessMySpotRevealCloseTitle
         case .far: isSender ? .guessMySpotRevealFarTitleSender(partnerName) : .guessMySpotRevealFarTitle
         }
-    }
-
-    private var line: LocalizedStringResource {
-        guard plan.verdict == .spotOn else {
-            let distance = GuessMySpotText.distance(plan.distanceMeters)
-            return isSender
-                ? .guessMySpotRevealOffSender(viewModel.partnerName, distance)
-                : .guessMySpotRevealOff(distance)
-        }
-        return isSender ? .guessMySpotRevealSpotOnSender(viewModel.partnerName) : .guessMySpotRevealSpotOnGuesser
     }
 }
 
@@ -182,7 +190,8 @@ struct GuessMySpotDistanceCapsule: View {
         .padding(.vertical, PaeoniaSpacing.space8)
         .glassEffect(.regular.tint(Color.paeoniaBackgroundSecondary.opacity(0.7)), in: Capsule())
         .scaleEffect(scale)
-        .accessibilityHidden(true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: GuessMySpotText.distance(final)))
         .accessibilityIdentifier("guessMySpot.reveal.distance")
     }
 }

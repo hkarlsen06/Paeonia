@@ -13,8 +13,6 @@ struct GuessMySpotScoreLine: View {
     /// How many of this round's points have counted up so far.
     let countedPoints: Int
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     private var shown: GuessMySpotScore {
         score.counting(points: points, counted: countedPoints, guesserIsMe: guesserIsMe)
     }
@@ -36,10 +34,7 @@ struct GuessMySpotScoreLine: View {
                     }
                 }
             case let .against(mine, theirs):
-                let layout = dynamicTypeSize.isAccessibilitySize
-                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: PaeoniaSpacing.space12))
-                    : AnyLayout(HStackLayout(alignment: .bottom, spacing: PaeoniaSpacing.space24))
-                layout {
+                VStack(alignment: .leading, spacing: PaeoniaSpacing.space8) {
                     column(me, tint: .paeoniaPartnerOne, total: mine, grows: guesserIsMe)
                     column(partner, tint: .paeoniaPartnerTwo, total: theirs, grows: !guesserIsMe)
                 }

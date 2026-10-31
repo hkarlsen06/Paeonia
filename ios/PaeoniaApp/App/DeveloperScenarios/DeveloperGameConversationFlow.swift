@@ -8,8 +8,8 @@
     let sync: PaeoniaSyncService
     let games: GamesViewModel
 
-    init(pending: any PendingSyncOperationPersisting) {
-      let gateway = DeveloperGameConversationGateway()
+    init(pending: any PendingSyncOperationPersisting, result: GameConversationResult? = nil) {
+      let gateway = DeveloperGameConversationGateway(result: result)
       let cache = InMemoryThreadChatCache()
       chat = ThreadChatService(gateway: gateway, cache: cache, pendingOperationStore: pending)
       sync = PaeoniaSyncService(
@@ -31,11 +31,17 @@
     private var summaries: [ThreadChatSummary] = []
     private var messages: [ThreadChatMessage] = []
     private let threadID = UUID()
+    private let result: GameConversationResult?
+
+    init(result: GameConversationResult?) {
+      self.result = result
+    }
 
     func loadThreadSummaries() -> [ThreadChatSummary] { summaries }
 
     func loadGameResult(coupleID _: UUID, source _: GameConversationSource) async throws -> GameConversationResult? {
-      await MainActor.run {
+      if let result { return result }
+      return await MainActor.run {
         guard let game = DeveloperMindMeldScenarioFactory.state(for: .mindMeldOver)?.current else { return nil }
         return .mindMeld(
           RemoteMindMeldHistoryGame(

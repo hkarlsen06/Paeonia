@@ -5,13 +5,15 @@ struct GameConversationButton: View {
     let source: GameConversationSource
     var result: GameConversationResult?
     var compact = false
+    var title: LocalizedStringResource?
 
     @Environment(\.threadChatContext) private var context
     @State private var chat: ThreadChatViewModel?
     @State private var isOpening = false
 
-    private var title: LocalizedStringResource {
-        context.summaries?.summary(for: .game(source)) == nil ? .gamesConversationStart : .gamesConversationOpen
+    private var resolvedTitle: LocalizedStringResource {
+        if let title { return title }
+        return context.summaries?.summary(for: .game(source)) == nil ? .gamesConversationStart : .gamesConversationOpen
     }
 
     var body: some View {
@@ -34,14 +36,14 @@ struct GameConversationButton: View {
             }
         } label: {
             Label {
-                Text(title)
+                Text(resolvedTitle)
             } icon: {
                 Image(systemName: "bubble.left.and.bubble.right")
             }
             .labelStyle(GameConversationLabelStyle(compact: compact))
         }
         .disabled(isOpening)
-        .accessibilityLabel(Text(title))
+        .accessibilityLabel(Text(resolvedTitle))
         .accessibilityIdentifier("game.conversation.open")
         .navigationDestination(
             isPresented: Binding(

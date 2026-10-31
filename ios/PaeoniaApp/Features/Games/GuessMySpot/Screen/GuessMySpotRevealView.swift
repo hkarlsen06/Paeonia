@@ -14,7 +14,7 @@ struct GuessMySpotRevealView: View {
 
     @State private var timeline = GuessMySpotRevealTimeline()
     @State private var camera: MapCameraPosition = GuessMySpotCamera.world
-    @State private var cardHeight: CGFloat = 0
+    @State private var controlsHeight: CGFloat = 0
     /// The whole map on the screen, under the top room and the card too.
     @State private var mapFrame: CGRect = .zero
     /// The safe area under the map, which the map draws on through. See `GuessMySpotMap.drawnFrame`.
@@ -39,6 +39,7 @@ struct GuessMySpotRevealView: View {
     @State private var isCardCollapsed = false
     @AccessibilityFocusState private var isTitleFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var round: RemoteGuessMySpotRound? { viewModel.round }
 
@@ -73,7 +74,7 @@ struct GuessMySpotRevealView: View {
             mapSize: mapSize,
             drawnHeight: drawnHeight,
             topInset: topInset,
-            cardHeight: cardHeight,
+            controlsHeight: controlsHeight,
             isWide: isWide
         )
     }
@@ -96,7 +97,18 @@ struct GuessMySpotRevealView: View {
             distanceCapsule
         }
         .overlay(alignment: .bottom) {
-            card
+            VStack(spacing: PaeoniaSpacing.space8) {
+                card
+                actions
+            }
+            .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+            .padding(.vertical, PaeoniaSpacing.space8)
+            .frame(maxWidth: Self.cardColumn)
+            .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
+            .onGeometryChange(for: CGFloat.self) { [isHeld] in isHeld ? 0 : $0.size.height } action: {
+                controlsHeight = $0
+                preloadIfReady()
+            }
         }
         .overlay {
             // Over the whole screen, so the petals are not clipped to the card.
@@ -110,14 +122,6 @@ struct GuessMySpotRevealView: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
             }
-        }
-        .paeoniaBottomBar(spacing: 0) {
-            actions
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.vertical, PaeoniaSpacing.space8)
-                // Under the card, in its column on a wide screen.
-                .frame(maxWidth: Self.cardColumn)
-                .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
         }
         .simultaneousGesture(TapGesture().onEnded {
             if timeline.canSkip { timeline.skip() }
@@ -140,7 +144,7 @@ struct GuessMySpotRevealView: View {
         // The card collapsed or expanded: the pin or pins frame again in the room it leaves.
         // Both pins that don't fit above the expanded card stay where they are, and the
         // button turns on again, so a tap collapses the card again.
-        .onChange(of: cardHeight) {
+        .onChange(of: controlsHeight) {
             guard timeline.isSettled, let focus else { return }
             if focus == .both, !isCardCollapsed, framing.settledOverview()?.fits == false {
                 self.focus = nil
@@ -231,7 +235,6 @@ struct GuessMySpotRevealView: View {
 
     // MARK: Card
 
-    @ViewBuilder
     private var card: some View {
         Group {
             if isHeld {
@@ -257,14 +260,6 @@ struct GuessMySpotRevealView: View {
                     .accessibilityHidden(!timeline.cardShown)
             }
         }
-        .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-        .padding(.bottom, PaeoniaSpacing.space8)
-        .frame(maxWidth: Self.cardColumn)
-        .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
-            cardHeight = $0
-            preloadIfReady()
-        }
     }
 
     /// Collapses or expands the card, once the reveal settled.
@@ -284,7 +279,16 @@ struct GuessMySpotRevealView: View {
     @ViewBuilder
     private var actions: some View {
         let isShown = (isHeld && viewModel.isHeldOnPhone) || timeline.actionsShown
-        VStack(spacing: PaeoniaSpacing.space12) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space12))
+            : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space12))
+        layout {
+            if let round, !isHeld {
+                GameConversationButton(
+                    source: .guessMySpot(round.id),
+                    result: .guessMySpot(round), title: .gamesConversationChat
+                )
+            }
             Button {
                 PaeoniaHaptics.gameContinued()
                 viewModel.continueFromReveal()
@@ -292,9 +296,6 @@ struct GuessMySpotRevealView: View {
                 Text(isSender ? .guessMySpotHandoffContinue : .guessMySpotHandoffSend)
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
-            if let round, !isHeld {
-                GameConversationButton(source: .guessMySpot(round.id), result: .guessMySpot(round))
-            }
         }
         .opacity(isShown ? 1 : 0)
         .offset(y: isShown || reduceMotion ? 0 : 12)
@@ -319,6 +320,7 @@ extension GuessMySpotRevealView {
             // Centered over the map the camera frames.
             .frame(maxWidth: .infinity)
             .padding(.leading, isWide ? Self.cardColumn : 0)
+            .accessibilityHidden(!timeline.isSettled)
             .transition(.opacity.combined(with: .scale(scale: 0.9)))
         }
         if timeline.isSettled {
@@ -414,7 +416,7 @@ extension GuessMySpotRevealView {
     /// this waits for the map's size and the card's height.
     private func preloadIfReady() {
         guard !hasPreloaded, !reduceMotion, timeline.hasBegun, !timeline.isSettled, timeline.camera == .start,
-              hasPlacedCamera, mapSize != .zero, bottomInset != nil, isWide || cardHeight > 0,
+              hasPlacedCamera, mapSize != .zero, bottomInset != nil, controlsHeight > 0,
               let start = camera.rect,
               let overview = framing.target(for: .overview),
               let landing = framing.target(for: .landed)
@@ -447,7 +449,7 @@ extension GuessMySpotRevealView {
                 y: (Self.topRoom + framed / 2) / mapSize.height
             )
         }
-        return UnitPoint(x: 0.5, y: (Self.topRoom + max(0, framed - cardHeight) / 2) / mapSize.height)
+        return UnitPoint(x: 0.5, y: (Self.topRoom + max(0, framed - controlsHeight) / 2) / mapSize.height)
     }
 
     private func announce() {
