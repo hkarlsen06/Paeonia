@@ -43,21 +43,9 @@ struct DailyAnswerTextField: View {
         .font(PaeoniaTypography.body)
         .foregroundStyle(colors.foreground)
         .tint(colors.accent)
-        .padding(isEmbedded ? 0 : PaeoniaSpacing.space12)
         .focused(isFocused)
         .accessibilityIdentifier("daily.answer.text")
-        .background(isEmbedded ? Color.clear : Color.paeoniaBackgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12))
-        .overlay {
-            if !isEmbedded {
-                RoundedRectangle(cornerRadius: PaeoniaRadius.radius12)
-                    .stroke(
-                        isFocused.wrappedValue ? colors.accent : Color.paeoniaSurfacePressed,
-                        lineWidth: isFocused.wrappedValue
-                            ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
-                    )
-            }
-        }
+        .paeoniaTextFieldChrome(isFocused: isFocused.wrappedValue, accent: colors.accent, isEmbedded: isEmbedded)
     }
 
     @ViewBuilder

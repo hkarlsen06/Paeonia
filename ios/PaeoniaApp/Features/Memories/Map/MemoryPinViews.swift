@@ -18,7 +18,7 @@ enum MemoryPinStyle {
     static let selectedRing = UIColor.paeoniaAccentPrimary
     static let emptyTile = UIColor(Color.paeoniaSurfacePrimary)
     static let badge = UIColor.paeoniaAccentSecondary
-    static let badgeText = UIColor(Color.paeoniaTextPrimary)
+    static let badgeText = UIColor(Color.paeoniaTextInverse)
     static let badgeRing = UIColor(Color.paeoniaBackgroundSecondary)
 }
 

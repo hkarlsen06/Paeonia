@@ -82,6 +82,7 @@ struct PaeoniaImageViewerOverlay: View {
     private static let flickDistance: CGFloat = 30
     private static let flickPredictedDistance: CGFloat = 350
     private static let fadeDistance: CGFloat = 400
+    private static let controlBackground = Color.black.opacity(0.75)
 
     init(
         items: [PaeoniaImageViewerItem],
@@ -181,7 +182,7 @@ struct PaeoniaImageViewerOverlay: View {
                     .font(.system(size: 30))
                     .foregroundStyle(Color.white.opacity(0.88))
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(Color.black.opacity(0.32)))
+                    .background(Circle().fill(Self.controlBackground))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text(.commonClose))
@@ -209,7 +210,7 @@ struct PaeoniaImageViewerOverlay: View {
                 }
             }
             .frame(width: 44, height: 44)
-            .background(Circle().fill(Color.black.opacity(0.32)))
+            .background(Circle().fill(Self.controlBackground))
         }
         .buttonStyle(.plain)
         .disabled(isSaving || isSaved)
@@ -245,7 +246,7 @@ struct PaeoniaImageViewerOverlay: View {
                 .foregroundStyle(Color.white.opacity(0.88))
                 .padding(.horizontal, PaeoniaSpacing.space12)
                 .padding(.vertical, PaeoniaSpacing.space8)
-                .background(Capsule(style: .continuous).fill(Color.black.opacity(0.35)))
+                .background(Capsule(style: .continuous).fill(Self.controlBackground))
                 .allowsHitTesting(false)
         }
     }

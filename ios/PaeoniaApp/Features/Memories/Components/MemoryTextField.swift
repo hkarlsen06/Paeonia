@@ -21,7 +21,7 @@ struct MemoryTextField<Field: Hashable>: View {
     var body: some View {
         TextField(
             text: $text,
-            prompt: Text(placeholder),
+            prompt: Text(placeholder).foregroundStyle(.paeoniaTextSecondary),
             axis: axis
         ) {
             Text(placeholder)
@@ -29,17 +29,8 @@ struct MemoryTextField<Field: Hashable>: View {
         .lineLimit(lineLimit)
         .font(PaeoniaTypography.body)
         .foregroundStyle(.paeoniaTextPrimary)
-        .padding(PaeoniaSpacing.space12)
         .focused(isFocused, equals: field)
-        .background(.paeoniaBackgroundSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: PaeoniaRadius.radius12, style: .continuous)
-                .stroke(
-                    isActive ? Color.paeoniaAccentPrimary : Color.paeoniaSurfacePressed,
-                    lineWidth: isActive ? PaeoniaRadius.strokeEmphasis : PaeoniaRadius.strokeDefault
-                )
-        }
+        .paeoniaTextFieldChrome(isFocused: isActive)
         .animation(PaeoniaMotion.stateChange, value: isActive)
         .onChange(of: text) { _, newText in
             guard let characterLimit, MemoryDataService.isOverLimit(newText, characterLimit) else { return }

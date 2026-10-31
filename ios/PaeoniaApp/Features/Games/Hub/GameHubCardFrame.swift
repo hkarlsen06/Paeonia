@@ -41,6 +41,7 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
     private var isLoading: Bool { loadingLabel != nil }
 
     @Environment(\.gameHubCardIsCompact) private var isCompact
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var shape: RoundedRectangle {
         RoundedRectangle(
@@ -91,8 +92,7 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
         .modifier(framing)
     }
 
-    /// The grid's small card: the scene, then the name on one line and room for three
-    /// lines of status, so every tile has the same height.
+    /// The grid's small card keeps a consistent height unless accessibility text needs more room.
     private var tile: some View {
         Button(action: open) {
             VStack(spacing: 0) {
@@ -102,14 +102,11 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
                     Text(name)
                         .font(PaeoniaTypography.sectionTitle)
                         .foregroundStyle(.paeoniaTextPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                        .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.75)
+                        .fixedSize(horizontal: false, vertical: true)
                         .contentTransition(.opacity)
-                    status
-                        .font(isYourTurn ? PaeoniaTypography.caption.weight(.semibold) : PaeoniaTypography.caption)
-                        .foregroundStyle(isYourTurn ? .paeoniaTextPrimary : .paeoniaTextSecondary)
-                        .lineLimit(3, reservesSpace: true)
-                        .contentTransition(.opacity)
+                    tileStatus
                 }
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
@@ -126,6 +123,19 @@ struct GameHubCardFrame<Artwork: View, Badge: View, Extras: View>: View {
         .accessibilityLabel(loadingLabel.map { Text($0) } ?? Text(name))
         .accessibilityValue(isLoading ? Text(verbatim: "") : status)
         .accessibilityIdentifier(actionIdentifier)
+    }
+
+    private var tileStatus: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                status.fixedSize(horizontal: false, vertical: true)
+            } else {
+                status.lineLimit(3, reservesSpace: true)
+            }
+        }
+        .font(isYourTurn ? PaeoniaTypography.caption.weight(.semibold) : PaeoniaTypography.caption)
+        .foregroundStyle(isYourTurn ? .paeoniaTextPrimary : .paeoniaTextSecondary)
+        .contentTransition(.opacity)
     }
 
     /// The picture behind the whole card, text included, the rounded shape, and the glow
