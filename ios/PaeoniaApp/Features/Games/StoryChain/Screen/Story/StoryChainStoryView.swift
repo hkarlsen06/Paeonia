@@ -44,6 +44,13 @@ struct StoryChainStoryView: View {
         .defaultScrollAnchor(keepsBottom ? .bottom : .top, for: .sizeChanges)
         .scrollBounceBehavior(.basedOnSize)
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            GameLiveReactionButtons(isAvailable: viewModel.canSendLiveReaction, identifierPrefix: "storyChain") {
+                viewModel.sendLiveReaction($0)
+            }
+            .padding(.vertical, viewModel.canSendLiveReaction ? PaeoniaSpacing.space8 : 0)
+            .background(.paeoniaBackgroundSecondary)
+        }
         // The page moves with the bottom when it changes, instead of jumping to keep
         // its bottom in place before the new bottom has faded in.
         .animation(reduceMotion ? nil : PaeoniaMotion.meaningfulMoment, value: viewModel.bottomPhase)

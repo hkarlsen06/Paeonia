@@ -5,7 +5,7 @@ nonisolated enum DrawAndGuessLiveMessage: GameLiveMessage, Equatable {
     static let game = "draw_and_guess"
 
     case guessScreen(DrawAndGuessGuessScreenMessage)
-    case reaction(round: UUID, reaction: DrawAndGuessLiveReaction)
+    case reaction(round: UUID, reaction: GameLiveReaction)
 }
 
 nonisolated struct DrawAndGuessGuessScreenMessage: Codable, Equatable, Sendable {

@@ -12,7 +12,8 @@
 
     override func send(_ message: WidgetLiveMessage) {
       guard message.type == .hello, let partnerRole else { return }
-      if message.needsCanvas == true, let partnerCanvas {
+      if message.needsCanvas == true {
+        guard let partnerCanvas else { return }
         onMessage?(WidgetLiveMessage(
           type: .ops,
           side: Double(GameCanvas.canonicalSide),

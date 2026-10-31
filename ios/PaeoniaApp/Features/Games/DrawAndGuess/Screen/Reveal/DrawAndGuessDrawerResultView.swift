@@ -48,7 +48,9 @@ struct DrawAndGuessDrawerResultView: View {
         ) {
             if !isRevealed {
                 statusRow
-                DrawAndGuessLiveReactionButtons(viewModel: viewModel)
+                GameLiveReactionButtons(isAvailable: viewModel.canSendLiveReaction, identifierPrefix: "draw") {
+                    viewModel.sendLiveReaction($0)
+                }
             }
         } square: { side in
             // The drawing keeps the size it had on the drawing screen until the

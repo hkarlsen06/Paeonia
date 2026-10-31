@@ -19,12 +19,9 @@ struct DrawAndGuessScreen: View {
         .animation(reduceMotion ? PaeoniaMotion.buttonPress : PaeoniaMotion.meaningfulMoment, value: phaseIdentity)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
-        .overlayPreferenceValue(DrawAndGuessReactionAnchors.self) { anchors in
-            DrawAndGuessFloatingReactions(flights: viewModel.liveReactions, anchors: anchors)
-        }
         .paeoniaFittingNavigationTitle(Text(.gamesDrawAndGuessName))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
-        .toolbarBackground(viewModel.liveReactions.isEmpty ? .automatic : .hidden, for: .navigationBar)
+        .gameLiveReactions(viewModel.liveReactions)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { menu }
         .preferredColorScheme(.dark)

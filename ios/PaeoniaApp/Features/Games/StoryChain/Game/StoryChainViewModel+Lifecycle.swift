@@ -76,6 +76,7 @@ extension StoryChainViewModel {
     }
 
     func resetForNewIdentity() {
+        liveReactions.clear()
         attentionCue.reset()
         state = nil
         settings = nil

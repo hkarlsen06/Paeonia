@@ -6,6 +6,7 @@
   nonisolated extension DeveloperScenario {
     static let storyChain: [DeveloperScenario] = [
       storyChainChoose, storyChainChooseOffline, storyChainWriting, storyChainWritingLast, storyChainWaitingLive,
+      storyChainReadingReactions,
       storyChainWaitingAway, storyChainSavedOffline, storyChainNaming, storyChainWaitingName, storyChainFinished,
       storyChainWaitingOpening, storyChainHistory, storyChainHistoryEmpty,
     ]
@@ -29,6 +30,10 @@
     static let storyChainWaitingLive = storyChainGame(
       "story-chain-waiting-live", "Story Chain · Robin is typing live",
       "Robin types past the limit, deletes the red overflow, sends line 8, and then your turn opens"
+    )
+    static let storyChainReadingReactions = storyChainGame(
+      "story-chain-reading-reactions", "Story Chain · live reactions while reading",
+      "Robin's draft stays on the page while either partner can send a live reaction"
     )
     static let storyChainWaitingAway = storyChainGame(
       "story-chain-waiting-away", "Story Chain · waiting for Robin, who is away",

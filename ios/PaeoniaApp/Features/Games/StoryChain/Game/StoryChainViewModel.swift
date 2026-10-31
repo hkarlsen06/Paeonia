@@ -67,6 +67,7 @@ final class StoryChainViewModel {
     /// The partner's live draft is set to be the last line.
     private(set) var partnerIsWritingLast = false
     private(set) var invite: GameInviteState = .hidden
+    let liveReactions = GameLiveReactions()
 
     // Sending.
     /// A move is saved on this phone and not sent yet. It may be on its way.
@@ -151,7 +152,7 @@ final class StoryChainViewModel {
 
     // The live room.
     @ObservationIgnored var live: WidgetLiveDrawing?
-    @ObservationIgnored var liveChannel: GameLiveChannel<StoryChainLiveMessage>?
+    @ObservationIgnored var liveChannel: GameLiveChannel<StoryChainRoomMessage>?
     @ObservationIgnored var partnerMessage: StoryChainReceivedMessage?
     @ObservationIgnored var liveWindowTask: Task<Void, Never>?
     @ObservationIgnored var liveDraftIsDirty = false

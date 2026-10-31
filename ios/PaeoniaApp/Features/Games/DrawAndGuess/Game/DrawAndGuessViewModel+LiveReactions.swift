@@ -12,39 +12,25 @@ extension DrawAndGuessViewModel {
         }
     }
 
-    func sendLiveReaction(_ reaction: DrawAndGuessLiveReaction) {
+    func sendLiveReaction(_ reaction: GameLiveReaction) {
         guard canSendLiveReaction, let round, let liveGuessChannel else { return }
         liveGuessChannel.send(.reaction(round: round.id, reaction: reaction))
-        showLiveReaction(reaction)
+        liveReactions.show(reaction)
         PaeoniaHaptics.selection()
     }
 
-    func receiveLiveReaction(_ reaction: DrawAndGuessLiveReaction, roundID: UUID) {
+    func receiveLiveReaction(_ reaction: GameLiveReaction, roundID: UUID) {
         guard canSendLiveReaction, round?.id == roundID else { return }
-        showLiveReaction(reaction)
+        liveReactions.show(reaction)
         if !board.isStrokeInProgress { PaeoniaHaptics.partnerDrawingReceived() }
         var announcement = AttributedString(
-            String(localized: .gamesDrawAndGuessLiveReactionReceived(partnerName, reaction.glyph))
+            String(localized: .gamesLiveReactionReceived(partnerName, reaction.glyph))
         )
         announcement.accessibilitySpeechAnnouncementPriority = .low
         AccessibilityNotification.Announcement(announcement).post()
     }
 
-    private func showLiveReaction(_ reaction: DrawAndGuessLiveReaction) {
-        liveReactions.removeAll { Date().timeIntervalSince($0.start) >= DrawAndGuessReactionFlight.duration }
-        liveReactions.append(DrawAndGuessReactionFlight(reaction: reaction))
-        liveReactions = Array(liveReactions.suffix(20))
-        liveReactionTask?.cancel()
-        liveReactionTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(DrawAndGuessReactionFlight.duration))
-            guard !Task.isCancelled else { return }
-            self?.liveReactions.removeAll()
-        }
-    }
-
     func clearLiveReactions() {
-        liveReactionTask?.cancel()
-        liveReactionTask = nil
-        liveReactions.removeAll()
+        liveReactions.clear()
     }
 }

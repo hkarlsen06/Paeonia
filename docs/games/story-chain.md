@@ -8,6 +8,10 @@ Page eyebrows and partner activity groups are centered. Waiting hints wrap under
 
 ## Decisions
 
+Decided on 2026-10-31.
+
+- Both partners can send !, ?, laughter and a heart while writing, reading or naming an unfinished story together. The buttons stay below the game title, above the page, including while the keyboard is open. Each tap shows a temporary reaction on both phones, with the same upward flight and random small tilt as Draw & Guess. Reactions use the live relay, belong to the current story and are not saved or sent as notifications. Reduce Motion uses a stationary fade. Finished stories keep their saved emoji reactions.
+
 Decided on 2026-10-13.
 
 - **Name.** "Story Chain" in English and "Skrivestafett" in Norwegian. A skrivestafett is the Norwegian school exercise where people take turns writing a story.
@@ -90,7 +94,7 @@ Live runs whenever both partners have the game screen open. Without the partner,
   - `choosing`: picking an opening, or naming a story.
   - `result`: looking at a finished story.
   - `present`: anywhere else in the game.
-- **Live letters.** While writing, the phone sends `StoryChainLiveMessage` on the game's `GameLiveChannel`: the story id, the line number, the draft as typed, and whether it is set to be the last line. It sends the whole draft on every change, at most every 50 ms, and again when the partner arrives. Drafts have a separate safety cap of 4,096 code points. Sent lines keep the 240-code-point limit. Nothing in it is saved.
+- **Live letters.** While writing, the phone sends a `StoryChainLiveMessage` inside the draft case of `StoryChainRoomMessage`: the story id, the line number, the draft as typed, and whether it is set to be the last line. It sends the whole draft on every change, at most every 50 ms, and again when the partner arrives. Drafts have a separate safety cap of 4,096 code points. Sent lines keep the 240-code-point limit. Nothing in it is saved.
 - **The reader's page.** The partner's draft shows at the end of the page in the partner's ink at reduced opacity, with a blinking caret. Letters past the normalized line limit turn red. Leading and trailing whitespace do not count, and inner whitespace counts once, as it does for Send. A composed character that crosses the limit turns red whole. VoiceOver can read the draft and its character count. Deletions show too. A draft older than 10 seconds without an update fades out, so a writer who left without sending leaves no ghost behind.
 - **Sending live.** The writer's phone sends a final message with the line id and `sent: true` the moment Send is tapped. A line watched live during this visit settles into place without a replay, even after a pause in typing. An unwatched line plays its arrival before Convex confirms. A confirmation never replays the same line, whichever message arrives first. The reader's composer opens only once Convex says it is their turn.
 - **The dare stays a surprise.** The live message never carries the dare word. The reader learns it when their turn opens.
@@ -355,10 +359,10 @@ The reveal. It should feel like closing a book you wrote together.
 - **Refused lines.** When the server refuses a queued line for good, the handler keeps its words in `rescuedLines`. The next composer this person writes in takes them in one cache step that also saves them as the draft, and adds them after whatever it holds, together with the "Your move wasn't sent" notice.
 - **A refused start.** When the server refuses the start of a story for good, the story never exists. The lines, title, seen mark and star queued for it stop too, because nothing could ever send them. The words of its line are rescued the same way.
 - **Arrivals.** A partner's unseen line writes itself in once per app session. The page runs the animation from `StoryChainPageText`'s `TimelineView` clock, with `page.arrivingLineID` and 45 ms between words. The view model remembers which draft the person watched during this visit, so a pause in typing and either confirmation order never replay a watched line. Leaving the screen or backgrounding the app clears that record. Own lines show without an arrival animation. Background updates wait until the screen is active. The shared `GameAttentionCue` owns the turn haptic.
-- **Live room.** Story Chain uses `WidgetLiveDrawing` only for presence and the socket, with no canvas, and sends `StoryChainLiveMessage` on a `GameLiveChannel`.
+- **Live room.** Story Chain uses `WidgetLiveDrawing` only for presence and the socket, with no canvas. Its `GameLiveChannel` sends `StoryChainRoomMessage`, with separate draft and reaction cases. The draft keeps `StoryChainLiveMessage` and its validation.
 - **Built screens.** The screens follow the design with these differences. The dare hint "Use WORD to send." shows only once the line is otherwise valid, because the capsule above the field already names the word. On line 20 the locked switch keeps its "Make this the last line" label, and the placeholder says "Write the last line." The hub card's status before the first story is the card subtitle, and "Waiting for [Name]" reuses the shared Games copy. Each line is its own VoiceOver element, and there is no rotor or VoiceOver action for the line popover yet.
 - **Offline history.** The phone keeps the current and previous story and the first page of "Our stories". An older story's page needs the network.
-- **Testing.** Every screen has a developer scenario (`story-chain-choose`, `-writing`, `-writing-last`, `-waiting-live`, `-waiting-away`, `-saved-offline`, `-naming`, `-waiting-name`, `-finished`, `-waiting-opening`, `-history`, `-history-empty`, `-choose-offline`). `backend/scripts/story-chain/play.mjs` plays the partner against the hosted backend, including live typing over the relay.
+- **Testing.** Every screen has a developer scenario (`story-chain-choose`, `-writing`, `-writing-last`, `-waiting-live`, `-reading-reactions`, `-waiting-away`, `-saved-offline`, `-naming`, `-waiting-name`, `-finished`, `-waiting-opening`, `-history`, `-history-empty`, `-choose-offline`). `backend/scripts/story-chain/play.mjs` plays the partner against the hosted backend, including live typing over the relay.
 
 ## Decisions made without the developer
 

@@ -34,7 +34,9 @@ struct DrawAndGuessGuessView: View {
             // so nothing above or below the square jumps when the guess is right.
             VStack(spacing: PaeoniaSpacing.space8) {
                 liveRow
-                DrawAndGuessLiveReactionButtons(viewModel: viewModel)
+                GameLiveReactionButtons(isAvailable: viewModel.canSendLiveReaction, identifierPrefix: "draw") {
+                    viewModel.sendLiveReaction($0)
+                }
                     .disabled(isRevealed)
             }
                 .opacity(isRevealed ? 0 : 1)

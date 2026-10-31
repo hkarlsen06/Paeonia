@@ -1,25 +1,27 @@
 import SwiftUI
 
-struct DrawAndGuessReactionAnchors: PreferenceKey {
-    static var defaultValue: [DrawAndGuessLiveReaction: Anchor<CGRect>] { [:] }
+struct GameLiveReactionAnchors: PreferenceKey {
+    static var defaultValue: [GameLiveReaction: Anchor<CGRect>] { [:] }
 
     static func reduce(
-        value: inout [DrawAndGuessLiveReaction: Anchor<CGRect>],
-        nextValue: () -> [DrawAndGuessLiveReaction: Anchor<CGRect>]
+        value: inout [GameLiveReaction: Anchor<CGRect>],
+        nextValue: () -> [GameLiveReaction: Anchor<CGRect>]
     ) {
         value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }
 
-struct DrawAndGuessLiveReactionButtons: View {
-    let viewModel: DrawAndGuessViewModel
+struct GameLiveReactionButtons: View {
+    let isAvailable: Bool
+    let identifierPrefix: String
+    let send: (GameLiveReaction) -> Void
 
     var body: some View {
-        if viewModel.canSendLiveReaction {
+        if isAvailable {
             HStack(spacing: PaeoniaSpacing.space12) {
-                ForEach(DrawAndGuessLiveReaction.allCases, id: \.self) { reaction in
+                ForEach(GameLiveReaction.allCases, id: \.self) { reaction in
                     Button {
-                        viewModel.sendLiveReaction(reaction)
+                        send(reaction)
                     } label: {
                         Text(verbatim: reaction.glyph)
                             .font(PaeoniaTypography.title.bold())
@@ -33,8 +35,8 @@ struct DrawAndGuessLiveReactionButtons: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(reaction.label))
-                    .accessibilityIdentifier("draw.liveReaction.\(reaction.rawValue)")
-                    .anchorPreference(key: DrawAndGuessReactionAnchors.self, value: .bounds) { [reaction: $0] }
+                    .accessibilityIdentifier("\(identifierPrefix).liveReaction.\(reaction.rawValue)")
+                    .anchorPreference(key: GameLiveReactionAnchors.self, value: .bounds) { [reaction: $0] }
                 }
             }
             .frame(maxWidth: .infinity)
@@ -42,12 +44,12 @@ struct DrawAndGuessLiveReactionButtons: View {
     }
 }
 
-struct DrawAndGuessFloatingReactions: View {
-    let flights: [DrawAndGuessReactionFlight]
-    let anchors: [DrawAndGuessLiveReaction: Anchor<CGRect>]
+struct GameFloatingReactions: View {
+    let flights: [GameLiveReactionFlight]
+    let anchors: [GameLiveReaction: Anchor<CGRect>]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var origins: [DrawAndGuessLiveReaction: CGRect] = [:]
+    @State private var origins: [GameLiveReaction: CGRect] = [:]
 
     var body: some View {
         GeometryReader { proxy in
@@ -56,7 +58,7 @@ struct DrawAndGuessFloatingReactions: View {
                 ForEach(flights) { flight in
                     if let origin = origins[flight.reaction] {
                         let elapsed = timeline.date.timeIntervalSince(flight.start)
-                        let progress = min(1, max(0, elapsed / DrawAndGuessReactionFlight.duration))
+                        let progress = min(1, max(0, elapsed / GameLiveReactionFlight.duration))
                         Text(verbatim: flight.reaction.glyph)
                             .font(.system(size: PaeoniaSpacing.space40, weight: .bold, design: .rounded))
                             .foregroundStyle(.paeoniaTextPrimary)
@@ -79,5 +81,14 @@ struct DrawAndGuessFloatingReactions: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    func gameLiveReactions(_ reactions: GameLiveReactions) -> some View {
+        overlayPreferenceValue(GameLiveReactionAnchors.self) { anchors in
+            GameFloatingReactions(flights: reactions.flights, anchors: anchors)
+        }
+        .toolbarBackground(reactions.flights.isEmpty ? .automatic : .hidden, for: .navigationBar)
     }
 }

@@ -21,6 +21,7 @@ struct StoryChainScreen: View {
         .paeoniaScreenBackground(.paeoniaBackgroundSecondary)
         .paeoniaFittingNavigationTitle(Text(.storyChainName))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
+        .gameLiveReactions(viewModel.liveReactions)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar { menu }
         .preferredColorScheme(.dark)

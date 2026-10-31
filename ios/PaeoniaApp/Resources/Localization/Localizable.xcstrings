@@ -14157,96 +14157,6 @@
         }
       }
     },
-    "games.drawAndGuess.liveReaction.confused" : {
-      "comment" : "Accessibility label for the question mark live reaction button in Draw & Guess.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send confusion"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send forvirring"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.liveReaction.excited" : {
-      "comment" : "Accessibility label for the exclamation mark live reaction button in Draw & Guess.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send excitement"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send begeistring"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.liveReaction.laugh" : {
-      "comment" : "Accessibility label for the laughing face live reaction button in Draw & Guess.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send laughter"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send latter"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.liveReaction.love" : {
-      "comment" : "Accessibility label for the heart live reaction button in Draw & Guess.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send love"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send kjærlighet"
-          }
-        }
-      }
-    },
-    "games.drawAndGuess.liveReaction.received" : {
-      "comment" : "VoiceOver announcement of a live reaction. First value is the partner name, second is the reaction symbol.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ reacted %2$@"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ reagerte med %2$@"
-          }
-        }
-      }
-    },
     "games.drawAndGuess.missed.line" : {
       "comment" : "Line under the missed title.",
       "extractionState" : "manual",
@@ -15839,6 +15749,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Norsk"
+          }
+        }
+      }
+    },
+    "games.liveReaction.confused" : {
+      "comment" : "Accessibility label for the question mark live reaction button in a live game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send confusion"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send forvirring"
+          }
+        }
+      }
+    },
+    "games.liveReaction.excited" : {
+      "comment" : "Accessibility label for the exclamation mark live reaction button in a live game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send excitement"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send begeistring"
+          }
+        }
+      }
+    },
+    "games.liveReaction.laugh" : {
+      "comment" : "Accessibility label for the laughing face live reaction button in a live game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send laughter"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send latter"
+          }
+        }
+      }
+    },
+    "games.liveReaction.love" : {
+      "comment" : "Accessibility label for the heart live reaction button in a live game.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send love"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send kjærlighet"
+          }
+        }
+      }
+    },
+    "games.liveReaction.received" : {
+      "comment" : "VoiceOver announcement of a live reaction. First value is the partner name, second is the reaction symbol.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reacted %2$@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ reagerte med %2$@"
           }
         }
       }

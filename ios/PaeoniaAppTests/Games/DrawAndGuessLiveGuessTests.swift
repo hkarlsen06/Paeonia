@@ -90,19 +90,19 @@ struct DrawAndGuessLiveGuessTests {
 
         guesser.sendLiveReaction(.exclamation)
         receiver.onGameData?(try #require(sender.sentGameData.last))
-        #expect(guesser.liveReactions.map(\.reaction) == [.exclamation])
-        #expect(drawer.liveReactions.map(\.reaction) == [.exclamation])
+        #expect(guesser.liveReactions.flights.map(\.reaction) == [.exclamation])
+        #expect(drawer.liveReactions.flights.map(\.reaction) == [.exclamation])
 
         drawer.sendLiveReaction(.love)
         sender.onGameData?(try #require(receiver.sentGameData.last))
-        #expect(guesser.liveReactions.map(\.reaction) == [.exclamation, .love])
+        #expect(guesser.liveReactions.flights.map(\.reaction) == [.exclamation, .love])
 
         let stale = DrawAndGuessLiveMessage.reaction(round: UUID(), reaction: .question)
         receiver.onGameData?(try JSONEncoder().encode(GameLiveEnvelope(
             game: DrawAndGuessLiveMessage.game,
             message: stale
         )))
-        #expect(drawer.liveReactions.count == 2)
+        #expect(drawer.liveReactions.flights.count == 2)
 
         sender.onMessage?(WidgetLiveMessage(type: .left, from: "partner"))
         guesser.recompute()

@@ -85,8 +85,13 @@ extension StoryChainViewModel {
 
     func attach(_ room: WidgetLiveDrawing) {
         room.onPartnerArrived = { [weak self] in self?.resendDraftLive() }
-        let channel = GameLiveChannel<StoryChainLiveMessage>(connection: room.connection)
-        channel.onMessage = { [weak self] message in self?.receive(message) }
+        let channel = GameLiveChannel<StoryChainRoomMessage>(connection: room.connection)
+        channel.onMessage = { [weak self] message in
+            switch message {
+            case let .draft(draft): self?.receive(draft)
+            case let .reaction(story, reaction): self?.receiveLiveReaction(reaction, storyID: story)
+            }
+        }
         liveChannel = channel
         live = room
     }
@@ -105,6 +110,7 @@ extension StoryChainViewModel {
     }
 
     func stopLive() {
+        liveReactions.clear()
         liveObservationTask?.cancel()
         liveObservationTask = nil
         liveWindowTask?.cancel()
@@ -146,12 +152,12 @@ extension StoryChainViewModel {
     private func flushDraftLive() {
         guard let key = liveKey else { return }
         liveDraftIsDirty = false
-        liveChannel?.send(StoryChainLiveMessage(
+        liveChannel?.send(.draft(StoryChainLiveMessage(
             story: key.storyID,
             number: key.number,
             text: draft,
             isLast: isLastLine
-        ))
+        )))
         liveWindowTask?.cancel()
         let interval = liveSendInterval
         let sleep = sleep
@@ -172,14 +178,14 @@ extension StoryChainViewModel {
         liveWindowTask?.cancel()
         liveWindowTask = nil
         liveDraftIsDirty = false
-        liveChannel?.send(StoryChainLiveMessage(
+        liveChannel?.send(.draft(StoryChainLiveMessage(
             story: line.storyID,
             number: number,
             text: line.text,
             isLast: line.isLast,
             lineID: line.lineID,
             sent: true
-        ))
+        )))
     }
 
     // MARK: - Receiving

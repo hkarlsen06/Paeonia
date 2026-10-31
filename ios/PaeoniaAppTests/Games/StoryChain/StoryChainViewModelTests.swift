@@ -42,13 +42,18 @@ final class StoryChainRecordingConnection: WidgetLiveConnection {
 
     var sentMessages: [StoryChainLiveMessage] {
         sentGameData.compactMap {
-            try? JSONDecoder().decode(GameLiveEnvelope<StoryChainLiveMessage>.self, from: $0).message
+            guard let envelope = try? JSONDecoder().decode(GameLiveEnvelope<StoryChainRoomMessage>.self, from: $0),
+                  case let .draft(draft) = envelope.message else { return nil }
+            return draft
         }
     }
 
     /// The partner's phone sent this message.
     func receive(_ message: StoryChainLiveMessage) {
-        let data = (try? JSONEncoder().encode(GameLiveEnvelope(game: StoryChainLiveMessage.game, message: message)))
+        let data = try? JSONEncoder().encode(GameLiveEnvelope(
+            game: StoryChainRoomMessage.game,
+            message: StoryChainRoomMessage.draft(message)
+        ))
         onGameData?(data ?? Data())
     }
 

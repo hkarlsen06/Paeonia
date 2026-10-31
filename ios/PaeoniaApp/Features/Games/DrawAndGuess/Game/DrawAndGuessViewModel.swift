@@ -65,7 +65,7 @@ final class DrawAndGuessViewModel {
     var partnerNextRound: DrawAndGuessPartnerNextRound?
     /// Drawer only: the partner's guess screen while they are on it, from the live room.
     var partnerGuess: DrawAndGuessPartnerGuess?
-    var liveReactions: [DrawAndGuessReactionFlight] = []
+    let liveReactions = GameLiveReactions()
     /// A move is saved on this phone and not sent yet. It may be on its way.
     var isWaitingToSend = false
     /// A waiting move has failed to send at least once, so it really is held on
@@ -141,7 +141,6 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var attentionCue = GameAttentionCue()
 
     @ObservationIgnored var liveObservationTask: Task<Void, Never>?
-    @ObservationIgnored var liveReactionTask: Task<Void, Never>?
     @ObservationIgnored var wrongGuessTask: Task<Void, Never>?
     @ObservationIgnored var draftTask: Task<Void, Never>?
     @ObservationIgnored var startTask: Task<Void, Never>?

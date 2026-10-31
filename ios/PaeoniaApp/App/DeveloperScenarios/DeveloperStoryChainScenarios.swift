@@ -22,7 +22,7 @@
         betweenStories(for: scenario)
       case .storyChainWritingLast:
         Fixture.lastLine()
-      case .storyChainWaitingLive, .storyChainWaitingAway:
+      case .storyChainWaitingLive, .storyChainWaitingAway, .storyChainReadingReactions:
         Fixture.writing(lines: 7)
       case .storyChainNaming:
         Fixture.titling(namedBy: Fixture.me)
@@ -55,7 +55,7 @@
       coupleID: UUID,
       cache: InMemoryStoryChainCache
     ) -> WidgetLiveDrawing {
-      let connection = WidgetLiveConnection(coupleID: coupleID, ticketProvider: { _ in nil })
+      let connection = DeveloperGameLiveConnection(coupleID: coupleID, ticketProvider: { _ in nil })
       let live = WidgetLiveDrawing(
         connection: connection,
         role: .present,
@@ -70,6 +70,8 @@
         simulatePartner(on: connection, role: .drawing)
         let typist = DeveloperStoryChainPartnerTypist(connection: connection, cache: cache)
         Task { await typist.run() }
+      case .storyChainReadingReactions:
+        simulatePartner(on: connection, role: .drawing)
       default:
         break
       }
@@ -79,6 +81,10 @@
     /// The partner opens the game with `role`, which is what their screen shows.
     @MainActor
     fileprivate static func simulatePartner(on connection: WidgetLiveConnection, role: WidgetLivePresence.Role) {
+      if let simulated = connection as? DeveloperGameLiveConnection {
+        simulated.partnerRole = role
+        simulated.onStart = { simulatePartner(on: $0, role: role) }
+      }
       connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
       connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: role.rawValue))
     }
@@ -190,7 +196,7 @@
         lineID: sent ? lineID : nil,
         sent: sent
       )
-      let envelope = GameLiveEnvelope(game: StoryChainLiveMessage.game, message: message)
+      let envelope = GameLiveEnvelope(game: StoryChainRoomMessage.game, message: StoryChainRoomMessage.draft(message))
       guard let data = try? JSONEncoder().encode(envelope) else { return }
       connection?.onGameData?(data)
     }
@@ -233,6 +239,20 @@
     /// The line went through the normal queue and its first try failed for lack of
     /// a connection, so the page says "Saved on this phone".
     private func seed() async {
+      if scenario == .storyChainReadingReactions {
+        await hub.game.start()
+        let message = StoryChainRoomMessage.draft(StoryChainLiveMessage(
+          story: DeveloperStoryChainFixture.storyID(DeveloperStoryChainFixture.storyNumber),
+          number: 8,
+          text: String(DeveloperStoryChainFixture.partnerLiveLine.text.prefix(90)),
+          isLast: false
+        ))
+        let envelope = GameLiveEnvelope(game: StoryChainRoomMessage.game, message: message)
+        if let data = try? JSONEncoder().encode(envelope) {
+          hub.game.live?.connection.onGameData?(data)
+        }
+        return
+      }
       guard scenario == .storyChainSavedOffline else { return }
       typealias Fixture = DeveloperStoryChainFixture
       let line = StoryChainQueuedLine(
