@@ -123,6 +123,8 @@ final class GuessMySpotViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    var continuation: GameContinuation?
+    @ObservationIgnored var partnerResultID: UUID?
     /// Taps when the partner sends a photo and it becomes this person's turn to guess.
     @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var refusedMoves: [GuessMySpotRefusedMove] = []

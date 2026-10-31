@@ -137,6 +137,7 @@ final class DrawAndGuessViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    var continuation: GameContinuation?
     /// Taps when the partner hands this person the turn or guesses on their drawing.
     @ObservationIgnored var attentionCue = GameAttentionCue()
 
@@ -300,8 +301,12 @@ final class DrawAndGuessViewModel {
         updateSpeedBonus()
         updateReveal()
         runEffects()
+        continuation = makeContinuation()
         if state != nil {
-            attentionCue.update(resolver.attention(state: state, pending: pending), isActive: isRunning && isActive)
+            attentionCue.update(
+                resolver.attention(state: state, pending: pending).including(continuation),
+                isActive: isRunning && isActive
+            )
         }
     }
 

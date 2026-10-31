@@ -5,6 +5,28 @@ import UIKit
 // The partner: what they are doing, the invite, the live room with the guess
 // marker, the marks on the pins, and the screen opening and closing.
 extension ConsensioViewModel {
+    func updateContinuation(attention: GameAttention) {
+        if case .reveal = phase, live?.partnerActivity == .result {
+            partnerResultID = round?.id
+        }
+        continuation = makeContinuation()
+        if state != nil {
+            attentionCue.update(attention.including(continuation), isActive: isRunning && isActive)
+        }
+    }
+
+    func makeContinuation() -> GameContinuation? {
+        guard case .reveal(isHeld: false) = phase, let round, let userID = currentUserID else { return nil }
+        if let next = state?.currentRound, next.roundNumber > round.roundNumber,
+           next.placerUserID != userID, next.guess == nil {
+            return GameContinuation(id: "round \(next.id) placed", status: .picked)
+        }
+        if round.guesserUserID == userID, partnerResultID == round.id, live?.partnerActivity == .present {
+            return GameContinuation(id: "round \(round.id) partner waiting", status: .waiting)
+        }
+        return nil
+    }
+
     // MARK: - Lifecycle
 
     func start() async {
@@ -155,7 +177,7 @@ extension ConsensioViewModel {
             let activity = Observations { live.partnerActivity }
             for await _ in activity {
                 guard !Task.isCancelled, let self else { return }
-                updatePartnerStatus()
+                recompute()
             }
         }
     }

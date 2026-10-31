@@ -114,6 +114,7 @@ final class MindMeldViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    var continuation: GameContinuation?
     /// Taps when the partner locks in and it becomes this person's turn.
     @ObservationIgnored var attentionCue = GameAttentionCue()
     /// Refused words that no reload has shown yet.

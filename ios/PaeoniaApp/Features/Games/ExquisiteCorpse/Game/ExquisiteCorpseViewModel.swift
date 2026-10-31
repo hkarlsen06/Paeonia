@@ -128,6 +128,7 @@ final class ExquisiteCorpseViewModel {
     /// screen. The game stops when this reaches zero.
     @ObservationIgnored var visibleScreens = 0
     @ObservationIgnored var reloadGate = GameReloadGate()
+    var continuation: GameContinuation?
     /// Taps when the partner's part makes it this person's turn.
     @ObservationIgnored var attentionCue = GameAttentionCue()
 

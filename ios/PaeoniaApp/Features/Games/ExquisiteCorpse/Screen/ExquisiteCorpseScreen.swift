@@ -159,6 +159,7 @@ struct ExquisiteCorpseScreen: View {
             ExquisiteCorpseRevealView(
                 content: content,
                 reduceMotion: reduceMotion,
+                continuation: viewModel.continuation,
                 onContinue: { Task { await viewModel.continueFromReveal() } },
                 onSettled: { Task { await viewModel.revealDidSettle(figureID: content.figureID) } }
             )

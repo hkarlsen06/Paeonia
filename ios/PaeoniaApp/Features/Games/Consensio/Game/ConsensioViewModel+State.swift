@@ -118,9 +118,7 @@ extension ConsensioViewModel {
         updatePartnerStatus()
         syncLiveRole()
         runEffects()
-        if state != nil {
-            attentionCue.update(resolver.attention(state: state, pending: work), isActive: isRunning && isActive)
-        }
+        updateContinuation(attention: resolver.attention(state: state, pending: work))
     }
 
     /// A new guess starts with the marker in the middle. Leaving the guess phase

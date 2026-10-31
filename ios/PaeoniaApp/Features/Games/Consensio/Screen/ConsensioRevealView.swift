@@ -261,7 +261,11 @@ struct ConsensioRevealView: View {
                 PaeoniaHaptics.gameContinued()
                 viewModel.continueFromReveal()
             } label: {
-                Text(isPlacer ? .consensioHandoffContinue : .consensioHandoffPlace)
+                GameContinueLabel(
+                    title: isPlacer ? .consensioHandoffContinue : .consensioHandoffPlace,
+                    partnerName: viewModel.participants.partnerName,
+                    continuation: viewModel.continuation
+                )
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
         }

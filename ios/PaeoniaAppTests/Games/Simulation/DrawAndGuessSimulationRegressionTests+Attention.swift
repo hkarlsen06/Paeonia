@@ -5,6 +5,32 @@ import Testing
 /// The taps that tell a person the game needs them, played through the real view
 /// models on two phones.
 extension DrawAndGuessSimulationRegressionTests {
+    @Test func nextDrawingUpdatesContinueAndCuesWhileThePreviousResultStaysOpen() async {
+        await scenario { driver in
+            let (drawer, guesser) = try await driver.scriptRoundToReveal()
+            let result = try driver.require(drawer, in: .reveal)
+            let resultID = result.round?.id
+            let log = CueLog()
+            log.listen(to: drawer)
+            await guesser.viewModel?.continueFromReveal()
+            await driver.settle()
+
+            try await driver.scriptPick(guesser)
+            #expect(result.phase == .reveal)
+            #expect(result.round?.id == resultID)
+            #expect(result.continuation?.status == .drawing)
+            #expect(log[drawer] == ["step"])
+
+            try await driver.scriptDraw(guesser)
+            try await driver.scriptDone(guesser)
+            #expect(result.phase == .reveal)
+            #expect(result.continuation?.status == .sentDrawing)
+            #expect(log[drawer] == ["step", "turn"])
+            result.recompute()
+            #expect(log[drawer] == ["step", "turn"])
+        }
+    }
+
     /// Each phone's cues, in the order they played.
     @MainActor
     final class CueLog {

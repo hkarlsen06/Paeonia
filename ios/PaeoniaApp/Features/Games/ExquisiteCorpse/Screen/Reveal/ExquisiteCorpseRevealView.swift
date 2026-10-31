@@ -15,6 +15,7 @@ import SwiftUI
 struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_length
     let content: ExquisiteCorpseRevealContent
     let reduceMotion: Bool
+    let continuation: GameContinuation?
     let onContinue: () -> Void
     /// Called after the strokes start playing again. The view replays them itself.
     let onPlayAgain: (() -> Void)?
@@ -34,6 +35,7 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
     init(
         content: ExquisiteCorpseRevealContent,
         reduceMotion: Bool,
+        continuation: GameContinuation? = nil,
         onContinue: @escaping () -> Void,
         onSettled: @escaping @MainActor () -> Void = {},
         onPlayAgain: (() -> Void)? = nil,
@@ -42,6 +44,7 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
     ) {
         self.content = content
         self.reduceMotion = reduceMotion
+        self.continuation = continuation
         self.onContinue = onContinue
         self.onPlayAgain = onPlayAgain
         _timeline = State(initialValue: timeline ?? ExquisiteCorpseRevealTimeline(onSettled: onSettled))
@@ -228,7 +231,11 @@ struct ExquisiteCorpseRevealView: View { // swiftlint:disable:this type_body_len
                 PaeoniaHaptics.gameContinued()
                 onContinue()
             } label: {
-                Text(content.nextIsMine ? .exquisiteCorpseRevealNextHead : .exquisiteCorpseRevealContinue)
+                GameContinueLabel(
+                    title: content.nextIsMine ? .exquisiteCorpseRevealNextHead : .exquisiteCorpseRevealContinue,
+                    partnerName: content.partnerName,
+                    continuation: continuation
+                )
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .accessibilityIdentifier("corpse.reveal.continue")

@@ -77,14 +77,11 @@ struct DrawAndGuessDrawerResultView: View {
                     PaeoniaHaptics.gameContinued()
                     Task { await viewModel.continueFromReveal() }
                 } label: {
-                    switch viewModel.partnerNextRound {
-                    case .drawing:
-                        Text(.gamesDrawAndGuessHandoffWatch(viewModel.partnerName))
-                    case .sent:
-                        Text(.gamesDrawAndGuessHandoffSeeDrawing(viewModel.partnerName))
-                    case nil:
-                        Text(.gamesDrawAndGuessHandoffContinue)
-                    }
+                    GameContinueLabel(
+                        title: .gamesDrawAndGuessHandoffContinue,
+                        partnerName: viewModel.partnerName,
+                        continuation: viewModel.continuation
+                    )
                 }
                 .buttonStyle(PaeoniaPrimaryButtonStyle())
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12)))

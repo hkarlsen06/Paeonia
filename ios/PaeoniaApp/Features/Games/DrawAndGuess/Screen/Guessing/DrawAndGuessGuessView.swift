@@ -230,19 +230,16 @@ struct DrawAndGuessGuessView: View {
             }
             .transition(.opacity.combined(with: .move(edge: .bottom)))
         }
-        if isRevealed, timeline.buttonShown, viewModel.isPartnerWaitingForMe {
-            Text(.gamesDrawAndGuessRevealPartnerWaiting(viewModel.partnerName))
-                .font(PaeoniaTypography.caption)
-                .foregroundStyle(.paeoniaTextSecondary)
-                .transition(.opacity)
-                .accessibilityIdentifier("draw.reveal.partnerWaiting")
-        }
         if isRevealed, timeline.buttonShown {
             Button {
                 PaeoniaHaptics.gameContinued()
                 Task { await viewModel.continueFromReveal() }
             } label: {
-                Text(viewModel.isNextTurnMine ? .gamesDrawAndGuessHandoffDraw : .gamesDrawAndGuessHandoffContinue)
+                GameContinueLabel(
+                    title: viewModel.isNextTurnMine ? .gamesDrawAndGuessHandoffDraw : .gamesDrawAndGuessHandoffContinue,
+                    partnerName: viewModel.partnerName,
+                    continuation: viewModel.continuation
+                )
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .transition(reduceMotion ? .opacity : .opacity.combined(with: .offset(y: 12)))

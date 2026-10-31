@@ -258,10 +258,14 @@ struct MindMeldRevealView: View {
         Button {
             continueToNextRound()
         } label: {
-            Text(.mindMeldRevealNext)
+            continueLabel(.mindMeldRevealNext)
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle())
         .accessibilityIdentifier("mindMeld.nextRound")
+    }
+
+    private func continueLabel(_ title: LocalizedStringResource) -> some View {
+        GameContinueLabel(title: title, partnerName: viewModel.partnerName, continuation: viewModel.continuation)
     }
 
     private func continueToNextRound() {
@@ -275,7 +279,7 @@ struct MindMeldRevealView: View {
             PaeoniaHaptics.gameContinued()
             Task { await viewModel.playAgain() }
         } label: {
-            Text(.mindMeldRevealPlayAgain)
+            continueLabel(.mindMeldRevealPlayAgain)
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isStartingGame))
         .accessibilityIdentifier("mindMeld.playAgain")

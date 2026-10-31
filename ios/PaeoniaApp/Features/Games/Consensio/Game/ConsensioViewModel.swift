@@ -96,6 +96,8 @@ final class ConsensioViewModel {
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
     @ObservationIgnored var reloadGate = GameReloadGate()
+    var continuation: GameContinuation?
+    @ObservationIgnored var partnerResultID: UUID?
     /// Taps when the partner places a marker and it becomes this person's turn to guess.
     @ObservationIgnored var attentionCue = GameAttentionCue()
     @ObservationIgnored var refusedMoves: [ConsensioRefusedMove] = []

@@ -3,6 +3,19 @@ import Foundation
 // The partner: the heartbeat that says this screen is open, what their phone
 // says they are doing, and the invite.
 extension ExquisiteCorpseViewModel {
+    func makeContinuation() -> GameContinuation? {
+        guard phase == .reveal, let figure, let game = state?.game, let userID = currentUserID else { return nil }
+        if let next = state?.currentFigure, next.number > figure.number,
+           let head = next.part(at: ExquisiteCorpsePartKind.head.rawValue), head.drawerUserID != userID {
+            return GameContinuation(id: "figure \(next.id) head sent", status: .drew)
+        }
+        if figure.starterUserID != userID, live?.partnerActivity == .watching,
+           game.figureNumber == figure.number + 1, game.partIndex == ExquisiteCorpsePartKind.head.rawValue {
+            return GameContinuation(id: "figure \(figure.id) partner waiting", status: .waiting)
+        }
+        return nil
+    }
+
     // MARK: - Presence
 
     /// Reads what the partner is doing from the relay room, and from their

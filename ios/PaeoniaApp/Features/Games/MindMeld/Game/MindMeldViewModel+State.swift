@@ -112,8 +112,12 @@ extension MindMeldViewModel {
         followDraftRound()
         updatePartnerStatus()
         runEffects()
+        continuation = makeContinuation()
         if state != nil {
-            attentionCue.update(resolver.attention(state: state, pending: work), isActive: isRunning && isActive)
+            attentionCue.update(
+                resolver.attention(state: state, pending: work).including(continuation),
+                isActive: isRunning && isActive
+            )
         }
     }
 

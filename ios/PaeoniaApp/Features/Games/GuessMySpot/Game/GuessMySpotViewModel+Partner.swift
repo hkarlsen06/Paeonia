@@ -6,6 +6,28 @@ import UIKit
 // The partner: what they are doing, the invite, the live room with the guess map,
 // the marks on the pins, and the screen opening and closing.
 extension GuessMySpotViewModel {
+    func updateContinuation(attention: GameAttention) {
+        if case .reveal = phase, live?.partnerActivity == .result {
+            partnerResultID = round?.id
+        }
+        continuation = makeContinuation()
+        if state != nil {
+            attentionCue.update(attention.including(continuation), isActive: isRunning && isActive)
+        }
+    }
+
+    func makeContinuation() -> GameContinuation? {
+        guard case .reveal(isHeld: false) = phase, let round, let userID = currentUserID else { return nil }
+        if let next = state?.currentRound, next.roundNumber > round.roundNumber,
+           next.senderUserID != userID, !next.isGuessed {
+            return GameContinuation(id: "round \(next.id) sent", status: .sentPhoto)
+        }
+        if round.guesserUserID == userID, partnerResultID == round.id, live?.partnerActivity == .present {
+            return GameContinuation(id: "round \(round.id) partner waiting", status: .waiting)
+        }
+        return nil
+    }
+
     // MARK: - Lifecycle
 
     func start() async {
@@ -163,7 +185,7 @@ extension GuessMySpotViewModel {
             let activity = Observations { live.partnerActivity }
             for await _ in activity {
                 guard !Task.isCancelled, let self else { return }
-                updatePartnerStatus()
+                recompute()
             }
         }
     }
