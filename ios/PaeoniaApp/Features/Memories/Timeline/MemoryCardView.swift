@@ -98,21 +98,17 @@ struct MemoryCardView: View {
             )
         }
         .aspectRatio(1, contentMode: .fit)
-        .overlay {
-            LinearGradient(
-                stops: [
-                    .init(color: .black.opacity(0.8), location: 0),
-                    .init(color: .clear, location: 0.5),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        }
         .overlay(alignment: .topTrailing) {
             date
                 .foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
-                .padding(PaeoniaSpacing.space4)
+                .background {
+                    Rectangle()
+                        .fill(.black.opacity(0.75))
+                        .padding(-PaeoniaSpacing.space4)
+                        .blur(radius: PaeoniaSpacing.space8)
+                }
+                .padding(PaeoniaSpacing.space8)
         }
         .overlay(alignment: .bottomTrailing) {
             if photoAssetIDs.count > 1 {
